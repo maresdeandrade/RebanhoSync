@@ -8,6 +8,7 @@ import type {
   EventoComercial,
   EventoFinanceiro,
   EventoPesagem,
+  EventoReproducao,
   EventoSanitario,
   FazendaSanidadeConfig,
   FinanceiroTipoEnum,
@@ -21,9 +22,23 @@ import type {
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
   Rejection,
+  SanitarioAgendaAnimalLocalV2,
+  SanitarioAgendaLocalV2,
   SociedadeAnimal,
   SociedadePecuaria,
 } from "@/lib/offline/types";
+import {
+  createMetricPeriod,
+  createMetricResult,
+  type MetricCoverage,
+  type MetricResult,
+  type MetricStatus,
+  type MetricTimezoneSource,
+} from "@/lib/reports/metricContract";
+import {
+  rebuildReproductiveProjection,
+  type ReproductiveProjectionEvent,
+} from "@/lib/reproduction/status";
 import {
   createSanitarySupplyNeedsInsight,
   type SanitarySupplyNeedGroup,
@@ -66,10 +81,12 @@ export const OPERATIONAL_REPORT_SOURCE_NOTES = [
   "Historico: event_eventos + detail tables no periodo selecionado.",
   "Estado atual: state_* como read model atual, sem historico completo.",
   "Agenda: pendencia/intencao futura, nao fato executado.",
+  "Completude historica por fazenda, dominio e periodo depende de evidencia tecnica de cobertura; watermark isolado nao basta.",
 ] as const;
 
 export const OPERATIONAL_REPORT_LIMITATIONS = [
   "Relatorio derivado/read-only; dados parciais nao autorizam decisao critica.",
+  "Zero local sem prova de cobertura nao e tratado como zero historico factual.",
   "Custo operacional parcial nao e DRE, ROI, margem ou custo por arroba.",
   "Pesagens indicam peso medio e ultima pesagem no periodo; nao afirmam GMD ou desempenho de lote/pasto sem permanencia comprovada.",
   "Saldo operacional e leitura parcial, nao conclusao financeira.",
@@ -83,7 +100,64 @@ export interface ReportRange {
   filenameTag: string;
 }
 
+export type OperationalMetricKey =
+  | "rebanho_animais_ativos"
+  | "rebanho_lotes_ativos"
+  | "rebanho_pastos_ativos"
+  | "rebanho_entradas"
+  | "rebanho_saidas"
+  | "rebanho_categorias_historicas"
+  | "agenda_aberta"
+  | "eventos_periodo"
+  | "financeiro_entradas"
+  | "financeiro_saidas"
+  | "financeiro_saldo"
+  | "financeiro_transacoes"
+  | "comercial_operacoes"
+  | "comercial_cabecas"
+  | "comercial_valor_bruto"
+  | "comercial_valor_liquido"
+  | "comercial_preco_medio_cabeca"
+  | "comercial_preco_medio_arroba"
+  | "comercial_peso_kg"
+  | "pesagem_eventos"
+  | "pesagem_media_kg"
+  | "pesagem_ultimo_kg"
+  | "repro_matrizes"
+  | "repro_servicos"
+  | "repro_diagnosticos"
+  | "repro_prenhas_atuais"
+  | "repro_partos"
+  | "repro_abortos"
+  | "repro_nascimentos"
+  | "sanitario_execucoes"
+  | "estoque_saldo_atual"
+  | "estoque_entradas"
+  | "estoque_saidas"
+  | "estoque_demanda_futura";
+
+export interface ReproductionReportSummary {
+  matrizes: number;
+  servicos: number;
+  diagnosticos: number;
+  prenhasAtuais: number;
+  partos: number;
+  abortosPerdas: number;
+  nascimentos: number | null;
+}
+
+export interface OperationalSummaryHistoricalCoverage {
+  state: Extract<MetricCoverage["state"], "verified" | "partial">;
+  evidence: string[];
+  pendingLocalOperations?: number;
+}
+
 export interface OperationalSummaryInput {
+  fazendaId: string;
+  farmTimezone?: string | null;
+  historicalCoverage?: Partial<
+    Record<OperationalMetricKey, OperationalSummaryHistoricalCoverage>
+  >;
   animals: Animal[];
   lotes: Lote[];
   pastos: Pasto[];
@@ -91,6 +165,7 @@ export interface OperationalSummaryInput {
   eventos: Evento[];
   eventosSanitario?: EventoSanitario[];
   eventosComercial?: EventoComercial[];
+  eventosReproducao?: EventoReproducao[];
   eventosPesagem: EventoPesagem[];
   eventosFinanceiro: EventoFinanceiro[];
   sociedadesPecuarias?: SociedadePecuaria[];
@@ -106,6 +181,8 @@ export interface OperationalSummaryInput {
   insumoApresentacoes?: InsumoApresentacao[];
   insumoLotes?: InsumoLote[];
   insumoMovimentacoes?: InsumoMovimentacao[];
+  sanitarioAgendaV2?: SanitarioAgendaLocalV2[];
+  sanitarioAgendaAnimaisV2?: SanitarioAgendaAnimalLocalV2[];
 }
 
 export interface SummaryMetric {
@@ -245,6 +322,12 @@ export interface SanitaryExceptionsReportSummary extends SanitaryExceptionSummar
 export interface CommercialTraceabilitySummary {
   totalReceita: number;
   totalCusto: number;
+  totalBruto: number | null;
+  totalLiquido: number | null;
+  cabecasNegociadas: number;
+  pesoComercialKg: number | null;
+  precoMedioCabecaLiquido: number | null;
+  precoMedioArrobaLiquido: number | null;
   operations: number;
   byOperation: SanitaryTraceabilityCostRow[];
   byCounterparty: SanitaryTraceabilityCostRow[];
@@ -256,6 +339,8 @@ export interface CommercialTraceabilitySummary {
 export interface OperationalSummaryReport {
   generatedAt: string;
   range: ReportRange;
+  metrics: Record<OperationalMetricKey, MetricResult<number>>;
+  reproducao: ReproductionReportSummary;
   summary: {
     animaisAtivos: number;
     lotesAtivos: number;
@@ -313,7 +398,10 @@ export interface OperationalSummaryReport {
     futureDemand: {
       horizonDays: number;
       status: "complete" | "partial" | "empty";
+      source: "sanitario_agenda_v2" | "state_agenda_itens_legacy";
+      limitations: string[];
       missingProductCount: number;
+
       missingQuantityCount: number;
       groups: InventoryFutureDemandRow[];
     };
@@ -383,20 +471,64 @@ const LONG_DATETIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
   minute: "2-digit",
 });
 
-function toLocalDateOnly(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+function resolveMetricTimezone(timezone: string | null | undefined): {
+  timezone: string | null;
+  source: MetricTimezoneSource;
+  limitation: string | null;
+} {
+  const normalized = timezone?.trim() || null;
+  if (normalized) {
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: normalized }).format();
+      return { timezone: normalized, source: "farm", limitation: null };
+    } catch {
+      return {
+        timezone: null,
+        source: "runtime",
+        limitation: `Timezone da fazenda invalido (${normalized}); fronteiras usam o timezone de runtime disponivel.`,
+      };
+    }
+  }
+
+  return {
+    timezone: null,
+    source: "runtime",
+    limitation:
+      "Timezone da fazenda nao foi carregado; fronteiras usam o timezone de runtime disponivel e nao representam necessariamente o calendario da fazenda.",
+  };
+}
+
+function getDateKeyInTimezone(date: Date, timezone: string | null): string {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    ...(timezone ? { timeZone: timezone } : {}),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
 function toDateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
+  const year = date.getUTCFullYear();
+  const month = `${date.getUTCMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getUTCDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
+function dateKeyToCalendarDate(dateKey: string): Date {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 function shiftDays(date: Date, days: number): Date {
-  const copy = new Date(date);
-  copy.setDate(copy.getDate() + days);
+  const copy = new Date(date.getTime());
+  copy.setUTCDate(copy.getUTCDate() + days);
   return copy;
 }
 
@@ -408,8 +540,21 @@ function safeDateTimeLabel(iso: string): string {
   return LONG_DATETIME_FORMATTER.format(new Date(iso));
 }
 
-function getEventDateKey(evento: Evento): string {
-  return evento.occurred_on ?? evento.occurred_at.slice(0, 10);
+function getTimestampDateKey(
+  timestamp: string,
+  timezone: string | null,
+): string {
+  try {
+    return getDateKeyInTimezone(new Date(timestamp), timezone);
+  } catch {
+    return timestamp.slice(0, 10);
+  }
+}
+
+function getEventDateKey(evento: Evento, timezone: string | null): string {
+  return (
+    evento.occurred_on ?? getTimestampDateKey(evento.occurred_at, timezone)
+  );
 }
 
 function escapeHtml(value: string): string {
@@ -581,7 +726,8 @@ function toSortedTraceabilityRows(
   map: Map<string, SanitaryTraceabilityCostRow>,
 ): SanitaryTraceabilityCostRow[] {
   return Array.from(map.values()).sort((left, right) => {
-    if (right.totalCost !== left.totalCost) return right.totalCost - left.totalCost;
+    if (right.totalCost !== left.totalCost)
+      return right.totalCost - left.totalCost;
     return left.label.localeCompare(right.label);
   });
 }
@@ -598,8 +744,10 @@ function resolveAgendaStatus(
 export function resolveReportRange(
   preset: ReportPreset,
   now = new Date(),
+  farmTimezone?: string | null,
 ): ReportRange {
-  const endDate = toLocalDateOnly(now);
+  const timezone = resolveMetricTimezone(farmTimezone).timezone;
+  const endDate = dateKeyToCalendarDate(getDateKeyInTimezone(now, timezone));
 
   if (preset === "mes_atual") {
     const startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
@@ -624,12 +772,396 @@ export function resolveReportRange(
   };
 }
 
-export function buildOperationalSummary(
+function filterFarmRows<T extends { fazenda_id: string }>(
+  rows: readonly T[] | undefined,
+  fazendaId: string,
+): T[] {
+  return (rows ?? []).filter((row) => row.fazenda_id === fazendaId);
+}
+
+function scopeOperationalSummaryInput(
   input: OperationalSummaryInput,
+): OperationalSummaryInput {
+  const fazendaId = input.fazendaId.trim();
+  if (!fazendaId)
+    throw new Error("fazendaId is required for operational reports");
+
+  return {
+    ...input,
+    fazendaId,
+    animals: filterFarmRows(input.animals, fazendaId),
+    lotes: filterFarmRows(input.lotes, fazendaId),
+    pastos: filterFarmRows(input.pastos, fazendaId),
+    agenda: filterFarmRows(input.agenda, fazendaId),
+    eventos: filterFarmRows(input.eventos, fazendaId),
+    eventosSanitario: input.eventosSanitario
+      ? filterFarmRows(input.eventosSanitario, fazendaId)
+      : undefined,
+    eventosComercial: input.eventosComercial
+      ? filterFarmRows(input.eventosComercial, fazendaId)
+      : undefined,
+    eventosReproducao: input.eventosReproducao
+      ? filterFarmRows(input.eventosReproducao, fazendaId)
+      : undefined,
+    eventosPesagem: filterFarmRows(input.eventosPesagem, fazendaId),
+    eventosFinanceiro: filterFarmRows(input.eventosFinanceiro, fazendaId),
+    sociedadesPecuarias: input.sociedadesPecuarias
+      ? filterFarmRows(input.sociedadesPecuarias, fazendaId)
+      : undefined,
+    sociedadeAnimais: input.sociedadeAnimais
+      ? filterFarmRows(input.sociedadeAnimais, fazendaId)
+      : undefined,
+    gestures: filterFarmRows(input.gestures, fazendaId),
+    rejections: input.rejections.filter(
+      (rejection) => rejection.fazenda_id === fazendaId,
+    ),
+    protocolosSanitarios: input.protocolosSanitarios
+      ? filterFarmRows(input.protocolosSanitarios, fazendaId)
+      : undefined,
+    protocoloItensSanitarios: input.protocoloItensSanitarios
+      ? filterFarmRows(input.protocoloItensSanitarios, fazendaId)
+      : undefined,
+    fazendaSanidadeConfig:
+      input.fazendaSanidadeConfig?.fazenda_id === fazendaId
+        ? input.fazendaSanidadeConfig
+        : null,
+    insumos: input.insumos
+      ? filterFarmRows(input.insumos, fazendaId)
+      : undefined,
+    insumoApresentacoes: input.insumoApresentacoes
+      ? filterFarmRows(input.insumoApresentacoes, fazendaId)
+      : undefined,
+    insumoLotes: input.insumoLotes
+      ? filterFarmRows(input.insumoLotes, fazendaId)
+      : undefined,
+    insumoMovimentacoes: input.insumoMovimentacoes
+      ? filterFarmRows(input.insumoMovimentacoes, fazendaId)
+      : undefined,
+    sanitarioAgendaV2: input.sanitarioAgendaV2
+      ? filterFarmRows(input.sanitarioAgendaV2, fazendaId)
+      : undefined,
+    sanitarioAgendaAnimaisV2: input.sanitarioAgendaAnimaisV2
+      ? filterFarmRows(input.sanitarioAgendaAnimaisV2, fazendaId)
+      : undefined,
+  };
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function readNestedNumber(
+  source: Record<string, unknown> | null | undefined,
+  key: string,
+): number | null {
+  return readNumberPayload(source, key);
+}
+
+function getCommercialTotalArrobas(detail: EventoComercial): number | null {
+  const pricing = asRecord(detail.snapshot?.pricing);
+  return readNestedNumber(pricing, "total_arrobas");
+}
+
+function isCommercialOperationV2(evento: Evento): boolean {
+  const payload = asRecord(evento.payload);
+  return payload?.kind === "commercial_operation_v2";
+}
+
+function isCommercialSimulation(
+  evento: Evento,
+  detalhe: EventoComercial | undefined,
+): boolean {
+  const payload = asRecord(evento.payload);
+  const snapshot = asRecord(detalhe?.snapshot);
+  const explicitBoolean = [
+    payload?.simulation,
+    payload?.is_simulation,
+    snapshot?.simulation,
+    snapshot?.is_simulation,
+  ].some((value) => value === true);
+  if (explicitBoolean) return true;
+
+  const explicitKind = [
+    payload?.kind,
+    payload?.operation_kind,
+    snapshot?.kind,
+    snapshot?.operation_kind,
+  ].find((value): value is string => typeof value === "string");
+  return Boolean(
+    explicitKind &&
+    [
+      "simulation",
+      "commercial_simulation",
+      "simulacao",
+      "simulacao_comercial",
+    ].includes(explicitKind.trim().toLowerCase()),
+  );
+}
+
+function getReproductiveBirthCount(detail: EventoReproducao): number | null {
+  const payload = asRecord(detail.payload);
+  const count = readNestedNumber(payload, "numero_crias");
+  return count != null && Number.isInteger(count) && count >= 0 ? count : null;
+}
+
+function buildSanitaryAgendaV2DemandItems(
+  agendas: readonly SanitarioAgendaLocalV2[],
+  agendaAnimals: readonly SanitarioAgendaAnimalLocalV2[],
+): Array<{
+  id: string;
+  status: string;
+  dueDate: string;
+  domain: string;
+  animalId: string | null;
+  loteId: string | null;
+  protocolId: string | null;
+  protocolItemVersionId: string | null;
+  productId: string | null;
+  productName: string | null;
+  productUnit: string | null;
+  quantityPerAnimal: number | null;
+  animalCount: number;
+}> {
+  const animalsByAgenda = new Map<string, SanitarioAgendaAnimalLocalV2[]>();
+  for (const relation of agendaAnimals) {
+    if (relation.planned_status !== "planejado") continue;
+    const current = animalsByAgenda.get(relation.agenda_id) ?? [];
+    current.push(relation);
+    animalsByAgenda.set(relation.agenda_id, current);
+  }
+
+  return agendas
+    .filter((agenda) => !agenda.deleted_at && agenda.status === "programada")
+    .map((agenda) => {
+      const relatedAnimals = animalsByAgenda.get(agenda.id) ?? [];
+      const target = asRecord(agenda.metadata.target);
+      const targetAnimalId =
+        target?.scope === "animal" && typeof target.id === "string"
+          ? target.id
+          : null;
+      const productSnapshot = asRecord(agenda.produto_snapshot);
+      const protocolSnapshot = asRecord(agenda.protocol_item_snapshot);
+      const productName =
+        readStringPayload(productSnapshot, "nome") ??
+        readStringPayload(productSnapshot, "produto_nome_catalogo") ??
+        readStringPayload(productSnapshot, "produto") ??
+        readStringPayload(protocolSnapshot, "produto");
+      const productUnit =
+        readStringPayload(productSnapshot, "unidade_base") ??
+        readStringPayload(productSnapshot, "productUnit") ??
+        readStringPayload(protocolSnapshot, "unidade_base");
+      const quantityPerAnimal =
+        readNumberPayload(productSnapshot, "quantityPerAnimal") ??
+        readNumberPayload(productSnapshot, "quantity_per_animal") ??
+        readNumberPayload(productSnapshot, "quantidade_por_animal") ??
+        readNumberPayload(protocolSnapshot, "quantityPerAnimal") ??
+        readNumberPayload(protocolSnapshot, "quantidade_por_animal");
+
+      return {
+        id: agenda.id,
+        status: "agendado",
+        dueDate: agenda.data_programada,
+        domain: "sanitario",
+        animalId: targetAnimalId,
+        loteId: agenda.lote_id,
+        protocolId: agenda.protocolo_id,
+        protocolItemVersionId: agenda.protocol_item_version_id,
+        productId: agenda.produto_veterinario_id,
+        productName,
+        productUnit,
+        quantityPerAnimal,
+        animalCount: relatedAnimals.length || (targetAnimalId ? 1 : 1),
+      };
+    });
+}
+
+function buildReproductiveHistory(
+  events: readonly Evento[],
+  details: readonly EventoReproducao[],
+): ReproductiveProjectionEvent[] {
+  const detailByEventId = new Map(
+    details.map((detail) => [detail.evento_id, detail]),
+  );
+
+  return events
+    .filter((event) => event.dominio === "reproducao")
+    .map((event) => {
+      const detail = detailByEventId.get(event.id);
+      return {
+        ...event,
+        details: detail
+          ? {
+              tipo: detail.tipo,
+              payload: detail.payload,
+              deleted_at: detail.deleted_at,
+            }
+          : undefined,
+      };
+    });
+}
+
+function makeMetric<T>(input: {
+  value: T | null;
+  status: MetricStatus;
+  sources: Array<{ name: string; role: "primary" | "auxiliary" }>;
+  limitations?: string[];
+  period?: ReturnType<typeof createMetricPeriod>;
+}): MetricResult<T> {
+  return createMetricResult(input);
+}
+
+function getMetricCoverageKind(
+  key: OperationalMetricKey,
+): MetricCoverage["kind"] {
+  if (
+    key === "rebanho_animais_ativos" ||
+    key === "rebanho_lotes_ativos" ||
+    key === "rebanho_pastos_ativos" ||
+    key === "repro_matrizes" ||
+    key === "estoque_saldo_atual"
+  ) {
+    return "current_snapshot";
+  }
+
+  if (key === "agenda_aberta" || key === "estoque_demanda_futura") {
+    return "planning";
+  }
+
+  return "historical";
+}
+
+function getMetricCoverageDomain(key: OperationalMetricKey): string {
+  if (key.startsWith("financeiro_")) return "financeiro";
+  if (key.startsWith("comercial_")) return "comercial";
+  if (key.startsWith("pesagem_")) return "pesagem";
+  if (key.startsWith("repro_")) return "reproducao";
+  if (key.startsWith("sanitario_")) return "sanitario";
+  if (key.startsWith("estoque_")) return "estoque";
+  if (key.startsWith("rebanho_")) return "rebanho";
+  return "operacional";
+}
+
+function closeMetricSemantics(
+  metrics: Record<OperationalMetricKey, MetricResult<number>>,
+  input: OperationalSummaryInput,
+  metricTimezone: ReturnType<typeof resolveMetricTimezone>,
+): Record<OperationalMetricKey, MetricResult<number>> {
+  const pendingLocalOperations =
+    input.gestures.filter(
+      (gesture) => !["DONE", "SYNCED"].includes(gesture.status),
+    ).length + input.rejections.length;
+  const historicalCoverageState: MetricCoverage["state"] =
+    pendingLocalOperations > 0 ? "partial" : "unknown";
+  const historicalEvidence = [
+    "Nao existe marcador local que prove cobertura historica completa por fazenda, dominio e periodo.",
+    "PullCursor/watermark registra somente ultimo updated_at/last_id e nao prova completude historica.",
+    ...(pendingLocalOperations > 0
+      ? [
+          `${pendingLocalOperations} pendencia(s) local(is) de sync/rejeicao impedem afirmar cobertura plena.`,
+        ]
+      : []),
+  ];
+
+  return Object.fromEntries(
+    Object.entries(metrics).map(([rawKey, metric]) => {
+      const key = rawKey as OperationalMetricKey;
+      const kind = getMetricCoverageKind(key);
+      const explicitCoverage = input.historicalCoverage?.[key];
+      const canUseExplicitCoverage =
+        kind === "historical" &&
+        explicitCoverage !== undefined &&
+        pendingLocalOperations === 0;
+      const coverage: MetricCoverage = {
+        kind,
+        state:
+          kind === "current_snapshot"
+            ? "not_applicable"
+            : kind === "planning"
+              ? "partial"
+              : canUseExplicitCoverage
+                ? explicitCoverage.state
+                : historicalCoverageState,
+        scope: {
+          fazendaId: input.fazendaId,
+          domain: getMetricCoverageDomain(key),
+        },
+        evidence:
+          kind === "current_snapshot"
+            ? ["Read model local atual filtrado por fazenda_id."]
+            : kind === "planning"
+              ? [
+                  "Agenda representa planejamento futuro e nao comprova execucao.",
+                ]
+              : canUseExplicitCoverage
+                ? explicitCoverage.evidence
+                : historicalEvidence,
+        ...(pendingLocalOperations > 0
+          ? { pendingLocalOperations }
+          : explicitCoverage?.pendingLocalOperations !== undefined
+            ? {
+                pendingLocalOperations: explicitCoverage.pendingLocalOperations,
+              }
+            : {}),
+      };
+      const limitations = [
+        ...metric.limitations,
+        ...(metricTimezone.limitation ? [metricTimezone.limitation] : []),
+      ];
+      let status = metric.status;
+      let value = metric.value;
+
+      if (
+        kind === "historical" &&
+        metric.status === "complete" &&
+        coverage.state !== "verified"
+      ) {
+        const hasLocalEvidence = metric.value != null && metric.value !== 0;
+        status =
+          coverage.state === "partial" || hasLocalEvidence
+            ? "partial"
+            : "unavailable";
+        value = status === "unavailable" ? null : metric.value;
+        limitations.push(
+          hasLocalEvidence
+            ? "Valor representa o conjunto local observado, mas a cobertura historica completa nao foi comprovada."
+            : "Zero local nao e tratado como zero factual porque a cobertura historica completa nao foi comprovada.",
+        );
+      }
+
+      if (kind === "planning" && metric.status === "complete") {
+        status = "partial";
+        limitations.push(
+          "Demanda futura e planejamento local; nao ha prova de cobertura historica nem de execucao.",
+        );
+      }
+
+      if (status === "unavailable") value = null;
+
+      return [
+        key,
+        createMetricResult({
+          value,
+          status,
+          period: metric.period,
+          coverage,
+          sources: metric.sources,
+          limitations,
+        }),
+      ];
+    }),
+  ) as Record<OperationalMetricKey, MetricResult<number>>;
+}
+
+export function buildOperationalSummary(
+  rawInput: OperationalSummaryInput,
   range: ReportRange,
   now = new Date(),
 ): OperationalSummaryReport {
-  const todayKey = toDateKey(toLocalDateOnly(now));
+  const input = scopeOperationalSummaryInput(rawInput);
+  const metricTimezone = resolveMetricTimezone(input.farmTimezone);
+  const todayKey = getDateKeyInTimezone(now, metricTimezone.timezone);
   const animals = input.animals.filter(
     (animal) => !animal.deleted_at && animal.status === "ativo",
   );
@@ -641,15 +1173,17 @@ export function buildOperationalSummary(
   const eventos = input.eventos.filter(
     (evento) =>
       !evento.deleted_at &&
-      getEventDateKey(evento) >= range.from &&
-      getEventDateKey(evento) <= range.to,
+      getEventDateKey(evento, metricTimezone.timezone) >= range.from &&
+      getEventDateKey(evento, metricTimezone.timezone) <= range.to,
   );
 
   const animalById = new Map(
-    input.animals.filter((animal) => !animal.deleted_at).map((animal) => [
-      animal.id,
-      animal.identificacao || animal.nome || "Animal sem identificacao",
-    ]),
+    input.animals
+      .filter((animal) => !animal.deleted_at)
+      .map((animal) => [
+        animal.id,
+        animal.identificacao || animal.nome || "Animal sem identificacao",
+      ]),
   );
   const loteById = new Map(lotes.map((lote) => [lote.id, lote.nome]));
   const financeByEventId = new Map(
@@ -682,8 +1216,10 @@ export function buildOperationalSummary(
   const inventoryMovements = (input.insumoMovimentacoes ?? []).filter(
     (movement) =>
       !movement.deleted_at &&
-      movement.occurred_at.slice(0, 10) >= range.from &&
-      movement.occurred_at.slice(0, 10) <= range.to,
+      getTimestampDateKey(movement.occurred_at, metricTimezone.timezone) >=
+        range.from &&
+      getTimestampDateKey(movement.occurred_at, metricTimezone.timezone) <=
+        range.to,
   );
   const movementsByLot = new Map<string, InsumoMovimentacao[]>();
   const inventorySaldoByInsumo = new Map<string, number>();
@@ -883,9 +1419,9 @@ export function buildOperationalSummary(
     );
   }
   const demandHorizonDays = 30;
-  const supplyAgendaItems = agendaAberta.map((item) => {
+  const legacySupplyAgendaItems = agendaAberta.map((item) => {
     const protocolItem = item.protocol_item_version_id
-      ? protocolItemByIdForDemand.get(item.protocol_item_version_id) ?? null
+      ? (protocolItemByIdForDemand.get(item.protocol_item_version_id) ?? null)
       : null;
 
     return {
@@ -905,10 +1441,26 @@ export function buildOperationalSummary(
       animalCount: item.animal_id
         ? 1
         : item.lote_id
-          ? animalCountByLote.get(item.lote_id) ?? 1
+          ? (animalCountByLote.get(item.lote_id) ?? 1)
           : 1,
     };
   });
+  const usingSanitaryAgendaV2 = input.sanitarioAgendaV2 !== undefined;
+  const supplyAgendaItems = usingSanitaryAgendaV2
+    ? buildSanitaryAgendaV2DemandItems(
+        input.sanitarioAgendaV2 ?? [],
+        input.sanitarioAgendaAnimaisV2 ?? [],
+      )
+    : legacySupplyAgendaItems;
+  const futureDemandSource = usingSanitaryAgendaV2
+    ? "sanitario_agenda_v2"
+    : "state_agenda_itens_legacy";
+  const futureDemandLimitations = [
+    "Demanda futura representa planejamento; nao comprova execucao historica.",
+    usingSanitaryAgendaV2
+      ? "Agenda Sanitária v2 foi usada como fonte preferencial de intencoes programadas."
+      : "A fonte Agenda Sanitária v2 nao foi carregada; o resultado usa state_agenda_itens legado.",
+  ];
   const futureSupplyNeeds = createSanitarySupplyNeedsInsight({
     questionKind: "future_need",
     question: "Demanda futura de insumos sanitarios por agenda valida",
@@ -921,7 +1473,9 @@ export function buildOperationalSummary(
   const getAvailableInventoryBalance = (group: SanitarySupplyNeedGroup) => {
     const productName = group.productName?.trim().toLowerCase();
     return inventoryItems.reduce((acc, item) => {
-      const insumo = insumoById.get(inventoryLotById.get(item.id)?.insumo_id ?? "");
+      const insumo = insumoById.get(
+        inventoryLotById.get(item.id)?.insumo_id ?? "",
+      );
       const matchesById =
         group.productId && insumo?.produto_veterinario_id === group.productId;
       const matchesByName =
@@ -1008,8 +1562,10 @@ export function buildOperationalSummary(
         currentBalanceBase,
         futureDemandBase: futureDemandByInventoryItem.get(insumo.id) ?? null,
         projectedBalanceBase: alert.projectedBalanceBase,
-        minimumStockBase: parseInventoryResupplyPolicy(insumo.payload).minimumStockBase,
-        reorderPointBase: parseInventoryResupplyPolicy(insumo.payload).reorderPointBase,
+        minimumStockBase: parseInventoryResupplyPolicy(insumo.payload)
+          .minimumStockBase,
+        reorderPointBase: parseInventoryResupplyPolicy(insumo.payload)
+          .reorderPointBase,
         currentGapBase: alert.currentGapBase,
         projectedGapBase: alert.projectedGapBase,
         reasons: alert.reasons,
@@ -1024,7 +1580,9 @@ export function buildOperationalSummary(
       return left.insumo.localeCompare(right.insumo);
     });
 
-  const sanitaryEvents = eventos.filter((evento) => evento.dominio === "sanitario");
+  const sanitaryEvents = eventos.filter(
+    (evento) => evento.dominio === "sanitario",
+  );
   const sanitaryCatalogProductIds = new Set<string>();
   let catalogLinkedEvents = 0;
   for (const event of sanitaryEvents) {
@@ -1057,7 +1615,9 @@ export function buildOperationalSummary(
     );
     if (hasActiveLot) activeLotMappedCatalogProducts += 1;
 
-    const hasCompatiblePresentation = Array.from(apresentacaoById.values()).some(
+    const hasCompatiblePresentation = Array.from(
+      apresentacaoById.values(),
+    ).some(
       (presentation) =>
         presentation.insumo_id === mappedInsumo.id &&
         presentation.unidade_base === mappedInsumo.unidade_base &&
@@ -1131,7 +1691,11 @@ export function buildOperationalSummary(
     sanitaryTraceTotalCost = Number((sanitaryTraceTotalCost + cost).toFixed(2));
     if (detail.produto_veterinario_id) eventsWithStructuredProduct += 1;
     if (detail.estoque_lote_id) eventsWithStockLot += 1;
-    const hasProduct = Boolean(detail.produto_veterinario_id || detail.produto_nome_snapshot || detail.produto);
+    const hasProduct = Boolean(
+      detail.produto_veterinario_id ||
+      detail.produto_nome_snapshot ||
+      detail.produto,
+    );
     const hasDoseVia = Boolean(
       typeof detail.dose_quantidade === "number" &&
       detail.dose_quantidade > 0 &&
@@ -1140,17 +1704,19 @@ export function buildOperationalSummary(
     );
     if (!hasProduct || !hasDoseVia) eventsWithoutCompleteTraceability += 1;
     if (hasProduct && !detail.estoque_lote_id) productsWithoutStockLot += 1;
-    if (hasProduct && detail.custo_total_snapshot == null) missingCostEvents += 1;
+    if (hasProduct && detail.custo_total_snapshot == null)
+      missingCostEvents += 1;
     if (
       detail.estoque_lote_id &&
       (!detail.estoque_lote_codigo_snapshot ||
         !detail.validade_produto ||
-        detail.validade_produto < getEventDateKey(event))
+        detail.validade_produto <
+          getEventDateKey(event, metricTimezone.timezone))
     ) {
       stockInconsistencyEvents += 1;
     }
     const protocolItem = detail.protocol_item_version_id
-      ? sanitaryProtocolItemById.get(detail.protocol_item_version_id) ?? null
+      ? (sanitaryProtocolItemById.get(detail.protocol_item_version_id) ?? null)
       : null;
     const protocolLabel = protocolItem
       ? `${protocolItem.item_code ?? protocolItem.tipo} / v${protocolItem.version}`
@@ -1160,7 +1726,9 @@ export function buildOperationalSummary(
 
     addTraceabilityCost(
       sanitaryTraceProduct,
-      detail.produto_veterinario_id ?? detail.produto_nome_snapshot ?? detail.produto,
+      detail.produto_veterinario_id ??
+        detail.produto_nome_snapshot ??
+        detail.produto,
       detail.produto_nome_snapshot ?? detail.produto,
       cost,
     );
@@ -1208,7 +1776,9 @@ export function buildOperationalSummary(
     agenda: agendaAberta,
     animals,
     lotes,
-    protocols: (input.protocolosSanitarios ?? []).filter((item) => !item.deleted_at),
+    protocols: (input.protocolosSanitarios ?? []).filter(
+      (item) => !item.deleted_at,
+    ),
     protocolItems: (input.protocoloItensSanitarios ?? []).filter(
       (item) => !item.deleted_at,
     ),
@@ -1275,14 +1845,18 @@ export function buildOperationalSummary(
   financeiro.saldo = financeiro.entradas - financeiro.saidas;
 
   const commercialEvents = eventos
-    .filter((evento) => evento.dominio === "comercial")
+    .filter(
+      (evento) =>
+        evento.dominio === "comercial" && isCommercialOperationV2(evento),
+    )
     .map((evento) => ({
       evento,
       detalhe: commercialByEventId.get(evento.id),
     }))
     .filter(
       (item): item is { evento: Evento; detalhe: EventoComercial } =>
-        Boolean(item.detalhe),
+        Boolean(item.detalhe) &&
+        !isCommercialSimulation(item.evento, item.detalhe),
     );
   const commercialOperation = new Map<string, SanitaryTraceabilityCostRow>();
   const commercialCounterparty = new Map<string, SanitaryTraceabilityCostRow>();
@@ -1291,13 +1865,48 @@ export function buildOperationalSummary(
   const commercialSociedade = new Map<string, SanitaryTraceabilityCostRow>();
   let commercialReceita = 0;
   let commercialCusto = 0;
+  let commercialGrossTotal = 0;
+  let commercialNetTotal = 0;
+  let commercialHeads = 0;
+  let commercialWeightKg = 0;
+  let commercialArrobas = 0;
+  let commercialGrossComplete = true;
+  let commercialNetComplete = true;
+  let commercialWeightComplete = true;
+  let commercialArrobasComplete = true;
 
   for (const { evento, detalhe } of commercialEvents) {
-    const amount = Number(detalhe.valor_liquido_derivado ?? detalhe.valor_bruto ?? 0);
+    commercialHeads += detalhe.quantidade_animais;
+    if (detalhe.valor_bruto == null) {
+      commercialGrossComplete = false;
+    } else {
+      commercialGrossTotal += detalhe.valor_bruto;
+    }
+    if (detalhe.valor_liquido_derivado == null) {
+      commercialNetComplete = false;
+    } else {
+      commercialNetTotal += detalhe.valor_liquido_derivado;
+    }
+    if (detalhe.peso_vivo_total == null) {
+      commercialWeightComplete = false;
+    } else {
+      commercialWeightKg += detalhe.peso_vivo_total;
+    }
+    const totalArrobas = getCommercialTotalArrobas(detalhe);
+    if (totalArrobas == null) {
+      commercialArrobasComplete = false;
+    } else {
+      commercialArrobas += totalArrobas;
+    }
+    const amount = Number(
+      detalhe.valor_liquido_derivado ?? detalhe.valor_bruto ?? 0,
+    );
     const normalizedAmount = Number.isFinite(amount) ? amount : 0;
 
     if (detalhe.operation_type === "venda") {
-      commercialReceita = Number((commercialReceita + normalizedAmount).toFixed(2));
+      commercialReceita = Number(
+        (commercialReceita + normalizedAmount).toFixed(2),
+      );
     } else {
       commercialCusto = Number((commercialCusto + normalizedAmount).toFixed(2));
     }
@@ -1315,7 +1924,8 @@ export function buildOperationalSummary(
       normalizedAmount,
     );
 
-    for (const animalId of detalhe.animal_ids ?? (evento.animal_id ? [evento.animal_id] : [])) {
+    for (const animalId of detalhe.animal_ids ??
+      (evento.animal_id ? [evento.animal_id] : [])) {
       addTraceabilityCost(
         commercialAnimal,
         animalId,
@@ -1327,7 +1937,9 @@ export function buildOperationalSummary(
     addTraceabilityCost(
       commercialLote,
       detalhe.lote_id ?? evento.lote_id,
-      loteById.get(detalhe.lote_id ?? evento.lote_id ?? "") ?? detalhe.lote_id ?? evento.lote_id,
+      loteById.get(detalhe.lote_id ?? evento.lote_id ?? "") ??
+        detalhe.lote_id ??
+        evento.lote_id,
       normalizedAmount,
     );
 
@@ -1358,10 +1970,53 @@ export function buildOperationalSummary(
     }
   }
 
+  const commercialEventCount = eventos.filter(
+    (evento) =>
+      evento.dominio === "comercial" &&
+      isCommercialOperationV2(evento) &&
+      !isCommercialSimulation(evento, commercialByEventId.get(evento.id)),
+  ).length;
+  const commercialDetailsComplete =
+    commercialEventCount === commercialEvents.length;
+  const commercialGrossValue =
+    commercialEvents.length === 0
+      ? 0
+      : commercialGrossComplete
+        ? Number(commercialGrossTotal.toFixed(2))
+        : commercialEvents.some((item) => item.detalhe.valor_bruto != null)
+          ? Number(commercialGrossTotal.toFixed(2))
+          : null;
+  const commercialNetValue =
+    commercialEvents.length === 0
+      ? 0
+      : commercialNetComplete
+        ? Number(commercialNetTotal.toFixed(2))
+        : commercialEvents.some(
+              (item) => item.detalhe.valor_liquido_derivado != null,
+            )
+          ? Number(commercialNetTotal.toFixed(2))
+          : null;
   const comercial: CommercialTraceabilitySummary = {
     totalReceita: commercialReceita,
     totalCusto: commercialCusto,
-    operations: commercialEvents.length,
+    totalBruto: commercialGrossValue,
+    totalLiquido: commercialNetValue,
+    cabecasNegociadas: commercialHeads,
+    pesoComercialKg:
+      commercialEvents.length === 0 || commercialWeightComplete
+        ? commercialWeightKg
+        : null,
+    precoMedioCabecaLiquido:
+      commercialNetValue != null && commercialHeads > 0
+        ? Number((commercialNetValue / commercialHeads).toFixed(2))
+        : null,
+    precoMedioArrobaLiquido:
+      commercialNetValue != null &&
+      commercialArrobasComplete &&
+      commercialArrobas > 0
+        ? Number((commercialNetValue / commercialArrobas).toFixed(2))
+        : null,
+    operations: commercialEventCount,
     byOperation: toSortedTraceabilityRows(commercialOperation),
     byCounterparty: toSortedTraceabilityRows(commercialCounterparty),
     byAnimal: toSortedTraceabilityRows(commercialAnimal),
@@ -1375,9 +2030,8 @@ export function buildOperationalSummary(
       evento,
       detalhe: weightByEventId.get(evento.id),
     }))
-    .filter(
-      (item): item is { evento: Evento; detalhe: EventoPesagem } =>
-        Boolean(item.detalhe),
+    .filter((item): item is { evento: Evento; detalhe: EventoPesagem } =>
+      Boolean(item.detalhe),
     );
 
   const totalPeso = pesagens.reduce(
@@ -1386,21 +2040,548 @@ export function buildOperationalSummary(
   );
   const ultimaPesagem = pesagens
     .slice()
-    .sort((left, right) => right.evento.occurred_at.localeCompare(left.evento.occurred_at))[0];
+    .sort((left, right) =>
+      right.evento.occurred_at.localeCompare(left.evento.occurred_at),
+    )[0];
+
+  const reproductionLoaded = input.eventosReproducao !== undefined;
+  const reproductionDetails = input.eventosReproducao ?? [];
+  const reproductionDetailByEventId = new Map(
+    reproductionDetails.map((detail) => [detail.evento_id, detail]),
+  );
+  const reproductiveHistory = reproductionLoaded
+    ? buildReproductiveHistory(input.eventos, reproductionDetails)
+    : [];
+  const reproductiveEventsInPeriod = reproductiveHistory.filter(
+    (event) =>
+      !event.deleted_at &&
+      getEventDateKey(event, metricTimezone.timezone) >= range.from &&
+      getEventDateKey(event, metricTimezone.timezone) <= range.to,
+  );
+  const reproductionEventCount = input.eventos.filter(
+    (event) => !event.deleted_at && event.dominio === "reproducao",
+  ).length;
+  const reproductionMissingDetailCount = reproductionLoaded
+    ? reproductiveHistory.filter((event) => !event.details).length
+    : reproductionEventCount;
+  const reproductiveProjections = animals
+    .filter((animal) => animal.sexo === "F")
+    .map((animal) =>
+      rebuildReproductiveProjection(
+        reproductiveHistory.filter((event) => event.animal_id === animal.id),
+      ),
+    );
+  const reproductiveInconsistencyCount = reproductiveProjections.filter(
+    (projection) => projection.inconsistency !== null,
+  ).length;
+  const reproductiveCoverageStatus: "complete" | "partial" | "unavailable" =
+    !reproductionLoaded
+      ? "unavailable"
+      : reproductionMissingDetailCount > 0 || reproductiveInconsistencyCount > 0
+        ? "partial"
+        : "complete";
+  const reproductivePeriodTypeCount = (type: EventoReproducao["tipo"]) =>
+    reproductiveEventsInPeriod.filter((event) => event.details?.tipo === type)
+      .length;
+  const partoEventsInPeriod = reproductiveEventsInPeriod.filter(
+    (event) => event.details?.tipo === "parto",
+  );
+  const birthCounts = partoEventsInPeriod.map((event) => {
+    const detail = reproductionDetailByEventId.get(event.id);
+    return detail ? getReproductiveBirthCount(detail) : null;
+  });
+  const knownBirthCount = birthCounts.reduce(
+    (total, value) => total + (value ?? 0),
+    0,
+  );
+  const birthsComplete = birthCounts.every((value) => value !== null);
+  const reproductiveSummary: ReproductionReportSummary = {
+    matrizes: animals.filter((animal) => animal.sexo === "F").length,
+    servicos:
+      reproductivePeriodTypeCount("cobertura") +
+      reproductivePeriodTypeCount("IA"),
+    diagnosticos: reproductivePeriodTypeCount("diagnostico"),
+    prenhasAtuais: reproductiveProjections.filter(
+      (projection) => projection.status === "PRENHA",
+    ).length,
+    partos: partoEventsInPeriod.length,
+    abortosPerdas: reproductivePeriodTypeCount("aborto"),
+    nascimentos:
+      partoEventsInPeriod.length === 0 || birthsComplete
+        ? knownBirthCount
+        : null,
+  };
+
+  const historicalPeriod = createMetricPeriod(range.from, range.to, {
+    timezone: metricTimezone.timezone,
+    timezoneSource: metricTimezone.source,
+  });
+  const purchaseEntryCount = commercialEvents
+    .filter(({ detalhe }) => detalhe.operation_type === "compra")
+    .reduce((total, { detalhe }) => total + detalhe.quantidade_animais, 0);
+  const saleExitCount = commercialEvents
+    .filter(({ detalhe }) => detalhe.operation_type === "venda")
+    .reduce((total, { detalhe }) => total + detalhe.quantidade_animais, 0);
+  const deathEvents = eventos.filter((event) => event.dominio === "obito");
+  const deathExitCount = deathEvents.filter(
+    (event) => event.animal_id !== null,
+  ).length;
+  const deathEventsWithoutAnimal = deathEvents.length - deathExitCount;
+  const herdEntryCount = purchaseEntryCount + knownBirthCount;
+  const herdExitCount = saleExitCount + deathExitCount;
+  const herdEntryStatus: MetricStatus =
+    commercialDetailsComplete && birthsComplete ? "complete" : "partial";
+  const herdExitStatus: MetricStatus =
+    commercialDetailsComplete && deathEventsWithoutAnimal === 0
+      ? "complete"
+      : "partial";
+  const historicalCategoryLabels = new Set<string>();
+  for (const event of eventos) {
+    const category =
+      readStringPayload(event.payload, "categoria_zootecnica") ??
+      readStringPayload(event.payload, "categoria_zootecnica_nome") ??
+      readStringPayload(event.payload, "categoria");
+    if (category) historicalCategoryLabels.add(category);
+  }
+  const historicalCategoryValue =
+    historicalCategoryLabels.size > 0 ? historicalCategoryLabels.size : null;
+  const historicalCategoryStatus: MetricStatus =
+    historicalCategoryValue === null ? "unavailable" : "partial";
+  const financeEventCount = eventos.filter(
+    (event) => !event.deleted_at && event.dominio === "financeiro",
+  ).length;
+  const financeDetailsComplete = financeEventCount === financeEvents.length;
+  const weightEventCount = eventos.filter(
+    (event) => !event.deleted_at && event.dominio === "pesagem",
+  ).length;
+  const weightDetailsComplete = weightEventCount === pesagens.length;
+  const sanitaryExecutionEvents = eventos.filter(
+    (event) => !event.deleted_at && event.dominio === "sanitario",
+  );
+  const sanitaryDetailsLoaded = input.eventosSanitario !== undefined;
+  const sanitaryDetailsComplete = sanitaryDetailsLoaded
+    ? sanitaryExecutionEvents.every((event) =>
+        sanitaryDetailByEventId.has(event.id),
+      )
+    : sanitaryExecutionEvents.length === 0;
+  const inventoryLoaded = input.insumoLotes !== undefined;
+  const futureDemandMetricStatus =
+    futureSupplyNeeds.answerability === "blocked"
+      ? "unavailable"
+      : futureSupplyNeeds.resultStatus === "partial"
+        ? "partial"
+        : "complete";
+  const futureDemandMetricValue =
+    futureSupplyNeeds.answerability === "answerable"
+      ? futureDemandGroups.reduce(
+          (total, group) => total + (group.estimatedQuantity ?? 0),
+          0,
+        )
+      : null;
+  const commercialStatus: "complete" | "partial" =
+    !commercialDetailsComplete ||
+    !commercialGrossComplete ||
+    !commercialNetComplete ||
+    !commercialWeightComplete ||
+    !commercialArrobasComplete
+      ? "partial"
+      : "complete";
+  const commercialPriceHeadStatus =
+    commercialStatus === "partial"
+      ? "partial"
+      : commercialNetValue != null && commercialHeads > 0
+        ? "complete"
+        : "unavailable";
+  const commercialPriceArrobaStatus =
+    commercialStatus === "partial"
+      ? "partial"
+      : commercialNetValue != null &&
+          commercialArrobasComplete &&
+          commercialArrobas > 0
+        ? "complete"
+        : "unavailable";
+  const metrics: Record<OperationalMetricKey, MetricResult<number>> = {
+    rebanho_animais_ativos: makeMetric({
+      value: animals.length,
+      status: "complete",
+      sources: [{ name: "state_animais", role: "primary" }],
+      limitations: [
+        "Estado atual; nao representa historico completo de entradas e saidas.",
+      ],
+    }),
+    rebanho_lotes_ativos: makeMetric({
+      value: lotes.length,
+      status: "complete",
+      sources: [{ name: "state_lotes", role: "primary" }],
+      limitations: ["Estado atual; nao representa historico de lotacao."],
+    }),
+    rebanho_pastos_ativos: makeMetric({
+      value: pastos.length,
+      status: "complete",
+      sources: [{ name: "state_pastos", role: "primary" }],
+    }),
+    rebanho_entradas: makeMetric({
+      value: herdEntryCount,
+      status: herdEntryStatus,
+      sources: [
+        { name: "event_eventos", role: "primary" },
+        { name: "event_eventos_comercial", role: "auxiliary" },
+        { name: "event_eventos_reproducao", role: "auxiliary" },
+      ],
+      limitations: [
+        "Entradas incluem compras factuais e numero_crias factual de partos; transferencias externas nao sao inferidas de estado atual.",
+        ...(herdEntryStatus === "partial"
+          ? [
+              "Ha entrada factual sem detalhe suficiente para fechar o total do periodo.",
+            ]
+          : []),
+      ],
+      period: historicalPeriod,
+    }),
+    rebanho_saidas: makeMetric({
+      value: herdExitCount,
+      status: herdExitStatus,
+      sources: [
+        { name: "event_eventos", role: "primary" },
+        { name: "event_eventos_comercial", role: "auxiliary" },
+      ],
+      limitations: [
+        "Saidas incluem vendas factuais e obitos com animal vinculado; transferencias externas e descarte sem Evento nao sao fabricados.",
+        ...(herdExitStatus === "partial"
+          ? [
+              "Ha saida factual sem detalhe ou vinculo suficiente para fechar o total do periodo.",
+            ]
+          : []),
+      ],
+      period: historicalPeriod,
+    }),
+    rebanho_categorias_historicas: makeMetric({
+      value: historicalCategoryValue,
+      status: historicalCategoryStatus,
+      sources: [{ name: "event_eventos", role: "primary" }],
+      limitations: [
+        "Categorias historicas somente contam observacoes categoriais explicitas no payload de Eventos; state_animais e classificacao atual nao reconstruem historico.",
+        "O contrato atual nao define um detalhe factual tipado para transicoes de categoria.",
+      ],
+      period: historicalPeriod,
+    }),
+    agenda_aberta: makeMetric({
+      value: agendaAberta.length,
+      status: "complete",
+      sources: [{ name: "state_agenda_itens", role: "primary" }],
+      limitations: ["Agenda e planejamento futuro; nao comprova execucao."],
+    }),
+    eventos_periodo: makeMetric({
+      value: eventos.length,
+      status: "complete",
+      sources: [{ name: "event_eventos", role: "primary" }],
+      period: historicalPeriod,
+    }),
+    financeiro_entradas: makeMetric({
+      value: financeDetailsComplete ? financeiro.entradas : null,
+      status: financeDetailsComplete ? "complete" : "partial",
+      sources: [
+        { name: "event_eventos", role: "primary" },
+        { name: "event_eventos_financeiro", role: "auxiliary" },
+      ],
+      limitations: financeDetailsComplete
+        ? []
+        : ["Existem Eventos financeiros sem detalhe carregado."],
+      period: historicalPeriod,
+    }),
+    financeiro_saidas: makeMetric({
+      value: financeDetailsComplete ? financeiro.saidas : null,
+      status: financeDetailsComplete ? "complete" : "partial",
+      sources: [
+        { name: "event_eventos", role: "primary" },
+        { name: "event_eventos_financeiro", role: "auxiliary" },
+      ],
+      limitations: financeDetailsComplete
+        ? []
+        : ["Existem Eventos financeiros sem detalhe carregado."],
+      period: historicalPeriod,
+    }),
+    financeiro_saldo: makeMetric({
+      value: financeDetailsComplete ? financeiro.saldo : null,
+      status: financeDetailsComplete ? "complete" : "partial",
+      sources: [
+        { name: "event_eventos", role: "primary" },
+        { name: "event_eventos_financeiro", role: "auxiliary" },
+      ],
+      limitations: [
+        "Operacoes comerciais sem fato financeiro vinculado nao sao convertidas automaticamente em receita/despesa.",
+      ],
+      period: historicalPeriod,
+    }),
+    financeiro_transacoes: makeMetric({
+      value: financeDetailsComplete ? financeiro.transacoes : null,
+      status: financeDetailsComplete ? "complete" : "partial",
+      sources: [
+        { name: "event_eventos", role: "primary" },
+        { name: "event_eventos_financeiro", role: "auxiliary" },
+      ],
+      period: historicalPeriod,
+    }),
+    comercial_operacoes: makeMetric({
+      value: commercialDetailsComplete
+        ? comercial.operations
+        : commercialEvents.length,
+      status: commercialDetailsComplete ? "complete" : "partial",
+      sources: [
+        { name: "event_eventos", role: "primary" },
+        { name: "event_eventos_comercial", role: "auxiliary" },
+      ],
+      limitations: commercialDetailsComplete
+        ? []
+        : ["Existem Eventos comerciais sem snapshot comercial carregado."],
+      period: historicalPeriod,
+    }),
+    comercial_cabecas: makeMetric({
+      value: commercialDetailsComplete ? comercial.cabecasNegociadas : null,
+      status: commercialDetailsComplete ? "complete" : "partial",
+      sources: [{ name: "event_eventos_comercial", role: "primary" }],
+      period: historicalPeriod,
+    }),
+    comercial_valor_bruto: makeMetric({
+      value: comercial.totalBruto,
+      status: commercialStatus,
+      sources: [{ name: "event_eventos_comercial", role: "primary" }],
+      limitations:
+        commercialStatus === "partial"
+          ? ["Valor bruto ausente em parte dos snapshots comerciais."]
+          : [],
+      period: historicalPeriod,
+    }),
+    comercial_valor_liquido: makeMetric({
+      value: comercial.totalLiquido,
+      status: commercialStatus,
+      sources: [{ name: "event_eventos_comercial", role: "primary" }],
+      limitations:
+        commercialStatus === "partial"
+          ? ["Valor liquido ausente em parte dos snapshots comerciais."]
+          : [],
+      period: historicalPeriod,
+    }),
+    comercial_preco_medio_cabeca: makeMetric({
+      value: comercial.precoMedioCabecaLiquido,
+      status: commercialPriceHeadStatus,
+      sources: [{ name: "event_eventos_comercial", role: "primary" }],
+      limitations: [
+        "Preco medio por cabeca usa valor liquido explicito dividido pelas cabecas negociadas.",
+      ],
+      period: historicalPeriod,
+    }),
+    comercial_preco_medio_arroba: makeMetric({
+      value: comercial.precoMedioArrobaLiquido,
+      status: commercialPriceArrobaStatus,
+      sources: [{ name: "event_eventos_comercial", role: "primary" }],
+      limitations: [
+        "R$/@ exige total_arrobas presente no snapshot comercial; simulacao nao entra.",
+      ],
+      period: historicalPeriod,
+    }),
+    comercial_peso_kg: makeMetric({
+      value: comercial.pesoComercialKg,
+      status: commercialStatus,
+      sources: [{ name: "event_eventos_comercial", role: "primary" }],
+      limitations: [
+        "Peso comercial nao e pesagem zootecnica e nao substitui peso atual confiavel.",
+      ],
+      period: historicalPeriod,
+    }),
+    pesagem_eventos: makeMetric({
+      value: pesagens.length,
+      status: weightDetailsComplete ? "complete" : "partial",
+      sources: [
+        { name: "event_eventos", role: "primary" },
+        { name: "event_eventos_pesagem", role: "auxiliary" },
+      ],
+      period: historicalPeriod,
+    }),
+    pesagem_media_kg: makeMetric({
+      value:
+        pesagens.length > 0 && weightDetailsComplete
+          ? totalPeso / pesagens.length
+          : null,
+      status:
+        weightDetailsComplete && pesagens.length > 0
+          ? "complete"
+          : weightDetailsComplete
+            ? "unavailable"
+            : "partial",
+      sources: [{ name: "event_eventos_pesagem", role: "primary" }],
+      limitations: [
+        "Sem pesagem factual no periodo, peso medio permanece indisponivel; ausencia nao e zero.",
+      ],
+      period: historicalPeriod,
+    }),
+    pesagem_ultimo_kg: makeMetric({
+      value: weightDetailsComplete
+        ? (ultimaPesagem?.detalhe.peso_kg ?? null)
+        : null,
+      status:
+        weightDetailsComplete && ultimaPesagem
+          ? "complete"
+          : weightDetailsComplete
+            ? "unavailable"
+            : "partial",
+      sources: [{ name: "event_eventos_pesagem", role: "primary" }],
+      limitations: [
+        "Ultima pesagem no periodo nao afirma peso atual confiavel.",
+      ],
+      period: historicalPeriod,
+    }),
+    repro_matrizes: makeMetric({
+      value: reproductiveSummary.matrizes,
+      status: "complete",
+      sources: [{ name: "state_animais", role: "primary" }],
+      limitations: [
+        "Matriz e definida aqui como femea ativa, conforme o dashboard reprodutivo existente.",
+      ],
+    }),
+    repro_servicos: makeMetric({
+      value: reproductionLoaded ? reproductiveSummary.servicos : null,
+      status: reproductiveCoverageStatus,
+      sources: [{ name: "event_eventos_reproducao", role: "primary" }],
+      limitations: reproductionLoaded
+        ? []
+        : ["Detalhes reprodutivos nao foram carregados para esta consulta."],
+      period: historicalPeriod,
+    }),
+    repro_diagnosticos: makeMetric({
+      value: reproductionLoaded ? reproductiveSummary.diagnosticos : null,
+      status: reproductiveCoverageStatus,
+      sources: [{ name: "event_eventos_reproducao", role: "primary" }],
+      limitations: reproductionLoaded
+        ? []
+        : ["Detalhes reprodutivos nao foram carregados para esta consulta."],
+      period: historicalPeriod,
+    }),
+    repro_prenhas_atuais: makeMetric({
+      value: reproductionLoaded ? reproductiveSummary.prenhasAtuais : null,
+      status: reproductiveCoverageStatus,
+      sources: [
+        { name: "event_eventos_reproducao", role: "primary" },
+        { name: "state_animais", role: "auxiliary" },
+      ],
+      limitations: [
+        "Prenhez atual e projeção reconstruida do historico factual; nao usa Agenda nem taxonomy_facts.",
+      ],
+    }),
+    repro_partos: makeMetric({
+      value: reproductionLoaded ? reproductiveSummary.partos : null,
+      status: reproductiveCoverageStatus,
+      sources: [{ name: "event_eventos_reproducao", role: "primary" }],
+      period: historicalPeriod,
+    }),
+    repro_abortos: makeMetric({
+      value: reproductionLoaded ? reproductiveSummary.abortosPerdas : null,
+      status: reproductiveCoverageStatus,
+      sources: [{ name: "event_eventos_reproducao", role: "primary" }],
+      period: historicalPeriod,
+    }),
+    repro_nascimentos: makeMetric({
+      value: reproductionLoaded ? reproductiveSummary.nascimentos : null,
+      status:
+        !reproductionLoaded || reproductiveCoverageStatus === "partial"
+          ? reproductiveCoverageStatus
+          : partoEventsInPeriod.length === 0 || birthsComplete
+            ? "complete"
+            : "partial",
+      sources: [{ name: "event_eventos_reproducao", role: "primary" }],
+      limitations: [
+        "Nascimento exige numero_crias factual no detalhe do Evento de parto; ausencia nao vira zero.",
+      ],
+      period: historicalPeriod,
+    }),
+    sanitario_execucoes: makeMetric({
+      value: sanitaryDetailsComplete ? sanitaryExecutionEvents.length : null,
+      status:
+        sanitaryDetailsComplete && sanitaryDetailsLoaded
+          ? "complete"
+          : sanitaryExecutionEvents.length === 0
+            ? "complete"
+            : "partial",
+      sources: [
+        { name: "event_eventos", role: "primary" },
+        { name: "event_eventos_sanitario", role: "auxiliary" },
+      ],
+      limitations: [
+        "Agenda Sanitária v2, closure e Protocolo nao sao contabilizados como execucao.",
+      ],
+      period: historicalPeriod,
+    }),
+    estoque_saldo_atual: makeMetric({
+      value: inventoryLoaded
+        ? inventoryItems.reduce((total, item) => total + item.saldo, 0)
+        : null,
+      status: inventoryLoaded ? "complete" : "unavailable",
+      sources: [{ name: "state_insumo_lotes", role: "primary" }],
+      limitations: [
+        "Saldo atual e read model; custo ausente permanece parcial no bloco de custo.",
+      ],
+    }),
+    estoque_entradas: makeMetric({
+      value: inventoryLoaded
+        ? inventoryMovements.reduce(
+            (total, movement) =>
+              total +
+              (getInventoryMovementSignal(movement.tipo) === "entrada"
+                ? movement.quantidade_base
+                : 0),
+            0,
+          )
+        : null,
+      status: inventoryLoaded ? "complete" : "unavailable",
+      sources: [{ name: "state_insumo_movimentacoes", role: "primary" }],
+      period: historicalPeriod,
+    }),
+    estoque_saidas: makeMetric({
+      value: inventoryLoaded
+        ? inventoryMovements.reduce(
+            (total, movement) =>
+              total +
+              (getInventoryMovementSignal(movement.tipo) === "saida"
+                ? movement.quantidade_base
+                : 0),
+            0,
+          )
+        : null,
+      status: inventoryLoaded ? "complete" : "unavailable",
+      sources: [{ name: "state_insumo_movimentacoes", role: "primary" }],
+      period: historicalPeriod,
+    }),
+    estoque_demanda_futura: makeMetric({
+      value: futureDemandMetricValue,
+      status: futureDemandMetricStatus,
+      sources: [{ name: futureDemandSource, role: "primary" }],
+      limitations: futureDemandLimitations,
+    }),
+  };
+  const semanticallyClosedMetrics = closeMetricSemantics(
+    metrics,
+    input,
+    metricTimezone,
+  );
 
   const agendaAttention = agendaAberta
     .slice()
-    .sort((left, right) => left.data_prevista.localeCompare(right.data_prevista))
+    .sort((left, right) =>
+      left.data_prevista.localeCompare(right.data_prevista),
+    )
     .slice(0, 10)
     .map((item) => {
       const sanitaryItem = sanitaryAttentionById.get(item.id);
       const protocolItem = item.protocol_item_version_id
-        ? sanitaryProtocolItemById.get(item.protocol_item_version_id) ?? null
+        ? (sanitaryProtocolItemById.get(item.protocol_item_version_id) ?? null)
         : null;
       const scheduleMeta =
         item.dominio === "sanitario"
           ? describeSanitaryAgendaScheduleMeta({
-              intervalDays: item.interval_days_applied ?? protocolItem?.intervalo_dias ?? null,
+              intervalDays:
+                item.interval_days_applied ??
+                protocolItem?.intervalo_dias ??
+                null,
               payloads: [
                 protocolItem?.payload ?? null,
                 item.payload,
@@ -1412,7 +2593,9 @@ export function buildOperationalSummary(
       return {
         id: item.id,
         data: item.data_prevista,
-        titulo: sanitaryItem?.titulo ?? `${DOMAIN_LABEL[item.dominio]}: ${item.tipo.replaceAll("_", " ")}`,
+        titulo:
+          sanitaryItem?.titulo ??
+          `${DOMAIN_LABEL[item.dominio]}: ${item.tipo.replaceAll("_", " ")}`,
         contexto:
           sanitaryItem?.contexto ??
           animalById.get(item.animal_id ?? "") ??
@@ -1422,7 +2605,9 @@ export function buildOperationalSummary(
         scheduleModeLabel: scheduleMeta?.modeLabel,
         scheduleAnchorLabel: scheduleMeta?.anchorLabel ?? undefined,
         operationalClassLabel: sanitaryItem
-          ? getSanitaryAttentionOperationalClassLabel(sanitaryItem.operationalClass)
+          ? getSanitaryAttentionOperationalClassLabel(
+              sanitaryItem.operationalClass,
+            )
           : undefined,
         status: resolveAgendaStatus(item, todayKey),
         priorityLabel: sanitaryItem?.priorityLabel,
@@ -1438,7 +2623,7 @@ export function buildOperationalSummary(
     .slice(0, 8)
     .map((evento) => ({
       id: evento.id,
-      data: getEventDateKey(evento),
+      data: getEventDateKey(evento, metricTimezone.timezone),
       dominio: DOMAIN_LABEL[evento.dominio],
       contexto:
         animalById.get(evento.animal_id ?? "") ??
@@ -1450,16 +2635,22 @@ export function buildOperationalSummary(
   return {
     generatedAt: new Date().toISOString(),
     range,
+    metrics: semanticallyClosedMetrics,
+    reproducao: reproductiveSummary,
     summary: {
       animaisAtivos: animals.length,
       lotesAtivos: lotes.length,
       pastosAtivos: pastos.length,
       agendaAberta: agendaAberta.length,
-      agendaHoje: agendaAberta.filter((item) => item.data_prevista === todayKey).length,
-      agendaAtrasada: agendaAberta.filter((item) => item.data_prevista < todayKey).length,
+      agendaHoje: agendaAberta.filter((item) => item.data_prevista === todayKey)
+        .length,
+      agendaAtrasada: agendaAberta.filter(
+        (item) => item.data_prevista < todayKey,
+      ).length,
       eventosPeriodo: eventos.length,
       pendenciasSync: input.gestures.filter(
-        (gesture) => gesture.status === "PENDING" || gesture.status === "SYNCING",
+        (gesture) =>
+          gesture.status === "PENDING" || gesture.status === "SYNCING",
       ).length,
       errosSync: input.rejections.length,
     },
@@ -1471,14 +2662,15 @@ export function buildOperationalSummary(
       pesoMedioKg: pesagens.length > 0 ? totalPeso / pesagens.length : null,
       ultimoPesoKg: ultimaPesagem?.detalhe.peso_kg ?? null,
       ultimaPesagemEm: ultimaPesagem
-        ? getEventDateKey(ultimaPesagem.evento)
+        ? getEventDateKey(ultimaPesagem.evento, metricTimezone.timezone)
         : null,
     },
     regulatoryCompliance: {
       openCount: regulatoryReadModel.attention.openCount,
       blockingCount: regulatoryReadModel.attention.blockingCount,
       feedBanOpenCount: regulatoryReadModel.attention.feedBanOpenCount,
-      criticalChecklistCount: regulatoryReadModel.attention.criticalChecklistCount,
+      criticalChecklistCount:
+        regulatoryReadModel.attention.criticalChecklistCount,
       nutritionBlockers: regulatoryReadModel.flows.nutrition.blockerCount,
       movementBlockers: regulatoryReadModel.flows.movementInternal.blockerCount,
       saleBlockers: regulatoryReadModel.flows.sale.blockerCount,
@@ -1494,7 +2686,8 @@ export function buildOperationalSummary(
     },
     inventory: {
       itensAtivos: insumos.filter((item) => item.ativo).length,
-      lotesAtivos: inventoryItems.filter((item) => item.status === "ativo").length,
+      lotesAtivos: inventoryItems.filter((item) => item.status === "ativo")
+        .length,
       saldoTotal: inventoryItems.reduce((acc, item) => acc + item.saldo, 0),
       entradasPeriodo: inventoryItems.reduce(
         (acc, item) => acc + item.entradas,
@@ -1519,6 +2712,11 @@ export function buildOperationalSummary(
           futureSupplyNeeds.answerability === "answerable"
             ? futureSupplyNeeds.resultStatus
             : "empty",
+        source: futureDemandSource,
+        limitations: [
+          ...futureDemandLimitations,
+          ...futureSupplyNeeds.source.limitations,
+        ],
         missingProductCount:
           futureSupplyNeeds.answerability === "answerable"
             ? futureSupplyNeeds.data.incompleteAgendaItemIds.length
@@ -1546,7 +2744,11 @@ export function buildOperationalSummaryCsv(
 
   pushRow("secao", "campo", "valor");
   pushRow("meta", "fazenda", farmName);
-  pushRow("meta", "periodo", `${report.range.label} (${report.range.from} a ${report.range.to})`);
+  pushRow(
+    "meta",
+    "periodo",
+    `${report.range.label} (${report.range.from} a ${report.range.to})`,
+  );
   pushRow("meta", "gerado_em", report.generatedAt);
   OPERATIONAL_REPORT_SOURCE_NOTES.forEach((note) => {
     pushRow("meta_fonte", "fonte", note);
@@ -1554,6 +2756,46 @@ export function buildOperationalSummaryCsv(
   OPERATIONAL_REPORT_LIMITATIONS.forEach((limitation) => {
     pushRow("meta_limitacao", "limitacao", limitation);
   });
+  for (const [key, metric] of Object.entries(report.metrics)) {
+    pushRow("metric", key, metric.value);
+    pushRow("metric_status", key, metric.status);
+    pushRow(
+      "metric_sources",
+      key,
+      metric.sources
+        .map((source) => `${source.role}:${source.name}`)
+        .join(", "),
+    );
+    pushRow(
+      "metric_coverage",
+      key,
+      metric.coverage
+        ? `${metric.coverage.kind}:${metric.coverage.state}`
+        : "unknown",
+    );
+    pushRow(
+      "metric_scope",
+      key,
+      metric.coverage
+        ? `${metric.coverage.scope.fazendaId}:${metric.coverage.scope.domain ?? "operacional"}`
+        : null,
+    );
+    pushRow(
+      "metric_period",
+      key,
+      metric.period ? `${metric.period.from} a ${metric.period.to}` : null,
+    );
+    pushRow(
+      "metric_timezone",
+      key,
+      metric.period
+        ? `${metric.period.timezoneSource}:${metric.period.timezone ?? "nao-informado"}`
+        : null,
+    );
+    metric.limitations.forEach((limitation) => {
+      pushRow("metric_limitation", key, limitation);
+    });
+  }
   pushRow("resumo", "animais_ativos", report.summary.animaisAtivos);
   pushRow("resumo", "lotes_ativos", report.summary.lotesAtivos);
   pushRow("resumo", "pastos_ativos", report.summary.pastosAtivos);
@@ -1568,8 +2810,51 @@ export function buildOperationalSummaryCsv(
   pushRow("financeiro", "saldo", report.financeiro.saldo.toFixed(2));
   pushRow("financeiro", "transacoes", report.financeiro.transacoes);
   pushRow("comercial", "operacoes", report.comercial.operations);
+  pushRow("comercial", "cabecas", report.comercial.cabecasNegociadas);
+  pushRow(
+    "comercial",
+    "valor_bruto",
+    report.comercial.totalBruto == null
+      ? null
+      : report.comercial.totalBruto.toFixed(2),
+  );
+  pushRow(
+    "comercial",
+    "valor_liquido",
+    report.comercial.totalLiquido == null
+      ? null
+      : report.comercial.totalLiquido.toFixed(2),
+  );
+  pushRow(
+    "comercial",
+    "peso_comercial_kg",
+    report.comercial.pesoComercialKg == null
+      ? null
+      : report.comercial.pesoComercialKg.toFixed(2),
+  );
+  pushRow(
+    "comercial",
+    "preco_medio_cabeca_liquido",
+    report.comercial.precoMedioCabecaLiquido == null
+      ? null
+      : report.comercial.precoMedioCabecaLiquido.toFixed(2),
+  );
+  pushRow(
+    "comercial",
+    "preco_medio_arroba_liquido",
+    report.comercial.precoMedioArrobaLiquido == null
+      ? null
+      : report.comercial.precoMedioArrobaLiquido.toFixed(2),
+  );
   pushRow("comercial", "receita", report.comercial.totalReceita.toFixed(2));
   pushRow("comercial", "custo", report.comercial.totalCusto.toFixed(2));
+  pushRow("reproducao", "matrizes", report.reproducao.matrizes);
+  pushRow("reproducao", "servicos", report.reproducao.servicos);
+  pushRow("reproducao", "diagnosticos", report.reproducao.diagnosticos);
+  pushRow("reproducao", "prenhas_atuais", report.reproducao.prenhasAtuais);
+  pushRow("reproducao", "partos", report.reproducao.partos);
+  pushRow("reproducao", "abortos_perdas", report.reproducao.abortosPerdas);
+  pushRow("reproducao", "nascimentos", report.reproducao.nascimentos);
   for (const item of report.comercial.byCounterparty) {
     pushRow(
       "comercial_contraparte",
@@ -1588,17 +2873,33 @@ export function buildOperationalSummaryCsv(
   pushRow(
     "pesagem",
     "peso_medio_kg",
-    report.pesagem.pesoMedioKg == null ? "" : report.pesagem.pesoMedioKg.toFixed(2),
+    report.pesagem.pesoMedioKg == null
+      ? ""
+      : report.pesagem.pesoMedioKg.toFixed(2),
   );
   pushRow(
     "pesagem",
     "ultimo_peso_kg",
-    report.pesagem.ultimoPesoKg == null ? "" : report.pesagem.ultimoPesoKg.toFixed(2),
+    report.pesagem.ultimoPesoKg == null
+      ? ""
+      : report.pesagem.ultimoPesoKg.toFixed(2),
   );
   pushRow("pesagem", "ultima_pesagem_em", report.pesagem.ultimaPesagemEm);
-  pushRow("conformidade", "pendencias_abertas", report.regulatoryCompliance.openCount);
-  pushRow("conformidade", "bloqueios", report.regulatoryCompliance.blockingCount);
-  pushRow("conformidade", "feed_ban_aberto", report.regulatoryCompliance.feedBanOpenCount);
+  pushRow(
+    "conformidade",
+    "pendencias_abertas",
+    report.regulatoryCompliance.openCount,
+  );
+  pushRow(
+    "conformidade",
+    "bloqueios",
+    report.regulatoryCompliance.blockingCount,
+  );
+  pushRow(
+    "conformidade",
+    "feed_ban_aberto",
+    report.regulatoryCompliance.feedBanOpenCount,
+  );
   pushRow(
     "conformidade",
     "checklists_criticos",
@@ -1620,7 +2921,11 @@ export function buildOperationalSummaryCsv(
     report.regulatoryCompliance.saleBlockers,
   );
   pushRow("biosseguranca", "ocorrencias", report.biosecurityOccurrences.total);
-  pushRow("biosseguranca", "ocorrencias_abertas", report.biosecurityOccurrences.openCount);
+  pushRow(
+    "biosseguranca",
+    "ocorrencias_abertas",
+    report.biosecurityOccurrences.openCount,
+  );
   pushRow(
     "biosseguranca",
     "ocorrencias_com_pendencia",
@@ -1641,8 +2946,16 @@ export function buildOperationalSummaryCsv(
     pushRow("biosseguranca_escopo", item.key, item.count);
   }
   pushRow("sanitario_excecoes", "abertas", report.sanitaryExceptions.totalOpen);
-  pushRow("sanitario_excecoes", "resolvidas", report.sanitaryExceptions.totalResolved);
-  pushRow("sanitario_excecoes", "ignoradas", report.sanitaryExceptions.totalIgnored);
+  pushRow(
+    "sanitario_excecoes",
+    "resolvidas",
+    report.sanitaryExceptions.totalResolved,
+  );
+  pushRow(
+    "sanitario_excecoes",
+    "ignoradas",
+    report.sanitaryExceptions.totalIgnored,
+  );
   pushRow(
     "sanitario_excecoes",
     "estoque_inconsistente",
@@ -1760,7 +3073,8 @@ export function buildOperationalSummaryCsv(
   pushRow(
     "estoque",
     "fase3_produtos_com_apresentacao_compativel",
-    report.inventory.sanitaryPhase3Prerequisites.presentationMappedCatalogProducts,
+    report.inventory.sanitaryPhase3Prerequisites
+      .presentationMappedCatalogProducts,
   );
   pushRow(
     "estoque",
@@ -1956,10 +3270,13 @@ export function buildOperationalSummaryPrintHtml(
   const metricCards = [
     ["Animais ativos", String(report.summary.animaisAtivos)],
     ["Agenda aberta", String(report.summary.agendaAberta)],
-    ["Saldo no periodo", report.financeiro.saldo.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    })],
+    [
+      "Saldo no periodo",
+      report.financeiro.saldo.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }),
+    ],
     ["Sync pendente", String(report.summary.pendenciasSync)],
   ]
     .map(
@@ -1977,6 +3294,20 @@ export function buildOperationalSummaryPrintHtml(
   const limitationRows = OPERATIONAL_REPORT_LIMITATIONS.map(
     (limitation) => `<li>${escapeHtml(limitation)}</li>`,
   ).join("");
+  const metricRows = Object.entries(report.metrics)
+    .map(
+      ([key, metric]) => `
+      <tr>
+        <td>${escapeHtml(key)}</td>
+        <td>${metric.value == null ? "—" : metric.value}</td>
+        <td>${escapeHtml(metric.status)}</td>
+        <td>${escapeHtml(metric.coverage?.state ?? "unknown")}</td>
+        <td>${escapeHtml(metric.period?.timezoneSource ?? "sem-periodo")}</td>
+        <td>${escapeHtml(metric.sources.map((source) => source.name).join(", "))}</td>
+      </tr>
+    `,
+    )
+    .join("");
 
   const manejoRows = report.manejoByDomain
     .map(
@@ -2282,6 +3613,23 @@ export function buildOperationalSummaryPrintHtml(
         </section>
 
         <section>
+          <h2>Métricas e cobertura</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Métrica</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Cobertura</th>
+                <th>Timezone</th>
+                <th>Fonte</th>
+              </tr>
+            </thead>
+            <tbody>${metricRows}</tbody>
+          </table>
+        </section>
+
+        <section>
           <h2>Manejos no periodo</h2>
           <table>
             <thead>
@@ -2299,24 +3647,30 @@ export function buildOperationalSummaryPrintHtml(
           <div class="finance-grid">
             <div class="finance-card">
               <span class="metric-label">Entradas</span>
-              <strong>${escapeHtml(report.financeiro.entradas.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              }))}</strong>
+              <strong>${escapeHtml(
+                report.financeiro.entradas.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                }),
+              )}</strong>
             </div>
             <div class="finance-card">
               <span class="metric-label">Saidas</span>
-              <strong>${escapeHtml(report.financeiro.saidas.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              }))}</strong>
+              <strong>${escapeHtml(
+                report.financeiro.saidas.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                }),
+              )}</strong>
             </div>
             <div class="finance-card">
               <span class="metric-label">Saldo</span>
-              <strong>${escapeHtml(report.financeiro.saldo.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              }))}</strong>
+              <strong>${escapeHtml(
+                report.financeiro.saldo.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                }),
+              )}</strong>
             </div>
           </div>
           <p class="meta" style="margin-top: 12px;">

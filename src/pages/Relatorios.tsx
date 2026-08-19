@@ -46,6 +46,7 @@ import {
 
 type FarmSummary = {
   nome: string;
+  timezone: string | null;
 };
 
 const PERIOD_OPTIONS: Array<{ value: ReportPreset; label: string }> = [
@@ -76,6 +77,22 @@ function formatQuantity(value: number): string {
   }).format(value);
 }
 
+function metricStatusLabel(
+  status: "complete" | "partial" | "unavailable",
+): string {
+  if (status === "complete") return "Completo";
+  if (status === "partial") return "Parcial";
+  return "Indisponivel";
+}
+
+function metricStatusTone(
+  status: "complete" | "partial" | "unavailable",
+): "success" | "warning" | "neutral" {
+  if (status === "complete") return "success";
+  if (status === "partial") return "warning";
+  return "neutral";
+}
+
 function slugify(value: string): string {
   return value
     .normalize("NFD")
@@ -100,7 +117,7 @@ const Relatorios = () => {
 
       const { data, error } = await supabase
         .from("fazendas")
-        .select("nome")
+        .select("nome, timezone")
         .eq("id", activeFarmId)
         .is("deleted_at", null)
         .maybeSingle();
@@ -124,6 +141,8 @@ const Relatorios = () => {
       lotes,
       pastos,
       agenda,
+      sanitarioAgendaV2,
+      sanitarioAgendaAnimaisV2,
       protocolosSanitarios,
       protocoloItensSanitarios,
       fazendaSanidadeConfig,
@@ -132,6 +151,7 @@ const Relatorios = () => {
       eventos,
       eventosPesagem,
       eventosSanitario,
+      eventosReproducao,
       eventosFinanceiro,
       insumos,
       insumoApresentacoes,
@@ -144,6 +164,14 @@ const Relatorios = () => {
       db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
       db.state_pastos.where("fazenda_id").equals(activeFarmId).toArray(),
       db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.ops_sanitario_agenda_v2
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.ops_sanitario_agenda_animais_v2
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
       db.state_protocolos_sanitarios
         .where("fazenda_id")
         .equals(activeFarmId)
@@ -161,6 +189,10 @@ const Relatorios = () => {
         .equals(activeFarmId)
         .toArray(),
       db.event_eventos_sanitario
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.event_eventos_reproducao
         .where("fazenda_id")
         .equals(activeFarmId)
         .toArray(),
@@ -187,6 +219,8 @@ const Relatorios = () => {
       lotes,
       pastos,
       agenda,
+      sanitarioAgendaV2,
+      sanitarioAgendaAnimaisV2,
       protocolosSanitarios,
       protocoloItensSanitarios,
       fazendaSanidadeConfig:
@@ -198,6 +232,7 @@ const Relatorios = () => {
       eventos,
       eventosPesagem,
       eventosSanitario,
+      eventosReproducao,
       eventosFinanceiro,
       insumos,
       insumoApresentacoes,
@@ -208,12 +243,22 @@ const Relatorios = () => {
     };
   }, [activeFarmId]);
 
-  const range = useMemo(() => resolveReportRange(preset), [preset]);
+  const range = useMemo(
+    () => resolveReportRange(preset, new Date(), farm?.timezone),
+    [farm?.timezone, preset],
+  );
 
   const report = useMemo(() => {
     if (!source) return null;
-    return buildOperationalSummary(source, range);
-  }, [range, source]);
+    return buildOperationalSummary(
+      {
+        ...source,
+        fazendaId: activeFarmId,
+        farmTimezone: farm?.timezone,
+      },
+      range,
+    );
+  }, [activeFarmId, farm?.timezone, range, source]);
 
   const maxDomainCount = useMemo(() => {
     if (!report) return 1;
@@ -311,40 +356,42 @@ const Relatorios = () => {
   return (
     <div className="space-y-5">
       <PageIntro
-       variant="plain"
+        variant="plain"
         title="Relatorios"
         description="Leituras derivadas de eventos, state_* e agenda. Indicadores parciais nao representam DRE, ROI, margem ou custo por arroba."
         meta={
           <>
-            <StatusBadge tone="neutral">{farm?.nome ?? "Sua fazenda"}</StatusBadge>
+            <StatusBadge tone="neutral">
+              {farm?.nome ?? "Sua fazenda"}
+            </StatusBadge>
             <StatusBadge tone="neutral">{report.range.label}</StatusBadge>
           </>
         }
         actions={
           <>
-          <Select
-            value={preset}
-            onValueChange={(value) => setPreset(value as ReportPreset)}
-          >
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PERIOD_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={handleExportCsv}>
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </Button>
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="h-4 w-4" />
-            Imprimir
-          </Button>
+            <Select
+              value={preset}
+              onValueChange={(value) => setPreset(value as ReportPreset)}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PERIOD_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={handleExportCsv}>
+              <Download className="h-4 w-4" />
+              Exportar CSV
+            </Button>
+            <Button variant="outline" onClick={handlePrint}>
+              <Printer className="h-4 w-4" />
+              Imprimir
+            </Button>
           </>
         }
       />
@@ -359,13 +406,15 @@ const Relatorios = () => {
           },
           {
             title: "Pesagens",
-            description: "Peso medio e ultima pesagem no periodo; GMD por lote/pasto exige permanencia comprovada.",
+            description:
+              "Peso medio e ultima pesagem no periodo; GMD por lote/pasto exige permanencia comprovada.",
             source: "Fonte: eventos de pesagem",
             icon: Scale,
           },
           {
             title: "Movimentacao",
-            description: "Movimentacoes executadas no periodo e estado atual apenas como read model.",
+            description:
+              "Movimentacoes executadas no periodo e estado atual apenas como read model.",
             source: "Fonte: eventos + state_*",
             icon: Beef,
           },
@@ -377,13 +426,15 @@ const Relatorios = () => {
           },
           {
             title: "Financeiro operacional",
-            description: "Receita, despesa e saldo informados no periodo; leitura parcial, nao DRE ou margem.",
+            description:
+              "Receita, despesa e saldo informados no periodo; leitura parcial, nao DRE ou margem.",
             source: "Fonte: lancamentos financeiros",
             icon: Receipt,
           },
           {
             title: "Visao operacional",
-            description: "Agenda aberta indica pendencia/intencao; eventos indicam fatos executados.",
+            description:
+              "Agenda aberta indica pendencia/intencao; eventos indicam fatos executados.",
             source: "Fonte: agenda + eventos",
             icon: RefreshCw,
           },
@@ -422,7 +473,9 @@ const Relatorios = () => {
             <p className="text-xs font-semibold uppercase text-muted-foreground">
               Resumo operacional
             </p>
-            <h2 className="text-xl font-semibold">{farm?.nome ?? "Sua fazenda"}</h2>
+            <h2 className="text-xl font-semibold">
+              {farm?.nome ?? "Sua fazenda"}
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {formatDate(report.range.from)} a {formatDate(report.range.to)}
             </p>
@@ -441,7 +494,9 @@ const Relatorios = () => {
               {report.summary.animaisAtivos}
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">{report.summary.lotesAtivos} lotes</Badge>
+              <Badge variant="outline">
+                {report.summary.lotesAtivos} lotes
+              </Badge>
               <Badge variant="outline">
                 {report.summary.pastosAtivos} pastos
               </Badge>
@@ -524,10 +579,86 @@ const Relatorios = () => {
       <section>
         <Card className="shadow-none">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="text-base">Métricas e cobertura</CardTitle>
+              <StatusBadge tone="neutral">
+                Fontes explicitas por KPI
+              </StatusBadge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                [
+                  "Prenhas atuais",
+                  report.metrics.repro_prenhas_atuais,
+                  report.reproducao.prenhasAtuais,
+                ],
+                [
+                  "Partos no periodo",
+                  report.metrics.repro_partos,
+                  report.reproducao.partos,
+                ],
+                [
+                  "Nascimentos",
+                  report.metrics.repro_nascimentos,
+                  report.reproducao.nascimentos,
+                ],
+                [
+                  "Demanda futura",
+                  report.metrics.estoque_demanda_futura,
+                  report.metrics.estoque_demanda_futura.value,
+                ],
+              ].map(([label, metric, value]) => {
+                const typedMetric =
+                  metric as typeof report.metrics.repro_prenhas_atuais;
+                const typedValue = value as number | null;
+                return (
+                  <div
+                    key={label as string}
+                    className="rounded-xl border border-border/70 bg-muted/20 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm text-muted-foreground">
+                        {label as string}
+                      </p>
+                      <StatusBadge tone={metricStatusTone(typedMetric.status)}>
+                        {metricStatusLabel(typedMetric.status)}
+                      </StatusBadge>
+                    </div>
+                    <p className="mt-2 text-2xl font-semibold">
+                      {typedValue == null
+                        ? "Sem dado"
+                        : formatQuantity(typedValue)}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Fonte:{" "}
+                      {typedMetric.sources
+                        .map((source) => source.name)
+                        .join(", ")}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              O periodo dos KPIs historicos é inclusivo e usa a data factual do
+              Evento; Agenda permanece planejamento e não comprova execução.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section>
+        <Card className="shadow-none">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle className="text-base">Fontes e limitacoes</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            {[...OPERATIONAL_REPORT_SOURCE_NOTES, ...OPERATIONAL_REPORT_LIMITATIONS].map((item) => (
+            {[
+              ...OPERATIONAL_REPORT_SOURCE_NOTES,
+              ...OPERATIONAL_REPORT_LIMITATIONS,
+            ].map((item) => (
               <p key={item}>{item}</p>
             ))}
           </CardContent>
@@ -659,9 +790,7 @@ const Relatorios = () => {
 
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
-                <p className="text-sm text-muted-foreground">
-                  Parametrizados
-                </p>
+                <p className="text-sm text-muted-foreground">Parametrizados</p>
                 <p className="mt-2 text-2xl font-semibold">
                   {report.inventory.resupplyConfiguredItems}
                 </p>
@@ -689,7 +818,8 @@ const Relatorios = () => {
                     Custo operacional parcial
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Leitura derivada do inventario e dos snapshots de movimentacao.
+                    Leitura derivada do inventario e dos snapshots de
+                    movimentacao.
                   </p>
                 </div>
                 <StatusBadge tone="neutral">
@@ -703,7 +833,9 @@ const Relatorios = () => {
                     Entradas com custo
                   </p>
                   <p className="mt-1 text-xl font-semibold">
-                    {money.format(report.inventory.partialCost.entradasKnownCost)}
+                    {money.format(
+                      report.inventory.partialCost.entradasKnownCost,
+                    )}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {formatQuantity(
@@ -734,9 +866,7 @@ const Relatorios = () => {
                     {money.format(report.inventory.partialCost.saldoKnownCost)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {
-                      report.inventory.partialCost.activeLotsWithKnownCost
-                    }{" "}
+                    {report.inventory.partialCost.activeLotsWithKnownCost}{" "}
                     lote(s)
                   </p>
                 </div>
@@ -786,17 +916,20 @@ const Relatorios = () => {
                     Pre-requisitos da fase 3
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Produto catalogado, mapeamento para insumo/lote e uso do consumo assistido.
+                    Produto catalogado, mapeamento para insumo/lote e uso do
+                    consumo assistido.
                   </p>
                 </div>
                 <StatusBadge
                   tone={
-                    report.inventory.sanitaryPhase3Prerequisites.readyForAutoReview
+                    report.inventory.sanitaryPhase3Prerequisites
+                      .readyForAutoReview
                       ? "success"
                       : "warning"
                   }
                 >
-                  {report.inventory.sanitaryPhase3Prerequisites.readyForAutoReview
+                  {report.inventory.sanitaryPhase3Prerequisites
+                    .readyForAutoReview
                     ? "Apto para revisao"
                     : "Coletando evidencias"}
                 </StatusBadge>
@@ -808,7 +941,10 @@ const Relatorios = () => {
                     Eventos sanitarios
                   </p>
                   <p className="mt-1 text-xl font-semibold">
-                    {report.inventory.sanitaryPhase3Prerequisites.sanitaryEvents}
+                    {
+                      report.inventory.sanitaryPhase3Prerequisites
+                        .sanitaryEvents
+                    }
                   </p>
                 </div>
                 <div className="rounded-lg border border-border/70 bg-background p-3">
@@ -816,7 +952,10 @@ const Relatorios = () => {
                     Produto catalogado
                   </p>
                   <p className="mt-1 text-xl font-semibold">
-                    {report.inventory.sanitaryPhase3Prerequisites.catalogLinkedEvents}
+                    {
+                      report.inventory.sanitaryPhase3Prerequisites
+                        .catalogLinkedEvents
+                    }
                   </p>
                 </div>
                 <div className="rounded-lg border border-border/70 bg-background p-3">
@@ -902,55 +1041,59 @@ const Relatorios = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {report.inventory.replenishmentAlerts.slice(0, 6).map((item) => (
-                    <div
-                      key={item.insumoId}
-                      className="grid gap-3 rounded-lg border border-border/70 bg-background p-3 md:grid-cols-[1.1fr_0.7fr_0.7fr_1fr]"
-                    >
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium">{item.insumo}</p>
-                          <Badge
-                            variant={
-                              item.severity === "critical"
-                                ? "destructive"
-                                : "secondary"
-                            }
-                          >
-                            {item.severity === "critical"
-                              ? "Critico"
-                              : "Atencao"}
-                          </Badge>
+                  {report.inventory.replenishmentAlerts
+                    .slice(0, 6)
+                    .map((item) => (
+                      <div
+                        key={item.insumoId}
+                        className="grid gap-3 rounded-lg border border-border/70 bg-background p-3 md:grid-cols-[1.1fr_0.7fr_0.7fr_1fr]"
+                      >
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium">{item.insumo}</p>
+                            <Badge
+                              variant={
+                                item.severity === "critical"
+                                  ? "destructive"
+                                  : "secondary"
+                              }
+                            >
+                              {item.severity === "critical"
+                                ? "Critico"
+                                : "Atencao"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {item.categoria} · {item.tipo}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {item.categoria} · {item.tipo}
-                        </p>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Saldo</p>
+                          <p className="font-semibold">
+                            {formatQuantity(item.currentBalanceBase)}{" "}
+                            {item.unidadeBase}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Demanda futura
+                          </p>
+                          <p className="font-semibold">
+                            {item.futureDemandBase == null
+                              ? "Sem demanda"
+                              : `${formatQuantity(item.futureDemandBase)} ${item.unidadeBase}`}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Motivo
+                          </p>
+                          <p className="text-sm font-medium">
+                            {item.reasons.join(" + ")}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Saldo</p>
-                        <p className="font-semibold">
-                          {formatQuantity(item.currentBalanceBase)}{" "}
-                          {item.unidadeBase}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">
-                          Demanda futura
-                        </p>
-                        <p className="font-semibold">
-                          {item.futureDemandBase == null
-                            ? "Sem demanda"
-                            : `${formatQuantity(item.futureDemandBase)} ${item.unidadeBase}`}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Motivo</p>
-                        <p className="text-sm font-medium">
-                          {item.reasons.join(" + ")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
@@ -1045,51 +1188,53 @@ const Relatorios = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {report.inventory.futureDemand.groups.slice(0, 6).map((item) => (
-                    <div
-                      key={item.productKey}
-                      className="grid gap-3 rounded-lg border border-border/70 bg-background p-3 md:grid-cols-[1.3fr_0.7fr_0.7fr_0.7fr]"
-                    >
-                      <div>
-                        <p className="font-medium">{item.productName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {item.agendaItemCount} agenda(s) · {item.animalCount}{" "}
-                          animal(is)
-                        </p>
+                  {report.inventory.futureDemand.groups
+                    .slice(0, 6)
+                    .map((item) => (
+                      <div
+                        key={item.productKey}
+                        className="grid gap-3 rounded-lg border border-border/70 bg-background p-3 md:grid-cols-[1.3fr_0.7fr_0.7fr_0.7fr]"
+                      >
+                        <div>
+                          <p className="font-medium">{item.productName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.agendaItemCount} agenda(s) ·{" "}
+                            {item.animalCount} animal(is)
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Demanda
+                          </p>
+                          <p className="font-semibold">
+                            {item.estimatedQuantity == null
+                              ? "Sem quantidade"
+                              : `${formatQuantity(item.estimatedQuantity)} ${item.productUnit}`}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Saldo</p>
+                          <p className="font-semibold">
+                            {formatQuantity(item.availableBalance)}{" "}
+                            {item.productUnit}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Gap</p>
+                          <Badge
+                            variant={
+                              item.balanceGap != null && item.balanceGap > 0
+                                ? "destructive"
+                                : "outline"
+                            }
+                          >
+                            {item.balanceGap == null
+                              ? "Sem quantidade"
+                              : formatQuantity(item.balanceGap)}
+                          </Badge>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">
-                          Demanda
-                        </p>
-                        <p className="font-semibold">
-                          {item.estimatedQuantity == null
-                            ? "Sem quantidade"
-                            : `${formatQuantity(item.estimatedQuantity)} ${item.productUnit}`}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Saldo</p>
-                        <p className="font-semibold">
-                          {formatQuantity(item.availableBalance)}{" "}
-                          {item.productUnit}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Gap</p>
-                        <Badge
-                          variant={
-                            item.balanceGap != null && item.balanceGap > 0
-                              ? "destructive"
-                              : "outline"
-                          }
-                        >
-                          {item.balanceGap == null
-                            ? "Sem quantidade"
-                            : formatQuantity(item.balanceGap)}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
@@ -1138,9 +1283,7 @@ const Relatorios = () => {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">
-                          Periodo
-                        </p>
+                        <p className="text-xs text-muted-foreground">Periodo</p>
                         <p className="font-semibold">
                           <span className="text-emerald-700">
                             +{formatQuantity(item.entradas)}
@@ -1389,7 +1532,9 @@ const Relatorios = () => {
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="shadow-none">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
-            <CardTitle className="text-base">Agenda que exige atencao</CardTitle>
+            <CardTitle className="text-base">
+              Agenda que exige atencao
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {report.agendaAttention.length === 0 ? (
