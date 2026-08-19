@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FieldCombobox } from "@/components/ui/field-combobox";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { createGesture } from "@/lib/offline/ops";
+import { buildPastoRegistrationRecord } from "@/lib/structures/registration";
 import { getActiveFarmId } from "@/lib/storage";
 import {
   TipoPastoEnum,
@@ -212,26 +213,25 @@ const PastoNovo = () => {
     const op = {
       table: "pastos",
       action: "INSERT" as const,
-      record: {
-        id: pastoId,
-        fazenda_id: activeFazendaId,
-        nome: nome.trim(),
-        area_ha: area,
-        capacidade_ua: capacidade,
-        tipo_pasto: tipoPasto, // legado
-        tipo_area: tipoPasto,
-        forrageira_nome: null,
-        forrageira_genero: null,
-        forrageira_cultivar: forrageiraCultivar.trim() || null,
-        altura_entrada_alvo_cm: entrada,
-        altura_saida_alvo_cm: saida,
-        capacidade_ua_alvo: capacidade,
-        infraestrutura: infra,
-        observacoes: observacoes || null,
-        payload: {},
-        created_at: now,
-        updated_at: now,
-      },
+      record: buildPastoRegistrationRecord({
+        fazendaId: activeFazendaId,
+        recordedAt: now,
+        draft: {
+          id: pastoId,
+          nome: nome.trim(),
+          areaHa: area,
+          capacidadeUa: capacidade,
+          tipoPasto,
+          tipoArea: tipoPasto,
+          forrageiraCultivar: forrageiraCultivar.trim() || null,
+          alturaEntrada: entrada,
+          alturaSaida: saida,
+          capacidadeUaAlvo: capacidade,
+          infraestrutura: infra,
+          observacoes,
+          payload: {},
+        },
+      }),
     };
     const ops = [op];
 

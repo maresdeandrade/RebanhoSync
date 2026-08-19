@@ -19,6 +19,7 @@ import {
 import { FieldCombobox } from "@/components/ui/field-combobox";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
+import { buildLoteRegistrationRecord } from "@/lib/structures/registration";
 import { getActiveFarmId } from "@/lib/storage";
 import { showError, showSuccess } from "@/utils/toast";
 
@@ -89,16 +90,17 @@ const LoteNovo = () => {
       client_tx_id: crypto.randomUUID(),
       table: "lotes",
       action: "INSERT" as const,
-      record: {
-        id: loteId,
-        fazenda_id: fazendaId,
-        nome: nome.trim(),
-        status,
-        pasto_id: pastoId === NULL_VALUE ? null : pastoId,
-        touro_id: touroId === NULL_VALUE ? null : touroId,
-        created_at: now,
-        updated_at: now,
-      },
+      record: buildLoteRegistrationRecord({
+        fazendaId,
+        recordedAt: now,
+        draft: {
+          id: loteId,
+          nome: nome.trim(),
+          status,
+          pastoId: pastoId === NULL_VALUE ? null : pastoId,
+          touroId: touroId === NULL_VALUE ? null : touroId,
+        },
+      }),
     };
 
     try {

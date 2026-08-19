@@ -85,15 +85,35 @@ export const createGesture = async (
   options: {
     sanitarioAgendaV2?: readonly SanitarioAgendaCreateDraftV2[];
     enqueueSanitarioAgendaV2?: boolean;
+    clientTxId?: string;
+    clientOpIds?: readonly string[];
   } = {},
 ) => {
   for (const op of ops_input) {
     assertAllowedOfflinePushSurface(op);
   }
 
-  const client_tx_id = crypto.randomUUID();
+  const client_tx_id = options.clientTxId ?? crypto.randomUUID();
   const client_recorded_at = new Date().toISOString();
   const client_id = getClientId();
+
+  const existingGesture = await db.queue_gestures.get(client_tx_id);
+  if (existingGesture) {
+    const existingOps = await db.queue_ops
+      .where("client_tx_id")
+      .equals(client_tx_id)
+      .toArray();
+    const expectedOpIds = options.clientOpIds ?? [];
+    const sameOperationSet =
+      expectedOpIds.length === ops_input.length &&
+      expectedOpIds.every((clientOpId) =>
+        existingOps.some((operation) => operation.client_op_id === clientOpId),
+      );
+    if (!sameOperationSet) {
+      throw new Error("CLIENT_TX_ID_REUSE_CONFLICT");
+    }
+    return client_tx_id;
+  }
 
   const gesture: Gesture = {
     client_tx_id,
@@ -104,7 +124,7 @@ export const createGesture = async (
   };
 
   const ops: Operation[] = ops_input.map((op, index) => {
-    const client_op_id = crypto.randomUUID();
+    const client_op_id = options.clientOpIds?.[index] ?? crypto.randomUUID();
     const normalizedRecord = normalizeTableMutationRecord(
       op.table,
       op.record,

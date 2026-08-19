@@ -19,18 +19,16 @@ import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-import { normalizeLookupValue } from "@/lib/import/animaisCsv";
-import { parsePastoImportCsv } from "@/lib/import/estruturasCsv";
+import { previewPastosImportV2 } from "@/lib/import/importV2";
+import { persistImportV2Preview } from "@/lib/import/importV2Persistence";
 import { db } from "@/lib/offline/db";
-import { createGesture } from "@/lib/offline/ops";
-import type { OperationInput } from "@/lib/offline/types";
 import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 import { showError, showSuccess } from "@/utils/toast";
 
 const TEMPLATE_CSV = [
-  "nome;area_ha;capacidade_ua;tipo_pasto;tipo_area;forrageira_genero;forrageira;cultivar;altura_entrada;altura_saida;capacidade_ua_alvo;observacoes",
-  "Piquete 1;12.5;18;cultivado;cultivado;Panicum;Mombaca;;35;15;20;Entrada principal",
-  "Reserva;8;;nativo;;;;;;;;;Uso estrategico na seca",
+  "nome;area_ha;capacidade_ua;tipo_pasto;tipo_area;forrageira_genero;forrageira;cultivar;altura_entrada;altura_saida;capacidade_ua_alvo;observacoes;schema_version;template_version",
+  "Piquete 1;12.5;18;cultivado;cultivado;Panicum;Mombaca;;35;15;20;Entrada principal;2;import-v2",
+  "Reserva;8;;nativo;;;;;;;;;Uso estrategico na seca;2;import-v2",
 ].join("\n");
 
 const PastosImportar = () => {
@@ -50,32 +48,20 @@ const PastosImportar = () => {
       .toArray();
   }, [activeFarmId]);
 
-  const parsed = useMemo(() => parsePastoImportCsv(csvText), [csvText]);
-
-  const validation = useMemo(() => {
-    const issues = [...parsed.issues];
-    const existingNames = new Set(
-      (pastosExistentes ?? []).map((pasto) => normalizeLookupValue(pasto.nome)),
-    );
-
-    parsed.rows.forEach((row) => {
-      if (existingNames.has(normalizeLookupValue(row.nome))) {
-        issues.push({
-          lineNumber: row.lineNumber,
-          field: "nome",
-          message: `Pasto "${row.nome}" ja existe na fazenda ativa.`,
-        });
-      }
-    });
-
-    return { issues };
-  }, [parsed, pastosExistentes]);
+  const preview = useMemo(
+    () =>
+      previewPastosImportV2({
+        entity: "pastos",
+        fazendaId: activeFarmId ?? "",
+        rawText: csvText,
+        fileName,
+        existing: { pastos: pastosExistentes ?? [] },
+      }),
+    [activeFarmId, csvText, fileName, pastosExistentes],
+  );
 
   const canImport =
-    Boolean(activeFarmId) &&
-    parsed.rows.length > 0 &&
-    validation.issues.length === 0 &&
-    !isImporting;
+    Boolean(activeFarmId) && preview.summary.valid > 0 && !isImporting;
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -100,61 +86,40 @@ const PastosImportar = () => {
       showError("Fazenda ativa nao encontrada.");
       return;
     }
-
-    if (validation.issues.length > 0) {
-      showError("Corrija a planilha antes de importar.");
+    if (preview.summary.valid === 0) {
+      showError("Nenhuma linha válida para importar.");
       return;
     }
 
     setIsImporting(true);
-
     try {
-      const now = new Date().toISOString();
-      const ops: OperationInput[] = parsed.rows.map((row) => ({
-        table: "pastos",
-        action: "INSERT",
-        record: {
-          id: crypto.randomUUID(),
-          fazenda_id: activeFarmId,
-          nome: row.nome,
-          area_ha: row.areaHa,
-          capacidade_ua: row.capacidadeUa,
-          tipo_pasto: row.tipoPasto,
-          tipo_area: row.tipoArea,
-          forrageira_nome: row.forrageiraNome,
-          forrageira_genero: row.forrageiraGenero,
-          forrageira_cultivar: row.forrageiraCultivar,
-          altura_entrada_alvo_cm: row.alturaEntrada,
-          altura_saida_alvo_cm: row.alturaSaida,
-          capacidade_ua_alvo: row.capacidadeUaAlvo,
-          infraestrutura: {},
-          observacoes: row.observacoes,
-          payload: {
-            import_source: fileName ?? "csv",
-            import_line: row.lineNumber,
-          },
-          created_at: now,
-          updated_at: now,
-          deleted_at: null,
-        },
-      }));
-
-      await createGesture(activeFarmId, ops);
+      const result = await persistImportV2Preview(preview);
       await trackPilotMetric({
         fazendaId: activeFarmId,
         eventName: "import_completed",
-        status: "success",
+        status: result.summary.retryable > 0 ? "error" : "success",
         entity: "pastos",
-        quantity: parsed.rows.length,
+        quantity: result.summary.imported,
         payload: {
           file_name: fileName ?? "csv",
+          import_id: result.importId,
+          rejected: result.summary.rejected,
+          conflicts: result.summary.conflicts,
+          retryable: result.summary.retryable,
         },
       });
-      showSuccess(`${parsed.rows.length} pasto(s) importado(s) localmente.`);
+      if (result.summary.retryable > 0) {
+        showError(`${result.summary.retryable} linha(s) aguardam retry.`);
+        return;
+      }
+      showSuccess(
+        `${result.summary.imported} pasto(s) importado(s); ${result.summary.rejected + result.summary.conflicts} linha(s) rejeitada(s) ou em conflito.`,
+      );
       navigate("/pastos");
     } catch (error) {
       console.error("[PastosImportar] failed to import pastures", error);
       showError("Nao foi possivel importar os pastos.");
+    } finally {
       setIsImporting(false);
     }
   };
@@ -167,15 +132,15 @@ const PastosImportar = () => {
         title="Importar pastos por planilha"
         meta={
           <>
-            <StatusBadge tone={parsed.rows.length > 0 ? "info" : "neutral"}>
-              {parsed.rows.length} linha(s) valida(s)
+            <StatusBadge tone={preview.summary.valid > 0 ? "info" : "neutral"}>
+              {preview.summary.valid} linha(s) pronta(s)
             </StatusBadge>
             <StatusBadge
-              tone={validation.issues.length === 0 ? "success" : "warning"}
+              tone={preview.summary.rejected + preview.summary.conflicts === 0 ? "success" : "warning"}
             >
-              {validation.issues.length === 0
-                ? "Planilha pronta para importar"
-                : `${validation.issues.length} alerta(s) para revisar`}
+              {preview.summary.rejected + preview.summary.conflicts === 0
+                ? "Preview sem rejeições"
+                : `${preview.summary.rejected + preview.summary.conflicts} rejeição(ões)/conflito(s)`}
             </StatusBadge>
           </>
         }
@@ -235,45 +200,43 @@ const PastosImportar = () => {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle>Preview</CardTitle>
               <Badge variant="secondary">
-                {parsed.rows.length} linha(s) valida(s)
+                {preview.summary.valid} linha(s) válida(s)
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
-            {parsed.rows.length === 0 ? (
+            {preview.totalLines === 0 ? (
               <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                Nenhuma linha valida encontrada.
+                Nenhuma linha encontrada.
               </div>
             ) : (
               <div className="grid gap-3">
-                {parsed.rows.slice(0, 12).map((row) => (
-                  <div
-                    key={`${row.lineNumber}-${row.nome}`}
-                    className="rounded-xl border border-border/70 bg-background p-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {row.nome}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Linha {row.lineNumber}
-                        </p>
+                {preview.lineResults
+                  .filter((line) => line.status === "valid")
+                  .slice(0, 12)
+                  .map((line) => (
+                    <div
+                      key={`${line.lineNumber}-${line.identity}`}
+                      className="rounded-xl border border-border/70 bg-background p-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {line.identity ?? "Identidade não informada"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Linha {line.lineNumber} · operação pronta
+                          </p>
+                        </div>
+                        <Badge variant="outline">valid</Badge>
                       </div>
-                      <Badge variant="outline">{row.areaHa} ha</Badge>
+                      {line.warnings.length > 0 ? (
+                        <p className="mt-2 text-xs text-amber-700">
+                          {line.warnings.length} warning(s) não bloqueante(s)
+                        </p>
+                      ) : null}
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Badge variant="secondary">
-                        {row.forrageiraCultivar ||
-                          row.forrageiraNome ||
-                          row.tipoPasto}
-                      </Badge>
-                      <Badge variant="outline">
-                        UA {row.capacidadeUaAlvo || row.capacidadeUa || "-"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </CardContent>
@@ -287,19 +250,21 @@ const PastosImportar = () => {
             <div className="flex flex-wrap gap-2">
               <Badge
                 variant={
-                  validation.issues.length === 0 ? "secondary" : "destructive"
+                  preview.summary.rejected + preview.summary.conflicts === 0
+                    ? "secondary"
+                    : "destructive"
                 }
               >
-                {validation.issues.length === 0
+                {preview.summary.rejected + preview.summary.conflicts === 0
                   ? "Sem erros"
-                  : `${validation.issues.length} erro(s)`}
+                  : `${preview.summary.rejected + preview.summary.conflicts} erro(s)/conflito(s)`}
               </Badge>
               <Badge variant="outline">
                 {pastosExistentes?.length ?? 0} pasto(s) ja cadastrado(s)
               </Badge>
             </div>
 
-            {validation.issues.length === 0 ? (
+            {preview.summary.rejected + preview.summary.conflicts === 0 ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
                 <div className="flex items-center gap-2 font-medium">
                   <CheckCircle2 className="h-4 w-4" />
@@ -311,22 +276,26 @@ const PastosImportar = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {validation.issues.slice(0, 8).map((issue) => (
-                  <div
-                    key={`${issue.lineNumber}-${issue.field}-${issue.message}`}
-                    className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
-                  >
-                    <div className="flex items-center gap-2 font-medium">
-                      <AlertTriangle className="h-4 w-4" />
-                      Linha {issue.lineNumber} - {issue.field}
+                {preview.lineResults
+                  .flatMap((line) =>
+                    line.issues.map((issue) => ({ ...issue, status: line.status })),
+                  )
+                  .slice(0, 8)
+                  .map((issue) => (
+                    <div
+                      key={`${issue.lineNumber}-${issue.field}-${issue.code}`}
+                      className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                    >
+                      <div className="flex items-center gap-2 font-medium">
+                        <AlertTriangle className="h-4 w-4" />
+                        Linha {issue.lineNumber} - {issue.field} - {issue.code}
+                      </div>
+                      <p className="mt-1">{issue.message}</p>
                     </div>
-                    <p className="mt-1">{issue.message}</p>
-                  </div>
-                ))}
-                {validation.issues.length > 8 ? (
+                  ))}
+                {preview.summary.rejected + preview.summary.conflicts > 8 ? (
                   <p className="text-sm text-muted-foreground">
-                    Mais {validation.issues.length - 8} erro(s) oculto(s) no
-                    preview.
+                    Mais {preview.summary.rejected + preview.summary.conflicts - 8} erro(s) oculto(s) no preview.
                   </p>
                 ) : null}
               </div>
@@ -345,7 +314,7 @@ const PastosImportar = () => {
               ) : (
                 <>
                   <Upload className="h-4 w-4" />
-                  Importar {parsed.rows.length} pasto(s)
+                  Importar {preview.summary.valid} pasto(s)
                 </>
               )}
             </Button>
