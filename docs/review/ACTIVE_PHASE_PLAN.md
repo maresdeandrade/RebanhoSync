@@ -1,12 +1,20 @@
-# Plano de fechamento — Fase 13 / Reprodução Operacional v1
+# Plano de fechamento — Fase 14 / Compra/Venda Operacional
 
-Atualizado em: 2026-08-07
-Status: **Fase 13 encerrada com patch funcional de leitura canônica**
-Próxima fase: **Fase 14 — Compra/Venda Operacional**
+Atualizado em: 2026-08-19
+Status: **Fase 14 encerrada no baseline autoritativo de saída**
+Próxima fase: **Fase 15 — KPIs/Relatórios**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
-## Fechamento funcional da Fase 13
+## Fechamento da Fase 14
+
+Baseline autoritativo de saída: `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`.
+
+A Fase 14 — Compra/Venda Operacional está encerrada. As operações comerciais individual e em lote foram integradas; o contrato kg/@ foi preservado; precificação e simulação comercial foram integradas, com simulação não factual; e a Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first. Nenhuma nova fonte de verdade foi criada.
+
+Próxima etapa: Fase 15 — KPIs/Relatórios. Não iniciar implementação nesta atualização documental.
+
+## Histórico — Fechamento funcional da Fase 13
 
 Baseline de entrada: `main@e7b69fc`, branch local 11 commits à frente de `origin/main` e worktree limpa.
 

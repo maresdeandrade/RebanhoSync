@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-08-07
-Fase atual: **Fase 14 — Compra/Venda Operacional**
-Fase anterior: **Fase 13 — Reprodução Operacional v1 encerrada com patch funcional**
+Atualizado em: 2026-08-19
+Fase atual: **Fase 15 — KPIs/Relatórios**
+Fase anterior: **Fase 14 — Compra/Venda Operacional encerrada com Importação V2 + Robustez**
 
 ## Objetivo
 
@@ -26,7 +26,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 6. Carência operacional derivada — **concluída**.
 7. Fechamento formal da Fase 12 — **concluído**.
 8. Fase 13 — Reprodução Operacional v1 — **concluída**.
-9. Fase 14 — Compra/Venda Operacional.
+9. Fase 14 — Compra/Venda Operacional — **concluída**.
 10. Fase 15 — KPIs/Relatórios.
 11. Fase 16 — Financeiro Gerencial.
 12. Fase 17 — Decisão Assistida.
@@ -38,14 +38,18 @@ O rollout do Sync Sanitário v2 permanece não autorizado por `SANITARIO_V2_E2E_
 
 Cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, vínculo mãe–cria, correções append-only e Agenda neonatal v2 estão operacionais. O patch final eliminou a precedência residual de `taxonomy_facts` sobre a projeção reprodutiva canônica nas telas.
 
+## Fase 14 — resultado encerrado
+
+A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`. As operações comerciais individual e em lote foram integradas, o contrato kg/@ foi preservado, precificação e simulação comercial foram integradas, e a simulação permaneceu não factual. A Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first. Nenhuma nova fonte de verdade foi criada.
+
 ## Próxima fase de desenvolvimento
 
 ```txt
-Fase 14 — Compra/Venda Operacional
+Fase 14 — Compra/Venda Operacional — encerrada
 → Fase 15 — KPIs/Relatórios
 ```
 
-A Fase 14 inicia sem habilitar gate, feature flag ou rollout do Sync Sanitário v2.
+A Fase 15 inicia sem habilitar gate, feature flag ou rollout do Sync Sanitário v2.
 
 ## Risco de rollout
 
@@ -62,8 +66,8 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | Fase | Escopo | Condição de início |
 |---|---|---|
 | 13 | Reprodução Operacional v1 | Concluída |
-| 14 | Compra/Venda Operacional | Fase 13 formalmente encerrada |
-| 15 | KPIs/Relatórios | Fontes, períodos e limitações explícitos |
+| 14 | Compra/Venda Operacional | **Concluída** em `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078` |
+| 15 | KPIs/Relatórios | Próxima fase; fontes, períodos e limitações explícitos |
 | 16 | Financeiro Gerencial | Ledger e critérios gerenciais explícitos |
 | 17 | Decisão Assistida | Dados confiáveis e limites de não autorização |
 | 18 | Beta/Hardening | Gates técnicos e operacionais atendidos |
