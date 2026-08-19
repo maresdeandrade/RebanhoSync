@@ -1,12 +1,18 @@
-# Handoff atual — Fase 13 encerrada / Reprodução Operacional v1
+# Handoff atual — Fase 14 encerrada / Compra/Venda Operacional
 
-Atualizado em: 2026-08-07
-Baseline de entrada do fechamento: `main@e7b69fc`
-Baseline autoritativo de saída da Fase 13: `main@e2aac87`
-Status: **Fase 13 fechada com patch funcional de leitura canônica**
-Próxima fase: **Fase 14 — Compra/Venda Operacional**
+Atualizado em: 2026-08-19
+Baseline de entrada do fechamento: `main@97ff4c0`
+Baseline autoritativo de saída da Fase 14: `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`
+Status: **Fase 14 fechada e integrada**
+Próxima fase: **Fase 15 — KPIs/Relatórios**
 
-## Fechamento funcional
+## Fechamento da Fase 14
+
+A Fase 14 — Compra/Venda Operacional foi encerrada com operações comerciais individual e em lote integradas, contrato kg/@ preservado, precificação e simulação comercial integradas e simulação não factual. A Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first. Nenhuma nova fonte de verdade foi criada.
+
+A transição para a Fase 15 — KPIs/Relatórios parte exclusivamente de `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`. Esta atualização é documental e não inicia implementação da Fase 15.
+
+## Histórico — Fechamento funcional da Fase 13
 
 - cobertura e IA podem ser iniciadas na ficha ou no painel reprodutivo; o serviço permanece Evento factual e alimenta histórico e próximo estado;
 - diagnóstico positivo e negativo são registráveis pela UI; PRENHA, VAZIA e DPP vêm da reconstrução histórica;

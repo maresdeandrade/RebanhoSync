@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-08-07
-Baseline autoritativo de governança para início da Fase 14: `main@aacc0452af5fe20fac800b9f0fcad4835b4b09bd`
+Atualizado em: 2026-08-19
+Baseline autoritativo de saída da Fase 14: `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`
 
 ## Objetivo
 
@@ -13,11 +13,13 @@ RebanhoSync está em beta interno, com arquitetura offline-first e isolamento mu
 
 A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 
+A Fase 14 — Compra/Venda Operacional está encerrada no baseline de saída acima. As operações comerciais individual e em lote foram integradas; o contrato kg/@ foi preservado; precificação e simulação comercial foram incorporadas; a simulação permanece não factual; e a Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first. Nenhuma nova fonte de verdade foi criada.
+
 O patch final eliminou a precedência residual do cache `taxonomy_facts` nas leituras reprodutivas das telas quando o contexto factual canônico está carregado. Nenhum contrato de banco ou sync foi alterado.
 
 A governança de `.agents`, `scripts` e `AGENTS.md` está reconciliada no baseline acima. Bootstrap, `audit:agents`, `gates:docs`, parsers aplicáveis e `git diff --check` foram aprovados; a credencial removida do remote local permanece com `ROTACAO_EXTERNA_PENDENTE`, sem bloquear o código de governança.
 
-Próxima fase de desenvolvimento: **Fase 14 — Compra/Venda Operacional**.
+Próxima fase de desenvolvimento: **Fase 15 — KPIs/Relatórios**.
 
 ## Estado reprodutivo consolidado
 
@@ -101,7 +103,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-A próxima etapa de desenvolvimento é a Fase 13 — Reprodução Operacional v1. O ciclo Dexie completo permanece coberto pela certificação local existente. A transição não habilita o Sync Sanitário v2; rollout e produção continuam inalterados.
+A próxima etapa de desenvolvimento é a Fase 15 — KPIs/Relatórios. O baseline autoritativo de saída é `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`. A transição não habilita o Sync Sanitário v2; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 
