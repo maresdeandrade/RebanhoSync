@@ -1,6 +1,7 @@
 # Handoff atual — Fase 15 encerrada / KPIs e Relatórios
 
 Atualizado em: 2026-08-19
+Baseline autoritativo de saída da Fase 14: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`
 Baseline de entrada do fechamento: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`
 Commit da implementação: `7bebe60e8c866ba36aca512996044701c354ceab`
 PR de revisão: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93)
