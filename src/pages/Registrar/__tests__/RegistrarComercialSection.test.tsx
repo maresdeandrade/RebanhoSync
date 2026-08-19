@@ -329,6 +329,35 @@ describe("RegistrarComercialSection", () => {
     expect(screen.getByText("R$ 295.00/@")).toBeInTheDocument();
   });
 
+  it("exibe R$/cabeça derivado do total negociado e identifica a entrada", () => {
+    render(
+      <StatefulCommercialSection
+        initialData={{
+          ...comercialData,
+          scope: "lote",
+          quantidadeAnimais: "2",
+          pricingMode: "total_value",
+          commercialWeightTotal: "20",
+          valorBruto: "6200",
+          newAnimals: [
+            { ...comercialData.newAnimals[0]!, commercialWeight: 10 },
+            {
+              ...comercialData.newAnimals[0]!,
+              localId: "animal-2",
+              identificacao: "A-2",
+              commercialWeight: 10,
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Valor total negociado (entrada)")).toBeInTheDocument();
+    expect(screen.getByText("R$ 3100.00/cabeça")).toBeInTheDocument();
+    expect(screen.getAllByText("R$ 310.00/@").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("R$ 3100.00").length).toBeGreaterThan(0);
+  });
+
   it("recebe arrobas diretamente e redistribui na unidade selecionada", () => {
     render(
       <StatefulCommercialSection

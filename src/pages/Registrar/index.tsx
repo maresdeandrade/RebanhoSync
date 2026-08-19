@@ -867,9 +867,17 @@ const Registrar = () => {
               : (comercialData.pesosPorAnimal[lineRef] ?? ""),
         },
         pricePerHead:
-          comercialData.operationType === "compra"
-            ? draft?.valorIndividual
-            : (comercialData.valoresPorAnimal[lineRef] ?? ""),
+          comercialData.pricingMode === "per_head"
+            ? comercialData.operationType === "compra"
+              ? draft?.valorIndividual
+              : (comercialData.valoresPorAnimal[lineRef] ?? "")
+            : undefined,
+        allocatedGrossValue:
+          comercialData.pricingMode === "total_value"
+            ? comercialData.operationType === "compra"
+              ? draft?.valorIndividual
+              : (comercialData.valoresPorAnimal[lineRef] ?? "")
+            : undefined,
         pricePerArroba: comercialData.pricePerArroba,
         arrobaBasis: comercialData.arrobaBasis,
         carcassYieldPercent: comercialData.carcassYieldPercent,
@@ -1681,7 +1689,7 @@ const Registrar = () => {
                       line.lineRef,
                       {
                         pricePerHead:
-                          comercialData.pricingMode !== "per_arroba"
+                          comercialData.pricingMode === "per_head"
                             ? line.pricePerHead
                             : null,
                         commercialWeight: {

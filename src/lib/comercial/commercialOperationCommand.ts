@@ -7,6 +7,8 @@ import {
 } from "@/lib/animals/registration";
 import { calculateCommercialOperation } from "@/lib/comercial/commercialOperation";
 import {
+  allocateCommercialTotalValue,
+  calculateAverageCommercialPricePerHead,
   calculateCommercialPricingLine,
   calculateEffectiveArrobaPrices,
   sumCommercialArrobas,
@@ -81,6 +83,7 @@ export interface CommercialPricingSnapshotLine {
   arrobas: number | null;
   arroba_basis: CommercialArrobaBasis | null;
   carcass_yield_percent: number | null;
+  gross_value_source: "input" | "derived";
 }
 
 export function validateCommercialPricingSnapshotLine(
@@ -162,7 +165,14 @@ function buildPricingCalculations(input: CommercialOperationCommandInput) {
       "Peso de carcaça conhecido não pode manter rendimento residual.",
     );
   }
-  const calculations = lineRefs.map((lineRef) => {
+  const totalValueAllocations =
+    input.pricing.pricingMode === "total_value"
+      ? allocateCommercialTotalValue(input.valorBruto, lineRefs.length)
+      : null;
+  if (input.pricing.pricingMode === "total_value" && !totalValueAllocations) {
+    throw new Error("Informe o valor total da negociação.");
+  }
+  const calculations = lineRefs.map((lineRef, index) => {
     const line = input.pricing!.lines[lineRef]!;
     if (line.commercialWeight.unit !== input.pricing!.weightUnit) {
       throw new Error("A unidade do peso comercial diverge da operação.");
@@ -178,7 +188,12 @@ function buildPricingCalculations(input: CommercialOperationCommandInput) {
     const calculation = calculateCommercialPricingLine({
       pricingMode: input.pricing!.pricingMode,
       commercialWeight: line.commercialWeight,
-      pricePerHead: line.pricePerHead,
+      pricePerHead:
+        input.pricing!.pricingMode === "per_head" ? line.pricePerHead : null,
+      allocatedGrossValue:
+        input.pricing!.pricingMode === "total_value"
+          ? totalValueAllocations![index]!.value
+          : null,
       pricePerArroba: input.pricing!.pricePerArroba,
       arrobaBasis: input.pricing!.arrobaBasis,
       carcassYieldPercent: input.pricing!.carcassYieldPercent,
@@ -359,6 +374,7 @@ export function buildCommercialOperationGesture(
       weight_considered_kg: item.calculation.weightConsideredKg,
       arrobas: item.calculation.arrobas,
       individual_gross_value: item.calculation.individualGrossValue,
+      gross_value_source: item.calculation.individualGrossValueSource ?? "derived",
     }))
     .sort((a, b) => a.animal_id.localeCompare(b.animal_id));
   for (const line of pricingLines ?? []) {
@@ -447,6 +463,14 @@ export function buildCommercialOperationGesture(
         netValue: summary.valorLiquidoDerivado,
       })
     : null;
+  const effectivePricePerHeadGross = calculateAverageCommercialPricePerHead({
+    totalValue: input.valorBruto,
+    quantity: animalIds.length,
+  });
+  const effectivePricePerHeadNet = calculateAverageCommercialPricePerHead({
+    totalValue: summary.valorLiquidoDerivado,
+    quantity: animalIds.length,
+  });
   const built = buildEventGesture({
     dominio: "comercial",
     fazendaId: input.fazendaId,
@@ -495,6 +519,9 @@ export function buildCommercialOperationGesture(
             arroba_basis: input.pricing.arrobaBasis ?? null,
             carcass_yield_percent: input.pricing.carcassYieldPercent ?? null,
             total_arrobas: totalArrobas?.value ?? null,
+            gross_value_input: input.valorBruto ?? null,
+            effective_price_per_head_gross: effectivePricePerHeadGross?.value ?? null,
+            effective_price_per_head_net: effectivePricePerHeadNet?.value ?? null,
             effective_price_per_arroba_gross:
               effectiveArrobaPrices?.gross?.value ?? null,
             effective_price_per_arroba_net:

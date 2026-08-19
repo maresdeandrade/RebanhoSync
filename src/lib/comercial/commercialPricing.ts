@@ -2,6 +2,7 @@ export type CommercialPricingMode = "per_head" | "per_arroba" | "total_value";
 export type CommercialArrobaBasis = "carcass_weight" | "live_weight_yield";
 export type CommercialWeightUnit = "kg" | "arroba";
 export type CommercialWeightSource = "direct" | "calculated";
+export type CommercialPricingValueSource = "input" | "derived";
 export type CommercialWeight<TAmount = number> =
   | { unit: "kg"; amount: TAmount }
   | { unit: "arroba"; amount: TAmount };
@@ -210,12 +211,15 @@ export interface CommercialPricingLineCalculation {
   individualGrossValue: number | null;
   arrobasInput: string;
   individualGrossValueInput: string;
+  individualGrossValueSource?: CommercialPricingValueSource;
 }
 
 export function calculateCommercialPricingLine(input: {
   pricingMode: CommercialPricingMode;
   commercialWeight: CommercialWeight<DecimalInput>;
   pricePerHead?: DecimalInput;
+  /** Valor individual rateado a partir do total informado no modo total_value. */
+  allocatedGrossValue?: DecimalInput;
   pricePerArroba?: DecimalInput;
   arrobaBasis?: CommercialArrobaBasis | null;
   carcassYieldPercent?: DecimalInput;
@@ -233,9 +237,13 @@ export function calculateCommercialPricingLine(input: {
     weightUnit === "kg" && weight !== null ? scaledToNumber(weight) : null;
   const weightSource: CommercialWeightSource =
     weightUnit === "kg" && input.arrobaBasis !== null ? "calculated" : "direct";
-  if (input.pricingMode !== "per_arroba") {
-    const price = parseDecimal(input.pricePerHead);
-    if (price === null) {
+  if (input.pricingMode === "per_head" || input.pricingMode === "total_value") {
+    const valueInput =
+      input.pricingMode === "per_head"
+        ? input.pricePerHead
+        : input.allocatedGrossValue;
+    const value = parseDecimal(valueInput);
+    if (value === null) {
       return {
         issue:
           input.pricingMode === "total_value"
@@ -250,7 +258,7 @@ export function calculateCommercialPricingLine(input: {
         individualGrossValueInput: "",
       };
     }
-    const cents = divideRounded(price * MONEY_SCALE, DECIMAL_SCALE);
+    const cents = divideRounded(value * MONEY_SCALE, DECIMAL_SCALE);
     let derivedArrobas: bigint | null = weightUnit === "arroba" ? weight : null;
     if (weightUnit === "kg" && weight !== null && input.arrobaBasis) {
       if (input.arrobaBasis === "carcass_weight") {
@@ -282,6 +290,8 @@ export function calculateCommercialPricingLine(input: {
       weightConsideredKg,
       arrobas: derivedArrobas === null ? null : scaledToNumber(derivedArrobas),
       individualGrossValue: scaledToNumber(cents, MONEY_SCALE),
+      individualGrossValueSource:
+        input.pricingMode === "per_head" ? "input" : "derived",
       arrobasInput:
         derivedArrobas === null ? "" : toFixedDecimal(derivedArrobas, 4),
       individualGrossValueInput: toFixedDecimal(cents, 2, MONEY_SCALE),
@@ -325,6 +335,7 @@ export function calculateCommercialPricingLine(input: {
       weightConsideredKg: null,
       arrobas: scaledToNumber(weight),
       individualGrossValue: scaledToNumber(grossCents, MONEY_SCALE),
+      individualGrossValueSource: "derived",
       arrobasInput: toFixedDecimal(weight, 4),
       individualGrossValueInput: toFixedDecimal(grossCents, 2, MONEY_SCALE),
     };
@@ -388,8 +399,91 @@ export function calculateCommercialPricingLine(input: {
     weightConsideredKg,
     arrobas: scaledToNumber(arrobas),
     individualGrossValue: scaledToNumber(grossCents, MONEY_SCALE),
+    individualGrossValueSource: "derived",
     arrobasInput: toFixedDecimal(arrobas, 4),
     individualGrossValueInput: toFixedDecimal(grossCents, 2, MONEY_SCALE),
+  };
+}
+
+export interface CommercialPricingSimulationLineInput {
+  lineRef: string;
+  commercialWeight: CommercialWeight<string | number | null | undefined>;
+  pricePerHead?: string | number | null;
+}
+
+export interface CommercialPricingSimulationResult {
+  issue: string | null;
+  calculations: Record<string, CommercialPricingLineCalculation>;
+  grossValue: { value: number; input: string } | null;
+  totalArrobas: { value: number; input: string } | null;
+  effectivePricePerArrobaGross: { value: number; input: string } | null;
+  effectivePricePerArrobaNet: { value: number; input: string } | null;
+  effectivePricePerHeadGross: { value: number; input: string } | null;
+  effectivePricePerHeadNet: { value: number; input: string } | null;
+}
+
+/**
+ * Simulação local/transitória. Este cálculo não cria eventos, operações,
+ * alterações de estado animal, lançamentos financeiros ou fila de sync.
+ */
+export function simulateCommercialPricing(input: {
+  pricingMode: CommercialPricingMode;
+  weightUnit: CommercialWeightUnit;
+  pricePerArroba?: string | number | null;
+  arrobaBasis?: CommercialArrobaBasis | null;
+  carcassYieldPercent?: string | number | null;
+  totalValue?: string | number | null;
+  netValue?: string | number | null;
+  lines: readonly CommercialPricingSimulationLineInput[];
+}): CommercialPricingSimulationResult {
+  const allocations =
+    input.pricingMode === "total_value"
+      ? allocateCommercialTotalValue(input.totalValue, input.lines.length)
+      : null;
+  const calculations = input.lines.map((line, index) =>
+    calculateCommercialPricingLine({
+      pricingMode: input.pricingMode,
+      commercialWeight: line.commercialWeight,
+      pricePerHead:
+        input.pricingMode === "per_head" ? line.pricePerHead : undefined,
+      allocatedGrossValue:
+        input.pricingMode === "total_value"
+          ? allocations?.[index]?.value
+          : undefined,
+      pricePerArroba: input.pricePerArroba,
+      arrobaBasis: input.arrobaBasis,
+      carcassYieldPercent: input.carcassYieldPercent,
+    }),
+  );
+  const calculationMap = Object.fromEntries(
+    input.lines.map((line, index) => [line.lineRef, calculations[index]!]),
+  );
+  const issue = calculations.find((calculation) => calculation.issue)?.issue ?? null;
+  const grossValue = issue ? null : sumCommercialPricingValues(calculations);
+  const totalArrobas = issue ? null : sumCommercialArrobas(calculations);
+  const effectiveArrobaPrices =
+    totalArrobas && grossValue
+      ? calculateEffectiveArrobaPrices({
+          totalArrobas: totalArrobas.value,
+          grossValue: grossValue.value,
+          netValue: input.netValue,
+        })
+      : null;
+  return {
+    issue,
+    calculations: calculationMap,
+    grossValue,
+    totalArrobas,
+    effectivePricePerArrobaGross: effectiveArrobaPrices?.gross ?? null,
+    effectivePricePerArrobaNet: effectiveArrobaPrices?.net ?? null,
+    effectivePricePerHeadGross: calculateAverageCommercialPricePerHead({
+      totalValue: grossValue?.value,
+      quantity: input.lines.length,
+    }),
+    effectivePricePerHeadNet: calculateAverageCommercialPricePerHead({
+      totalValue: input.netValue,
+      quantity: input.lines.length,
+    }),
   };
 }
 
@@ -411,6 +505,52 @@ export function sumCommercialPricingValues(
   return {
     value: scaledToNumber(cents, MONEY_SCALE),
     input: toFixedDecimal(cents, 2, MONEY_SCALE),
+  };
+}
+
+export interface CommercialTotalValueAllocation {
+  value: number;
+  input: string;
+}
+
+/**
+ * Rateia um valor total em centavos, entregando o resto de centavos às
+ * primeiras linhas. A ordem recebida é a ordem factual das linhas.
+ */
+export function allocateCommercialTotalValue(
+  totalValue: DecimalInput,
+  lineCount: number,
+): CommercialTotalValueAllocation[] | null {
+  const parsed = parseDecimal(totalValue);
+  if (parsed === null || !Number.isInteger(lineCount) || lineCount < 1) {
+    return null;
+  }
+  const totalCents = divideRounded(parsed * MONEY_SCALE, DECIMAL_SCALE);
+  const count = BigInt(lineCount);
+  const base = totalCents / count;
+  const remainder = Number(totalCents % count);
+  return Array.from({ length: lineCount }, (_, index) => {
+    const cents = base + (index < remainder ? 1n : 0n);
+    return {
+      value: scaledToNumber(cents, MONEY_SCALE),
+      input: toFixedDecimal(cents, 2, MONEY_SCALE),
+    };
+  });
+}
+
+export function calculateAverageCommercialPricePerHead(input: {
+  totalValue: DecimalInput;
+  quantity: number;
+}) {
+  const total = parseDecimal(input.totalValue);
+  if (total === null || !Number.isInteger(input.quantity) || input.quantity < 1) {
+    return null;
+  }
+  const totalCents = divideRounded(total * MONEY_SCALE, DECIMAL_SCALE);
+  const averageCents = divideRounded(totalCents, BigInt(input.quantity));
+  return {
+    value: scaledToNumber(averageCents, MONEY_SCALE),
+    input: toFixedDecimal(averageCents, 2, MONEY_SCALE),
   };
 }
 

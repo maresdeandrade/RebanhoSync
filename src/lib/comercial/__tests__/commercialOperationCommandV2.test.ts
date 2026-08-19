@@ -85,6 +85,7 @@ describe("commercial_operation_v2 domain command", () => {
         arrobas: 17.5,
         arroba_basis: null,
         carcass_yield_percent: null,
+        gross_value_source: "derived",
       }),
     ).toMatch(/igual às arrobas faturadas/i);
   });
@@ -117,6 +118,9 @@ describe("commercial_operation_v2 domain command", () => {
       total_arrobas: 18,
       effective_price_per_arroba_gross: 300,
       effective_price_per_arroba_net: 300,
+      gross_value_input: 5400,
+      effective_price_per_head_gross: 5400,
+      effective_price_per_head_net: 5400,
       lines: [
         {
           animal_id: "30000000-0000-4000-8000-000000000001",
@@ -132,6 +136,7 @@ describe("commercial_operation_v2 domain command", () => {
           weight_considered_kg: null,
           arrobas: 18,
           individual_gross_value: 5400,
+          gross_value_source: "derived",
         },
       ],
     });
@@ -155,7 +160,6 @@ describe("commercial_operation_v2 domain command", () => {
       weightUnit: "arroba",
       lines: {
         "row-1": {
-          pricePerHead: 6_000,
           commercialWeight: { unit: "arroba", amount: 20 },
         },
       },
@@ -180,6 +184,62 @@ describe("commercial_operation_v2 domain command", () => {
         },
       ],
     });
+  });
+
+  it("rates total value across multiple animals without using a second price source", () => {
+    const input = baseInput();
+    input.scope = "lote";
+    input.loteId = lot;
+    input.declaredQuantity = 2;
+    input.valorBruto = 6200;
+    input.newAnimals = [
+      input.newAnimals[0]!,
+      {
+        ...input.newAnimals[0]!,
+        localId: "row-2",
+        id: "30000000-0000-4000-8000-000000000002",
+        identificacao: "BR-002",
+      },
+    ];
+    input.pricing = {
+      pricingMode: "total_value",
+      weightUnit: "arroba",
+      lines: {
+        "row-1": { commercialWeight: { unit: "arroba", amount: 10 } },
+        "row-2": { commercialWeight: { unit: "arroba", amount: 10 } },
+      },
+    };
+
+    const built = buildCommercialOperationGesture(input);
+    expect(buildCommercialOperationGesture(input)).toEqual(built);
+    expect(
+      built.ops.some(
+        (op) =>
+          op.table === "finance_transactions" || op.table === "eventos_financeiro",
+      ),
+    ).toBe(false);
+    const detail = built.ops.find(
+      (op) => op.table === "eventos_comercial",
+    )!.record;
+    expect(detail.snapshot.pricing).toMatchObject({
+      gross_value_input: 6200,
+      effective_price_per_head_gross: 3100,
+      total_arrobas: 20,
+      effective_price_per_arroba_gross: 310,
+      lines: [
+        {
+          allocated_gross_value: 3100,
+          individual_gross_value: 3100,
+          gross_value_source: "derived",
+        },
+        {
+          allocated_gross_value: 3100,
+          individual_gross_value: 3100,
+          gross_value_source: "derived",
+        },
+      ],
+    });
+    expect(detail.snapshot.pricing.lines[0].price_per_head).toBeNull();
   });
 
   it("records arrobas calculated from kg without promoting commercial weight to animal state", () => {

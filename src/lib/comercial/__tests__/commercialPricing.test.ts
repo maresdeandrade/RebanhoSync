@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  allocateCommercialTotalValue,
+  calculateAverageCommercialPricePerHead,
   calculateCommercialPricingLine,
   calculateEffectiveArrobaPrices,
+  simulateCommercialPricing,
   convertCommercialWeightFromKg,
   convertCommercialWeightToKg,
   resolveCommercialWeightUnit,
@@ -60,6 +63,55 @@ describe("commercial pricing", () => {
     ).toMatch(/valor por cabeça/i);
   });
 
+  it("rates total value in cents and derives average price per head", () => {
+    expect(allocateCommercialTotalValue("6200", 2)).toEqual([
+      { value: 3100, input: "3100.00" },
+      { value: 3100, input: "3100.00" },
+    ]);
+    expect(allocateCommercialTotalValue("100.01", 3)).toEqual([
+      { value: 33.34, input: "33.34" },
+      { value: 33.34, input: "33.34" },
+      { value: 33.33, input: "33.33" },
+    ]);
+    expect(
+      calculateAverageCommercialPricePerHead({ totalValue: "100", quantity: 3 }),
+    ).toEqual({ value: 33.33, input: "33.33" });
+  });
+
+  it("simulates total value locally without mutating the input lines", () => {
+    const lines = [
+      {
+        lineRef: "animal-1",
+        commercialWeight: { unit: "arroba" as const, amount: "10" },
+      },
+      {
+        lineRef: "animal-2",
+        commercialWeight: { unit: "arroba" as const, amount: "10" },
+      },
+    ];
+    const before = structuredClone(lines);
+    const result = simulateCommercialPricing({
+      pricingMode: "total_value",
+      weightUnit: "arroba",
+      totalValue: "6200",
+      netValue: "5900",
+      lines,
+    });
+
+    expect(result.issue).toBeNull();
+    expect(result.grossValue).toEqual({ value: 6200, input: "6200.00" });
+    expect(result.totalArrobas).toEqual({ value: 20, input: "20" });
+    expect(result.effectivePricePerArrobaGross).toEqual({
+      value: 310,
+      input: "310.00",
+    });
+    expect(result.effectivePricePerHeadGross).toEqual({
+      value: 3100,
+      input: "3100.00",
+    });
+    expect(lines).toEqual(before);
+  });
+
   it("sums individual head values exactly", () => {
     const calculations = ["1000.01", "2000.02", "3000.03"].map((pricePerHead) =>
       calculateCommercialPricingLine({
@@ -71,6 +123,21 @@ describe("commercial pricing", () => {
     expect(sumCommercialPricingValues(calculations)).toEqual({
       value: 6000.06,
       input: "6000.06",
+    });
+  });
+
+  it("calculates total-value lines from an explicit allocated value", () => {
+    expect(
+      calculateCommercialPricingLine({
+        pricingMode: "total_value",
+        commercialWeight: { unit: "arroba", amount: "10" },
+        allocatedGrossValue: "3100",
+      }),
+    ).toMatchObject({
+      issue: null,
+      individualGrossValue: 3100,
+      individualGrossValueSource: "derived",
+      arrobas: 10,
     });
   });
 

@@ -38,7 +38,7 @@ import {
   calculateCommercialPricingLine,
   calculateEffectiveArrobaPrices,
   resolveCommercialWeightUnit,
-  sumCommercialArrobas,
+  simulateCommercialPricing,
   sumCommercialPricingValues,
   switchCommercialWeightUnit,
   type CommercialArrobaBasis,
@@ -229,7 +229,14 @@ export function RegistrarComercialSection(
         unit: commercialWeightUnit,
         amount: commercialWeight,
       },
-      pricePerHead,
+      pricePerHead:
+        (overrides.pricingMode ?? comercialData.pricingMode) === "per_head"
+          ? pricePerHead
+          : undefined,
+      allocatedGrossValue:
+        (overrides.pricingMode ?? comercialData.pricingMode) === "total_value"
+          ? pricePerHead
+          : undefined,
       pricePerArroba: overrides.pricePerArroba ?? comercialData.pricePerArroba,
       arrobaBasis: overrides.arrobaBasis ?? comercialData.arrobaBasis,
       carcassYieldPercent:
@@ -241,7 +248,13 @@ export function RegistrarComercialSection(
     overrides: Parameters<typeof calculatePricing>[2] = {},
   ) => {
     const calculations = lines.map((line) =>
-      calculatePricing(line.commercialWeight, null, overrides),
+      calculatePricing(
+        line.commercialWeight,
+        comercialData.pricingMode === "total_value"
+          ? line.valorIndividual
+          : null,
+        overrides,
+      ),
     );
     const next = lines.map((line, index) => ({
       ...line,
@@ -260,7 +273,13 @@ export function RegistrarComercialSection(
     overrides: Parameters<typeof calculatePricing>[2] = {},
   ) => {
     const calculations = lineIds.map((id) =>
-      calculatePricing(weights[id] ?? "", null, overrides),
+      calculatePricing(
+        weights[id] ?? "",
+        comercialData.pricingMode === "total_value"
+          ? comercialData.valoresPorAnimal[id] ?? ""
+          : null,
+        overrides,
+      ),
     );
     updateComercialData(
       "valoresPorAnimal",
@@ -421,33 +440,34 @@ export function RegistrarComercialSection(
     commercialLineIds.map((id) => displayedWeights[id] ?? ""),
   );
 
-  const pricingCalculations = useMemo(
+  const pricingSimulation = useMemo(
     () =>
-      Object.fromEntries(
-        commercialLineIds.map((id) => {
+      simulateCommercialPricing({
+        pricingMode: comercialData.pricingMode,
+        weightUnit: commercialWeightUnit,
+        pricePerArroba: comercialData.pricePerArroba,
+        arrobaBasis: comercialData.arrobaBasis,
+        carcassYieldPercent: comercialData.carcassYieldPercent,
+        totalValue: comercialData.valorBruto,
+        lines: commercialLineIds.map((id) => {
           const draft = purchase
             ? newAnimals.find((item) => item.localId === id)
             : null;
-          return [
-            id,
-            calculateCommercialPricingLine({
-              pricingMode: comercialData.pricingMode,
-              commercialWeight: {
-                unit: commercialWeightUnit,
-                amount: purchase
-                  ? draft?.commercialWeight
-                  : (comercialData.pesosPorAnimal[id] ?? ""),
-              },
-              pricePerHead: purchase
+          return {
+            lineRef: id,
+            commercialWeight: {
+              unit: commercialWeightUnit,
+              amount: purchase
+                ? draft?.commercialWeight
+                : (comercialData.pesosPorAnimal[id] ?? ""),
+            },
+            pricePerHead:
+              purchase
                 ? draft?.valorIndividual
                 : (comercialData.valoresPorAnimal[id] ?? ""),
-              pricePerArroba: comercialData.pricePerArroba,
-              arrobaBasis: comercialData.arrobaBasis,
-              carcassYieldPercent: comercialData.carcassYieldPercent,
-            }),
-          ];
+          };
         }),
-      ),
+      }),
     [
       commercialLineIds,
       comercialData,
@@ -456,9 +476,8 @@ export function RegistrarComercialSection(
       purchase,
     ],
   );
-  const pricingIssue = Object.values(pricingCalculations).find(
-    (item) => item.issue,
-  )?.issue;
+  const pricingCalculations = pricingSimulation.calculations;
+  const pricingIssue = pricingSimulation.issue;
 
   const handleAggregateChange = (
     field: "commercialWeightTotal" | "valorBruto",
@@ -816,10 +835,7 @@ export function RegistrarComercialSection(
     targetLotId,
     commercialWeightUnit,
   ]);
-  const totalArrobas = useMemo(
-    () => sumCommercialArrobas(Object.values(pricingCalculations)),
-    [pricingCalculations],
-  );
+  const totalArrobas = pricingSimulation.totalArrobas;
   const effectiveArrobaPrices = useMemo(
     () =>
       totalArrobas
@@ -974,7 +990,7 @@ export function RegistrarComercialSection(
               <div className="grid gap-3 md:grid-cols-3">
                 {comercialData.pricingMode === "per_arroba" ? (
                   <div className="space-y-2">
-                    <Label>Preço por arroba (R$) *</Label>
+                    <Label>Preço por arroba (entrada) *</Label>
                     <Input
                       aria-label="Preço por arroba"
                       type="number"
@@ -1203,8 +1219,13 @@ export function RegistrarComercialSection(
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label>Valor bruto total</Label>
+                              <div className="space-y-2">
+                <Label>
+                  {comercialData.pricingMode === "total_value"
+                    ? "Valor total negociado (entrada)"
+                    : "Valor bruto total"}
+                </Label>
+
                 <Input
                   aria-label="Valor Bruto (R$)"
                   type="number"
@@ -1219,11 +1240,13 @@ export function RegistrarComercialSection(
                   }
                   className="bg-background"
                 />
-                {comercialData.pricingMode === "per_arroba" ? (
-                  <p className="text-[11px] text-muted-foreground">
-                    Derivado da soma exata das linhas.
-                  </p>
-                ) : null}
+                <p className="text-[11px] text-muted-foreground">
+                  {comercialData.pricingMode === "total_value"
+                    ? "Entrada principal; o valor por animal é derivado e rateado em centavos."
+                    : comercialData.pricingMode === "per_arroba"
+                      ? "Derivado da soma exata das linhas."
+                      : "Agregado das entradas por cabeça; pode ser editado para redistribuir as linhas."}
+                </p>
               </div>
             </div>
 
@@ -1391,7 +1414,11 @@ export function RegistrarComercialSection(
                           Peso individual ({weightUnitSymbol})
                         </th>
                         <th className="p-2">Arrobas</th>
-                        <th className="p-2">Valor</th>
+                        <th className="p-2">
+                          {comercialData.pricingMode === "per_head"
+                            ? "Valor por cabeça (entrada)"
+                            : "Valor por cabeça (derivado)"}
+                        </th>
                         <th className="p-2 text-right">Ações</th>
                       </tr>
                     </thead>
@@ -1506,8 +1533,11 @@ export function RegistrarComercialSection(
                                       )
                                     }
                                   />
-                                ) : calculation?.individualGrossValueInput ? (
-                                  `R$ ${calculation.individualGrossValueInput}`
+                                                                  ) : calculation?.individualGrossValueInput ? (
+                                  <span title="Valor derivado do total negociado">
+                                    {`R$ ${calculation.individualGrossValueInput}`}
+                                  </span>
+
                                 ) : (
                                   "—"
                                 )}
@@ -1676,8 +1706,12 @@ export function RegistrarComercialSection(
                           Peso individual ({weightUnitSymbol})
                         </th>
                         <th className="p-2">Arrobas</th>
-                        <th className="p-2">Preço unitário</th>
-                        <th className="p-2">Valor calculado</th>
+                        <th className="p-2">
+                          {comercialData.pricingMode === "total_value"
+                            ? "Preço unitário (derivado)"
+                            : "Preço unitário"}
+                        </th>
+                        <th className="p-2">Valor calculado (derivado)</th>
                         <th className="p-2">Ações</th>
                       </tr>
                     </thead>
@@ -1746,6 +1780,8 @@ export function RegistrarComercialSection(
                                   }
                                   className="h-9 w-28 bg-background"
                                 />
+                              ) : comercialData.pricingMode === "total_value" ? (
+                                "Derivado do total"
                               ) : comercialData.pricePerArroba ? (
                                 `R$ ${Number(comercialData.pricePerArroba).toFixed(2)}/@`
                               ) : (
@@ -1912,13 +1948,23 @@ export function RegistrarComercialSection(
                 </p>
               </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <div className="rounded-lg border bg-background/50 p-4 text-center">
                 <span className="text-xs font-semibold uppercase text-muted-foreground">
                   Arrobas consideradas
                 </span>
                 <p className="mt-1 text-xl font-bold">
                   {totalArrobas ? `${totalArrobas.input} @` : "—"}
+                </p>
+              </div>
+              <div className="rounded-lg border bg-background/50 p-4 text-center">
+                <span className="text-xs font-semibold uppercase text-muted-foreground">
+                  Valor médio por cabeça (derivado)
+                </span>
+                <p className="mt-1 text-xl font-bold">
+                  {pricingSimulation.effectivePricePerHeadGross?.input
+                    ? `R$ ${pricingSimulation.effectivePricePerHeadGross.input}/cabeça`
+                    : "—"}
                 </p>
               </div>
               <div className="rounded-lg border bg-background/50 p-4 text-center">
