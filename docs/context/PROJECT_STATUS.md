@@ -1,9 +1,11 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-08-19
-Baseline de entrada da Fase 15: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`
-Commit da Fase 15: `7bebe60e8c866ba36aca512996044701c354ceab`
-PR de revisão: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93) — aberta, sem merge
+Atualizado em: 2026-08-20
+Baseline integrado da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
+Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
+Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
+Fase 15 integrada; não há revisão remota pendente.
+Próxima fase de desenvolvimento: **Fase 16.1A — proteção offline financeira**.
 
 ## Objetivo
 
@@ -17,11 +19,13 @@ A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre co
 
 A Fase 14 — Compra/Venda Operacional permanece encerrada. As operações comerciais individual e em lote foram integradas; o contrato kg/@ foi preservado; precificação e simulação comercial foram incorporadas; a simulação permanece não factual; e a Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first.
 
-A Fase 15 — KPIs/Relatórios está tecnicamente concluída e publicada para revisão na PR #93. O contrato inclui `MetricResult<T>` com `complete`/`partial`/`unavailable`, cobertura histórica conservadora, período e timezone da fazenda com fallback runtime declarado, isolamento por `fazendaId`, reprodução canônica, comercial factual v2, histórico factual de entradas/saídas/categorias do rebanho, Agenda Sanitária v2 preferencial e exportações com cobertura/escopo/período/timezone. Nenhuma nova fonte de verdade foi criada.
+A Fase 15 — KPIs/Relatórios está tecnicamente concluída e integrada em `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`. O contrato inclui `MetricResult<T>` com `complete`/`partial`/`unavailable`, cobertura histórica conservadora, período e timezone da fazenda com fallback runtime declarado, isolamento por `fazendaId`, reprodução canônica, comercial factual v2, histórico factual de entradas/saídas/categorias do rebanho, Agenda Sanitária v2 preferencial e exportações com cobertura/escopo/período/timezone. Nenhuma nova fonte de verdade foi criada.
 
-A validação confirmou 16 testes focados, `quality:gate`, build, typecheck compatível, Prettier nos cinco arquivos afetados e `git diff --check`. `audit:agents` permanece não executado pela indisponibilidade de Bash no Windows. Não houve migration, RLS, schema, RPC, Edge Function, grant ou sync remoto; produção não foi alterada.
+A validação da Fase 15 confirmou 16 testes focados, `quality:gate`, build, typecheck compatível, Prettier nos arquivos afetados, `git diff --check` e Validate repository remoto. A integração ocorreu sem migration, RLS, schema, RPC, Edge Function, grant ou sync remoto; produção não foi alterada.
 
-Próxima fase de desenvolvimento: **Fase 15 — revisão remota e integração pendentes**.
+A auditoria documental 16.0 do Financeiro Gerencial está concluída. Foram fechadas as fontes de verdade, a matriz canônica, a separação Evento versus ledger, caixa versus competência, zero versus ausência, comercial versus financeiro, rateios MVP e riscos de offline/sync/RLS.
+
+A Fase 16.1A está em execução com o primeiro hardening P0 implementado localmente: operações pendentes de `finance_transactions` e `finance_categories` agora são protegidas durante pull replace/merge, com filtro por `fazenda_id` e preservação dos mecanismos existentes de fila. A validação local passou; a fase permanece aberta para fechamento formal. Não iniciar 16.1B ou Fase 17.
 
 ## Estado reprodutivo consolidado
 
