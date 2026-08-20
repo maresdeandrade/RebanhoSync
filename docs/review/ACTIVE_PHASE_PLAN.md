@@ -1,9 +1,9 @@
 # Plano ativo — Fase 16 / Financeiro Gerencial
 
 Atualizado em: 2026-08-20
-Status: **Fase 16.0 concluída documentalmente; Fase 16.1A ativa**
+Status: **Fase 16.0 concluída documentalmente; Fase 16.1A concluída; Fase 16.1B ativa, em validação local**
 Fase 15 integrada em `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`.
-Próxima fase: **Fase 16.1A — proteger stores financeiras durante pull**
+Próxima fase: **Fase 16.1C — Evento financeiro × ledger × comercial v2, após fechamento formal da 16.1B**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -20,13 +20,19 @@ O gate semântico e o Validate repository remoto passaram. Histórico sem evidê
 
 A auditoria fechou fontes de verdade, semântica de Evento versus ledger, caixa versus competência, zero versus ausência, correção/estorno, comercial versus financeiro, rateio MVP e riscos de offline/sync/RLS. A Fase 15 permanece concluída e integrada em `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`.
 
-## Fase 16.1A — hardening offline P0
+## Fase 16.1A — hardening offline P0 — concluída
 
 Objetivo exclusivo: proteger operações pendentes de `finance_transactions` e `finance_categories` durante pull `replace`/`merge`, reutilizando `queue_ops`, preservando isolamento por `fazenda_id`, cursores, retry/replay, rollback e reconciliação. Não criar nova fila, fonte de verdade, migration, RLS, schema, RPC, KPI, UX, rateio ou estorno.
 
-Implementação local realizada em `src/lib/offline/pull.ts`, com testes focados em `src/lib/offline/__tests__/financePull.test.ts`. O patch inclui as duas stores financeiras na proteção de pendências, filtra operações pela fazenda do pull e preserva a lógica existente de bloqueio de cursor no merge. A validação local passou; o fechamento formal da 16.1A depende da revisão do diff e do gate documental quando Bash estiver disponível.
+Implementação local realizada em `src/lib/offline/pull.ts`, com testes focados em `src/lib/offline/__tests__/financePull.test.ts`. O patch inclui as duas stores financeiras na proteção de pendências, filtra operações pela fazenda do pull e preserva a lógica existente de bloqueio de cursor no merge. O baseline de saída local é `feat/phase-16-finance-managerial@1734a5b`; não houve alteração de migration, RLS, schema, RPC ou sync worker.
 
-A Fase 16.1B e a Fase 17 não foram iniciadas.
+## Fase 16.1B — hardening semântico do ledger financeiro
+
+A implementação local restringe-se a `src/lib/finance/gerencial.ts`, seus testes focados e o fluxo de criação de lançamento em `src/pages/Financeiro.tsx`. Valores ausentes, inválidos, não finitos, zero e negativos não são convertidos para zero; `valor_total` permanece estritamente positivo; realizado, previsto, cancelado e `deleted_at` possuem participação explícita nos agregados; e os agrupadores representam somente transações realizadas. Quantidade e valor unitário informados também são validados no domínio. Não houve migration, RLS, RPC, schema, pull, sync worker, integração Evento × ledger × comercial, estorno, rateio ou novo KPI.
+
+A validação técnica local passou nos testes financeiros focados, regressões de pull da 16.1A, `quality:gate`, typecheck, build, Prettier dos arquivos alterados e `git diff --check`. O gate documental não pôde ser executado pelo script no Windows porque ele não detectou `bash.exe`; portanto, a Fase 16.1B ainda não está declarada concluída.
+
+A Fase 16.1C e a Fase 17 não foram iniciadas.
 
 ## Histórico — Fechamento funcional da Fase 13
 

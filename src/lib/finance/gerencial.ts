@@ -12,10 +12,48 @@ export interface FinanceGerencialSummary {
   previstosAReceber: number;
 }
 
+const VALID_DIRECTIONS = new Set(["entrada", "saida"]);
+const VALID_STATUSES = new Set(["previsto", "realizado", "cancelado"]);
+const VALID_COST_CENTER_TYPES = new Set(["fazenda", "animal", "lote", "pasto"]);
+const VALID_ALLOCATION_METHODS = new Set([
+  "direto",
+  "por_cabeca",
+  "por_peso_vivo",
+  "por_dias",
+  "por_area",
+]);
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isPositiveFiniteNumber(value: unknown): value is number {
+  return isFiniteNumber(value) && value > 0;
+}
+
+function isValidDateTime(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.trim().length > 0 &&
+    Number.isFinite(new Date(value).getTime())
+  );
+}
+
 /**
- * Valida uma transação financeira gerencial de acordo com as regras rígidas da Fase 8.
+ * Preserva a distinção entre ausência, valor inválido e zero na entrada textual.
+ * A validação de domínio continua responsável por rejeitar NaN e valores semânticos inválidos.
  */
-export function validateFinanceTransaction(tx: Partial<FinanceTransaction>): string[] {
+export function parseOptionalFinanceNumber(value: string): number | undefined {
+  const normalized = value.trim();
+  return normalized === "" ? undefined : Number(normalized);
+}
+
+/**
+ * Valida uma transação financeira gerencial sem normalizar valores inválidos para zero.
+ */
+export function validateFinanceTransaction(
+  tx: Partial<FinanceTransaction>,
+): string[] {
   const issues: string[] = [];
 
   if (!tx.fazenda_id) {
@@ -28,53 +66,97 @@ export function validateFinanceTransaction(tx: Partial<FinanceTransaction>): str
 
   if (!tx.occurred_at) {
     issues.push("occurred_at é obrigatório.");
+  } else if (!isValidDateTime(tx.occurred_at)) {
+    issues.push("occurred_at deve ser uma data válida.");
   }
 
-  if (!tx.direction || (tx.direction !== "entrada" && tx.direction !== "saida")) {
+  if (!VALID_DIRECTIONS.has(tx.direction)) {
     issues.push("direction deve ser 'entrada' ou 'saida'.");
   }
 
   if (tx.valor_total === undefined || tx.valor_total === null) {
     issues.push("valor_total é obrigatório.");
+  } else if (!isFiniteNumber(tx.valor_total)) {
+    issues.push("valor_total deve ser um número finito.");
   } else if (tx.valor_total <= 0) {
     issues.push("valor_total deve ser estritamente positivo (maior que zero).");
   }
 
-  if (tx.status && tx.status !== "previsto" && tx.status !== "realizado" && tx.status !== "cancelado") {
+  if (tx.status !== undefined && !VALID_STATUSES.has(tx.status)) {
     issues.push("status deve ser 'previsto', 'realizado' ou 'cancelado'.");
   }
 
-  if (tx.centro_custo_tipo) {
-    if (!["fazenda", "animal", "lote", "pasto"].includes(tx.centro_custo_tipo)) {
-      issues.push("centro_custo_tipo inválido.");
+  if (tx.quantidade !== undefined && tx.quantidade !== null) {
+    if (!isFiniteNumber(tx.quantidade)) {
+      issues.push("quantidade deve ser um número finito.");
+    } else if (tx.quantidade <= 0) {
+      issues.push(
+        "quantidade deve ser estritamente positiva quando informada.",
+      );
     }
   }
 
-  if (tx.rateio_metodo) {
-    if (!["direto", "por_cabeca", "por_peso_vivo", "por_dias", "por_area"].includes(tx.rateio_metodo)) {
-      issues.push("rateio_metodo inválido.");
+  if (tx.valor_unitario !== undefined && tx.valor_unitario !== null) {
+    if (!isFiniteNumber(tx.valor_unitario)) {
+      issues.push("valor_unitario deve ser um número finito.");
+    } else if (tx.valor_unitario < 0) {
+      issues.push("valor_unitario não pode ser negativo.");
     }
+  }
+
+  if (
+    tx.centro_custo_tipo !== undefined &&
+    tx.centro_custo_tipo !== null &&
+    !VALID_COST_CENTER_TYPES.has(tx.centro_custo_tipo)
+  ) {
+    issues.push("centro_custo_tipo inválido.");
+  }
+
+  if (
+    tx.rateio_metodo !== undefined &&
+    tx.rateio_metodo !== null &&
+    !VALID_ALLOCATION_METHODS.has(tx.rateio_metodo)
+  ) {
+    issues.push("rateio_metodo inválido.");
   }
 
   return issues;
 }
 
+function isActiveRealizedTransaction(tx: FinanceTransaction): boolean {
+  return (
+    !tx.deleted_at &&
+    tx.status === "realizado" &&
+    isPositiveFiniteNumber(tx.valor_total)
+  );
+}
+
+function isActiveTransactionWithValidValue(tx: FinanceTransaction): boolean {
+  return (
+    !tx.deleted_at &&
+    tx.status !== "cancelado" &&
+    isPositiveFiniteNumber(tx.valor_total)
+  );
+}
+
 /**
- * Calcula o sumário gerencial de transações autorizadas para a Fase 8.
- * Desconsidera cancelados. Separa previstos e realizados.
+ * Calcula o sumário gerencial separando explicitamente realizados e previstos.
+ * Transações canceladas, excluídas ou com valor inválido não participam dos agregados.
  */
-export function calculateGerencialSummary(transactions: FinanceTransaction[]): FinanceGerencialSummary {
+export function calculateGerencialSummary(
+  transactions: FinanceTransaction[],
+): FinanceGerencialSummary {
   let entradasRealizadas = 0;
   let saidasRealizadas = 0;
   let previstosAPagar = 0;
   let previstosAReceber = 0;
 
   for (const tx of transactions) {
-    if (tx.deleted_at || tx.status === "cancelado") {
+    if (!isActiveTransactionWithValidValue(tx)) {
       continue;
     }
 
-    const valor = Number(tx.valor_total) || 0;
+    const valor = tx.valor_total;
 
     if (tx.status === "realizado") {
       if (tx.direction === "entrada") {
@@ -105,17 +187,17 @@ export function calculateGerencialSummary(transactions: FinanceTransaction[]): F
  */
 export function groupGerencialByCategory(
   transactions: FinanceTransaction[],
-  categories: FinanceCategory[]
+  categories: FinanceCategory[],
 ): Record<string, number> {
   const categoryMap = new Map(categories.map((c) => [c.id, c.nome]));
   const groups: Record<string, number> = {};
 
   for (const tx of transactions) {
-    if (tx.deleted_at || tx.status === "cancelado") {
+    if (!isActiveRealizedTransaction(tx)) {
       continue;
     }
     const catNome = categoryMap.get(tx.category_id) || "Sem Categoria";
-    groups[catNome] = (groups[catNome] || 0) + (Number(tx.valor_total) || 0);
+    groups[catNome] = (groups[catNome] ?? 0) + tx.valor_total;
   }
 
   return groups;
@@ -126,17 +208,19 @@ export function groupGerencialByCategory(
  */
 export function groupGerencialByContraparte(
   transactions: FinanceTransaction[],
-  contrapartes: Contraparte[]
+  contrapartes: Contraparte[],
 ): Record<string, number> {
   const counterpartMap = new Map(contrapartes.map((c) => [c.id, c.nome]));
   const groups: Record<string, number> = {};
 
   for (const tx of transactions) {
-    if (tx.deleted_at || tx.status === "cancelado") {
+    if (!isActiveRealizedTransaction(tx)) {
       continue;
     }
-    const cpNome = tx.contraparte_id ? (counterpartMap.get(tx.contraparte_id) || "Sem parceiro") : "Sem parceiro";
-    groups[cpNome] = (groups[cpNome] || 0) + (Number(tx.valor_total) || 0);
+    const cpNome = tx.contraparte_id
+      ? counterpartMap.get(tx.contraparte_id) || "Sem parceiro"
+      : "Sem parceiro";
+    groups[cpNome] = (groups[cpNome] ?? 0) + tx.valor_total;
   }
 
   return groups;
@@ -146,18 +230,18 @@ export function groupGerencialByContraparte(
  * Agrupa transações realizadas por centro de custo.
  */
 export function groupGerencialByCentroCusto(
-  transactions: FinanceTransaction[]
+  transactions: FinanceTransaction[],
 ): Record<string, number> {
   const groups: Record<string, number> = {};
 
   for (const tx of transactions) {
-    if (tx.deleted_at || tx.status === "cancelado") {
+    if (!isActiveRealizedTransaction(tx)) {
       continue;
     }
     const ccKey = tx.centro_custo_tipo
       ? `${tx.centro_custo_tipo}${tx.centro_custo_id ? `:${tx.centro_custo_id}` : ""}`
       : "Geral Fazenda";
-    groups[ccKey] = (groups[ccKey] || 0) + (Number(tx.valor_total) || 0);
+    groups[ccKey] = (groups[ccKey] ?? 0) + tx.valor_total;
   }
 
   return groups;

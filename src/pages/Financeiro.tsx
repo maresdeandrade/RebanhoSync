@@ -18,6 +18,7 @@ import { createGesture } from "@/lib/offline/ops";
 import {
   validateFinanceTransaction,
   calculateGerencialSummary,
+  parseOptionalFinanceNumber,
 } from "@/lib/finance/gerencial";
 import { buildCommercialFinanceRows } from "@/lib/finance/commercialReadModel";
 import type {
@@ -535,17 +536,15 @@ const Financeiro = () => {
     if (!activeFarmId) return;
     setTxErrors([]);
 
-    const valorNum = parseFloat(formTxValorTotal);
-    const qtyNum = formTxQuantidade ? parseFloat(formTxQuantidade) : null;
-    const unitPriceNum = formTxValorUnitario
-      ? parseFloat(formTxValorUnitario)
-      : null;
+    const valorNum = parseOptionalFinanceNumber(formTxValorTotal);
+    const qtyNum = parseOptionalFinanceNumber(formTxQuantidade);
+    const unitPriceNum = parseOptionalFinanceNumber(formTxValorUnitario);
 
     const payload: Partial<FinanceTransaction> = {
       fazenda_id: activeFarmId,
       direction: formTxDirection,
       category_id: formTxCategoryId,
-      valor_total: isNaN(valorNum) ? 0 : valorNum,
+      valor_total: valorNum,
       status: formTxStatus,
       occurred_at: new Date(formTxOccurredAt).toISOString(),
       competence_date: formTxCompetenceDate || null,
@@ -562,9 +561,9 @@ const Financeiro = () => {
           ? null
           : formTxCentroCustoId || null,
       rateio_metodo: formTxRateioMetodo,
-      quantidade: qtyNum,
+      quantidade: qtyNum ?? null,
       unidade: formTxUnidade || null,
-      valor_unitario: unitPriceNum,
+      valor_unitario: unitPriceNum ?? null,
       origem: "manual",
       observacoes: formTxObservacoes || null,
     };

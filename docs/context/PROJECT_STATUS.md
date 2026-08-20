@@ -5,7 +5,7 @@ Baseline integrado da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
 Fase 15 integrada; não há revisão remota pendente.
-Próxima fase de desenvolvimento: **Fase 16.1A — proteção offline financeira**.
+Próxima fase de desenvolvimento: **Fase 16.1B — hardening semântico do ledger financeiro**.
 
 ## Objetivo
 
@@ -25,7 +25,7 @@ A validação da Fase 15 confirmou 16 testes focados, `quality:gate`, build, typ
 
 A auditoria documental 16.0 do Financeiro Gerencial está concluída. Foram fechadas as fontes de verdade, a matriz canônica, a separação Evento versus ledger, caixa versus competência, zero versus ausência, comercial versus financeiro, rateios MVP e riscos de offline/sync/RLS.
 
-A Fase 16.1A está em execução com o primeiro hardening P0 implementado localmente: operações pendentes de `finance_transactions` e `finance_categories` agora são protegidas durante pull replace/merge, com filtro por `fazenda_id` e preservação dos mecanismos existentes de fila. A validação local passou; a fase permanece aberta para fechamento formal. Não iniciar 16.1B ou Fase 17.
+A Fase 16.1A foi concluída no HEAD `1734a5b`, com proteção local de operações pendentes de `finance_transactions` e `finance_categories` durante pull replace/merge, filtro por `fazenda_id` e preservação dos mecanismos existentes de fila. A Fase 16.1B está em validação local: o ledger gerencial passou a rejeitar valores ausentes, inválidos, não finitos, zero e negativos; sumários separam realizado de previsto; cancelado e `deleted_at` ficam fora dos agregados; agrupadores são explicitamente realizados-only; e a UI não fabrica `valor_total: 0`. A fase ainda não foi declarada concluída porque o gate documental não pôde ser executado no Windows por ausência de `bash.exe` detectável pelo script. Não iniciar 16.1C ou Fase 17.
 
 ## Estado reprodutivo consolidado
 

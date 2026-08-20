@@ -46,10 +46,10 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 
 ```txt
 Fase 15 — KPIs/Relatórios — encerrada e integrada em main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb
-→ Fase 16 — Financeiro Gerencial — auditoria 16.0 encerrada; hardening P0 16.1A em execução
+→ Fase 16 — Financeiro Gerencial — auditoria 16.0 encerrada; 16.1A concluída; 16.1B em validação local
 ```
 
-A Fase 16.1A está restrita à proteção offline de `finance_transactions` e `finance_categories` durante pull `replace`/`merge`. Não iniciar 16.1B ou qualquer fase posterior antes do fechamento formal da 16.1A.
+A Fase 16.1A restringiu-se à proteção offline de `finance_transactions` e `finance_categories` durante pull `replace`/`merge` e está concluída no baseline `1734a5b`. A Fase 16.1B restringe-se ao hardening semântico de valores, status e agrupamentos do ledger gerencial; não iniciar 16.1C ou qualquer fase posterior antes do fechamento formal da 16.1B.
 
 ## Risco de rollout
 

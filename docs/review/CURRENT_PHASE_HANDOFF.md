@@ -2,10 +2,12 @@
 
 Atualizado em: 2026-08-20
 Baseline integrado da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
+Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
+Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 16.0 encerrada documentalmente; Fase 16.1A ativa**
-Próxima fase: **Fase 16.1A — proteger stores financeiras durante pull**
+Status: **Fase 16.0 encerrada documentalmente; Fase 16.1A concluída; Fase 16.1B ativa, em validação local**
+Próxima fase: **Fase 16.1C — Evento financeiro × ledger × comercial v2, após fechamento formal da 16.1B**
 
 ## Saída integrada da Fase 15
 
@@ -23,15 +25,21 @@ A auditoria fechou a matriz canônica de fontes: Evento e detalhe financeiro par
 
 Também foram fechados os contratos de caixa versus competência, zero versus ausência, correção/estorno, rateios MVP e riscos de offline/sync/RLS. A Fase 16.0 não criou nova fonte de verdade e não alterou código.
 
-## Fase 16.1A — hardening offline P0
+## Fase 16.1A — hardening offline P0 — concluída
 
 Implementação realizada exclusivamente em `src/lib/offline/pull.ts`: `getPendingRecordIds` agora protege `finance_transactions` e `finance_categories`, recebe `fazenda_id` e ignora operações pendentes de outra fazenda. O caminho de merge propaga a fazenda sem alterar a lógica existente de bloqueio de cursor quando uma linha protegida é omitida do snapshot remoto.
 
 O teste novo `src/lib/offline/__tests__/financePull.test.ts` cobre replace sem linha remota, linha remota antiga, tombstone, categoria pendente, isolamento entre fazendas, consumo da operação, merge e falha de pull sem escrita parcial. As regressões existentes de pull comercial e pull básico continuam passando.
 
-Validações locais confirmadas: 16 testes focados de offline/pull, `quality:gate`, lint, typecheck com `--ignoreDeprecations 5.0`, build, Prettier nos dois arquivos de código/teste e `git diff --check`. O primeiro quality gate ficou preso no ambiente durante smoke; após execução isolada de `test:smoke`, a segunda execução do `quality:gate` concluiu com sucesso. `pnpm run gates:docs` não foi executado com sucesso porque Bash não está disponível no Windows; a continuidade documental foi verificada manualmente.
+Validações locais confirmadas: 16 testes focados de offline/pull, `quality:gate`, lint, typecheck com `--ignoreDeprecations 5.0`, build, Prettier nos dois arquivos de código/teste e `git diff --check`. O primeiro quality gate ficou preso no ambiente durante smoke; após execução isolada de `test:smoke`, a segunda execução do `quality:gate` concluiu com sucesso. O gate documental permaneceu não executável pelo wrapper Node no Windows porque ele não detectou `bash.exe`; a continuidade documental foi reconciliada manualmente.
 
-Ficam fora desta execução: `Number(valor_total) || 0`, `NaN → 0`, agrupadores realizado/previsto, `commercialReadModel`, seeding duplo, estorno/contra-lançamento, rateios, KPIs, `Financeiro.tsx`, migration, RLS e RPC. A Fase 16.1B e a Fase 17 não foram iniciadas.
+## Fase 16.1B — hardening semântico do ledger financeiro
+
+O patch local altera somente `src/lib/finance/gerencial.ts`, `src/lib/finance/__tests__/gerencial.test.ts` e o parsing de lançamento em `src/pages/Financeiro.tsx`. A validação rejeita ausência, `NaN`, infinitos, zero e negativos em `valor_total`; valida datas, enums e números opcionais; sumários distinguem realizado de previsto; cancelado e `deleted_at` não agregam; e os três agrupadores são realizados-only. A UI não transforma entrada inválida em `valor_total: 0`.
+
+Validações da 16.1B confirmadas: 20 testes financeiros focados, `financePull.test.ts`, `pull.test.ts`, `commercialPurchasePull.test.ts`, `quality:gate`, `pnpm exec tsc --noEmit --ignoreDeprecations 5.0`, `pnpm run build`, Prettier nos três arquivos alterados e `git diff --check`. O gate documental foi tentado e falhou por limitação do wrapper no Windows; portanto, a Fase 16.1B ainda não está declarada concluída.
+
+Ficam fora desta execução: integração Evento × ledger × comercial, `commercialReadModel`, estorno/contra-lançamento, edição de realizado, snapshots econômicos, rateio, novos KPIs, migration, RLS, RPC, schema Dexie, pull, sync worker, Fase 16.1C e Fase 17.
 
 ## Histórico — Fechamento funcional da Fase 13
 
