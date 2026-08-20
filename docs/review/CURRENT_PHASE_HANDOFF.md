@@ -6,7 +6,7 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 17 ativa, em validação local**
+Status: **Fase 17 ativa, preparada para abertura, não iniciada**
 Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
 
 ## Saída integrada da Fase 15
@@ -19,38 +19,39 @@ A reprodução usa `rebuildReproductiveProjection`; a demanda futura prefere Age
 
 O Validate repository remoto passou integralmente antes da integração. O merge não alterou migration, RLS, schema, RPC, Edge Function, grant ou sincronização remota.
 
-## Auditoria 16.0 — encerrada
+## Saída integrada da Fase 16
 
-A auditoria fechou a matriz canônica de fontes: Evento e detalhe financeiro para fatos históricos; `state_finance_transactions`/`finance_transactions` para o ledger gerencial administrativo; comercial v2 separado de financeiro; estoque factual por `insumo_movimentacoes`; snapshots preservados no fato; categorias e contrapartes como cadastros tenant-scoped.
+A Fase 16 — Financeiro Gerencial — foi integralmente validada e integrada à branch principal.
 
-Também foram fechados os contratos de caixa versus competência, zero versus ausência, correção/estorno, rateios MVP e riscos de offline/sync/RLS. A Fase 16.0 não criou nova fonte de verdade e não alterou código.
+Baseline de entrada: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
+Feature head: `078cfcad654b7e92b7ec94b8a2145bb9123dbc55`
+PR: `#94`
+Merge commit: `f20146505a04c0eab03c0685f2bdef7763bae221`
 
-## Fase 16.1A — hardening offline P0 — concluída
+A implementação entregou:
+- **Hardening offline:** Proteção de operações pendentes em `finance_transactions` e `finance_categories` durante pull `replace`/`merge`.
+- **Hardening semântico:** Prevenção de conversão silenciosa de valores inválidos/ausentes para zero; `valor_total` estritamente positivo; sumários distinguindo realizado de previsto; cancelado ignorado na agregação.
+- **Classificação Canônica:** `classifyCommercialOperation` e `classifyLedgerTransaction` separam fatos do ledger, isolam simulações comerciais e deduplicam vínculos, prevenindo dupla contagem (Evento × ledger × comercial).
+- **Modos Temporais:** Agregação separada por caixa (realizado com `paid_at`), competência (`competence_date`), previsão (status previsto com `due_date`) e vencido.
+- **Estorno Append-Only:** `reverses_transaction_id` com constraints contra *self-reference* e múltiplos estornos, preservando o lançamento original de forma imutável.
+- **Categorias Determinísticas:** UUID determinístico customizado (SHA-256) com convergência cliente/Postgres. O `sync-batch` exige compatibilidade total (fazenda, slug, ID canônico, `is_default=true`) para aceitar `collision_noop`; divergências retornam `CONFLICT`.
+- **KPIs Conservadores:** O *Operational Summary* passou a exigir cobertura histórica para tratar ausência de dados como zero factual; sem evidência, a métrica retorna `unavailable` com limitações explícitas declaradas.
 
-Implementação realizada exclusivamente em `src/lib/offline/pull.ts`: `getPendingRecordIds` agora protege `finance_transactions` e `finance_categories`, recebe `fazenda_id` e ignora operações pendentes de outra fazenda. O caminho de merge propaga a fazenda sem alterar a lógica existente de bloqueio de cursor quando uma linha protegida é omitida do snapshot remoto.
+A migration associada (`20260601000000_financeiro_estorno_categorias.sql`) foi versionada em `main`, porém **NÃO foi aplicada em staging ou produção** durante esta fase. O RLS e o isolamento por `fazenda_id` permaneceram preservados.
 
-O teste novo `src/lib/offline/__tests__/financePull.test.ts` cobre replace sem linha remota, linha remota antiga, tombstone, categoria pendente, isolamento entre fazendas, consumo da operação, merge e falha de pull sem escrita parcial. As regressões existentes de pull comercial e pull básico continuam passando.
+## Contratos restritivos para a Fase 17
 
-Validações locais confirmadas: 16 testes focados de offline/pull, `quality:gate`, lint, typecheck com `--ignoreDeprecations 5.0`, build, Prettier nos dois arquivos de código/teste e `git diff --check`. O primeiro quality gate ficou preso no ambiente durante smoke; após execução isolada de `test:smoke`, a segunda execução do `quality:gate` concluiu com sucesso. O gate documental permaneceu não executável pelo wrapper Node no Windows porque ele não detectou `bash.exe`; a continuidade documental foi reconciliada manualmente.
-
-## Fase 16.1B — hardening semântico do ledger financeiro
-
-O patch local altera somente `src/lib/finance/gerencial.ts`, `src/lib/finance/__tests__/gerencial.test.ts` e o parsing de lançamento em `src/pages/Financeiro.tsx`. A validação rejeita ausência, `NaN`, infinitos, zero e negativos em `valor_total`; valida datas, enums e números opcionais; sumários distinguem realizado de previsto; cancelado e `deleted_at` não agregam; e os três agrupadores são realizados-only. A UI não transforma entrada inválida em `valor_total: 0`.
-
-Validações da 16.1B confirmadas: 20 testes financeiros focados, `financePull.test.ts`, `pull.test.ts`, `commercialPurchasePull.test.ts`, `quality:gate`, `pnpm exec tsc --noEmit --ignoreDeprecations 5.0`, `pnpm run build`, Prettier nos três arquivos alterados e `git diff --check`. O gate documental foi executado via WSL e passou, concluindo a 16.1B.
-
-## Fase 16.1C (Fase 16 núcleo) — Concluída
-
-O núcleo funcional do Financeiro Gerencial foi finalizado, fechando o gap entre o ledger e os eventos de domínio sem alterar a arquitetura offline-first ou criar migrations.
-
-- **Deduplicação e Links**: `resolveFinancialEventLink` e `resolveCommercialFinanceLink` previnem duplo-lançamento ao exigir link explícito e restringir ao mesmo tenant;
-- **Classificação**: `classifyCommercialOperation` ignora simulações explícitas e legacy, consumindo apenas o payload canônico v2;
-- **Modos Temporais**: `calculateGerencialTemporalSummary` agrega valores em caixa (realizado com `paid_at`), competência (`competence_date`), previsão (status previsto com `due_date`) e vencido (previsto com `due_date` expirado);
-- **Estorno**: Ação auditável append-only em `corrections.ts` gera contra-lançamento com identidade determinística (`getFinanceReversalId`), validando que o original é realizado, possui valor positivo e não foi estornado, sem editar silenciosamente o registro base;
-- **Categorias**: Identidades locais offline agora são determinísticas e idempotentes (`generateDeterministicId` com farm e slug), alinhadas ao seed remoto para evitar duplicação no sync;
-- **KPIs**: `buildOperationalSummary` foi expandido para expor `financeiro_entradas_competencia`, `financeiro_previstos_receber`, etc., documentando explicitamente `state_finance_transactions` como fonte primária e limitando as métricas quando o ledger não está carregado.
-
-Validações executadas localmente: 62 testes unitários (classificação, correções, categorias, gerencial, offline pull e relatório operacional), 8 testes de componentes e e2e (Home e Relatorios), `quality:gate` (lint, hotspots, testes integrados, smoke), typecheck, formatação, build de produção e verificação documental via WSL. Nenhuma migration, RLS, RPC, Edge Function, worker ou E2E remoto foi alterado.
+A Fase 17 **não foi iniciada**. A próxima etapa formal exige a obediência aos seguintes limites:
+- Recomendações não são fatos.
+- Insights, sinais e tags são auxiliares.
+- Não autorizar automaticamente venda ou abate.
+- Não liberar carência automaticamente.
+- Não fabricar peso atual nem aptidão operacional.
+- Toda recomendação deve expor fonte, período, qualidade e limitações.
+- Evento permanece a fonte histórica factual.
+- `state_*` permanece read model.
+- Agenda permanece intenção futura.
+- O Financeiro Gerencial não equivale a contabilidade fiscal.
 
 ## Histórico — Fechamento funcional da Fase 13
 

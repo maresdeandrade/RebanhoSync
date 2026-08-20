@@ -1,8 +1,8 @@
 # Plano ativo — Fase 17 / Decisão Assistida
 
 Atualizado em: 2026-08-20
-Status: **Fase 17 ativa, em validação local**
-Fase 15 integrada em `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`.
+Status: **Fase 17 ativa, preparada para abertura, não iniciada**
+Fase 16 integrada em `main@f20146505a04c0eab03c0685f2bdef7763bae221`.
 Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
@@ -16,36 +16,31 @@ A Fase 15 implementou `MetricResult<T>` com estados `complete`, `partial` e `una
 
 O gate semântico e o Validate repository remoto passaram. Histórico sem evidência verificada permanece `partial`/`unavailable`, zero local sem cobertura não vira zero factual, pendências locais tornam o resultado parcial e ausência de timezone da fazenda usa fallback de runtime com limitação declarada. Não houve migration, RLS, schema, RPC, Edge Function, grant ou sync remoto na Fase 15.
 
-## Fase 16.0 — auditoria de contrato concluída
+## Encerramento integrado da Fase 16
 
-A auditoria fechou fontes de verdade, semântica de Evento versus ledger, caixa versus competência, zero versus ausência, correção/estorno, comercial versus financeiro, rateio MVP e riscos de offline/sync/RLS. A Fase 15 permanece concluída e integrada em `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`.
+Baseline integrado: `main@f20146505a04c0eab03c0685f2bdef7763bae221`.
+Merge commit: `f20146505a04c0eab03c0685f2bdef7763bae221`.
+Feature head: `078cfcad654b7e92b7ec94b8a2145bb9123dbc55` (PR #94).
 
-## Fase 16.1A — hardening offline P0 — concluída
+A Fase 16 implementou o Financeiro Gerencial respeitando estritamente a separação entre fato histórico (Evento financeiro) e ledger administrativo (`finance_transactions`). Incluiu hardening offline das transações e categorias; hardening semântico de valores/status para evitar conversões silenciosas a zero; e classificação canônica (Evento × ledger × comercial) prevenindo dupla contagem.
 
-Objetivo exclusivo: proteger operações pendentes de `finance_transactions` e `finance_categories` durante pull `replace`/`merge`, reutilizando `queue_ops`, preservando isolamento por `fazenda_id`, cursores, retry/replay, rollback e reconciliação. Não criar nova fila, fonte de verdade, migration, RLS, schema, RPC, KPI, UX, rateio ou estorno.
+Os KPIs financeiros ganharam cobertura conservadora, preservando `MetricResult<T>` e `limitations`. As categorias default adotaram UUID determinístico customizado (SHA-256) com `collision_noop` estrito (exigindo mesma fazenda, slug, ID e `is_default=true`). O estorno foi implementado de forma auditável e append-only (com `reverses_transaction_id`). A migration associada (`20260601000000_financeiro_estorno_categorias.sql`) está versionada em `main`, porém **não foi aplicada em staging ou produção** durante esta fase. O RLS e o isolamento por fazenda permaneceram preservados.
 
-Implementação local realizada em `src/lib/offline/pull.ts`, com testes focados em `src/lib/offline/__tests__/financePull.test.ts`. O patch inclui as duas stores financeiras na proteção de pendências, filtra operações pela fazenda do pull e preserva a lógica existente de bloqueio de cursor no merge. O baseline de saída local é `feat/phase-16-finance-managerial@1734a5b`; não houve alteração de migration, RLS, schema, RPC ou sync worker.
+## Preparação para a Fase 17 — Decisão Assistida
 
-## Fase 16.1B — hardening semântico do ledger financeiro
+A Fase 17 **não foi iniciada**. Este documento serve como base de preparação.
 
-A implementação local restringe-se a `src/lib/finance/gerencial.ts`, seus testes focados e o fluxo de criação de lançamento em `src/pages/Financeiro.tsx`. Valores ausentes, inválidos, não finitos, zero e negativos não são convertidos para zero; `valor_total` permanece estritamente positivo; realizado, previsto, cancelado e `deleted_at` possuem participação explícita nos agregados; e os agrupadores representam somente transações realizadas. Quantidade e valor unitário informados também são validados no domínio. Não houve migration, RLS, RPC, schema, pull, sync worker, integração Evento × ledger × comercial, estorno, rateio ou novo KPI.
-
-A validação técnica local passou nos testes financeiros focados, regressões de pull da 16.1A, `quality:gate`, typecheck, build, Prettier dos arquivos alterados e `git diff --check`. O gate documental foi executado via WSL e passou, concluindo formalmente a 16.1B.
-
-## Fase 16.1C (Fase 16 núcleo) — Evento financeiro × ledger × comercial v2
-
-Objetivo: Concluir o núcleo funcional do Financeiro Gerencial, estabelecendo contratos claros de deduplicação, modos temporais, estorno auditável, categorias idempotentes e UX mínima.
-
-A implementação inclui:
-- `classifyCommercialOperation` e `classifyLedgerTransaction` em `src/lib/finance/classification.ts` para separar fatos de ledger, isolar operações legadas/simulações comerciais e deduplicar vínculos;
-- `resolveFinancialEventLink` explícito para evitar duplo-lançamento e links cross-farm;
-- `calculateGerencialTemporalSummary` em `src/lib/finance/gerencial.ts` para agregar caixa, competência, previsão e vencimento;
-- estorno financeiro append-only em `src/lib/finance/corrections.ts`, idempotente e sem edição silenciosa do realizado;
-- identidades locais determinísticas para as categorias padrão em `src/lib/finance/categories.ts`, alinhadas com a autoridade de slug do RLS remoto;
-- `buildOperationalSummary` consumindo a nova semântica de classificação, links explícitos e sumário temporal para os KPIs financeiros;
-- UX mínima em `src/pages/Financeiro.tsx` para apresentar as visões separadas e acionar o estorno.
-
-A validação técnica local passou em testes focados, regressões de pull e qualidade, `quality:gate`, typecheck, build e formatação. A Fase 17 não foi iniciada.
+Contratos restritivos obrigatórios para a Fase 17:
+- Recomendações não são fatos.
+- Insights, sinais e tags são auxiliares.
+- Não autorizar automaticamente venda ou abate.
+- Não liberar carência automaticamente.
+- Não fabricar peso atual nem aptidão operacional.
+- Toda recomendação deve expor sua fonte, período, qualidade e limitações.
+- Evento permanece a fonte histórica factual.
+- `state_*` permanece read model.
+- Agenda permanece intenção futura.
+- O Financeiro Gerencial não equivale a contabilidade fiscal.
 
 ## Histórico — Fechamento funcional da Fase 13
 

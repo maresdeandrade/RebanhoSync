@@ -1,11 +1,11 @@
 # Project Status — RebanhoSync
 
 Atualizado em: 2026-08-20
-Baseline integrado da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
-Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Fase 16 concluída e validada localmente.
-Próxima fase de desenvolvimento: **Fase 17 — a definir**.
+Baseline integrado da Fase 16: `main@f20146505a04c0eab03c0685f2bdef7763bae221`
+Merge commit da Fase 16: `f20146505a04c0eab03c0685f2bdef7763bae221`
+Feature head da Fase 16: `078cfcad654b7e92b7ec94b8a2145bb9123dbc55`
+PR de integração da Fase 16: `#94`
+Próxima fase de desenvolvimento: **Fase 17 — Decisão Assistida** (preparada para abertura, não iniciada).
 
 ## Objetivo
 
@@ -23,9 +23,9 @@ A Fase 15 — KPIs/Relatórios está tecnicamente concluída e integrada em `mai
 
 A validação da Fase 15 confirmou 16 testes focados, `quality:gate`, build, typecheck compatível, Prettier nos arquivos afetados, `git diff --check` e Validate repository remoto. A integração ocorreu sem migration, RLS, schema, RPC, Edge Function, grant ou sync remoto; produção não foi alterada.
 
-A auditoria documental 16.0 do Financeiro Gerencial está concluída. Foram fechadas as fontes de verdade, a matriz canônica, a separação Evento versus ledger, caixa versus competência, zero versus ausência, comercial versus financeiro, rateios MVP e riscos de offline/sync/RLS.
+A Fase 16 — Financeiro Gerencial — foi integralmente concluída e integrada via PR #94. A implementação incluiu hardening offline de `finance_transactions` e `finance_categories`, hardening semântico de valores e status do ledger, classificação canônica cruzada (Evento × ledger × comercial) para prevenir dupla contagem, e separação clara entre caixa, competência, previsão e vencidos. Os KPIs ganharam cobertura conservadora (ausência de dados não é zero factual). As categorias default passaram a usar UUID determinístico customizado baseado em SHA-256 com identidade convergente cliente/Postgres e resolução de colisão estrita. A Fase 16 também introduziu o estorno append-only (com a coluna `reverses_transaction_id`) e atualizou a Edge Function `sync-batch` e o Dexie para a v29. O RLS permaneceu preservado. A validação de upgrade legado isolado, 43 testes focados, gates de qualidade e build de produção passaram com sucesso.
 
-A Fase 16 foi integralmente concluída no escopo local. O hardening offline (16.1A) protegeu operações financeiras pendentes no sync. O hardening semântico (16.1B) proibiu conversões silenciosas para zero e garantiu valores positivos no ledger. O núcleo gerencial (16.1C) introduziu deduplicação de vínculos explícitos cross-tenant, isolou simulações comerciais v2 do caixa, implementou sumário temporal (caixa, competência, previsão, vencido), adicionou estorno auditável append-only e identidades determinísticas para categorias, além de expandir a UI financeira e os KPIs operacionais com as novas restrições. A validação técnica completa, o build de produção e os gates documentais via WSL passaram com sucesso. Nenhuma migration, alteração de RLS, schema ou sync remoto foi necessária.
+**Importante:** A presença da migration `20260601000000_financeiro_estorno_categorias.sql` versionada na `main` NÃO significa que ela foi aplicada em staging ou produção. Os ambientes de staging e produção não foram alterados durante a Fase 16.
 
 ## Estado reprodutivo consolidado
 
@@ -109,7 +109,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-A próxima etapa formal é a revisão da PR #93. A Fase 16 não deve ser iniciada nesta transição. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+A Fase 17 — Decisão Assistida — está preparada para abertura, mas **NÃO foi iniciada**. Nenhuma implementação de código ou alteração estrutural da Fase 17 ocorreu. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 
