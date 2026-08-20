@@ -1,24 +1,51 @@
-# Plano de fechamento — Fase 15 / KPIs e Relatórios
+# Plano ativo — Fase 17 / Decisão Assistida
 
-Atualizado em: 2026-08-19
-Status: **Fase 15 encerrada tecnicamente e publicada para revisão remota**
-PR: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93) — aberto, sem merge
-Próxima fase: **Fase 15 — concluir revisão remota e integração da PR #93**
+Atualizado em: 2026-08-20
+Status: **Fase 17 ativa, em validação local**
+Fase 15 integrada em `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`.
+Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
 
-Este documento contém o plano corrente. Estado técnico detalhado, validações e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
-## Fechamento da Fase 15
+## Encerramento integrado da Fase 15
 
-Baseline de entrada: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`.
-Commit de implementação: `7bebe60e8c866ba36aca512996044701c354ceab`.
+Baseline integrado: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`.
+Merge commit: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`.
 
 A Fase 15 implementou `MetricResult<T>` com estados `complete`, `partial` e `unavailable`; cobertura histórica conservadora; `MetricPeriod` com período, fronteiras inclusivas, campo factual e timezone da fazenda; escopo explícito por `fazendaId`; KPIs reprodutivos canônicos; KPIs comerciais factuais v2; entradas, saídas e categorias históricas do rebanho; Agenda Sanitária v2 como fonte preferencial de demanda futura; e exportação de cobertura, escopo, período e timezone. Operações comerciais só são selecionadas quando possuem `payload.kind = "commercial_operation_v2"`; simulações explícitas permanecem fora dos KPIs.
 
-O gate semântico final passou após um patch mínimo de seleção positiva comercial. Histórico sem evidência verificada permanece `partial`/`unavailable`, zero local sem cobertura não vira zero factual, pendências locais tornam o resultado parcial e ausência de timezone da fazenda usa fallback de runtime com limitação declarada. Não houve migration, RLS, schema, RPC, Edge Function, grant ou sync remoto.
+O gate semântico e o Validate repository remoto passaram. Histórico sem evidência verificada permanece `partial`/`unavailable`, zero local sem cobertura não vira zero factual, pendências locais tornam o resultado parcial e ausência de timezone da fazenda usa fallback de runtime com limitação declarada. Não houve migration, RLS, schema, RPC, Edge Function, grant ou sync remoto na Fase 15.
 
-Validações confirmadas: 16 testes focados, `quality:gate`, build, typecheck com `--ignoreDeprecations 5.0`, Prettier nos cinco arquivos afetados e `git diff --check`. `audit:agents` não foi executado porque Bash não está disponível no ambiente Windows; a formatação global do baseline não foi alterada.
+## Fase 16.0 — auditoria de contrato concluída
 
-Próxima etapa: revisão da PR #93. A Fase 16 não foi iniciada e nenhum merge foi realizado.
+A auditoria fechou fontes de verdade, semântica de Evento versus ledger, caixa versus competência, zero versus ausência, correção/estorno, comercial versus financeiro, rateio MVP e riscos de offline/sync/RLS. A Fase 15 permanece concluída e integrada em `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`.
+
+## Fase 16.1A — hardening offline P0 — concluída
+
+Objetivo exclusivo: proteger operações pendentes de `finance_transactions` e `finance_categories` durante pull `replace`/`merge`, reutilizando `queue_ops`, preservando isolamento por `fazenda_id`, cursores, retry/replay, rollback e reconciliação. Não criar nova fila, fonte de verdade, migration, RLS, schema, RPC, KPI, UX, rateio ou estorno.
+
+Implementação local realizada em `src/lib/offline/pull.ts`, com testes focados em `src/lib/offline/__tests__/financePull.test.ts`. O patch inclui as duas stores financeiras na proteção de pendências, filtra operações pela fazenda do pull e preserva a lógica existente de bloqueio de cursor no merge. O baseline de saída local é `feat/phase-16-finance-managerial@1734a5b`; não houve alteração de migration, RLS, schema, RPC ou sync worker.
+
+## Fase 16.1B — hardening semântico do ledger financeiro
+
+A implementação local restringe-se a `src/lib/finance/gerencial.ts`, seus testes focados e o fluxo de criação de lançamento em `src/pages/Financeiro.tsx`. Valores ausentes, inválidos, não finitos, zero e negativos não são convertidos para zero; `valor_total` permanece estritamente positivo; realizado, previsto, cancelado e `deleted_at` possuem participação explícita nos agregados; e os agrupadores representam somente transações realizadas. Quantidade e valor unitário informados também são validados no domínio. Não houve migration, RLS, RPC, schema, pull, sync worker, integração Evento × ledger × comercial, estorno, rateio ou novo KPI.
+
+A validação técnica local passou nos testes financeiros focados, regressões de pull da 16.1A, `quality:gate`, typecheck, build, Prettier dos arquivos alterados e `git diff --check`. O gate documental foi executado via WSL e passou, concluindo formalmente a 16.1B.
+
+## Fase 16.1C (Fase 16 núcleo) — Evento financeiro × ledger × comercial v2
+
+Objetivo: Concluir o núcleo funcional do Financeiro Gerencial, estabelecendo contratos claros de deduplicação, modos temporais, estorno auditável, categorias idempotentes e UX mínima.
+
+A implementação inclui:
+- `classifyCommercialOperation` e `classifyLedgerTransaction` em `src/lib/finance/classification.ts` para separar fatos de ledger, isolar operações legadas/simulações comerciais e deduplicar vínculos;
+- `resolveFinancialEventLink` explícito para evitar duplo-lançamento e links cross-farm;
+- `calculateGerencialTemporalSummary` em `src/lib/finance/gerencial.ts` para agregar caixa, competência, previsão e vencimento;
+- estorno financeiro append-only em `src/lib/finance/corrections.ts`, idempotente e sem edição silenciosa do realizado;
+- identidades locais determinísticas para as categorias padrão em `src/lib/finance/categories.ts`, alinhadas com a autoridade de slug do RLS remoto;
+- `buildOperationalSummary` consumindo a nova semântica de classificação, links explícitos e sumário temporal para os KPIs financeiros;
+- UX mínima em `src/pages/Financeiro.tsx` para apresentar as visões separadas e acionar o estorno.
+
+A validação técnica local passou em testes focados, regressões de pull e qualidade, `quality:gate`, typecheck, build e formatação. A Fase 17 não foi iniciada.
 
 ## Histórico — Fechamento funcional da Fase 13
 

@@ -266,14 +266,19 @@ async function getPendingFactualEventIds() {
   );
 }
 
-async function getPendingRecordIds(remoteTables: readonly string[]) {
+async function getPendingRecordIds(
+  remoteTables: readonly string[],
+  fazendaId: string,
+) {
   const protectedTables = new Set(
     remoteTables.filter(
       (table) =>
         table === "animais" ||
         table === "eventos" ||
         table === "eventos_comercial" ||
-        table === "agenda_itens",
+        table === "agenda_itens" ||
+        table === "finance_transactions" ||
+        table === "finance_categories",
     ),
   );
   const pendingIds = new Map<string, Set<string>>();
@@ -288,6 +293,7 @@ async function getPendingRecordIds(remoteTables: readonly string[]) {
     ];
     for (const candidate of candidates) {
       if (!protectedTables.has(candidate.table)) continue;
+      if (candidate.record?.fazenda_id !== fazendaId) continue;
       const id =
         candidate.table === "eventos_comercial"
           ? candidate.record?.evento_id
@@ -349,6 +355,7 @@ async function writeMergeResults(
   storesToUpdate: Array<{ remote: string; local: string }>,
   results: Record<string, RemoteRow[]>,
   cursorUpdates: CursorUpdate[],
+  fazendaId: string,
 ) {
   const protectsFactualRows = storesToUpdate.some(({ remote }) =>
     [
@@ -364,6 +371,7 @@ async function writeMergeResults(
     : new Set<string>();
   const pendingRecordIds = await getPendingRecordIds(
     storesToUpdate.map(({ remote }) => remote),
+    fazendaId,
   );
   const effectiveResults: Record<string, RemoteRow[]> = { ...results };
   const cursorBlockedTables = new Set<string>();
@@ -464,7 +472,7 @@ export const pullDataForFarm = async (
   )
     ? await getPendingFactualEventIds()
     : new Set<string>();
-  const pendingRecordIds = await getPendingRecordIds(remoteTables);
+  const pendingRecordIds = await getPendingRecordIds(remoteTables, fazenda_id);
   const pendingLocalRows = new Map<string, RemoteRow[]>();
   for (const { remote, local } of storesToUpdate) {
     const ids = pendingRecordIds.get(remote);
@@ -932,7 +940,7 @@ export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
     return;
   }
 
-  await writeMergeResults(storesToUpdate, results, cursorUpdates);
+  await writeMergeResults(storesToUpdate, results, cursorUpdates, fazenda_id);
 };
 
 export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
@@ -986,6 +994,7 @@ export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
     })),
     results,
     cursorUpdates,
+    fazendaId,
   );
 
   return recomputeSanitaryComplianceAfterPullV2({ fazendaId });

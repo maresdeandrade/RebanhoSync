@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-08-19
-Fase atual: **Fase 15 — KPIs/Relatórios**
-Fase anterior: **Fase 14 — Compra/Venda Operacional encerrada com Importação V2 + Robustez**
+Atualizado em: 2026-08-20
+Fase atual: **Fase 17 — Decisão Assistida (a iniciar)**
+Fase anterior: **Fase 16 — Financeiro Gerencial concluída localmente**
 
 ## Objetivo
 
@@ -45,11 +45,11 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 ## Próxima fase de desenvolvimento
 
 ```txt
-Fase 14 — Compra/Venda Operacional — encerrada
-→ Fase 15 — KPIs/Relatórios
+Fase 16 — Financeiro Gerencial — concluída localmente
+→ Fase 17 — Decisão Assistida — a definir
 ```
 
-A Fase 15 inicia sem habilitar gate, feature flag ou rollout do Sync Sanitário v2.
+A Fase 16.1A restringiu-se à proteção offline de `finance_transactions` e `finance_categories` durante pull `replace`/`merge` e está concluída. A Fase 16.1B concluiu o hardening semântico de valores, status e agrupamentos do ledger gerencial. A Fase 16.1C finalizou o núcleo financeiro, com deduplicação de vínculos, modos temporais, estorno auditável, categorias determinísticas e expansão dos KPIs operacionais. Toda a Fase 16 foi concluída localmente. A Fase 17 não foi iniciada.
 
 ## Risco de rollout
 

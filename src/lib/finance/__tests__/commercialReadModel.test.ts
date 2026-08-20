@@ -4,7 +4,18 @@ import { buildCommercialFinanceRows } from "../commercialReadModel";
 describe("commercial finance read model", () => {
   it("shows individual and lot facts without requiring a financial link", () => {
     const rows = buildCommercialFinanceRows({
-      events: [{ id: "purchase" }, { id: "sale" }],
+      events: [
+        {
+          id: "purchase",
+          dominio: "comercial",
+          payload: { kind: "commercial_operation_v2" },
+        },
+        {
+          id: "sale",
+          dominio: "comercial",
+          payload: { kind: "commercial_operation_v2" },
+        },
+      ],
       lots: [{ id: "lot-1", nome: "Lote Norte" }],
       details: [
         {
@@ -53,6 +64,59 @@ describe("commercial finance read model", () => {
     });
   });
 
+  it("ignores legacy and simulated commercial details", () => {
+    const rows = buildCommercialFinanceRows({
+      events: [
+        {
+          id: "legacy",
+          dominio: "comercial",
+          payload: { kind: "legacy_sale" },
+        },
+        {
+          id: "simulation",
+          dominio: "comercial",
+          payload: {
+            kind: "commercial_operation_v2",
+            is_simulation: true,
+          },
+        },
+      ],
+      lots: [],
+      details: [
+        {
+          evento_id: "legacy",
+          operation_type: "venda",
+          scope: "lote",
+          occurred_at: "2026-08-13T12:00:00.000Z",
+          lote_id: null,
+          quantidade_animais: 1,
+          animal_ids: null,
+          contraparte_nome: "Legado",
+          valor_bruto: 100,
+          valor_liquido_derivado: 100,
+          finance_transaction_id: null,
+          snapshot: {},
+        },
+        {
+          evento_id: "simulation",
+          operation_type: "venda",
+          scope: "lote",
+          occurred_at: "2026-08-13T12:00:00.000Z",
+          lote_id: null,
+          quantidade_animais: 1,
+          animal_ids: null,
+          contraparte_nome: "Simulação",
+          valor_bruto: 100,
+          valor_liquido_derivado: 100,
+          finance_transaction_id: null,
+          snapshot: {},
+        },
+      ],
+    });
+
+    expect(rows).toEqual([]);
+  });
+
   it("ignores orphan details instead of creating a parallel source of truth", () => {
     expect(
       buildCommercialFinanceRows({
@@ -71,6 +135,7 @@ describe("commercial finance read model", () => {
             valor_bruto: null,
             valor_liquido_derivado: null,
             finance_transaction_id: null,
+            snapshot: {},
           },
         ],
       }),

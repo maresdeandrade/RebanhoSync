@@ -220,6 +220,8 @@ const Home = () => {
       eventosEcc,
       eventosMovimentacao,
       eventosTodos,
+      eventosFinanceiro,
+      financeTransactions,
     ] = await Promise.all([
       db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
       db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
@@ -288,6 +290,14 @@ const Home = () => {
         .between([activeFarmId, ""], [activeFarmId, "\uffff"], true, true)
         .filter((evento) => !evento.deleted_at)
         .toArray(),
+      db.event_eventos_financeiro
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.state_finance_transactions
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
     ]);
 
     const animaisDisponiveis = animais.filter((animal) => !animal.deleted_at);
@@ -338,7 +348,8 @@ const Home = () => {
         sanitarioAgendaV2,
         sanitarioAgendaAnimaisV2,
         eventosPesagem: [],
-        eventosFinanceiro: [],
+        eventosFinanceiro,
+        financeTransactions,
         gestures: [],
         rejections: [],
         protocolosSanitarios: protocolosDisponiveis,

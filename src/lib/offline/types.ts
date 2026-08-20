@@ -274,7 +274,8 @@ export type FinanceTransactionOrigemEnum =
   | "evento_financeiro"
   | "insumo_movimentacao"
   | "compra_animal"
-  | "venda_animal";
+  | "venda_animal"
+  | "estorno";
 export type InsumoTipoEnum = "sanitario" | "nutricional" | "outro";
 export type InsumoUnidadeBaseEnum = "ml" | "l" | "g" | "kg" | "un" | "dose";
 export type InsumoUnidadeCompraEnum =
@@ -1529,6 +1530,7 @@ export interface FinanceTransaction {
   source_event_id: string | null;
   source_inventory_movement_id: string | null;
   observacoes: string | null;
+  reverses_transaction_id?: string | null;
 
   // Sync metadata
   client_id: string;

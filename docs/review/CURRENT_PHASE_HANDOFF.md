@@ -1,32 +1,56 @@
-# Handoff atual — Fase 15 encerrada / KPIs e Relatórios
+# Handoff atual — Fase 17 / Decisão Assistida
 
-Atualizado em: 2026-08-19
-Baseline autoritativo de saída da Fase 14: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`
-Baseline de entrada do fechamento: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`
-Commit da implementação: `7bebe60e8c866ba36aca512996044701c354ceab`
-PR de revisão: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93)
-Status: **Fase 15 fechada tecnicamente; PR aberta, sem merge**
-Próxima fase: **Fase 15 — concluir integração da PR #93**
+Atualizado em: 2026-08-20
+Baseline integrado da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
+Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
+Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
+Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
+Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
+Status: **Fase 17 ativa, em validação local**
+Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
 
-## Fechamento da Fase 15
+## Saída integrada da Fase 15
 
 A Fase 15 implementou o contrato `MetricResult<T>` com `complete`, `partial` e `unavailable`, fontes, limitações, período e cobertura. `MetricCoverage` distingue histórico, snapshot atual e planejamento; histórico sem evidência verificada permanece conservador; zero local sem cobertura vira indisponível; e pendências locais tornam o resultado parcial.
 
-`MetricPeriod` registra fronteiras inclusivas, campo factual e timezone. `fazendas.timezone` é usado quando válido; ausência ou valor inválido usa timezone de runtime com limitação declarada. As fronteiras são calculadas com a chave de calendário no timezone resolvido. O agregador filtra explicitamente todas as coleções por `fazendaId`.
+`MetricPeriod` registra fronteiras inclusivas, campo factual e timezone. `fazendas.timezone` é usado quando válido; ausência ou valor inválido usa timezone de runtime com limitação declarada. O agregador filtra explicitamente todas as coleções por `fazendaId`.
 
-A reprodução usa `rebuildReproductiveProjection`; a demanda futura prefere Agenda Sanitária v2 e declara fallback legado; o histórico do rebanho usa Eventos factuais para entradas, saídas e categorias, sem transformar `state_animais` em histórico. KPIs comerciais selecionam positivamente Eventos com `payload.kind = "commercial_operation_v2"`, exigem detalhe `eventos_comercial` vinculado para os valores e excluem simulações explicitamente marcadas. Peso comercial não substitui pesagem zootécnica, e operações comerciais sem fato factual v2 não entram no KPI.
+A reprodução usa `rebuildReproductiveProjection`; a demanda futura prefere Agenda Sanitária v2; o histórico do rebanho usa Eventos factuais; e KPIs comerciais selecionam positivamente Eventos com `payload.kind = "commercial_operation_v2"`, exigem detalhe vinculado para valores e excluem simulações explícitas.
 
-CSV e impressão incluem cobertura, escopo, período e timezone por métrica. Agenda continua sendo intenção, Evento continua sendo fato histórico executado, `state_*` continua read model atual e Protocolo continua configuração. Tags, sinais e insights continuam auxiliares.
+O Validate repository remoto passou integralmente antes da integração. O merge não alterou migration, RLS, schema, RPC, Edge Function, grant ou sincronização remota.
 
-## Patch final e superfícies não alteradas
+## Auditoria 16.0 — encerrada
 
-O patch final da implementação contém `src/lib/reports/metricContract.ts`, `src/lib/reports/operationalSummary.ts`, seu teste focado, `src/pages/Home.tsx` e `src/pages/Relatorios.tsx`. Não há migration, alteração de RLS, schema, RPC, Edge Function, grant ou sincronização remota.
+A auditoria fechou a matriz canônica de fontes: Evento e detalhe financeiro para fatos históricos; `state_finance_transactions`/`finance_transactions` para o ledger gerencial administrativo; comercial v2 separado de financeiro; estoque factual por `insumo_movimentacoes`; snapshots preservados no fato; categorias e contrapartes como cadastros tenant-scoped.
 
-## Validações e limitações operacionais
+Também foram fechados os contratos de caixa versus competência, zero versus ausência, correção/estorno, rateios MVP e riscos de offline/sync/RLS. A Fase 16.0 não criou nova fonte de verdade e não alterou código.
 
-Foram confirmados 16 testes focados do agregador, `quality:gate` com lint/hotspots/integração/smoke, build, typecheck com `pnpm exec tsc --noEmit --ignoreDeprecations 5.0`, Prettier nos cinco arquivos afetados e `git diff --check`. O typecheck sem override falha no baseline porque o TypeScript 5.8.3 não aceita `ignoreDeprecations: "6.0"`; o typecheck compatível passou sem erros de código. `audit:agents` e `gates:docs` não foram executados com sucesso porque Bash não está disponível no Windows; `gates:docs` retornou explicitamente `bash not found on Windows`. A formatação global do baseline, que envolve 532 arquivos fora do escopo, não foi alterada.
+## Fase 16.1A — hardening offline P0 — concluída
 
-A PR #93 está aberta contra `main` para revisão remota. Nenhum merge foi realizado, produção não foi acessada, nenhuma mudança remota de banco foi aplicada e a Fase 16 não foi iniciada.
+Implementação realizada exclusivamente em `src/lib/offline/pull.ts`: `getPendingRecordIds` agora protege `finance_transactions` e `finance_categories`, recebe `fazenda_id` e ignora operações pendentes de outra fazenda. O caminho de merge propaga a fazenda sem alterar a lógica existente de bloqueio de cursor quando uma linha protegida é omitida do snapshot remoto.
+
+O teste novo `src/lib/offline/__tests__/financePull.test.ts` cobre replace sem linha remota, linha remota antiga, tombstone, categoria pendente, isolamento entre fazendas, consumo da operação, merge e falha de pull sem escrita parcial. As regressões existentes de pull comercial e pull básico continuam passando.
+
+Validações locais confirmadas: 16 testes focados de offline/pull, `quality:gate`, lint, typecheck com `--ignoreDeprecations 5.0`, build, Prettier nos dois arquivos de código/teste e `git diff --check`. O primeiro quality gate ficou preso no ambiente durante smoke; após execução isolada de `test:smoke`, a segunda execução do `quality:gate` concluiu com sucesso. O gate documental permaneceu não executável pelo wrapper Node no Windows porque ele não detectou `bash.exe`; a continuidade documental foi reconciliada manualmente.
+
+## Fase 16.1B — hardening semântico do ledger financeiro
+
+O patch local altera somente `src/lib/finance/gerencial.ts`, `src/lib/finance/__tests__/gerencial.test.ts` e o parsing de lançamento em `src/pages/Financeiro.tsx`. A validação rejeita ausência, `NaN`, infinitos, zero e negativos em `valor_total`; valida datas, enums e números opcionais; sumários distinguem realizado de previsto; cancelado e `deleted_at` não agregam; e os três agrupadores são realizados-only. A UI não transforma entrada inválida em `valor_total: 0`.
+
+Validações da 16.1B confirmadas: 20 testes financeiros focados, `financePull.test.ts`, `pull.test.ts`, `commercialPurchasePull.test.ts`, `quality:gate`, `pnpm exec tsc --noEmit --ignoreDeprecations 5.0`, `pnpm run build`, Prettier nos três arquivos alterados e `git diff --check`. O gate documental foi executado via WSL e passou, concluindo a 16.1B.
+
+## Fase 16.1C (Fase 16 núcleo) — Concluída
+
+O núcleo funcional do Financeiro Gerencial foi finalizado, fechando o gap entre o ledger e os eventos de domínio sem alterar a arquitetura offline-first ou criar migrations.
+
+- **Deduplicação e Links**: `resolveFinancialEventLink` e `resolveCommercialFinanceLink` previnem duplo-lançamento ao exigir link explícito e restringir ao mesmo tenant;
+- **Classificação**: `classifyCommercialOperation` ignora simulações explícitas e legacy, consumindo apenas o payload canônico v2;
+- **Modos Temporais**: `calculateGerencialTemporalSummary` agrega valores em caixa (realizado com `paid_at`), competência (`competence_date`), previsão (status previsto com `due_date`) e vencido (previsto com `due_date` expirado);
+- **Estorno**: Ação auditável append-only em `corrections.ts` gera contra-lançamento com identidade determinística (`getFinanceReversalId`), validando que o original é realizado, possui valor positivo e não foi estornado, sem editar silenciosamente o registro base;
+- **Categorias**: Identidades locais offline agora são determinísticas e idempotentes (`generateDeterministicId` com farm e slug), alinhadas ao seed remoto para evitar duplicação no sync;
+- **KPIs**: `buildOperationalSummary` foi expandido para expor `financeiro_entradas_competencia`, `financeiro_previstos_receber`, etc., documentando explicitamente `state_finance_transactions` como fonte primária e limitando as métricas quando o ledger não está carregado.
+
+Validações executadas localmente: 62 testes unitários (classificação, correções, categorias, gerencial, offline pull e relatório operacional), 8 testes de componentes e e2e (Home e Relatorios), `quality:gate` (lint, hotspots, testes integrados, smoke), typecheck, formatação, build de produção e verificação documental via WSL. Nenhuma migration, RLS, RPC, Edge Function, worker ou E2E remoto foi alterado.
 
 ## Histórico — Fechamento funcional da Fase 13
 

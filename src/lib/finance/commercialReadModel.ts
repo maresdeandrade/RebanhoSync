@@ -1,3 +1,9 @@
+import type { Evento, EventoComercial } from "@/lib/offline/types";
+import {
+  isCommercialOperationV2,
+  isCommercialSimulation,
+} from "@/lib/finance/classification";
+
 export interface CommercialFinanceRow {
   id: string;
   operationType: string;
@@ -12,27 +18,39 @@ export interface CommercialFinanceRow {
   financeTransactionId: string | null;
 }
 
+type CommercialFinanceDetail = Pick<
+  EventoComercial,
+  | "evento_id"
+  | "operation_type"
+  | "scope"
+  | "occurred_at"
+  | "lote_id"
+  | "quantidade_animais"
+  | "animal_ids"
+  | "contraparte_nome"
+  | "valor_bruto"
+  | "valor_liquido_derivado"
+  | "finance_transaction_id"
+  | "snapshot"
+>;
+
 export function buildCommercialFinanceRows(input: {
-  events: Array<{ id: string }>;
-  details: Array<{
-    evento_id: string;
-    operation_type: string;
-    scope: string;
-    occurred_at: string;
-    lote_id: string | null;
-    quantidade_animais: number;
-    animal_ids: string[] | null;
-    contraparte_nome: string | null;
-    valor_bruto: number | null;
-    valor_liquido_derivado: number | null;
-    finance_transaction_id: string | null;
-  }>;
+  events: Array<Pick<Evento, "id" | "dominio" | "payload">>;
+  details: CommercialFinanceDetail[];
   lots: Array<{ id: string; nome: string }>;
 }): CommercialFinanceRow[] {
-  const eventIds = new Set(input.events.map((event) => event.id));
+  const eventById = new Map(input.events.map((event) => [event.id, event]));
   const lotNames = new Map(input.lots.map((lot) => [lot.id, lot.nome]));
   return input.details
-    .filter((detail) => eventIds.has(detail.evento_id))
+    .filter((detail) => {
+      const event = eventById.get(detail.evento_id);
+      return (
+        Boolean(event) &&
+        event.dominio === "comercial" &&
+        isCommercialOperationV2(event as Evento) &&
+        !isCommercialSimulation(event as Evento, detail as EventoComercial)
+      );
+    })
     .map((detail) => ({
       id: detail.evento_id,
       operationType: detail.operation_type,

@@ -17,8 +17,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { createGesture } from "@/lib/offline/ops";
 import {
   validateFinanceTransaction,
-  calculateGerencialSummary,
+  calculateGerencialTemporalSummary,
+  parseOptionalFinanceNumber,
 } from "@/lib/finance/gerencial";
+import {
+  classifyLedgerTransaction,
+  classifyFinancialEvent,
+} from "@/lib/finance/classification";
+import {
+  buildFinanceReversalOperation,
+  parseFinanceReversal,
+} from "@/lib/finance/corrections";
 import { buildCommercialFinanceRows } from "@/lib/finance/commercialReadModel";
 import type {
   FinanceCategoryTipoEnum,
@@ -224,97 +233,12 @@ const Financeiro = () => {
         .count();
       if (count === 0) {
         console.log("[Financeiro] Semeando categorias gerenciais padrão...");
-        const defaults = [
-          {
-            nome: "Venda de Animais",
-            tipo: "receita",
-            grupo: "venda_animais",
-            slug: "venda-animais",
-          },
-          {
-            nome: "Compra de Animais",
-            tipo: "custo_variavel",
-            grupo: "compra_animais",
-            slug: "compra-animais",
-          },
-          {
-            nome: "Sanidade/Medicamentos",
-            tipo: "custo_variavel",
-            grupo: "sanidade",
-            slug: "sanidade-medicamentos",
-          },
-          {
-            nome: "Nutrição/Alimentos",
-            tipo: "custo_variavel",
-            grupo: "nutricao",
-            slug: "nutricao-alimentos",
-          },
-          {
-            nome: "Mão de Obra/Salários",
-            tipo: "custo_fixo",
-            grupo: "mao_obra",
-            slug: "mao-de-obra-salarios",
-          },
-          {
-            nome: "Combustível",
-            tipo: "custo_variavel",
-            grupo: "combustivel",
-            slug: "combustivel",
-          },
-          {
-            nome: "Manutenção",
-            tipo: "custo_fixo",
-            grupo: "manutencao",
-            slug: "manutencao",
-          },
-          {
-            nome: "Arrendamento",
-            tipo: "custo_fixo",
-            grupo: "arrendamento",
-            slug: "arrendamento",
-          },
-          {
-            nome: "Infraestrutura",
-            tipo: "investimento",
-            grupo: "infraestrutura",
-            slug: "infraestrutura",
-          },
-          {
-            nome: "Reprodução/Sêmen",
-            tipo: "custo_variavel",
-            grupo: "reproducao",
-            slug: "reproducao-semen",
-          },
-          {
-            nome: "Administrativo",
-            tipo: "custo_fixo",
-            grupo: "administrativo",
-            slug: "administrativo",
-          },
-          {
-            nome: "Outros",
-            tipo: "custo_variavel",
-            grupo: "outros",
-            slug: "outros",
-          },
-        ];
-
-        const ops = defaults.map((c) => ({
-          table: "finance_categories",
-          action: "INSERT" as const,
-          record: {
-            id: crypto.randomUUID(),
-            fazenda_id: activeFarmId,
-            nome: c.nome,
-            tipo: c.tipo as FinanceCategoryTipoEnum,
-            grupo: c.grupo as FinanceCategoryGrupoEnum,
-            slug: c.slug,
-            is_default: true,
-            ativo: true,
-            observacoes: "Categoria gerencial padrão semeada localmente.",
-          },
-        }));
-
+        // O servidor possui um trigger e RPC (seed_default_finance_categories) que é a autoridade remota.
+        // O client semeia localmente os mesmos slugs default para permitir o uso offline-first imediato.
+        // O pull remote resolve pelo slug idempotente, evitando duplicação.
+        const { getLocalDefaultFinanceCategoriesOps } =
+          await import("@/lib/finance/categories");
+        const ops = getLocalDefaultFinanceCategoriesOps(activeFarmId);
         await createGesture(activeFarmId, ops);
       }
     };
@@ -348,6 +272,9 @@ const Financeiro = () => {
         ccNome = `Pasto: ${pastoMap.get(tx.centro_custo_id) || tx.centro_custo_id}`;
       }
 
+      const classification = classifyLedgerTransaction(tx);
+      const isLinked = classification.sourceType === "ledger_linked";
+
       return {
         id: tx.id,
         tipoOrigem: "gerencial" as const,
@@ -356,8 +283,12 @@ const Financeiro = () => {
         contraparteNome: cpNome,
         naturezaLabel:
           tx.direction === "entrada"
-            ? "Receita Gerencial"
-            : "Despesa Gerencial",
+            ? isLinked
+              ? "Receita (Vinculada)"
+              : "Receita Gerencial"
+            : isLinked
+              ? "Despesa (Vinculada)"
+              : "Despesa Gerencial",
         categoriaNome: catNome,
         centroCustoLabel: ccNome,
         status: tx.status,
@@ -369,11 +300,35 @@ const Financeiro = () => {
       };
     });
 
-    // 2. Map Legacy zootecnico purchases and sales
+    // 2. Map isolated historical financial events (legacy)
+    // Commercial operations are excluded here because they are not cash equivalents automatically.
+    const txByEventId = new Map(
+      data.transactions.map((tx) => [tx.source_event_id, tx]),
+    );
+
     const legacyRows = data.detalhes
       .map((detalhe) => {
         const evento = data.eventosBase.find((e) => e.id === detalhe.evento_id);
         if (!evento) return null;
+
+        // We do not classify commercial operations as ledger items directly anymore.
+        // The read model is strict: if it's commercial v2, it shows up in the commercial list,
+        // and only hits the ledger if a finance_transaction is explicitly linked.
+        if (evento.dominio === "comercial") {
+          return null;
+        }
+
+        const linkedTx = txByEventId.get(evento.id);
+        const classification = classifyFinancialEvent(
+          evento,
+          detalhe,
+          linkedTx,
+        );
+
+        // If it's linked, the ledger row already represents it. Do not double-count in the UI.
+        if (classification.sourceType === "evento_financeiro_linked") {
+          return null;
+        }
 
         const cpNome = detalhe.contraparte_id
           ? counterpartMap.get(detalhe.contraparte_id) || "Sem parceiro"
@@ -385,19 +340,6 @@ const Financeiro = () => {
           ? loteMap.get(evento.lote_id) || "Sem lote"
           : "Sem lote";
 
-        const payloadKind =
-          evento.payload && typeof evento.payload.kind === "string"
-            ? evento.payload.kind
-            : "";
-        let naturezaLabel =
-          detalhe.tipo === "compra" ? "Compra Zootécnica" : "Venda Zootécnica";
-        if (payloadKind.startsWith("sociedade_")) {
-          naturezaLabel =
-            payloadKind === "sociedade_entrada"
-              ? "Sociedade (Entrada)"
-              : "Sociedade (Saída)";
-        }
-
         return {
           id: detalhe.evento_id,
           tipoOrigem: "legacy" as const,
@@ -407,7 +349,10 @@ const Financeiro = () => {
               : ("entrada" as const),
           valorTotal: Number(detalhe.valor_total),
           contraparteNome: cpNome,
-          naturezaLabel,
+          naturezaLabel:
+            detalhe.tipo === "compra"
+              ? "Despesa Zootécnica"
+              : "Receita Zootécnica",
           categoriaNome:
             detalhe.tipo === "compra"
               ? "Compra de Animais"
@@ -501,9 +446,13 @@ const Financeiro = () => {
         saldoRealizado: 0,
         previstosAPagar: 0,
         previstosAReceber: 0,
+        entradasCompetencia: 0,
+        saidasCompetencia: 0,
+        vencidosAPagar: 0,
+        vencidosAReceber: 0,
       };
     }
-    return calculateGerencialSummary(data.transactions);
+    return calculateGerencialTemporalSummary(data.transactions, new Date());
   }, [data]);
 
   const commercialRows = useMemo(() => {
@@ -535,17 +484,15 @@ const Financeiro = () => {
     if (!activeFarmId) return;
     setTxErrors([]);
 
-    const valorNum = parseFloat(formTxValorTotal);
-    const qtyNum = formTxQuantidade ? parseFloat(formTxQuantidade) : null;
-    const unitPriceNum = formTxValorUnitario
-      ? parseFloat(formTxValorUnitario)
-      : null;
+    const valorNum = parseOptionalFinanceNumber(formTxValorTotal);
+    const qtyNum = parseOptionalFinanceNumber(formTxQuantidade);
+    const unitPriceNum = parseOptionalFinanceNumber(formTxValorUnitario);
 
     const payload: Partial<FinanceTransaction> = {
       fazenda_id: activeFarmId,
       direction: formTxDirection,
       category_id: formTxCategoryId,
-      valor_total: isNaN(valorNum) ? 0 : valorNum,
+      valor_total: valorNum,
       status: formTxStatus,
       occurred_at: new Date(formTxOccurredAt).toISOString(),
       competence_date: formTxCompetenceDate || null,
@@ -562,9 +509,9 @@ const Financeiro = () => {
           ? null
           : formTxCentroCustoId || null,
       rateio_metodo: formTxRateioMetodo,
-      quantidade: qtyNum,
+      quantidade: qtyNum ?? null,
       unidade: formTxUnidade || null,
-      valor_unitario: unitPriceNum,
+      valor_unitario: unitPriceNum ?? null,
       origem: "manual",
       observacoes: formTxObservacoes || null,
     };
@@ -599,6 +546,32 @@ const Financeiro = () => {
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
       setTxErrors([errMsg || "Erro desconhecido ao salvar transação."]);
+    }
+  };
+
+  const handleReverseTransaction = async (transactionId: string) => {
+    if (!activeFarmId || !data) return;
+    const original = data.transactions.find(
+      (transaction) => transaction.id === transactionId,
+    );
+    if (!original) return;
+
+    const reason = window.prompt(
+      "Informe o motivo do estorno. O lançamento original será preservado:",
+    );
+    if (!reason?.trim()) return;
+
+    try {
+      const operation = buildFinanceReversalOperation({
+        original,
+        occurredAt: new Date().toISOString(),
+        reason,
+        existingTransactions: data.transactions,
+      });
+      await createGesture(activeFarmId, [operation]);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setTxErrors([message || "Não foi possível criar o estorno."]);
     }
   };
 
@@ -672,74 +645,142 @@ const Financeiro = () => {
         }
       />
 
-      {/* Authorized simple indicators box */}
-      <div className="grid gap-3 md:grid-cols-5">
-        <Card className="border-border/70 shadow-none">
-          <CardContent className="space-y-3 p-4">
-            <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
-              <span>Entradas Realizadas</span>
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-            </p>
-            <p className="text-xl font-semibold tracking-tight text-emerald-600">
-              {money.format(summary.entradasRealizadas)}
-            </p>
-          </CardContent>
-        </Card>
+      <section className="space-y-3" aria-label="Caixa realizado">
+        <div>
+          <h2 className="text-lg font-semibold">Caixa realizado</h2>
+          <p className="text-sm text-muted-foreground">
+            Inclui somente status realizado com paid_at preenchido.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <Card className="border-border/70 shadow-none">
+            <CardContent className="space-y-3 p-4">
+              <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
+                <span>Entradas Realizadas</span>
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+              </p>
+              <p className="text-xl font-semibold tracking-tight text-emerald-600">
+                {money.format(summary.entradasRealizadas)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-border/70 shadow-none">
+            <CardContent className="space-y-3 p-4">
+              <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
+                <span>Saídas Realizadas</span>
+                <TrendingDown className="h-4 w-4 text-red-500" />
+              </p>
+              <p className="text-xl font-semibold tracking-tight text-red-600">
+                {money.format(summary.saidasRealizadas)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-border/70 shadow-none">
+            <CardContent className="space-y-3 p-4">
+              <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
+                <span>Saldo Realizado</span>
+                <BadgeDollarSign className="h-4 w-4 text-primary" />
+              </p>
+              <p
+                className={`text-xl font-semibold tracking-tight ${
+                  summary.saldoRealizado >= 0
+                    ? "text-emerald-700"
+                    : "text-red-700"
+                }`}
+              >
+                {money.format(summary.saldoRealizado)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
-        <Card className="border-border/70 shadow-none">
-          <CardContent className="space-y-3 p-4">
-            <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
-              <span>Saídas Realizadas</span>
-              <TrendingDown className="h-4 w-4 text-red-500" />
-            </p>
-            <p className="text-xl font-semibold tracking-tight text-red-600">
-              {money.format(summary.saidasRealizadas)}
-            </p>
-          </CardContent>
-        </Card>
+      <section className="space-y-3" aria-label="Competência financeira">
+        <div>
+          <h2 className="text-lg font-semibold">Competência</h2>
+          <p className="text-sm text-muted-foreground">
+            Usa competence_date e não representa caixa realizado.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Card className="border-border/70 shadow-none">
+            <CardContent className="space-y-3 p-4">
+              <p className="text-xs font-medium uppercase text-muted-foreground">
+                Receitas por competência
+              </p>
+              <p className="text-xl font-semibold text-emerald-700">
+                {money.format(summary.entradasCompetencia)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-border/70 shadow-none">
+            <CardContent className="space-y-3 p-4">
+              <p className="text-xs font-medium uppercase text-muted-foreground">
+                Despesas por competência
+              </p>
+              <p className="text-xl font-semibold text-red-700">
+                {money.format(summary.saidasCompetencia)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
-        <Card className="border-border/70 shadow-none">
-          <CardContent className="space-y-3 p-4">
-            <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
-              <span>Saldo de Caixa Realizado</span>
-              <BadgeDollarSign className="h-4 w-4 text-primary" />
-            </p>
-            <p
-              className={`text-xl font-semibold tracking-tight ${
-                summary.saldoRealizado >= 0
-                  ? "text-emerald-700"
-                  : "text-red-700"
-              }`}
-            >
-              {money.format(summary.saldoRealizado)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/70 shadow-none">
-          <CardContent className="space-y-3 p-4">
-            <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
-              <span>Previstos a Receber</span>
-              <span className="text-emerald-500 font-bold text-xs">+</span>
-            </p>
-            <p className="text-xl font-semibold tracking-tight text-muted-foreground">
-              {money.format(summary.previstosAReceber)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/70 shadow-none">
-          <CardContent className="space-y-3 p-4">
-            <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
-              <span>Previstos a Pagar</span>
-              <span className="text-red-500 font-bold text-xs">-</span>
-            </p>
-            <p className="text-xl font-semibold tracking-tight text-muted-foreground">
-              {money.format(summary.previstosAPagar)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <section className="space-y-3" aria-label="Previsões e vencimentos">
+        <div>
+          <h2 className="text-lg font-semibold">Previsões e vencimentos</h2>
+          <p className="text-sm text-muted-foreground">
+            Usa due_date e status previsto; não comprova pagamento ou
+            recebimento.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-4">
+          <Card className="border-border/70 shadow-none">
+            <CardContent className="space-y-3 p-4">
+              <p className="text-xs font-medium uppercase text-muted-foreground">
+                A receber
+              </p>
+              <p className="text-xl font-semibold text-emerald-700">
+                {money.format(summary.previstosAReceber)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-border/70 shadow-none">
+            <CardContent className="space-y-3 p-4">
+              <p className="text-xs font-medium uppercase text-muted-foreground">
+                A pagar
+              </p>
+              <p className="text-xl font-semibold text-red-700">
+                {money.format(summary.previstosAPagar)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-border/70 shadow-none">
+            <CardContent className="space-y-3 p-4">
+              <p className="text-xs font-medium uppercase text-muted-foreground">
+                Vencido a receber
+              </p>
+              <p className="text-xl font-semibold text-amber-700">
+                {money.format(summary.vencidosAReceber)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-border/70 shadow-none">
+            <CardContent className="space-y-3 p-4">
+              <p className="text-xs font-medium uppercase text-muted-foreground">
+                Vencido a pagar
+              </p>
+              <p className="text-xl font-semibold text-amber-700">
+                {money.format(summary.vencidosAPagar)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+      <p className="text-xs text-muted-foreground">
+        Operações comerciais não equivalem automaticamente a recebimento ou
+        pagamento.
+      </p>
 
       <section className="space-y-3" aria-label="Operações comerciais">
         <div className="flex items-center justify-between">
@@ -1032,6 +1073,33 @@ const Financeiro = () => {
                   </p>
                 </div>
               </div>
+              {row.tipoOrigem === "gerencial" && row.status === "realizado" && (
+                <div className="mt-3 flex items-center justify-between gap-3 border-t pt-3">
+                  <p className="text-xs text-muted-foreground">
+                    {data?.transactions.some(
+                      (transaction) =>
+                        parseFinanceReversal(transaction.observacoes)
+                          ?.original_transaction_id === row.id,
+                    )
+                      ? "Estorno já registrado."
+                      : "Correção preserva este lançamento e cria um contra-lançamento."}
+                  </p>
+                  {!data?.transactions.some(
+                    (transaction) =>
+                      parseFinanceReversal(transaction.observacoes)
+                        ?.original_transaction_id === row.id,
+                  ) && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void handleReverseTransaction(row.id)}
+                    >
+                      Estornar
+                    </Button>
+                  )}
+                </div>
+              )}
             </article>
           ))}
         </div>
