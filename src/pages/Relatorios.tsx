@@ -153,6 +153,7 @@ const Relatorios = () => {
       eventosSanitario,
       eventosReproducao,
       eventosFinanceiro,
+      financeTransactions,
       insumos,
       insumoApresentacoes,
       insumoLotes,
@@ -200,6 +201,10 @@ const Relatorios = () => {
         .where("fazenda_id")
         .equals(activeFarmId)
         .toArray(),
+      db.state_finance_transactions
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
       db.state_insumos.where("fazenda_id").equals(activeFarmId).toArray(),
       db.state_insumo_apresentacoes
         .where("fazenda_id")
@@ -234,6 +239,7 @@ const Relatorios = () => {
       eventosSanitario,
       eventosReproducao,
       eventosFinanceiro,
+      financeTransactions,
       insumos,
       insumoApresentacoes,
       insumoLotes,

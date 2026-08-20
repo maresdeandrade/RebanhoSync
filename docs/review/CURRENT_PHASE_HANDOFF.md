@@ -1,4 +1,4 @@
-# Handoff atual — Fase 16 / Financeiro Gerencial
+# Handoff atual — Fase 17 / Decisão Assistida
 
 Atualizado em: 2026-08-20
 Baseline integrado da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
@@ -6,8 +6,8 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 16.0 encerrada documentalmente; Fase 16.1A concluída; Fase 16.1B ativa, em validação local**
-Próxima fase: **Fase 16.1C — Evento financeiro × ledger × comercial v2, após fechamento formal da 16.1B**
+Status: **Fase 17 ativa, em validação local**
+Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
 
 ## Saída integrada da Fase 15
 
@@ -37,9 +37,20 @@ Validações locais confirmadas: 16 testes focados de offline/pull, `quality:gat
 
 O patch local altera somente `src/lib/finance/gerencial.ts`, `src/lib/finance/__tests__/gerencial.test.ts` e o parsing de lançamento em `src/pages/Financeiro.tsx`. A validação rejeita ausência, `NaN`, infinitos, zero e negativos em `valor_total`; valida datas, enums e números opcionais; sumários distinguem realizado de previsto; cancelado e `deleted_at` não agregam; e os três agrupadores são realizados-only. A UI não transforma entrada inválida em `valor_total: 0`.
 
-Validações da 16.1B confirmadas: 20 testes financeiros focados, `financePull.test.ts`, `pull.test.ts`, `commercialPurchasePull.test.ts`, `quality:gate`, `pnpm exec tsc --noEmit --ignoreDeprecations 5.0`, `pnpm run build`, Prettier nos três arquivos alterados e `git diff --check`. O gate documental foi tentado e falhou por limitação do wrapper no Windows; portanto, a Fase 16.1B ainda não está declarada concluída.
+Validações da 16.1B confirmadas: 20 testes financeiros focados, `financePull.test.ts`, `pull.test.ts`, `commercialPurchasePull.test.ts`, `quality:gate`, `pnpm exec tsc --noEmit --ignoreDeprecations 5.0`, `pnpm run build`, Prettier nos três arquivos alterados e `git diff --check`. O gate documental foi executado via WSL e passou, concluindo a 16.1B.
 
-Ficam fora desta execução: integração Evento × ledger × comercial, `commercialReadModel`, estorno/contra-lançamento, edição de realizado, snapshots econômicos, rateio, novos KPIs, migration, RLS, RPC, schema Dexie, pull, sync worker, Fase 16.1C e Fase 17.
+## Fase 16.1C (Fase 16 núcleo) — Concluída
+
+O núcleo funcional do Financeiro Gerencial foi finalizado, fechando o gap entre o ledger e os eventos de domínio sem alterar a arquitetura offline-first ou criar migrations.
+
+- **Deduplicação e Links**: `resolveFinancialEventLink` e `resolveCommercialFinanceLink` previnem duplo-lançamento ao exigir link explícito e restringir ao mesmo tenant;
+- **Classificação**: `classifyCommercialOperation` ignora simulações explícitas e legacy, consumindo apenas o payload canônico v2;
+- **Modos Temporais**: `calculateGerencialTemporalSummary` agrega valores em caixa (realizado com `paid_at`), competência (`competence_date`), previsão (status previsto com `due_date`) e vencido (previsto com `due_date` expirado);
+- **Estorno**: Ação auditável append-only em `corrections.ts` gera contra-lançamento com identidade determinística (`getFinanceReversalId`), validando que o original é realizado, possui valor positivo e não foi estornado, sem editar silenciosamente o registro base;
+- **Categorias**: Identidades locais offline agora são determinísticas e idempotentes (`generateDeterministicId` com farm e slug), alinhadas ao seed remoto para evitar duplicação no sync;
+- **KPIs**: `buildOperationalSummary` foi expandido para expor `financeiro_entradas_competencia`, `financeiro_previstos_receber`, etc., documentando explicitamente `state_finance_transactions` como fonte primária e limitando as métricas quando o ledger não está carregado.
+
+Validações executadas localmente: 62 testes unitários (classificação, correções, categorias, gerencial, offline pull e relatório operacional), 8 testes de componentes e e2e (Home e Relatorios), `quality:gate` (lint, hotspots, testes integrados, smoke), typecheck, formatação, build de produção e verificação documental via WSL. Nenhuma migration, RLS, RPC, Edge Function, worker ou E2E remoto foi alterado.
 
 ## Histórico — Fechamento funcional da Fase 13
 

@@ -12,6 +12,7 @@ import type {
   EventoSanitario,
   FazendaSanidadeConfig,
   FinanceiroTipoEnum,
+  FinanceTransaction,
   Gesture,
   Insumo,
   InsumoApresentacao,
@@ -74,6 +75,12 @@ import {
   type SanitaryException,
   type SanitaryExceptionSummary,
 } from "@/lib/sanitario/reconciliation/sanitaryExceptions";
+import {
+  classifyCommercialOperation,
+  isRealizedCashTransaction,
+  resolveCommercialFinanceLink,
+  resolveFinancialEventLink,
+} from "@/lib/finance/classification";
 
 export type ReportPreset = "7d" | "30d" | "90d" | "mes_atual";
 
@@ -113,6 +120,12 @@ export type OperationalMetricKey =
   | "financeiro_saidas"
   | "financeiro_saldo"
   | "financeiro_transacoes"
+  | "financeiro_entradas_competencia"
+  | "financeiro_saidas_competencia"
+  | "financeiro_previstos_receber"
+  | "financeiro_previstos_pagar"
+  | "financeiro_vencidos_receber"
+  | "financeiro_vencidos_pagar"
   | "comercial_operacoes"
   | "comercial_cabecas"
   | "comercial_valor_bruto"
@@ -168,6 +181,7 @@ export interface OperationalSummaryInput {
   eventosReproducao?: EventoReproducao[];
   eventosPesagem: EventoPesagem[];
   eventosFinanceiro: EventoFinanceiro[];
+  financeTransactions?: FinanceTransaction[];
   sociedadesPecuarias?: SociedadePecuaria[];
   sociedadeAnimais?: SociedadeAnimal[];
   gestures: Gesture[];
@@ -360,6 +374,12 @@ export interface OperationalSummaryReport {
     transacoes: number;
     compras: number;
     vendas: number;
+    entradasCompetencia: number;
+    saidasCompetencia: number;
+    previstosAPagar: number;
+    previstosAReceber: number;
+    vencidosAPagar: number;
+    vencidosAReceber: number;
   };
   comercial: CommercialTraceabilitySummary;
   pesagem: {
@@ -805,6 +825,9 @@ function scopeOperationalSummaryInput(
       : undefined,
     eventosPesagem: filterFarmRows(input.eventosPesagem, fazendaId),
     eventosFinanceiro: filterFarmRows(input.eventosFinanceiro, fazendaId),
+    financeTransactions: input.financeTransactions
+      ? filterFarmRows(input.financeTransactions, fazendaId)
+      : undefined,
     sociedadesPecuarias: input.sociedadesPecuarias
       ? filterFarmRows(input.sociedadesPecuarias, fazendaId)
       : undefined,
@@ -1116,7 +1139,7 @@ function closeMetricSemantics(
 
       if (
         kind === "historical" &&
-        metric.status === "complete" &&
+        (metric.status === "complete" || metric.status === "partial" || metric.status === "unavailable") &&
         coverage.state !== "verified"
       ) {
         const hasLocalEvidence = metric.value != null && metric.value !== 0;
@@ -1818,47 +1841,141 @@ export function buildOperationalSummary(
     value: eventos.filter((evento) => evento.dominio === dominio).length,
   }));
 
+  const activeFinanceTransactions = (input.financeTransactions ?? []).filter(
+    (transaction) =>
+      !transaction.deleted_at &&
+      Number.isFinite(transaction.valor_total) &&
+      transaction.valor_total > 0,
+  );
   const financeEvents = eventos
     .filter((evento) => evento.dominio === "financeiro")
-    .map((evento) => financeByEventId.get(evento.id))
-    .filter((item): item is EventoFinanceiro => Boolean(item));
+    .map((evento) => ({
+      evento,
+      detalhe: financeByEventId.get(evento.id),
+      link: resolveFinancialEventLink({
+        fazendaId: input.fazendaId,
+        eventId: evento.id,
+        transactions: activeFinanceTransactions,
+      }),
+    }))
+    .filter(
+      (
+        item,
+      ): item is {
+        evento: Evento;
+        detalhe: EventoFinanceiro;
+        link: ReturnType<typeof resolveFinancialEventLink>;
+      } => Boolean(item.detalhe),
+    );
+  const isDateInRange = (value: string | null | undefined) => {
+    if (!value) return false;
+    const dateKey = value.slice(0, 10);
+    return dateKey >= range.from && dateKey <= range.to;
+  };
 
-  const financeiro = financeEvents.reduce(
-    (acc, item) => {
-      if (FINANCE_SIGNAL[item.tipo] === "entrada") {
-        acc.entradas += Number(item.valor_total || 0);
-        acc.vendas += 1;
-      } else {
-        acc.saidas += Number(item.valor_total || 0);
-        acc.compras += 1;
+  const financeiro = {
+    entradas: 0,
+    saidas: 0,
+    saldo: 0,
+    transacoes: 0,
+    compras: 0,
+    vendas: 0,
+    entradasCompetencia: 0,
+    saidasCompetencia: 0,
+    previstosAPagar: 0,
+    previstosAReceber: 0,
+    vencidosAPagar: 0,
+    vencidosAReceber: 0,
+  };
+
+  for (const transaction of activeFinanceTransactions) {
+    if (transaction.status === "cancelado") continue;
+    if (isDateInRange(transaction.occurred_at)) {
+      financeiro.transacoes += 1;
+      if (transaction.direction === "entrada") financeiro.vendas += 1;
+      else financeiro.compras += 1;
+    }
+
+    if (transaction.status === "realizado") {
+      if (
+        isRealizedCashTransaction(transaction) &&
+        isDateInRange(transaction.paid_at)
+      ) {
+        if (transaction.direction === "entrada")
+          financeiro.entradas += transaction.valor_total;
+        else financeiro.saidas += transaction.valor_total;
       }
-      acc.transacoes += 1;
-      return acc;
-    },
-    {
-      entradas: 0,
-      saidas: 0,
-      saldo: 0,
-      transacoes: 0,
-      compras: 0,
-      vendas: 0,
-    },
-  );
+      if (isDateInRange(transaction.competence_date)) {
+        if (transaction.direction === "entrada")
+          financeiro.entradasCompetencia += transaction.valor_total;
+        else financeiro.saidasCompetencia += transaction.valor_total;
+      }
+    } else if (transaction.status === "previsto") {
+      if (isDateInRange(transaction.due_date)) {
+        if (transaction.direction === "entrada") {
+          financeiro.previstosAReceber += transaction.valor_total;
+          if (transaction.due_date! < range.to)
+            financeiro.vencidosAReceber += transaction.valor_total;
+        } else {
+          financeiro.previstosAPagar += transaction.valor_total;
+          if (transaction.due_date! < range.to)
+            financeiro.vencidosAPagar += transaction.valor_total;
+        }
+      }
+      if (isDateInRange(transaction.competence_date)) {
+        if (transaction.direction === "entrada")
+          financeiro.entradasCompetencia += transaction.valor_total;
+        else financeiro.saidasCompetencia += transaction.valor_total;
+      }
+    }
+  }
+
+  for (const item of financeEvents) {
+    if (item.link.duplicate || item.link.crossFarm || item.link.transaction) {
+      continue;
+    }
+    if (
+      !Number.isFinite(item.detalhe.valor_total) ||
+      item.detalhe.valor_total <= 0
+    )
+      continue;
+    if (FINANCE_SIGNAL[item.detalhe.tipo] === "entrada") {
+      financeiro.entradas += item.detalhe.valor_total;
+      financeiro.vendas += 1;
+    } else {
+      financeiro.saidas += item.detalhe.valor_total;
+      financeiro.compras += 1;
+    }
+    financeiro.transacoes += 1;
+  }
+
   financeiro.saldo = financeiro.entradas - financeiro.saidas;
 
   const commercialEvents = eventos
+    .filter((evento) => evento.dominio === "comercial")
+    .map((evento) => {
+      const detalhe = commercialByEventId.get(evento.id);
+      if (!detalhe) return null;
+      const link = resolveCommercialFinanceLink({
+        fazendaId: input.fazendaId,
+        financeTransactionId: detalhe.finance_transaction_id,
+        transactions: activeFinanceTransactions,
+      });
+      const classification = classifyCommercialOperation(
+        evento,
+        detalhe,
+        link.transaction,
+      );
+      return { evento, detalhe, classification };
+    })
     .filter(
-      (evento) =>
-        evento.dominio === "comercial" && isCommercialOperationV2(evento),
-    )
-    .map((evento) => ({
-      evento,
-      detalhe: commercialByEventId.get(evento.id),
-    }))
-    .filter(
-      (item): item is { evento: Evento; detalhe: EventoComercial } =>
-        Boolean(item.detalhe) &&
-        !isCommercialSimulation(item.evento, item.detalhe),
+      (
+        item,
+      ): item is {
+        evento: Evento;
+        detalhe: EventoComercial;
+        classification: ReturnType<typeof classifyCommercialOperation>;
+      } => Boolean(item) && item!.classification.includedInCommercialAggregate,
     );
   const commercialOperation = new Map<string, SanitaryTraceabilityCostRow>();
   const commercialCounterparty = new Map<string, SanitaryTraceabilityCostRow>();
@@ -1972,12 +2089,24 @@ export function buildOperationalSummary(
     }
   }
 
-  const commercialEventCount = eventos.filter(
-    (evento) =>
-      evento.dominio === "comercial" &&
-      isCommercialOperationV2(evento) &&
-      !isCommercialSimulation(evento, commercialByEventId.get(evento.id)),
-  ).length;
+  const commercialEventCount = eventos.filter((evento) => {
+    if (evento.dominio !== "comercial") return false;
+    const detalhe = commercialByEventId.get(evento.id);
+    if (!detalhe) {
+      // For counting purposes, if detail is missing we still check if it *should* have been included
+      // to flag it as partial.
+      return (
+        isCommercialOperationV2(evento) &&
+        !isCommercialSimulation(evento, undefined)
+      );
+    }
+    const classification = classifyCommercialOperation(
+      evento,
+      detalhe,
+      undefined,
+    );
+    return classification.includedInCommercialAggregate;
+  }).length;
   const commercialDetailsComplete =
     commercialEventCount === commercialEvents.length;
   const commercialGrossValue =
@@ -2153,6 +2282,37 @@ export function buildOperationalSummary(
     (event) => !event.deleted_at && event.dominio === "financeiro",
   ).length;
   const financeDetailsComplete = financeEventCount === financeEvents.length;
+  const financeEvidenceCount =
+    financeEventCount + activeFinanceTransactions.length;
+
+  const explicitFinanceCoverage = input.historicalCoverage?.financeiro_entradas;
+  const isFinanceExplicitlyVerified = explicitFinanceCoverage?.state === "verified";
+
+  const financeMetricStatus: MetricStatus =
+    financeEvidenceCount === 0 && !isFinanceExplicitlyVerified
+      ? "unavailable"
+      : financeDetailsComplete
+        ? "complete"
+        : "partial";
+  const financeSources = input.financeTransactions
+    ? [
+        { name: "state_finance_transactions", role: "primary" as const },
+        { name: "event_eventos_financeiro", role: "auxiliary" as const },
+      ]
+    : [
+        { name: "event_eventos", role: "primary" as const },
+        { name: "event_eventos_financeiro", role: "auxiliary" as const },
+      ];
+  const financeMetricLimitations = [
+    "Caixa realizado exige status realizado, paid_at preenchido e paid_at dentro do periodo.",
+    "Eventos financeiros e lançamentos vinculados são deduplicados por identidade explícita.",
+    ...(input.financeTransactions
+      ? []
+      : ["Ledger gerencial não foi carregado nesta leitura."]),
+    ...(financeDetailsComplete
+      ? []
+      : ["Existem Eventos financeiros sem detalhe carregado."]),
+  ];
   const weightEventCount = eventos.filter(
     (event) => !event.deleted_at && event.dominio === "pesagem",
   ).length;
@@ -2280,47 +2440,112 @@ export function buildOperationalSummary(
       period: historicalPeriod,
     }),
     financeiro_entradas: makeMetric({
-      value: financeDetailsComplete ? financeiro.entradas : null,
-      status: financeDetailsComplete ? "complete" : "partial",
-      sources: [
-        { name: "event_eventos", role: "primary" },
-        { name: "event_eventos_financeiro", role: "auxiliary" },
-      ],
-      limitations: financeDetailsComplete
-        ? []
-        : ["Existem Eventos financeiros sem detalhe carregado."],
+      value: financeMetricStatus === "unavailable" ? null : financeiro.entradas,
+      status: financeMetricStatus,
+      sources: financeSources,
+      limitations: financeMetricLimitations,
       period: historicalPeriod,
     }),
     financeiro_saidas: makeMetric({
-      value: financeDetailsComplete ? financeiro.saidas : null,
-      status: financeDetailsComplete ? "complete" : "partial",
-      sources: [
-        { name: "event_eventos", role: "primary" },
-        { name: "event_eventos_financeiro", role: "auxiliary" },
-      ],
-      limitations: financeDetailsComplete
-        ? []
-        : ["Existem Eventos financeiros sem detalhe carregado."],
+      value: financeMetricStatus === "unavailable" ? null : financeiro.saidas,
+      status: financeMetricStatus,
+      sources: financeSources,
+      limitations: financeMetricLimitations,
       period: historicalPeriod,
     }),
     financeiro_saldo: makeMetric({
-      value: financeDetailsComplete ? financeiro.saldo : null,
-      status: financeDetailsComplete ? "complete" : "partial",
-      sources: [
-        { name: "event_eventos", role: "primary" },
-        { name: "event_eventos_financeiro", role: "auxiliary" },
-      ],
+      value: financeMetricStatus === "unavailable" ? null : financeiro.saldo,
+      status: financeMetricStatus,
+      sources: financeSources,
       limitations: [
-        "Operacoes comerciais sem fato financeiro vinculado nao sao convertidas automaticamente em receita/despesa.",
+        ...financeMetricLimitations,
+        "Operações comerciais sem fato financeiro vinculado não são convertidas automaticamente em receita/despesa.",
       ],
       period: historicalPeriod,
     }),
     financeiro_transacoes: makeMetric({
-      value: financeDetailsComplete ? financeiro.transacoes : null,
-      status: financeDetailsComplete ? "complete" : "partial",
-      sources: [
-        { name: "event_eventos", role: "primary" },
-        { name: "event_eventos_financeiro", role: "auxiliary" },
+      value:
+        financeMetricStatus === "unavailable" ? null : financeiro.transacoes,
+      status: financeMetricStatus,
+      sources: financeSources,
+      limitations: financeMetricLimitations,
+      period: historicalPeriod,
+    }),
+    financeiro_entradas_competencia: makeMetric({
+      value:
+        financeMetricStatus === "unavailable"
+          ? null
+          : financeiro.entradasCompetencia,
+      status: financeMetricStatus,
+      sources: financeSources,
+      limitations: [
+        ...financeMetricLimitations,
+        "Competência usa competence_date; não é caixa realizado.",
+      ],
+      period: historicalPeriod,
+    }),
+    financeiro_saidas_competencia: makeMetric({
+      value:
+        financeMetricStatus === "unavailable"
+          ? null
+          : financeiro.saidasCompetencia,
+      status: financeMetricStatus,
+      sources: financeSources,
+      limitations: [
+        ...financeMetricLimitations,
+        "Competência usa competence_date; não é caixa realizado.",
+      ],
+      period: historicalPeriod,
+    }),
+    financeiro_previstos_receber: makeMetric({
+      value:
+        financeMetricStatus === "unavailable"
+          ? null
+          : financeiro.previstosAReceber,
+      status: financeMetricStatus,
+      sources: financeSources,
+      limitations: [
+        ...financeMetricLimitations,
+        "Previsão usa due_date e status previsto; não comprova recebimento.",
+      ],
+      period: historicalPeriod,
+    }),
+    financeiro_previstos_pagar: makeMetric({
+      value:
+        financeMetricStatus === "unavailable"
+          ? null
+          : financeiro.previstosAPagar,
+      status: financeMetricStatus,
+      sources: financeSources,
+      limitations: [
+        ...financeMetricLimitations,
+        "Previsão usa due_date e status previsto; não comprova pagamento.",
+      ],
+      period: historicalPeriod,
+    }),
+    financeiro_vencidos_receber: makeMetric({
+      value:
+        financeMetricStatus === "unavailable"
+          ? null
+          : financeiro.vencidosAReceber,
+      status: financeMetricStatus,
+      sources: financeSources,
+      limitations: [
+        ...financeMetricLimitations,
+        "Vencido é previsto com due_date anterior ao fim do periodo.",
+      ],
+      period: historicalPeriod,
+    }),
+    financeiro_vencidos_pagar: makeMetric({
+      value:
+        financeMetricStatus === "unavailable"
+          ? null
+          : financeiro.vencidosAPagar,
+      status: financeMetricStatus,
+      sources: financeSources,
+      limitations: [
+        ...financeMetricLimitations,
+        "Vencido é previsto com due_date anterior ao fim do periodo.",
       ],
       period: historicalPeriod,
     }),

@@ -176,6 +176,7 @@ describe("Gerencial Finance Core Domain Logic", () => {
         occurred_at: "2026-05-29T12:00:00Z",
         direction: "entrada",
         status: "realizado",
+        paid_at: "2026-05-29T12:00:00Z",
         category_id: "cat-receita",
         valor_total: 10000,
         deleted_at: null,
@@ -186,6 +187,7 @@ describe("Gerencial Finance Core Domain Logic", () => {
         occurred_at: "2026-05-29T12:00:00Z",
         direction: "saida",
         status: "realizado",
+        paid_at: "2026-05-29T12:00:00Z",
         category_id: "cat-despesa",
         valor_total: 3500.5,
         deleted_at: null,
@@ -357,5 +359,82 @@ describe("Gerencial Finance Core Domain Logic", () => {
         fazenda: 300,
       });
     });
+  });
+});
+
+describe("temporal finance summary", () => {
+  it("separates cash from competence and due-date forecasts", async () => {
+    const { calculateGerencialTemporalSummary } = await import("../gerencial");
+    const base = {
+      fazenda_id: "farm-1",
+      category_id: "cat-1",
+      quantidade: null,
+      unidade: null,
+      valor_unitario: null,
+      contraparte_id: null,
+      animal_id: null,
+      lote_id: null,
+      pasto_id: null,
+      centro_custo_tipo: "fazenda",
+      centro_custo_id: null,
+      rateio_metodo: "direto",
+      origem: "manual",
+      source_event_id: null,
+      source_inventory_movement_id: null,
+      observacoes: null,
+      client_id: "client-1",
+      client_op_id: "op-1",
+      client_tx_id: null,
+      client_recorded_at: "2026-03-01T00:00:00.000Z",
+      server_received_at: "2026-03-01T00:00:00.000Z",
+      created_at: "2026-03-01T00:00:00.000Z",
+      updated_at: "2026-03-01T00:00:00.000Z",
+      deleted_at: null,
+    };
+    const realizedWithoutPaidAt = {
+      ...base,
+      id: "tx-no-paid",
+      occurred_at: "2026-03-10T00:00:00.000Z",
+      competence_date: "2026-03-01",
+      due_date: null,
+      paid_at: null,
+      direction: "entrada",
+      status: "realizado",
+      valor_total: 100,
+    };
+    const realizedWithPaidAt = {
+      ...base,
+      id: "tx-paid",
+      occurred_at: "2026-03-11T00:00:00.000Z",
+      competence_date: "2026-03-01",
+      due_date: null,
+      paid_at: "2026-03-11T00:00:00.000Z",
+      direction: "saida",
+      status: "realizado",
+      valor_total: 80,
+    };
+    const forecast = {
+      ...base,
+      id: "tx-forecast",
+      occurred_at: "2026-03-12T00:00:00.000Z",
+      competence_date: "2026-03-01",
+      due_date: "2026-03-15",
+      paid_at: null,
+      direction: "entrada",
+      status: "previsto",
+      valor_total: 50,
+    };
+
+    const result = calculateGerencialTemporalSummary(
+      [realizedWithoutPaidAt, realizedWithPaidAt, forecast] as never,
+      new Date("2026-03-20T00:00:00.000Z"),
+    );
+
+    expect(result.entradasRealizadas).toBe(0);
+    expect(result.saidasRealizadas).toBe(80);
+    expect(result.entradasCompetencia).toBe(150);
+    expect(result.saidasCompetencia).toBe(80);
+    expect(result.previstosAReceber).toBe(50);
+    expect(result.vencidosAReceber).toBe(50);
   });
 });

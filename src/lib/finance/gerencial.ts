@@ -12,6 +12,13 @@ export interface FinanceGerencialSummary {
   previstosAReceber: number;
 }
 
+export interface FinanceTemporalSummary extends FinanceGerencialSummary {
+  entradasCompetencia: number;
+  saidasCompetencia: number;
+  vencidosAPagar: number;
+  vencidosAReceber: number;
+}
+
 const VALID_DIRECTIONS = new Set(["entrada", "saida"]);
 const VALID_STATUSES = new Set(["previsto", "realizado", "cancelado"]);
 const VALID_COST_CENTER_TYPES = new Set(["fazenda", "animal", "lote", "pasto"]);
@@ -146,30 +153,57 @@ function isActiveTransactionWithValidValue(tx: FinanceTransaction): boolean {
 export function calculateGerencialSummary(
   transactions: FinanceTransaction[],
 ): FinanceGerencialSummary {
+  const temporal = calculateGerencialTemporalSummary(transactions);
+  return {
+    entradasRealizadas: temporal.entradasRealizadas,
+    saidasRealizadas: temporal.saidasRealizadas,
+    saldoRealizado: temporal.saldoRealizado,
+    previstosAPagar: temporal.previstosAPagar,
+    previstosAReceber: temporal.previstosAReceber,
+  };
+}
+
+export function calculateGerencialTemporalSummary(
+  transactions: FinanceTransaction[],
+  referenceDate = new Date(),
+): FinanceTemporalSummary {
+  const today = referenceDate.toISOString().slice(0, 10);
   let entradasRealizadas = 0;
   let saidasRealizadas = 0;
+  let entradasCompetencia = 0;
+  let saidasCompetencia = 0;
   let previstosAPagar = 0;
   let previstosAReceber = 0;
+  let vencidosAPagar = 0;
+  let vencidosAReceber = 0;
 
   for (const tx of transactions) {
-    if (!isActiveTransactionWithValidValue(tx)) {
-      continue;
-    }
-
+    if (!isActiveTransactionWithValidValue(tx)) continue;
     const valor = tx.valor_total;
 
     if (tx.status === "realizado") {
-      if (tx.direction === "entrada") {
-        entradasRealizadas += valor;
-      } else if (tx.direction === "saida") {
-        saidasRealizadas += valor;
+      if (tx.paid_at) {
+        if (tx.direction === "entrada") entradasRealizadas += valor;
+        else if (tx.direction === "saida") saidasRealizadas += valor;
       }
-    } else if (tx.status === "previsto") {
-      if (tx.direction === "saida") {
-        previstosAPagar += valor;
-      } else if (tx.direction === "entrada") {
-        previstosAReceber += valor;
+      if (tx.competence_date) {
+        if (tx.direction === "entrada") entradasCompetencia += valor;
+        else if (tx.direction === "saida") saidasCompetencia += valor;
       }
+      continue;
+    }
+
+    if (tx.status !== "previsto") continue;
+    if (tx.direction === "entrada") previstosAReceber += valor;
+    else if (tx.direction === "saida") previstosAPagar += valor;
+
+    if (tx.due_date && tx.due_date < today) {
+      if (tx.direction === "entrada") vencidosAReceber += valor;
+      else if (tx.direction === "saida") vencidosAPagar += valor;
+    }
+    if (tx.competence_date) {
+      if (tx.direction === "entrada") entradasCompetencia += valor;
+      else if (tx.direction === "saida") saidasCompetencia += valor;
     }
   }
 
@@ -179,6 +213,10 @@ export function calculateGerencialSummary(
     saldoRealizado: entradasRealizadas - saidasRealizadas,
     previstosAPagar,
     previstosAReceber,
+    entradasCompetencia,
+    saidasCompetencia,
+    vencidosAPagar,
+    vencidosAReceber,
   };
 }
 

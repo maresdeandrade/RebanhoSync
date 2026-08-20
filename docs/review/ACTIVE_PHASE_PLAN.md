@@ -1,9 +1,9 @@
-# Plano ativo — Fase 16 / Financeiro Gerencial
+# Plano ativo — Fase 17 / Decisão Assistida
 
 Atualizado em: 2026-08-20
-Status: **Fase 16.0 concluída documentalmente; Fase 16.1A concluída; Fase 16.1B ativa, em validação local**
+Status: **Fase 17 ativa, em validação local**
 Fase 15 integrada em `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`.
-Próxima fase: **Fase 16.1C — Evento financeiro × ledger × comercial v2, após fechamento formal da 16.1B**
+Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -30,9 +30,22 @@ Implementação local realizada em `src/lib/offline/pull.ts`, com testes focados
 
 A implementação local restringe-se a `src/lib/finance/gerencial.ts`, seus testes focados e o fluxo de criação de lançamento em `src/pages/Financeiro.tsx`. Valores ausentes, inválidos, não finitos, zero e negativos não são convertidos para zero; `valor_total` permanece estritamente positivo; realizado, previsto, cancelado e `deleted_at` possuem participação explícita nos agregados; e os agrupadores representam somente transações realizadas. Quantidade e valor unitário informados também são validados no domínio. Não houve migration, RLS, RPC, schema, pull, sync worker, integração Evento × ledger × comercial, estorno, rateio ou novo KPI.
 
-A validação técnica local passou nos testes financeiros focados, regressões de pull da 16.1A, `quality:gate`, typecheck, build, Prettier dos arquivos alterados e `git diff --check`. O gate documental não pôde ser executado pelo script no Windows porque ele não detectou `bash.exe`; portanto, a Fase 16.1B ainda não está declarada concluída.
+A validação técnica local passou nos testes financeiros focados, regressões de pull da 16.1A, `quality:gate`, typecheck, build, Prettier dos arquivos alterados e `git diff --check`. O gate documental foi executado via WSL e passou, concluindo formalmente a 16.1B.
 
-A Fase 16.1C e a Fase 17 não foram iniciadas.
+## Fase 16.1C (Fase 16 núcleo) — Evento financeiro × ledger × comercial v2
+
+Objetivo: Concluir o núcleo funcional do Financeiro Gerencial, estabelecendo contratos claros de deduplicação, modos temporais, estorno auditável, categorias idempotentes e UX mínima.
+
+A implementação inclui:
+- `classifyCommercialOperation` e `classifyLedgerTransaction` em `src/lib/finance/classification.ts` para separar fatos de ledger, isolar operações legadas/simulações comerciais e deduplicar vínculos;
+- `resolveFinancialEventLink` explícito para evitar duplo-lançamento e links cross-farm;
+- `calculateGerencialTemporalSummary` em `src/lib/finance/gerencial.ts` para agregar caixa, competência, previsão e vencimento;
+- estorno financeiro append-only em `src/lib/finance/corrections.ts`, idempotente e sem edição silenciosa do realizado;
+- identidades locais determinísticas para as categorias padrão em `src/lib/finance/categories.ts`, alinhadas com a autoridade de slug do RLS remoto;
+- `buildOperationalSummary` consumindo a nova semântica de classificação, links explícitos e sumário temporal para os KPIs financeiros;
+- UX mínima em `src/pages/Financeiro.tsx` para apresentar as visões separadas e acionar o estorno.
+
+A validação técnica local passou em testes focados, regressões de pull e qualidade, `quality:gate`, typecheck, build e formatação. A Fase 17 não foi iniciada.
 
 ## Histórico — Fechamento funcional da Fase 13
 

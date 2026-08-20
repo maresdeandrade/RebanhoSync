@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
 Atualizado em: 2026-08-20
-Fase atual: **Fase 16 — Financeiro Gerencial**
-Fase anterior: **Fase 15 — KPIs/Relatórios encerrada e integrada em main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb**
+Fase atual: **Fase 17 — Decisão Assistida (a iniciar)**
+Fase anterior: **Fase 16 — Financeiro Gerencial concluída localmente**
 
 ## Objetivo
 
@@ -45,11 +45,11 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 ## Próxima fase de desenvolvimento
 
 ```txt
-Fase 15 — KPIs/Relatórios — encerrada e integrada em main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb
-→ Fase 16 — Financeiro Gerencial — auditoria 16.0 encerrada; 16.1A concluída; 16.1B em validação local
+Fase 16 — Financeiro Gerencial — concluída localmente
+→ Fase 17 — Decisão Assistida — a definir
 ```
 
-A Fase 16.1A restringiu-se à proteção offline de `finance_transactions` e `finance_categories` durante pull `replace`/`merge` e está concluída no baseline `1734a5b`. A Fase 16.1B restringe-se ao hardening semântico de valores, status e agrupamentos do ledger gerencial; não iniciar 16.1C ou qualquer fase posterior antes do fechamento formal da 16.1B.
+A Fase 16.1A restringiu-se à proteção offline de `finance_transactions` e `finance_categories` durante pull `replace`/`merge` e está concluída. A Fase 16.1B concluiu o hardening semântico de valores, status e agrupamentos do ledger gerencial. A Fase 16.1C finalizou o núcleo financeiro, com deduplicação de vínculos, modos temporais, estorno auditável, categorias determinísticas e expansão dos KPIs operacionais. Toda a Fase 16 foi concluída localmente. A Fase 17 não foi iniciada.
 
 ## Risco de rollout
 

@@ -230,12 +230,16 @@ const FK_CONSTRAINT_REASON: Record<string, string> = {
   fk_insumo_movimentacoes_lote_fazenda: "VALIDATION_INSUMO_LOTE",
   fk_insumo_movimentacoes_source_evento_fazenda:
     "VALIDATION_INSUMO_SOURCE_EVENTO",
+  fk_finance_transactions_category_fazenda: "VALIDATION_FINANCEIRO_CATEGORIA",
+  fk_finance_transactions_reverses_fazenda: "VALIDATION_FINANCEIRO_ESTORNO_ORIGEM",
 };
 
 const UNIQUE_CONSTRAINT_REASON: Record<string, string> = {
   idx_eventos_unique_source_task: "agenda_already_completed_by_event",
   ux_sanitario_agenda_closures_v2_agenda_active:
     "sanitario_agenda_closure_already_exists",
+  uq_finance_categories_slug: "finance_category_slug_already_exists",
+  ux_finance_transactions_unique_reversal: "finance_reversal_already_exists",
 };
 
 const TABLE_PRIMARY_KEY: Record<
@@ -290,6 +294,14 @@ export function normalizeDbError(
 
   if (dbCode === "23505" && op.table === "agenda_itens") {
     return { status: "APPLIED_ALTERED", altered: { dedup: "collision_noop" } };
+  }
+
+  if (dbCode === "23505" && op.table === "finance_categories") {
+    // A validação de conteúdo e reconciliação exata foi movida para o laço principal
+    // para permitir acesso assíncrono ao banco de dados, mas caso o erro chegue
+    // até aqui por alguma falha na pré-validação ou concorrência extrema,
+    // tratamos de forma conservadora.
+    return { status: "CONFLICT", reason_code: "finance_category_slug_already_exists", reason_message: "Slug já existe. A pré-validação falhou ou houve concorrência." };
   }
 
   if (dbCode === "23505") {

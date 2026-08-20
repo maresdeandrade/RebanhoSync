@@ -8,6 +8,7 @@ import type {
   EventoComercial,
   EventoFinanceiro,
   EventoPesagem,
+  FinanceTransaction,
   EventoReproducao,
   EventoSanitario,
   FazendaSanidadeConfig,
@@ -1828,5 +1829,193 @@ describe("Fase 15.2 — fechamento semantico", () => {
       value: 1,
       status: "partial",
     });
+  });
+});
+
+describe("Phase 16 finance event and ledger semantics", () => {
+  const range = resolveReportRange("30d", new Date("2026-03-29T12:00:00.000Z"));
+
+  function buildMinimalReport(input: {
+    eventos: Evento[];
+    eventosFinanceiro: EventoFinanceiro[];
+    eventosComercial?: EventoComercial[];
+    financeTransactions?: FinanceTransaction[];
+    historicalCoverage?: Record<string, { state: "complete" | "partial" | "verified" }>;
+    gestures?: Gesture[];
+    rejections?: Rejection[];
+  }) {
+    return buildOperationalSummary(
+      {
+        fazendaId: "farm-1",
+        animals: [],
+        lotes: [],
+        pastos: [],
+        agenda: [],
+        eventos: input.eventos,
+        eventosPesagem: [],
+        eventosFinanceiro: input.eventosFinanceiro,
+        eventosComercial: input.eventosComercial,
+        financeTransactions: input.financeTransactions,
+        historicalCoverage: input.historicalCoverage as Record<
+          OperationalMetricKey,
+          OperationalSummaryHistoricalCoverage
+        >,
+        gestures: input.gestures ?? [],
+        rejections: input.rejections ?? [],
+      },
+      range,
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
+  }
+
+  it("keeps commercial v2 outside cash and exposes a linked forecast as a forecast", () => {
+    const event = {
+      ...baseEvento,
+      id: "commercial-forecast-event",
+      dominio: "comercial",
+      occurred_at: "2026-03-15T12:00:00.000Z",
+      payload: { kind: "commercial_operation_v2" },
+    } as Evento;
+    const detail = {
+      evento_id: event.id,
+      fazenda_id: "farm-1",
+      operation_type: "venda",
+      scope: "animal",
+      occurred_at: event.occurred_at,
+      quantidade_animais: 1,
+      valor_bruto: 1000,
+      valor_liquido_derivado: 1000,
+      finance_transaction_id: "tx-forecast",
+      snapshot: {},
+      calculation_status: "complete",
+      issues: [],
+      limitations: [],
+      deleted_at: null,
+    } as unknown as EventoComercial;
+    const transaction = {
+      id: "tx-forecast",
+      fazenda_id: "farm-1",
+      occurred_at: "2026-03-15T12:00:00.000Z",
+      competence_date: "2026-03-01",
+      due_date: "2026-03-20",
+      paid_at: null,
+      direction: "entrada",
+      status: "previsto",
+      valor_total: 1000,
+      source_event_id: null,
+      deleted_at: null,
+    } as unknown as FinanceTransaction;
+
+    const report = buildMinimalReport({
+      eventos: [event],
+      eventosFinanceiro: [],
+      eventosComercial: [detail],
+      financeTransactions: [transaction],
+    });
+
+    expect(report.financeiro.entradas).toBe(0);
+    expect(report.financeiro.previstosAReceber).toBe(1000);
+    expect(report.comercial.operations).toBe(1);
+    expect(report.comercial.totalLiquido).toBe(1000);
+  });
+
+  it("counts a linked financial event and ledger transaction only once", () => {
+    const event = {
+      ...baseEvento,
+      id: "financial-linked-event",
+      dominio: "financeiro",
+      occurred_at: "2026-03-15T12:00:00.000Z",
+    } as Evento;
+    const detail = {
+      evento_id: event.id,
+      fazenda_id: "farm-1",
+      tipo: "venda",
+      valor_total: 3500,
+      contraparte_id: null,
+      payload: {},
+      deleted_at: null,
+    } as unknown as EventoFinanceiro;
+    const transaction = {
+      id: "tx-linked",
+      fazenda_id: "farm-1",
+      occurred_at: "2026-03-15T12:00:00.000Z",
+      competence_date: "2026-03-01",
+      due_date: "2026-03-20",
+      paid_at: "2026-03-15T12:00:00.000Z",
+      direction: "entrada",
+      status: "realizado",
+      valor_total: 3500,
+      source_event_id: event.id,
+      deleted_at: null,
+    } as unknown as FinanceTransaction;
+
+    const report = buildMinimalReport({
+      eventos: [event],
+      eventosFinanceiro: [detail],
+      financeTransactions: [transaction],
+    });
+
+    expect(report.financeiro.entradas).toBe(3500);
+    expect(report.financeiro.saldo).toBe(3500);
+    expect(report.financeiro.transacoes).toBe(1);
+  });
+
+  describe("Fase 16 - KPI Coverage", () => {
+    it("does not treat loaded ledger as complete historical coverage automatically", () => {
+    const transaction = {
+      id: "tx-linked",
+      fazenda_id: "farm-1",
+      occurred_at: "2026-03-15T12:00:00.000Z",
+      competence_date: "2026-03-01",
+      due_date: "2026-03-20",
+      paid_at: "2026-03-15T12:00:00.000Z",
+      direction: "entrada",
+      status: "realizado",
+      valor_total: 3500,
+      source_event_id: null,
+      deleted_at: null,
+    } as unknown as FinanceTransaction;
+
+    const report = buildMinimalReport({
+      eventos: [],
+      eventosFinanceiro: [],
+      financeTransactions: [transaction],
+      historicalCoverage: {}, // Explicitly empty/missing
+    });
+
+    expect(report.metrics.financeiro_entradas.status).toBe("partial");
+    expect(report.metrics.financeiro_entradas.limitations).toContain(
+      "Valor representa o conjunto local observado, mas a cobertura historica completa nao foi comprovada.",
+    );
+  });
+
+  it("treats zero local without explicit coverage as unavailable", () => {
+    const report = buildMinimalReport({
+      eventos: [],
+      eventosFinanceiro: [],
+      financeTransactions: [],
+      historicalCoverage: {}, // Explicitly empty/missing
+    });
+
+    expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
+    expect(report.metrics.financeiro_entradas.value).toBeNull();
+    expect(report.metrics.financeiro_entradas.limitations).toContain(
+      "Zero local nao e tratado como zero factual porque a cobertura historica completa nao foi comprovada.",
+    );
+  });
+
+  it("treats zero local with explicit verified coverage as true zero", () => {
+    const report = buildMinimalReport({
+      eventos: [],
+      eventosFinanceiro: [],
+      financeTransactions: [],
+      historicalCoverage: {
+        financeiro_entradas: { state: "verified", evidence: [] },
+      } as unknown as Record<OperationalMetricKey, OperationalSummaryHistoricalCoverage>,
+    });
+
+    expect(report.metrics.financeiro_entradas.status).toBe("complete");
+    expect(report.metrics.financeiro_entradas.value).toBe(0);
+  });
   });
 });

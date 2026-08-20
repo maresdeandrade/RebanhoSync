@@ -780,6 +780,12 @@ export class OfflineDB extends Dexie {
       sync_sanitario_v2_cutovers:
         "key, fazenda_id, contract_version, status, updated_at, [fazenda_id+contract_version]",
     });
+
+    // Version 29: FASE 16 - Financeiro Gerencial (Blockers resolution)
+    this.version(29).stores({
+      state_finance_transactions:
+        "id, fazenda_id, category_id, status, direction, occurred_at, source_event_id, reverses_transaction_id, deleted_at, [fazenda_id+status], [fazenda_id+category_id]",
+    });
   }
 }
 
