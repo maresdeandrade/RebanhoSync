@@ -1,39 +1,41 @@
-# Resultado funcional mais recente — Fase 13
+# Resultado funcional mais recente — Fase 15 / KPIs e Relatórios
 
-Atualizado em: 2026-08-07
-Baseline de entrada do fechamento: `e7b69fc`
-Decisão: **Fase 13 encerrada com patch funcional**
+Atualizado em: 2026-08-19
+Baseline de entrada: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`
+Commit da implementação: `7bebe60e8c866ba36aca512996044701c354ceab`
+PR de revisão: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93)
+Decisão: **Fase 15 encerrada tecnicamente e publicada para revisão; sem merge**
 
 ## Resultado
 
-A Reprodução Operacional v1 cobre a jornada matriz → cobertura/IA → diagnóstico → estado atual → parto ou aborto → cria, quando houver → próximas ações.
+A Fase 15 implementa um contrato comum de KPIs por meio de `MetricResult<T>`, com estados `complete`, `partial` e `unavailable`, fontes, limitações, período e cobertura. `MetricCoverage` diferencia histórico, snapshot atual e planejamento. Histórico sem evidência verificada não é apresentado como completo; zero local sem cobertura torna-se indisponível; e pendências locais tornam o resultado parcial.
 
-- PRENHA, VAZIA, DPP, parto vigente e perda gestacional são reconstruídos do histórico factual;
-- parto preserva mãe, pai quando factual, `birth_event_id`, `fazenda_id`, atomicidade e replay idempotente;
-- cada cria recebe seis intenções neonatais canônicas na Agenda Sanitária v2, sem converter Agenda em Evento;
-- aborto encerra o episódio afetado, remove a DPP atual e não cria cria ou Agenda;
-- correções permanecem append-only;
-- `taxonomy_facts` permanece cache derivado e não prevalece sobre o contexto reprodutivo canônico carregado pelas telas.
+O período registra fronteiras inclusivas, campo factual e timezone. O timezone válido da fazenda é preferido; ausência ou valor inválido usa o timezone de runtime com limitação explícita. O escopo do agregador é filtrado por `fazendaId`, sem misturar dados de outra fazenda.
 
-## Patch final
+A reprodução usa `rebuildReproductiveProjection`. O histórico factual do rebanho calcula entradas, saídas e categorias a partir de Eventos e detalhes factuais, sem transformar `state_animais` em histórico. A demanda futura prefere Agenda Sanitária v2 e declara o fallback legado. O comercial exige seleção positiva por `payload.kind = "commercial_operation_v2"`, detalhe `eventos_comercial` vinculado para valores e exclusão de simulações explícitas. Peso comercial não é tratado como pesagem zootécnica.
 
-O adaptador de taxonomia passou a obter DPP e último parto de `rebuildReproductiveProjection`. Quando uma tela fornece contexto reprodutivo, inclusive histórico vazio, esse contexto é autoritativo e um cache antigo não pode reintroduzir prenhez, DPP ou parto na leitura.
+CSV e impressão exportam `metric_coverage`, `metric_scope`, `metric_period` e `metric_timezone` por KPI. Agenda continua sendo intenção, Evento continua sendo fato histórico executado, `state_*` permanece estado atual/read model e Protocolo permanece configuração.
 
-Não houve alteração de banco, migration, RLS, RPC, Edge Function, Dexie schema, fila ou sync.
+## Gate semântico final
+
+O gate de cobertura confirmou que nenhum código produtivo injeta `state: "verified"`; essa evidência pode ser fornecida apenas pelo chamador com comprovação real. O gate de timezone confirmou o uso de `fazendas.timezone` e o fallback runtime limitado. O gate comercial encontrou e corrigiu a ausência de seleção positiva: agora eventos comerciais sem `payload.kind = "commercial_operation_v2"` não entram, mesmo com detalhe legado correspondente; simulações explicitamente marcadas continuam excluídas.
+
+## Patch e banco
+
+O patch contém `src/lib/reports/metricContract.ts`, `src/lib/reports/operationalSummary.ts`, `src/lib/reports/__tests__/operationalSummary.test.ts`, `src/pages/Home.tsx` e `src/pages/Relatorios.tsx`. Não houve migration, alteração de RLS, schema, RPC, Edge Function, grant ou sincronização remota. Produção não foi acessada ou modificada.
 
 ## Validação
 
-- Caminho A: IA → diagnóstico positivo → PRENHA + DPP → parto → cria → seis Agendas v2 → replay sem duplicação → projeção pós-parto;
-- Caminho B: cobertura → diagnóstico positivo → aborto → VAZIA → sem DPP, cria ou Agenda → replay sem duplicação;
-- 14 testes passaram em 2 arquivos;
-- ESLint passou nos 3 arquivos TypeScript alterados;
-- build passou uma vez, com warnings preexistentes;
-- `git diff --check` passou no fechamento.
-
-A inspeção visual automatizada não foi executada porque `agent-browser` não está instalado no ambiente. A disponibilidade das ações e navegações foi confirmada nas rotas e componentes existentes.
+- 16 testes focados de `operationalSummary` passaram, incluindo cobertura, zero/ausência, pendências locais, isolamento, timezone, Agenda Sanitária v2, entradas/saídas e simulação comercial.
+- `quality:gate` passou, incluindo lint, hotspots, integração e smoke.
+- `pnpm run build` passou, com warnings preexistentes de Browserslist, chunks e import misto do Dexie.
+- `pnpm exec tsc --noEmit --ignoreDeprecations 5.0` passou sem erros de código. A execução sem override permanece incompatível com o baseline `ignoreDeprecations: "6.0"` usando TypeScript 5.8.3.
+- Prettier passou nos cinco arquivos afetados e `git diff --check` passou.
+- `audit:agents` e `gates:docs` não foram executados com sucesso porque Bash não está disponível no ambiente Windows; `gates:docs` retornou explicitamente `bash not found on Windows`.
+- A formatação global do baseline, envolvendo 532 arquivos fora do escopo, não foi alterada.
 
 ## Próxima fase
 
-Fase 14 — Compra/Venda Operacional. Implantação, piloto e rollout permanecem fora do roadmap imediato de desenvolvimento.
+A próxima etapa é a revisão da PR #93 contra `main`. A Fase 16 não foi iniciada, nenhum merge foi realizado e nenhuma ação remota irreversível foi executada.
 
-Detalhes no [plano de fechamento](./ACTIVE_PHASE_PLAN.md) e no [handoff atual](./CURRENT_PHASE_HANDOFF.md).
+Detalhes no [plano ativo](./ACTIVE_PHASE_PLAN.md), no [handoff atual](./CURRENT_PHASE_HANDOFF.md) e no [estado macro do projeto](../context/PROJECT_STATUS.md).

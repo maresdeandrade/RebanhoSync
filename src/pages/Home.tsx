@@ -42,7 +42,10 @@ import type {
   BuildOperationalInsightsInput,
   OperationalInsightsLoadedSources,
 } from "@/features/operationalInsights/operationalInsightsAdapter";
-import { computeHomeIndicators, type HomeIndicatorsResult } from "@/features/operationalInsights/operationalHomeIndicatorsAdapter";
+import {
+  computeHomeIndicators,
+  type HomeIndicatorsResult,
+} from "@/features/operationalInsights/operationalHomeIndicatorsAdapter";
 import { cn } from "@/lib/utils";
 import {
   buildAgendaCalendarModePath,
@@ -58,6 +61,7 @@ type FarmSummary = {
   municipio: string | null;
   estado: string | null;
   tipo_producao: "corte" | "leite" | "mista" | null;
+  timezone: string | null;
 };
 
 type HomeSnapshot = {
@@ -174,7 +178,7 @@ const Home = () => {
 
       const { data, error } = await supabase
         .from("fazendas")
-        .select("nome, municipio, estado, tipo_producao")
+        .select("nome, municipio, estado, tipo_producao, timezone")
         .eq("id", activeFarmId)
         .is("deleted_at", null)
         .maybeSingle();
@@ -202,6 +206,8 @@ const Home = () => {
       protocolos,
       protocoloItens,
       agendaItens,
+      sanitarioAgendaV2,
+      sanitarioAgendaAnimaisV2,
       eventos,
       eventosMensais,
       insumos,
@@ -230,6 +236,14 @@ const Home = () => {
         .where("[fazenda_id+status]")
         .equals([activeFarmId, "agendado"])
         .filter((item) => !item.deleted_at)
+        .toArray(),
+      db.ops_sanitario_agenda_v2
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.ops_sanitario_agenda_animais_v2
+        .where("fazenda_id")
+        .equals(activeFarmId)
         .toArray(),
       db.event_eventos
         .where("[fazenda_id+occurred_at]")
@@ -260,9 +274,15 @@ const Home = () => {
         .toArray(),
       loadFarmSyncSummary(activeFarmId),
       loadRegulatorySurfaceSource(activeFarmId),
-      db.event_eventos_pesagem.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.event_eventos_pesagem
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
       db.event_eventos_ecc.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.event_eventos_movimentacao.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.event_eventos_movimentacao
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
       db.event_eventos
         .where("[fazenda_id+occurred_at]")
         .between([activeFarmId, ""], [activeFarmId, "\uffff"], true, true)
@@ -308,11 +328,15 @@ const Home = () => {
       buildRegulatoryOperationalReadModel(regulatorySource);
     const operationalSummary = buildOperationalSummary(
       {
+        fazendaId: activeFarmId,
+        farmTimezone: farm?.timezone,
         animals: animaisDisponiveis,
         lotes: lotesDisponiveis,
         pastos: pastosAtivos,
         agenda: agendaAberta,
         eventos: eventosMensais,
+        sanitarioAgendaV2,
+        sanitarioAgendaAnimaisV2,
         eventosPesagem: [],
         eventosFinanceiro: [],
         gestures: [],
@@ -451,7 +475,8 @@ const Home = () => {
       lifecycleBiologicalCount,
       sanitaryAttention,
       regulatoryCompliance,
-      replenishmentAlerts: operationalSummary.inventory.replenishmentAlerts.slice(0, 5),
+      replenishmentAlerts:
+        operationalSummary.inventory.replenishmentAlerts.slice(0, 5),
       proximosItens,
       eventosRecentes: eventosRecentes.map((evento) => {
         const animal = animaisAtivos.find(
@@ -472,7 +497,7 @@ const Home = () => {
       }),
       checklist,
     };
-  }, [activeFarmId, farmLifecycleConfig]);
+  }, [activeFarmId, farm?.timezone, farmLifecycleConfig]);
 
   const farmSubtitle = useMemo(() => {
     const parts = [
@@ -667,7 +692,9 @@ const Home = () => {
             value: snapshot.sanitaryAttention.criticalCount,
             hint: "Criticos no horizonte",
             tone:
-              snapshot.sanitaryAttention.criticalCount > 0 ? "danger" : "neutral",
+              snapshot.sanitaryAttention.criticalCount > 0
+                ? "danger"
+                : "neutral",
             icon: AlertTriangle,
           },
           {
@@ -688,9 +715,12 @@ const Home = () => {
             key={item.label}
             className={cn(
               "shadow-none",
-              item.tone === "danger" && "border-destructive/25 bg-destructive/10",
-              item.tone === "warning" && "border-warning/20 bg-warning-muted/60",
-              item.tone === "success" && "border-success/20 bg-success-muted/60",
+              item.tone === "danger" &&
+                "border-destructive/25 bg-destructive/10",
+              item.tone === "warning" &&
+                "border-warning/20 bg-warning-muted/60",
+              item.tone === "success" &&
+                "border-success/20 bg-success-muted/60",
             )}
           >
             <CardContent className="space-y-3 p-4">
@@ -836,10 +866,12 @@ const Home = () => {
             )}
           </CardContent>
         </Card>
-
       </section>
 
-      <OperationalInsightsPanel viewModel={operationalInsights} homeIndicators={snapshot.homeIndicators} />
+      <OperationalInsightsPanel
+        viewModel={operationalInsights}
+        homeIndicators={snapshot.homeIndicators}
+      />
 
       {snapshot.replenishmentAlerts.length > 0 ? (
         <Card>
@@ -876,7 +908,9 @@ const Home = () => {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{item.insumo}</p>
                       <StatusBadge
-                        tone={item.severity === "critical" ? "danger" : "warning"}
+                        tone={
+                          item.severity === "critical" ? "danger" : "warning"
+                        }
                       >
                         {item.severity === "critical" ? "Critico" : "Atencao"}
                       </StatusBadge>
@@ -1246,5 +1280,3 @@ const Home = () => {
 };
 
 export default Home;
-
-

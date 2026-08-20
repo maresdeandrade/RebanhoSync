@@ -1,18 +1,24 @@
-# Plano de fechamento — Fase 14 / Compra/Venda Operacional
+# Plano de fechamento — Fase 15 / KPIs e Relatórios
 
 Atualizado em: 2026-08-19
-Status: **Fase 14 encerrada no baseline autoritativo de saída**
-Próxima fase: **Fase 15 — KPIs/Relatórios**
+Status: **Fase 15 encerrada tecnicamente e publicada para revisão remota**
+PR: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93) — aberto, sem merge
+Próxima fase: **Fase 15 — concluir revisão remota e integração da PR #93**
 
-Este documento contém o plano corrente. Estado técnico detalhado, validações e risco de plataforma ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+Este documento contém o plano corrente. Estado técnico detalhado, validações e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
-## Fechamento da Fase 14
+## Fechamento da Fase 15
 
-Baseline autoritativo de saída: `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`.
+Baseline de entrada: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`.
+Commit de implementação: `7bebe60e8c866ba36aca512996044701c354ceab`.
 
-A Fase 14 — Compra/Venda Operacional está encerrada. As operações comerciais individual e em lote foram integradas; o contrato kg/@ foi preservado; precificação e simulação comercial foram integradas, com simulação não factual; e a Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first. Nenhuma nova fonte de verdade foi criada.
+A Fase 15 implementou `MetricResult<T>` com estados `complete`, `partial` e `unavailable`; cobertura histórica conservadora; `MetricPeriod` com período, fronteiras inclusivas, campo factual e timezone da fazenda; escopo explícito por `fazendaId`; KPIs reprodutivos canônicos; KPIs comerciais factuais v2; entradas, saídas e categorias históricas do rebanho; Agenda Sanitária v2 como fonte preferencial de demanda futura; e exportação de cobertura, escopo, período e timezone. Operações comerciais só são selecionadas quando possuem `payload.kind = "commercial_operation_v2"`; simulações explícitas permanecem fora dos KPIs.
 
-Próxima etapa: Fase 15 — KPIs/Relatórios. Não iniciar implementação nesta atualização documental.
+O gate semântico final passou após um patch mínimo de seleção positiva comercial. Histórico sem evidência verificada permanece `partial`/`unavailable`, zero local sem cobertura não vira zero factual, pendências locais tornam o resultado parcial e ausência de timezone da fazenda usa fallback de runtime com limitação declarada. Não houve migration, RLS, schema, RPC, Edge Function, grant ou sync remoto.
+
+Validações confirmadas: 16 testes focados, `quality:gate`, build, typecheck com `--ignoreDeprecations 5.0`, Prettier nos cinco arquivos afetados e `git diff --check`. `audit:agents` não foi executado porque Bash não está disponível no ambiente Windows; a formatação global do baseline não foi alterada.
+
+Próxima etapa: revisão da PR #93. A Fase 16 não foi iniciada e nenhum merge foi realizado.
 
 ## Histórico — Fechamento funcional da Fase 13
 

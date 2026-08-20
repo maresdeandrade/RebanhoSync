@@ -1,16 +1,32 @@
-# Handoff atual — Fase 14 encerrada / Compra/Venda Operacional
+# Handoff atual — Fase 15 encerrada / KPIs e Relatórios
 
 Atualizado em: 2026-08-19
-Baseline de entrada do fechamento: `main@97ff4c0`
-Baseline autoritativo de saída da Fase 14: `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`
-Status: **Fase 14 fechada e integrada**
-Próxima fase: **Fase 15 — KPIs/Relatórios**
+Baseline autoritativo de saída da Fase 14: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`
+Baseline de entrada do fechamento: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`
+Commit da implementação: `7bebe60e8c866ba36aca512996044701c354ceab`
+PR de revisão: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93)
+Status: **Fase 15 fechada tecnicamente; PR aberta, sem merge**
+Próxima fase: **Fase 15 — concluir integração da PR #93**
 
-## Fechamento da Fase 14
+## Fechamento da Fase 15
 
-A Fase 14 — Compra/Venda Operacional foi encerrada com operações comerciais individual e em lote integradas, contrato kg/@ preservado, precificação e simulação comercial integradas e simulação não factual. A Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first. Nenhuma nova fonte de verdade foi criada.
+A Fase 15 implementou o contrato `MetricResult<T>` com `complete`, `partial` e `unavailable`, fontes, limitações, período e cobertura. `MetricCoverage` distingue histórico, snapshot atual e planejamento; histórico sem evidência verificada permanece conservador; zero local sem cobertura vira indisponível; e pendências locais tornam o resultado parcial.
 
-A transição para a Fase 15 — KPIs/Relatórios parte exclusivamente de `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`. Esta atualização é documental e não inicia implementação da Fase 15.
+`MetricPeriod` registra fronteiras inclusivas, campo factual e timezone. `fazendas.timezone` é usado quando válido; ausência ou valor inválido usa timezone de runtime com limitação declarada. As fronteiras são calculadas com a chave de calendário no timezone resolvido. O agregador filtra explicitamente todas as coleções por `fazendaId`.
+
+A reprodução usa `rebuildReproductiveProjection`; a demanda futura prefere Agenda Sanitária v2 e declara fallback legado; o histórico do rebanho usa Eventos factuais para entradas, saídas e categorias, sem transformar `state_animais` em histórico. KPIs comerciais selecionam positivamente Eventos com `payload.kind = "commercial_operation_v2"`, exigem detalhe `eventos_comercial` vinculado para os valores e excluem simulações explicitamente marcadas. Peso comercial não substitui pesagem zootécnica, e operações comerciais sem fato factual v2 não entram no KPI.
+
+CSV e impressão incluem cobertura, escopo, período e timezone por métrica. Agenda continua sendo intenção, Evento continua sendo fato histórico executado, `state_*` continua read model atual e Protocolo continua configuração. Tags, sinais e insights continuam auxiliares.
+
+## Patch final e superfícies não alteradas
+
+O patch final da implementação contém `src/lib/reports/metricContract.ts`, `src/lib/reports/operationalSummary.ts`, seu teste focado, `src/pages/Home.tsx` e `src/pages/Relatorios.tsx`. Não há migration, alteração de RLS, schema, RPC, Edge Function, grant ou sincronização remota.
+
+## Validações e limitações operacionais
+
+Foram confirmados 16 testes focados do agregador, `quality:gate` com lint/hotspots/integração/smoke, build, typecheck com `pnpm exec tsc --noEmit --ignoreDeprecations 5.0`, Prettier nos cinco arquivos afetados e `git diff --check`. O typecheck sem override falha no baseline porque o TypeScript 5.8.3 não aceita `ignoreDeprecations: "6.0"`; o typecheck compatível passou sem erros de código. `audit:agents` e `gates:docs` não foram executados com sucesso porque Bash não está disponível no Windows; `gates:docs` retornou explicitamente `bash not found on Windows`. A formatação global do baseline, que envolve 532 arquivos fora do escopo, não foi alterada.
+
+A PR #93 está aberta contra `main` para revisão remota. Nenhum merge foi realizado, produção não foi acessada, nenhuma mudança remota de banco foi aplicada e a Fase 16 não foi iniciada.
 
 ## Histórico — Fechamento funcional da Fase 13
 

@@ -8,6 +8,7 @@ import type {
   EventoComercial,
   EventoFinanceiro,
   EventoPesagem,
+  EventoReproducao,
   EventoSanitario,
   FazendaSanidadeConfig,
   Gesture,
@@ -19,6 +20,8 @@ import type {
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
   Rejection,
+  SanitarioAgendaAnimalLocalV2,
+  SanitarioAgendaLocalV2,
 } from "@/lib/offline/types";
 import {
   buildOperationalSummary,
@@ -141,7 +144,10 @@ const baseGesture = {
 
 describe("resolveReportRange", () => {
   it("builds current month range", () => {
-    const range = resolveReportRange("mes_atual", new Date("2026-03-29T12:00:00.000Z"));
+    const range = resolveReportRange(
+      "mes_atual",
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
 
     expect(range).toMatchObject({
       from: "2026-03-01",
@@ -154,7 +160,10 @@ describe("resolveReportRange", () => {
 
 describe("buildOperationalSummary", () => {
   it("aggregates rebanho, agenda, sync, manejo, financeiro and pesagem", () => {
-    const range = resolveReportRange("30d", new Date("2026-03-29T12:00:00.000Z"));
+    const range = resolveReportRange(
+      "30d",
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
 
     const animals: Animal[] = [
       {
@@ -173,7 +182,9 @@ describe("buildOperationalSummary", () => {
       },
     ];
     const lotes: Lote[] = [{ ...baseLote, id: "lote-1", nome: "Matrizes" }];
-    const pastos: Pasto[] = [{ ...basePasto, id: "pasto-1", nome: "Piquete 1" }];
+    const pastos: Pasto[] = [
+      { ...basePasto, id: "pasto-1", nome: "Piquete 1" },
+    ];
     const protocolosSanitarios: ProtocoloSanitario[] = [
       {
         id: "protocol-1",
@@ -206,15 +217,15 @@ describe("buildOperationalSummary", () => {
         dose_num: 1,
         gera_agenda: true,
         dedup_template: null,
-	        payload: {
-	          obrigatorio: true,
-	          calendario_base: {
-	            version: 1,
-	            mode: "campanha",
-	            anchor: "sem_ancora",
-	            label: "Campanha oficial de novembro",
-	            months: [11],
-	            interval_days: 180,
+        payload: {
+          obrigatorio: true,
+          calendario_base: {
+            version: 1,
+            mode: "campanha",
+            anchor: "sem_ancora",
+            label: "Campanha oficial de novembro",
+            months: [11],
+            interval_days: 180,
           },
         },
         client_id: "client-1",
@@ -402,6 +413,7 @@ describe("buildOperationalSummary", () => {
 
     const report = buildOperationalSummary(
       {
+        fazendaId: "farm-1",
         animals,
         lotes,
         pastos,
@@ -446,14 +458,22 @@ describe("buildOperationalSummary", () => {
       ultimoPesoKg: 420,
       ultimaPesagemEm: "2026-03-27",
     });
-    expect(report.manejoByDomain.find((item) => item.label === "Sanitario")?.value).toBe(1);
+    expect(
+      report.manejoByDomain.find((item) => item.label === "Sanitario")?.value,
+    ).toBe(1);
     expect(report.agendaAttention[0]?.status).toBe("atrasado");
     expect(report.agendaAttention[0]?.priorityLabel).toBe("Critico 19d");
-    expect(report.agendaAttention[0]?.titulo).toBe("Calendario oficial: Endectocida");
-    expect(report.agendaAttention[0]?.scheduleLabel).toBe("Campanha oficial de novembro");
+    expect(report.agendaAttention[0]?.titulo).toBe(
+      "Calendario oficial: Endectocida",
+    );
+    expect(report.agendaAttention[0]?.scheduleLabel).toBe(
+      "Campanha oficial de novembro",
+    );
     expect(report.agendaAttention[0]?.scheduleModeLabel).toBe("Campanha");
     expect(report.agendaAttention[0]?.scheduleAnchorLabel).toBe("Sem ancora");
-    expect(report.agendaAttention[0]?.operationalClassLabel).toBe("Protocolo operacional");
+    expect(report.agendaAttention[0]?.operationalClassLabel).toBe(
+      "Protocolo operacional",
+    );
     expect(report.regulatoryCompliance).toMatchObject({
       openCount: 1,
       blockingCount: 1,
@@ -484,7 +504,10 @@ describe("buildOperationalSummary", () => {
   });
 
   it("builds partial inventory cost read model without inferring absent movement cost", () => {
-    const range = resolveReportRange("30d", new Date("2026-06-04T12:00:00.000Z"));
+    const range = resolveReportRange(
+      "30d",
+      new Date("2026-06-04T12:00:00.000Z"),
+    );
     const baseInsumo = {
       fazenda_id: "farm-1",
       tipo: "sanitario",
@@ -551,11 +574,17 @@ describe("buildOperationalSummary", () => {
       deleted_at: null,
     } satisfies Omit<
       InsumoMovimentacao,
-      "id" | "tipo" | "quantidade_base" | "occurred_at" | "custo_unitario_snapshot" | "custo_total_snapshot"
+      | "id"
+      | "tipo"
+      | "quantidade_base"
+      | "occurred_at"
+      | "custo_unitario_snapshot"
+      | "custo_total_snapshot"
     >;
 
     const report = buildOperationalSummary(
       {
+        fazendaId: "farm-1",
         animals: [],
         lotes: [],
         pastos: [],
@@ -675,7 +704,10 @@ describe("buildOperationalSummary", () => {
   });
 
   it("groups structured sanitary cost by product, animal and livestock lot", () => {
-    const range = resolveReportRange("30d", new Date("2026-05-31T12:00:00.000Z"));
+    const range = resolveReportRange(
+      "30d",
+      new Date("2026-05-31T12:00:00.000Z"),
+    );
     const eventos: Evento[] = [
       {
         ...baseEvento,
@@ -718,8 +750,15 @@ describe("buildOperationalSummary", () => {
 
     const report = buildOperationalSummary(
       {
+        fazendaId: "farm-1",
         animals: [
-          { ...baseAnimal, id: "animal-1", identificacao: "BR-001", sexo: "F", status: "ativo" },
+          {
+            ...baseAnimal,
+            id: "animal-1",
+            identificacao: "BR-001",
+            sexo: "F",
+            status: "ativo",
+          },
         ],
         lotes: [{ ...baseLote, id: "lote-1", nome: "Lote 1" }],
         pastos: [],
@@ -785,14 +824,23 @@ describe("buildOperationalSummary", () => {
       label: "vacina-a-d1 / v1",
       totalCost: 9,
     });
-    expect(report.inventory.sanitaryTraceability.eventsWithoutCompleteTraceability).toBe(0);
-    expect(report.inventory.sanitaryTraceability.productsWithoutStockLot).toBe(0);
+    expect(
+      report.inventory.sanitaryTraceability.eventsWithoutCompleteTraceability,
+    ).toBe(0);
+    expect(report.inventory.sanitaryTraceability.productsWithoutStockLot).toBe(
+      0,
+    );
     expect(report.inventory.sanitaryTraceability.missingCostEvents).toBe(0);
-    expect(report.inventory.sanitaryTraceability.stockInconsistencyEvents).toBe(0);
+    expect(report.inventory.sanitaryTraceability.stockInconsistencyEvents).toBe(
+      0,
+    );
   });
 
   it("adds biosecurity occurrence grouping from real event payloads", () => {
-    const range = resolveReportRange("30d", new Date("2026-05-31T12:00:00.000Z"));
+    const range = resolveReportRange(
+      "30d",
+      new Date("2026-05-31T12:00:00.000Z"),
+    );
     const eventos: Evento[] = [
       {
         ...baseEvento,
@@ -841,6 +889,7 @@ describe("buildOperationalSummary", () => {
 
     const report = buildOperationalSummary(
       {
+        fazendaId: "farm-1",
         animals: [],
         lotes: [],
         pastos: [],
@@ -874,7 +923,10 @@ describe("buildOperationalSummary", () => {
   });
 
   it("identifies sanitary events without stock lot, cost and complete traceability", () => {
-    const range = resolveReportRange("30d", new Date("2026-05-31T12:00:00.000Z"));
+    const range = resolveReportRange(
+      "30d",
+      new Date("2026-05-31T12:00:00.000Z"),
+    );
     const eventos: Evento[] = [
       {
         ...baseEvento,
@@ -942,8 +994,15 @@ describe("buildOperationalSummary", () => {
 
     const report = buildOperationalSummary(
       {
+        fazendaId: "farm-1",
         animals: [
-          { ...baseAnimal, id: "animal-1", identificacao: "BR-001", sexo: "F", status: "ativo" },
+          {
+            ...baseAnimal,
+            id: "animal-1",
+            identificacao: "BR-001",
+            sexo: "F",
+            status: "ativo",
+          },
         ],
         lotes: [{ ...baseLote, id: "lote-1", nome: "Lote 1" }],
         pastos: [],
@@ -959,14 +1018,23 @@ describe("buildOperationalSummary", () => {
       new Date("2026-05-31T12:00:00.000Z"),
     );
 
-    expect(report.inventory.sanitaryTraceability.eventsWithoutCompleteTraceability).toBe(1);
-    expect(report.inventory.sanitaryTraceability.productsWithoutStockLot).toBe(1);
+    expect(
+      report.inventory.sanitaryTraceability.eventsWithoutCompleteTraceability,
+    ).toBe(1);
+    expect(report.inventory.sanitaryTraceability.productsWithoutStockLot).toBe(
+      1,
+    );
     expect(report.inventory.sanitaryTraceability.missingCostEvents).toBe(1);
-    expect(report.inventory.sanitaryTraceability.stockInconsistencyEvents).toBe(1);
+    expect(report.inventory.sanitaryTraceability.stockInconsistencyEvents).toBe(
+      1,
+    );
   });
 
   it("groups commercial revenue by operation, counterparty, animal, lot and society", () => {
-    const range = resolveReportRange("30d", new Date("2026-05-31T12:00:00.000Z"));
+    const range = resolveReportRange(
+      "30d",
+      new Date("2026-05-31T12:00:00.000Z"),
+    );
     const eventos: Evento[] = [
       {
         ...baseEvento,
@@ -975,6 +1043,7 @@ describe("buildOperationalSummary", () => {
         occurred_at: "2026-05-30T12:00:00.000Z",
         animal_id: "animal-1",
         lote_id: "lote-1",
+        payload: { kind: "commercial_operation_v2" },
       },
     ];
     const eventosComercial: EventoComercial[] = [
@@ -1024,8 +1093,15 @@ describe("buildOperationalSummary", () => {
 
     const report = buildOperationalSummary(
       {
+        fazendaId: "farm-1",
         animals: [
-          { ...baseAnimal, id: "animal-1", identificacao: "BR-001", sexo: "F", status: "vendido" },
+          {
+            ...baseAnimal,
+            id: "animal-1",
+            identificacao: "BR-001",
+            sexo: "F",
+            status: "vendido",
+          },
         ],
         lotes: [{ ...baseLote, id: "lote-1", nome: "Lote 1" }],
         pastos: [],
@@ -1065,7 +1141,10 @@ describe("buildOperationalSummary", () => {
 
 describe("buildOperationalSummaryCsv", () => {
   it("serializes report sections for spreadsheet export", () => {
-    const range = resolveReportRange("7d", new Date("2026-03-29T12:00:00.000Z"));
+    const range = resolveReportRange(
+      "7d",
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
     const fazendaSanidadeConfig: FazendaSanidadeConfig = {
       fazenda_id: "farm-1",
       uf: "SP",
@@ -1146,6 +1225,7 @@ describe("buildOperationalSummaryCsv", () => {
     ];
     const report = buildOperationalSummary(
       {
+        fazendaId: "farm-1",
         animals: [],
         lotes: [],
         pastos: [],
@@ -1170,19 +1250,583 @@ describe("buildOperationalSummaryCsv", () => {
     expect(csv).toContain("meta;fazenda;Fazenda Teste");
     expect(csv).toContain("resumo;animais_ativos;0");
     expect(csv).toContain("financeiro;saldo;0.00");
-    expect(csv).toContain("meta_fonte;fonte;Historico: event_eventos + detail tables no periodo selecionado.");
-    expect(csv).toContain("meta_fonte;fonte;Estado atual: state_* como read model atual, sem historico completo.");
-    expect(csv).toContain("meta_fonte;fonte;Agenda: pendencia/intencao futura, nao fato executado.");
-    expect(csv).toContain("meta_limitacao;limitacao;Custo operacional parcial nao e DRE, ROI, margem ou custo por arroba.");
-    expect(csv).toContain("nao afirmam GMD ou desempenho de lote/pasto sem permanencia comprovada");
+    expect(csv).toContain(
+      "meta_fonte;fonte;Historico: event_eventos + detail tables no periodo selecionado.",
+    );
+    expect(csv).toContain(
+      "meta_fonte;fonte;Estado atual: state_* como read model atual, sem historico completo.",
+    );
+    expect(csv).toContain(
+      "meta_fonte;fonte;Agenda: pendencia/intencao futura, nao fato executado.",
+    );
+    expect(csv).toContain(
+      "meta_limitacao;limitacao;Custo operacional parcial nao e DRE, ROI, margem ou custo por arroba.",
+    );
+    expect(csv).toContain(
+      "nao afirmam GMD ou desempenho de lote/pasto sem permanencia comprovada",
+    );
+    expect(csv).toContain("metric_coverage");
+    expect(csv).toContain("metric_timezone");
+    expect(csv).toContain("metric_period");
     expect(csv).toContain("conformidade_subarea");
     expect(csv).toContain("conformidade_impacto");
     expect(csv).not.toContain("undefined");
 
     const html = buildOperationalSummaryPrintHtml(report, "Fazenda Teste");
     expect(html).toContain("Fontes e limitacoes");
-    expect(html).toContain("Agenda: pendencia/intencao futura, nao fato executado.");
-    expect(html).toContain("Custo operacional parcial nao e DRE, ROI, margem ou custo por arroba.");
-    expect(html).toContain("nao afirmam GMD ou desempenho de lote/pasto sem permanencia comprovada");
+    expect(html).toContain("Cobertura");
+    expect(html).toContain("Timezone");
+    expect(html).toContain(
+      "Agenda: pendencia/intencao futura, nao fato executado.",
+    );
+    expect(html).toContain(
+      "Custo operacional parcial nao e DRE, ROI, margem ou custo por arroba.",
+    );
+    expect(html).toContain(
+      "nao afirmam GMD ou desempenho de lote/pasto sem permanencia comprovada",
+    );
+  });
+});
+
+describe("Fase 15 incremental metrics", () => {
+  const range = resolveReportRange("30d", new Date("2026-03-29T12:00:00.000Z"));
+
+  it("filters every farm-scoped source before calculating metrics", () => {
+    const report = buildOperationalSummary(
+      {
+        fazendaId: "farm-1",
+        animals: [
+          {
+            ...baseAnimal,
+            id: "animal-1",
+            identificacao: "BR-001",
+            sexo: "F",
+            status: "ativo",
+          },
+          {
+            ...baseAnimal,
+            fazenda_id: "farm-2",
+            id: "animal-2",
+            identificacao: "BR-002",
+            sexo: "F",
+            status: "ativo",
+          },
+        ],
+        lotes: [],
+        pastos: [],
+        agenda: [],
+        eventos: [
+          {
+            ...baseEvento,
+            id: "event-1",
+            dominio: "sanitario",
+            occurred_at: "2026-03-10T12:00:00.000Z",
+          },
+          {
+            ...baseEvento,
+            fazenda_id: "farm-2",
+            id: "event-2",
+            dominio: "sanitario",
+            occurred_at: "2026-03-10T12:00:00.000Z",
+          },
+        ],
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+      },
+      range,
+    );
+
+    expect(report.summary.animaisAtivos).toBe(1);
+    expect(report.summary.eventosPeriodo).toBe(1);
+    expect(report.metrics.rebanho_animais_ativos.value).toBe(1);
+    expect(report.metrics.eventos_periodo.sources).toEqual([
+      { name: "event_eventos", role: "primary" },
+    ]);
+  });
+
+  it("reports canonical reproduction KPIs from event details and projection", () => {
+    const serviceAnimal1 = {
+      ...baseEvento,
+      id: "repro-service-1",
+      dominio: "reproducao",
+      occurred_at: "2026-03-01T12:00:00.000Z",
+      animal_id: "animal-1",
+    } satisfies Evento;
+    const diagnosisAnimal1 = {
+      ...baseEvento,
+      id: "repro-diagnosis-1",
+      dominio: "reproducao",
+      occurred_at: "2026-03-10T12:00:00.000Z",
+      animal_id: "animal-1",
+    } satisfies Evento;
+    const serviceAnimal2 = {
+      ...baseEvento,
+      id: "repro-service-2",
+      dominio: "reproducao",
+      occurred_at: "2026-03-02T12:00:00.000Z",
+      animal_id: "animal-2",
+    } satisfies Evento;
+    const birthAnimal2 = {
+      ...baseEvento,
+      id: "repro-birth-2",
+      dominio: "reproducao",
+      occurred_at: "2026-03-20T12:00:00.000Z",
+      animal_id: "animal-2",
+    } satisfies Evento;
+    const detail = (
+      evento_id: string,
+      tipo: EventoReproducao["tipo"],
+      payload: Record<string, unknown>,
+    ): EventoReproducao => ({
+      evento_id,
+      fazenda_id: "farm-1",
+      tipo,
+      macho_id: null,
+      payload,
+      client_id: "client-1",
+      client_op_id: `op-${evento_id}`,
+      client_tx_id: null,
+      client_recorded_at: "2026-03-20T10:00:00.000Z",
+      server_received_at: "2026-03-20T10:00:00.000Z",
+      created_at: "2026-03-20T10:00:00.000Z",
+      updated_at: "2026-03-20T10:00:00.000Z",
+      deleted_at: null,
+    });
+
+    const report = buildOperationalSummary(
+      {
+        fazendaId: "farm-1",
+        animals: [
+          {
+            ...baseAnimal,
+            id: "animal-1",
+            identificacao: "BR-001",
+            sexo: "F",
+            status: "ativo",
+          },
+          {
+            ...baseAnimal,
+            id: "animal-2",
+            identificacao: "BR-002",
+            sexo: "F",
+            status: "ativo",
+          },
+        ],
+        lotes: [],
+        pastos: [],
+        agenda: [],
+        eventos: [
+          serviceAnimal1,
+          diagnosisAnimal1,
+          serviceAnimal2,
+          birthAnimal2,
+        ],
+        eventosReproducao: [
+          detail("repro-service-1", "cobertura", { schema_version: 1 }),
+          detail("repro-diagnosis-1", "diagnostico", {
+            schema_version: 1,
+            resultado: "positivo",
+            episode_evento_id: "repro-service-1",
+          }),
+          detail("repro-service-2", "cobertura", { schema_version: 1 }),
+          detail("repro-birth-2", "parto", {
+            schema_version: 1,
+            data_parto_real: "2026-03-20",
+            numero_crias: 2,
+            episode_evento_id: "repro-service-2",
+          }),
+        ],
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+      },
+      range,
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
+
+    expect(report.reproducao).toMatchObject({
+      matrizes: 2,
+      servicos: 2,
+      diagnosticos: 1,
+      prenhasAtuais: 1,
+      partos: 1,
+      abortosPerdas: 0,
+      nascimentos: 2,
+    });
+    expect(report.metrics.repro_prenhas_atuais.status).toBe("partial");
+    expect(report.metrics.repro_nascimentos).toMatchObject({
+      value: 2,
+      status: "partial",
+      sources: [{ name: "event_eventos_reproducao", role: "primary" }],
+    });
+  });
+
+  it("uses Agenda Sanitária v2 as the future-demand source when it is loaded", () => {
+    const agendaV2: SanitarioAgendaLocalV2 = {
+      id: "agenda-v2-1",
+      fazenda_id: "farm-1",
+      status: "programada",
+      dedup_key: "farm-1:agenda-v2-1",
+      client_id: "client-1",
+      client_op_id: "op-agenda-v2-1",
+      client_tx_id: null,
+      client_recorded_at: "2026-03-20T10:00:00.000Z",
+      server_received_at: "2026-03-20T10:00:00.000Z",
+      source_demand_key: null,
+      preview_group_id: null,
+      protocolo_id: null,
+      protocol_item_version_id: null,
+      protocol_item_snapshot: {},
+      janela_inicio: "2026-03-29",
+      janela_fim: null,
+      data_programada: "2026-03-29",
+      lote_id: null,
+      produto_veterinario_id: "product-1",
+      produto_snapshot: {
+        nome: "Vacina A",
+        unidade_base: "dose",
+        quantityPerAnimal: 2,
+      },
+      produto_classe: null,
+      acao_sanitaria: "vacinacao",
+      execution_evento_id: null,
+      metadata: { target: { scope: "animal", id: "animal-1" } },
+      created_at: "2026-03-20T10:00:00.000Z",
+      updated_at: "2026-03-20T10:00:00.000Z",
+      deleted_at: null,
+    };
+
+    const report = buildOperationalSummary(
+      {
+        fazendaId: "farm-1",
+        animals: [
+          {
+            ...baseAnimal,
+            id: "animal-1",
+            identificacao: "BR-001",
+            sexo: "F",
+            status: "ativo",
+          },
+        ],
+        lotes: [],
+        pastos: [],
+        agenda: [
+          {
+            ...baseAgenda,
+            id: "legacy-agenda",
+            tipo: "vacinacao",
+            data_prevista: "2026-03-29",
+            payload: { produto_nome_catalogo: "Legado" },
+          },
+        ],
+        eventos: [],
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+        sanitarioAgendaV2: [agendaV2],
+        sanitarioAgendaAnimaisV2: [],
+      },
+      range,
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
+
+    expect(report.inventory.futureDemand.source).toBe("sanitario_agenda_v2");
+    expect(report.inventory.futureDemand.groups[0]).toMatchObject({
+      productName: "Vacina A",
+      estimatedQuantity: 2,
+    });
+    expect(report.metrics.estoque_demanda_futura).toMatchObject({
+      value: 2,
+      status: "partial",
+      sources: [{ name: "sanitario_agenda_v2", role: "primary" }],
+    });
+    expect(report.inventory.futureDemand.limitations).toContain(
+      "Agenda Sanitária v2 foi usada como fonte preferencial de intencoes programadas.",
+    );
+    expect(report.inventory.futureDemand.groups).toHaveLength(1);
+  });
+});
+
+describe("Fase 15.2 — fechamento semantico", () => {
+  const semanticRange = resolveReportRange(
+    "30d",
+    new Date("2026-03-29T12:00:00.000Z"),
+    "America/Sao_Paulo",
+  );
+
+  function buildSemanticReport(
+    overrides: Partial<Parameters<typeof buildOperationalSummary>[0]> = {},
+    range = semanticRange,
+  ) {
+    return buildOperationalSummary(
+      {
+        fazendaId: "farm-1",
+        farmTimezone: "America/Sao_Paulo",
+        animals: [],
+        lotes: [],
+        pastos: [],
+        agenda: [],
+        eventos: [],
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+        ...overrides,
+      },
+      range,
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
+  }
+
+  function makeCommercialDetail(
+    eventoId: string,
+    operationType: "compra" | "venda",
+    animalIds: string[],
+    snapshot: Record<string, unknown> = {},
+  ): EventoComercial {
+    return {
+      evento_id: eventoId,
+      fazenda_id: "farm-1",
+      operation_type: operationType,
+      scope: "animal",
+      occurred_at: "2026-03-25T12:00:00.000Z",
+      quantidade_animais: animalIds.length,
+      peso_vivo_total: 400,
+      peso_medio_derivado: 400 / animalIds.length,
+      valor_bruto: 1000,
+      frete: 0,
+      comissao: 0,
+      descontos: 0,
+      taxas_impostos: 0,
+      valor_liquido_derivado: 1000,
+      contraparte_id: null,
+      contraparte_nome: null,
+      animal_ids: animalIds,
+      lote_id: null,
+      finance_transaction_id: null,
+      titularidade_snapshot: null,
+      sociedade_snapshot: null,
+      commercial_signals: null,
+      valor_por_animal: null,
+      snapshot,
+      calculation_status: "complete",
+      issues: [],
+      limitations: [],
+      observacoes: null,
+      client_id: "client-1",
+      client_op_id: `op-${eventoId}`,
+      client_tx_id: null,
+      client_recorded_at: "2026-03-25T12:00:00.000Z",
+      server_received_at: "2026-03-25T12:00:00.000Z",
+      created_at: "2026-03-25T12:00:00.000Z",
+      updated_at: "2026-03-25T12:00:00.000Z",
+      deleted_at: null,
+    };
+  }
+
+  it("distinguishes covered real zero from local zero without coverage", () => {
+    const covered = buildSemanticReport({
+      historicalCoverage: {
+        comercial_operacoes: {
+          state: "verified",
+          evidence: ["pull baseline completo por fazenda e periodo"],
+        },
+      },
+    });
+    expect(covered.metrics.comercial_operacoes).toMatchObject({
+      value: 0,
+      status: "complete",
+      coverage: { state: "verified" },
+    });
+
+    const uncovered = buildSemanticReport();
+    expect(uncovered.metrics.comercial_operacoes).toMatchObject({
+      value: null,
+      status: "unavailable",
+      coverage: { state: "unknown" },
+    });
+  });
+
+  it("downgrades historical values when a local operation is pending", () => {
+    const event: Evento = {
+      ...baseEvento,
+      id: "evt-pendente",
+      dominio: "obito",
+      occurred_at: "2026-03-25T12:00:00.000Z",
+      animal_id: "animal-1",
+    };
+    const report = buildSemanticReport({
+      eventos: [event],
+      gestures: [
+        { ...baseGesture, client_tx_id: "tx-pendente", status: "PENDING" },
+      ],
+    });
+
+    expect(report.metrics.eventos_periodo).toMatchObject({
+      value: 1,
+      status: "partial",
+      coverage: { state: "partial", pendingLocalOperations: 1 },
+    });
+  });
+
+  it("keeps two farms isolated and does not infer historical categories from state_animais", () => {
+    const otherFarmEvent: Evento = {
+      ...baseEvento,
+      id: "evt-outra-fazenda",
+      fazenda_id: "farm-2",
+      dominio: "obito",
+      occurred_at: "2026-03-25T12:00:00.000Z",
+      animal_id: "animal-2",
+    };
+    const report = buildSemanticReport({
+      animals: [
+        {
+          ...baseAnimal,
+          id: "animal-1",
+          identificacao: "BR-001",
+          sexo: "F",
+          status: "ativo",
+          payload: { taxonomy_facts: { categoria: "vaca" } },
+        },
+      ],
+      eventos: [otherFarmEvent],
+    });
+
+    expect(report.summary.eventosPeriodo).toBe(0);
+    expect(report.metrics.rebanho_categorias_historicas).toMatchObject({
+      value: null,
+      status: "unavailable",
+    });
+  });
+
+  it("uses the farm timezone for date boundaries and declares runtime fallback when absent", () => {
+    const boundaryEvent: Evento = {
+      ...baseEvento,
+      id: "evt-boundary",
+      dominio: "obito",
+      occurred_at: "2026-03-01T02:30:00.000Z",
+      animal_id: "animal-1",
+    };
+    const februaryRange = resolveReportRange(
+      "mes_atual",
+      new Date("2026-03-01T01:00:00.000Z"),
+      "America/Sao_Paulo",
+    );
+    const farmTimezoneReport = buildSemanticReport(
+      { eventos: [boundaryEvent] },
+      { ...februaryRange, preset: "mes_atual", filenameTag: "2026-02" },
+    );
+    expect(farmTimezoneReport.summary.eventosPeriodo).toBe(1);
+    expect(farmTimezoneReport.metrics.eventos_periodo.period).toMatchObject({
+      timezone: "America/Sao_Paulo",
+      timezoneSource: "farm",
+      boundary: "inclusive",
+    });
+
+    const runtimeReport = buildSemanticReport({ farmTimezone: null });
+    expect(runtimeReport.metrics.eventos_periodo.period).toMatchObject({
+      timezone: null,
+      timezoneSource: "runtime",
+    });
+    expect(runtimeReport.metrics.eventos_periodo.limitations).toContain(
+      "Timezone da fazenda nao foi carregado; fronteiras usam o timezone de runtime disponivel e nao representam necessariamente o calendario da fazenda.",
+    );
+  });
+
+  it("counts factual purchase and sale animals, excludes explicit simulation and keeps missing history fail-safe", () => {
+    const purchaseEvent: Evento = {
+      ...baseEvento,
+      id: "evt-compra-factual",
+      dominio: "comercial",
+      occurred_at: "2026-03-25T12:00:00.000Z",
+      payload: { kind: "commercial_operation_v2" },
+    };
+    const saleEvent: Evento = {
+      ...baseEvento,
+      id: "evt-venda-factual",
+      dominio: "comercial",
+      occurred_at: "2026-03-26T12:00:00.000Z",
+      payload: { kind: "commercial_operation_v2" },
+    };
+    const simulationEvent: Evento = {
+      ...baseEvento,
+      id: "evt-simulacao",
+      dominio: "comercial",
+      occurred_at: "2026-03-27T12:00:00.000Z",
+      payload: { kind: "commercial_simulation" },
+    };
+    const legacyEventWithDetail: Evento = {
+      ...baseEvento,
+      id: "evt-comercial-legado",
+      dominio: "comercial",
+      occurred_at: "2026-03-28T12:00:00.000Z",
+      payload: {},
+    };
+    const conflictingFlagEvent: Evento = {
+      ...baseEvento,
+      id: "evt-v2-flag-conflitante",
+      dominio: "comercial",
+      occurred_at: "2026-03-28T13:00:00.000Z",
+      payload: { kind: "commercial_operation_v2", is_simulation: true },
+    };
+    const conflictingSnapshotEvent: Evento = {
+      ...baseEvento,
+      id: "evt-v2-snapshot-conflitante",
+      dominio: "comercial",
+      occurred_at: "2026-03-28T14:00:00.000Z",
+      payload: { kind: "commercial_operation_v2" },
+    };
+    const missingDetailEvent: Evento = {
+      ...baseEvento,
+      id: "evt-v2-sem-detalhe",
+      dominio: "comercial",
+      occurred_at: "2026-03-28T15:00:00.000Z",
+      payload: { kind: "commercial_operation_v2" },
+    };
+    const report = buildSemanticReport({
+      eventos: [
+        purchaseEvent,
+        saleEvent,
+        simulationEvent,
+        legacyEventWithDetail,
+        conflictingFlagEvent,
+        conflictingSnapshotEvent,
+        missingDetailEvent,
+      ],
+      eventosComercial: [
+        makeCommercialDetail("evt-compra-factual", "compra", ["animal-1"]),
+        makeCommercialDetail("evt-venda-factual", "venda", ["animal-2"]),
+        makeCommercialDetail("evt-simulacao", "venda", ["animal-3"]),
+        makeCommercialDetail("evt-comercial-legado", "venda", ["animal-4"]),
+        makeCommercialDetail("evt-v2-flag-conflitante", "venda", ["animal-5"]),
+        makeCommercialDetail(
+          "evt-v2-snapshot-conflitante",
+          "venda",
+          ["animal-6"],
+          { operation_kind: "commercial_simulation" },
+        ),
+      ],
+    });
+
+    expect(report.comercial.operations).toBe(2);
+    expect(report.metrics.comercial_operacoes).toMatchObject({
+      value: 2,
+      status: "partial",
+    });
+    expect(report.metrics.comercial_operacoes.limitations).toContain(
+      "Existem Eventos comerciais factuais v2 sem detalhe comercial utilizavel carregado; a contagem representa somente operacoes agregadas.",
+    );
+    expect(report.metrics.rebanho_entradas).toMatchObject({
+      value: 1,
+      status: "partial",
+    });
+    expect(report.metrics.rebanho_saidas).toMatchObject({
+      value: 1,
+      status: "partial",
+    });
   });
 });

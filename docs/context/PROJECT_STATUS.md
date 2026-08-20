@@ -1,7 +1,9 @@
 # Project Status — RebanhoSync
 
 Atualizado em: 2026-08-19
-Baseline autoritativo de saída da Fase 14: `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`
+Baseline de entrada da Fase 15: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`
+Commit da Fase 15: `7bebe60e8c866ba36aca512996044701c354ceab`
+PR de revisão: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93) — aberta, sem merge
 
 ## Objetivo
 
@@ -13,13 +15,13 @@ RebanhoSync está em beta interno, com arquitetura offline-first e isolamento mu
 
 A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 
-A Fase 14 — Compra/Venda Operacional está encerrada no baseline de saída acima. As operações comerciais individual e em lote foram integradas; o contrato kg/@ foi preservado; precificação e simulação comercial foram incorporadas; a simulação permanece não factual; e a Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first. Nenhuma nova fonte de verdade foi criada.
+A Fase 14 — Compra/Venda Operacional permanece encerrada. As operações comerciais individual e em lote foram integradas; o contrato kg/@ foi preservado; precificação e simulação comercial foram incorporadas; a simulação permanece não factual; e a Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first.
 
-O patch final eliminou a precedência residual do cache `taxonomy_facts` nas leituras reprodutivas das telas quando o contexto factual canônico está carregado. Nenhum contrato de banco ou sync foi alterado.
+A Fase 15 — KPIs/Relatórios está tecnicamente concluída e publicada para revisão na PR #93. O contrato inclui `MetricResult<T>` com `complete`/`partial`/`unavailable`, cobertura histórica conservadora, período e timezone da fazenda com fallback runtime declarado, isolamento por `fazendaId`, reprodução canônica, comercial factual v2, histórico factual de entradas/saídas/categorias do rebanho, Agenda Sanitária v2 preferencial e exportações com cobertura/escopo/período/timezone. Nenhuma nova fonte de verdade foi criada.
 
-A governança de `.agents`, `scripts` e `AGENTS.md` está reconciliada no baseline acima. Bootstrap, `audit:agents`, `gates:docs`, parsers aplicáveis e `git diff --check` foram aprovados; a credencial removida do remote local permanece com `ROTACAO_EXTERNA_PENDENTE`, sem bloquear o código de governança.
+A validação confirmou 16 testes focados, `quality:gate`, build, typecheck compatível, Prettier nos cinco arquivos afetados e `git diff --check`. `audit:agents` permanece não executado pela indisponibilidade de Bash no Windows. Não houve migration, RLS, schema, RPC, Edge Function, grant ou sync remoto; produção não foi alterada.
 
-Próxima fase de desenvolvimento: **Fase 15 — KPIs/Relatórios**.
+Próxima fase de desenvolvimento: **Fase 15 — revisão remota e integração pendentes**.
 
 ## Estado reprodutivo consolidado
 
@@ -103,7 +105,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-A próxima etapa de desenvolvimento é a Fase 15 — KPIs/Relatórios. O baseline autoritativo de saída é `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`. A transição não habilita o Sync Sanitário v2; rollout e produção continuam inalterados.
+A próxima etapa formal é a revisão da PR #93. A Fase 16 não deve ser iniciada nesta transição. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 
