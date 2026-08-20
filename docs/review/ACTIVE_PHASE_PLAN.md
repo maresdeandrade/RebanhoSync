@@ -3,7 +3,7 @@
 Atualizado em: 2026-08-19
 Status: **Fase 15 encerrada tecnicamente e publicada para revisão remota**
 PR: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93) — aberto, sem merge
-Próxima fase: **Fase 15 — concluir revisão remota e integração; Fase 16 não iniciar**
+Próxima fase: **Fase 15 — concluir revisão remota e integração da PR #93**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 

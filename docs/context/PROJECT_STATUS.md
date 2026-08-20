@@ -21,7 +21,7 @@ A Fase 15 — KPIs/Relatórios está tecnicamente concluída e publicada para re
 
 A validação confirmou 16 testes focados, `quality:gate`, build, typecheck compatível, Prettier nos cinco arquivos afetados e `git diff --check`. `audit:agents` permanece não executado pela indisponibilidade de Bash no Windows. Não houve migration, RLS, schema, RPC, Edge Function, grant ou sync remoto; produção não foi alterada.
 
-Próxima fase de desenvolvimento: **Fase 15 — integração da PR #93 pendente; Fase 16 não iniciada**.
+Próxima fase de desenvolvimento: **Fase 15 — revisão remota e integração pendentes**.
 
 ## Estado reprodutivo consolidado
 
