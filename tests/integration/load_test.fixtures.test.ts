@@ -3,28 +3,40 @@ import { parseAnimalImportCsv } from "@/lib/import/animaisCsv";
 import { parsePastoImportCsv, parseLoteImportCsv } from "@/lib/import/estruturasCsv";
 import fs from "fs";
 
+function parseCsv(text: string) {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  const headers = lines[0].split(";");
+  return lines.slice(1).map((line) => {
+    const cells = line.split(";");
+    const row: Record<string, string> = {};
+    headers.forEach((header, index) => {
+      row[header] = cells[index] ?? "";
+    });
+    return row;
+  });
+}
+
 function checkReferentialIntegrity(highVolume = false) {
   const pastosFile = highVolume ? "tests/fixtures/pastos_high_volume.csv" : "tests/fixtures/pastos_medium_volume.csv";
   const lotesFile = highVolume ? "tests/fixtures/lotes_high_volume.csv" : "tests/fixtures/lotes_medium_volume.csv";
   const animaisFile = highVolume ? "tests/fixtures/animais_high_volume.csv" : "tests/fixtures/animais_medium_volume.csv";
 
-  const pastos = fs.readFileSync(pastosFile, "utf8")
-    .split("\n").slice(1).filter(l => l.trim()).map(l => l.split(";")[0]);
-  const lotesRaw = fs.readFileSync(lotesFile, "utf8")
-    .split("\n").slice(1).filter(l => l.trim());
-  const lotes = lotesRaw.map(l => ({
-    nome: l.split(";")[0],
-    pasto: l.split(";")[2]
+  const pastos = parseCsv(fs.readFileSync(pastosFile, "utf8")).map((r) => r.nome);
+  const lotes = parseCsv(fs.readFileSync(lotesFile, "utf8")).map((r) => ({
+    nome: r.nome,
+    pasto: r.pasto,
   }));
-  const animaisRaw = fs.readFileSync(animaisFile, "utf8")
-    .split("\n").slice(1).filter(l => l.trim());
-  const animais = animaisRaw.map(l => l.split(";")[2]); // lote_nome (semicolon delimiter)
+  const animais = parseCsv(fs.readFileSync(animaisFile, "utf8")).map((r) => r.lote);
 
-  const lotesSet = new Set(lotes.map(l => l.nome));
+  const lotesSet = new Set(lotes.map((l) => l.nome));
   const pastosSet = new Set(pastos);
 
-  const lotesInvalidos = lotes.filter(l => !pastosSet.has(l.pasto));
-  const animaisInvalidos = animais.filter(a => !lotesSet.has(a));
+  const lotesInvalidos = lotes.filter((l) => l.pasto && !pastosSet.has(l.pasto));
+  const animaisInvalidos = animais.filter((a) => a && !lotesSet.has(a));
 
   return {
     lotesReferencingValidPastos: lotesInvalidos.length === 0,
