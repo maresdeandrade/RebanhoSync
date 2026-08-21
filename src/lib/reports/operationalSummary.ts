@@ -23,6 +23,8 @@ import type {
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
   Rejection,
+  SanitarioAgendaAnimalLocalV2,
+  SanitarioAgendaLocalV2,
   SociedadeAnimal,
   SociedadePecuaria,
 } from "@/lib/offline/types";
@@ -43,6 +45,7 @@ import {
   type SanitarySupplyAgendaItemInput,
   type SanitarySupplyNeedGroup,
 } from "@/lib/insights/sanitarySupplyNeeds";
+import { selectFutureSanitarySupplyAgenda } from "@/lib/reports/futureSanitarySupplyAgenda";
 import {
   evaluateInventoryReplenishmentAlert,
   evaluateInventoryResupply,
@@ -194,6 +197,8 @@ export interface OperationalSummaryInput {
   insumoApresentacoes?: InsumoApresentacao[];
   insumoLotes?: InsumoLote[];
   insumoMovimentacoes?: InsumoMovimentacao[];
+  sanitarioAgendaV2?: SanitarioAgendaLocalV2[];
+  sanitarioAgendaAnimaisV2?: SanitarioAgendaAnimalLocalV2[];
   futureSanitaryAgendaItems?: readonly SanitarySupplyAgendaItemInput[];
 }
 
@@ -1391,11 +1396,21 @@ export function buildOperationalSummary(
           : 1,
     };
   });
-  const usingComposedSanitaryAgenda =
-    input.futureSanitaryAgendaItems !== undefined;
-  const supplyAgendaItems = usingComposedSanitaryAgenda
-    ? input.futureSanitaryAgendaItems
-    : legacySupplyAgendaItems;
+  const composedSanitaryAgendaItems =
+    input.futureSanitaryAgendaItems ??
+    (input.sanitarioAgendaV2 !== undefined
+      ? selectFutureSanitarySupplyAgenda({
+          activeFarmId: input.fazendaId,
+          legacyItems: input.agenda,
+          agendaV2: input.sanitarioAgendaV2,
+          agendaAnimalsV2: input.sanitarioAgendaAnimaisV2 ?? [],
+          animals: input.animals,
+          lots: input.lotes,
+          protocolItems: input.protocoloItensSanitarios ?? [],
+        })
+      : undefined);
+  const usingComposedSanitaryAgenda = composedSanitaryAgendaItems !== undefined;
+  const supplyAgendaItems = composedSanitaryAgendaItems ?? legacySupplyAgendaItems;
   const futureDemandSource = usingComposedSanitaryAgenda
     ? "state_agenda_itens + ops_sanitario_agenda_v2"
     : "state_agenda_itens";

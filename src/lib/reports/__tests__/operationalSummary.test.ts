@@ -1594,6 +1594,75 @@ describe("Fase 15 incremental metrics", () => {
     expect(report.inventory.futureDemand.groups[0]?.productName).toBe("Legacy");
   });
 
+  it("keeps raw Agenda Sanitária v2 callers compatible through the selector", () => {
+    const report = buildOperationalSummary(
+      {
+        fazendaId: "farm-1",
+        animals: [
+          {
+            ...baseAnimal,
+            id: "animal-1",
+            identificacao: "BR-001",
+            sexo: "F",
+            status: "ativo",
+          },
+        ],
+        lotes: [],
+        pastos: [],
+        agenda: [],
+        eventos: [],
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+        sanitarioAgendaV2: [
+          {
+            id: "agenda-v2-1",
+            fazenda_id: "farm-1",
+            status: "programada",
+            dedup_key: "farm-1:agenda-v2-1",
+            client_id: "client-1",
+            client_op_id: "op-agenda-v2-1",
+            client_tx_id: null,
+            client_recorded_at: "2026-03-20T10:00:00.000Z",
+            server_received_at: "2026-03-20T10:00:00.000Z",
+            source_demand_key: null,
+            preview_group_id: null,
+            protocolo_id: null,
+            protocol_item_version_id: null,
+            protocol_item_snapshot: {},
+            janela_inicio: "2026-03-29",
+            janela_fim: null,
+            data_programada: "2026-03-29",
+            lote_id: null,
+            produto_veterinario_id: "product-1",
+            produto_snapshot: {
+              productName: "Vacina A",
+              productUnit: "dose",
+              quantityPerAnimal: 2,
+            },
+            produto_classe: null,
+            acao_sanitaria: "vacinacao",
+            execution_evento_id: null,
+            metadata: { target: { scope: "animal", id: "animal-1" } },
+            created_at: "2026-03-20T10:00:00.000Z",
+            updated_at: "2026-03-20T10:00:00.000Z",
+            deleted_at: null,
+          },
+        ],
+        sanitarioAgendaAnimaisV2: [],
+      },
+      range,
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
+
+    expect(report.inventory.futureDemand.status).toBe("complete");
+    expect(report.inventory.futureDemand.groups[0]).toMatchObject({
+      productName: "Vacina A",
+      estimatedQuantity: 2,
+    });
+  });
+
   it("does not fall back to legacy when the analytical agenda is an empty array", () => {
     const report = buildOperationalSummary(
       {
