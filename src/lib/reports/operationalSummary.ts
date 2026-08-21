@@ -23,8 +23,6 @@ import type {
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
   Rejection,
-  SanitarioAgendaAnimalLocalV2,
-  SanitarioAgendaLocalV2,
   SociedadeAnimal,
   SociedadePecuaria,
 } from "@/lib/offline/types";
@@ -42,6 +40,7 @@ import {
 } from "@/lib/reproduction/status";
 import {
   createSanitarySupplyNeedsInsight,
+  type SanitarySupplyAgendaItemInput,
   type SanitarySupplyNeedGroup,
 } from "@/lib/insights/sanitarySupplyNeeds";
 import {
@@ -195,8 +194,7 @@ export interface OperationalSummaryInput {
   insumoApresentacoes?: InsumoApresentacao[];
   insumoLotes?: InsumoLote[];
   insumoMovimentacoes?: InsumoMovimentacao[];
-  sanitarioAgendaV2?: SanitarioAgendaLocalV2[];
-  sanitarioAgendaAnimaisV2?: SanitarioAgendaAnimalLocalV2[];
+  futureSanitaryAgendaItems?: readonly SanitarySupplyAgendaItemInput[];
 }
 
 export interface SummaryMetric {
@@ -860,12 +858,6 @@ function scopeOperationalSummaryInput(
     insumoMovimentacoes: input.insumoMovimentacoes
       ? filterFarmRows(input.insumoMovimentacoes, fazendaId)
       : undefined,
-    sanitarioAgendaV2: input.sanitarioAgendaV2
-      ? filterFarmRows(input.sanitarioAgendaV2, fazendaId)
-      : undefined,
-    sanitarioAgendaAnimaisV2: input.sanitarioAgendaAnimaisV2
-      ? filterFarmRows(input.sanitarioAgendaAnimaisV2, fazendaId)
-      : undefined,
   };
 }
 
@@ -929,77 +921,6 @@ function getReproductiveBirthCount(detail: EventoReproducao): number | null {
   const payload = asRecord(detail.payload);
   const count = readNestedNumber(payload, "numero_crias");
   return count != null && Number.isInteger(count) && count >= 0 ? count : null;
-}
-
-function buildSanitaryAgendaV2DemandItems(
-  agendas: readonly SanitarioAgendaLocalV2[],
-  agendaAnimals: readonly SanitarioAgendaAnimalLocalV2[],
-): Array<{
-  id: string;
-  status: string;
-  dueDate: string;
-  domain: string;
-  animalId: string | null;
-  loteId: string | null;
-  protocolId: string | null;
-  protocolItemVersionId: string | null;
-  productId: string | null;
-  productName: string | null;
-  productUnit: string | null;
-  quantityPerAnimal: number | null;
-  animalCount: number;
-}> {
-  const animalsByAgenda = new Map<string, SanitarioAgendaAnimalLocalV2[]>();
-  for (const relation of agendaAnimals) {
-    if (relation.planned_status !== "planejado") continue;
-    const current = animalsByAgenda.get(relation.agenda_id) ?? [];
-    current.push(relation);
-    animalsByAgenda.set(relation.agenda_id, current);
-  }
-
-  return agendas
-    .filter((agenda) => !agenda.deleted_at && agenda.status === "programada")
-    .map((agenda) => {
-      const relatedAnimals = animalsByAgenda.get(agenda.id) ?? [];
-      const target = asRecord(agenda.metadata.target);
-      const targetAnimalId =
-        target?.scope === "animal" && typeof target.id === "string"
-          ? target.id
-          : null;
-      const productSnapshot = asRecord(agenda.produto_snapshot);
-      const protocolSnapshot = asRecord(agenda.protocol_item_snapshot);
-      const productName =
-        readStringPayload(productSnapshot, "nome") ??
-        readStringPayload(productSnapshot, "produto_nome_catalogo") ??
-        readStringPayload(productSnapshot, "produto") ??
-        readStringPayload(protocolSnapshot, "produto");
-      const productUnit =
-        readStringPayload(productSnapshot, "unidade_base") ??
-        readStringPayload(productSnapshot, "productUnit") ??
-        readStringPayload(protocolSnapshot, "unidade_base");
-      const quantityPerAnimal =
-        readNumberPayload(productSnapshot, "quantityPerAnimal") ??
-        readNumberPayload(productSnapshot, "quantity_per_animal") ??
-        readNumberPayload(productSnapshot, "quantidade_por_animal") ??
-        readNumberPayload(protocolSnapshot, "quantityPerAnimal") ??
-        readNumberPayload(protocolSnapshot, "quantidade_por_animal");
-
-      return {
-        id: agenda.id,
-        status: "agendado",
-        dueDate: agenda.data_programada,
-        domain: "sanitario",
-        animalId: targetAnimalId,
-        loteId: agenda.lote_id,
-        protocolId: agenda.protocolo_id,
-        protocolItemVersionId: agenda.protocol_item_version_id,
-        productId: agenda.produto_veterinario_id,
-        productName,
-        productUnit,
-        quantityPerAnimal,
-        animalCount: relatedAnimals.length || (targetAnimalId ? 1 : 1),
-      };
-    });
 }
 
 function buildReproductiveHistory(
@@ -1470,21 +1391,19 @@ export function buildOperationalSummary(
           : 1,
     };
   });
-  const usingSanitaryAgendaV2 = input.sanitarioAgendaV2 !== undefined;
-  const supplyAgendaItems = usingSanitaryAgendaV2
-    ? buildSanitaryAgendaV2DemandItems(
-        input.sanitarioAgendaV2 ?? [],
-        input.sanitarioAgendaAnimaisV2 ?? [],
-      )
+  const usingComposedSanitaryAgenda =
+    input.futureSanitaryAgendaItems !== undefined;
+  const supplyAgendaItems = usingComposedSanitaryAgenda
+    ? input.futureSanitaryAgendaItems
     : legacySupplyAgendaItems;
-  const futureDemandSource = usingSanitaryAgendaV2
-    ? "sanitario_agenda_v2"
-    : "state_agenda_itens_legacy";
+  const futureDemandSource = usingComposedSanitaryAgenda
+    ? "state_agenda_itens + ops_sanitario_agenda_v2"
+    : "state_agenda_itens";
   const futureDemandLimitations = [
     "Demanda futura representa planejamento; nao comprova execucao historica.",
-    usingSanitaryAgendaV2
-      ? "Agenda Sanitária v2 foi usada como fonte preferencial de intencoes programadas."
-      : "A fonte Agenda Sanitária v2 nao foi carregada; o resultado usa state_agenda_itens legado.",
+    usingComposedSanitaryAgenda
+      ? "Projecao analitica combina Agenda Sanitária v2 canonica com compatibilidade legacy apenas por identidade explicita."
+      : "O caller nao forneceu a projecao composta; o resultado usa state_agenda_itens legado.",
   ];
   const futureSupplyNeeds = createSanitarySupplyNeedsInsight({
     questionKind: "future_need",
@@ -1494,6 +1413,17 @@ export function buildOperationalSummary(
     scope: "due_within_days",
     referenceDate: todayKey,
     days: demandHorizonDays,
+    primarySource: futureDemandSource,
+    auxiliarySources: usingComposedSanitaryAgenda
+      ? [
+          "ops_sanitario_agenda_animais_v2",
+          "state_animais",
+          "state_lotes",
+          "protocolos_sanitarios",
+          "protocolos_sanitarios_itens",
+          "produtos_veterinarios",
+        ]
+      : undefined,
   });
   const getAvailableInventoryBalance = (group: SanitarySupplyNeedGroup) => {
     const productName = group.productName?.trim().toLowerCase();

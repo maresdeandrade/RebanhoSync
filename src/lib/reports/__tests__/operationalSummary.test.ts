@@ -21,8 +21,6 @@ import type {
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
   Rejection,
-  SanitarioAgendaAnimalLocalV2,
-  SanitarioAgendaLocalV2,
 } from "@/lib/offline/types";
 import {
   buildOperationalSummary,
@@ -1465,62 +1463,20 @@ describe("Fase 15 incremental metrics", () => {
     });
   });
 
-  it("uses Agenda Sanitária v2 as the future-demand source when it is loaded", () => {
-    const agendaV2: SanitarioAgendaLocalV2 = {
-      id: "agenda-v2-1",
-      fazenda_id: "farm-1",
-      status: "programada",
-      dedup_key: "farm-1:agenda-v2-1",
-      client_id: "client-1",
-      client_op_id: "op-agenda-v2-1",
-      client_tx_id: null,
-      client_recorded_at: "2026-03-20T10:00:00.000Z",
-      server_received_at: "2026-03-20T10:00:00.000Z",
-      source_demand_key: null,
-      preview_group_id: null,
-      protocolo_id: null,
-      protocol_item_version_id: null,
-      protocol_item_snapshot: {},
-      janela_inicio: "2026-03-29",
-      janela_fim: null,
-      data_programada: "2026-03-29",
-      lote_id: null,
-      produto_veterinario_id: "product-1",
-      produto_snapshot: {
-        nome: "Vacina A",
-        unidade_base: "dose",
-        quantityPerAnimal: 2,
-      },
-      produto_classe: null,
-      acao_sanitaria: "vacinacao",
-      execution_evento_id: null,
-      metadata: { target: { scope: "animal", id: "animal-1" } },
-      created_at: "2026-03-20T10:00:00.000Z",
-      updated_at: "2026-03-20T10:00:00.000Z",
-      deleted_at: null,
-    };
-
+  it("uses the explicitly supplied analytical agenda for future demand", () => {
     const report = buildOperationalSummary(
       {
         fazendaId: "farm-1",
-        animals: [
-          {
-            ...baseAnimal,
-            id: "animal-1",
-            identificacao: "BR-001",
-            sexo: "F",
-            status: "ativo",
-          },
-        ],
+        animals: [],
         lotes: [],
         pastos: [],
         agenda: [
           {
             ...baseAgenda,
-            id: "legacy-agenda",
+            id: "legacy-1",
             tipo: "vacinacao",
             data_prevista: "2026-03-29",
-            payload: { produto_nome_catalogo: "Legado" },
+            payload: { produto_nome_catalogo: "Legacy" },
           },
         ],
         eventos: [],
@@ -1528,27 +1484,145 @@ describe("Fase 15 incremental metrics", () => {
         eventosFinanceiro: [],
         gestures: [],
         rejections: [],
-        sanitarioAgendaV2: [agendaV2],
-        sanitarioAgendaAnimaisV2: [],
+        futureSanitaryAgendaItems: [
+          {
+            id: "sanitario-v2:agenda-1",
+            status: "agendado",
+            dueDate: "2026-03-29",
+            domain: "sanitario",
+            productId: "product-1",
+            productName: "Vacina A",
+            productUnit: "dose",
+            quantityPerAnimal: 2,
+            animalCount: 1,
+          },
+        ],
       },
       range,
       new Date("2026-03-29T12:00:00.000Z"),
     );
 
-    expect(report.inventory.futureDemand.source).toBe("sanitario_agenda_v2");
+    expect(report.inventory.futureDemand.source).toBe(
+      "state_agenda_itens + ops_sanitario_agenda_v2",
+    );
     expect(report.inventory.futureDemand.groups[0]).toMatchObject({
       productName: "Vacina A",
       estimatedQuantity: 2,
     });
-    expect(report.metrics.estoque_demanda_futura).toMatchObject({
-      value: 2,
-      status: "partial",
-      sources: [{ name: "sanitario_agenda_v2", role: "primary" }],
-    });
-    expect(report.inventory.futureDemand.limitations).toContain(
-      "Agenda Sanitária v2 foi usada como fonte preferencial de intencoes programadas.",
-    );
+    expect(report.inventory.futureDemand.status).toBe("complete");
     expect(report.inventory.futureDemand.groups).toHaveLength(1);
+  });
+
+  it("degrades composed future demand when legacy and v2 may overlap", () => {
+    const report = buildOperationalSummary(
+      {
+        fazendaId: "farm-1",
+        animals: [],
+        lotes: [],
+        pastos: [],
+        agenda: [],
+        eventos: [],
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+        futureSanitaryAgendaItems: [
+          {
+            id: "legacy-1",
+            status: "agendado",
+            dueDate: "2026-03-29",
+            domain: "sanitario",
+            productId: "product-1",
+            productName: "Vacina A",
+            productUnit: "dose",
+            quantityPerAnimal: 1,
+            animalCount: 1,
+            possibleSourceOverlap: true,
+          },
+          {
+            id: "sanitario-v2:agenda-1",
+            status: "agendado",
+            dueDate: "2026-03-29",
+            domain: "sanitario",
+            productId: "product-1",
+            productName: "Vacina A",
+            productUnit: "dose",
+            quantityPerAnimal: 1,
+            animalCount: 1,
+            possibleSourceOverlap: true,
+          },
+        ],
+      },
+      range,
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
+
+    expect(report.inventory.futureDemand.status).toBe("partial");
+    expect(report.inventory.futureDemand.groups[0].agendaItemCount).toBe(2);
+    expect(report.inventory.futureDemand.limitations).toContain(
+      "Fontes legacy e Agenda Sanitária v2 coexistem sem vínculo suficiente para excluir possível sobreposição.",
+    );
+  });
+
+  it("keeps the legacy fallback when the analytical agenda is undefined", () => {
+    const report = buildOperationalSummary(
+      {
+        fazendaId: "farm-1",
+        animals: [],
+        lotes: [],
+        pastos: [],
+        agenda: [
+          {
+            ...baseAgenda,
+            id: "legacy-1",
+            tipo: "vacinacao",
+            data_prevista: "2026-03-29",
+            payload: { produto_nome_catalogo: "Legacy", quantityPerAnimal: 1 },
+          },
+        ],
+        eventos: [],
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+      },
+      range,
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
+
+    expect(report.inventory.futureDemand.source).toBe("state_agenda_itens");
+    expect(report.inventory.futureDemand.groups[0]?.productName).toBe("Legacy");
+  });
+
+  it("does not fall back to legacy when the analytical agenda is an empty array", () => {
+    const report = buildOperationalSummary(
+      {
+        fazendaId: "farm-1",
+        animals: [],
+        lotes: [],
+        pastos: [],
+        agenda: [
+          {
+            ...baseAgenda,
+            id: "legacy-1",
+            tipo: "vacinacao",
+            data_prevista: "2026-03-29",
+            payload: { produto_nome_catalogo: "Legacy" },
+          },
+        ],
+        eventos: [],
+        eventosPesagem: [],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+        futureSanitaryAgendaItems: [],
+      },
+      range,
+      new Date("2026-03-29T12:00:00.000Z"),
+    );
+
+    expect(report.inventory.futureDemand.status).toBe("empty");
+    expect(report.inventory.futureDemand.groups).toEqual([]);
   });
 });
 

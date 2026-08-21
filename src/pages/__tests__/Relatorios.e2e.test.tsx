@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -427,5 +427,73 @@ describe("Relatorios flow", () => {
         eventName: "report_printed",
       }),
     );
+  });
+
+  it("compõe Agenda Sanitária v2 local e exibe futureDemand parcial factual", async () => {
+    const baseSource = mockedUseLiveQuery(() => null, []);
+    const agendaBase = {
+      fazenda_id: "farm-1",
+      status: "programada",
+      dedup_key: "agenda-v2",
+      client_id: "client-1",
+      client_op_id: "op-v2",
+      client_tx_id: null,
+      client_recorded_at: "2026-03-20T10:00:00.000Z",
+      server_received_at: "2026-03-20T10:00:00.000Z",
+      source_demand_key: null,
+      preview_group_id: null,
+      protocolo_id: null,
+      protocol_item_version_id: null,
+      protocol_item_snapshot: {},
+      janela_inicio: "2026-03-29",
+      janela_fim: null,
+      data_programada: "2026-03-29",
+      lote_id: null,
+      produto_classe: null,
+      acao_sanitaria: "vacinacao",
+      execution_evento_id: null,
+      metadata: { target: { scope: "animal", id: "animal-1" } },
+      created_at: "2026-03-20T10:00:00.000Z",
+      updated_at: "2026-03-20T10:00:00.000Z",
+      deleted_at: null,
+    };
+
+    mockedUseLiveQuery.mockReturnValue({
+      ...baseSource,
+      agenda: [],
+      sanitarioAgendaV2: [
+        {
+          ...agendaBase,
+          id: "agenda-v2-with-product",
+          produto_veterinario_id: "product-v2",
+          produto_snapshot: { productName: "Vacina V2" },
+        },
+        {
+          ...agendaBase,
+          id: "agenda-v2-without-product",
+          produto_veterinario_id: null,
+          produto_snapshot: {},
+        },
+      ],
+      sanitarioAgendaAnimaisV2: [],
+      protocoloItensSanitarios: [],
+    } as ReturnType<typeof useLiveQuery>);
+
+    render(
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Relatorios />
+      </MemoryRouter>,
+    );
+
+    const heading = await screen.findByRole("heading", {
+      name: /Demanda futura por agenda valida/i,
+    });
+    const section = heading.parentElement?.parentElement;
+    expect(section).not.toBeNull();
+    expect(within(section as HTMLElement).getByText("Parcial")).toBeInTheDocument();
+    expect(within(section as HTMLElement).getByText(/1 sem produto/i)).toBeInTheDocument();
+    expect(screen.getByText("Vacina V2")).toBeInTheDocument();
   });
 });

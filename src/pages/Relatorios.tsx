@@ -27,6 +27,7 @@ import {
   resolveReportRange,
   type ReportPreset,
 } from "@/lib/reports/operationalSummary";
+import { selectFutureSanitarySupplyAgenda } from "@/lib/reports/futureSanitarySupplyAgenda";
 import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 import { showError, showSuccess } from "@/utils/toast";
 import { formatWeight } from "@/lib/format/weight";
@@ -256,11 +257,21 @@ const Relatorios = () => {
 
   const report = useMemo(() => {
     if (!source) return null;
+    const futureSanitaryAgendaItems = selectFutureSanitarySupplyAgenda({
+      activeFarmId,
+      legacyItems: source.agenda,
+      agendaV2: source.sanitarioAgendaV2 ?? [],
+      agendaAnimalsV2: source.sanitarioAgendaAnimaisV2 ?? [],
+      animals: source.animals,
+      lots: source.lotes,
+      protocolItems: source.protocoloItensSanitarios,
+    });
     return buildOperationalSummary(
       {
         ...source,
         fazendaId: activeFarmId,
         farmTimezone: farm?.timezone,
+        futureSanitaryAgendaItems,
       },
       range,
     );
