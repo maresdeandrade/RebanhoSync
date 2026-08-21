@@ -1,7 +1,7 @@
 # Plano ativo — Fase 17 / Decisão Assistida
 
 Atualizado em: 2026-08-20
-Status: **Fase 17 ativa, preparada para abertura, não iniciada**
+Status: **Fase 16 encerrada; Fase 17 preparada para abertura, não iniciada**
 Fase 16 integrada em `main@f20146505a04c0eab03c0685f2bdef7763bae221`.
 Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
 
