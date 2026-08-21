@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
 Atualizado em: 2026-08-20
-Fase atual: **Fase 17 — Decisão Assistida (a iniciar)**
-Fase anterior: **Fase 16 — Financeiro Gerencial concluída localmente**
+Fase atual: **Fase 17 — Decisão Assistida (preparada para abertura, não iniciada)**
+Fase anterior: **Fase 16 — Financeiro Gerencial (integrada via PR #94)**
 
 ## Objetivo
 
@@ -45,11 +45,11 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 ## Próxima fase de desenvolvimento
 
 ```txt
-Fase 16 — Financeiro Gerencial — concluída localmente
-→ Fase 17 — Decisão Assistida — a definir
+Fase 16 — Financeiro Gerencial — integrada
+→ Fase 17 — Decisão Assistida — preparada para abertura
 ```
 
-A Fase 16.1A restringiu-se à proteção offline de `finance_transactions` e `finance_categories` durante pull `replace`/`merge` e está concluída. A Fase 16.1B concluiu o hardening semântico de valores, status e agrupamentos do ledger gerencial. A Fase 16.1C finalizou o núcleo financeiro, com deduplicação de vínculos, modos temporais, estorno auditável, categorias determinísticas e expansão dos KPIs operacionais. Toda a Fase 16 foi concluída localmente. A Fase 17 não foi iniciada.
+A Fase 16 — Financeiro Gerencial foi integralmente concluída e integrada à branch principal (merge commit `f20146505a04c0eab03c0685f2bdef7763bae221`). A implementação incluiu o hardening offline de transações e categorias financeiras, hardening semântico de valores, classificação canônica para prevenção de dupla contagem, separação de caixa/competência/previsão/vencido, estorno append-only auditável e identidades determinísticas para categorias baseadas em SHA-256. A Fase 17 — Decisão Assistida não foi iniciada.
 
 ## Risco de rollout
 
@@ -67,7 +67,7 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 |---|---|---|
 | 13 | Reprodução Operacional v1 | Concluída |
 | 14 | Compra/Venda Operacional | **Concluída** em `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078` |
-| 15 | KPIs/Relatórios | Próxima fase; fontes, períodos e limitações explícitos |
-| 16 | Financeiro Gerencial | Ledger e critérios gerenciais explícitos |
-| 17 | Decisão Assistida | Dados confiáveis e limites de não autorização |
+| 15 | KPIs/Relatórios | **Concluída** |
+| 16 | Financeiro Gerencial | **Integrada via PR #94** |
+| 17 | Decisão Assistida | Preparada para abertura, não iniciada |
 | 18 | Beta/Hardening | Gates técnicos e operacionais atendidos |
