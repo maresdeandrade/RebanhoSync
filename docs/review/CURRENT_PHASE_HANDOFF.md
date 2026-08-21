@@ -6,7 +6,7 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 17 ativa, preparada para abertura, não iniciada**
+Status: **Fase 16 encerrada; Fase 17 preparada para abertura, não iniciada**
 Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
 
 ## Saída integrada da Fase 15
