@@ -18,6 +18,8 @@ import { sortOpsForSync } from "./syncOrder";
 import {
   mergeOperationAudit,
   planOperationReconciliation,
+  type OperationResultMatch,
+  type TerminalBlockedDependencyClassifier,
 } from "./syncReconciliation";
 import {
   pullDataForFarm,
@@ -768,9 +770,15 @@ async function reconcileGenericOperationResults(
   gesture: Gesture,
   operations: Operation[],
   results: SyncOperationResult[],
+  isTerminalBlockedDependency?: TerminalBlockedDependencyClassifier,
 ) {
   const recordedAt = new Date().toISOString();
-  const plan = planOperationReconciliation(operations, results, recordedAt);
+  const plan = planOperationReconciliation(
+    operations,
+    results,
+    recordedAt,
+    isTerminalBlockedDependency,
+  );
   if (plan.rejected.length === 0) return false;
 
   const rejectedOps = plan.rejected.map(({ op }) => op);
@@ -916,6 +924,46 @@ async function reconcileGenericOperationResults(
   return true;
 }
 
+function buildTerminalBlockedDependencyClassifier(
+  operations: Operation[],
+  results: SyncOperationResult[],
+): TerminalBlockedDependencyClassifier {
+  const resultsByOpId = new Map(
+    results
+      .filter(
+        (result) =>
+          !result.client_op_id || result.client_op_id === result.op_id,
+      )
+      .map((result) => [result.op_id, result]),
+  );
+  const eventOperationsById = new Map(
+    operations
+      .filter((operation) => getRemoteTableName(operation.table) === "eventos")
+      .map((operation) => [String(operation.record?.id ?? ""), operation]),
+  );
+
+  return ({ op, result }: OperationResultMatch) => {
+    if (
+      result.status !== "BLOCKED_DEPENDENCY" ||
+      result.retryable === true ||
+      getRemoteTableName(op.table) !== "eventos_reproducao"
+    ) {
+      return false;
+    }
+
+    const dependency = eventOperationsById.get(
+      String(op.record?.evento_id ?? ""),
+    );
+    if (!dependency) return false;
+
+    const dependencyResult = resultsByOpId.get(dependency.client_op_id);
+    return (
+      dependencyResult?.status === "REJECTED" ||
+      dependencyResult?.status === "CONFLICT"
+    );
+  };
+}
+
 export async function processGesture(gesture: Gesture) {
   const queuedOps = await db.queue_ops
     .where("client_tx_id")
@@ -1055,10 +1103,13 @@ export async function processGesture(gesture: Gesture) {
     if (handledSanitarioV2) return;
 
     const genericRecordedAt = new Date().toISOString();
+    const isTerminalBlockedDependency =
+      buildTerminalBlockedDependencyClassifier(ops, result.results);
     const genericPlan = planOperationReconciliation(
       ops,
       result.results,
       genericRecordedAt,
+      isTerminalBlockedDependency,
     );
     const hasCommercialPurchase = commercialCommand !== null;
     const allApplied = hasCommercialPurchase
@@ -1077,7 +1128,12 @@ export async function processGesture(gesture: Gesture) {
     const isTerminalReproductionResult = (entry: SyncOperationResult) =>
       entry.status === "REJECTED" ||
       (hasReproductionOperation &&
-        (entry.status === "CONFLICT" || entry.status === "BLOCKED_DEPENDENCY"));
+        entry.status === "CONFLICT") ||
+      genericPlan.rejected.some(
+        ({ result: rejectedResult }) =>
+          rejectedResult.op_id === entry.op_id &&
+          rejectedResult.status === "BLOCKED_DEPENDENCY",
+      );
     const isTerminalResult = (entry: SyncOperationResult) =>
       isTerminalReproductionResult(entry) ||
       (hasCommercialPurchase &&
@@ -1241,7 +1297,12 @@ export async function processGesture(gesture: Gesture) {
     if (
       hasRejected &&
       !hasCommercialPurchase &&
-      (await reconcileGenericOperationResults(gesture, ops, result.results))
+      (await reconcileGenericOperationResults(
+        gesture,
+        ops,
+        result.results,
+        isTerminalBlockedDependency,
+      ))
     ) {
       await trackPilotMetric({
         fazendaId: gesture.fazenda_id,

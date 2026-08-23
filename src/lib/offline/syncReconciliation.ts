@@ -17,6 +17,10 @@ export type OperationReconciliationPlan = {
   audits: SyncOperationAuditResult[];
 };
 
+export type TerminalBlockedDependencyClassifier = (
+  match: OperationResultMatch,
+) => boolean;
+
 export function mergeOperationAudit(
   current: SyncOperationAuditResult[] | undefined,
   incoming: SyncOperationAuditResult[],
@@ -45,6 +49,7 @@ export function planOperationReconciliation(
   operations: Operation[],
   results: SyncOperationResult[],
   recordedAt: string,
+  isTerminalBlockedDependency?: TerminalBlockedDependencyClassifier,
 ): OperationReconciliationPlan {
   const operationsById = new Map(
     operations.map((operation) => [operation.client_op_id, operation]),
@@ -95,7 +100,13 @@ export function planOperationReconciliation(
     const match = { op: operation, result };
     if (result.status === "APPLIED" || result.status === "APPLIED_ALTERED") {
       plan.applied.push(match);
-    } else if (result.status === "REJECTED" || result.status === "CONFLICT") {
+    } else if (
+      result.status === "REJECTED" ||
+      result.status === "CONFLICT" ||
+      (result.status === "BLOCKED_DEPENDENCY" &&
+        result.retryable !== true &&
+        isTerminalBlockedDependency?.(match) === true)
+    ) {
       plan.rejected.push(match);
     } else {
       plan.retryable.push(match);

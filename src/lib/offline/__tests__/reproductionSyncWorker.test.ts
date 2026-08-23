@@ -294,10 +294,56 @@ describe("reproduction diagnosis sync worker", () => {
     await processGesture(gesture);
 
     expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "REJECTED" });
-    expect(await db.event_eventos.get("diagnosis-worker")).toBeUndefined();
+    expect(await db.event_eventos.get("diagnostico-worker")).toBeUndefined();
     expect(
-      await db.event_eventos_reproducao.get("diagnosis-worker"),
+      await db.event_eventos_reproducao.get("diagnostico-worker"),
     ).toBeUndefined();
+    expect(
+      await db.queue_ops.where("client_tx_id").equals(txId).toArray(),
+    ).toEqual([
+      expect.objectContaining({ sync_state: "REJECTED" }),
+      expect.objectContaining({ sync_state: "REJECTED" }),
+    ]);
+    expect(await db.queue_rejections.count()).toBe(2);
     expect(mocks.pullReproductionDiagnosisState).not.toHaveBeenCalled();
+  });
+
+  it("keeps a blocked detail retryable while its dependency is transient", async () => {
+    const txId = await createReproductionGesture();
+    const ops = await db.queue_ops
+      .where("client_tx_id")
+      .equals(txId)
+      .sortBy("op_order");
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({
+      results: [
+        {
+          op_id: ops[0].client_op_id,
+          status: "RETRYABLE",
+          retryable: true,
+          reason_code: "EVENT_TIMEOUT",
+        },
+        {
+          op_id: ops[1].client_op_id,
+          status: "BLOCKED_DEPENDENCY",
+          retryable: false,
+          reason_code: "REPRODUCTION_EVENT_NOT_APPLIED",
+        },
+      ],
+    }), { status: 200 }));
+    const gesture = await db.queue_gestures.get(txId);
+    if (!gesture) throw new Error("gesture not found");
+
+    await processGesture(gesture);
+
+    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "PENDING" });
+    expect(await db.event_eventos.get("diagnostico-worker")).toBeDefined();
+    expect(
+      await db.event_eventos_reproducao.get("diagnostico-worker"),
+    ).toBeDefined();
+    expect(
+      (await db.queue_ops.where("client_tx_id").equals(txId).toArray()).every(
+        (operation) => operation.sync_state !== "REJECTED",
+      ),
+    ).toBe(true);
   });
 });
