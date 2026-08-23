@@ -1018,16 +1018,22 @@ export async function processGesture(gesture: Gesture) {
         }
       }
 
-      await db.queue_gestures.update(gesture.client_tx_id, {
-        status: "DONE",
-        sync_result: syncResult,
-        completed_at: completedAt,
-        last_error: undefined,
-      });
-      await db.queue_ops
-        .where("client_tx_id")
-        .equals(gesture.client_tx_id)
-        .delete();
+      await db.transaction(
+        "rw",
+        [db.queue_gestures, db.queue_ops],
+        async () => {
+          await db.queue_gestures.update(gesture.client_tx_id, {
+            status: "DONE",
+            sync_result: syncResult,
+            completed_at: completedAt,
+            last_error: undefined,
+          });
+          await db.queue_ops
+            .where("client_tx_id")
+            .equals(gesture.client_tx_id)
+            .delete();
+        },
+      );
       await trackPilotMetric({
         fazendaId: gesture.fazenda_id,
         eventName: "sync_success",

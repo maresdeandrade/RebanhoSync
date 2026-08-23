@@ -17,6 +17,77 @@ import {
 import { buildCommercialPurchaseQueueOperation } from "@/lib/comercial/animalPurchaseSync";
 import { buildCommercialOperationQueueOperation } from "@/lib/comercial/commercialOperationSync";
 
+export type CreateGestureDiagnostic = {
+  stage: string;
+  clientTxId?: string;
+  operationCount: number;
+  operationIndex?: number;
+  table?: string;
+  action?: string;
+  error: {
+    name: string;
+    message: string;
+    stack?: string;
+    cause?: { name: string; message: string };
+    dexie?: Record<string, unknown>;
+  };
+};
+
+const createGestureDiagnostics = new WeakMap<object, CreateGestureDiagnostic>();
+
+function describeCreateGestureError(error: unknown) {
+  const value =
+    error && typeof error === "object"
+      ? (error as Record<string, unknown>)
+      : null;
+  const cause = value?.cause;
+  const causeRecord =
+    cause && typeof cause === "object"
+      ? (cause as Record<string, unknown>)
+      : null;
+  const dexieKeys = ["inner", "failures", "failuresByPos", "failedKeys"];
+  const dexie = value
+    ? Object.fromEntries(
+        dexieKeys
+          .filter((key) => value[key] !== undefined)
+          .map((key) => [key, value[key]]),
+      )
+    : {};
+  return {
+    name: typeof value?.name === "string" ? value.name : typeof error,
+    message: typeof value?.message === "string" ? value.message : String(error),
+    ...(typeof value?.stack === "string" ? { stack: value.stack } : {}),
+    ...(typeof causeRecord?.message === "string"
+      ? {
+          cause: {
+            name:
+              typeof causeRecord.name === "string" ? causeRecord.name : typeof cause,
+            message: causeRecord.message,
+          },
+        }
+      : {}),
+    ...(Object.keys(dexie).length > 0 ? { dexie } : {}),
+  };
+}
+
+function recordCreateGestureFailure(
+  error: unknown,
+  context: Omit<CreateGestureDiagnostic, "error">,
+): never {
+  const diagnostic = { ...context, error: describeCreateGestureError(error) };
+  if (error && typeof error === "object") {
+    createGestureDiagnostics.set(error, diagnostic);
+  }
+  console.error("[createGesture] failed", diagnostic);
+  throw error;
+}
+
+export function getCreateGestureDiagnostic(error: unknown) {
+  return error && typeof error === "object"
+    ? createGestureDiagnostics.get(error)
+    : undefined;
+}
+
 function getRecordKey(record: Record<string, unknown>): string | null {
   if (typeof record.id === "string") return record.id;
   if (typeof record.evento_id === "string") return record.evento_id;
@@ -89,15 +160,43 @@ export const createGesture = async (
     clientOpIds?: readonly string[];
   } = {},
 ) => {
-  for (const op of ops_input) {
-    assertAllowedOfflinePushSurface(op);
+  for (const [operationIndex, op] of ops_input.entries()) {
+    try {
+      assertAllowedOfflinePushSurface(op);
+    } catch (error) {
+      recordCreateGestureFailure(error, {
+        stage: "validate-input",
+        operationCount: ops_input.length,
+        operationIndex,
+        table: op.table,
+        action: op.action,
+      });
+    }
   }
 
   const client_tx_id = options.clientTxId ?? crypto.randomUUID();
   const client_recorded_at = new Date().toISOString();
-  const client_id = getClientId();
+  let client_id: string;
+  try {
+    client_id = getClientId();
+  } catch (error) {
+    recordCreateGestureFailure(error, {
+      stage: "create-identifiers",
+      clientTxId: client_tx_id,
+      operationCount: ops_input.length,
+    });
+  }
 
-  const existingGesture = await db.queue_gestures.get(client_tx_id);
+  let existingGesture: Gesture | undefined;
+  try {
+    existingGesture = await db.queue_gestures.get(client_tx_id);
+  } catch (error) {
+    recordCreateGestureFailure(error, {
+      stage: "check-existing-gesture",
+      clientTxId: client_tx_id,
+      operationCount: ops_input.length,
+    });
+  }
   if (existingGesture) {
     const existingOps = await db.queue_ops
       .where("client_tx_id")
@@ -125,11 +224,23 @@ export const createGesture = async (
 
   const ops: Operation[] = ops_input.map((op, index) => {
     const client_op_id = options.clientOpIds?.[index] ?? crypto.randomUUID();
-    const normalizedRecord = normalizeTableMutationRecord(
-      op.table,
-      op.record,
-      fazenda_id,
-    );
+    let normalizedRecord: Record<string, unknown>;
+    try {
+      normalizedRecord = normalizeTableMutationRecord(
+        op.table,
+        op.record,
+        fazenda_id,
+      );
+    } catch (error) {
+      recordCreateGestureFailure(error, {
+        stage: "normalize-operation",
+        clientTxId: client_tx_id,
+        operationCount: ops_input.length,
+        operationIndex: index,
+        table: op.table,
+        action: op.action,
+      });
+    }
 
     return {
       ...op,
@@ -226,37 +337,71 @@ export const createGesture = async (
     ...sanitarioAgendaV2.flatMap(({ queueOp }) => (queueOp ? [queueOp] : [])),
   ];
 
-  for (const op of queueOps) {
-    validateOperationPayloadContracts(op);
+  for (const [operationIndex, op] of queueOps.entries()) {
+    try {
+      validateOperationPayloadContracts(op);
+    } catch (error) {
+      recordCreateGestureFailure(error, {
+        stage: "validate-operation",
+        clientTxId: client_tx_id,
+        operationCount: queueOps.length,
+        operationIndex,
+        table: op.table,
+        action: op.action,
+      });
+    }
   }
 
-  await db.transaction(
-    "rw",
-    [
-      db.queue_gestures,
-      db.queue_ops,
-      ...getAffectedStores(ops),
-      ...(sanitarioAgendaV2.length > 0
-        ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
-        : []),
-    ],
-    async () => {
-      await db.queue_gestures.add(gesture);
-      await db.queue_ops.bulkAdd(queueOps);
+  let transactionStage = "transaction-start";
+  let transactionOperationIndex: number | undefined;
+  await db
+    .transaction(
+      "rw",
+      [
+        db.queue_gestures,
+        db.queue_ops,
+        ...getAffectedStores(ops),
+        ...(sanitarioAgendaV2.length > 0
+          ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
+          : []),
+      ],
+      async () => {
+        transactionStage = "write-gesture";
+        await db.queue_gestures.add(gesture);
+        transactionStage = "write-operations";
+        await db.queue_ops.bulkAdd(queueOps);
 
-      for (const op of ops) {
-        await applyOpLocal(op);
-      }
-      if (sanitarioAgendaV2.length > 0) {
-        await db.ops_sanitario_agenda_v2.bulkPut(
-          sanitarioAgendaV2.map(({ agenda }) => agenda),
-        );
-        await db.ops_sanitario_agenda_animais_v2.bulkPut(
-          sanitarioAgendaV2.map(({ animal }) => animal),
-        );
-      }
-    },
-  );
+        transactionStage = "apply-local-operation";
+        for (const [operationIndex, op] of ops.entries()) {
+          transactionOperationIndex = operationIndex;
+          await applyOpLocal(op);
+        }
+        transactionOperationIndex = undefined;
+        if (sanitarioAgendaV2.length > 0) {
+          await db.ops_sanitario_agenda_v2.bulkPut(
+            sanitarioAgendaV2.map(({ agenda }) => agenda),
+          );
+          await db.ops_sanitario_agenda_animais_v2.bulkPut(
+            sanitarioAgendaV2.map(({ animal }) => animal),
+          );
+        }
+      },
+    )
+    .catch((error) => {
+      const op =
+        transactionOperationIndex === undefined
+          ? undefined
+          : ops[transactionOperationIndex];
+      recordCreateGestureFailure(error, {
+        stage: transactionStage,
+        clientTxId: client_tx_id,
+        operationCount: queueOps.length,
+        ...(transactionOperationIndex === undefined
+          ? {}
+          : { operationIndex: transactionOperationIndex }),
+        ...(op ? { table: op.table, action: op.action } : {}),
+      });
+    });
 
   return client_tx_id;
 };

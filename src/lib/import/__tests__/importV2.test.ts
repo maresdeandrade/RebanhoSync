@@ -191,6 +191,60 @@ describe("Importação V2 — preview e contrato", () => {
     );
   });
 
+  it("classifica schema e template inválidos como rejeições determinísticas sem operação", () => {
+    const preview = previewAnimalsImportV2({
+      entity: "animais",
+      fazendaId: "farm-1",
+      rawText: [
+        "identificacao;sexo;schema_version;template_version",
+        "A-002;F;99;template-corrompido",
+      ].join("\n"),
+      existing: { animais: [], lotes: [] },
+      lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+    });
+
+    expect(preview.summary).toMatchObject({ valid: 0, retryable: 0 });
+    expect(preview.operations).toHaveLength(0);
+    expect(preview.chunks).toHaveLength(0);
+    expect(preview.lineResults.flatMap((line) => line.issues)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "SCHEMA_VERSION_UNSUPPORTED" }),
+        expect.objectContaining({ code: "TEMPLATE_VERSION_INVALID" }),
+      ]),
+    );
+  });
+
+  it("rejeita cabeçalho malformado antes de gerar operação", () => {
+    const preview = previewAnimalsImportV2({
+      entity: "animais",
+      fazendaId: "farm-1",
+      rawText: [
+        "identificacao;sexo;data\\_nascimento;**nome;schema\\_version;template_version",
+        "A-002;F;2024-01-10;Estrela;2;import-v2",
+      ].join("\n"),
+      existing: { animais: [], lotes: [] },
+      lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+    });
+
+    expect(preview.summary).toMatchObject({ valid: 0, retryable: 0 });
+    expect(preview.operations).toHaveLength(0);
+    expect(preview.chunks).toHaveLength(0);
+    expect(preview.lineResults.flatMap((line) => line.issues)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "HEADER_INVALID",
+          message: expect.stringContaining(
+            'Coluna inválida "data\\_nascimento"',
+          ),
+        }),
+        expect.objectContaining({
+          code: "HEADER_INVALID",
+          message: expect.stringContaining('Coluna inválida "**nome"'),
+        }),
+      ]),
+    );
+  });
+
   it("define identidade estável por contexto e divide volume em chunks determinísticos", () => {
     const rows = Array.from(
       { length: IMPORT_V2_LIMITS.chunkSize + 1 },

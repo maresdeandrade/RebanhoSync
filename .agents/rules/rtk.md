@@ -1,41 +1,41 @@
-# RTK — Execução de comandos no RebanhoSync
+# RTK — Execução e Validação no RebanhoSync
 
-Use estas diretrizes sempre que a tarefa envolver comandos, testes, Graphify, pnpm, WSL/Windows ou validação local.
+## Princípio
+
+`rtk` é um wrapper opcional.
+
+Quando estiver disponível e suportar o comando:
+
+```bash
+rtk <comando>
+```
+
+Quando não estiver disponível, executar diretamente o comando nativo previsto pelo projeto:
+
+```bash
+pnpm ...
+node ...
+graphify ...
+git ...
+```
+
+**A ausência de `rtk` não bloqueia comandos disponíveis diretamente no ambiente.**
+
+Nunca inventar comandos ou declarar sucesso sem saída confirmatória.
 
 ---
 
-## Princípios
+## Estado inicial
 
-* Preferir comandos reproduzíveis, mínimos e proporcionais ao risco.
-* Usar `rtk` para comandos do projeto quando disponível.
-* Confirmar scripts em `package.json` ou no caminho citado; não inventar comandos.
-* Não declarar sucesso sem saída confirmatória.
-* Distinguir falha nova, warning preexistente e validação não executada.
-
-Se `rtk` não estiver disponível ou não suportar o comando necessário, registrar a limitação e usar apenas a alternativa já prevista pelo repositório/ambiente.
-
----
-
-## Estado inicial do repositório
-
-Antes de alterar ou validar:
+Antes de alterar código:
 
 ```bash
 git status --short --untracked-files=all
-```
-
-Inspecionar separadamente alterações unstaged e staged:
-
-```bash
 git diff --name-only
-git diff --stat
 git diff --cached --name-only
-git diff --cached --stat
 ```
 
-`git diff` comum não mostra arquivos untracked nem substitui a inspeção do conteúdo desses arquivos.
-
-Para revisão textual do patch:
+Quando necessário:
 
 ```bash
 git diff
@@ -43,11 +43,13 @@ git diff --cached
 git diff --check
 ```
 
+`git diff` não inclui arquivos untracked.
+
 ---
 
-## pnpm e Corepack
+## pnpm
 
-Confirmar o contrato do projeto antes de assumir versão ou script:
+Confirmar primeiro:
 
 ```bash
 node -p "require('./package.json').packageManager || 'sem packageManager'"
@@ -55,9 +57,7 @@ pnpm --version
 corepack --version
 ```
 
-Se `package.json` não definir `packageManager`, não assumir versão única do pnpm.
-
-Com `rtk` disponível:
+### Com `rtk`
 
 ```bash
 rtk pnpm test
@@ -65,125 +65,162 @@ rtk pnpm run lint
 rtk pnpm run build
 ```
 
+### Sem `rtk`
+
+```bash
+pnpm test
+pnpm run lint
+pnpm run build
+```
+
 Teste específico:
 
 ```bash
-rtk pnpm test -- caminho/do/teste.test.ts
+pnpm test -- caminho/do/teste.test.ts
 ```
 
-Vitest por nome:
+Teste por nome:
 
 ```bash
-rtk pnpm test -- -t "nome do teste"
+pnpm test -- -t "nome do teste"
 ```
+
+Usar o mesmo fallback direto quando `rtk` não estiver disponível.
 
 ---
 
 ## Validação proporcional
 
-### Documentação, prompt ou skill sem alteração funcional
+### Documentação / prompt / skill
 
 ```bash
 git status --short --untracked-files=all
 git diff --check
 ```
 
-Adicionar validador específico existente quando houver. Não executar lint, testes ou build de produto sem justificativa funcional.
-
-### Patch local
+### Patch localizado
 
 ```bash
-rtk pnpm test -- caminho/do/teste.test.ts
+pnpm test -- caminho/do/teste.test.ts
 ```
 
 ### UI / componente
 
 ```bash
-rtk pnpm test -- caminho/do/componente.test.tsx
-rtk pnpm run lint
+pnpm test -- caminho/do/componente.test.tsx
+pnpm run lint
 ```
 
 ### Domínio crítico
 
 ```bash
-rtk pnpm test -- caminho/do/dominio
-rtk pnpm run lint
-rtk pnpm run build
+pnpm test -- caminho/do/dominio
+pnpm run lint
+pnpm run build
 ```
 
 ### Entrega ampla
 
 ```bash
-rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
+pnpm run lint
+pnpm test
+pnpm run build
 ```
 
-### Supabase / RLS / RPC / migration / sync-batch
+Executar apenas validações proporcionais ao risco e ao escopo.
 
-Quando o script existir e o escopo tocar esses contratos:
+---
+
+## Supabase / RLS / RPC / sync
+
+Somente quando o arquivo existir e o escopo tocar esses contratos:
 
 ```bash
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
+node scripts/codex/validate-supabase-baseline-functional.mjs
 ```
+
+Não inventar scripts.
 
 ---
 
 ## Scripts Codex
 
-Confirmar a existência antes de executar:
+Confirmar existência e parâmetros antes da execução.
+
+Exemplos previstos:
 
 ```powershell
 powershell -File scripts/codex/preflight.ps1 -Paths "<path1>","<path2>"
-powershell -File scripts/codex/validate.ps1 -Profile focused -TouchedPaths "<path1>","<path2>" -TestPaths "<teste-focado>"
 ```
 
-Use `standard` com `-TestPaths`, `-LintPaths` e `-IncludeBuild` somente conforme o risco. Use `full -ConfirmFull` apenas em fechamento amplo explicitamente autorizado. Executar no ambiente previsto pelo repositório; não adaptar ou inventar parâmetros sem ler o script ou sua documentação.
+```powershell
+powershell -File scripts/codex/validate.ps1 -Profile focused -TouchedPaths "<path1>","<path2>" -TestPaths "<teste>"
+```
+
+Não adaptar parâmetros sem ler o script ou documentação correspondente.
 
 ---
 
 ## Graphify
 
-Usar somente nos casos definidos em `.agents/rules/GRAPHIFY_USAGE.md`.
+Seguir:
 
-Se `rtk`, Graphify e o contrato correspondente estiverem disponíveis:
+```text
+.agents/rules/GRAPHIFY_USAGE.md
+```
+
+### Com `rtk`
+
+Se `rtk` estiver disponível e suportar Graphify:
 
 ```bash
 rtk graphify query "<pergunta>"
-rtk graphify path "<arquivo-ou-conceito-A>" "<arquivo-ou-conceito-B>"
 rtk graphify explain "<conceito>"
-```
-
-Atualizar o grafo apenas após mudança estrutural relevante:
-
-```bash
+rtk graphify path "<A>" "<B>"
 rtk graphify update .
 ```
 
-Graphify não é obrigatório para copy, patch visual pequeno, teste isolado ou arquivo-alvo já conhecido.
+### Sem `rtk`
+
+```bash
+graphify query "<pergunta>"
+graphify explain "<conceito>"
+graphify path "<A>" "<B>"
+graphify update .
+```
+
+A ausência de `rtk` não significa indisponibilidade do Graphify.
 
 ---
 
 ## Relato de validação
 
-```txt
+Usar:
+
+```text
 Validações executadas:
-- comando: [comando exato]
-- resultado: [passou/falhou + resumo objetivo]
-- observação: [warning ou limitação relevante]
+- comando: <comando>
+- resultado: passou/falhou
+- observação: <warning ou limitação relevante>
 
 Validações não executadas:
-- comando: [comando esperado]
-- motivo: [razão objetiva]
+- comando: <comando esperado>
+- motivo: <razão objetiva>
 ```
+
+Separar:
+
+* falha nova;
+* warning preexistente;
+* validação não executada.
 
 ---
 
 ## Segurança
 
-* Não executar comando destrutivo sem escopo explícito e alvo confirmado.
-* Não alterar migration, seed, RLS, RPC ou teste fora do escopo.
+* Não executar comandos destrutivos sem autorização.
 * Não usar `--force`, `reset`, `clean` ou `rebase` sem autorização explícita.
-* Não mascarar falhas nem alterar teste apenas para fazê-lo passar.
-* Não tratar warning antigo como erro novo sem evidência.
-* Não afirmar que arquivos untracked foram revisados apenas porque `git diff` está limpo.
+* Não alterar migration, seed, RLS, RPC ou testes fora do escopo.
+* Não modificar testes apenas para fazê-los passar.
+* Não considerar arquivos untracked revisados apenas porque `git diff` está limpo.
+* Não mascarar falhas.

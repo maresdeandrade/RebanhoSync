@@ -23,6 +23,7 @@ export type AnimalImportIssue = {
   lineNumber: number;
   field: string;
   message: string;
+  code?: string;
 };
 
 export type AnimalImportParseResult = {
@@ -47,6 +48,12 @@ const HEADER_ALIASES: Record<string, string[]> = {
   maeTag: ["mae", "mae_tag", "mae_identificacao", "mae_brinco"],
 };
 
+const VERSION_HEADERS = ["schema_version", "template_version"] as const;
+const SUPPORTED_HEADERS = new Set([
+  ...Object.values(HEADER_ALIASES).flat(),
+  ...VERSION_HEADERS,
+]);
+
 function stripDiacritics(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
@@ -57,6 +64,35 @@ function normalizeHeader(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+}
+
+function validateHeaders(rawHeaders: string[], headers: string[]) {
+  const issues: AnimalImportIssue[] = [];
+
+  rawHeaders.forEach((rawHeader, index) => {
+    const trimmedHeader = rawHeader.trim();
+    const comparableHeader = stripDiacritics(trimmedHeader).toLowerCase();
+    if (!/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(comparableHeader)) {
+      issues.push({
+        lineNumber: 1,
+        field: trimmedHeader || `coluna_${index + 1}`,
+        code: "HEADER_INVALID",
+        message: `Coluna inválida "${trimmedHeader}". Use exatamente um cabeçalho do modelo ou um alias legado suportado.`,
+      });
+      return;
+    }
+
+    if (!SUPPORTED_HEADERS.has(headers[index]!)) {
+      issues.push({
+        lineNumber: 1,
+        field: trimmedHeader,
+        code: "HEADER_UNKNOWN",
+        message: `Coluna desconhecida "${trimmedHeader}".`,
+      });
+    }
+  });
+
+  return issues;
 }
 
 export function normalizeLookupValue(value: string) {
@@ -205,7 +241,9 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
-  const headers = splitCsvLine(lines[0], delimiter).map(normalizeHeader);
+  const rawHeaders = splitCsvLine(lines[0], delimiter);
+  const headers = rawHeaders.map(normalizeHeader);
+  issues.push(...validateHeaders(rawHeaders, headers));
   const identificacaoIndex = findHeaderIndex(headers, "identificacao");
   const sexoIndex = findHeaderIndex(headers, "sexo");
 
@@ -213,6 +251,7 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
     issues.push({
       lineNumber: 1,
       field: "identificacao",
+      code: "HEADER_REQUIRED_MISSING",
       message: "Cabecalho obrigatorio ausente: identificacao.",
     });
   }
@@ -221,6 +260,7 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
     issues.push({
       lineNumber: 1,
       field: "sexo",
+      code: "HEADER_REQUIRED_MISSING",
       message: "Cabecalho obrigatorio ausente: sexo.",
     });
   }
@@ -246,6 +286,18 @@ export function parseAnimalImportCsv(text: string): AnimalImportParseResult {
   for (let lineIndex = 1; lineIndex < lines.length; lineIndex += 1) {
     const cells = splitCsvLine(lines[lineIndex], delimiter);
     const lineNumber = lineIndex + 1;
+    const malformedValueIndex = cells.findIndex((cell) => cell.includes("**"));
+    if (malformedValueIndex !== -1) {
+      const field =
+        headers[malformedValueIndex] ?? `coluna_${malformedValueIndex + 1}`;
+      issues.push({
+        lineNumber,
+        field,
+        code: "VALUE_FORMAT_INVALID",
+        message: `Valor inválido na coluna "${field}". Remova o marcador "**" e importe novamente.`,
+      });
+      continue;
+    }
     const identificacao = readCell(cells, identificacaoIndex);
     const sexoValue = readCell(cells, sexoIndex);
     const loteNome = readCell(cells, loteIndex);

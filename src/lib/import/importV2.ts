@@ -126,6 +126,24 @@ export type ImportPersistResult = {
     chunkId: string;
     status: "imported" | "skipped" | "retryable";
     lineNumbers: number[];
+    technicalError?: {
+      code: string;
+      name: string;
+      message: string;
+      stack?: string;
+      cause?: { name: string; message: string };
+      chunkId: string;
+      lineNumbers: number[];
+      createGesture?: {
+        stage: string;
+        clientTxId?: string;
+        operationCount: number;
+        operationIndex?: number;
+        table?: string;
+        action?: string;
+        dexie?: Record<string, unknown>;
+      };
+    };
   }>;
   items: ImportPersistItemResult[];
   summary: ImportV2Preview["summary"];
@@ -173,13 +191,15 @@ function issueFromParser(
   issue: AnimalImportIssue | StructureImportIssue,
 ): ImportV2Issue {
   const code =
-    issue.field === "arquivo"
-      ? "FILE_EMPTY"
-      : issue.message.toLowerCase().includes("duplicad")
-        ? "DUPLICATE_IN_FILE"
-        : issue.field === "identificacao"
-          ? "IDENTIFIER_INVALID"
-          : "FIELD_INVALID";
+    "code" in issue && issue.code
+      ? issue.code
+      : issue.field === "arquivo"
+        ? "FILE_EMPTY"
+        : issue.message.toLowerCase().includes("duplicad")
+          ? "DUPLICATE_IN_FILE"
+          : issue.field === "identificacao"
+            ? "IDENTIFIER_INVALID"
+            : "FIELD_INVALID";
   return {
     ...issue,
     code,
@@ -400,6 +420,9 @@ function finalizePreview(input: {
       "VERSION_HEADERS_INCOMPLETE",
       "SCHEMA_VERSION_UNSUPPORTED",
       "TEMPLATE_VERSION_INVALID",
+      "HEADER_INVALID",
+      "HEADER_UNKNOWN",
+      "HEADER_REQUIRED_MISSING",
     ].includes(issue.code),
   );
   const effectiveLineResults = fatalFileIssue

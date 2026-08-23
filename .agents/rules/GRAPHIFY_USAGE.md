@@ -1,39 +1,156 @@
 # Graphify Usage — RebanhoSync
 
-Use Graphify quando a tarefa envolver:
+## Objetivo
 
-* Mapa de dependências;
-* Relação entre módulos;
-* Impacto transversal;
-* Análise arquitetural;
-* Investigação em que a descoberta dirigida não localizou um arquivo-alvo confiável.
+Usar Graphify para descoberta arquitetural e análise de dependências do RebanhoSync.
 
-Se `graphify-out/GRAPH_REPORT.md` existir, consulte-o antes de regenerar o grafo.
+Graphify auxilia a investigação. **Não substitui inspeção do código, diff, contratos ou testes reais.**
 
-Não use Graphify por padrão para:
+---
 
-* Arquivo-alvo já conhecido;
-* Alteração de texto ou microcopy;
-* Atualização documental localizada;
-* Patch visual pequeno;
-* Teste unitário isolado.
+## Quando usar
 
-Graphify auxilia a descoberta; não substitui inspeção do código, do diff ou dos testes reais.
+Usar Graphify quando houver:
 
-## Comandos
+* dependências entre módulos;
+* impacto transversal;
+* fluxo distribuído entre vários arquivos;
+* análise arquitetural;
+* origem ou destino de dados pouco claros;
+* dificuldade para localizar um arquivo-alvo confiável.
 
-Siga obrigatoriamente `.agents/rules/rtk.md`. Quando `rtk` e Graphify estiverem disponíveis:
+Evitar Graphify quando houver:
+
+* arquivo-alvo já conhecido;
+* alteração textual ou documental localizada;
+* microcopy;
+* patch visual pequeno;
+* teste unitário isolado.
+
+---
+
+## Grafo existente
+
+Antes de regenerar:
 
 ```bash
-rtk graphify query "<pergunta>"
-rtk graphify path "<arquivo-ou-conceito-A>" "<arquivo-ou-conceito-B>"
-rtk graphify explain "<conceito>"
+test -f graphify-out/graph.json
+test -f graphify-out/GRAPH_REPORT.md
 ```
 
-Atualize o grafo apenas após mudança estrutural relevante:
+No PowerShell:
+
+```powershell
+Test-Path .\graphify-out\graph.json
+Test-Path .\graphify-out\GRAPH_REPORT.md
+```
+
+Se o grafo existir, reutilizá-lo.
+
+---
+
+## Consultas
 
 ```bash
-rtk graphify update .
+graphify query "<pergunta>"
+graphify explain "<arquivo-ou-conceito>"
+graphify path "<origem>" "<destino>"
 ```
 
-Não invente comandos nem afirme que o grafo foi atualizado sem saída confirmatória.
+Preferir perguntas específicas.
+
+Bom:
+
+```bash
+graphify query "Como MoverAnimalLote persiste uma mudança de lote e quais funções ou stores são chamadas?"
+```
+
+Evitar consultas excessivamente genéricas:
+
+```bash
+graphify query "Tudo relacionado a lote"
+```
+
+---
+
+## Uso de `path`
+
+Usar `path` preferencialmente entre arquivos, funções ou símbolos específicos:
+
+```bash
+graphify path "MoverAnimalLote" "AnimalMovementHistoryTable"
+```
+
+Evitar termos genéricos como:
+
+```bash
+graphify path "AnimalMovementHistoryTable" "lote"
+```
+
+porque podem resolver para variáveis, fixtures ou testes sem relevância arquitetural.
+
+---
+
+## Atualização
+
+Após mudança estrutural relevante no código:
+
+```bash
+graphify update .
+```
+
+Não atualizar o grafo por alterações de:
+
+* texto;
+* microcopy;
+* documentação isolada;
+* CSS localizado;
+* testes sem alteração estrutural.
+
+Verificar necessidade de atualização adicional:
+
+```bash
+graphify check-update .
+```
+
+Extração completa somente quando necessária:
+
+```bash
+graphify extract . --backend gemini
+```
+
+Não executar extração completa automaticamente.
+
+---
+
+## Interpretação dos resultados
+
+Resultados de `graphify query` são **candidatos de descoberta**, não escopo confirmado.
+
+Fluxo recomendado:
+
+1. `query` para descobrir candidatos;
+2. `explain` nos candidatos relevantes;
+3. `path` entre nós específicos quando necessário;
+4. inspeção direta do código;
+5. confirmação por busca, diff e testes.
+
+Documentação, testes e símbolos homônimos encontrados no grafo não devem ser considerados automaticamente parte do fluxo funcional.
+
+---
+
+## Regras
+
+* Não usar `rtk graphify` quando `rtk` não estiver disponível.
+* A ausência de `rtk` não bloqueia Graphify.
+* Não inventar comandos.
+* Não regenerar o grafo sem necessidade.
+* Não afirmar atualização sem saída confirmatória.
+* Não tratar `GRAPH_REPORT.md` como fonte de verdade superior ao código.
+* Confirmar writers, stores, eventos e persistência diretamente na implementação.
+* Preservar as fontes de verdade do RebanhoSync:
+
+  * Agenda = intenção;
+  * Evento = fato;
+  * `state_*` = estado atual;
+  * Protocolo = regra/configuração.

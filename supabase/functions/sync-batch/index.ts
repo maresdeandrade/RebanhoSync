@@ -391,51 +391,6 @@ Deno.serve(async (req: Request) => {
           );
           continue;
         }
-        if (op.table === "finance_categories" && op.action === "INSERT") {
-          const { data: existingCat, error: existingCatError } = await supabase
-            .from("finance_categories")
-            .select("id, slug, is_default, tipo, grupo, ativo")
-            .eq("fazenda_id", fazenda_id)
-            .eq("slug", record.slug)
-            .maybeSingle();
-
-          if (existingCatError) {
-            results.push({
-              op_id: op.client_op_id,
-              status: "RETRYABLE",
-              retryable: true,
-              reason_code: "FINANCE_CATEGORY_LOOKUP_FAILED",
-              reason_message: existingCatError.message,
-            });
-            continue;
-          }
-
-          if (existingCat) {
-            const incomingId = record.id;
-            const incomingIsDefault = record.is_default;
-
-            // Se o slug já existe, validamos a colisão.
-            // Se for a mesma categoria canônica default (mesmo ID e is_default=true)
-            if (existingCat.id === incomingId && existingCat.is_default === true && incomingIsDefault === true) {
-              results.push({
-                op_id: op.client_op_id,
-                status: "APPLIED_ALTERED",
-                altered: { dedup: "collision_noop" },
-              });
-              continue;
-            }
-
-            // Qualquer outra divergência de ID para o mesmo slug, ou se não for default
-            results.push({
-              op_id: op.client_op_id,
-              status: "CONFLICT",
-              reason_code: "finance_category_slug_already_exists",
-              reason_message: "Categoria com o mesmo slug já existe com identidade ou contrato divergente.",
-            });
-            continue;
-          }
-        }
-
         if (isSanitarioSyncV2Operation(rawOp)) {
           if (!serviceSupabase) {
             results.push(sanitarioSyncV2DependencyBlocked(rawOp));
@@ -809,6 +764,51 @@ Deno.serve(async (req: Request) => {
         );
         if (TABLES_WITH_FAZENDA.has(op.table)) {
           record.fazenda_id = fazenda_id; // Always use request fazenda_id
+        }
+
+        if (op.table === "finance_categories" && op.action === "INSERT") {
+          const { data: existingCat, error: existingCatError } = await supabase
+            .from("finance_categories")
+            .select("id, slug, is_default, tipo, grupo, ativo")
+            .eq("fazenda_id", fazenda_id)
+            .eq("slug", record.slug)
+            .maybeSingle();
+
+          if (existingCatError) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "RETRYABLE",
+              retryable: true,
+              reason_code: "FINANCE_CATEGORY_LOOKUP_FAILED",
+              reason_message: existingCatError.message,
+            });
+            continue;
+          }
+
+          if (existingCat) {
+            const incomingId = record.id;
+            const incomingIsDefault = record.is_default;
+
+            // Se o slug já existe, validamos a colisão.
+            // Se for a mesma categoria canônica default (mesmo ID e is_default=true)
+            if (existingCat.id === incomingId && existingCat.is_default === true && incomingIsDefault === true) {
+              results.push({
+                op_id: op.client_op_id,
+                status: "APPLIED_ALTERED",
+                altered: { dedup: "collision_noop" },
+              });
+              continue;
+            }
+
+            // Qualquer outra divergência de ID para o mesmo slug, ou se não for default
+            results.push({
+              op_id: op.client_op_id,
+              status: "CONFLICT",
+              reason_code: "finance_category_slug_already_exists",
+              reason_message: "Categoria com o mesmo slug já existe com identidade ou contrato divergente.",
+            });
+            continue;
+          }
         }
 
         const sanitaryMovementIssue = validateSanitarioInventoryMovementRecord(
