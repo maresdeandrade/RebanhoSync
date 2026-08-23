@@ -24,6 +24,7 @@ import {
   resolveNotificationPreferences,
   type NotificationPreferences,
 } from "@/lib/notifications/sanitaryReminders";
+import { clearAllOfflineData } from "@/lib/offline/reset";
 
 
 // Role schema for runtime validation
@@ -333,6 +334,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
       setNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
       removeActiveFarmId();
+      await clearAllOfflineData();
     } catch (e) {
       console.error("[useAuth] Error signing out:", e);
     }

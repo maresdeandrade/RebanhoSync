@@ -35,3 +35,7 @@ export async function resetOfflineFarmData(fazendaId: string) {
     }
   });
 }
+
+export async function clearAllOfflineData() {
+  await Promise.all(db.tables.map(t => t.clear()));
+}
