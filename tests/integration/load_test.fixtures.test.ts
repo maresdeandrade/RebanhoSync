@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import { parseAnimalImportCsv } from "@/lib/import/animaisCsv";
 import { parsePastoImportCsv, parseLoteImportCsv } from "@/lib/import/estruturasCsv";
+import { previewAnimalsImportV2 } from "@/lib/import/importV2";
 import fs from "fs";
 
 function parseCsv(text: string) {
@@ -48,9 +50,36 @@ describe("fixtures - low volume", () => {
   it("parses low volume animals CSV correctly", () => {
     const csv = fs.readFileSync("tests/fixtures/animais_low_volume.csv", "utf8");
     const result = parseAnimalImportCsv(csv);
-    expect(result.rows.length).toBe(10);
+    expect(result.issues).toEqual([]);
+    expect(result.rows.length).toBe(2);
     expect(result.rows[0]).toHaveProperty("paiTag");
     expect(result.rows[0]).toHaveProperty("maeTag");
+
+    const preview = previewAnimalsImportV2({
+      entity: "animais",
+      fazendaId: "farm-fixture",
+      rawText: csv,
+      fileName: "animais_low_volume.csv",
+      lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+      existing: {
+        animais: [],
+        lotes: [
+          {
+            id: "lote-02",
+            fazenda_id: "farm-fixture",
+            nome: "L_02",
+            deleted_at: null,
+          } as never,
+        ],
+      },
+    });
+
+    expect(preview.sourceTemplateVersion).toBe("import-v2");
+    expect(preview.summary).toMatchObject({
+      total: 2,
+      valid: 2,
+      rejected: 0,
+    });
   });
 
   it("parses low volume pastos CSV correctly", () => {

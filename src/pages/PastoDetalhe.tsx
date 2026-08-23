@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { differenceInDays, parseISO } from "date-fns";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
@@ -26,6 +26,7 @@ import { EmptyState } from "@/components/EmptyState";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -64,10 +65,12 @@ import { showError, showSuccess } from "@/utils/toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { AnimalMovementHistoryTable } from "@/features/occupancy/AnimalMovementHistoryTable";
 import { OccupancyEntryInfo, OccupancyTimeline, CollapsibleInfrastructure, OccupancyAlert } from "@/features/occupancy";
+import { useOccupancyData } from "@/features/occupancy/useOccupancyData";
 
 import { calculatePastoMetrics } from "@/features/occupancy/cockpitManejoAdapter";
 import { TimelineFactual } from "@/components/timeline/TimelineFactual";
 import { useAuth } from "@/hooks/useAuth";
+import { readPastoInActiveFarm } from "@/pages/detailFarmIsolation";
 import { usePastoWithdrawal } from "@/lib/sanitario/hooks/useWithdrawal";
 import { WithdrawalBadgePanel } from "@/components/sanitario/WithdrawalBadgePanel";
 
@@ -248,6 +251,8 @@ const PastoDetalhe = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [rondaOpen, setRondaOpen] = useState(false);
+  const [isSavingRonda, setIsSavingRonda] = useState(false);
+  const savingRondaRef = useRef(false);
   const [momento, setMomento] = useState<PastoAvaliacaoMomentoEnum>("ronda");
   const [alturaCm, setAlturaCm] = useState("");
   const [coberturaSolo, setCoberturaSolo] = useState<PastoCoberturaSoloEnum | "">("");
@@ -262,34 +267,96 @@ const PastoDetalhe = () => {
 
   const { farmLifecycleConfig, activeFarmId } = useAuth();
   const weightFreshnessDays = farmLifecycleConfig?.weightFreshnessDays;
-  const carenciaModel = usePastoWithdrawal(id ?? null, activeFarmId ?? null);
 
   // Dexie Reactive Queries
   const pasto = useLiveQuery(
-    () => (id ? db.state_pastos.get(id) : undefined),
-    [id],
+    () => readPastoInActiveFarm(id, activeFarmId),
+    [id, activeFarmId],
+  );
+  const carenciaModel = usePastoWithdrawal(
+    pasto?.id ?? null,
+    activeFarmId ?? null,
   );
   const lotes = useLiveQuery(
-    () => (id ? db.state_lotes.where("pasto_id").equals(id).toArray() : []),
-    [id],
+    () =>
+      pasto && activeFarmId
+        ? db.state_lotes
+            .where("pasto_id")
+            .equals(pasto.id)
+            .filter((lote) => lote.fazenda_id === activeFarmId)
+            .toArray()
+        : [],
+    [pasto?.id, activeFarmId],
   );
 
-  const pastos = useLiveQuery(() => db.state_pastos.toArray()) ?? EMPTY_ARRAY;
-  const animals = useLiveQuery(() => db.state_animais.toArray()) ?? EMPTY_ARRAY;
-  const events = useLiveQuery(() => db.event_eventos.toArray()) ?? EMPTY_ARRAY;
-  const pesagens = useLiveQuery(() => db.event_eventos_pesagem.toArray()) ?? EMPTY_ARRAY;
-  const eccs = useLiveQuery(() => db.event_eventos_ecc.toArray()) ?? EMPTY_ARRAY;
-  const movimentacoes = useLiveQuery(() => db.event_eventos_movimentacao.toArray()) ?? EMPTY_ARRAY;
-  const agendaItens = useLiveQuery(() => db.state_agenda_itens.toArray()) ?? EMPTY_ARRAY;
-  const pastoOcupacoes = useLiveQuery(() => db.state_pasto_ocupacoes.toArray()) ?? EMPTY_ARRAY;
+  const pastos = useLiveQuery(
+    () =>
+      pasto && activeFarmId
+        ? db.state_pastos.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [pasto?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const animals = useLiveQuery(
+    () =>
+      pasto && activeFarmId
+        ? db.state_animais.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [pasto?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const events = useLiveQuery(
+    () =>
+      pasto && activeFarmId
+        ? db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [pasto?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const pesagens = useLiveQuery(
+    () =>
+      pasto && activeFarmId
+        ? db.event_eventos_pesagem.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [pasto?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const eccs = useLiveQuery(
+    () =>
+      pasto && activeFarmId
+        ? db.event_eventos_ecc.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [pasto?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const movimentacoes = useLiveQuery(
+    () =>
+      pasto && activeFarmId
+        ? db.event_eventos_movimentacao.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [pasto?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const agendaItens = useLiveQuery(
+    () =>
+      pasto && activeFarmId
+        ? db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [pasto?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const pastoOcupacoes = useLiveQuery(
+    () =>
+      pasto && activeFarmId
+        ? db.state_pasto_ocupacoes.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [pasto?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
 
   const referenceDate = useMemo(() => new Date().toISOString(), []);
+  const { allAnimalPeriods } = useOccupancyData(
+    activeFarmId ?? "",
+    referenceDate,
+  );
 
   // Pasto Cockpit Metrics Calculation
   const pastoMetrics = useMemo(() => {
-    if (!id || !lotes || !animals) return null;
+    if (!pasto || !lotes || !animals) return null;
     return calculatePastoMetrics(
-      id,
+      pasto.id,
       referenceDate,
       weightFreshnessDays,
       animals,
@@ -302,11 +369,11 @@ const PastoDetalhe = () => {
       agendaItens,
       pastoOcupacoes
     );
-  }, [id, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens, pastoOcupacoes]);
+  }, [pasto, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens, pastoOcupacoes]);
 
   // Unified Timeline for Pasto
   const timelineItems = useMemo(() => {
-    if (!id || !events || !lotes || !animals) return [];
+    if (!pasto || !events || !lotes || !animals) return [];
     const loteIdsInPasto = new Set(lotes.map(l => l.id));
     const activeAnimals = animals.filter(a => a.lote_id && loteIdsInPasto.has(a.lote_id) && a.status === "ativo");
     const activeAnimalIds = new Set(activeAnimals.map(a => a.id));
@@ -318,7 +385,9 @@ const PastoDetalhe = () => {
       
       if (e.dominio === "movimentacao") {
         const m = movimentacoes.find(x => x.evento_id === e.id);
-        const touchesPasto = m && (m.from_pasto_id === id || m.to_pasto_id === id);
+        const touchesPasto =
+          m &&
+          (m.from_pasto_id === pasto.id || m.to_pasto_id === pasto.id);
         return touchesPasto || isAnimalTarget;
       }
       
@@ -343,9 +412,9 @@ const PastoDetalhe = () => {
         case "movimentacao": {
           const m = movimentacoes.find(x => x.evento_id === e.id);
           if (m) {
-            if (m.to_pasto_id === id) {
+            if (m.to_pasto_id === pasto.id) {
               desc = "Entrada no Pasto";
-            } else if (m.from_pasto_id === id) {
+            } else if (m.from_pasto_id === pasto.id) {
               desc = "Saída do Pasto";
             } else {
               desc = "Movimentação de pastagem";
@@ -377,43 +446,30 @@ const PastoDetalhe = () => {
         detalhe: detail,
       };
     });
-  }, [id, events, pesagens, eccs, movimentacoes, lotes, animals]);
+  }, [pasto, events, pesagens, eccs, movimentacoes, lotes, animals]);
 
-  // Historical trajectories for the table
+  // Histórico factual canônico de permanência no pasto
   const pastoAnimalPeriods = useMemo(() => {
-    if (!id || !movimentacoes || !events || !animals) return [];
-    const pastoMovs = movimentacoes.filter(m => m.to_pasto_id === id || m.from_pasto_id === id);
-    return pastoMovs.map(m => {
-      const ev = events.find(e => e.id === m.evento_id);
-      const anim = animals.find(a => a.id === ev?.animal_id);
-      return {
-        id: m.id,
-        loteId: m.to_lote_id || "",
-        pastoId: id,
-        animalId: ev?.animal_id || "",
-        animalIdentificacao: anim?.identificacao || "",
-        entradaAt: ev?.occurred_at || "",
-        saidaAt: m.from_pasto_id === id ? ev?.occurred_at : null,
-      };
-    });
-  }, [id, movimentacoes, events, animals]);
+    if (!pasto) return [];
+    return allAnimalPeriods.filter((period) => period.pastoId === pasto.id);
+  }, [allAnimalPeriods, pasto]);
 
   const animaisCount = useMemo(() => {
-    if (!lotes || !animals) return 0;
+    if (!pasto || !lotes || !animals) return 0;
     const loteIds = new Set(lotes.map(l => l.id));
     return animals.filter(a => a.lote_id && loteIds.has(a.lote_id) && a.status === "ativo").length;
-  }, [lotes, animals]);
+  }, [pasto, lotes, animals]);
 
   const ocupacaoAberta = useLiveQuery(
     () =>
-      id
+      pasto && activeFarmId
         ? db.state_pasto_ocupacoes
-            .where("pasto_id")
-            .equals(id)
+            .where("[fazenda_id+pasto_id]")
+            .equals([activeFarmId, pasto.id])
             .filter((o) => !o.saida_em)
             .first()
         : undefined,
-    [id],
+    [pasto?.id, activeFarmId],
   );
 
   const ocupacoesPorLote = useMemo(() => {
@@ -421,18 +477,23 @@ const PastoDetalhe = () => {
   }, []);
 
   const avaliacoesPasto = useLiveQuery(async () => {
-    if (!id) return [];
+    if (!pasto?.id || !activeFarmId) return [];
 
     const detalhes = await db.event_eventos_pasto_avaliacao
       .where("pasto_id")
-      .equals(id)
+      .equals(pasto.id)
+      .filter((avaliacao) => avaliacao.fazenda_id === activeFarmId)
       .toArray();
     const ativos = detalhes.filter((avaliacao) => !avaliacao.deleted_at);
     const eventos = await db.event_eventos.bulkGet(
       ativos.map((avaliacao) => avaliacao.evento_id),
     );
     const eventosById = new Map(
-      eventos.filter(Boolean).map((evento) => [evento!.id, evento!]),
+      eventos
+        .filter(
+          (evento) => evento?.fazenda_id === activeFarmId,
+        )
+        .map((evento) => [evento!.id, evento!]),
     );
 
     return ativos
@@ -445,7 +506,7 @@ const PastoDetalhe = () => {
         const bDate = b.evento?.occurred_at ?? b.avaliacao.created_at;
         return bDate.localeCompare(aDate);
       });
-  }, [id]);
+  }, [pasto?.id, activeFarmId]);
 
   if (!id || !pasto) {
     return (
@@ -495,6 +556,7 @@ const PastoDetalhe = () => {
   };
 
   const handleSalvarRonda = async () => {
+    if (savingRondaRef.current) return;
     const alturaParsed = parseOptionalNumber(alturaCm);
     const eccParsed = parseOptionalNumber(eccLoteMedio);
     const suplementoParsed =
@@ -530,6 +592,8 @@ const PastoDetalhe = () => {
       return;
     }
 
+    savingRondaRef.current = true;
+    setIsSavingRonda(true);
     try {
       const { ops } = buildEventGesture({
         dominio: "pastagem",
@@ -559,6 +623,9 @@ const PastoDetalhe = () => {
     } catch (error) {
       console.error(error);
       showError("Nao foi possivel registrar a ronda.");
+    } finally {
+      savingRondaRef.current = false;
+      setIsSavingRonda(false);
     }
   };
 
@@ -1013,10 +1080,18 @@ const PastoDetalhe = () => {
         )}
       </section>
 
-      <Dialog open={rondaOpen} onOpenChange={setRondaOpen}>
+      <Dialog
+        open={rondaOpen}
+        onOpenChange={(open) => {
+          if (!isSavingRonda) setRondaOpen(open);
+        }}
+      >
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Registrar ronda</DialogTitle>
+            <DialogDescription>
+              Registre as condições observadas no pasto como fato operacional.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -1228,10 +1303,16 @@ const PastoDetalhe = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRondaOpen(false)}>
+            <Button
+              variant="outline"
+              disabled={isSavingRonda}
+              onClick={() => setRondaOpen(false)}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleSalvarRonda}>Salvar ronda</Button>
+            <Button disabled={isSavingRonda} onClick={handleSalvarRonda}>
+              {isSavingRonda ? "Salvando ronda..." : "Salvar ronda"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

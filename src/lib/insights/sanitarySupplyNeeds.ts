@@ -32,6 +32,7 @@ export type SanitarySupplyAgendaItemInput = {
 
   quantityPerAnimal?: number | null;
   animalCount?: number | null;
+  possibleSourceOverlap?: boolean;
 };
 
 export type SanitarySupplyQuestionKind = Extract<
@@ -76,6 +77,8 @@ export type CreateSanitarySupplyNeedsInsightInput = {
   days?: number;
   filters?: SanitarySupplyFilter;
   requireProductSource?: boolean;
+  primarySource?: string;
+  auxiliarySources?: readonly string[];
 };
 
 const PRIMARY_SOURCE = "state_agenda_itens";
@@ -182,6 +185,7 @@ function hasEstimatedQuantity(group: SanitarySupplyNeedGroup): boolean {
 function buildLimitations(input: {
   hasMissingProduct: boolean;
   hasMissingQuantity: boolean;
+  hasPossibleSourceOverlap: boolean;
 }): string[] {
   const limitations = [
     "Necessidade sanitaria futura usa agenda aberta/materializada; agenda concluida, cancelada ou deletada nao entra.",
@@ -196,7 +200,13 @@ function buildLimitations(input: {
 
   if (input.hasMissingQuantity) {
     limitations.push(
-      "Agendas sem quantityPerAnimal valido maior que zero nao contribuem para estimatedQuantity; missingQuantityCount inclui quantidade ausente ou invalida.",
+      "Quantidade por animal não disponível; demanda quantitativa não pôde ser determinada.",
+    );
+  }
+
+  if (input.hasPossibleSourceOverlap) {
+    limitations.push(
+      "Fontes legacy e Agenda Sanitária v2 coexistem sem vínculo suficiente para excluir possível sobreposição.",
     );
   }
 
@@ -333,6 +343,9 @@ export function createSanitarySupplyNeedsInsight(
   const summary = groupSanitarySupplyNeeds(agendaItems);
   const hasMissingProduct = summary.incompleteAgendaItemIds.length > 0;
   const hasMissingQuantity = summary.groups.some((group) => group.missingQuantityCount > 0);
+  const hasPossibleSourceOverlap = agendaItems.some(
+    (item) => item.possibleSourceOverlap === true,
+  );
 
   if (input.requireProductSource && summary.groups.length === 0 && hasMissingProduct) {
     return createBlockedInsight({
@@ -360,30 +373,47 @@ export function createSanitarySupplyNeedsInsight(
     generatedAt: input.generatedAt,
     filters,
     source: createAnswerableSourceContract({
-      primarySource: PRIMARY_SOURCE,
-      auxiliarySources: [
-        "protocolos_sanitarios",
-        "protocolos_sanitarios_itens",
-        "produtos_veterinarios",
-        "state_animais",
-        "state_lotes",
-      ],
+      primarySource: input.primarySource ?? PRIMARY_SOURCE,
+      auxiliarySources: input.auxiliarySources ?? [
+          "protocolos_sanitarios",
+          "protocolos_sanitarios_itens",
+          "produtos_veterinarios",
+          "state_animais",
+          "state_lotes",
+        ],
       excludedSources: ["eventos", "eventos_*", "agenda_concluida", "tags/marcadores"],
       limitations: buildLimitations({
         hasMissingProduct,
         hasMissingQuantity,
+        hasPossibleSourceOverlap,
       }),
-      evidenceStatus: hasMissingProduct || hasMissingQuantity ? "depende_validacao" : "comprovado",
+      evidenceStatus:
+        hasMissingProduct || hasMissingQuantity || hasPossibleSourceOverlap
+          ? "depende_validacao"
+          : "comprovado",
     }),
     resultStatus:
       summary.groups.length === 0
         ? "empty"
-        : hasMissingProduct
+        : hasMissingProduct || hasMissingQuantity || hasPossibleSourceOverlap
           ? "partial"
           : "complete",
-    partialReason: hasMissingProduct
-      ? "Existem agendas sem produto identificado; resultado por produto e parcial."
-      : undefined,
+    partialReason:
+      hasMissingProduct || hasMissingQuantity || hasPossibleSourceOverlap
+        ? [
+            hasMissingProduct
+              ? "Existem agendas sem produto identificado; resultado por produto e parcial."
+              : null,
+            hasMissingQuantity
+              ? "Quantidade por animal não disponível; demanda quantitativa não pôde ser determinada."
+              : null,
+            hasPossibleSourceOverlap
+              ? "Fontes legacy e Agenda Sanitária v2 podem se sobrepor sem vínculo explícito."
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" ")
+        : undefined,
     data: {
       groups: summary.groups.map((group) => ({
         ...group,

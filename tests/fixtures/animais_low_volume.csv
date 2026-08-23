@@ -1,11 +1,3 @@
 ﻿identificacao;sexo;especie;lote;data_nascimento;data_entrada;origem;raca;nome;rfid;schema_version;template_version
 B_001;M;bovino;L_02;2022-08-17;;nascimento;brangus;;;2;import-v2
 B_002;M;bovino;L_02;2020-02-20;;nascimento;brahman;;;2;import-v2
-B_003;M;bovino;L_01;2020-01-15;;nascimento;brangus;;;2;import-v2
-B_004;M;bovino;L_03;2020-01-19;;compra;brangus;Animal_4;;2;import-v2
-B_005;F;bovino;L_01;2023-05-25;;compra;brangus;Animal_5;;2;import-v2
-B_006;M;bovino;L_04;2023-09-22;;doacao;brangus;;;2;import-v2
-B_007;F;bovino;L_01;2022-04-21;;nascimento;;Animal_7;;2;import-v2
-B_008;M;bovino;L_04;2020-02-03;;doacao;angus;;;2;import-v2
-B_009;M;bovino;L_01;2021-07-28;;nascimento;nelore;Animal_9;;2;import-v2
-B_0010;F;bovino;L_04;2021-08-05;;nascimento;nelore;;;2;import-v2

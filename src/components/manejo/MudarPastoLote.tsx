@@ -9,6 +9,7 @@ import { buildPastoOcupacaoOps } from "@/lib/pastos/pastoOcupacoes";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -148,6 +149,9 @@ export function MudarPastoLote({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Mudar pasto do lote</DialogTitle>
+          <DialogDescription>
+            Registre a mudança executada do lote para outro pasto.
+          </DialogDescription>
         </DialogHeader>
 
         <FormSection

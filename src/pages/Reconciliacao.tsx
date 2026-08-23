@@ -33,7 +33,7 @@ import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import { useAuth } from "@/hooks/useAuth";
-import { createGesture } from "@/lib/offline/ops";
+import { retryRejectedOperation } from "@/lib/offline/ops";
 import { resetOfflineFarmData } from "@/lib/offline/reset";
 import {
   exportRejections,
@@ -381,13 +381,19 @@ export default function Reconciliacao() {
     [lotes],
   );
   const canRetryRejection = useCallback(
-    (rejection: Rejection) =>
-      !NON_RETRYABLE_REASON_CODES.has(rejection.reason_code),
+    (rejection: Rejection, operation?: Operation | null) =>
+      !NON_RETRYABLE_REASON_CODES.has(rejection.reason_code) &&
+      (!operation ||
+        operation.sync_state === "REJECTED" ||
+        operation.sync_state === undefined),
     [],
   );
   const retryableCount = useMemo(
-    () => items.filter((item) => canRetryRejection(item)).length,
-    [items, canRetryRejection],
+    () =>
+      items.filter((item) =>
+        canRetryRejection(item, operationsById.get(item.client_op_id)),
+      ).length,
+    [items, operationsById, canRetryRejection],
   );
   const correctionRequiredCount = items.length - retryableCount;
   const selectedOperation = selectedRejection
@@ -403,7 +409,7 @@ export default function Reconciliacao() {
     ? describeNextStep(selectedRejection)
     : null;
   const selectedCanRetry = selectedRejection
-    ? canRetryRejection(selectedRejection)
+    ? canRetryRejection(selectedRejection, selectedOperation)
     : false;
   const selectedCorrectionAction = selectedRejection
     ? getCorrectionAction(selectedRejection)
@@ -483,69 +489,24 @@ export default function Reconciliacao() {
   };
 
   const handleRetry = async (rejection: Rejection) => {
-    if (!canRetryRejection(rejection)) {
+    const operation = operationsById.get(rejection.client_op_id);
+    if (!canRetryRejection(rejection, operation)) {
       showError(describeNextStep(rejection));
       return;
     }
 
-    const existingGesture = await db.queue_gestures
-      .where("fazenda_id")
-      .equals(rejection.fazenda_id)
-      .and(
-        (gesture) =>
-          gesture.status === "PENDING" || gesture.status === "SYNCING",
-      )
-      .first();
-
-    if (existingGesture) {
-      const pendingOps = await db.queue_ops
-        .where("client_tx_id")
-        .equals(existingGesture.client_tx_id)
-        .toArray();
-
-      const hasDuplicate = pendingOps.some(
-        (op) => op.table === rejection.table && op.action === rejection.action,
+    try {
+      await retryRejectedOperation(rejection);
+    } catch (error) {
+      showError(
+        error instanceof Error
+          ? error.message
+          : "Falha ao rearmar operação rejeitada.",
       );
-
-      if (hasDuplicate) {
-        showError("Esta operacao ja esta na fila de sincronizacao.");
-        return;
-      }
-    }
-
-    const ops = await db.queue_ops
-      .where("client_tx_id")
-      .equals(rejection.client_tx_id)
-      .toArray();
-
-    if (ops.length === 0) {
-      showError("A operacao original nao esta mais disponivel na fila local.");
       return;
     }
-
-    await createGesture(
-      rejection.fazenda_id,
-      ops.map((op) => {
-        if (
-          op.table === "protocolos_sanitarios_itens" &&
-          (op.action === "INSERT" || op.action === "UPDATE")
-        ) {
-          const record = { ...(op.record ?? {}) };
-          const intervalo = Number(record.intervalo_dias);
-          if (!Number.isFinite(intervalo) || intervalo <= 0) {
-            record.intervalo_dias = 1;
-          }
-          return { table: op.table, action: op.action, record };
-        }
-        return { table: op.table, action: op.action, record: op.record };
-      }),
-    );
-
-    if (rejection.id != null) {
-      await db.queue_rejections.delete(rejection.id);
-    }
     showSuccess(
-      "Operacao reenfileirada neste aparelho. Sincronizacao pendente.",
+      "Mesma operação rearmada com identidade preservada. Sincronização pendente.",
     );
     await loadFirstPage();
   };
@@ -648,7 +609,7 @@ export default function Reconciliacao() {
               lotesById,
             );
             const nextStep = describeNextStep(rejection);
-            const canRetry = canRetryRejection(rejection);
+            const canRetry = canRetryRejection(rejection, operation);
             const correctionAction = getCorrectionAction(rejection);
 
             return (
@@ -1008,4 +969,3 @@ export default function Reconciliacao() {
     </div>
   );
 }
-

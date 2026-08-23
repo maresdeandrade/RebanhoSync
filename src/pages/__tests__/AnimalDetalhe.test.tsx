@@ -183,6 +183,9 @@ describe("AnimalDetalhe", () => {
       if (typeof fn !== "function") return null;
       const str = fn.toString();
 
+      if (str.includes("readAnimalInActiveFarm")) {
+        return mockResponses.animal ?? null;
+      }
       if (str.includes("event_eventos")) {
         if (str.includes("pesagem")) {
           if (str.includes("resolveCurrentWeight")) {
@@ -204,7 +207,7 @@ describe("AnimalDetalhe", () => {
       if (str.includes("catalog_doencas_notificaveis")) {
         return mockResponses.officialDiseases ?? [];
       }
-      if (str.includes("state_animais_sociedade")) {
+      if (str.includes("state_sociedade_animais")) {
         return mockResponses.sociedadeAtiva ?? null;
       }
       if (str.includes("state_contrapartes")) {
@@ -248,9 +251,77 @@ describe("AnimalDetalhe", () => {
     vi.clearAllMocks();
     mockedUseAuth.mockReturnValue({
       activeFarmId: "farm-1",
+      role: "owner",
       farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
       farmMeasurementConfig: DEFAULT_FARM_MEASUREMENT_CONFIG,
     } as ReturnType<typeof useAuth>);
+  });
+
+  it("exibe sociedade exclusivamente pelo contrato vigente após reconstrução", () => {
+    setupMockLiveQuery({
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "SOC-001",
+        sexo: "F",
+        origem: "sociedade",
+      }),
+      sociedadeAtiva: {
+        id: "link-1",
+        fazenda_id: "farm-1",
+        sociedade_id: "sociedade-1",
+        animal_id: "animal-1",
+        data_entrada: "2026-08-20",
+        status: "ativo",
+        deleted_at: null,
+        contraparte_id: "contraparte-1",
+        nome: "Parceria vigente",
+        percentual_fazenda: 60,
+        percentual_parceiro: 40,
+      },
+      contraparte: {
+        id: "contraparte-1",
+        fazenda_id: "farm-1",
+        nome: "Sócio atual",
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/animais/animal-1"]}>
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Detalhes da sociedade")).toBeInTheDocument();
+    expect(screen.getAllByText(/Sócio atual/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/60%/).length).toBeGreaterThan(0);
+
+    const querySources = mockedUseLiveQuery.mock.calls.map(([query]) =>
+      typeof query === "function" ? query.toString() : "",
+    );
+    expect(querySources.some((source) => source.includes("state_sociedade_animais"))).toBe(true);
+    expect(querySources.some((source) => source.includes("state_sociedades_pecuarias"))).toBe(true);
+    expect(querySources.some((source) => source.includes("state_animais_sociedade"))).toBe(false);
+  });
+
+  it("nao renderiza animal de outra fazenda", () => {
+    setupMockLiveQuery({ animal: undefined });
+
+    render(
+      <MemoryRouter initialEntries={["/animais/animal-farm-b"]}>
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /animal não encontrado/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /mover de lote/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("renderiza aba de agenda sem quebrar o fluxo da página", () => {
@@ -710,6 +781,7 @@ describe("AnimalDetalhe", () => {
 
   it("exibe acao de registrar historico anterior sem usar marcar como vacinado", async () => {
     const user = userEvent.setup();
+    const warningSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const animal = makeAnimal({
       id: "animal-1",
       identificacao: "BR-001",
@@ -796,6 +868,14 @@ describe("AnimalDetalhe", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Marcar como vacinado/i)).not.toBeInTheDocument();
+    expect(
+      warningSpy.mock.calls.some((call) =>
+        call.some((message) =>
+          String(message).includes("Missing `Description` or `aria-describedby={undefined}`"),
+        ),
+      ),
+    ).toBe(false);
+    warningSpy.mockRestore();
   });
 
   it("diferencia estado atual de autorizacao comercial", async () => {

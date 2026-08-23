@@ -26,6 +26,7 @@ import {
 import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
 import { buildCommercialOperationGesture } from "@/lib/comercial/commercialOperationCommand";
 import { validateAnimalRegistrationDraft } from "@/lib/animals/registration";
+import { buildAnimalSocietyRegistrationOps } from "@/lib/society/animalSocietyRegistration";
 import { EventValidationError } from "@/lib/events/validators";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageIntro } from "@/components/ui/page-intro";
@@ -55,7 +56,7 @@ import { useLotes } from "@/hooks/useLotes";
 
 const AnimalNovo = () => {
   const navigate = useNavigate();
-  const { activeFarmId, farmLifecycleConfig } = useAuth();
+  const { activeFarmId, farmLifecycleConfig, role } = useAuth();
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -85,6 +86,8 @@ const AnimalNovo = () => {
   const [isSelectingOutraRaca, setIsSelectingOutraRaca] = useState(false);
 
   // Estados da Fase 2.2: Sociedade (quando origem='sociedade')
+  const [sociedadeId, setSociedadeId] = useState<string>("new");
+  const [sociedadeNome, setSociedadeNome] = useState("");
   const [sociedadeContraparteId, setSociedadeContraparteId] =
     useState<string>("null");
   const [percentualSociedade, setPercentualSociedade] = useState("");
@@ -143,6 +146,15 @@ const AnimalNovo = () => {
       .where("fazenda_id")
       .equals(activeFarmId)
       .filter((c) => !c.deleted_at)
+      .toArray();
+  }, [activeFarmId]);
+
+  const sociedadesAtivas = useLiveQuery(() => {
+    if (!activeFarmId) return [];
+    return db.state_sociedades_pecuarias
+      .where("[fazenda_id+status]")
+      .equals([activeFarmId, "ativa"])
+      .filter((sociedade) => !sociedade.deleted_at)
       .toArray();
   }, [activeFarmId]);
 
@@ -210,8 +222,21 @@ const AnimalNovo = () => {
 
     // Validação específica para origem='sociedade'
     if (origem === "sociedade") {
-      if (!sociedadeContraparteId || sociedadeContraparteId === "null") {
-        showError("Contraparte é obrigatória para animais em sociedade.");
+      if (role !== "owner" && role !== "manager") {
+        showError("Apenas owner/manager pode cadastrar animal em sociedade.");
+        return;
+      }
+      if (sociedadeId === "new") {
+        if (!sociedadeNome.trim()) {
+          showError("Nome da sociedade é obrigatório.");
+          return;
+        }
+        if (!sociedadeContraparteId || sociedadeContraparteId === "null") {
+          showError("Contraparte é obrigatória para a nova sociedade.");
+          return;
+        }
+      } else if (!sociedadesAtivas?.some((item) => item.id === sociedadeId)) {
+        showError("Selecione uma sociedade ativa da fazenda.");
         return;
       }
     }
@@ -337,32 +362,43 @@ const AnimalNovo = () => {
       },
     };
 
-    ops.push(op);
-
-    // 2. Se origem='sociedade', criar registro em animais_sociedade
+    // 2. Cadastro societário é uma única gesture: sociedade (se nova), animal e vínculo.
     if (origem === "sociedade") {
-      const opSociedade = {
-        table: "animais_sociedade",
-        action: "INSERT" as const,
-        record: {
-          id: crypto.randomUUID(),
-          fazenda_id,
-          animal_id,
-          contraparte_id: sociedadeContraparteId,
-          percentual: percentualSociedade
-            ? parseFloat(percentualSociedade)
-            : null,
-          inicio:
-            inicioSociedade ||
-            dataEntrada ||
-            new Date().toISOString().split("T")[0],
-          fim: null,
-          payload: {},
-          created_at: now,
-          updated_at: now,
-        },
-      };
-      ops.push(opSociedade);
+      const dataInicio =
+        inicioSociedade || dataEntrada || new Date().toISOString().split("T")[0];
+      const sociedadeExistente = sociedadesAtivas?.find(
+        (item) => item.id === sociedadeId,
+      );
+      const percentualFazenda = parseNumeric(percentualSociedade);
+
+      try {
+        ops.push(
+          ...buildAnimalSocietyRegistrationOps({
+            role,
+            fazendaId: fazenda_id,
+            animalId: animal_id,
+            animalOperation: op,
+            linkId: crypto.randomUUID(),
+            dataEntrada: dataInicio,
+            now,
+            society: sociedadeExistente
+              ? { kind: "existing", society: sociedadeExistente }
+              : {
+                  kind: "new",
+                  id: crypto.randomUUID(),
+                  contraparteId: sociedadeContraparteId,
+                  nome: sociedadeNome,
+                  percentualFazenda,
+                },
+          }),
+        );
+      } catch {
+        showError("Revise os dados da sociedade antes de salvar.");
+        setIsSaving(false);
+        return;
+      }
+    } else {
+      ops.push(op);
     }
 
     // 3. Compra usa o mesmo caso de uso composto consumido pelo Menu Registrar.
@@ -448,6 +484,14 @@ const AnimalNovo = () => {
   const contraparteOptions = [
     { value: "null", label: "Selecione..." },
     ...(contrapartes ?? []).map((c) => ({ value: c.id, label: c.nome })),
+  ];
+
+  const sociedadeOptions = [
+    { value: "new", label: "Criar nova sociedade" },
+    ...(sociedadesAtivas ?? []).map((sociedade) => ({
+      value: sociedade.id,
+      label: sociedade.nome,
+    })),
   ];
 
   const compraContraparteOptions = [
@@ -802,37 +846,70 @@ const AnimalNovo = () => {
               </CardHeader>
               <CardContent className="grid gap-3 p-4 pt-0 sm:p-5 sm:pt-0 md:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="sociedade_contraparte">
-                    Contraparte <span className="text-red-500">*</span>
+                  <Label htmlFor="sociedade_selecao">
+                    Sociedade <span className="text-red-500">*</span>
                   </Label>
                   <FieldCombobox
-                    id="sociedade_contraparte"
-                    options={contraparteOptions}
-                    value={sociedadeContraparteId}
+                    id="sociedade_selecao"
+                    options={sociedadeOptions}
+                    value={sociedadeId}
                     onValueChange={(value) =>
-                      setSociedadeContraparteId(value || "null")
+                      setSociedadeId(value || "new")
                     }
-                    placeholder="Selecione..."
-                    searchPlaceholder="Buscar contraparte..."
+                    placeholder="Selecione ou crie..."
+                    searchPlaceholder="Buscar sociedade..."
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="percentual_sociedade">
-                    Percentual da Fazenda (%)
-                  </Label>
-                  <Input
-                    id="percentual_sociedade"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={percentualSociedade}
-                    onChange={(e) => setPercentualSociedade(e.target.value)}
-                    placeholder="Ex: 50"
-                    className="h-12 text-body rounded-xl"
-                  />
-                </div>
+                {sociedadeId === "new" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="sociedade_nome">
+                        Nome <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="sociedade_nome"
+                        value={sociedadeNome}
+                        onChange={(e) => setSociedadeNome(e.target.value)}
+                        placeholder="Ex: Parceria Fazenda-Sócio"
+                        className="h-12 text-body rounded-xl"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="sociedade_contraparte">
+                        Contraparte <span className="text-red-500">*</span>
+                      </Label>
+                      <FieldCombobox
+                        id="sociedade_contraparte"
+                        options={contraparteOptions}
+                        value={sociedadeContraparteId}
+                        onValueChange={(value) =>
+                          setSociedadeContraparteId(value || "null")
+                        }
+                        placeholder="Selecione..."
+                        searchPlaceholder="Buscar contraparte..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="percentual_sociedade">
+                        Percentual da Fazenda (%)
+                      </Label>
+                      <Input
+                        id="percentual_sociedade"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={percentualSociedade}
+                        onChange={(e) => setPercentualSociedade(e.target.value)}
+                        placeholder="Ex: 50"
+                        className="h-12 text-body rounded-xl"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="inicio_sociedade">

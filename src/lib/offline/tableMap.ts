@@ -11,7 +11,8 @@ export const TABLE_MAP: Record<string, string> = {
   // Sociedade Pecuária (Patch Fase 9)
   sociedades_pecuarias: "state_sociedades_pecuarias",
   sociedade_animais: "state_sociedade_animais",
-  animais_sociedade: "state_animais_sociedade", // LEGACY FASE 2.2
+  // Compatibilidade de replay/rollback para gestures antigas; novos writers são proibidos.
+  animais_sociedade: "state_animais_sociedade",
   categorias_zootecnicas: "state_categorias_zootecnicas", // FASE 2.3
   protocolos_sanitarios: "state_protocolos_sanitarios",
   protocolos_sanitarios_itens: "state_protocolos_sanitarios_itens",

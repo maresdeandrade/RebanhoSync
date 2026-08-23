@@ -6,6 +6,7 @@ import { createGesture } from "@/lib/offline/ops";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -97,6 +98,9 @@ export function TrocarTouroLote({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Trocar reprodutor do lote</DialogTitle>
+          <DialogDescription>
+            Selecione o reprodutor que passará a compor este lote.
+          </DialogDescription>
         </DialogHeader>
 
         <FormSection

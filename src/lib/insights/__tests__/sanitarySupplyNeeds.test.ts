@@ -373,6 +373,39 @@ describe("sanitary supply needs insights", () => {
     );
   });
 
+  it("returns partial when product and cardinality are known but quantity is missing", () => {
+    const insight = createSanitarySupplyNeedsInsight({
+      questionKind: "future_need",
+      question: "Quais insumos sanitarios preciso?",
+      generatedAt,
+      scope: "all_open",
+      items: [createAgendaItem({ quantityPerAnimal: null })],
+    });
+
+    expect(insight.resultStatus).toBe("partial");
+    expect(insight.data.groups[0].missingQuantityCount).toBe(1);
+    expect(insight.data.incompleteAgendaItemIds).toEqual([]);
+    expect(insight.source.limitations).toContain(
+      "Quantidade por animal não disponível; demanda quantitativa não pôde ser determinada.",
+    );
+  });
+
+  it("keeps complete with product, known cardinality and valid quantity", () => {
+    const insight = createSanitarySupplyNeedsInsight({
+      questionKind: "future_need",
+      question: "Quais insumos sanitarios preciso?",
+      generatedAt,
+      scope: "all_open",
+      items: [createAgendaItem({ quantityPerAnimal: 2, animalCount: 3 })],
+    });
+
+    expect(insight.resultStatus).toBe("complete");
+    expect(insight.data.groups[0]).toMatchObject({
+      estimatedQuantity: 6,
+      missingQuantityCount: 0,
+    });
+  });
+
   it("blocks only when product is required and no item can be grouped by product", () => {
     const insight = createSanitarySupplyNeedsInsight({
       questionKind: "future_need",
@@ -448,18 +481,62 @@ describe("sanitary supply needs insights", () => {
     expect(summary.groups[0].missingQuantityCount).toBe(1);
   });
 
-  it("counts invalid quantity as missing quantity in the insight limitation", () => {
+  it.each([
+    undefined,
+    null,
+    0,
+    -1,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    "inválida" as unknown as number,
+  ])("treats invalid quantity %s as partial and does not calculate it", (quantity) => {
     const insight = createSanitarySupplyNeedsInsight({
       questionKind: "future_need",
       question: "Quais insumos sanitarios preciso?",
       generatedAt,
       scope: "all_open",
-      items: [createAgendaItem({ quantityPerAnimal: 0 })],
+      items: [createAgendaItem({ quantityPerAnimal: quantity })],
     });
 
+    expect(insight.resultStatus).toBe("partial");
+    expect(insight.data.groups[0].estimatedQuantity).toBeUndefined();
     expect(insight.data.groups[0].missingQuantityCount).toBe(1);
     expect(insight.source.limitations).toContain(
-      "Agendas sem quantityPerAnimal valido maior que zero nao contribuem para estimatedQuantity; missingQuantityCount inclui quantidade ausente ou invalida.",
+      "Quantidade por animal não disponível; demanda quantitativa não pôde ser determinada.",
+    );
+  });
+
+  it("returns partial when legacy and v2 may overlap without explicit linkage", () => {
+    const insight = createSanitarySupplyNeedsInsight({
+      questionKind: "future_need",
+      question: "Quais insumos sanitarios preciso?",
+      generatedAt,
+      scope: "all_open",
+      items: [
+        createAgendaItem({ id: "legacy", possibleSourceOverlap: true }),
+        createAgendaItem({ id: "sanitario-v2:v2", possibleSourceOverlap: true }),
+      ],
+    });
+
+    expect(insight.resultStatus).toBe("partial");
+    expect(insight.data.groups[0].agendaItemCount).toBe(2);
+    expect(insight.source.limitations).toContain(
+      "Fontes legacy e Agenda Sanitária v2 coexistem sem vínculo suficiente para excluir possível sobreposição.",
+    );
+  });
+
+  it("does not degrade complete sources without an overlap signal", () => {
+    const insight = createSanitarySupplyNeedsInsight({
+      questionKind: "future_need",
+      question: "Quais insumos sanitarios preciso?",
+      generatedAt,
+      scope: "all_open",
+      items: [createAgendaItem(), createAgendaItem({ id: "v2" })],
+    });
+
+    expect(insight.resultStatus).toBe("complete");
+    expect(insight.source.limitations).not.toContain(
+      "Fontes legacy e Agenda Sanitária v2 coexistem sem vínculo suficiente para excluir possível sobreposição.",
     );
   });
 
@@ -494,6 +571,41 @@ describe("sanitary supply needs insights", () => {
     expect(insight.questionKind).toBe("future_need");
     expect(insight.source.primarySource).toBe("state_agenda_itens");
     expect(insight.source.excludedSources).toContain("eventos");
+  });
+
+  it("accepts factual provenance for a composed Agenda Sanitária v2 projection", () => {
+    const insight = createSanitarySupplyNeedsInsight({
+      questionKind: "future_need",
+      question: "Quais insumos sanitarios preciso?",
+      generatedAt,
+      scope: "all_open",
+      items: [
+        createAgendaItem({ id: "with-product" }),
+        createAgendaItem({
+          id: "without-product",
+          productId: null,
+          productName: null,
+        }),
+      ],
+      primarySource: "state_agenda_itens + ops_sanitario_agenda_v2",
+      auxiliarySources: [
+        "ops_sanitario_agenda_animais_v2",
+        "state_animais",
+        "state_lotes",
+      ],
+    });
+
+    expect(insight.resultStatus).toBe("partial");
+    expect(insight.data.groups).toHaveLength(1);
+    expect(insight.data.incompleteAgendaItemIds).toEqual(["without-product"]);
+    expect(insight.source.primarySource).toBe(
+      "state_agenda_itens + ops_sanitario_agenda_v2",
+    );
+    expect(insight.source.auxiliarySources).toEqual([
+      "ops_sanitario_agenda_animais_v2",
+      "state_animais",
+      "state_lotes",
+    ]);
   });
 
   it("does not use the global clock", () => {

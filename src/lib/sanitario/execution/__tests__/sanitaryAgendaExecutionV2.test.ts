@@ -14,7 +14,12 @@ import type {
   SanitarioProdutoCarenciaRuleLocalV2,
 } from "@/lib/offline/types";
 import type { SanitaryProtocolCatalogReadModelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
-import { executeSanitaryAgendaV2 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
+import {
+  executeSanitaryAgendaBatchV2,
+  executeSanitaryAgendaV2,
+  type ExecuteSanitaryAgendaInputV2,
+  type ExecuteSanitaryAgendaResultV2,
+} from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
 import { buildSanitaryExecutedHistoryV2 } from "@/lib/sanitario/history/sanitaryExecutedHistoryV2";
 
 const agenda = (overrides: Partial<SanitarioAgendaLocalV2> = {}): SanitarioAgendaLocalV2 => ({
@@ -63,6 +68,108 @@ const agenda = (overrides: Partial<SanitarioAgendaLocalV2> = {}): SanitarioAgend
   updated_at: "2026-06-01T10:00:00.000Z",
   deleted_at: null,
   ...overrides,
+});
+
+describe("executeSanitaryAgendaBatchV2", () => {
+  const inputs = ["agenda-a", "agenda-b", "agenda-c"].map(
+    (agendaId, index): ExecuteSanitaryAgendaInputV2 => ({
+      fazendaId: "farm-batch",
+      agendaId,
+      clientOpId: `batch-op-${index + 1}`,
+      executedAt: "2026-08-23",
+      confirmation: { userConfirmedExecution: true },
+    }),
+  );
+  const success = (
+    input: ExecuteSanitaryAgendaInputV2,
+  ): ExecuteSanitaryAgendaResultV2 => ({
+    eventId: `event-${input.agendaId}`,
+    agendaId: input.agendaId,
+    clientOpId: input.clientOpId,
+    agendaStatus: "executed",
+    createsEvent: true,
+    createsStockMovement: false,
+    createsActiveWithdrawal: false,
+  });
+
+  it("representa sucesso total por item", async () => {
+    const executeItem = vi.fn(async (input: ExecuteSanitaryAgendaInputV2) =>
+      success(input),
+    );
+
+    const result = await executeSanitaryAgendaBatchV2(inputs, executeItem);
+
+    expect(result.items.map((item) => item.status)).toEqual([
+      "EXECUTADO",
+      "EXECUTADO",
+      "EXECUTADO",
+    ]);
+    expect(result).toMatchObject({
+      executedCount: 3,
+      failedCount: 0,
+      notExecutedCount: 0,
+      retryAvailableCount: 0,
+    });
+  });
+
+  it("distingue falha no primeiro item dos itens ainda não executados", async () => {
+    const executeItem = vi.fn(async () => {
+      throw new Error("first-item-failed");
+    });
+
+    const result = await executeSanitaryAgendaBatchV2(inputs, executeItem);
+
+    expect(executeItem).toHaveBeenCalledTimes(1);
+    expect(result.items.map((item) => item.status)).toEqual([
+      "FALHOU",
+      "NAO_EXECUTADO",
+      "NAO_EXECUTADO",
+    ]);
+    expect(result.retryAvailableCount).toBe(3);
+  });
+
+  it("preserva sucesso parcial e retry executa somente falhos ou pendentes", async () => {
+    const firstAttempt = vi.fn(
+      async (input: ExecuteSanitaryAgendaInputV2) => {
+        if (input.agendaId === "agenda-b") throw new Error("second-item-failed");
+        return success(input);
+      },
+    );
+    const firstResult = await executeSanitaryAgendaBatchV2(
+      inputs,
+      firstAttempt,
+    );
+
+    expect(firstResult.items.map((item) => item.status)).toEqual([
+      "EXECUTADO",
+      "FALHOU",
+      "NAO_EXECUTADO",
+    ]);
+    const retryIds = new Set(
+      firstResult.items
+        .filter((item) => item.retryAvailable)
+        .map((item) => item.clientOpId),
+    );
+    const retryInputs = inputs.filter((input) => retryIds.has(input.clientOpId));
+    const retryAttempt = vi.fn(async (input: ExecuteSanitaryAgendaInputV2) =>
+      success(input),
+    );
+
+    const retryResult = await executeSanitaryAgendaBatchV2(
+      retryInputs,
+      retryAttempt,
+    );
+
+    expect(retryAttempt.mock.calls.map(([input]) => input.agendaId)).toEqual([
+      "agenda-b",
+      "agenda-c",
+    ]);
+    expect(retryAttempt).not.toHaveBeenCalledWith(
+      expect.objectContaining({ agendaId: "agenda-a" }),
+    );
+    expect(retryResult.retryAvailableCount).toBe(0);
+    expect(firstAttempt).toHaveBeenCalledTimes(2);
+  });
 });
 
 const agendaAnimal = (

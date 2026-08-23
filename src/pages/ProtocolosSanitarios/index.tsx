@@ -28,7 +28,7 @@ import {
   rescheduleLocalSanitaryAgendaV2,
 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
 import {
-  executeSanitaryAgendaV2,
+  executeSanitaryAgendaBatchV2,
   type ExecuteSanitaryAgendaInputV2,
 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
 import {
@@ -179,27 +179,30 @@ const ProtocolosSanitarios = () => {
   };
 
   const executeAgenda = async (payloads: Array<Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">>) => {
-    try {
-      const results = [];
-      for (const payload of payloads) {
-        results.push(
-          await executeSanitaryAgendaV2({
-            ...payload,
-            fazendaId: activeFarmId,
-          }),
-        );
-      }
-      const stockMovements = results.filter((result) => result.createsStockMovement).length;
+    const result = await executeSanitaryAgendaBatchV2(
+      payloads.map((payload) => ({ ...payload, fazendaId: activeFarmId })),
+    );
+    if (result.retryAvailableCount === 0) {
+      const stockMovements = result.items.filter(
+        (item) => item.result?.createsStockMovement,
+      ).length;
       toast.success(
-        results.length === 1
+        result.executedCount === 1
           ? stockMovements > 0
             ? "Evento sanitário registrado com baixa de estoque."
             : "Evento sanitário registrado."
-          : `${results.length} eventos sanitários registrados.`,
+          : `${result.executedCount} eventos sanitários registrados.`,
       );
-    } catch {
-      toast.error("Não foi possível executar esta agenda sanitária.");
+    } else if (result.executedCount > 0) {
+      toast.warning(
+        `${result.executedCount} executado(s); ${result.retryAvailableCount} item(ns) pode(m) ser reenviado(s).`,
+      );
+    } else {
+      toast.error(
+        `Nenhum item foi executado; ${result.retryAvailableCount} item(ns) pode(m) ser reenviado(s).`,
+      );
     }
+    return result;
   };
 
   return (

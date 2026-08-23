@@ -218,51 +218,53 @@ async function appendEventoAnimais(
 async function getPendingFactualEventIds() {
   const operations = await db.queue_ops.toArray();
   return new Set(
-    operations.flatMap((operation) => {
-      const commercialRecords = [
-        ...getPendingCommercialPurchaseRecords(operation),
-        ...getPendingCommercialOperationRecords(operation),
-      ];
-      const commercialEvent = commercialRecords.find(
-        ({ table }) => table === "eventos",
-      )?.record;
-      if (typeof commercialEvent?.id === "string") {
-        return [commercialEvent.id];
-      }
-      if (
-        operation.table === "eventos" &&
-        typeof operation.record?.id === "string"
-      ) {
-        return [operation.record.id];
-      }
-      if (
-        operation.table.startsWith("eventos_") &&
-        typeof operation.record?.evento_id === "string"
-      ) {
-        return [operation.record.evento_id];
-      }
-      if (
-        operation.table === "state_insumo_movimentacoes" ||
-        operation.table === "insumo_movimentacoes"
-      ) {
-        const sourceEventId = operation.record?.source_evento_id;
-        return typeof sourceEventId === "string" ? [sourceEventId] : [];
-      }
-      if (operation.table !== "sanitario_v2") return [];
-      const record = operation.record as RemoteRow;
-      const payload = record?.payload;
-      const event =
-        payload && typeof payload === "object" && !Array.isArray(payload)
-          ? (payload as RemoteRow).event
-          : null;
-      return record?.command === "apply_factual_core" &&
-        event &&
-        typeof event === "object" &&
-        !Array.isArray(event) &&
-        typeof (event as RemoteRow).id === "string"
-        ? [String((event as RemoteRow).id)]
-        : [];
-    }),
+    operations
+      .filter((operation) => operation.sync_state !== "REJECTED")
+      .flatMap((operation) => {
+        const commercialRecords = [
+          ...getPendingCommercialPurchaseRecords(operation),
+          ...getPendingCommercialOperationRecords(operation),
+        ];
+        const commercialEvent = commercialRecords.find(
+          ({ table }) => table === "eventos",
+        )?.record;
+        if (typeof commercialEvent?.id === "string") {
+          return [commercialEvent.id];
+        }
+        if (
+          operation.table === "eventos" &&
+          typeof operation.record?.id === "string"
+        ) {
+          return [operation.record.id];
+        }
+        if (
+          operation.table.startsWith("eventos_") &&
+          typeof operation.record?.evento_id === "string"
+        ) {
+          return [operation.record.evento_id];
+        }
+        if (
+          operation.table === "state_insumo_movimentacoes" ||
+          operation.table === "insumo_movimentacoes"
+        ) {
+          const sourceEventId = operation.record?.source_evento_id;
+          return typeof sourceEventId === "string" ? [sourceEventId] : [];
+        }
+        if (operation.table !== "sanitario_v2") return [];
+        const record = operation.record as RemoteRow;
+        const payload = record?.payload;
+        const event =
+          payload && typeof payload === "object" && !Array.isArray(payload)
+            ? (payload as RemoteRow).event
+            : null;
+        return record?.command === "apply_factual_core" &&
+          event &&
+          typeof event === "object" &&
+          !Array.isArray(event) &&
+          typeof (event as RemoteRow).id === "string"
+          ? [String((event as RemoteRow).id)]
+          : [];
+      }),
   );
 }
 
@@ -286,6 +288,7 @@ async function getPendingRecordIds(
 
   const operations = await db.queue_ops.toArray();
   for (const operation of operations) {
+    if (operation.sync_state === "REJECTED") continue;
     const candidates = [
       { table: operation.table, record: operation.record },
       ...getPendingCommercialPurchaseRecords(operation),

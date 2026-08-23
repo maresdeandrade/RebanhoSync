@@ -57,9 +57,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageIntro } from "@/components/ui/page-intro";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -76,6 +78,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { readAnimalInActiveFarm } from "@/pages/detailFarmIsolation";
 import { getAnimalBreedLabel } from "@/lib/animals/catalogs";
 import {
   buildAnimalLifecyclePayload,
@@ -697,8 +700,12 @@ export function AnimalSanitaryCasesPanel({
 const AnimalDetalhe = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { farmLifecycleConfig, farmMeasurementConfig, activeFarmId: fazendaId } = useAuth();
-  const carenciaModel = useAnimalWithdrawal(id ?? null, fazendaId ?? null);
+  const {
+    farmLifecycleConfig,
+    farmMeasurementConfig,
+    activeFarmId: fazendaId,
+    role,
+  } = useAuth();
   const [showMoverLote, setShowMoverLote] = useState(false);
   const [showCloseSociedadeDialog, setShowCloseSociedadeDialog] =
     useState(false);
@@ -752,7 +759,14 @@ const AnimalDetalhe = () => {
   const [isClosingClinicalCase, setIsClosingClinicalCase] = useState(false);
   const autoAppliedStageRef = useRef<string | null>(null);
 
-  const animal = useLiveQuery(() => db.state_animais.get(id!), [id]);
+  const animal = useLiveQuery(
+    () => readAnimalInActiveFarm(id, fazendaId),
+    [id, fazendaId],
+  );
+  const carenciaModel = useAnimalWithdrawal(
+    animal?.id ?? null,
+    fazendaId ?? null,
+  );
   const animalLote = useLiveQuery(
     async () => {
       if (!animal?.lote_id || !fazendaId) return undefined;
@@ -762,7 +776,7 @@ const AnimalDetalhe = () => {
     [animal?.lote_id, fazendaId],
   );
 
-  const activeSocietyLink = useLiveQuery(
+  const sociedadeAtiva = useLiveQuery(
     async () => {
       if (!animal?.id || !fazendaId) return null;
       const links = await db.state_sociedade_animais
@@ -779,14 +793,16 @@ const AnimalDetalhe = () => {
     [animal?.id, fazendaId]
   );
 
-  const mae = useLiveQuery(
-    () => (animal?.mae_id ? db.state_animais.get(animal.mae_id) : null),
-    [animal?.mae_id],
-  );
-  const pai = useLiveQuery(
-    () => (animal?.pai_id ? db.state_animais.get(animal.pai_id) : null),
-    [animal?.pai_id],
-  );
+  const mae = useLiveQuery(async () => {
+    if (!animal?.mae_id || !fazendaId) return null;
+    const candidate = await db.state_animais.get(animal.mae_id);
+    return candidate?.fazenda_id === fazendaId ? candidate : null;
+  }, [animal?.mae_id, fazendaId]);
+  const pai = useLiveQuery(async () => {
+    if (!animal?.pai_id || !fazendaId) return null;
+    const candidate = await db.state_animais.get(animal.pai_id);
+    return candidate?.fazenda_id === fazendaId ? candidate : null;
+  }, [animal?.pai_id, fazendaId]);
   const crias = useLiveQuery(async () => {
     if (!animal?.id || !animal.fazenda_id) return [];
 
@@ -800,10 +816,11 @@ const AnimalDetalhe = () => {
   }, [animal?.id, animal?.fazenda_id]);
 
   const eventos = useLiveQuery<EnrichedEvent[]>(async () => {
-    if (!id) return [];
+    if (!animal?.id || !fazendaId) return [];
     const evts = await db.event_eventos
       .where("animal_id")
-      .equals(id)
+      .equals(animal.id)
+      .filter((event) => event.fazenda_id === fazendaId)
       .reverse()
       .sortBy("occurred_at");
 
@@ -814,7 +831,8 @@ const AnimalDetalhe = () => {
           let machoIdentificacao = undefined;
           if (details?.macho_id) {
             const macho = await db.state_animais.get(details.macho_id);
-            machoIdentificacao = macho?.identificacao;
+            machoIdentificacao =
+              macho?.fazenda_id === fazendaId ? macho.identificacao : undefined;
           }
           return { ...evt, details, machoIdentificacao } as EnrichedEvent;
         }
@@ -825,7 +843,7 @@ const AnimalDetalhe = () => {
         return evt as EnrichedEvent;
       }),
     );
-  }, [id]);
+  }, [animal?.id, fazendaId]);
 
   const animalComerciais = useMemo(() => {
     if (!eventos) return [];
@@ -835,12 +853,12 @@ const AnimalDetalhe = () => {
   }, [eventos]);
 
   const agenda = useLiveQuery(async () => {
-    if (!id) return [];
+    if (!animal?.id || !fazendaId) return [];
 
     const items = await db.state_agenda_itens
       .where("animal_id")
-      .equals(id)
-      .filter((item) => !item.deleted_at)
+      .equals(animal.id)
+      .filter((item) => item.fazenda_id === fazendaId && !item.deleted_at)
       .toArray();
     const protocolItemIds = Array.from(
       new Set(
@@ -885,19 +903,24 @@ const AnimalDetalhe = () => {
           scheduleAnchorLabel: scheduleMeta?.anchorLabel ?? null,
         };
       });
-  }, [id]);
+  }, [animal?.id, fazendaId]);
   const officialDiseases = useLiveQuery(
-    () => db.catalog_doencas_notificaveis.toArray(),
-    [],
+    () => (animal ? db.catalog_doencas_notificaveis.toArray() : []),
+    [animal?.id],
   );
 
   const ultimoPeso = useLiveQuery(async () => {
-    if (!id) return null;
+    if (!animal?.id || !fazendaId) return null;
 
     const registros = await db.event_eventos
       .where("animal_id")
-      .equals(id)
-      .filter((event) => event.dominio === "pesagem" && !event.deleted_at)
+      .equals(animal.id)
+      .filter(
+        (event) =>
+          event.fazenda_id === fazendaId &&
+          event.dominio === "pesagem" &&
+          !event.deleted_at,
+      )
       .toArray();
 
     if (!registros.length) return null;
@@ -927,14 +950,19 @@ const AnimalDetalhe = () => {
     return resolved
       ? { peso_kg: resolved.peso_kg, data: resolved.pesado_em }
       : null;
-  }, [id]);
+  }, [animal?.id, fazendaId]);
   const historicoPeso = useLiveQuery(async () => {
-    if (!id) return [];
+    if (!animal?.id || !fazendaId) return [];
 
     const registros = await db.event_eventos
       .where("animal_id")
-      .equals(id)
-      .filter((event) => event.dominio === "pesagem" && !event.deleted_at)
+      .equals(animal.id)
+      .filter(
+        (event) =>
+          event.fazenda_id === fazendaId &&
+          event.dominio === "pesagem" &&
+          !event.deleted_at,
+      )
       .toArray();
 
     const pontos = await Promise.all(
@@ -964,15 +992,20 @@ const AnimalDetalhe = () => {
         } => ponto !== null,
       )
       .sort((left, right) => left.data.localeCompare(right.data));
-  }, [id]);
+  }, [animal?.id, fazendaId]);
 
   const ultimoEcc = useLiveQuery(async () => {
-    if (!id) return null;
+    if (!animal?.id || !fazendaId) return null;
 
     const registros = await db.event_eventos
       .where("animal_id")
-      .equals(id)
-      .filter((event) => event.dominio === "ecc" && !event.deleted_at)
+      .equals(animal.id)
+      .filter(
+        (event) =>
+          event.fazenda_id === fazendaId &&
+          event.dominio === "ecc" &&
+          !event.deleted_at,
+      )
       .toArray();
 
     if (!registros.length) return null;
@@ -1000,15 +1033,20 @@ const AnimalDetalhe = () => {
       .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
 
     return eligible[0] ?? null;
-  }, [id]);
+  }, [animal?.id, fazendaId]);
 
   const historicoEcc = useLiveQuery(async () => {
-    if (!id) return [];
+    if (!animal?.id || !fazendaId) return [];
 
     const registros = await db.event_eventos
       .where("animal_id")
-      .equals(id)
-      .filter((event) => event.dominio === "ecc" && !event.deleted_at)
+      .equals(animal.id)
+      .filter(
+        (event) =>
+          event.fazenda_id === fazendaId &&
+          event.dominio === "ecc" &&
+          !event.deleted_at,
+      )
       .toArray();
 
     const pontos = await Promise.all(
@@ -1034,7 +1072,7 @@ const AnimalDetalhe = () => {
     return pontos
       .filter((ponto): ponto is NonNullable<typeof ponto> => ponto !== null)
       .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at));
-  }, [id]);
+  }, [animal?.id, fazendaId]);
 
   const proximaAgenda = useMemo(() => {
     const hoje = new Date().toISOString().split("T")[0];
@@ -1049,20 +1087,13 @@ const AnimalDetalhe = () => {
     );
   }, [agenda]);
 
-  const sociedadeAtiva = useLiveQuery(async () => {
-    if (!animal?.id || animal.origem !== "sociedade") return null;
-    const sociedades = await db.state_animais_sociedade
-      .where("[fazenda_id+animal_id]")
-      .equals([animal.fazenda_id, animal.id])
-      .and((item) => item.deleted_at === null && item.fim === null)
-      .toArray();
-    return sociedades[0] || null;
-  }, [animal]);
-
   const contraparte = useLiveQuery(async () => {
-    if (!sociedadeAtiva?.contraparte_id) return null;
-    return await db.state_contrapartes.get(sociedadeAtiva.contraparte_id);
-  }, [sociedadeAtiva?.contraparte_id]);
+    if (!sociedadeAtiva?.contraparte_id || !fazendaId) return null;
+    const candidate = await db.state_contrapartes.get(
+      sociedadeAtiva.contraparte_id,
+    );
+    return candidate?.fazenda_id === fazendaId ? candidate : null;
+  }, [sociedadeAtiva?.contraparte_id, fazendaId]);
   const activeSanitaryAlert = useMemo(
     () => readAnimalSanitaryAlert(animal?.payload),
     [animal?.payload],
@@ -1416,6 +1447,11 @@ const AnimalDetalhe = () => {
   const handleCloseSociedade = useCallback(async () => {
     if (!animal || !sociedadeAtiva) return;
 
+    if (role !== "owner" && role !== "manager") {
+      showError("Apenas owner/manager pode encerrar vínculo societário.");
+      return;
+    }
+
     const now = new Date().toISOString();
     const hoje = new Date().toISOString().split("T")[0];
 
@@ -1423,11 +1459,13 @@ const AnimalDetalhe = () => {
     try {
       await createGesture(animal.fazenda_id, [
         {
-          table: "animais_sociedade",
+          table: "sociedade_animais",
           action: "UPDATE",
           record: {
             id: sociedadeAtiva.id,
-            fim: hoje,
+            status: "encerrado",
+            data_saida: hoje,
+            motivo_saida: "encerramento_manual",
             updated_at: now,
           },
         },
@@ -1439,7 +1477,7 @@ const AnimalDetalhe = () => {
     } finally {
       setIsClosingSociedade(false);
     }
-  }, [animal, sociedadeAtiva]);
+  }, [animal, role, sociedadeAtiva]);
 
   const handleRegisterEntryHistory = useCallback(async () => {
     if (!animal || !sanitaryProtocolCatalogV2) return;
@@ -1748,10 +1786,28 @@ const AnimalDetalhe = () => {
     }
   }, [animal, clinicalCaseClosure, sanitaryCases]);
 
-  if (!animal) {
+  if (animal === undefined) {
     return (
       <div className="p-12 text-center text-muted-foreground">
         Carregando animal...
+      </div>
+    );
+  }
+
+  if (animal === null) {
+    return (
+      <div className="space-y-5">
+        <PageIntro
+          variant="plain"
+          eyebrow="Rebanho"
+          title="Animal não encontrado"
+          actions={
+            <Button variant="outline" onClick={() => navigate("/animais")}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar para animais
+            </Button>
+          }
+        />
       </div>
     );
   }
@@ -1964,10 +2020,10 @@ const AnimalDetalhe = () => {
                 {getAnimalProductiveDestinationLabel(maleDestination)}
               </Badge>
             )}
-            {activeSocietyLink && (
+            {sociedadeAtiva && (
               <Badge variant="outline" className="border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200">
                 <Handshake className="h-3 w-3 mr-1" />
-                Sociedade {activeSocietyLink.percentual_fazenda}/{activeSocietyLink.percentual_parceiro}
+                Sociedade {sociedadeAtiva.percentual_fazenda}/{sociedadeAtiva.percentual_parceiro}
               </Badge>
             )}
             {animal.sexo === "M" && maleReproductiveStatus && (
@@ -1987,11 +2043,10 @@ const AnimalDetalhe = () => {
                 {getTransitionModeLabel(effectiveTransitionMode)}
               </Badge>
             )}
-            {animal.origem === "sociedade" && sociedadeAtiva && contraparte && (
+            {sociedadeAtiva && contraparte && (
               <Badge variant="default" className="bg-blue-600">
                 {contraparte.nome}
-                {sociedadeAtiva.percentual &&
-                  ` (${sociedadeAtiva.percentual}%)`}
+                {` (${sociedadeAtiva.percentual_fazenda}%)`}
               </Badge>
             )}
           </CardContent>
@@ -2906,14 +2961,12 @@ const AnimalDetalhe = () => {
         </Card>
       </div>
 
-      {animal.origem === "sociedade" && sociedadeAtiva && contraparte && (
+      {sociedadeAtiva && contraparte && (
         <Card className="border-border/70 bg-card shadow-none">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Detalhes da sociedade</CardTitle>
-              <Badge variant="default">
-                {sociedadeAtiva.fim ? "Encerrada" : "Ativa"}
-              </Badge>
+              <Badge variant="default">Ativa</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -2923,13 +2976,13 @@ const AnimalDetalhe = () => {
                 <p className="font-semibold">{contraparte.nome}</p>
               </div>
 
-              {sociedadeAtiva.percentual && (
+              {sociedadeAtiva.percentual_fazenda != null && (
                 <div>
                   <p className="text-xs text-muted-foreground">
                     Participacao da fazenda
                   </p>
                   <p className="font-semibold">
-                    {sociedadeAtiva.percentual}%
+                    {sociedadeAtiva.percentual_fazenda}%
                   </p>
                 </div>
               )}
@@ -2939,34 +2992,22 @@ const AnimalDetalhe = () => {
               <div>
                 <p className="text-xs text-muted-foreground">Data de inicio</p>
                 <p className="font-medium">
-                  {formatDate(sociedadeAtiva.inicio)}
+                  {formatDate(sociedadeAtiva.data_entrada)}
                 </p>
               </div>
-
-              {sociedadeAtiva.fim && (
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    Data de encerramento
-                  </p>
-                  <p className="font-medium">
-                    {formatDate(sociedadeAtiva.fim)}
-                  </p>
-                </div>
-              )}
             </div>
 
-            {!sociedadeAtiva.fim && (
-              <div className="border-t border-border/70 pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-destructive/30 text-destructive hover:bg-destructive/10"
-                  onClick={() => setShowCloseSociedadeDialog(true)}
-                >
-                  Encerrar sociedade
-                </Button>
-              </div>
-            )}
+            <div className="border-t border-border/70 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={role !== "owner" && role !== "manager"}
+                className="border-destructive/30 text-destructive hover:bg-destructive/10"
+                onClick={() => setShowCloseSociedadeDialog(true)}
+              >
+                Encerrar vínculo societário
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -3419,6 +3460,10 @@ const AnimalDetalhe = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Registrar histórico anterior</DialogTitle>
+            <DialogDescription>
+              Registre um fato sanitário anterior à entrada do animal, sem
+              representar uma execução da fazenda ou movimentar estoque.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">

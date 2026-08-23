@@ -69,16 +69,24 @@ const LotesImportar = () => {
     | Array<Record<string, unknown>>
     | undefined;
 
-  const pastosDisponiveis = Array.isArray(references)
-    ? (references.filter(
-        (record) => !("identificacao" in record),
-      ) as Pasto[])
-    : (references?.pastos ?? []);
-  const animaisDisponiveis = Array.isArray(references)
-    ? (references.filter(
-        (record) => "identificacao" in record,
-      ) as Animal[])
-    : (references?.animais ?? []);
+  const pastosDisponiveis = useMemo(
+    () =>
+      Array.isArray(references)
+        ? (references.filter(
+            (record) => !("identificacao" in record),
+          ) as Pasto[])
+        : (references?.pastos ?? []),
+    [references],
+  );
+  const animaisDisponiveis = useMemo(
+    () =>
+      Array.isArray(references)
+        ? (references.filter(
+            (record) => "identificacao" in record,
+          ) as Animal[])
+        : (references?.animais ?? []),
+    [references],
+  );
   const preview = useMemo(
     () =>
       previewLotesImportV2({
@@ -368,5 +376,4 @@ const LotesImportar = () => {
 };
 
 export default LotesImportar;
-
 

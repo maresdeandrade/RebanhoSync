@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { AnimalOccupancyPeriod } from "./occupancyTypes";
+import type { AnimalOccupancyPeriod, DataStatus } from "./occupancyTypes";
 
 interface AnimalMovementHistoryTableProps {
   periods: AnimalOccupancyPeriod[];
@@ -17,8 +17,8 @@ function formatDate(dateString: string | null | undefined): string {
 }
 
 function getStatusTone(
-  status: "complete" | "partial" | "empty"
-): "success" | "warning" | "info" {
+  status: DataStatus["status"],
+): "success" | "warning" | "info" | "danger" {
   switch (status) {
     case "complete":
       return "success";
@@ -26,10 +26,12 @@ function getStatusTone(
       return "warning";
     case "empty":
       return "info";
+    case "bloqueado":
+      return "danger";
   }
 }
 
-function getStatusLabel(status: "complete" | "partial" | "empty"): string {
+function getStatusLabel(status: DataStatus["status"]): string {
   switch (status) {
     case "complete":
       return "Completo";
@@ -37,6 +39,8 @@ function getStatusLabel(status: "complete" | "partial" | "empty"): string {
       return "Parcial";
     case "empty":
       return "Vazio";
+    case "bloqueado":
+      return "Bloqueado";
   }
 }
 

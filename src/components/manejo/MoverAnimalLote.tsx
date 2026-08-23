@@ -14,6 +14,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -131,6 +132,9 @@ export function MoverAnimalLote({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Mover animal</DialogTitle>
+          <DialogDescription>
+            Registre a movimentação executada do animal entre lotes.
+          </DialogDescription>
         </DialogHeader>
 
         <FormSection

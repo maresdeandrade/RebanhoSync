@@ -110,7 +110,8 @@ jobs:
         run: |
           set +e
           supabase stop --no-backup
-          rm -f supabase/config.toml supabase/.gitignore "$RUNNER_TEMP/rebanhosync-supabase.env"
+          rm -f "$RUNNER_TEMP/rebanhosync-supabase.env"
+          git restore --source=HEAD --worktree -- supabase/config.toml supabase/.gitignore
           cli_state="$RUNNER_TEMP/rebanhosync-supabase-cli-latest"
           if [[ -f "$cli_state" ]]; then
             cp "$cli_state" supabase/.temp/cli-latest

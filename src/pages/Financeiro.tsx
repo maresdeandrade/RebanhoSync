@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useNavigate } from "react-router-dom";
 import {
@@ -56,6 +56,7 @@ import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -118,6 +119,10 @@ const Financeiro = () => {
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [txErrors, setTxErrors] = useState<string[]>([]);
   const [catErrors, setCatErrors] = useState<string[]>([]);
+  const [isSavingTx, setIsSavingTx] = useState(false);
+  const [isSavingCat, setIsSavingCat] = useState(false);
+  const savingTxRef = useRef(false);
+  const savingCatRef = useRef(false);
 
   // Form inputs for Transaction
   const [formTxDirection, setFormTxDirection] =
@@ -481,7 +486,7 @@ const Financeiro = () => {
 
   // Save Transaction
   const handleSaveTx = async () => {
-    if (!activeFarmId) return;
+    if (!activeFarmId || savingTxRef.current) return;
     setTxErrors([]);
 
     const valorNum = parseOptionalFinanceNumber(formTxValorTotal);
@@ -532,6 +537,8 @@ const Financeiro = () => {
       },
     };
 
+    savingTxRef.current = true;
+    setIsSavingTx(true);
     try {
       await createGesture(activeFarmId, [op]);
       setIsTxModalOpen(false);
@@ -546,6 +553,9 @@ const Financeiro = () => {
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
       setTxErrors([errMsg || "Erro desconhecido ao salvar transação."]);
+    } finally {
+      savingTxRef.current = false;
+      setIsSavingTx(false);
     }
   };
 
@@ -577,7 +587,7 @@ const Financeiro = () => {
 
   // Save Category
   const handleSaveCat = async () => {
-    if (!activeFarmId) return;
+    if (!activeFarmId || savingCatRef.current) return;
     setCatErrors([]);
 
     if (!formCatNome.trim()) {
@@ -610,6 +620,8 @@ const Financeiro = () => {
       },
     };
 
+    savingCatRef.current = true;
+    setIsSavingCat(true);
     try {
       await createGesture(activeFarmId, [op]);
       setIsCatModalOpen(false);
@@ -619,6 +631,9 @@ const Financeiro = () => {
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
       setCatErrors([errMsg || "Erro desconhecido ao salvar categoria."]);
+    } finally {
+      savingCatRef.current = false;
+      setIsSavingCat(false);
     }
   };
 
@@ -1106,10 +1121,18 @@ const Financeiro = () => {
       )}
 
       {/* Modal - Novo Lançamento Gerencial */}
-      <Dialog open={isTxModalOpen} onOpenChange={setIsTxModalOpen}>
+      <Dialog
+        open={isTxModalOpen}
+        onOpenChange={(open) => {
+          if (!isSavingTx) setIsTxModalOpen(open);
+        }}
+      >
         <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Novo Lançamento Financeiro Gerencial</DialogTitle>
+            <DialogDescription>
+              Registre uma entrada ou saída administrativa no ledger gerencial.
+            </DialogDescription>
           </DialogHeader>
 
           {txErrors.length > 0 && (
@@ -1409,19 +1432,33 @@ const Financeiro = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsTxModalOpen(false)}>
+            <Button
+              variant="outline"
+              disabled={isSavingTx}
+              onClick={() => setIsTxModalOpen(false)}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleSaveTx}>Salvar Lançamento</Button>
+            <Button disabled={isSavingTx} onClick={handleSaveTx}>
+              {isSavingTx ? "Salvando lançamento..." : "Salvar Lançamento"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Modal - Nova Categoria Gerencial */}
-      <Dialog open={isCatModalOpen} onOpenChange={setIsCatModalOpen}>
+      <Dialog
+        open={isCatModalOpen}
+        onOpenChange={(open) => {
+          if (!isSavingCat) setIsCatModalOpen(open);
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Nova Categoria Financeira Gerencial</DialogTitle>
+            <DialogDescription>
+              Crie uma categoria administrativa para classificar lançamentos.
+            </DialogDescription>
           </DialogHeader>
 
           {catErrors.length > 0 && (
@@ -1521,10 +1558,16 @@ const Financeiro = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCatModalOpen(false)}>
+            <Button
+              variant="outline"
+              disabled={isSavingCat}
+              onClick={() => setIsCatModalOpen(false)}
+            >
               Cancelar
             </Button>
-            <Button onClick={handleSaveCat}>Salvar Categoria</Button>
+            <Button disabled={isSavingCat} onClick={handleSaveCat}>
+              {isSavingCat ? "Salvando categoria..." : "Salvar Categoria"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

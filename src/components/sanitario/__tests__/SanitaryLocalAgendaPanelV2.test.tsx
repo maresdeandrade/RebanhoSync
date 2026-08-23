@@ -9,6 +9,10 @@ import { db } from "@/lib/offline/db";
 import type { Insumo, InsumoLote } from "@/lib/offline/types";
 import { loadSanitaryAgendaExecutionOptionsV2 } from "@/components/sanitario/SanitaryAgendaExecutionConfirmV2";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
+import type {
+  SanitaryAgendaBatchItemResultV2,
+  SanitaryAgendaBatchResultV2,
+} from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
 
 const items = [
   {
@@ -61,11 +65,32 @@ const items = [
   },
 ];
 
-function renderPanel(onReschedule = vi.fn(), onCancel = vi.fn(), onExecute = vi.fn()) {
+function batchResult(
+  itemResults: SanitaryAgendaBatchItemResultV2[],
+): SanitaryAgendaBatchResultV2 {
+  return {
+    items: itemResults,
+    executedCount: itemResults.filter((item) => item.status === "EXECUTADO")
+      .length,
+    failedCount: itemResults.filter((item) => item.status === "FALHOU").length,
+    notExecutedCount: itemResults.filter(
+      (item) => item.status === "NAO_EXECUTADO",
+    ).length,
+    retryAvailableCount: itemResults.filter((item) => item.retryAvailable)
+      .length,
+  };
+}
+
+function renderPanel(
+  onReschedule = vi.fn(),
+  onCancel = vi.fn(),
+  onExecute = vi.fn().mockResolvedValue(batchResult([])),
+  panelItems = items,
+) {
   render(
     <MemoryRouter>
       <SanitaryLocalAgendaPanelV2
-        items={items}
+        items={panelItems}
         executionProductOptions={[
           {
             id: "product-1",
@@ -216,7 +241,16 @@ describe("SanitaryLocalAgendaPanelV2", () => {
   });
 
   it("abre modal de execução, exige confirmação explícita e não mostra executar para agenda cancelada", async () => {
-    const onExecute = vi.fn().mockResolvedValue(undefined);
+    const onExecute = vi.fn().mockImplementation(async (payloads) =>
+      batchResult(
+        payloads.map((payload: { agendaId: string; clientOpId: string }) => ({
+          agendaId: payload.agendaId,
+          clientOpId: payload.clientOpId,
+          status: "EXECUTADO" as const,
+          retryAvailable: false,
+        })),
+      ),
+    );
     renderPanel(vi.fn(), vi.fn(), onExecute);
 
     expect(screen.getAllByRole("button", { name: /Executar grupo/ })).toHaveLength(1);
@@ -258,5 +292,82 @@ describe("SanitaryLocalAgendaPanelV2", () => {
         ],
       ),
     );
+  });
+
+  it("mostra sucesso parcial e reenvia somente agendas falhas ou não executadas", async () => {
+    const groupedItems = [
+      { ...items[0], id: "agenda-a", target: { ...items[0].target, label: "Animal A" } },
+      { ...items[0], id: "agenda-b", target: { ...items[0].target, label: "Animal B" } },
+      { ...items[0], id: "agenda-c", target: { ...items[0].target, label: "Animal C" } },
+    ];
+    const onExecute = vi
+      .fn()
+      .mockImplementationOnce(async (payloads) =>
+        batchResult([
+          {
+            agendaId: "agenda-a",
+            clientOpId: payloads[0].clientOpId,
+            status: "EXECUTADO",
+            retryAvailable: false,
+          },
+          {
+            agendaId: "agenda-b",
+            clientOpId: payloads[1].clientOpId,
+            status: "FALHOU",
+            retryAvailable: true,
+          },
+          {
+            agendaId: "agenda-c",
+            clientOpId: payloads[2].clientOpId,
+            status: "NAO_EXECUTADO",
+            retryAvailable: true,
+          },
+        ]),
+      )
+      .mockImplementationOnce(async (payloads) =>
+        batchResult(
+          payloads.map((payload: { agendaId: string; clientOpId: string }) => ({
+            agendaId: payload.agendaId,
+            clientOpId: payload.clientOpId,
+            status: "EXECUTADO" as const,
+            retryAvailable: false,
+          })),
+        ),
+      );
+    renderPanel(vi.fn(), vi.fn(), onExecute, groupedItems);
+    fireEvent.click(screen.getByRole("button", { name: /Executar grupo/i }));
+    fireEvent.click(screen.getByLabelText("Produto real"));
+    fireEvent.click(screen.getByRole("option", { name: "Vermífugo A · Lab" }));
+    fireEvent.change(screen.getByLabelText("Via"), {
+      target: { value: "subcutanea" },
+    });
+    fireEvent.click(
+      screen.getByLabelText("Confirmo que este manejo sanitário foi executado."),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar execução" }));
+
+    await screen.findByText("Resultado por agenda");
+    expect(screen.getByText("Animal A")).toBeInTheDocument();
+    expect(screen.getByText("Executado")).toBeInTheDocument();
+    expect(screen.getByText("Animal B")).toBeInTheDocument();
+    expect(screen.getByText("Falhou")).toBeInTheDocument();
+    expect(screen.getByText("Animal C")).toBeInTheDocument();
+    expect(screen.getByText("Não executado")).toBeInTheDocument();
+    expect(screen.getAllByText("Retry disponível")).toHaveLength(2);
+
+    const firstPayloads = onExecute.mock.calls[0][0];
+    fireEvent.click(
+      screen.getByRole("button", { name: "Reenviar 2 pendente(s)" }),
+    );
+    await waitFor(() => expect(onExecute).toHaveBeenCalledTimes(2));
+    const retryPayloads = onExecute.mock.calls[1][0];
+    expect(retryPayloads.map((payload: { agendaId: string }) => payload.agendaId)).toEqual([
+      "agenda-b",
+      "agenda-c",
+    ]);
+    expect(retryPayloads.map((payload: { clientOpId: string }) => payload.clientOpId)).toEqual([
+      firstPayloads[1].clientOpId,
+      firstPayloads[2].clientOpId,
+    ]);
   });
 });

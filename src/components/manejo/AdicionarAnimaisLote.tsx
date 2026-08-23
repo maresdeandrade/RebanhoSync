@@ -15,6 +15,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -175,6 +176,9 @@ export function AdicionarAnimaisLote({
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Adicionar animais ao lote</DialogTitle>
+          <DialogDescription>
+            Selecione os animais que serão movimentados para este lote.
+          </DialogDescription>
         </DialogHeader>
 
         <FormSection

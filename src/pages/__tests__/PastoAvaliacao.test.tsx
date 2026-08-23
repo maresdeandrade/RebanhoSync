@@ -39,6 +39,8 @@ vi.mock("@/components/ui/dialog", async () => {
     }) => (open ? React.createElement("div", null, children) : null),
     DialogContent: ({ children }: { children: React.ReactNode }) =>
       React.createElement("div", { role: "dialog" }, children),
+    DialogDescription: ({ children }: { children: React.ReactNode }) =>
+      React.createElement("p", null, children),
     DialogFooter: ({ children }: { children: React.ReactNode }) =>
       React.createElement("div", null, children),
     DialogHeader: ({ children }: { children: React.ReactNode }) =>
@@ -236,7 +238,7 @@ function mockPastoDetalheQueries({
 } = {}) {
   vi.mocked(useLiveQuery).mockImplementation(((query) => {
     const source = typeof query === "function" ? query.toString() : "";
-    if (source.includes("db.state_pastos.get")) return pasto;
+    if (source.includes("readPastoInActiveFarm")) return pasto;
     if (source.includes("state_pasto_ocupacoes")) return ocupacao ?? undefined;
     if (source.includes("event_eventos_pasto_avaliacao")) return avaliacoes;
     if (source.includes(".count()")) return 0;
@@ -273,6 +275,19 @@ describe("PastoDetalhe avaliacao/ronda", () => {
       role: "owner",
     } as unknown as ReturnType<typeof useAuth>);
     mockPastoDetalheQueries();
+  });
+
+  it("nao renderiza pasto de outra fazenda", () => {
+    mockPastoDetalheQueries({ pasto: null });
+
+    renderPastoDetalhe();
+
+    expect(
+      screen.getByRole("heading", { name: /pasto nao encontrado/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /registrar ronda/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("renderiza botao Registrar ronda", () => {
@@ -361,6 +376,51 @@ describe("PastoDetalhe avaliacao/ronda", () => {
         ["pastos", "lotes", "pasto_ocupacoes"].includes(op.table),
       ),
     ).toHaveLength(0);
+  });
+
+  it("bloqueia clique duplo e repetido enquanto a ronda está persistindo", async () => {
+    let resolveGesture: ((value: string) => void) | undefined;
+    mockedCreateGesture.mockImplementationOnce(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveGesture = resolve;
+        }),
+    );
+    renderPastoDetalhe();
+    fireEvent.click(screen.getByRole("button", { name: /Registrar ronda/i }));
+    const saveButton = screen.getByRole("button", { name: /Salvar ronda/i });
+
+    fireEvent.click(saveButton);
+    fireEvent.click(saveButton);
+    fireEvent.click(saveButton);
+
+    expect(mockedCreateGesture).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("button", { name: /Salvando ronda/i }),
+    ).toBeDisabled();
+
+    resolveGesture?.("tx-ronda");
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("desbloqueia a ronda após erro e permite nova tentativa", async () => {
+    mockedCreateGesture
+      .mockRejectedValueOnce(new Error("persistencia indisponivel"))
+      .mockResolvedValueOnce("tx-ronda-retry");
+    renderPastoDetalhe();
+    fireEvent.click(screen.getByRole("button", { name: /Registrar ronda/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Salvar ronda/i }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Salvar ronda/i }),
+      ).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Salvar ronda/i }));
+
+    await waitFor(() => expect(mockedCreateGesture).toHaveBeenCalledTimes(2));
   });
 
   it("ajusta unidade de suplemento conforme o tipo selecionado", () => {

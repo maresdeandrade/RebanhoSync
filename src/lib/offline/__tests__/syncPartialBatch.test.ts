@@ -1,11 +1,4 @@
-/**
- * Documenta o comportamento atual quando o sync-batch devolve sucesso parcial:
- * a primeira op pode ter sido aplicada no servidor (sequencial), mas qualquer REJECTED
- * faz o cliente marcar o gesto como REJECTED, registrar rejeição e reverter todas as
- * ops locais em ordem reversa — sem garantir atomicidade servidor/cliente.
- *
- * Não altera produção; não corrige atomicidade.
- */
+/** Valida reconciliação por operação para resultados remotos mistos. */
 /** @vitest-environment jsdom */
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -45,7 +38,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
   trackPilotMetric: vi.fn(async () => undefined),
 }));
 
-import { createGesture } from "../ops";
+import { createGesture, retryRejectedOperation } from "../ops";
 import { db } from "../db";
 import { pullDataForFarm } from "../pull";
 import { processGesture } from "../syncWorker";
@@ -98,7 +91,7 @@ async function getGesture(txId: string) {
   return gesture;
 }
 
-describe("sync partial batch (multi-op): cliente rollback total vs servidor possivelmente parcial", () => {
+describe("sync partial batch: reconciliação por operação", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     vi.stubGlobal("localStorage", {
@@ -129,7 +122,7 @@ describe("sync partial batch (multi-op): cliente rollback total vs servidor poss
     ]);
   });
 
-  it("com APPLIED na 1ª op e REJECTED na 2ª: REJECTED, rejeição, queue_ops retida, estado local restaurado", async () => {
+  it("APPLIED + REJECTED preserva a aplicada e retém somente a rejeitada", async () => {
     const animalId = await seedAnimal({ id: "animal-partial-batch" });
     const ts1 = new Date().toISOString();
     const ts2 = new Date().toISOString();
@@ -178,7 +171,6 @@ describe("sync partial batch (multi-op): cliente rollback total vs servidor poss
         { status: 200 },
       ),
     );
-
     await processGesture(await getGesture(txId));
 
     const gesture = await getGesture(txId);
@@ -195,13 +187,29 @@ describe("sync partial batch (multi-op): cliente rollback total vs servidor poss
     });
 
     const opsAfter = await db.queue_ops.where("client_tx_id").equals(txId).toArray();
-    expect(opsAfter).toHaveLength(2);
+    expect(opsAfter).toHaveLength(1);
+    expect(opsAfter[0]).toMatchObject({
+      client_op_id: secondOp.client_op_id,
+      sync_state: "REJECTED",
+    });
 
-    const rolledBack = await db.state_animais.get(animalId);
-    expect(rolledBack?.observacoes).toBe("seed-obs");
+    const reconciled = await db.state_animais.get(animalId);
+    expect(reconciled?.observacoes).toBe("after-op1");
+    expect(gesture.operation_results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          op_id: firstOp.client_op_id,
+          status: "APPLIED",
+          matched: true,
+        }),
+        expect.objectContaining({
+          op_id: secondOp.client_op_id,
+          status: "REJECTED",
+          matched: true,
+        }),
+      ]),
+    );
 
-    // Duas UPDATEs encadeadas no mesmo registro: rollback reverso precisa desfazer op2
-    // antes de op1 para voltar ao before_snapshot da primeira op.
     expect(firstOp.before_snapshot).toBeDefined();
     expect(secondOp.before_snapshot).toBeDefined();
     expect((secondOp.before_snapshot as { observacoes?: string })?.observacoes).toBe(
@@ -210,6 +218,247 @@ describe("sync partial batch (multi-op): cliente rollback total vs servidor poss
     expect((firstOp.before_snapshot as { observacoes?: string })?.observacoes).toBe(
       "seed-obs",
     );
+  });
+
+  it("APPLIED + REJECTED + APPLIED_ALTERED mantém somente a intermediária para reconciliação", async () => {
+    const animalId = await seedAnimal({ id: "animal-three-ops" });
+    const txId = await createGesture("farm-partial", [
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: { id: animalId, observacoes: "after-a" },
+      },
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: { id: animalId, observacoes: "after-b" },
+      },
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: { id: animalId, observacoes: "after-c" },
+      },
+    ]);
+    const [opA, opB, opC] = await db.queue_ops
+      .where("client_tx_id")
+      .equals(txId)
+      .sortBy("op_order");
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [
+            { op_id: opA.client_op_id, status: "APPLIED" },
+            {
+              op_id: opB.client_op_id,
+              status: "REJECTED",
+              reason_code: "TEST_MIDDLE_REJECT",
+              reason_message: "middle rejected",
+            },
+            {
+              op_id: opC.client_op_id,
+              status: "APPLIED_ALTERED",
+              altered: { dedup: "collision_noop" },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+    vi.mocked(pullDataForFarm).mockImplementationOnce(async () => {
+      const current = await db.state_animais.get(animalId);
+      if (!current) throw new Error("animal missing during pull");
+      await db.state_animais.put({
+        ...current,
+        observacoes: "remote-canonical-c",
+      });
+    });
+
+    await processGesture(await getGesture(txId));
+
+    expect(await db.queue_ops.where("client_tx_id").equals(txId).toArray()).toEqual([
+      expect.objectContaining({
+        client_op_id: opB.client_op_id,
+        sync_state: "REJECTED",
+      }),
+    ]);
+    expect((await db.state_animais.get(animalId))?.observacoes).toBe(
+      "remote-canonical-c",
+    );
+    expect(pullDataForFarm).toHaveBeenCalledWith("farm-partial", ["animais"]);
+    expect((await getGesture(txId)).operation_results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ op_id: opA.client_op_id, status: "APPLIED" }),
+        expect.objectContaining({ op_id: opB.client_op_id, status: "REJECTED" }),
+        expect.objectContaining({
+          op_id: opC.client_op_id,
+          status: "APPLIED_ALTERED",
+        }),
+      ]),
+    );
+  });
+
+  it("reload e retry repetido preservam IDs e não reenviam operações já aplicadas", async () => {
+    const animalId = await seedAnimal({ id: "animal-reload-retry" });
+    const txId = await createGesture("farm-partial", [
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: { id: animalId, observacoes: "applied" },
+      },
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: { id: animalId, observacoes: "retry-me" },
+      },
+    ]);
+    const [appliedOp, rejectedOp] = await db.queue_ops
+      .where("client_tx_id")
+      .equals(txId)
+      .sortBy("op_order");
+
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          results: [
+            { op_id: appliedOp.client_op_id, status: "APPLIED" },
+            {
+              op_id: rejectedOp.client_op_id,
+              status: "REJECTED",
+              reason_code: "TEST_RETRYABLE_REJECT",
+              reason_message: "retry explicitly",
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+    await processGesture(await getGesture(txId));
+
+    const rejection = (await db.queue_rejections.toArray())[0];
+    await processGesture(await getGesture(txId));
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    await retryRejectedOperation(rejection);
+    await expect(retryRejectedOperation(rejection)).rejects.toThrow(
+      "REJECTED_OPERATION_ALREADY_QUEUED",
+    );
+
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          results: [{ op_id: rejectedOp.client_op_id, status: "APPLIED" }],
+        }),
+        { status: 200 },
+      ),
+    );
+    await processGesture(await getGesture(txId));
+
+    const secondRequest = JSON.parse(
+      String(vi.mocked(fetch).mock.calls[1]?.[1]?.body),
+    ) as { client_tx_id: string; ops: Array<{ client_op_id: string }> };
+    expect(secondRequest.client_tx_id).toBe(txId);
+    expect(secondRequest.ops.map((op) => op.client_op_id)).toEqual([
+      rejectedOp.client_op_id,
+    ]);
+    expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(0);
+    expect((await getGesture(txId)).status).toBe("DONE");
+    expect(await db.queue_rejections.count()).toBe(1);
+  });
+
+  it("timeout após aplicação remota mantém IDs para replay do mesmo fato", async () => {
+    const animalId = await seedAnimal({ id: "animal-timeout" });
+    const txId = await createGesture("farm-partial", [
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: { id: animalId, observacoes: "timeout-fact" },
+      },
+    ]);
+    const [operation] = await db.queue_ops
+      .where("client_tx_id")
+      .equals(txId)
+      .toArray();
+    vi.mocked(fetch)
+      .mockRejectedValueOnce(new Error("network timeout after remote commit"))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            results: [{ op_id: operation.client_op_id, status: "APPLIED" }],
+          }),
+          { status: 200 },
+        ),
+      );
+
+    await processGesture(await getGesture(txId));
+    expect((await getGesture(txId)).status).toBe("PENDING");
+    expect((await db.queue_ops.get(operation.client_op_id))?.client_tx_id).toBe(
+      txId,
+    );
+
+    await processGesture(await getGesture(txId));
+    const requests = vi.mocked(fetch).mock.calls.map(([, init]) =>
+      JSON.parse(String(init?.body)),
+    ) as Array<{ client_tx_id: string; ops: Array<{ client_op_id: string }> }>;
+    expect(requests.map((request) => request.client_tx_id)).toEqual([txId, txId]);
+    expect(requests.map((request) => request.ops[0]?.client_op_id)).toEqual([
+      operation.client_op_id,
+      operation.client_op_id,
+    ]);
+    expect(await db.queue_ops.count()).toBe(0);
+    expect((await getGesture(txId)).status).toBe("DONE");
+  });
+
+  it("correção explícita cria novo comando sem apagar a rejeição original", async () => {
+    const animalId = await seedAnimal({ id: "animal-explicit-correction" });
+    const originalTxId = await createGesture("farm-partial", [
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: { id: animalId, observacoes: "invalid-command" },
+      },
+    ]);
+    const [originalOperation] = await db.queue_ops
+      .where("client_tx_id")
+      .equals(originalTxId)
+      .toArray();
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          results: [
+            {
+              op_id: originalOperation.client_op_id,
+              status: "REJECTED",
+              reason_code: "VALIDATION_COMMAND",
+              reason_message: "Corrija os dados e envie um novo comando.",
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+    await processGesture(await getGesture(originalTxId));
+
+    const correctedTxId = await createGesture("farm-partial", [
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: { id: animalId, observacoes: "corrected-command" },
+      },
+    ]);
+    const [correctedOperation] = await db.queue_ops
+      .where("client_tx_id")
+      .equals(correctedTxId)
+      .toArray();
+
+    expect(correctedTxId).not.toBe(originalTxId);
+    expect(correctedOperation.client_op_id).not.toBe(
+      originalOperation.client_op_id,
+    );
+    expect(await db.queue_ops.get(originalOperation.client_op_id)).toMatchObject({
+      sync_state: "REJECTED",
+    });
+    expect(await db.queue_rejections.count()).toBe(1);
   });
 
   it("em duplicidade de agenda sanitaria, faz rollback local e puxa agenda/eventos do servidor", async () => {

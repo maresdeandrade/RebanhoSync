@@ -3,6 +3,7 @@ import type {
   Gesture,
   Operation,
   OperationInput,
+  Rejection,
   SanitarioAgendaAnimalLocalV2,
   SanitarioAgendaCreateDraftV2,
   SanitarioAgendaLocalV2,
@@ -16,6 +17,77 @@ import {
 } from "@/lib/animals/taxonomyFactsContract";
 import { buildCommercialPurchaseQueueOperation } from "@/lib/comercial/animalPurchaseSync";
 import { buildCommercialOperationQueueOperation } from "@/lib/comercial/commercialOperationSync";
+
+export type CreateGestureDiagnostic = {
+  stage: string;
+  clientTxId?: string;
+  operationCount: number;
+  operationIndex?: number;
+  table?: string;
+  action?: string;
+  error: {
+    name: string;
+    message: string;
+    stack?: string;
+    cause?: { name: string; message: string };
+    dexie?: Record<string, unknown>;
+  };
+};
+
+const createGestureDiagnostics = new WeakMap<object, CreateGestureDiagnostic>();
+
+function describeCreateGestureError(error: unknown) {
+  const value =
+    error && typeof error === "object"
+      ? (error as Record<string, unknown>)
+      : null;
+  const cause = value?.cause;
+  const causeRecord =
+    cause && typeof cause === "object"
+      ? (cause as Record<string, unknown>)
+      : null;
+  const dexieKeys = ["inner", "failures", "failuresByPos", "failedKeys"];
+  const dexie = value
+    ? Object.fromEntries(
+        dexieKeys
+          .filter((key) => value[key] !== undefined)
+          .map((key) => [key, value[key]]),
+      )
+    : {};
+  return {
+    name: typeof value?.name === "string" ? value.name : typeof error,
+    message: typeof value?.message === "string" ? value.message : String(error),
+    ...(typeof value?.stack === "string" ? { stack: value.stack } : {}),
+    ...(typeof causeRecord?.message === "string"
+      ? {
+          cause: {
+            name:
+              typeof causeRecord.name === "string" ? causeRecord.name : typeof cause,
+            message: causeRecord.message,
+          },
+        }
+      : {}),
+    ...(Object.keys(dexie).length > 0 ? { dexie } : {}),
+  };
+}
+
+function recordCreateGestureFailure(
+  error: unknown,
+  context: Omit<CreateGestureDiagnostic, "error">,
+): never {
+  const diagnostic = { ...context, error: describeCreateGestureError(error) };
+  if (error && typeof error === "object") {
+    createGestureDiagnostics.set(error, diagnostic);
+  }
+  console.error("[createGesture] failed", diagnostic);
+  throw error;
+}
+
+export function getCreateGestureDiagnostic(error: unknown) {
+  return error && typeof error === "object"
+    ? createGestureDiagnostics.get(error)
+    : undefined;
+}
 
 function getRecordKey(record: Record<string, unknown>): string | null {
   if (typeof record.id === "string") return record.id;
@@ -43,6 +115,12 @@ const getClientId = () => {
 
 function assertAllowedOfflinePushSurface(op: OperationInput) {
   const localStoreName = getLocalStoreName(op.table);
+
+  if (op.table === "animais_sociedade") {
+    throw new Error(
+      "LEGACY_SOCIETY_WRITE_BLOCKED: use sociedades_pecuarias/sociedade_animais",
+    );
+  }
 
   if (op.table.startsWith("state_")) {
     throw new Error(
@@ -89,15 +167,43 @@ export const createGesture = async (
     clientOpIds?: readonly string[];
   } = {},
 ) => {
-  for (const op of ops_input) {
-    assertAllowedOfflinePushSurface(op);
+  for (const [operationIndex, op] of ops_input.entries()) {
+    try {
+      assertAllowedOfflinePushSurface(op);
+    } catch (error) {
+      recordCreateGestureFailure(error, {
+        stage: "validate-input",
+        operationCount: ops_input.length,
+        operationIndex,
+        table: op.table,
+        action: op.action,
+      });
+    }
   }
 
   const client_tx_id = options.clientTxId ?? crypto.randomUUID();
   const client_recorded_at = new Date().toISOString();
-  const client_id = getClientId();
+  let client_id: string;
+  try {
+    client_id = getClientId();
+  } catch (error) {
+    recordCreateGestureFailure(error, {
+      stage: "create-identifiers",
+      clientTxId: client_tx_id,
+      operationCount: ops_input.length,
+    });
+  }
 
-  const existingGesture = await db.queue_gestures.get(client_tx_id);
+  let existingGesture: Gesture | undefined;
+  try {
+    existingGesture = await db.queue_gestures.get(client_tx_id);
+  } catch (error) {
+    recordCreateGestureFailure(error, {
+      stage: "check-existing-gesture",
+      clientTxId: client_tx_id,
+      operationCount: ops_input.length,
+    });
+  }
   if (existingGesture) {
     const existingOps = await db.queue_ops
       .where("client_tx_id")
@@ -125,11 +231,23 @@ export const createGesture = async (
 
   const ops: Operation[] = ops_input.map((op, index) => {
     const client_op_id = options.clientOpIds?.[index] ?? crypto.randomUUID();
-    const normalizedRecord = normalizeTableMutationRecord(
-      op.table,
-      op.record,
-      fazenda_id,
-    );
+    let normalizedRecord: Record<string, unknown>;
+    try {
+      normalizedRecord = normalizeTableMutationRecord(
+        op.table,
+        op.record,
+        fazenda_id,
+      );
+    } catch (error) {
+      recordCreateGestureFailure(error, {
+        stage: "normalize-operation",
+        clientTxId: client_tx_id,
+        operationCount: ops_input.length,
+        operationIndex: index,
+        table: op.table,
+        action: op.action,
+      });
+    }
 
     return {
       ...op,
@@ -226,37 +344,71 @@ export const createGesture = async (
     ...sanitarioAgendaV2.flatMap(({ queueOp }) => (queueOp ? [queueOp] : [])),
   ];
 
-  for (const op of queueOps) {
-    validateOperationPayloadContracts(op);
+  for (const [operationIndex, op] of queueOps.entries()) {
+    try {
+      validateOperationPayloadContracts(op);
+    } catch (error) {
+      recordCreateGestureFailure(error, {
+        stage: "validate-operation",
+        clientTxId: client_tx_id,
+        operationCount: queueOps.length,
+        operationIndex,
+        table: op.table,
+        action: op.action,
+      });
+    }
   }
 
-  await db.transaction(
-    "rw",
-    [
-      db.queue_gestures,
-      db.queue_ops,
-      ...getAffectedStores(ops),
-      ...(sanitarioAgendaV2.length > 0
-        ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
-        : []),
-    ],
-    async () => {
-      await db.queue_gestures.add(gesture);
-      await db.queue_ops.bulkAdd(queueOps);
+  let transactionStage = "transaction-start";
+  let transactionOperationIndex: number | undefined;
+  await db
+    .transaction(
+      "rw",
+      [
+        db.queue_gestures,
+        db.queue_ops,
+        ...getAffectedStores(ops),
+        ...(sanitarioAgendaV2.length > 0
+          ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
+          : []),
+      ],
+      async () => {
+        transactionStage = "write-gesture";
+        await db.queue_gestures.add(gesture);
+        transactionStage = "write-operations";
+        await db.queue_ops.bulkAdd(queueOps);
 
-      for (const op of ops) {
-        await applyOpLocal(op);
-      }
-      if (sanitarioAgendaV2.length > 0) {
-        await db.ops_sanitario_agenda_v2.bulkPut(
-          sanitarioAgendaV2.map(({ agenda }) => agenda),
-        );
-        await db.ops_sanitario_agenda_animais_v2.bulkPut(
-          sanitarioAgendaV2.map(({ animal }) => animal),
-        );
-      }
-    },
-  );
+        transactionStage = "apply-local-operation";
+        for (const [operationIndex, op] of ops.entries()) {
+          transactionOperationIndex = operationIndex;
+          await applyOpLocal(op);
+        }
+        transactionOperationIndex = undefined;
+        if (sanitarioAgendaV2.length > 0) {
+          await db.ops_sanitario_agenda_v2.bulkPut(
+            sanitarioAgendaV2.map(({ agenda }) => agenda),
+          );
+          await db.ops_sanitario_agenda_animais_v2.bulkPut(
+            sanitarioAgendaV2.map(({ animal }) => animal),
+          );
+        }
+      },
+    )
+    .catch((error) => {
+      const op =
+        transactionOperationIndex === undefined
+          ? undefined
+          : ops[transactionOperationIndex];
+      recordCreateGestureFailure(error, {
+        stage: transactionStage,
+        clientTxId: client_tx_id,
+        operationCount: queueOps.length,
+        ...(transactionOperationIndex === undefined
+          ? {}
+          : { operationIndex: transactionOperationIndex }),
+        ...(op ? { table: op.table, action: op.action } : {}),
+      });
+    });
 
   return client_tx_id;
 };
@@ -331,6 +483,35 @@ export const applyOpLocal = async (op: Operation) => {
   }
 };
 
+export const reapplyOpLocal = async (op: Operation) => {
+  const localStoreName = getLocalStoreName(op.table);
+  const store = db.table(localStoreName);
+  if (!store) return;
+
+  const recordKey = getRecordKey(op.record);
+  if (!recordKey) return;
+
+  if (op.action === "INSERT") {
+    await store.put(op.record);
+    return;
+  }
+
+  if (op.action === "UPDATE") {
+    const existing = await store.get(recordKey);
+    await store.put(existing ? { ...existing, ...op.record } : op.record);
+    return;
+  }
+
+  if (op.action === "DELETE") {
+    await store.update(recordKey, {
+      deleted_at:
+        typeof op.record.deleted_at === "string"
+          ? op.record.deleted_at
+          : new Date().toISOString(),
+    });
+  }
+};
+
 export const rollbackOpLocal = async (op: Operation) => {
   if (!op.before_snapshot && op.action !== "INSERT") return;
 
@@ -354,4 +535,61 @@ export function getAffectedStores(ops: Operation[]) {
   return Array.from(tableNames)
     .map((t) => db.table(t))
     .filter(Boolean);
+}
+
+export async function retryRejectedOperation(rejection: Rejection) {
+  const operation = await db.queue_ops.get(rejection.client_op_id);
+  if (!operation) {
+    throw new Error("REJECTED_OPERATION_NOT_AVAILABLE");
+  }
+
+  return db.transaction(
+    "rw",
+    [db.queue_gestures, db.queue_ops, ...getAffectedStores([operation])],
+    async () => {
+      const [currentOperation, gesture] = await Promise.all([
+        db.queue_ops.get(operation.client_op_id),
+        db.queue_gestures.get(rejection.client_tx_id),
+      ]);
+
+      if (!currentOperation || !gesture) {
+        throw new Error("REJECTED_OPERATION_NOT_AVAILABLE");
+      }
+      if (
+        currentOperation.client_tx_id !== rejection.client_tx_id ||
+        gesture.fazenda_id !== rejection.fazenda_id
+      ) {
+        throw new Error("REJECTED_OPERATION_IDENTITY_MISMATCH");
+      }
+      if (
+        currentOperation.sync_state !== "REJECTED" &&
+        !(
+          currentOperation.sync_state === undefined &&
+          gesture.status === "REJECTED"
+        )
+      ) {
+        throw new Error("REJECTED_OPERATION_ALREADY_QUEUED");
+      }
+
+      await reapplyOpLocal(currentOperation);
+      await db.queue_ops.update(currentOperation.client_op_id, {
+        sync_state: "PENDING",
+        retry_count: (currentOperation.retry_count ?? 0) + 1,
+        next_attempt_at: undefined,
+        blocked_reason: undefined,
+      });
+      await db.queue_gestures.update(gesture.client_tx_id, {
+        status: "PENDING",
+        sync_result: undefined,
+        completed_at: undefined,
+        retry_count: (gesture.retry_count ?? 0) + 1,
+        last_error: "Retry explícito da operação rejeitada com identidade preservada",
+      });
+
+      return {
+        clientTxId: gesture.client_tx_id,
+        clientOpId: currentOperation.client_op_id,
+      };
+    },
+  );
 }

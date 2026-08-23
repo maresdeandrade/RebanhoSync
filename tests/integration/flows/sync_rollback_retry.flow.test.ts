@@ -123,12 +123,25 @@ describe("flow: sync rollback + retry", () => {
       },
     ]);
 
+    const operation = await db.queue_ops
+      .where("client_tx_id")
+      .equals(clientTxId)
+      .first();
+
     vi.mocked(fetch)
       .mockRejectedValueOnce(new Error("network down"))
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ results: [{ status: "APPLIED", op_id: "any" }] }), {
-          status: 200,
-        }),
+        new Response(
+          JSON.stringify({
+            results: [
+              {
+                status: "APPLIED",
+                op_id: operation?.client_op_id,
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
       );
 
     await processGesture(await getGesture(clientTxId));

@@ -252,6 +252,118 @@ describe("animal species in create/edit forms", () => {
     expect(ops.some((op) => op.table === "eventos_financeiro")).toBe(false);
   });
 
+  it("owner cria nova sociedade, animal e vínculo na mesma gesture", async () => {
+    const user = userEvent.setup();
+    mockedUseLiveQuery.mockImplementation(((query) => {
+      const source = typeof query === "function" ? query.toString() : "";
+      if (source.includes("state_contrapartes")) {
+        return [{ id: "contraparte-1", fazenda_id: "farm-1", nome: "Sócio" }];
+      }
+      return [];
+    }) as typeof useLiveQuery);
+
+    render(
+      <MemoryRouter>
+        <AnimalNovo />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText(/Identificação/i), {
+      target: { value: "SOC-NOVA-01" },
+    });
+    await user.click(screen.getByRole("tab", { name: /Origem/i }));
+    await user.click(screen.getByRole("button", { name: /^Sociedade$/i }));
+    fireEvent.change(screen.getByLabelText(/^Nome/i), {
+      target: { value: "Nova parceria" },
+    });
+    fireEvent.change(screen.getByLabelText(/Contraparte/i), {
+      target: { value: "contraparte-1" },
+    });
+    fireEvent.change(screen.getByLabelText(/Percentual da Fazenda/i), {
+      target: { value: "60" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Salvar animal/i })[0]);
+
+    await waitFor(() => expect(mockedCreateGesture).toHaveBeenCalledTimes(1));
+    const ops = mockedCreateGesture.mock.calls[0]?.[1] ?? [];
+    expect(ops.map((op) => op.table)).toEqual([
+      "sociedades_pecuarias",
+      "animais",
+      "sociedade_animais",
+    ]);
+    expect(ops.some((op) => op.table === "animais_sociedade")).toBe(false);
+  });
+
+  it("manager reutiliza sociedade existente e cria somente animal e vínculo", async () => {
+    const user = userEvent.setup();
+    mockedUseAuth.mockReturnValue({
+      activeFarmId: "farm-1",
+      role: "manager",
+      farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+    } as ReturnType<typeof useAuth>);
+    mockedUseLiveQuery.mockImplementation(((query) => {
+      const source = typeof query === "function" ? query.toString() : "";
+      if (source.includes("state_sociedades_pecuarias")) {
+        return [
+          {
+            id: "sociedade-1",
+            fazenda_id: "farm-1",
+            nome: "Sociedade existente",
+            status: "ativa",
+            deleted_at: null,
+          },
+        ];
+      }
+      return [];
+    }) as typeof useLiveQuery);
+
+    render(
+      <MemoryRouter>
+        <AnimalNovo />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText(/Identificação/i), {
+      target: { value: "SOC-EXISTENTE-01" },
+    });
+    await user.click(screen.getByRole("tab", { name: /Origem/i }));
+    await user.click(screen.getByRole("button", { name: /^Sociedade$/i }));
+    fireEvent.change(screen.getByLabelText(/^Sociedade/i), {
+      target: { value: "sociedade-1" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Salvar animal/i })[0]);
+
+    await waitFor(() => expect(mockedCreateGesture).toHaveBeenCalledTimes(1));
+    expect(mockedCreateGesture.mock.calls[0]?.[1].map((op) => op.table)).toEqual([
+      "animais",
+      "sociedade_animais",
+    ]);
+  });
+
+  it("cowboy é bloqueado antes de persistir cadastro societário", async () => {
+    const user = userEvent.setup();
+    mockedUseAuth.mockReturnValue({
+      activeFarmId: "farm-1",
+      role: "cowboy",
+      farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+    } as ReturnType<typeof useAuth>);
+
+    render(
+      <MemoryRouter>
+        <AnimalNovo />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText(/Identificação/i), {
+      target: { value: "SOC-BLOQUEADO-01" },
+    });
+    await user.click(screen.getByRole("tab", { name: /Origem/i }));
+    await user.click(screen.getByRole("button", { name: /^Sociedade$/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Salvar animal/i })[0]);
+
+    expect(mockedCreateGesture).not.toHaveBeenCalled();
+  });
+
   it("preserva especie existente na edicao quando o campo nao muda", async () => {
     const existingAnimal = makeAnimal({ especie: "bovino" });
     mockedUseLiveQuery.mockImplementation(((query) => {

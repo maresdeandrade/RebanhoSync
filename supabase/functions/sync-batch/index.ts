@@ -3,7 +3,9 @@ import {
   buildInternalErrorResult,
   buildMutationMatch,
   inferAgendaSourceTaskIdForEventInsert,
+  isPersistedOperationReplay,
   normalizeDbError,
+  resolveOperationPrimaryKey,
   type Operation,
   prevalidateAntiTeleport,
   readLinkedReproductionType,
@@ -391,51 +393,6 @@ Deno.serve(async (req: Request) => {
           );
           continue;
         }
-        if (op.table === "finance_categories" && op.action === "INSERT") {
-          const { data: existingCat, error: existingCatError } = await supabase
-            .from("finance_categories")
-            .select("id, slug, is_default, tipo, grupo, ativo")
-            .eq("fazenda_id", fazenda_id)
-            .eq("slug", record.slug)
-            .maybeSingle();
-
-          if (existingCatError) {
-            results.push({
-              op_id: op.client_op_id,
-              status: "RETRYABLE",
-              retryable: true,
-              reason_code: "FINANCE_CATEGORY_LOOKUP_FAILED",
-              reason_message: existingCatError.message,
-            });
-            continue;
-          }
-
-          if (existingCat) {
-            const incomingId = record.id;
-            const incomingIsDefault = record.is_default;
-
-            // Se o slug já existe, validamos a colisão.
-            // Se for a mesma categoria canônica default (mesmo ID e is_default=true)
-            if (existingCat.id === incomingId && existingCat.is_default === true && incomingIsDefault === true) {
-              results.push({
-                op_id: op.client_op_id,
-                status: "APPLIED_ALTERED",
-                altered: { dedup: "collision_noop" },
-              });
-              continue;
-            }
-
-            // Qualquer outra divergência de ID para o mesmo slug, ou se não for default
-            results.push({
-              op_id: op.client_op_id,
-              status: "CONFLICT",
-              reason_code: "finance_category_slug_already_exists",
-              reason_message: "Categoria com o mesmo slug já existe com identidade ou contrato divergente.",
-            });
-            continue;
-          }
-        }
-
         if (isSanitarioSyncV2Operation(rawOp)) {
           if (!serviceSupabase) {
             results.push(sanitarioSyncV2DependencyBlocked(rawOp));
@@ -809,6 +766,98 @@ Deno.serve(async (req: Request) => {
         );
         if (TABLES_WITH_FAZENDA.has(op.table)) {
           record.fazenda_id = fazenda_id; // Always use request fazenda_id
+        }
+
+        const primaryKey = resolveOperationPrimaryKey({ ...op, record });
+        if (primaryKey) {
+          let replayQuery = supabase
+            .from(op.table)
+            .select("*")
+            .eq(primaryKey.field, primaryKey.value);
+          if (TABLES_WITH_FAZENDA.has(op.table)) {
+            replayQuery = replayQuery.eq("fazenda_id", fazenda_id);
+          }
+          const { data: existingOperation, error: replayLookupError } =
+            await replayQuery.maybeSingle();
+
+          if (replayLookupError) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "RETRYABLE",
+              retryable: true,
+              reason_code: "OPERATION_REPLAY_LOOKUP_FAILED",
+              reason_message: replayLookupError.message,
+            });
+            continue;
+          }
+
+          if (
+            existingOperation &&
+            isPersistedOperationReplay(
+              existingOperation as Record<string, unknown>,
+              op,
+              client_tx_id,
+            )
+          ) {
+            results.push({ op_id: op.client_op_id, status: "APPLIED" });
+            continue;
+          }
+
+          if (existingOperation && op.action === "INSERT") {
+            results.push({
+              op_id: op.client_op_id,
+              status: "REJECTED",
+              reason_code: "OPERATION_IDENTITY_CONFLICT",
+              reason_message:
+                "Primary key already exists with different operation identity",
+            });
+            continue;
+          }
+        }
+
+        if (op.table === "finance_categories" && op.action === "INSERT") {
+          const { data: existingCat, error: existingCatError } = await supabase
+            .from("finance_categories")
+            .select("id, slug, is_default, tipo, grupo, ativo")
+            .eq("fazenda_id", fazenda_id)
+            .eq("slug", record.slug)
+            .maybeSingle();
+
+          if (existingCatError) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "RETRYABLE",
+              retryable: true,
+              reason_code: "FINANCE_CATEGORY_LOOKUP_FAILED",
+              reason_message: existingCatError.message,
+            });
+            continue;
+          }
+
+          if (existingCat) {
+            const incomingId = record.id;
+            const incomingIsDefault = record.is_default;
+
+            // Se o slug já existe, validamos a colisão.
+            // Se for a mesma categoria canônica default (mesmo ID e is_default=true)
+            if (existingCat.id === incomingId && existingCat.is_default === true && incomingIsDefault === true) {
+              results.push({
+                op_id: op.client_op_id,
+                status: "APPLIED_ALTERED",
+                altered: { dedup: "collision_noop" },
+              });
+              continue;
+            }
+
+            // Qualquer outra divergência de ID para o mesmo slug, ou se não for default
+            results.push({
+              op_id: op.client_op_id,
+              status: "CONFLICT",
+              reason_code: "finance_category_slug_already_exists",
+              reason_message: "Categoria com o mesmo slug já existe com identidade ou contrato divergente.",
+            });
+            continue;
+          }
         }
 
         const sanitaryMovementIssue = validateSanitarioInventoryMovementRecord(
@@ -1529,7 +1578,12 @@ Deno.serve(async (req: Request) => {
           }
           query = supabase
             .from(op.table)
-            .update({ deleted_at: new Date().toISOString() })
+            .update({
+              deleted_at: new Date().toISOString(),
+              client_id,
+              client_op_id: op.client_op_id,
+              client_tx_id,
+            })
             .match(match)
             .select(); // Request representation to avoid PGRST204
         }

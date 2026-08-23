@@ -46,11 +46,13 @@ import {
 } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { AnimalMovementHistoryTable } from "@/features/occupancy/AnimalMovementHistoryTable";
 import { OccupancyEntryInfo } from "@/features/occupancy";
+import { useOccupancyData } from "@/features/occupancy/useOccupancyData";
 import { Input } from "@/components/ui/input";
 
 import { calculateLoteMetrics } from "@/features/occupancy/cockpitManejoAdapter";
 import { TimelineFactual } from "@/components/timeline/TimelineFactual";
 import { useAuth } from "@/hooks/useAuth";
+import { readLoteInActiveFarm } from "@/pages/detailFarmIsolation";
 import { useLoteWithdrawal } from "@/lib/sanitario/hooks/useWithdrawal";
 import { WithdrawalBadgePanel } from "@/components/sanitario/WithdrawalBadgePanel";
 import { SanitaryLotSummaryPanelV2 } from "@/components/sanitario/SanitaryLotSummaryPanelV2";
@@ -202,24 +204,35 @@ export default function LoteDetalhe() {
 
   const { farmLifecycleConfig, activeFarmId } = useAuth();
   const weightFreshnessDays = farmLifecycleConfig?.weightFreshnessDays;
-  const carenciaModel = useLoteWithdrawal(id ?? null, activeFarmId ?? null);
 
   // Dexie Reactive Queries
   const lote = useLiveQuery(
-    () => (id ? db.state_lotes.get(id) : undefined),
-    [id],
+    () => readLoteInActiveFarm(id, activeFarmId),
+    [id, activeFarmId],
   );
-  const pasto = useLiveQuery(
-    () => (lote?.pasto_id ? db.state_pastos.get(lote.pasto_id) : undefined),
-    [lote?.pasto_id],
+  const carenciaModel = useLoteWithdrawal(
+    lote?.id ?? null,
+    activeFarmId ?? null,
   );
-  const touro = useLiveQuery(
-    () => (lote?.touro_id ? db.state_animais.get(lote.touro_id) : undefined),
-    [lote?.touro_id],
-  );
+  const pasto = useLiveQuery(async () => {
+    if (!lote?.pasto_id || !activeFarmId) return undefined;
+    const candidate = await db.state_pastos.get(lote.pasto_id);
+    return candidate?.fazenda_id === activeFarmId ? candidate : undefined;
+  }, [lote?.pasto_id, activeFarmId]);
+  const touro = useLiveQuery(async () => {
+    if (!lote?.touro_id || !activeFarmId) return undefined;
+    const candidate = await db.state_animais.get(lote.touro_id);
+    return candidate?.fazenda_id === activeFarmId ? candidate : undefined;
+  }, [lote?.touro_id, activeFarmId]);
   const animais = useLiveQuery(
-    () => (id ? db.state_animais.where("lote_id").equals(id).toArray() : []),
-    [id],
+    () =>
+      lote && activeFarmId
+        ? db.state_animais
+            .where("[fazenda_id+lote_id]")
+            .equals([activeFarmId, lote.id])
+            .toArray()
+        : [],
+    [lote?.id, activeFarmId],
   );
   const sanitaryProtocolCatalogV2 = useLiveQuery(
     () =>
@@ -269,15 +282,61 @@ export default function LoteDetalhe() {
     [lote?.fazenda_id],
   );
 
-  const events = useLiveQuery(() => db.event_eventos.toArray()) ?? EMPTY_ARRAY;
-  const pesagens = useLiveQuery(() => db.event_eventos_pesagem.toArray()) ?? EMPTY_ARRAY;
-  const eccs = useLiveQuery(() => db.event_eventos_ecc.toArray()) ?? EMPTY_ARRAY;
-  const movimentacoes = useLiveQuery(() => db.event_eventos_movimentacao.toArray()) ?? EMPTY_ARRAY;
-  const comerciais = useLiveQuery(() => db.event_eventos_comercial.toArray()) ?? EMPTY_ARRAY;
-  const agendaItens = useLiveQuery(() => db.state_agenda_itens.toArray()) ?? EMPTY_ARRAY;
-  const pastoOcupacoes = useLiveQuery(() => db.state_pasto_ocupacoes.toArray()) ?? EMPTY_ARRAY;
+  const events = useLiveQuery(
+    () =>
+      lote && activeFarmId
+        ? db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [lote?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const pesagens = useLiveQuery(
+    () =>
+      lote && activeFarmId
+        ? db.event_eventos_pesagem.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [lote?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const eccs = useLiveQuery(
+    () =>
+      lote && activeFarmId
+        ? db.event_eventos_ecc.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [lote?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const movimentacoes = useLiveQuery(
+    () =>
+      lote && activeFarmId
+        ? db.event_eventos_movimentacao.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [lote?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const comerciais = useLiveQuery(
+    () =>
+      lote && activeFarmId
+        ? db.event_eventos_comercial.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [lote?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const agendaItens = useLiveQuery(
+    () =>
+      lote && activeFarmId
+        ? db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [lote?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
+  const pastoOcupacoes = useLiveQuery(
+    () =>
+      lote && activeFarmId
+        ? db.state_pasto_ocupacoes.where("fazenda_id").equals(activeFarmId).toArray()
+        : [],
+    [lote?.id, activeFarmId],
+  ) ?? EMPTY_ARRAY;
 
   const referenceDate = useMemo(() => new Date().toISOString(), []);
+  const { allAnimalPeriods } = useOccupancyData(
+    activeFarmId ?? "",
+    referenceDate,
+  );
 
   // Regulatory Read Model
   const regulatoryReadModel = useMemo(
@@ -288,9 +347,9 @@ export default function LoteDetalhe() {
 
   // Computação das Métricas do Cockpit
   const loteMetrics = useMemo(() => {
-    if (!id || !animais) return null;
+    if (!lote || !animais) return null;
     return calculateLoteMetrics(
-      id,
+      lote.id,
       referenceDate,
       weightFreshnessDays,
       animais,
@@ -301,17 +360,17 @@ export default function LoteDetalhe() {
       agendaItens,
       pastoOcupacoes
     );
-  }, [id, referenceDate, weightFreshnessDays, animais, events, pesagens, eccs, movimentacoes, agendaItens, pastoOcupacoes]);
+  }, [lote, referenceDate, weightFreshnessDays, animais, events, pesagens, eccs, movimentacoes, agendaItens, pastoOcupacoes]);
 
   // Unified Timeline selector
   const timelineItems = useMemo(() => {
-    if (!id || !events || !animais) return [];
+    if (!lote || !events || !animais) return [];
     const activeAnimalIds = new Set(animais.filter(a => a.status === "ativo").map(a => a.id));
     const animalMap = new Map(animais.map(a => [a.id, a.identificacao]));
 
     const loteEvents = events.filter(e => {
       if (e.deleted_at) return false;
-      const isLoteTarget = e.lote_id === id;
+      const isLoteTarget = e.lote_id === lote.id;
       const isAnimalTarget = e.animal_id && activeAnimalIds.has(e.animal_id);
       return isLoteTarget || isAnimalTarget;
     });
@@ -362,33 +421,20 @@ export default function LoteDetalhe() {
         detalhe: detail,
       };
     });
-  }, [id, events, pesagens, eccs, comerciais, animais]);
+  }, [lote, events, pesagens, eccs, comerciais, animais]);
 
-  // Tempo de permanência histórico para a tabela antiga
+  // Histórico factual canônico de permanência no lote
   const loteAnimalPeriods = useMemo(() => {
-    if (!id || !movimentacoes || !events) return [];
-    // We map movements to compute active periods for the table
-    // A simplified layout that filters movements related to this lote
-    const loteMovs = movimentacoes.filter(m => m.to_lote_id === id || m.from_lote_id === id);
-    return loteMovs.map(m => {
-      const ev = events.find(e => e.id === m.evento_id);
-      const anim = animais.find(a => a.id === ev?.animal_id);
-      return {
-        id: m.id,
-        loteId: id,
-        pastoId: m.to_pasto_id || "",
-        animalId: ev?.animal_id || "",
-        animalIdentificacao: anim?.identificacao || "",
-        entradaAt: ev?.occurred_at || "",
-        saidaAt: m.from_lote_id === id ? ev?.occurred_at : null,
-      };
-    });
-  }, [id, movimentacoes, events, animais]);
+    if (!lote) return [];
+    return allAnimalPeriods.filter((period) => period.loteId === lote.id);
+  }, [allAnimalPeriods, lote]);
 
   const loteComerciais = useMemo(() => {
-    if (!id || !comerciais) return [];
-    return comerciais.filter((item) => item.lote_id === id && !item.deleted_at);
-  }, [id, comerciais]);
+    if (!lote || !comerciais) return [];
+    return comerciais.filter(
+      (item) => item.lote_id === lote.id && !item.deleted_at,
+    );
+  }, [lote, comerciais]);
 
   const animalEntradaMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -436,7 +482,7 @@ export default function LoteDetalhe() {
     }));
   }, [animais]);
   const sanitaryFutureAgendaV2 = useMemo(() => {
-    if (!id || !animais || !sanitaryAgendaV2 || !sanitaryAgendaAnimalsV2) return [];
+    if (!lote || !animais || !sanitaryAgendaV2 || !sanitaryAgendaAnimalsV2) return [];
     const today = new Date().toISOString().slice(0, 10);
     const lotAnimalIds = new Set(animais.map((animal) => animal.id));
     const agendaIdsByLotAnimals = new Set(
@@ -452,7 +498,7 @@ export default function LoteDetalhe() {
           agenda.status === "programada" &&
           !agenda.execution_evento_id &&
           agenda.data_programada >= today &&
-          (agenda.lote_id === id || agendaIdsByLotAnimals.has(agenda.id)),
+          (agenda.lote_id === lote.id || agendaIdsByLotAnimals.has(agenda.id)),
       )
       .sort((left, right) => left.data_programada.localeCompare(right.data_programada))
       .map((agenda) => {
@@ -470,12 +516,12 @@ export default function LoteDetalhe() {
             : protocolLabel,
           dateLabel: formatDate(agenda.data_programada),
           detailLabel:
-            agenda.lote_id === id
+            agenda.lote_id === lote.id
               ? "Planejamento do lote"
               : "Planejamento vinculado a animal do lote",
         };
       });
-  }, [animais, id, sanitaryAgendaAnimalsV2, sanitaryAgendaV2]);
+  }, [animais, lote, sanitaryAgendaAnimalsV2, sanitaryAgendaV2]);
 
   if (!id || !lote) {
     return (

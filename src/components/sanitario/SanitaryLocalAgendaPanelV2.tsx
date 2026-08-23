@@ -34,7 +34,10 @@ import {
   type SanitaryLocalAgendaFiltersV2,
   type SanitaryLocalAgendaListItemV2,
 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
-import type { ExecuteSanitaryAgendaInputV2 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
+import type {
+  ExecuteSanitaryAgendaInputV2,
+  SanitaryAgendaBatchResultV2,
+} from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
 import {
   SanitaryAgendaExecutionConfirmV2,
   type SanitaryExecutionInventoryLotOptionV2,
@@ -68,7 +71,9 @@ type Props = {
   executionInventoryLotOptions?: SanitaryExecutionInventoryLotOptionV2[];
   onReschedule: (agendaId: string, plannedFor: string) => Promise<void>;
   onCancel: (agendaId: string) => Promise<void>;
-  onExecute: (payloads: ExecutionPayload[]) => Promise<void>;
+  onExecute: (
+    payloads: ExecutionPayload[],
+  ) => Promise<SanitaryAgendaBatchResultV2>;
 };
 
 type AgendaGroupV2 = {
@@ -194,9 +199,12 @@ export function SanitaryLocalAgendaPanelV2({
   const executeAgenda = async (payloads: ExecutionPayload[]) => {
     setBusyAction("execute:batch");
     try {
-      await onExecute(payloads);
-      setExecutionTargets([]);
-      setSelectedAgendaIds(new Set());
+      const result = await onExecute(payloads);
+      if (result.retryAvailableCount === 0) {
+        setExecutionTargets([]);
+        setSelectedAgendaIds(new Set());
+      }
+      return result;
     } finally {
       setBusyAction(null);
     }

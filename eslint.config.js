@@ -7,7 +7,7 @@ import tseslint from "typescript-eslint";
 import dsTokens from "eslint-plugin-ds-tokens";
 
 export default tseslint.config(
-  { ignores: ["dist", "eslint-plugin-ds-tokens"] },
+  { ignores: ["dist", "eslint-plugin-ds-tokens", "**/.temp/**"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
