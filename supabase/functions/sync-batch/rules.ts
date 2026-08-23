@@ -305,7 +305,11 @@ export function normalizeDbError(
   }
 
   if (dbCode === "23505") {
-    return { status: "APPLIED" };
+    return {
+      status: "REJECTED",
+      reason_code: "OPERATION_IDENTITY_CONFLICT",
+      reason_message: buildReasonMessage(error),
+    };
   }
 
   if (dbCode === "23514") {
@@ -381,6 +385,17 @@ export function resolveOperationPrimaryKey(
   }
 
   return null;
+}
+
+export function isPersistedOperationReplay(
+  existing: Record<string, unknown>,
+  op: Operation,
+  clientTxId: string,
+) {
+  return (
+    existing.client_op_id === op.client_op_id &&
+    existing.client_tx_id === clientTxId
+  );
 }
 
 export function buildMutationMatch(

@@ -133,10 +133,34 @@ describe("LoteDetalhe page", () => {
     } as unknown as ReturnType<typeof useAuth>);
   });
 
+  it("nao renderiza lote de outra fazenda", () => {
+    mockedUseLiveQuery.mockImplementation(((query) => {
+      const source = typeof query === "function" ? query.toString() : "";
+      if (source.includes("readLoteInActiveFarm")) return undefined;
+      if (source.includes("loadRegulatorySurfaceSource")) return null;
+      return [];
+    }) as typeof useLiveQuery);
+
+    render(
+      <MemoryRouter initialEntries={["/lotes/lote-farm-b"]}>
+        <Routes>
+          <Route path="/lotes/:id" element={<LoteDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /lote não encontrado/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /adicionar animais/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("antecipa restricao regulatoria de movimentacao no lote", () => {
     mockedUseLiveQuery.mockImplementation(((query) => {
       const source = typeof query === "function" ? query.toString() : "";
-      if (source.includes("db.state_lotes.get")) {
+      if (source.includes("readLoteInActiveFarm")) {
         return {
           id: "lote-1",
           fazenda_id: "farm-1",
@@ -367,7 +391,7 @@ describe("LoteDetalhe page", () => {
 
     mockedUseLiveQuery.mockImplementation(((query) => {
       const source = typeof query === "function" ? query.toString() : "";
-      if (source.includes("db.state_lotes.get")) return lote;
+      if (source.includes("readLoteInActiveFarm")) return lote;
       if (source.includes("db.state_pastos.get")) return undefined;
       if (source.includes("db.state_animais.get")) return undefined;
       if (source.includes("db.state_animais.where") && source.includes("lote_id")) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,10 @@ import {
   formatSanitaryProductClassLabelV2,
   type SanitaryLocalAgendaListItemV2,
 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
-import type { ExecuteSanitaryAgendaInputV2 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
+import type {
+  ExecuteSanitaryAgendaInputV2,
+  SanitaryAgendaBatchResultV2,
+} from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
 
 type ExecutionPayload = Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">;
 
@@ -54,7 +57,9 @@ type Props = {
   productOptions?: SanitaryExecutionProductOptionV2[];
   inventoryLotOptions?: SanitaryExecutionInventoryLotOptionV2[];
   onOpenChange: (open: boolean) => void;
-  onConfirm: (payloads: ExecutionPayload[]) => Promise<void>;
+  onConfirm: (
+    payloads: ExecutionPayload[],
+  ) => Promise<SanitaryAgendaBatchResultV2>;
 };
 
 function todayKey() {
@@ -270,7 +275,13 @@ export function SanitaryAgendaExecutionConfirmV2({
   const [notes, setNotes] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [batchClientOpId, setBatchClientOpId] = useState("");
+  const [batchResult, setBatchResult] =
+    useState<SanitaryAgendaBatchResultV2 | null>(null);
+  const [retryPayloads, setRetryPayloads] = useState<ExecutionPayload[] | null>(
+    null,
+  );
   const productRequired = items.some(requiresProduct);
   const productClassGroupWarning = items.some(
     (entry) => entry.productRequirementKind === "product_class_group",
@@ -321,6 +332,8 @@ export function SanitaryAgendaExecutionConfirmV2({
     setResponsibleName(defaultResponsibleName?.trim() ?? "");
     setNotes("");
     setConfirmed(false);
+    setBatchResult(null);
+    setRetryPayloads(null);
     setBatchClientOpId(`sanitary-agenda-batch-v2:${operationId()}`);
   }, [defaultResponsibleName, items, open]);
 
@@ -392,10 +405,19 @@ export function SanitaryAgendaExecutionConfirmV2({
   ]);
 
   const submit = async () => {
-    if (items.length === 0 || !canSubmit || (selectedProductId && !selectedProduct)) return;
+    if (
+      submittingRef.current ||
+      items.length === 0 ||
+      !canSubmit ||
+      (selectedProductId && !selectedProduct)
+    )
+      return;
+    submittingRef.current = true;
     setSubmitting(true);
     try {
-      const payloads = items.map((entry, index): ExecutionPayload => {
+      const payloads =
+        retryPayloads ??
+        items.map((entry, index): ExecutionPayload => {
         const quantityForAgenda =
           inventoryLotId.trim() && totalDoses && totalAnimals > 0
             ? Number(((totalDoses * Math.max(entry.animalCount, 1)) / totalAnimals).toFixed(4))
@@ -431,9 +453,21 @@ export function SanitaryAgendaExecutionConfirmV2({
           userConfirmedWithdrawal: Boolean(selectedProduct),
         },
       };
-      });
-      await onConfirm(payloads);
+        });
+      const result = await onConfirm(payloads);
+      const retryableIds = new Set(
+        result.items
+          .filter((entry) => entry.retryAvailable)
+          .map((entry) => entry.clientOpId),
+      );
+      setBatchResult(result);
+      setRetryPayloads(
+        retryableIds.size > 0
+          ? payloads.filter((payload) => retryableIds.has(payload.clientOpId))
+          : null,
+      );
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -609,12 +643,50 @@ export function SanitaryAgendaExecutionConfirmV2({
           </div>
         ) : null}
 
+        {batchResult ? (
+          <section
+            className="space-y-2 rounded-lg border border-border p-3 text-sm"
+            aria-label="Resultado da execução agrupada"
+          >
+            <p className="font-medium">Resultado por agenda</p>
+            {batchResult.items.map((resultItem) => {
+              const agendaItem = items.find(
+                (entry) => entry.id === resultItem.agendaId,
+              );
+              const statusLabel =
+                resultItem.status === "EXECUTADO"
+                  ? "Executado"
+                  : resultItem.status === "FALHOU"
+                    ? "Falhou"
+                    : "Não executado";
+              return (
+                <div
+                  key={resultItem.clientOpId}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 px-3 py-2"
+                >
+                  <span>{agendaItem?.target.label ?? "Agenda sanitária"}</span>
+                  <span className="font-medium">{statusLabel}</span>
+                  {resultItem.retryAvailable ? (
+                    <span className="basis-full text-xs text-amber-700">
+                      Retry disponível
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })}
+          </section>
+        ) : null}
+
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Voltar
           </Button>
           <Button type="button" disabled={!canSubmit || submitting} onClick={submit}>
-            Confirmar execução
+            {submitting
+              ? "Executando..."
+              : retryPayloads
+                ? `Reenviar ${retryPayloads.length} pendente(s)`
+                : "Confirmar execução"}
           </Button>
         </DialogFooter>
       </DialogContent>

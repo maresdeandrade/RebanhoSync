@@ -4,6 +4,7 @@ import {
   buildMutationMatch,
   inferAgendaSourceTaskIdForEventInsert,
   isRecord,
+  isPersistedOperationReplay,
   normalizeDbError,
   type Operation,
   prevalidateAntiTeleport,
@@ -132,7 +133,7 @@ describe("sync-batch rules: normalizeDbError", () => {
     });
   });
 
-  it("maps generic unique violation to APPLIED for idempotency", () => {
+  it("não trata unique violation genérica como replay comprovado", () => {
     const result = normalizeDbError(
       {
         code: "23505",
@@ -141,10 +142,13 @@ describe("sync-batch rules: normalizeDbError", () => {
       op({ table: "eventos_pesagem" }),
     );
 
-    expect(result).toEqual({ status: "APPLIED" });
+    expect(result).toMatchObject({
+      status: "REJECTED",
+      reason_code: "OPERATION_IDENTITY_CONFLICT",
+    });
   });
 
-  it("maps inventory movement unique violation to APPLIED for replay idempotency", () => {
+  it("não trata colisão de estoque como replay sem identidade persistida", () => {
     const result = normalizeDbError(
       {
         code: "23505",
@@ -162,7 +166,10 @@ describe("sync-batch rules: normalizeDbError", () => {
       }),
     );
 
-    expect(result).toEqual({ status: "APPLIED" });
+    expect(result).toMatchObject({
+      status: "REJECTED",
+      reason_code: "OPERATION_IDENTITY_CONFLICT",
+    });
   });
 
   it("sentinela 11.5A: retry offline nao duplica agenda, evento sanitario nem baixa de estoque", () => {
@@ -236,9 +243,18 @@ describe("sync-batch rules: normalizeDbError", () => {
       status: "APPLIED_ALTERED",
       altered: { dedup: "collision_noop" },
     });
-    expect(eventRetry).toEqual({ status: "APPLIED" });
-    expect(sanitaryDetailRetry).toEqual({ status: "APPLIED" });
-    expect(stockMovementRetry).toEqual({ status: "APPLIED" });
+    expect(eventRetry).toMatchObject({
+      status: "REJECTED",
+      reason_code: "OPERATION_IDENTITY_CONFLICT",
+    });
+    expect(sanitaryDetailRetry).toMatchObject({
+      status: "REJECTED",
+      reason_code: "OPERATION_IDENTITY_CONFLICT",
+    });
+    expect(stockMovementRetry).toMatchObject({
+      status: "REJECTED",
+      reason_code: "OPERATION_IDENTITY_CONFLICT",
+    });
   });
 
   it("maps duplicate agenda source event to deterministic rejection", () => {
@@ -292,7 +308,10 @@ describe("sync-batch rules: normalizeDbError", () => {
       }),
     );
 
-    expect(result).toEqual({ status: "APPLIED" });
+    expect(result).toMatchObject({
+      status: "REJECTED",
+      reason_code: "OPERATION_IDENTITY_CONFLICT",
+    });
   });
 
   it("maps known FK constraint to domain reason_code", () => {
@@ -337,6 +356,34 @@ describe("sync-batch rules: normalizeDbError", () => {
     if (source.status === "REJECTED") {
       expect(source.reason_code).toBe("VALIDATION_INSUMO_SOURCE_EVENTO");
     }
+  });
+});
+
+describe("sync-batch rules: persisted operation replay", () => {
+  it("aceita somente a mesma identidade de operação e gesture", () => {
+    const operation = op({ client_op_id: "op-replay-1" });
+
+    expect(
+      isPersistedOperationReplay(
+        { client_op_id: "op-replay-1", client_tx_id: "tx-replay-1" },
+        operation,
+        "tx-replay-1",
+      ),
+    ).toBe(true);
+    expect(
+      isPersistedOperationReplay(
+        { client_op_id: "op-replay-1", client_tx_id: "tx-other" },
+        operation,
+        "tx-replay-1",
+      ),
+    ).toBe(false);
+    expect(
+      isPersistedOperationReplay(
+        { client_op_id: "op-other", client_tx_id: "tx-replay-1" },
+        operation,
+        "tx-replay-1",
+      ),
+    ).toBe(false);
   });
 });
 

@@ -43,6 +43,7 @@ export type SanitarioSyncV2ResultStatus =
 export type OperationQueueSyncState =
   | "PENDING"
   | "RETRYABLE"
+  | "REJECTED"
   | "BLOCKED_DEPENDENCY";
 export type SanitarioV2CutoverStatus =
   | "PREPARED"

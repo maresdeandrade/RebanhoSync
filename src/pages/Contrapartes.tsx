@@ -252,14 +252,10 @@ export default function Contrapartes() {
             (item.deleted_at === null || !item.deleted_at),
         )
         .count(),
-      db.state_animais_sociedade
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .and(
-          (item) =>
-            item.contraparte_id === id &&
-            (item.deleted_at === null || !item.deleted_at),
-        )
+      db.state_sociedades_pecuarias
+        .where("[fazenda_id+contraparte_id]")
+        .equals([activeFarmId, id])
+        .and((item) => item.deleted_at === null || !item.deleted_at)
         .count(),
     ]);
 
@@ -664,5 +660,4 @@ export default function Contrapartes() {
     </div>
   );
 }
-
 

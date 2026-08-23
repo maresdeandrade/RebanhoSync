@@ -154,6 +154,7 @@ function makePasto(overrides: Partial<Pasto> = {}): Pasto {
 function mockLiveQueriesForPasto(pasto: Pasto | null) {
   vi.mocked(useLiveQuery).mockImplementation(((query) => {
     const source = typeof query === "function" ? query.toString() : "";
+    if (source.includes("readPastoInActiveFarm")) return pasto;
     if (source.includes("db.state_pastos.get")) return pasto;
     if (source.includes("db.state_pastos")) return pasto ? [pasto] : [];
     if (source.includes(".count()")) return 0;

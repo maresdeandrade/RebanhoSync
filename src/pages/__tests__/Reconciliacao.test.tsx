@@ -8,6 +8,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useAuth } from "@/hooks/useAuth";
 import Reconciliacao from "@/pages/Reconciliacao";
 import { getRejectionStats, listRejections } from "@/lib/offline/rejections";
+import { retryRejectedOperation } from "@/lib/offline/ops";
 
 vi.mock("@/hooks/useAuth");
 vi.mock("dexie-react-hooks", () => ({
@@ -21,7 +22,7 @@ vi.mock("@/lib/offline/rejections", () => ({
   triggerDownload: vi.fn(),
 }));
 vi.mock("@/lib/offline/ops", () => ({
-  createGesture: vi.fn(),
+  retryRejectedOperation: vi.fn(),
 }));
 vi.mock("@/lib/offline/reset", () => ({
   resetOfflineFarmData: vi.fn(),
@@ -64,6 +65,7 @@ describe("Reconciliacao page", () => {
   const mockedUseLiveQuery = vi.mocked(useLiveQuery);
   const mockedListRejections = vi.mocked(listRejections);
   const mockedGetRejectionStats = vi.mocked(getRejectionStats);
+  const mockedRetryRejectedOperation = vi.mocked(retryRejectedOperation);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -140,5 +142,49 @@ describe("Reconciliacao page", () => {
     ).not.toBeInTheDocument();
     },
   );
-});
 
+  it("rearma a operação rejeitada preservando identidade e evidência", async () => {
+    mockedListRejections.mockResolvedValue({
+      items: [
+        {
+          id: "rej-retry",
+          fazenda_id: "farm-1",
+          client_tx_id: "tx-1",
+          client_op_id: "op-1",
+          table: "animais",
+          action: "UPDATE",
+          reason_code: "DB_TIMEOUT",
+          reason_message: "Falha transitória.",
+          created_at: "2026-04-07T10:00:00.000Z",
+        },
+      ],
+      nextCursor: undefined,
+    });
+    mockedRetryRejectedOperation.mockResolvedValue({
+      clientTxId: "tx-1",
+      clientOpId: "op-1",
+    });
+
+    render(
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Reconciliacao />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("Falha transitória.");
+    fireEvent.click(screen.getByRole("button", { name: "Re-enfileirar" }));
+
+    await waitFor(() =>
+      expect(mockedRetryRejectedOperation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "rej-retry",
+          client_tx_id: "tx-1",
+          client_op_id: "op-1",
+        }),
+      ),
+    );
+    expect(mockedListRejections).toHaveBeenCalled();
+  });
+});

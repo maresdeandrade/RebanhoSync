@@ -67,6 +67,28 @@ export type ExecuteSanitaryAgendaResultV2 = {
   createsActiveWithdrawal: boolean;
 };
 
+export type SanitaryAgendaBatchItemStatusV2 =
+  | "EXECUTADO"
+  | "FALHOU"
+  | "NAO_EXECUTADO";
+
+export type SanitaryAgendaBatchItemResultV2 = {
+  agendaId: string;
+  clientOpId: string;
+  status: SanitaryAgendaBatchItemStatusV2;
+  retryAvailable: boolean;
+  result?: ExecuteSanitaryAgendaResultV2;
+  errorMessage?: string;
+};
+
+export type SanitaryAgendaBatchResultV2 = {
+  items: SanitaryAgendaBatchItemResultV2[];
+  executedCount: number;
+  failedCount: number;
+  notExecutedCount: number;
+  retryAvailableCount: number;
+};
+
 export type SanitaryAgendaExecutionDbV2 = Pick<
   OfflineDB,
   | "ops_sanitario_agenda_v2"
@@ -833,5 +855,57 @@ export async function executeSanitaryAgendaV2(
     createsEvent: true,
     createsStockMovement: Boolean(records.movement),
     createsActiveWithdrawal: withdrawal.createsActiveWithdrawal,
+  };
+}
+
+export async function executeSanitaryAgendaBatchV2(
+  inputs: ExecuteSanitaryAgendaInputV2[],
+  executeItem: (
+    input: ExecuteSanitaryAgendaInputV2,
+  ) => Promise<ExecuteSanitaryAgendaResultV2> = executeSanitaryAgendaV2,
+): Promise<SanitaryAgendaBatchResultV2> {
+  const items: SanitaryAgendaBatchItemResultV2[] = [];
+  let executionInterrupted = false;
+
+  for (const input of inputs) {
+    if (executionInterrupted) {
+      items.push({
+        agendaId: input.agendaId,
+        clientOpId: input.clientOpId,
+        status: "NAO_EXECUTADO",
+        retryAvailable: true,
+      });
+      continue;
+    }
+
+    try {
+      const result = await executeItem(input);
+      items.push({
+        agendaId: input.agendaId,
+        clientOpId: input.clientOpId,
+        status: "EXECUTADO",
+        retryAvailable: false,
+        result,
+      });
+    } catch (error) {
+      executionInterrupted = true;
+      items.push({
+        agendaId: input.agendaId,
+        clientOpId: input.clientOpId,
+        status: "FALHOU",
+        retryAvailable: true,
+        errorMessage:
+          error instanceof Error ? error.message : "Falha desconhecida",
+      });
+    }
+  }
+
+  return {
+    items,
+    executedCount: items.filter((item) => item.status === "EXECUTADO").length,
+    failedCount: items.filter((item) => item.status === "FALHOU").length,
+    notExecutedCount: items.filter((item) => item.status === "NAO_EXECUTADO")
+      .length,
+    retryAvailableCount: items.filter((item) => item.retryAvailable).length,
   };
 }

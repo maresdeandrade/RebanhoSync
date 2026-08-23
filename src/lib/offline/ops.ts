@@ -3,6 +3,7 @@ import type {
   Gesture,
   Operation,
   OperationInput,
+  Rejection,
   SanitarioAgendaAnimalLocalV2,
   SanitarioAgendaCreateDraftV2,
   SanitarioAgendaLocalV2,
@@ -114,6 +115,12 @@ const getClientId = () => {
 
 function assertAllowedOfflinePushSurface(op: OperationInput) {
   const localStoreName = getLocalStoreName(op.table);
+
+  if (op.table === "animais_sociedade") {
+    throw new Error(
+      "LEGACY_SOCIETY_WRITE_BLOCKED: use sociedades_pecuarias/sociedade_animais",
+    );
+  }
 
   if (op.table.startsWith("state_")) {
     throw new Error(
@@ -476,6 +483,35 @@ export const applyOpLocal = async (op: Operation) => {
   }
 };
 
+export const reapplyOpLocal = async (op: Operation) => {
+  const localStoreName = getLocalStoreName(op.table);
+  const store = db.table(localStoreName);
+  if (!store) return;
+
+  const recordKey = getRecordKey(op.record);
+  if (!recordKey) return;
+
+  if (op.action === "INSERT") {
+    await store.put(op.record);
+    return;
+  }
+
+  if (op.action === "UPDATE") {
+    const existing = await store.get(recordKey);
+    await store.put(existing ? { ...existing, ...op.record } : op.record);
+    return;
+  }
+
+  if (op.action === "DELETE") {
+    await store.update(recordKey, {
+      deleted_at:
+        typeof op.record.deleted_at === "string"
+          ? op.record.deleted_at
+          : new Date().toISOString(),
+    });
+  }
+};
+
 export const rollbackOpLocal = async (op: Operation) => {
   if (!op.before_snapshot && op.action !== "INSERT") return;
 
@@ -499,4 +535,61 @@ export function getAffectedStores(ops: Operation[]) {
   return Array.from(tableNames)
     .map((t) => db.table(t))
     .filter(Boolean);
+}
+
+export async function retryRejectedOperation(rejection: Rejection) {
+  const operation = await db.queue_ops.get(rejection.client_op_id);
+  if (!operation) {
+    throw new Error("REJECTED_OPERATION_NOT_AVAILABLE");
+  }
+
+  return db.transaction(
+    "rw",
+    [db.queue_gestures, db.queue_ops, ...getAffectedStores([operation])],
+    async () => {
+      const [currentOperation, gesture] = await Promise.all([
+        db.queue_ops.get(operation.client_op_id),
+        db.queue_gestures.get(rejection.client_tx_id),
+      ]);
+
+      if (!currentOperation || !gesture) {
+        throw new Error("REJECTED_OPERATION_NOT_AVAILABLE");
+      }
+      if (
+        currentOperation.client_tx_id !== rejection.client_tx_id ||
+        gesture.fazenda_id !== rejection.fazenda_id
+      ) {
+        throw new Error("REJECTED_OPERATION_IDENTITY_MISMATCH");
+      }
+      if (
+        currentOperation.sync_state !== "REJECTED" &&
+        !(
+          currentOperation.sync_state === undefined &&
+          gesture.status === "REJECTED"
+        )
+      ) {
+        throw new Error("REJECTED_OPERATION_ALREADY_QUEUED");
+      }
+
+      await reapplyOpLocal(currentOperation);
+      await db.queue_ops.update(currentOperation.client_op_id, {
+        sync_state: "PENDING",
+        retry_count: (currentOperation.retry_count ?? 0) + 1,
+        next_attempt_at: undefined,
+        blocked_reason: undefined,
+      });
+      await db.queue_gestures.update(gesture.client_tx_id, {
+        status: "PENDING",
+        sync_result: undefined,
+        completed_at: undefined,
+        retry_count: (gesture.retry_count ?? 0) + 1,
+        last_error: "Retry explícito da operação rejeitada com identidade preservada",
+      });
+
+      return {
+        clientTxId: gesture.client_tx_id,
+        clientOpId: currentOperation.client_op_id,
+      };
+    },
+  );
 }

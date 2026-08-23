@@ -13,8 +13,12 @@ import type {
 } from "./types";
 import { getRemoteTableName } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
-import { getAffectedStores, rollbackOpLocal } from "./ops";
+import { getAffectedStores, reapplyOpLocal, rollbackOpLocal } from "./ops";
 import { sortOpsForSync } from "./syncOrder";
+import {
+  mergeOperationAudit,
+  planOperationReconciliation,
+} from "./syncReconciliation";
 import {
   pullDataForFarm,
   pullInitialData,
@@ -289,30 +293,6 @@ function isOperationReadyForSync(op: Operation, nowMs = Date.now()) {
 
   const nextAttemptAt = Date.parse(op.next_attempt_at);
   return !Number.isFinite(nextAttemptAt) || nextAttemptAt <= nowMs;
-}
-
-function mergeOperationAudit(
-  current: SyncOperationAuditResult[] | undefined,
-  incoming: SyncOperationAuditResult[],
-) {
-  const merged = new Map<string, SyncOperationAuditResult>();
-
-  for (const result of current ?? []) {
-    const key =
-      result.op_id ||
-      result.domain_op_id ||
-      `${result.status}:${result.local_reason_code ?? "unknown"}`;
-    merged.set(key, result);
-  }
-  for (const result of incoming) {
-    const key =
-      result.op_id ||
-      result.domain_op_id ||
-      `${result.status}:${result.local_reason_code ?? "unknown"}`;
-    merged.set(key, result);
-  }
-
-  return Array.from(merged.values());
 }
 
 function buildMinimalRejectionPayload(result: SyncOperationResult) {
@@ -784,12 +764,166 @@ export function mapOperationForSync(
   };
 }
 
+async function reconcileGenericOperationResults(
+  gesture: Gesture,
+  operations: Operation[],
+  results: SyncOperationResult[],
+) {
+  const recordedAt = new Date().toISOString();
+  const plan = planOperationReconciliation(operations, results, recordedAt);
+  if (plan.rejected.length === 0) return false;
+
+  const rejectedOps = plan.rejected.map(({ op }) => op);
+  const appliedOps = plan.applied.map(({ op }) => op);
+  const retryableOps = [
+    ...plan.retryable.map(({ op }) => op),
+    ...plan.missing,
+  ];
+  const transactionStores = Array.from(
+    new Set([
+      db.queue_gestures,
+      db.queue_ops,
+      db.queue_rejections,
+      ...getAffectedStores([...rejectedOps, ...appliedOps]),
+    ]),
+  );
+
+  await db.transaction("rw", transactionStores, async () => {
+    for (const op of [...rejectedOps].reverse()) {
+      await rollbackOpLocal(op);
+    }
+    for (const op of sortOpsForSync(appliedOps)) {
+      await reapplyOpLocal(op);
+    }
+
+    if (appliedOps.length > 0) {
+      await db.queue_ops.bulkDelete(
+        appliedOps.map((operation) => operation.client_op_id),
+      );
+    }
+
+    for (const { op, result } of plan.rejected) {
+      await db.queue_ops.update(op.client_op_id, {
+        sync_state: "REJECTED",
+        next_attempt_at: undefined,
+        blocked_reason: result.reason_code ?? "SYNC_OPERATION_REJECTED",
+      });
+      await db.queue_rejections.add({
+        client_tx_id: gesture.client_tx_id,
+        client_op_id: op.client_op_id,
+        fazenda_id: gesture.fazenda_id,
+        table: op.table,
+        action: op.action,
+        reason_code: result.reason_code ?? "SYNC_OPERATION_REJECTED",
+        reason_message:
+          result.reason_message ?? `Operation result: ${result.status}`,
+        created_at: recordedAt,
+      });
+    }
+
+    for (const { op, result } of plan.retryable) {
+      await db.queue_ops.update(
+        op.client_op_id,
+        getSanitarioRetryUpdate(
+          op,
+          Date.parse(recordedAt),
+          result.reason_code ?? "SYNC_OPERATION_RETRYABLE",
+        ),
+      );
+    }
+    for (const op of plan.missing) {
+      await db.queue_ops.update(
+        op.client_op_id,
+        getSanitarioRetryUpdate(
+          op,
+          Date.parse(recordedAt),
+          "SYNC_RESULT_MISSING",
+        ),
+      );
+    }
+
+    const rejectionSummary = plan.rejected
+      .map(
+        ({ result }) =>
+          `${result.reason_code ?? "UNKNOWN"}: ${result.reason_message ?? "-"}`,
+      )
+      .join(" | ");
+    await db.queue_gestures.update(gesture.client_tx_id, {
+      status: retryableOps.length > 0 ? "PENDING" : "REJECTED",
+      sync_result: retryableOps.length > 0 ? undefined : "REJECTED",
+      completed_at: retryableOps.length > 0 ? undefined : recordedAt,
+      last_error: rejectionSummary || "Gesture has rejected operations",
+      operation_results: mergeOperationAudit(
+        gesture.operation_results,
+        plan.audits,
+      ),
+    });
+  });
+
+  const remoteTables = Array.from(
+    new Set(
+      [...appliedOps, ...rejectedOps].map((operation) =>
+        getRemoteTableName(operation.table),
+      ),
+    ),
+  );
+  if (remoteTables.length > 0) {
+    try {
+      await pullDataForFarm(gesture.fazenda_id, remoteTables);
+    } catch (error) {
+      console.warn(
+        `[sync-worker] mixed-result pull failed for TX ${gesture.client_tx_id}:`,
+        error,
+      );
+    }
+  }
+
+  if (
+    plan.rejected.some(
+      ({ result }) => result.reason_code === AGENDA_ALREADY_COMPLETED_REASON,
+    )
+  ) {
+    try {
+      await pullDataForFarm(gesture.fazenda_id, [
+        "agenda_itens",
+        "eventos",
+        "eventos_sanitario",
+      ]);
+    } catch (error) {
+      console.warn(
+        `[sync-worker] agenda reconciliation pull failed for TX ${gesture.client_tx_id}:`,
+        error,
+      );
+    }
+  }
+
+  if (
+    plan.rejected.some(
+      ({ op }) =>
+        getRemoteTableName(op.table) === "sanitario_agenda_closures_v2",
+    )
+  ) {
+    try {
+      await pullSanitarioAgendaV2(gesture.fazenda_id);
+    } catch (error) {
+      console.warn(
+        `[sync-worker] agenda v2 operation reconciliation pull failed for TX ${gesture.client_tx_id}:`,
+        error,
+      );
+    }
+  }
+
+  return true;
+}
+
 export async function processGesture(gesture: Gesture) {
   const queuedOps = await db.queue_ops
     .where("client_tx_id")
     .equals(gesture.client_tx_id)
     .toArray();
-  const readyOps = queuedOps.filter((op) => isOperationReadyForSync(op));
+  const readyOps = queuedOps.filter(
+    (op) => op.sync_state !== "REJECTED" && isOperationReadyForSync(op),
+  );
 
   if (readyOps.length === 0) {
     const hasDeferredRetry = queuedOps.some(
@@ -798,24 +932,35 @@ export async function processGesture(gesture: Gesture) {
     const hasBlockedDependency = queuedOps.some(
       (op) => op.sync_state === "BLOCKED_DEPENDENCY",
     );
+    const hasRejectedOperation = queuedOps.some(
+      (op) => op.sync_state === "REJECTED",
+    );
 
     await db.queue_gestures.update(gesture.client_tx_id, {
       status: hasDeferredRetry
         ? "PENDING"
-        : hasBlockedDependency
-          ? "ERROR"
-          : "DONE",
+        : hasRejectedOperation
+          ? "REJECTED"
+          : hasBlockedDependency
+            ? "ERROR"
+            : "DONE",
       sync_result:
-        hasBlockedDependency && !hasDeferredRetry ? "ERROR" : undefined,
+        hasRejectedOperation && !hasDeferredRetry
+          ? "REJECTED"
+          : hasBlockedDependency && !hasDeferredRetry
+            ? "ERROR"
+            : undefined,
       completed_at:
-        hasBlockedDependency && !hasDeferredRetry
+        (hasRejectedOperation || hasBlockedDependency) && !hasDeferredRetry
           ? new Date().toISOString()
           : undefined,
       last_error: hasDeferredRetry
         ? "sanitario_v2 retry waiting for backoff"
-        : hasBlockedDependency
-          ? "sanitario_v2 blocked by unavailable dependency"
-          : undefined,
+        : hasRejectedOperation
+          ? "Gesture possui operações rejeitadas aguardando reconciliação"
+          : hasBlockedDependency
+            ? "sanitario_v2 blocked by unavailable dependency"
+            : undefined,
     });
     return;
   }
@@ -909,9 +1054,21 @@ export async function processGesture(gesture: Gesture) {
     );
     if (handledSanitarioV2) return;
 
-    const allApplied = result.results.every(
-      (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
+    const genericRecordedAt = new Date().toISOString();
+    const genericPlan = planOperationReconciliation(
+      ops,
+      result.results,
+      genericRecordedAt,
     );
+    const hasCommercialPurchase = commercialCommand !== null;
+    const allApplied = hasCommercialPurchase
+      ? result.results.every(
+          (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
+        )
+      : genericPlan.applied.length === ops.length &&
+        genericPlan.rejected.length === 0 &&
+        genericPlan.retryable.length === 0 &&
+        genericPlan.missing.length === 0;
     const hasReproductionOperation = ops.some(
       (op) =>
         getRemoteTableName(op.table) === "eventos_reproducao" &&
@@ -921,12 +1078,13 @@ export async function processGesture(gesture: Gesture) {
       entry.status === "REJECTED" ||
       (hasReproductionOperation &&
         (entry.status === "CONFLICT" || entry.status === "BLOCKED_DEPENDENCY"));
-    const hasCommercialPurchase = commercialCommand !== null;
     const isTerminalResult = (entry: SyncOperationResult) =>
       isTerminalReproductionResult(entry) ||
       (hasCommercialPurchase &&
         (entry.status === "REJECTED" || entry.status === "CONFLICT"));
-    const hasRejected = result.results.some(isTerminalResult);
+    const hasRejected = hasCommercialPurchase
+      ? result.results.some(isTerminalResult)
+      : genericPlan.rejected.length > 0;
 
     if (allApplied) {
       const completedAt = new Date().toISOString();
@@ -939,6 +1097,10 @@ export async function processGesture(gesture: Gesture) {
         ops.map((op) => getRemoteTableName(op.table)),
       );
       const refreshTables = new Set<string>();
+
+      await db.queue_ops.bulkDelete(
+        ops.map((operation) => operation.client_op_id),
+      );
 
       if (hasCommercialPurchase) {
         refreshTables.add("animais");
@@ -1022,16 +1184,38 @@ export async function processGesture(gesture: Gesture) {
         "rw",
         [db.queue_gestures, db.queue_ops],
         async () => {
-          await db.queue_gestures.update(gesture.client_tx_id, {
-            status: "DONE",
-            sync_result: syncResult,
-            completed_at: completedAt,
-            last_error: undefined,
-          });
-          await db.queue_ops
+          const remaining = await db.queue_ops
             .where("client_tx_id")
             .equals(gesture.client_tx_id)
-            .delete();
+            .toArray();
+          const hasRemainingRejected = remaining.some(
+            (operation) => operation.sync_state === "REJECTED",
+          );
+          await db.queue_gestures.update(gesture.client_tx_id, {
+            status:
+              remaining.length === 0
+                ? "DONE"
+                : hasRemainingRejected
+                  ? "REJECTED"
+                  : "PENDING",
+            sync_result:
+              remaining.length === 0
+                ? syncResult
+                : hasRemainingRejected
+                  ? "REJECTED"
+                  : undefined,
+            completed_at:
+              remaining.length === 0 || hasRemainingRejected
+                ? completedAt
+                : undefined,
+            last_error: hasRemainingRejected
+              ? "Gesture ainda possui operações rejeitadas"
+              : undefined,
+            operation_results: mergeOperationAudit(
+              gesture.operation_results,
+              genericPlan.audits,
+            ),
+          });
         },
       );
       await trackPilotMetric({
@@ -1051,6 +1235,29 @@ export async function processGesture(gesture: Gesture) {
           `[sync-worker] TX ${gesture.client_tx_id} synced successfully`,
         );
       }
+      return;
+    }
+
+    if (
+      hasRejected &&
+      !hasCommercialPurchase &&
+      (await reconcileGenericOperationResults(gesture, ops, result.results))
+    ) {
+      await trackPilotMetric({
+        fazendaId: gesture.fazenda_id,
+        eventName: "sync_rejected",
+        status: "error",
+        entity: "sync-batch",
+        quantity: genericPlan.rejected.length,
+        reasonCode: genericPlan.rejected[0]?.result.reason_code,
+        payload: {
+          op_count: ops.length,
+          applied_count: genericPlan.applied.length,
+          rejected_count: genericPlan.rejected.length,
+          retryable_count:
+            genericPlan.retryable.length + genericPlan.missing.length,
+        },
+      });
       return;
     }
 

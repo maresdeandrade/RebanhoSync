@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { createGesture } from "@/lib/offline/ops";
 import { ANIMAL_BREED_OPTIONS, type AnimalBreedEnum } from "@/lib/animals/catalogs";
+import { canManageLivestockSociety } from "@/lib/society/animalSocietyRegistration";
 
 type ActionType = "entrada" | "vincular" | "retirar" | "encerrar";
 
@@ -39,7 +40,8 @@ export function RegistrarSociedadeSection(props: {
   contrapartes: { id: string; nome: string }[] | undefined;
   fazendaId: string;
 }) {
-  const { user } = useAuth();
+  const { role } = useAuth();
+  const canManageSociety = canManageLivestockSociety(role);
   const [actionType, setActionType] = useState<ActionType>("entrada");
 
   // Sociedade selecionada (geral)
@@ -179,6 +181,10 @@ export function RegistrarSociedadeSection(props: {
 
   // Confirmar Entrada de Animais
   const handleEntradaSociedade = async () => {
+    if (!canManageSociety) {
+      alert("Apenas owner/manager pode registrar sociedade pecuária.");
+      return;
+    }
     let finalSocId = selectedSocId;
     const ops: OperationInput[] = [];
 
@@ -325,6 +331,10 @@ export function RegistrarSociedadeSection(props: {
   };
 
   const handleLinkAnimals = async () => {
+    if (!canManageSociety) {
+      alert("Apenas owner/manager pode vincular animais à sociedade.");
+      return;
+    }
     if (!selectedSocId || selectedSocId === "new") {
       alert("Selecione uma sociedade ativa.");
       return;
@@ -367,6 +377,10 @@ export function RegistrarSociedadeSection(props: {
   };
 
   const handleRetiradaSociedade = async () => {
+    if (!canManageSociety) {
+      alert("Apenas owner/manager pode retirar animais da sociedade.");
+      return;
+    }
     if (selectedAnimalsWithActiveLink.length === 0) {
       alert("Selecione animais que possuam vínculo societário ativo.");
       return;
@@ -424,6 +438,10 @@ export function RegistrarSociedadeSection(props: {
   };
 
   const handleEndSociety = async () => {
+    if (!canManageSociety) {
+      alert("Apenas owner/manager pode encerrar sociedade pecuária.");
+      return;
+    }
     if (!selectedSocId || selectedSocId === "new") {
       alert("Selecione a sociedade a ser encerrada.");
       return;
@@ -754,7 +772,7 @@ export function RegistrarSociedadeSection(props: {
               ))}
             </div>
 
-            <Button onClick={handleEntradaSociedade} className="w-full">
+            <Button onClick={handleEntradaSociedade} className="w-full" disabled={!canManageSociety}>
               Confirmar Registro de Entrada
             </Button>
           </div>
@@ -788,7 +806,7 @@ export function RegistrarSociedadeSection(props: {
                   </Select>
                 </div>
 
-                <Button onClick={handleLinkAnimals} className="w-full" disabled={!selectedSocId}>
+                <Button onClick={handleLinkAnimals} className="w-full" disabled={!canManageSociety || !selectedSocId}>
                   Vincular {selectedAnimalsWithoutLink.length} Animais à Sociedade
                 </Button>
               </div>
@@ -849,6 +867,7 @@ export function RegistrarSociedadeSection(props: {
                   onClick={handleRetiradaSociedade} 
                   variant={physicalRemoval ? "destructive" : "default"}
                   className="w-full mt-2"
+                  disabled={!canManageSociety}
                 >
                   Confirmar e Executar Retiradas
                 </Button>
@@ -910,6 +929,7 @@ export function RegistrarSociedadeSection(props: {
                   onClick={handleEndSociety} 
                   variant={!animalsRemain ? "destructive" : "default"}
                   className="w-full"
+                  disabled={!canManageSociety}
                 >
                   Finalizar Sociedade e Vínculos
                 </Button>
