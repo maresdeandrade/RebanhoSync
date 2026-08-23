@@ -1,15 +1,19 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-08-20
-Baseline integrado da Fase 16: `main@f20146505a04c0eab03c0685f2bdef7763bae221`
-Merge commit da Fase 16: `f20146505a04c0eab03c0685f2bdef7763bae221`
-Feature head da Fase 16: `078cfcad654b7e92b7ec94b8a2145bb9123dbc55`
-PR de integração da Fase 16: `#94`
+Atualizado em: 2026-08-23
+Baseline integrado atual: `main@4e208ba090daa652f2735c94403317ed4ecbf045`
+Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
+Feature head integrado: `fcc977a9d6087ebbf76364e400bf03a9dd686bac`
+PR de integração: `#96`
 Próxima fase de desenvolvimento: **Fase 17 — Decisão Assistida** (preparada para abertura, não iniciada).
 
 ## Objetivo
 
 Registrar o estado vivo do produto em formato curto. Este documento não substitui o [roadmap](../product/ROADMAP.md), o [plano ativo](../review/ACTIVE_PHASE_PLAN.md) nem o [handoff técnico](../review/CURRENT_PHASE_HANDOFF.md).
+
+## Referência arquitetural operacional
+
+O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é a referência arquitetural canônica dos fluxos operacionais. Código e migrations ativas mantêm precedência factual; os resumos deste `PROJECT_STATUS.md` registram estado e contexto, mas não redefinem contratos do mapa.
 
 ## Estado atual
 
@@ -26,6 +30,16 @@ A validação da Fase 15 confirmou 16 testes focados, `quality:gate`, build, typ
 A Fase 16 — Financeiro Gerencial — foi integralmente concluída e integrada via PR #94. A implementação incluiu hardening offline de `finance_transactions` e `finance_categories`, hardening semântico de valores e status do ledger, classificação canônica cruzada (Evento × ledger × comercial) para prevenir dupla contagem, e separação clara entre caixa, competência, previsão e vencidos. Os KPIs ganharam cobertura conservadora (ausência de dados não é zero factual). As categorias default passaram a usar UUID determinístico customizado baseado em SHA-256 com identidade convergente cliente/Postgres e resolução de colisão estrita. A Fase 16 também introduziu o estorno append-only (com a coluna `reverses_transaction_id`) e atualizou a Edge Function `sync-batch` e o Dexie para a v29. O RLS permaneceu preservado. A validação de upgrade legado isolado, 43 testes focados, gates de qualidade e build de produção passaram com sucesso.
 
 **Importante:** A presença da migration `20260601000000_financeiro_estorno_categorias.sql` versionada na `main` NÃO significa que ela foi aplicada em staging ou produção. Os ambientes de staging e produção não foram alterados durante a Fase 16.
+
+## Hardening transversal integrado — PR #96
+
+O ciclo de auditoria operacional foi integrado em `main` via PR #96. O pacote consolidou isolamento local por fazenda nas telas de detalhe, occupancy pelo read model canônico, cadastro e leitura societária pelo contrato vigente, reconciliação mista por operação, retry idempotente, sucesso parcial sanitário, locks locais de submit, acessibilidade dos dialogs e consistência dos gates de importação/lint.
+
+No sync, o pacote preservou o contrato canônico de resultado por operação, rollback e retry descrito no [mapa operacional](../architecture/OPERATIONAL_FLOWS.md); este documento registra apenas o estado integrado.
+
+O merge também versionou a configuração local descartável do Supabase, o ajuste de `search_path` de `pgcrypto` e alterações do `sync-batch` já contidas na branch acumulada. O baseline funcional foi executado apenas contra Supabase local descartável; esta integração não executou deploy de migration, RLS, RPC ou Edge Function em staging/produção.
+
+Validação final: 2.668 testes em 354 arquivos, lint, build, gates documentais, cleanup Supabase e `Repository must remain clean` passaram no CI de `main` ([run 32619923698](https://github.com/maresdeandrade/RebanhoSync/actions/runs/32619923698)). O teste focado de reprodução/sync passou com 5/5 casos após o merge.
 
 ## Estado reprodutivo consolidado
 

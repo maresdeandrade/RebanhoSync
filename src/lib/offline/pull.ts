@@ -1,7 +1,11 @@
 import { supabase } from "@/lib/supabase";
 import { recomputeSanitaryComplianceAfterPullV2 } from "@/lib/sanitario/compliance/sanitaryComplianceV2";
 import { db } from "./db";
-import { getLocalStoreName } from "./tableMap";
+import {
+  getLocalStoreName,
+  getRemoteTableName,
+  STANDARD_EVENT_DETAIL_REMOTE_TABLES,
+} from "./tableMap";
 import { getPendingCommercialPurchaseRecords } from "@/lib/comercial/animalPurchaseSync";
 import { getPendingCommercialOperationRecords } from "@/lib/comercial/commercialOperationSync";
 import type { PullCursor, PullCursorScope } from "./types";
@@ -13,6 +17,7 @@ export const DEFAULT_REMOTE_TABLES = [
   "agenda_itens",
   "eventos",
   "eventos_sanitario",
+  ...STANDARD_EVENT_DETAIL_REMOTE_TABLES,
   "eventos_comercial",
   "eventos_nutricao",
   "eventos_pasto_avaliacao",
@@ -67,6 +72,31 @@ export interface PullOptions {
 }
 
 type RemoteRow = Record<string, unknown>;
+
+const PENDING_FACTUAL_REMOTE_TABLES = new Set<string>([
+  "eventos",
+  "eventos_sanitario",
+  "eventos_reproducao",
+  "eventos_comercial",
+  "eventos_animais",
+  "insumo_movimentacoes",
+  ...STANDARD_EVENT_DETAIL_REMOTE_TABLES,
+]);
+
+function isStandardEventDetailRemoteTable(
+  remoteTable: string,
+): remoteTable is (typeof STANDARD_EVENT_DETAIL_REMOTE_TABLES)[number] {
+  return (STANDARD_EVENT_DETAIL_REMOTE_TABLES as readonly string[]).includes(
+    remoteTable,
+  );
+}
+
+function getFactualEventId(remoteTable: string, row: RemoteRow) {
+  if (remoteTable === "eventos") return row.id;
+  if (remoteTable === "insumo_movimentacoes") return row.source_evento_id;
+  if (remoteTable === "eventos_ecc") return row.event_id;
+  return row.evento_id;
+}
 
 interface CursorUpdate {
   key: string;
@@ -231,24 +261,10 @@ async function getPendingFactualEventIds() {
         if (typeof commercialEvent?.id === "string") {
           return [commercialEvent.id];
         }
-        if (
-          operation.table === "eventos" &&
-          typeof operation.record?.id === "string"
-        ) {
-          return [operation.record.id];
-        }
-        if (
-          operation.table.startsWith("eventos_") &&
-          typeof operation.record?.evento_id === "string"
-        ) {
-          return [operation.record.evento_id];
-        }
-        if (
-          operation.table === "state_insumo_movimentacoes" ||
-          operation.table === "insumo_movimentacoes"
-        ) {
-          const sourceEventId = operation.record?.source_evento_id;
-          return typeof sourceEventId === "string" ? [sourceEventId] : [];
+        const remoteTable = getRemoteTableName(operation.table);
+        if (PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)) {
+          const eventId = getFactualEventId(remoteTable, operation.record);
+          return typeof eventId === "string" ? [eventId] : [];
         }
         if (operation.table !== "sanitario_v2") return [];
         const record = operation.record as RemoteRow;
@@ -278,6 +294,7 @@ async function getPendingRecordIds(
         table === "animais" ||
         table === "eventos" ||
         table === "eventos_comercial" ||
+        isStandardEventDetailRemoteTable(table) ||
         table === "agenda_itens" ||
         table === "finance_transactions" ||
         table === "finance_categories",
@@ -295,16 +312,18 @@ async function getPendingRecordIds(
       ...getPendingCommercialOperationRecords(operation),
     ];
     for (const candidate of candidates) {
-      if (!protectedTables.has(candidate.table)) continue;
+      const remoteTable = getRemoteTableName(candidate.table);
+      if (!protectedTables.has(remoteTable)) continue;
       if (candidate.record?.fazenda_id !== fazendaId) continue;
       const id =
-        candidate.table === "eventos_comercial"
-          ? candidate.record?.evento_id
+        remoteTable === "eventos_comercial" ||
+        isStandardEventDetailRemoteTable(remoteTable)
+          ? getFactualEventId(remoteTable, candidate.record)
           : candidate.record?.id;
       if (typeof id !== "string") continue;
-      const ids = pendingIds.get(candidate.table) ?? new Set<string>();
+      const ids = pendingIds.get(remoteTable) ?? new Set<string>();
       ids.add(id);
-      pendingIds.set(candidate.table, ids);
+      pendingIds.set(remoteTable, ids);
     }
   }
   return pendingIds;
@@ -318,7 +337,11 @@ function protectPendingRecordRows(
   const ids = pendingRecordIds.get(remoteTable);
   if (!ids || ids.size === 0) return { rows, skipped: false };
   const safeRows = rows.filter((row) => {
-    const id = remoteTable === "eventos_comercial" ? row.evento_id : row.id;
+    const id =
+      remoteTable === "eventos_comercial" ||
+      isStandardEventDetailRemoteTable(remoteTable)
+        ? getFactualEventId(remoteTable, row)
+        : row.id;
     return typeof id !== "string" || !ids.has(id);
   });
   return { rows: safeRows, skipped: safeRows.length !== rows.length };
@@ -331,24 +354,12 @@ function protectPendingFactualRows(
 ) {
   if (
     pendingEventIds.size === 0 ||
-    ![
-      "eventos",
-      "eventos_sanitario",
-      "eventos_reproducao",
-      "eventos_comercial",
-      "eventos_animais",
-      "insumo_movimentacoes",
-    ].includes(remoteTable)
+    !PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
   ) {
     return { rows, skipped: false };
   }
   const safeRows = rows.filter((row) => {
-    const eventId =
-      remoteTable === "eventos"
-        ? row.id
-        : remoteTable === "insumo_movimentacoes"
-          ? row.source_evento_id
-          : row.evento_id;
+    const eventId = getFactualEventId(remoteTable, row);
     return typeof eventId !== "string" || !pendingEventIds.has(eventId);
   });
   return { rows: safeRows, skipped: safeRows.length !== rows.length };
@@ -361,13 +372,7 @@ async function writeMergeResults(
   fazendaId: string,
 ) {
   const protectsFactualRows = storesToUpdate.some(({ remote }) =>
-    [
-      "eventos",
-      "eventos_sanitario",
-      "eventos_reproducao",
-      "eventos_animais",
-      "insumo_movimentacoes",
-    ].includes(remote),
+    PENDING_FACTUAL_REMOTE_TABLES.has(remote),
   );
   const pendingEventIds = protectsFactualRows
     ? await getPendingFactualEventIds()
@@ -471,7 +476,7 @@ export const pullDataForFarm = async (
 
   const storeNames = storesToUpdate.map((s) => s.local);
   const pendingEventIds = remoteTables.some((table) =>
-    ["eventos", "eventos_reproducao"].includes(table),
+    PENDING_FACTUAL_REMOTE_TABLES.has(table),
   )
     ? await getPendingFactualEventIds()
     : new Set<string>();

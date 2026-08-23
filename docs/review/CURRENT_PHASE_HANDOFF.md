@@ -1,13 +1,38 @@
 # Handoff atual — Fase 17 / Decisão Assistida
 
-Atualizado em: 2026-08-20
+Atualizado em: 2026-08-23
+Baseline integrado atual: `main@4e208ba090daa652f2735c94403317ed4ecbf045`
+PR transversal integrado: `#96`
+Feature head integrado: `fcc977a9d6087ebbf76364e400bf03a9dd686bac`
 Baseline integrado da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
 Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 16 encerrada; Fase 17 preparada para abertura, não iniciada**
+Status: **Fase 16 encerrada; hardening transversal integrado; Fase 17 preparada para abertura, não iniciada**
 Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
+
+## Impacto no mapa operacional
+
+Mapa canônico: [docs/architecture/OPERATIONAL_FLOWS.md](../architecture/OPERATIONAL_FLOWS.md)
+
+Fluxos afetados: `[...]`
+
+Contrato: `PRESERVADO / ALTERADO / ESTENDIDO / NÃO APLICÁVEL`
+
+Seções afetadas: `[...]`
+
+Atualização documental pendente: `SIM / NÃO`
+
+## Hardening transversal integrado — PR #96
+
+O PR #96 integrou o ciclo corretivo da auditoria operacional sem reclassificá-lo como início formal da Fase 17. O pacote cobre isolamento cross-farm, occupancy canônico, sociedade pecuária vigente, reconciliação mixed-result por operação, retry idempotente, sucesso parcial sanitário, prevenção de double submit, acessibilidade de dialogs e normalização dos gates de importação/lint.
+
+No caso reprodutivo que motivou o último hardening, o pacote preservou o contrato canônico de dependência, rollback e resultado por operação documentado no [mapa operacional](../architecture/OPERATIONAL_FLOWS.md).
+
+Commits de fechamento: `7a551a325d9b631c02f43f6e5b487dde10b8e71d` (propagação terminal contextual), `3a0cd1e24ef7209b14d1045992ef904e9f973942` (cleanup Supabase rastreado) e `fcc977a9d6087ebbf76364e400bf03a9dd686bac` (exclusão de `GRAPHIFY_USAGE.md` do pacote). Merge commit: `4e208ba090daa652f2735c94403317ed4ecbf045`.
+
+O CI final de `main` aprovou 2.668 testes em 354 arquivos, lint, build, baseline Supabase descartável, gates documentais e repository-clean. A configuração/migration Supabase contida na branch ficou apenas versionada e validada localmente; não houve deploy em staging/produção nesta integração. O rollout sanitário permanece desligado.
 
 ## Saída integrada da Fase 15
 

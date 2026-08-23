@@ -11,7 +11,10 @@ import type {
   SyncOperationAuditResult,
   SyncOperationResult,
 } from "./types";
-import { getRemoteTableName } from "./tableMap";
+import {
+  getRemoteTableName,
+  STANDARD_EVENT_DETAIL_REMOTE_TABLES,
+} from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
 import { getAffectedStores, reapplyOpLocal, rollbackOpLocal } from "./ops";
 import { sortOpsForSync } from "./syncOrder";
@@ -1191,6 +1194,11 @@ export async function processGesture(gesture: Gesture) {
       if (remoteTablesTouched.has("insumo_movimentacoes")) {
         refreshTables.add("insumo_lotes");
         refreshTables.add("insumo_movimentacoes");
+      }
+      for (const detailTable of STANDARD_EVENT_DETAIL_REMOTE_TABLES) {
+        if (remoteTablesTouched.has(detailTable)) {
+          refreshTables.add(detailTable);
+        }
       }
 
       if (refreshTables.size > 0) {

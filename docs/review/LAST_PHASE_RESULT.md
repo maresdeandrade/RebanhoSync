@@ -1,41 +1,48 @@
-# Resultado funcional mais recente — Fase 15 / KPIs e Relatórios
+# Resultado funcional mais recente — Hardening transversal / PR #96
 
-Atualizado em: 2026-08-19
-Baseline de entrada: `main@209913b3d6061f2dc5b2bf0cbfc1b83a012169f6`
-Commit da implementação: `7bebe60e8c866ba36aca512996044701c354ceab`
-PR de revisão: [#93](https://github.com/maresdeandrade/RebanhoSync/pull/93)
-Decisão: **Fase 15 encerrada tecnicamente e publicada para revisão; sem merge**
+Atualizado em: 2026-08-23
+Baseline integrado: `main@4e208ba090daa652f2735c94403317ed4ecbf045`
+Feature head: `fcc977a9d6087ebbf76364e400bf03a9dd686bac`
+PR: [#96](https://github.com/maresdeandrade/RebanhoSync/pull/96)
+Decisão: **integrado**
 
 ## Resultado
 
-A Fase 15 implementa um contrato comum de KPIs por meio de `MetricResult<T>`, com estados `complete`, `partial` e `unavailable`, fontes, limitações, período e cobertura. `MetricCoverage` diferencia histórico, snapshot atual e planejamento. Histórico sem evidência verificada não é apresentado como completo; zero local sem cobertura torna-se indisponível; e pendências locais tornam o resultado parcial.
+O ciclo das Fases 1–6 da auditoria transversal foi integrado em um pacote único de hardening. Foram corrigidos isolamento local cross-farm, occupancy pelo read model canônico, uso operacional do contrato societário vigente, reconciliação mixed-result por operação, retry idempotente, sucesso parcial sanitário, locks de submit, acessibilidade dos dialogs e consistência dos gates de importação/lint.
 
-O período registra fronteiras inclusivas, campo factual e timezone. O timezone válido da fazenda é preferido; ausência ou valor inválido usa o timezone de runtime com limitação explícita. O escopo do agregador é filtrado por `fazendaId`, sem misturar dados de outra fazenda.
+O contrato factual e offline-first permaneceu preservado conforme o [mapa operacional canônico](../architecture/OPERATIONAL_FLOWS.md), com isolamento por `fazenda_id` e auditabilidade.
 
-A reprodução usa `rebuildReproductiveProjection`. O histórico factual do rebanho calcula entradas, saídas e categorias a partir de Eventos e detalhes factuais, sem transformar `state_animais` em histórico. A demanda futura prefere Agenda Sanitária v2 e declara o fallback legado. O comercial exige seleção positiva por `payload.kind = "commercial_operation_v2"`, detalhe `eventos_comercial` vinculado para valores e exclusão de simulações explícitas. Peso comercial não é tratado como pesagem zootécnica.
+## Fechamento de sync
 
-CSV e impressão exportam `metric_coverage`, `metric_scope`, `metric_period` e `metric_timezone` por KPI. Agenda continua sendo intenção, Evento continua sendo fato histórico executado, `state_*` permanece estado atual/read model e Protocolo permanece configuração.
+O hardening preservou resultado por operação, sucesso parcial, terminalidade, rollback e identidade de retry conforme o [mapa operacional canônico](../architecture/OPERATIONAL_FLOWS.md). Este resultado registra a evidência do fechamento, sem redefinir o contrato.
 
-## Gate semântico final
+O último defeito funcional de CI foi corrigido em `7a551a325d9b631c02f43f6e5b487dde10b8e71d`. O cleanup de Supabase rastreado foi corrigido em `3a0cd1e24ef7209b14d1045992ef904e9f973942`. O arquivo `.agents/rules/GRAPHIFY_USAGE.md` foi excluído do pacote antes do merge por `fcc977a9d6087ebbf76364e400bf03a9dd686bac`.
 
-O gate de cobertura confirmou que nenhum código produtivo injeta `state: "verified"`; essa evidência pode ser fornecida apenas pelo chamador com comprovação real. O gate de timezone confirmou o uso de `fazendas.timezone` e o fallback runtime limitado. O gate comercial encontrou e corrigiu a ausência de seleção positiva: agora eventos comerciais sem `payload.kind = "commercial_operation_v2"` não entram, mesmo com detalhe legado correspondente; simulações explicitamente marcadas continuam excluídas.
+## Banco e ambientes
 
-## Patch e banco
-
-O patch contém `src/lib/reports/metricContract.ts`, `src/lib/reports/operationalSummary.ts`, `src/lib/reports/__tests__/operationalSummary.test.ts`, `src/pages/Home.tsx` e `src/pages/Relatorios.tsx`. Não houve migration, alteração de RLS, schema, RPC, Edge Function, grant ou sincronização remota. Produção não foi acessada ou modificada.
+A branch acumulada versionou `supabase/config.toml`, `supabase/.gitignore`, alterações do `sync-batch` e a migration `20260821000000_fix_pgcrypto_digest_search_path.sql`. O baseline funcional utilizou somente Supabase local descartável. Nenhuma migration, RLS, RPC ou Edge Function foi aplicada ou publicada em staging/produção durante o fechamento e merge do PR #96.
 
 ## Validação
 
-- 16 testes focados de `operationalSummary` passaram, incluindo cobertura, zero/ausência, pendências locais, isolamento, timezone, Agenda Sanitária v2, entradas/saídas e simulação comercial.
-- `quality:gate` passou, incluindo lint, hotspots, integração e smoke.
-- `pnpm run build` passou, com warnings preexistentes de Browserslist, chunks e import misto do Dexie.
-- `pnpm exec tsc --noEmit --ignoreDeprecations 5.0` passou sem erros de código. A execução sem override permanece incompatível com o baseline `ignoreDeprecations: "6.0"` usando TypeScript 5.8.3.
-- Prettier passou nos cinco arquivos afetados e `git diff --check` passou.
-- `audit:agents` e `gates:docs` não foram executados com sucesso porque Bash não está disponível no ambiente Windows; `gates:docs` retornou explicitamente `bash not found on Windows`.
-- A formatação global do baseline, envolvendo 532 arquivos fora do escopo, não foi alterada.
+- CI do PR no feature head: lint, 2.668 testes em 354 arquivos, build, gates documentais e repository-clean aprovados;
+- pós-merge local em `main`: lint, build e 5/5 testes focados de reprodução/sync aprovados;
+- CI oficial de `main`: [run 32619923698](https://github.com/maresdeandrade/RebanhoSync/actions/runs/32619923698), com 2.668/2.668 testes, lint, build, cleanup Supabase e repository-clean aprovados;
+- merge commit: `4e208ba090daa652f2735c94403317ed4ecbf045`.
 
-## Próxima fase
+## Impacto arquitetural
 
-A próxima etapa é a revisão da PR #93 contra `main`. A Fase 16 não foi iniciada, nenhum merge foi realizado e nenhuma ação remota irreversível foi executada.
+Todo fechamento de fase deve registrar:
+
+- mapa operacional consultado;
+- fluxos afetados;
+- invariantes alteradas;
+- testes contratuais adicionados ou alterados;
+- necessidade de atualização do [OPERATIONAL_FLOWS.md](../architecture/OPERATIONAL_FLOWS.md).
+
+Uma fase com mudança arquitetural conhecida não pode ser declarada finalizada sem esse registro.
+
+## Próximo estado
+
+A Fase 17 — Decisão Assistida — permanece preparada para abertura formal e não é considerada iniciada por este hardening. O rollout sanitário continua separado e não foi autorizado.
 
 Detalhes no [plano ativo](./ACTIVE_PHASE_PLAN.md), no [handoff atual](./CURRENT_PHASE_HANDOFF.md) e no [estado macro do projeto](../context/PROJECT_STATUS.md).

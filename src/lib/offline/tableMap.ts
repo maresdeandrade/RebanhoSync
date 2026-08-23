@@ -1,6 +1,12 @@
 /**
  * Mapeamento entre o nome da tabela no Supabase e o store correspondente no Dexie.
  */
+export const STANDARD_EVENT_DETAIL_REMOTE_TABLES = [
+  "eventos_ecc",
+  "eventos_pesagem",
+  "eventos_financeiro",
+] as const;
+
 export const TABLE_MAP: Record<string, string> = {
   // State Rails
   animais: "state_animais",

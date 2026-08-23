@@ -50,6 +50,10 @@ Rules, skills e prompts orientam o trabalho do agente; não substituem contratos
 
 Consulte `.agents/rules/CORE_RULES.md` e, somente quando pertinente, `docs/context/SOURCE_OF_TRUTH.md`.
 
+Antes de alterar qualquer fluxo operacional, writer, Evento, `state_*`, Agenda, sync, retry, read model ou operação bulk, consulte `docs/architecture/OPERATIONAL_FLOWS.md`.
+
+Não crie caminho paralelo nem reconstrua contrato canônico sem justificar explicitamente por que o contrato existente não atende.
+
 - Agenda = intenção/tarefa futura.
 - Evento = fato executado.
 - `state_*` = estado atual/read model.

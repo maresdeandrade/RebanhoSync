@@ -1,6 +1,12 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-07-30
+Atualizado em: 2026-08-23
+
+## Responsabilidade documental
+
+Este documento descreve os detalhes internos do mecanismo offline/sync. O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é o contrato canônico de como esse mecanismo participa dos fluxos de domínio; fontes de verdade de domínio não são redefinidas aqui.
+
+Para impacto operacional, consulte no mapa os contratos de resultado por operação (`APPLIED`, `APPLIED_ALTERED`, `RETRYABLE`, `REJECTED` e `BLOCKED_DEPENDENCY`), proteção de pending, pull padrão ou especializado, retry e preservação de identidade.
 
 ## Contrato geral
 
@@ -47,12 +53,23 @@ Regras:
 ### Resultados do worker
 
 - `APPLIED`;
+- `APPLIED_ALTERED`;
 - `RETRYABLE`;
 - `REJECTED`;
 - `CONFLICT`;
 - `BLOCKED_DEPENDENCY`.
 
 O worker não transforma timeout em conflito confirmado. Resultado desconhecido ou identidade divergente permanece rastreável e elegível para reconcile seguro.
+
+Terminalidade e retry são decididos por operação:
+
+- `APPLIED` e `APPLIED_ALTERED` são confirmações remotas e não sofrem rollback ou reenvio como fato novo;
+- `REJECTED` e `CONFLICT` são terminais;
+- `RETRYABLE` permanece transitório;
+- `BLOCKED_DEPENDENCY` é terminal somente quando a dependência concreta da mesma gesture terminou em `REJECTED` ou `CONFLICT`;
+- dependência retryable, ausente, bloqueada ou ainda não resolvida mantém o dependente transitório.
+
+Uma gesture com resultado misto converge por operação. O retry preserva identidade quando representa o mesmo fato, não remove evidência de rejeição e não duplica operações já aplicadas.
 
 ### Dexie e cutover
 

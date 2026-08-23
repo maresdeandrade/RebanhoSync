@@ -1,11 +1,31 @@
 # Plano ativo — Fase 17 / Decisão Assistida
 
-Atualizado em: 2026-08-20
-Status: **Fase 16 encerrada; Fase 17 preparada para abertura, não iniciada**
-Fase 16 integrada em `main@f20146505a04c0eab03c0685f2bdef7763bae221`.
+Atualizado em: 2026-08-23
+Status: **Fase 16 encerrada; hardening transversal integrado; Fase 17 preparada para abertura, não iniciada**
+Baseline integrado atual: `main@4e208ba090daa652f2735c94403317ed4ecbf045`.
 Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Gate obrigatório para mudança de fluxo operacional
+
+Antes de implementar uma mudança em fluxo operacional:
+
+1. consultar o [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md);
+2. identificar o fluxo e as seções afetadas;
+3. declarar writer, fonte de verdade, `state_*`/read model e consumidores afetados;
+4. classificar o contrato como `PRESERVADO`, `ESTENDIDO` ou `ALTERADO`;
+5. quando `ALTERADO`, atualizar o mapa após a validação do patch.
+
+O plano registra intenção e escopo; não redefine o contrato operacional canônico.
+
+## Hardening transversal integrado antes da Fase 17
+
+O PR #96 foi integrado como pacote corretivo transversal e não inicia a Fase 17. Foram fechados os achados de isolamento local por fazenda, occupancy, sociedade pecuária, reconciliação/retry por operação, sucesso parcial sanitário, double submit, acessibilidade e gates de importação/lint.
+
+A reconciliação preservou o contrato por operação descrito no [mapa operacional](../architecture/OPERATIONAL_FLOWS.md). O cleanup do CI restaura exclusivamente `supabase/config.toml` e `supabase/.gitignore` ao conteúdo do `HEAD`, sem ocultar outras alterações do runner.
+
+Evidência integrada: `main@4e208ba090daa652f2735c94403317ed4ecbf045`, PR #96, CI de `main` 2.668/2.668 testes, lint, build, gates documentais e repository-clean aprovados. Nenhum rollout ou deploy Supabase foi autorizado por esse fechamento.
 
 ## Encerramento integrado da Fase 15
 

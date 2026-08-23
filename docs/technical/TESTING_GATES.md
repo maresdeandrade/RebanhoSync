@@ -1,7 +1,6 @@
-```md
 # Testing Gates — RebanhoSync
 
-Atualizado em: 2026-07-30
+Atualizado em: 2026-08-23
 
 ## Objetivo
 
@@ -20,6 +19,21 @@ Sempre registrar:
 - resultado;
 - comando não executado;
 - motivo.
+
+## Mudança em fluxo documentado
+
+Mudança em fluxo operacional exige teste proporcional à invariante alterada. A seção **Testes como contrato** do [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md#26-testes-como-contrato) é a referência canônica.
+
+O gate deve relacionar explicitamente:
+
+```txt
+fluxo afetado
+→ invariante
+→ teste existente ou novo
+→ resultado
+```
+
+Contagem agregada de testes, isoladamente, não comprova cobertura do fluxo.
 
 ---
 
@@ -70,15 +84,17 @@ Se existirem no `package.json`, executar também `lint:docs`, `docs:check` e `ma
 
 Validar manualmente links relativos, títulos/âncoras, consistência do próximo incremento e ausência de alteração em código/schema.
 
-Para o estado corrente da Fase 12, confirmar:
+Para mudanças documentais de estado, confirmar baseline, PR/merge, validações realmente executadas e distinção entre código versionado e deploy efetivo. Gate remoto, feature flag e rollout não podem ser inferidos a partir da presença de arquivos no repositório.
 
-- Fase 12 ativa;
-- item 3.8 como próximo incremento;
-- gate remoto desligado;
-- feature flag local `false`;
-- rollout não autorizado;
-- staging separado de produção;
-- bloqueio `40001` descrito como plataforma, sem causa no SQL não comprovada.
+## Cleanup do Supabase local no CI
+
+`supabase/config.toml` e `supabase/.gitignore` são arquivos rastreados. O cleanup descartável pode remover somente artefatos temporários e deve restaurar exclusivamente esses dois arquivos ao conteúdo do `HEAD` antes do gate de limpeza:
+
+```bash
+git restore --source=HEAD --worktree -- supabase/config.toml supabase/.gitignore
+```
+
+Não usar `git reset --hard`, `git restore .` ou cleanup amplo. O gate `Repository must remain clean` deve continuar detectando qualquer outra modificação inesperada.
 
 ---
 
@@ -225,7 +241,3 @@ corepack --version
 
 * **comando:**
 * **motivo:**
-
-```
-
-```

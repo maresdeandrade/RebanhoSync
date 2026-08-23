@@ -118,6 +118,7 @@ export function AdicionarAnimaisLote({
       (animais ?? []).map((animal) => [animal.id, animal]),
     );
     const ops: OperationInput[] = [];
+    const processedAnimalIds: string[] = [];
 
     for (const animalId of selectedAnimais) {
       const animal =
@@ -137,6 +138,7 @@ export function AdicionarAnimaisLote({
       });
 
       ops.push(...built.ops);
+      processedAnimalIds.push(animal.id);
     }
 
     if (ops.length === 0) {
@@ -152,7 +154,7 @@ export function AdicionarAnimaisLote({
     try {
       await createGesture(lote.fazenda_id, ops);
       showSuccess(
-        `${selectedAnimais.size} animal(is) adicionado(s) ao lote ${lote.nome}.`,
+        `${processedAnimalIds.length} animal(is) adicionado(s) ao lote ${lote.nome}.`,
       );
       setSelectedAnimais(new Set());
       setSearch("");
