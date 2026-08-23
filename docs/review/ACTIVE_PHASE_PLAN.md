@@ -1,9 +1,10 @@
 # Plano ativo — Fase 17 / Decisão Assistida
 
 Atualizado em: 2026-08-23
-Status: **Fase 16 encerrada; hardening transversal integrado; Fase 17 preparada para abertura, não iniciada**
-Baseline integrado atual: `main@4e208ba090daa652f2735c94403317ed4ecbf045`.
-Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
+Status: **Fase 17 ativa; implementação e validação local concluídas no candidate worktree; integração não realizada**
+Baseline de entrada observado: `main@1a4bd008d896f1f4c807aec05a3a360f73d3ae50`, alinhado a `origin/main`.
+Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
+Próxima fase: **Fase 17 — Decisão Assistida ativa até integração e fechamento formal**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -18,6 +19,43 @@ Antes de implementar uma mudança em fluxo operacional:
 5. quando `ALTERADO`, atualizar o mapa após a validação do patch.
 
 O plano registra intenção e escopo; não redefine o contrato operacional canônico.
+
+## Entrega local da Fase 17
+
+Contrato operacional: **PRESERVADO**. A entrega apenas consome Evento + detail de pesagem e Agenda aberta já convergidos no snapshot local. Não cria writer, store Dexie, migration, RPC, fila, Evento, Agenda, `state_*` ou nova fonte factual.
+
+### Inventário e decisão de escopo
+
+| decision_id | Pergunta | Fonte primária | Convergência | Período/cutoff | Cobertura mínima | Estados | Decisão |
+|---|---|---|---|---|---|---|---|
+| `weight_data_quality` | A evidência de pesagem é suficiente e atual para apoiar decisão dependente de peso? | `eventos` + `eventos_pesagem` | `PULL_PADRAO` nas duas fontes | cutoff instantâneo; timezone explícito; limite técnico `weightFreshnessDays` | Evento e detail da mesma fazenda/animal, detail válido e dentro do cutoff | `confirmed`, `partial`, `unknown`, `ambiguous`, `not_permitted` | implementada |
+| `overdue_agenda_review` | Quais intenções de Agenda abertas e vencidas precisam de revisão? | `state_agenda_itens` | `PULL_PADRAO` | data de referência + cutoff + timezone | snapshot carregado, `fazenda_id`, status aberto e `data_prevista` válida | `confirmed`, `partial`, `unknown`, `ambiguous`, `not_permitted` | implementada |
+| `missing_required_information` | Há informação obrigatória ausente? | depende da decisão concreta | `NAO_APLICAVEL` como decisão autônoma | — | fonte técnica específica | — | absorvida por `weight_data_quality` para detail/limite ausente; não virou terceira representação |
+| `withdrawal_review` | A carência pode ser comprovada? | Evento sanitário + detail + snapshots técnicos | superfícies sanitárias padrão e especializadas conforme a cadeia | depende do fato e finalidade | projeção sanitária completa | — | descartada; duplicaria a projeção de carência e ampliaria risco crítico |
+| `movement_history_review` | O histórico de movimentação está completo? | `eventos` + `eventos_movimentacao` | `CONVERGENCIA_NAO_COMPROVADA` para o detail entre instalações/dispositivos | histórico completo | Evento-base + detail convergido | — | descartada; ausência de pull direto do detail impede `confirmed` seguro |
+| `commercial_authorization` | O animal pode ser vendido ou abatido? | fonte técnica/factual múltipla | — | — | aptidão técnica explícita | somente `not_permitted` | descartada; Fase 17 não é motor de autorização |
+
+`queue_rejections` entra somente como fonte auxiliar técnica `LOCAL_DERIVADO`, quando ainda retida. Presença adiciona limitação de possível incompletude; ausência declara explicitamente que não prova inexistência histórica de rejeição.
+
+### Contrato mínimo
+
+`DecisionRecommendation<T>` é um read model derivado e aditivo ao contrato de insights. `MetricResult<T>` foi reutilizado como referência semântica, mas não foi estendido porque seus três estados não expressam conflito, não permissão e convergência por fonte. O novo contrato expõe pergunta, fazenda/entidade, cutoff, timezone, status/razão, fontes, campos presentes/ausentes, convergência, cobertura, limitações, conflitos e ações proibidas.
+
+### UX e efeitos permitidos
+
+- Home mostra a Agenda vencida e até cinco recomendações de peso não confirmadas, ordenadas deterministicamente por animal;
+- `partial`, `unknown`, `ambiguous` e `not_permitted` não usam apresentação equivalente a evidência completa;
+- CTAs apenas navegam: `Atualizar peso` abre o fluxo canônico de pesagem e `Revisar Agenda` abre a Agenda;
+- visualizar ou acionar CTA não cria nem altera fato, estado, Agenda ou fila.
+
+### Validação registrada
+
+- 20 testes do contrato de decisão e 2 testes de apresentação;
+- 47 testes focados de decisão/Home/insights;
+- 467 regressões de reports, insights, Agenda, financeiro, comercial, occupancy e seletores/pull offline;
+- 29 testes de integração, 570 testes de hotspots e 5 smokes;
+- lint global e build de produção aprovados;
+- warnings conhecidos de React Router, Browserslist, import misto do Dexie e tamanho de chunks permaneceram não bloqueantes.
 
 ## Hardening transversal integrado antes da Fase 17
 

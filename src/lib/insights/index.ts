@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./sourceContract";
 export * from "./agendaNeeds";
+export * from "./decisionRecommendations";
 export * from "./sanitarySupplyNeeds";
 export * from "./historicalActivitySummary";
 export * from "./monthlyOperationalKpis";

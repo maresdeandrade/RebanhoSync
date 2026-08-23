@@ -1,48 +1,64 @@
-# Resultado funcional mais recente — Hardening transversal / PR #96
+# Resultado funcional mais recente — Fase 17 / Decisão Assistida
 
 Atualizado em: 2026-08-23
-Baseline integrado: `main@4e208ba090daa652f2735c94403317ed4ecbf045`
-Feature head: `fcc977a9d6087ebbf76364e400bf03a9dd686bac`
-PR: [#96](https://github.com/maresdeandrade/RebanhoSync/pull/96)
-Decisão: **integrado**
+Baseline de entrada observado: `main@1a4bd008d896f1f4c807aec05a3a360f73d3ae50`, alinhado a `origin/main`
+Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`
+Decisão local: **implementação validada; integração pendente**
 
 ## Resultado
 
-O ciclo das Fases 1–6 da auditoria transversal foi integrado em um pacote único de hardening. Foram corrigidos isolamento local cross-farm, occupancy pelo read model canônico, uso operacional do contrato societário vigente, reconciliação mixed-result por operação, retry idempotente, sucesso parcial sanitário, locks de submit, acessibilidade dos dialogs e consistência dos gates de importação/lint.
+A primeira entrega da Fase 17 transforma snapshots canônicos locais em recomendações derivadas, explicáveis e sem persistência. Foram implementadas duas decisões de baixo risco:
 
-O contrato factual e offline-first permaneceu preservado conforme o [mapa operacional canônico](../architecture/OPERATIONAL_FLOWS.md), com isolamento por `fazenda_id` e auditabilidade.
+- qualidade/freshness de peso por animal, usando Evento + detail de pesagem;
+- revisão de Agenda aberta e vencida, usando o read model de Agenda.
 
-## Fechamento de sync
+O contrato `DecisionRecommendation<T>` diferencia `confirmed`, `partial`, `unknown`, `ambiguous` e `not_permitted`, registra cutoff/timezone, cobertura, fontes, convergência, campos presentes/ausentes, conflitos, limitações e ações proibidas. `MetricResult<T>` foi preservado para métricas; não foi forçado a representar semânticas que não possui.
 
-O hardening preservou resultado por operação, sucesso parcial, terminalidade, rollback e identidade de retry conforme o [mapa operacional canônico](../architecture/OPERATIONAL_FLOWS.md). Este resultado registra a evidência do fechamento, sem redefinir o contrato.
+## Guardrails confirmados
 
-O último defeito funcional de CI foi corrigido em `7a551a325d9b631c02f43f6e5b487dde10b8e71d`. O cleanup de Supabase rastreado foi corrigido em `3a0cd1e24ef7209b14d1045992ef904e9f973942`. O arquivo `.agents/rules/GRAPHIFY_USAGE.md` foi excluído do pacote antes do merge por `fcc977a9d6087ebbf76364e400bf03a9dd686bac`.
+- recomendação não é Evento, autorização, execução ou fonte factual;
+- Evento-base de pesagem não substitui `eventos_pesagem`;
+- Agenda concluída não comprova execução;
+- limite de freshness ausente retorna `not_permitted` em vez de usar default fabricado;
+- ausência sem cobertura não vira zero, `false` ou certeza;
+- conflito não usa last-write-wins silencioso;
+- `queue_rejections` só adiciona limitação técnica temporária;
+- venda, abate, aptidão e carência não são autorizados;
+- registros cross-farm são excluídos dentro dos selectors puros;
+- nenhum efeito escreve Evento, Agenda, `state_*`, fila ou recomendação.
 
-## Banco e ambientes
+## Convergência
 
-A branch acumulada versionou `supabase/config.toml`, `supabase/.gitignore`, alterações do `sync-batch` e a migration `20260821000000_fix_pgcrypto_digest_search_path.sql`. O baseline funcional utilizou somente Supabase local descartável. Nenhuma migration, RLS, RPC ou Edge Function foi aplicada ou publicada em staging/produção durante o fechamento e merge do PR #96.
+| Fonte | Classificação | Uso |
+|---|---|---|
+| `eventos` | `PULL_PADRAO` | Evento-base factual de pesagem |
+| `eventos_pesagem` | `PULL_PADRAO` | detail obrigatório de peso |
+| `state_agenda_itens` | `PULL_PADRAO` | intenção aberta/vencida |
+| `queue_rejections` | `LOCAL_DERIVADO` | limitação técnica auxiliar com TTL |
+| `eventos_movimentacao` | `CONVERGENCIA_NAO_COMPROVADA` | não usado nesta entrega |
 
 ## Validação
 
-- CI do PR no feature head: lint, 2.668 testes em 354 arquivos, build, gates documentais e repository-clean aprovados;
-- pós-merge local em `main`: lint, build e 5/5 testes focados de reprodução/sync aprovados;
-- CI oficial de `main`: [run 32619923698](https://github.com/maresdeandrade/RebanhoSync/actions/runs/32619923698), com 2.668/2.668 testes, lint, build, cleanup Supabase e repository-clean aprovados;
-- merge commit: `4e208ba090daa652f2735c94403317ed4ecbf045`.
+- 20 testes do contrato de decisão;
+- 2 testes do painel de apresentação;
+- 47 testes focados de decisão, Home e insights;
+- 467 regressões de reports/operationalSummary, insights, sanitary supply/withdrawal, Agenda, financeiro, comercial, occupancy e pull/selectors offline;
+- 29 testes de integração;
+- 570 testes de hotspots de Agenda/Registrar/Protocolos Sanitários;
+- 5 smokes;
+- lint global e build de produção aprovados;
+- `git diff --check` e gates documentais executados no fechamento.
+
+Warnings de React Router, Browserslist, import misto do Dexie e tamanho de chunks permanecem preexistentes e não bloqueantes.
+
+## Banco, offline e ambientes
+
+Não houve migration, RLS, RPC, Edge Function, store Dexie, queue, mecanismo de sync ou deploy. As recomendações são reconstruídas deterministicamente do snapshot local e cutoff recebidos. Staging, produção, gates remotos e rollout não foram alterados.
 
 ## Impacto arquitetural
 
-Todo fechamento de fase deve registrar:
-
-- mapa operacional consultado;
-- fluxos afetados;
-- invariantes alteradas;
-- testes contratuais adicionados ou alterados;
-- necessidade de atualização do [OPERATIONAL_FLOWS.md](../architecture/OPERATIONAL_FLOWS.md).
-
-Uma fase com mudança arquitetural conhecida não pode ser declarada finalizada sem esse registro.
+O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) foi consultado e permanece **PRESERVADO**. A entrega adiciona um consumidor/read model puro sobre fontes existentes; não muda writer, truth factual, convergência ou fluxo operacional.
 
 ## Próximo estado
 
-A Fase 17 — Decisão Assistida — permanece preparada para abertura formal e não é considerada iniciada por este hardening. O rollout sanitário continua separado e não foi autorizado.
-
-Detalhes no [plano ativo](./ACTIVE_PHASE_PLAN.md), no [handoff atual](./CURRENT_PHASE_HANDOFF.md) e no [estado macro do projeto](../context/PROJECT_STATUS.md).
+Revisar e integrar a Fase 17 somente após autorização explícita. A Fase 18 — Beta/Hardening permanece posterior ao fechamento formal desta entrega.

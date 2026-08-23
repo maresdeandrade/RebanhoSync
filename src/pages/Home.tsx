@@ -37,6 +37,7 @@ import {
 } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { OperationalInsightsPanel } from "@/features/operationalInsights/OperationalInsightsPanel";
+import { DecisionRecommendationsPanel } from "@/features/decisionAssistance/DecisionRecommendationsPanel";
 import { useOperationalInsights } from "@/features/operationalInsights/useOperationalInsights";
 import type {
   BuildOperationalInsightsInput,
@@ -55,6 +56,11 @@ import {
   buildOperationalSummary,
   type InventoryReplenishmentAlertRow,
 } from "@/lib/reports/operationalSummary";
+import {
+  buildOverdueAgendaRecommendation,
+  buildWeightDataQualityRecommendation,
+  type DecisionRecommendation,
+} from "@/lib/insights/decisionRecommendations";
 
 type FarmSummary = {
   nome: string;
@@ -72,6 +78,7 @@ type HomeSnapshot = {
     end: string;
   };
   operationalInsightSources: OperationalInsightsLoadedSources;
+  decisionRecommendations: DecisionRecommendation<unknown>[];
   homeIndicators: HomeIndicatorsResult;
   animais: number;
   lotes: number;
@@ -462,8 +469,55 @@ const Home = () => {
       weightFreshnessDays: farmLifecycleConfig?.weightFreshnessDays,
     });
 
+    const generatedAt = new Date().toISOString();
+    const decisionTimezone =
+      farm?.timezone ??
+      Intl.DateTimeFormat().resolvedOptions().timeZone ??
+      null;
+    const sharedDecisionInput = {
+      fazendaId: activeFarmId,
+      cutoffAt: generatedAt,
+      timezone: decisionTimezone,
+      timezoneVerified: Boolean(farm?.timezone),
+      retainedQueueRejectionCount: syncSummary.rejectionCount,
+    };
+    const weightRecommendations = animaisAtivos
+      .slice()
+      .sort((left, right) => left.id.localeCompare(right.id))
+      .map((animal) =>
+        buildWeightDataQualityRecommendation({
+          ...sharedDecisionInput,
+          animalId: animal.id,
+          freshnessLimitDays: farmLifecycleConfig?.weightFreshnessDays,
+          events: {
+            availability: "loaded",
+            records: eventosTodos,
+            convergence: { mode: "standard_pull", verified: true },
+          },
+          weightDetails: {
+            availability: "loaded",
+            records: eventosPesagem,
+            convergence: { mode: "standard_pull", verified: true },
+          },
+        }),
+      )
+      .filter((recommendation) => recommendation.status !== "confirmed")
+      .slice(0, 5);
+    const decisionRecommendations: DecisionRecommendation<unknown>[] = [
+      buildOverdueAgendaRecommendation({
+        ...sharedDecisionInput,
+        referenceDate: todayKey,
+        agenda: {
+          availability: "loaded",
+          records: agendaAberta,
+          convergence: { mode: "standard_pull", verified: true },
+        },
+      }),
+      ...weightRecommendations,
+    ];
+
     return {
-      generatedAt: new Date().toISOString(),
+      generatedAt,
       referenceDate: todayKey,
       monthlyPeriod,
       operationalInsightSources: {
@@ -472,6 +526,7 @@ const Home = () => {
         events: eventosMensais,
         protocolItems: protocoloItensDisponiveis,
       },
+      decisionRecommendations,
       homeIndicators,
       animais: animaisAtivos.length,
       lotes: lotesAtivos.length,
@@ -882,6 +937,10 @@ const Home = () => {
       <OperationalInsightsPanel
         viewModel={operationalInsights}
         homeIndicators={snapshot.homeIndicators}
+      />
+
+      <DecisionRecommendationsPanel
+        recommendations={snapshot.decisionRecommendations}
       />
 
       {snapshot.replenishmentAlerts.length > 0 ? (

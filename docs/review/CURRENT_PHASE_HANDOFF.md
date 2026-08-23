@@ -1,7 +1,8 @@
 # Handoff atual — Fase 17 / Decisão Assistida
 
 Atualizado em: 2026-08-23
-Baseline integrado atual: `main@4e208ba090daa652f2735c94403317ed4ecbf045`
+Baseline de entrada observado: `main@1a4bd008d896f1f4c807aec05a3a360f73d3ae50`, alinhado a `origin/main`
+Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`
 PR transversal integrado: `#96`
 Feature head integrado: `fcc977a9d6087ebbf76364e400bf03a9dd686bac`
 Baseline integrado da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
@@ -9,20 +10,45 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 16 encerrada; hardening transversal integrado; Fase 17 preparada para abertura, não iniciada**
-Próxima fase: **Fase 18 — Beta/Hardening, após fechamento formal da Fase 17**
+Status: **Fase 17 ativa; implementação e validação local concluídas no candidate worktree; sem commit, push, PR, merge ou deploy**
+Próxima fase: **Fase 17 — Decisão Assistida ativa até integração e fechamento formal**
 
 ## Impacto no mapa operacional
 
 Mapa canônico: [docs/architecture/OPERATIONAL_FLOWS.md](../architecture/OPERATIONAL_FLOWS.md)
 
-Fluxos afetados: `[...]`
+Fluxos afetados: `leitura de pesagem`, `leitura de Agenda aberta`, `Home`
 
-Contrato: `PRESERVADO / ALTERADO / ESTENDIDO / NÃO APLICÁVEL`
+Contrato: `PRESERVADO`
 
-Seções afetadas: `[...]`
+Seções afetadas: `17`, `21`, `23`, `25`, `27` e `28` (somente consumo dos contratos existentes)
 
-Atualização documental pendente: `SIM / NÃO`
+Atualização documental pendente: `NÃO`
+
+## Entrega da Fase 17 — Decisão Assistida
+
+A implementação introduz `DecisionRecommendation<T>` como read model puro, local e reconstruível. Não persiste recomendação e não reutiliza recomendação anterior como evidência. Mesmo snapshot + mesmo cutoff produz a mesma saída.
+
+Decisões implementadas:
+
+- `weight_data_quality`: usa `eventos` + `eventos_pesagem`, ambos com `PULL_PADRAO` comprovado no baseline. Evento-base sem detail nunca confirma peso. Freshness sem limite técnico configurado retorna `not_permitted`; peso stale ou convergência incompleta retorna `partial`; conflitos ficam `ambiguous`.
+- `overdue_agenda_review`: usa `state_agenda_itens` com `PULL_PADRAO`. Agenda aberta prova pendência; Agenda concluída/cancelada permanece estado administrativo e não comprova Evento. Snapshot vazio só confirma zero quando a convergência declarada está verificada.
+
+Proveniência exposta na Home: pergunta, fazenda/entidade, fontes, modo de convergência, cutoff, timezone, cobertura, campos presentes/ausentes, conflitos, status, razão, limitações e ações não autorizadas. Os únicos CTAs navegam para Pesagem ou Agenda; não há writer nem efeito factual.
+
+Isolamento: todas as coleções são filtradas novamente por `fazendaId` dentro dos selectors puros. Registros cross-farm não entram na evidência, cobertura, status ou conflitos. O snapshot da Home já é carregado por índice de fazenda, mas essa filtragem anterior não é a única fronteira.
+
+Limitações de convergência preservadas:
+
+- `eventos_movimentacao` não foi usado; sua ausência no pull padrão não foi reclassificada como defeito;
+- superfícies sanitárias especializadas não foram tratadas como pull genérico;
+- `queue_rejections` é auxiliar técnico temporário, nunca fonte primária ou histórico;
+- fallback de timezone reduz a recomendação para `partial`;
+- a Home limita a apresentação a cinco recomendações de peso não confirmadas; o selector permanece reutilizável por animal.
+
+Decisões descartadas: autorização comercial/abate, liberação de carência, histórico completo de movimentação e nova recomendação financeira. Os motivos são, respectivamente, proibição autorizativa, risco de duplicar projeção sanitária, convergência não comprovada do detail e ausência de necessidade de uma nova leitura concorrente.
+
+Validação: 20 testes do selector, 2 de UI, 47 focados, 467 regressões relacionadas, 29 integrações, 570 hotspots, 5 smokes, lint global e build passaram. Não houve mudança de banco, migration, RLS, RPC, Edge Function, Dexie, sync ou rollout.
 
 ## Hardening transversal integrado — PR #96
 
