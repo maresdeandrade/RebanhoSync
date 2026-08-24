@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-08-20
-Fase atual: **Fase 17 — Decisão Assistida (preparada para abertura, não iniciada)**
-Fase anterior: **Fase 16 — Financeiro Gerencial (integrada via PR #94)**
+Atualizado em: 2026-08-23
+Fase atual: **Fase 18 — Rebaseline Visual 360° (aberta documentalmente; auditoria e implementação visual não iniciadas)**
+Fase anterior: **Fase 17 — Decisão Assistida (integrada em `main@797f84d3aa49f424bf0b6ca013e416c61f24c41e`)**
 
 ## Objetivo
 
@@ -29,8 +29,14 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 9. Fase 14 — Compra/Venda Operacional — **concluída**.
 10. Fase 15 — KPIs/Relatórios.
 11. Fase 16 — Financeiro Gerencial.
-12. Fase 17 — Decisão Assistida.
-13. Fase 18 — Beta/Hardening.
+12. Fase 17 — Decisão Assistida — **concluída**.
+13. Fase 18 — Rebaseline Visual 360°.
+14. Fase 19 — Foundations + Shell + Branding.
+15. Fase 20 — Jornadas UX Críticas.
+16. Fase 21 — Inteligência Operacional v2.
+17. Fase 22 — Eficiência Produtiva e Econômica.
+18. Fase 23 — Simulação Produtiva e Comercial.
+19. Fase 24 — Release Hardening / Scale Readiness.
 
 O rollout do Sync Sanitário v2 permanece não autorizado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`. Isso não reabre o desenvolvimento técnico da Fase 12.
 
@@ -45,11 +51,23 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 ## Próxima fase de desenvolvimento
 
 ```txt
-Fase 16 — Financeiro Gerencial — integrada
-→ Fase 17 — Decisão Assistida — preparada para abertura
+Fase 17 — Decisão Assistida — integrada
+→ Fase 18 — Rebaseline Visual 360° — aberta documentalmente
 ```
 
-A Fase 16 — Financeiro Gerencial foi integralmente concluída e integrada à branch principal (merge commit `f20146505a04c0eab03c0685f2bdef7763bae221`). A implementação incluiu o hardening offline de transações e categorias financeiras, hardening semântico de valores, classificação canônica para prevenção de dupla contagem, separação de caixa/competência/previsão/vencido, estorno append-only auditável e identidades determinísticas para categorias baseadas em SHA-256. A Fase 17 — Decisão Assistida não foi iniciada.
+A Fase 17 — Decisão Assistida foi concluída e integrada à branch principal em `797f84d3aa49f424bf0b6ca013e416c61f24c41e`. A entrega adicionou recomendações explicáveis de qualidade/freshness de peso e revisão de Agenda vencida como read models puros, sem persistir recomendação, criar writer ou autorizar operação crítica. A primeira entrega esperada da Fase 18 é o inventário da experiência visual atual, a definição documental do Design System alvo e a matriz de migração; auditoria e implementação visual ainda não foram iniciadas.
+
+## Roadmap 18–24 — limites
+
+- **Fase 18 — Rebaseline Visual 360°:** auditoria e inventário visual, Design System documental e matriz de migração P0–P3.
+- **Fase 19 — Foundations + Shell + Branding:** foundations visuais, shell da aplicação e identidade de marca.
+- **Fase 20 — Jornadas UX Críticas:** Home, Animais, AnimalDetalhe, Registrar e Agenda.
+- **Fase 21 — Inteligência Operacional v2:** evolução da inteligência operacional reutilizando `MetricResult` e `DecisionRecommendation`.
+- **Fase 22 — Eficiência Produtiva e Econômica:** produtividade e economia; peso observado não equivale automaticamente a peso atual confiável, e o item 22C de lote/pasto depende de histórico de movimentação confiável.
+- **Fase 23 — Simulação Produtiva e Comercial:** simulações com premissas explícitas; projeção não é fato e simulação não é autorização comercial.
+- **Fase 24 — Release Hardening / Scale Readiness:** offline prolongado, multi-device, RLS, recovery, observabilidade, performance, migrations/upgrades e release gates.
+
+Hardening proporcional permanece obrigatório em cada fase. A Fase 24 concentra o hardening sistêmico final para escala. Fases encerradas só reabrem diante de regressão concreta.
 
 ## Risco de rollout
 
@@ -69,5 +87,11 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 14 | Compra/Venda Operacional | **Concluída** em `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078` |
 | 15 | KPIs/Relatórios | **Concluída** |
 | 16 | Financeiro Gerencial | **Integrada via PR #94** |
-| 17 | Decisão Assistida | Preparada para abertura, não iniciada |
-| 18 | Beta/Hardening | Gates técnicos e operacionais atendidos |
+| 17 | Decisão Assistida | **Concluída e integrada** em `main@797f84d3aa49f424bf0b6ca013e416c61f24c41e` |
+| 18 | Rebaseline Visual 360° | Aberta documentalmente; auditoria e implementação visual não iniciadas |
+| 19 | Foundations + Shell + Branding | Após o fechamento da Fase 18 |
+| 20 | Jornadas UX Críticas | Após foundations e shell da Fase 19 |
+| 21 | Inteligência Operacional v2 | Reutilizar `MetricResult` e `DecisionRecommendation` |
+| 22 | Eficiência Produtiva e Econômica | Exigir fontes confiáveis para peso e histórico de movimentação |
+| 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
+| 24 | Release Hardening / Scale Readiness | Hardening sistêmico final para escala |

@@ -1,12 +1,32 @@
-# Plano ativo — Fase 17 / Decisão Assistida
+# Plano ativo — Fase 18 / Rebaseline Visual 360°
 
 Atualizado em: 2026-08-23
-Status: **Fase 17 ativa; implementação e validação local concluídas no candidate worktree; integração não realizada**
-Baseline de entrada observado: `main@1a4bd008d896f1f4c807aec05a3a360f73d3ae50`, alinhado a `origin/main`.
+Status: **Fase 18 ativa somente no registro de continuidade; auditoria e implementação visual não iniciadas**
+Baseline integrado observado: `main@e806443d8d326d9fb5c025e6aa55d5c73582a015`, alinhado a `origin/main`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
-Próxima fase: **Fase 17 — Decisão Assistida ativa até integração e fechamento formal**
+Próxima fase: **Fase 18 — Rebaseline Visual 360°**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Objetivo da Fase 18
+
+- auditar visualmente a experiência atual;
+- produzir o inventário de padrões, componentes e inconsistências;
+- definir documentalmente o Design System alvo;
+- produzir a matriz de migração priorizada de P0 a P3.
+
+## Limites da Fase 18
+
+Nesta fase é proibido:
+
+- executar redesign amplo;
+- migrar todas as telas;
+- alterar domínio ou contratos operacionais;
+- alterar sync;
+- criar ou alterar migration, RLS ou RPC;
+- implementar a Fase 19;
+- criar novos KPIs;
+- criar novas decisões.
 
 ## Gate obrigatório para mudança de fluxo operacional
 
@@ -20,7 +40,7 @@ Antes de implementar uma mudança em fluxo operacional:
 
 O plano registra intenção e escopo; não redefine o contrato operacional canônico.
 
-## Entrega local da Fase 17
+## Entrega integrada da Fase 17
 
 Contrato operacional: **PRESERVADO**. A entrega apenas consome Evento + detail de pesagem e Agenda aberta já convergidos no snapshot local. Não cria writer, store Dexie, migration, RPC, fila, Evento, Agenda, `state_*` ou nova fonte factual.
 
@@ -84,9 +104,9 @@ A Fase 16 implementou o Financeiro Gerencial respeitando estritamente a separaç
 
 Os KPIs financeiros ganharam cobertura conservadora, preservando `MetricResult<T>` e `limitations`. As categorias default adotaram UUID determinístico customizado (SHA-256) com `collision_noop` estrito (exigindo mesma fazenda, slug, ID e `is_default=true`). O estorno foi implementado de forma auditável e append-only (com `reverses_transaction_id`). A migration associada (`20260601000000_financeiro_estorno_categorias.sql`) está versionada em `main`, porém **não foi aplicada em staging ou produção** durante esta fase. O RLS e o isolamento por fazenda permaneceram preservados.
 
-## Preparação para a Fase 17 — Decisão Assistida
+## Guardrails preservados pela Fase 17 — Decisão Assistida
 
-A Fase 17 **não foi iniciada**. Este documento serve como base de preparação.
+A Fase 17 foi concluída e integrada em `main@797f84d3aa49f424bf0b6ca013e416c61f24c41e`. Os limites abaixo permanecem válidos para evolução e hardening:
 
 Contratos restritivos obrigatórios para a Fase 17:
 - Recomendações não são fatos.

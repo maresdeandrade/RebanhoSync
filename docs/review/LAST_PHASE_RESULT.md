@@ -3,7 +3,7 @@
 Atualizado em: 2026-08-23
 Baseline de entrada observado: `main@1a4bd008d896f1f4c807aec05a3a360f73d3ae50`, alinhado a `origin/main`
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`
-Decisão local: **implementação validada; integração pendente**
+Decisão final: **implementação validada e integrada em `main@797f84d3aa49f424bf0b6ca013e416c61f24c41e`**
 
 ## Resultado
 
@@ -61,4 +61,4 @@ O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) foi
 
 ## Próximo estado
 
-Revisar e integrar a Fase 17 somente após autorização explícita. A Fase 18 — Beta/Hardening permanece posterior ao fechamento formal desta entrega.
+A Fase 17 está formalmente encerrada no baseline integrado. O próximo desenvolvimento é a Fase 18 — Rebaseline Visual 360°, cuja primeira entrega esperada é o inventário visual, o Design System documental e a matriz de migração; auditoria e implementação visual ainda não foram iniciadas.

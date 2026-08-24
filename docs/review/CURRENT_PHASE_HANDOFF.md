@@ -1,19 +1,34 @@
-# Handoff atual — Fase 17 / Decisão Assistida
+# Handoff atual — Fase 18 / Rebaseline Visual 360°
 
 Atualizado em: 2026-08-23
-Baseline de entrada observado: `main@1a4bd008d896f1f4c807aec05a3a360f73d3ae50`, alinhado a `origin/main`
+Baseline integrado observado: `main@e806443d8d326d9fb5c025e6aa55d5c73582a015`, alinhado a `origin/main`
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`
 PR transversal integrado: `#96`
-Feature head integrado: `fcc977a9d6087ebbf76364e400bf03a9dd686bac`
+Feature head do hardening transversal: `fcc977a9d6087ebbf76364e400bf03a9dd686bac`
+Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Baseline integrado da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
 Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 17 ativa; implementação e validação local concluídas no candidate worktree; sem commit, push, PR, merge ou deploy**
-Próxima fase: **Fase 17 — Decisão Assistida ativa até integração e fechamento formal**
+Status: **Fase 18 ativa somente no registro de continuidade; auditoria e implementação visual não iniciadas**
+Próxima fase: **Fase 18 — Rebaseline Visual 360°**
 
-## Impacto no mapa operacional
+## Abertura da Fase 18
+
+Contrato operacional: **PRESERVADO**.
+
+Writer: **NÃO APLICÁVEL**.
+
+Fonte factual: **NÃO ALTERADA**.
+
+Sync: **NÃO ALTERADO**.
+
+Objetivo: **rebaseline visual/documental**.
+
+Próxima entrega esperada: **Design System alvo + `MIGRATION_PLAN`**.
+
+## Impacto da entrega integrada da Fase 17 no mapa operacional
 
 Mapa canônico: [docs/architecture/OPERATIONAL_FLOWS.md](../architecture/OPERATIONAL_FLOWS.md)
 
@@ -90,9 +105,9 @@ A implementação entregou:
 
 A migration associada (`20260601000000_financeiro_estorno_categorias.sql`) foi versionada em `main`, porém **NÃO foi aplicada em staging ou produção** durante esta fase. O RLS e o isolamento por `fazenda_id` permaneceram preservados.
 
-## Contratos restritivos para a Fase 17
+## Contratos preservados após a Fase 17
 
-A Fase 17 **não foi iniciada**. A próxima etapa formal exige a obediência aos seguintes limites:
+A Fase 17 foi integrada preservando os limites abaixo, que continuam obrigatórios na Fase 18:
 - Recomendações não são fatos.
 - Insights, sinais e tags são auxiliares.
 - Não autorizar automaticamente venda ou abate.
