@@ -716,7 +716,10 @@ const Home = () => {
         }
       />
 
-      <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-7">
+      <section
+        aria-label="Resumo operacional"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      >
         {[
           {
             label: "Atrasadas",
@@ -814,7 +817,7 @@ const Home = () => {
             </span>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {[
             ["Registrar vacinacao", "/registrar?dominio=sanitario"],
             ["Registrar pesagem", "/registrar?dominio=pesagem"],

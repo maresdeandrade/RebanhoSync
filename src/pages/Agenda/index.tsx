@@ -5,6 +5,7 @@ import { Calendar, Plus } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { PageIntro } from "@/components/ui/page-intro";
+import { StateBanner } from "@/components/ui/state-banner";
 import { useAuth } from "@/hooks/useAuth";
 import { buildAgendaCriticalNavigationTargets } from "@/lib/agenda/criticalNavigation";
 import {
@@ -255,7 +256,8 @@ export default function Agenda() {
       }),
     [baseRows, filtered, hasQuickFiltersActive],
   );
-  const effectiveGroupMode = dominioFilter === "sanitario" ? "evento" : groupMode;
+  const effectiveGroupMode =
+    dominioFilter === "sanitario" ? "evento" : groupMode;
 
   const counts = useMemo(
     () => summarizeAgendaRowsByStatus(filtered),
@@ -264,7 +266,8 @@ export default function Agenda() {
   const pendingSanitaryCount = useMemo(
     () =>
       baseRows.filter(
-        (row) => row.item.dominio === "sanitario" && row.item.status === "agendado",
+        (row) =>
+          row.item.dominio === "sanitario" && row.item.status === "agendado",
       ).length,
     [baseRows],
   );
@@ -362,13 +365,17 @@ export default function Agenda() {
       }),
     [activeFarmId, navigate],
   );
-  const goToAgendaAction = (item: Parameters<typeof actionController.goToRegistrar>[0]) => {
+  const goToAgendaAction = (
+    item: Parameters<typeof actionController.goToRegistrar>[0],
+  ) => {
     const sanitaryAgendaV2Id =
       typeof item.source_ref?.agenda_v2_id === "string"
         ? item.source_ref.agenda_v2_id
         : null;
     if (sanitaryAgendaV2Id) {
-      navigate(`/protocolos-sanitarios?tab=agenda&agendaId=${sanitaryAgendaV2Id}`);
+      navigate(
+        `/protocolos-sanitarios?tab=agenda&agendaId=${sanitaryAgendaV2Id}`,
+      );
       return;
     }
     actionController.goToRegistrar(item);
@@ -447,14 +454,20 @@ export default function Agenda() {
       />
 
       {isRefreshing ? (
-        <div className="rounded-lg border border-info/20 bg-info/5 p-3 text-sm text-muted-foreground">
-          Atualizando dados locais da agenda...
-        </div>
+        <StateBanner
+          tone="info"
+          live="polite"
+          title="Atualizando agenda"
+          description="Os dados locais permanecem disponíveis durante a atualização."
+        />
       ) : null}
       {refreshError ? (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
-          {refreshError}
-        </div>
+        <StateBanner
+          tone="error"
+          live="assertive"
+          title="Não foi possível atualizar a agenda"
+          description={refreshError}
+        />
       ) : null}
 
       <AgendaStatusMetrics

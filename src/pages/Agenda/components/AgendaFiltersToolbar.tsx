@@ -26,11 +26,17 @@ type AgendaFiltersToolbarProps = {
   dominioFilter: string;
   onDominioFilterChange: (value: string) => void;
   quickCalendarModeFilter: AgendaCalendarModeQuickFilter;
-  onQuickCalendarModeFilterChange: (value: AgendaCalendarModeQuickFilter) => void;
+  onQuickCalendarModeFilterChange: (
+    value: AgendaCalendarModeQuickFilter,
+  ) => void;
   quickCalendarAnchorFilter: AgendaCalendarAnchorQuickFilter;
-  onQuickCalendarAnchorFilterChange: (value: AgendaCalendarAnchorQuickFilter) => void;
+  onQuickCalendarAnchorFilterChange: (
+    value: AgendaCalendarAnchorQuickFilter,
+  ) => void;
   quickOperationalClassFilter: AgendaOperationalClassQuickFilter;
-  onQuickOperationalClassFilterChange: (value: AgendaOperationalClassQuickFilter) => void;
+  onQuickOperationalClassFilterChange: (
+    value: AgendaOperationalClassQuickFilter,
+  ) => void;
   dateFrom: string;
   onDateFromChange: (value: string) => void;
   dateTo: string;
@@ -63,19 +69,26 @@ export function AgendaFiltersToolbar({
 }: AgendaFiltersToolbarProps) {
   return (
     <div className="space-y-3">
-      <Toolbar className="bg-muted/20 shadow-none border-none p-0">
-        <ToolbarGroup className="flex-1 gap-2">
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+      <Toolbar aria-label="Busca e filtros da agenda">
+        <ToolbarGroup className="w-full flex-1 gap-2 sm:flex-nowrap">
+          <div className="relative w-full flex-1 sm:min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pl-9 bg-background"
+              aria-label="Buscar na agenda"
+              className="min-h-11 bg-background pl-9"
               placeholder="Buscar por tipo, animal ou lote"
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
             />
           </div>
-          <Select value={groupMode} onValueChange={(value) => onGroupModeChange(value as GroupMode)}>
-            <SelectTrigger className="w-[180px] bg-background">
+          <Select
+            value={groupMode}
+            onValueChange={(value) => onGroupModeChange(value as GroupMode)}
+          >
+            <SelectTrigger
+              aria-label="Agrupar agenda"
+              className="min-h-11 w-full bg-background sm:w-[180px]"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -83,18 +96,27 @@ export function AgendaFiltersToolbar({
               <SelectItem value="evento">Agrupar por evento</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="sm" onClick={onClearFilters} className="text-muted-foreground hover:text-foreground">
+          <Button
+            variant="ghost"
+            onClick={onClearFilters}
+            className="min-h-11 text-muted-foreground hover:text-foreground"
+          >
             Limpar
           </Button>
         </ToolbarGroup>
       </Toolbar>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <Select
           value={statusFilter}
-          onValueChange={(value) => onStatusFilterChange(value as AgendaStatusFilter)}
+          onValueChange={(value) =>
+            onStatusFilterChange(value as AgendaStatusFilter)
+          }
         >
-          <SelectTrigger className="h-8 w-fit min-w-[140px] border-none bg-muted/50 hover:bg-muted text-xs">
+          <SelectTrigger
+            aria-label="Filtrar por status"
+            className="min-h-11 w-full bg-muted/50 text-xs hover:bg-muted"
+          >
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -106,7 +128,10 @@ export function AgendaFiltersToolbar({
         </Select>
 
         <Select value={dominioFilter} onValueChange={onDominioFilterChange}>
-          <SelectTrigger className="h-8 w-fit min-w-[140px] border-none bg-muted/50 hover:bg-muted text-xs">
+          <SelectTrigger
+            aria-label="Filtrar por domínio"
+            className="min-h-11 w-full bg-muted/50 text-xs hover:bg-muted"
+          >
             <SelectValue placeholder="Domínio" />
           </SelectTrigger>
           <SelectContent>
@@ -123,10 +148,15 @@ export function AgendaFiltersToolbar({
         <Select
           value={quickCalendarModeFilter}
           onValueChange={(value) =>
-            onQuickCalendarModeFilterChange(value as AgendaCalendarModeQuickFilter)
+            onQuickCalendarModeFilterChange(
+              value as AgendaCalendarModeQuickFilter,
+            )
           }
         >
-          <SelectTrigger className="h-8 w-fit min-w-[140px] border-none bg-muted/50 hover:bg-muted text-xs">
+          <SelectTrigger
+            aria-label="Filtrar por calendário"
+            className="min-h-11 w-full bg-muted/50 text-xs hover:bg-muted"
+          >
             <SelectValue placeholder="Calendário" />
           </SelectTrigger>
           <SelectContent>
@@ -139,7 +169,7 @@ export function AgendaFiltersToolbar({
           </SelectContent>
         </Select>
 
-        <div className="flex items-center gap-1 bg-muted/50 rounded-md px-2 py-1">
+        <div className="flex min-h-11 items-center gap-1 rounded-lg border border-border/70 bg-muted/50 px-2 py-1">
           <Input
             type="date"
             value={dateFrom}
@@ -160,4 +190,3 @@ export function AgendaFiltersToolbar({
     </div>
   );
 }
-

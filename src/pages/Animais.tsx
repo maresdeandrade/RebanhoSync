@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { FilterBar, FilterBarGroup } from "@/components/ui/toolbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useLotes } from "@/hooks/useLotes";
@@ -285,7 +286,7 @@ function FilterChipGroup<Value extends string>({
               className={cn(
                 "h-11 rounded-full px-4 text-sm font-bold",
                 !active && "bg-background hover:bg-muted/70 border-border",
-                active && "shadow-md"
+                active && "shadow-md",
               )}
               onClick={() => onChange(option.value)}
             >
@@ -1004,7 +1005,9 @@ export default function Animais() {
         description="Lista operacional do rebanho, com filtros compactos e proximo evento em destaque."
         meta={
           <>
-            <StatusBadge tone="neutral">{animalRows.length} animais</StatusBadge>
+            <StatusBadge tone="neutral">
+              {animalRows.length} animais
+            </StatusBadge>
             {lifecyclePendingCount > 0 ? (
               <StatusBadge tone="warning">
                 {lifecyclePendingCount} transicao(oes)
@@ -1031,29 +1034,33 @@ export default function Animais() {
       />
 
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="relative w-full md:max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar animal..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="min-h-11 w-full pl-9"
-            />
-          </div>
-          <Button
-            variant="outline"
-            className="min-h-11"
-            aria-expanded={showFilters}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">
-              {showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-            </span>
-            <span className="sm:hidden">Filtros</span>
-          </Button>
-        </div>
+        <FilterBar aria-label="Busca e filtros de animais">
+          <FilterBarGroup className="w-full flex-1 sm:flex-nowrap">
+            <div className="relative w-full sm:max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                aria-label="Buscar animal"
+                placeholder="Buscar animal..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="min-h-11 w-full pl-9"
+              />
+            </div>
+            <Button
+              variant="outline"
+              className="min-h-11 shrink-0"
+              aria-controls="animal-filters"
+              aria-expanded={showFilters}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">
+                {showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+              </span>
+              <span className="sm:hidden">Filtros</span>
+            </Button>
+          </FilterBarGroup>
+        </FilterBar>
 
         {activeFilterLabels.length > 0 ? (
           <div className="flex flex-wrap gap-2">
@@ -1066,7 +1073,10 @@ export default function Animais() {
         ) : null}
 
         {showFilters && (
-          <div className="rounded-xl border border-border/70 bg-muted/20 p-3 shadow-none">
+          <div
+            id="animal-filters"
+            className="rounded-xl border border-border/70 bg-muted/20 p-3 shadow-none sm:p-4"
+          >
             <div className="grid gap-3">
               <div className="grid gap-3 lg:grid-cols-[minmax(180px,220px)_1fr]">
                 <div className="space-y-2">
@@ -1370,14 +1380,14 @@ export default function Animais() {
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
                         <StatusBadge
-                          tone={animal.status === "ativo" ? "success" : "warning"}
+                          tone={
+                            animal.status === "ativo" ? "success" : "warning"
+                          }
                         >
                           {animal.status}
                         </StatusBadge>
                         {pendingAnimalIds.has(animal.id) && (
-                          <StatusBadge tone="warning">
-                            No aparelho
-                          </StatusBadge>
+                          <StatusBadge tone="warning">No aparelho</StatusBadge>
                         )}
                       </div>
                     </div>
@@ -1601,5 +1611,3 @@ export default function Animais() {
     </div>
   );
 }
-
-

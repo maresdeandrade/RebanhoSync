@@ -1,13 +1,24 @@
 # Migration Plan — RebanhoSync
 
 Atualizado em: 2026-08-24
-Status: **Matriz P0–P3 da Fase 18 — P0 responsivo encerrado; migração ampla não iniciada**
+Status: **Matriz P0–P3 da Fase 18 — cinco jornadas P1 migradas na Fase 20**
 
 ## Decisão da auditoria
 
 **READY.** O inventário de código, rotas, componentes e tokens foi concluído. A inspeção autenticada real cobriu Home, Animais, AnimalDetalhe, Registrar e Agenda em 1440 × 900 e 390 × 844, nos temas claro e escuro. O Registrar também foi verificado em 768 × 1024 e 1024 × 768 para delimitar a quebra responsiva.
 
-**P0 aberto: 0.** O P0 responsivo do Registrar foi resolvido com empilhamento dos controles de contexto abaixo de `lg` e duas colunas a partir de 1024 px. A revalidação autenticada em 390, 768 e 1024 px, nos temas claro e escuro, confirmou rótulos completos, ausência de overlap/clipping, altura de 48 px, foco visível e seleção/navegação preservadas. Home, Animais, AnimalDetalhe, Registrar e Agenda permanecem P1 para a migração ampla da F20. A inspeção usou uma fixture local com dois pastos, dois lotes, oito animais, uma pesagem e uma movimentação interna; a Agenda foi avaliada no estado vazio real, sem fabricar protocolo sanitário ou intenção futura.
+**P0 aberto: 0.** O P0 responsivo do Registrar permanece resolvido. Na Fase 20, Home, Animais, AnimalDetalhe, Registrar e Agenda foram marcadas **MIGRATED** após inspeção autenticada em 390×844, 768×1024, 1024×768 e 1440×900, nos temas claro e escuro. A validação confirmou ausência de overlap, clipping e overflow estrutural, preservação de ações e separação semântica entre Evento, Agenda, `state_*` e Recommendation. Dívidas P2/P3 não bloqueantes permanecem destinadas às fases indicadas na matriz.
+
+## Resultado da Fase 20
+
+| Jornada | Estado | Evidência | Dívida remanescente |
+|---|---|---|---|
+| Home | **MIGRATED** | hierarquia de métricas/atalhos, 4 viewports, light/dark | detalhamento de inteligência permanece F21 |
+| Animais | **MIGRATED** | FilterBar, busca/filtros, lista responsiva, 4 viewports, light/dark | polimento de filtros avançados é P2 |
+| AnimalDetalhe | **MIGRATED** | tabs adaptativas, semântica localizada, 4 viewports, light/dark | decomposição interna do arquivo monolítico é dívida técnica separada |
+| Registrar | **MIGRATED** | progresso, erro e action bar; P0 revalidado, 4 viewports, light/dark | nenhum P0/P1 operacional aberto |
+| Agenda | **MIGRATED** | intenção futura explícita, estados e filtros, 4 viewports, light/dark | amostra visual permaneceu no estado vazio factual |
+
 
 ## Critério
 
@@ -130,11 +141,11 @@ Evidências: `E1` = revisão de código + testes existentes; `E2` = 360/768/1024
 | Route/grupo | Screen | Priority | Current patterns | Target patterns | Visual debt | Responsive debt | Accessibility debt | Operational risk | Dependencies | Phase | Acceptance evidence |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | global | foundations/shell/branding | P1 | tokens parciais, AppShell, nav divergente | Foundations + semantic roles + shell único | hardcoded e aliases ausentes | modelo mobile divergente | foco/contraste/touch gate | alto se status virar brand | contrato F18 | F19 | E1–E4 |
-| `/home` | Home | P1 | dashboard local denso | Dashboard + MetricCard + DecisionCard | competição/hardcoded local | sete métricas | ordem/landmarks | alto | F19 | F20 | E1–E4 |
-| `/animais` | Animais | P1 | cards + filtros locais | List + FilterBar + responsive list | filtros e badges | painel mobile | labels/ordem | alto | F19 | F20 | E1–E4 |
-| `/animais/:id` | AnimalDetalhe | P1 | detalhe monolítico + tabs/dialogs | Detail + StateBanner + tabs adaptativas | 126 cores/duplicações | tabs/dialogs | descriptions/headings | alto | F19 | F20 | E1–E4 |
-| `/registrar` | Registrar | P1 (P0 RESOLVED) | wizard modular + sticky bar | Operational Workflow | composição extensa | seletor de contexto resolvido em 390/768/1024; workflow/sticky pendentes | ordem/foco/status | muito alto | F19 + fluxos canônicos | F20 | E1–E4 |
-| `/agenda` | Agenda | P1 | painéis, filtros e grupos | Agenda + FilterBar + StateBanner | banners locais | filtros/grupos | feedback assíncrono | muito alto | F19 + fluxos canônicos | F20 | E1–E4 |
+| `/home` | Home | MIGRATED | Dashboard compartilhado | Dashboard + MetricCard + DecisionCard | dívida localizada não bloqueante | grid progressivo validado | landmarks preservados | preservado | F19 | F20 concluída | E1–E4 aprovadas |
+| `/animais` | Animais | MIGRATED | List + FilterBar + responsive list | List + FilterBar + responsive list | P2 localizado | mobile validado | labels/ordem tratadas | preservado | F19 | F20 concluída | E1–E4 aprovadas |
+| `/animais/:id` | AnimalDetalhe | MIGRATED | Detail + tabs adaptativas | Detail + StateBanner + tabs adaptativas | arquivo monolítico permanece dívida técnica | tabs validadas | headings/ações preservados | preservado | F19 | F20 concluída | E1–E4 aprovadas |
+| `/registrar` | Registrar | MIGRATED (P0 RESOLVED) | Operational Workflow | Operational Workflow | composição extensa preservada | 390/768/1024/1440 aprovados | progresso/erro/foco tratados | preservado | F19 + fluxos canônicos | F20 concluída | E1–E4 aprovadas |
+| `/agenda` | Agenda | MIGRATED | Agenda + FilterBar + StateBanner | Agenda + FilterBar + StateBanner | estado vazio real validado | filtros/grupos responsivos | feedback assíncrono tratado | preservado | F19 + fluxos canônicos | F20 concluída | E1–E4 aprovadas |
 | auth/contexto | login, signup, invite, fazenda | P2/P3 | cards/forms locais | Form + PageHeader | branding/copy | formulários | labels/erros | médio | F19 | pós-F20 | E1,E2,E4 |
 | cadastro animal | novo/editar/reprodução/pós-parto/cria | P2 | forms/tabs locais | Form/Workflow | cores/composição | fluxo longo | foco/erros | alto | padrões F20 | pós-F20 | E1–E4 |
 | lotes | lista/importar/novo/editar/detalhe | P2 | cards/forms/detalhe local | List/Form/Detail | 93 cores no detalhe | grids/tabelas | ações/labels | alto | F19+F20 | pós-F20 | E1–E4 |

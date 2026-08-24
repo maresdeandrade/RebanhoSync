@@ -13,13 +13,14 @@ export function RegistrarStepIndicator({
   stepLabels,
 }: RegistrarStepIndicatorProps) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div aria-label="Progresso do registro" className="grid grid-cols-3 gap-2">
       {registrationSteps.map((currentStep) => {
         const isActive = step === currentStep;
         const isCompleted = step > currentStep;
         return (
           <div
             key={currentStep}
+            aria-current={isActive ? "step" : undefined}
             className={cn(
               "flex min-w-0 items-center rounded-xl border px-2 py-2 transition-colors sm:px-3",
               isActive || isCompleted

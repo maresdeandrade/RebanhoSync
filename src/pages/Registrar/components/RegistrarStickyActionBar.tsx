@@ -1,5 +1,6 @@
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StateBanner } from "@/components/ui/state-banner";
 
 interface RegistrarStickyActionBarProps {
   step: number;
@@ -28,18 +29,25 @@ export function RegistrarStickyActionBar({
   const isConfirmStep = step === 3; // RegistrationStep.CONFIRM
 
   return (
-    <div className="sticky bottom-0 z-40 bg-card py-3 border-t mt-4 -mx-4 px-4 -mb-4 rounded-b-xl shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] sm:-mx-5 sm:px-5 sm:-mb-5">
+    <div
+      aria-busy={isFinalizing}
+      className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 -mx-4 -mb-4 mt-4 rounded-b-xl border-t bg-card px-4 py-3 shadow-soft sm:-mx-5 sm:-mb-5 sm:px-5 md:bottom-0"
+    >
       {isChooseActionStep && actionStepIssues.length > 0 && (
-        <div className="mb-4 rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm font-medium text-destructive">
-          {actionStepIssues[0]}
-        </div>
+        <StateBanner
+          className="mb-4"
+          tone="error"
+          live="assertive"
+          title="Revise antes de continuar"
+          description={actionStepIssues[0]}
+        />
       )}
-      
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button variant="outline" onClick={onBack}>
           <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
-        
+
         {isChooseActionStep && (
           <Button
             className="flex-1"

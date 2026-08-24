@@ -2013,15 +2013,12 @@ const AnimalDetalhe = () => {
               </Badge>
             )}
             {animal.sexo === "M" && maleDestination && (
-              <Badge
-                variant="outline"
-                className="border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200"
-              >
+              <Badge variant="outline">
                 {getAnimalProductiveDestinationLabel(maleDestination)}
               </Badge>
             )}
             {sociedadeAtiva && (
-              <Badge variant="outline" className="border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200">
+              <Badge variant="secondary">
                 <Handshake className="h-3 w-3 mr-1" />
                 Sociedade {sociedadeAtiva.percentual_fazenda}/{sociedadeAtiva.percentual_parceiro}
               </Badge>
@@ -2031,8 +2028,8 @@ const AnimalDetalhe = () => {
                 variant="outline"
                 className={
                   maleReproductiveStatus === "apto"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                    : "border-amber-200 bg-amber-50 text-amber-800"
+                    ? "border-semantic-success-border bg-semantic-success-muted text-semantic-success-foreground"
+                    : "border-semantic-warning-border bg-semantic-warning-muted text-semantic-warning-foreground"
                 }
               >
                 {getMaleReproductiveStatusLabel(maleReproductiveStatus)}
@@ -2044,7 +2041,7 @@ const AnimalDetalhe = () => {
               </Badge>
             )}
             {sociedadeAtiva && contraparte && (
-              <Badge variant="default" className="bg-blue-600">
+              <Badge variant="default">
                 {contraparte.nome}
                 {` (${sociedadeAtiva.percentual_fazenda}%)`}
               </Badge>
@@ -2097,10 +2094,10 @@ const AnimalDetalhe = () => {
 
       {(animal.payload as Record<string, unknown> | undefined)?.compliance_state === "catch_up_required" ||
       (animal.payload as Record<string, unknown> | undefined)?.history_confidence === "unknown" ? (
-        <Card className="border-amber-200 bg-amber-50/50 shadow-none dark:border-amber-800 dark:bg-amber-950/30">
+        <Card className="border-semantic-warning-border bg-semantic-warning-muted shadow-none">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <ClipboardCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <ClipboardCheck className="h-4 w-4 text-semantic-warning-foreground" />
               Catch-up sanitario necessario
             </CardTitle>
           </CardHeader>
@@ -3015,7 +3012,11 @@ const AnimalDetalhe = () => {
       <WithdrawalBadgePanel readModel={carenciaModel} className="mb-6" />
 
       <Tabs defaultValue="timeline" className="w-full">
-        <TabsList className="grid w-full max-w-[760px] grid-cols-5 bg-muted/40 p-1">
+        <div className="overflow-x-auto pb-1">
+        <TabsList
+          aria-label="Seções do animal"
+          className="grid min-w-[680px] max-w-[760px] grid-cols-5 bg-muted/40 p-1"
+        >
           <TabsTrigger value="timeline" className="gap-2 rounded-md">
             <History className="h-4 w-4" /> Timeline
           </TabsTrigger>
@@ -3032,6 +3033,7 @@ const AnimalDetalhe = () => {
             <DollarSign className="h-4 w-4" /> Comercial
           </TabsTrigger>
         </TabsList>
+        </div>
 
         <TabsContent value="timeline" className="mt-6">
           <div className="space-y-3">

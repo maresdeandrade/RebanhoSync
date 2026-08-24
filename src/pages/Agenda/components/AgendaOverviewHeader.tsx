@@ -26,6 +26,7 @@ export function AgendaOverviewHeader({
       variant="plain"
       eyebrow="Rotina planejada"
       title="Agenda de manejo"
+      description="Intenções e tarefas futuras organizadas por prazo. A execução factual é registrada no Registrar."
       meta={
         <>
           {badges.map((badge) => (
