@@ -1,51 +1,57 @@
-# Resultado funcional mais recente — Fase 18 / Rebaseline Visual 360°
+# Resultado funcional mais recente — Fase 19 / Foundations + Shell + Branding
 
 Atualizado em: 2026-08-24
-Baseline documental de abertura: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`
-Decisão final: **READY — Fase 18 concluída**
+Baseline de abertura: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
+Decisão final: **READY — Fase 19 concluída**
 
 ## Resultado
 
-A Fase 18 inventariou a superfície visual ativa, definiu o Design System alvo e consolidou a migração em uma matriz P0–P3. Foram confirmadas 47 entradas ativas no router, 58 primitives/arquivos compartilhados em `src/components/ui`, 63 arquivos com cores Tailwind hardcoded, 851 ocorrências dessas cores, 265 valores arbitrários e nove inline styles majoritariamente dinâmicos.
+A Fase 19 transformou o contrato visual da F18 em infraestrutura compartilhada sem migrar integralmente Home, Animais, AnimalDetalhe, Registrar ou Agenda.
 
-Os sete contratos documentais foram criados em `docs/design-system/`: foundations, cores semânticas, estados operacionais, padrões de componentes, padrões de telas, regras responsivas e plano de migração.
+- `components.json` aponta agora para o CSS produtivo real, `src/globals.css`;
+- a escala tipográfica nomeada, superfícies, elevação, overlay e foco foram alinhados ao contrato aprovado;
+- `brand.*` e `neutral.*` foram separados das famílias `semantic.success`, `warning`, `error`, `info`, `offline`, `pending`, `conflict`, `unknown` e `not-permitted` em light/dark;
+- Button, Select, Dialog, Sheet e StatusBadge foram ajustados preservando APIs existentes;
+- `PageHeader` e `FilterBar` são aliases das implementações canônicas `PageIntro` e `Toolbar`, sem duplicação;
+- `StateBanner` foi adicionado como composição textual acessível para estados operacionais;
+- AppShell, TopBar, SideNav, MobileBottomNav e BrandMark foram consolidados para gutters, largura, scroll, foco e touch targets.
 
-## Inspeção visual autenticada
+## Branding × semântica
 
-Home, Animais, AnimalDetalhe, Registrar e Agenda foram inspecionadas com fixture local autenticada em desktop/mobile e light/dark. O único P0 confirmado estava no primeiro passo do Registrar: os controles de contexto sobrepunham e cortavam rótulos em 390 e 768 px.
+Primary/accent continuam identificando marca e ações. StatusBadge e StateBanner consomem famílias semânticas próprias; marca não representa automaticamente confirmação, sincronização, segurança ou autorização. Os estados críticos mantêm texto explícito e não dependem somente de cor.
 
-O seletor passou a empilhar abaixo de `lg` e mantém duas colunas em 1024 px+. A revalidação em 390×844, 768×1024 e 1024×768, nos temas claro e escuro, confirmou:
+## Validação visual autenticada
 
-- zero overlap e zero clipping;
-- rótulos completos;
-- controles com 48 px de altura;
-- foco visível;
-- seleção de contexto e avanço para a etapa 2 preservados.
+Home, Animais, AnimalDetalhe, Registrar e Agenda foram carregadas em 390×844, 768×1024, 1024×768 e 1440×900, nos temas claro e escuro. Foram confirmados:
 
-**P0 aberto: 0.** Home, Animais, AnimalDetalhe, Registrar e Agenda permanecem P1 para a migração ampla da F20; dívidas P2/P3 seguem a matriz de migração.
+- navegação mobile em 390 px e sidebar a partir de 768 px;
+- shell, headers, conteúdo e navegação sem clipping estrutural observado;
+- touch targets compartilhados de pelo menos 44 px;
+- Sheet de navegação e Dialog real utilizáveis no mobile;
+- compatibilidade temática de superfícies, bordas, estados, disabled, hover e overlays;
+- P0 responsivo do Registrar preservado em 390, 768 e 1024 px; **P0 novo = 0**.
 
-## Guardrails confirmados
+As dívidas visuais P1/P2/P3 permanecem na matriz da F18 para migração por jornada. AnimalDetalhe continua P1, sem regressão P0 confirmada.
 
-- branding permanece separado de semântica operacional;
-- estados críticos não dependem somente de cor no contrato alvo;
-- Agenda continua intenção futura, Evento continua fato e `state_*` continua estado/read model;
-- peso observado não foi promovido automaticamente a peso atual confiável;
-- nenhum writer, fonte factual, sync, Dexie, migration, RLS, RPC ou regra de domínio foi alterado;
-- Fase 19 não foi implementada.
+## Validação técnica
 
-## Validação
-
-- teste focado de `RegistrarSelectTargetStep`: 2/2 testes aprovados;
-- matriz visual autenticada 390/768/1024 light/dark: aprovada;
+- testes focados de foundations, SideNav, MobileBottomNav e Registrar: **21/21 aprovados**;
 - `pnpm run lint`: aprovado;
-- `pnpm run build`: aprovado, mantendo apenas warnings conhecidos de Browserslist, importação mista de `db.ts` e tamanho de chunks;
+- `pnpm run build`: aprovado, mantendo warnings conhecidos de Browserslist, importação mista de `db.ts` e tamanho de chunks;
 - `pnpm run gates:docs`: aprovado;
 - `git diff --check`: aprovado.
 
+## Guardrails confirmados
+
+- nenhuma regra de negócio foi movida para UI;
+- Evento, Agenda, `state_*`, writers, `DecisionRecommendation` e `MetricResult` não foram alterados;
+- nenhum código de sync, Dexie, Supabase, migration, RLS ou RPC foi alterado;
+- nenhuma jornada da F20 foi migrada integralmente.
+
 ## Impacto arquitetural
 
-O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) permanece **PRESERVADO**. A única mudança de produto foi de layout responsivo no seletor de contexto do Registrar.
+O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) permanece **PRESERVADO**. A mudança é estritamente de infraestrutura visual e apresentação.
 
 ## Próximo estado
 
-O marcador foi avançado para a **Fase 19 — Foundations + Shell + Branding**, cuja implementação ainda não foi iniciada. A migração ampla de Home, Animais, AnimalDetalhe, Registrar e Agenda permanece reservada à F20.
+O marcador foi avançado para a **Fase 20 — Jornadas UX Críticas**, cuja implementação ainda não foi iniciada.

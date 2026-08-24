@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import {
-  ChevronDown,
-  ChevronRight,
-  User,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, User } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -18,12 +14,15 @@ interface SideNavProps {
 export const SideNav = ({ mobile = false }: SideNavProps) => {
   const { role, farmExperienceMode } = useAuth();
   const location = useLocation();
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(["Financeiro"]);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([
+    "Financeiro",
+  ]);
 
   const visibleSections = useMemo(() => {
     const visibleItems = navigationItems
       .filter((item) => {
-        if (item.modes && !item.modes.includes(farmExperienceMode)) return false;
+        if (item.modes && !item.modes.includes(farmExperienceMode))
+          return false;
         if (!item.roles) return true;
         return role ? item.roles.includes(role) : false;
       })
@@ -81,7 +80,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
     nested?: boolean;
   }) =>
     cn(
-      "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors",
+      "group flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
       nested && "pl-6",
       active
         ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
@@ -102,7 +101,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
         "flex flex-col",
         mobile
           ? "w-full bg-transparent"
-          : "hidden w-[272px] shrink-0 border-r border-sidebar-border/80 bg-sidebar md:flex",
+          : "sticky top-14 hidden h-[calc(100svh-3.5rem)] w-[272px] shrink-0 self-start border-r border-sidebar-border/80 bg-sidebar md:flex",
       )}
       aria-label="Navegacao principal"
     >
@@ -112,7 +111,12 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
         </div>
       ) : null}
 
-      <div className={cn("flex-1 overflow-y-auto", mobile ? "px-4 py-4" : "px-4 py-5")}>
+      <div
+        className={cn(
+          "flex-1 overflow-y-auto",
+          mobile ? "px-4 py-4" : "px-4 py-5",
+        )}
+      >
         <div className="space-y-6">
           {visibleSections.map((section) => (
             <div key={section.key} className="space-y-1.5">
@@ -168,7 +172,9 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
                             >
                               {({ isActive }) => (
                                 <>
-                                  <span className={indicatorClasses(isActive)} />
+                                  <span
+                                    className={indicatorClasses(isActive)}
+                                  />
                                   <child.icon className="h-4 w-4" />
                                   {child.label}
                                 </>
@@ -185,7 +191,9 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
                   <NavLink
                     key={item.path}
                     to={item.path!}
-                    className={({ isActive }) => itemClasses({ active: isActive })}
+                    className={({ isActive }) =>
+                      itemClasses({ active: isActive })
+                    }
                   >
                     {({ isActive }) => (
                       <>

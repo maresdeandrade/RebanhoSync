@@ -27,6 +27,7 @@ export * from "./drawer";
 
 // Feedback & status
 export * from "./alert";
+export * from "./state-banner";
 export * from "./badge";
 export * from "./status-badge";
 export * from "./sync-status-badge";  // SyncStatusBadge + OfflinePill (§19)

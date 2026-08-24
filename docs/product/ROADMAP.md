@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
 Atualizado em: 2026-08-24
-Fase atual: **Fase 19 — Foundations + Shell + Branding (marcador avançado; implementação não iniciada)**
-Fase anterior: **Fase 18 — Rebaseline Visual 360° (concluída)**
+Fase atual: **Fase 20 — Jornadas UX Críticas (marcador avançado; implementação não iniciada)**
+Fase anterior: **Fase 19 — Foundations + Shell + Branding (concluída)**
 
 ## Objetivo
 
@@ -31,7 +31,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 11. Fase 16 — Financeiro Gerencial.
 12. Fase 17 — Decisão Assistida — **concluída**.
 13. Fase 18 — Rebaseline Visual 360° — **concluída**.
-14. Fase 19 — Foundations + Shell + Branding.
+14. Fase 19 — Foundations + Shell + Branding — **concluída**.
 15. Fase 20 — Jornadas UX Críticas.
 16. Fase 21 — Inteligência Operacional v2.
 17. Fase 22 — Eficiência Produtiva e Econômica.
@@ -51,11 +51,11 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 ## Próxima fase de desenvolvimento
 
 ```txt
-Fase 18 — Rebaseline Visual 360° — concluída
-→ Fase 19 — Foundations + Shell + Branding — implementação não iniciada
+Fase 19 — Foundations + Shell + Branding — concluída
+→ Fase 20 — Jornadas UX Críticas — implementação não iniciada
 ```
 
-A Fase 18 concluiu a auditoria estática e autenticada, o Design System documental e a matriz P0–P3. O único P0 confirmado, no seletor de contexto do Registrar, foi corrigido e revalidado em 390, 768 e 1024 px nos temas claro e escuro; nenhum P0 permanece aberto. As dívidas P1/P2/P3 seguem para F19/F20 conforme a matriz, sem alteração de domínio ou contrato operacional.
+A Fase 19 implementou foundations tipográficas e semânticas, branding reutilizável, primitives estruturais e shell/navegação responsivos sobre o contrato da F18. Home, Animais, AnimalDetalhe, Registrar e Agenda foram revalidados sem migração ampla em 390, 768, 1024 e 1440 px, light/dark; nenhum P0 novo foi confirmado e o P0 do Registrar permanece resolvido.
 
 ## Roadmap 18–24 — limites
 
@@ -89,8 +89,8 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 16 | Financeiro Gerencial | **Integrada via PR #94** |
 | 17 | Decisão Assistida | **Concluída e integrada** em `main@797f84d3aa49f424bf0b6ca013e416c61f24c41e` |
 | 18 | Rebaseline Visual 360° | **Concluída**; Design System e matriz P0–P3 produzidos, P0 responsivo encerrado |
-| 19 | Foundations + Shell + Branding | Fase atual; implementação não iniciada |
-| 20 | Jornadas UX Críticas | Após foundations e shell da Fase 19 |
+| 19 | Foundations + Shell + Branding | **Concluída**; foundations e shell revalidados em light/dark e mobile/desktop |
+| 20 | Jornadas UX Críticas | Fase atual; implementação não iniciada |
 | 21 | Inteligência Operacional v2 | Reutilizar `MetricResult` e `DecisionRecommendation` |
 | 22 | Eficiência Produtiva e Econômica | Exigir fontes confiáveis para peso e histórico de movimentação |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |

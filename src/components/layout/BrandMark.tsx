@@ -19,7 +19,7 @@ export function BrandMark({
     <Link
       to="/home"
       className={cn(
-        "flex min-w-0 items-center gap-2 rounded-md text-sidebar-foreground outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+        "flex min-h-11 min-w-0 items-center gap-2 rounded-lg text-sidebar-foreground outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
         className,
       )}
       aria-label="Ir para RebanhoSync"

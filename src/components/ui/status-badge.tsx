@@ -9,10 +9,23 @@ const statusBadgeVariants = cva(
     variants: {
       tone: {
         neutral: "border-border bg-muted text-foreground",
-        info: "border-info bg-info text-info-foreground",
-        success: "border-success bg-success text-success-foreground",
-        warning: "border-2 border-warning-strong bg-warning text-warning-foreground",
-        danger: "border-2 border-destructive bg-destructive text-destructive-foreground",
+        info: "border-semantic-info-border bg-semantic-info-muted text-foreground",
+        success:
+          "border-semantic-success-border bg-semantic-success-muted text-foreground",
+        warning:
+          "border-semantic-warning-border bg-semantic-warning-muted text-foreground",
+        danger:
+          "border-semantic-error-border bg-semantic-error-muted text-foreground",
+        offline:
+          "border-semantic-offline-border bg-semantic-offline-muted text-foreground",
+        pending:
+          "border-semantic-pending-border bg-semantic-pending-muted text-foreground",
+        conflict:
+          "border-semantic-conflict-border bg-semantic-conflict-muted text-foreground",
+        unknown:
+          "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground",
+        notPermitted:
+          "border-semantic-not-permitted-border bg-semantic-not-permitted-muted text-foreground",
       },
     },
     defaultVariants: {
@@ -22,14 +35,11 @@ const statusBadgeVariants = cva(
 );
 
 export interface StatusBadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends
+    React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof statusBadgeVariants> {}
 
-export function StatusBadge({
-  className,
-  tone,
-  ...props
-}: StatusBadgeProps) {
+export function StatusBadge({ className, tone, ...props }: StatusBadgeProps) {
   return (
     <div className={cn(statusBadgeVariants({ tone }), className)} {...props} />
   );

@@ -20,13 +20,14 @@ const buttonVariants = cva(
           "border border-border bg-background text-foreground hover:bg-muted hover:text-foreground active:bg-muted/75",
         secondary:
           "border border-border bg-secondary text-secondary-foreground hover:bg-secondary/75 active:bg-secondary/60",
-        ghost: "text-foreground border border-border/50 hover:bg-muted hover:text-foreground active:bg-muted/75",
+        ghost:
+          "text-foreground border border-border/50 hover:bg-muted hover:text-foreground active:bg-muted/75",
         link: "text-primary underline-offset-4 hover:underline font-semibold",
       },
       size: {
         // DS §7.1 — default sobe de h-11 (44 px) para h-12 (48 px) — alvo de toque mínimo
         default: "h-12 px-5 py-2.5",
-        sm: "h-9 rounded-lg px-3.5 text-xs",
+        sm: "h-11 rounded-lg px-3.5 text-xs",
         // DS §7.1 — lg: 56 px — ação primária em formulário de campo
         lg: "h-14 rounded-xl px-6 text-base",
         icon: "h-12 w-12 rounded-xl",

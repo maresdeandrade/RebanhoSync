@@ -38,15 +38,15 @@ export const AppShell = () => {
   }, [activeFarmId, location.pathname]);
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="flex min-h-svh flex-col bg-transparent">
       <SanitaryNotificationManager />
       <TopBar onMenuClick={() => setIsMobileMenuOpen(true)} />
 
-      <div className="flex min-h-[calc(100vh-3.5rem)]">
+      <div className="flex min-h-0 flex-1">
         <SideNav />
 
-        <main className="min-w-0 flex-1 px-4 pb-24 pt-5 sm:px-6 md:pb-5 lg:px-8 lg:py-8">
-          <div className="mx-auto w-full max-w-[1440px]">
+        <main className="min-w-0 flex-1 px-4 pb-24 pt-5 sm:px-6 md:pb-6 lg:px-8 lg:py-8">
+          <div className="app-content">
             <Outlet />
           </div>
         </main>
@@ -57,7 +57,7 @@ export const AppShell = () => {
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetContent
           side="left"
-          className="w-[290px] border-r border-sidebar-border/80 bg-sidebar p-0 shadow-crisp"
+          className="w-[min(90vw,22rem)] max-w-none border-r border-sidebar-border/80 bg-sidebar p-0 shadow-crisp"
         >
           <div className="flex h-full flex-col">
             <div className="border-b border-sidebar-border/80 px-5 py-4">

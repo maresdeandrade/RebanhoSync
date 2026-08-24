@@ -25,7 +25,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { SyncStatusBadge, OfflinePill } from "@/components/ui/sync-status-badge";
+import {
+  SyncStatusBadge,
+  OfflinePill,
+} from "@/components/ui/sync-status-badge";
 import {
   EMPTY_FARM_SYNC_SUMMARY,
   loadFarmSyncSummary,
@@ -170,12 +173,19 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
           <OfflinePill offline={!isOnline} />
 
           {activeFarmId && (
-            <Link to={syncSummary.rejectionCount > 0 ? "/reconciliacao" : "/home"}>
+            <Link
+              to={syncSummary.rejectionCount > 0 ? "/reconciliacao" : "/home"}
+              className="flex min-h-11 items-center rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
               <SyncStatusBadge summary={syncSummary} />
             </Link>
           )}
 
-          <Link to="/perfil" aria-label="Abrir perfil">
+          <Link
+            to="/perfil"
+            aria-label="Abrir perfil"
+            className="flex h-11 w-11 items-center justify-center rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             <Avatar className="h-9 w-9 border border-border/80 shadow-soft transition-transform hover:scale-[1.02]">
               <AvatarImage src={userAvatar || undefined} />
               <AvatarFallback className="bg-primary text-sm font-medium text-primary-foreground">

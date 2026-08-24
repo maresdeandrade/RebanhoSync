@@ -31,3 +31,5 @@ export function ToolbarGroup({
     />
   );
 }
+
+export { Toolbar as FilterBar, ToolbarGroup as FilterBarGroup };

@@ -1,12 +1,23 @@
-# Plano ativo — Fase 19 / Foundations + Shell + Branding
+# Plano ativo — Fase 20 / Jornadas UX Críticas
 
 Atualizado em: 2026-08-24
-Status: **Fase 18 encerrada; Fase 19 ainda não iniciada**
+Status: **Fase 19 encerrada; Fase 20 ainda não iniciada**
+Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
-Próxima fase: **Fase 19 — Foundations + Shell + Branding**
+Próxima fase: **Fase 20 — Jornadas UX Críticas**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Resultado da Fase 19
+
+- foundations reais implementadas em `src/globals.css` e `tailwind.config.ts`, preservando compatibilidade com os tokens existentes;
+- branding separado das famílias semânticas success, warning, error, info, offline, pending, conflict, unknown e not-permitted;
+- drift de `components.json` corrigido para o CSS global real;
+- Button, Select, Dialog, Sheet, StatusBadge, PageIntro/PageHeader e Toolbar/FilterBar alinhados sem quebra de API; `StateBanner` adicionado;
+- AppShell, TopBar, SideNav, MobileBottomNav e BrandMark consolidados para largura, gutters, scroll, foco e touch targets;
+- Home, Animais, AnimalDetalhe, Registrar e Agenda revalidados em 390/768/1024/1440, light/dark; P0 novo = 0;
+- contrato operacional preservado e nenhuma migração integral da F20 iniciada.
 
 ## Objetivo da Fase 18
 

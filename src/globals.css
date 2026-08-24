@@ -38,6 +38,7 @@
     --border: 45 15% 80%;
     --input: 45 15% 80%;
     --ring: 200 100% 25%;
+    --overlay: 200 50% 8% / 0.42;
 
     --radius: 1rem;
 
@@ -45,7 +46,7 @@
     --success: 142 76% 25%;
     --success-foreground: 0 0% 100%;
     --success-muted: 142 50% 90%;
-    
+
     --warning: 35 92% 30%;
     --warning-foreground: 0 0% 100%;
     --warning-muted: 35 90% 90%;
@@ -54,7 +55,56 @@
     --info: 200 100% 25%;
     --info-foreground: 0 0% 100%;
     --info-muted: 200 50% 90%;
-    
+
+    /* Brand identifies the product; semantic families communicate state. */
+    --brand-primary: var(--primary);
+    --brand-primary-foreground: var(--primary-foreground);
+    --brand-accent: var(--accent);
+    --brand-accent-foreground: var(--accent-foreground);
+
+    --neutral-background: var(--background);
+    --neutral-foreground: var(--foreground);
+    --neutral-surface: var(--card);
+    --neutral-muted: var(--muted);
+    --neutral-border: var(--border);
+
+    --semantic-success: var(--success);
+    --semantic-success-foreground: var(--success-foreground);
+    --semantic-success-muted: var(--success-muted);
+    --semantic-success-border: 142 58% 35%;
+    --semantic-warning: var(--warning);
+    --semantic-warning-foreground: var(--warning-foreground);
+    --semantic-warning-muted: var(--warning-muted);
+    --semantic-warning-border: var(--warning-strong);
+    --semantic-error: var(--destructive);
+    --semantic-error-foreground: var(--destructive-foreground);
+    --semantic-error-muted: 0 72% 94%;
+    --semantic-error-border: 0 72% 42%;
+    --semantic-info: var(--info);
+    --semantic-info-foreground: var(--info-foreground);
+    --semantic-info-muted: var(--info-muted);
+    --semantic-info-border: 200 72% 38%;
+    --semantic-offline: 25 82% 32%;
+    --semantic-offline-foreground: 0 0% 100%;
+    --semantic-offline-muted: 30 70% 92%;
+    --semantic-offline-border: 25 72% 38%;
+    --semantic-pending: 42 88% 30%;
+    --semantic-pending-foreground: 0 0% 100%;
+    --semantic-pending-muted: 45 82% 91%;
+    --semantic-pending-border: 42 78% 36%;
+    --semantic-conflict: 272 55% 38%;
+    --semantic-conflict-foreground: 0 0% 100%;
+    --semantic-conflict-muted: 272 48% 93%;
+    --semantic-conflict-border: 272 50% 45%;
+    --semantic-unknown: 215 18% 38%;
+    --semantic-unknown-foreground: 0 0% 100%;
+    --semantic-unknown-muted: 210 18% 92%;
+    --semantic-unknown-border: 215 18% 48%;
+    --semantic-not-permitted: 345 48% 34%;
+    --semantic-not-permitted-foreground: 0 0% 100%;
+    --semantic-not-permitted-muted: 345 38% 93%;
+    --semantic-not-permitted-border: 345 42% 42%;
+
     --surface: 45 15% 98%;
     --surface-muted: 45 10% 92%;
 
@@ -104,12 +154,13 @@
     --border: 200 30% 25%;
     --input: 200 30% 25%;
     --ring: 200 100% 45%;
+    --overlay: 200 60% 3% / 0.72;
 
     /* Status colors */
     --success: 142 76% 40%;
     --success-foreground: 0 0% 100%;
     --success-muted: 142 50% 20%;
-    
+
     --warning: 35 92% 50%;
     --warning-foreground: 200 50% 8%;
     --warning-muted: 35 90% 20%;
@@ -118,7 +169,55 @@
     --info: 200 100% 35%;
     --info-foreground: 0 0% 100%;
     --info-muted: 200 50% 20%;
-    
+
+    --brand-primary: var(--primary);
+    --brand-primary-foreground: var(--primary-foreground);
+    --brand-accent: var(--accent);
+    --brand-accent-foreground: var(--accent-foreground);
+
+    --neutral-background: var(--background);
+    --neutral-foreground: var(--foreground);
+    --neutral-surface: var(--card);
+    --neutral-muted: var(--muted);
+    --neutral-border: var(--border);
+
+    --semantic-success: var(--success);
+    --semantic-success-foreground: 200 50% 8%;
+    --semantic-success-muted: var(--success-muted);
+    --semantic-success-border: 142 58% 48%;
+    --semantic-warning: var(--warning);
+    --semantic-warning-foreground: var(--warning-foreground);
+    --semantic-warning-muted: var(--warning-muted);
+    --semantic-warning-border: 35 82% 58%;
+    --semantic-error: var(--destructive);
+    --semantic-error-foreground: var(--destructive-foreground);
+    --semantic-error-muted: 0 46% 20%;
+    --semantic-error-border: 0 68% 58%;
+    --semantic-info: var(--info);
+    --semantic-info-foreground: var(--info-foreground);
+    --semantic-info-muted: var(--info-muted);
+    --semantic-info-border: 200 72% 52%;
+    --semantic-offline: 28 88% 58%;
+    --semantic-offline-foreground: 200 50% 8%;
+    --semantic-offline-muted: 28 46% 20%;
+    --semantic-offline-border: 28 72% 56%;
+    --semantic-pending: 45 88% 58%;
+    --semantic-pending-foreground: 200 50% 8%;
+    --semantic-pending-muted: 45 46% 20%;
+    --semantic-pending-border: 45 72% 56%;
+    --semantic-conflict: 272 68% 68%;
+    --semantic-conflict-foreground: 200 50% 8%;
+    --semantic-conflict-muted: 272 34% 22%;
+    --semantic-conflict-border: 272 58% 64%;
+    --semantic-unknown: 210 18% 70%;
+    --semantic-unknown-foreground: 200 50% 8%;
+    --semantic-unknown-muted: 210 18% 22%;
+    --semantic-unknown-border: 210 18% 60%;
+    --semantic-not-permitted: 345 58% 66%;
+    --semantic-not-permitted-foreground: 200 50% 8%;
+    --semantic-not-permitted-muted: 345 32% 22%;
+    --semantic-not-permitted-border: 345 50% 62%;
+
     --surface: 200 40% 12%;
     --surface-muted: 200 30% 18%;
 
@@ -140,7 +239,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
     min-height: 100vh;
   }
 
@@ -152,7 +251,7 @@
 
 @layer components {
   .app-kicker {
-    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground;
+    @apply text-kicker uppercase text-muted-foreground;
   }
 
   .app-surface {
@@ -161,6 +260,14 @@
 
   .app-surface-muted {
     @apply rounded-2xl border border-border bg-muted shadow-soft;
+  }
+
+  .app-surface-elevated {
+    @apply rounded-2xl border border-border bg-popover text-popover-foreground shadow-crisp;
+  }
+
+  .app-content {
+    @apply mx-auto w-full max-w-[1440px];
   }
 
   .app-divider {

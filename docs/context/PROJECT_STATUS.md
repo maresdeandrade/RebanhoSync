@@ -2,11 +2,12 @@
 
 Atualizado em: 2026-08-24
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
+Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 19 — Foundations + Shell + Branding** — implementação não iniciada.
-Próxima fase de desenvolvimento: **Fase 19 — Foundations + Shell + Branding**.
+Fase atual: **Fase 20 — Jornadas UX Críticas** — implementação não iniciada.
+Próxima fase de desenvolvimento: **Fase 20 — Jornadas UX Críticas**.
 
 ## Objetivo
 
@@ -23,6 +24,8 @@ RebanhoSync está em beta interno, com arquitetura offline-first e isolamento mu
 A Fase 17 foi concluída e integrada em `main@797f84d3aa49f424bf0b6ca013e416c61f24c41e`. A entrega inclui recomendações puras de qualidade/freshness de peso e revisão de Agenda vencida, com proveniência, convergência, cutoff, conflitos, limitações e não-autorização explícitos. Usa `eventos` + `eventos_pesagem` e `state_agenda_itens`, não persiste recomendação e não altera Evento, Agenda, `state_*`, Dexie, sync ou banco. Os testes focados, regressões proporcionais, lint e build registrados no fechamento passaram.
 
 A Fase 18 foi concluída com inventário de 47 rotas ativas, 58 primitives/arquivos compartilhados, auditoria de tokens e CSS, sete documentos do Design System alvo e matriz de migração P0–P3. A inspeção autenticada cobriu Home, Animais, AnimalDetalhe, Registrar e Agenda em desktop/mobile e light/dark. O único P0 confirmado, no seletor de contexto do Registrar, foi corrigido por layout responsivo e revalidado em 390, 768 e 1024 px nos dois temas; **P0 aberto = 0**. Nenhum redesign amplo ou implementação da Fase 19 foi iniciado.
+
+A Fase 19 foi concluída sobre `main@b07a1252a6436a413f9562a7f9079269cb49d026` com tokens reais de tipografia, superfície, elevação, overlay, branding, neutros e famílias semânticas; primitives estruturais compatíveis; `StateBanner`; aliases `PageHeader` e `FilterBar`; correção do drift de `components.json`; e consolidação responsiva do shell/navegação. A matriz autenticada cobriu Home, Animais, AnimalDetalhe, Registrar e Agenda em 390, 768, 1024 e 1440 px, light/dark. **P0 novo = 0** e a migração ampla da F20 não foi iniciada.
 
 A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 
@@ -128,7 +131,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O próximo desenvolvimento é a Fase 19 — Foundations + Shell + Branding, usando o contrato documental da F18 sem migrar antecipadamente as jornadas da F20. A implementação da F19 não foi iniciada. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+O próximo desenvolvimento é a Fase 20 — Jornadas UX Críticas, migrando Home, Animais, AnimalDetalhe, Registrar e Agenda sobre as foundations da F19, uma jornada por patch verificável. A implementação da F20 não foi iniciada. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 

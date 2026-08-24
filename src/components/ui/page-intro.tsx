@@ -2,8 +2,10 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-interface PageIntroProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, "title"> {
+interface PageIntroProps extends Omit<
+  React.HTMLAttributes<HTMLElement>,
+  "title"
+> {
   eyebrow?: React.ReactNode;
   title: React.ReactNode;
   description?: React.ReactNode;
@@ -35,7 +37,7 @@ export function PageIntro({
       <div className="space-y-3">
         {eyebrow ? <div className="app-kicker">{eyebrow}</div> : null}
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-[-0.02em] text-foreground sm:text-3xl">
+          <h1 className="text-h1 tracking-[-0.02em] text-foreground">
             {title}
           </h1>
           {description ? (
@@ -44,7 +46,9 @@ export function PageIntro({
             </p>
           ) : null}
         </div>
-        {meta ? <div className="flex flex-wrap items-center gap-2">{meta}</div> : null}
+        {meta ? (
+          <div className="flex flex-wrap items-center gap-2">{meta}</div>
+        ) : null}
       </div>
 
       {actions ? (
@@ -55,3 +59,5 @@ export function PageIntro({
     </section>
   );
 }
+
+export { PageIntro as PageHeader };
