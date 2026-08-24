@@ -1,7 +1,7 @@
-# Handoff atual — Fase 18 / Rebaseline Visual 360°
+# Handoff atual — Fase 18 concluída / próxima Fase 19
 
-Atualizado em: 2026-08-23
-Baseline integrado observado: `main@e806443d8d326d9fb5c025e6aa55d5c73582a015`, alinhado a `origin/main`
+Atualizado em: 2026-08-24
+Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`
 PR transversal integrado: `#96`
 Feature head do hardening transversal: `fcc977a9d6087ebbf76364e400bf03a9dd686bac`
@@ -11,10 +11,10 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 18 ativa somente no registro de continuidade; auditoria e implementação visual não iniciadas**
-Próxima fase: **Fase 18 — Rebaseline Visual 360°**
+Status: **Fase 18 encerrada; Fase 19 ainda não iniciada**
+Próxima fase: **Fase 19 — Foundations + Shell + Branding** — não iniciada
 
-## Abertura da Fase 18
+## Fechamento da Fase 18
 
 Contrato operacional: **PRESERVADO**.
 
@@ -24,9 +24,15 @@ Fonte factual: **NÃO ALTERADA**.
 
 Sync: **NÃO ALTERADO**.
 
-Objetivo: **rebaseline visual/documental**.
+Objetivo: **rebaseline visual/documental — concluído**.
 
-Próxima entrega esperada: **Design System alvo + `MIGRATION_PLAN`**.
+Entrega concluída: **Design System alvo + `MIGRATION_PLAN`**.
+
+Evidência visual autenticada: **Home, Animais, AnimalDetalhe, Registrar e Agenda em desktop/mobile e light/dark**. O P0 responsivo do Registrar foi corrigido e revalidado em 390, 768 e 1024 px, nos dois temas, com zero overlap/clipping, rótulos completos, 48 px, foco visível e seleção/navegação preservadas. **P0 aberto = 0**. AnimalDetalhe e as demais jornadas permanecem P1 para a F20. Agenda foi validada no estado vazio real; nenhum protocolo ou intenção futura foi fabricado para preencher a tela.
+
+Próxima entrega esperada: **Fase 19 — foundations, shell e branding**, sem antecipar a migração das jornadas críticas reservada à F20.
+
+Fase 19: **marcador avançado; implementação não iniciada**.
 
 ## Impacto da entrega integrada da Fase 17 no mapa operacional
 

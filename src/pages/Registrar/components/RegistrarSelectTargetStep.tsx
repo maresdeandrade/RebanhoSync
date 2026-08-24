@@ -56,7 +56,7 @@ export function RegistrarSelectTargetStep(
       <CardContent className="space-y-4 p-4 sm:p-5">
         <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-3">
           <Label>Contexto do registro</Label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
             {(
               [
                 { value: "existing", label: "Com animais ou lote existentes" },

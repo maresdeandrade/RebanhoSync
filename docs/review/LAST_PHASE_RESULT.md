@@ -1,64 +1,51 @@
-# Resultado funcional mais recente — Fase 17 / Decisão Assistida
+# Resultado funcional mais recente — Fase 18 / Rebaseline Visual 360°
 
-Atualizado em: 2026-08-23
-Baseline de entrada observado: `main@1a4bd008d896f1f4c807aec05a3a360f73d3ae50`, alinhado a `origin/main`
-Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`
-Decisão final: **implementação validada e integrada em `main@797f84d3aa49f424bf0b6ca013e416c61f24c41e`**
+Atualizado em: 2026-08-24
+Baseline documental de abertura: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`
+Decisão final: **READY — Fase 18 concluída**
 
 ## Resultado
 
-A primeira entrega da Fase 17 transforma snapshots canônicos locais em recomendações derivadas, explicáveis e sem persistência. Foram implementadas duas decisões de baixo risco:
+A Fase 18 inventariou a superfície visual ativa, definiu o Design System alvo e consolidou a migração em uma matriz P0–P3. Foram confirmadas 47 entradas ativas no router, 58 primitives/arquivos compartilhados em `src/components/ui`, 63 arquivos com cores Tailwind hardcoded, 851 ocorrências dessas cores, 265 valores arbitrários e nove inline styles majoritariamente dinâmicos.
 
-- qualidade/freshness de peso por animal, usando Evento + detail de pesagem;
-- revisão de Agenda aberta e vencida, usando o read model de Agenda.
+Os sete contratos documentais foram criados em `docs/design-system/`: foundations, cores semânticas, estados operacionais, padrões de componentes, padrões de telas, regras responsivas e plano de migração.
 
-O contrato `DecisionRecommendation<T>` diferencia `confirmed`, `partial`, `unknown`, `ambiguous` e `not_permitted`, registra cutoff/timezone, cobertura, fontes, convergência, campos presentes/ausentes, conflitos, limitações e ações proibidas. `MetricResult<T>` foi preservado para métricas; não foi forçado a representar semânticas que não possui.
+## Inspeção visual autenticada
+
+Home, Animais, AnimalDetalhe, Registrar e Agenda foram inspecionadas com fixture local autenticada em desktop/mobile e light/dark. O único P0 confirmado estava no primeiro passo do Registrar: os controles de contexto sobrepunham e cortavam rótulos em 390 e 768 px.
+
+O seletor passou a empilhar abaixo de `lg` e mantém duas colunas em 1024 px+. A revalidação em 390×844, 768×1024 e 1024×768, nos temas claro e escuro, confirmou:
+
+- zero overlap e zero clipping;
+- rótulos completos;
+- controles com 48 px de altura;
+- foco visível;
+- seleção de contexto e avanço para a etapa 2 preservados.
+
+**P0 aberto: 0.** Home, Animais, AnimalDetalhe, Registrar e Agenda permanecem P1 para a migração ampla da F20; dívidas P2/P3 seguem a matriz de migração.
 
 ## Guardrails confirmados
 
-- recomendação não é Evento, autorização, execução ou fonte factual;
-- Evento-base de pesagem não substitui `eventos_pesagem`;
-- Agenda concluída não comprova execução;
-- limite de freshness ausente retorna `not_permitted` em vez de usar default fabricado;
-- ausência sem cobertura não vira zero, `false` ou certeza;
-- conflito não usa last-write-wins silencioso;
-- `queue_rejections` só adiciona limitação técnica temporária;
-- venda, abate, aptidão e carência não são autorizados;
-- registros cross-farm são excluídos dentro dos selectors puros;
-- nenhum efeito escreve Evento, Agenda, `state_*`, fila ou recomendação.
-
-## Convergência
-
-| Fonte | Classificação | Uso |
-|---|---|---|
-| `eventos` | `PULL_PADRAO` | Evento-base factual de pesagem |
-| `eventos_pesagem` | `PULL_PADRAO` | detail obrigatório de peso |
-| `state_agenda_itens` | `PULL_PADRAO` | intenção aberta/vencida |
-| `queue_rejections` | `LOCAL_DERIVADO` | limitação técnica auxiliar com TTL |
-| `eventos_movimentacao` | `CONVERGENCIA_NAO_COMPROVADA` | não usado nesta entrega |
+- branding permanece separado de semântica operacional;
+- estados críticos não dependem somente de cor no contrato alvo;
+- Agenda continua intenção futura, Evento continua fato e `state_*` continua estado/read model;
+- peso observado não foi promovido automaticamente a peso atual confiável;
+- nenhum writer, fonte factual, sync, Dexie, migration, RLS, RPC ou regra de domínio foi alterado;
+- Fase 19 não foi implementada.
 
 ## Validação
 
-- 20 testes do contrato de decisão;
-- 2 testes do painel de apresentação;
-- 47 testes focados de decisão, Home e insights;
-- 467 regressões de reports/operationalSummary, insights, sanitary supply/withdrawal, Agenda, financeiro, comercial, occupancy e pull/selectors offline;
-- 29 testes de integração;
-- 570 testes de hotspots de Agenda/Registrar/Protocolos Sanitários;
-- 5 smokes;
-- lint global e build de produção aprovados;
-- `git diff --check` e gates documentais executados no fechamento.
-
-Warnings de React Router, Browserslist, import misto do Dexie e tamanho de chunks permanecem preexistentes e não bloqueantes.
-
-## Banco, offline e ambientes
-
-Não houve migration, RLS, RPC, Edge Function, store Dexie, queue, mecanismo de sync ou deploy. As recomendações são reconstruídas deterministicamente do snapshot local e cutoff recebidos. Staging, produção, gates remotos e rollout não foram alterados.
+- teste focado de `RegistrarSelectTargetStep`: 2/2 testes aprovados;
+- matriz visual autenticada 390/768/1024 light/dark: aprovada;
+- `pnpm run lint`: aprovado;
+- `pnpm run build`: aprovado, mantendo apenas warnings conhecidos de Browserslist, importação mista de `db.ts` e tamanho de chunks;
+- `pnpm run gates:docs`: aprovado;
+- `git diff --check`: aprovado.
 
 ## Impacto arquitetural
 
-O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) foi consultado e permanece **PRESERVADO**. A entrega adiciona um consumidor/read model puro sobre fontes existentes; não muda writer, truth factual, convergência ou fluxo operacional.
+O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) permanece **PRESERVADO**. A única mudança de produto foi de layout responsivo no seletor de contexto do Registrar.
 
 ## Próximo estado
 
-A Fase 17 está formalmente encerrada no baseline integrado. O próximo desenvolvimento é a Fase 18 — Rebaseline Visual 360°, cuja primeira entrega esperada é o inventário visual, o Design System documental e a matriz de migração; auditoria e implementação visual ainda não foram iniciadas.
+O marcador foi avançado para a **Fase 19 — Foundations + Shell + Branding**, cuja implementação ainda não foi iniciada. A migração ampla de Home, Animais, AnimalDetalhe, Registrar e Agenda permanece reservada à F20.

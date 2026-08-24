@@ -1,10 +1,10 @@
-# Plano ativo — Fase 18 / Rebaseline Visual 360°
+# Plano ativo — Fase 19 / Foundations + Shell + Branding
 
-Atualizado em: 2026-08-23
-Status: **Fase 18 ativa somente no registro de continuidade; auditoria e implementação visual não iniciadas**
-Baseline integrado observado: `main@e806443d8d326d9fb5c025e6aa55d5c73582a015`, alinhado a `origin/main`.
+Atualizado em: 2026-08-24
+Status: **Fase 18 encerrada; Fase 19 ainda não iniciada**
+Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
-Próxima fase: **Fase 18 — Rebaseline Visual 360°**
+Próxima fase: **Fase 19 — Foundations + Shell + Branding**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -14,6 +14,15 @@ Este documento contém o plano corrente. Estado técnico detalhado, validações
 - produzir o inventário de padrões, componentes e inconsistências;
 - definir documentalmente o Design System alvo;
 - produzir a matriz de migração priorizada de P0 a P3.
+
+## Resultado da Fase 18
+
+- inventário estático concluído para 47 rotas ativas, 58 primitives/arquivos compartilhados e a superfície atual de tokens/CSS;
+- inspeção autenticada concluída nas cinco jornadas críticas, em 1440 × 900 e 390 × 844, nos temas claro e escuro; o Registrar também foi verificado em 768 × 1024 e 1024 × 768;
+- sete documentos do Design System alvo e matriz única de migração produzidos;
+- P0 responsivo do Registrar corrigido e revalidado em 390/768/1024, light/dark; P0 aberto = 0;
+- contrato operacional preservado e nenhuma implementação da F19 iniciada;
+- Fase 18 encerrada e marcador do ROADMAP avançado para F19.
 
 ## Limites da Fase 18
 
