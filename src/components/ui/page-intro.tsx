@@ -28,7 +28,7 @@ export function PageIntro({
     <section
       className={cn(
         "flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between",
-        variant === "surface" && "app-surface p-5 sm:p-6",
+        variant === "surface" && "app-surface bg-card/80 p-5 sm:p-6",
         variant === "plain" && "py-1",
         className,
       )}

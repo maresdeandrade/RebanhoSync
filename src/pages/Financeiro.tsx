@@ -672,9 +672,9 @@ const Financeiro = () => {
             <CardContent className="space-y-3 p-4">
               <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
                 <span>Entradas Realizadas</span>
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <TrendingUp className="h-4 w-4 text-semantic-success" />
               </p>
-              <p className="text-xl font-semibold tracking-tight text-emerald-600">
+              <p className="text-xl font-semibold tracking-tight text-semantic-success">
                 {money.format(summary.entradasRealizadas)}
               </p>
             </CardContent>
@@ -683,9 +683,9 @@ const Financeiro = () => {
             <CardContent className="space-y-3 p-4">
               <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
                 <span>Saídas Realizadas</span>
-                <TrendingDown className="h-4 w-4 text-red-500" />
+                <TrendingDown className="h-4 w-4 text-semantic-error" />
               </p>
-              <p className="text-xl font-semibold tracking-tight text-red-600">
+              <p className="text-xl font-semibold tracking-tight text-semantic-error">
                 {money.format(summary.saidasRealizadas)}
               </p>
             </CardContent>
@@ -699,8 +699,8 @@ const Financeiro = () => {
               <p
                 className={`text-xl font-semibold tracking-tight ${
                   summary.saldoRealizado >= 0
-                    ? "text-emerald-700"
-                    : "text-red-700"
+                    ? "text-semantic-success"
+                    : "text-semantic-error"
                 }`}
               >
                 {money.format(summary.saldoRealizado)}
@@ -723,7 +723,7 @@ const Financeiro = () => {
               <p className="text-xs font-medium uppercase text-muted-foreground">
                 Receitas por competência
               </p>
-              <p className="text-xl font-semibold text-emerald-700">
+              <p className="text-xl font-semibold text-semantic-success">
                 {money.format(summary.entradasCompetencia)}
               </p>
             </CardContent>
@@ -733,7 +733,7 @@ const Financeiro = () => {
               <p className="text-xs font-medium uppercase text-muted-foreground">
                 Despesas por competência
               </p>
-              <p className="text-xl font-semibold text-red-700">
+              <p className="text-xl font-semibold text-semantic-error">
                 {money.format(summary.saidasCompetencia)}
               </p>
             </CardContent>
@@ -755,7 +755,7 @@ const Financeiro = () => {
               <p className="text-xs font-medium uppercase text-muted-foreground">
                 A receber
               </p>
-              <p className="text-xl font-semibold text-emerald-700">
+              <p className="text-xl font-semibold text-semantic-success">
                 {money.format(summary.previstosAReceber)}
               </p>
             </CardContent>
@@ -765,7 +765,7 @@ const Financeiro = () => {
               <p className="text-xs font-medium uppercase text-muted-foreground">
                 A pagar
               </p>
-              <p className="text-xl font-semibold text-red-700">
+              <p className="text-xl font-semibold text-semantic-error">
                 {money.format(summary.previstosAPagar)}
               </p>
             </CardContent>
@@ -775,7 +775,7 @@ const Financeiro = () => {
               <p className="text-xs font-medium uppercase text-muted-foreground">
                 Vencido a receber
               </p>
-              <p className="text-xl font-semibold text-amber-700">
+              <p className="text-xl font-semibold text-semantic-warning">
                 {money.format(summary.vencidosAReceber)}
               </p>
             </CardContent>
@@ -785,7 +785,7 @@ const Financeiro = () => {
               <p className="text-xs font-medium uppercase text-muted-foreground">
                 Vencido a pagar
               </p>
-              <p className="text-xl font-semibold text-amber-700">
+              <p className="text-xl font-semibold text-semantic-warning">
                 {money.format(summary.vencidosAPagar)}
               </p>
             </CardContent>
@@ -852,8 +852,8 @@ const Financeiro = () => {
                   <p
                     className={
                       row.financeTransactionId
-                        ? "text-xs text-emerald-700"
-                        : "text-xs text-amber-700"
+                        ? "text-xs text-semantic-success"
+                        : "text-xs text-semantic-warning"
                     }
                   >
                     {row.financeTransactionId
@@ -1029,10 +1029,10 @@ const Financeiro = () => {
                     <Badge
                       className={
                         row.tipoOrigem === "legacy"
-                          ? "border-amber-200 bg-amber-50 text-amber-700 font-medium"
+                          ? "border-semantic-warning-border bg-semantic-warning-muted text-foreground font-medium"
                           : row.direction === "entrada"
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 font-medium"
-                            : "border-red-200 bg-red-50 text-red-700 font-medium"
+                            ? "border-semantic-success-border bg-semantic-success-muted text-foreground font-medium"
+                            : "border-semantic-error-border bg-semantic-error-muted text-foreground font-medium"
                       }
                       variant="outline"
                     >
@@ -1042,7 +1042,7 @@ const Financeiro = () => {
                     {row.status === "previsto" && (
                       <Badge
                         variant="secondary"
-                        className="border-blue-200 bg-blue-50 text-blue-700"
+                        className="border-semantic-info-border bg-semantic-info-muted text-foreground"
                       >
                         Previsto
                       </Badge>
@@ -1050,7 +1050,7 @@ const Financeiro = () => {
                     {row.status === "cancelado" && (
                       <Badge
                         variant="destructive"
-                        className="bg-red-100 text-red-800 line-through"
+                        className="bg-semantic-error-muted text-foreground line-through"
                       >
                         Cancelado
                       </Badge>
@@ -1076,8 +1076,8 @@ const Financeiro = () => {
                       row.status === "cancelado"
                         ? "text-muted-foreground line-through"
                         : row.direction === "entrada"
-                          ? "text-emerald-600"
-                          : "text-red-600"
+                          ? "text-semantic-success"
+                          : "text-semantic-error"
                     }`}
                   >
                     {row.direction === "entrada" ? "+" : "-"}{" "}
@@ -1136,7 +1136,7 @@ const Financeiro = () => {
           </DialogHeader>
 
           {txErrors.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 space-y-1">
+            <div className="rounded-lg border border-semantic-error-border bg-semantic-error-muted p-3 text-sm text-foreground space-y-1">
               <p className="font-semibold">Corrija as inconsistências:</p>
               <ul className="list-disc pl-4 space-y-0.5">
                 {txErrors.map((err, i) => (
@@ -1462,7 +1462,7 @@ const Financeiro = () => {
           </DialogHeader>
 
           {catErrors.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+            <div className="rounded-lg border border-semantic-error-border bg-semantic-error-muted p-3 text-sm text-foreground">
               {catErrors[0]}
             </div>
           )}

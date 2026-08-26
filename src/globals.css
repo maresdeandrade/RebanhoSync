@@ -4,27 +4,27 @@
 
 @layer base {
   :root {
-    /* Base surfaces - low-glare, warm neutrals */
-    --background: 45 20% 96%;
-    --foreground: 200 50% 10%;
+    /* Base surfaces - restrained warm neutrals to reduce field glare */
+    --background: 45 14% 93%;
+    --foreground: 200 34% 14%;
 
-    --card: 45 15% 98%;
-    --card-foreground: 200 50% 10%;
+    --card: 45 12% 96%;
+    --card-foreground: 200 34% 14%;
 
-    --popover: 45 15% 98%;
-    --popover-foreground: 200 50% 10%;
+    --popover: 45 12% 97%;
+    --popover-foreground: 200 34% 14%;
 
     /* Primary color - deep petroleum blue for high visibility */
-    --primary: 200 100% 15%;
+    --primary: 200 76% 20%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary - muted surface */
-    --secondary: 45 20% 96%;
-    --secondary-foreground: 200 50% 10%;
+    --secondary: 45 12% 89%;
+    --secondary-foreground: 200 34% 14%;
 
     /* Muted - for secondary text and backgrounds */
-    --muted: 45 15% 92%;
-    --muted-foreground: 200 20% 35%;
+    --muted: 45 10% 87%;
+    --muted-foreground: 200 16% 36%;
 
     /* Accent - warm operational accent */
     --accent: 35 92% 30%;
@@ -35,10 +35,10 @@
     --destructive-foreground: 0 0% 100%;
 
     /* Border and input - strong, visible */
-    --border: 45 15% 80%;
-    --input: 45 15% 80%;
-    --ring: 200 100% 25%;
-    --overlay: 200 50% 8% / 0.42;
+    --border: 45 10% 75%;
+    --input: 45 10% 72%;
+    --ring: 200 76% 30%;
+    --overlay: 200 34% 10% / 0.46;
 
     --radius: 1rem;
 
@@ -105,70 +105,70 @@
     --semantic-not-permitted-muted: 345 38% 93%;
     --semantic-not-permitted-border: 345 42% 42%;
 
-    --surface: 45 15% 98%;
-    --surface-muted: 45 10% 92%;
+    --surface: 45 12% 96%;
+    --surface-muted: 45 10% 87%;
 
     /* Sidebar - high contrast dark */
-    --sidebar-background: 200 50% 12%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 200 100% 25%;
+    --sidebar-background: 200 34% 14%;
+    --sidebar-foreground: 45 12% 92%;
+    --sidebar-primary: 200 76% 30%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 35 92% 30%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 200 40% 25%;
-    --sidebar-ring: 200 100% 35%;
+    --sidebar-border: 200 22% 27%;
+    --sidebar-ring: 200 76% 42%;
   }
 
   .dark {
-    /* Dark mode - high contrast for field use */
-    --background: 200 50% 8%;
-    --foreground: 45 20% 96%;
+    /* Dark mode - lifted neutrals preserve hierarchy without black crush */
+    --background: 200 28% 12%;
+    --foreground: 45 12% 90%;
 
-    --card: 200 40% 12%;
-    --card-foreground: 45 20% 96%;
+    --card: 200 24% 16%;
+    --card-foreground: 45 12% 90%;
 
-    --popover: 200 40% 12%;
-    --popover-foreground: 45 20% 96%;
+    --popover: 200 24% 18%;
+    --popover-foreground: 45 12% 90%;
 
-    /* Primary - bright blue for visibility */
-    --primary: 200 100% 35%;
-    --primary-foreground: 200 50% 8%;
+    /* Primary - visible without neon glare */
+    --primary: 198 72% 42%;
+    --primary-foreground: 200 34% 10%;
 
     /* Secondary */
-    --secondary: 200 30% 18%;
-    --secondary-foreground: 45 20% 96%;
+    --secondary: 200 20% 21%;
+    --secondary-foreground: 45 12% 90%;
 
     /* Muted */
-    --muted: 200 30% 18%;
-    --muted-foreground: 45 20% 70%;
+    --muted: 200 18% 21%;
+    --muted-foreground: 45 8% 66%;
 
     /* Accent */
-    --accent: 35 92% 50%;
-    --accent-foreground: 200 50% 8%;
+    --accent: 35 76% 48%;
+    --accent-foreground: 200 34% 10%;
 
     /* Destructive */
-    --destructive: 0 84% 50%;
+    --destructive: 0 68% 48%;
     --destructive-foreground: 0 0% 100%;
 
     /* Border and input */
-    --border: 200 30% 25%;
-    --input: 200 30% 25%;
-    --ring: 200 100% 45%;
-    --overlay: 200 60% 3% / 0.72;
+    --border: 200 16% 29%;
+    --input: 200 16% 32%;
+    --ring: 198 72% 52%;
+    --overlay: 200 34% 5% / 0.68;
 
     /* Status colors */
-    --success: 142 76% 40%;
-    --success-foreground: 0 0% 100%;
-    --success-muted: 142 50% 20%;
+    --success: 142 52% 40%;
+    --success-foreground: 200 34% 10%;
+    --success-muted: 142 28% 22%;
 
-    --warning: 35 92% 50%;
-    --warning-foreground: 200 50% 8%;
-    --warning-muted: 35 90% 20%;
-    --warning-strong: 35 92% 40%;
+    --warning: 35 72% 50%;
+    --warning-foreground: 200 34% 10%;
+    --warning-muted: 35 34% 22%;
+    --warning-strong: 35 68% 43%;
 
-    --info: 200 100% 35%;
-    --info-foreground: 0 0% 100%;
-    --info-muted: 200 50% 20%;
+    --info: 200 68% 44%;
+    --info-foreground: 200 34% 10%;
+    --info-muted: 200 30% 22%;
 
     --brand-primary: var(--primary);
     --brand-primary-foreground: var(--primary-foreground);
@@ -182,54 +182,54 @@
     --neutral-border: var(--border);
 
     --semantic-success: var(--success);
-    --semantic-success-foreground: 200 50% 8%;
+    --semantic-success-foreground: 200 34% 10%;
     --semantic-success-muted: var(--success-muted);
-    --semantic-success-border: 142 58% 48%;
+    --semantic-success-border: 142 42% 46%;
     --semantic-warning: var(--warning);
     --semantic-warning-foreground: var(--warning-foreground);
     --semantic-warning-muted: var(--warning-muted);
-    --semantic-warning-border: 35 82% 58%;
+    --semantic-warning-border: 35 60% 54%;
     --semantic-error: var(--destructive);
     --semantic-error-foreground: var(--destructive-foreground);
-    --semantic-error-muted: 0 46% 20%;
-    --semantic-error-border: 0 68% 58%;
+    --semantic-error-muted: 0 32% 22%;
+    --semantic-error-border: 0 54% 54%;
     --semantic-info: var(--info);
     --semantic-info-foreground: var(--info-foreground);
     --semantic-info-muted: var(--info-muted);
-    --semantic-info-border: 200 72% 52%;
-    --semantic-offline: 28 88% 58%;
-    --semantic-offline-foreground: 200 50% 8%;
-    --semantic-offline-muted: 28 46% 20%;
-    --semantic-offline-border: 28 72% 56%;
-    --semantic-pending: 45 88% 58%;
-    --semantic-pending-foreground: 200 50% 8%;
-    --semantic-pending-muted: 45 46% 20%;
-    --semantic-pending-border: 45 72% 56%;
-    --semantic-conflict: 272 68% 68%;
-    --semantic-conflict-foreground: 200 50% 8%;
-    --semantic-conflict-muted: 272 34% 22%;
-    --semantic-conflict-border: 272 58% 64%;
-    --semantic-unknown: 210 18% 70%;
-    --semantic-unknown-foreground: 200 50% 8%;
-    --semantic-unknown-muted: 210 18% 22%;
-    --semantic-unknown-border: 210 18% 60%;
-    --semantic-not-permitted: 345 58% 66%;
-    --semantic-not-permitted-foreground: 200 50% 8%;
-    --semantic-not-permitted-muted: 345 32% 22%;
-    --semantic-not-permitted-border: 345 50% 62%;
+    --semantic-info-border: 200 54% 50%;
+    --semantic-offline: 28 66% 54%;
+    --semantic-offline-foreground: 200 34% 10%;
+    --semantic-offline-muted: 28 30% 22%;
+    --semantic-offline-border: 28 52% 50%;
+    --semantic-pending: 45 66% 54%;
+    --semantic-pending-foreground: 200 34% 10%;
+    --semantic-pending-muted: 45 30% 22%;
+    --semantic-pending-border: 45 52% 50%;
+    --semantic-conflict: 272 48% 64%;
+    --semantic-conflict-foreground: 200 34% 10%;
+    --semantic-conflict-muted: 272 26% 23%;
+    --semantic-conflict-border: 272 42% 58%;
+    --semantic-unknown: 210 14% 66%;
+    --semantic-unknown-foreground: 200 34% 10%;
+    --semantic-unknown-muted: 210 14% 23%;
+    --semantic-unknown-border: 210 14% 56%;
+    --semantic-not-permitted: 345 42% 62%;
+    --semantic-not-permitted-foreground: 200 34% 10%;
+    --semantic-not-permitted-muted: 345 24% 23%;
+    --semantic-not-permitted-border: 345 38% 56%;
 
-    --surface: 200 40% 12%;
-    --surface-muted: 200 30% 18%;
+    --surface: 200 24% 16%;
+    --surface-muted: 200 18% 21%;
 
     /* Sidebar */
-    --sidebar-background: 200 50% 10%;
-    --sidebar-foreground: 45 20% 96%;
-    --sidebar-primary: 200 100% 40%;
-    --sidebar-primary-foreground: 200 50% 8%;
-    --sidebar-accent: 35 92% 50%;
-    --sidebar-accent-foreground: 200 50% 8%;
-    --sidebar-border: 200 30% 25%;
-    --sidebar-ring: 200 100% 45%;
+    --sidebar-background: 200 28% 14%;
+    --sidebar-foreground: 45 12% 90%;
+    --sidebar-primary: 198 64% 36%;
+    --sidebar-primary-foreground: 45 12% 94%;
+    --sidebar-accent: 35 72% 48%;
+    --sidebar-accent-foreground: 200 34% 10%;
+    --sidebar-border: 200 16% 27%;
+    --sidebar-ring: 198 72% 52%;
   }
 }
 
@@ -255,11 +255,11 @@
   }
 
   .app-surface {
-    @apply rounded-2xl border border-border bg-card shadow-soft;
+    @apply rounded-2xl border border-border/80 bg-card shadow-none;
   }
 
   .app-surface-muted {
-    @apply rounded-2xl border border-border bg-muted shadow-soft;
+    @apply rounded-2xl border border-border/80 bg-muted/70 shadow-none;
   }
 
   .app-surface-elevated {

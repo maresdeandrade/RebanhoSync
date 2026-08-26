@@ -47,7 +47,7 @@ function LoteCard({ lote }: { lote: Lote }) {
         ) : null}
       </div>
 
-      <div className="grid grid-cols-3 gap-4 border-t border-border/70 pt-3 text-sm">
+      <div className="grid grid-cols-2 gap-4 border-t border-border/70 pt-3 text-sm sm:grid-cols-3">
         <div>
           <p className="text-xs font-semibold uppercase text-muted-foreground">
             Animais
@@ -56,7 +56,7 @@ function LoteCard({ lote }: { lote: Lote }) {
             {typeof totalAnimais === "number" ? totalAnimais : "-"}
           </p>
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 sm:col-auto">
           <p className="text-xs font-semibold uppercase text-muted-foreground">
             Peso medio
           </p>
@@ -64,11 +64,11 @@ function LoteCard({ lote }: { lote: Lote }) {
             {pesoMedio}
           </p>
         </div>
-        <div className="min-w-0">
+        <div className="col-span-2 min-w-0 sm:col-span-1">
           <p className="text-xs font-semibold uppercase text-muted-foreground">
             Pasto
           </p>
-          <p className="mt-1 truncate text-lg font-semibold text-foreground">
+          <p className="mt-1 text-base font-semibold leading-6 text-foreground sm:truncate sm:text-lg">
             {pasto?.nome ?? "-"}
           </p>
         </div>

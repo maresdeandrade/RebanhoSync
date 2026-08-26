@@ -1,7 +1,7 @@
 # Semantic Colors — RebanhoSync
 
 Atualizado em: 2026-08-24
-Status: **Contrato visual alvo da Fase 18 — documental, ainda não implementado**
+Status: **Contrato implementado na Fase 19 — recalibrado após a Fase 20**
 
 ## Regra central
 
@@ -9,11 +9,13 @@ Status: **Contrato visual alvo da Fase 18 — documental, ainda não implementad
 
 ## Estado atual
 
-O tema produtivo contém `primary`, `secondary`, `accent`, `destructive`, `success`, `warning`, `info`, neutros e superfícies em light/dark. Ainda não há famílias produtivas próprias para `offline`, `pending`, `conflict`, `unknown` e `not_permitted`. Há uso recorrente de cores Tailwind literais em telas, principalmente detalhes densos; a migração deve substituir papel por papel, sem busca e troca global.
+O tema produtivo contém famílias próprias para `brand`, neutros, `success`, `warning`, `error`, `info`, `offline`, `pending`, `conflict`, `unknown` e `not_permitted`, com foreground, muted e border em light/dark. Cores Tailwind literais ainda existem em telas legadas; a migração substitui papel por papel, sem busca e troca global.
+
+Após a F20, a escala foi recalibrada para reduzir ofuscação no tema claro e densidade no escuro. Financeiro, Relatórios e os cockpits de Lote/Pasto passaram a consumir papéis semânticos em vez de valores `emerald`, `red`, `amber`, `blue`, `rose` e `slate` nos pontos migrados.
 
 ## Papéis alvo
 
-Cada família deve expor `foreground`, `background/muted`, `border` e, quando usada em ação sólida, `solid-foreground`. Os valores literais serão calibrados na Fase 19 com teste de contraste.
+Cada família expõe `foreground`, `background/muted`, `border` e, quando usada em ação sólida, `solid-foreground`. A calibração preserva significado e contraste entre os temas.
 
 | Família | Significado | Usar em | Não usar em | Light/dark e associação |
 |---|---|---|---|---|

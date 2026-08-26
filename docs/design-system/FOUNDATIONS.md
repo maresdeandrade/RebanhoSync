@@ -1,24 +1,32 @@
 # Foundations — RebanhoSync
 
 Atualizado em: 2026-08-24
-Status: **Contrato visual alvo da Fase 18 — documental, ainda não implementado**
+Status: **Contrato implementado na Fase 19 — recalibrado após a Fase 20**
 
 ## Propósito e precedência
 
-Este documento define as fundações visuais alvo do RebanhoSync. Ele orienta a Fase 19 e as migrações posteriores; não modifica código, domínio ou o contrato operacional canônico de [OPERATIONAL_FLOWS](../architecture/OPERATIONAL_FLOWS.md).
+Este documento define as fundações visuais implementadas do RebanhoSync. Ele orienta as migrações posteriores; não modifica domínio nem o contrato operacional canônico de [OPERATIONAL_FLOWS](../architecture/OPERATIONAL_FLOWS.md).
 
-Quando houver conflito visual com documentos anteriores em `docs/ux/**`, este conjunto de sete documentos da Fase 18 é a referência alvo. Código e tokens produtivos continuam descrevendo o estado implementado até a migração.
+Quando houver conflito visual com documentos anteriores em `docs/ux/**`, este conjunto de sete documentos da Fase 18 é a referência. Código e tokens produtivos descrevem o estado efetivamente implementado.
 
 ## Baseline auditado
 
 - fonte tipográfica: Inter variável, carregada em `src/main.tsx`;
-- tema produtivo: variáveis HSL em `src/globals.css`, com pares light/dark;
+- tema produtivo: variáveis HSL em `src/globals.css`, com pares light/dark e escala neutra de baixa ofuscação;
 - configuração: `tailwind.config.ts`, com escala tipográfica, cores semânticas parciais, radius e sombras;
 - shell: largura máxima de 1440 px, navegação lateral a partir de `md` e barra inferior no mobile;
 - estilos: não existe `src/styles/**`; o CSS global está centralizado em `src/globals.css`;
-- dívida: 63 arquivos usam cores Tailwind hardcoded, com 851 ocorrências; há 265 valores arbitrários;
+- dívida auditada na F18: 63 arquivos usavam cores Tailwind hardcoded, com 851 ocorrências; a substituição permanece incremental por papel semântico;
 - inline style: nove ocorrências, em maioria valores dinâmicos de progresso, gráfico, avatar ou largura; não são prioridade de migração por si só;
-- drift de tooling: `components.json` aponta para `src/index.css`, enquanto o CSS efetivo é `src/globals.css`. Corrigir somente na Fase 19.
+- tooling: `components.json` foi alinhado ao CSS efetivo `src/globals.css` na F19.
+
+## Calibração pós-F20
+
+- light: `background`, `card`, `muted` e bordas usam neutros quentes mais baixos para reduzir brilho contínuo;
+- dark: fundo e cards foram elevados e dessaturados para evitar compressão em preto azulado;
+- cards informativos usam borda como separador padrão; sombra fica reservada a popovers, dialogs e overlays;
+- `PageIntro`, `Card` e `Toolbar` propagam essa hierarquia às jornadas que ainda aguardam migração específica;
+- a calibração foi inspecionada em 390 × 844 e 1440 × 900, light/dark, sem overflow estrutural nas rotas representativas P2/P3.
 
 ## Tipografia
 

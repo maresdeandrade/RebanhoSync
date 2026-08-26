@@ -2,9 +2,11 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { RequireFarm } from "./components/auth/RequireFarm";
+import { RequireSuperAdmin } from "./components/auth/RequireSuperAdmin";
 import { AppShell } from "./components/layout/AppShell";
 import { LoadingScreen } from "./components/ui/loading-screen";
 
+const AdminBackoffice = lazy(() => import("./pages/Admin"));
 const Home = lazy(() => import("./pages/Home"));
 const Animais = lazy(() => import("./pages/Animais"));
 const AnimaisImportar = lazy(() => import("./pages/AnimaisImportar"));
@@ -79,6 +81,17 @@ const App = () => (
           element={
             <RequireAuth>
               <CriarFazenda />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <RequireAuth>
+              <RequireSuperAdmin>
+                <AdminBackoffice />
+              </RequireSuperAdmin>
             </RequireAuth>
           }
         />

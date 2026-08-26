@@ -105,13 +105,13 @@ function CockpitCard({
   const getStatusStyles = (s: typeof status) => {
     switch (s) {
       case "complete":
-        return "border-emerald-200 bg-emerald-50/20 text-emerald-800 dark:border-emerald-800/20 dark:bg-emerald-950/10 dark:text-emerald-300";
+        return "border-semantic-success-border bg-semantic-success-muted text-foreground";
       case "partial":
-        return "border-amber-200 bg-amber-50/20 text-amber-800 dark:border-amber-800/20 dark:bg-amber-950/10 dark:text-amber-300";
+        return "border-semantic-warning-border bg-semantic-warning-muted text-foreground";
       case "blocked":
-        return "border-rose-200 bg-rose-50/20 text-rose-800 dark:border-rose-800/20 dark:bg-rose-950/10 dark:text-rose-300";
+        return "border-semantic-error-border bg-semantic-error-muted text-foreground";
       default:
-        return "border-slate-200 bg-slate-50/20 text-slate-800 dark:border-slate-800/20 dark:bg-slate-900/10 dark:text-slate-400";
+        return "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground";
     }
   };
 
@@ -131,18 +131,18 @@ function CockpitCard({
   const getStatusBadgeStyles = (s: typeof status) => {
     switch (s) {
       case "complete":
-        return "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800";
+        return "border-semantic-success-border bg-semantic-success-muted text-foreground";
       case "partial":
-        return "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-800";
+        return "border-semantic-warning-border bg-semantic-warning-muted text-foreground";
       case "blocked":
-        return "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/50 dark:text-rose-300 dark:border-rose-800";
+        return "border-semantic-error-border bg-semantic-error-muted text-foreground";
       default:
-        return "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
+        return "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground";
     }
   };
 
   return (
-    <div className={`flex flex-col justify-between rounded-xl border p-4 shadow-sm transition-all hover:shadow-md ${getStatusStyles(status)}`}>
+    <div className={`flex flex-col justify-between rounded-xl border p-4 ${getStatusStyles(status)}`}>
       <div className="space-y-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
@@ -182,7 +182,7 @@ function CockpitCard({
           </p>
         )}
         {limitation && (
-          <p className="text-amber-700/90 dark:text-amber-400/90 font-medium">
+          <p className="font-medium text-semantic-warning">
             <span className="font-semibold">Nota:</span> {limitation}
           </p>
         )}
@@ -621,7 +621,7 @@ export default function LoteDetalhe() {
         <Card
           className={
             movementBlocked
-              ? "border-amber-200 bg-amber-50/60"
+              ? "border-semantic-warning-border bg-semantic-warning-muted"
               : "border-warning/30 bg-warning-muted/70"
           }
         >
@@ -648,7 +648,7 @@ export default function LoteDetalhe() {
       <WithdrawalBadgePanel readModel={carenciaModel} />
 
       {/* Cockpit Actions / Navigation CTAs */}
-      <div className="flex flex-wrap gap-2.5 items-center bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/80 rounded-xl p-3.5 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-border/70 bg-muted/55 p-3.5">
         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mr-1.5">Ações Rápidas:</span>
         <Button asChild variant="outline" size="sm" className="h-9">
           <Link to={`/registrar?dominio=ecc&loteId=${encodeURIComponent(id)}`}>
@@ -658,13 +658,13 @@ export default function LoteDetalhe() {
         </Button>
         <Button asChild variant="outline" size="sm" className="h-9">
           <Link to={`/registrar?dominio=pesagem&loteId=${encodeURIComponent(id)}`}>
-            <Scale className="mr-1.5 h-4 w-4 text-emerald-500" />
+            <Scale className="mr-1.5 h-4 w-4 text-semantic-success" />
             Registrar Pesagem
           </Link>
         </Button>
         <Button asChild variant="outline" size="sm" className="h-9">
           <Link to={`/registrar?dominio=movimentacao&loteId=${encodeURIComponent(id)}`}>
-            <ArrowRightLeft className="mr-1.5 h-4 w-4 text-blue-500" />
+            <ArrowRightLeft className="mr-1.5 h-4 w-4 text-semantic-info" />
             Registrar Movimentação
           </Link>
         </Button>
@@ -677,12 +677,12 @@ export default function LoteDetalhe() {
             el?.scrollIntoView({ behavior: "smooth" });
           }}
         >
-          <PawPrint className="mr-1.5 h-4 w-4 text-indigo-500" />
+          <PawPrint className="mr-1.5 h-4 w-4 text-primary" />
           Ver Animais
         </Button>
         <Button asChild variant="outline" size="sm" className="h-9">
           <Link to={`/agenda?loteId=${encodeURIComponent(id)}`}>
-            <CalendarIcon className="mr-1.5 h-4 w-4 text-amber-500" />
+            <CalendarIcon className="mr-1.5 h-4 w-4 text-semantic-warning" />
             Ver Agenda
           </Link>
         </Button>
@@ -746,7 +746,7 @@ export default function LoteDetalhe() {
                     <div className="pt-1.5 border-t border-current/10">
                       <button
                         onClick={() => setShowSemEcc(!showSemEcc)}
-                        className="flex items-center gap-1 font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                        className="flex items-center gap-1 font-semibold text-primary hover:underline"
                       >
                         {showSemEcc ? (
                           <>
@@ -809,15 +809,15 @@ export default function LoteDetalhe() {
               source="state_agenda_itens"
               extraContent={
                 <div className="grid grid-cols-3 gap-1 mt-2 text-center text-[10px] font-bold">
-                  <div className="p-1 rounded bg-rose-500/10 text-rose-700 border border-rose-200/20">
+                  <div className="rounded border border-semantic-error-border bg-semantic-error-muted p-1 text-semantic-error">
                     <div>{loteMetrics.agendaItensAbertos.atrasados}</div>
                     <div className="uppercase text-[8px] opacity-75">Atrasados</div>
                   </div>
-                  <div className="p-1 rounded bg-amber-500/10 text-amber-700 border border-amber-200/20">
+                  <div className="rounded border border-semantic-warning-border bg-semantic-warning-muted p-1 text-semantic-warning">
                     <div>{loteMetrics.agendaItensAbertos.hoje}</div>
                     <div className="uppercase text-[8px] opacity-75">Hoje</div>
                   </div>
-                  <div className="p-1 rounded bg-blue-500/10 text-blue-700 border border-blue-200/20">
+                  <div className="rounded border border-semantic-info-border bg-semantic-info-muted p-1 text-semantic-info">
                     <div>{loteMetrics.agendaItensAbertos.proximos}</div>
                     <div className="uppercase text-[8px] opacity-75">Próximos</div>
                   </div>
@@ -826,11 +826,11 @@ export default function LoteDetalhe() {
             />
 
             {/* Categoria Predominante */}
-            <div className="flex flex-col justify-between rounded-xl border p-4 shadow-sm border-slate-200 bg-slate-50/20 dark:border-slate-800/20 dark:bg-slate-900/10">
+            <div className="flex flex-col justify-between rounded-xl border border-border/70 bg-card p-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-background/50 border border-slate-200 dark:border-slate-800">
-                    <Clock className="h-4 w-4 text-indigo-500" />
+                  <div className="rounded-lg border border-border bg-background/50 p-1.5">
+                    <Clock className="h-4 w-4 text-primary" />
                   </div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     Perfil Zootécnico
@@ -845,7 +845,7 @@ export default function LoteDetalhe() {
                   </p>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-muted-foreground">
+              <div className="mt-3 border-t border-border/70 pt-3 text-[11px] text-muted-foreground">
                 <p>
                   <span className="font-semibold text-foreground/75">Total de Animais:</span> {loteMetrics.quantidadeAtual} ativos
                 </p>
@@ -910,7 +910,9 @@ export default function LoteDetalhe() {
                     <div className="flex items-center justify-between border-b pb-2 border-border/40">
                       <span className={cn(
                         "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                        isCompra ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-blue-200 bg-blue-50 text-blue-800"
+                        isCompra
+                          ? "border-semantic-success-border bg-semantic-success-muted text-foreground"
+                          : "border-semantic-info-border bg-semantic-info-muted text-foreground"
                       )}>
                         {com.operation_type}
                       </span>
@@ -941,12 +943,12 @@ export default function LoteDetalhe() {
                       </div>
                       {com.finance_transaction_id && (
                         <div className="col-span-2">
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">• Vínculo financeiro ativo</span>
+                          <span className="text-xs font-semibold text-semantic-success">• Vínculo financeiro ativo</span>
                         </div>
                       )}
                     </div>
                     {com.limitations && com.limitations.length > 0 && (
-                      <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-100 rounded-lg p-2 text-[10px] text-amber-800 space-y-0.5">
+                      <div className="space-y-0.5 rounded-lg border border-semantic-warning-border bg-semantic-warning-muted p-2 text-[10px] text-foreground">
                         <span className="font-semibold">Notas de conformidade:</span>
                         {com.limitations.map((lim, idx) => (
                           <p key={idx}>- {lim}</p>

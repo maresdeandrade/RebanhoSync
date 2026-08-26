@@ -5,6 +5,7 @@ import {
   Building2,
   Loader2,
   LogOut,
+  ShieldCheck,
   Trash2,
   Upload,
   User,
@@ -38,7 +39,7 @@ const REMINDER_DAY_OPTIONS = [7, 3, 1] as const;
 export const Perfil = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { refreshSettings, farmExperienceMode } = useAuth();
+  const { refreshSettings, farmExperienceMode, isSuperAdmin } = useAuth();
 
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
@@ -690,7 +691,18 @@ export const Perfil = () => {
       </Tabs>
 
       <FormSection title="Conta e acesso">
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3 sm:flex-row flex-wrap">
+          {isSuperAdmin && (
+            <Button
+              variant="default"
+              onClick={() => navigate("/admin")}
+              className="sm:w-auto flex items-center gap-2"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Painel Administrativo
+            </Button>
+          )}
+
           <Button
             variant="outline"
             onClick={handleSwitchFarm}

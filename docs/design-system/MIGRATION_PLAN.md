@@ -19,6 +19,14 @@ Status: **Matriz P0–P3 da Fase 18 — cinco jornadas P1 migradas na Fase 20**
 | Registrar | **MIGRATED** | progresso, erro e action bar; P0 revalidado, 4 viewports, light/dark | nenhum P0/P1 operacional aberto |
 | Agenda | **MIGRATED** | intenção futura explícita, estados e filtros, 4 viewports, light/dark | amostra visual permaneceu no estado vazio factual |
 
+## Calibração transversal pós-F20
+
+- foundations light/dark recalibradas para reduzir brilho no claro e compressão tonal no escuro;
+- `PageIntro`, `Card` e `Toolbar` propagam superfícies mais calmas às jornadas P2/P3 sem alterar seus fluxos;
+- Lotes recebeu leitura mobile completa para o contexto de pasto;
+- Financeiro, Relatórios, LoteDetalhe e PastoDetalhe tiveram cores literais prioritárias substituídas por papéis semânticos;
+- 15 rotas representativas P2/P3 foram verificadas em 390 × 844 e 1440 × 900, light/dark, com overflow estrutural igual a zero;
+- essa cobertura é uma normalização visual compartilhada, não antecipa regras ou funcionalidades das Fases 21–24 e não marca todas as jornadas como integralmente migradas.
 
 ## Critério
 

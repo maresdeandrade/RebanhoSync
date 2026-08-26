@@ -24,6 +24,7 @@ import {
   resolveNotificationPreferences,
   type NotificationPreferences,
 } from "@/lib/notifications/sanitaryReminders";
+import { checkIsSuperAdmin } from "@/lib/admin/adminApi";
 
 
 // Role schema for runtime validation
@@ -34,6 +35,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  isSuperAdmin: boolean | null;
   activeFarmId: string | null;
   role: UserRole | null;
   farmExperienceMode: FarmExperienceMode;
@@ -94,6 +96,7 @@ async function fetchFirstAccessibleFarmId(userId: string) {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null);
   const [activeFarmId, setActiveFarmId] = useState<string | null>(() => {
     return getActiveFarmId();
   });
@@ -172,12 +175,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
+        setIsSuperAdmin(false);
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
         setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
         setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
         setNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
         return;
       }
+
+      // Avaliar SuperAdmin de forma defensiva e assíncrona
+      const adminStatus = await checkIsSuperAdmin(supabase);
+      setIsSuperAdmin(adminStatus);
 
       const localFarmId = getActiveFarmId();
 
@@ -309,6 +317,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         setActiveFarmId(null);
         setRole(null);
+        setIsSuperAdmin(false);
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
         setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
         setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
@@ -328,6 +337,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.signOut();
       setActiveFarmId(null);
       setRole(null);
+      setIsSuperAdmin(false);
       setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
       setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
       setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
@@ -344,6 +354,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         session,
         user: session?.user ?? null,
         loading,
+        isSuperAdmin,
         activeFarmId,
         role,
         farmExperienceMode,

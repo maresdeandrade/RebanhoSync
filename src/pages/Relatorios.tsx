@@ -556,8 +556,8 @@ const Relatorios = () => {
             <div
               className={`text-3xl font-bold ${
                 report.financeiro.saldo >= 0
-                  ? "text-emerald-600"
-                  : "text-red-600"
+                  ? "text-semantic-success"
+                  : "text-semantic-error"
               }`}
             >
               {money.format(report.financeiro.saldo)}
@@ -711,7 +711,7 @@ const Relatorios = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <TrendingUp className="h-4 w-4 text-emerald-600" />
+                  <TrendingUp className="h-4 w-4 text-semantic-success" />
                   Entradas
                 </div>
                 <p className="mt-2 text-2xl font-semibold">
@@ -724,7 +724,7 @@ const Relatorios = () => {
 
               <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <TrendingDown className="h-4 w-4 text-red-600" />
+                  <TrendingDown className="h-4 w-4 text-semantic-error" />
                   Saidas
                 </div>
                 <p className="mt-2 text-2xl font-semibold">
@@ -791,7 +791,7 @@ const Relatorios = () => {
                 <p className="text-sm text-muted-foreground">
                   Entradas no periodo
                 </p>
-                <p className="mt-2 text-2xl font-semibold text-emerald-700">
+                <p className="mt-2 text-2xl font-semibold text-semantic-success">
                   +{formatQuantity(report.inventory.entradasPeriodo)}
                 </p>
               </div>
@@ -799,7 +799,7 @@ const Relatorios = () => {
                 <p className="text-sm text-muted-foreground">
                   Saidas no periodo
                 </p>
-                <p className="mt-2 text-2xl font-semibold text-red-700">
+                <p className="mt-2 text-2xl font-semibold text-semantic-error">
                   -{formatQuantity(report.inventory.saidasPeriodo)}
                 </p>
               </div>
@@ -814,7 +814,7 @@ const Relatorios = () => {
               </div>
               <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                 <p className="text-sm text-muted-foreground">Ressuprir</p>
-                <p className="mt-2 text-2xl font-semibold text-amber-700">
+                <p className="mt-2 text-2xl font-semibold text-semantic-warning">
                   {report.inventory.resupplyWarningItems}
                 </p>
               </div>
@@ -822,7 +822,7 @@ const Relatorios = () => {
                 <p className="text-sm text-muted-foreground">
                   Abaixo do minimo
                 </p>
-                <p className="mt-2 text-2xl font-semibold text-red-700">
+                <p className="mt-2 text-2xl font-semibold text-semantic-error">
                   {report.inventory.resupplyCriticalItems}
                 </p>
               </div>
@@ -1016,7 +1016,7 @@ const Relatorios = () => {
 
               {report.inventory.sanitaryPhase3Prerequisites
                 .unmappedCatalogProducts > 0 ? (
-                <p className="text-sm text-amber-700">
+                <p className="text-sm text-semantic-warning">
                   {
                     report.inventory.sanitaryPhase3Prerequisites
                       .unmappedCatalogProducts
@@ -1138,16 +1138,16 @@ const Relatorios = () => {
                       </StatusBadge>
                     </div>
                     <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                      <span className="text-emerald-700">
+                      <span className="text-semantic-success">
                         +{formatQuantity(category.entradas)} entrada(s)
                       </span>
-                      <span className="text-red-700">
+                      <span className="text-semantic-error">
                         -{formatQuantity(category.saidas)} saida(s)
                       </span>
-                      <span className="text-amber-700">
+                      <span className="text-semantic-warning">
                         {category.resupplyWarningCount} ressuprir
                       </span>
-                      <span className="text-red-700">
+                      <span className="text-semantic-error">
                         {category.resupplyCriticalCount} abaixo minimo
                       </span>
                     </div>
@@ -1302,10 +1302,10 @@ const Relatorios = () => {
                       <div>
                         <p className="text-xs text-muted-foreground">Periodo</p>
                         <p className="font-semibold">
-                          <span className="text-emerald-700">
+                          <span className="text-semantic-success">
                             +{formatQuantity(item.entradas)}
                           </span>{" "}
-                          <span className="text-red-700">
+                          <span className="text-semantic-error">
                             -{formatQuantity(item.saidas)}
                           </span>
                         </p>
