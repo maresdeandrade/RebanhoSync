@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
 Atualizado em: 2026-08-24
-Fase atual: **Fase 21 — Inteligência Operacional v2 (marcador avançado; implementação não iniciada)**
+Fase atual: **Fase 21 — Inteligência Operacional v2 (em andamento; primeira entrega vertical implementada e validada)**
 Fase anterior: **Fase 20 — Jornadas UX Críticas (concluída)**
 
 ## Objetivo
@@ -52,7 +52,7 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 
 ```txt
 Fase 20 — Jornadas UX Críticas — concluída
-→ Fase 21 — Inteligência Operacional v2 — implementação não iniciada
+→ Fase 21 — Inteligência Operacional v2 — primeira entrega vertical implementada e validada
 ```
 
 A Fase 19 implementou foundations tipográficas e semânticas, branding reutilizável, primitives estruturais e shell/navegação responsivos sobre o contrato da F18. Home, Animais, AnimalDetalhe, Registrar e Agenda foram revalidados sem migração ampla em 390, 768, 1024 e 1440 px, light/dark; nenhum P0 novo foi confirmado e o P0 do Registrar permanece resolvido.
@@ -93,7 +93,7 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 18 | Rebaseline Visual 360° | **Concluída**; Design System e matriz P0–P3 produzidos, P0 responsivo encerrado |
 | 19 | Foundations + Shell + Branding | **Concluída**; foundations e shell revalidados em light/dark e mobile/desktop |
 | 20 | Jornadas UX Críticas | **Concluída**; cinco jornadas migradas e validadas |
-| 21 | Inteligência Operacional v2 | Fase atual; implementação não iniciada; reutilizar `MetricResult` e `DecisionRecommendation` |
+| 21 | Inteligência Operacional v2 | **Em andamento**; primeira entrega deriva revisão de cobertura histórica de `MetricResult` para `DecisionRecommendation`, sem writer ou nova fonte factual |
 | 22 | Eficiência Produtiva e Econômica | Exigir fontes confiáveis para peso e validação remota E2E de movimentação |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
 | 24 | Release Hardening / Scale Readiness | Hardening sistêmico final para escala |

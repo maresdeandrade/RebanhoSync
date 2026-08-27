@@ -1,11 +1,12 @@
 # Plano ativo — Fase 21 / Inteligência Operacional v2
 
-Atualizado em: 2026-08-24
-Status: **Fase 20 encerrada; Fase 21 ainda não iniciada**
+Atualizado em: 2026-08-27
+Status: **Fase 21 ativa — primeira entrega vertical implementada e validada**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`.
+Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Próxima fase: **Fase 21 — Inteligência Operacional v2**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
@@ -21,9 +22,17 @@ Este documento contém o plano corrente. Estado técnico detalhado, validações
 - 65 testes focados, lint, build, `gates:docs` e `git diff --check` aprovados;
 - contrato operacional preservado; F21 não foi implementada.
 
-## Limite de abertura da Fase 21
+## Primeira entrega vertical — revisão da cobertura histórica operacional
 
-A Fase 21 permanece não iniciada. Qualquer plano de implementação deve reutilizar `MetricResult` e `DecisionRecommendation`, preservar fontes e limitações e não transformar recomendação em fato ou autorização.
+A Fase 21 foi iniciada no candidate worktree aberto em `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`. A primeira entrega reutiliza `MetricResult` e `DecisionRecommendation`, preserva fontes e limitações e não transforma recomendação em fato ou autorização.
+
+- pergunta: a cobertura dos Eventos do período permite interpretar o volume operacional observado;
+- fonte primária: `event_eventos`; read model reutilizado: `MetricResult<number>` de `eventos_periodo`;
+- escopo: selector puro filtrado novamente por `fazendaId`, período inclusivo, cutoff e timezone explícitos;
+- estados: `confirmed`, `partial`, `unknown`, `ambiguous` e `not_permitted`, sem desempate silencioso de snapshots divergentes;
+- efeito permitido: navegação para `/relatorios`; efeitos proibidos: persistir recomendação, criar ou alterar Evento, concluir Agenda, alterar `state_*` ou autorizar operação;
+- contrato operacional: **PRESERVADO**; writer, Dexie, sync, migration, RPC e RLS não alterados;
+- validação completa: 2.776 testes gerais, 29 integrações, 570 hotspots, lint, build, `gates:docs` e `git diff --check` aprovados; não atribuir hash até existir commit autorizado.
 
 ## Resultado da Fase 19
 

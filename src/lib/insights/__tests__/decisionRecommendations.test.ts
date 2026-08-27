@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildOperationalHistoryReviewRecommendation,
   buildOverdueAgendaRecommendation,
   buildWeightDataQualityRecommendation,
+  type BuildOperationalHistoryReviewInput,
   type BuildOverdueAgendaInput,
   type BuildWeightDataQualityInput,
 } from "@/lib/insights/decisionRecommendations";
 import type { AgendaItem, Evento, EventoPesagem } from "@/lib/offline/types";
+import {
+  createMetricPeriod,
+  createMetricResult,
+  type MetricResult,
+} from "@/lib/reports/metricContract";
 
 const FARM_ID = "farm-1";
 const OTHER_FARM_ID = "farm-2";
@@ -125,6 +132,46 @@ function agendaInput(
       availability: "loaded",
       records: [agendaItem()],
       convergence: { mode: "standard_pull", verified: true },
+    },
+    ...overrides,
+  };
+}
+
+function historyMetric(
+  overrides: Partial<MetricResult<number>> = {},
+  fazendaId = FARM_ID,
+): MetricResult<number> {
+  return createMetricResult({
+    value: 4,
+    status: "complete",
+    period: createMetricPeriod("2026-08-01", "2026-08-23", {
+      timezone: "America/Sao_Paulo",
+      timezoneSource: "farm",
+    }),
+    coverage: {
+      kind: "historical",
+      state: "verified",
+      scope: { fazendaId, domain: "operacional" },
+      evidence: ["Cobertura historica verificada para o periodo."],
+    },
+    sources: [{ name: "event_eventos", role: "primary" }],
+    limitations: [],
+    ...overrides,
+  });
+}
+
+function historyInput(
+  overrides: Partial<BuildOperationalHistoryReviewInput> = {},
+): BuildOperationalHistoryReviewInput {
+  return {
+    fazendaId: FARM_ID,
+    cutoffAt: CUTOFF,
+    timezone: "America/Sao_Paulo",
+    timezoneVerified: true,
+    metrics: {
+      availability: "loaded",
+      records: [{ metricKey: "eventos_periodo", result: historyMetric() }],
+      convergence: { mode: "local_derived", verified: true },
     },
     ...overrides,
   };
@@ -470,5 +517,161 @@ describe("overdue agenda recommendation", () => {
     );
 
     expect(result.status).toBe("unknown");
+  });
+});
+
+describe("operational history review recommendation", () => {
+  it("returns confirmed from a complete MetricResult with verified historical coverage", () => {
+    const result = buildOperationalHistoryReviewRecommendation(historyInput());
+
+    expect(result.status).toBe("confirmed");
+    expect(result.data).toMatchObject({
+      metricKey: "eventos_periodo",
+      observedEventCount: 4,
+      metricStatus: "complete",
+      coverageState: "verified",
+    });
+    expect(result.evidence.primarySources[0].name).toBe("event_eventos");
+    expect(result.suggestedAction).toBeUndefined();
+  });
+
+  it("preserves partial as distinct when historical coverage is incomplete", () => {
+    const partialMetric = historyMetric({
+      status: "partial",
+      coverage: {
+        kind: "historical",
+        state: "partial",
+        scope: { fazendaId: FARM_ID, domain: "operacional" },
+        evidence: ["Cobertura local incompleta."],
+      },
+      limitations: ["Historico completo nao comprovado."],
+    });
+    const result = buildOperationalHistoryReviewRecommendation(
+      historyInput({
+        metrics: {
+          availability: "loaded",
+          records: [{ metricKey: "eventos_periodo", result: partialMetric }],
+          convergence: { mode: "local_derived", verified: true },
+        },
+      }),
+    );
+
+    expect(result.status).toBe("partial");
+    expect(result.data?.observedEventCount).toBe(4);
+    expect(result.evidence.limitations).toContain(
+      "Historico completo nao comprovado.",
+    );
+    expect(result.suggestedAction).toEqual({
+      label: "Revisar relatorios",
+      href: "/relatorios",
+    });
+  });
+
+  it("keeps absent and unavailable sources semantically distinct", () => {
+    const absent = buildOperationalHistoryReviewRecommendation(
+      historyInput({
+        metrics: {
+          availability: "not_loaded",
+          convergence: { mode: "local_derived", verified: false },
+        },
+      }),
+    );
+    const unavailable = buildOperationalHistoryReviewRecommendation(
+      historyInput({
+        metrics: {
+          availability: "not_available",
+          convergence: { mode: "not_applicable", verified: false },
+        },
+      }),
+    );
+
+    expect(absent.status).toBe("unknown");
+    expect(unavailable.status).toBe("not_permitted");
+  });
+
+  it("returns ambiguous for divergent MetricResult snapshots without choosing a winner", () => {
+    const result = buildOperationalHistoryReviewRecommendation(
+      historyInput({
+        metrics: {
+          availability: "loaded",
+          records: [
+            { metricKey: "eventos_periodo", result: historyMetric() },
+            {
+              metricKey: "eventos_periodo",
+              result: historyMetric({ value: 7 }),
+            },
+          ],
+          convergence: { mode: "local_derived", verified: true },
+        },
+      }),
+    );
+
+    expect(result.status).toBe("ambiguous");
+    expect(result.data).toBeNull();
+    expect(result.evidence.conflicts).toHaveLength(1);
+  });
+
+  it("filters MetricResult explicitly by fazenda and prevents cross-farm contamination", () => {
+    const result = buildOperationalHistoryReviewRecommendation(
+      historyInput({
+        metrics: {
+          availability: "loaded",
+          records: [
+            {
+              metricKey: "eventos_periodo",
+              result: historyMetric({ value: 999 }, OTHER_FARM_ID),
+            },
+            { metricKey: "eventos_periodo", result: historyMetric() },
+          ],
+          convergence: { mode: "local_derived", verified: true },
+        },
+      }),
+    );
+
+    expect(result.status).toBe("confirmed");
+    expect(result.data?.observedEventCount).toBe(4);
+    expect(result.evidence.coverage).toContain(`fazenda:${FARM_ID}`);
+    expect(result.evidence.coverage).not.toContain(`fazenda:${OTHER_FARM_ID}`);
+  });
+
+  it("uses the explicit cutoff and timezone without presenting an incomplete period as certain", () => {
+    const afterCutoff = historyMetric({
+      period: createMetricPeriod("2026-08-01", "2026-08-31", {
+        timezone: "America/Sao_Paulo",
+        timezoneSource: "farm",
+      }),
+    });
+    const cutoffResult = buildOperationalHistoryReviewRecommendation(
+      historyInput({
+        metrics: {
+          availability: "loaded",
+          records: [{ metricKey: "eventos_periodo", result: afterCutoff }],
+          convergence: { mode: "local_derived", verified: true },
+        },
+      }),
+    );
+    const timezoneResult = buildOperationalHistoryReviewRecommendation(
+      historyInput({ timezone: "UTC" }),
+    );
+
+    expect(cutoffResult.status).toBe("partial");
+    expect(cutoffResult.evidence.limitations).toContain(
+      "O periodo metrico termina depois do cutoff; a leitura representa somente o conjunto observado ate o cutoff.",
+    );
+    expect(timezoneResult.status).toBe("ambiguous");
+    expect(timezoneResult.evidence.conflicts[0].code).toBe(
+      "metric_timezone_conflict",
+    );
+  });
+
+  it("is deterministic, farm-isolated and free of side effects", () => {
+    const input = historyInput();
+    const snapshot = structuredClone(input);
+
+    const first = buildOperationalHistoryReviewRecommendation(input);
+    const second = buildOperationalHistoryReviewRecommendation(input);
+
+    expect(second).toEqual(first);
+    expect(input).toEqual(snapshot);
   });
 });

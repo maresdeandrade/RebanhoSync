@@ -57,10 +57,13 @@ import {
   type InventoryReplenishmentAlertRow,
 } from "@/lib/reports/operationalSummary";
 import {
+  buildOperationalHistoryReviewRecommendation,
   buildOverdueAgendaRecommendation,
   buildWeightDataQualityRecommendation,
+  type BuildOperationalHistoryReviewInput,
   type DecisionRecommendation,
 } from "@/lib/insights/decisionRecommendations";
+import type { MetricResult } from "@/lib/reports/metricContract";
 
 type FarmSummary = {
   nome: string;
@@ -170,6 +173,20 @@ function getMonthPeriod(referenceDate: string) {
 
 function formatDay(date: string) {
   return dateFormatter.format(new Date(`${date}T00:00:00`));
+}
+
+function buildHomeOperationalHistoryReview(
+  input: Omit<BuildOperationalHistoryReviewInput, "metrics">,
+  metric: MetricResult<number>,
+) {
+  return buildOperationalHistoryReviewRecommendation({
+    ...input,
+    metrics: {
+      availability: "loaded",
+      records: [{ metricKey: "eventos_periodo", result: metric }],
+      convergence: { mode: "local_derived", verified: true },
+    },
+  });
 }
 
 const Home = () => {
@@ -513,6 +530,10 @@ const Home = () => {
           convergence: { mode: "standard_pull", verified: true },
         },
       }),
+      buildHomeOperationalHistoryReview(
+        sharedDecisionInput,
+        operationalSummary.metrics.eventos_periodo,
+      ),
       ...weightRecommendations,
     ];
 
