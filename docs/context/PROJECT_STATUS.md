@@ -117,8 +117,8 @@ Estado dos subitens:
 - Auth / Grants: privilégios de tabelas autenticadas reconciliados (`20260826230107`), validado localmente, aplicado em staging; produção pendente.
 - Admin Track: A1.1 + A2 + A2.1 + A4 operacionais em staging; provisionamento e smoke de SuperAdmin validados; produção pendente.
 - F16 Financeiro: migration aplicada em staging; produção pendente.
-- B4 Movimentação: `eventos_movimentacao` integrado em `STANDARD_EVENT_DETAIL_REMOTE_TABLES`; convergência comprovada em testes automatizados (`AUTOMATED_CONVERGENCE_VERIFIED`); E2E remoto pendente antes da F22C.
-- Trilha C (Hardening Banco / Advisor): C0 (Inventário Autoritativo) e C1 (Hardening SECURITY DEFINER & EXECUTE) concluídos e validados localmente (migrations `20260827100000`, `20260827110000`, `20260827120000`); C2–C7 pendentes como trilha de infraestrutura independente.
+- B4 Movimentação: `eventos_movimentacao` com convergência remota E2E comprovada (`REMOTE_CONVERGENCE_VERIFIED`) em teste automatizado Device A -> staging/backend -> Device B limpo; gate de entrada da F22C satisfeito.
+- Trilha C (Hardening Banco / Advisor): C0 (Inventário Autoritativo), C1 (Hardening SECURITY DEFINER & EXECUTE), C2 (Hardening search_path em 10 funções SECURITY INVOKER; Auth Leaked Password classificado `C2_AUTH_BLOCKED_BY_PLAN`), C3 (Otimização auth_rls_initplan em 8 policies com gate multi-tenant) e C4 (Normalização do 1º lote de multiple_permissive_policies em contrapartes) concluídos e validados localmente (migrations `20260827100000` a `20260827150000`); C5–C7 pendentes como trilha de infraestrutura independente.
 - Produção: não alterada (100% preservada).
 
 

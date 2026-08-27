@@ -31,14 +31,15 @@ Não há evidência atual de defeito no SQL ou na regra de domínio.
 
 ## P1 — Validação Remota E2E de Movimentação (Gate de Entrada F22C)
 
-Status: `PENDENTE_F22C`
-Código: `B4_REMOTE_E2E_PENDING`
+Status: `RESOLVIDO`
+Código: `REMOTE_CONVERGENCE_VERIFIED`
 
 Fatos:
 
-- inclusão canônica de `eventos_movimentacao` em `STANDARD_EVENT_DETAIL_REMOTE_TABLES` implementada e testada com sucesso no pull local (`AUTOMATED_CONVERGENCE_VERIFIED`);
-- não bloqueia a Fase 21 (Inteligência Operacional v2);
-- E2E remoto multi-device (Device A -> Push -> Supabase Staging -> Device B -> Pull -> Integridade/Isolamento) permanece como gate de entrada obrigatório para a Fase 22C.
+- inclusão canônica de `eventos_movimentacao` em `STANDARD_EVENT_DETAIL_REMOTE_TABLES` implementada e testada com sucesso;
+- validação remota E2E multi-device (Device A -> Push real via sync-batch -> servidor -> Device B limpo -> Pull real -> convergência factual e read model) aprovada com 100% de sucesso via `validate-b4-remote-movimentacao-e2e.mjs`;
+- casos adicionais comprovados: idempotência local sem duplicidade no 2º pull, isolamento multi-tenant da Fazenda B e idempotência de replay no push;
+- gate pré-F22C satisfeito; não bloqueia a Fase 21.
 
 
 ## P1 — Promoção de Migrations e Backoffice para Produção
@@ -52,13 +53,16 @@ Fatos:
 
 ## P1 — Trilha C: Hardening de Banco e Advisor (C2–C7)
 
-Status: `PENDENTE_TRILHA_C`
+Status: `C2_C3_C4_CONCLUIDOS`
 
 Fatos:
 
-- C0 (inventário autoritativo de 34 funções `SECURITY DEFINER`) e C1 (hardening de privilégios `EXECUTE`, isolamento tenant de `get_user_emails` e resolução de search_path blocker em `seed_default_finance_categories`) concluídos com sucesso e validados localmente (migrations `20260827100000`, `20260827110000`, `20260827120000`);
-- C2–C7 (search_path mutable global, auth_rls_initplan, multiple_permissive_policies, FK indexes, workload, unused indexes) permanecem pendentes como subtrilhas de infraestrutura técnica;
-- Não bloqueia a abertura da Fase 21 — Inteligência Operacional v2.
+- C0 (inventário autoritativo de 34 funções `SECURITY DEFINER`) e C1 (hardening de privilégios `EXECUTE`, isolamento tenant de `get_user_emails` e resolução de search_path blocker em `seed_default_finance_categories`) concluídos com sucesso (migrations `20260827100000`, `20260827110000`, `20260827120000`);
+- C2 (hardening de search_path em 10 funções `SECURITY INVOKER` via migration `20260827130000`; Auth Leaked Password classificado `C2_AUTH_BLOCKED_BY_PLAN`);
+- C3 (otimização `auth_rls_initplan` via subquery escalar `(select auth.uid())` em 8 policies via migration `20260827140000`, validado com gate multi-tenant);
+- C4 (normalização do lote inicial de `multiple_permissive_policies` na tabela `contrapartes` dividindo `FOR ALL` em `INSERT`, `UPDATE`, `DELETE` via migration `20260827150000`, eliminando sobreposição em `SELECT` com zero quebra de semântica);
+- C5–C7 (FK indexes, workload, unused indexes) permanecem pendentes como subtrilhas técnicas;
+- Não bloqueia a Fase 21 — Inteligência Operacional v2.
 
 
 ## P2 — Ruído residual em testes
