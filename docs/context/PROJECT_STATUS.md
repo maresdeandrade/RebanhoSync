@@ -118,7 +118,11 @@ Estado dos subitens:
 - Admin Track: A1.1 + A2 + A2.1 + A4 operacionais em staging; provisionamento e smoke de SuperAdmin validados; produção pendente.
 - F16 Financeiro: migration aplicada em staging; produção pendente.
 - B4 Movimentação: `eventos_movimentacao` integrado em `STANDARD_EVENT_DETAIL_REMOTE_TABLES`; convergência comprovada em testes automatizados (`AUTOMATED_CONVERGENCE_VERIFIED`); E2E remoto pendente antes da F22C.
+- Trilha C (Hardening Banco / Advisor): C0 (Inventário Autoritativo) e C1 (Hardening SECURITY DEFINER & EXECUTE) concluídos e validados localmente (migrations `20260827100000`, `20260827110000`, `20260827120000`); C2–C7 pendentes como trilha de infraestrutura independente.
 - Produção: não alterada (100% preservada).
+
+
+
 - Gate sanitário remoto: desligado (`fail-closed`).
 - Feature flag local Sanitário v2: `false`.
 - Rollout para usuários: não autorizado.

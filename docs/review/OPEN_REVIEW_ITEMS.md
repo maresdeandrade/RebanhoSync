@@ -40,6 +40,7 @@ Fatos:
 - não bloqueia a Fase 21 (Inteligência Operacional v2);
 - E2E remoto multi-device (Device A -> Push -> Supabase Staging -> Device B -> Pull -> Integridade/Isolamento) permanece como gate de entrada obrigatório para a Fase 22C.
 
+
 ## P1 — Promoção de Migrations e Backoffice para Produção
 
 Status: `PENDENTE_PRODUCAO`
@@ -48,6 +49,17 @@ Fatos:
 
 - staging alinhado com 42 migrations aplicadas (`42 local == 42 staging`), incluindo privilégios de tabelas autenticadas, SuperAdmin e financeiro determinístico;
 - ambiente de produção permanece 100% inalterado. Promoção exige janela formal de release na Fase 24.
+
+## P1 — Trilha C: Hardening de Banco e Advisor (C2–C7)
+
+Status: `PENDENTE_TRILHA_C`
+
+Fatos:
+
+- C0 (inventário autoritativo de 34 funções `SECURITY DEFINER`) e C1 (hardening de privilégios `EXECUTE`, isolamento tenant de `get_user_emails` e resolução de search_path blocker em `seed_default_finance_categories`) concluídos com sucesso e validados localmente (migrations `20260827100000`, `20260827110000`, `20260827120000`);
+- C2–C7 (search_path mutable global, auth_rls_initplan, multiple_permissive_policies, FK indexes, workload, unused indexes) permanecem pendentes como subtrilhas de infraestrutura técnica;
+- Não bloqueia a abertura da Fase 21 — Inteligência Operacional v2.
+
 
 ## P2 — Ruído residual em testes
 

@@ -16,8 +16,10 @@
     "scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs",
     "scripts/codex/validate-sanitario-complete-payloads-12f9.mjs",
     "scripts/codex/validate-sanitario-sync-v2-expand.mjs",
+    "scripts/codex/validate-security-definer-exposure.mjs",
     "scripts/fix-docs-encoding.mjs"
   ],
+
   "duplicates": {
     "ignore": [
       "scripts/**"

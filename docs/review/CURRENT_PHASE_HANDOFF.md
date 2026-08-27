@@ -41,6 +41,7 @@ Status: **Concluída e certificada**. Baseline de infraestrutura e sync alinhado
    - Classificação de evidência: `AUTOMATED_CONVERGENCE_VERIFIED` (suíte dedicada de 7 cenários com 100% de aprovação).
    - Gate F22C: pré-requisito técnico de implementação resolvido; E2E remoto em staging registrado como gate de entrada pré-F22C.
 
+
 5. **Sync Sanitário v2:**
    - Mantido estritamente em `SANITARIO_V2_E2E_PLATFORM_BLOCKED` (fail-closed, feature flag local `false`, gate remoto desligado).
    - Não bloqueia abertura da Fase 21.
@@ -48,6 +49,12 @@ Status: **Concluída e certificada**. Baseline de infraestrutura e sync alinhado
 6. **Ambientes:**
    - Staging: operacional e alinhado (`42 local == 42 staging`).
    - Produção: 100% inalterada.
+
+7. **Trilha C — Hardening de Banco e Advisor (C0/C1):**
+   - C0: Inventário autoritativo de 34 funções `SECURITY DEFINER` e respectivos grants catalogados sem ambiguidade (`UNKNOWN = 0`).
+   - C1: Hardening de privilégios `EXECUTE` via migrations `20260827100000`, `20260827110000`, `20260827120000`. Revogação de `PUBLIC` em 100% das funções; `anon` restrito às 2 funções intencionais (`get_invite_preview`, `reject_invite`); funções de trigger e internas revogadas de `authenticated`; `get_user_emails` reforçado contra enumeração/vazamento cross-tenant; `seed_default_finance_categories` corrigido com `search_path` fixado.
+   - Status: local = 100% validado (`validate-security-definer-exposure.mjs`), staging dry-run = aprovado (3 migrations pendentes de push), C2–C7 = pendentes como trilha técnica independente; Fase 21 apta para abertura.
+
 
 ## Fechamento da Fase 20
 
@@ -130,6 +137,7 @@ Limitações de convergência preservadas:
 
 - `eventos_movimentacao`: no escopo da F17 não foi utilizado; a convergência de pull padrão foi posteriormente resolvida na Trilha B (`STANDARD_EVENT_DETAIL_REMOTE_TABLES`) com `AUTOMATED_CONVERGENCE_VERIFIED`;
 - superfícies sanitárias especializadas não foram tratadas como pull genérico;
+
 - `queue_rejections` é auxiliar técnico temporário, nunca fonte primária ou histórico;
 - fallback de timezone reduz a recomendação para `partial`;
 - a Home limita a apresentação a cinco recomendações de peso não confirmadas; o selector permanece reutilizável por animal.
