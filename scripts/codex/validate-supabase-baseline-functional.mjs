@@ -7,6 +7,63 @@ const { Client } = pg;
 
 const CLIENT_ID = "baseline-functional";
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
+const AUTHENTICATED_TABLE_PRIVILEGE_MATRIX = {
+  agenda_itens: ["SELECT", "INSERT", "UPDATE"],
+  animais: ["SELECT", "INSERT", "UPDATE"],
+  catalogo_doencas_notificaveis: ["SELECT"],
+  catalogo_protocolos_oficiais: ["SELECT"],
+  catalogo_protocolos_oficiais_itens: ["SELECT"],
+  contrapartes: ["SELECT", "INSERT", "UPDATE"],
+  eventos: ["SELECT", "INSERT"],
+  eventos_animais: ["SELECT"],
+  eventos_comercial: ["SELECT", "INSERT"],
+  eventos_ecc: ["SELECT", "INSERT"],
+  eventos_financeiro: ["SELECT", "INSERT"],
+  eventos_movimentacao: ["SELECT", "INSERT"],
+  eventos_nutricao: ["SELECT", "INSERT"],
+  eventos_pasto_avaliacao: ["SELECT", "INSERT"],
+  eventos_pesagem: ["SELECT", "INSERT"],
+  eventos_reproducao: ["SELECT", "INSERT"],
+  eventos_sanitario: ["SELECT", "INSERT"],
+  farm_invites: ["SELECT"],
+  fazenda_sanidade_config: ["SELECT", "INSERT", "UPDATE"],
+  fazendas: ["SELECT", "UPDATE"],
+  finance_categories: ["SELECT", "INSERT"],
+  finance_transactions: ["SELECT", "INSERT"],
+  insumo_apresentacoes: ["SELECT", "INSERT", "UPDATE"],
+  insumo_lotes: ["SELECT", "INSERT", "UPDATE"],
+  insumo_movimentacoes: ["SELECT", "INSERT"],
+  insumos: ["SELECT", "INSERT", "UPDATE"],
+  lotes: ["SELECT", "INSERT", "UPDATE"],
+  metrics_events: ["SELECT", "INSERT"],
+  pasto_ocupacoes: ["SELECT", "INSERT", "UPDATE"],
+  pastos: ["SELECT", "INSERT", "UPDATE"],
+  produtos_veterinarios: ["SELECT"],
+  protocolos_sanitarios: ["SELECT", "INSERT", "UPDATE"],
+  protocolos_sanitarios_itens: ["SELECT", "INSERT", "UPDATE"],
+  sanitario_agenda_animais_v2: ["SELECT"],
+  sanitario_agenda_closures_v2: ["SELECT"],
+  sanitario_agenda_v2: ["SELECT"],
+  sanitario_casos: ["SELECT", "INSERT", "UPDATE"],
+  sanitario_fonte_cobertura_campos_v2: ["SELECT"],
+  sanitario_fontes_tecnicas_v2: ["SELECT"],
+  sanitario_product_class_default_rules_v2: ["SELECT"],
+  sanitario_product_class_group_members_v2: ["SELECT"],
+  sanitario_product_class_groups_v2: ["SELECT"],
+  sanitario_product_classes_v2: ["SELECT"],
+  sanitario_produto_carencia_rules_v2: ["SELECT"],
+  sanitario_produto_dose_rules_v2: ["SELECT"],
+  sanitario_produto_especie_autorizacao_v2: ["SELECT"],
+  sanitario_produto_fontes_v2: ["SELECT"],
+  sanitario_produtos_v2: ["SELECT"],
+  sanitario_protocolo_itens_versions_v2: ["SELECT"],
+  sanitario_protocolos_v2: ["SELECT"],
+  sociedade_animais: ["SELECT", "INSERT", "UPDATE"],
+  sociedades_pecuarias: ["SELECT", "INSERT", "UPDATE"],
+  user_fazendas: ["SELECT"],
+  user_profiles: ["SELECT", "INSERT", "UPDATE"],
+  user_settings: ["SELECT", "INSERT", "UPDATE"],
+};
 
 function readSupabaseStatusEnv() {
   if (process.env.DB_URL && process.env.API_URL && process.env.ANON_KEY && process.env.SERVICE_ROLE_KEY) {
@@ -146,12 +203,94 @@ async function expectCount(client, sql, params, expected, label) {
   assert(count === expected, `${label}: esperado ${expected}, recebido ${count}`);
 }
 
+async function validateAuthenticatedTablePrivilegeMatrix(client) {
+  const expected = Object.entries(AUTHENTICATED_TABLE_PRIVILEGE_MATRIX).flatMap(
+    ([tableName, privileges]) =>
+      privileges.map((privilege) => ({
+        table_name: tableName,
+        privilege,
+      })),
+  );
+  const result = await client.query(
+    `
+      with expected as (
+        select table_name, privilege
+        from jsonb_to_recordset($1::jsonb)
+          as item(table_name text, privilege text)
+      )
+      select
+        expected.table_name,
+        expected.privilege,
+        has_table_privilege(
+          'authenticated',
+          format('public.%I', expected.table_name),
+          expected.privilege
+        ) as has_grant,
+        exists (
+          select 1
+          from pg_policies policy
+          where policy.schemaname = 'public'
+            and policy.tablename = expected.table_name
+            and policy.cmd in ('ALL', expected.privilege)
+            and (
+              policy.roles @> array['public']::name[]
+              or policy.roles @> array['authenticated']::name[]
+            )
+        ) as has_policy
+      from expected
+      order by expected.table_name, expected.privilege
+    `,
+    [JSON.stringify(expected)],
+  );
+
+  for (const row of result.rows) {
+    assert(
+      row.has_grant,
+      `grant ausente: authenticated ${row.privilege} public.${row.table_name}`,
+    );
+    assert(
+      row.has_policy,
+      `policy ausente: authenticated ${row.privilege} public.${row.table_name}`,
+    );
+  }
+
+  for (const tableName of Object.keys(AUTHENTICATED_TABLE_PRIVILEGE_MATRIX)) {
+    assert(
+      !(await client.query(
+        "select has_table_privilege('authenticated', format('public.%I', $1::text), 'DELETE') as allowed",
+        [tableName],
+      )).rows[0].allowed,
+      `DELETE nao esperado para authenticated em public.${tableName}`,
+    );
+    assert(
+      !(await client.query(
+        "select has_table_privilege('anon', format('public.%I', $1::text), 'SELECT,INSERT,UPDATE,DELETE') as allowed",
+        [tableName],
+      )).rows[0].allowed,
+      `anon nao deve ter acesso operacional a public.${tableName}`,
+    );
+  }
+}
+
 async function withAuthenticatedUser(client, userId, fn) {
   await client.query("begin");
   try {
     await client.query("set local role authenticated");
     await client.query("select set_config('request.jwt.claim.sub', $1, true)", [userId]);
     await client.query("select set_config('request.jwt.claim.role', 'authenticated', true)");
+    const result = await fn();
+    await client.query("commit");
+    return result;
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  }
+}
+
+async function withAnonRole(client, fn) {
+  await client.query("begin");
+  try {
+    await client.query("set local role anon");
     const result = await fn();
     await client.query("commit");
     return result;
@@ -255,23 +394,156 @@ async function main() {
     await client.query("set statement_timeout = '60s'");
     await client.query("set lock_timeout = '5s'");
 
+    console.log("authenticated privileges: grants + policies");
+    await validateAuthenticatedTablePrivilegeMatrix(client);
+
     const owner = await createAuthUser(adminClient, runId, "owner", password);
     const manager = await createAuthUser(adminClient, runId, "manager", password);
     const cowboy = await createAuthUser(adminClient, runId, "cowboy", password);
     const outsider = await createAuthUser(adminClient, runId, "outsider", password);
     createdUsers.push(owner, manager, cowboy, outsider);
 
-    console.log("1/5 RLS + fluxo owner/fazenda");
+    console.log("user_profiles: privilegio de tabela + RLS");
 
-    const farmId = await withAuthenticatedUser(client, owner.id, async () => {
+    await withAuthenticatedUser(client, owner.id, async () => {
       await client.query(
         "insert into public.user_profiles(user_id, display_name) values ($1, $2)",
         [owner.id, `Owner ${runId}`],
       );
+    });
+    await expectError(
+      () =>
+        withAuthenticatedUser(client, owner.id, async () => {
+          await client.query(
+            "insert into public.user_profiles(user_id, display_name) values ($1, $2)",
+            [manager.id, `Spoof ${runId}`],
+          );
+        }),
+      "usuario autenticado nao deve criar perfil alheio",
+      ["42501"],
+    );
+    await expectError(
+      () =>
+        withAnonRole(client, async () => {
+          await client.query(
+            "insert into public.user_profiles(user_id, display_name) values ($1, $2)",
+            [manager.id, `Anon ${runId}`],
+          );
+        }),
+      "anon nao deve criar perfil",
+      ["42501"],
+    );
+    await expectError(
+      () =>
+        withAuthenticatedUser(client, owner.id, async () => {
+          await client.query(
+            "insert into public.user_profiles(user_id, display_name) values ($1, $2)",
+            [owner.id, `Owner duplicado ${runId}`],
+          );
+        }),
+      "perfil duplicado deve preservar a chave primaria atual",
+      ["23505"],
+    );
+
+    console.log("user_settings: privilegio de tabela + RLS");
+
+    await withAuthenticatedUser(client, owner.id, async () => {
       await client.query(
         "insert into public.user_settings(user_id) values ($1)",
         [owner.id],
       );
+    });
+    await expectError(
+      () =>
+        withAuthenticatedUser(client, owner.id, async () => {
+          await client.query(
+            "insert into public.user_settings(user_id) values ($1)",
+            [manager.id],
+          );
+        }),
+      "usuario autenticado nao deve criar settings alheios",
+      ["42501"],
+    );
+    await expectError(
+      () =>
+        withAnonRole(client, async () => {
+          await client.query(
+            "insert into public.user_settings(user_id) values ($1)",
+            [manager.id],
+          );
+        }),
+      "anon nao deve criar settings",
+      ["42501"],
+    );
+    await expectError(
+      () =>
+        withAuthenticatedUser(client, owner.id, async () => {
+          await client.query(
+            "insert into public.user_settings(user_id) values ($1)",
+            [owner.id],
+          );
+        }),
+      "settings duplicados devem preservar a chave primaria atual",
+      ["23505"],
+    );
+
+    await client.query(
+      "insert into public.user_settings(user_id) values ($1)",
+      [manager.id],
+    );
+
+    await withAuthenticatedUser(client, owner.id, async () => {
+      await expectCount(
+        client,
+        "select count(*) from public.user_settings where user_id = $1",
+        [owner.id],
+        1,
+        "usuario autenticado le os proprios settings",
+      );
+      await expectCount(
+        client,
+        "select count(*) from public.user_settings where user_id = $1",
+        [manager.id],
+        0,
+        "settings alheios permanecem invisiveis",
+      );
+
+      const ownUpdate = await client.query(
+        "update public.user_settings set theme = 'dark' where user_id = $1",
+        [owner.id],
+      );
+      assert(ownUpdate.rowCount === 1, "usuario autenticado deve atualizar os proprios settings");
+
+      const foreignUpdate = await client.query(
+        "update public.user_settings set theme = 'light' where user_id = $1",
+        [manager.id],
+      );
+      assert(foreignUpdate.rowCount === 0, "usuario autenticado nao deve atualizar settings alheios");
+    });
+
+    await expectError(
+      () =>
+        withAnonRole(client, async () => {
+          await client.query("select * from public.user_settings");
+        }),
+      "anon nao deve ler settings",
+      ["42501"],
+    );
+    await expectError(
+      () =>
+        withAnonRole(client, async () => {
+          await client.query(
+            "update public.user_settings set theme = 'light' where user_id = $1",
+            [owner.id],
+          );
+        }),
+      "anon nao deve atualizar settings",
+      ["42501"],
+    );
+
+    console.log("1/5 RLS + fluxo owner/fazenda");
+
+    const farmId = await withAuthenticatedUser(client, owner.id, async () => {
       const created = await client.query(
         "select public.create_fazenda($1, $2, $3, 'GO'::public.estado_uf_enum, null, 120, 'corte'::public.tipo_producao_enum, 'pastagem'::public.sistema_manejo_enum) as id",
         [`Fazenda Baseline ${runId}`, `base-${runId}`, "Goiania"],
@@ -383,11 +655,15 @@ async function main() {
         "insert into public.pastos(fazenda_id, nome) values ($1, $2)",
         [farmId, `Pasto Manager ${runId}`],
       );
-      const update = await client.query(
-        "update public.user_fazendas set role = 'owner' where user_id = $1 and fazenda_id = $2",
-        [manager.id, farmId],
+      await expectError(
+        () =>
+          client.query(
+            "update public.user_fazendas set role = 'owner' where user_id = $1 and fazenda_id = $2",
+            [manager.id, farmId],
+          ),
+        "manager nao deve conseguir autoelevar role por update direto",
+        ["42501"],
       );
-      assert(update.rowCount === 0, "manager nao deve conseguir autoelevar role por update direto");
     });
     await expectCount(client, "select count(*) from public.user_fazendas where user_id = $1 and fazenda_id = $2 and role = 'manager'", [manager.id, farmId], 1, "manager permaneceu manager");
 

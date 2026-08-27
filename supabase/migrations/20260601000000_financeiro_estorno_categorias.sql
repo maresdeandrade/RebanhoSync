@@ -63,7 +63,8 @@ BEGIN
     array_to_string(chars[21:32], '')
   )::uuid;
 END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql IMMUTABLE
+SET search_path = public, extensions, pg_temp;
 
 -- Migrar categorias existentes:
 DO $$

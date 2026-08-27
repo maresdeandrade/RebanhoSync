@@ -40,7 +40,7 @@ A validação da Fase 15 confirmou 16 testes focados, `quality:gate`, build, typ
 
 A Fase 16 — Financeiro Gerencial — foi integralmente concluída e integrada via PR #94. A implementação incluiu hardening offline de `finance_transactions` e `finance_categories`, hardening semântico de valores e status do ledger, classificação canônica cruzada (Evento × ledger × comercial) para prevenir dupla contagem, e separação clara entre caixa, competência, previsão e vencidos. Os KPIs ganharam cobertura conservadora (ausência de dados não é zero factual). As categorias default passaram a usar UUID determinístico customizado baseado em SHA-256 com identidade convergente cliente/Postgres e resolução de colisão estrita. A Fase 16 também introduziu o estorno append-only (com a coluna `reverses_transaction_id`) e atualizou a Edge Function `sync-batch` e o Dexie para a v29. O RLS permaneceu preservado. A validação de upgrade legado isolado, 43 testes focados, gates de qualidade e build de produção passaram com sucesso.
 
-**Importante:** A presença da migration `20260601000000_financeiro_estorno_categorias.sql` versionada na `main` NÃO significa que ela foi aplicada em staging ou produção. Os ambientes de staging e produção não foram alterados durante a Fase 16.
+**Importante:** A migration `20260601000000_financeiro_estorno_categorias.sql` foi aplicada com sucesso em staging durante a Trilha B (alinhamento `42 local == 42 staging`). A promoção para produção permanece pendente.
 
 ## Hardening transversal integrado — PR #96
 
@@ -113,10 +113,14 @@ Estado dos subitens:
 
 ## Ambiente e rollout
 
-- Supabase staging: `zqloazqzhwauamcejmuz`.
-- Produção: não alterada.
-- Gate sanitário remoto: desligado.
-- Feature flag local: `false`.
+- Supabase staging: `zqloazqzhwauamcejmuz` (42 migrations alinhadas: `42 local == 42 staging`).
+- Auth / Grants: privilégios de tabelas autenticadas reconciliados (`20260826230107`), validado localmente, aplicado em staging; produção pendente.
+- Admin Track: A1.1 + A2 + A2.1 + A4 operacionais em staging; provisionamento e smoke de SuperAdmin validados; produção pendente.
+- F16 Financeiro: migration aplicada em staging; produção pendente.
+- B4 Movimentação: `eventos_movimentacao` integrado em `STANDARD_EVENT_DETAIL_REMOTE_TABLES`; convergência comprovada em testes automatizados (`AUTOMATED_CONVERGENCE_VERIFIED`); E2E remoto pendente antes da F22C.
+- Produção: não alterada (100% preservada).
+- Gate sanitário remoto: desligado (`fail-closed`).
+- Feature flag local Sanitário v2: `false`.
 - Rollout para usuários: não autorizado.
 - Fixtures sintéticas residuais: zero.
 

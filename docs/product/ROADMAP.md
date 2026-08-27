@@ -65,7 +65,7 @@ A Fase 20 migrou as cinco jornadas críticas para os padrões compartilhados, co
 - **Fase 19 — Foundations + Shell + Branding:** foundations visuais, shell da aplicação e identidade de marca.
 - **Fase 20 — Jornadas UX Críticas:** Home, Animais, AnimalDetalhe, Registrar e Agenda.
 - **Fase 21 — Inteligência Operacional v2:** evolução da inteligência operacional reutilizando `MetricResult` e `DecisionRecommendation`.
-- **Fase 22 — Eficiência Produtiva e Econômica:** produtividade e economia; peso observado não equivale automaticamente a peso atual confiável, e o item 22C de lote/pasto depende de histórico de movimentação confiável.
+- **Fase 22 — Eficiência Produtiva e Econômica:** produtividade e economia; peso observado não equivale automaticamente a peso atual confiável, e o item 22C de lote/pasto depende de histórico de movimentação confiável (pré-requisito de pull padrão resolvido na Trilha B com `AUTOMATED_CONVERGENCE_VERIFIED`; validação remota E2E é gate de entrada da F22C).
 - **Fase 23 — Simulação Produtiva e Comercial:** simulações com premissas explícitas; projeção não é fato e simulação não é autorização comercial.
 - **Fase 24 — Release Hardening / Scale Readiness:** offline prolongado, multi-device, RLS, recovery, observabilidade, performance, migrations/upgrades e release gates.
 
@@ -94,6 +94,6 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 19 | Foundations + Shell + Branding | **Concluída**; foundations e shell revalidados em light/dark e mobile/desktop |
 | 20 | Jornadas UX Críticas | **Concluída**; cinco jornadas migradas e validadas |
 | 21 | Inteligência Operacional v2 | Fase atual; implementação não iniciada; reutilizar `MetricResult` e `DecisionRecommendation` |
-| 22 | Eficiência Produtiva e Econômica | Exigir fontes confiáveis para peso e histórico de movimentação |
+| 22 | Eficiência Produtiva e Econômica | Exigir fontes confiáveis para peso e validação remota E2E de movimentação |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
 | 24 | Release Hardening / Scale Readiness | Hardening sistêmico final para escala |
