@@ -24,8 +24,9 @@ async function runSecurityDefinerGate() {
     console.log("--- 1. Auditoria de Catálogo pg_proc (Schema public) ---");
 
     const catalogQuery = `
-      SELECT 
+      SELECT
         p.proname AS name,
+
         p.oid,
         pg_get_function_identity_arguments(p.oid) AS identity_arguments,
         pg_get_function_result(p.oid) AS result_type,
@@ -135,14 +136,15 @@ async function runSecurityDefinerGate() {
     // Inserir fazendas e memberships
     await client.query(`
       INSERT INTO public.fazendas (id, nome, codigo, created_by)
-      VALUES 
+      VALUES
         ('${farmA}', 'Fazenda Alpha', 'ALP-01', '${userA}'),
         ('${farmB}', 'Fazenda Beta', 'BET-01', '${userB}')
       ON CONFLICT (id) DO NOTHING;
 
       INSERT INTO public.user_fazendas (fazenda_id, user_id, role, accepted_at)
-      VALUES 
+      VALUES
         ('${farmA}', '${userA}', 'owner', now()),
+
         ('${farmA}', '${userB}', 'cowboy', now()),
         ('${farmB}', '${userB}', 'owner', now())
       ON CONFLICT (user_id, fazenda_id) DO UPDATE SET deleted_at = null, role = EXCLUDED.role;
