@@ -310,7 +310,7 @@ KPI financeiro deve declarar fonte, período, inclusão/exclusão e limitação.
 
 ### Status
 
-Parcial conforme eventos e read models existentes.
+Parcial conforme eventos e read models existentes. A convergência de pull de `eventos_movimentacao` foi resolvida em testes automatizados (`AUTOMATED_CONVERGENCE_VERIFIED`); a comprovação remota E2E permanece pendente antes da F22C.
 
 ### Não inferir sem fonte
 
