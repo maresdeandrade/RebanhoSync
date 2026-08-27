@@ -5,8 +5,15 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { DecisionRecommendationsPanel } from "@/features/decisionAssistance/DecisionRecommendationsPanel";
-import { buildOverdueAgendaRecommendation } from "@/lib/insights/decisionRecommendations";
+import {
+  buildOperationalHistoryReviewRecommendation,
+  buildOverdueAgendaRecommendation,
+} from "@/lib/insights/decisionRecommendations";
 import type { AgendaItem } from "@/lib/offline/types";
+import {
+  createMetricPeriod,
+  createMetricResult,
+} from "@/lib/reports/metricContract";
 
 describe("DecisionRecommendationsPanel", () => {
   it("shows provenance, limitations, non-authorization and a canonical navigation CTA", () => {
@@ -60,5 +67,55 @@ describe("DecisionRecommendationsPanel", () => {
 
     expect(screen.getByText("Decisao assistida")).toBeInTheDocument();
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("explains the MetricResult limitation and only navigates to reports", () => {
+    const recommendation = buildOperationalHistoryReviewRecommendation({
+      fazendaId: "farm-1",
+      cutoffAt: "2026-08-23T12:00:00.000Z",
+      timezone: "America/Sao_Paulo",
+      timezoneVerified: true,
+      metrics: {
+        availability: "loaded",
+        convergence: { mode: "local_derived", verified: true },
+        records: [
+          {
+            metricKey: "eventos_periodo",
+            result: createMetricResult({
+              value: 4,
+              status: "partial",
+              period: createMetricPeriod("2026-08-01", "2026-08-23", {
+                timezone: "America/Sao_Paulo",
+                timezoneSource: "farm",
+              }),
+              coverage: {
+                kind: "historical",
+                state: "partial",
+                scope: { fazendaId: "farm-1", domain: "operacional" },
+                evidence: ["Cobertura local incompleta."],
+              },
+              sources: [{ name: "event_eventos", role: "primary" }],
+              limitations: ["Historico completo nao comprovado."],
+            }),
+          },
+        ],
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <DecisionRecommendationsPanel recommendations={[recommendation]} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Evidencia parcial")).toBeInTheDocument();
+    expect(screen.getByText(/event_eventos/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Historico completo nao comprovado/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Revisar relatorios" }),
+    ).toHaveAttribute("href", "/relatorios");
+    expect(screen.getByText(/nao cria nem altera Evento/)).toBeInTheDocument();
   });
 });

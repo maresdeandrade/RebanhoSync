@@ -57,6 +57,7 @@ import {
   type InventoryReplenishmentAlertRow,
 } from "@/lib/reports/operationalSummary";
 import {
+  buildOperationalHistoryReviewRecommendation,
   buildOverdueAgendaRecommendation,
   buildWeightDataQualityRecommendation,
   type DecisionRecommendation,
@@ -511,6 +512,19 @@ const Home = () => {
           availability: "loaded",
           records: agendaAberta,
           convergence: { mode: "standard_pull", verified: true },
+        },
+      }),
+      buildOperationalHistoryReviewRecommendation({
+        ...sharedDecisionInput,
+        metrics: {
+          availability: "loaded",
+          records: [
+            {
+              metricKey: "eventos_periodo",
+              result: operationalSummary.metrics.eventos_periodo,
+            },
+          ],
+          convergence: { mode: "local_derived", verified: true },
         },
       }),
       ...weightRecommendations,
