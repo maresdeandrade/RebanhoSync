@@ -1,6 +1,8 @@
 import type { AgendaItem, Evento, EventoPesagem } from "@/lib/offline/types";
 import type {
+  MetricCoverage,
   MetricCoverageState,
+  MetricPeriod,
   MetricResult,
   MetricStatus,
 } from "@/lib/reports/metricContract";
@@ -776,6 +778,11 @@ function operationalHistorySource(
   const primarySource = metric?.sources.find(
     (source) => source.role === "primary",
   );
+  const fields = [
+    ["MetricResult.value", metric?.value !== null],
+    ["MetricResult.period", Boolean(metric?.period)],
+    ["MetricResult.coverage", Boolean(metric?.coverage)],
+  ] as const;
   return {
     name: primarySource?.name ?? "event_eventos",
     role: "primary",
@@ -784,17 +791,11 @@ function operationalHistorySource(
     fieldsPresent: metric
       ? [
           "MetricResult.status",
-          ...(metric.value !== null ? ["MetricResult.value"] : []),
-          ...(metric.period ? ["MetricResult.period"] : []),
-          ...(metric.coverage ? ["MetricResult.coverage"] : []),
+          ...fields.filter(([, present]) => present).map(([field]) => field),
         ]
       : [],
     fieldsMissing: metric
-      ? [
-          ...(metric.value === null ? ["MetricResult.value"] : []),
-          ...(!metric.period ? ["MetricResult.period"] : []),
-          ...(!metric.coverage ? ["MetricResult.coverage"] : []),
-        ]
+      ? fields.filter(([, present]) => !present).map(([field]) => field)
       : ["MetricResult:eventos_periodo"],
   };
 }
@@ -834,12 +835,64 @@ function cutoffDateKey(cutoffAt: string, timezone: string): string | null {
   }
 }
 
-export function buildOperationalHistoryReviewRecommendation(
-  input: BuildOperationalHistoryReviewInput,
-): DecisionRecommendation<OperationalHistoryReviewData> {
-  assertSharedInput(input);
+const OPERATIONAL_HISTORY_ACTION = {
+  label: "Revisar relatorios",
+  href: "/relatorios",
+};
+const OPERATIONAL_HISTORY_PROHIBITED_ACTIONS = [
+  "nao cria nem altera Evento",
+  "nao conclui nem altera Agenda",
+  "nao persiste recomendacao ou MetricResult",
+  "nao autoriza operacao comercial, sanitaria ou de manejo",
+];
 
-  const base = {
+type OperationalHistorySelection =
+  | { kind: "unavailable"; status: DecisionRecommendationStatus }
+  | {
+      kind: "missing";
+      status: "unknown" | "not_permitted";
+      reason: string;
+      metric: MetricResult<number> | null;
+    }
+  | { kind: "conflict"; metric: MetricResult<number> }
+  | { kind: "selected"; metric: MetricResult<number> };
+
+type OperationalHistoryContract =
+  | { kind: "invalid"; metric: MetricResult<number> }
+  | {
+      kind: "timezone_conflict";
+      metric: MetricResult<number>;
+      period: MetricPeriod;
+      coverage: MetricCoverage;
+    }
+  | {
+      kind: "valid";
+      metric: MetricResult<number>;
+      period: MetricPeriod;
+      coverage: MetricCoverage;
+      periodExceedsCutoff: boolean;
+    };
+
+type OperationalHistoryAssessment = {
+  status: "confirmed" | "partial" | "unknown";
+  statusReason: string;
+  data: OperationalHistoryReviewData | null;
+  limitations: string[];
+};
+
+function operationalHistoryBase(
+  input: BuildOperationalHistoryReviewInput,
+): Pick<
+  DecisionRecommendation<OperationalHistoryReviewData>,
+  | "id"
+  | "decisionId"
+  | "question"
+  | "scope"
+  | "generatedAt"
+  | "period"
+  | "prohibitedActions"
+> {
+  return {
     id: `${OPERATIONAL_HISTORY_DECISION_ID}:${input.fazendaId}`,
     decisionId: OPERATIONAL_HISTORY_DECISION_ID,
     question:
@@ -850,38 +903,15 @@ export function buildOperationalHistoryReviewRecommendation(
       timezone: input.timezone,
       cutoffAt: input.cutoffAt,
     },
-    prohibitedActions: [
-      "nao cria nem altera Evento",
-      "nao conclui nem altera Agenda",
-      "nao persiste recomendacao ou MetricResult",
-      "nao autoriza operacao comercial, sanitaria ou de manejo",
-    ],
-  } as const;
-  const convergence = [
-    sourceConvergence(
-      `MetricResult:${OPERATIONAL_HISTORY_METRIC_KEY}`,
-      input.metrics,
-    ),
-  ];
-  const limitations = technicalLimitations(input);
+    prohibitedActions: [...OPERATIONAL_HISTORY_PROHIBITED_ACTIONS],
+  };
+}
+
+function resolveOperationalHistoryMetric(
+  input: BuildOperationalHistoryReviewInput,
+): OperationalHistorySelection {
   const unavailable = unavailableStatus([input.metrics]);
-  if (unavailable) {
-    return {
-      ...base,
-      status: unavailable,
-      statusReason: unavailableReason(unavailable),
-      data: null,
-      evidence: {
-        primarySources: [operationalHistorySource(null)],
-        auxiliarySources: technicalSources(input),
-        convergence,
-        coverage: [],
-        limitations,
-        conflicts: [],
-      },
-      suggestedAction: { label: "Revisar relatorios", href: "/relatorios" },
-    };
-  }
+  if (unavailable) return { kind: "unavailable", status: unavailable };
 
   const metricSnapshots = (input.metrics.records ?? []).filter(
     (snapshot) => snapshot.metricKey === OPERATIONAL_HISTORY_METRIC_KEY,
@@ -897,228 +927,357 @@ export function buildOperationalHistoryReviewRecommendation(
     .map((snapshot) => snapshot.result);
 
   if (localMetrics.length === 0) {
-    const status: DecisionRecommendationStatus = unscopedMetric
-      ? "not_permitted"
-      : "unknown";
     return {
-      ...base,
-      status,
-      statusReason: unscopedMetric
+      kind: "missing",
+      status: unscopedMetric ? "not_permitted" : "unknown",
+      reason: unscopedMetric
         ? "O MetricResult nao declara escopo por fazenda; usar a leitura para conclusao nao e permitido."
         : "Nenhum MetricResult do periodo foi localizado para a fazenda informada.",
-      data: null,
-      evidence: {
-        primarySources: [
-          operationalHistorySource(unscopedMetric?.result ?? null),
-        ],
-        auxiliarySources: technicalSources(input),
-        convergence,
-        coverage: [],
-        limitations,
-        conflicts: [],
-      },
-      suggestedAction: { label: "Revisar relatorios", href: "/relatorios" },
+      metric: unscopedMetric?.result ?? null,
     };
   }
 
   const variants = unique(localMetrics.map(canonicalMetricResult));
-  if (variants.length > 1) {
-    return {
-      ...base,
-      status: "ambiguous",
-      statusReason:
-        "Ha MetricResult divergente para a mesma fazenda, metrica e periodo; nenhum desempate foi autorizado.",
-      data: null,
-      evidence: {
-        primarySources: [operationalHistorySource(localMetrics[0])],
-        auxiliarySources: technicalSources(input),
-        convergence,
-        coverage: [`fazenda:${input.fazendaId}`],
-        limitations,
-        conflicts: [
-          {
-            code: "conflicting_metric_result",
-            source: `MetricResult:${OPERATIONAL_HISTORY_METRIC_KEY}`,
-            recordIds: [],
-            description:
-              "Snapshots metricos da mesma fazenda apresentam valor, status, periodo, cobertura ou fonte divergente.",
-          },
-        ],
-      },
-      suggestedAction: { label: "Revisar relatorios", href: "/relatorios" },
-    };
-  }
+  return variants.length > 1
+    ? { kind: "conflict", metric: localMetrics[0] }
+    : { kind: "selected", metric: localMetrics[0] };
+}
 
-  const metric = localMetrics[0];
-  const primarySource = metric.sources.find(
+function validOperationalHistoryPeriod(period: MetricPeriod): boolean {
+  return [
+    isValidDateKey(period.from),
+    isValidDateKey(period.to),
+    period.from <= period.to,
+  ].every(Boolean);
+}
+
+function validOperationalHistoryCoverage(
+  coverage: MetricCoverage,
+  fazendaId: string,
+): boolean {
+  return [
+    coverage.kind === "historical",
+    coverage.scope.fazendaId === fazendaId,
+  ].every(Boolean);
+}
+
+function validateOperationalHistoryContract(
+  input: BuildOperationalHistoryReviewInput,
+  metric: MetricResult<number>,
+): OperationalHistoryContract {
+  const hasPrimarySource = metric.sources.some(
     (source) => source.role === "primary" && source.name === "event_eventos",
   );
   const period = metric.period;
   const coverage = metric.coverage;
-  const metricTimezone = period?.timezone;
-  const cutoffKey =
-    input.timezone && period
-      ? cutoffDateKey(input.cutoffAt, input.timezone)
-      : null;
-  const invalidContract =
-    !primarySource ||
-    !period ||
-    !coverage ||
-    coverage.kind !== "historical" ||
-    coverage.scope.fazendaId !== input.fazendaId ||
-    !isValidDateKey(period.from) ||
-    !isValidDateKey(period.to) ||
-    period.from > period.to ||
-    !input.timezone ||
-    !cutoffKey;
-
-  if (invalidContract) {
-    return {
-      ...base,
-      period: {
-        start: period?.from,
-        end: period?.to,
-        timezone: metricTimezone ?? input.timezone,
-        cutoffAt: input.cutoffAt,
-      },
-      status: "not_permitted",
-      statusReason:
-        "Fonte primaria, periodo, timezone ou cobertura historica obrigatoria nao esta explicita no MetricResult.",
-      data: null,
-      evidence: {
-        primarySources: [operationalHistorySource(metric)],
-        auxiliarySources: technicalSources(input),
-        convergence,
-        coverage: [`fazenda:${input.fazendaId}`],
-        limitations: unique([...limitations, ...metric.limitations]),
-        conflicts: [],
-      },
-      suggestedAction: { label: "Revisar relatorios", href: "/relatorios" },
-    };
+  if (!hasPrimarySource || !period || !coverage || !input.timezone) {
+    return { kind: "invalid", metric };
   }
-
-  if (metricTimezone !== input.timezone) {
-    return {
-      ...base,
-      period: {
-        start: period.from,
-        end: period.to,
-        timezone: metricTimezone,
-        cutoffAt: input.cutoffAt,
-      },
-      status: "ambiguous",
-      statusReason:
-        "O timezone do MetricResult diverge do timezone declarado para a decisao.",
-      data: null,
-      evidence: {
-        primarySources: [operationalHistorySource(metric)],
-        auxiliarySources: technicalSources(input),
-        convergence,
-        coverage: [
-          `fazenda:${input.fazendaId}`,
-          `periodo:${period.from}/${period.to}`,
-        ],
-        limitations: unique([...limitations, ...metric.limitations]),
-        conflicts: [
-          {
-            code: "metric_timezone_conflict",
-            source: `MetricResult:${OPERATIONAL_HISTORY_METRIC_KEY}`,
-            recordIds: [],
-            description: `Timezone metrico ${metricTimezone ?? "ausente"} diverge de ${input.timezone}.`,
-          },
-        ],
-      },
-      suggestedAction: { label: "Revisar relatorios", href: "/relatorios" },
-    };
+  const cutoffKey = cutoffDateKey(input.cutoffAt, input.timezone);
+  const validContract = [
+    validOperationalHistoryPeriod(period),
+    validOperationalHistoryCoverage(coverage, input.fazendaId),
+    Boolean(cutoffKey),
+  ].every(Boolean);
+  if (!validContract || !cutoffKey) {
+    return { kind: "invalid", metric };
   }
+  if (period.timezone !== input.timezone) {
+    return { kind: "timezone_conflict", metric, period, coverage };
+  }
+  return {
+    kind: "valid",
+    metric,
+    period,
+    coverage,
+    periodExceedsCutoff: period.to > cutoffKey,
+  };
+}
 
-  const periodExceedsCutoff = period.to > cutoffKey;
-  if (periodExceedsCutoff) {
-    limitations.push(
+function optionalLimitation(condition: boolean, message: string): string[] {
+  return condition ? [message] : [];
+}
+
+function operationalHistoryStatus(
+  complete: boolean,
+  metric: MetricResult<number>,
+): "confirmed" | "partial" | "unknown" {
+  if (complete) return "confirmed";
+  if (metric.status === "unavailable" || metric.value === null) return "unknown";
+  return "partial";
+}
+
+function operationalHistoryStatusReason(
+  status: "confirmed" | "partial" | "unknown",
+): string {
+  if (status === "confirmed") {
+    return "Fonte factual, escopo, periodo, timezone e cobertura historica estao explicitos.";
+  }
+  if (status === "unknown") {
+    return "O MetricResult nao possui valor interpretavel com a cobertura disponivel.";
+  }
+  return "O volume local e util, mas cobertura, cutoff, timezone ou convergencia ainda limitam a interpretacao.";
+}
+
+function operationalHistoryData(
+  status: "confirmed" | "partial" | "unknown",
+  metric: MetricResult<number>,
+  coverage: MetricCoverage,
+): OperationalHistoryReviewData | null {
+  if (status === "unknown") return null;
+  const summary =
+    status === "confirmed"
+      ? `${metric.value} Evento(s) no periodo com cobertura historica verificada.`
+      : `${metric.value} Evento(s) observados; interprete o volume com as limitacoes declaradas.`;
+  return {
+    summary,
+    metricKey: OPERATIONAL_HISTORY_METRIC_KEY,
+    observedEventCount: metric.value,
+    metricStatus: metric.status,
+    coverageState: coverage.state,
+  };
+}
+
+function deriveOperationalHistoryAssessment(
+  input: BuildOperationalHistoryReviewInput,
+  contract: Extract<OperationalHistoryContract, { kind: "valid" }>,
+): OperationalHistoryAssessment {
+  const { metric, period, coverage, periodExceedsCutoff } = contract;
+  const limitations = unique([
+    ...technicalLimitations(input),
+    ...optionalLimitation(
+      periodExceedsCutoff,
       "O periodo metrico termina depois do cutoff; a leitura representa somente o conjunto observado ate o cutoff.",
-    );
-  }
-  limitations.push(...metric.limitations);
-  if (!input.metrics.convergence.verified) {
-    limitations.push(
+    ),
+    ...metric.limitations,
+    ...optionalLimitation(
+      !input.metrics.convergence.verified,
       "A derivacao local do MetricResult nao foi declarada como verificada.",
-    );
+    ),
+  ]);
+  const isComplete = [
+    metric.status === "complete",
+    coverage.state === "verified",
+    period.timezoneSource === "farm",
+    input.timezoneVerified,
+    input.metrics.convergence.verified,
+    input.metrics.convergence.mode !== "not_verified",
+    !periodExceedsCutoff,
+  ].every(Boolean);
+  const status = operationalHistoryStatus(isComplete, metric);
+  return {
+    status,
+    statusReason: operationalHistoryStatusReason(status),
+    data: operationalHistoryData(status, metric, coverage),
+    limitations,
+  };
+}
+
+function operationalHistoryMetricSource(): DecisionEvidenceSource {
+  return {
+    name: `MetricResult:${OPERATIONAL_HISTORY_METRIC_KEY}`,
+    role: "auxiliary",
+    kind: "technical",
+    recordIds: [],
+    fieldsPresent: ["status", "period", "coverage", "sources", "limitations"],
+    fieldsMissing: [],
+  };
+}
+
+function buildOperationalHistoryEvidence(
+  input: BuildOperationalHistoryReviewInput,
+  options: {
+    metric: MetricResult<number> | null;
+    coverage?: string[];
+    limitations?: string[];
+    conflicts?: DecisionEvidenceConflict[];
+    includeMetricSource?: boolean;
+  },
+): DecisionRecommendation<OperationalHistoryReviewData>["evidence"] {
+  return {
+    primarySources: [operationalHistorySource(options.metric)],
+    auxiliarySources: [
+      ...(options.includeMetricSource ? [operationalHistoryMetricSource()] : []),
+      ...technicalSources(input),
+    ],
+    convergence: [
+      sourceConvergence(
+        `MetricResult:${OPERATIONAL_HISTORY_METRIC_KEY}`,
+        input.metrics,
+      ),
+    ],
+    coverage: options.coverage ?? [],
+    limitations: options.limitations ?? technicalLimitations(input),
+    conflicts: options.conflicts ?? [],
+  };
+}
+
+function buildOperationalHistorySelectionRecommendation(
+  input: BuildOperationalHistoryReviewInput,
+  selection: Exclude<OperationalHistorySelection, { kind: "selected" }>,
+): DecisionRecommendation<OperationalHistoryReviewData> {
+  const base = operationalHistoryBase(input);
+  if (selection.kind === "unavailable") {
+    return {
+      ...base,
+      status: selection.status,
+      statusReason: unavailableReason(selection.status),
+      data: null,
+      evidence: buildOperationalHistoryEvidence(input, { metric: null }),
+      suggestedAction: { ...OPERATIONAL_HISTORY_ACTION },
+    };
   }
-
-  const isComplete =
-    metric.status === "complete" &&
-    coverage.state === "verified" &&
-    period.timezoneSource === "farm" &&
-    input.timezoneVerified &&
-    input.metrics.convergence.verified &&
-    input.metrics.convergence.mode !== "not_verified" &&
-    !periodExceedsCutoff;
-  const status: DecisionRecommendationStatus = isComplete
-    ? "confirmed"
-    : metric.status === "unavailable" || metric.value === null
-      ? "unknown"
-      : "partial";
-  const data: OperationalHistoryReviewData | null =
-    status === "unknown"
-      ? null
-      : {
-          summary:
-            status === "confirmed"
-              ? `${metric.value} Evento(s) no periodo com cobertura historica verificada.`
-              : `${metric.value} Evento(s) observados; interprete o volume com as limitacoes declaradas.`,
-          metricKey: OPERATIONAL_HISTORY_METRIC_KEY,
-          observedEventCount: metric.value,
-          metricStatus: metric.status,
-          coverageState: coverage.state,
-        };
-
+  const conflict = selection.kind === "conflict";
   return {
     ...base,
+    status: conflict ? "ambiguous" : selection.status,
+    statusReason: conflict
+      ? "Ha MetricResult divergente para a mesma fazenda, metrica e periodo; nenhum desempate foi autorizado."
+      : selection.reason,
+    data: null,
+    evidence: buildOperationalHistoryEvidence(input, {
+      metric: selection.metric,
+      coverage: conflict ? [`fazenda:${input.fazendaId}`] : [],
+      conflicts: conflict
+        ? [
+            {
+              code: "conflicting_metric_result",
+              source: `MetricResult:${OPERATIONAL_HISTORY_METRIC_KEY}`,
+              recordIds: [],
+              description:
+                "Snapshots metricos da mesma fazenda apresentam valor, status, periodo, cobertura ou fonte divergente.",
+            },
+          ]
+        : [],
+    }),
+    suggestedAction: { ...OPERATIONAL_HISTORY_ACTION },
+  };
+}
+
+function buildInvalidOperationalHistoryRecommendation(
+  input: BuildOperationalHistoryReviewInput,
+  contract: Extract<OperationalHistoryContract, { kind: "invalid" }>,
+): DecisionRecommendation<OperationalHistoryReviewData> {
+  const period = contract.metric.period;
+  return {
+    ...operationalHistoryBase(input),
+    period: {
+      start: period?.from,
+      end: period?.to,
+      timezone: period?.timezone ?? input.timezone,
+      cutoffAt: input.cutoffAt,
+    },
+    status: "not_permitted",
+    statusReason:
+      "Fonte primaria, periodo, timezone ou cobertura historica obrigatoria nao esta explicita no MetricResult.",
+    data: null,
+    evidence: buildOperationalHistoryEvidence(input, {
+      metric: contract.metric,
+      coverage: [`fazenda:${input.fazendaId}`],
+      limitations: unique([
+        ...technicalLimitations(input),
+        ...contract.metric.limitations,
+      ]),
+    }),
+    suggestedAction: { ...OPERATIONAL_HISTORY_ACTION },
+  };
+}
+
+function buildTimezoneConflictRecommendation(
+  input: BuildOperationalHistoryReviewInput,
+  contract: Extract<
+    OperationalHistoryContract,
+    { kind: "timezone_conflict" }
+  >,
+): DecisionRecommendation<OperationalHistoryReviewData> {
+  const { metric, period } = contract;
+  return {
+    ...operationalHistoryBase(input),
     period: {
       start: period.from,
       end: period.to,
-      timezone: metricTimezone,
+      timezone: period.timezone,
       cutoffAt: input.cutoffAt,
     },
-    status,
+    status: "ambiguous",
     statusReason:
-      status === "confirmed"
-        ? "Fonte factual, escopo, periodo, timezone e cobertura historica estao explicitos."
-        : status === "unknown"
-          ? "O MetricResult nao possui valor interpretavel com a cobertura disponivel."
-          : "O volume local e util, mas cobertura, cutoff, timezone ou convergencia ainda limitam a interpretacao.",
-    data,
-    evidence: {
-      primarySources: [operationalHistorySource(metric)],
-      auxiliarySources: [
-        {
-          name: `MetricResult:${OPERATIONAL_HISTORY_METRIC_KEY}`,
-          role: "auxiliary",
-          kind: "technical",
-          recordIds: [],
-          fieldsPresent: [
-            "status",
-            "period",
-            "coverage",
-            "sources",
-            "limitations",
-          ],
-          fieldsMissing: [],
-        },
-        ...technicalSources(input),
+      "O timezone do MetricResult diverge do timezone declarado para a decisao.",
+    data: null,
+    evidence: buildOperationalHistoryEvidence(input, {
+      metric,
+      coverage: [
+        `fazenda:${input.fazendaId}`,
+        `periodo:${period.from}/${period.to}`,
       ],
-      convergence,
+      limitations: unique([
+        ...technicalLimitations(input),
+        ...metric.limitations,
+      ]),
+      conflicts: [
+        {
+          code: "metric_timezone_conflict",
+          source: `MetricResult:${OPERATIONAL_HISTORY_METRIC_KEY}`,
+          recordIds: [],
+          description: `Timezone metrico ${period.timezone ?? "ausente"} diverge de ${input.timezone}.`,
+        },
+      ],
+    }),
+    suggestedAction: { ...OPERATIONAL_HISTORY_ACTION },
+  };
+}
+
+function buildOperationalHistoryAssessmentRecommendation(
+  input: BuildOperationalHistoryReviewInput,
+  contract: Extract<OperationalHistoryContract, { kind: "valid" }>,
+  assessment: OperationalHistoryAssessment,
+): DecisionRecommendation<OperationalHistoryReviewData> {
+  const { metric, period, coverage } = contract;
+  return {
+    ...operationalHistoryBase(input),
+    period: {
+      start: period.from,
+      end: period.to,
+      timezone: period.timezone,
+      cutoffAt: input.cutoffAt,
+    },
+    status: assessment.status,
+    statusReason: assessment.statusReason,
+    data: assessment.data,
+    evidence: buildOperationalHistoryEvidence(input, {
+      metric,
+      includeMetricSource: true,
       coverage: [
         `fazenda:${input.fazendaId}`,
         `periodo:${period.from}/${period.to}`,
         `historico:${coverage.state}`,
       ],
-      limitations: unique(limitations),
-      conflicts: [],
-    },
+      limitations: assessment.limitations,
+    }),
     suggestedAction:
-      status === "confirmed"
+      assessment.status === "confirmed"
         ? undefined
-        : { label: "Revisar relatorios", href: "/relatorios" },
+        : { ...OPERATIONAL_HISTORY_ACTION },
   };
+}
+
+export function buildOperationalHistoryReviewRecommendation(
+  input: BuildOperationalHistoryReviewInput,
+): DecisionRecommendation<OperationalHistoryReviewData> {
+  assertSharedInput(input);
+  const selection = resolveOperationalHistoryMetric(input);
+  if (selection.kind !== "selected") {
+    return buildOperationalHistorySelectionRecommendation(input, selection);
+  }
+  const contract = validateOperationalHistoryContract(input, selection.metric);
+  if (contract.kind === "invalid") {
+    return buildInvalidOperationalHistoryRecommendation(input, contract);
+  }
+  if (contract.kind === "timezone_conflict") {
+    return buildTimezoneConflictRecommendation(input, contract);
+  }
+  return buildOperationalHistoryAssessmentRecommendation(
+    input,
+    contract,
+    deriveOperationalHistoryAssessment(input, contract),
+  );
 }
