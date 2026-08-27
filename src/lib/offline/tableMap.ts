@@ -5,6 +5,7 @@ export const STANDARD_EVENT_DETAIL_REMOTE_TABLES = [
   "eventos_ecc",
   "eventos_pesagem",
   "eventos_financeiro",
+  "eventos_movimentacao",
 ] as const;
 
 export const TABLE_MAP: Record<string, string> = {

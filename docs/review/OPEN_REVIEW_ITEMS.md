@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-08-05
+Atualizado em: 2026-08-26
 
 ## Objetivo
 
@@ -29,11 +29,37 @@ Conduta:
 
 Não há evidência atual de defeito no SQL ou na regra de domínio.
 
-## P1 — Próximo incremento reprodutivo
+## P1 — Validação Remota E2E de Movimentação (Gate de Entrada F22C)
 
-Status: `ABERTO`
+Status: `PENDENTE_F22C`
+Código: `B4_REMOTE_E2E_PENDING`
 
-Implementar parto e encerramento da gestação como novo fato histórico, reconstruindo a projeção atual sem reabrir a Fase 12. Aborto/perda gestacional, correção append-only e round-trip remoto permanecem incrementos posteriores.
+Fatos:
+
+- inclusão canônica de `eventos_movimentacao` em `STANDARD_EVENT_DETAIL_REMOTE_TABLES` implementada e testada com sucesso no pull local (`AUTOMATED_CONVERGENCE_VERIFIED`);
+- não bloqueia a Fase 21 (Inteligência Operacional v2);
+- E2E remoto multi-device (Device A -> Push -> Supabase Staging -> Device B -> Pull -> Integridade/Isolamento) permanece como gate de entrada obrigatório para a Fase 22C.
+
+
+## P1 — Promoção de Migrations e Backoffice para Produção
+
+Status: `PENDENTE_PRODUCAO`
+
+Fatos:
+
+- staging alinhado com 42 migrations aplicadas (`42 local == 42 staging`), incluindo privilégios de tabelas autenticadas, SuperAdmin e financeiro determinístico;
+- ambiente de produção permanece 100% inalterado. Promoção exige janela formal de release na Fase 24.
+
+## P1 — Trilha C: Hardening de Banco e Advisor (C2–C7)
+
+Status: `PENDENTE_TRILHA_C`
+
+Fatos:
+
+- C0 (inventário autoritativo de 34 funções `SECURITY DEFINER`) e C1 (hardening de privilégios `EXECUTE`, isolamento tenant de `get_user_emails` e resolução de search_path blocker em `seed_default_finance_categories`) concluídos com sucesso e validados localmente (migrations `20260827100000`, `20260827110000`, `20260827120000`);
+- C2–C7 (search_path mutable global, auth_rls_initplan, multiple_permissive_policies, FK indexes, workload, unused indexes) permanecem pendentes como subtrilhas de infraestrutura técnica;
+- Não bloqueia a abertura da Fase 21 — Inteligência Operacional v2.
+
 
 ## P2 — Ruído residual em testes
 

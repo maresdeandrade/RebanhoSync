@@ -13,8 +13,48 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 20 encerrada; Fase 21 ainda não iniciada**
+Status: **Fase 20 encerrada; Trilha B concluída; Fase 21 ainda não iniciada**
 Próxima fase: **Fase 21 — Inteligência Operacional v2** — não iniciada
+
+## Fechamento da Trilha B — Infraestrutura, Sync e Convergência Remota
+
+Status: **Concluída e certificada**. Baseline de infraestrutura e sync alinhado antes da abertura da Fase 21.
+
+1. **Auth / Grants e RLS:**
+   - Migration `20260826230107_reconcile_authenticated_table_privileges.sql` versionada e alinhada.
+   - Privilégios das 56 tabelas remotas autenticadas reconciliados com policies RLS.
+   - Status: local = validado, staging = aplicado (42/42 migrations), produção = pendente.
+
+2. **Admin Track (A1.1 + A2 + A2.1 + A4):**
+   - Fundação SuperAdmin, RPCs de leitura segura (tokens removidos de listagem), mutação idempotente de `can_create_farm` com auditoria atômica append-only (`app_admin_audit_events`), execução autoritativa em `create_fazenda` e bloqueio imediato (42501) na revogação.
+   - Script de validação `validate-superadmin-security-gate.mjs` aprovado (100%).
+   - Status: staging = operacional e provisionado, SuperAdmin bootstrap = validado, produção = pendente.
+
+3. **Fase 16 — Financeiro Gerencial (Hardening determinístico):**
+   - Migration `20260601000000_financeiro_estorno_categorias.sql` recebeu hardening de `search_path` (`SET search_path = public, extensions, pg_temp;`) para compatibilidade com `pgcrypto` em schemas de extensões.
+   - Limpeza de categorias órfãs classificada como `STAGING_DATA_REPAIR_ONLY`: reparo já concluído em staging e removido da migration canônica para manter o baseline estritamente reproduzível e seguro.
+   - Status: staging = aplicada (42/42 migrations), produção = pendente.
+
+4. **B4 — Convergência de Movimentação:**
+   - Inclusão canônica de `eventos_movimentacao` em `STANDARD_EVENT_DETAIL_REMOTE_TABLES` em `src/lib/offline/tableMap.ts`.
+   - Propagação comprovada para: `DEFAULT_REMOTE_TABLES`, `PENDING_FACTUAL_REMOTE_TABLES`, proteção de rows por `evento_id` em pull replace/merge, e pós-sync refresh.
+   - Classificação de evidência: `AUTOMATED_CONVERGENCE_VERIFIED` (suíte dedicada de 7 cenários com 100% de aprovação).
+   - Gate F22C: pré-requisito técnico de implementação resolvido; E2E remoto em staging registrado como gate de entrada pré-F22C.
+
+
+5. **Sync Sanitário v2:**
+   - Mantido estritamente em `SANITARIO_V2_E2E_PLATFORM_BLOCKED` (fail-closed, feature flag local `false`, gate remoto desligado).
+   - Não bloqueia abertura da Fase 21.
+
+6. **Ambientes:**
+   - Staging: operacional e alinhado (`42 local == 42 staging`).
+   - Produção: 100% inalterada.
+
+7. **Trilha C — Hardening de Banco e Advisor (C0/C1):**
+   - C0: Inventário autoritativo de 34 funções `SECURITY DEFINER` e respectivos grants catalogados sem ambiguidade (`UNKNOWN = 0`).
+   - C1: Hardening de privilégios `EXECUTE` via migrations `20260827100000`, `20260827110000`, `20260827120000`. Revogação de `PUBLIC` em 100% das funções; `anon` restrito às 2 funções intencionais (`get_invite_preview`, `reject_invite`); funções de trigger e internas revogadas de `authenticated`; `get_user_emails` reforçado contra enumeração/vazamento cross-tenant; `seed_default_finance_categories` corrigido com `search_path` fixado.
+   - Status: local = 100% validado (`validate-security-definer-exposure.mjs`), staging dry-run = aprovado (3 migrations pendentes de push), C2–C7 = pendentes como trilha técnica independente; Fase 21 apta para abertura.
+
 
 ## Fechamento da Fase 20
 
@@ -95,13 +135,14 @@ Isolamento: todas as coleções são filtradas novamente por `fazendaId` dentro 
 
 Limitações de convergência preservadas:
 
-- `eventos_movimentacao` não foi usado; sua ausência no pull padrão não foi reclassificada como defeito;
+- `eventos_movimentacao`: no escopo da F17 não foi utilizado; a convergência de pull padrão foi posteriormente resolvida na Trilha B (`STANDARD_EVENT_DETAIL_REMOTE_TABLES`) com `AUTOMATED_CONVERGENCE_VERIFIED`;
 - superfícies sanitárias especializadas não foram tratadas como pull genérico;
+
 - `queue_rejections` é auxiliar técnico temporário, nunca fonte primária ou histórico;
 - fallback de timezone reduz a recomendação para `partial`;
 - a Home limita a apresentação a cinco recomendações de peso não confirmadas; o selector permanece reutilizável por animal.
 
-Decisões descartadas: autorização comercial/abate, liberação de carência, histórico completo de movimentação e nova recomendação financeira. Os motivos são, respectivamente, proibição autorizativa, risco de duplicar projeção sanitária, convergência não comprovada do detail e ausência de necessidade de uma nova leitura concorrente.
+Decisões descartadas na Fase 17: autorização comercial/abate, liberação de carência, histórico completo de movimentação (reaberto para a F22C após convergência de pull na Trilha B) e nova recomendação financeira. Os motivos originais foram, respectivamente, proibição autorizativa, risco de duplicar projeção sanitária, ausência prévia de pull do detail e ausência de necessidade de uma nova leitura concorrente.
 
 Validação: 20 testes do selector, 2 de UI, 47 focados, 467 regressões relacionadas, 29 integrações, 570 hotspots, 5 smokes, lint global e build passaram. Não houve mudança de banco, migration, RLS, RPC, Edge Function, Dexie, sync ou rollout.
 

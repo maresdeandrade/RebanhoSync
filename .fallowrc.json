@@ -3,6 +3,9 @@
   "entry": [
     "src/main.tsx",
     "index.html",
+    "scripts/create-and-grant-superadmin.mjs",
+    "scripts/grant-superadmin.mjs",
+    "scripts/codex/validate-superadmin-security-gate.mjs",
     "scripts/codex/validate-supabase-baseline-functional.mjs",
     "scripts/codex/validate-dry-cow-therapy-functional.mjs",
     "scripts/codex/prepare-dry-cow-ui-smoke.mjs",
@@ -13,8 +16,20 @@
     "scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs",
     "scripts/codex/validate-sanitario-complete-payloads-12f9.mjs",
     "scripts/codex/validate-sanitario-sync-v2-expand.mjs",
+    "scripts/codex/validate-security-definer-exposure.mjs",
     "scripts/fix-docs-encoding.mjs"
   ],
+
+  "duplicates": {
+    "ignore": [
+      "scripts/**"
+    ]
+  },
+  "health": {
+    "ignore": [
+      "scripts/**"
+    ]
+  },
   "workspaces": {
     "patterns": [
       ".",
