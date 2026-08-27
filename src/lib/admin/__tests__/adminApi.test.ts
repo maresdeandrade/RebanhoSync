@@ -12,6 +12,35 @@ import {
 import { AdminApiError } from "../adminTypes";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+function withNavigatorOnlineStatus<T>(onLine: boolean, run: () => T): T {
+  const hadNavigator = typeof globalThis.navigator !== "undefined";
+
+  if (!hadNavigator) {
+    Object.defineProperty(globalThis, "navigator", {
+      value: {},
+      configurable: true,
+    });
+  }
+
+  const testNavigator = globalThis.navigator;
+  const originalOnLine = Object.getOwnPropertyDescriptor(testNavigator, "onLine");
+  Object.defineProperty(testNavigator, "onLine", { value: onLine, configurable: true });
+
+  try {
+    return run();
+  } finally {
+    if (originalOnLine) {
+      Object.defineProperty(testNavigator, "onLine", originalOnLine);
+    } else {
+      delete (testNavigator as { onLine?: boolean }).onLine;
+    }
+
+    if (!hadNavigator) {
+      delete (globalThis as { navigator?: Navigator }).navigator;
+    }
+  }
+}
+
 describe("adminApi (A3.1 + A4 + A5 Hardening)", () => {
   describe("parseAdminError (A3.1 + A5 — ordem de precedência)", () => {
     it("identifica erro FORBIDDEN quando code = 42501 ou mensagem contém 'Forbidden'", () => {
@@ -47,55 +76,26 @@ describe("adminApi (A3.1 + A4 + A5 Hardening)", () => {
     // O erro explícito do backend tem PRIORIDADE sobre o estado de conectividade
     // ────────────────────────────────────────────────────────────────────────
     it("A5: 42501 recebido com navigator.onLine=false ainda resulta em FORBIDDEN (não OFFLINE)", () => {
-      // Simula navigator.onLine = false durante o processamento
-      const originalOnLine = Object.getOwnPropertyDescriptor(navigator, "onLine");
-      Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
-
-      try {
+      withNavigatorOnlineStatus(false, () => {
         const err = parseAdminError({ code: "42501", message: "Forbidden: Access denied" });
         expect(err.code).toBe("FORBIDDEN");
         expect(err.code).not.toBe("OFFLINE");
-      } finally {
-        // Restaura o valor original
-        if (originalOnLine) {
-          Object.defineProperty(navigator, "onLine", originalOnLine);
-        } else {
-          Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
-        }
-      }
+      });
     });
 
     it("A5: mensagem 'Forbidden' recebida com navigator.onLine=false ainda resulta em FORBIDDEN", () => {
-      const originalOnLine = Object.getOwnPropertyDescriptor(navigator, "onLine");
-      Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
-
-      try {
+      withNavigatorOnlineStatus(false, () => {
         const err = parseAdminError(new Error("Forbidden: Access denied"));
         expect(err.code).toBe("FORBIDDEN");
-      } finally {
-        if (originalOnLine) {
-          Object.defineProperty(navigator, "onLine", originalOnLine);
-        } else {
-          Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
-        }
-      }
+      });
     });
 
     it("A5: OFFLINE é retornado como fallback somente quando não há código explícito", () => {
-      const originalOnLine = Object.getOwnPropertyDescriptor(navigator, "onLine");
-      Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
-
-      try {
+      withNavigatorOnlineStatus(false, () => {
         // Erro genérico sem código de autorização → OFFLINE (fallback correto)
         const err = parseAdminError(new Error("Algum erro inesperado sem código"));
         expect(err.code).toBe("OFFLINE");
-      } finally {
-        if (originalOnLine) {
-          Object.defineProperty(navigator, "onLine", originalOnLine);
-        } else {
-          Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
-        }
-      }
+      });
     });
 
     it("A5: EMPTY (array vazio sem erro) é semanticamente distinto de ERROR/OFFLINE/FORBIDDEN", async () => {
