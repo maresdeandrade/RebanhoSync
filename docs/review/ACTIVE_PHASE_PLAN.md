@@ -1,13 +1,13 @@
-# Plano ativo — Fase 21 / Inteligência Operacional v2
+# Plano de fechamento — Fase 21 / Inteligência Operacional v2
 
 Atualizado em: 2026-08-28
-Status: **Fase 21 ativa — V1 DONE; V2 IMPLEMENTED; consolidação PENDING**
+Status: **Fase 21 fechada (CLOSED) — V1 DONE; V2 DONE; consolidação DONE**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`.
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
-Próxima fase: **Fase 21 — Consolidação/Fechamento**
+Próxima fase: **Fase 22 — Eficiência Produtiva e Econômica**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -34,9 +34,9 @@ A Fase 21 foi iniciada em `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`. A V1 
 - contrato operacional: **PRESERVADO**; writer, Dexie, sync, migration, RPC e RLS não alterados;
 - validação completa: 2.776 testes gerais, 29 integrações, 570 hotspots, lint, build, `gates:docs`, `git diff --check` e CI remoto aprovados.
 
-## V2 IMPLEMENTED — revisão do fluxo factual do rebanho
+## V2 DONE — revisão do fluxo factual do rebanho
 
-Identificador: `herd_flow_review`. Implementação funcional candidata iniciada em `main@7e9dbad8f3c3e7481582e7e6ef63307fc999e20d`, após integração do PR documental `#103`; integração da V2 ainda pendente.
+Identificador: `herd_flow_review`. Implementação iniciada em `main@7e9dbad8f3c3e7481582e7e6ef63307fc999e20d`, após integração do PR documental `#103`, e integrada pelo PR `#104` no merge commit `main@54ace078bf815c034e7bfdfce7b2bfca84afeaee`.
 
 - pergunta operacional: a cobertura factual de entradas e saídas permite revisar o fluxo do rebanho no período;
 - fonte primária: `event_eventos`; detalhes comerciais e reprodutivos permanecem auxiliares conforme os `MetricResult` existentes;
@@ -51,7 +51,16 @@ Identificador: `herd_flow_review`. Implementação funcional candidata iniciada 
 - validação local: 39 testes focados, lint, build e `fallow audit --gate new-only` aprovados;
 - justificativa: maior valor operacional e menor risco entre os read models disponíveis, sem criar KPI, fonte de verdade, writer, migration, RPC/RLS, schema Dexie ou sync e sem duplicar `operational_history_review`, `weight_data_quality` ou `overdue_agenda_review`.
 
-Consolidação da Fase 21: **PENDING**.
+## Consolidação DONE — `F21_SUFFICIENT`
+
+- `operational_history_review` e `herd_flow_review` respondem perguntas distintas; a primeira qualifica a cobertura operacional geral e a segunda revisa entradas e saídas factuais;
+- não há recomendação duplicada nem outra vertical com pergunta relevante, inteligência ausente e fonte técnica confiável;
+- a Home agrupa revisão operacional e cobertura/fluxo, ordena apenas a apresentação por necessidade de revisão e mantém a derivação fora da UI;
+- fontes primárias, fontes auxiliares, cobertura e limitações ficam visíveis de forma consistente, com expansão para limitações adicionais;
+- todos os CTAs permanecem navegacionais e nenhuma prioridade é persistida ou convertida em fato, autorização ou regra crítica;
+- contrato operacional: **PRESERVADO**; Evento, Agenda, `state_*`, writer, Dexie, sync, Supabase, migration, RPC e RLS não foram alterados.
+
+Fase 21: **CLOSED**. A Fase 22 permanece apenas como próxima fase; seu conteúdo funcional não foi iniciado neste fechamento.
 
 ## Resultado da Fase 19
 

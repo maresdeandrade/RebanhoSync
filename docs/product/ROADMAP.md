@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
 Atualizado em: 2026-08-28
-Fase atual: **Fase 21 — Inteligência Operacional v2 (em andamento; V1 integrada e V2 implementada, aguardando integração)**
-Fase anterior: **Fase 20 — Jornadas UX Críticas (concluída)**
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (NEXT; conteúdo funcional não iniciado)**
+Fase anterior: **Fase 21 — Inteligência Operacional v2 (CLOSED)**
 
 ## Objetivo
 
@@ -33,7 +33,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 13. Fase 18 — Rebaseline Visual 360° — **concluída**.
 14. Fase 19 — Foundations + Shell + Branding — **concluída**.
 15. Fase 20 — Jornadas UX Críticas — **concluída**.
-16. Fase 21 — Inteligência Operacional v2.
+16. Fase 21 — Inteligência Operacional v2 — **concluída**.
 17. Fase 22 — Eficiência Produtiva e Econômica.
 18. Fase 23 — Simulação Produtiva e Comercial.
 19. Fase 24 — Release Hardening / Scale Readiness.
@@ -51,9 +51,11 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 ## Próxima fase de desenvolvimento
 
 ```txt
-Fase 20 — Jornadas UX Críticas — concluída
-→ Fase 21 — Inteligência Operacional v2 — V1 integrada; V2 herd_flow_review implementada; consolidação pendente
+Fase 21 — Inteligência Operacional v2 — V1 operational_history_review + V2 herd_flow_review + consolidação concluídas
+→ Fase 22 — Eficiência Produtiva e Econômica — próxima
 ```
+
+A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A consolidação agrupou as leituras por finalidade, ordenou apenas a apresentação por necessidade de revisão e tornou fontes e limitações visíveis de forma consistente. Nenhuma terceira vertical foi justificada e nenhum conteúdo funcional da Fase 22 foi iniciado.
 
 A Fase 19 implementou foundations tipográficas e semânticas, branding reutilizável, primitives estruturais e shell/navegação responsivos sobre o contrato da F18. Home, Animais, AnimalDetalhe, Registrar e Agenda foram revalidados sem migração ampla em 390, 768, 1024 e 1440 px, light/dark; nenhum P0 novo foi confirmado e o P0 do Registrar permanece resolvido.
 

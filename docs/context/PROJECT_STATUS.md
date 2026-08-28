@@ -1,14 +1,14 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-08-24
+Atualizado em: 2026-08-28
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 21 — Inteligência Operacional v2** — marcador avançado; implementação não iniciada.
-Próxima fase de desenvolvimento: **Fase 21 — Inteligência Operacional v2**.
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — NEXT; conteúdo funcional não iniciado.
+Próxima fase de desenvolvimento: **Fase 22 — Eficiência Produtiva e Econômica**.
 
 ## Objetivo
 
@@ -29,6 +29,8 @@ A Fase 18 foi concluída com inventário de 47 rotas ativas, 58 primitives/arqui
 A Fase 19 foi concluída sobre `main@b07a1252a6436a413f9562a7f9079269cb49d026` com tokens reais de tipografia, superfície, elevação, overlay, branding, neutros e famílias semânticas; primitives estruturais compatíveis; `StateBanner`; aliases `PageHeader` e `FilterBar`; correção do drift de `components.json`; e consolidação responsiva do shell/navegação. A matriz autenticada cobriu Home, Animais, AnimalDetalhe, Registrar e Agenda em 390, 768, 1024 e 1440 px, light/dark. **P0 novo = 0** e a migração ampla da F20 não foi iniciada.
 
 A Fase 20 foi concluída sobre `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`. Home, Animais, AnimalDetalhe, Registrar e Agenda foram migradas incrementalmente para os padrões da F18/F19, preservando selectors, filtros, bulk, builders, validação, submit, Agenda e writers. A inspeção autenticada cobriu as cinco jornadas em 390×844, 768×1024, 1024×768 e 1440×900, nos temas claro e escuro, sem overflow estrutural; **P0 novo = 0**. Foram aprovados 65 testes focados, lint, build e os gates documentais de fechamento.
+
+A Fase 21 foi encerrada com `operational_history_review` e `herd_flow_review`, ambas derivadas de `MetricResult` existentes e apresentadas como `DecisionRecommendation` não persistidas. A auditoria conjunta confirmou perguntas distintas, ausência de duplicação relevante, fontes/cobertura/limitações explícitas, isolamento por fazenda e CTAs exclusivamente navegacionais. A consolidação foi apenas apresentacional; Evento, Agenda, `state_*`, writers, Dexie, sync e banco permaneceram inalterados.
 
 A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 
@@ -142,7 +144,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O próximo desenvolvimento é a Fase 21 — Inteligência Operacional v2, reutilizando `MetricResult` e `DecisionRecommendation` sem antecipação nesta entrega. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+O próximo desenvolvimento é a Fase 22 — Eficiência Produtiva e Econômica, iniciando pelo gate de fontes para 22A/22B e mantendo 22C bloqueada até a validação remota de B4. Nenhum conteúdo funcional da Fase 22 foi iniciado neste fechamento. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 
