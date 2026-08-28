@@ -1,4 +1,4 @@
-# Handoff atual — Fase 21 em andamento / V1 integrada; V2 implementada
+# Handoff atual — Fase 21 encerrada / Inteligência Operacional v2
 
 Atualizado em: 2026-08-28
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
@@ -13,9 +13,9 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 20 encerrada; Trilha B concluída; Fase 21 em andamento — V1 DONE; V2 IMPLEMENTED; consolidação PENDING**
-Fase atual: **Fase 21 — Inteligência Operacional v2**
-Próxima fase: **Fase 21 — Consolidação/Fechamento**
+Status: **Fase 20 encerrada; Trilha B concluída; Fase 21 fechada (CLOSED) — V1 DONE; V2 DONE; consolidação DONE**
+Fase encerrada: **Fase 21 — Inteligência Operacional v2**
+Próxima fase: **Fase 22 — Eficiência Produtiva e Econômica**
 
 ## Fase 21 — V1 DONE
 
@@ -30,9 +30,9 @@ A Home apenas apresenta pergunta, fonte, cobertura, cutoff, limitações e açõ
 
 Contrato operacional: **PRESERVADO**. Passaram 2.776 testes gerais, 29 integrações, 570 hotspots, lint, build, `gates:docs`, `git diff --check` e o CI remoto do PR `#102`.
 
-## Fase 21 — V2 IMPLEMENTED
+## Fase 21 — V2 DONE
 
-Entrega: `herd_flow_review`, implementada como candidata a partir de `main@7e9dbad8f3c3e7481582e7e6ef63307fc999e20d`, após merge do PR documental `#103`. Integração funcional ainda pendente.
+Entrega: `herd_flow_review`, implementada a partir de `main@7e9dbad8f3c3e7481582e7e6ef63307fc999e20d`, após merge do PR documental `#103`, e integrada pelo PR `#104` no merge commit `main@54ace078bf815c034e7bfdfce7b2bfca84afeaee`.
 
 O gate técnico confirmou que a vertical não depende de reconstrução histórica de `eventos_movimentacao`: movimentos internos não constituem entrada ou saída de fronteira. A leitura reutiliza os `MetricResult<number>` existentes de `rebanho_entradas` e `rebanho_saidas`, cuja fonte primária permanece `event_eventos`; detalhes comerciais e reprodutivos são auxiliares. Nenhum `state_*` substitui histórico factual e o E2E remoto pré-F22C não é requisito desta recomendação.
 
@@ -40,9 +40,15 @@ O selector puro exige `fazendaId`, o mesmo período, cutoff, timezone e cobertur
 
 A Home carrega por `fazenda_id` os detalhes comercial e reprodutivo já existentes, compõe os `MetricResult` e apresenta pergunta, fonte, cobertura, cutoff, limitações e ações proibidas. O CTA apenas navega para `/relatorios`. Foram aprovados 39 testes focados, lint, build e Fallow NEW.
 
-A leitura não calcula saldo populacional presumido, não infere transferência externa ou descarte sem Evento, não persiste recomendação e não autoriza venda ou abate. O único efeito permitido será navegação para `/relatorios`. Writer, Evento, Agenda, `state_*`, Dexie, sync, Supabase, migration, RPC e RLS permanecem fora do escopo salvo evidência objetiva futura.
+A leitura não calcula saldo populacional presumido, não infere transferência externa ou descarte sem Evento, não persiste recomendação e não autoriza venda ou abate. O único efeito permitido é navegação para `/relatorios`. Writer, Evento, Agenda, `state_*`, Dexie, sync, Supabase, migration, RPC e RLS permanecem fora do escopo salvo evidência objetiva futura.
 
-Consolidação da Fase 21: **PENDING**.
+## Fase 21 — Consolidação DONE
+
+A auditoria conjunta de `operational_history_review`, `herd_flow_review`, `weight_data_quality`, `overdue_agenda_review` e das demais `DecisionRecommendation` exibidas concluiu `F21_SUFFICIENT`: as perguntas são distintas, não há duplicação relevante e nenhuma lacuna operacional concreta justifica uma terceira vertical com as fontes atuais.
+
+A consolidação foi apenas apresentacional. A Home mantém composição; o painel agrupa revisão operacional e cobertura/fluxo, ordena recomendações por necessidade de revisão sem persistir prioridade, explicita fontes primárias e auxiliares e permite expandir limitações adicionais. Os CTAs continuam exclusivamente navegacionais para os fluxos canônicos.
+
+Contrato operacional: **PRESERVADO**. Recomendação continua derivação não persistida; Evento, Agenda, `state_*`, writers, Dexie, sync, Supabase, migration, RPC e RLS não foram alterados. A Fase 21 está **CLOSED** e a Fase 22 é **NEXT**, sem implementação funcional iniciada neste fechamento.
 
 ## Fechamento da Trilha B — Infraestrutura, Sync e Convergência Remota
 

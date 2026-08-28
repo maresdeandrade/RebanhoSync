@@ -50,6 +50,7 @@ describe("DecisionRecommendationsPanel", () => {
     );
 
     expect(screen.getByText("Decisao assistida")).toBeInTheDocument();
+    expect(screen.getByText("Revisao operacional")).toBeInTheDocument();
     expect(screen.getByText("Evidencia completa")).toBeInTheDocument();
     expect(screen.getAllByText(/state_agenda_itens/)).toHaveLength(2);
     expect(screen.getByText(/standard_pull/)).toBeInTheDocument();
@@ -110,6 +111,7 @@ describe("DecisionRecommendationsPanel", () => {
     );
 
     expect(screen.getByText("Evidencia parcial")).toBeInTheDocument();
+    expect(screen.getByText("Cobertura e fluxo")).toBeInTheDocument();
     expect(screen.getByText(/event_eventos/)).toBeInTheDocument();
     expect(
       screen.getByText(/Historico completo nao comprovado/),
@@ -147,7 +149,11 @@ describe("DecisionRecommendationsPanel", () => {
               status: "partial",
               period,
               coverage,
-              sources: [{ name: "event_eventos", role: "primary" }],
+              sources: [
+                { name: "event_eventos", role: "primary" },
+                { name: "event_eventos_comercial", role: "auxiliary" },
+                { name: "event_eventos_reproducao", role: "auxiliary" },
+              ],
               limitations: ["Transferencias externas nao sao inferidas."],
             }),
           },
@@ -158,7 +164,10 @@ describe("DecisionRecommendationsPanel", () => {
               status: "partial",
               period,
               coverage,
-              sources: [{ name: "event_eventos", role: "primary" }],
+              sources: [
+                { name: "event_eventos", role: "primary" },
+                { name: "event_eventos_comercial", role: "auxiliary" },
+              ],
               limitations: ["Descarte sem Evento nao e fabricado."],
             }),
           },
@@ -176,10 +185,53 @@ describe("DecisionRecommendationsPanel", () => {
 
     const cta = screen.getByRole("link", { name: "Revisar relatorios" });
     expect(cta).toHaveAttribute("href", "/relatorios");
+    expect(screen.getByText("Fontes auxiliares:")).toBeInTheDocument();
+    expect(screen.getByText(/event_eventos_comercial/)).toBeInTheDocument();
+    expect(screen.getByText(/Outras limitacoes/)).toBeInTheDocument();
     fireEvent.click(cta);
     expect(input).toEqual(snapshot);
     expect(
       screen.getByText(/nao move animal nem altera state_/),
     ).toBeInTheDocument();
+  });
+
+  it("prioritizes review states without changing recommendation meaning", () => {
+    const base = buildOperationalHistoryReviewRecommendation({
+      fazendaId: "farm-1",
+      cutoffAt: "2026-08-23T12:00:00.000Z",
+      timezone: "America/Sao_Paulo",
+      timezoneVerified: true,
+      metrics: {
+        availability: "not_loaded",
+        convergence: { mode: "not_verified", verified: false },
+      },
+    });
+    const confirmed = {
+      ...base,
+      id: "confirmed-last",
+      status: "confirmed" as const,
+      question: "Leitura confirmada",
+    };
+    const ambiguous = {
+      ...base,
+      id: "ambiguous-first",
+      status: "ambiguous" as const,
+      question: "Conflito para revisar",
+    };
+
+    render(
+      <MemoryRouter>
+        <DecisionRecommendationsPanel
+          recommendations={[confirmed, ambiguous]}
+        />
+      </MemoryRouter>,
+    );
+
+    const higherPriority = screen.getByText("Conflito para revisar");
+    const lowerPriority = screen.getByText("Leitura confirmada");
+    expect(
+      higherPriority.compareDocumentPosition(lowerPriority) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });
