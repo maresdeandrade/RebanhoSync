@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-08-27
-Fase atual: **Fase 21 — Inteligência Operacional v2 (em andamento; V1 integrada e V2 selecionada)**
+Atualizado em: 2026-08-28
+Fase atual: **Fase 21 — Inteligência Operacional v2 (em andamento; V1 integrada e V2 implementada, aguardando integração)**
 Fase anterior: **Fase 20 — Jornadas UX Críticas (concluída)**
 
 ## Objetivo
@@ -52,7 +52,7 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 
 ```txt
 Fase 20 — Jornadas UX Críticas — concluída
-→ Fase 21 — Inteligência Operacional v2 — V1 integrada; V2 herd_flow_review selecionada
+→ Fase 21 — Inteligência Operacional v2 — V1 integrada; V2 herd_flow_review implementada; consolidação pendente
 ```
 
 A Fase 19 implementou foundations tipográficas e semânticas, branding reutilizável, primitives estruturais e shell/navegação responsivos sobre o contrato da F18. Home, Animais, AnimalDetalhe, Registrar e Agenda foram revalidados sem migração ampla em 390, 768, 1024 e 1440 px, light/dark; nenhum P0 novo foi confirmado e o P0 do Registrar permanece resolvido.

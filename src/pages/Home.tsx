@@ -57,9 +57,11 @@ import {
   type InventoryReplenishmentAlertRow,
 } from "@/lib/reports/operationalSummary";
 import {
+  buildHerdFlowReviewRecommendation,
   buildOperationalHistoryReviewRecommendation,
   buildOverdueAgendaRecommendation,
   buildWeightDataQualityRecommendation,
+  type BuildHerdFlowReviewInput,
   type BuildOperationalHistoryReviewInput,
   type DecisionRecommendation,
 } from "@/lib/insights/decisionRecommendations";
@@ -175,17 +177,41 @@ function formatDay(date: string) {
   return dateFormatter.format(new Date(`${date}T00:00:00`));
 }
 
+function buildHomeMetricSource(
+  records: NonNullable<
+    BuildOperationalHistoryReviewInput["metrics"]["records"]
+  >,
+): BuildOperationalHistoryReviewInput["metrics"] {
+  return {
+    availability: "loaded",
+    records,
+    convergence: { mode: "local_derived", verified: true },
+  };
+}
+
 function buildHomeOperationalHistoryReview(
   input: Omit<BuildOperationalHistoryReviewInput, "metrics">,
   metric: MetricResult<number>,
 ) {
   return buildOperationalHistoryReviewRecommendation({
     ...input,
-    metrics: {
-      availability: "loaded",
-      records: [{ metricKey: "eventos_periodo", result: metric }],
-      convergence: { mode: "local_derived", verified: true },
-    },
+    metrics: buildHomeMetricSource([
+      { metricKey: "eventos_periodo", result: metric },
+    ]),
+  });
+}
+
+function buildHomeHerdFlowReview(
+  input: Omit<BuildHerdFlowReviewInput, "metrics">,
+  entries: MetricResult<number>,
+  exits: MetricResult<number>,
+) {
+  return buildHerdFlowReviewRecommendation({
+    ...input,
+    metrics: buildHomeMetricSource([
+      { metricKey: "rebanho_entradas", result: entries },
+      { metricKey: "rebanho_saidas", result: exits },
+    ]),
   });
 }
 
@@ -234,6 +260,8 @@ const Home = () => {
       sanitarioAgendaAnimaisV2,
       eventos,
       eventosMensais,
+      eventosComercial,
+      eventosReproducao,
       insumos,
       insumoLotes,
       insumoApresentacoes,
@@ -287,6 +315,14 @@ const Home = () => {
           true,
         )
         .filter((evento) => !evento.deleted_at)
+        .toArray(),
+      db.event_eventos_comercial
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .toArray(),
+      db.event_eventos_reproducao
+        .where("fazenda_id")
+        .equals(activeFarmId)
         .toArray(),
       db.state_insumos.where("fazenda_id").equals(activeFarmId).toArray(),
       db.state_insumo_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
@@ -369,6 +405,8 @@ const Home = () => {
         pastos: pastosAtivos,
         agenda: agendaAberta,
         eventos: eventosMensais,
+        eventosComercial,
+        eventosReproducao,
         sanitarioAgendaV2,
         sanitarioAgendaAnimaisV2,
         eventosPesagem: [],
@@ -533,6 +571,11 @@ const Home = () => {
       buildHomeOperationalHistoryReview(
         sharedDecisionInput,
         operationalSummary.metrics.eventos_periodo,
+      ),
+      buildHomeHerdFlowReview(
+        sharedDecisionInput,
+        operationalSummary.metrics.rebanho_entradas,
+        operationalSummary.metrics.rebanho_saidas,
       ),
       ...weightRecommendations,
     ];
