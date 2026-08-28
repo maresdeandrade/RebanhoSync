@@ -1,6 +1,6 @@
-# Handoff atual — Fase 21 em andamento / V1 integrada; V2 selecionada
+# Handoff atual — Fase 21 em andamento / V1 integrada; V2 implementada
 
-Atualizado em: 2026-08-27
+Atualizado em: 2026-08-28
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
@@ -13,9 +13,9 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 20 encerrada; Trilha B concluída; Fase 21 em andamento — V1 DONE; V2 NEXT; consolidação PENDING**
+Status: **Fase 20 encerrada; Trilha B concluída; Fase 21 em andamento — V1 DONE; V2 IMPLEMENTED; consolidação PENDING**
 Fase atual: **Fase 21 — Inteligência Operacional v2**
-Próxima fase: **Fase 21 — V2 `herd_flow_review`**
+Próxima fase: **Fase 21 — Consolidação/Fechamento**
 
 ## Fase 21 — V1 DONE
 
@@ -30,11 +30,15 @@ A Home apenas apresenta pergunta, fonte, cobertura, cutoff, limitações e açõ
 
 Contrato operacional: **PRESERVADO**. Passaram 2.776 testes gerais, 29 integrações, 570 hotspots, lint, build, `gates:docs`, `git diff --check` e o CI remoto do PR `#102`.
 
-## Fase 21 — V2 NEXT
+## Fase 21 — V2 IMPLEMENTED
 
-Entrega selecionada: `herd_flow_review`, ainda não implementada.
+Entrega: `herd_flow_review`, implementada como candidata a partir de `main@7e9dbad8f3c3e7481582e7e6ef63307fc999e20d`, após merge do PR documental `#103`. Integração funcional ainda pendente.
 
-A próxima vertical deve derivar uma leitura explicável da cobertura factual de entradas e saídas do rebanho, reutilizando os `MetricResult<number>` de `rebanho_entradas` e `rebanho_saidas`. A fonte primária permanece `event_eventos`; detalhes comerciais e reprodutivos são auxiliares conforme os contratos atuais. O selector deverá exigir a mesma fazenda, período, cutoff e timezone para os dois read models e tratar divergência ou incompletude de forma conservadora.
+O gate técnico confirmou que a vertical não depende de reconstrução histórica de `eventos_movimentacao`: movimentos internos não constituem entrada ou saída de fronteira. A leitura reutiliza os `MetricResult<number>` existentes de `rebanho_entradas` e `rebanho_saidas`, cuja fonte primária permanece `event_eventos`; detalhes comerciais e reprodutivos são auxiliares. Nenhum `state_*` substitui histórico factual e o E2E remoto pré-F22C não é requisito desta recomendação.
+
+O selector puro exige `fazendaId`, o mesmo período, cutoff, timezone e cobertura histórica para os dois read models. Snapshots divergentes, timezone/período incompatível, fonte ausente e escopo não declarado permanecem `ambiguous`, `unknown` ou `not_permitted`, sem vencedor arbitrário. Mesma entrada e cutoff produzem a mesma saída e as entradas não são mutadas.
+
+A Home carrega por `fazenda_id` os detalhes comercial e reprodutivo já existentes, compõe os `MetricResult` e apresenta pergunta, fonte, cobertura, cutoff, limitações e ações proibidas. O CTA apenas navega para `/relatorios`. Foram aprovados 39 testes focados, lint, build e Fallow NEW.
 
 A leitura não calcula saldo populacional presumido, não infere transferência externa ou descarte sem Evento, não persiste recomendação e não autoriza venda ou abate. O único efeito permitido será navegação para `/relatorios`. Writer, Evento, Agenda, `state_*`, Dexie, sync, Supabase, migration, RPC e RLS permanecem fora do escopo salvo evidência objetiva futura.
 

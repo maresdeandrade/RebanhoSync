@@ -119,6 +119,15 @@ export interface OperationalHistoryReviewData {
   coverageState: MetricCoverageState;
 }
 
+export interface HerdFlowReviewData {
+  summary: string;
+  observedEntries: number;
+  observedExits: number;
+  entryMetricStatus: MetricStatus;
+  exitMetricStatus: MetricStatus;
+  coverageStates: MetricCoverageState[];
+}
+
 export interface OperationalMetricSnapshot<T> {
   metricKey: string;
   result: MetricResult<T>;
@@ -148,10 +157,17 @@ export type BuildOperationalHistoryReviewInput = SharedDecisionInput & {
   metrics: DecisionSourceState<OperationalMetricSnapshot<number>>;
 };
 
+export type BuildHerdFlowReviewInput = SharedDecisionInput & {
+  metrics: DecisionSourceState<OperationalMetricSnapshot<number>>;
+};
+
 const WEIGHT_DECISION_ID = "weight_data_quality";
 const OVERDUE_AGENDA_DECISION_ID = "overdue_agenda_review";
 const OPERATIONAL_HISTORY_DECISION_ID = "operational_history_review";
 const OPERATIONAL_HISTORY_METRIC_KEY = "eventos_periodo";
+const HERD_FLOW_DECISION_ID = "herd_flow_review";
+const HERD_FLOW_METRIC_KEYS = ["rebanho_entradas", "rebanho_saidas"] as const;
+type HerdFlowMetricKey = (typeof HERD_FLOW_METRIC_KEYS)[number];
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function unique(values: readonly string[]): string[] {
@@ -1279,5 +1295,547 @@ export function buildOperationalHistoryReviewRecommendation(
     input,
     contract,
     deriveOperationalHistoryAssessment(input, contract),
+  );
+}
+
+const HERD_FLOW_ACTION = {
+  label: "Revisar relatorios",
+  href: "/relatorios",
+};
+const HERD_FLOW_PROHIBITED_ACTIONS = [
+  "nao cria nem altera Evento",
+  "nao conclui nem altera Agenda",
+  "nao move animal nem altera state_*",
+  "nao persiste recomendacao ou MetricResult",
+  "nao infere saldo populacional nem autoriza operacao",
+];
+
+type HerdFlowMetrics = Record<HerdFlowMetricKey, MetricResult<number>>;
+type HerdFlowMetricResolution =
+  | { kind: "selected"; key: HerdFlowMetricKey; metric: MetricResult<number> }
+  | {
+      kind: "missing";
+      key: HerdFlowMetricKey;
+      status: "unknown" | "not_permitted";
+      metric: MetricResult<number> | null;
+    }
+  | {
+      kind: "conflict";
+      key: HerdFlowMetricKey;
+      metric: MetricResult<number>;
+    };
+type HerdFlowSelection =
+  | { kind: "unavailable"; status: DecisionRecommendationStatus }
+  | {
+      kind: "missing";
+      status: "unknown" | "not_permitted";
+      metrics: Partial<HerdFlowMetrics>;
+      missingKeys: HerdFlowMetricKey[];
+    }
+  | {
+      kind: "conflict";
+      metrics: Partial<HerdFlowMetrics>;
+      conflictKeys: HerdFlowMetricKey[];
+    }
+  | { kind: "selected"; metrics: HerdFlowMetrics };
+type HerdFlowContract =
+  | { kind: "invalid"; metrics: HerdFlowMetrics; reason: string }
+  | {
+      kind: "conflict";
+      metrics: HerdFlowMetrics;
+      conflicts: DecisionEvidenceConflict[];
+    }
+  | {
+      kind: "valid";
+      metrics: HerdFlowMetrics;
+      period: MetricPeriod;
+      coverages: Record<HerdFlowMetricKey, MetricCoverage>;
+      periodExceedsCutoff: boolean;
+    };
+type HerdFlowAssessment = {
+  status: "confirmed" | "partial" | "unknown";
+  statusReason: string;
+  data: HerdFlowReviewData | null;
+  limitations: string[];
+};
+
+function herdFlowBase(
+  input: BuildHerdFlowReviewInput,
+): Pick<
+  DecisionRecommendation<HerdFlowReviewData>,
+  | "id"
+  | "decisionId"
+  | "question"
+  | "scope"
+  | "generatedAt"
+  | "period"
+  | "prohibitedActions"
+> {
+  return {
+    id: `${HERD_FLOW_DECISION_ID}:${input.fazendaId}`,
+    decisionId: HERD_FLOW_DECISION_ID,
+    question:
+      "As entradas e saidas factuais observadas permitem revisar o fluxo do rebanho no periodo?",
+    scope: { fazendaId: input.fazendaId, entityType: "herd_flow_metric" },
+    generatedAt: input.cutoffAt,
+    period: { timezone: input.timezone, cutoffAt: input.cutoffAt },
+    prohibitedActions: [...HERD_FLOW_PROHIBITED_ACTIONS],
+  };
+}
+
+function resolveHerdFlowMetric(
+  input: BuildHerdFlowReviewInput,
+  key: HerdFlowMetricKey,
+): HerdFlowMetricResolution {
+  const snapshots = (input.metrics.records ?? []).filter(
+    (snapshot) => snapshot.metricKey === key,
+  );
+  const unscoped = snapshots.find(
+    (snapshot) => !snapshot.result.coverage?.scope.fazendaId,
+  );
+  const localMetrics = snapshots
+    .filter(
+      (snapshot) =>
+        snapshot.result.coverage?.scope.fazendaId === input.fazendaId,
+    )
+    .map((snapshot) => snapshot.result);
+  if (localMetrics.length === 0) {
+    return {
+      kind: "missing",
+      key,
+      status: unscoped ? "not_permitted" : "unknown",
+      metric: unscoped?.result ?? null,
+    };
+  }
+  const variants = unique(localMetrics.map(canonicalMetricResult));
+  return variants.length > 1
+    ? { kind: "conflict", key, metric: localMetrics[0] }
+    : { kind: "selected", key, metric: localMetrics[0] };
+}
+
+function resolvedHerdFlowMetrics(
+  resolutions: readonly HerdFlowMetricResolution[],
+): Partial<HerdFlowMetrics> {
+  return Object.fromEntries(
+    resolutions
+      .filter(
+        (
+          resolution,
+        ): resolution is Extract<
+          HerdFlowMetricResolution,
+          { kind: "selected" | "conflict" }
+        > => resolution.kind !== "missing",
+      )
+      .map((resolution) => [resolution.key, resolution.metric]),
+  );
+}
+
+function resolveHerdFlowMetrics(
+  input: BuildHerdFlowReviewInput,
+): HerdFlowSelection {
+  const unavailable = unavailableStatus([input.metrics]);
+  if (unavailable) return { kind: "unavailable", status: unavailable };
+
+  const resolutions = HERD_FLOW_METRIC_KEYS.map((key) =>
+    resolveHerdFlowMetric(input, key),
+  );
+  const metrics = resolvedHerdFlowMetrics(resolutions);
+  const conflictKeys = resolutions
+    .filter((resolution) => resolution.kind === "conflict")
+    .map((resolution) => resolution.key);
+  if (conflictKeys.length > 0) {
+    return { kind: "conflict", metrics, conflictKeys };
+  }
+  const missing = resolutions.filter(
+    (
+      resolution,
+    ): resolution is Extract<HerdFlowMetricResolution, { kind: "missing" }> =>
+      resolution.kind === "missing",
+  );
+  if (missing.length > 0) {
+    return {
+      kind: "missing",
+      status: missing.some(
+        (resolution) => resolution.status === "not_permitted",
+      )
+        ? "not_permitted"
+        : "unknown",
+      metrics,
+      missingKeys: missing.map((resolution) => resolution.key),
+    };
+  }
+  return { kind: "selected", metrics: metrics as HerdFlowMetrics };
+}
+
+function validHerdFlowMetric(
+  input: BuildHerdFlowReviewInput,
+  metric: MetricResult<number>,
+): boolean {
+  const valueIsValid =
+    metric.value === null ||
+    (Number.isFinite(metric.value) && metric.value >= 0);
+  return [
+    metric.sources.some(
+      (source) => source.role === "primary" && source.name === "event_eventos",
+    ),
+    Boolean(metric.period && validOperationalHistoryPeriod(metric.period)),
+    Boolean(
+      metric.coverage &&
+      validOperationalHistoryCoverage(metric.coverage, input.fazendaId),
+    ),
+    valueIsValid,
+    Boolean(input.timezone),
+  ].every(Boolean);
+}
+
+function herdFlowPeriodConflict(
+  entries: MetricPeriod,
+  exits: MetricPeriod,
+): DecisionEvidenceConflict | null {
+  const samePeriod =
+    entries.from === exits.from &&
+    entries.to === exits.to &&
+    entries.timezone === exits.timezone;
+  return samePeriod
+    ? null
+    : {
+        code: "herd_flow_period_conflict",
+        source: "MetricResult:rebanho_entradas+rebanho_saidas",
+        recordIds: [],
+        description:
+          "Os MetricResult de entradas e saidas usam periodo ou timezone divergente.",
+      };
+}
+
+function validateHerdFlowContract(
+  input: BuildHerdFlowReviewInput,
+  metrics: HerdFlowMetrics,
+): HerdFlowContract {
+  const validMetrics = HERD_FLOW_METRIC_KEYS.every((key) =>
+    validHerdFlowMetric(input, metrics[key]),
+  );
+  if (!validMetrics) {
+    return {
+      kind: "invalid",
+      metrics,
+      reason:
+        "Fonte primaria, valor, periodo ou cobertura historica obrigatoria nao esta explicita nos MetricResult.",
+    };
+  }
+  const entriesPeriod = metrics.rebanho_entradas.period!;
+  const exitsPeriod = metrics.rebanho_saidas.period!;
+  const periodConflict = herdFlowPeriodConflict(entriesPeriod, exitsPeriod);
+  const timezoneConflict =
+    entriesPeriod.timezone !== input.timezone
+      ? {
+          code: "herd_flow_timezone_conflict",
+          source: "MetricResult:rebanho_entradas+rebanho_saidas",
+          recordIds: [],
+          description: `Timezone metrico ${entriesPeriod.timezone ?? "ausente"} diverge de ${input.timezone}.`,
+        }
+      : null;
+  const conflicts = [periodConflict, timezoneConflict].filter(
+    (conflict): conflict is DecisionEvidenceConflict => conflict !== null,
+  );
+  if (conflicts.length > 0) return { kind: "conflict", metrics, conflicts };
+
+  const cutoffKey = cutoffDateKey(input.cutoffAt, input.timezone!);
+  if (!cutoffKey) {
+    return {
+      kind: "invalid",
+      metrics,
+      reason: "Cutoff ou timezone nao permite delimitar o periodo da leitura.",
+    };
+  }
+  return {
+    kind: "valid",
+    metrics,
+    period: entriesPeriod,
+    coverages: {
+      rebanho_entradas: metrics.rebanho_entradas.coverage!,
+      rebanho_saidas: metrics.rebanho_saidas.coverage!,
+    },
+    periodExceedsCutoff: entriesPeriod.to > cutoffKey,
+  };
+}
+
+function herdFlowPrimarySource(
+  metrics: Partial<HerdFlowMetrics>,
+): DecisionEvidenceSource {
+  const presentKeys = HERD_FLOW_METRIC_KEYS.filter((key) => metrics[key]);
+  const missingKeys = HERD_FLOW_METRIC_KEYS.filter((key) => !metrics[key]);
+  return {
+    name: "event_eventos",
+    role: "primary",
+    kind: "event",
+    recordIds: [],
+    fieldsPresent: presentKeys.map((key) => `MetricResult:${key}`),
+    fieldsMissing: missingKeys.map((key) => `MetricResult:${key}`),
+  };
+}
+
+function herdFlowAuxiliarySources(
+  metrics: Partial<HerdFlowMetrics>,
+): DecisionEvidenceSource[] {
+  const detailNames = unique(
+    Object.values(metrics).flatMap((metric) =>
+      metric.sources
+        .filter((source) => source.role === "auxiliary")
+        .map((source) => source.name),
+    ),
+  );
+  return detailNames.map((name) => ({
+    name,
+    role: "auxiliary",
+    kind: "event_detail",
+    recordIds: [],
+    fieldsPresent: ["MetricResult.sources"],
+    fieldsMissing: [],
+  }));
+}
+
+function buildHerdFlowEvidence(
+  input: BuildHerdFlowReviewInput,
+  options: {
+    metrics?: Partial<HerdFlowMetrics>;
+    coverage?: string[];
+    limitations?: string[];
+    conflicts?: DecisionEvidenceConflict[];
+  } = {},
+): DecisionRecommendation<HerdFlowReviewData>["evidence"] {
+  const metrics = options.metrics ?? {};
+  return {
+    primarySources: [herdFlowPrimarySource(metrics)],
+    auxiliarySources: [
+      ...HERD_FLOW_METRIC_KEYS.map((key) => ({
+        name: `MetricResult:${key}`,
+        role: "auxiliary" as const,
+        kind: "technical" as const,
+        recordIds: [],
+        fieldsPresent: metrics[key]
+          ? ["status", "period", "coverage", "sources", "limitations"]
+          : [],
+        fieldsMissing: metrics[key] ? [] : ["MetricResult"],
+      })),
+      ...herdFlowAuxiliarySources(metrics),
+      ...technicalSources(input),
+    ],
+    convergence: HERD_FLOW_METRIC_KEYS.map((key) =>
+      sourceConvergence(`MetricResult:${key}`, input.metrics),
+    ),
+    coverage: options.coverage ?? [],
+    limitations: options.limitations ?? technicalLimitations(input),
+    conflicts: options.conflicts ?? [],
+  };
+}
+
+function buildHerdFlowSelectionRecommendation(
+  input: BuildHerdFlowReviewInput,
+  selection: Exclude<HerdFlowSelection, { kind: "selected" }>,
+): DecisionRecommendation<HerdFlowReviewData> {
+  const base = herdFlowBase(input);
+  if (selection.kind === "unavailable") {
+    return {
+      ...base,
+      status: selection.status,
+      statusReason: unavailableReason(selection.status),
+      data: null,
+      evidence: buildHerdFlowEvidence(input),
+      suggestedAction: { ...HERD_FLOW_ACTION },
+    };
+  }
+  if (selection.kind === "missing") {
+    return {
+      ...base,
+      status: selection.status,
+      statusReason:
+        selection.status === "not_permitted"
+          ? "Um MetricResult obrigatorio nao declara escopo por fazenda; a conclusao nao e permitida."
+          : "Um ou mais MetricResult obrigatorios nao foram localizados para a fazenda.",
+      data: null,
+      evidence: buildHerdFlowEvidence(input, {
+        metrics: selection.metrics,
+        limitations: [
+          ...technicalLimitations(input),
+          `MetricResult ausente: ${selection.missingKeys.join(", ")}.`,
+        ],
+      }),
+      suggestedAction: { ...HERD_FLOW_ACTION },
+    };
+  }
+  return {
+    ...base,
+    status: "ambiguous",
+    statusReason:
+      "Ha MetricResult divergente para a mesma fazenda e metrica; nenhum desempate foi autorizado.",
+    data: null,
+    evidence: buildHerdFlowEvidence(input, {
+      metrics: selection.metrics,
+      coverage: [`fazenda:${input.fazendaId}`],
+      conflicts: selection.conflictKeys.map((key) => ({
+        code: "conflicting_herd_flow_metric",
+        source: `MetricResult:${key}`,
+        recordIds: [],
+        description: `Snapshots divergentes foram recebidos para ${key}.`,
+      })),
+    }),
+    suggestedAction: { ...HERD_FLOW_ACTION },
+  };
+}
+
+function buildHerdFlowContractRecommendation(
+  input: BuildHerdFlowReviewInput,
+  contract: Exclude<HerdFlowContract, { kind: "valid" }>,
+): DecisionRecommendation<HerdFlowReviewData> {
+  const entriesPeriod = contract.metrics.rebanho_entradas.period;
+  const base = {
+    ...herdFlowBase(input),
+    period: {
+      start: entriesPeriod?.from,
+      end: entriesPeriod?.to,
+      timezone: entriesPeriod?.timezone ?? input.timezone,
+      cutoffAt: input.cutoffAt,
+    },
+  };
+  return {
+    ...base,
+    status: contract.kind === "conflict" ? "ambiguous" : "not_permitted",
+    statusReason:
+      contract.kind === "conflict"
+        ? "Periodo ou timezone diverge entre as fontes obrigatorias do fluxo do rebanho."
+        : contract.reason,
+    data: null,
+    evidence: buildHerdFlowEvidence(input, {
+      metrics: contract.metrics,
+      limitations: unique([
+        ...technicalLimitations(input),
+        ...HERD_FLOW_METRIC_KEYS.flatMap(
+          (key) => contract.metrics[key].limitations,
+        ),
+      ]),
+      conflicts: contract.kind === "conflict" ? contract.conflicts : [],
+    }),
+    suggestedAction: { ...HERD_FLOW_ACTION },
+  };
+}
+
+function herdFlowData(
+  status: HerdFlowAssessment["status"],
+  metrics: HerdFlowMetrics,
+  coverages: Record<HerdFlowMetricKey, MetricCoverage>,
+): HerdFlowReviewData | null {
+  const entries = metrics.rebanho_entradas.value;
+  const exits = metrics.rebanho_saidas.value;
+  if (status === "unknown" || entries === null || exits === null) return null;
+  return {
+    summary:
+      status === "confirmed"
+        ? `${entries} entrada(s) e ${exits} saida(s) factuais no periodo com cobertura verificada.`
+        : `${entries} entrada(s) e ${exits} saida(s) observadas; revise as limitacoes antes de interpretar o fluxo.`,
+    observedEntries: entries,
+    observedExits: exits,
+    entryMetricStatus: metrics.rebanho_entradas.status,
+    exitMetricStatus: metrics.rebanho_saidas.status,
+    coverageStates: [
+      coverages.rebanho_entradas.state,
+      coverages.rebanho_saidas.state,
+    ],
+  };
+}
+
+function deriveHerdFlowAssessment(
+  input: BuildHerdFlowReviewInput,
+  contract: Extract<HerdFlowContract, { kind: "valid" }>,
+): HerdFlowAssessment {
+  const { metrics, period, coverages, periodExceedsCutoff } = contract;
+  const limitations = unique([
+    ...technicalLimitations(input),
+    ...HERD_FLOW_METRIC_KEYS.flatMap((key) => metrics[key].limitations),
+    "A leitura nao infere transferencias externas, descartes sem Evento ou saldo populacional do rebanho.",
+    ...optionalLimitation(
+      periodExceedsCutoff,
+      "O periodo metrico termina depois do cutoff; a leitura representa somente o conjunto observado ate o cutoff.",
+    ),
+    ...optionalLimitation(
+      !input.metrics.convergence.verified,
+      "A derivacao local dos MetricResult nao foi declarada como verificada.",
+    ),
+  ]);
+  const complete = [
+    ...HERD_FLOW_METRIC_KEYS.map((key) => metrics[key].status === "complete"),
+    ...HERD_FLOW_METRIC_KEYS.map((key) => coverages[key].state === "verified"),
+    ...HERD_FLOW_METRIC_KEYS.map(
+      (key) => metrics[key].period?.timezoneSource === "farm",
+    ),
+    input.timezoneVerified,
+    input.metrics.convergence.verified,
+    input.metrics.convergence.mode !== "not_verified",
+    !periodExceedsCutoff,
+  ].every(Boolean);
+  const unavailable = HERD_FLOW_METRIC_KEYS.some(
+    (key) =>
+      metrics[key].status === "unavailable" || metrics[key].value === null,
+  );
+  const status = complete ? "confirmed" : unavailable ? "unknown" : "partial";
+  return {
+    status,
+    statusReason:
+      status === "confirmed"
+        ? "Entradas, saidas, escopo, periodo, timezone e cobertura historica estao explicitos."
+        : status === "unknown"
+          ? "Ao menos um MetricResult nao possui valor interpretavel com a cobertura disponivel."
+          : "Os volumes observados sao uteis, mas cobertura, detalhe, cutoff, timezone ou convergencia limitam a interpretacao.",
+    data: herdFlowData(status, metrics, coverages),
+    limitations,
+  };
+}
+
+function buildHerdFlowAssessmentRecommendation(
+  input: BuildHerdFlowReviewInput,
+  contract: Extract<HerdFlowContract, { kind: "valid" }>,
+  assessment: HerdFlowAssessment,
+): DecisionRecommendation<HerdFlowReviewData> {
+  const { metrics, period, coverages } = contract;
+  return {
+    ...herdFlowBase(input),
+    period: {
+      start: period.from,
+      end: period.to,
+      timezone: period.timezone,
+      cutoffAt: input.cutoffAt,
+    },
+    status: assessment.status,
+    statusReason: assessment.statusReason,
+    data: assessment.data,
+    evidence: buildHerdFlowEvidence(input, {
+      metrics,
+      coverage: [
+        `fazenda:${input.fazendaId}`,
+        `periodo:${period.from}/${period.to}`,
+        `entradas:${coverages.rebanho_entradas.state}`,
+        `saidas:${coverages.rebanho_saidas.state}`,
+      ],
+      limitations: assessment.limitations,
+    }),
+    suggestedAction: { ...HERD_FLOW_ACTION },
+  };
+}
+
+export function buildHerdFlowReviewRecommendation(
+  input: BuildHerdFlowReviewInput,
+): DecisionRecommendation<HerdFlowReviewData> {
+  assertSharedInput(input);
+  const selection = resolveHerdFlowMetrics(input);
+  if (selection.kind !== "selected") {
+    return buildHerdFlowSelectionRecommendation(input, selection);
+  }
+  const contract = validateHerdFlowContract(input, selection.metrics);
+  if (contract.kind !== "valid") {
+    return buildHerdFlowContractRecommendation(input, contract);
+  }
+  return buildHerdFlowAssessmentRecommendation(
+    input,
+    contract,
+    deriveHerdFlowAssessment(input, contract),
   );
 }

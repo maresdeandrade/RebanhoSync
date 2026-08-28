@@ -1,11 +1,12 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { DecisionRecommendationsPanel } from "@/features/decisionAssistance/DecisionRecommendationsPanel";
 import {
+  buildHerdFlowReviewRecommendation,
   buildOperationalHistoryReviewRecommendation,
   buildOverdueAgendaRecommendation,
 } from "@/lib/insights/decisionRecommendations";
@@ -117,5 +118,68 @@ describe("DecisionRecommendationsPanel", () => {
       screen.getByRole("link", { name: "Revisar relatorios" }),
     ).toHaveAttribute("href", "/relatorios");
     expect(screen.getByText(/nao cria nem altera Evento/)).toBeInTheDocument();
+  });
+
+  it("keeps the herd flow CTA navigational and free of factual effects", () => {
+    const period = createMetricPeriod("2026-08-01", "2026-08-23", {
+      timezone: "America/Sao_Paulo",
+      timezoneSource: "farm",
+    });
+    const coverage = {
+      kind: "historical" as const,
+      state: "partial" as const,
+      scope: { fazendaId: "farm-1", domain: "rebanho" },
+      evidence: ["Cobertura local incompleta."],
+    };
+    const input = {
+      fazendaId: "farm-1",
+      cutoffAt: "2026-08-23T12:00:00.000Z",
+      timezone: "America/Sao_Paulo",
+      timezoneVerified: true,
+      metrics: {
+        availability: "loaded" as const,
+        convergence: { mode: "local_derived" as const, verified: true },
+        records: [
+          {
+            metricKey: "rebanho_entradas",
+            result: createMetricResult({
+              value: 3,
+              status: "partial",
+              period,
+              coverage,
+              sources: [{ name: "event_eventos", role: "primary" }],
+              limitations: ["Transferencias externas nao sao inferidas."],
+            }),
+          },
+          {
+            metricKey: "rebanho_saidas",
+            result: createMetricResult({
+              value: 1,
+              status: "partial",
+              period,
+              coverage,
+              sources: [{ name: "event_eventos", role: "primary" }],
+              limitations: ["Descarte sem Evento nao e fabricado."],
+            }),
+          },
+        ],
+      },
+    };
+    const snapshot = structuredClone(input);
+    const recommendation = buildHerdFlowReviewRecommendation(input);
+
+    render(
+      <MemoryRouter>
+        <DecisionRecommendationsPanel recommendations={[recommendation]} />
+      </MemoryRouter>,
+    );
+
+    const cta = screen.getByRole("link", { name: "Revisar relatorios" });
+    expect(cta).toHaveAttribute("href", "/relatorios");
+    fireEvent.click(cta);
+    expect(input).toEqual(snapshot);
+    expect(
+      screen.getByText(/nao move animal nem altera state_/),
+    ).toBeInTheDocument();
   });
 });
