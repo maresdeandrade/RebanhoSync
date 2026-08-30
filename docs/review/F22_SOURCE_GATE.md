@@ -67,6 +67,19 @@ Regra obrigatória: **último peso observado ≠ peso atual automaticamente**.
 
 GMD não está autorizado neste gate. A matéria-prima existe porque todas as pesagens usam `peso_kg`, porém uma futura implementação precisa exigir simultaneamente: duas pesagens factuais do mesmo animal/fazenda, datas válidas e ordenadas, intervalo mínimo tecnicamente definido, cobertura/convergência verificadas, details presentes e ausência de conflito factual. O selector de occupancy atual não satisfaz esse contrato.
 
+### Atualização F22A.2 — contrato factual do intervalo
+
+O incremento F22A.2 implementa somente a seleção e validação do intervalo factual. `selectFactualGmdInterval` reutiliza a evidência de `eventos` + `eventos_pesagem`, bloqueia conflito factual e escolhe as duas observações válidas mais recentes em instantes distintos. A saída contém observações inicial/final, ordem temporal, intervalo em dias, unidade, coverage e limitações; não contém diferença de peso, ganho diário ou GMD.
+
+```ini
+F22A_LAST_OBSERVED_WEIGHT = IMPLEMENTED
+F22A_GMD_INTERVAL_CONTRACT = IMPLEMENTED
+F22A_GMD_CALCULATION = BLOCKED_BY_POLICY
+GMD_MIN_INTERVAL_POLICY = NOT_DEFINED
+```
+
+Nenhuma fonte técnica/de domínio auditada define o intervalo mínimo zootecnicamente aceitável. Intervalo positivo é uma validação estrutural, não substitui essa política. O cálculo permanece bloqueado por `MIN_INTERVAL_POLICY_REQUIRED`.
+
 ## Inventário 22B — eficiência econômica
 
 | Fonte | Categoria | Natureza | `fazendaId` | Data temporal | Origem | Coverage / convergência | Idempotência | Limitações | Consumidores atuais | Status |
@@ -117,7 +130,8 @@ A `main` posterior ao baseline integrou o PR `#108` e a evidência `B4 REMOTE_CO
 | Última pesagem observada + data | Evento + detail de pesagem | animal/fazenda, cutoff, duas fontes convergidas, detail completo | confundir observação com estado atual | `READY` | Sim, com essa nomenclatura |
 | Idade/freshness da pesagem | `weight_data_quality` | anterior + timezone e limite técnico explícitos | threshold arbitrário | `READY` | Sim, reutilizando o contrato existente |
 | Origem e método da pesagem | inexistente no contrato persistido atual | campos factuais novos e política de preenchimento | inventar proveniência | `BLOCKED` | Não |
-| GMD factual | duas ou mais pesagens | mesma fazenda/animal, ordem, intervalo mínimo, conflito e convergência | selector atual não canônico | `PARTIAL` | Não antes do contrato focado |
+| Intervalo factual candidato a GMD | duas ou mais pesagens | mesma fazenda/animal, ordem, conflito e convergência | confundir intervalo estrutural com autorização de cálculo | `READY` | Sim; contrato F22A.2 implementado |
+| Cálculo de GMD | intervalo factual validado | política técnica/de domínio de intervalo mínimo | threshold arbitrário ou intervalo inadequado | `BLOCKED` | Não; `MIN_INTERVAL_POLICY_REQUIRED` |
 | Peso comercial por operação | Evento comercial v2 | fato não simulado, snapshot/linhas completos | confundir com peso zootécnico | `READY` | Sim, em bloco comercial separado |
 | Receita/saída de caixa observada | ledger | coverage do período, `paid_at`, status, estornos e tenant | vazio interpretado como zero | `READY` | Sim, como caixa observado |
 | Valor comercial observado | Evento comercial v2 | fato não simulado e calculation status explícito | valor sem liquidação financeira | `READY` | Sim, separado de caixa |
@@ -131,10 +145,10 @@ A `main` posterior ao baseline integrou o PR `#108` e a evidência `B4 REMOTE_CO
 
 1. Read models existentes com “atual” no nome podem induzir uso indevido do último peso observado como peso corrente.
 2. O relatório financeiro combina ledger e Evento isolado; sem coverage explícita e nomenclatura de caixa versus valor declarado, pode haver interpretação econômica excessiva.
-3. O GMD de occupancy existente não é base autorizada para F22 e deve permanecer fora de qualquer nova capacidade até contrato e testes próprios.
+3. O GMD de occupancy existente não é base autorizada para a F22A.2 nem para um cálculo futuro; o novo contrato usa exclusivamente a evidência factual canônica e mantém o cálculo bloqueado.
 
 ## Decisão e próximo passo
 
 Decisão final: **READY WITH CAVEATS** — o gate de fontes de 22A/22B está fechado, sem implementação funcional.
 
-Próximo passo recomendado: abrir incrementos independentes e pequenos. Primeiro, definir o contrato read-only de “última pesagem observada” reutilizando as fontes de `weight_data_quality`, sem GMD. Depois, definir o contrato de coverage econômica para caixa observado, custo conhecido/ausente e resultado observado, reutilizando `MetricResult` e a deduplicação existente. Origem/método de pesagem, GMD e lucro completo permanecem bloqueados até decisões de contrato próprias; o source gate de 22C está desbloqueado, sem implementação funcional iniciada.
+Atualização de execução: F22A.1 e o contrato factual de intervalo F22A.2 foram implementados. O próximo passo da F22A é definir e adotar, com fonte técnica/de domínio, a política de intervalo mínimo; até lá o cálculo de GMD permanece bloqueado. O contrato de coverage econômica pode avançar de forma independente. Origem/método de pesagem e lucro completo continuam bloqueados; o source gate de 22C está desbloqueado, sem implementação funcional iniciada.

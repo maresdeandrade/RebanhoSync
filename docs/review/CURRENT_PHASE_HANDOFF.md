@@ -15,7 +15,7 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 22 ativa; Fase 21 fechada; F22A.1 última pesagem observada implementada; GMD não iniciado**
+Status: **Fase 22 ativa; Fase 21 fechada; F22A.1 e contrato factual de intervalo F22A.2 implementados; cálculo de GMD bloqueado por política**
 Fase encerrada: **Fase 21 — Inteligência Operacional v2**
 Fase atual: **Fase 22 — Eficiência Produtiva e Econômica**
 
@@ -29,7 +29,9 @@ Para 22B, ledger, Eventos financeiros, Eventos comerciais e snapshots de custo s
 
 Para 22C, `B4 REMOTE_CONVERGENCE_VERIFIED` está integrado e o source gate técnico está desbloqueado. Permanecem proibidas nesta entrega a reconstrução por `state_*` e as métricas dias em lote/pasto, UA/ha, @/ha e desempenho por pastagem.
 
-F22A.1 adiciona um selector puro e testes focados para última pesagem observada. O contrato filtra animal/fazenda, usa `occurred_at`, exige detail positivo em kg, não depende da ordem física, calcula `ageDays` com referência controlada e expõe empate temporal como conflito. Origem, método, freshness normativa e GMD permanecem indisponíveis. Não houve UI, writer, migration, RPC/RLS, Dexie ou sync.
+F22A.1 adiciona um selector puro e testes focados para última pesagem observada. O contrato filtra animal/fazenda, usa `occurred_at`, exige detail positivo em kg, não depende da ordem física, calcula `ageDays` com referência controlada e expõe empate temporal como conflito. Origem, método e freshness normativa permanecem indisponíveis.
+
+F22A.2 extrai a evidência compartilhada e adiciona `selectFactualGmdInterval`. O selector escolhe as duas observações factuais válidas mais recentes em instantes distintos, preserva ordem temporal, unidade kg, coverage e limitações e bloqueia conflitos do snapshot. Não calcula diferença de peso, ganho diário ou GMD. A política de intervalo mínimo não foi encontrada nas fontes técnicas/de domínio; portanto `F22A_GMD_INTERVAL_CONTRACT = IMPLEMENTED`, `F22A_GMD_CALCULATION = BLOCKED_BY_POLICY` e `GMD_MIN_INTERVAL_POLICY = NOT_DEFINED`. Não houve UI, writer, migration, RPC/RLS, Dexie ou sync.
 
 ## Fase 21 — V1 DONE
 
