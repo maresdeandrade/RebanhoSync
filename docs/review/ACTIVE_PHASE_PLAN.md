@@ -1,15 +1,27 @@
-# Plano de fechamento — Fase 21 / Inteligência Operacional v2
+# Plano ativo — Fase 22 / Eficiência Produtiva e Econômica
 
-Atualizado em: 2026-08-28
-Status: **Fase 21 fechada (CLOSED) — V1 DONE; V2 DONE; consolidação DONE**
+Atualizado em: 2026-08-29
+Status: **Fase 22 ativa; gate de fontes 22A/22B fechado — READY WITH CAVEATS; implementação não iniciada**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`.
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
-Próxima fase: **Fase 22 — Eficiência Produtiva e Econômica**
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica**
+Próxima fase: **Fase 22 — incrementos autorizados após o gate de fontes**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+
+## Gate de fontes 22A/22B
+
+Inventário autoritativo desta abertura: [F22_SOURCE_GATE.md](./F22_SOURCE_GATE.md).
+
+- `22A_PARTIAL`: última pesagem observada, data, idade/freshness e peso comercial factual possuem fonte; método/origem da medição e GMD canônico permanecem sem contrato suficiente;
+- `22B_PARTIAL`: caixa/valores observados e custos conhecidos podem ser lidos com coverage explícita; ausência de custo não é zero, saldo observado não é lucro real completo;
+- `22C_BLOCKED_B4`: o baseline comprova apenas `AUTOMATED_CONVERGENCE_VERIFIED`; falta `B4 REMOTE_CONVERGENCE_VERIFIED`;
+- nenhuma implementação funcional, writer, UI, migration, RPC/RLS, Dexie ou sync foi iniciada.
+
+Próximos incrementos elegíveis são independentes: contrato read-only de última pesagem observada e contrato de coverage econômica observada. GMD, origem/método da medição, lucro completo e métricas por lote/pasto ficam fora do início.
 
 ## Resultado da Fase 20
 

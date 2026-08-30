@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-08-28
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (NEXT; conteúdo funcional não iniciado)**
+Atualizado em: 2026-08-29
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (gate 22A/22B fechado; conteúdo funcional não iniciado)**
 Fase anterior: **Fase 21 — Inteligência Operacional v2 (CLOSED)**
 
 ## Objetivo
@@ -95,7 +95,7 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 18 | Rebaseline Visual 360° | **Concluída**; Design System e matriz P0–P3 produzidos, P0 responsivo encerrado |
 | 19 | Foundations + Shell + Branding | **Concluída**; foundations e shell revalidados em light/dark e mobile/desktop |
 | 20 | Jornadas UX Críticas | **Concluída**; cinco jornadas migradas e validadas |
-| 21 | Inteligência Operacional v2 | **Em andamento**; primeira entrega deriva revisão de cobertura histórica de `MetricResult` para `DecisionRecommendation`, sem writer ou nova fonte factual |
-| 22 | Eficiência Produtiva e Econômica | Exigir fontes confiáveis para peso e validação remota E2E de movimentação |
+| 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
+| 22 | Eficiência Produtiva e Econômica | **Gate 22A/22B fechado com ressalvas**; `22A_PARTIAL`, `22B_PARTIAL`; 22C bloqueada até `B4 REMOTE_CONVERGENCE_VERIFIED` |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
 | 24 | Release Hardening / Scale Readiness | Hardening sistêmico final para escala |
