@@ -1,6 +1,6 @@
 # Fase 22 — Gate de fontes 22A/22B
 
-Atualizado em: 2026-08-29
+Atualizado em: 2026-08-30
 Baseline: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7956c01`
 Branch: `feat/f22-source-gate`
 Decisão do gate: **READY WITH CAVEATS**
@@ -9,7 +9,7 @@ Decisão do gate: **READY WITH CAVEATS**
 F22_SOURCE_GATE = CLOSED
 22A = PARTIAL
 22B = PARTIAL
-22C = BLOCKED_B4
+22C = SOURCE_GATE_UNBLOCKED
 ```
 
 ## Escopo e pergunta
@@ -20,7 +20,7 @@ Decisões:
 
 - `22A_PARTIAL`;
 - `22B_PARTIAL`;
-- `22C_BLOCKED_B4`.
+- `22C_SOURCE_GATE_UNBLOCKED` após a integração da evidência B4 na `main`.
 
 ## Baseline
 
@@ -100,13 +100,13 @@ Tratamentos obrigatórios:
 - período sem coverage verificada é `unavailable`/`partial`, inclusive quando a coleção está vazia;
 - duplicidade ou vínculo cross-farm não admite escolha silenciosa.
 
-## Dependência 22C
+## Atualização pós-baseline da dependência 22C
 
 ```ini
-22C = BLOCKED até B4 REMOTE_CONVERGENCE_VERIFIED
+22C = SOURCE_GATE_UNBLOCKED
 ```
 
-O baseline contém `AUTOMATED_CONVERGENCE_VERIFIED` para `eventos_movimentacao`, mas o E2E remoto multi-device em staging continua registrado como `B4_REMOTE_E2E_PENDING`. Portanto, a condição `REMOTE_CONVERGENCE_VERIFIED` não está satisfeita.
+A `main` posterior ao baseline integrou o PR `#108` e a evidência `B4 REMOTE_CONVERGENCE_VERIFIED`: round-trip remoto multi-device e reconstrução após clean install foram comprovados. A condição técnica de entrada foi satisfeita; a F22C permanece não iniciada.
 
 `state_lote`, `state_lotes`, vínculo corrente de animal/lote ou qualquer outro estado atual não podem reconstruir permanência histórica. Permanecem fora do escopo: dias em lote, dias em pasto, UA/ha, @/ha e desempenho por pastagem.
 
@@ -125,7 +125,7 @@ O baseline contém `AUTOMATED_CONVERGENCE_VERIFIED` para `eventos_movimentacao`,
 | Cobertura de custos | mesmas fontes + categorias | fontes carregadas, ausências e não classificados contados | lacunas ocultas | `PARTIAL` | Sim, após contrato de coverage explícito |
 | Resultado observado do recorte | ledger/Eventos deduplicados | mesmo período e critério temporal, coverage e estornos | chamar saldo de lucro | `PARTIAL` | Sim, com caveat e nomenclatura estrita |
 | Lucro real completo | não existe fonte exaustiva | conciliação e totalidade de custos/receitas/rateios | falsa precisão econômica | `BLOCKED` | Não |
-| Permanência/desempenho por lote/pasto | Eventos de movimentação com E2E remoto | `B4 REMOTE_CONVERGENCE_VERIFIED` | reconstruir histórico por `state_*` | `BLOCKED` | Não (`22C_BLOCKED_B4`) |
+| Permanência/desempenho por lote/pasto | Eventos de movimentação com E2E remoto | `B4 REMOTE_CONVERGENCE_VERIFIED` | reconstruir histórico por `state_*` | `READY` no source gate | Sim, em incremento próprio; não iniciada aqui |
 
 ## Riscos remanescentes
 
@@ -137,4 +137,4 @@ O baseline contém `AUTOMATED_CONVERGENCE_VERIFIED` para `eventos_movimentacao`,
 
 Decisão final: **READY WITH CAVEATS** — o gate de fontes de 22A/22B está fechado, sem implementação funcional.
 
-Próximo passo recomendado: abrir dois incrementos independentes e pequenos. Primeiro, definir o contrato read-only de “última pesagem observada” reutilizando `weight_data_quality`, sem GMD. Depois, definir o contrato de coverage econômica para caixa observado, custo conhecido/ausente e resultado observado, reutilizando `MetricResult` e a deduplicação existente. Origem/método de pesagem, GMD e lucro completo permanecem bloqueados até decisões de contrato próprias; 22C permanece bloqueada pelo B4 remoto.
+Próximo passo recomendado: abrir incrementos independentes e pequenos. Primeiro, definir o contrato read-only de “última pesagem observada” reutilizando as fontes de `weight_data_quality`, sem GMD. Depois, definir o contrato de coverage econômica para caixa observado, custo conhecido/ausente e resultado observado, reutilizando `MetricResult` e a deduplicação existente. Origem/método de pesagem, GMD e lucro completo permanecem bloqueados até decisões de contrato próprias; o source gate de 22C está desbloqueado, sem implementação funcional iniciada.
