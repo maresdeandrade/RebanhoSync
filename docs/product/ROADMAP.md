@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-08-29
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (gate 22A/22B fechado; conteúdo funcional não iniciado)**
+Atualizado em: 2026-08-30
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (F22A.1 última pesagem observada implementada; sem GMD)**
 Fase anterior: **Fase 21 — Inteligência Operacional v2 (CLOSED)**
 
 ## Objetivo
@@ -96,6 +96,6 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 19 | Foundations + Shell + Branding | **Concluída**; foundations e shell revalidados em light/dark e mobile/desktop |
 | 20 | Jornadas UX Críticas | **Concluída**; cinco jornadas migradas e validadas |
 | 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
-| 22 | Eficiência Produtiva e Econômica | **Gate 22A/22B fechado com ressalvas**; `22A_PARTIAL`, `22B_PARTIAL`; 22C bloqueada até `B4 REMOTE_CONVERGENCE_VERIFIED` |
+| 22 | Eficiência Produtiva e Econômica | **Gate de fontes fechado**; `F22A_LAST_OBSERVED_WEIGHT = IMPLEMENTED`, `F22A_GMD = CONTRACT_REQUIRED`, `22B_PARTIAL`; source gate de 22C desbloqueado por `B4 REMOTE_CONVERGENCE_VERIFIED`, sem implementação |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
 | 24 | Release Hardening / Scale Readiness | Hardening sistêmico final para escala |

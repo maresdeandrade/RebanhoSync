@@ -1,7 +1,7 @@
 # Plano ativo — Fase 22 / Eficiência Produtiva e Econômica
 
-Atualizado em: 2026-08-29
-Status: **Fase 22 ativa; gate de fontes 22A/22B fechado — READY WITH CAVEATS; implementação não iniciada**
+Atualizado em: 2026-08-30
+Status: **Fase 22 ativa; F22A.1 última pesagem observada implementada; GMD não iniciado**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
@@ -18,10 +18,16 @@ Inventário autoritativo desta abertura: [F22_SOURCE_GATE.md](./F22_SOURCE_GATE.
 
 - `22A_PARTIAL`: última pesagem observada, data, idade/freshness e peso comercial factual possuem fonte; método/origem da medição e GMD canônico permanecem sem contrato suficiente;
 - `22B_PARTIAL`: caixa/valores observados e custos conhecidos podem ser lidos com coverage explícita; ausência de custo não é zero, saldo observado não é lucro real completo;
-- `22C_BLOCKED_B4`: o baseline comprova apenas `AUTOMATED_CONVERGENCE_VERIFIED`; falta `B4 REMOTE_CONVERGENCE_VERIFIED`;
-- nenhuma implementação funcional, writer, UI, migration, RPC/RLS, Dexie ou sync foi iniciada.
+- `22C_SOURCE_GATE_UNBLOCKED`: a `main` integrou `B4 REMOTE_CONVERGENCE_VERIFIED`; a F22C não foi iniciada;
+- F22A.1 implementa somente read model puro; writer, UI, migration, RPC/RLS, Dexie e sync permanecem inalterados.
 
-Próximos incrementos elegíveis são independentes: contrato read-only de última pesagem observada e contrato de coverage econômica observada. GMD, origem/método da medição, lucro completo e métricas por lote/pasto ficam fora do início.
+## Incremento F22A.1 — última pesagem observada
+
+`selectLatestObservedWeight` deriva de `eventos` + `eventos_pesagem` a última observação factual conhecida por animal/fazenda. A seleção usa `occurred_at`, ignora datas futuras ou inválidas com limitação explícita, exige peso positivo em kg e retorna conflito quando Eventos distintos empatam no instante mais recente. `referenceDate` é obrigatória e produz apenas `ageDays`; não há threshold de freshness.
+
+Estados sem dado distinguem animal inexistente, ausência de observação e ausência de observação válida. Ausência nunca vira peso zero. Origem e método não são inferidos. Última pesagem observada não é peso atual. `F22A_GMD = CONTRACT_REQUIRED`.
+
+Próximos incrementos elegíveis permanecem independentes: contrato factual de GMD e contrato de coverage econômica observada. Origem/método da medição, lucro completo e métricas por lote/pasto não foram iniciados.
 
 ## Resultado da Fase 20
 

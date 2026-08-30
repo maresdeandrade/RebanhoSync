@@ -1,15 +1,15 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-08-29
+Atualizado em: 2026-08-30
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — gate de fontes 22A/22B fechado com ressalvas; conteúdo funcional não iniciado.
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — gate de fontes fechado; F22A.1 implementa o read model puro de última pesagem observada, sem UI.
 Próxima fase de desenvolvimento: **Fase 22 — incrementos autorizados após o gate de fontes**.
-Próximo incremento: contrato read-only de última pesagem observada ou coverage econômica observada, sem GMD e sem lucro completo.
+Próximo incremento: contrato factual de GMD, sem iniciar cálculo antes de critérios temporais e de conflito próprios.
 
 ## Objetivo
 
@@ -33,7 +33,7 @@ A Fase 20 foi concluída sobre `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`. 
 
 A Fase 21 foi encerrada com `operational_history_review` e `herd_flow_review`, ambas derivadas de `MetricResult` existentes e apresentadas como `DecisionRecommendation` não persistidas. A auditoria conjunta confirmou perguntas distintas, ausência de duplicação relevante, fontes/cobertura/limitações explícitas, isolamento por fazenda e CTAs exclusivamente navegacionais. A consolidação foi apenas apresentacional; Evento, Agenda, `state_*`, writers, Dexie, sync e banco permaneceram inalterados.
 
-O [gate de fontes da Fase 22](../review/F22_SOURCE_GATE.md) classificou `22A_PARTIAL`, `22B_PARTIAL` e `22C_BLOCKED_B4`. Última pesagem observada/freshness, peso comercial factual, caixa observado e valores/custos conhecidos possuem recortes iniciáveis com coverage explícita. Método/origem da pesagem, GMD canônico, lucro completo e permanência histórica por lote/pasto não possuem fonte suficiente. Nenhuma métrica, UI, migration, RLS, RPC, Dexie, sync ou writer foi implementado.
+O [gate de fontes da Fase 22](../review/F22_SOURCE_GATE.md) classificou `22A_PARTIAL` e `22B_PARTIAL`; a integração posterior do PR `#108` satisfez `B4 REMOTE_CONVERGENCE_VERIFIED` e desbloqueou tecnicamente o source gate de 22C, sem iniciar sua implementação. A F22A.1 adiciona `selectLatestObservedWeight`, leitura pura de `eventos` + `eventos_pesagem` por animal/fazenda, com data factual, kg, idade da observação, ausência explícita e conflito em empate temporal. Última pesagem observada não é peso atual; método/origem permanecem indisponíveis; GMD não foi implementado. Nenhuma UI, migration, RLS, RPC, Dexie, sync ou writer foi alterado.
 
 A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 

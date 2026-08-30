@@ -29,16 +29,16 @@ Conduta:
 
 Não há evidência atual de defeito no SQL ou na regra de domínio.
 
-## P1 — Validação Remota E2E de Movimentação (Gate de Entrada F22C)
+## Concluído — Validação Remota E2E de Movimentação (Gate de Entrada F22C)
 
-Status: `PENDENTE_F22C`
-Código: `B4_REMOTE_E2E_PENDING`
+Status: `CONCLUIDO`
+Código: `REMOTE_CONVERGENCE_VERIFIED`
 
 Fatos:
 
-- inclusão canônica de `eventos_movimentacao` em `STANDARD_EVENT_DETAIL_REMOTE_TABLES` implementada e testada com sucesso no pull local (`AUTOMATED_CONVERGENCE_VERIFIED`);
-- não bloqueia a Fase 21 (Inteligência Operacional v2);
-- E2E remoto multi-device (Device A -> Push -> Supabase Staging -> Device B -> Pull -> Integridade/Isolamento) permanece como gate de entrada obrigatório para a Fase 22C.
+- inclusão canônica de `eventos_movimentacao` em `STANDARD_EVENT_DETAIL_REMOTE_TABLES` implementada e testada com sucesso no pull local;
+- E2E remoto multi-device (Device A -> Push -> Supabase Staging -> Device B -> Pull -> Integridade/Isolamento) e clean install comprovados no PR `#108`;
+- o source gate técnico da F22C está desbloqueado; a F22C não foi iniciada.
 
 
 ## P1 — Promoção de Migrations e Backoffice para Produção

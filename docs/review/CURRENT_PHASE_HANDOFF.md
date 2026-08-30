@@ -1,6 +1,6 @@
 # Handoff atual — Fase 22 / gate de fontes 22A e 22B
 
-Atualizado em: 2026-08-29
+Atualizado em: 2026-08-30
 Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7956c01`
 Próxima fase: **Fase 22 — incrementos autorizados após o gate de fontes**
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
@@ -15,21 +15,21 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 22 ativa; Fase 21 fechada; gate de fontes 22A/22B fechado — READY WITH CAVEATS; conteúdo funcional da F22 não iniciado**
+Status: **Fase 22 ativa; Fase 21 fechada; F22A.1 última pesagem observada implementada; GMD não iniciado**
 Fase encerrada: **Fase 21 — Inteligência Operacional v2**
 Fase atual: **Fase 22 — Eficiência Produtiva e Econômica**
 
 ## Fase 22 — gate de fontes fechado
 
-O inventário completo está em [F22_SOURCE_GATE.md](./F22_SOURCE_GATE.md). A auditoria confirmou `22A_PARTIAL`, `22B_PARTIAL` e `22C_BLOCKED_B4`.
+O inventário completo está em [F22_SOURCE_GATE.md](./F22_SOURCE_GATE.md). A auditoria confirmou `22A_PARTIAL` e `22B_PARTIAL`; a `main` posterior integrou o PR `#108` e satisfez o source gate B4 de 22C, sem iniciar a F22C.
 
 Para 22A, `eventos` + `eventos_pesagem` sustentam última pesagem observada, data, idade/freshness com limite explícito, coverage e conflitos. Não sustentam método/origem da medição nem autorizam tratar o último peso como atual. O GMD existente de occupancy foi classificado `NOT_CANONICAL` para a F22.
 
 Para 22B, ledger, Eventos financeiros, Eventos comerciais e snapshots de custo sustentam caixa/valores observados e custos conhecidos com coverage e deduplicação explícitas. Operação comercial sem financeiro associado não entra no caixa; custo ausente não vira zero; saldo observado não é lucro real completo.
 
-Para 22C, `AUTOMATED_CONVERGENCE_VERIFIED` não satisfaz a condição exigida `B4 REMOTE_CONVERGENCE_VERIFIED`. Permanecem proibidas a reconstrução por `state_*` e as métricas dias em lote/pasto, UA/ha, @/ha e desempenho por pastagem.
+Para 22C, `B4 REMOTE_CONVERGENCE_VERIFIED` está integrado e o source gate técnico está desbloqueado. Permanecem proibidas nesta entrega a reconstrução por `state_*` e as métricas dias em lote/pasto, UA/ha, @/ha e desempenho por pastagem.
 
-O patch é exclusivamente documental. Não houve implementação de métrica, selector, UI, writer, migration, RPC/RLS, Dexie ou sync.
+F22A.1 adiciona um selector puro e testes focados para última pesagem observada. O contrato filtra animal/fazenda, usa `occurred_at`, exige detail positivo em kg, não depende da ordem física, calcula `ageDays` com referência controlada e expõe empate temporal como conflito. Origem, método, freshness normativa e GMD permanecem indisponíveis. Não houve UI, writer, migration, RPC/RLS, Dexie ou sync.
 
 ## Fase 21 — V1 DONE
 
