@@ -1,7 +1,7 @@
 # Plano ativo — Fase 22 / Eficiência Produtiva e Econômica
 
 Atualizado em: 2026-08-30
-Status: **Fase 22 ativa; F22A.1 última pesagem observada implementada; GMD não iniciado**
+Status: **Fase 22 ativa; F22A.1 e contrato factual de intervalo F22A.2 implementados; cálculo de GMD bloqueado por política**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
@@ -16,18 +16,30 @@ Este documento contém o plano corrente. Estado técnico detalhado, validações
 
 Inventário autoritativo desta abertura: [F22_SOURCE_GATE.md](./F22_SOURCE_GATE.md).
 
-- `22A_PARTIAL`: última pesagem observada, data, idade/freshness e peso comercial factual possuem fonte; método/origem da medição e GMD canônico permanecem sem contrato suficiente;
+- `22A_PARTIAL`: última pesagem observada e o intervalo factual candidato a GMD possuem contrato; método/origem da medição e cálculo de GMD permanecem bloqueados, este último pela ausência de política de intervalo mínimo;
 - `22B_PARTIAL`: caixa/valores observados e custos conhecidos podem ser lidos com coverage explícita; ausência de custo não é zero, saldo observado não é lucro real completo;
 - `22C_SOURCE_GATE_UNBLOCKED`: a `main` integrou `B4 REMOTE_CONVERGENCE_VERIFIED`; a F22C não foi iniciada;
-- F22A.1 implementa somente read model puro; writer, UI, migration, RPC/RLS, Dexie e sync permanecem inalterados.
+- F22A.1 e F22A.2 implementam somente read models puros; writer, UI, migration, RPC/RLS, Dexie e sync permanecem inalterados.
 
 ## Incremento F22A.1 — última pesagem observada
 
 `selectLatestObservedWeight` deriva de `eventos` + `eventos_pesagem` a última observação factual conhecida por animal/fazenda. A seleção usa `occurred_at`, ignora datas futuras ou inválidas com limitação explícita, exige peso positivo em kg e retorna conflito quando Eventos distintos empatam no instante mais recente. `referenceDate` é obrigatória e produz apenas `ageDays`; não há threshold de freshness.
 
-Estados sem dado distinguem animal inexistente, ausência de observação e ausência de observação válida. Ausência nunca vira peso zero. Origem e método não são inferidos. Última pesagem observada não é peso atual. `F22A_GMD = CONTRACT_REQUIRED`.
+Estados sem dado distinguem animal inexistente, ausência de observação e ausência de observação válida. Ausência nunca vira peso zero. Origem e método não são inferidos. Última pesagem observada não é peso atual.
 
-Próximos incrementos elegíveis permanecem independentes: contrato factual de GMD e contrato de coverage econômica observada. Origem/método da medição, lucro completo e métricas por lote/pasto não foram iniciados.
+## Incremento F22A.2 — contrato factual do intervalo de GMD
+
+`selectFactualGmdInterval` reutiliza a seleção canônica de `eventos` + `eventos_pesagem`, exige animal/fazenda e data de referência, bloqueia qualquer conflito factual e escolhe deterministicamente as duas observações válidas mais recentes em instantes distintos. Duplicata idêntica do mesmo Evento conta uma vez; Evento distinto no mesmo instante é conflito; datas futuras/inválidas e peso não positivo são excluídos com limitações explícitas.
+
+O resultado expõe somente as duas observações, ordem temporal, intervalo factual em dias, compatibilidade em kg, coverage e limitações. Não expõe diferença de peso, ganho diário nem GMD. `READY` significa apenas intervalo factual apto ao próximo gate. Como nenhuma fonte técnica/de domínio define hoje o intervalo mínimo zootecnicamente aceitável, o estado permanece:
+
+```ini
+F22A_GMD_INTERVAL_CONTRACT = IMPLEMENTED
+F22A_GMD_CALCULATION = BLOCKED_BY_POLICY
+GMD_MIN_INTERVAL_POLICY = NOT_DEFINED
+```
+
+O próximo incremento elegível da F22A é exclusivamente definir e adotar essa política. O contrato de coverage econômica observada permanece independente. Origem/método da medição, lucro completo e métricas por lote/pasto não foram iniciados.
 
 ## Resultado da Fase 20
 

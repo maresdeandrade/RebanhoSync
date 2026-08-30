@@ -7,9 +7,9 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — gate de fontes fechado; F22A.1 implementa o read model puro de última pesagem observada, sem UI.
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — gate de fontes fechado; F22A.1 e o contrato factual de intervalo da F22A.2 estão implementados, sem UI ou cálculo de GMD.
 Próxima fase de desenvolvimento: **Fase 22 — incrementos autorizados após o gate de fontes**.
-Próximo incremento: contrato factual de GMD, sem iniciar cálculo antes de critérios temporais e de conflito próprios.
+Próximo incremento: definir e adotar, com fonte técnica/de domínio, a política de intervalo mínimo para autorizar o cálculo de GMD.
 
 ## Objetivo
 
@@ -33,7 +33,7 @@ A Fase 20 foi concluída sobre `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`. 
 
 A Fase 21 foi encerrada com `operational_history_review` e `herd_flow_review`, ambas derivadas de `MetricResult` existentes e apresentadas como `DecisionRecommendation` não persistidas. A auditoria conjunta confirmou perguntas distintas, ausência de duplicação relevante, fontes/cobertura/limitações explícitas, isolamento por fazenda e CTAs exclusivamente navegacionais. A consolidação foi apenas apresentacional; Evento, Agenda, `state_*`, writers, Dexie, sync e banco permaneceram inalterados.
 
-O [gate de fontes da Fase 22](../review/F22_SOURCE_GATE.md) classificou `22A_PARTIAL` e `22B_PARTIAL`; a integração posterior do PR `#108` satisfez `B4 REMOTE_CONVERGENCE_VERIFIED` e desbloqueou tecnicamente o source gate de 22C, sem iniciar sua implementação. A F22A.1 adiciona `selectLatestObservedWeight`, leitura pura de `eventos` + `eventos_pesagem` por animal/fazenda, com data factual, kg, idade da observação, ausência explícita e conflito em empate temporal. Última pesagem observada não é peso atual; método/origem permanecem indisponíveis; GMD não foi implementado. Nenhuma UI, migration, RLS, RPC, Dexie, sync ou writer foi alterado.
+O [gate de fontes da Fase 22](../review/F22_SOURCE_GATE.md) classificou `22A_PARTIAL` e `22B_PARTIAL`; a integração posterior do PR `#108` satisfez `B4 REMOTE_CONVERGENCE_VERIFIED` e desbloqueou tecnicamente o source gate de 22C, sem iniciar sua implementação. A F22A.1 adiciona `selectLatestObservedWeight`, leitura pura de `eventos` + `eventos_pesagem` por animal/fazenda, com data factual, kg, idade da observação, ausência explícita e conflito em empate temporal. A F22A.2 reutiliza a mesma evidência canônica e seleciona as duas observações válidas mais recentes em instantes distintos, bloqueando conflitos e sem calcular diferença, ganho diário ou GMD. Última pesagem observada não é peso atual; método/origem permanecem indisponíveis; a política de intervalo mínimo não está definida e mantém o cálculo de GMD bloqueado. Nenhuma UI, migration, RLS, RPC, Dexie, sync ou writer foi alterado.
 
 A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 
@@ -147,7 +147,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O próximo desenvolvimento é a Fase 22 — Eficiência Produtiva e Econômica. O gate remoto B4 da F22C foi satisfeito e a F22C está tecnicamente desbloqueada, mas nenhum conteúdo funcional da F22C foi iniciado neste fechamento. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+O próximo desenvolvimento da F22A é definir e adotar, com fonte técnica/de domínio, a política de intervalo mínimo necessária ao cálculo de GMD. O gate remoto B4 da F22C foi satisfeito e a F22C está tecnicamente desbloqueada, mas nenhum conteúdo funcional da F22C foi iniciado neste fechamento. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 

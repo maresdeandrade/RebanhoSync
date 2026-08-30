@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
 Atualizado em: 2026-08-30
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (F22A.1 última pesagem observada implementada; sem GMD)**
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (F22A.1 e contrato factual de intervalo F22A.2 implementados; cálculo de GMD bloqueado por política)**
 Fase anterior: **Fase 21 — Inteligência Operacional v2 (CLOSED)**
 
 ## Objetivo
@@ -48,14 +48,14 @@ Cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/pe
 
 A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`. As operações comerciais individual e em lote foram integradas, o contrato kg/@ foi preservado, precificação e simulação comercial foram integradas, e a simulação permaneceu não factual. A Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first. Nenhuma nova fonte de verdade foi criada.
 
-## Próxima fase de desenvolvimento
+## Fase atual de desenvolvimento
 
 ```txt
 Fase 21 — Inteligência Operacional v2 — V1 operational_history_review + V2 herd_flow_review + consolidação concluídas
-→ Fase 22 — Eficiência Produtiva e Econômica — próxima
+→ Fase 22 — Eficiência Produtiva e Econômica — ativa; F22A.1 e contrato factual F22A.2 implementados
 ```
 
-A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A consolidação agrupou as leituras por finalidade, ordenou apenas a apresentação por necessidade de revisão e tornou fontes e limitações visíveis de forma consistente. Nenhuma terceira vertical foi justificada e nenhum conteúdo funcional da Fase 22 foi iniciado.
+A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está ativa: F22A.1 implementa a última pesagem observada e F22A.2 implementa apenas a seleção/validação do intervalo factual. O cálculo de GMD permanece bloqueado até existir política técnica/de domínio para o intervalo mínimo.
 
 A Fase 19 implementou foundations tipográficas e semânticas, branding reutilizável, primitives estruturais e shell/navegação responsivos sobre o contrato da F18. Home, Animais, AnimalDetalhe, Registrar e Agenda foram revalidados sem migração ampla em 390, 768, 1024 e 1440 px, light/dark; nenhum P0 novo foi confirmado e o P0 do Registrar permanece resolvido.
 
@@ -96,6 +96,6 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 19 | Foundations + Shell + Branding | **Concluída**; foundations e shell revalidados em light/dark e mobile/desktop |
 | 20 | Jornadas UX Críticas | **Concluída**; cinco jornadas migradas e validadas |
 | 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
-| 22 | Eficiência Produtiva e Econômica | **Gate de fontes fechado**; `F22A_LAST_OBSERVED_WEIGHT = IMPLEMENTED`, `F22A_GMD = CONTRACT_REQUIRED`, `22B_PARTIAL`; source gate de 22C desbloqueado por `B4 REMOTE_CONVERGENCE_VERIFIED`, sem implementação |
+| 22 | Eficiência Produtiva e Econômica | **Gate de fontes fechado**; `F22A_LAST_OBSERVED_WEIGHT = IMPLEMENTED`, `F22A_GMD_INTERVAL_CONTRACT = IMPLEMENTED`, `F22A_GMD_CALCULATION = BLOCKED_BY_POLICY`, `22B_PARTIAL`; source gate de 22C desbloqueado por `B4 REMOTE_CONVERGENCE_VERIFIED`, sem implementação |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
 | 24 | Release Hardening / Scale Readiness | Hardening sistêmico final para escala |
