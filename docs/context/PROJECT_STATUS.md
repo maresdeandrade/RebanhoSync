@@ -1,14 +1,15 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-08-28
+Atualizado em: 2026-08-29
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — NEXT; conteúdo funcional não iniciado.
-Próxima fase de desenvolvimento: **Fase 22 — Eficiência Produtiva e Econômica**.
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — gate de fontes 22A/22B fechado com ressalvas; conteúdo funcional não iniciado.
+Próxima fase de desenvolvimento: **Fase 22 — incrementos autorizados após o gate de fontes**.
+Próximo incremento: contrato read-only de última pesagem observada ou coverage econômica observada, sem GMD e sem lucro completo.
 
 ## Objetivo
 
@@ -31,6 +32,8 @@ A Fase 19 foi concluída sobre `main@b07a1252a6436a413f9562a7f9079269cb49d026` c
 A Fase 20 foi concluída sobre `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`. Home, Animais, AnimalDetalhe, Registrar e Agenda foram migradas incrementalmente para os padrões da F18/F19, preservando selectors, filtros, bulk, builders, validação, submit, Agenda e writers. A inspeção autenticada cobriu as cinco jornadas em 390×844, 768×1024, 1024×768 e 1440×900, nos temas claro e escuro, sem overflow estrutural; **P0 novo = 0**. Foram aprovados 65 testes focados, lint, build e os gates documentais de fechamento.
 
 A Fase 21 foi encerrada com `operational_history_review` e `herd_flow_review`, ambas derivadas de `MetricResult` existentes e apresentadas como `DecisionRecommendation` não persistidas. A auditoria conjunta confirmou perguntas distintas, ausência de duplicação relevante, fontes/cobertura/limitações explícitas, isolamento por fazenda e CTAs exclusivamente navegacionais. A consolidação foi apenas apresentacional; Evento, Agenda, `state_*`, writers, Dexie, sync e banco permaneceram inalterados.
+
+O [gate de fontes da Fase 22](../review/F22_SOURCE_GATE.md) classificou `22A_PARTIAL`, `22B_PARTIAL` e `22C_BLOCKED_B4`. Última pesagem observada/freshness, peso comercial factual, caixa observado e valores/custos conhecidos possuem recortes iniciáveis com coverage explícita. Método/origem da pesagem, GMD canônico, lucro completo e permanência histórica por lote/pasto não possuem fonte suficiente. Nenhuma métrica, UI, migration, RLS, RPC, Dexie, sync ou writer foi implementado.
 
 A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 
