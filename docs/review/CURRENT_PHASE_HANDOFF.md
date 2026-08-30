@@ -72,8 +72,9 @@ Status: **Concluída e certificada**. Baseline de infraestrutura e sync alinhado
 4. **B4 — Convergência de Movimentação:**
    - Inclusão canônica de `eventos_movimentacao` em `STANDARD_EVENT_DETAIL_REMOTE_TABLES` em `src/lib/offline/tableMap.ts`.
    - Propagação comprovada para: `DEFAULT_REMOTE_TABLES`, `PENDING_FACTUAL_REMOTE_TABLES`, proteção de rows por `evento_id` em pull replace/merge, e pós-sync refresh.
-   - Classificação de evidência: `AUTOMATED_CONVERGENCE_VERIFIED` (suíte dedicada de 7 cenários com 100% de aprovação).
-   - Gate F22C: pré-requisito técnico de implementação resolvido; E2E remoto em staging registrado como gate de entrada pré-F22C.
+   - Classificação de evidência: `REMOTE_CONVERGENCE_VERIFIED`; além da suíte automatizada, o round-trip real Device A → `sync-batch` → staging → Device B limpo foi comprovado em `zqloazqzhwauamcejmuz`.
+   - Cenários remotos aprovados: bootstrap, segundo pull idempotente, isolamento cross-farm, reinstall, replay com as mesmas identidades, chegada detail antes do pai sem órfão permanente e coerência entre último Evento e `state_animais`.
+   - Gate F22C: desbloqueado tecnicamente; F22C não iniciada nesta execução. Evidência: [`B4_REMOTE_MOVEMENT_CONVERGENCE_20260829.md`](evidence/B4_REMOTE_MOVEMENT_CONVERGENCE_20260829.md).
 
 
 5. **Sync Sanitário v2:**

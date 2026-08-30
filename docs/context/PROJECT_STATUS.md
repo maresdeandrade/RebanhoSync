@@ -119,7 +119,7 @@ Estado dos subitens:
 - Auth / Grants: privilégios de tabelas autenticadas reconciliados (`20260826230107`), validado localmente, aplicado em staging; produção pendente.
 - Admin Track: A1.1 + A2 + A2.1 + A4 operacionais em staging; provisionamento e smoke de SuperAdmin validados; produção pendente.
 - F16 Financeiro: migration aplicada em staging; produção pendente.
-- B4 Movimentação: `eventos_movimentacao` integrado em `STANDARD_EVENT_DETAIL_REMOTE_TABLES`; convergência comprovada em testes automatizados (`AUTOMATED_CONVERGENCE_VERIFIED`); E2E remoto pendente antes da F22C.
+- B4 Movimentação: `eventos_movimentacao` integrado em `STANDARD_EVENT_DETAIL_REMOTE_TABLES`; convergência automatizada e round-trip remoto A → staging → B, incluindo clean install, comprovados (`REMOTE_CONVERGENCE_VERIFIED`); gate técnico da F22C desbloqueado, sem iniciar a F22C.
 - Trilha C (Hardening Banco / Advisor): C0 (Inventário Autoritativo) e C1 (Hardening SECURITY DEFINER & EXECUTE) concluídos e validados localmente (migrations `20260827100000`, `20260827110000`, `20260827120000`); C2–C7 pendentes como trilha de infraestrutura independente.
 - Produção: não alterada (100% preservada).
 
@@ -144,7 +144,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O próximo desenvolvimento é a Fase 22 — Eficiência Produtiva e Econômica, iniciando pelo gate de fontes para 22A/22B e mantendo 22C bloqueada até a validação remota de B4. Nenhum conteúdo funcional da Fase 22 foi iniciado neste fechamento. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+O próximo desenvolvimento é a Fase 22 — Eficiência Produtiva e Econômica. O gate remoto B4 da F22C foi satisfeito e a F22C está tecnicamente desbloqueada, mas nenhum conteúdo funcional da F22C foi iniciado neste fechamento. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 

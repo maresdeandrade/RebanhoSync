@@ -189,7 +189,7 @@ ECC, pesagem e nutrição são fatos distintos e não devem ser presumidos equiv
 | Superfície | Pull atual | Refresh pós-sync | Proteção de pending | Chave factual |
 |---|---|---|---|---|
 | `eventos` | PADRÃO | quando Evento/agenda relacionada é tocado | sim | `id` |
-| `eventos_movimentacao` | NÃO APLICÁVEL ao pull direto localizado | não localizado para o detail | não localizada nesse pipeline | `evento_id` |
+| `eventos_movimentacao` | PADRÃO via `STANDARD_EVENT_DETAIL_REMOTE_TABLES` | sim | sim, por `evento_id` | `evento_id` |
 | `eventos_nutricao` | PADRÃO | não integra a lista padrão de details de refresh | não explícita no helper factual atual | `evento_id` |
 | `eventos_comercial` | PADRÃO; também converge no fluxo comercial composto | sim no fluxo comercial | sim | `evento_id` |
 | `eventos_ecc` | PADRÃO | sim | sim | `event_id` |
@@ -200,7 +200,7 @@ ECC, pesagem e nutrição são fatos distintos e não devem ser presumidos equiv
 
 `eventos_ecc`, `eventos_pesagem` e `eventos_financeiro` foram corrigidos no candidate worktree. `APPLIED` e `APPLIED_ALTERED` convergem para os stores locais correspondentes, sem sobrescrever detalhe local pendente e sem atravessar fazendas.
 
-A ausência de `eventos_movimentacao` no `DEFAULT_REMOTE_TABLES` não é classificada automaticamente como defeito; é limitação conhecida que exige análise própria antes de qualquer mudança.
+`eventos_movimentacao` integra `STANDARD_EVENT_DETAIL_REMOTE_TABLES` e, por propagação, o pull padrão, a proteção de pending e o refresh pós-sync. O round-trip remoto e a reconstrução após clean install foram comprovados no B4.
 
 ## 18. Importação
 
@@ -364,7 +364,6 @@ No escopo do mapa oficial candidato:
 
 Limitações conhecidas, sem classificação automática como defeito:
 
-- `eventos_movimentacao` não possui caminho direto no pull padrão observado;
 - superfícies especializadas não devem ser tratadas como equivalentes ao pull genérico;
 - `queue_rejections` é evidência operacional temporária e segue política de retenção.
 
