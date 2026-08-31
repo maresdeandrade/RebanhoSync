@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
 Atualizado em: 2026-08-30
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (F22A.1/F22A.2 implementados; política contextual de GMD definida; cálculo não iniciado)**
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (F22A.1/F22A.2/F22A.3 implementados; adoção não iniciada)**
 Fase anterior: **Fase 21 — Inteligência Operacional v2 (CLOSED)**
 
 ## Objetivo
@@ -55,7 +55,7 @@ Fase 21 — Inteligência Operacional v2 — V1 operational_history_review + V2 
 → Fase 22 — Eficiência Produtiva e Econômica — ativa; F22A.1/F22A.2 e política contextual F22A.2B definidos
 ```
 
-A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está ativa: F22A.1 implementa a última pesagem observada, F22A.2 seleciona/valida o intervalo factual e F22A.2B define política contextual. Não existe mínimo universal; a futura F22A.3 pode calcular somente uma derivação com confiabilidade não classificada e uso operacional não autorizado.
+A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está ativa: F22A.1 implementa a última pesagem observada, F22A.2 seleciona/valida o intervalo factual, F22A.2B define política contextual e F22A.3 calcula a derivação matemática qualificada. Não existe mínimo universal; confiabilidade permanece não classificada e uso operacional não autorizado.
 
 A Fase 19 implementou foundations tipográficas e semânticas, branding reutilizável, primitives estruturais e shell/navegação responsivos sobre o contrato da F18. Home, Animais, AnimalDetalhe, Registrar e Agenda foram revalidados sem migração ampla em 390, 768, 1024 e 1440 px, light/dark; nenhum P0 novo foi confirmado e o P0 do Registrar permanece resolvido.
 
@@ -96,6 +96,6 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 19 | Foundations + Shell + Branding | **Concluída**; foundations e shell revalidados em light/dark e mobile/desktop |
 | 20 | Jornadas UX Críticas | **Concluída**; cinco jornadas migradas e validadas |
 | 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
-| 22 | Eficiência Produtiva e Econômica | **Gate de fontes fechado**; `F22A_GMD_INTERVAL_CONTRACT = IMPLEMENTED`, `F22A_GMD_POLICY = DEFINED_CONTEXTUAL`, `F22A_GMD_CALCULATION = READY_WITH_POLICY_CONSTRAINTS`, `22B_PARTIAL`; source gate de 22C desbloqueado, sem implementação |
+| 22 | Eficiência Produtiva e Econômica | **Gate de fontes fechado**; `F22A_GMD_INTERVAL_CONTRACT = IMPLEMENTED`, `F22A_GMD_POLICY = DEFINED_CONTEXTUAL`, `F22A_GMD_CALCULATION = IMPLEMENTED_QUALIFIED`, `22B_PARTIAL`; adoção F22A e implementação 22C não iniciadas |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
 | 24 | Release Hardening / Scale Readiness | Hardening sistêmico final para escala |

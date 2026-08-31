@@ -75,10 +75,12 @@ O incremento F22A.2 implementa somente a seleção e validação do intervalo fa
 F22A_LAST_OBSERVED_WEIGHT = IMPLEMENTED
 F22A_GMD_INTERVAL_CONTRACT = IMPLEMENTED
 F22A_GMD_POLICY = DEFINED_CONTEXTUAL
-F22A_GMD_CALCULATION = READY_WITH_POLICY_CONSTRAINTS
+F22A_GMD_CALCULATION = IMPLEMENTED_QUALIFIED
+F22A_GMD_RELIABILITY = UNCLASSIFIED
+F22A_GMD_OPERATIONAL_USE = NOT_AUTHORIZED
 ```
 
-A [política técnica F22A.2B](./F22A_GMD_INTERVAL_POLICY.md) confirmou que não há mínimo universal transferível entre contextos. Intervalo positivo autoriza somente cálculo matemático com confiabilidade não classificada e uso operacional não autorizado. Classificar confiabilidade permanece dependente de política contextual e coverage de medição.
+A [política técnica F22A.2B](./F22A_GMD_INTERVAL_POLICY.md) confirmou que não há mínimo universal transferível entre contextos. A F22A.3 implementa somente o cálculo matemático sobre o intervalo factual `READY`, sem seleção paralela de pesagens, threshold universal ou arredondamento. Classificar confiabilidade permanece dependente de política contextual e coverage de medição.
 
 ## Inventário 22B — eficiência econômica
 
@@ -131,7 +133,7 @@ A `main` posterior ao baseline integrou o PR `#108` e a evidência `B4 REMOTE_CO
 | Idade/freshness da pesagem | `weight_data_quality` | anterior + timezone e limite técnico explícitos | threshold arbitrário | `READY` | Sim, reutilizando o contrato existente |
 | Origem e método da pesagem | inexistente no contrato persistido atual | campos factuais novos e política de preenchimento | inventar proveniência | `BLOCKED` | Não |
 | Intervalo factual candidato a GMD | duas ou mais pesagens | mesma fazenda/animal, ordem, conflito e convergência | confundir intervalo estrutural com autorização de cálculo | `READY` | Sim; contrato F22A.2 implementado |
-| Cálculo matemático de GMD | intervalo factual validado | política contextual aplicada e cobertura atual explicitada | apresentar derivação como confiável ou acionável | `READY_WITH_CONSTRAINTS` | Sim; `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED` |
+| Cálculo matemático de GMD | intervalo factual validado | política contextual aplicada e cobertura atual explicitada | apresentar derivação como confiável ou acionável | `IMPLEMENTED_QUALIFIED` | Implementado; `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED` |
 | GMD confiável ou operacionalmente acionável | intervalo factual validado | origem, método, condições de pesagem e política contextual compatível | falsa precisão e decisão fora do contexto validado | `BLOCKED` | Não; `MEASUREMENT_COVERAGE_REQUIRED` |
 | Peso comercial por operação | Evento comercial v2 | fato não simulado, snapshot/linhas completos | confundir com peso zootécnico | `READY` | Sim, em bloco comercial separado |
 | Receita/saída de caixa observada | ledger | coverage do período, `paid_at`, status, estornos e tenant | vazio interpretado como zero | `READY` | Sim, como caixa observado |
@@ -152,4 +154,4 @@ A `main` posterior ao baseline integrou o PR `#108` e a evidência `B4 REMOTE_CO
 
 Decisão final: **READY WITH CAVEATS** — o gate de fontes de 22A/22B está fechado, sem implementação funcional.
 
-Atualização de execução: F22A.1 e F22A.2 foram implementados, e F22A.2B definiu política contextual sem mínimo universal. A futura F22A.3 pode implementar apenas cálculo matemático com confiabilidade não classificada e uso operacional não autorizado. Origem/método e classificação confiável continuam dependentes de coverage própria; o contrato econômico pode avançar independentemente e o source gate de 22C segue desbloqueado.
+Atualização de execução: F22A.1, F22A.2 e F22A.3 foram implementados, e F22A.2B definiu política contextual sem mínimo universal. O cálculo matemático permanece qualificado por confiabilidade não classificada e uso operacional não autorizado. Origem/método e classificação confiável continuam dependentes de coverage própria; adoção/migração não foi iniciada, o contrato econômico pode avançar independentemente e o source gate de 22C segue desbloqueado.

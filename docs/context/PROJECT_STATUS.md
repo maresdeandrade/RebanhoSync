@@ -7,9 +7,9 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — F22A.1 e o contrato factual F22A.2 implementados; política contextual de GMD definida, sem cálculo ou UI.
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — F22A.1/F22A.2 implementados; política contextual definida e cálculo matemático qualificado F22A.3 implementado, sem UI.
 Próxima fase de desenvolvimento: **Fase 22 — incrementos autorizados após o gate de fontes**.
-Próximo incremento: implementar somente o cálculo matemático de GMD com confiabilidade não classificada e uso operacional não autorizado.
+Próximo incremento: gate de adoção/migração da F22A, sem promover fluxos legados a fonte canônica.
 
 ## Objetivo
 
@@ -33,7 +33,7 @@ A Fase 20 foi concluída sobre `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`. 
 
 A Fase 21 foi encerrada com `operational_history_review` e `herd_flow_review`, ambas derivadas de `MetricResult` existentes e apresentadas como `DecisionRecommendation` não persistidas. A auditoria conjunta confirmou perguntas distintas, ausência de duplicação relevante, fontes/cobertura/limitações explícitas, isolamento por fazenda e CTAs exclusivamente navegacionais. A consolidação foi apenas apresentacional; Evento, Agenda, `state_*`, writers, Dexie, sync e banco permaneceram inalterados.
 
-O [gate de fontes da Fase 22](../review/F22_SOURCE_GATE.md) classificou `22A_PARTIAL` e `22B_PARTIAL`; a integração posterior do PR `#108` satisfez `B4 REMOTE_CONVERGENCE_VERIFIED` e desbloqueou tecnicamente o source gate de 22C, sem iniciar sua implementação. A F22A.1 adiciona `selectLatestObservedWeight`, e a F22A.2 seleciona as duas observações válidas mais recentes em instantes distintos, sem calcular GMD. A [política técnica F22A.2B](../review/F22A_GMD_INTERVAL_POLICY.md) conclui que o intervalo mínimo é contextual: `intervalDays > 0` permite apenas cálculo matemático; sem origem, método e condições de pesagem, confiabilidade fica não classificada e uso operacional não autorizado. Nenhuma UI, migration, RLS, RPC, Dexie, sync ou writer foi alterado.
+O [gate de fontes da Fase 22](../review/F22_SOURCE_GATE.md) classificou `22A_PARTIAL` e `22B_PARTIAL`; a integração posterior do PR `#108` satisfez `B4 REMOTE_CONVERGENCE_VERIFIED` e desbloqueou tecnicamente o source gate de 22C, sem iniciar sua implementação. A F22A.1 adiciona `selectLatestObservedWeight`, a F22A.2 seleciona o intervalo factual e a F22A.3 calcula somente `weightDeltaKg` e `gmdKgPerDay` a partir desse contrato. A [política técnica F22A.2B](../review/F22A_GMD_INTERVAL_POLICY.md) permanece contextual: todo resultado calculado expõe `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`. Nenhuma UI, migration, RLS, RPC, Dexie, sync ou writer foi alterado.
 
 A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 
@@ -147,7 +147,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O próximo desenvolvimento da F22A pode implementar somente o cálculo matemático derivado de GMD, preservando `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED` enquanto origem, método e condições de pesagem não tiverem cobertura factual e uma política contextual aplicável. O gate remoto B4 da F22C foi satisfeito e a F22C está tecnicamente desbloqueada, mas nenhum conteúdo funcional da F22C foi iniciado neste fechamento. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+O próximo desenvolvimento da F22A é o gate de adoção/migração do cálculo qualificado, sem migrar UI ou consumidores legados automaticamente e sem alterar `reliability = UNCLASSIFIED` ou `operationalUse = NOT_AUTHORIZED`. O gate remoto B4 da F22C foi satisfeito e a F22C está tecnicamente desbloqueada, mas nenhum conteúdo funcional da F22C foi iniciado neste fechamento. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 

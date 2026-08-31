@@ -15,7 +15,7 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 22 ativa; F22A.1/F22A.2 implementados; política contextual F22A.2B definida; cálculo de GMD não iniciado**
+Status: **Fase 22 ativa; F22A.1/F22A.2/F22A.3 implementados; adoção do cálculo não iniciada**
 Fase encerrada: **Fase 21 — Inteligência Operacional v2**
 Fase atual: **Fase 22 — Eficiência Produtiva e Econômica**
 
@@ -31,7 +31,7 @@ Para 22C, `B4 REMOTE_CONVERGENCE_VERIFIED` está integrado e o source gate técn
 
 F22A.1 adiciona um selector puro e testes focados para última pesagem observada. O contrato filtra animal/fazenda, usa `occurred_at`, exige detail positivo em kg, não depende da ordem física, calcula `ageDays` com referência controlada e expõe empate temporal como conflito. Origem, método e freshness normativa permanecem indisponíveis.
 
-F22A.2 extrai a evidência compartilhada e adiciona `selectFactualGmdInterval`, sem calcular diferença de peso, ganho diário ou GMD. A [política F22A.2B](./F22A_GMD_INTERVAL_POLICY.md) conclui `UNIVERSAL_MIN_INTERVAL = CONTEXT_DEPENDENT`: intervalo positivo autoriza apenas cálculo matemático. Sem origem, método, jejum, horário, água, balança e manejo conhecidos, `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`. Assim, `F22A_GMD_POLICY = DEFINED_CONTEXTUAL` e `F22A_GMD_CALCULATION = READY_WITH_POLICY_CONSTRAINTS`. Não houve UI, writer, migration, RPC/RLS, Dexie ou sync.
+F22A.2 extrai a evidência compartilhada e adiciona `selectFactualGmdInterval`. A [política F22A.2B](./F22A_GMD_INTERVAL_POLICY.md) conclui `UNIVERSAL_MIN_INTERVAL = CONTEXT_DEPENDENT`. A F22A.3 adiciona `calculateQualifiedGmd`, que consome exclusivamente o resultado factual e calcula delta/GMD somente para intervalo `READY` e positivo. Todo `CALCULATED` mantém `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`; conflito, insuficiência e entrada numérica inválida permanecem sem cálculo. Não houve UI, writer, migration, RPC/RLS, Dexie ou sync.
 
 ## Fase 21 — V1 DONE
 

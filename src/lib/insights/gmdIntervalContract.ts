@@ -13,14 +13,7 @@ export type GmdIntervalStatus =
   | "INVALID_INTERVAL"
   | "UNSUPPORTED";
 
-export type GmdIntervalLimitation =
-  | ObservedWeightLimitation
-  | {
-      code:
-        | "GMD_MIN_INTERVAL_POLICY_UNDEFINED"
-        | "GMD_CALCULATION_NOT_AUTHORIZED";
-      recordIds: string[];
-    };
+export type GmdIntervalLimitation = ObservedWeightLimitation;
 
 export interface GmdIntervalObservation {
   animalId: string;
@@ -46,7 +39,7 @@ export interface FactualGmdInterval {
     factualConflicts: "none";
     source: "not_available";
     method: "not_available";
-    minimumIntervalPolicy: "not_defined";
+    minimumIntervalPolicy: "context_dependent";
   };
   limitations: GmdIntervalLimitation[];
 }
@@ -84,14 +77,10 @@ const DAY_MS = 86_400_000;
 function intervalLimitations(
   limitations: readonly ObservedWeightLimitation[],
 ): GmdIntervalLimitation[] {
-  return [
-    ...limitations.map((limitation) => ({
-      ...limitation,
-      recordIds: [...limitation.recordIds],
-    })),
-    { code: "GMD_MIN_INTERVAL_POLICY_UNDEFINED", recordIds: [] },
-    { code: "GMD_CALCULATION_NOT_AUTHORIZED", recordIds: [] },
-  ];
+  return limitations.map((limitation) => ({
+    ...limitation,
+    recordIds: [...limitation.recordIds],
+  }));
 }
 
 function toIntervalObservation(
@@ -158,7 +147,7 @@ export function selectFactualGmdInterval(
         factualConflicts: "none",
         source: "not_available",
         method: "not_available",
-        minimumIntervalPolicy: "not_defined",
+        minimumIntervalPolicy: "context_dependent",
       },
       limitations,
     },
