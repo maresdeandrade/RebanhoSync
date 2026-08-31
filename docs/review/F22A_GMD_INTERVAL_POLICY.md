@@ -7,7 +7,7 @@ Decisão: **POLÍTICA CONTEXTUAL DEFINIDA**
 ```ini
 UNIVERSAL_MIN_INTERVAL = CONTEXT_DEPENDENT
 F22A_GMD_POLICY = DEFINED_CONTEXTUAL
-F22A_GMD_CALCULATION = READY_WITH_POLICY_CONSTRAINTS
+F22A_GMD_CALCULATION = IMPLEMENTED_QUALIFIED
 ```
 
 ## 1. Problema
@@ -84,7 +84,7 @@ Não existe evidência para um número único aplicável a toda pesagem bovina. 
 
 ## 6. Política recomendada para F22A.3
 
-A implementação futura deve consumir `FactualGmdInterval` em uma camada separada de policy/evaluation e somente depois calcular:
+A implementação F22A.3 consome `GmdIntervalResult` em uma camada separada de cálculo, sem consultar novamente as fontes factuais:
 
 ```text
 FactualGmdInterval
@@ -105,7 +105,7 @@ operationalUse = NOT_AUTHORIZED
 policyBasis = OBSERVED_WEIGHTS_WITH_UNKNOWN_MEASUREMENT_CONDITIONS
 ```
 
-O valor futuro deve ser nomeado como GMD matemático derivado de duas pesagens observadas, acompanhado das duas datas, `intervalDays` e limitações. A F22A.3 não deve inventar configuração ou persistir uma política contextual.
+O valor é um GMD matemático derivado de duas pesagens observadas, acompanhado das duas datas, `intervalDays` e limitações. A F22A.3 não inventa configuração nem persiste política contextual.
 
 ## 7. Política proibida
 
@@ -123,8 +123,9 @@ O valor futuro deve ser nomeado como GMD matemático derivado de duas pesagens o
 
 ```ini
 F22A_GMD_POLICY = DEFINED_CONTEXTUAL
-F22A_GMD_CALCULATION = READY_WITH_POLICY_CONSTRAINTS
-GMD_CALCULATION_GATE = READY_WITH_CONSTRAINTS
+F22A_GMD_CALCULATION = IMPLEMENTED_QUALIFIED
+F22A_GMD_RELIABILITY = UNCLASSIFIED
+F22A_GMD_OPERATIONAL_USE = NOT_AUTHORIZED
 ```
 
-A liberação vale exclusivamente para cálculo matemático com `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`. Classificar confiabilidade ou uso operacional continua bloqueado por `MEASUREMENT_COVERAGE_REQUIRED` e por uma política contextual aplicável.
+A implementação vale exclusivamente para cálculo matemático com `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`. Classificar confiabilidade ou uso operacional continua bloqueado por `MEASUREMENT_COVERAGE_REQUIRED` e por uma política contextual aplicável; adoção/migração é incremento separado.
