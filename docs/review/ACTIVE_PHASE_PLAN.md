@@ -1,7 +1,7 @@
 # Plano ativo — Fase 22 / Eficiência Produtiva e Econômica
 
 Atualizado em: 2026-08-30
-Status: **Fase 22 ativa; F22A.1 e contrato factual de intervalo F22A.2 implementados; cálculo de GMD bloqueado por política**
+Status: **Fase 22 ativa; F22A.1/F22A.2 implementados; política contextual F22A.2B definida; cálculo não iniciado**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
@@ -16,7 +16,7 @@ Este documento contém o plano corrente. Estado técnico detalhado, validações
 
 Inventário autoritativo desta abertura: [F22_SOURCE_GATE.md](./F22_SOURCE_GATE.md).
 
-- `22A_PARTIAL`: última pesagem observada e o intervalo factual candidato a GMD possuem contrato; método/origem da medição e cálculo de GMD permanecem bloqueados, este último pela ausência de política de intervalo mínimo;
+- `22A_PARTIAL`: última pesagem observada e intervalo factual possuem contrato; política de GMD é contextual; método/origem e condições de pesagem ainda impedem classificar confiabilidade ou autorizar uso operacional;
 - `22B_PARTIAL`: caixa/valores observados e custos conhecidos podem ser lidos com coverage explícita; ausência de custo não é zero, saldo observado não é lucro real completo;
 - `22C_SOURCE_GATE_UNBLOCKED`: a `main` integrou `B4 REMOTE_CONVERGENCE_VERIFIED`; a F22C não foi iniciada;
 - F22A.1 e F22A.2 implementam somente read models puros; writer, UI, migration, RPC/RLS, Dexie e sync permanecem inalterados.
@@ -31,15 +31,15 @@ Estados sem dado distinguem animal inexistente, ausência de observação e aus�
 
 `selectFactualGmdInterval` reutiliza a seleção canônica de `eventos` + `eventos_pesagem`, exige animal/fazenda e data de referência, bloqueia qualquer conflito factual e escolhe deterministicamente as duas observações válidas mais recentes em instantes distintos. Duplicata idêntica do mesmo Evento conta uma vez; Evento distinto no mesmo instante é conflito; datas futuras/inválidas e peso não positivo são excluídos com limitações explícitas.
 
-O resultado expõe somente as duas observações, ordem temporal, intervalo factual em dias, compatibilidade em kg, coverage e limitações. Não expõe diferença de peso, ganho diário nem GMD. `READY` significa apenas intervalo factual apto ao próximo gate. Como nenhuma fonte técnica/de domínio define hoje o intervalo mínimo zootecnicamente aceitável, o estado permanece:
+O resultado expõe somente as duas observações, ordem temporal, intervalo factual em dias, compatibilidade em kg, coverage e limitações. Não expõe diferença de peso, ganho diário nem GMD. `READY` significa apenas intervalo factual apto à avaliação de política.
 
 ```ini
 F22A_GMD_INTERVAL_CONTRACT = IMPLEMENTED
-F22A_GMD_CALCULATION = BLOCKED_BY_POLICY
-GMD_MIN_INTERVAL_POLICY = NOT_DEFINED
+F22A_GMD_POLICY = DEFINED_CONTEXTUAL
+F22A_GMD_CALCULATION = READY_WITH_POLICY_CONSTRAINTS
 ```
 
-O próximo incremento elegível da F22A é exclusivamente definir e adotar essa política. O contrato de coverage econômica observada permanece independente. Origem/método da medição, lucro completo e métricas por lote/pasto não foram iniciados.
+A [política F22A.2B](./F22A_GMD_INTERVAL_POLICY.md) rejeita um mínimo universal. A futura F22A.3 pode calcular apenas um GMD matemático com confiabilidade não classificada e uso operacional não autorizado. Classificação confiável exige política contextual e coverage de método/condições ainda indisponível. O contrato econômico permanece independente; lucro completo e métricas por lote/pasto não foram iniciados.
 
 ## Resultado da Fase 20
 
