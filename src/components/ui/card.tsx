@@ -10,7 +10,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border border-border/80 bg-card text-card-foreground shadow-none",
+      "rounded-xl border border-border/80 bg-surface text-content-primary shadow-none",
       className,
     )}
     {...props}
@@ -35,7 +35,7 @@ const CardField = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border border-border bg-card text-card-foreground p-4 transition-colors active:bg-muted/50",
+      "rounded-lg border border-border bg-surface p-4 text-content-primary transition-colors active:bg-surface-muted/50",
       className,
     )}
     {...props}
@@ -62,13 +62,12 @@ CardField.displayName = "CardField";
 type CardStatusTone = "success" | "warning" | "info" | "danger";
 
 const toneClasses: Record<CardStatusTone, string> = {
-  success:
-    "border-2 border-success bg-success-muted/40 text-card-foreground",
+  success: "border-2 border-success bg-success-muted/40 text-card-foreground",
   warning:
     "border-2 border-warning-strong bg-warning-muted/40 text-card-foreground",
   info: "border-2 border-info bg-info-muted/40 text-card-foreground",
   danger:
-    "border-2 border-destructive bg-destructive/10 text-card-foreground",
+    "border-2 border-danger-border bg-danger-muted/40 text-content-primary",
 };
 
 interface CardStatusProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -79,11 +78,7 @@ const CardStatus = React.forwardRef<HTMLDivElement, CardStatusProps>(
   ({ className, tone = "warning", ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(
-        "rounded-xl p-4",
-        toneClasses[tone],
-        className,
-      )}
+      className={cn("rounded-xl p-4", toneClasses[tone], className)}
       {...props}
     />
   ),
@@ -96,7 +91,10 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-2 border-b border-border p-5 sm:p-6", className)}
+    className={cn(
+      "flex flex-col space-y-2 border-b border-border p-5 sm:p-6",
+      className,
+    )}
     {...props}
   />
 ));
@@ -123,7 +121,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm font-medium text-muted-foreground", className)}
+    className={cn("text-sm font-medium text-content-muted", className)}
     {...props}
   />
 ));
@@ -143,7 +141,10 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center border-t border-border p-5 sm:p-6", className)}
+    className={cn(
+      "flex items-center border-t border-border p-5 sm:p-6",
+      className,
+    )}
     {...props}
   />
 ));

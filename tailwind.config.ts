@@ -55,13 +55,21 @@ export default {
       },
       colors: {
         border: "hsl(var(--border))",
+        "border-strong": "hsl(var(--border-strong))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        content: {
+          primary: "hsl(var(--text-primary))",
+          secondary: "hsl(var(--text-secondary))",
+          muted: "hsl(var(--text-muted))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
+          subtle: "hsl(var(--primary-subtle))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -70,6 +78,12 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--danger))",
+          foreground: "hsl(var(--danger-foreground))",
+          muted: "hsl(var(--danger-muted))",
+          border: "hsl(var(--danger-border))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -176,6 +190,14 @@ export default {
         surface: {
           DEFAULT: "hsl(var(--surface))",
           muted: "hsl(var(--surface-muted))",
+          elevated: "hsl(var(--surface-elevated))",
+        },
+        control: {
+          disabled: "hsl(var(--control-disabled))",
+          "disabled-foreground": "hsl(var(--control-disabled-foreground))",
+          selected: "hsl(var(--control-selected))",
+          "selected-foreground": "hsl(var(--control-selected-foreground))",
+          "selected-border": "hsl(var(--control-selected-border))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
