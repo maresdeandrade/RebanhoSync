@@ -1,7 +1,7 @@
 # Plano ativo — Fase 22 / Eficiência Produtiva e Econômica
 
-Atualizado em: 2026-08-31
-Status: **Fase 22 ativa; F22A.1/F22A.2/F22A.3 implementados; gate F22A.4 fechado; migração não iniciada**
+Atualizado em: 2026-09-01
+Status: **Fase 22 ativa; gate F22A.4 fechado sem migração; F22B.1 Economic Coverage implementado**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
@@ -52,7 +52,19 @@ F22A_GMD_ADOPTION_GATE = CLOSED
 F22A_GMD_LEGACY_MIGRATION = NOT_STARTED
 ```
 
-Próximo incremento: **F22B economic coverage**. Uma futura adoção F22A depende de autorização explícita para a mudança de UX/política descrita no gate.
+Uma futura adoção F22A depende de autorização explícita para a mudança de UX/política descrita no gate.
+
+## Incremento F22B.1 — Economic Coverage
+
+O [contrato de coverage econômica](./F22B_ECONOMIC_COVERAGE.md) implementa `selectEconomicCoverage` como read model puro sobre `finance_transactions`, `finance_categories`, Eventos e details comerciais já disponíveis. Fazenda, período inclusivo, timezone e coverage por fonte são explícitos. Receita e custo usam categoria e direção coerentes; ausência não vira zero; estorno reverte o bucket do original; operação comercial sem financeiro permanece lacuna.
+
+```ini
+F22B_ECONOMIC_COVERAGE = IMPLEMENTED
+F22B_OBSERVED_RESULT = NOT_STARTED
+F22B_COMPLETE_PROFIT = BLOCKED
+```
+
+Não há saldo, lucro, margem, ROI, custo por cabeça, UI ou migração de consumidores. Próximo incremento elegível: **F22B.2 — Observed Economic Result**.
 
 ## Resultado da Fase 20
 
