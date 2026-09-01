@@ -1,6 +1,6 @@
-# Handoff atual — Fase 22 / gate de fontes 22A e 22B
+# Handoff atual — Fase 22 / gate de adoção F22A.4
 
-Atualizado em: 2026-08-30
+Atualizado em: 2026-08-31
 Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7956c01`
 Próxima fase: **Fase 22 — incrementos autorizados após o gate de fontes**
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
@@ -15,7 +15,7 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 22 ativa; F22A.1/F22A.2/F22A.3 implementados; adoção do cálculo não iniciada**
+Status: **Fase 22 ativa; F22A.1/F22A.2/F22A.3 implementados; gate F22A.4 fechado; migração não iniciada**
 Fase encerrada: **Fase 21 — Inteligência Operacional v2**
 Fase atual: **Fase 22 — Eficiência Produtiva e Econômica**
 
@@ -32,6 +32,17 @@ Para 22C, `B4 REMOTE_CONVERGENCE_VERIFIED` está integrado e o source gate técn
 F22A.1 adiciona um selector puro e testes focados para última pesagem observada. O contrato filtra animal/fazenda, usa `occurred_at`, exige detail positivo em kg, não depende da ordem física, calcula `ageDays` com referência controlada e expõe empate temporal como conflito. Origem, método e freshness normativa permanecem indisponíveis.
 
 F22A.2 extrai a evidência compartilhada e adiciona `selectFactualGmdInterval`. A [política F22A.2B](./F22A_GMD_INTERVAL_POLICY.md) conclui `UNIVERSAL_MIN_INTERVAL = CONTEXT_DEPENDENT`. A F22A.3 adiciona `calculateQualifiedGmd`, que consome exclusivamente o resultado factual e calcula delta/GMD somente para intervalo `READY` e positivo. Todo `CALCULATED` mantém `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`; conflito, insuficiência e entrada numérica inválida permanecem sem cálculo. Não houve UI, writer, migration, RPC/RLS, Dexie ou sync.
+
+## F22A.4 — gate de adoção fechado
+
+O inventário completo está em [F22A_GMD_ADOPTION_GATE.md](./F22A_GMD_ADOPTION_GATE.md). Nenhum consumidor produtivo usa hoje a cadeia canônica, e nenhum foi classificado `MIGRATABLE_NOW`. As telas individuais exigem mudança de UX; o KPI de GMD da Home está `BLOCKED_BY_RELIABILITY`; occupancy e cockpits de lote/pasto permanecem `KEEP_SEPARATE`; `calculateIndividualGmd` e `resolveCurrentWeight` continuam `LEGACY_NOT_CANONICAL` e não foram removidos.
+
+```ini
+F22A_GMD_ADOPTION_GATE = CLOSED
+F22A_GMD_LEGACY_MIGRATION = NOT_STARTED
+```
+
+Próximo passo recomendado: **F22B economic coverage**. Futura Wave 1 da F22A depende de autorização específica para UX que exponha confiabilidade, uso operacional, coverage, conflito e ausência sem zero.
 
 ## Fase 21 — V1 DONE
 
