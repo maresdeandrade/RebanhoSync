@@ -1,15 +1,15 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-08-31
+Atualizado em: 2026-09-01
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — F22A.1/F22A.2/F22A.3 implementados; gate de adoção F22A.4 fechado, sem migração de consumidores.
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — F22A.4 fechado sem migração; F22B.1 Economic Coverage implementado sem resultado econômico.
 Próxima fase de desenvolvimento: **Fase 22 — incrementos autorizados após o gate de fontes**.
-Próximo incremento: **F22B economic coverage**; nenhuma adoção F22A pode começar sem mudança de UX ou política adicional.
+Próximo incremento: **F22B.2 — Observed Economic Result**, condicionado ao contrato de coverage explícita da F22B.1.
 
 ## Objetivo
 
@@ -34,6 +34,8 @@ A Fase 20 foi concluída sobre `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`. 
 A Fase 21 foi encerrada com `operational_history_review` e `herd_flow_review`, ambas derivadas de `MetricResult` existentes e apresentadas como `DecisionRecommendation` não persistidas. A auditoria conjunta confirmou perguntas distintas, ausência de duplicação relevante, fontes/cobertura/limitações explícitas, isolamento por fazenda e CTAs exclusivamente navegacionais. A consolidação foi apenas apresentacional; Evento, Agenda, `state_*`, writers, Dexie, sync e banco permaneceram inalterados.
 
 O [gate de fontes da Fase 22](../review/F22_SOURCE_GATE.md) classificou `22A_PARTIAL` e `22B_PARTIAL`; a integração posterior do PR `#108` satisfez `B4 REMOTE_CONVERGENCE_VERIFIED` e desbloqueou tecnicamente o source gate de 22C, sem iniciar sua implementação. A F22A.1 adiciona `selectLatestObservedWeight`, a F22A.2 seleciona o intervalo factual e a F22A.3 calcula somente `weightDeltaKg` e `gmdKgPerDay` a partir desse contrato. A [política técnica F22A.2B](../review/F22A_GMD_INTERVAL_POLICY.md) permanece contextual: todo resultado calculado expõe `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`. O [gate de adoção F22A.4](../review/F22A_GMD_ADOPTION_GATE.md) confirmou que nenhum consumidor atual é `MIGRATABLE_NOW`: telas individuais exigem UX qualificadora, KPI executivo está bloqueado por confiabilidade e occupancy deve permanecer separado. Nenhuma UI, migration, RLS, RPC, Dexie, sync ou writer foi alterado.
+
+A [F22B.1 Economic Coverage](../review/F22B_ECONOMIC_COVERAGE.md) adiciona `selectEconomicCoverage`, read model puro por fazenda e período. O contrato separa receitas e custos factuais, ausência e zero observado, categorias desconhecidas, estornos e operações comerciais sem financeiro associado; exige coverage de fonte explícita e não calcula saldo, resultado, lucro, margem, ROI ou custo unitário. Nenhum consumer, banco ou fluxo offline foi alterado.
 
 A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 
@@ -147,7 +149,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O gate F22A.4 está fechado, mas a migração legada não foi iniciada: não há consumidor apto a migrar sem UX ou política adicional. O próximo incremento recomendado é F22B economic coverage. O gate remoto B4 da F22C foi satisfeito e a F22C está tecnicamente desbloqueada, mas nenhum conteúdo funcional da F22C foi iniciado neste fechamento. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+O gate F22A.4 está fechado e a migração legada não foi iniciada. A F22B.1 implementa somente coverage econômica factual; o próximo incremento elegível é F22B.2 — Observed Economic Result, sem autorizar lucro completo. O gate remoto B4 da F22C foi satisfeito e a F22C está tecnicamente desbloqueada, mas nenhum conteúdo funcional da F22C foi iniciado neste fechamento. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 

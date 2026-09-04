@@ -1,6 +1,6 @@
-# Handoff atual — Fase 22 / gate de adoção F22A.4
+# Handoff atual — Fase 22 / F22B.1 Economic Coverage
 
-Atualizado em: 2026-08-31
+Atualizado em: 2026-09-01
 Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7956c01`
 Próxima fase: **Fase 22 — incrementos autorizados após o gate de fontes**
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
@@ -15,7 +15,7 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 22 ativa; F22A.1/F22A.2/F22A.3 implementados; gate F22A.4 fechado; migração não iniciada**
+Status: **Fase 22 ativa; F22A.4 fechado sem migração; F22B.1 Economic Coverage implementado**
 Fase encerrada: **Fase 21 — Inteligência Operacional v2**
 Fase atual: **Fase 22 — Eficiência Produtiva e Econômica**
 
@@ -42,7 +42,21 @@ F22A_GMD_ADOPTION_GATE = CLOSED
 F22A_GMD_LEGACY_MIGRATION = NOT_STARTED
 ```
 
-Próximo passo recomendado: **F22B economic coverage**. Futura Wave 1 da F22A depende de autorização específica para UX que exponha confiabilidade, uso operacional, coverage, conflito e ausência sem zero.
+Futura Wave 1 da F22A depende de autorização específica para UX que exponha confiabilidade, uso operacional, coverage, conflito e ausência sem zero.
+
+## F22B.1 — Economic Coverage
+
+O contrato completo está em [F22B_ECONOMIC_COVERAGE.md](./F22B_ECONOMIC_COVERAGE.md). `selectEconomicCoverage` consome somente snapshots existentes do ledger, categorias e fatos comerciais. A saída mantém fazenda e período, usa `paid_at` como data econômica observada, classifica por categoria explícita com direção coerente e representa coverage, limitações e conflitos.
+
+Estorno append-only reduz o bucket factual do original; não vira receita/custo oposto independente. Categoria ausente ou desconhecida permanece não classificada. Evento comercial v2 sem transação associada aparece como lacuna e não entra no caixa. Coleção vazia e bucket sem fato retornam `null`; zero exige fatos observados que produzam zero.
+
+```ini
+F22B_ECONOMIC_COVERAGE = IMPLEMENTED
+F22B_OBSERVED_RESULT = NOT_STARTED
+F22B_COMPLETE_PROFIT = BLOCKED
+```
+
+Não houve UI, writer, schema, migration, RPC/RLS, Dexie, sync ou cálculo de lucro. Próximo passo recomendado: **F22B.2 — Observed Economic Result**.
 
 ## Fase 21 — V1 DONE
 
