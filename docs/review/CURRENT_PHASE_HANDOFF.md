@@ -1,6 +1,6 @@
-# Handoff atual — Fase 22 / F22B.1 Economic Coverage
+# Handoff atual — Fase 22 / F22B.2 Observed Economic Result
 
-Atualizado em: 2026-09-01
+Atualizado em: 2026-09-04
 Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7956c01`
 Próxima fase: **Fase 22 — incrementos autorizados após o gate de fontes**
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
@@ -15,7 +15,7 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 22 ativa; F22A.4 fechado sem migração; F22B.1 Economic Coverage implementado**
+Status: **Fase 22 ativa; F22A.4 fechado sem migração; F22B.2 resultado observado qualificado implementado**
 Fase encerrada: **Fase 21 — Inteligência Operacional v2**
 Fase atual: **Fase 22 — Eficiência Produtiva e Econômica**
 
@@ -52,11 +52,11 @@ Estorno append-only reduz o bucket factual do original; não vira receita/custo 
 
 ```ini
 F22B_ECONOMIC_COVERAGE = IMPLEMENTED
-F22B_OBSERVED_RESULT = NOT_STARTED
+F22B_OBSERVED_RESULT = IMPLEMENTED_QUALIFIED
 F22B_COMPLETE_PROFIT = BLOCKED
 ```
 
-Não houve UI, writer, schema, migration, RPC/RLS, Dexie, sync ou cálculo de lucro. Próximo passo recomendado: **F22B.2 — Observed Economic Result**.
+A F22B.2 implementa `calculateObservedEconomicResult` sobre o contrato canônico, sem reler fontes. A saída conserva coverage completa, limitações e gaps e qualifica `OBSERVED_SCOPE_ONLY`, `completeAccounting = false`, `profit = NOT_DEMONSTRATED`. Zero factual é calculável; ausência, conflito, insuficiência e números inválidos não são. Não houve UI, writer, schema, migration, RPC/RLS, Dexie, sync ou cálculo de lucro. Próximo passo recomendado: **F22B adoption/presentation gate**.
 
 ## Fase 21 — V1 DONE
 

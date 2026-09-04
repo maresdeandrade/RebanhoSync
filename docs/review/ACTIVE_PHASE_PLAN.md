@@ -1,7 +1,7 @@
 # Plano ativo — Fase 22 / Eficiência Produtiva e Econômica
 
-Atualizado em: 2026-09-01
-Status: **Fase 22 ativa; gate F22A.4 fechado sem migração; F22B.1 Economic Coverage implementado**
+Atualizado em: 2026-09-04
+Status: **Fase 22 ativa; gate F22A.4 fechado sem migração; F22B.2 resultado observado qualificado implementado**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
@@ -60,11 +60,11 @@ O [contrato de coverage econômica](./F22B_ECONOMIC_COVERAGE.md) implementa `sel
 
 ```ini
 F22B_ECONOMIC_COVERAGE = IMPLEMENTED
-F22B_OBSERVED_RESULT = NOT_STARTED
+F22B_OBSERVED_RESULT = IMPLEMENTED_QUALIFIED
 F22B_COMPLETE_PROFIT = BLOCKED
 ```
 
-Não há saldo, lucro, margem, ROI, custo por cabeça, UI ou migração de consumidores. Próximo incremento elegível: **F22B.2 — Observed Economic Result**.
+A F22B.2 adiciona `calculateObservedEconomicResult` exclusivamente sobre EconomicCoverage: receita observada menos custo observado, sem preencher ausências com zero. Coverage parcial e gaps permanecem explícitos; conflitos e totais indisponíveis bloqueiam o cálculo. Não há lucro, margem, ROI, custo por cabeça, UI ou migração de consumidores. Próximo incremento elegível: **F22B adoption/presentation gate**.
 
 ## Resultado da Fase 20
 
