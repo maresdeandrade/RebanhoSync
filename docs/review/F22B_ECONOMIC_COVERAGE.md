@@ -1,6 +1,6 @@
 # F22B.1 — Economic Coverage
 
-Atualizado em: 2026-09-04
+Atualizado em: 2026-09-05
 Baseline: `main@4e476536647a113d7515a0ea7687f7632b4e1b99`
 Branch: `feat/f22b-economic-coverage`
 Status: **IMPLEMENTED**
@@ -8,6 +8,7 @@ Status: **IMPLEMENTED**
 ```ini
 F22B_ECONOMIC_COVERAGE = IMPLEMENTED
 F22B_OBSERVED_RESULT = IMPLEMENTED_QUALIFIED
+F22B_ADOPTION_PRESENTATION_GATE = CLOSED
 F22B_COMPLETE_PROFIT = BLOCKED
 ```
 
@@ -106,4 +107,4 @@ Motivos de `NOT_CALCULATED`, em ordem de precedência: `CONFLICT`, `INSUFFICIENT
 
 Os testes focados da F22B.2 cobrem sinal, zero factual via estorno integral canônico, ausência de cada lado, coverage parcial com gap, conflitos, insuficiência, NaN/Infinity, overflow, precisão e imutabilidade. Não há UI, lucro, margem, ROI, rateio nem alteração de writer/schema/sync.
 
-Próximo passo recomendado, não iniciado: **F22B adoption/presentation gate**.
+O [gate de adoção/apresentação F22B.3](./F22B_ADOPTION_PRESENTATION_GATE.md) foi fechado com `MIGRATABLE_NOW = 0`. Próximo passo recomendado, não iniciado: **F22C historical occupancy source gate**.

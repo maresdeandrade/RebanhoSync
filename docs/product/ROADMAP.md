@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-09-04
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (F22A.4 fechado sem migração; F22B.2 resultado observado qualificado implementado)**
+Atualizado em: 2026-09-05
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (gates F22A.4 e F22B.3 fechados sem migração)**
 Fase anterior: **Fase 21 — Inteligência Operacional v2 (CLOSED)**
 
 ## Objetivo
@@ -55,7 +55,7 @@ Fase 21 — Inteligência Operacional v2 — V1 operational_history_review + V2 
 → Fase 22 — Eficiência Produtiva e Econômica — ativa; F22A.1/F22A.2 e política contextual F22A.2B definidos
 ```
 
-A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está ativa: F22A.1 implementa a última pesagem observada, F22A.2 seleciona/valida o intervalo factual, F22A.2B define política contextual e F22A.3 calcula a derivação matemática qualificada. O gate F22A.4 fechou sem migração. A F22B.1 implementa coverage econômica factual por fazenda/período; a F22B.2 calcula somente resultado observado qualificado, nunca lucro completo. O próximo incremento elegível é F22B adoption/presentation gate.
+A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está ativa: F22A.1–F22A.3 implementam peso/GMD qualificado e F22A.4 fechou sem migração. F22B.1/F22B.2 implementam coverage e resultado observado qualificado; o gate F22B.3 fechou com `MIGRATABLE_NOW = 0`, sem liberar lucro completo. O próximo incremento elegível é F22C historical occupancy source gate.
 
 A Fase 19 implementou foundations tipográficas e semânticas, branding reutilizável, primitives estruturais e shell/navegação responsivos sobre o contrato da F18. Home, Animais, AnimalDetalhe, Registrar e Agenda foram revalidados sem migração ampla em 390, 768, 1024 e 1440 px, light/dark; nenhum P0 novo foi confirmado e o P0 do Registrar permanece resolvido.
 
@@ -96,6 +96,6 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 19 | Foundations + Shell + Branding | **Concluída**; foundations e shell revalidados em light/dark e mobile/desktop |
 | 20 | Jornadas UX Críticas | **Concluída**; cinco jornadas migradas e validadas |
 | 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
-| 22 | Eficiência Produtiva e Econômica | **F22A.4 fechado sem migração; F22B.2 implementado**; `F22B_OBSERVED_RESULT = IMPLEMENTED_QUALIFIED`, coverage econômica implementada e lucro completo bloqueado; implementação 22C não iniciada |
+| 22 | Eficiência Produtiva e Econômica | **Gates F22A.4 e F22B.3 fechados sem migração**; coverage e resultado observado qualificado implementados, lucro completo bloqueado; F22C é o próximo source gate |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
 | 24 | Release Hardening / Scale Readiness | Hardening sistêmico final para escala |
