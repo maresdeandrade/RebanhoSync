@@ -7,9 +7,9 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — F22A.4/F22B.3 fechados sem migração; F22C source gate fechado com caveats de coverage.
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — F22C.1 historical lot occupancy implementado sem duração.
 Próxima fase de desenvolvimento: **Fase 22 — incrementos autorizados após o gate de fontes**.
-Próximo incremento: **F22C.1 Historical Lot Occupancy Read Model**; adoção F22B permanece sem Wave 1 autorizada.
+Próximo incremento: **F22C.2 Historical Lot → Pasture Occupancy Composition**; adoção F22B permanece sem Wave 1 autorizada.
 
 ## Objetivo
 
@@ -35,7 +35,7 @@ A Fase 21 foi encerrada com `operational_history_review` e `herd_flow_review`, a
 
 O [gate de fontes da Fase 22](../review/F22_SOURCE_GATE.md) classificou `22A_PARTIAL` e `22B_PARTIAL`; a integração posterior do PR `#108` satisfez `B4 REMOTE_CONVERGENCE_VERIFIED` e desbloqueou tecnicamente o source gate de 22C, sem iniciar sua implementação. A F22A.1 adiciona `selectLatestObservedWeight`, a F22A.2 seleciona o intervalo factual e a F22A.3 calcula somente `weightDeltaKg` e `gmdKgPerDay` a partir desse contrato. A [política técnica F22A.2B](../review/F22A_GMD_INTERVAL_POLICY.md) permanece contextual: todo resultado calculado expõe `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`. O [gate de adoção F22A.4](../review/F22A_GMD_ADOPTION_GATE.md) confirmou que nenhum consumidor atual é `MIGRATABLE_NOW`: telas individuais exigem UX qualificadora, KPI executivo está bloqueado por confiabilidade e occupancy deve permanecer separado. Nenhuma UI, migration, RLS, RPC, Dexie, sync ou writer foi alterado.
 
-Atualização posterior: o [source gate F22C](../review/F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) confirmou fontes históricas `READY` para animal→lote e lote→pasto, sem prometer coverage completa. Cadastros iniciais podem deixar a boundary esquerda desconhecida, e estado atual não preenche histórico. O read model F22C.1 permanece não iniciado.
+Atualização posterior: o [contrato F22C](../review/F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) confirmou fontes históricas `READY` para animal→lote e lote→pasto. F22C.1 implementa intervalos factuais de lote, coverage, limitações e conflitos sem duração; cadastros iniciais podem deixar a boundary esquerda desconhecida, e estado atual não preenche histórico.
 
 A [F22B.1 Economic Coverage](../review/F22B_ECONOMIC_COVERAGE.md) adiciona `selectEconomicCoverage`, read model puro por fazenda e período. O contrato separa receitas e custos factuais, ausência e zero observado, categorias desconhecidas, estornos e operações comerciais sem financeiro associado; exige coverage de fonte explícita e não calcula saldo, resultado, lucro, margem, ROI ou custo unitário. Nenhum consumer, banco ou fluxo offline foi alterado.
 
@@ -151,7 +151,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O gate F22A.4 está fechado e a migração legada não foi iniciada. A F22B.2 implementa resultado observado qualificado exclusivamente sobre EconomicCoverage, preservando ausência, zero factual, coverage parcial, limitações e gaps; não demonstra lucro completo. O [gate F22B.3](../review/F22B_ADOPTION_PRESENTATION_GATE.md) encontrou `MIGRATABLE_NOW = 0`. O source gate F22C está fechado e não implementou métricas; o próximo incremento elegível é F22C.1 Historical Lot Occupancy Read Model. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+O gate F22A.4 está fechado e a migração legada não foi iniciada. A F22B.2 implementa resultado observado qualificado exclusivamente sobre EconomicCoverage, preservando ausência, zero factual, coverage parcial, limitações e gaps; não demonstra lucro completo. O [gate F22B.3](../review/F22B_ADOPTION_PRESENTATION_GATE.md) encontrou `MIGRATABLE_NOW = 0`. F22C.1 está implementado sem métricas; o próximo incremento elegível é F22C.2 Historical Lot → Pasture Occupancy Composition. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 
