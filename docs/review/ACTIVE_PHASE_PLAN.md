@@ -1,7 +1,7 @@
 # Plano ativo — Fase 22 / Eficiência Produtiva e Econômica
 
 Atualizado em: 2026-09-05
-Status: **Fase 22 ativa; F22C source gate fechado com fontes históricas prontas e caveats de coverage**
+Status: **Fase 22 ativa; F22C.1 historical lot occupancy implementado sem duração**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
@@ -18,7 +18,7 @@ Inventário autoritativo desta abertura: [F22_SOURCE_GATE.md](./F22_SOURCE_GATE.
 
 - `22A_PARTIAL`: última pesagem observada e intervalo factual possuem contrato; política de GMD é contextual; método/origem e condições de pesagem ainda impedem classificar confiabilidade ou autorizar uso operacional;
 - `22B_PARTIAL`: caixa/valores observados e custos conhecidos podem ser lidos com coverage explícita; ausência de custo não é zero, saldo observado não é lucro real completo;
-- `22C_SOURCE_GATE_READY_WITH_CAVEATS`: `eventos` + `eventos_movimentacao` sustentam as relações históricas animal→lote e lote→pasto; coverage inicial pode ser parcial e `state_*` não completa lacunas;
+- `22C_SOURCE_GATE_READY_WITH_CAVEATS`: `eventos` + `eventos_movimentacao` sustentam as relações históricas animal→lote e lote→pasto; F22C.1 implementa somente animal→lote, com coverage e conflitos explícitos;
 - F22A.1 e F22A.2 implementam somente read models puros; writer, UI, migration, RPC/RLS, Dexie e sync permanecem inalterados.
 
 ## Incremento F22A.1 — última pesagem observada
@@ -65,7 +65,7 @@ F22B_ADOPTION_PRESENTATION_GATE = CLOSED
 F22B_COMPLETE_PROFIT = BLOCKED
 ```
 
-A F22B.2 adiciona `calculateObservedEconomicResult` exclusivamente sobre EconomicCoverage: receita observada menos custo observado, sem preencher ausências com zero. O [gate F22B.3](./F22B_ADOPTION_PRESENTATION_GATE.md) fechou com `MIGRATABLE_NOW = 0`; Financeiro e Relatórios exigem mudança de apresentação, e lucro completo permanece bloqueado. O [gate F22C](./F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) confirmou fontes históricas para lote e pasto, com coverage explícita. Próximo incremento elegível: **F22C.1 Historical Lot Occupancy Read Model**.
+A F22B.2 adiciona `calculateObservedEconomicResult` exclusivamente sobre EconomicCoverage: receita observada menos custo observado, sem preencher ausências com zero. O [gate F22B.3](./F22B_ADOPTION_PRESENTATION_GATE.md) fechou com `MIGRATABLE_NOW = 0`; Financeiro e Relatórios exigem mudança de apresentação, e lucro completo permanece bloqueado. O [gate F22C](./F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) confirmou fontes históricas para lote e pasto, e F22C.1 implementa intervalos factuais de lote sem duração. Próximo incremento elegível: **F22C.2 Historical Lot → Pasture Occupancy Composition**.
 
 ## Resultado da Fase 20
 

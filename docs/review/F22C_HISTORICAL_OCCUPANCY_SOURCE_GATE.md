@@ -10,7 +10,9 @@ Branch: `feat/f22c-historical-occupancy-gate`
 F22C_SOURCE_GATE = READY_WITH_CAVEATS
 F22C_HISTORICAL_LOT_SOURCE = READY
 F22C_HISTORICAL_PASTURE_SOURCE = READY
-F22C_LOT_OCCUPANCY_READ_MODEL = NOT_STARTED
+F22C_LOT_OCCUPANCY_READ_MODEL = IMPLEMENTED
+F22C_LOT_DURATION = NOT_STARTED
+F22C_PASTURE_OCCUPANCY_READ_MODEL = NOT_STARTED
 ```
 
 As duas relações possuem fatos históricos datados e convergentes: `animal → lote` em `eventos` + `eventos_movimentacao` e `lote → pasto` no mesmo par de tabelas, com um Evento de movimentação próprio para o lote inteiro. Isso é suficiente para iniciar um read model que produza intervalos factuais e coverage explícita.
@@ -18,6 +20,14 @@ As duas relações possuem fatos históricos datados e convergentes: `animal →
 `READY` qualifica a **fonte e o próximo contrato**, não promete histórico completo para todo animal ou período. Cadastros podem nascer com `lote_id` e lotes podem nascer com `pasto_id` sem Evento de movimentação inicial; além disso, não há um fato canônico geral e durável `lote A → null`. Cada reconstrução deverá, portanto, resultar em `NO_HISTORY`, `PARTIAL_HISTORY`, `CONTIGUOUS_HISTORY` ou `CONFLICTED_HISTORY`, sem preencher lacunas com `state_*`.
 
 Nenhum cálculo de permanência, lotação ou produtividade foi implementado.
+
+## Atualização F22C.1 — Historical Lot Occupancy Read Model
+
+`selectHistoricalLotOccupancy` implementa uma leitura pura sobre coleções já carregadas de `eventos` e `eventos_movimentacao`. A função filtra animal e fazenda, ordena por `occurred_at`, deduplica cópias idênticas e produz intervalos `[enteredAt, leftAt)` sem consultar `state_*`, banco ou relógio global.
+
+O contrato preserva `LEFT_BOUND_UNKNOWN`, `OPEN_RIGHT_BOUND` e `RIGHT_BOUND_UNKNOWN`; expõe `READY`, `PARTIAL`, `NO_HISTORY` e `CONFLICT`; e interrompe a cadeia diante de empate temporal, origem incompatível, identidade divergente ou correção sem resolvedor canônico. Detail ausente, tombstone, data inválida e `A → null` não canônico permanecem limitações explícitas. Movimentos exclusivos de pasto não participam.
+
+O read model não contém duração, dias, pasto, peso, GMD, lotação ou estado atual. O próximo incremento elegível é F22C.2, que deverá compor relações factuais de lote e pasto sem retroagir o pasto atual.
 
 ## Integração de entrada — PR #116
 
@@ -179,7 +189,7 @@ O E2E remoto não foi repetido nesta branch.
 | conflitos temporais | identidades, timestamps e pares from/to | `READY_FOR_IMPLEMENTATION` | resolvedor ainda não implementado |
 | histórico lote → pasto | Evento/detail `lote_pasto` | `READY` | vínculo inicial de lote com pasto pode não ter Evento |
 | histórico animal → pasto | composição temporal das duas cadeias | `READY` | retorna parcial/desconhecido onde qualquer cadeia não tiver coverage |
-| dias em lote | intervalos factuais futuros | `READY_FOR_IMPLEMENTATION` | somente depois do read model F22C.1; não calculado aqui |
+| dias em lote | read model factual F22C.1 | `READY_FOR_IMPLEMENTATION` | duração permanece fora do contrato atual e não foi calculada |
 | dias em pasto | interseção temporal futura | `READY_FOR_IMPLEMENTATION` | posterior à composição validada; não calculado aqui |
 
 ## Fatos, inferências e recomendações
@@ -198,7 +208,7 @@ O E2E remoto não foi repetido nesta branch.
 
 ### RECOMENDAÇÃO
 
-Próximo e único incremento recomendado: **F22C.1 — Historical Lot Occupancy Read Model**. Implementar primeiro os intervalos de lote, coverage e conflitos; não calcular duração e não iniciar ainda a composição de pasto.
+Próximo e único incremento recomendado: **F22C.2 — Historical Lot → Pasture Occupancy Composition**. Compor as duas cadeias factuais sem calcular duração e sem usar o pasto atual como histórico.
 
 ## Escopo preservado
 
