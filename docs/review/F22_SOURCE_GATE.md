@@ -9,7 +9,7 @@ Decisão do gate: **READY WITH CAVEATS**
 F22_SOURCE_GATE = CLOSED
 22A = PARTIAL
 22B = PARTIAL
-22C = SOURCE_GATE_UNBLOCKED
+22C = SOURCE_GATE_READY_WITH_CAVEATS
 ```
 
 ## Escopo e pergunta
@@ -20,7 +20,7 @@ Decisões:
 
 - `22A_PARTIAL`;
 - `22B_PARTIAL`;
-- `22C_SOURCE_GATE_UNBLOCKED` após a integração da evidência B4 na `main`.
+- `22C_SOURCE_GATE_READY_WITH_CAVEATS` após a integração da evidência B4 e o gate histórico específico.
 
 ## Baseline
 
@@ -118,10 +118,12 @@ Tratamentos obrigatórios:
 ## Atualização pós-baseline da dependência 22C
 
 ```ini
-22C = SOURCE_GATE_UNBLOCKED
+22C = SOURCE_GATE_READY_WITH_CAVEATS
 ```
 
 A `main` posterior ao baseline integrou o PR `#108` e a evidência `B4 REMOTE_CONVERGENCE_VERIFIED`: round-trip remoto multi-device e reconstrução após clean install foram comprovados. A condição técnica de entrada foi satisfeita; a F22C permanece não iniciada.
+
+Atualização posterior: o [gate específico F22C](./F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) confirmou fontes históricas `READY` para animal→lote e lote→pasto, com coverage potencialmente parcial; o read model F22C.1 permanece não iniciado.
 
 `state_lote`, `state_lotes`, vínculo corrente de animal/lote ou qualquer outro estado atual não podem reconstruir permanência histórica. Permanecem fora do escopo: dias em lote, dias em pasto, UA/ha, @/ha e desempenho por pastagem.
 
