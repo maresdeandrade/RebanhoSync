@@ -1,15 +1,15 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-09-04
+Atualizado em: 2026-09-05
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — F22A.4 fechado sem migração; F22B.2 resultado observado qualificado implementado.
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — F22A.4 fechado sem migração; F22B.3 adoption/presentation gate fechado sem consumidor migrável agora.
 Próxima fase de desenvolvimento: **Fase 22 — incrementos autorizados após o gate de fontes**.
-Próximo incremento: **F22B adoption/presentation gate**, sem autorizar lucro completo.
+Próximo incremento: **F22C historical occupancy source gate**; adoção F22B permanece sem Wave 1 autorizada.
 
 ## Objetivo
 
@@ -149,7 +149,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O gate F22A.4 está fechado e a migração legada não foi iniciada. A F22B.2 implementa resultado observado qualificado exclusivamente sobre EconomicCoverage, preservando ausência, zero factual, coverage parcial, limitações e gaps; não demonstra lucro completo. O próximo incremento elegível é F22B adoption/presentation gate. O gate remoto B4 da F22C foi satisfeito, mas nenhum conteúdo funcional da F22C foi iniciado neste fechamento. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+O gate F22A.4 está fechado e a migração legada não foi iniciada. A F22B.2 implementa resultado observado qualificado exclusivamente sobre EconomicCoverage, preservando ausência, zero factual, coverage parcial, limitações e gaps; não demonstra lucro completo. O [gate F22B.3](../review/F22B_ADOPTION_PRESENTATION_GATE.md) encontrou `MIGRATABLE_NOW = 0`: Financeiro e Relatórios exigem mudança de apresentação e substituição de agregados paralelos. O próximo incremento elegível é F22C historical occupancy source gate. Nenhuma UI F22B ou implementação F22C foi iniciada. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
 
 ## Fontes de detalhe
 
