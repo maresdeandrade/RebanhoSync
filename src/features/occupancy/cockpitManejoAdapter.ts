@@ -110,6 +110,25 @@ function groupWeightDetailsByAnimal(
   return grouped;
 }
 
+function prepareCommonOccupancySources(
+  eventsInput: Evento[],
+  pesagensInput: EventoPesagem[],
+  referenceDate: string,
+  observedPerformance?: OccupancyPerformanceAggregate | null,
+) {
+  const events = Array.isArray(eventsInput) ? eventsInput : [];
+  const pesagens = Array.isArray(pesagensInput) ? pesagensInput : [];
+  const validEvents = events.filter(
+    (event) => !event.deleted_at && event.occurred_at <= referenceDate,
+  );
+
+  return {
+    validEvents,
+    animalPesagensMap: groupWeightDetailsByAnimal(pesagens, validEvents),
+    performance: presentObservedOccupancyPerformance(observedPerformance),
+  };
+}
+
 // fallow-ignore-next-line complexity -- legacy multi-metric adapter; F22C changes only qualified permanence/performance.
 export function calculateLoteMetrics(
   loteId: string,
@@ -125,8 +144,6 @@ export function calculateLoteMetrics(
   observedPerformance?: OccupancyPerformanceAggregate | null,
 ): CockpitLoteMetrics {
   const animals = Array.isArray(animalsInput) ? animalsInput : [];
-  const events = Array.isArray(eventsInput) ? eventsInput : [];
-  const pesagens = Array.isArray(pesagensInput) ? pesagensInput : [];
   const eccs = Array.isArray(eccsInput) ? eccsInput : [];
   const movimentacoes = Array.isArray(movimentacoesInput) ? movimentacoesInput : [];
   const agendaItens = Array.isArray(agendaItensInput) ? agendaItensInput : [];
@@ -139,22 +156,13 @@ export function calculateLoteMetrics(
    );
   const activeAnimalIds = new Set(activeAnimals.map((a) => a.id));
 
-  // Non-deleted events on or before referenceDate
-  const validEvents = events.filter(
-    (e) => !e.deleted_at && e.occurred_at <= referenceDate
-  );
-
-  // Pesos atuais continuam disponíveis apenas para o cálculo legado de UA,
-  // que permanece fora do escopo da performance histórica F22C.
-  const animalPesagensMap = groupWeightDetailsByAnimal(pesagens, validEvents);
-
-  // 1. Peso final e GMD observados somente na janela factual dentro da ocupação.
-  const performance = presentObservedOccupancyPerformance(observedPerformance);
-  const pesoMedio = performance.finalWeightKg;
-  const pesoStatus: DataStatus = performance.status;
-  const gmdMedio = performance.observedGmdKgPerDay;
-  const ganhoMedio = performance.weightDeltaKg;
-  const gmdStatus: DataStatus = performance.status;
+  const { validEvents, animalPesagensMap, performance } =
+    prepareCommonOccupancySources(
+      eventsInput,
+      pesagensInput,
+      referenceDate,
+      observedPerformance,
+    );
 
   // 3. ECC (Escore de Condição Corporal)
   let sumEcc = 0;
@@ -292,11 +300,11 @@ export function calculateLoteMetrics(
   return {
     loteId,
     quantidadeAtual: activeAnimals.length,
-    pesoMedio,
-    pesoStatus,
-    gmdMedio,
-    ganhoMedio,
-    gmdStatus,
+    pesoMedio: performance.finalWeightKg,
+    pesoStatus: performance.status,
+    gmdMedio: performance.observedGmdKgPerDay,
+    ganhoMedio: performance.weightDeltaKg,
+    gmdStatus: performance.status,
     eccMedio,
     eccStatus,
     eccCobertura: { avaliados: countEccEvaluated, total: activeAnimals.length },
@@ -337,8 +345,6 @@ export function calculatePastoMetrics(
   const animals = Array.isArray(animalsInput) ? animalsInput : [];
   const lotes = Array.isArray(lotesInput) ? lotesInput : [];
   const pastos = Array.isArray(pastosInput) ? pastosInput : [];
-  const events = Array.isArray(eventsInput) ? eventsInput : [];
-  const pesagens = Array.isArray(pesagensInput) ? pesagensInput : [];
   const eccs = Array.isArray(eccsInput) ? eccsInput : [];
   const movimentacoes = Array.isArray(movimentacoesInput) ? movimentacoesInput : [];
   const agendaItens = Array.isArray(agendaItensInput) ? agendaItensInput : [];
@@ -355,22 +361,13 @@ export function calculatePastoMetrics(
    );
   const activeAnimalIds = new Set(activeAnimals.map((a) => a.id));
 
-  // Non-deleted events on or before referenceDate
-  const validEvents = events.filter(
-    (e) => !e.deleted_at && e.occurred_at <= referenceDate
+  const commonSources = prepareCommonOccupancySources(
+    eventsInput,
+    pesagensInput,
+    referenceDate,
+    observedPerformance,
   );
-
-  // Pesos atuais continuam disponíveis apenas para o cálculo legado de UA,
-  // que permanece fora do escopo da performance histórica F22C.
-  const animalPesagensMap = groupWeightDetailsByAnimal(pesagens, validEvents);
-
-  // 1. Peso final e GMD observados somente na janela factual dentro da ocupação.
-  const performance = presentObservedOccupancyPerformance(observedPerformance);
-  const pesoMedio = performance.finalWeightKg;
-  const pesoStatus: DataStatus = performance.status;
-  const gmdMedio = performance.observedGmdKgPerDay;
-  const ganhoMedioPeso = performance.weightDeltaKg;
-  const gmdStatus: DataStatus = performance.status;
+  const { validEvents, animalPesagensMap, performance } = commonSources;
 
   // fallow-ignore-next-line code-duplication -- legacy ECC branches remain outside the F22C scope.
   // 3. ECC
@@ -512,11 +509,11 @@ export function calculatePastoMetrics(
   return {
     pastoId,
     lotacaoAtual: activeAnimals.length,
-    pesoMedio,
-    pesoStatus,
-    gmdMedio,
-    ganhoMedioPeso,
-    gmdStatus,
+    pesoMedio: performance.finalWeightKg,
+    pesoStatus: performance.status,
+    gmdMedio: performance.observedGmdKgPerDay,
+    ganhoMedioPeso: performance.weightDeltaKg,
+    gmdStatus: performance.status,
     eccMedio,
     eccStatus,
     eccCobertura: { avaliados: countEccEvaluated, total: activeAnimals.length },
