@@ -10,25 +10,20 @@ import type {
   EventoEcc,
   EventoMovimentacao,
   AgendaItem,
-  PastoOcupacao,
 } from "@/lib/offline/types";
 import { calculateIndividualGmd, calculateUaLotacao } from "@/lib/animals/kpiHelpers";
 import { getPredominantCategorySnapshot } from "./classification";
+import type { OccupancyAggregate } from "@/lib/occupancy/occupancyAggregation";
+import { presentQualifiedOccupancyDuration } from "./qualifiedOccupancyAdapter";
 
 const GMD_LOTE_SCOPE_LIMITATION =
   "Leitura baseada nos animais atualmente no lote com pesagens válidas; não comprova desempenho histórico completo do lote nem permanência no período sem movimentações suficientes.";
 const GMD_PASTO_SCOPE_LIMITATION =
   "Leitura baseada nos animais atualmente no pasto com pesagens válidas; não comprova desempenho histórico completo do pasto nem permanência no período sem movimentações suficientes.";
-const OCCUPANCY_READ_MODEL_LIMITATION =
-  "Read model de ocupação atual; não é fonte histórica primária completa de permanência.";
-const MOVEMENT_HISTORY_LIMITATION =
-  "Baseado em movimentações de entrada registradas para os animais atuais; não substitui auditoria histórica completa de entradas e saídas.";
 const PASTO_STOCKING_RATE_LIMITATION =
   "Taxa UA/ha exige area_ha válida e peso explícito dos animais atuais; dados incompletos tornam a leitura parcial.";
 const LOTE_UA_LIMITATION =
   "UA total do lote exige peso explícito dos animais atuais; dados ausentes ou desatualizados tornam a leitura parcial.";
-const CURRENT_ENTRY_MOVEMENT_LIMITATION =
-  "Leitura atual baseada em movimentações de entrada; sem eventos completos de entrada e saída, não afirma permanência histórica completa.";
 
 function mergeLimitations(...limitations: Array<string | undefined>): string | undefined {
   return limitations.filter(Boolean).join(" ");
@@ -54,8 +49,8 @@ export interface CockpitLoteMetrics {
   eccCobertura: { avaliados: number; total: number };
   animaisSemEcc: string[];
   dataEntradaLote: string | null;
-  tempoMedioPermanencia: number;
-  tempoMaximoPermanencia: number;
+  tempoMedioPermanencia: number | null;
+  tempoMaximoPermanencia: number | null;
   permanenciaStatus: DataStatus;
   ultimaMovimentacao: string | null;
   agendaItensAbertos: {
@@ -82,7 +77,7 @@ export interface CockpitPastoMetrics {
   eccStatus: DataStatus;
   eccCobertura: { avaliados: number; total: number };
   animaisSemEcc: string[];
-  tempoUsoDias: number;
+  tempoUsoDias: number | null;
   permanenciaStatus: DataStatus;
   ultimaMovimentacao: string | null;
   agendaItensAbertos: {
@@ -103,6 +98,7 @@ function safeParseDate(dStr: string): Date {
   return parseISO(dStr);
 }
 
+// fallow-ignore-next-line complexity -- legacy multi-metric adapter; F22C.3 changes only qualified permanence.
 export function calculateLoteMetrics(
   loteId: string,
   referenceDate: string,
@@ -113,7 +109,7 @@ export function calculateLoteMetrics(
   eccsInput: EventoEcc[],
   movimentacoesInput: EventoMovimentacao[],
   agendaItensInput: AgendaItem[],
-  pastoOcupacoesInput?: PastoOcupacao[]
+  qualifiedDuration?: OccupancyAggregate | null,
 ): CockpitLoteMetrics {
   const animals = Array.isArray(animalsInput) ? animalsInput : [];
   const events = Array.isArray(eventsInput) ? eventsInput : [];
@@ -341,119 +337,12 @@ export function calculateLoteMetrics(
     };
   }
 
-  // 4. Permanência com prioridade de state_pasto_ocupacoes
-  let dataEntradaLote: string | null = null;
-  let tempoMedioPermanencia = 0;
-  let maxPermanencia = 0;
-  let permanenciaStatus: DataStatus = { status: "empty", reason: "Sem histórico de permanência", source: "Sem dados" };
-
-  const ocupacoesLote = Array.isArray(pastoOcupacoesInput)
-    ? pastoOcupacoesInput.filter((o) => o.lote_id === loteId)
-    : [];
-
-  const animalMovMap = new Map<string, EventoMovimentacao[]>();
-  movimentacoes.forEach((m) => {
-    if (m.deleted_at) return;
-    const ev = validEvents.find((v) => v.id === m.evento_id);
-    if (ev && ev.animal_id) {
-      if (!animalMovMap.has(ev.animal_id)) {
-        animalMovMap.set(ev.animal_id, []);
-      }
-      animalMovMap.get(ev.animal_id)!.push(m);
-    }
-  });
-
-  if (ocupacoesLote.length > 0) {
-    const ocupacaoAtiva = ocupacoesLote.find((o) => o.saida_em === null);
-    if (ocupacaoAtiva) {
-      dataEntradaLote = ocupacaoAtiva.entrada_em;
-      const days = differenceInDays(refDateObj, safeParseDate(dataEntradaLote));
-      tempoMedioPermanencia = days >= 0 ? days : 0;
-      maxPermanencia = tempoMedioPermanencia;
-      permanenciaStatus = {
-        status: "partial",
-        reason: "Ocupação atual mapeada por read model",
-        source: "state_pasto_ocupacoes (read model)",
-        limitation: OCCUPANCY_READ_MODEL_LIMITATION,
-      };
-    } else {
-      const sorted = [...ocupacoesLote].sort((a, b) => b.entrada_em.localeCompare(a.entrada_em));
-      dataEntradaLote = sorted[0].entrada_em;
-      const days = differenceInDays(refDateObj, safeParseDate(dataEntradaLote));
-      tempoMedioPermanencia = days >= 0 ? days : 0;
-      maxPermanencia = tempoMedioPermanencia;
-      permanenciaStatus = {
-        status: "partial",
-        reason: "Ocupação anterior encerrada",
-        source: "state_pasto_ocupacoes (read model)",
-        limitation: mergeLimitations(
-          "Não há registro de ocupação aberta atualmente no pasto.",
-          OCCUPANCY_READ_MODEL_LIMITATION,
-        ),
-      };
-    }
-  } else {
-    // Fallback: eventos_movimentacao
-    let sumPermanenciaDays = 0;
-    let countWithEntry = 0;
-
-    activeAnimals.forEach((animal) => {
-      const animalM = animalMovMap.get(animal.id) || [];
-      const validM = animalM
-        .map((m) => {
-          const ev = validEvents.find((v) => v.id === m.evento_id)!;
-          return { m, ev };
-        })
-        .sort((a, b) => b.ev.occurred_at.localeCompare(a.ev.occurred_at));
-
-      if (validM.length > 0 && validM[0].m.to_lote_id === loteId) {
-        const entryDate = validM[0].ev.occurred_at;
-        const days = differenceInDays(refDateObj, safeParseDate(entryDate));
-        const validDays = days >= 0 ? days : 0;
-        sumPermanenciaDays += validDays;
-        countWithEntry++;
-        if (validDays > maxPermanencia) {
-          maxPermanencia = validDays;
-        }
-        if (!dataEntradaLote || entryDate > dataEntradaLote) {
-          dataEntradaLote = entryDate;
-        }
-      }
-    });
-
-    tempoMedioPermanencia = countWithEntry > 0 ? sumPermanenciaDays / countWithEntry : 0;
-
-    if (activeAnimals.length === 0) {
-      permanenciaStatus = { status: "empty", reason: "Sem animais ativos no lote", source: "Sem dados" };
-    } else if (countWithEntry === activeAnimals.length) {
-      permanenciaStatus = {
-        status: "partial",
-        reason: "Permanência atual calculada por movimentações de entrada",
-        source: "eventos_movimentacao",
-        limitation: mergeLimitations(
-          CURRENT_ENTRY_MOVEMENT_LIMITATION,
-          MOVEMENT_HISTORY_LIMITATION,
-        ),
-      };
-    } else if (countWithEntry > 0) {
-      permanenciaStatus = {
-        status: "partial",
-        reason: "Permanência calculada parcialmente via movimentações",
-        source: "eventos_movimentacao",
-        limitation: mergeLimitations(
-          `${activeAnimals.length - countWithEntry} animais sem movimentação de entrada registrada.`,
-          MOVEMENT_HISTORY_LIMITATION,
-        ),
-      };
-    } else {
-      permanenciaStatus = {
-        status: "partial",
-        reason: "Permanência desconhecida (todos os animais sem movimentação de entrada)",
-        source: "eventos_movimentacao",
-        limitation: "Movimentação inicial ausente para todos os animais atuais; permanência histórica não pode ser afirmada.",
-      };
-    }
-  }
+  // 4. Permanência histórica qualificada. O adapter não reconstrói fatos nem usa state_*.
+  const qualifiedPermanence = presentQualifiedOccupancyDuration(qualifiedDuration);
+  const dataEntradaLote: string | null = null;
+  const tempoMedioPermanencia = qualifiedPermanence.meanDurationDays;
+  const maxPermanencia = qualifiedPermanence.maxDurationDays;
+  const permanenciaStatus: DataStatus = qualifiedPermanence.status;
 
   // Ultima movimentação que tocou este lote
   const loteMovs = validEvents.filter(
@@ -562,7 +451,7 @@ export function calculatePastoMetrics(
   eccsInput: EventoEcc[],
   movimentacoesInput: EventoMovimentacao[],
   agendaItensInput: AgendaItem[],
-  pastoOcupacoesInput?: PastoOcupacao[]
+  qualifiedDuration?: OccupancyAggregate | null,
 ): CockpitPastoMetrics {
   const animals = Array.isArray(animalsInput) ? animalsInput : [];
   const lotes = Array.isArray(lotesInput) ? lotesInput : [];
@@ -735,6 +624,7 @@ export function calculatePastoMetrics(
     };
   }
 
+  // fallow-ignore-next-line code-duplication -- legacy ECC branches remain outside the F22C.3 duration scope.
   // 3. ECC
   let sumEcc = 0;
   let countEccEvaluated = 0;
@@ -796,115 +686,10 @@ export function calculatePastoMetrics(
     };
   }
 
-  // 4. Lotação / Uso do Pasto com prioridade de state_pasto_ocupacoes
-  let tempoUsoDias = 0;
-  let permanenciaStatus: DataStatus = { status: "empty", reason: "Sem histórico de uso", source: "Sem dados" };
-
-  const ocupacoesPasto = Array.isArray(pastoOcupacoesInput)
-    ? pastoOcupacoesInput.filter((o) => o.pasto_id === pastoId)
-    : [];
-
-  const animalMovMap = new Map<string, EventoMovimentacao[]>();
-  movimentacoes.forEach((m) => {
-    if (m.deleted_at) return;
-    const ev = validEvents.find((v) => v.id === m.evento_id);
-    if (ev && ev.animal_id) {
-      if (!animalMovMap.has(ev.animal_id)) {
-        animalMovMap.set(ev.animal_id, []);
-      }
-      animalMovMap.get(ev.animal_id)!.push(m);
-    }
-  });
-
-  if (ocupacoesPasto.length > 0) {
-    const ocupacoesAtivas = ocupacoesPasto.filter((o) => o.saida_em === null);
-    if (ocupacoesAtivas.length > 0) {
-      const sumDays = ocupacoesAtivas.reduce((sum, o) => {
-        const days = differenceInDays(refDateObj, safeParseDate(o.entrada_em));
-        return sum + (days >= 0 ? days : 0);
-      }, 0);
-      tempoUsoDias = sumDays / ocupacoesAtivas.length;
-      permanenciaStatus = {
-        status: "partial",
-        reason: "Ocupação atual mapeada por read model",
-        source: "state_pasto_ocupacoes (read model)",
-        limitation: OCCUPANCY_READ_MODEL_LIMITATION,
-      };
-    } else {
-      const sorted = [...ocupacoesPasto].sort((a, b) => b.entrada_em.localeCompare(a.entrada_em));
-      const latest = sorted[0];
-      const days = differenceInDays(refDateObj, safeParseDate(latest.entrada_em));
-      tempoUsoDias = days >= 0 ? days : 0;
-      permanenciaStatus = {
-        status: "partial",
-        reason: "Última ocupação encerrada",
-        source: "state_pasto_ocupacoes (read model)",
-        limitation: mergeLimitations(
-          "Não há registro de lote ativo atualmente no pasto.",
-          OCCUPANCY_READ_MODEL_LIMITATION,
-        ),
-      };
-    }
-  } else {
-    // Fallback: eventos_movimentacao
-    let sumUsoDays = 0;
-    let countWithPastoEntry = 0;
-
-    activeAnimals.forEach((animal) => {
-      const animalM = animalMovMap.get(animal.id) || [];
-      const validM = animalM
-        .map((m) => {
-          const ev = validEvents.find((v) => v.id === m.evento_id)!;
-          return { m, ev };
-        })
-        .sort((a, b) => b.ev.occurred_at.localeCompare(a.ev.occurred_at));
-
-      if (validM.length > 0 && validM[0].m.to_pasto_id === pastoId) {
-        const entryDate = validM[0].ev.occurred_at;
-        const days = differenceInDays(refDateObj, safeParseDate(entryDate));
-        const validDays = days >= 0 ? days : 0;
-        sumUsoDays += validDays;
-        countWithPastoEntry++;
-      }
-    });
-
-    tempoUsoDias = countWithPastoEntry > 0 ? sumUsoDays / countWithPastoEntry : 0;
-
-    if (activeAnimals.length === 0) {
-      permanenciaStatus = {
-        status: "empty",
-        reason: "Sem animais ativos no pasto",
-        source: "Sem dados",
-      };
-    } else if (countWithPastoEntry === activeAnimals.length) {
-      permanenciaStatus = {
-        status: "partial",
-        reason: "Uso atual calculado por movimentações de entrada",
-        source: "eventos_movimentacao",
-        limitation: mergeLimitations(
-          CURRENT_ENTRY_MOVEMENT_LIMITATION,
-          MOVEMENT_HISTORY_LIMITATION,
-        ),
-      };
-    } else if (countWithPastoEntry > 0) {
-      permanenciaStatus = {
-        status: "partial",
-        reason: "Tempo de uso parcial via movimentações",
-        source: "eventos_movimentacao",
-        limitation: mergeLimitations(
-          `${activeAnimals.length - countWithPastoEntry} animais sem movimentação de entrada registrada.`,
-          MOVEMENT_HISTORY_LIMITATION,
-        ),
-      };
-    } else {
-      permanenciaStatus = {
-        status: "partial",
-        reason: "Tempo de uso desconhecido (todos os animais sem movimentação de entrada)",
-        source: "eventos_movimentacao",
-        limitation: "Movimentação inicial ausente para todos os animais atuais; uso histórico do pasto não pode ser afirmado.",
-      };
-    }
-  }
+  // 4. Uso histórico qualificado. O adapter não reconstrói fatos nem usa state_*.
+  const qualifiedPermanence = presentQualifiedOccupancyDuration(qualifiedDuration);
+  const tempoUsoDias = qualifiedPermanence.meanDurationDays;
+  const permanenciaStatus: DataStatus = qualifiedPermanence.status;
 
   // Ultima movimentação que tocou este pasto
   const pastoMovs = validEvents.filter((e) => {

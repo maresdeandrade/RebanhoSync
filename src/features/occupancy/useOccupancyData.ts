@@ -3,7 +3,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import { db } from "@/lib/offline/db";
-import type { Evento, EventoMovimentacao, EventoPesagem, EventoEcc, Animal, Lote, Pasto, PastoOcupacao } from "@/lib/offline/types";
+import type { Evento, EventoMovimentacao, EventoPesagem, EventoEcc, Animal, Lote, Pasto } from "@/lib/offline/types";
 import { buildAnimalOccupancyTimeline } from "./buildAnimalOccupancyTimeline";
 import { buildWeightGainForOccupancy } from "./buildWeightGainForOccupancy";
 import { buildEccMetricsForOccupancy } from "./buildEccMetricsForOccupancy";
@@ -12,6 +12,12 @@ import { buildPastoOccupancyMetrics } from "./buildPastoOccupancyMetrics";
 import { getLatestValidEcc } from "./eccHelpers";
 import { getPredominantCategorySnapshot } from "./classification";
 import type { AnimalOccupancyPeriod, LoteOccupancyMetrics, PastoOccupancyMetrics } from "./occupancyTypes";
+import { selectHistoricalLotOccupancy } from "@/lib/occupancy/historicalLotOccupancy";
+import { selectHistoricalPastureOccupancy } from "@/lib/occupancy/historicalPastureOccupancy";
+import {
+  buildLotOccupancyAggregation,
+  buildPastureOccupancyAggregation,
+} from "@/lib/occupancy/occupancyAggregation";
 
 export function useOccupancyData(fazendaId: string, referenceDate: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,11 +57,6 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
 
   const allPastos = useLiveQuery(
     () => db.state_pastos.where("fazenda_id").equals(fazendaId).toArray(),
-    [fazendaId],
-  ) || [];
-
-  const allPastoOcupacoes = useLiveQuery(
-    () => db.state_pasto_ocupacoes.where("fazenda_id").equals(fazendaId).toArray(),
     [fazendaId],
   ) || [];
 
@@ -130,6 +131,78 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
     return periods;
   }, [allEvents, movimentacoesMap, pesagensMap, eccsMap, referenceDate]);
 
+  const historicalLotResults = useMemo(
+    () =>
+      allAnimals
+        .filter((animal) => !animal.deleted_at)
+        .map((animal) =>
+          selectHistoricalLotOccupancy({
+            animalId: animal.id,
+            fazendaId,
+            referenceDate,
+            events: allEvents,
+            movementDetails: allMovimentacoes,
+          }),
+        ),
+    [allAnimals, allEvents, allMovimentacoes, fazendaId, referenceDate],
+  );
+
+  const historicalPastureResults = useMemo(
+    () =>
+      allAnimals
+        .filter((animal) => !animal.deleted_at)
+        .map((animal) =>
+          selectHistoricalPastureOccupancy({
+            animalId: animal.id,
+            fazendaId,
+            referenceDate,
+            events: allEvents,
+            movementDetails: allMovimentacoes,
+          }),
+        ),
+    [allAnimals, allEvents, allMovimentacoes, fazendaId, referenceDate],
+  );
+
+  const qualifiedLotOccupancy = useMemo(
+    () =>
+      buildLotOccupancyAggregation({
+        results: historicalLotResults,
+        referenceDate,
+      }),
+    [historicalLotResults, referenceDate],
+  );
+
+  const qualifiedPastureOccupancy = useMemo(
+    () =>
+      buildPastureOccupancyAggregation({
+        results: historicalPastureResults,
+        referenceDate,
+      }),
+    [historicalPastureResults, referenceDate],
+  );
+
+  const qualifiedLotDurationById = useMemo(
+    () =>
+      new Map(
+        qualifiedLotOccupancy.byLote.map((aggregate) => [
+          aggregate.groupId,
+          aggregate,
+        ]),
+      ),
+    [qualifiedLotOccupancy],
+  );
+
+  const qualifiedPastureDurationById = useMemo(
+    () =>
+      new Map(
+        qualifiedPastureOccupancy.byPasto.map((aggregate) => [
+          aggregate.groupId,
+          aggregate,
+        ]),
+      ),
+    [qualifiedPastureOccupancy],
+  );
+
   const getLoteMetrics = (loteId: string): LoteOccupancyMetrics | null => {
     const activeAnimals = allAnimals.filter(
       (a) => a.lote_id === loteId && a.status !== "vendido" && a.status !== "morto" && a.status !== "retirado"
@@ -155,6 +228,7 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       lastMovementDate,
       categoriaPredominante: categoriaSnapshot.label,
       categoriaStatus: categoriaSnapshot.status,
+      qualifiedDuration: qualifiedLotDurationById.get(loteId),
     });
   };
 
@@ -190,6 +264,7 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       categoriaPredominante: categoriaSnapshot.label,
       categoriaStatus: categoriaSnapshot.status,
       areaHa,
+      qualifiedDuration: qualifiedPastureDurationById.get(pastoId),
     });
   };
 
@@ -199,6 +274,9 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
     getPastoMetrics,
     animalsMap,
     latestEccsMap,
-    allPastoOcupacoes,
+    qualifiedLotOccupancy,
+    qualifiedPastureOccupancy,
+    qualifiedLotDurationById,
+    qualifiedPastureDurationById,
   };
 }

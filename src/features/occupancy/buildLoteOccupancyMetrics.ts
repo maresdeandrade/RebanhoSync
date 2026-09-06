@@ -3,6 +3,8 @@
 import type { Animal } from "@/lib/offline/types";
 import type { AnimalOccupancyPeriod, LoteOccupancyMetrics, DataStatus } from "./occupancyTypes";
 import { calculateUaLotacao } from "../../lib/animals/kpiHelpers";
+import type { OccupancyAggregate } from "@/lib/occupancy/occupancyAggregation";
+import { presentQualifiedOccupancyDuration } from "./qualifiedOccupancyAdapter";
 
 interface BuildLoteOccupancyMetricsInput {
   loteId: string;
@@ -13,8 +15,10 @@ interface BuildLoteOccupancyMetricsInput {
   lastMovementDate?: string | null;
   categoriaPredominante?: string;
   categoriaStatus?: DataStatus;
+  qualifiedDuration?: OccupancyAggregate | null;
 }
 
+// fallow-ignore-next-line complexity -- legacy multi-metric builder; F22C.3 replaces only duration semantics.
 export function buildLoteOccupancyMetrics({
   loteId,
   animalPeriods,
@@ -28,8 +32,10 @@ export function buildLoteOccupancyMetrics({
     reason: "Classificacao operacional nao informada",
     source: "classificationSnapshot",
   },
+  qualifiedDuration,
 }: BuildLoteOccupancyMetricsInput): LoteOccupancyMetrics {
   const periodsInLote = animalPeriods.filter((p) => p.loteId === loteId);
+  const qualified = presentQualifiedOccupancyDuration(qualifiedDuration);
 
   if (periodsInLote.length === 0) {
     const evaluatedCount = activeAnimals.filter((a) => latestEccsMap.has(a.id)).length;
@@ -48,18 +54,12 @@ export function buildLoteOccupancyMetrics({
     const animalWeights = activeAnimals.map(() => ({ pesoKg: 0, isConfiavel: false, isMissing: true }));
     const uaResult = calculateUaLotacao(animalWeights, undefined);
 
-    const permanenciaStatus: DataStatus = {
-      status: "empty",
-      reason: "Sem histórico de movimentação (tempo de lotação estimado).",
-      source: "Sem dados",
-    };
-
     return {
       loteId,
       quantidadeAtual: activeAnimals.length,
       dataEntradaRecente: null,
-      tempoMedioPermanencia: 0,
-      tempoMaximoPermanencia: 0,
+      tempoMedioPermanencia: qualified.meanDurationDays,
+      tempoMaximoPermanencia: qualified.maxDurationDays,
       pesoMedioInicial: 0,
       pesoMedioFinal: 0,
       ganhoMedio: 0,
@@ -69,8 +69,8 @@ export function buildLoteOccupancyMetrics({
       eccCobertura: { avaliados: evaluatedCount, total: activeAnimals.length || totalAnimalsInLote },
       eccStatus,
       animaisSemEcc,
-      permanenciaStatus,
-      tempoLotacaoStatus: permanenciaStatus,
+      permanenciaStatus: qualified.status,
+      tempoLotacaoStatus: qualified.status,
       ultimaMovimentacao: lastMovementDate,
       categoriaPredominante,
       categoriaStatus,
@@ -97,9 +97,6 @@ export function buildLoteOccupancyMetrics({
     if (!latestDate) return period.entradaAt;
     return period.entradaAt > latestDate ? period.entradaAt : latestDate;
   }, null as string | null);
-
-  const tempoMedioPermanenciaVal = periodsInLote.reduce((sum, p) => sum + p.dias, 0) / (periodsInLote.length || 1);
-  const tempoMaximoPermanencia = periodsInLote.reduce((max, p) => Math.max(max, p.dias), 0);
 
   const periodsWithWeight = periodsInLote.filter((p) => p.weightStatus.status === "complete");
   const pesoMedioInicial = periodsWithWeight.reduce((sum, p) => sum + (p.pesoInicial || 0), 0) / (periodsWithWeight.length || 1);
@@ -137,18 +134,6 @@ export function buildLoteOccupancyMetrics({
     eccStatus = periodsWithEcc.length > 0 ? { status: "complete" } : { status: "empty" };
   }
 
-  const permanenciaStatus: DataStatus =
-    lastMovementDate === null
-      ? {
-          status: "empty",
-          reason: "Sem histórico de movimentação (tempo de lotação estimado).",
-          source: "Sem dados",
-        }
-      : {
-          status: "complete",
-          source: "Movimentações factuais",
-        };
-
   // UA Lotacao real
   const animalWeights = activeAnimals.map(animal => {
     const p = periodsInLote.find(per => per.animalId === animal.id && per.saidaAt === null);
@@ -160,23 +145,25 @@ export function buildLoteOccupancyMetrics({
 
   const uaResult = calculateUaLotacao(animalWeights, undefined);
 
+  // fallow-ignore-next-line code-duplication -- parallel return shapes preserve the existing legacy builder contract.
   return {
     loteId,
     quantidadeAtual,
     dataEntradaRecente,
-    tempoMedioPermanencia: tempoMedioPermanenciaVal,
-    tempoMaximoPermanencia,
+    tempoMedioPermanencia: qualified.meanDurationDays,
+    tempoMaximoPermanencia: qualified.maxDurationDays,
     pesoMedioInicial,
     pesoMedioFinal,
     ganhoMedio,
     gmdEstimado,
     weightStatus,
+    // fallow-ignore-next-line code-duplication -- common output fields intentionally preserve the public builder shape.
     eccMedioAtual,
     eccCobertura: { avaliados: evaluatedCount, total: activeAnimals.length || totalAnimalsInLote },
     eccStatus,
     animaisSemEcc,
-    permanenciaStatus,
-    tempoLotacaoStatus: permanenciaStatus,
+    permanenciaStatus: qualified.status,
+    tempoLotacaoStatus: qualified.status,
     ultimaMovimentacao: lastMovementDate,
     categoriaPredominante,
     categoriaStatus,

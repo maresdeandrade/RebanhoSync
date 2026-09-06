@@ -1,6 +1,6 @@
 # F22C — Historical Occupancy Source Gate
 
-Atualizado em: 2026-09-05
+Atualizado em: 2026-09-06
 Baseline: `main@4e9d71b69c0e41c2aec26f900b83e083eb98d920`
 Branch: `feat/f22c-historical-occupancy-gate`
 
@@ -11,16 +11,19 @@ F22C_SOURCE_GATE = READY_WITH_CAVEATS
 F22C_HISTORICAL_LOT_SOURCE = READY
 F22C_HISTORICAL_PASTURE_SOURCE = READY
 F22C_LOT_OCCUPANCY_READ_MODEL = IMPLEMENTED
-F22C_LOT_DURATION = NOT_STARTED
+F22C_LOT_DURATION = IMPLEMENTED
 F22C_PASTURE_OCCUPANCY_READ_MODEL = IMPLEMENTED
-F22C_PASTURE_DURATION = NOT_STARTED
+F22C_PASTURE_DURATION = IMPLEMENTED
+F22C_QUALIFIED_DURATION = IMPLEMENTED
+F22C_OCCUPANCY_AGGREGATION = IMPLEMENTED
+F22C_DURATION_ADOPTION = PARTIAL
 ```
 
 As duas relações possuem fatos históricos datados e convergentes: `animal → lote` em `eventos` + `eventos_movimentacao` e `lote → pasto` no mesmo par de tabelas, com um Evento de movimentação próprio para o lote inteiro. Isso é suficiente para iniciar um read model que produza intervalos factuais e coverage explícita.
 
 `READY` qualifica a **fonte e o próximo contrato**, não promete histórico completo para todo animal ou período. Cadastros podem nascer com `lote_id` e lotes podem nascer com `pasto_id` sem Evento de movimentação inicial; além disso, não há um fato canônico geral e durável `lote A → null`. Cada reconstrução deverá, portanto, resultar em `NO_HISTORY`, `PARTIAL_HISTORY`, `CONTIGUOUS_HISTORY` ou `CONFLICTED_HISTORY`, sem preencher lacunas com `state_*`.
 
-Nenhum cálculo de permanência, lotação ou produtividade foi implementado.
+No fechamento deste source gate ainda não havia cálculo de permanência, lotação ou produtividade; a atualização F22C.3 abaixo registra a implementação posterior de duração qualificada.
 
 ## Atualização F22C.1 — Historical Lot Occupancy Read Model
 
@@ -37,6 +40,12 @@ O read model não contém duração, dias, pasto, peso, GMD, lotação ou estado
 `selectHistoricalPastureOccupancy` reutiliza `selectHistoricalLotOccupancy` e compõe cada intervalo animal→pasto somente pela interseção temporal com um intervalo lote→pasto do mesmo lote e fazenda. A saída mantém separadamente `lotOccupancySourceEventIds` e `pastureSourceEventIds`, não consolida segmentos com provenance distinta e expõe trechos sem suporte simultâneo como `PASTURE_UNKNOWN`.
 
 Coverage e conflitos das duas fontes são propagados conservadoramente: a composição não promove `LEFT_BOUND_UNKNOWN`, `RIGHT_BOUND_UNKNOWN`, `PARTIAL_HISTORY` ou `CONFLICTED_HISTORY`. Estado atual não completa gaps. Nenhuma duração, métrica, UI, infraestrutura ou writer foi adicionado. O próximo incremento elegível é F22C.3 — Qualified Occupancy Duration.
+
+## Atualização F22C.3 — Qualified Occupancy Metrics
+
+`qualifiedOccupancyDuration` consome exclusivamente `HistoricalLotOccupancyResult` ou `HistoricalPastureOccupancyResult`. Intervalos fechados usam diferença temporal real; intervalos abertos exigem `referenceDate` explícita e não transformam essa referência em saída factual. `LEFT_BOUND_UNKNOWN`, `RIGHT_BOUND_UNKNOWN` e boundaries afetadas por conflito retornam `NOT_CALCULATED`. Recortes usam a interseção com `[from, to)`, sem arredondamento interno e sem converter ausência em zero.
+
+`occupancyAggregation` produz duração conhecida, média, máximo, contagem de intervalos conhecidos/desconhecidos, coverage, limitações e conflitos por animal, lote e pasto. Builders, cards e a parcela de permanência dos cockpits passaram a consumir esses agregados. `buildWeightGainForOccupancy`, GMD, UA e taxa de lotação continuam separados por dependerem de contratos adicionais.
 
 ## Integração de entrada — PR #116
 
@@ -198,8 +207,8 @@ O E2E remoto não foi repetido nesta branch.
 | conflitos temporais | identidades, timestamps e pares from/to | `READY_FOR_IMPLEMENTATION` | resolvedor ainda não implementado |
 | histórico lote → pasto | Evento/detail `lote_pasto` | `READY` | vínculo inicial de lote com pasto pode não ter Evento |
 | histórico animal → pasto | composição temporal das duas cadeias | `READY` | retorna parcial/desconhecido onde qualquer cadeia não tiver coverage |
-| dias em lote | read model factual F22C.1 | `READY_FOR_IMPLEMENTATION` | duração permanece fora do contrato atual e não foi calculada |
-| dias em pasto | interseção temporal futura | `READY_FOR_IMPLEMENTATION` | posterior à composição validada; não calculado aqui |
+| dias em lote | read model factual F22C.1 | `IMPLEMENTED_QUALIFIED` | apenas boundaries suficientes; ausência permanece indisponível |
+| dias em pasto | composição factual F22C.2 | `IMPLEMENTED_QUALIFIED` | somente interseções demonstráveis; gaps permanecem gaps |
 
 ## Fatos, inferências e recomendações
 
@@ -217,8 +226,8 @@ O E2E remoto não foi repetido nesta branch.
 
 ### RECOMENDAÇÃO
 
-Próximo e único incremento recomendado: **F22C.3 — Qualified Occupancy Duration**. Calcular duração somente sobre intervalos com boundaries suficientes, sem promover coverage parcial.
+F22C.3 está implementado. Novo incremento deve introduzir capacidade de produto explicitamente autorizada, sem promover coverage parcial nem acoplar duração a GMD, UA ou rentabilidade por inferência.
 
 ## Escopo preservado
 
-Não foram alterados UI, writer, Evento, migration, RPC/RLS, trigger, Dexie, sync ou queue. Não foram implementados `daysInLot`, `daysInPasture`, tempo médio, UA, UA/ha, @/ha, GMD por ocupação, taxa de lotação, ganho por área, ranking, alerta ou recomendação.
+Não foram alterados writer, Evento, migration, RPC/RLS, trigger, Dexie, sync ou queue. Foram implementadas duração e agregação factuais e sua apresentação nos consumidores de permanência compatíveis. Não foram implementados UA, UA/ha, @/ha, GMD por ocupação, taxa de lotação nova, ganho por área, ranking, alerta ou recomendação.
