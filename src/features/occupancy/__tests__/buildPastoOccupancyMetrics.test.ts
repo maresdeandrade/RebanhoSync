@@ -1,6 +1,27 @@
 import { describe, it, expect } from "vitest";
 import { buildPastoOccupancyMetrics } from "../buildPastoOccupancyMetrics";
 import type { AnimalOccupancyPeriod } from "../occupancyTypes";
+import type { OccupancyAggregate } from "@/lib/occupancy/occupancyAggregation";
+
+function qualifiedPastureDuration(meanDays: number): OccupancyAggregate {
+  return {
+    dimension: "PASTURE",
+    groupId: "pasto-X",
+    fazendaId: "farm-1",
+    animalIds: ["animal-1", "animal-2"],
+    knownDurationMs: meanDays * 2 * 86_400_000,
+    knownDurationDays: meanDays * 2,
+    meanKnownDurationMs: meanDays * 86_400_000,
+    meanKnownDurationDays: meanDays,
+    maxKnownDurationMs: 130 * 86_400_000,
+    maxKnownDurationDays: 130,
+    knownIntervals: 2,
+    unknownIntervals: 0,
+    coverage: "COMPLETE",
+    limitations: [],
+    conflicts: [],
+  };
+}
 
 describe("buildPastoOccupancyMetrics", () => {
   const pastoId = "pasto-X";
@@ -16,7 +37,7 @@ describe("buildPastoOccupancyMetrics", () => {
     expect(result).toMatchObject({
       pastoId,
       lotacaoAtual: 0,
-      tempoMedioOcupacao: 0,
+      tempoMedioOcupacao: null,
       ganhoMedioPeso: 0,
       gmdEstimado: 0,
       weightStatus: { status: "empty" },
@@ -79,6 +100,7 @@ describe("buildPastoOccupancyMetrics", () => {
     const result = buildPastoOccupancyMetrics({
       pastoId,
       animalPeriods,
+      qualifiedDuration: qualifiedPastureDuration((30 + 130) / 2),
     });
 
     expect(result.lotacaoAtual).toBe(1);

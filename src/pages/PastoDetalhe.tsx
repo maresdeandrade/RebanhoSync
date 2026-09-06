@@ -338,16 +338,8 @@ const PastoDetalhe = () => {
         : [],
     [pasto?.id, activeFarmId],
   ) ?? EMPTY_ARRAY;
-  const pastoOcupacoes = useLiveQuery(
-    () =>
-      pasto && activeFarmId
-        ? db.state_pasto_ocupacoes.where("fazenda_id").equals(activeFarmId).toArray()
-        : [],
-    [pasto?.id, activeFarmId],
-  ) ?? EMPTY_ARRAY;
-
   const referenceDate = useMemo(() => new Date().toISOString(), []);
-  const { allAnimalPeriods } = useOccupancyData(
+  const { allAnimalPeriods, qualifiedPastureDurationById } = useOccupancyData(
     activeFarmId ?? "",
     referenceDate,
   );
@@ -367,9 +359,9 @@ const PastoDetalhe = () => {
       eccs,
       movimentacoes,
       agendaItens,
-      pastoOcupacoes
+      qualifiedPastureDurationById.get(pasto.id),
     );
-  }, [pasto, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens, pastoOcupacoes]);
+  }, [pasto, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens, qualifiedPastureDurationById]);
 
   // Unified Timeline for Pasto
   const timelineItems = useMemo(() => {
@@ -819,7 +811,7 @@ const PastoDetalhe = () => {
               unit="dias"
               icon={<CalendarIcon className="h-4 w-4" />}
               status={pastoMetrics.permanenciaStatus.status}
-              reason={`Leitura de uso atual: ${pastoMetrics.tempoUsoDias.toFixed(0)} dias no pasto`}
+              reason={pastoMetrics.permanenciaStatus.reason}
               source={pastoMetrics.permanenciaStatus.source}
               limitation={pastoMetrics.permanenciaStatus.limitation}
               extraContent={
@@ -866,20 +858,21 @@ const PastoDetalhe = () => {
                 <div className="grid grid-cols-3 gap-1 mt-2 text-center text-[10px] font-bold">
                   <div className="rounded border border-semantic-error-border bg-semantic-error-muted p-1 text-semantic-error">
                     <div>{pastoMetrics.agendaItensAbertos.atrasados}</div>
-                    <div className="uppercase text-[8px] opacity-75">Atrasados</div>
+                    <div className="uppercase text-caption opacity-75">Atrasados</div>
                   </div>
                   <div className="rounded border border-semantic-warning-border bg-semantic-warning-muted p-1 text-semantic-warning">
                     <div>{pastoMetrics.agendaItensAbertos.hoje}</div>
-                    <div className="uppercase text-[8px] opacity-75">Hoje</div>
+                    <div className="uppercase text-caption opacity-75">Hoje</div>
                   </div>
                   <div className="rounded border border-semantic-info-border bg-semantic-info-muted p-1 text-semantic-info">
                     <div>{pastoMetrics.agendaItensAbertos.proximos}</div>
-                    <div className="uppercase text-[8px] opacity-75">Próximos</div>
+                    <div className="uppercase text-caption opacity-75">Próximos</div>
                   </div>
                 </div>
               }
             />
 
+            {/* fallow-ignore-next-line code-duplication -- existing lote/pasto card symmetry is intentional. */}
             {/* Perfil Zootécnico */}
             <div className="flex flex-col justify-between rounded-xl border border-border/70 bg-card p-4">
               <div className="space-y-3">

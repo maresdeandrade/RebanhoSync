@@ -1,6 +1,30 @@
 import { describe, it, expect } from "vitest";
 import { buildLoteOccupancyMetrics } from "../buildLoteOccupancyMetrics";
 import type { AnimalOccupancyPeriod } from "../occupancyTypes";
+import type { OccupancyAggregate } from "@/lib/occupancy/occupancyAggregation";
+
+function qualifiedLotDuration(
+  meanDays: number,
+  maxDays: number,
+): OccupancyAggregate {
+  return {
+    dimension: "LOT",
+    groupId: "lote-A",
+    fazendaId: "farm-1",
+    animalIds: ["animal-1", "animal-2", "animal-3"],
+    knownDurationMs: meanDays * 3 * 86_400_000,
+    knownDurationDays: meanDays * 3,
+    meanKnownDurationMs: meanDays * 86_400_000,
+    meanKnownDurationDays: meanDays,
+    maxKnownDurationMs: maxDays * 86_400_000,
+    maxKnownDurationDays: maxDays,
+    knownIntervals: 3,
+    unknownIntervals: 0,
+    coverage: "COMPLETE",
+    limitations: [],
+    conflicts: [],
+  };
+}
 
 describe("buildLoteOccupancyMetrics", () => {
   const loteId = "lote-A";
@@ -19,8 +43,8 @@ describe("buildLoteOccupancyMetrics", () => {
       loteId,
       quantidadeAtual: 0,
       dataEntradaRecente: null,
-      tempoMedioPermanencia: 0,
-      tempoMaximoPermanencia: 0,
+      tempoMedioPermanencia: null,
+      tempoMaximoPermanencia: null,
       pesoMedioInicial: 0,
       pesoMedioFinal: 0,
       ganhoMedio: 0,
@@ -86,6 +110,7 @@ describe("buildLoteOccupancyMetrics", () => {
       loteId,
       animalPeriods,
       totalAnimalsInLote,
+      qualifiedDuration: qualifiedLotDuration((30 + 130 + 113) / 3, 130),
     });
 
     expect(result.quantidadeAtual).toBe(2);

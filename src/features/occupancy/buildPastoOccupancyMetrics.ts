@@ -3,6 +3,8 @@
 import type { Animal } from "@/lib/offline/types";
 import type { AnimalOccupancyPeriod, PastoOccupancyMetrics, DataStatus } from "./occupancyTypes";
 import { calculateUaLotacao } from "../../lib/animals/kpiHelpers";
+import type { OccupancyAggregate } from "@/lib/occupancy/occupancyAggregation";
+import { presentQualifiedOccupancyDuration } from "./qualifiedOccupancyAdapter";
 
 interface BuildPastoOccupancyMetricsInput {
   pastoId: string;
@@ -13,6 +15,7 @@ interface BuildPastoOccupancyMetricsInput {
   categoriaPredominante?: string;
   categoriaStatus?: DataStatus;
   areaHa?: number | null;
+  qualifiedDuration?: OccupancyAggregate | null;
 }
 
 export function buildPastoOccupancyMetrics({
@@ -28,8 +31,10 @@ export function buildPastoOccupancyMetrics({
     source: "classificationSnapshot",
   },
   areaHa = null,
+  qualifiedDuration,
 }: BuildPastoOccupancyMetricsInput): PastoOccupancyMetrics {
   const periodsInPasto = animalPeriods.filter((p) => p.pastoId === pastoId);
+  const qualified = presentQualifiedOccupancyDuration(qualifiedDuration);
 
   if (periodsInPasto.length === 0) {
     const evaluatedCount = activeAnimals.filter((a) => latestEccsMap.has(a.id)).length;
@@ -48,16 +53,10 @@ export function buildPastoOccupancyMetrics({
     const animalWeights = activeAnimals.map(() => ({ pesoKg: 0, isConfiavel: false, isMissing: true }));
     const uaResult = calculateUaLotacao(animalWeights, areaHa);
 
-    const permanenciaStatus: DataStatus = {
-      status: "empty",
-      reason: "Sem histórico de movimentação (tempo de lotação estimado).",
-      source: "Sem dados",
-    };
-
     return {
       pastoId,
       lotacaoAtual: activeAnimals.length,
-      tempoMedioOcupacao: 0,
+      tempoMedioOcupacao: qualified.meanDurationDays,
       ganhoMedioPeso: 0,
       gmdEstimado: 0,
       weightStatus: { status: "empty", reason: "Sem pesagens suficientes" },
@@ -66,8 +65,8 @@ export function buildPastoOccupancyMetrics({
       eccStatus,
       eccCobertura: { avaliados: evaluatedCount, total: activeAnimals.length },
       animaisSemEcc,
-      permanenciaStatus,
-      tempoLotacaoStatus: permanenciaStatus,
+      permanenciaStatus: qualified.status,
+      tempoLotacaoStatus: qualified.status,
       ultimaMovimentacao: lastMovementDate,
       categoriaPredominante,
       categoriaStatus,
@@ -83,8 +82,6 @@ export function buildPastoOccupancyMetrics({
   }
 
   const lotacaoAtual = activeAnimals.length || periodsInPasto.filter((p) => p.saidaAt === null).length;
-  const tempoMedioOcupacao = periodsInPasto.reduce((sum, p) => sum + p.dias, 0) / (periodsInPasto.length || 1);
-
   const periodsWithWeight = periodsInPasto.filter((p) => p.weightStatus.status === "complete");
   const ganhoMedioPeso = periodsWithWeight.reduce((sum, p) => sum + (p.ganho || 0), 0) / (periodsWithWeight.length || 1);
   const gmdEstimado = periodsWithWeight.reduce((sum, p) => sum + (p.gmd || 0), 0) / (periodsWithWeight.length || 1);
@@ -122,18 +119,6 @@ export function buildPastoOccupancyMetrics({
     eccStatus = periodsWithEcc.length > 0 ? { status: "complete" } : { status: "empty" };
   }
 
-  const permanenciaStatus: DataStatus =
-    lastMovementDate === null
-      ? {
-          status: "empty",
-          reason: "Sem histórico de movimentação (tempo de lotação estimado).",
-          source: "Sem dados",
-        }
-      : {
-          status: "complete",
-          source: "Movimentações factuais",
-        };
-
   // UA Lotacao real
   const animalWeights = activeAnimals.map(animal => {
     const p = periodsInPasto.find(per => per.animalId === animal.id && per.saidaAt === null);
@@ -148,7 +133,7 @@ export function buildPastoOccupancyMetrics({
   return {
     pastoId,
     lotacaoAtual,
-    tempoMedioOcupacao,
+    tempoMedioOcupacao: qualified.meanDurationDays,
     ganhoMedioPeso,
     gmdEstimado,
     weightStatus,
@@ -157,8 +142,8 @@ export function buildPastoOccupancyMetrics({
     eccStatus,
     eccCobertura: { avaliados: evaluatedCount, total: activeAnimals.length || lotacaoAtual },
     animaisSemEcc,
-    permanenciaStatus,
-    tempoLotacaoStatus: permanenciaStatus,
+    permanenciaStatus: qualified.status,
+    tempoLotacaoStatus: qualified.status,
     ultimaMovimentacao: lastMovementDate,
     categoriaPredominante,
     categoriaStatus,

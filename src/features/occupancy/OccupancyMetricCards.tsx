@@ -14,7 +14,7 @@ import type { LoteOccupancyMetrics, PastoOccupancyMetrics } from "./occupancyTyp
 
 interface MetricCardProps {
   label: string;
-  value: string | number;
+  value: string | number | null;
   unit?: string;
   icon?: React.ReactNode;
   status?: "complete" | "partial" | "empty";
@@ -60,8 +60,8 @@ function MetricCard({
         )}
       </div>
       <p className="text-3xl font-bold text-foreground">
-        {typeof value === "number" ? value.toFixed(2) : value}
-        {unit && <span className="text-sm font-medium text-muted-foreground ml-2">{unit}</span>}
+        {value === null ? "—" : typeof value === "number" ? value.toFixed(2) : value}
+        {value !== null && unit && <span className="text-sm font-medium text-muted-foreground ml-2">{unit}</span>}
       </p>
       {extraContent}
     </div>
@@ -242,7 +242,7 @@ export function OccupancyMetricCards({
               <p className="text-xs text-yellow-800 space-y-1">
                 <strong>Limitações e Cobertura:</strong>
                 {loteMetrics.tempoLotacaoStatus.status !== "complete" && (
-                  <span> • Tempo de permanência estimado por ausência de histórico de movimentação factual.</span>
+                  <span> • Tempo exibido somente quando a duração histórica possui boundaries qualificadas.</span>
                 )}
                 {loteMetrics.weightStatus.status !== "complete" && (
                   <span> • Ganho de peso e GMD indisponíveis por pesagens insuficientes no lote.</span>

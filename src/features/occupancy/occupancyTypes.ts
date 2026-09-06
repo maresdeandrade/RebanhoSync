@@ -29,8 +29,8 @@ export interface LoteOccupancyMetrics {
   loteId: string;
   quantidadeAtual: number;
   dataEntradaRecente: string | null;
-  tempoMedioPermanencia: number;
-  tempoMaximoPermanencia: number;
+  tempoMedioPermanencia: number | null;
+  tempoMaximoPermanencia: number | null;
   pesoMedioInicial: number;
   pesoMedioFinal: number;
   ganhoMedio: number;
@@ -52,7 +52,7 @@ export interface LoteOccupancyMetrics {
 export interface PastoOccupancyMetrics {
   pastoId: string;
   lotacaoAtual: number;
-  tempoMedioOcupacao: number;
+  tempoMedioOcupacao: number | null;
   ganhoMedioPeso: number;
   gmdEstimado: number;
   weightStatus: DataStatus;

@@ -324,16 +324,8 @@ export default function LoteDetalhe() {
         : [],
     [lote?.id, activeFarmId],
   ) ?? EMPTY_ARRAY;
-  const pastoOcupacoes = useLiveQuery(
-    () =>
-      lote && activeFarmId
-        ? db.state_pasto_ocupacoes.where("fazenda_id").equals(activeFarmId).toArray()
-        : [],
-    [lote?.id, activeFarmId],
-  ) ?? EMPTY_ARRAY;
-
   const referenceDate = useMemo(() => new Date().toISOString(), []);
-  const { allAnimalPeriods } = useOccupancyData(
+  const { allAnimalPeriods, qualifiedLotDurationById } = useOccupancyData(
     activeFarmId ?? "",
     referenceDate,
   );
@@ -358,9 +350,9 @@ export default function LoteDetalhe() {
       eccs,
       movimentacoes,
       agendaItens,
-      pastoOcupacoes
+      qualifiedLotDurationById.get(lote.id),
     );
-  }, [lote, referenceDate, weightFreshnessDays, animais, events, pesagens, eccs, movimentacoes, agendaItens, pastoOcupacoes]);
+  }, [lote, referenceDate, weightFreshnessDays, animais, events, pesagens, eccs, movimentacoes, agendaItens, qualifiedLotDurationById]);
 
   // Unified Timeline selector
   const timelineItems = useMemo(() => {
@@ -778,7 +770,7 @@ export default function LoteDetalhe() {
               unit="dias"
               icon={<CalendarIcon className="h-4 w-4" />}
               status={loteMetrics.permanenciaStatus.status}
-              reason={`Leitura de permanência atual: ${loteMetrics.tempoMedioPermanencia.toFixed(0)} dias (máx. ${loteMetrics.tempoMaximoPermanencia} dias)`}
+              reason={loteMetrics.permanenciaStatus.reason}
               source={loteMetrics.permanenciaStatus.source}
               limitation={loteMetrics.permanenciaStatus.limitation}
               extraContent={
@@ -811,15 +803,15 @@ export default function LoteDetalhe() {
                 <div className="grid grid-cols-3 gap-1 mt-2 text-center text-[10px] font-bold">
                   <div className="rounded border border-semantic-error-border bg-semantic-error-muted p-1 text-semantic-error">
                     <div>{loteMetrics.agendaItensAbertos.atrasados}</div>
-                    <div className="uppercase text-[8px] opacity-75">Atrasados</div>
+                    <div className="uppercase text-caption opacity-75">Atrasados</div>
                   </div>
                   <div className="rounded border border-semantic-warning-border bg-semantic-warning-muted p-1 text-semantic-warning">
                     <div>{loteMetrics.agendaItensAbertos.hoje}</div>
-                    <div className="uppercase text-[8px] opacity-75">Hoje</div>
+                    <div className="uppercase text-caption opacity-75">Hoje</div>
                   </div>
                   <div className="rounded border border-semantic-info-border bg-semantic-info-muted p-1 text-semantic-info">
                     <div>{loteMetrics.agendaItensAbertos.proximos}</div>
-                    <div className="uppercase text-[8px] opacity-75">Próximos</div>
+                    <div className="uppercase text-caption opacity-75">Próximos</div>
                   </div>
                 </div>
               }
