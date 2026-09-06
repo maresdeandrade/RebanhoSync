@@ -16,7 +16,9 @@ F22C_PASTURE_OCCUPANCY_READ_MODEL = IMPLEMENTED
 F22C_PASTURE_DURATION = IMPLEMENTED
 F22C_QUALIFIED_DURATION = IMPLEMENTED
 F22C_OCCUPANCY_AGGREGATION = IMPLEMENTED
-F22C_DURATION_ADOPTION = PARTIAL
+F22C_OCCUPANCY_PERFORMANCE = IMPLEMENTED
+F22C_DURATION_ADOPTION = IMPLEMENTED
+F22C = CLOSED
 ```
 
 As duas relações possuem fatos históricos datados e convergentes: `animal → lote` em `eventos` + `eventos_movimentacao` e `lote → pasto` no mesmo par de tabelas, com um Evento de movimentação próprio para o lote inteiro. Isso é suficiente para iniciar um read model que produza intervalos factuais e coverage explícita.
@@ -45,7 +47,13 @@ Coverage e conflitos das duas fontes são propagados conservadoramente: a compos
 
 `qualifiedOccupancyDuration` consome exclusivamente `HistoricalLotOccupancyResult` ou `HistoricalPastureOccupancyResult`. Intervalos fechados usam diferença temporal real; intervalos abertos exigem `referenceDate` explícita e não transformam essa referência em saída factual. `LEFT_BOUND_UNKNOWN`, `RIGHT_BOUND_UNKNOWN` e boundaries afetadas por conflito retornam `NOT_CALCULATED`. Recortes usam a interseção com `[from, to)`, sem arredondamento interno e sem converter ausência em zero.
 
-`occupancyAggregation` produz duração conhecida, média, máximo, contagem de intervalos conhecidos/desconhecidos, coverage, limitações e conflitos por animal, lote e pasto. Builders, cards e a parcela de permanência dos cockpits passaram a consumir esses agregados. `buildWeightGainForOccupancy`, GMD, UA e taxa de lotação continuam separados por dependerem de contratos adicionais.
+`occupancyAggregation` produz duração conhecida, média, máximo, contagem de intervalos conhecidos/desconhecidos, coverage, limitações e conflitos por animal, lote e pasto. Builders, cards e a parcela de permanência dos cockpits passaram a consumir esses agregados. Naquele incremento, `buildWeightGainForOccupancy`, GMD, UA e taxa de lotação continuavam separados por dependerem de contratos adicionais.
+
+## Fechamento F22C — Observed Occupancy Performance
+
+`buildObservedOccupancyPerformance` consome exclusivamente os intervalos históricos qualificados e a evidência factual F22A de `eventos` + `eventos_pesagem`. Para cada intervalo, a primeira e a última observação válida contida formam a janela observada; duas datas distintas permitem calcular delta e GMD sem arredondamento interno. O contrato declara `OBSERVED_WITHIN_OCCUPANCY`, `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`.
+
+Coverage de peso distingue `FULL_BOUNDARY_COVERAGE`, `PARTIAL_WEIGHT_COVERAGE`, `INSUFFICIENT_WEIGHT_EVIDENCE` e `CONFLICT`. Coverage completa exige coincidência factual exata com os dois limites da ocupação. Occupancy parcial pode sustentar somente a janela observada interna; ausência e conflito permanecem `null`, sem fallback zero, tolerância temporal ou peso atual. Builders, cards e cockpits de lote/pasto consomem o agregado qualificado, e `buildWeightGainForOccupancy` deixou de ser fonte de consumidores produtivos.
 
 ## Integração de entrada — PR #116
 
@@ -226,8 +234,8 @@ O E2E remoto não foi repetido nesta branch.
 
 ### RECOMENDAÇÃO
 
-F22C.3 está implementado. Novo incremento deve introduzir capacidade de produto explicitamente autorizada, sem promover coverage parcial nem acoplar duração a GMD, UA ou rentabilidade por inferência.
+F22C está fechado. Novo incremento deve introduzir capacidade de produto explicitamente autorizada, sem promover coverage parcial nem tratar GMD observado como desempenho confiável, ganho integral da permanência, UA ou rentabilidade.
 
 ## Escopo preservado
 
-Não foram alterados writer, Evento, migration, RPC/RLS, trigger, Dexie, sync ou queue. Foram implementadas duração e agregação factuais e sua apresentação nos consumidores de permanência compatíveis. Não foram implementados UA, UA/ha, @/ha, GMD por ocupação, taxa de lotação nova, ganho por área, ranking, alerta ou recomendação.
+Não foram alterados writer, Evento, migration, RPC/RLS, trigger, Dexie, sync ou queue. Foram implementadas duração, agregação e performance observada factual, com apresentação qualificada nos consumidores compatíveis. Não foram implementados UA, UA/ha, @/ha, taxa de lotação nova, ganho por área, ranking, alerta ou recomendação.

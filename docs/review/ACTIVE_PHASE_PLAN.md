@@ -1,7 +1,7 @@
 # Plano ativo — Fase 22 / Eficiência Produtiva e Econômica
 
 Atualizado em: 2026-09-06
-Status: **Fase 22 ativa; F22C.3 qualified occupancy metrics implementado**
+Status: **Fase 22 ativa; F22C fechada**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
@@ -65,7 +65,7 @@ F22B_ADOPTION_PRESENTATION_GATE = CLOSED
 F22B_COMPLETE_PROFIT = BLOCKED
 ```
 
-A F22B.2 adiciona `calculateObservedEconomicResult` exclusivamente sobre EconomicCoverage: receita observada menos custo observado, sem preencher ausências com zero. O [gate F22B.3](./F22B_ADOPTION_PRESENTATION_GATE.md) fechou com `MIGRATABLE_NOW = 0`; Financeiro e Relatórios exigem mudança de apresentação, e lucro completo permanece bloqueado. O [gate F22C](./F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) confirmou fontes históricas para lote e pasto; F22C.1 implementa intervalos de lote, F22C.2 compõe pasto e F22C.3 qualifica duração e agrega por animal/lote/pasto. Builders, cards e cockpits adotaram somente a parcela segura de permanência; GMD, UA e lotação não foram migrados.
+A F22B.2 adiciona `calculateObservedEconomicResult` exclusivamente sobre EconomicCoverage: receita observada menos custo observado, sem preencher ausências com zero. O [gate F22B.3](./F22B_ADOPTION_PRESENTATION_GATE.md) fechou com `MIGRATABLE_NOW = 0`; Financeiro e Relatórios exigem mudança de apresentação, e lucro completo permanece bloqueado. A [F22C](./F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) está fechada: histórico de lote/pasto, duração, agregação e performance observada dentro da ocupação estão implementados. Builders, cards e cockpits usam a janela factual qualificada; GMD permanece não classificado e não autorizado para uso operacional. UA e lotação não foram alterados.
 
 ## Resultado da Fase 20
 

@@ -5,6 +5,8 @@ import type { AnimalOccupancyPeriod, PastoOccupancyMetrics, DataStatus } from ".
 import { calculateUaLotacao } from "../../lib/animals/kpiHelpers";
 import type { OccupancyAggregate } from "@/lib/occupancy/occupancyAggregation";
 import { presentQualifiedOccupancyDuration } from "./qualifiedOccupancyAdapter";
+import type { OccupancyPerformanceAggregate } from "@/lib/occupancy/occupancyPerformance";
+import { presentObservedOccupancyPerformance } from "./observedOccupancyPerformanceAdapter";
 
 interface BuildPastoOccupancyMetricsInput {
   pastoId: string;
@@ -16,6 +18,7 @@ interface BuildPastoOccupancyMetricsInput {
   categoriaStatus?: DataStatus;
   areaHa?: number | null;
   qualifiedDuration?: OccupancyAggregate | null;
+  observedPerformance?: OccupancyPerformanceAggregate | null;
 }
 
 export function buildPastoOccupancyMetrics({
@@ -32,9 +35,11 @@ export function buildPastoOccupancyMetrics({
   },
   areaHa = null,
   qualifiedDuration,
+  observedPerformance,
 }: BuildPastoOccupancyMetricsInput): PastoOccupancyMetrics {
   const periodsInPasto = animalPeriods.filter((p) => p.pastoId === pastoId);
   const qualified = presentQualifiedOccupancyDuration(qualifiedDuration);
+  const performance = presentObservedOccupancyPerformance(observedPerformance);
 
   if (periodsInPasto.length === 0) {
     const evaluatedCount = activeAnimals.filter((a) => latestEccsMap.has(a.id)).length;
@@ -57,9 +62,9 @@ export function buildPastoOccupancyMetrics({
       pastoId,
       lotacaoAtual: activeAnimals.length,
       tempoMedioOcupacao: qualified.meanDurationDays,
-      ganhoMedioPeso: 0,
-      gmdEstimado: 0,
-      weightStatus: { status: "empty", reason: "Sem pesagens suficientes" },
+      ganhoMedioPeso: performance.weightDeltaKg,
+      gmdEstimado: performance.observedGmdKgPerDay,
+      weightStatus: performance.status,
       eccMedioAtual,
       eccVariacaoMedia: 0,
       eccStatus,
@@ -82,15 +87,6 @@ export function buildPastoOccupancyMetrics({
   }
 
   const lotacaoAtual = activeAnimals.length || periodsInPasto.filter((p) => p.saidaAt === null).length;
-  const periodsWithWeight = periodsInPasto.filter((p) => p.weightStatus.status === "complete");
-  const ganhoMedioPeso = periodsWithWeight.reduce((sum, p) => sum + (p.ganho || 0), 0) / (periodsWithWeight.length || 1);
-  const gmdEstimado = periodsWithWeight.reduce((sum, p) => sum + (p.gmd || 0), 0) / (periodsWithWeight.length || 1);
-
-  let weightStatus: DataStatus = { status: "empty", reason: "Sem pesagens suficientes" };
-  if (periodsWithWeight.length > 0) {
-    weightStatus = { status: "complete" };
-  }
-
   // Factual ECC calculations
   let evaluatedCount = 0;
   let eccMedioAtual = 0;
@@ -134,9 +130,9 @@ export function buildPastoOccupancyMetrics({
     pastoId,
     lotacaoAtual,
     tempoMedioOcupacao: qualified.meanDurationDays,
-    ganhoMedioPeso,
-    gmdEstimado,
-    weightStatus,
+    ganhoMedioPeso: performance.weightDeltaKg,
+    gmdEstimado: performance.observedGmdKgPerDay,
+    weightStatus: performance.status,
     eccMedioAtual,
     eccVariacaoMedia,
     eccStatus,

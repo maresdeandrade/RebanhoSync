@@ -11,15 +11,12 @@ import type {
   EventoMovimentacao,
   AgendaItem,
 } from "@/lib/offline/types";
-import { calculateIndividualGmd, calculateUaLotacao } from "@/lib/animals/kpiHelpers";
+import { calculateUaLotacao } from "@/lib/animals/kpiHelpers";
 import { getPredominantCategorySnapshot } from "./classification";
 import type { OccupancyAggregate } from "@/lib/occupancy/occupancyAggregation";
 import { presentQualifiedOccupancyDuration } from "./qualifiedOccupancyAdapter";
-
-const GMD_LOTE_SCOPE_LIMITATION =
-  "Leitura baseada nos animais atualmente no lote com pesagens válidas; não comprova desempenho histórico completo do lote nem permanência no período sem movimentações suficientes.";
-const GMD_PASTO_SCOPE_LIMITATION =
-  "Leitura baseada nos animais atualmente no pasto com pesagens válidas; não comprova desempenho histórico completo do pasto nem permanência no período sem movimentações suficientes.";
+import type { OccupancyPerformanceAggregate } from "@/lib/occupancy/occupancyPerformance";
+import { presentObservedOccupancyPerformance } from "./observedOccupancyPerformanceAdapter";
 const PASTO_STOCKING_RATE_LIMITATION =
   "Taxa UA/ha exige area_ha válida e peso explícito dos animais atuais; dados incompletos tornam a leitura parcial.";
 const LOTE_UA_LIMITATION =
@@ -98,7 +95,41 @@ function safeParseDate(dStr: string): Date {
   return parseISO(dStr);
 }
 
-// fallow-ignore-next-line complexity -- legacy multi-metric adapter; F22C.3 changes only qualified permanence.
+function groupWeightDetailsByAnimal(
+  details: readonly EventoPesagem[],
+  events: readonly Evento[],
+): Map<string, EventoPesagem[]> {
+  const eventsById = new Map(events.map((event) => [event.id, event]));
+  const grouped = new Map<string, EventoPesagem[]>();
+  for (const detail of details) {
+    if (detail.deleted_at) continue;
+    const animalId = eventsById.get(detail.evento_id)?.animal_id;
+    if (!animalId) continue;
+    grouped.set(animalId, [...(grouped.get(animalId) ?? []), detail]);
+  }
+  return grouped;
+}
+
+function prepareCommonOccupancySources(
+  eventsInput: Evento[],
+  pesagensInput: EventoPesagem[],
+  referenceDate: string,
+  observedPerformance?: OccupancyPerformanceAggregate | null,
+) {
+  const events = Array.isArray(eventsInput) ? eventsInput : [];
+  const pesagens = Array.isArray(pesagensInput) ? pesagensInput : [];
+  const validEvents = events.filter(
+    (event) => !event.deleted_at && event.occurred_at <= referenceDate,
+  );
+
+  return {
+    validEvents,
+    animalPesagensMap: groupWeightDetailsByAnimal(pesagens, validEvents),
+    performance: presentObservedOccupancyPerformance(observedPerformance),
+  };
+}
+
+// fallow-ignore-next-line complexity -- legacy multi-metric adapter; F22C changes only qualified permanence/performance.
 export function calculateLoteMetrics(
   loteId: string,
   referenceDate: string,
@@ -110,10 +141,9 @@ export function calculateLoteMetrics(
   movimentacoesInput: EventoMovimentacao[],
   agendaItensInput: AgendaItem[],
   qualifiedDuration?: OccupancyAggregate | null,
+  observedPerformance?: OccupancyPerformanceAggregate | null,
 ): CockpitLoteMetrics {
   const animals = Array.isArray(animalsInput) ? animalsInput : [];
-  const events = Array.isArray(eventsInput) ? eventsInput : [];
-  const pesagens = Array.isArray(pesagensInput) ? pesagensInput : [];
   const eccs = Array.isArray(eccsInput) ? eccsInput : [];
   const movimentacoes = Array.isArray(movimentacoesInput) ? movimentacoesInput : [];
   const agendaItens = Array.isArray(agendaItensInput) ? agendaItensInput : [];
@@ -126,155 +156,13 @@ export function calculateLoteMetrics(
    );
   const activeAnimalIds = new Set(activeAnimals.map((a) => a.id));
 
-  // Non-deleted events on or before referenceDate
-  const validEvents = events.filter(
-    (e) => !e.deleted_at && e.occurred_at <= referenceDate
-  );
-
-  // 1. Peso Confiável & Recência
-  let sumWeight = 0;
-  let countWeightUsed = 0;
-  let countExpired = 0;
-  let countMissing = 0;
-
-  const animalPesagensMap = new Map<string, EventoPesagem[]>();
-  pesagens.forEach((p) => {
-    if (p.deleted_at) return;
-    const ev = validEvents.find((e) => e.id === p.evento_id);
-    if (ev && ev.animal_id) {
-      if (!animalPesagensMap.has(ev.animal_id)) {
-        animalPesagensMap.set(ev.animal_id, []);
-      }
-      animalPesagensMap.get(ev.animal_id)!.push(p);
-    }
-  });
-
-  activeAnimals.forEach((animal) => {
-    const animalPes = animalPesagensMap.get(animal.id) || [];
-    const validPes = animalPes
-      .map((p) => {
-        const ev = validEvents.find((e) => e.id === p.evento_id)!;
-        return { p, ev };
-      })
-      .sort((a, b) => b.ev.occurred_at.localeCompare(a.ev.occurred_at));
-
-    if (validPes.length === 0) {
-      countMissing++;
-    } else {
-      const latest = validPes[0];
-      const weightDateObj = safeParseDate(latest.ev.occurred_at);
-      const days = differenceInDays(refDateObj, weightDateObj);
-
-      if (weightFreshnessDays !== undefined && weightFreshnessDays !== null) {
-        if (days <= weightFreshnessDays) {
-          sumWeight += latest.p.peso_kg;
-          countWeightUsed++;
-        } else {
-          countExpired++;
-        }
-      } else {
-        sumWeight += latest.p.peso_kg;
-        countWeightUsed++;
-      }
-    }
-  });
-
-  const pesoMedio = countWeightUsed > 0 ? sumWeight / countWeightUsed : null;
-  let pesoStatus: DataStatus = { status: "empty", reason: "Sem pesagens registradas" };
-
-  if (activeAnimals.length === 0) {
-    pesoStatus = { status: "empty", reason: "Sem animais ativos no lote" };
-  } else if (weightFreshnessDays !== undefined && weightFreshnessDays !== null) {
-    if (countWeightUsed === activeAnimals.length) {
-      pesoStatus = {
-        status: "complete",
-        reason: "Todos os pesos são confiáveis",
-        source: "Pesagem factual fresca",
-      };
-    } else if (countWeightUsed > 0) {
-      pesoStatus = {
-        status: "partial",
-        reason: `${countWeightUsed} de ${activeAnimals.length} animais com peso confiável`,
-        source: "Pesagem factual fresca",
-        limitation: `${countExpired} expirados, ${countMissing} sem peso`,
-      };
-    } else {
-      pesoStatus = {
-        status: "empty",
-        reason: "Nenhum peso confiável dentro do prazo de validade",
-        source: "Pesagem factual fresca",
-        limitation: `Todos os ${activeAnimals.length} animais com peso expirado ou ausente`,
-      };
-    }
-  } else {
-    if (countWeightUsed > 0) {
-      pesoStatus = {
-        status: "partial",
-        reason: "Usando último peso registrado (sem limite de recência)",
-        source: "Último peso registrado",
-        limitation: "FreshnessDays não configurado",
-      };
-    }
-  }
-
-  // 2. GMD (Média dos GMDs individuais reais válidos)
-  let sumGmd = 0;
-  let sumGanho = 0;
-  let countGmdCalculated = 0;
-
-  activeAnimals.forEach((animal) => {
-    const animalPes = animalPesagensMap.get(animal.id) || [];
-    const mappedPes = animalPes.map(p => {
-      const ev = validEvents.find((e) => e.id === p.evento_id)!;
-      return {
-        peso_kg: p.peso_kg,
-        occurred_at: ev.occurred_at,
-        deleted_at: p.deleted_at,
-      };
-    });
-
-    const gmdResult = calculateIndividualGmd(mappedPes);
-    if (gmdResult.isValid) {
-      sumGmd += gmdResult.gmdKgDia;
-      sumGanho += gmdResult.ganhoKg;
-      countGmdCalculated++;
-    }
-  });
-
-  const gmdMedio = countGmdCalculated > 0 ? sumGmd / countGmdCalculated : null;
-  const ganhoMedio = countGmdCalculated > 0 ? sumGanho / countGmdCalculated : null;
-  let gmdStatus: DataStatus = { status: "empty", reason: "Sem histórico de GMD" };
-
-  if (activeAnimals.length === 0) {
-    gmdStatus = { status: "empty", reason: "Sem animais ativos" };
-  } else if (countGmdCalculated === activeAnimals.length) {
-    gmdStatus = {
-      status: "partial",
-      reason: "GMD individual disponível para todos os animais atuais do lote",
-      source: "Pesagens factuais dos animais atuais",
-      limitation: GMD_LOTE_SCOPE_LIMITATION,
-    };
-  } else if (countGmdCalculated > 0) {
-    gmdStatus = {
-      status: "partial",
-      reason: `${countGmdCalculated} de ${activeAnimals.length} animais atuais do lote com GMD`,
-      source: "Pesagens factuais dos animais atuais",
-      limitation: mergeLimitations(
-        `${activeAnimals.length - countGmdCalculated} animais com dados insuficientes (exige ≥2 pesagens em dias distintos).`,
-        GMD_LOTE_SCOPE_LIMITATION,
-      ),
-    };
-  } else {
-    gmdStatus = {
-      status: "empty",
-      reason: "Dados insuficientes para calcular GMD",
-      source: "Pesagens factuais dos animais atuais",
-      limitation: mergeLimitations(
-        "Todos os animais têm menos de 2 pesagens ou intervalo inválido.",
-        GMD_LOTE_SCOPE_LIMITATION,
-      ),
-    };
-  }
+  const { validEvents, animalPesagensMap, performance } =
+    prepareCommonOccupancySources(
+      eventsInput,
+      pesagensInput,
+      referenceDate,
+      observedPerformance,
+    );
 
   // 3. ECC (Escore de Condição Corporal)
   let sumEcc = 0;
@@ -412,11 +300,11 @@ export function calculateLoteMetrics(
   return {
     loteId,
     quantidadeAtual: activeAnimals.length,
-    pesoMedio,
-    pesoStatus,
-    gmdMedio,
-    ganhoMedio,
-    gmdStatus,
+    pesoMedio: performance.finalWeightKg,
+    pesoStatus: performance.status,
+    gmdMedio: performance.observedGmdKgPerDay,
+    ganhoMedio: performance.weightDeltaKg,
+    gmdStatus: performance.status,
     eccMedio,
     eccStatus,
     eccCobertura: { avaliados: countEccEvaluated, total: activeAnimals.length },
@@ -452,12 +340,11 @@ export function calculatePastoMetrics(
   movimentacoesInput: EventoMovimentacao[],
   agendaItensInput: AgendaItem[],
   qualifiedDuration?: OccupancyAggregate | null,
+  observedPerformance?: OccupancyPerformanceAggregate | null,
 ): CockpitPastoMetrics {
   const animals = Array.isArray(animalsInput) ? animalsInput : [];
   const lotes = Array.isArray(lotesInput) ? lotesInput : [];
   const pastos = Array.isArray(pastosInput) ? pastosInput : [];
-  const events = Array.isArray(eventsInput) ? eventsInput : [];
-  const pesagens = Array.isArray(pesagensInput) ? pesagensInput : [];
   const eccs = Array.isArray(eccsInput) ? eccsInput : [];
   const movimentacoes = Array.isArray(movimentacoesInput) ? movimentacoesInput : [];
   const agendaItens = Array.isArray(agendaItensInput) ? agendaItensInput : [];
@@ -474,157 +361,15 @@ export function calculatePastoMetrics(
    );
   const activeAnimalIds = new Set(activeAnimals.map((a) => a.id));
 
-  // Non-deleted events on or before referenceDate
-  const validEvents = events.filter(
-    (e) => !e.deleted_at && e.occurred_at <= referenceDate
+  const commonSources = prepareCommonOccupancySources(
+    eventsInput,
+    pesagensInput,
+    referenceDate,
+    observedPerformance,
   );
+  const { validEvents, animalPesagensMap, performance } = commonSources;
 
-  // 1. Peso Confiável & Recência
-  let sumWeight = 0;
-  let countWeightUsed = 0;
-  let countExpired = 0;
-  let countMissing = 0;
-
-  const animalPesagensMap = new Map<string, EventoPesagem[]>();
-  pesagens.forEach((p) => {
-    if (p.deleted_at) return;
-    const ev = validEvents.find((e) => e.id === p.evento_id);
-    if (ev && ev.animal_id) {
-      if (!animalPesagensMap.has(ev.animal_id)) {
-        animalPesagensMap.set(ev.animal_id, []);
-      }
-      animalPesagensMap.get(ev.animal_id)!.push(p);
-    }
-  });
-
-  activeAnimals.forEach((animal) => {
-    const animalPes = animalPesagensMap.get(animal.id) || [];
-    const validPes = animalPes
-      .map((p) => {
-        const ev = validEvents.find((e) => e.id === p.evento_id)!;
-        return { p, ev };
-      })
-      .sort((a, b) => b.ev.occurred_at.localeCompare(a.ev.occurred_at));
-
-    if (validPes.length === 0) {
-      countMissing++;
-    } else {
-      const latest = validPes[0];
-      const weightDateObj = safeParseDate(latest.ev.occurred_at);
-      const days = differenceInDays(refDateObj, weightDateObj);
-
-      if (weightFreshnessDays !== undefined && weightFreshnessDays !== null) {
-        if (days <= weightFreshnessDays) {
-          sumWeight += latest.p.peso_kg;
-          countWeightUsed++;
-        } else {
-          countExpired++;
-        }
-      } else {
-        sumWeight += latest.p.peso_kg;
-        countWeightUsed++;
-      }
-    }
-  });
-
-  const pesoMedio = countWeightUsed > 0 ? sumWeight / countWeightUsed : null;
-  let pesoStatus: DataStatus = { status: "empty", reason: "Sem pesagens registradas" };
-
-  if (activeAnimals.length === 0) {
-    pesoStatus = { status: "empty", reason: "Sem animais ativos no pasto" };
-  } else if (weightFreshnessDays !== undefined && weightFreshnessDays !== null) {
-    if (countWeightUsed === activeAnimals.length) {
-      pesoStatus = {
-        status: "complete",
-        reason: "Todos os pesos são confiáveis",
-        source: "Pesagem factual fresca",
-      };
-    } else if (countWeightUsed > 0) {
-      pesoStatus = {
-        status: "partial",
-        reason: `${countWeightUsed} de ${activeAnimals.length} animais com peso confiável`,
-        source: "Pesagem factual fresca",
-        limitation: `${countExpired} expirados, ${countMissing} sem peso`,
-      };
-    } else {
-      pesoStatus = {
-        status: "empty",
-        reason: "Nenhum peso confiável dentro do prazo de validade",
-        source: "Pesagem factual fresca",
-        limitation: `Todos os ${activeAnimals.length} animais com peso expirado ou ausente`,
-      };
-    }
-  } else {
-    if (countWeightUsed > 0) {
-      pesoStatus = {
-        status: "partial",
-        reason: "Usando último peso registrado (sem limite de recência)",
-        source: "Último peso registrado",
-        limitation: "FreshnessDays não configurado",
-      };
-    }
-  }
-
-  // 2. GMD (Média dos GMDs individuais reais válidos)
-  let sumGmd = 0;
-  let sumGanho = 0;
-  let countGmdCalculated = 0;
-
-  activeAnimals.forEach((animal) => {
-    const animalPes = animalPesagensMap.get(animal.id) || [];
-    const mappedPes = animalPes.map(p => {
-      const ev = validEvents.find((e) => e.id === p.evento_id)!;
-      return {
-        peso_kg: p.peso_kg,
-        occurred_at: ev.occurred_at,
-        deleted_at: p.deleted_at,
-      };
-    });
-
-    const gmdResult = calculateIndividualGmd(mappedPes);
-    if (gmdResult.isValid) {
-      sumGmd += gmdResult.gmdKgDia;
-      sumGanho += gmdResult.ganhoKg;
-      countGmdCalculated++;
-    }
-  });
-
-  const gmdMedio = countGmdCalculated > 0 ? sumGmd / countGmdCalculated : null;
-  const ganhoMedioPeso = countGmdCalculated > 0 ? sumGanho / countGmdCalculated : null;
-  let gmdStatus: DataStatus = { status: "empty", reason: "Sem histórico de GMD" };
-
-  if (activeAnimals.length === 0) {
-    gmdStatus = { status: "empty", reason: "Sem animais ativos" };
-  } else if (countGmdCalculated === activeAnimals.length) {
-    gmdStatus = {
-      status: "partial",
-      reason: "GMD individual disponível para todos os animais atuais do pasto",
-      source: "Pesagens factuais dos animais atuais",
-      limitation: GMD_PASTO_SCOPE_LIMITATION,
-    };
-  } else if (countGmdCalculated > 0) {
-    gmdStatus = {
-      status: "partial",
-      reason: `${countGmdCalculated} de ${activeAnimals.length} animais atuais do pasto com GMD`,
-      source: "Pesagens factuais dos animais atuais",
-      limitation: mergeLimitations(
-        `${activeAnimals.length - countGmdCalculated} animais com dados insuficientes (exige ≥2 pesagens em dias distintos).`,
-        GMD_PASTO_SCOPE_LIMITATION,
-      ),
-    };
-  } else {
-    gmdStatus = {
-      status: "empty",
-      reason: "Dados insuficientes para calcular GMD",
-      source: "Pesagens factuais dos animais atuais",
-      limitation: mergeLimitations(
-        "Todos os animais têm menos de 2 pesagens ou intervalo inválido.",
-        GMD_PASTO_SCOPE_LIMITATION,
-      ),
-    };
-  }
-
-  // fallow-ignore-next-line code-duplication -- legacy ECC branches remain outside the F22C.3 duration scope.
+  // fallow-ignore-next-line code-duplication -- legacy ECC branches remain outside the F22C scope.
   // 3. ECC
   let sumEcc = 0;
   let countEccEvaluated = 0;
@@ -764,11 +509,11 @@ export function calculatePastoMetrics(
   return {
     pastoId,
     lotacaoAtual: activeAnimals.length,
-    pesoMedio,
-    pesoStatus,
-    gmdMedio,
-    ganhoMedioPeso,
-    gmdStatus,
+    pesoMedio: performance.finalWeightKg,
+    pesoStatus: performance.status,
+    gmdMedio: performance.observedGmdKgPerDay,
+    ganhoMedioPeso: performance.weightDeltaKg,
+    gmdStatus: performance.status,
     eccMedio,
     eccStatus,
     eccCobertura: { avaliados: countEccEvaluated, total: activeAnimals.length },

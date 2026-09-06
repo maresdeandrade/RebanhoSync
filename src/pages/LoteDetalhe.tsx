@@ -50,6 +50,7 @@ import { useOccupancyData } from "@/features/occupancy/useOccupancyData";
 import { Input } from "@/components/ui/input";
 
 import { calculateLoteMetrics } from "@/features/occupancy/cockpitManejoAdapter";
+import { CockpitCard } from "@/features/occupancy/CockpitCard";
 import { TimelineFactual } from "@/components/timeline/TimelineFactual";
 import { useAuth } from "@/hooks/useAuth";
 import { readLoteInActiveFarm } from "@/pages/detailFarmIsolation";
@@ -77,119 +78,6 @@ function readString(source: Record<string, unknown> | null | undefined, ...keys:
 function formatDate(value: string | null | undefined) {
   if (!value) return "-";
   return new Date(`${value.slice(0, 10)}T00:00:00.000`).toLocaleDateString("pt-BR");
-}
-
-interface CockpitCardProps {
-  title: string;
-  value: string | number | null;
-  unit?: string;
-  icon: React.ReactNode;
-  status: "empty" | "partial" | "complete" | "blocked";
-  reason?: string;
-  source?: string;
-  limitation?: string;
-  extraContent?: React.ReactNode;
-}
-
-function CockpitCard({
-  title,
-  value,
-  unit,
-  icon,
-  status,
-  reason,
-  source,
-  limitation,
-  extraContent,
-}: CockpitCardProps) {
-  const getStatusStyles = (s: typeof status) => {
-    switch (s) {
-      case "complete":
-        return "border-semantic-success-border bg-semantic-success-muted text-foreground";
-      case "partial":
-        return "border-semantic-warning-border bg-semantic-warning-muted text-foreground";
-      case "blocked":
-        return "border-semantic-error-border bg-semantic-error-muted text-foreground";
-      default:
-        return "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground";
-    }
-  };
-
-  const getStatusLabel = (s: typeof status) => {
-    switch (s) {
-      case "complete":
-        return "Completo";
-      case "partial":
-        return "Parcial";
-      case "blocked":
-        return "Bloqueado";
-      default:
-        return "Vazio";
-    }
-  };
-
-  const getStatusBadgeStyles = (s: typeof status) => {
-    switch (s) {
-      case "complete":
-        return "border-semantic-success-border bg-semantic-success-muted text-foreground";
-      case "partial":
-        return "border-semantic-warning-border bg-semantic-warning-muted text-foreground";
-      case "blocked":
-        return "border-semantic-error-border bg-semantic-error-muted text-foreground";
-      default:
-        return "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground";
-    }
-  };
-
-  return (
-    <div className={`flex flex-col justify-between rounded-xl border p-4 ${getStatusStyles(status)}`}>
-      <div className="space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-background/50 border border-current/10">
-              {icon}
-            </div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              {title}
-            </h4>
-          </div>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getStatusBadgeStyles(status)}`}>
-            {getStatusLabel(status)}
-          </span>
-        </div>
-
-        <div className="space-y-1">
-          <p className="text-2xl font-extrabold tracking-tight text-foreground">
-            {value !== null ? (typeof value === "number" ? value.toFixed(1) : value) : "—"}
-            {value !== null && unit && (
-              <span className="text-xs font-semibold text-muted-foreground ml-1.5 uppercase tracking-wide">
-                {unit}
-              </span>
-            )}
-          </p>
-          {reason && (
-            <p className="text-xs font-medium text-foreground/80 leading-snug">
-              {reason}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-3 pt-3 border-t border-current/10 space-y-1.5 text-[11px] text-muted-foreground">
-        {source && (
-          <p>
-            <span className="font-semibold text-foreground/75">Fonte:</span> {source}
-          </p>
-        )}
-        {limitation && (
-          <p className="font-medium text-semantic-warning">
-            <span className="font-semibold">Nota:</span> {limitation}
-          </p>
-        )}
-        {extraContent}
-      </div>
-    </div>
-  );
 }
 
 export default function LoteDetalhe() {
@@ -325,7 +213,11 @@ export default function LoteDetalhe() {
     [lote?.id, activeFarmId],
   ) ?? EMPTY_ARRAY;
   const referenceDate = useMemo(() => new Date().toISOString(), []);
-  const { allAnimalPeriods, qualifiedLotDurationById } = useOccupancyData(
+  const {
+    allAnimalPeriods,
+    qualifiedLotDurationById,
+    observedLotPerformanceById,
+  } = useOccupancyData(
     activeFarmId ?? "",
     referenceDate,
   );
@@ -351,8 +243,9 @@ export default function LoteDetalhe() {
       movimentacoes,
       agendaItens,
       qualifiedLotDurationById.get(lote.id),
+      observedLotPerformanceById.get(lote.id),
     );
-  }, [lote, referenceDate, weightFreshnessDays, animais, events, pesagens, eccs, movimentacoes, agendaItens, qualifiedLotDurationById]);
+  }, [lote, referenceDate, weightFreshnessDays, animais, events, pesagens, eccs, movimentacoes, agendaItens, qualifiedLotDurationById, observedLotPerformanceById]);
 
   // Unified Timeline selector
   const timelineItems = useMemo(() => {
@@ -689,9 +582,9 @@ export default function LoteDetalhe() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Peso Médio Confiável */}
+            {/* Peso final observado */}
             <CockpitCard
-              title="Peso Médio Confiável"
+              title="Peso final observado"
               value={loteMetrics.pesoMedio}
               unit="kg"
               icon={<Scale className="h-4 w-4" />}
@@ -701,9 +594,9 @@ export default function LoteDetalhe() {
               limitation={loteMetrics.pesoStatus.limitation}
             />
 
-            {/* GMD Médio */}
+            {/* GMD observado */}
             <CockpitCard
-              title="GMD Médio"
+              title="GMD observado"
               value={loteMetrics.gmdMedio}
               unit="kg/dia"
               icon={<TrendingUp className="h-4 w-4" />}
@@ -714,7 +607,7 @@ export default function LoteDetalhe() {
               extraContent={
                 loteMetrics.ganhoMedio !== null && (
                   <p className="mt-1">
-                    <span className="font-semibold text-foreground/75">Ganho Acumulado:</span> {loteMetrics.ganhoMedio.toFixed(1)} kg
+                    <span className="font-semibold text-foreground/75">Variação observada:</span> {loteMetrics.ganhoMedio.toFixed(1)} kg
                   </p>
                 )
               }

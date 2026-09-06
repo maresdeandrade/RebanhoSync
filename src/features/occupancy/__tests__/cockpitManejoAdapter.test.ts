@@ -5,6 +5,30 @@ import { describe, it, expect } from "vitest";
 import { calculateLoteMetrics, calculatePastoMetrics } from "../cockpitManejoAdapter";
 import type { Animal, Evento, EventoPesagem, EventoEcc, EventoMovimentacao, Pasto, Lote } from "../../../lib/offline/types";
 import type { OccupancyAggregate } from "@/lib/occupancy/occupancyAggregation";
+import type { OccupancyPerformanceAggregate } from "@/lib/occupancy/occupancyPerformance";
+
+function observedPerformance(
+  dimension: "LOT" | "PASTURE",
+  groupId: string,
+): OccupancyPerformanceAggregate {
+  return {
+    dimension,
+    groupId,
+    fazendaId: "faz-1",
+    animalIds: ["ani-1"],
+    meanInitialObservedWeightKg: 200,
+    meanFinalObservedWeightKg: 210,
+    meanWeightDeltaKg: 10,
+    meanObservedGmdKgPerDay: 1,
+    calculatedIntervals: 1,
+    unavailableIntervals: 0,
+    coverage: "PARTIAL_WEIGHT_COVERAGE",
+    reliability: "UNCLASSIFIED",
+    operationalUse: "NOT_AUTHORIZED",
+    limitations: [],
+    conflicts: [],
+  };
+}
 
 function qualifiedDuration(
   dimension: "LOT" | "PASTURE",
@@ -36,7 +60,7 @@ describe("cockpitManejoAdapter unit tests", () => {
   describe("calculateLoteMetrics", () => {
     const refDate = "2026-05-28";
 
-    it("calculates correct GMD with 2 weights and days interval", () => {
+    it("presents the qualified observed GMD aggregate", () => {
       const animals: Animal[] = [
         { id: "ani-1", status: "ativo", lote_id: "lote-1", identificacao: "A1", sexo: "F", fazenda_id: "faz-1", payload: {} } as any
       ];
@@ -49,13 +73,15 @@ describe("cockpitManejoAdapter unit tests", () => {
         { evento_id: "evt-2", peso_kg: 210 } as any
       ];
 
-      const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, pesagens, [], [], []);
+      const metrics = calculateLoteMetrics(
+        "lote-1", refDate, 30, animals, events, pesagens, [], [], [], undefined,
+        observedPerformance("LOT", "lote-1"),
+      );
       expect(metrics.gmdMedio).toBe(1); // 10kg gain / 10 days = 1.0 kg/day
       expect(metrics.ganhoMedio).toBe(10); // 10kg gain
       expect(metrics.gmdStatus.status).toBe("partial");
-      expect(metrics.gmdStatus.reason).toContain("animais atuais do lote");
-      expect(metrics.gmdStatus.limitation).toContain("não comprova desempenho histórico completo do lote");
-      expect(metrics.gmdStatus.limitation).toContain("permanência no período");
+      expect(metrics.gmdStatus.reason).toContain("GMD observado");
+      expect(metrics.gmdStatus.limitation).toContain("não representa ganho de toda a permanência");
     });
 
     it("blocks GMD with less than 2 weights", () => {
@@ -72,8 +98,8 @@ describe("cockpitManejoAdapter unit tests", () => {
       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, pesagens, [], [], []);
       expect(metrics.gmdMedio).toBeNull();
       expect(metrics.gmdStatus.status).toBe("empty");
-      expect(metrics.gmdStatus.limitation).toContain("pesagens");
-      expect(metrics.gmdStatus.limitation).toContain("não comprova desempenho histórico completo do lote");
+      expect(metrics.gmdStatus.reason).toContain("Pesagens factuais insuficientes");
+      expect(metrics.gmdStatus.limitation).toContain("não representa desempenho de toda a permanência");
     });
 
     it("blocks GMD with 0 days interval", () => {
@@ -196,7 +222,10 @@ describe("cockpitManejoAdapter unit tests", () => {
         { evento_id: "evt-1", peso_kg: 450 } as any
       ];
 
-      const metrics = calculatePastoMetrics("pasto-1", refDate, 30, animals, lotes, pastos, events, pesagens, [], [], []);
+      const metrics = calculatePastoMetrics(
+        "pasto-1", refDate, 30, animals, lotes, pastos, events, pesagens, [], [], [], undefined,
+        observedPerformance("PASTURE", "pasto-1"),
+      );
       expect(metrics.uaTotal).toBe(1); // 450 / 450 = 1 UA
       expect(metrics.taxaLotacaoUaHa).toBe(0.1); // 1 UA / 10 ha = 0.1 UA/ha
       expect(metrics.taxaLotacaoStatus.status).toBe("complete");
@@ -224,7 +253,7 @@ describe("cockpitManejoAdapter unit tests", () => {
       expect(metrics.taxaLotacaoStatus.limitation).toContain("area_ha válida");
     });
 
-    it("keeps pasto GMD partial without proven permanence in the period", () => {
+    it("keeps pasture observed GMD qualified as partial", () => {
       const animals: Animal[] = [
         { id: "ani-1", status: "ativo", lote_id: "lote-1", identificacao: "A1", sexo: "F", fazenda_id: "faz-1", payload: {} } as any
       ];
@@ -237,12 +266,14 @@ describe("cockpitManejoAdapter unit tests", () => {
         { evento_id: "evt-2", peso_kg: 210 } as any
       ];
 
-      const metrics = calculatePastoMetrics("pasto-1", refDate, 30, animals, lotes, pastos, events, pesagens, [], [], []);
+      const metrics = calculatePastoMetrics(
+        "pasto-1", refDate, 30, animals, lotes, pastos, events, pesagens, [], [], [], undefined,
+        observedPerformance("PASTURE", "pasto-1"),
+      );
       expect(metrics.gmdMedio).toBe(1);
       expect(metrics.gmdStatus.status).toBe("partial");
-      expect(metrics.gmdStatus.reason).toContain("animais atuais do pasto");
-      expect(metrics.gmdStatus.limitation).toContain("não comprova desempenho histórico completo do pasto");
-      expect(metrics.gmdStatus.limitation).toContain("permanência no período");
+      expect(metrics.gmdStatus.reason).toContain("GMD observado");
+      expect(metrics.gmdStatus.limitation).toContain("não representa ganho de toda a permanência");
     });
 
     it("uses qualified partial pasture duration and propagates coverage", () => {
@@ -288,8 +319,7 @@ describe("cockpitManejoAdapter unit tests", () => {
   describe("Testes adicionais Fase 5.1 — invariantes KPI", () => {
     const refDate = "2026-05-28";
 
-    it("GMD usa occurred_at do evento, não outra data", () => {
-      // occurred_at = "2026-05-18" e "2026-05-28" => 10 dias de intervalo
+    it("consome o GMD observado qualificado sem recalcular no cockpit", () => {
       const animals: Animal[] = [
         { id: "ani-1", status: "ativo", lote_id: "lote-1", identificacao: "A1", sexo: "F", fazenda_id: "faz-1", payload: {} } as any,
       ];
@@ -302,8 +332,10 @@ describe("cockpitManejoAdapter unit tests", () => {
         { evento_id: "evt-2", peso_kg: 210 } as any,
       ];
 
-      const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, pesagens, [], [], []);
-      // ganho 10 kg / 10 dias = 1.0 kg/dia
+      const metrics = calculateLoteMetrics(
+        "lote-1", refDate, 30, animals, events, pesagens, [], [], [], undefined,
+        observedPerformance("LOT", "lote-1"),
+      );
       expect(metrics.gmdMedio).toBe(1.0);
       expect(metrics.gmdStatus.status).toBe("partial");
     });
@@ -400,7 +432,7 @@ it("animal vendido é excluído do cálculo de GMD", () => {
       const metrics = calculateLoteMetrics("lote-1", refDate, 30, animals, events, pesagens, [], [], []);
       expect(metrics.gmdMedio).toBeNull();
       expect(metrics.gmdStatus.status).toBe("empty");
-      expect(metrics.gmdStatus.limitation).toContain("intervalo inválido");
+      expect(metrics.gmdStatus.limitation).toContain("não representa desempenho de toda a permanência");
     });
 
     it("UA/ha bloqueia quando área do pasto é 0", () => {
