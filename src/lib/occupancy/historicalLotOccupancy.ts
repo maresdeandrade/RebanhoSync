@@ -1,4 +1,16 @@
 import type { Evento, EventoMovimentacao } from "@/lib/offline/types";
+import {
+  appendFinalSourcedInterval,
+  buildFactualEvidenceIndex,
+  cloneSourced,
+  closeSourcedInterval,
+  coverageFromEvidence,
+  groupByKey,
+  sortTimestamped,
+  stableSignature,
+  statusFromHistory,
+  uniqueSorted,
+} from "./historicalOccupancyInternals";
 
 export type HistoricalLotOccupancyStatus =
   | "READY"
@@ -143,25 +155,9 @@ interface ReconstructionState {
   truncated: boolean;
 }
 
-function canonicalize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalize);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, nested]) => [key, canonicalize(nested)]),
-    );
-  }
-  return value;
-}
-
-function signature(value: unknown): string {
-  return JSON.stringify(canonicalize(value));
-}
-
 function semanticEventSignature(event: Evento): string {
   const timestamp = Date.parse(event.occurred_at);
-  return signature({
+  return stableSignature({
     id: event.id,
     fazendaId: event.fazenda_id,
     dominio: event.dominio,
@@ -174,7 +170,7 @@ function semanticEventSignature(event: Evento): string {
 }
 
 function semanticDetailSignature(detail: EventoMovimentacao): string {
-  return signature({
+  return stableSignature({
     eventoId: detail.evento_id,
     fazendaId: detail.fazenda_id,
     fromLoteId: detail.from_lote_id,
@@ -184,21 +180,6 @@ function semanticDetailSignature(detail: EventoMovimentacao): string {
     payload: detail.payload,
     deletedAt: detail.deleted_at,
   });
-}
-
-function groupBy<T>(items: readonly T[], key: (item: T) => string): Map<string, T[]> {
-  const grouped = new Map<string, T[]>();
-  for (const item of items) {
-    const id = key(item);
-    const group = grouped.get(id) ?? [];
-    group.push(item);
-    grouped.set(id, group);
-  }
-  return grouped;
-}
-
-function uniqueSorted(values: readonly string[]): string[] {
-  return [...new Set(values)].sort((left, right) => left.localeCompare(right));
 }
 
 function addLimitation(
@@ -398,18 +379,12 @@ function collectEvidence(
   input: SelectHistoricalLotOccupancyInput,
   referenceTimestamp: number,
 ): EvidenceCollection {
-  const scopedEvents = input.events.filter(
+  const index = buildFactualEvidenceIndex(
+    input.events,
+    input.movementDetails,
+    input.fazendaId,
     (event) =>
-      event.fazenda_id === input.fazendaId &&
-      event.animal_id === input.animalId &&
-      event.dominio === "movimentacao",
-  );
-  const eventGroups = groupBy(scopedEvents, (event) => event.id);
-  const detailGroups = groupBy(
-    input.movementDetails.filter(
-      (detail) => detail.fazenda_id === input.fazendaId,
-    ),
-    (detail) => detail.evento_id,
+      event.animal_id === input.animalId && event.dominio === "movimentacao",
   );
   const state: EvidenceAccumulator = {
     movements: [],
@@ -422,8 +397,8 @@ function collectEvidence(
     hasUnpositionedConflict: false,
   };
 
-  for (const eventId of [...eventGroups.keys()].sort((a, b) => a.localeCompare(b))) {
-    const copies = eventGroups.get(eventId)!;
+  for (const eventId of [...index.eventGroups.keys()].sort((a, b) => a.localeCompare(b))) {
+    const copies = index.eventGroups.get(eventId)!;
     const event = selectUniqueEvent(copies, state);
     if (!event) continue;
     const timestamp = validateEventForReference(
@@ -435,7 +410,7 @@ function collectEvidence(
     const detail = selectUniqueDetail(
       event,
       timestamp,
-      detailGroups.get(event.id) ?? [],
+      index.detailGroups.get(event.id) ?? [],
       state,
     );
     if (!detail) continue;
@@ -444,17 +419,13 @@ function collectEvidence(
 
   return {
     ...state,
-    movements: [...state.movements].sort(
-      (left, right) =>
-        left.timestamp - right.timestamp ||
-        left.eventId.localeCompare(right.eventId),
-    ),
-    scopedEventCount: scopedEvents.length,
+    movements: sortTimestamped(state.movements),
+    scopedEventCount: index.scopedEventCount,
   };
 }
 
 function cloneInterval(interval: MutableInterval): HistoricalLotOccupancyInterval {
-  return { ...interval, sourceEventIds: [...interval.sourceEventIds] };
+  return cloneSourced(interval);
 }
 
 function movementsByTimestamp(
@@ -487,10 +458,9 @@ function closeCurrentInterval(
   state: ReconstructionState,
 ): void {
   if (!state.current) return;
-  state.current.leftAt = movement.occurredAt;
-  state.current.endBoundary = "KNOWN";
-  state.current.sourceEventIds.push(movement.eventId);
-  state.intervals.push(cloneInterval(state.current));
+  state.intervals.push(
+    closeSourcedInterval(state.current, movement.occurredAt, movement.eventId),
+  );
   state.current = null;
 }
 
@@ -601,87 +571,22 @@ function reconstructIntervals(
     }
   }
 
-  if (evidence.blockingTimestamp !== null || evidence.conflicts.length > 0) {
-    state.truncated = true;
-  }
-  if (state.current) {
-    state.current.endBoundary = state.truncated ? "RIGHT_BOUND_UNKNOWN" : "OPEN";
-    state.intervals.push(cloneInterval(state.current));
-  }
+  appendFinalSourcedInterval(
+    state.intervals,
+    state.current,
+    state.truncated,
+    evidence.blockingTimestamp !== null || evidence.conflicts.length > 0,
+  );
   return {
     intervals: state.intervals,
     appliedMovementCount: state.appliedMovementCount,
   };
 }
 
-function resolveHistoryCoverage(
-  evidence: EvidenceCollection,
-  intervals: readonly HistoricalLotOccupancyInterval[],
-): HistoricalLotOccupancyHistoryCoverage {
-  if (evidence.conflicts.length > 0) return "CONFLICTED_HISTORY";
-  if (intervals.length === 0) return "NO_HISTORY";
-  const unknownBoundary = intervals.some(
-    (interval) =>
-      interval.startBoundary === "LEFT_BOUND_UNKNOWN" ||
-      interval.endBoundary === "RIGHT_BOUND_UNKNOWN",
-  );
-  const incompleteSource = evidence.limitations.some(
-    (limitation) => limitation.affectsCoverage,
-  );
-  return unknownBoundary || incompleteSource
-    ? "PARTIAL_HISTORY"
-    : "CONTIGUOUS_HISTORY";
-}
-
-function resolveLeftBoundary(
-  intervals: readonly HistoricalLotOccupancyInterval[],
-): HistoricalLotOccupancyCoverage["leftBoundary"] {
-  if (intervals.length === 0) return "NOT_AVAILABLE";
-  return intervals.some(
-    (interval) => interval.startBoundary === "LEFT_BOUND_UNKNOWN",
-  )
-    ? "LEFT_BOUND_UNKNOWN"
-    : "KNOWN_LEFT_BOUND";
-}
-
-function resolveRightBoundary(
-  intervals: readonly HistoricalLotOccupancyInterval[],
-): HistoricalLotOccupancyCoverage["rightBoundary"] {
-  const last = intervals[intervals.length - 1];
-  if (!last) return "NOT_AVAILABLE";
-  if (last.endBoundary === "OPEN") return "OPEN_RIGHT_BOUND";
-  if (last.endBoundary === "RIGHT_BOUND_UNKNOWN") {
-    return "RIGHT_BOUND_UNKNOWN";
-  }
-  return "KNOWN_RIGHT_BOUND";
-}
-
-function coverageFor(
-  input: SelectHistoricalLotOccupancyInput,
-  evidence: EvidenceCollection,
-  intervals: readonly HistoricalLotOccupancyInterval[],
-  appliedMovementCount: number,
-): HistoricalLotOccupancyCoverage {
-  return {
-    history: resolveHistoryCoverage(evidence, intervals),
-    leftBoundary: resolveLeftBoundary(intervals),
-    rightBoundary: resolveRightBoundary(intervals),
-    inputEventCount: input.events.length,
-    scopedEventCount: evidence.scopedEventCount,
-    usableMovementCount: evidence.movements.length,
-    appliedMovementCount,
-    deduplicatedEventCount: evidence.deduplicatedEventCount,
-    deduplicatedDetailCount: evidence.deduplicatedDetailCount,
-  };
-}
-
 function statusFor(
   coverage: HistoricalLotOccupancyCoverage,
 ): HistoricalLotOccupancyStatus {
-  if (coverage.history === "CONFLICTED_HISTORY") return "CONFLICT";
-  if (coverage.history === "NO_HISTORY") return "NO_HISTORY";
-  if (coverage.history === "PARTIAL_HISTORY") return "PARTIAL";
-  return "READY";
+  return statusFromHistory(coverage.history);
 }
 
 export function selectHistoricalLotOccupancy(
@@ -719,8 +624,8 @@ export function selectHistoricalLotOccupancy(
 
   const evidence = collectEvidence(input, referenceTimestamp);
   const reconstruction = reconstructIntervals(input, evidence);
-  const coverage = coverageFor(
-    input,
+  const coverage = coverageFromEvidence(
+    input.events.length,
     evidence,
     reconstruction.intervals,
     reconstruction.appliedMovementCount,

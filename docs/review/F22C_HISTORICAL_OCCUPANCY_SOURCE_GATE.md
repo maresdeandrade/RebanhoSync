@@ -12,7 +12,8 @@ F22C_HISTORICAL_LOT_SOURCE = READY
 F22C_HISTORICAL_PASTURE_SOURCE = READY
 F22C_LOT_OCCUPANCY_READ_MODEL = IMPLEMENTED
 F22C_LOT_DURATION = NOT_STARTED
-F22C_PASTURE_OCCUPANCY_READ_MODEL = NOT_STARTED
+F22C_PASTURE_OCCUPANCY_READ_MODEL = IMPLEMENTED
+F22C_PASTURE_DURATION = NOT_STARTED
 ```
 
 As duas relações possuem fatos históricos datados e convergentes: `animal → lote` em `eventos` + `eventos_movimentacao` e `lote → pasto` no mesmo par de tabelas, com um Evento de movimentação próprio para o lote inteiro. Isso é suficiente para iniciar um read model que produza intervalos factuais e coverage explícita.
@@ -27,7 +28,15 @@ Nenhum cálculo de permanência, lotação ou produtividade foi implementado.
 
 O contrato preserva `LEFT_BOUND_UNKNOWN`, `OPEN_RIGHT_BOUND` e `RIGHT_BOUND_UNKNOWN`; expõe `READY`, `PARTIAL`, `NO_HISTORY` e `CONFLICT`; e interrompe a cadeia diante de empate temporal, origem incompatível, identidade divergente ou correção sem resolvedor canônico. Detail ausente, tombstone, data inválida e `A → null` não canônico permanecem limitações explícitas. Movimentos exclusivos de pasto não participam.
 
-O read model não contém duração, dias, pasto, peso, GMD, lotação ou estado atual. O próximo incremento elegível é F22C.2, que deverá compor relações factuais de lote e pasto sem retroagir o pasto atual.
+O read model não contém duração, dias, pasto, peso, GMD, lotação ou estado atual.
+
+## Atualização F22C.2 — Historical Pasture Occupancy Composition
+
+`selectHistoricalLotPastureOccupancy` reconstrói a cadeia factual lote→pasto apenas quando o Evento identifica `animal_id = null`, `lote_id = L` e o detail mantém `from_lote_id = to_lote_id = L`, com origem/destino em `from_pasto_id`/`to_pasto_id`. O selector preserva boundaries, deduplicação, limitações e conflitos equivalentes aos da cadeia animal→lote.
+
+`selectHistoricalPastureOccupancy` reutiliza `selectHistoricalLotOccupancy` e compõe cada intervalo animal→pasto somente pela interseção temporal com um intervalo lote→pasto do mesmo lote e fazenda. A saída mantém separadamente `lotOccupancySourceEventIds` e `pastureSourceEventIds`, não consolida segmentos com provenance distinta e expõe trechos sem suporte simultâneo como `PASTURE_UNKNOWN`.
+
+Coverage e conflitos das duas fontes são propagados conservadoramente: a composição não promove `LEFT_BOUND_UNKNOWN`, `RIGHT_BOUND_UNKNOWN`, `PARTIAL_HISTORY` ou `CONFLICTED_HISTORY`. Estado atual não completa gaps. Nenhuma duração, métrica, UI, infraestrutura ou writer foi adicionado. O próximo incremento elegível é F22C.3 — Qualified Occupancy Duration.
 
 ## Integração de entrada — PR #116
 
@@ -208,7 +217,7 @@ O E2E remoto não foi repetido nesta branch.
 
 ### RECOMENDAÇÃO
 
-Próximo e único incremento recomendado: **F22C.2 — Historical Lot → Pasture Occupancy Composition**. Compor as duas cadeias factuais sem calcular duração e sem usar o pasto atual como histórico.
+Próximo e único incremento recomendado: **F22C.3 — Qualified Occupancy Duration**. Calcular duração somente sobre intervalos com boundaries suficientes, sem promover coverage parcial.
 
 ## Escopo preservado
 
