@@ -1,4 +1,4 @@
-# Handoff atual — Fase 22 / F22C.1 historical lot occupancy
+# Handoff atual — Fase 22 / F22C.2 historical pasture occupancy
 
 Atualizado em: 2026-09-05
 Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7956c01`
@@ -15,7 +15,7 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 22 ativa; F22C.1 implementado sem duração ou composição de pasto**
+Status: **Fase 22 ativa; F22C.2 implementado sem duração ou métricas**
 Fase encerrada: **Fase 21 — Inteligência Operacional v2**
 Fase atual: **Fase 22 — Eficiência Produtiva e Econômica**
 
@@ -27,7 +27,7 @@ Para 22A, `eventos` + `eventos_pesagem` sustentam última pesagem observada, dat
 
 Para 22B, ledger, Eventos financeiros, Eventos comerciais e snapshots de custo sustentam caixa/valores observados e custos conhecidos com coverage e deduplicação explícitas. Operação comercial sem financeiro associado não entra no caixa; custo ausente não vira zero; saldo observado não é lucro real completo.
 
-Para 22C, `B4 REMOTE_CONVERGENCE_VERIFIED` está integrado. O [contrato histórico](./F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) mantém `LOT_SOURCE = READY` e `PASTURE_SOURCE = READY`; F22C.1 implementa a cadeia animal→lote com boundaries, coverage, limitações e conflitos. Cadastro inicial pode deixar `LEFT_BOUND_UNKNOWN`. Permanecem proibidos o preenchimento por `state_*` e as métricas dias em lote/pasto, UA/ha, @/ha e desempenho por pastagem.
+Para 22C, `B4 REMOTE_CONVERGENCE_VERIFIED` está integrado. O [contrato histórico](./F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) mantém `LOT_SOURCE = READY` e `PASTURE_SOURCE = READY`; F22C.1 implementa animal→lote e F22C.2 reconstrói lote→pasto e compõe animal→pasto por interseção factual. Cadastro inicial pode deixar `LEFT_BOUND_UNKNOWN`, e trechos sem suporte simultâneo permanecem `PASTURE_UNKNOWN`. Permanecem proibidos o preenchimento por `state_*` e as métricas dias em lote/pasto, UA/ha, @/ha e desempenho por pastagem.
 
 F22A.1 adiciona um selector puro e testes focados para última pesagem observada. O contrato filtra animal/fazenda, usa `occurred_at`, exige detail positivo em kg, não depende da ordem física, calcula `ageDays` com referência controlada e expõe empate temporal como conflito. Origem, método e freshness normativa permanecem indisponíveis.
 
@@ -57,7 +57,7 @@ F22B_ADOPTION_PRESENTATION_GATE = CLOSED
 F22B_COMPLETE_PROFIT = BLOCKED
 ```
 
-A F22B.2 implementa `calculateObservedEconomicResult` sobre o contrato canônico, sem reler fontes. O [gate F22B.3](./F22B_ADOPTION_PRESENTATION_GATE.md) confirmou que nenhum consumidor atual preserva todas as qualificações sem mudança de UX. Financeiro e Relatórios formam a Wave 2; competência, previsões, comercial e inventário permanecem separados. Não houve UI, writer, schema, migration, RPC/RLS, Dexie, sync ou cálculo de lucro. Próximo passo recomendado: **F22C.2 Historical Lot → Pasture Occupancy Composition**.
+A F22B.2 implementa `calculateObservedEconomicResult` sobre o contrato canônico, sem reler fontes. O [gate F22B.3](./F22B_ADOPTION_PRESENTATION_GATE.md) confirmou que nenhum consumidor atual preserva todas as qualificações sem mudança de UX. Financeiro e Relatórios formam a Wave 2; competência, previsões, comercial e inventário permanecem separados. Não houve UI, writer, schema, migration, RPC/RLS, Dexie, sync ou cálculo de lucro. Próximo passo recomendado: **F22C.3 Qualified Occupancy Duration**.
 
 ## Fase 21 — V1 DONE
 
@@ -116,7 +116,7 @@ Status: **Concluída e certificada**. Baseline de infraestrutura e sync alinhado
    - Propagação comprovada para: `DEFAULT_REMOTE_TABLES`, `PENDING_FACTUAL_REMOTE_TABLES`, proteção de rows por `evento_id` em pull replace/merge, e pós-sync refresh.
    - Classificação de evidência: `REMOTE_CONVERGENCE_VERIFIED`; além da suíte automatizada, o round-trip real Device A → `sync-batch` → staging → Device B limpo foi comprovado em `zqloazqzhwauamcejmuz`.
    - Cenários remotos aprovados: bootstrap, segundo pull idempotente, isolamento cross-farm, reinstall, replay com as mesmas identidades, chegada detail antes do pai sem órfão permanente e coerência entre último Evento e `state_animais`.
-   - Gate F22C: fechado com fontes históricas `READY`; F22C.1 implementa animal→lote sem duração, e F22C.2 permanece não iniciado. Evidências: [contrato F22C](./F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) e [`B4_REMOTE_MOVEMENT_CONVERGENCE_20260829.md`](evidence/B4_REMOTE_MOVEMENT_CONVERGENCE_20260829.md).
+   - Gate F22C: fechado com fontes históricas `READY`; F22C.1 implementa animal→lote e F22C.2 compõe animal→pasto, ambas sem duração. F22C.3 permanece não iniciado. Evidências: [contrato F22C](./F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) e [`B4_REMOTE_MOVEMENT_CONVERGENCE_20260829.md`](evidence/B4_REMOTE_MOVEMENT_CONVERGENCE_20260829.md).
 
 
 5. **Sync Sanitário v2:**
