@@ -34,6 +34,7 @@ vi.mock("@/features/occupancy/useOccupancyData", () => ({
     getLoteMetrics: () => null,
     getPastoMetrics: () => null,
     animalsMap: new Map(),
+    qualifiedLotDurationById: new Map(),
   }),
 }));
 
