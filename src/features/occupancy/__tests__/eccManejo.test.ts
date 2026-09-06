@@ -264,7 +264,7 @@ describe("Fase 2 — ECC and Occupancy Metrics Core", () => {
 
       expect(metrics.weightStatus.status).toBe("complete");
       expect(metrics.gmdEstimado).toBe(1.0); // only period1 has complete status
-      expect(metrics.tempoLotacaoStatus.status).toBe("complete"); // movement present
+      expect(metrics.tempoLotacaoStatus.status).toBe("empty"); // qualified duration absent; movement is not a fallback
     });
   });
 });
