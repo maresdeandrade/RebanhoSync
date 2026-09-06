@@ -374,6 +374,7 @@ describe("Relatorios flow", () => {
     expect(screen.getByText(/Resumo operacional/i)).toBeInTheDocument();
     expect(screen.getByText(/Financeiro operacional/i)).toBeInTheDocument();
     expect(screen.getByText(/nao e DRE, ROI ou margem/i)).toBeInTheDocument();
+    expect(screen.getByText(/profit=NOT_DEMONSTRATED/i)).toBeInTheDocument();
     expect(screen.getByText(/Estoque operacional/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Custo operacional parcial/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Fonte: read model de inventario/i)).toBeInTheDocument();
@@ -396,7 +397,7 @@ describe("Relatorios flow", () => {
     expect(screen.getByText(/R\$ 16,00/i)).toBeInTheDocument();
     expect(screen.getByText(/R\$ 84,00/i)).toBeInTheDocument();
     expect(screen.getByText(/28\/02\/2026 a 29\/03\/2026/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/R\$ 3\.500,00/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Indisponivel").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: /Exportar CSV/i }));
 

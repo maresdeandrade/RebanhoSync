@@ -11,7 +11,7 @@ import type {
   EventoReproducao,
   EventoSanitario,
   FazendaSanidadeConfig,
-  FinanceiroTipoEnum,
+  FinanceCategory,
   FinanceTransaction,
   Gesture,
   Insumo,
@@ -79,10 +79,11 @@ import {
 } from "@/lib/sanitario/reconciliation/sanitaryExceptions";
 import {
   classifyCommercialOperation,
-  isRealizedCashTransaction,
   resolveCommercialFinanceLink,
   resolveFinancialEventLink,
 } from "@/lib/finance/classification";
+import { selectEconomicCoverage } from "@/lib/finance/economicCoverage";
+import { calculateObservedEconomicResult, type ObservedEconomicResult } from "@/lib/finance/observedEconomicResult";
 
 export type ReportPreset = "7d" | "30d" | "90d" | "mes_atual";
 
@@ -184,6 +185,7 @@ export interface OperationalSummaryInput {
   eventosPesagem: EventoPesagem[];
   eventosFinanceiro: EventoFinanceiro[];
   financeTransactions?: FinanceTransaction[];
+  financeCategories?: FinanceCategory[];
   sociedadesPecuarias?: SociedadePecuaria[];
   sociedadeAnimais?: SociedadeAnimal[];
   gestures: Gesture[];
@@ -371,9 +373,9 @@ export interface OperationalSummaryReport {
   };
   manejoByDomain: SummaryMetric[];
   financeiro: {
-    entradas: number;
-    saidas: number;
-    saldo: number;
+    entradas: number | null;
+    saidas: number | null;
+    saldo: number | null;
     transacoes: number;
     compras: number;
     vendas: number;
@@ -383,6 +385,7 @@ export interface OperationalSummaryReport {
     previstosAReceber: number;
     vencidosAPagar: number;
     vencidosAReceber: number;
+    observedEconomicResult: ObservedEconomicResult;
   };
   comercial: CommercialTraceabilitySummary;
   pesagem: {
@@ -474,11 +477,6 @@ const DOMAIN_ORDER: DominioEnum[] = [
   "obito",
   "ecc",
 ];
-
-const FINANCE_SIGNAL: Record<FinanceiroTipoEnum, "entrada" | "saida"> = {
-  compra: "saida",
-  venda: "entrada",
-};
 
 const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -830,6 +828,9 @@ function scopeOperationalSummaryInput(
     eventosFinanceiro: filterFarmRows(input.eventosFinanceiro, fazendaId),
     financeTransactions: input.financeTransactions
       ? filterFarmRows(input.financeTransactions, fazendaId)
+      : undefined,
+    financeCategories: input.financeCategories
+      ? filterFarmRows(input.financeCategories, fazendaId)
       : undefined,
     sociedadesPecuarias: input.sociedadesPecuarias
       ? filterFarmRows(input.sociedadesPecuarias, fazendaId)
@@ -1818,11 +1819,23 @@ export function buildOperationalSummary(
     return dateKey >= range.from && dateKey <= range.to;
   };
 
+  const observedEconomicResult = calculateObservedEconomicResult(selectEconomicCoverage({
+    fazendaId: input.fazendaId,
+    period: { from: range.from, to: range.to, timezone: metricTimezone.timezone ?? "UTC" },
+    sourceCoverage: {
+      financeTransactions: input.financeTransactions ? "VERIFIED" : "UNKNOWN",
+      financeCategories: input.financeCategories ? "VERIFIED" : "UNKNOWN",
+      commercialOperations: input.eventosComercial ? "VERIFIED" : "UNKNOWN",
+    },
+    transactions: input.financeTransactions ?? [], categories: input.financeCategories ?? [],
+    events: input.eventos, commercialDetails: input.eventosComercial ?? [],
+  }));
+
   const financeiro = {
-    entradas: 0,
-    saidas: 0,
-    saldo: 0,
-    transacoes: 0,
+    entradas: observedEconomicResult.status === "CALCULATED" ? observedEconomicResult.observedRevenue : null,
+    saidas: observedEconomicResult.status === "CALCULATED" ? observedEconomicResult.observedCost : null,
+    saldo: observedEconomicResult.status === "CALCULATED" ? observedEconomicResult.observedResult : null,
+    transacoes: observedEconomicResult.coverage.coverage.realizedTransactionsInPeriod,
     compras: 0,
     vendas: 0,
     entradasCompetencia: 0,
@@ -1831,25 +1844,17 @@ export function buildOperationalSummary(
     previstosAReceber: 0,
     vencidosAPagar: 0,
     vencidosAReceber: 0,
+    observedEconomicResult,
   };
 
   for (const transaction of activeFinanceTransactions) {
     if (transaction.status === "cancelado") continue;
     if (isDateInRange(transaction.occurred_at)) {
-      financeiro.transacoes += 1;
       if (transaction.direction === "entrada") financeiro.vendas += 1;
       else financeiro.compras += 1;
     }
 
     if (transaction.status === "realizado") {
-      if (
-        isRealizedCashTransaction(transaction) &&
-        isDateInRange(transaction.paid_at)
-      ) {
-        if (transaction.direction === "entrada")
-          financeiro.entradas += transaction.valor_total;
-        else financeiro.saidas += transaction.valor_total;
-      }
       if (isDateInRange(transaction.competence_date)) {
         if (transaction.direction === "entrada")
           financeiro.entradasCompetencia += transaction.valor_total;
@@ -1874,27 +1879,6 @@ export function buildOperationalSummary(
       }
     }
   }
-
-  for (const item of financeEvents) {
-    if (item.link.duplicate || item.link.crossFarm || item.link.transaction) {
-      continue;
-    }
-    if (
-      !Number.isFinite(item.detalhe.valor_total) ||
-      item.detalhe.valor_total <= 0
-    )
-      continue;
-    if (FINANCE_SIGNAL[item.detalhe.tipo] === "entrada") {
-      financeiro.entradas += item.detalhe.valor_total;
-      financeiro.vendas += 1;
-    } else {
-      financeiro.saidas += item.detalhe.valor_total;
-      financeiro.compras += 1;
-    }
-    financeiro.transacoes += 1;
-  }
-
-  financeiro.saldo = financeiro.entradas - financeiro.saidas;
 
   const commercialEvents = eventos
     .filter((evento) => evento.dominio === "comercial")
@@ -2258,6 +2242,19 @@ export function buildOperationalSummary(
       ? []
       : ["Existem Eventos financeiros sem detalhe carregado."]),
   ];
+  const observedFinanceMetricStatus: MetricStatus = observedEconomicResult.status === "NOT_CALCULATED"
+    ? "unavailable"
+    : observedEconomicResult.coverage.status === "PARTIAL" ? "partial" : "complete";
+  const observedFinanceSources = [
+    { name: "state_finance_transactions", role: "primary" as const },
+    { name: "state_finance_categories", role: "auxiliary" as const },
+    { name: "event_eventos_comercial", role: "auxiliary" as const },
+  ];
+  const observedFinanceLimitations = [
+    ...observedEconomicResult.limitations,
+    "Resultado observado restrito ao recorte conhecido; completeAccounting=false e profit=NOT_DEMONSTRATED.",
+    ...(observedEconomicResult.status === "NOT_CALCULATED" ? [`Indisponivel: ${observedEconomicResult.reason}.`] : []),
+  ];
   const weightEventCount = eventos.filter(
     (event) => !event.deleted_at && event.dominio === "pesagem",
   ).length;
@@ -2385,35 +2382,31 @@ export function buildOperationalSummary(
       period: historicalPeriod,
     }),
     financeiro_entradas: makeMetric({
-      value: financeMetricStatus === "unavailable" ? null : financeiro.entradas,
-      status: financeMetricStatus,
-      sources: financeSources,
-      limitations: financeMetricLimitations,
+      value: financeiro.entradas,
+      status: observedFinanceMetricStatus,
+      sources: observedFinanceSources,
+      limitations: observedFinanceLimitations,
       period: historicalPeriod,
     }),
     financeiro_saidas: makeMetric({
-      value: financeMetricStatus === "unavailable" ? null : financeiro.saidas,
-      status: financeMetricStatus,
-      sources: financeSources,
-      limitations: financeMetricLimitations,
+      value: financeiro.saidas,
+      status: observedFinanceMetricStatus,
+      sources: observedFinanceSources,
+      limitations: observedFinanceLimitations,
       period: historicalPeriod,
     }),
     financeiro_saldo: makeMetric({
-      value: financeMetricStatus === "unavailable" ? null : financeiro.saldo,
-      status: financeMetricStatus,
-      sources: financeSources,
-      limitations: [
-        ...financeMetricLimitations,
-        "Operações comerciais sem fato financeiro vinculado não são convertidas automaticamente em receita/despesa.",
-      ],
+      value: financeiro.saldo,
+      status: observedFinanceMetricStatus,
+      sources: observedFinanceSources,
+      limitations: observedFinanceLimitations,
       period: historicalPeriod,
     }),
     financeiro_transacoes: makeMetric({
-      value:
-        financeMetricStatus === "unavailable" ? null : financeiro.transacoes,
-      status: financeMetricStatus,
-      sources: financeSources,
-      limitations: financeMetricLimitations,
+      value: observedFinanceMetricStatus === "unavailable" ? null : financeiro.transacoes,
+      status: observedFinanceMetricStatus,
+      sources: observedFinanceSources,
+      limitations: observedFinanceLimitations,
       period: historicalPeriod,
     }),
     financeiro_entradas_competencia: makeMetric({
@@ -2977,9 +2970,16 @@ export function buildOperationalSummaryCsv(
   pushRow("resumo", "eventos_no_periodo", report.summary.eventosPeriodo);
   pushRow("resumo", "pendencias_sync", report.summary.pendenciasSync);
   pushRow("resumo", "erros_sync", report.summary.errosSync);
-  pushRow("financeiro", "entradas", report.financeiro.entradas.toFixed(2));
-  pushRow("financeiro", "saidas", report.financeiro.saidas.toFixed(2));
-  pushRow("financeiro", "saldo", report.financeiro.saldo.toFixed(2));
+  pushRow("financeiro_observado", "receita_observada", report.financeiro.entradas?.toFixed(2) ?? "indisponivel");
+  pushRow("financeiro_observado", "custo_observado", report.financeiro.saidas?.toFixed(2) ?? "indisponivel");
+  pushRow("financeiro_observado", "resultado_observado", report.financeiro.saldo?.toFixed(2) ?? "indisponivel");
+  pushRow("financeiro_observado", "status", report.financeiro.observedEconomicResult.status);
+  pushRow("financeiro_observado", "coverage", report.financeiro.observedEconomicResult.coverage.status);
+  pushRow("financeiro_observado", "interpretation", "OBSERVED_SCOPE_ONLY");
+  pushRow("financeiro_observado", "completeAccounting", "false");
+  pushRow("financeiro_observado", "profit", "NOT_DEMONSTRATED");
+  report.financeiro.observedEconomicResult.limitations.forEach((item) => pushRow("financeiro_observado", "limitation", item));
+  report.financeiro.observedEconomicResult.coverage.conflicts.forEach((item) => pushRow("financeiro_observado", "conflict", `${item.code}: ${item.description}`));
   pushRow("financeiro", "transacoes", report.financeiro.transacoes);
   pushRow("comercial", "operacoes", report.comercial.operations);
   pushRow("comercial", "cabecas", report.comercial.cabecasNegociadas);
@@ -3444,7 +3444,7 @@ export function buildOperationalSummaryPrintHtml(
     ["Agenda aberta", String(report.summary.agendaAberta)],
     [
       "Saldo no periodo",
-      report.financeiro.saldo.toLocaleString("pt-BR", {
+      report.financeiro.saldo == null ? "Indisponivel" : report.financeiro.saldo.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL",
       }),
@@ -3815,30 +3815,30 @@ export function buildOperationalSummaryPrintHtml(
         </section>
 
         <section>
-          <h2>Financeiro basico</h2>
+          <h2>Resultado economico observado</h2>
           <div class="finance-grid">
             <div class="finance-card">
-              <span class="metric-label">Entradas</span>
+              <span class="metric-label">Receita observada</span>
               <strong>${escapeHtml(
-                report.financeiro.entradas.toLocaleString("pt-BR", {
+                report.financeiro.entradas == null ? "Indisponivel" : report.financeiro.entradas.toLocaleString("pt-BR", {
                   style: "currency",
                   currency: "BRL",
                 }),
               )}</strong>
             </div>
             <div class="finance-card">
-              <span class="metric-label">Saidas</span>
+              <span class="metric-label">Custo observado</span>
               <strong>${escapeHtml(
-                report.financeiro.saidas.toLocaleString("pt-BR", {
+                report.financeiro.saidas == null ? "Indisponivel" : report.financeiro.saidas.toLocaleString("pt-BR", {
                   style: "currency",
                   currency: "BRL",
                 }),
               )}</strong>
             </div>
             <div class="finance-card">
-              <span class="metric-label">Saldo</span>
+              <span class="metric-label">Resultado observado</span>
               <strong>${escapeHtml(
-                report.financeiro.saldo.toLocaleString("pt-BR", {
+                report.financeiro.saldo == null ? "Indisponivel" : report.financeiro.saldo.toLocaleString("pt-BR", {
                   style: "currency",
                   currency: "BRL",
                 }),
@@ -3846,7 +3846,8 @@ export function buildOperationalSummaryPrintHtml(
             </div>
           </div>
           <p class="meta" style="margin-top: 12px;">
-            ${report.financeiro.transacoes} transacao(oes) no periodo. Pesagens: ${report.pesagem.totalPesagens}.
+            Status: ${escapeHtml(report.financeiro.observedEconomicResult.status)} | coverage: ${escapeHtml(report.financeiro.observedEconomicResult.coverage.status)} |
+            interpretation=OBSERVED_SCOPE_ONLY | completeAccounting=false | profit=NOT_DEMONSTRATED. Ausencia nao e zero. Pesagens: ${report.pesagem.totalPesagens}.
           </p>
         </section>
 

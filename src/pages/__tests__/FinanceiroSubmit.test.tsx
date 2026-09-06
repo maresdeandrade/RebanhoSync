@@ -132,6 +132,13 @@ describe("Financeiro submit lock", () => {
     vi.mocked(useLiveQuery).mockReturnValue(financeData);
   });
 
+  it("apresenta resultado observado indisponivel sem converter ausencia em R$ 0", () => {
+    renderFinanceiro();
+    expect(screen.getByText("Resultado economico observado")).toBeInTheDocument();
+    expect(screen.getAllByText("Indisponivel")).toHaveLength(3);
+    expect(screen.getByText(/Ausencia nao e tratada como R\$ 0/i)).toBeInTheDocument();
+  });
+
   it("bloqueia clique duplo e rápido durante a persistência", async () => {
     let resolveGesture: ((value: string) => void) | undefined;
     mockedCreateGesture.mockImplementationOnce(

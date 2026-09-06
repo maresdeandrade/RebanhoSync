@@ -29,6 +29,8 @@ import {
   parseFinanceReversal,
 } from "@/lib/finance/corrections";
 import { buildCommercialFinanceRows } from "@/lib/finance/commercialReadModel";
+import { selectEconomicCoverage } from "@/lib/finance/economicCoverage";
+import { calculateObservedEconomicResult } from "@/lib/finance/observedEconomicResult";
 import type {
   FinanceCategoryTipoEnum,
   FinanceCategoryGrupoEnum,
@@ -460,6 +462,26 @@ const Financeiro = () => {
     return calculateGerencialTemporalSummary(data.transactions, new Date());
   }, [data]);
 
+  const observedEconomic = useMemo(() => {
+    if (!data || !activeFarmId) return null;
+    return calculateObservedEconomicResult(selectEconomicCoverage({
+      fazendaId: activeFarmId,
+      period: { from: dateFrom || "1900-01-01", to: dateTo || "9999-12-31", timezone: "UTC" },
+      sourceCoverage: {
+        financeTransactions: "VERIFIED", financeCategories: "VERIFIED", commercialOperations: "VERIFIED",
+      },
+      transactions: data.transactions, categories: data.categories,
+      events: data.commercialEvents, commercialDetails: data.commercialDetails,
+    }));
+  }, [activeFarmId, data, dateFrom, dateTo]);
+
+  const observedValue = (field: "revenue" | "cost" | "result") => {
+    if (observedEconomic?.status !== "CALCULATED") return "Indisponivel";
+    if (field === "revenue") return money.format(observedEconomic.observedRevenue);
+    if (field === "cost") return money.format(observedEconomic.observedCost);
+    return money.format(observedEconomic.observedResult);
+  };
+
   const commercialRows = useMemo(() => {
     if (!data) return [];
     return buildCommercialFinanceRows({
@@ -660,53 +682,62 @@ const Financeiro = () => {
         }
       />
 
-      <section className="space-y-3" aria-label="Caixa realizado">
+      <section className="space-y-3" aria-label="Resultado economico observado">
         <div>
-          <h2 className="text-lg font-semibold">Caixa realizado</h2>
+          <h2 className="text-lg font-semibold">Resultado economico observado</h2>
           <p className="text-sm text-muted-foreground">
-            Inclui somente status realizado com paid_at preenchido.
+            Escopo observado por paid_at. Nao demonstra lucro ou contabilidade completa.
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           <Card className="border-border/70 shadow-none">
             <CardContent className="space-y-3 p-4">
               <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
-                <span>Entradas Realizadas</span>
+                <span>Receita observada</span>
                 <TrendingUp className="h-4 w-4 text-semantic-success" />
               </p>
               <p className="text-xl font-semibold tracking-tight text-semantic-success">
-                {money.format(summary.entradasRealizadas)}
+                {observedValue("revenue")}
               </p>
             </CardContent>
           </Card>
           <Card className="border-border/70 shadow-none">
             <CardContent className="space-y-3 p-4">
               <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
-                <span>Saídas Realizadas</span>
+                <span>Custo observado</span>
                 <TrendingDown className="h-4 w-4 text-semantic-error" />
               </p>
               <p className="text-xl font-semibold tracking-tight text-semantic-error">
-                {money.format(summary.saidasRealizadas)}
+                {observedValue("cost")}
               </p>
             </CardContent>
           </Card>
           <Card className="border-border/70 shadow-none">
             <CardContent className="space-y-3 p-4">
               <p className="flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
-                <span>Saldo Realizado</span>
+                <span>Resultado observado</span>
                 <BadgeDollarSign className="h-4 w-4 text-primary" />
               </p>
               <p
                 className={`text-xl font-semibold tracking-tight ${
-                  summary.saldoRealizado >= 0
+                  observedEconomic?.status === "CALCULATED" && observedEconomic.observedResult >= 0
                     ? "text-semantic-success"
                     : "text-semantic-error"
                 }`}
               >
-                {money.format(summary.saldoRealizado)}
+                {observedValue("result")}
               </p>
             </CardContent>
           </Card>
+        </div>
+        <div className="rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
+          {observedEconomic?.status === "CALCULATED" ? (
+            <>Coverage: {observedEconomic.coverage.status}. interpretation=OBSERVED_SCOPE_ONLY; completeAccounting=false; profit=NOT_DEMONSTRATED.
+              {observedEconomic.limitations.length > 0 ? ` Limitacoes: ${observedEconomic.limitations.join(" ")}` : null}
+            </>
+          ) : (
+            <>Indisponivel{observedEconomic ? `: ${observedEconomic.reason}` : "."} Ausencia nao e tratada como R$ 0. interpretation=OBSERVED_SCOPE_ONLY; completeAccounting=false; profit=NOT_DEMONSTRATED.</>
+          )}
         </div>
       </section>
 

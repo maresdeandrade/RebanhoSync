@@ -71,6 +71,7 @@ import {
 } from "@/lib/reproduction/neonatal";
 import { buildPostPartumOps } from "@/lib/reproduction/postPartum";
 import { showError, showSuccess } from "@/utils/toast";
+import { selectAnimalWeightPresentation } from "@/lib/insights/animalWeightPresentation";
 
 type TimelineItem = {
   id: string;
@@ -164,43 +165,25 @@ export default function AnimalCriaInicial() {
       .filter((item) => !item.deleted_at && isCalfJourneyAgendaItem(item))
       .sortBy("data_prevista");
   }, [calf?.id]);
-  const historicoPeso = useLiveQuery(async () => {
-    if (!calf?.id) return [];
+  const weightPresentation = useLiveQuery(async () => {
+    if (!calf?.id || !calf.fazenda_id) return null;
 
     const registros = await db.event_eventos
       .where("animal_id")
       .equals(calf.id)
-      .filter((event) => event.dominio === "pesagem" && !event.deleted_at)
+      .filter((event) => event.fazenda_id === calf.fazenda_id && event.dominio === "pesagem" && !event.deleted_at)
       .toArray();
-
-    const pontos = await Promise.all(
-      registros.map(async (event) => {
-        const details = await db.event_eventos_pesagem.get(event.id);
-        if (!details?.peso_kg) return null;
-
-        const dataReferencia = event.server_received_at || event.occurred_at;
-        return {
-          id: event.id,
-          data: dataReferencia.slice(0, 10),
-          dataLabel: formatDate(dataReferencia),
-          pesoKg: details.peso_kg,
-        };
-      }),
-    );
-
-    return pontos
-      .filter(
-        (
-          ponto,
-        ): ponto is {
-          id: string;
-          data: string;
-          dataLabel: string;
-          pesoKg: number;
-        } => ponto !== null,
-      )
-      .sort((left, right) => left.data.localeCompare(right.data));
-  }, [calf?.id]);
+    const details = await db.event_eventos_pesagem.bulkGet(registros.map((event) => event.id));
+    return selectAnimalWeightPresentation({
+      fazendaId: calf.fazenda_id, animalId: calf.id, animal: calf, events: registros,
+      weightDetails: details.filter((detail): detail is NonNullable<typeof detail> => Boolean(detail)),
+      referenceDate: new Date().toISOString(),
+    });
+  }, [calf?.id, calf?.fazenda_id]);
+  const historicoPeso = (weightPresentation?.observations ?? []).map((observation) => ({
+    id: observation.eventId, data: observation.measuredAt.slice(0, 10),
+    dataLabel: formatDate(observation.measuredAt), pesoKg: observation.weightKg,
+  }));
   const timeline = useLiveQuery<TimelineItem[]>(async () => {
     if (!calf?.id) return [];
 
@@ -310,25 +293,18 @@ export default function AnimalCriaInicial() {
 
     const primeiro = historicoPeso[0];
     const ultimo = historicoPeso[historicoPeso.length - 1];
-    const variacaoKg = ultimo.pesoKg - primeiro.pesoKg;
-    const diasEntreRegistros = Math.max(
-      1,
-      Math.round(
-        (new Date(ultimo.data).getTime() - new Date(primeiro.data).getTime()) /
-          (1000 * 60 * 60 * 24),
-      ),
-    );
-    const ganhoMedioDiaKg =
-      historicoPeso.length > 1 ? variacaoKg / diasEntreRegistros : null;
+    const qualifiedGmd = weightPresentation?.gmd?.status === "CALCULATED"
+      ? weightPresentation.gmd : null;
 
     return {
       primeiro,
       ultimo,
-      variacaoKg,
-      ganhoMedioDiaKg,
+      variacaoKg: qualifiedGmd?.weightDeltaKg ?? null,
+      ganhoMedioDiaKg: qualifiedGmd?.gmdKgPerDay ?? null,
       totalPesagens: historicoPeso.length,
+      gmdStatus: weightPresentation?.gmd?.status ?? "NOT_CALCULATED",
     };
-  }, [historicoPeso]);
+  }, [historicoPeso, weightPresentation]);
 
   useEffect(() => {
     if (!calf) return;
@@ -855,7 +831,7 @@ export default function AnimalCriaInicial() {
                 <Scale className="h-5 w-5 text-emerald-700" />
                 Acompanhamento inicial de peso
               </CardTitle>
-              {resumoPeso && (
+              {resumoPeso?.variacaoKg != null && (
                 <Badge
                   variant="outline"
                   className={
@@ -884,6 +860,11 @@ export default function AnimalCriaInicial() {
                     </p>
                     <p className="mt-1 text-xl font-semibold">
                       {resumoPeso?.totalPesagens ?? 0}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {resumoPeso?.gmdStatus === "CALCULATED"
+                        ? "Confiabilidade nao classificada; uso operacional nao autorizado."
+                        : "Indisponivel: evidencia insuficiente ou conflitante."}
                     </p>
                   </div>
                   <div className="rounded-xl border bg-muted/20 p-3">
@@ -1003,5 +984,4 @@ export default function AnimalCriaInicial() {
     </div>
   );
 }
-
 
