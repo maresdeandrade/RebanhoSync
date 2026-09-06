@@ -2,6 +2,27 @@ import { describe, it, expect } from "vitest";
 import { buildLoteOccupancyMetrics } from "../buildLoteOccupancyMetrics";
 import type { AnimalOccupancyPeriod } from "../occupancyTypes";
 import type { OccupancyAggregate } from "@/lib/occupancy/occupancyAggregation";
+import type { OccupancyPerformanceAggregate } from "@/lib/occupancy/occupancyPerformance";
+
+function observedLotPerformance(): OccupancyPerformanceAggregate {
+  return {
+    dimension: "LOT",
+    groupId: "lote-A",
+    fazendaId: "farm-1",
+    animalIds: ["animal-1", "animal-2"],
+    meanInitialObservedWeightKg: 105,
+    meanFinalObservedWeightKg: 140,
+    meanWeightDeltaKg: 35,
+    meanObservedGmdKgPerDay: 0.75,
+    calculatedIntervals: 2,
+    unavailableIntervals: 1,
+    coverage: "PARTIAL_WEIGHT_COVERAGE",
+    reliability: "UNCLASSIFIED",
+    operationalUse: "NOT_AUTHORIZED",
+    limitations: [],
+    conflicts: [],
+  };
+}
 
 function qualifiedLotDuration(
   meanDays: number,
@@ -45,10 +66,10 @@ describe("buildLoteOccupancyMetrics", () => {
       dataEntradaRecente: null,
       tempoMedioPermanencia: null,
       tempoMaximoPermanencia: null,
-      pesoMedioInicial: 0,
-      pesoMedioFinal: 0,
-      ganhoMedio: 0,
-      gmdEstimado: 0,
+      pesoMedioInicial: null,
+      pesoMedioFinal: null,
+      ganhoMedio: null,
+      gmdEstimado: null,
       weightStatus: { status: "empty" },
       eccMedioAtual: 0,
       eccCobertura: { avaliados: 0, total: 3 },
@@ -111,6 +132,7 @@ describe("buildLoteOccupancyMetrics", () => {
       animalPeriods,
       totalAnimalsInLote,
       qualifiedDuration: qualifiedLotDuration((30 + 130 + 113) / 3, 130),
+      observedPerformance: observedLotPerformance(),
     });
 
     expect(result.quantidadeAtual).toBe(2);
@@ -118,10 +140,10 @@ describe("buildLoteOccupancyMetrics", () => {
     expect(result.tempoMedioPermanencia).toBeCloseTo((30 + 130 + 113) / 3);
     expect(result.tempoMaximoPermanencia).toBe(130);
     expect(result.pesoMedioInicial).toBeCloseTo((100 + 110) / 2);
-    expect(result.pesoMedioFinal).toBeCloseTo(150); // Only animal-2 is current and has final weight
-    expect(result.ganhoMedio).toBeCloseTo((30 + 40) / 2);
-    expect(result.gmdEstimado).toBeCloseTo((1 + 0.5) / 2);
-    expect(result.weightStatus.status).toBe("complete");
+    expect(result.pesoMedioFinal).toBeCloseTo(140);
+    expect(result.ganhoMedio).toBeCloseTo(35);
+    expect(result.gmdEstimado).toBeCloseTo(0.75);
+    expect(result.weightStatus.status).toBe("partial");
     expect(result.eccMedioAtual).toBeCloseTo(4.5); // Only animal-2 is current and has final ecc
     expect(result.eccCobertura).toMatchObject({ avaliados: 2, total: 3 });
     expect(result.eccStatus.status).toBe("complete");
@@ -150,6 +172,30 @@ describe("buildLoteOccupancyMetrics", () => {
     });
 
     expect(result.weightStatus.status).toBe("empty"); // No complete weight data
+  });
+
+  it("does not present a partial aggregate when factual weight evidence conflicts", () => {
+    const conflicted = {
+      ...observedLotPerformance(),
+      coverage: "CONFLICT" as const,
+      conflicts: [
+        {
+          code: "MEASUREMENT_TIMESTAMP_CONFLICT" as const,
+          measuredAt: "2026-01-10T00:00:00.000Z",
+          eventIds: ["weight-1", "weight-2"],
+        },
+      ],
+    };
+    const result = buildLoteOccupancyMetrics({
+      loteId,
+      animalPeriods: [],
+      totalAnimalsInLote: 1,
+      observedPerformance: conflicted,
+    });
+
+    expect(result.gmdEstimado).toBeNull();
+    expect(result.ganhoMedio).toBeNull();
+    expect(result.weightStatus.status).toBe("bloqueado");
   });
 
   it("should handle partial ECC data", () => {

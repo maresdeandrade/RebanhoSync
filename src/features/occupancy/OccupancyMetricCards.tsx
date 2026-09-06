@@ -93,11 +93,13 @@ export function OccupancyMetricCards({
   }
 
   const weightStatusTooltip =
-    metrics.weightStatus.status === "empty"
-      ? "Sem pesagens suficientes para calcular ganho de peso. GMD indisponível."
+    metrics.weightStatus.status === "bloqueado"
+      ? "Conflito factual impede apresentar o GMD observado."
+      : metrics.weightStatus.status === "empty"
+      ? "Pesagens factuais insuficientes dentro da ocupação. GMD observado indisponível."
       : metrics.weightStatus.status === "partial"
-        ? "Apenas uma pesagem disponível no período. GMD indisponível."
-        : "GMD calculado com base em pelo menos duas pesagens válidas no período.";
+        ? "GMD observado entre pesagens factuais dentro da ocupação; não representa toda a permanência."
+        : "GMD observado com cobertura factual dos limites da ocupação.";
 
   const eccStatusTooltip =
     metrics.eccStatus.status === "empty"
@@ -206,7 +208,7 @@ export function OccupancyMetricCards({
               tooltip={weightStatusTooltip}
             />
             <MetricCard
-              label="GMD Estimado"
+              label="GMD observado"
               value={loteMetrics.gmdEstimado}
               unit="kg/dia"
               icon={<TrendingUp className="h-4 w-4" />}
@@ -215,7 +217,7 @@ export function OccupancyMetricCards({
               extraContent={
                 loteMetrics.weightStatus.status !== "complete" && (
                   <p className="text-[10px] text-yellow-600 font-semibold mt-1">
-                    ⚠️ Requer ≥2 pesagens no período
+                    ⚠️ Uso operacional não autorizado
                   </p>
                 )
               }
@@ -298,7 +300,7 @@ export function OccupancyMetricCards({
             }
           />
           <MetricCard
-            label="GMD Estimado"
+            label="GMD observado"
             value={pastoMetrics.gmdEstimado}
             unit="kg/dia"
             icon={<TrendingUp className="h-4 w-4" />}
@@ -307,7 +309,7 @@ export function OccupancyMetricCards({
             extraContent={
               pastoMetrics.weightStatus.status !== "complete" && (
                 <p className="text-[10px] text-yellow-600 font-semibold mt-1">
-                  ⚠️ Requer ≥2 pesagens no período
+                  ⚠️ Uso operacional não autorizado
                 </p>
               )
             }

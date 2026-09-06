@@ -139,7 +139,7 @@ interface CockpitCardProps {
   value: string | number | null;
   unit?: string;
   icon: React.ReactNode;
-  status: "empty" | "partial" | "complete" | "blocked";
+  status: "empty" | "partial" | "complete" | "bloqueado";
   reason?: string;
   source?: string;
   limitation?: string;
@@ -163,7 +163,7 @@ function CockpitCard({
         return "border-semantic-success-border bg-semantic-success-muted text-foreground";
       case "partial":
         return "border-semantic-warning-border bg-semantic-warning-muted text-foreground";
-      case "blocked":
+      case "bloqueado":
         return "border-semantic-error-border bg-semantic-error-muted text-foreground";
       default:
         return "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground";
@@ -176,7 +176,7 @@ function CockpitCard({
         return "Completo";
       case "partial":
         return "Parcial";
-      case "blocked":
+      case "bloqueado":
         return "Bloqueado";
       default:
         return "Vazio";
@@ -189,7 +189,7 @@ function CockpitCard({
         return "border-semantic-success-border bg-semantic-success-muted text-foreground";
       case "partial":
         return "border-semantic-warning-border bg-semantic-warning-muted text-foreground";
-      case "blocked":
+      case "bloqueado":
         return "border-semantic-error-border bg-semantic-error-muted text-foreground";
       default:
         return "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground";
@@ -339,7 +339,11 @@ const PastoDetalhe = () => {
     [pasto?.id, activeFarmId],
   ) ?? EMPTY_ARRAY;
   const referenceDate = useMemo(() => new Date().toISOString(), []);
-  const { allAnimalPeriods, qualifiedPastureDurationById } = useOccupancyData(
+  const {
+    allAnimalPeriods,
+    qualifiedPastureDurationById,
+    observedPasturePerformanceById,
+  } = useOccupancyData(
     activeFarmId ?? "",
     referenceDate,
   );
@@ -360,8 +364,9 @@ const PastoDetalhe = () => {
       movimentacoes,
       agendaItens,
       qualifiedPastureDurationById.get(pasto.id),
+      observedPasturePerformanceById.get(pasto.id),
     );
-  }, [pasto, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens, qualifiedPastureDurationById]);
+  }, [pasto, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens, qualifiedPastureDurationById, observedPasturePerformanceById]);
 
   // Unified Timeline for Pasto
   const timelineItems = useMemo(() => {
@@ -730,9 +735,9 @@ const PastoDetalhe = () => {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Peso Médio Confiável */}
+            {/* Peso final observado */}
             <CockpitCard
-              title="Peso Médio Confiável"
+              title="Peso final observado"
               value={pastoMetrics.pesoMedio}
               unit="kg"
               icon={<Scale className="h-4 w-4" />}
@@ -742,9 +747,9 @@ const PastoDetalhe = () => {
               limitation={pastoMetrics.pesoStatus.limitation}
             />
 
-            {/* GMD Médio */}
+            {/* GMD observado */}
             <CockpitCard
-              title="GMD Médio"
+              title="GMD observado"
               value={pastoMetrics.gmdMedio}
               unit="kg/dia"
               icon={<TrendingUp className="h-4 w-4" />}
@@ -755,7 +760,7 @@ const PastoDetalhe = () => {
               extraContent={
                 pastoMetrics.ganhoMedioPeso !== null && (
                   <p className="mt-1">
-                    <span className="font-semibold text-foreground/75">Ganho Acumulado:</span> {pastoMetrics.ganhoMedioPeso.toFixed(1)} kg
+                    <span className="font-semibold text-foreground/75">Variação observada:</span> {pastoMetrics.ganhoMedioPeso.toFixed(1)} kg
                   </p>
                 )
               }

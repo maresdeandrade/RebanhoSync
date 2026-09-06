@@ -84,7 +84,7 @@ interface CockpitCardProps {
   value: string | number | null;
   unit?: string;
   icon: React.ReactNode;
-  status: "empty" | "partial" | "complete" | "blocked";
+  status: "empty" | "partial" | "complete" | "bloqueado";
   reason?: string;
   source?: string;
   limitation?: string;
@@ -108,7 +108,7 @@ function CockpitCard({
         return "border-semantic-success-border bg-semantic-success-muted text-foreground";
       case "partial":
         return "border-semantic-warning-border bg-semantic-warning-muted text-foreground";
-      case "blocked":
+      case "bloqueado":
         return "border-semantic-error-border bg-semantic-error-muted text-foreground";
       default:
         return "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground";
@@ -121,7 +121,7 @@ function CockpitCard({
         return "Completo";
       case "partial":
         return "Parcial";
-      case "blocked":
+      case "bloqueado":
         return "Bloqueado";
       default:
         return "Vazio";
@@ -134,7 +134,7 @@ function CockpitCard({
         return "border-semantic-success-border bg-semantic-success-muted text-foreground";
       case "partial":
         return "border-semantic-warning-border bg-semantic-warning-muted text-foreground";
-      case "blocked":
+      case "bloqueado":
         return "border-semantic-error-border bg-semantic-error-muted text-foreground";
       default:
         return "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground";
@@ -325,7 +325,11 @@ export default function LoteDetalhe() {
     [lote?.id, activeFarmId],
   ) ?? EMPTY_ARRAY;
   const referenceDate = useMemo(() => new Date().toISOString(), []);
-  const { allAnimalPeriods, qualifiedLotDurationById } = useOccupancyData(
+  const {
+    allAnimalPeriods,
+    qualifiedLotDurationById,
+    observedLotPerformanceById,
+  } = useOccupancyData(
     activeFarmId ?? "",
     referenceDate,
   );
@@ -351,8 +355,9 @@ export default function LoteDetalhe() {
       movimentacoes,
       agendaItens,
       qualifiedLotDurationById.get(lote.id),
+      observedLotPerformanceById.get(lote.id),
     );
-  }, [lote, referenceDate, weightFreshnessDays, animais, events, pesagens, eccs, movimentacoes, agendaItens, qualifiedLotDurationById]);
+  }, [lote, referenceDate, weightFreshnessDays, animais, events, pesagens, eccs, movimentacoes, agendaItens, qualifiedLotDurationById, observedLotPerformanceById]);
 
   // Unified Timeline selector
   const timelineItems = useMemo(() => {
@@ -689,9 +694,9 @@ export default function LoteDetalhe() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Peso Médio Confiável */}
+            {/* Peso final observado */}
             <CockpitCard
-              title="Peso Médio Confiável"
+              title="Peso final observado"
               value={loteMetrics.pesoMedio}
               unit="kg"
               icon={<Scale className="h-4 w-4" />}
@@ -701,9 +706,9 @@ export default function LoteDetalhe() {
               limitation={loteMetrics.pesoStatus.limitation}
             />
 
-            {/* GMD Médio */}
+            {/* GMD observado */}
             <CockpitCard
-              title="GMD Médio"
+              title="GMD observado"
               value={loteMetrics.gmdMedio}
               unit="kg/dia"
               icon={<TrendingUp className="h-4 w-4" />}
@@ -714,7 +719,7 @@ export default function LoteDetalhe() {
               extraContent={
                 loteMetrics.ganhoMedio !== null && (
                   <p className="mt-1">
-                    <span className="font-semibold text-foreground/75">Ganho Acumulado:</span> {loteMetrics.ganhoMedio.toFixed(1)} kg
+                    <span className="font-semibold text-foreground/75">Variação observada:</span> {loteMetrics.ganhoMedio.toFixed(1)} kg
                   </p>
                 )
               }

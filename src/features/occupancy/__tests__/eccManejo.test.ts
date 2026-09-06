@@ -5,6 +5,7 @@ import { buildLoteOccupancyMetrics } from "../buildLoteOccupancyMetrics";
 import { buildPastoOccupancyMetrics } from "../buildPastoOccupancyMetrics";
 import type { Evento, EventoEcc, Animal } from "@/lib/offline/types";
 import type { AnimalOccupancyPeriod } from "../occupancyTypes";
+import type { OccupancyPerformanceAggregate } from "@/lib/occupancy/occupancyPerformance";
 
 describe("Fase 2 — ECC and Occupancy Metrics Core", () => {
   describe("validateEccInput", () => {
@@ -252,6 +253,24 @@ describe("Fase 2 — ECC and Occupancy Metrics Core", () => {
         eccStatus: { status: "empty" },
       };
 
+      const observedPerformance: OccupancyPerformanceAggregate = {
+        dimension: "LOT",
+        groupId: "lote-1",
+        fazendaId: "faz-1",
+        animalIds: ["a1", "a2"],
+        meanInitialObservedWeightKg: 200,
+        meanFinalObservedWeightKg: 230,
+        meanWeightDeltaKg: 30,
+        meanObservedGmdKgPerDay: 1,
+        calculatedIntervals: 1,
+        unavailableIntervals: 1,
+        coverage: "PARTIAL_WEIGHT_COVERAGE",
+        reliability: "UNCLASSIFIED",
+        operationalUse: "NOT_AUTHORIZED",
+        limitations: [],
+        conflicts: [],
+      };
+
       const metrics = buildLoteOccupancyMetrics({
         loteId: "lote-1",
         animalPeriods: [period1, period2],
@@ -260,9 +279,10 @@ describe("Fase 2 — ECC and Occupancy Metrics Core", () => {
         latestEccsMap,
         lastMovementDate: "2026-01-01T00:00:00Z",
         categoriaPredominante: "Novilha",
+        observedPerformance,
       });
 
-      expect(metrics.weightStatus.status).toBe("complete");
+      expect(metrics.weightStatus.status).toBe("partial");
       expect(metrics.gmdEstimado).toBe(1.0); // only period1 has complete status
       expect(metrics.tempoLotacaoStatus.status).toBe("empty"); // qualified duration absent; movement is not a fallback
     });
