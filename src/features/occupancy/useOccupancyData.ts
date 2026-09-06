@@ -3,15 +3,21 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
 import { db } from "@/lib/offline/db";
-import type { Evento, EventoMovimentacao, EventoPesagem, EventoEcc, Animal, Lote, Pasto, PastoOcupacao } from "@/lib/offline/types";
+import type { Evento, EventoMovimentacao, EventoEcc, Animal, Lote, Pasto } from "@/lib/offline/types";
 import { buildAnimalOccupancyTimeline } from "./buildAnimalOccupancyTimeline";
-import { buildWeightGainForOccupancy } from "./buildWeightGainForOccupancy";
 import { buildEccMetricsForOccupancy } from "./buildEccMetricsForOccupancy";
 import { buildLoteOccupancyMetrics } from "./buildLoteOccupancyMetrics";
 import { buildPastoOccupancyMetrics } from "./buildPastoOccupancyMetrics";
 import { getLatestValidEcc } from "./eccHelpers";
 import { getPredominantCategorySnapshot } from "./classification";
 import type { AnimalOccupancyPeriod, LoteOccupancyMetrics, PastoOccupancyMetrics } from "./occupancyTypes";
+import { selectHistoricalLotOccupancy } from "@/lib/occupancy/historicalLotOccupancy";
+import { selectHistoricalPastureOccupancy } from "@/lib/occupancy/historicalPastureOccupancy";
+import {
+  buildLotOccupancyAggregation,
+  buildPastureOccupancyAggregation,
+} from "@/lib/occupancy/occupancyAggregation";
+import { buildObservedOccupancyPerformance } from "@/lib/occupancy/occupancyPerformance";
 
 export function useOccupancyData(fazendaId: string, referenceDate: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -54,22 +60,11 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
     [fazendaId],
   ) || [];
 
-  const allPastoOcupacoes = useLiveQuery(
-    () => db.state_pasto_ocupacoes.where("fazenda_id").equals(fazendaId).toArray(),
-    [fazendaId],
-  ) || [];
-
   const movimentacoesMap = useMemo(() => {
     return new Map<string, EventoMovimentacao>(
       allMovimentacoes.map((m) => [m.evento_id, m]),
     );
   }, [allMovimentacoes]);
-
-  const pesagensMap = useMemo(() => {
-    return new Map<string, EventoPesagem>(
-      allPesagens.map((p) => [p.evento_id, p]),
-    );
-  }, [allPesagens]);
 
   const eccsMap = useMemo(() => {
     return new Map<string, EventoEcc>(
@@ -114,13 +109,8 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       });
 
       animalTimeline = animalTimeline.map(period => {
-        const periodWithWeight = buildWeightGainForOccupancy({
-          period,
-          events: animalEvents,
-          pesagens: pesagensMap,
-        });
         return buildEccMetricsForOccupancy({
-          period: periodWithWeight,
+          period,
           events: animalEvents,
           eccs: eccsMap,
         });
@@ -128,7 +118,123 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       periods = periods.concat(animalTimeline);
     }
     return periods;
-  }, [allEvents, movimentacoesMap, pesagensMap, eccsMap, referenceDate]);
+  }, [allEvents, movimentacoesMap, eccsMap, referenceDate]);
+
+  const historicalLotResults = useMemo(
+    () =>
+      allAnimals
+        .filter((animal) => !animal.deleted_at)
+        .map((animal) =>
+          selectHistoricalLotOccupancy({
+            animalId: animal.id,
+            fazendaId,
+            referenceDate,
+            events: allEvents,
+            movementDetails: allMovimentacoes,
+          }),
+        ),
+    [allAnimals, allEvents, allMovimentacoes, fazendaId, referenceDate],
+  );
+
+  const historicalPastureResults = useMemo(
+    () =>
+      allAnimals
+        .filter((animal) => !animal.deleted_at)
+        .map((animal) =>
+          selectHistoricalPastureOccupancy({
+            animalId: animal.id,
+            fazendaId,
+            referenceDate,
+            events: allEvents,
+            movementDetails: allMovimentacoes,
+          }),
+        ),
+    [allAnimals, allEvents, allMovimentacoes, fazendaId, referenceDate],
+  );
+
+  const qualifiedLotOccupancy = useMemo(
+    () =>
+      buildLotOccupancyAggregation({
+        results: historicalLotResults,
+        referenceDate,
+      }),
+    [historicalLotResults, referenceDate],
+  );
+
+  const qualifiedPastureOccupancy = useMemo(
+    () =>
+      buildPastureOccupancyAggregation({
+        results: historicalPastureResults,
+        referenceDate,
+      }),
+    [historicalPastureResults, referenceDate],
+  );
+
+  const qualifiedLotDurationById = useMemo(
+    () =>
+      new Map(
+        qualifiedLotOccupancy.byLote.map((aggregate) => [
+          aggregate.groupId,
+          aggregate,
+        ]),
+      ),
+    [qualifiedLotOccupancy],
+  );
+
+  const qualifiedPastureDurationById = useMemo(
+    () =>
+      new Map(
+        qualifiedPastureOccupancy.byPasto.map((aggregate) => [
+          aggregate.groupId,
+          aggregate,
+        ]),
+      ),
+    [qualifiedPastureOccupancy],
+  );
+
+  const observedLotPerformance = useMemo(
+    () =>
+      buildObservedOccupancyPerformance({
+        qualifiedResults: qualifiedLotOccupancy.qualified,
+        events: allEvents,
+        weightDetails: allPesagens,
+        referenceDate,
+      }),
+    [qualifiedLotOccupancy, allEvents, allPesagens, referenceDate],
+  );
+
+  const observedPasturePerformance = useMemo(
+    () =>
+      buildObservedOccupancyPerformance({
+        qualifiedResults: qualifiedPastureOccupancy.qualified,
+        events: allEvents,
+        weightDetails: allPesagens,
+        referenceDate,
+      }),
+    [qualifiedPastureOccupancy, allEvents, allPesagens, referenceDate],
+  );
+
+  const observedLotPerformanceById = useMemo(
+    () =>
+      new Map(
+        observedLotPerformance.byGroup.map((aggregate) => [
+          aggregate.groupId,
+          aggregate,
+        ]),
+      ),
+    [observedLotPerformance],
+  );
+
+  const observedPasturePerformanceById = useMemo(
+    () =>
+      new Map(
+        observedPasturePerformance.byGroup.map((aggregate) => [
+          aggregate.groupId,
+          aggregate,
+        ]),
+      ),
+    [observedPasturePerformance],
+  );
 
   const getLoteMetrics = (loteId: string): LoteOccupancyMetrics | null => {
     const activeAnimals = allAnimals.filter(
@@ -155,6 +261,8 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       lastMovementDate,
       categoriaPredominante: categoriaSnapshot.label,
       categoriaStatus: categoriaSnapshot.status,
+      qualifiedDuration: qualifiedLotDurationById.get(loteId),
+      observedPerformance: observedLotPerformanceById.get(loteId),
     });
   };
 
@@ -190,6 +298,8 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
       categoriaPredominante: categoriaSnapshot.label,
       categoriaStatus: categoriaSnapshot.status,
       areaHa,
+      qualifiedDuration: qualifiedPastureDurationById.get(pastoId),
+      observedPerformance: observedPasturePerformanceById.get(pastoId),
     });
   };
 
@@ -199,6 +309,13 @@ export function useOccupancyData(fazendaId: string, referenceDate: string) {
     getPastoMetrics,
     animalsMap,
     latestEccsMap,
-    allPastoOcupacoes,
+    qualifiedLotOccupancy,
+    qualifiedPastureOccupancy,
+    qualifiedLotDurationById,
+    qualifiedPastureDurationById,
+    observedLotPerformance,
+    observedPasturePerformance,
+    observedLotPerformanceById,
+    observedPasturePerformanceById,
   };
 }

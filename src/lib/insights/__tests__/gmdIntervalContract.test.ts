@@ -372,7 +372,7 @@ describe("selectFactualGmdInterval", () => {
     });
   });
 
-  it("does not invent operational reliability without a minimum interval policy", () => {
+  it("keeps a short positive interval ready for contextual policy evaluation", () => {
     const result = selectFactualGmdInterval(
       input({
         events: [
@@ -386,14 +386,13 @@ describe("selectFactualGmdInterval", () => {
       status: "READY",
       interval: {
         intervalDays: 0.5,
-        coverage: { minimumIntervalPolicy: "not_defined" },
+        coverage: { minimumIntervalPolicy: "context_dependent" },
       },
     });
     if (result.status !== "READY") throw new Error("expected ready interval");
-    expect(result.interval.limitations).toContainEqual({
-      code: "GMD_MIN_INTERVAL_POLICY_UNDEFINED",
-      recordIds: [],
-    });
+    expect(result.interval).not.toHaveProperty("gmdKgPerDay");
+    expect(result.interval).not.toHaveProperty("reliability");
+    expect(result.interval).not.toHaveProperty("operationalUse");
   });
 
   it("returns unsupported when the animal does not exist in the farm scope", () => {

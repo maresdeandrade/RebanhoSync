@@ -1,6 +1,48 @@
 import { describe, it, expect } from "vitest";
 import { buildPastoOccupancyMetrics } from "../buildPastoOccupancyMetrics";
 import type { AnimalOccupancyPeriod } from "../occupancyTypes";
+import type { OccupancyAggregate } from "@/lib/occupancy/occupancyAggregation";
+import type { OccupancyPerformanceAggregate } from "@/lib/occupancy/occupancyPerformance";
+
+function observedPasturePerformance(): OccupancyPerformanceAggregate {
+  return {
+    dimension: "PASTURE",
+    groupId: "pasto-X",
+    fazendaId: "farm-1",
+    animalIds: ["animal-1", "animal-2"],
+    meanInitialObservedWeightKg: 105,
+    meanFinalObservedWeightKg: 140,
+    meanWeightDeltaKg: 35,
+    meanObservedGmdKgPerDay: 0.75,
+    calculatedIntervals: 2,
+    unavailableIntervals: 0,
+    coverage: "PARTIAL_WEIGHT_COVERAGE",
+    reliability: "UNCLASSIFIED",
+    operationalUse: "NOT_AUTHORIZED",
+    limitations: [],
+    conflicts: [],
+  };
+}
+
+function qualifiedPastureDuration(meanDays: number): OccupancyAggregate {
+  return {
+    dimension: "PASTURE",
+    groupId: "pasto-X",
+    fazendaId: "farm-1",
+    animalIds: ["animal-1", "animal-2"],
+    knownDurationMs: meanDays * 2 * 86_400_000,
+    knownDurationDays: meanDays * 2,
+    meanKnownDurationMs: meanDays * 86_400_000,
+    meanKnownDurationDays: meanDays,
+    maxKnownDurationMs: 130 * 86_400_000,
+    maxKnownDurationDays: 130,
+    knownIntervals: 2,
+    unknownIntervals: 0,
+    coverage: "COMPLETE",
+    limitations: [],
+    conflicts: [],
+  };
+}
 
 describe("buildPastoOccupancyMetrics", () => {
   const pastoId = "pasto-X";
@@ -16,9 +58,9 @@ describe("buildPastoOccupancyMetrics", () => {
     expect(result).toMatchObject({
       pastoId,
       lotacaoAtual: 0,
-      tempoMedioOcupacao: 0,
-      ganhoMedioPeso: 0,
-      gmdEstimado: 0,
+      tempoMedioOcupacao: null,
+      ganhoMedioPeso: null,
+      gmdEstimado: null,
       weightStatus: { status: "empty" },
       eccMedioAtual: 0,
       eccVariacaoMedia: 0,
@@ -79,13 +121,15 @@ describe("buildPastoOccupancyMetrics", () => {
     const result = buildPastoOccupancyMetrics({
       pastoId,
       animalPeriods,
+      qualifiedDuration: qualifiedPastureDuration((30 + 130) / 2),
+      observedPerformance: observedPasturePerformance(),
     });
 
     expect(result.lotacaoAtual).toBe(1);
     expect(result.tempoMedioOcupacao).toBeCloseTo((30 + 130) / 2);
-    expect(result.ganhoMedioPeso).toBeCloseTo((30 + 40) / 2);
-    expect(result.gmdEstimado).toBeCloseTo((1 + 0.5) / 2);
-    expect(result.weightStatus.status).toBe("complete");
+    expect(result.ganhoMedioPeso).toBeCloseTo(35);
+    expect(result.gmdEstimado).toBeCloseTo(0.75);
+    expect(result.weightStatus.status).toBe("partial");
     expect(result.eccMedioAtual).toBeCloseTo(4.5); // Only animal-2 is current and has final ecc
     expect(result.eccVariacaoMedia).toBeCloseTo((1 + 1) / 2);
     expect(result.eccStatus.status).toBe("complete");

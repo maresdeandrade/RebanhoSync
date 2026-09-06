@@ -68,6 +68,7 @@ import { OccupancyEntryInfo, OccupancyTimeline, CollapsibleInfrastructure, Occup
 import { useOccupancyData } from "@/features/occupancy/useOccupancyData";
 
 import { calculatePastoMetrics } from "@/features/occupancy/cockpitManejoAdapter";
+import { CockpitCard } from "@/features/occupancy/CockpitCard";
 import { TimelineFactual } from "@/components/timeline/TimelineFactual";
 import { useAuth } from "@/hooks/useAuth";
 import { readPastoInActiveFarm } from "@/pages/detailFarmIsolation";
@@ -133,119 +134,6 @@ type SuplementoTipoValue = (typeof SUPLEMENTO_OPTIONS)[number]["value"];
 const SUPLEMENTO_BY_VALUE = new Map(
   SUPLEMENTO_OPTIONS.map((option) => [option.value, option]),
 );
-
-interface CockpitCardProps {
-  title: string;
-  value: string | number | null;
-  unit?: string;
-  icon: React.ReactNode;
-  status: "empty" | "partial" | "complete" | "blocked";
-  reason?: string;
-  source?: string;
-  limitation?: string;
-  extraContent?: React.ReactNode;
-}
-
-function CockpitCard({
-  title,
-  value,
-  unit,
-  icon,
-  status,
-  reason,
-  source,
-  limitation,
-  extraContent,
-}: CockpitCardProps) {
-  const getStatusStyles = (s: typeof status) => {
-    switch (s) {
-      case "complete":
-        return "border-semantic-success-border bg-semantic-success-muted text-foreground";
-      case "partial":
-        return "border-semantic-warning-border bg-semantic-warning-muted text-foreground";
-      case "blocked":
-        return "border-semantic-error-border bg-semantic-error-muted text-foreground";
-      default:
-        return "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground";
-    }
-  };
-
-  const getStatusLabel = (s: typeof status) => {
-    switch (s) {
-      case "complete":
-        return "Completo";
-      case "partial":
-        return "Parcial";
-      case "blocked":
-        return "Bloqueado";
-      default:
-        return "Vazio";
-    }
-  };
-
-  const getStatusBadgeStyles = (s: typeof status) => {
-    switch (s) {
-      case "complete":
-        return "border-semantic-success-border bg-semantic-success-muted text-foreground";
-      case "partial":
-        return "border-semantic-warning-border bg-semantic-warning-muted text-foreground";
-      case "blocked":
-        return "border-semantic-error-border bg-semantic-error-muted text-foreground";
-      default:
-        return "border-semantic-unknown-border bg-semantic-unknown-muted text-foreground";
-    }
-  };
-
-  return (
-    <div className={`flex flex-col justify-between rounded-xl border p-4 ${getStatusStyles(status)}`}>
-      <div className="space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-background/50 border border-current/10">
-              {icon}
-            </div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              {title}
-            </h4>
-          </div>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getStatusBadgeStyles(status)}`}>
-            {getStatusLabel(status)}
-          </span>
-        </div>
-
-        <div className="space-y-1">
-          <p className="text-2xl font-extrabold tracking-tight text-foreground">
-            {value !== null ? (typeof value === "number" ? value.toFixed(1) : value) : "—"}
-            {value !== null && unit && (
-              <span className="text-xs font-semibold text-muted-foreground ml-1.5 uppercase tracking-wide">
-                {unit}
-              </span>
-            )}
-          </p>
-          {reason && (
-            <p className="text-xs font-medium text-foreground/80 leading-snug">
-              {reason}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-3 pt-3 border-t border-current/10 space-y-1.5 text-[11px] text-muted-foreground">
-        {source && (
-          <p>
-            <span className="font-semibold text-foreground/75">Fonte:</span> {source}
-          </p>
-        )}
-        {limitation && (
-          <p className="font-medium text-semantic-warning">
-            <span className="font-semibold">Nota:</span> {limitation}
-          </p>
-        )}
-        {extraContent}
-      </div>
-    </div>
-  );
-}
 
 const PastoDetalhe = () => {
   const { id } = useParams<{ id: string }>();
@@ -338,16 +226,12 @@ const PastoDetalhe = () => {
         : [],
     [pasto?.id, activeFarmId],
   ) ?? EMPTY_ARRAY;
-  const pastoOcupacoes = useLiveQuery(
-    () =>
-      pasto && activeFarmId
-        ? db.state_pasto_ocupacoes.where("fazenda_id").equals(activeFarmId).toArray()
-        : [],
-    [pasto?.id, activeFarmId],
-  ) ?? EMPTY_ARRAY;
-
   const referenceDate = useMemo(() => new Date().toISOString(), []);
-  const { allAnimalPeriods } = useOccupancyData(
+  const {
+    allAnimalPeriods,
+    qualifiedPastureDurationById,
+    observedPasturePerformanceById,
+  } = useOccupancyData(
     activeFarmId ?? "",
     referenceDate,
   );
@@ -367,9 +251,10 @@ const PastoDetalhe = () => {
       eccs,
       movimentacoes,
       agendaItens,
-      pastoOcupacoes
+      qualifiedPastureDurationById.get(pasto.id),
+      observedPasturePerformanceById.get(pasto.id),
     );
-  }, [pasto, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens, pastoOcupacoes]);
+  }, [pasto, referenceDate, weightFreshnessDays, animals, lotes, pastos, events, pesagens, eccs, movimentacoes, agendaItens, qualifiedPastureDurationById, observedPasturePerformanceById]);
 
   // Unified Timeline for Pasto
   const timelineItems = useMemo(() => {
@@ -738,9 +623,9 @@ const PastoDetalhe = () => {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Peso Médio Confiável */}
+            {/* Peso final observado */}
             <CockpitCard
-              title="Peso Médio Confiável"
+              title="Peso final observado"
               value={pastoMetrics.pesoMedio}
               unit="kg"
               icon={<Scale className="h-4 w-4" />}
@@ -750,9 +635,9 @@ const PastoDetalhe = () => {
               limitation={pastoMetrics.pesoStatus.limitation}
             />
 
-            {/* GMD Médio */}
+            {/* GMD observado */}
             <CockpitCard
-              title="GMD Médio"
+              title="GMD observado"
               value={pastoMetrics.gmdMedio}
               unit="kg/dia"
               icon={<TrendingUp className="h-4 w-4" />}
@@ -763,7 +648,7 @@ const PastoDetalhe = () => {
               extraContent={
                 pastoMetrics.ganhoMedioPeso !== null && (
                   <p className="mt-1">
-                    <span className="font-semibold text-foreground/75">Ganho Acumulado:</span> {pastoMetrics.ganhoMedioPeso.toFixed(1)} kg
+                    <span className="font-semibold text-foreground/75">Variação observada:</span> {pastoMetrics.ganhoMedioPeso.toFixed(1)} kg
                   </p>
                 )
               }
@@ -819,7 +704,7 @@ const PastoDetalhe = () => {
               unit="dias"
               icon={<CalendarIcon className="h-4 w-4" />}
               status={pastoMetrics.permanenciaStatus.status}
-              reason={`Leitura de uso atual: ${pastoMetrics.tempoUsoDias.toFixed(0)} dias no pasto`}
+              reason={pastoMetrics.permanenciaStatus.reason}
               source={pastoMetrics.permanenciaStatus.source}
               limitation={pastoMetrics.permanenciaStatus.limitation}
               extraContent={
@@ -866,20 +751,21 @@ const PastoDetalhe = () => {
                 <div className="grid grid-cols-3 gap-1 mt-2 text-center text-[10px] font-bold">
                   <div className="rounded border border-semantic-error-border bg-semantic-error-muted p-1 text-semantic-error">
                     <div>{pastoMetrics.agendaItensAbertos.atrasados}</div>
-                    <div className="uppercase text-[8px] opacity-75">Atrasados</div>
+                    <div className="uppercase text-caption opacity-75">Atrasados</div>
                   </div>
                   <div className="rounded border border-semantic-warning-border bg-semantic-warning-muted p-1 text-semantic-warning">
                     <div>{pastoMetrics.agendaItensAbertos.hoje}</div>
-                    <div className="uppercase text-[8px] opacity-75">Hoje</div>
+                    <div className="uppercase text-caption opacity-75">Hoje</div>
                   </div>
                   <div className="rounded border border-semantic-info-border bg-semantic-info-muted p-1 text-semantic-info">
                     <div>{pastoMetrics.agendaItensAbertos.proximos}</div>
-                    <div className="uppercase text-[8px] opacity-75">Próximos</div>
+                    <div className="uppercase text-caption opacity-75">Próximos</div>
                   </div>
                 </div>
               }
             />
 
+            {/* fallow-ignore-next-line code-duplication -- existing lote/pasto card symmetry is intentional. */}
             {/* Perfil Zootécnico */}
             <div className="flex flex-col justify-between rounded-xl border border-border/70 bg-card p-4">
               <div className="space-y-3">
