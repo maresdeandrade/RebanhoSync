@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   computeHomeIndicators,
@@ -13,10 +15,13 @@ import {
 } from "../operationalHomeIndicatorsAdapter";
 
 const referenceDate = "2026-05-28";
+const fazendaId = "farm-1";
 
 function createMockInput(overrides: Partial<HomeIndicatorsInput> = {}): HomeIndicatorsInput {
   return {
+    fazendaId,
     referenceDate,
+    referenceTimestamp: "2026-05-28T23:59:59.999Z",
     animals: [],
     lotes: [],
     pastos: [],
@@ -120,30 +125,144 @@ describe("operationalHomeIndicatorsAdapter", () => {
   });
 
   describe("computeGmd", () => {
-    it("correctly computes weight gain only for animals with >= 2 weights", () => {
-      const lotes: FactualLote[] = [{ id: "l1", nome: "Lote A" }];
-      const animals: FactualAnimal[] = [
-        { id: "a1", identificacao: "001", status: "ativo", lote_id: "l1" },
-        { id: "a2", identificacao: "002", status: "ativo", lote_id: "l1" },
-      ];
-      const events: FactualEvent[] = [
-        { id: "e1", dominio: "pesagem", animal_id: "a1", occurred_at: "2026-05-01T10:00:00Z" },
-        { id: "e2", dominio: "pesagem", animal_id: "a1", occurred_at: "2026-05-15T10:00:00Z" },
-        { id: "e3", dominio: "pesagem", animal_id: "a2", occurred_at: "2026-05-01T10:00:00Z" }, // Only 1 weight for a2
-      ];
-      const pesagens: FactualPesagem[] = [
-        { evento_id: "e1", peso_kg: 200 },
-        { evento_id: "e2", peso_kg: 220 },
-        { evento_id: "e3", peso_kg: 210 },
-      ];
+    function buildGmdInput(
+      animals: FactualAnimal[],
+      events: FactualEvent[],
+      pesagens: FactualPesagem[],
+    ) {
+      return createMockInput({ animals, events, pesagens });
+    }
 
-      const input = createMockInput({ lotes, animals, events, pesagens });
-      const res = computeHomeIndicators(input);
+    const animal = (id: string): FactualAnimal => ({
+      id,
+      fazenda_id: fazendaId,
+      identificacao: id,
+      status: "ativo",
+    });
+    const event = (
+      id: string,
+      animalId: string,
+      occurredAt: string,
+    ): FactualEvent => ({
+      id,
+      fazenda_id: fazendaId,
+      dominio: "pesagem",
+      animal_id: animalId,
+      occurred_at: occurredAt,
+    });
+    const weight = (eventoId: string, pesoKg: number): FactualPesagem => ({
+      evento_id: eventoId,
+      fazenda_id: fazendaId,
+      peso_kg: pesoKg,
+    });
 
-      expect(res.gmd.status).toBe("completo");
-      expect(res.gmd.animaisComApenasUmaPesagemCount).toBe(1);
-      // Lote A has only 1 animal (a1) with sufficient weights. Weight gain for a1 is 20 kg
-      expect(res.gmd.lotesComGmd).toContainEqual({ loteId: "l1", nome: "Lote A", gmdMedio: 1.43, ganhoMedio: 20, animaisCount: 1 });
+    it.each([
+      { label: "positivo", initial: 200, final: 220, expected: 2 },
+      { label: "negativo", initial: 220, final: 200, expected: -2 },
+      { label: "zero factual", initial: 200, final: 200, expected: 0 },
+    ])("preserva GMD observado $label sem promover confiabilidade", ({ initial, final, expected }) => {
+      const res = computeHomeIndicators(
+        buildGmdInput(
+          [animal("a1")],
+          [
+            event("e1", "a1", "2026-05-01T10:00:00Z"),
+            event("e2", "a1", "2026-05-11T10:00:00Z"),
+          ],
+          [weight("e1", initial), weight("e2", final)],
+        ),
+      );
+
+      expect(res.gmd.status).toBe("parcial");
+      expect(res.gmd.reliability).toBe("UNCLASSIFIED");
+      expect(res.gmd.operationalUse).toBe("NOT_AUTHORIZED");
+      expect(res.gmd.animals[0]).toMatchObject({
+        status: "CALCULATED",
+        valueKgPerDay: expected,
+        reason: null,
+        intervalDays: 10,
+      });
+    });
+
+    it.each([
+      { label: "ausente", events: [], weights: [], observedCount: 0 },
+      {
+        label: "insuficiente",
+        events: [event("e1", "a1", "2026-05-01T10:00:00Z")],
+        weights: [weight("e1", 200)],
+        observedCount: 1,
+      },
+    ])("mantém GMD $label indisponível sem fallback zero", ({ events, weights, observedCount }) => {
+      const res = computeHomeIndicators(
+        buildGmdInput([animal("a1")], events, weights),
+      );
+
+      expect(res.gmd.status).toBe("bloqueado");
+      expect(res.gmd.availableCount).toBe(0);
+      expect(res.gmd.animals[0]).toMatchObject({
+        status: "NOT_CALCULATED",
+        valueKgPerDay: null,
+        reason: "INSUFFICIENT_OBSERVATIONS",
+        observedCount,
+      });
+    });
+
+    it("bloqueia apresentação quando há conflito factual no mesmo instante", () => {
+      const res = computeHomeIndicators(
+        buildGmdInput(
+          [animal("a1")],
+          [
+            event("e1", "a1", "2026-05-01T10:00:00Z"),
+            event("e2", "a1", "2026-05-11T10:00:00Z"),
+            event("e3", "a1", "2026-05-11T10:00:00Z"),
+          ],
+          [weight("e1", 200), weight("e2", 210), weight("e3", 211)],
+        ),
+      );
+
+      expect(res.gmd.conflictCount).toBe(1);
+      expect(res.gmd.animals[0]).toMatchObject({
+        status: "NOT_CALCULATED",
+        valueKgPerDay: null,
+        reason: "CONFLICT",
+      });
+    });
+
+    it("não usa lote atual para agregar, ordenar ou recomendar por GMD", () => {
+      const res = computeHomeIndicators(
+        buildGmdInput(
+          [
+            { ...animal("a1"), lote_id: "l1" },
+            { ...animal("a2"), lote_id: "l1" },
+          ],
+          [
+            event("e1", "a1", "2026-05-01T10:00:00Z"),
+            event("e2", "a1", "2026-05-11T10:00:00Z"),
+            event("e3", "a2", "2026-05-01T10:00:00Z"),
+            event("e4", "a2", "2026-05-11T10:00:00Z"),
+          ],
+          [weight("e1", 200), weight("e2", 230), weight("e3", 200), weight("e4", 210)],
+        ),
+      );
+
+      expect(res.gmd.animals.map(({ animalId }) => animalId)).toEqual([
+        "a1",
+        "a2",
+      ]);
+      expect(res.gmd).not.toHaveProperty("lotesComGmd");
+      expect(res.gmd).not.toHaveProperty("ranking");
+      expect(res.gmd).not.toHaveProperty("recommendation");
+    });
+
+    it("não importa o helper legado no consumidor produtivo da Home", () => {
+      const source = readFileSync(
+        resolve(
+          process.cwd(),
+          "src/features/operationalInsights/operationalHomeIndicatorsAdapter.ts",
+        ),
+        "utf8",
+      );
+
+      expect(source).not.toContain("calculateIndividualGmd");
     });
   });
 
@@ -240,9 +359,9 @@ describe("operationalHomeIndicatorsAdapter", () => {
    describe("retirado status handling", () => {
      it("correctly excludes retirado animals from active indicators", () => {
        const animals: FactualAnimal[] = [
-         { id: "a1", identificacao: "001", status: "ativo" },
-         { id: "a2", identificacao: "002", status: "retirado" }, // should be ignored
-         { id: "a3", identificacao: "003", status: "ativo" },
+         { id: "a1", fazenda_id: fazendaId, identificacao: "001", status: "ativo" },
+         { id: "a2", fazenda_id: fazendaId, identificacao: "002", status: "retirado" }, // should be ignored
+         { id: "a3", fazenda_id: fazendaId, identificacao: "003", status: "ativo" },
        ];
        const events: FactualEvent[] = [
          { id: "e1", dominio: "ecc", animal_id: "a1", occurred_at: "2026-05-25T10:00:00Z" },
@@ -258,7 +377,10 @@ describe("operationalHomeIndicatorsAdapter", () => {
 
        // Only 2 active animals should be counted (retirado excluded)
        expect(res.ecc.coberturaAtiva.total).toBe(2);
-       expect(res.gmd.lotesComGmd.length).toBeGreaterThanOrEqual(0);
+       expect(res.gmd.animals.map(({ animalId }) => animalId)).toEqual([
+         "a1",
+         "a3",
+       ]);
      });
    });
  });

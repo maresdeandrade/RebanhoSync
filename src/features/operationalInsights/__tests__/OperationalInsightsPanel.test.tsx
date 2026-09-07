@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { OperationalInsightsPanel } from "@/features/operationalInsights/OperationalInsightsPanel";
+import { computeHomeIndicators } from "@/features/operationalInsights/operationalHomeIndicatorsAdapter";
 import { buildOperationalInsights } from "@/features/operationalInsights/operationalInsightsAdapter";
 
 const generatedAt = "2026-05-07T12:00:00.000Z";
@@ -153,5 +154,69 @@ describe("OperationalInsightsPanel", () => {
     expect(screen.queryByText("Pendencias atuais exigem agenda aberta ja carregada."))
       .not.toBeInTheDocument();
     expectReadOnly(container);
+  });
+
+  it("presents canonical observed GMD without ranking or operational action", () => {
+    const viewModel = buildOperationalInsights({
+      generatedAt,
+      referenceDate,
+      monthlyPeriod,
+      sources: { agendaItems: [], animals: [], events: [] },
+    });
+    const homeIndicators = computeHomeIndicators({
+      fazendaId: "farm-1",
+      referenceDate,
+      referenceTimestamp: generatedAt,
+      animals: [
+        {
+          id: "animal-1",
+          fazenda_id: "farm-1",
+          identificacao: "001",
+          status: "ativo",
+        },
+      ],
+      lotes: [],
+      pastos: [],
+      agenda: [],
+      events: [
+        {
+          id: "weight-1",
+          fazenda_id: "farm-1",
+          dominio: "pesagem",
+          animal_id: "animal-1",
+          occurred_at: "2026-05-01T12:00:00.000Z",
+        },
+        {
+          id: "weight-2",
+          fazenda_id: "farm-1",
+          dominio: "pesagem",
+          animal_id: "animal-1",
+          occurred_at: "2026-05-07T12:00:00.000Z",
+        },
+      ],
+      pesagens: [
+        { evento_id: "weight-1", fazenda_id: "farm-1", peso_kg: 200 },
+        { evento_id: "weight-2", fazenda_id: "farm-1", peso_kg: 200 },
+      ],
+      eccs: [],
+      movimentacoes: [],
+    });
+
+    const { container } = render(
+      <OperationalInsightsPanel
+        viewModel={viewModel}
+        homeIndicators={homeIndicators}
+      />,
+    );
+
+    expect(screen.getByText("GMD observado")).toBeInTheDocument();
+    expect(screen.getByText("0.00 kg/dia")).toBeInTheDocument();
+    expect(screen.getByText("Confiabilidade: não classificada.")).toBeInTheDocument();
+    expect(screen.getByText("Uso operacional: não autorizado.")).toBeInTheDocument();
+    expect(screen.queryByText(/Desempenho de Ganho/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/GMD por lote/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /gmd/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /gmd/i })).not.toBeInTheDocument();
+    expect(container).toBeInTheDocument();
   });
 });

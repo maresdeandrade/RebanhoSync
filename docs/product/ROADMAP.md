@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-09-06
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (F22C fechada)**
+Atualizado em: 2026-09-07
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase anterior: **Fase 21 — Inteligência Operacional v2 (CLOSED)**
 
 ## Objetivo
@@ -52,10 +52,10 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 
 ```txt
 Fase 21 — Inteligência Operacional v2 — V1 operational_history_review + V2 herd_flow_review + consolidação concluídas
-→ Fase 22 — Eficiência Produtiva e Econômica — ativa; F22A.1/F22A.2 e política contextual F22A.2B definidos
+→ Fase 22 — Eficiência Produtiva e Econômica — F22A, F22B e F22C fechadas
 ```
 
-A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está ativa: F22A.1–F22A.3 implementam peso/GMD qualificado e F22A.4 fechou sem migração. F22B.1/F22B.2 implementam coverage e resultado observado qualificado; o gate F22B.3 fechou com `MIGRATABLE_NOW = 0`, sem liberar lucro completo. A F22C está fechada: histórico animal→lote, composição animal→pasto, duração, agregação e performance observada dentro da ocupação estão implementados, com coverage e não-autorização explícitos nos consumidores compatíveis.
+A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está fechada: F22A implementa peso/GMD canônico e adoção produtiva com confiabilidade não classificada e uso operacional não autorizado; F22B implementa coverage, resultado observado e adoção produtiva sem demonstrar lucro completo; F22C implementa histórico animal→lote, composição animal→pasto, duração, agregação e performance observada dentro da ocupação, com coverage e não-autorização explícitos.
 
 A Fase 19 implementou foundations tipográficas e semânticas, branding reutilizável, primitives estruturais e shell/navegação responsivos sobre o contrato da F18. Home, Animais, AnimalDetalhe, Registrar e Agenda foram revalidados sem migração ampla em 390, 768, 1024 e 1440 px, light/dark; nenhum P0 novo foi confirmado e o P0 do Registrar permanece resolvido.
 
@@ -96,6 +96,6 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 19 | Foundations + Shell + Branding | **Concluída**; foundations e shell revalidados em light/dark e mobile/desktop |
 | 20 | Jornadas UX Críticas | **Concluída**; cinco jornadas migradas e validadas |
 | 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
-| 22 | Eficiência Produtiva e Econômica | **Gates F22A.4 e F22B.3 fechados; F22C fechada com histórico, duração, agregação e performance observada implementados**; lucro completo permanece bloqueado e novo incremento exige capacidade de produto explicitamente autorizada |
+| 22 | Eficiência Produtiva e Econômica | **Concluída**; F22A, F22B e F22C adotadas no escopo autorizado, sem promover GMD observado a confiável nem resultado observado a lucro completo |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
 | 24 | Release Hardening / Scale Readiness | Hardening sistêmico final para escala |

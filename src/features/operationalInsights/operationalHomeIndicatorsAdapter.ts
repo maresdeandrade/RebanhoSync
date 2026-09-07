@@ -1,6 +1,7 @@
 // src/features/operationalInsights/operationalHomeIndicatorsAdapter.ts
 
-import { calculateIndividualGmd } from "../../lib/animals/kpiHelpers";
+import { calculateQualifiedGmd } from "@/lib/insights/gmdCalculation";
+import { selectFactualGmdInterval } from "@/lib/insights/gmdIntervalContract";
 
 /**
  * Pure deterministic adapter to compute operational home indicators from factual data.
@@ -8,6 +9,7 @@ import { calculateIndividualGmd } from "../../lib/animals/kpiHelpers";
  */
 export interface FactualEvent {
   id: string;
+  fazenda_id?: string;
   dominio: string;
   animal_id?: string | null;
   lote_id?: string | null;
@@ -17,6 +19,7 @@ export interface FactualEvent {
 
 export interface FactualPesagem {
   evento_id: string;
+  fazenda_id?: string;
   peso_kg: number;
   deleted_at?: string | null;
 }
@@ -47,6 +50,7 @@ export interface FactualAgendaItem {
 
 export interface FactualAnimal {
    id: string;
+   fazenda_id?: string;
    identificacao: string;
    lote_id?: string | null;
    status: string; // 'ativo' | 'morto' | 'vendido' | 'retirado'
@@ -66,7 +70,9 @@ export interface FactualPasto {
 }
 
 export interface HomeIndicatorsInput {
+  fazendaId: string;
   referenceDate: string; // YYYY-MM-DD
+  referenceTimestamp: string;
   animals: readonly FactualAnimal[];
   lotes: readonly FactualLote[];
   pastos: readonly FactualPasto[];
@@ -101,10 +107,24 @@ export interface HomeIndicatorsResult {
   };
   gmd: {
     status: IndicatorStatus;
-    lotesComGmd: { loteId: string; nome: string; gmdMedio: number; animaisCount: number }[];
-    lotesSemPesagemSuficiente: { loteId: string; nome: string; reason: string }[];
-    animaisComApenasUmaPesagemCount: number;
-    limitation?: string;
+    reliability: "UNCLASSIFIED";
+    operationalUse: "NOT_AUTHORIZED";
+    animals: {
+      animalId: string;
+      identificacao: string;
+      status: "CALCULATED" | "NOT_CALCULATED";
+      valueKgPerDay: number | null;
+      reason: string | null;
+      observedCount: number | null;
+      intervalDays: number | null;
+      initialMeasuredAt: string | null;
+      finalMeasuredAt: string | null;
+    }[];
+    availableCount: number;
+    unavailableCount: number;
+    conflictCount: number;
+    singleObservationCount: number;
+    limitation: string;
   };
   lotacao: {
     status: IndicatorStatus;
@@ -238,75 +258,93 @@ const activeAnimals = input.animals.filter(a => a.status === 'ativo' && !a.delet
  * Compute GMD (weight gain) indicators.
  */
 function computeGmd(input: HomeIndicatorsInput) {
-  // group pesagens by animal
-  const pesagensByAnimal: Record<string, FactualPesagem[]> = {};
-  for (const p of input.pesagens) {
-    if (p.deleted_at) continue;
-    const evt = input.events.find(e => e.id === p.evento_id);
-    if (!evt) continue;
-    const animalId = evt.animal_id;
-    if (!animalId) continue;
-    if (!pesagensByAnimal[animalId]) pesagensByAnimal[animalId] = [];
-    pesagensByAnimal[animalId].push(p);
-  }
+  const activeAnimals = input.animals.filter(
+    (animal): animal is FactualAnimal & { fazenda_id: string } =>
+      animal.status === "ativo" &&
+      !animal.deleted_at &&
+      animal.fazenda_id === input.fazendaId,
+  );
+  const events = input.events.filter(
+    (
+      event,
+    ): event is FactualEvent & { fazenda_id: string; dominio: "pesagem" } =>
+      event.fazenda_id === input.fazendaId && event.dominio === "pesagem",
+  );
+  const weightDetails = input.pesagens.filter(
+    (detail): detail is FactualPesagem & { fazenda_id: string } =>
+      detail.fazenda_id === input.fazendaId,
+  );
 
-  // Only consider animals with >=2 valid pesagens
-  const lotesMap = new Map<string, { gmdSum: number; ganhoSum: number; animaisCount: number; nome: string }>();
-  for (const lote of input.lotes) lotesMap.set(lote.id, { gmdSum: 0, ganhoSum: 0, animaisCount: 0, nome: lote.nome });
-
-  const lotesSemPesagemSuficiente: { loteId: string; nome: string; reason: string }[] = [];
-  let animaisComApenasUmaPesagemCount = 0;
-
-for (const animal of input.animals) {
-     // morto/vendido/retirado animals are excluded by the status check above
-     if (animal.status !== 'ativo' || animal.deleted_at) continue;
-    const pesagens = pesagensByAnimal[animal.id] ?? [];
-    if (pesagens.length < 2) {
-      if (pesagens.length === 1) animaisComApenasUmaPesagemCount++;
-      continue;
-    }
-
-    const mappedPesagens = pesagens.map(p => {
-      const ev = input.events.find(e => e.id === p.evento_id)!;
+  const animals = activeAnimals.map((animal) => {
+    const result = calculateQualifiedGmd(
+      selectFactualGmdInterval({
+        fazendaId: input.fazendaId,
+        animalId: animal.id,
+        animal,
+        events,
+        weightDetails,
+        referenceDate: input.referenceTimestamp,
+      }),
+    );
+    if (result.status === "CALCULATED") {
       return {
-        peso_kg: p.peso_kg,
-        occurred_at: ev.occurred_at,
-        deleted_at: p.deleted_at,
+        animalId: animal.id,
+        identificacao: animal.identificacao,
+        status: result.status,
+        valueKgPerDay: result.gmdKgPerDay,
+        reason: null,
+        observedCount: null,
+        intervalDays: result.intervalDays,
+        initialMeasuredAt: result.initialMeasuredAt,
+        finalMeasuredAt: result.finalMeasuredAt,
       };
-    });
-
-    const gmdResult = calculateIndividualGmd(mappedPesagens);
-    if (gmdResult.isValid) {
-      const loteId = animal.lote_id;
-      if (loteId && lotesMap.has(loteId)) {
-        const entry = lotesMap.get(loteId)!;
-        entry.gmdSum += gmdResult.gmdKgDia;
-        entry.ganhoSum += gmdResult.ganhoKg;
-        entry.animaisCount += 1;
-      }
     }
-  }
+    return {
+      animalId: animal.id,
+      identificacao: animal.identificacao,
+      status: result.status,
+      valueKgPerDay: null,
+      reason: result.reason,
+      observedCount:
+        result.source.status === "INSUFFICIENT_OBSERVATIONS"
+          ? result.source.observedCount
+          : null,
+      intervalDays: null,
+      initialMeasuredAt: null,
+      finalMeasuredAt: null,
+    };
+  });
+  const availableCount = animals.filter(
+    (animal) => animal.status === "CALCULATED",
+  ).length;
+  const unavailableCount = animals.length - availableCount;
+  const conflictCount = animals.filter(
+    (animal) => animal.reason === "CONFLICT",
+  ).length;
+  const singleObservationCount = animals.filter(
+    (animal) =>
+      animal.reason === "INSUFFICIENT_OBSERVATIONS" &&
+      animal.observedCount === 1,
+  ).length;
+  const status: IndicatorStatus =
+    animals.length === 0
+      ? "vazio"
+      : availableCount > 0
+        ? "parcial"
+        : "bloqueado";
 
-  const lotesComGmd = Array.from(lotesMap.entries())
-    .filter(([, v]) => v.animaisCount > 0)
-    .map(([id, v]) => ({
-      loteId: id,
-      nome: v.nome,
-      gmdMedio: Number((v.gmdSum / v.animaisCount).toFixed(2)),
-      ganhoMedio: Number((v.ganhoSum / v.animaisCount).toFixed(2)),
-      animaisCount: v.animaisCount,
-    }));
-
-  // Identify lotes with insufficient pesagens
-  for (const lote of input.lotes) {
-    const entry = lotesMap.get(lote.id)!;
-    if (entry.animaisCount === 0) {
-      lotesSemPesagemSuficiente.push({ loteId: lote.id, nome: lote.nome, reason: 'Nenhuma pesagem suficiente' });
-    }
-  }
-
-  const status: IndicatorStatus = lotesComGmd.length ? 'completo' : 'bloqueado';
-  return { status, lotesComGmd, lotesSemPesagemSuficiente, animaisComApenasUmaPesagemCount };
+  return {
+    status,
+    reliability: "UNCLASSIFIED" as const,
+    operationalUse: "NOT_AUTHORIZED" as const,
+    animals,
+    availableCount,
+    unavailableCount,
+    conflictCount,
+    singleObservationCount,
+    limitation:
+      "GMD matematico derivado de pesagens observadas; confiabilidade nao classificada e uso operacional nao autorizado.",
+  };
 }
 
 /**

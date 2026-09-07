@@ -1,15 +1,15 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-09-06
+Atualizado em: 2026-09-07
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — F22C fechada.
-Próxima fase de desenvolvimento: **Fase 22 — incrementos autorizados após o gate de fontes**.
-Próximo incremento: somente nova capacidade de produto explicitamente autorizada; adoção F22B permanece sem Wave 1 autorizada.
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**.
+Próxima fase de desenvolvimento: **Fase 22 — CLOSED; nenhuma fase seguinte iniciada**.
+Próximo incremento: somente nova capacidade de produto explicitamente autorizada.
 
 ## Objetivo
 
@@ -35,9 +35,13 @@ A Fase 21 foi encerrada com `operational_history_review` e `herd_flow_review`, a
 
 O [gate de fontes da Fase 22](../review/F22_SOURCE_GATE.md) classificou `22A_PARTIAL` e `22B_PARTIAL`; a integração posterior do PR `#108` satisfez `B4 REMOTE_CONVERGENCE_VERIFIED` e desbloqueou tecnicamente o source gate de 22C, sem iniciar sua implementação. A F22A.1 adiciona `selectLatestObservedWeight`, a F22A.2 seleciona o intervalo factual e a F22A.3 calcula somente `weightDeltaKg` e `gmdKgPerDay` a partir desse contrato. A [política técnica F22A.2B](../review/F22A_GMD_INTERVAL_POLICY.md) permanece contextual: todo resultado calculado expõe `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`. O [gate de adoção F22A.4](../review/F22A_GMD_ADOPTION_GATE.md) confirmou que nenhum consumidor atual é `MIGRATABLE_NOW`: telas individuais exigem UX qualificadora, KPI executivo está bloqueado por confiabilidade e occupancy deve permanecer separado. Nenhuma UI, migration, RLS, RPC, Dexie, sync ou writer foi alterado.
 
+Após o gate, os consumidores compatíveis de peso e GMD adotaram os contratos canônicos. A Home agora consome exclusivamente `selectFactualGmdInterval` → `calculateQualifiedGmd`, apresenta o valor como **GMD observado**, mantém `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`, não agrega nem ranqueia o valor por lote e preserva ausência, insuficiência e conflito como indisponíveis. `calculateIndividualGmd` permanece apenas como helper legado sem consumidor produtivo. A F22A está fechada.
+
 Atualização posterior: o [contrato F22C](../review/F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) confirmou fontes históricas `READY` para animal→lote e lote→pasto. F22C.1 implementa intervalos factuais de lote, F22C.2 compõe animal→pasto, F22C.3 qualifica duração e agrega, e o fechamento integra pesagens factuais à ocupação qualificada. Delta e GMD representam somente a janela observada, mantêm reliability não classificada e uso operacional não autorizado; ausência ou conflito permanecem `null`. Builders, cards e cockpits compatíveis deixaram de usar o cálculo legado como fonte. UA e lotação permanecem separados.
 
 A [F22B.1 Economic Coverage](../review/F22B_ECONOMIC_COVERAGE.md) adiciona `selectEconomicCoverage`, read model puro por fazenda e período. O contrato separa receitas e custos factuais, ausência e zero observado, categorias desconhecidas, estornos e operações comerciais sem financeiro associado; exige coverage de fonte explícita e não calcula saldo, resultado, lucro, margem, ROI ou custo unitário. Nenhum consumer, banco ou fluxo offline foi alterado.
+
+Financeiro, Relatórios e o resumo operacional compatível adotaram `EconomicCoverageResult` e `ObservedEconomicResult`, preservando `interpretation = OBSERVED_SCOPE_ONLY`, `completeAccounting = false`, `profit = NOT_DEMONSTRATED` e ausência distinta de zero. A adoção produtiva F22B está implementada; lucro contábil completo continua não demonstrado.
 
 A Fase 13 está funcionalmente encerrada. A Reprodução Operacional v1 cobre cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/perda, cria, correção append-only e seis Agendas neonatais na Agenda Sanitária v2.
 
@@ -151,7 +155,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O gate F22A.4 está fechado e a migração legada geral não foi iniciada. A F22B.2 implementa resultado observado qualificado exclusivamente sobre EconomicCoverage, preservando ausência, zero factual, coverage parcial, limitações e gaps; não demonstra lucro completo. O [gate F22B.3](../review/F22B_ADOPTION_PRESENTATION_GATE.md) encontrou `MIGRATABLE_NOW = 0`. A F22C está fechada com histórico, composição, duração, agregação e performance observada factual adotados pelos consumidores compatíveis. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+F22A, F22B e F22C estão fechadas no escopo autorizado da Fase 22. GMD calculável continua apenas observado, com confiabilidade não classificada e uso operacional não autorizado; resultado econômico continua limitado ao escopo observado e não demonstra lucro completo. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados. Nenhuma próxima fase foi iniciada.
 
 ## Fontes de detalhe
 

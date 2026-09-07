@@ -1,8 +1,8 @@
-# Handoff atual — Fase 22 / F22C fechada
+# Handoff atual — Fase 22 fechada
 
-Atualizado em: 2026-09-06
+Atualizado em: 2026-09-07
 Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7956c01`
-Próxima fase: **Fase 22 — incrementos autorizados após o gate de fontes**
+Próxima fase: **Fase 22 — CLOSED; nenhuma fase seguinte iniciada**
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
@@ -15,7 +15,7 @@ Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50e
 Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
 Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
 Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 22 ativa; F22C histórica, duração, agregação e performance observada implementadas**
+Status: **Fase 22 fechada; F22A, F22B e F22C implementadas no escopo autorizado**
 Fase encerrada: **Fase 21 — Inteligência Operacional v2**
 Fase atual: **Fase 22 — Eficiência Produtiva e Econômica**
 
@@ -33,16 +33,20 @@ F22A.1 adiciona um selector puro e testes focados para última pesagem observada
 
 F22A.2 extrai a evidência compartilhada e adiciona `selectFactualGmdInterval`. A [política F22A.2B](./F22A_GMD_INTERVAL_POLICY.md) conclui `UNIVERSAL_MIN_INTERVAL = CONTEXT_DEPENDENT`. A F22A.3 adiciona `calculateQualifiedGmd`, que consome exclusivamente o resultado factual e calcula delta/GMD somente para intervalo `READY` e positivo. Todo `CALCULATED` mantém `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`; conflito, insuficiência e entrada numérica inválida permanecem sem cálculo. Não houve UI, writer, migration, RPC/RLS, Dexie ou sync.
 
-## F22A.4 — gate de adoção fechado
+## F22A — adoção produtiva fechada
 
-O inventário completo está em [F22A_GMD_ADOPTION_GATE.md](./F22A_GMD_ADOPTION_GATE.md). Nenhum consumidor produtivo usa hoje a cadeia canônica, e nenhum foi classificado `MIGRATABLE_NOW`. As telas individuais exigem mudança de UX; o KPI de GMD da Home está `BLOCKED_BY_RELIABILITY`; occupancy e cockpits de lote/pasto permanecem `KEEP_SEPARATE`; `calculateIndividualGmd` e `resolveCurrentWeight` continuam `LEGACY_NOT_CANONICAL` e não foram removidos.
+O inventário histórico está em [F22A_GMD_ADOPTION_GATE.md](./F22A_GMD_ADOPTION_GATE.md). Após esse gate, os consumidores compatíveis de peso foram migrados e a Home passou a consumir exclusivamente `selectFactualGmdInterval` → `calculateQualifiedGmd`. A apresentação usa **GMD observado**, sem ranking, recomendação, alerta ou agregação operacional por lote. Ausência, intervalo insuficiente e conflito permanecem indisponíveis; zero só é exibido quando factual. `calculateIndividualGmd` não possui consumidor produtivo.
 
 ```ini
 F22A_GMD_ADOPTION_GATE = CLOSED
-F22A_GMD_LEGACY_MIGRATION = NOT_STARTED
+F22A_CANONICAL_WEIGHT_GMD = IMPLEMENTED
+F22A_PRODUCTIVE_ADOPTION = IMPLEMENTED
+F22A_GMD_RELIABILITY = UNCLASSIFIED
+F22A_GMD_OPERATIONAL_USE = NOT_AUTHORIZED
+F22A = CLOSED
 ```
 
-Futura Wave 1 da F22A depende de autorização específica para UX que exponha confiabilidade, uso operacional, coverage, conflito e ausência sem zero.
+A política contextual de confiabilidade não foi criada. `intervalDays > 0` permite cálculo, mas não promove o resultado a confiável nem autoriza uso operacional.
 
 ## F22B.1 — Economic Coverage
 
@@ -52,12 +56,13 @@ Estorno append-only reduz o bucket factual do original; não vira receita/custo 
 
 ```ini
 F22B_ECONOMIC_COVERAGE = IMPLEMENTED
-F22B_OBSERVED_RESULT = IMPLEMENTED_QUALIFIED
+F22B_OBSERVED_RESULT = IMPLEMENTED
 F22B_ADOPTION_PRESENTATION_GATE = CLOSED
+F22B_PRODUCTIVE_ADOPTION = IMPLEMENTED
 F22B_COMPLETE_PROFIT = BLOCKED
 ```
 
-A F22B.2 implementa `calculateObservedEconomicResult` sobre o contrato canônico, sem reler fontes. O [gate F22B.3](./F22B_ADOPTION_PRESENTATION_GATE.md) confirmou que nenhum consumidor atual preserva todas as qualificações sem mudança de UX. Financeiro e Relatórios formam a Wave 2; competência, previsões, comercial e inventário permanecem separados. O fechamento da F22C não altera esse bloqueio. Novo incremento depende de capacidade de produto explicitamente autorizada.
+A F22B.2 implementa `calculateObservedEconomicResult` sobre o contrato canônico, sem reler fontes. Após o [gate F22B.3](./F22B_ADOPTION_PRESENTATION_GATE.md), Financeiro, Relatórios e o resumo operacional compatível adotaram os contratos canônicos com `interpretation = OBSERVED_SCOPE_ONLY`, `completeAccounting = false` e `profit = NOT_DEMONSTRATED`. Ausência não vira `R$ 0`; competência, previsões, comercial e inventário permanecem separados.
 
 ## Fase 21 — V1 DONE
 
