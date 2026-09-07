@@ -53,6 +53,7 @@ import {
   deriveAnimalTaxonomy,
 } from "@/lib/animals/taxonomy";
 import { formatWeight, formatWeightPerDay } from "@/lib/format/weight";
+import { selectAnimalWeightPresentation } from "@/lib/insights/animalWeightPresentation";
 import { db } from "@/lib/offline/db";
 import { triggerDownload } from "@/lib/offline/rejections";
 import { type AgendaItem, type Animal } from "@/lib/offline/types";
@@ -124,10 +125,11 @@ const ANIMAL_ROWS_PAGE_SIZE = 100;
 
 type AnimalWeightSummary = {
   animalId: string;
-  ultimoPesoKg: number;
-  ultimoPesoData: string;
+  ultimoPesoKg: number | null;
+  ultimoPesoData: string | null;
   ganhoMedioDiaKg: number | null;
   totalPesagens: number;
+  blocked: boolean;
 };
 
 type AnimalNextAgendaSummary = {
@@ -453,7 +455,8 @@ export default function Animais() {
   const weightSummaries = useLiveQuery(async () => {
     if (!activeFarmId) return [];
 
-    const [events, details] = await Promise.all([
+    const [animals, events, details] = await Promise.all([
+      db.state_animais.where("fazenda_id").equals(activeFarmId).filter((animal) => !animal.deleted_at).toArray(),
       db.event_eventos
         .where("[fazenda_id+dominio]")
         .equals([activeFarmId, "pesagem"])
@@ -466,57 +469,22 @@ export default function Animais() {
         .toArray(),
     ]);
 
-    const detailByEventId = new Map(
-      details.map((detail) => [detail.evento_id, detail]),
-    );
-    const pointsByAnimal = new Map<
-      string,
-      Array<{ data: string; pesoKg: number }>
-    >();
-
-    for (const event of events) {
-      if (!event.animal_id) continue;
-      const detail = detailByEventId.get(event.id);
-      if (!detail || typeof detail.peso_kg !== "number") continue;
-
-      const referenceDate = event.server_received_at || event.occurred_at;
-      const current = pointsByAnimal.get(event.animal_id) ?? [];
-      current.push({
-        data: referenceDate,
-        pesoKg: detail.peso_kg,
+    const referenceDate = new Date().toISOString();
+    return animals.map((animal): AnimalWeightSummary => {
+      const presentation = selectAnimalWeightPresentation({
+        fazendaId: activeFarmId, animalId: animal.id, animal, events, weightDetails: details, referenceDate,
       });
-      pointsByAnimal.set(event.animal_id, current);
-    }
-
-    return Array.from(pointsByAnimal.entries()).map(
-      ([animalId, rawPoints]): AnimalWeightSummary => {
-        const points = rawPoints
-          .slice()
-          .sort((left, right) => left.data.localeCompare(right.data));
-        const primeiro = points[0];
-        const ultimo = points[points.length - 1];
-        const diasEntreRegistros = Math.max(
-          1,
-          Math.round(
-            (new Date(ultimo.data).getTime() -
-              new Date(primeiro.data).getTime()) /
-              (1000 * 60 * 60 * 24),
-          ),
-        );
-        const ganhoMedioDiaKg =
-          points.length > 1
-            ? (ultimo.pesoKg - primeiro.pesoKg) / diasEntreRegistros
-            : null;
-
-        return {
-          animalId,
-          ultimoPesoKg: ultimo.pesoKg,
-          ultimoPesoData: ultimo.data,
-          ganhoMedioDiaKg,
-          totalPesagens: points.length,
-        };
-      },
-    );
+      const latest = presentation.latestObservedWeight.status === "available"
+        ? presentation.latestObservedWeight.value : null;
+      const gmd = presentation.gmd.status === "CALCULATED" ? presentation.gmd : null;
+      return {
+        animalId: animal.id, ultimoPesoKg: latest?.weight ?? null,
+        ultimoPesoData: latest?.measuredAt ?? null, ganhoMedioDiaKg: gmd?.gmdKgPerDay ?? null,
+        totalPesagens: presentation.observations.length,
+        blocked: presentation.latestObservedWeight.status === "conflict" ||
+          (presentation.gmd.status === "NOT_CALCULATED" && presentation.gmd.reason === "CONFLICT"),
+      };
+    });
   }, [activeFarmId]);
 
   const nextAgendaSummaries = useLiveQuery(async () => {
@@ -1309,8 +1277,8 @@ export default function Animais() {
       <Card className="overflow-hidden border-transparent bg-transparent shadow-none">
         <CardContent className="p-0">
           <div className="mb-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
-            <span>Peso atual</span>
-            <span>Ganho</span>
+            <span>Ultimo peso observado</span>
+            <span>GMD qualificado</span>
             <span>Proximo evento</span>
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -1399,12 +1367,12 @@ export default function Animais() {
                           Peso
                         </p>
                         <p className="font-semibold tabular-nums text-foreground">
-                          {weightSummary
+                          {weightSummary?.ultimoPesoKg != null
                             ? formatWeight(
                                 weightSummary.ultimoPesoKg,
                                 farmMeasurementConfig.weight_unit,
                               )
-                            : "Sem pesagem"}
+                            : weightSummary?.blocked ? "Conflito factual" : "Sem pesagem"}
                         </p>
                       </div>
                       <div>
@@ -1412,12 +1380,15 @@ export default function Animais() {
                           Ganho/dia
                         </p>
                         <p className="font-semibold tabular-nums text-foreground">
-                          {weightSummary
+                          {weightSummary?.ganhoMedioDiaKg != null
                             ? formatWeightPerDay(
                                 weightSummary.ganhoMedioDiaKg,
                                 farmMeasurementConfig.weight_unit,
                               )
-                            : "Aguardando serie"}
+                            : weightSummary?.blocked ? "Conflito factual" : "Indisponivel"}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Confiabilidade nao classificada; uso operacional nao autorizado.
                         </p>
                       </div>
                       <div>

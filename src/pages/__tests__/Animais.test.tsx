@@ -240,8 +240,8 @@ describe("Animais page", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Peso atual")).toBeInTheDocument();
-    expect(screen.getByText("Ganho")).toBeInTheDocument();
+    expect(screen.getByText("Ultimo peso observado")).toBeInTheDocument();
+    expect(screen.getByText("GMD qualificado")).toBeInTheDocument();
     expect(screen.getByText("Proximo evento")).toBeInTheDocument();
     expect(screen.queryByText("Fase vet.")).not.toBeInTheDocument();
     expect(screen.queryByText("Vinculo")).not.toBeInTheDocument();
@@ -493,4 +493,3 @@ describe("Animais page", () => {
     expect(screen.getAllByText("Nascimento").length).toBeGreaterThan(0);
   });
 });
-

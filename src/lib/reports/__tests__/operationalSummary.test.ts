@@ -8,6 +8,7 @@ import type {
   EventoComercial,
   EventoFinanceiro,
   EventoPesagem,
+  FinanceCategory,
   FinanceTransaction,
   EventoReproducao,
   EventoSanitario,
@@ -443,14 +444,7 @@ describe("buildOperationalSummary", () => {
       pendenciasSync: 1,
       errosSync: 1,
     });
-    expect(report.financeiro).toMatchObject({
-      entradas: 3500,
-      saidas: 0,
-      saldo: 3500,
-      transacoes: 1,
-      compras: 0,
-      vendas: 1,
-    });
+    expect(report.financeiro).toMatchObject({ entradas: null, saidas: null, saldo: null, transacoes: 0, compras: 0, vendas: 0 });
     expect(report.pesagem).toMatchObject({
       totalPesagens: 1,
       pesoMedioKg: 420,
@@ -1248,7 +1242,8 @@ describe("buildOperationalSummaryCsv", () => {
 
     expect(csv).toContain("meta;fazenda;Fazenda Teste");
     expect(csv).toContain("resumo;animais_ativos;0");
-    expect(csv).toContain("financeiro;saldo;0.00");
+    expect(csv).toContain("financeiro_observado;resultado_observado;indisponivel");
+    expect(csv).toContain("financeiro_observado;profit;NOT_DEMONSTRATED");
     expect(csv).toContain(
       "meta_fonte;fonte;Historico: event_eventos + detail tables no periodo selecionado.",
     );
@@ -1273,6 +1268,8 @@ describe("buildOperationalSummaryCsv", () => {
 
     const html = buildOperationalSummaryPrintHtml(report, "Fazenda Teste");
     expect(html).toContain("Fontes e limitacoes");
+    expect(html).toContain("Resultado economico observado");
+    expect(html).toContain("profit=NOT_DEMONSTRATED");
     expect(html).toContain("Cobertura");
     expect(html).toContain("Timezone");
     expect(html).toContain(
@@ -1983,6 +1980,7 @@ describe("Phase 16 finance event and ledger semantics", () => {
     eventosFinanceiro: EventoFinanceiro[];
     eventosComercial?: EventoComercial[];
     financeTransactions?: FinanceTransaction[];
+    financeCategories?: FinanceCategory[];
     historicalCoverage?: Record<string, { state: "complete" | "partial" | "verified" }>;
     gestures?: Gesture[];
     rejections?: Rejection[];
@@ -1999,6 +1997,7 @@ describe("Phase 16 finance event and ledger semantics", () => {
         eventosFinanceiro: input.eventosFinanceiro,
         eventosComercial: input.eventosComercial,
         financeTransactions: input.financeTransactions,
+        financeCategories: input.financeCategories,
         historicalCoverage: input.historicalCoverage as Record<
           OperationalMetricKey,
           OperationalSummaryHistoricalCoverage
@@ -2056,13 +2055,13 @@ describe("Phase 16 finance event and ledger semantics", () => {
       financeTransactions: [transaction],
     });
 
-    expect(report.financeiro.entradas).toBe(0);
+    expect(report.financeiro.entradas).toBeNull();
     expect(report.financeiro.previstosAReceber).toBe(1000);
     expect(report.comercial.operations).toBe(1);
     expect(report.comercial.totalLiquido).toBe(1000);
   });
 
-  it("counts a linked financial event and ledger transaction only once", () => {
+  it("does not promote a lone observed revenue to a complete result", () => {
     const event = {
       ...baseEvento,
       id: "financial-linked-event",
@@ -2087,6 +2086,7 @@ describe("Phase 16 finance event and ledger semantics", () => {
       paid_at: "2026-03-15T12:00:00.000Z",
       direction: "entrada",
       status: "realizado",
+      category_id: "revenue-category",
       valor_total: 3500,
       source_event_id: event.id,
       deleted_at: null,
@@ -2096,12 +2096,36 @@ describe("Phase 16 finance event and ledger semantics", () => {
       eventos: [event],
       eventosFinanceiro: [detail],
       financeTransactions: [transaction],
+      financeCategories: [{ id: "revenue-category", fazenda_id: "farm-1", tipo: "receita", ativo: true, deleted_at: null } as FinanceCategory],
     });
 
-    expect(report.financeiro.entradas).toBe(3500);
-    expect(report.financeiro.saldo).toBe(3500);
+    expect(report.financeiro.entradas).toBeNull();
+    expect(report.financeiro.saldo).toBeNull();
+    expect(report.financeiro.observedEconomicResult).toMatchObject({ status: "NOT_CALCULATED", reason: "COST_UNAVAILABLE", completeAccounting: false, profit: "NOT_DEMONSTRATED" });
     expect(report.financeiro.transacoes).toBe(1);
   });
+
+  it.each([[150, 100, 50], [100, 100, 0], [80, 100, -20]])(
+    "presents canonical observed result (%s - %s = %s)", (revenue, cost, expected) => {
+      const tx = (id: string, direction: "entrada" | "saida", category_id: string, valor_total: number) => ({
+        id, client_op_id: id, fazenda_id: "farm-1", occurred_at: "2026-03-15T12:00:00.000Z",
+        paid_at: "2026-03-15T12:00:00.000Z", direction, status: "realizado",
+        category_id, valor_total, origem: "manual", deleted_at: null,
+      }) as FinanceTransaction;
+      const report = buildMinimalReport({
+        eventos: [], eventosFinanceiro: [], eventosComercial: [],
+        financeCategories: [
+          { id: "revenue", fazenda_id: "farm-1", tipo: "receita", ativo: true, deleted_at: null } as FinanceCategory,
+          { id: "cost", fazenda_id: "farm-1", tipo: "custo_variavel", ativo: true, deleted_at: null } as FinanceCategory,
+        ],
+        financeTransactions: [tx("tx-r", "entrada", "revenue", revenue), tx("tx-c", "saida", "cost", cost)],
+      });
+      expect(report.financeiro).toMatchObject({
+        entradas: revenue, saidas: cost, saldo: expected,
+        observedEconomicResult: { status: "CALCULATED", interpretation: "OBSERVED_SCOPE_ONLY", completeAccounting: false, profit: "NOT_DEMONSTRATED" },
+      });
+    },
+  );
 
   describe("Fase 16 - KPI Coverage", () => {
     it("does not treat loaded ledger as complete historical coverage automatically", () => {
@@ -2126,10 +2150,8 @@ describe("Phase 16 finance event and ledger semantics", () => {
       historicalCoverage: {}, // Explicitly empty/missing
     });
 
-    expect(report.metrics.financeiro_entradas.status).toBe("partial");
-    expect(report.metrics.financeiro_entradas.limitations).toContain(
-      "Valor representa o conjunto local observado, mas a cobertura historica completa nao foi comprovada.",
-    );
+    expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
+    expect(report.metrics.financeiro_entradas.value).toBeNull();
   });
 
   it("treats zero local without explicit coverage as unavailable", () => {
@@ -2142,12 +2164,10 @@ describe("Phase 16 finance event and ledger semantics", () => {
 
     expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
     expect(report.metrics.financeiro_entradas.value).toBeNull();
-    expect(report.metrics.financeiro_entradas.limitations).toContain(
-      "Zero local nao e tratado como zero factual porque a cobertura historica completa nao foi comprovada.",
-    );
+    expect(report.financeiro.observedEconomicResult).toMatchObject({ status: "NOT_CALCULATED", reason: "INSUFFICIENT_COVERAGE" });
   });
 
-  it("treats zero local with explicit verified coverage as true zero", () => {
+  it("does not turn an empty verified snapshot into observed zero", () => {
     const report = buildMinimalReport({
       eventos: [],
       eventosFinanceiro: [],
@@ -2157,8 +2177,8 @@ describe("Phase 16 finance event and ledger semantics", () => {
       } as unknown as Record<OperationalMetricKey, OperationalSummaryHistoricalCoverage>,
     });
 
-    expect(report.metrics.financeiro_entradas.status).toBe("complete");
-    expect(report.metrics.financeiro_entradas.value).toBe(0);
+    expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
+    expect(report.metrics.financeiro_entradas.value).toBeNull();
   });
   });
 });
