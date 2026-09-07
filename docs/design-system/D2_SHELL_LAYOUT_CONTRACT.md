@@ -1,7 +1,7 @@
 # D2 — Shell, Layout & Navigation Contract
 
 Atualizado em: 2026-09-07
-Status: **Contrato estrutural implementado; D3 não iniciada**
+Status: **Contrato estrutural implementado com caveat visual; D3 não iniciada**
 
 ## 1. Baseline
 
@@ -9,12 +9,14 @@ Status: **Contrato estrutural implementado; D3 não iniciada**
 |---|---|
 | `main` inicial | `4f24ab5b6c67b172267dbe5f7c764444e7c66597` |
 | `origin/main` inicial | `4f24ab5b6c67b172267dbe5f7c764444e7c66597` |
+| `origin/main` convergida | `b4c865ecc951abae1235418145c99be47ad51f9b` |
 | Branch | `ux/d2-shell-layout` |
 | Merge D1 | `4f24ab5b6c67b172267dbe5f7c764444e7c66597` |
+| Merge concorrente F22A na D2 | `41f7ded` |
 | Head funcional D1 | `3c3dd4fe7ab99f637ebb7d03f76d3ff0f7744a4b` |
 | Worktree | dedicada e limpa na abertura |
 
-A D2 parte diretamente da `main` que contém a D1. Os commits `5a61aa7fa914e1153eac030b61b8461283212d79` e `3c3dd4fe7ab99f637ebb7d03f76d3ff0f7744a4b` foram confirmados como ancestrais de `origin/main` antes do patch.
+A D2 parte diretamente da `main` que contém a D1. Os commits `5a61aa7fa914e1153eac030b61b8461283212d79` e `3c3dd4fe7ab99f637ebb7d03f76d3ff0f7744a4b` foram confirmados como ancestrais de `origin/main` antes do patch. Quando a `main` avançou com o F22A (#123), o novo baseline foi incorporado por merge normal; a migração estrutural de Animais foi revertida para preservar a versão canônica concorrente.
 
 ## 2. Diagnóstico factual anterior
 
