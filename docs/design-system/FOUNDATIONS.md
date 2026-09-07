@@ -7,6 +7,8 @@ Status: **Contrato implementado na Fase 19 — recalibrado após a Fase 20**
 
 Este documento define as fundações visuais implementadas do RebanhoSync. Ele orienta as migrações posteriores; não modifica domínio nem o contrato operacional canônico de [OPERATIONAL_FLOWS](../architecture/OPERATIONAL_FLOWS.md).
 
+O contrato semântico vigente de tema, aliases e estados de interação está em [D1 — Semantic Tokens & Theme Contract](./D1_SEMANTIC_THEME_CONTRACT.md). Este documento permanece a referência de tipografia, espaçamento, forma, movimento e acessibilidade.
+
 Quando houver conflito visual com documentos anteriores em `docs/ux/**`, este conjunto de sete documentos da Fase 18 é a referência. Código e tokens produtivos descrevem o estado efetivamente implementado.
 
 ## Baseline auditado

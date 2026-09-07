@@ -4,41 +4,63 @@
 
 @layer base {
   :root {
-    /* Base surfaces - restrained warm neutrals to reduce field glare */
+    /* D1 canonical neutral roles - restrained warm neutrals reduce field glare. */
     --background: 45 14% 93%;
-    --foreground: 200 34% 14%;
+    --surface: 45 12% 96%;
+    --surface-muted: 45 10% 87%;
+    --surface-elevated: 45 12% 97%;
 
-    --card: 45 12% 96%;
-    --card-foreground: 200 34% 14%;
+    --border: 45 10% 75%;
+    --border-strong: 45 10% 62%;
 
-    --popover: 45 12% 97%;
-    --popover-foreground: 200 34% 14%;
+    --text-primary: 200 34% 14%;
+    --text-secondary: 200 22% 27%;
+    --text-muted: 200 16% 36%;
+
+    /* Compatibility aliases: legacy consumers resolve to canonical roles. */
+    --foreground: var(--text-primary);
+
+    --card: var(--surface);
+    --card-foreground: var(--text-primary);
+
+    --popover: var(--surface-elevated);
+    --popover-foreground: var(--text-primary);
 
     /* Primary color - deep petroleum blue for high visibility */
     --primary: 200 76% 20%;
     --primary-foreground: 0 0% 100%;
+    --primary-hover: 200 76% 16%;
+    --primary-subtle: 200 42% 88%;
 
     /* Secondary - muted surface */
     --secondary: 45 12% 89%;
-    --secondary-foreground: 200 34% 14%;
+    --secondary-foreground: var(--text-primary);
 
     /* Muted - for secondary text and backgrounds */
-    --muted: 45 10% 87%;
-    --muted-foreground: 200 16% 36%;
+    --muted: var(--surface-muted);
+    --muted-foreground: var(--text-muted);
 
     /* Accent - warm operational accent */
     --accent: 35 92% 30%;
     --accent-foreground: 0 0% 100%;
 
-    /* Destructive - red/rust for errors */
-    --destructive: 0 84% 40%;
-    --destructive-foreground: 0 0% 100%;
+    /* Danger is canonical; destructive remains a component compatibility alias. */
+    --danger: 0 84% 40%;
+    --danger-foreground: 0 0% 100%;
+    --danger-muted: 0 72% 94%;
+    --danger-border: 0 72% 42%;
+    --destructive: var(--danger);
+    --destructive-foreground: var(--danger-foreground);
 
-    /* Border and input - strong, visible */
-    --border: 45 10% 75%;
-    --input: 45 10% 72%;
+    /* Focus and control states share one semantic contract. */
+    --input: var(--border-strong);
     --ring: 200 76% 30%;
     --overlay: 200 34% 10% / 0.46;
+    --control-disabled: var(--surface-muted);
+    --control-disabled-foreground: var(--text-muted);
+    --control-selected: var(--primary-subtle);
+    --control-selected-foreground: var(--text-primary);
+    --control-selected-border: var(--primary);
 
     --radius: 1rem;
 
@@ -76,10 +98,10 @@
     --semantic-warning-foreground: var(--warning-foreground);
     --semantic-warning-muted: var(--warning-muted);
     --semantic-warning-border: var(--warning-strong);
-    --semantic-error: var(--destructive);
-    --semantic-error-foreground: var(--destructive-foreground);
-    --semantic-error-muted: 0 72% 94%;
-    --semantic-error-border: 0 72% 42%;
+    --semantic-error: var(--danger);
+    --semantic-error-foreground: var(--danger-foreground);
+    --semantic-error-muted: var(--danger-muted);
+    --semantic-error-border: var(--danger-border);
     --semantic-info: var(--info);
     --semantic-info-foreground: var(--info-foreground);
     --semantic-info-muted: var(--info-muted);
@@ -105,9 +127,6 @@
     --semantic-not-permitted-muted: 345 38% 93%;
     --semantic-not-permitted-border: 345 42% 42%;
 
-    --surface: 45 12% 96%;
-    --surface-muted: 45 10% 87%;
-
     /* Sidebar - high contrast dark */
     --sidebar-background: 200 34% 14%;
     --sidebar-foreground: 45 12% 92%;
@@ -120,41 +139,62 @@
   }
 
   .dark {
-    /* Dark mode - lifted neutrals preserve hierarchy without black crush */
+    /* D1 canonical dark roles preserve hierarchy without black crush. */
     --background: 200 28% 12%;
-    --foreground: 45 12% 90%;
+    --surface: 200 24% 16%;
+    --surface-muted: 200 18% 21%;
+    --surface-elevated: 200 24% 18%;
 
-    --card: 200 24% 16%;
-    --card-foreground: 45 12% 90%;
+    --border: 200 16% 29%;
+    --border-strong: 200 16% 38%;
 
-    --popover: 200 24% 18%;
-    --popover-foreground: 45 12% 90%;
+    --text-primary: 45 12% 90%;
+    --text-secondary: 45 9% 76%;
+    --text-muted: 45 8% 66%;
+
+    --foreground: var(--text-primary);
+
+    --card: var(--surface);
+    --card-foreground: var(--text-primary);
+
+    --popover: var(--surface-elevated);
+    --popover-foreground: var(--text-primary);
 
     /* Primary - visible without neon glare */
     --primary: 198 72% 42%;
-    --primary-foreground: 200 34% 10%;
+    --primary-foreground: 200 34% 8%;
+    --primary-hover: 198 72% 48%;
+    --primary-subtle: 200 30% 22%;
 
     /* Secondary */
     --secondary: 200 20% 21%;
-    --secondary-foreground: 45 12% 90%;
+    --secondary-foreground: var(--text-primary);
 
     /* Muted */
-    --muted: 200 18% 21%;
-    --muted-foreground: 45 8% 66%;
+    --muted: var(--surface-muted);
+    --muted-foreground: var(--text-muted);
 
     /* Accent */
     --accent: 35 76% 48%;
     --accent-foreground: 200 34% 10%;
 
-    /* Destructive */
-    --destructive: 0 68% 48%;
-    --destructive-foreground: 0 0% 100%;
+    /* Danger and destructive compatibility alias. */
+    --danger: 0 68% 48%;
+    --danger-foreground: 0 0% 100%;
+    --danger-muted: 0 32% 22%;
+    --danger-border: 0 54% 54%;
+    --destructive: var(--danger);
+    --destructive-foreground: var(--danger-foreground);
 
-    /* Border and input */
-    --border: 200 16% 29%;
-    --input: 200 16% 32%;
+    /* Focus and control states. */
+    --input: var(--border-strong);
     --ring: 198 72% 52%;
     --overlay: 200 34% 5% / 0.68;
+    --control-disabled: var(--surface-muted);
+    --control-disabled-foreground: var(--text-muted);
+    --control-selected: var(--primary-subtle);
+    --control-selected-foreground: var(--text-primary);
+    --control-selected-border: var(--primary);
 
     /* Status colors */
     --success: 142 52% 40%;
@@ -189,10 +229,10 @@
     --semantic-warning-foreground: var(--warning-foreground);
     --semantic-warning-muted: var(--warning-muted);
     --semantic-warning-border: 35 60% 54%;
-    --semantic-error: var(--destructive);
-    --semantic-error-foreground: var(--destructive-foreground);
-    --semantic-error-muted: 0 32% 22%;
-    --semantic-error-border: 0 54% 54%;
+    --semantic-error: var(--danger);
+    --semantic-error-foreground: var(--danger-foreground);
+    --semantic-error-muted: var(--danger-muted);
+    --semantic-error-border: var(--danger-border);
     --semantic-info: var(--info);
     --semantic-info-foreground: var(--info-foreground);
     --semantic-info-muted: var(--info-muted);
@@ -218,9 +258,6 @@
     --semantic-not-permitted-muted: 345 24% 23%;
     --semantic-not-permitted-border: 345 38% 56%;
 
-    --surface: 200 24% 16%;
-    --surface-muted: 200 18% 21%;
-
     /* Sidebar */
     --sidebar-background: 200 28% 14%;
     --sidebar-foreground: 45 12% 90%;
@@ -239,13 +276,13 @@
   }
 
   body {
-    @apply bg-background font-sans text-foreground antialiased;
+    @apply bg-background font-sans text-content-primary antialiased;
     min-height: 100vh;
   }
 
   ::selection {
-    background-color: hsl(var(--primary) / 0.16);
-    color: hsl(var(--foreground));
+    background-color: hsl(var(--primary-subtle));
+    color: hsl(var(--text-primary));
   }
 }
 
@@ -255,15 +292,11 @@
   }
 
   .app-surface {
-    @apply rounded-2xl border border-border/80 bg-card shadow-none;
+    @apply rounded-2xl border border-border/80 bg-surface shadow-none;
   }
 
   .app-surface-muted {
-    @apply rounded-2xl border border-border/80 bg-muted/70 shadow-none;
-  }
-
-  .app-surface-elevated {
-    @apply rounded-2xl border border-border bg-popover text-popover-foreground shadow-crisp;
+    @apply rounded-2xl border border-border/80 bg-surface-muted/70 shadow-none;
   }
 
   .app-content {
