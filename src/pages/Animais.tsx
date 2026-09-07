@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
 import { AnimalDemographicsCard } from "@/components/animals/AnimalDemographicsCard";
+import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -998,7 +999,7 @@ export default function Animais() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <PageContainer width="standard" className="space-y-5">
       <PageIntro
         variant="plain"
         title="Animais"
@@ -1608,6 +1609,6 @@ export default function Animais() {
           ) : null}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

@@ -38,14 +38,14 @@ export const AppShell = () => {
   }, [activeFarmId, location.pathname]);
 
   return (
-    <div className="flex min-h-svh flex-col bg-transparent">
+    <div className="flex min-h-dvh flex-col bg-background text-content-primary">
       <SanitaryNotificationManager />
       <TopBar onMenuClick={() => setIsMobileMenuOpen(true)} />
 
       <div className="flex min-h-0 flex-1">
         <SideNav />
 
-        <main className="min-w-0 flex-1 px-4 pb-24 pt-5 sm:px-6 md:pb-6 lg:px-8 lg:py-8">
+        <main className="min-w-0 flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 md:pb-6 lg:py-8">
           <div className="app-content">
             <Outlet />
           </div>

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageContainer } from "@/components/layout/PageContainer";
 import { PageIntro } from "@/components/ui/page-intro";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -400,7 +401,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-5">
+    <PageContainer width="full" className="space-y-5">
       <PageIntro
         variant="plain"
         eyebrow="Saude operacional"
@@ -1085,9 +1086,8 @@ const Dashboard = () => {
           </Accordion>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 };
 
 export default Dashboard;
-
