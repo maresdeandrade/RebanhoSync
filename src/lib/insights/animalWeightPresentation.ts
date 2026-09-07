@@ -19,3 +19,38 @@ export function selectAnimalWeightPresentation(input: SelectObservedWeightEviden
         : [],
   };
 }
+
+export type AnimalWeightPresentation = ReturnType<
+  typeof selectAnimalWeightPresentation
+>;
+
+export function buildAnimalWeightHistory(
+  presentation: AnimalWeightPresentation | null | undefined,
+) {
+  return (presentation?.observations ?? []).map((observation) => ({
+    id: observation.eventId,
+    data: observation.measuredAt.slice(0, 10),
+    dataLabel: new Date(observation.measuredAt).toLocaleDateString("pt-BR"),
+    measuredAt: observation.measuredAt,
+    pesoKg: observation.weightKg,
+  }));
+}
+
+export function buildAnimalWeightSummary(
+  presentation: AnimalWeightPresentation | null | undefined,
+) {
+  const history = buildAnimalWeightHistory(presentation);
+  if (history.length === 0) return null;
+
+  const qualifiedGmd =
+    presentation?.gmd.status === "CALCULATED" ? presentation.gmd : null;
+
+  return {
+    primeiro: history[0],
+    ultimo: history[history.length - 1],
+    variacaoKg: qualifiedGmd?.weightDeltaKg ?? null,
+    ganhoMedioDiaKg: qualifiedGmd?.gmdKgPerDay ?? null,
+    totalPesagens: history.length,
+    gmdStatus: presentation?.gmd.status ?? "NOT_CALCULATED",
+  };
+}

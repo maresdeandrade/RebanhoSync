@@ -35,6 +35,7 @@ import {
 } from "recharts";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
+import { AnimalWeightVariationBadge } from "@/components/animals/AnimalWeightVariationBadge";
 import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
 import { MoverAnimalLote } from "@/components/manejo/MoverAnimalLote";
 import {
@@ -78,6 +79,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { useAnimalWeightPresentation } from "@/hooks/useAnimalWeightPresentation";
 import { readAnimalInActiveFarm } from "@/pages/detailFarmIsolation";
 import { getAnimalBreedLabel } from "@/lib/animals/catalogs";
 import {
@@ -155,7 +157,10 @@ import {
   formatSanitaryProtocolItemLabelV2,
   readLocalSanitaryProtocolCatalogV2,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
-import { selectAnimalWeightPresentation } from "@/lib/insights/animalWeightPresentation";
+import {
+  buildAnimalWeightHistory,
+  buildAnimalWeightSummary,
+} from "@/lib/insights/animalWeightPresentation";
 import { showError, showSuccess } from "@/utils/toast";
 import {
   CLINICAL_CASE_CLOSURE_REASONS,
@@ -909,34 +914,11 @@ const AnimalDetalhe = () => {
     [animal?.id],
   );
 
-  const weightPresentation = useLiveQuery(async () => {
-    if (!animal?.id || !fazendaId) return null;
-
-    const registros = await db.event_eventos
-      .where("animal_id")
-      .equals(animal.id)
-      .filter(
-        (event) =>
-          event.fazenda_id === fazendaId &&
-          event.dominio === "pesagem" &&
-          !event.deleted_at,
-      )
-      .toArray();
-
-    const details = await db.event_eventos_pesagem.bulkGet(registros.map((event) => event.id));
-    return selectAnimalWeightPresentation({
-      fazendaId, animalId: animal.id, animal, events: registros,
-      weightDetails: details.filter((detail): detail is NonNullable<typeof detail> => Boolean(detail)),
-      referenceDate: new Date().toISOString(),
-    });
-  }, [animal?.id, fazendaId]);
+  const weightPresentation = useAnimalWeightPresentation(animal, fazendaId);
   const ultimoPeso = weightPresentation?.latestObservedWeight?.status === "available"
     ? { peso_kg: weightPresentation.latestObservedWeight.value.weight, data: weightPresentation.latestObservedWeight.value.measuredAt }
     : null;
-  const historicoPeso = (weightPresentation?.observations ?? []).map((observation) => ({
-    id: observation.eventId, data: observation.measuredAt.slice(0, 10),
-    dataLabel: formatDate(observation.measuredAt), pesoKg: observation.weightKg,
-  }));
+  const historicoPeso = buildAnimalWeightHistory(weightPresentation);
 
   const ultimoEcc = useLiveQuery(async () => {
     if (!animal?.id || !fazendaId) return null;
@@ -1258,23 +1240,7 @@ const AnimalDetalhe = () => {
 
     return dashboard.animals[0] ?? null;
   }, [animal, isReproductionEligible, animalLote, eventos]);
-  const resumoPeso = useMemo(() => {
-    if (!historicoPeso || historicoPeso.length === 0) return null;
-
-    const primeiro = historicoPeso[0];
-    const ultimo = historicoPeso[historicoPeso.length - 1];
-    const qualifiedGmd = weightPresentation?.gmd?.status === "CALCULATED"
-      ? weightPresentation.gmd : null;
-
-    return {
-      primeiro,
-      ultimo,
-      variacaoKg: qualifiedGmd?.weightDeltaKg ?? null,
-      ganhoMedioDiaKg: qualifiedGmd?.gmdKgPerDay ?? null,
-      totalPesagens: historicoPeso.length,
-      gmdStatus: weightPresentation?.gmd?.status ?? "NOT_CALCULATED",
-    };
-  }, [historicoPeso, weightPresentation]);
+  const resumoPeso = buildAnimalWeightSummary(weightPresentation);
   const pendingNeonatalCount = useMemo(
     () =>
       (crias ?? []).filter((calf) => hasPendingNeonatalSetup(calf.payload))
@@ -2375,23 +2341,10 @@ const AnimalDetalhe = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-base">Evolucao de peso</CardTitle>
             <div className="flex flex-wrap items-center gap-2">
-              {resumoPeso?.variacaoKg != null && (
-                <Badge
-                  variant="outline"
-                  className={
-                    resumoPeso.variacaoKg >= 0
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-amber-200 bg-amber-50 text-amber-800"
-                  }
-                >
-                  {resumoPeso.variacaoKg >= 0 ? "+" : ""}
-                  {formatWeight(
-                    Math.abs(resumoPeso.variacaoKg),
-                    farmMeasurementConfig.weight_unit,
-                  )}{" "}
-                  no periodo
-                </Badge>
-              )}
+              <AnimalWeightVariationBadge
+                variationKg={resumoPeso?.variacaoKg}
+                weightUnit={farmMeasurementConfig.weight_unit}
+              />
               <Button
                 variant="outline"
                 size="sm"

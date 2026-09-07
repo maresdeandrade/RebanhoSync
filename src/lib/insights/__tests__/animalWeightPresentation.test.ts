@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Animal, Evento, EventoPesagem } from "@/lib/offline/types";
-import { selectAnimalWeightPresentation } from "../animalWeightPresentation";
+import {
+  buildAnimalWeightHistory,
+  buildAnimalWeightSummary,
+  selectAnimalWeightPresentation,
+} from "../animalWeightPresentation";
 
 const animal = { id: "animal-1", fazenda_id: "farm-1", deleted_at: null } as Animal;
 const event = (id: string, day: number) => ({
@@ -37,6 +41,24 @@ describe("selectAnimalWeightPresentation", () => {
     expect(result.latestObservedWeight.status).toBe("unavailable");
     expect(result.gmd).toMatchObject({ status: "NOT_CALCULATED", reason: "INSUFFICIENT_OBSERVATIONS" });
     expect(result.observations).toEqual([]);
+    expect(buildAnimalWeightSummary(result)).toBeNull();
+  });
+
+  it("deriva histórico e resumo sem recalcular o GMD na apresentação", () => {
+    const result = select([300, 310]);
+
+    expect(buildAnimalWeightHistory(result)).toMatchObject([
+      { id: "event-0", data: "2026-01-01", pesoKg: 300 },
+      { id: "event-1", data: "2026-01-02", pesoKg: 310 },
+    ]);
+    expect(buildAnimalWeightSummary(result)).toMatchObject({
+      primeiro: { id: "event-0", pesoKg: 300 },
+      ultimo: { id: "event-1", pesoKg: 310 },
+      variacaoKg: 10,
+      ganhoMedioDiaKg: 10,
+      totalPesagens: 2,
+      gmdStatus: "CALCULATED",
+    });
   });
 
   it("bloqueia peso e GMD quando há conflito factual", () => {

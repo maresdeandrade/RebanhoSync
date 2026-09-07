@@ -28,7 +28,7 @@ import {
   type CalfInitialDraft,
 } from "@/components/animals/CalfInitialEditor";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
-import { Badge } from "@/components/ui/badge";
+import { AnimalWeightVariationBadge } from "@/components/animals/AnimalWeightVariationBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
+import { useAnimalWeightPresentation } from "@/hooks/useAnimalWeightPresentation";
 import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
 import {
   formatWeight,
@@ -71,7 +72,10 @@ import {
 } from "@/lib/reproduction/neonatal";
 import { buildPostPartumOps } from "@/lib/reproduction/postPartum";
 import { showError, showSuccess } from "@/utils/toast";
-import { selectAnimalWeightPresentation } from "@/lib/insights/animalWeightPresentation";
+import {
+  buildAnimalWeightHistory,
+  buildAnimalWeightSummary,
+} from "@/lib/insights/animalWeightPresentation";
 
 type TimelineItem = {
   id: string;
@@ -165,25 +169,11 @@ export default function AnimalCriaInicial() {
       .filter((item) => !item.deleted_at && isCalfJourneyAgendaItem(item))
       .sortBy("data_prevista");
   }, [calf?.id]);
-  const weightPresentation = useLiveQuery(async () => {
-    if (!calf?.id || !calf.fazenda_id) return null;
-
-    const registros = await db.event_eventos
-      .where("animal_id")
-      .equals(calf.id)
-      .filter((event) => event.fazenda_id === calf.fazenda_id && event.dominio === "pesagem" && !event.deleted_at)
-      .toArray();
-    const details = await db.event_eventos_pesagem.bulkGet(registros.map((event) => event.id));
-    return selectAnimalWeightPresentation({
-      fazendaId: calf.fazenda_id, animalId: calf.id, animal: calf, events: registros,
-      weightDetails: details.filter((detail): detail is NonNullable<typeof detail> => Boolean(detail)),
-      referenceDate: new Date().toISOString(),
-    });
-  }, [calf?.id, calf?.fazenda_id]);
-  const historicoPeso = (weightPresentation?.observations ?? []).map((observation) => ({
-    id: observation.eventId, data: observation.measuredAt.slice(0, 10),
-    dataLabel: formatDate(observation.measuredAt), pesoKg: observation.weightKg,
-  }));
+  const weightPresentation = useAnimalWeightPresentation(
+    calf,
+    calf?.fazenda_id,
+  );
+  const historicoPeso = buildAnimalWeightHistory(weightPresentation);
   const timeline = useLiveQuery<TimelineItem[]>(async () => {
     if (!calf?.id) return [];
 
@@ -288,23 +278,7 @@ export default function AnimalCriaInicial() {
     () => (calf ? getCalfJourneyStage(calf, journeyAgendaItems ?? []) : null),
     [calf, journeyAgendaItems],
   );
-  const resumoPeso = useMemo(() => {
-    if (!historicoPeso || historicoPeso.length === 0) return null;
-
-    const primeiro = historicoPeso[0];
-    const ultimo = historicoPeso[historicoPeso.length - 1];
-    const qualifiedGmd = weightPresentation?.gmd?.status === "CALCULATED"
-      ? weightPresentation.gmd : null;
-
-    return {
-      primeiro,
-      ultimo,
-      variacaoKg: qualifiedGmd?.weightDeltaKg ?? null,
-      ganhoMedioDiaKg: qualifiedGmd?.gmdKgPerDay ?? null,
-      totalPesagens: historicoPeso.length,
-      gmdStatus: weightPresentation?.gmd?.status ?? "NOT_CALCULATED",
-    };
-  }, [historicoPeso, weightPresentation]);
+  const resumoPeso = buildAnimalWeightSummary(weightPresentation);
 
   useEffect(() => {
     if (!calf) return;
@@ -831,23 +805,10 @@ export default function AnimalCriaInicial() {
                 <Scale className="h-5 w-5 text-emerald-700" />
                 Acompanhamento inicial de peso
               </CardTitle>
-              {resumoPeso?.variacaoKg != null && (
-                <Badge
-                  variant="outline"
-                  className={
-                    resumoPeso.variacaoKg >= 0
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-amber-200 bg-amber-50 text-amber-800"
-                  }
-                >
-                  {resumoPeso.variacaoKg >= 0 ? "+" : ""}
-                  {formatWeight(
-                    Math.abs(resumoPeso.variacaoKg),
-                    farmMeasurementConfig.weight_unit,
-                  )}{" "}
-                  no periodo
-                </Badge>
-              )}
+              <AnimalWeightVariationBadge
+                variationKg={resumoPeso?.variacaoKg}
+                weightUnit={farmMeasurementConfig.weight_unit}
+              />
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -984,4 +945,3 @@ export default function AnimalCriaInicial() {
     </div>
   );
 }
-
