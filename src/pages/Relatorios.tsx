@@ -155,6 +155,8 @@ const Relatorios = () => {
       eventosReproducao,
       eventosFinanceiro,
       financeTransactions,
+      financeCategories,
+      eventosComercial,
       insumos,
       insumoApresentacoes,
       insumoLotes,
@@ -206,6 +208,8 @@ const Relatorios = () => {
         .where("fazenda_id")
         .equals(activeFarmId)
         .toArray(),
+      db.state_finance_categories.where("fazenda_id").equals(activeFarmId).toArray(),
+      db.event_eventos_comercial.where("fazenda_id").equals(activeFarmId).toArray(),
       db.state_insumos.where("fazenda_id").equals(activeFarmId).toArray(),
       db.state_insumo_apresentacoes
         .where("fazenda_id")
@@ -241,6 +245,8 @@ const Relatorios = () => {
       eventosReproducao,
       eventosFinanceiro,
       financeTransactions,
+      financeCategories,
+      eventosComercial,
       insumos,
       insumoApresentacoes,
       insumoLotes,
@@ -550,17 +556,17 @@ const Relatorios = () => {
         <Card className="shadow-none">
           <CardContent className="space-y-3 p-4">
             <p className="flex items-center justify-between text-sm font-medium text-muted-foreground">
-              Saldo no periodo
+              Resultado observado no periodo
               <Receipt className="h-4 w-4" />
             </p>
             <div
               className={`text-3xl font-bold ${
-                report.financeiro.saldo >= 0
+                report.financeiro.saldo != null && report.financeiro.saldo >= 0
                   ? "text-semantic-success"
                   : "text-semantic-error"
               }`}
             >
-              {money.format(report.financeiro.saldo)}
+              {report.financeiro.saldo == null ? "Indisponivel" : money.format(report.financeiro.saldo)}
             </div>
             <div className="mt-3">
               <Badge variant="outline">
@@ -568,7 +574,9 @@ const Relatorios = () => {
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Leitura operacional parcial; nao e DRE, ROI ou margem.
+              {report.financeiro.observedEconomicResult.status === "NOT_CALCULATED"
+                ? `Nao calculado: ${report.financeiro.observedEconomicResult.reason}. Ausencia nao e R$ 0; nao e DRE, ROI ou margem.`
+                : `Coverage ${report.financeiro.observedEconomicResult.coverage.status}. Escopo observado; nao demonstra lucro e nao e DRE, ROI ou margem.`}
             </p>
           </CardContent>
         </Card>
@@ -705,35 +713,41 @@ const Relatorios = () => {
 
         <Card className="shadow-none">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
-            <CardTitle className="text-base">Financeiro e pesagem</CardTitle>
+            <CardTitle className="text-base">Resultado observado e pesagem</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <TrendingUp className="h-4 w-4 text-semantic-success" />
-                  Entradas
+                  Receita observada
                 </div>
                 <p className="mt-2 text-2xl font-semibold">
-                  {money.format(report.financeiro.entradas)}
+                  {report.financeiro.entradas == null ? "Indisponivel" : money.format(report.financeiro.entradas)}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {report.financeiro.vendas} venda(s)
+                  {report.financeiro.vendas} lancamento(s) de entrada
                 </p>
               </div>
 
               <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <TrendingDown className="h-4 w-4 text-semantic-error" />
-                  Saidas
+                  Custo observado
                 </div>
                 <p className="mt-2 text-2xl font-semibold">
-                  {money.format(report.financeiro.saidas)}
+                  {report.financeiro.saidas == null ? "Indisponivel" : money.format(report.financeiro.saidas)}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {report.financeiro.compras} compra(s)
+                  {report.financeiro.compras} lancamento(s) de saida
                 </p>
               </div>
+            </div>
+
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-xs text-muted-foreground">
+              interpretation=OBSERVED_SCOPE_ONLY; completeAccounting=false; profit=NOT_DEMONSTRATED. Coverage: {report.financeiro.observedEconomicResult.coverage.status}.
+              {report.financeiro.observedEconomicResult.limitations.length > 0 ? ` Limitacoes: ${report.financeiro.observedEconomicResult.limitations.join(" ")}` : null}
+              {report.financeiro.observedEconomicResult.coverage.conflicts.length > 0 ? " Conflito factual: resultado bloqueado." : null}
             </div>
 
             <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
