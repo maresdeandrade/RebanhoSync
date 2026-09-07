@@ -24,6 +24,7 @@ import type { FarmSyncSummary } from "@/lib/offline/syncPresentation";
 import { loadFarmSyncSummary } from "@/lib/offline/syncQueries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageContainer } from "@/components/layout/PageContainer";
 import { PageIntro } from "@/components/ui/page-intro";
 import {
   getSanitaryAttentionOperationalClassLabel,
@@ -659,7 +660,7 @@ const Home = () => {
 
   if (!activeFarmId) {
     return (
-      <div className="space-y-5">
+      <PageContainer width="full" className="space-y-5">
         <Card className="border-dashed">
           <CardHeader>
             <CardTitle>Escolha uma fazenda para comecar</CardTitle>
@@ -673,19 +674,19 @@ const Home = () => {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     );
   }
 
   if (!snapshot) {
     return (
-      <div className="space-y-5">
+      <PageContainer width="full" className="space-y-5">
         <Card>
           <CardHeader>
             <CardTitle>Carregando a rotina da fazenda</CardTitle>
           </CardHeader>
         </Card>
-      </div>
+      </PageContainer>
     );
   }
 
@@ -700,7 +701,7 @@ const Home = () => {
   );
 
   return (
-    <div className="space-y-5">
+    <PageContainer width="full" className="space-y-5">
       <PageIntro
         variant="plain"
         title="Central Operacional"
@@ -1412,7 +1413,7 @@ const Home = () => {
       </section>
 
       <SyncStatusPanel summary={snapshot.syncSummary} />
-    </div>
+    </PageContainer>
   );
 };
 

@@ -16,6 +16,7 @@ import { calculateCommercialOperation } from "@/lib/comercial/commercialOperatio
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
+import { PageContainer } from "@/components/layout/PageContainer";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -1808,7 +1809,7 @@ const Registrar = () => {
 
   if (!activeFarmId) {
     return (
-      <div className="mx-auto max-w-5xl space-y-5">
+      <PageContainer width="narrow" className="space-y-5">
         <PageIntro
           variant="plain"
           eyebrow="Fluxo operacional"
@@ -1829,12 +1830,12 @@ const Registrar = () => {
             onClick: () => navigate("/select-fazenda"),
           }}
         />
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5 pb-8">
+    <PageContainer width="narrow" className="space-y-5 pb-8">
       <PageIntro
         variant="plain"
         eyebrow="Fluxo operacional"
@@ -2276,7 +2277,7 @@ const Registrar = () => {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageContainer>
   );
 };
 

@@ -26,8 +26,13 @@ describe("MobileBottomNav", () => {
   it("renders the five mobile items with expected links", () => {
     renderMobileBottomNav();
 
-    expect(screen.getByRole("navigation", { name: /navegacao mobile/i }))
-      .toHaveClass("md:hidden");
+    expect(
+      screen.getByRole("navigation", { name: /navegacao mobile/i }),
+    ).toHaveClass(
+      "bg-surface/95",
+      "pb-[env(safe-area-inset-bottom)]",
+      "md:hidden",
+    );
     expect(screen.getByRole("link", { name: /hoje/i })).toHaveAttribute(
       "href",
       "/home",
@@ -75,6 +80,9 @@ describe("MobileBottomNav", () => {
         : screen.getByRole("link", { name: label });
 
     expect(item).toHaveAttribute("aria-current", "page");
+    expect(item).toHaveClass(
+      label === "Manejo" ? "bg-primary" : "bg-control-selected",
+    );
   });
 
   it("resolves active keys for secondary routes", () => {

@@ -3,6 +3,7 @@ import { Map as MapIcon, Plus, Upload } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { EmptyState } from "@/components/EmptyState";
+import { PageContainer } from "@/components/layout/PageContainer";
 import { PageIntro } from "@/components/ui/page-intro";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -180,7 +181,7 @@ const Pastos = () => {
   }, [pastos]);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <PageContainer width="standard" className="space-y-5">
       <PageIntro
         variant="plain"
         title="Pastos"
@@ -226,7 +227,7 @@ const Pastos = () => {
           ))}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };
 

@@ -117,8 +117,8 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-card/95 text-foreground shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur">
-      <div className="flex h-14 items-center justify-between gap-3 px-4 lg:px-6">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-surface/95 text-content-primary backdrop-blur">
+      <div className="app-content flex h-14 items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"

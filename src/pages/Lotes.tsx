@@ -3,6 +3,7 @@ import { Beef, Layers, Plus, Upload } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { EmptyState } from "@/components/EmptyState";
+import { PageContainer } from "@/components/layout/PageContainer";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
@@ -102,7 +103,7 @@ const Lotes = () => {
   const comPasto = lotes?.filter((lote) => Boolean(lote.pasto_id)).length ?? 0;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <PageContainer width="standard" className="space-y-5">
       <PageIntro
         variant="plain"
         title="Lotes"
@@ -146,7 +147,7 @@ const Lotes = () => {
           ))}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 };
 

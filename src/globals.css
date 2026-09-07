@@ -300,7 +300,7 @@
   }
 
   .app-content {
-    @apply mx-auto w-full max-w-[1440px];
+    @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8;
   }
 
   .app-divider {
