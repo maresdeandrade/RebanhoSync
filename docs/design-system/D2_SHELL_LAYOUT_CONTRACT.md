@@ -132,7 +132,7 @@ O gutter de 24 px começa em 640 px para manter compatibilidade com o contrato j
 | MobileBottomNav | aliases/opacidades locais para surface e selected | `surface`, `control-selected`, `primary-hover` e safe-area explícita | MIGRATED |
 | Home | wrapper local sem nome | `PageContainer full`; conteúdo intacto | MIGRATED |
 | Dashboard | wrapper local sem nome | `PageContainer full`; conteúdo intacto | MIGRATED |
-| Animais | `mx-auto max-w-7xl` | `PageContainer standard` | MIGRATED |
+| Animais | `mx-auto max-w-7xl` | preservado após a integração concorrente do F22A na mesma página | DEFER_D4 |
 | Lotes | `mx-auto max-w-7xl` | `PageContainer standard` | MIGRATED |
 | Pastos | `mx-auto max-w-7xl` | `PageContainer standard` | MIGRATED |
 | Registrar | `mx-auto max-w-5xl` | `PageContainer narrow`; fluxo intacto | MIGRATED |
