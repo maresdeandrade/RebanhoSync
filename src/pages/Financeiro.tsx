@@ -900,6 +900,7 @@ const Financeiro = () => {
             <Input
               className="pl-9"
               placeholder="Pesquisar por parceiro, observações..."
+              aria-label="Pesquisar por parceiro ou observações"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -911,7 +912,7 @@ const Financeiro = () => {
               setTipoFilter(value as "all" | "entrada" | "saida")
             }
           >
-            <SelectTrigger className="w-full sm:w-[130px]">
+            <SelectTrigger className="w-full sm:w-[130px]" aria-label="Filtrar por direção">
               <SelectValue placeholder="Direção" />
             </SelectTrigger>
             <SelectContent>
@@ -929,7 +930,7 @@ const Financeiro = () => {
               )
             }
           >
-            <SelectTrigger className="w-full sm:w-[130px]">
+            <SelectTrigger className="w-full sm:w-[130px]" aria-label="Filtrar por status">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -941,7 +942,7 @@ const Financeiro = () => {
           </Select>
 
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectTrigger className="w-full sm:w-[150px]" aria-label="Filtrar por categoria">
               <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
@@ -962,7 +963,7 @@ const Financeiro = () => {
               )
             }
           >
-            <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectTrigger className="w-full sm:w-[150px]" aria-label="Filtrar por centro de custo">
               <SelectValue placeholder="Centro Custo" />
             </SelectTrigger>
             <SelectContent>
@@ -978,7 +979,7 @@ const Financeiro = () => {
             value={contraparteFilter}
             onValueChange={setContraparteFilter}
           >
-            <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectTrigger className="w-full sm:w-[150px]" aria-label="Filtrar por parceiro">
               <SelectValue placeholder="Parceiro" />
             </SelectTrigger>
             <SelectContent>
@@ -1166,7 +1167,7 @@ const Financeiro = () => {
           )}
 
           <div className="grid gap-4 py-2 text-sm">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Direção *
@@ -1177,7 +1178,7 @@ const Financeiro = () => {
                     setFormTxDirection(val as FinanceTransactionDirectionEnum)
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Direção da transação">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1197,7 +1198,7 @@ const Financeiro = () => {
                     setFormTxStatus(val as FinanceTransactionStatusEnum)
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Status da transação">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1209,7 +1210,7 @@ const Financeiro = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Categoria *
@@ -1218,7 +1219,7 @@ const Financeiro = () => {
                   value={formTxCategoryId}
                   onValueChange={setFormTxCategoryId}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Categoria da transação">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -1232,10 +1233,11 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                <label htmlFor="form-tx-valor-total" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Valor Total (R$) *
                 </label>
                 <Input
+                  id="form-tx-valor-total"
                   type="number"
                   placeholder="0.00"
                   step="0.01"
@@ -1245,12 +1247,13 @@ const Financeiro = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                <label htmlFor="form-tx-occurred-at" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Data Registro *
                 </label>
                 <Input
+                  id="form-tx-occurred-at"
                   type="date"
                   value={formTxOccurredAt}
                   onChange={(e) => setFormTxOccurredAt(e.target.value)}
@@ -1258,10 +1261,11 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                <label htmlFor="form-tx-competence-date" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Data Competência
                 </label>
                 <Input
+                  id="form-tx-competence-date"
                   type="date"
                   value={formTxCompetenceDate}
                   onChange={(e) => setFormTxCompetenceDate(e.target.value)}
@@ -1269,10 +1273,11 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                <label htmlFor="form-tx-due-date" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Data Vencimento
                 </label>
                 <Input
+                  id="form-tx-due-date"
                   type="date"
                   value={formTxDueDate}
                   onChange={(e) => setFormTxDueDate(e.target.value)}
@@ -1280,7 +1285,7 @@ const Financeiro = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Parceiro (Contraparte)
@@ -1289,7 +1294,7 @@ const Financeiro = () => {
                   value={formTxContraparteId}
                   onValueChange={setFormTxContraparteId}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Parceiro contraparte">
                     <SelectValue placeholder="Nenhum" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1315,7 +1320,7 @@ const Financeiro = () => {
                     )
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Método de rateio">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1335,7 +1340,7 @@ const Financeiro = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Centro de Custo Tipo
@@ -1349,7 +1354,7 @@ const Financeiro = () => {
                     setFormTxCentroCustoId("");
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Tipo de centro de custo">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1370,7 +1375,7 @@ const Financeiro = () => {
                     value={formTxCentroCustoId}
                     onValueChange={setFormTxCentroCustoId}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger aria-label="Alvo do centro de custo">
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -1398,12 +1403,13 @@ const Financeiro = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-4 border-t pt-2 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/70 pt-2 mt-2">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                <label htmlFor="form-tx-quantidade" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Quantidade
                 </label>
                 <Input
+                  id="form-tx-quantidade"
                   type="number"
                   placeholder="ex: 10"
                   value={formTxQuantidade}
@@ -1412,10 +1418,11 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                <label htmlFor="form-tx-unidade" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Unidade
                 </label>
                 <Input
+                  id="form-tx-unidade"
                   type="text"
                   placeholder="ex: kg, cabeças"
                   value={formTxUnidade}
@@ -1424,10 +1431,11 @@ const Financeiro = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+                <label htmlFor="form-tx-valor-unitario" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                   Valor Unitário
                 </label>
                 <Input
+                  id="form-tx-valor-unitario"
                   type="number"
                   placeholder="0.0000"
                   step="0.0001"
@@ -1438,12 +1446,12 @@ const Financeiro = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+              <label htmlFor="form-tx-observacoes" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                 Observações
               </label>
               <Input
-                type="text"
-                placeholder="Detalhes administrativos..."
+                id="form-tx-observacoes"
+                placeholder="Detalhes opcionais..."
                 value={formTxObservacoes}
                 onChange={(e) => setFormTxObservacoes(e.target.value)}
               />
@@ -1488,10 +1496,11 @@ const Financeiro = () => {
 
           <div className="grid gap-4 py-2 text-sm">
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+              <label htmlFor="form-cat-nome" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                 Nome da Categoria *
               </label>
               <Input
+                id="form-cat-nome"
                 placeholder="ex: Diesel Trator, Suplementação"
                 value={formCatNome}
                 onChange={(e) => setFormCatNome(e.target.value)}
@@ -1508,7 +1517,7 @@ const Financeiro = () => {
                   setFormCatTipo(val as FinanceCategoryTipoEnum)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Tipo de categoria">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1530,7 +1539,7 @@ const Financeiro = () => {
                   setFormCatGrupo(val as FinanceCategoryGrupoEnum)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label="Grupo contábil da categoria">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1565,10 +1574,11 @@ const Financeiro = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+              <label htmlFor="form-cat-observacoes" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
                 Observações
               </label>
               <Input
+                id="form-cat-observacoes"
                 placeholder="Descrição adicional..."
                 value={formCatObservacoes}
                 onChange={(e) => setFormCatObservacoes(e.target.value)}

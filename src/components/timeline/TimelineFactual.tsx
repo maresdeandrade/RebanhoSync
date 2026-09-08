@@ -106,77 +106,86 @@ export const TimelineFactual: React.FC<TimelineFactualProps> = ({
   };
 
   return (
-    <Card className="shadow-sm border border-slate-100 dark:border-slate-800">
+    <Card className="shadow-none border border-border">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-slate-400" />
+        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           {title}
         </CardTitle>
-        <span className="text-xs text-slate-500 font-normal">
+        <span className="text-xs text-muted-foreground font-normal">
           {sortedItems.length} {sortedItems.length === 1 ? "evento" : "eventos"}
         </span>
       </CardHeader>
       <CardContent>
         {sortedItems.length === 0 ? (
-          <div className="text-center py-6 text-slate-400 text-sm">
+          <div className="text-center py-6 text-muted-foreground text-sm">
             Nenhum evento registrado nesta linha do tempo.
           </div>
         ) : (
-          <div className="relative border-l border-slate-200 dark:border-slate-800 ml-3 pl-6 space-y-6">
+          <ol
+            aria-label="Linha do tempo factual"
+            className="relative border-l border-border ml-3 pl-6 space-y-6 list-none"
+          >
             {visibleItems.map((item) => (
-              <div key={item.id} className="relative group">
+              <li key={item.id} className="relative group">
                 {/* Timeline Dot with Icon */}
-                <div className="absolute -left-[38px] top-0.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-full p-1.5 shadow-sm group-hover:scale-105 transition-transform">
+                <div
+                  aria-hidden="true"
+                  className="absolute -left-[38px] top-0.5 bg-card border border-border rounded-full p-1.5 shadow-sm group-hover:scale-105 transition-transform"
+                >
                   {getDomainIcon(item.dominio)}
                 </div>
 
                 <div className="flex flex-col space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                    <time
+                      dateTime={item.occurred_at}
+                      className="text-[11px] font-medium text-muted-foreground"
+                    >
                       {formatDateStr(item.occurred_at)}
-                    </span>
+                    </time>
                     <span
                       className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getDomainBadgeStyle(
-                        item.dominio
+                        item.dominio,
                       )}`}
                     >
                       {getDomainLabel(item.dominio)}
                     </span>
                   </div>
 
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                  <p className="text-sm font-medium text-foreground">
                     {item.descricao}
                   </p>
 
                   {item.animalIdentificacao && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-muted-foreground">
                       Animal:{" "}
-                      <span className="font-semibold text-slate-600 dark:text-slate-300">
+                      <span className="font-semibold text-foreground">
                         {item.animalIdentificacao}
                       </span>
                     </p>
                   )}
 
                   {item.detalhe && (
-                    <p className="text-xs text-slate-400 dark:text-slate-500 italic mt-0.5">
+                    <p className="text-xs text-muted-foreground italic mt-0.5">
                       {item.detalhe}
                     </p>
                   )}
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         )}
 
         {sortedItems.length > limit && (
-          <div className="mt-4 pt-2 flex justify-center border-t border-slate-50 dark:border-slate-900">
+          <div className="mt-4 pt-2 flex justify-center border-t border-border/60">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLimit((prev) => prev + 15)}
-              className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1.5"
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5"
             >
-              <ChevronDown className="h-3.5 w-3.5" />
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
               Ver mais {Math.min(15, sortedItems.length - limit)} de{" "}
               {sortedItems.length - limit} eventos
             </Button>
@@ -189,9 +198,9 @@ export const TimelineFactual: React.FC<TimelineFactualProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => setLimit(15)}
-              className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1.5"
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5"
             >
-              <ChevronUp className="h-3.5 w-3.5" />
+              <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
               Recolher linha do tempo
             </Button>
           </div>
