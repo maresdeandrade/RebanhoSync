@@ -515,8 +515,11 @@ const Home = () => {
     const lifecycleBiologicalCount =
       lifecycleQueue.length - lifecycleStrategicCount;
 
+    const generatedAt = new Date().toISOString();
     const homeIndicators = computeHomeIndicators({
+      fazendaId: activeFarmId,
       referenceDate: todayKey,
+      referenceTimestamp: generatedAt,
       animals: animaisDisponiveis,
       lotes: lotesDisponiveis,
       pastos: pastosAtivos,
@@ -527,8 +530,6 @@ const Home = () => {
       movimentacoes: eventosMovimentacao,
       weightFreshnessDays: farmLifecycleConfig?.weightFreshnessDays,
     });
-
-    const generatedAt = new Date().toISOString();
     const decisionTimezone =
       farm?.timezone ??
       Intl.DateTimeFormat().resolvedOptions().timeZone ??

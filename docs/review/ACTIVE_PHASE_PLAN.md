@@ -1,14 +1,14 @@
 # Plano ativo — Fase 22 / Eficiência Produtiva e Econômica
 
-Atualizado em: 2026-09-06
-Status: **Fase 22 ativa; F22C fechada**
+Atualizado em: 2026-09-08
+Status: **Fase 22 encerrada (CLOSED); F22A, F22B e F22C fechadas**
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
 Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`.
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica**
-Próxima fase: **Fase 22 — incrementos autorizados após o gate de fontes**
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
+Próxima fase: **Fase 22 — encerramento formal e baseline unificada U0 (próxima trilha técnica: C3)**
 
 Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
 
@@ -43,29 +43,36 @@ F22A_GMD_OPERATIONAL_USE = NOT_AUTHORIZED
 
 A [política F22A.2B](./F22A_GMD_INTERVAL_POLICY.md) rejeita um mínimo universal. A F22A.3 adiciona cálculo puro sobre `GmdIntervalResult`: somente `READY` com `intervalDays > 0` produz delta e GMD, inclusive zero ou negativo, sem arredondamento. Conflito, insuficiência, intervalo inválido e valor não finito não geram cálculo. Classificação confiável exige política contextual e coverage de método/condições ainda indisponível. O contrato econômico permanece independente; adoção, UI, lucro completo e métricas por lote/pasto não foram iniciados.
 
-## Incremento F22A.4 — gate de adoção/migração
+## Incremento F22A.4 — adoção e encerramento
 
-O [inventário de adoção](./F22A_GMD_ADOPTION_GATE.md) fechou o gate sem migrar consumidores. Não há `MIGRATABLE_NOW`: `AnimalDetalhe`, `AnimalCriaInicial` e `Animais` exigem UX que preserve `UNCLASSIFIED` e `NOT_AUTHORIZED`; o GMD executivo da Home está bloqueado por confiabilidade; occupancy, lote/pasto, relatórios e qualidade de dados permanecem semanticamente separados. Helpers legados não foram removidos.
+A adoção de F22A foi concluída: a Home adota exclusivamente a cadeia canônica (`selectFactualGmdInterval` → `calculateQualifiedGmd`), elimina qualquer consumo produtivo de `calculateIndividualGmd` e exibe "GMD observado" individual sem agregação ou ranking por lote. O contrato preserva rigorosamente `reliability = UNCLASSIFIED` e `operationalUse = NOT_AUTHORIZED`. Ausência, insuficiência e conflito permanecem indisponíveis sem fallback para zero. Telas de detalhe foram migradas no PR #123.
 
 ```ini
 F22A_GMD_ADOPTION_GATE = CLOSED
-F22A_GMD_LEGACY_MIGRATION = NOT_STARTED
+F22A_GMD_LEGACY_MIGRATION = COMPLETED
+F22A = CLOSED
 ```
 
-Uma futura adoção F22A depende de autorização explícita para a mudança de UX/política descrita no gate.
+## Incremento F22B — Economic Coverage & Resultado Observado
 
-## Incremento F22B.1 — Economic Coverage
-
-O [contrato de coverage econômica](./F22B_ECONOMIC_COVERAGE.md) implementa `selectEconomicCoverage` como read model puro sobre `finance_transactions`, `finance_categories`, Eventos e details comerciais já disponíveis. Fazenda, período inclusivo, timezone e coverage por fonte são explícitos. Receita e custo usam categoria e direção coerentes; ausência não vira zero; estorno reverte o bucket do original; operação comercial sem financeiro permanece lacuna.
+O contrato de coverage econômica (`selectEconomicCoverage`) e resultado econômico observado (`calculateObservedEconomicResult`) foi integrado. A adoção nos consumidores preserva `profit = NOT_DEMONSTRATED` e `completeAccounting = false` (receitas observadas menos custos observados não equivalem a lucro real demonstrado).
 
 ```ini
 F22B_ECONOMIC_COVERAGE = IMPLEMENTED
 F22B_OBSERVED_RESULT = IMPLEMENTED_QUALIFIED
 F22B_ADOPTION_PRESENTATION_GATE = CLOSED
 F22B_COMPLETE_PROFIT = BLOCKED
+F22B = CLOSED
 ```
 
-A F22B.2 adiciona `calculateObservedEconomicResult` exclusivamente sobre EconomicCoverage: receita observada menos custo observado, sem preencher ausências com zero. O [gate F22B.3](./F22B_ADOPTION_PRESENTATION_GATE.md) fechou com `MIGRATABLE_NOW = 0`; Financeiro e Relatórios exigem mudança de apresentação, e lucro completo permanece bloqueado. A [F22C](./F22C_HISTORICAL_OCCUPANCY_SOURCE_GATE.md) está fechada: histórico de lote/pasto, duração, agregação e performance observada dentro da ocupação estão implementados. Builders, cards e cockpits usam a janela factual qualificada; GMD permanece não classificado e não autorizado para uso operacional. UA e lotação não foram alterados.
+## Incremento F22C — Ocupação Histórica Qualificada
+
+A F22C está fechada: histórico animal→lote, composição animal→pasto, duração, agregação e performance observada dentro da ocupação estão implementados. Builders, cards e cockpits usam a janela factual qualificada; GMD permanece não classificado e não autorizado para uso operacional. UA e lotação não foram alterados.
+
+```ini
+F22C = CLOSED
+F22 = CLOSED
+```
 
 ## Resultado da Fase 20
 

@@ -1,7 +1,7 @@
 # Roadmap — RebanhoSync
 
 Atualizado em: 2026-09-08
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (F22C fechada)**
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase anterior: **Fase 21 — Inteligência Operacional v2 (CLOSED)**
 
 ## Objetivo
@@ -35,7 +35,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 15. Fase 20 — Jornadas UX Críticas — **concluída**.
 16. Trilha D — UX/UI Rebaseline 2.0 (D0–D6) — **concluída e formalmente encerrada (PRs #122, #125–#128)**.
 17. Fase 21 — Inteligência Operacional v2 — **concluída**.
-18. Fase 22 — Eficiência Produtiva e Econômica.
+18. Fase 22 — Eficiência Produtiva e Econômica — **concluída (F22A, F22B e F22C fechadas)**.
 19. Fase 23 — Simulação Produtiva e Comercial.
 20. Fase 24 — Release Hardening / Scale Readiness.
 
@@ -52,11 +52,11 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 ## Fase atual de desenvolvimento
 
 ```txt
-Fase 21 — Inteligência Operacional v2 — V1 operational_history_review + V2 herd_flow_review + consolidação concluídas
-→ Fase 22 — Eficiência Produtiva e Econômica — ativa; F22A.1/F22A.2 e política contextual F22A.2B definidos
+Fase 22 — Eficiência Produtiva e Econômica — CONCLUÍDA (F22A, F22B e F22C fechadas)
+→ Próxima fase técnica: Trilha C (C3+) / Fase 23 (Simulação Produtiva e Comercial)
 ```
 
-A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está ativa: F22A.1–F22A.3 implementam peso/GMD qualificado e F22A.4 fechou sem migração. F22B.1/F22B.2 implementam coverage e resultado observado qualificado; o gate F22B.3 fechou com `MIGRATABLE_NOW = 0`, sem liberar lucro completo. A F22C está fechada: histórico animal→lote, composição animal→pasto, duração, agregação e performance observada dentro da ocupação estão implementados, com coverage e não-autorização explícitos nos consumidores compatíveis.
+A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está concluída e formalmente encerrada (**CLOSED**): F22A.1–F22A.3 implementam peso/GMD qualificado e F22A adotada canonicamente na Home (sem ranking, sem uso operacional); F22B.1/F22B.2 implementam coverage e resultado observado qualificado adotados com ressalva de não demonstração de lucro completo; a F22C está fechada com histórico animal→lote, composição animal→pasto, duração, agregação e performance observada factual adotados com coverage e não-autorização explícitos nos consumidores compatíveis.
 
 A Fase 19 implementou foundations tipográficas e semânticas, branding reutilizável, primitives estruturais e shell/navegação responsivos sobre o contrato da F18. Home, Animais, AnimalDetalhe, Registrar e Agenda foram revalidados sem migração ampla em 390, 768, 1024 e 1440 px, light/dark; nenhum P0 novo foi confirmado e o P0 do Registrar permanece resolvido.
 
@@ -69,7 +69,7 @@ A Fase 20 migrou as cinco jornadas críticas para os padrões compartilhados, co
 - **Fase 20 — Jornadas UX Críticas:** Home, Animais, AnimalDetalhe, Registrar e Agenda.
 - **Trilha D — UX/UI Rebaseline 2.0 (D0–D6):** consolidação definitiva dos tokens semânticos, shell, componentes canônicos e redesign dirigido das 9 superfícies prioritárias (PRs #122, #125, #126, #127 e #128). A iniciativa visual está formalmente encerrada e o foco retorna às trilhas funcionais/técnicas; melhorias posteriores de UX devem ser tratadas como demandas novas.
 - **Fase 21 — Inteligência Operacional v2:** evolução da inteligência operacional reutilizando `MetricResult` e `DecisionRecommendation`.
-- **Fase 22 — Eficiência Produtiva e Econômica:** produtividade e economia; peso observado não equivale automaticamente a peso atual confiável, e o item 22C de lote/pasto depende de histórico de movimentação confiável (pré-requisito de pull padrão resolvido na Trilha B com `AUTOMATED_CONVERGENCE_VERIFIED`; validação remota E2E é gate de entrada da F22C).
+- **Fase 22 — Eficiência Produtiva e Econômica:** produtividade e economia (CLOSED); GMD observado com confiabilidade não classificada e uso operacional não autorizado; resultado econômico observado com lucro completo bloqueado; ocupação qualificada histórica adotada.
 - **Fase 23 — Simulação Produtiva e Comercial:** simulações com premissas explícitas; projeção não é fato e simulação não é autorização comercial.
 - **Fase 24 — Release Hardening / Scale Readiness:** offline prolongado, multi-device, RLS, recovery, observabilidade, performance, migrations/upgrades e release gates.
 

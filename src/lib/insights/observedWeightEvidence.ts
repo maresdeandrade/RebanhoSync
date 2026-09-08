@@ -36,9 +36,20 @@ export interface ObservedWeightConflict {
 export interface SelectObservedWeightEvidenceInput {
   fazendaId: string;
   animalId: string;
-  animal: Pick<Animal, "id" | "fazenda_id" | "deleted_at"> | null;
-  events: readonly Evento[];
-  weightDetails: readonly EventoPesagem[];
+  animal:
+    | (Pick<Animal, "id" | "fazenda_id"> &
+        Partial<Pick<Animal, "deleted_at">>)
+    | null;
+  events: readonly (Pick<
+    Evento,
+    "id" | "fazenda_id" | "dominio" | "occurred_at" | "animal_id"
+  > &
+    Partial<Pick<Evento, "deleted_at">>)[];
+  weightDetails: readonly (Pick<
+    EventoPesagem,
+    "evento_id" | "fazenda_id" | "peso_kg"
+  > &
+    Partial<Pick<EventoPesagem, "deleted_at">>)[];
   referenceDate: string;
 }
 

@@ -563,19 +563,19 @@ export function OperationalInsightsPanel({
               </CardContent>
             </Card>
 
-            {/* Card 3: Desempenho (GMD) */}
+            {/* Card 3: GMD observado, sem ranking ou uso operacional */}
             <Card className={`shadow-none transition-all duration-300 hover:scale-[1.01] hover:shadow-md ${cardToneStyles[getStatusCardTone(homeIndicators.gmd.status)]}`}>
               <CardHeader className="space-y-3 p-4 pb-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 space-y-2">
                     <CardDescription className="text-xs font-medium uppercase tracking-[0.12em]">
-                      Desempenho de Ganho (GMD)
+                      GMD observado
                     </CardDescription>
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                       <CardTitle className="text-3xl tabular-nums tracking-normal">
-                        {homeIndicators.gmd.lotesComGmd.length}
+                        {homeIndicators.gmd.availableCount}
                       </CardTitle>
-                      <span className="text-sm text-muted-foreground">lotes com GMD calculável</span>
+                      <span className="text-sm text-muted-foreground">animal(is) com cálculo disponível</span>
                     </div>
                   </div>
                   <div className={iconToneStyles[getStatusCardTone(homeIndicators.gmd.status)]}>
@@ -586,48 +586,59 @@ export function OperationalInsightsPanel({
                   <StatusBadge tone={getStatusTone(homeIndicators.gmd.status)}>
                     {getStatusLabel(homeIndicators.gmd.status)}
                   </StatusBadge>
-                  {homeIndicators.gmd.animaisComApenasUmaPesagemCount > 0 && (
+                  {homeIndicators.gmd.singleObservationCount > 0 && (
                     <span className="text-xs text-muted-foreground">
-                      {homeIndicators.gmd.animaisComApenasUmaPesagemCount} animal(is) com pesagem única
+                      {homeIndicators.gmd.singleObservationCount} animal(is) sem intervalo suficiente
                     </span>
                   )}
                 </div>
                 <p className="truncate text-xs text-muted-foreground">
-                  Fonte: event_eventos_pesagem
+                  Fonte: event_eventos + event_eventos_pesagem
                 </p>
               </CardHeader>
               <CardContent className="space-y-3 px-4 pb-4 text-sm">
-                {homeIndicators.gmd.lotesComGmd.length > 0 ? (
+                {homeIndicators.gmd.availableCount > 0 ? (
                   <div className="space-y-1.5">
-                    <p className="text-xs font-semibold text-muted-foreground">GMD por lote:</p>
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      Valores individuais, sem ranking:
+                    </p>
                     <div className="space-y-1 text-xs">
-                      {homeIndicators.gmd.lotesComGmd.slice(0, 3).map(l => (
-                        <div key={l.loteId} className="flex justify-between items-center text-muted-foreground">
-                          <span className="truncate max-w-[120px] font-medium">{l.nome}</span>
-                          <span className="font-mono text-success font-semibold">+{l.gmdMedio.toFixed(2)} kg/dia ({l.animaisCount} an.)</span>
-                        </div>
-                      ))}
+                      {homeIndicators.gmd.animals
+                        .filter((animal) => animal.status === "CALCULATED")
+                        .slice(0, 3)
+                        .map((animal) => (
+                          <div key={animal.animalId} className="flex items-center justify-between text-muted-foreground">
+                            <span className="truncate max-w-[120px] font-medium">
+                              {animal.identificacao}
+                            </span>
+                            <span className="font-mono font-semibold text-foreground">
+                              {animal.valueKgPerDay?.toFixed(2)} kg/dia
+                            </span>
+                          </div>
+                        ))}
                     </div>
                   </div>
                 ) : (
                   <div className="rounded bg-muted/40 p-2 text-xs text-muted-foreground border border-border/30">
-                    Nenhum lote possui pesagens suficientes (&ge; 2 pesagens) para cálculo de ganho diário.
+                    GMD observado indisponível no recorte factual carregado.
                   </div>
                 )}
 
-                {homeIndicators.gmd.lotesSemPesagemSuficiente.length > 0 && (
+                {homeIndicators.gmd.unavailableCount > 0 && (
                   <div className="space-y-1 border-t border-border/40 pt-2">
-                    <p className="text-[11px] font-semibold text-muted-foreground">Lotes sem dados suficientes:</p>
-                    <div className="space-y-0.5 text-[11px] text-muted-foreground">
-                      {homeIndicators.gmd.lotesSemPesagemSuficiente.slice(0, 2).map(l => (
-                        <div key={l.loteId} className="flex justify-between truncate">
-                          <span>{l.nome}</span>
-                          <span className="text-[10px] italic">Dados insuficientes</span>
-                        </div>
-                      ))}
-                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {homeIndicators.gmd.unavailableCount} animal(is) com valor indisponível
+                      {homeIndicators.gmd.conflictCount > 0
+                        ? `; ${homeIndicators.gmd.conflictCount} com conflito factual`
+                        : ""}.
+                    </p>
                   </div>
                 )}
+                <div className="space-y-1 border-t border-border/40 pt-2 text-[11px] text-muted-foreground">
+                  <p>Confiabilidade: não classificada.</p>
+                  <p>Uso operacional: não autorizado.</p>
+                  <p>{homeIndicators.gmd.limitation}</p>
+                </div>
               </CardContent>
             </Card>
 

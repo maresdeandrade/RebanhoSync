@@ -7,9 +7,9 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica** — F22C fechada.
-Próxima fase de desenvolvimento: **Fase 22 — incrementos autorizados após o gate de fontes**.
-Próximo incremento: somente nova capacidade de produto explicitamente autorizada; adoção F22B permanece sem Wave 1 autorizada.
+Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**.
+Próxima fase de desenvolvimento: **Fase 22 — encerramento formal e baseline unificada U0 (próxima trilha técnica: C3)**.
+Próximo incremento: Trilha C (C3 auth_rls_initplan); nenhuma nova capacidade funcional antes da baseline unificada U0.
 
 ## Objetivo
 
@@ -129,11 +129,15 @@ Estado dos subitens:
 - Admin Track: A1.1 + A2 + A2.1 + A4 operacionais em staging; provisionamento e smoke de SuperAdmin validados; produção pendente.
 - F16 Financeiro: migration aplicada em staging; produção pendente.
 - B4 Movimentação: `eventos_movimentacao` integrado em `STANDARD_EVENT_DETAIL_REMOTE_TABLES`; convergência automatizada e round-trip remoto A → staging → B, incluindo clean install, comprovados (`REMOTE_CONVERGENCE_VERIFIED`); gate técnico da F22C desbloqueado, sem iniciar a F22C.
-- Trilha C (Hardening Banco / Advisor): C0 (Inventário Autoritativo) e C1 (Hardening SECURITY DEFINER & EXECUTE) concluídos e validados localmente (migrations `20260827100000`, `20260827110000`, `20260827120000`); C2–C7 pendentes como trilha de infraestrutura independente.
+- Trilha C (Hardening Banco / Advisor): C0 (Inventário Autoritativo), C1 (Hardening SECURITY DEFINER & EXECUTE) e C2 (Search Path & Auth Hardening) concluídos (caveat C2_AUTH_BLOCKED_BY_PLAN registrado); C3 (auth_rls_initplan) é a próxima trilha técnica autorizada; C4 (multiple permissive policies), C5 (FK/index review), C6 (workload evidence) e C7 (unused indexes) bloqueadas em sequência.
 - Produção: não alterada (100% preservada).
 
-
-
+- B3 Sync Sanitário v2:
+  - `B3_IMPLEMENTATION = CLOSED`
+  - `B3_REMOTE_MULTI_DEVICE_GATE = PLATFORM_BLOCKED`
+  - `B3_FEATURE_FLAG = FAIL_CLOSED`
+  - `B3_BLOCKS_CURRENT_MAIN = NO`
+  - `B3_BLOCKS_RELEASE = YES`
 - Gate sanitário remoto: desligado (`fail-closed`).
 - Feature flag local Sanitário v2: `false`.
 - Rollout para usuários: não autorizado.
@@ -153,7 +157,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-O gate F22A.4 está fechado e a migração legada geral não foi iniciada. A F22B.2 implementa resultado observado qualificado exclusivamente sobre EconomicCoverage, preservando ausência, zero factual, coverage parcial, limitações e gaps; não demonstra lucro completo. O [gate F22B.3](../review/F22B_ADOPTION_PRESENTATION_GATE.md) encontrou `MIGRATABLE_NOW = 0`. A F22C está fechada com histórico, composição, duração, agregação e performance observada factual adotados pelos consumidores compatíveis. O Sync Sanitário v2 permanece sem habilitação; rollout e produção continuam inalterados.
+A Fase 22 está formalmente encerrada (**CLOSED**): F22A adotada canonicamente na Home (GMD observado sem ranking, `reliability = UNCLASSIFIED`, `operationalUse = NOT_AUTHORIZED`); F22B adotada via PR #123 com resultado econômico observado qualificado (`profit = NOT_DEMONSTRATED`, `completeAccounting = false`); F22C fechada com ocupação histórica, duração e performance observada factual. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`PLATFORM_BLOCKED`), mas não bloqueia desenvolvimento interno. O próximo ciclo técnico autorizado é C3 (auth_rls_initplan na Trilha C), seguido por F23 (Simulação Produtiva e Comercial) somente sobre a baseline unificada.
 
 ## Fontes de detalhe
 
