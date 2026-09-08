@@ -1,6 +1,6 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-09-06
+Atualizado em: 2026-09-08
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
@@ -22,6 +22,8 @@ O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é 
 ## Estado atual
 
 RebanhoSync está em beta interno, com arquitetura offline-first e isolamento multi-tenant por `fazenda_id`.
+
+A Trilha D (UX/UI Rebaseline 2.0) foi integralmente executada e formalmente encerrada sobre `main@c2300d01d7cd6d71dcf89829a1cb2945146b96bb` (PRs #124 a #128). O ciclo consolidou D0 (auditoria 360°), D1 (tokens semânticos e theme contract), D2 (shell e layout unificado), D3 (componentes estruturais canônicos), D4 (redesign dirigido de 9 páginas), D5 (responsividade, dark mode e acessibilidade) e D6 (regressão visual sistemática com zero regressões e fechamento verification-only). A iniciativa visual está formalmente encerrada e o foco retorna às trilhas funcionais/técnicas do roadmap (Fase 22+). Quaisquer melhorias adicionais de UX devem ser tratadas como demandas novas e independentes.
 
 A Fase 17 foi concluída e integrada em `main@797f84d3aa49f424bf0b6ca013e416c61f24c41e`. A entrega inclui recomendações puras de qualidade/freshness de peso e revisão de Agenda vencida, com proveniência, convergência, cutoff, conflitos, limitações e não-autorização explícitos. Usa `eventos` + `eventos_pesagem` e `state_agenda_itens`, não persiste recomendação e não altera Evento, Agenda, `state_*`, Dexie, sync ou banco. Os testes focados, regressões proporcionais, lint e build registrados no fechamento passaram.
 

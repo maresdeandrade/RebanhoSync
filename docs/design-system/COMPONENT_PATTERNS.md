@@ -1,7 +1,7 @@
 # Component Patterns — RebanhoSync
 
-Atualizado em: 2026-08-24
-Status: **Contrato visual alvo da Fase 18 — documental, ainda não implementado**
+Atualizado em: 2026-09-08
+Status: **Contratos canônicos implementados e consolidados via Trilha D (D1–D6); Rebaseline 2.0 encerrado**
 
 ## Inventário atual
 

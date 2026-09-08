@@ -1,7 +1,7 @@
 # D2 — Shell, Layout & Navigation Contract
 
-Atualizado em: 2026-09-07
-Status: **Contrato estrutural implementado com caveat visual; D3 não iniciada**
+Atualizado em: 2026-09-08
+Status: **Contrato estrutural implementado, certificado e integrado via PR #125; Trilha D (D0–D6) encerrada**
 
 ## 1. Baseline
 
