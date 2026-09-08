@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Calendar, Plus } from "lucide-react";
 
-import { EmptyState } from "@/components/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
-import { PageIntro } from "@/components/ui/page-intro";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PageHeader } from "@/components/ui/page-header";
 import { StateBanner } from "@/components/ui/state-banner";
 import { useAuth } from "@/hooks/useAuth";
 import { buildAgendaCriticalNavigationTargets } from "@/lib/agenda/criticalNavigation";
@@ -404,8 +405,8 @@ export default function Agenda() {
 
   if (!activeFarmId) {
     return (
-      <div className="space-y-5">
-        <PageIntro
+      <PageContainer width="standard" className="space-y-6">
+        <PageHeader
           variant="plain"
           eyebrow="Rotina planejada"
           title="Fazenda não selecionada"
@@ -415,14 +416,14 @@ export default function Agenda() {
             </Button>
           }
         />
-      </div>
+      </PageContainer>
     );
   }
 
   if (!data) {
     return (
-      <div className="space-y-5">
-        <PageIntro
+      <PageContainer width="standard" className="space-y-6">
+        <PageHeader
           variant="plain"
           eyebrow="Rotina planejada"
           title="Agenda de manejo"
@@ -442,12 +443,12 @@ export default function Agenda() {
             onClick: () => navigate("/registrar"),
           }}
         />
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <PageContainer width="standard" className="space-y-6">
       <AgendaOverviewHeader
         badges={overviewBadges}
         onGoToRegistrar={() => navigate("/registrar")}
@@ -564,6 +565,6 @@ export default function Agenda() {
           />
         </>
       )}
-    </div>
+    </PageContainer>
   );
 }

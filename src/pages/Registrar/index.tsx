@@ -15,9 +15,9 @@ import {
 import { calculateCommercialOperation } from "@/lib/comercial/commercialOperation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { PageIntro } from "@/components/ui/page-intro";
+import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from "@/utils/toast";
@@ -1809,8 +1809,8 @@ const Registrar = () => {
 
   if (!activeFarmId) {
     return (
-      <PageContainer width="narrow" className="space-y-5">
-        <PageIntro
+      <PageContainer width="narrow" className="space-y-6">
+        <PageHeader
           variant="plain"
           eyebrow="Fluxo operacional"
           title="Registrar execução"
@@ -1835,8 +1835,8 @@ const Registrar = () => {
   }
 
   return (
-    <PageContainer width="narrow" className="space-y-5 pb-8">
-      <PageIntro
+    <PageContainer width="narrow" className="space-y-6 pb-12">
+      <PageHeader
         variant="plain"
         eyebrow="Fluxo operacional"
         title="Registrar manejo"

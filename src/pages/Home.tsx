@@ -25,7 +25,9 @@ import { loadFarmSyncSummary } from "@/lib/offline/syncQueries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { PageIntro } from "@/components/ui/page-intro";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionHeader } from "@/components/ui/section-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { MetricCard } from "@/components/ui/metric-card";
 import {
   getSanitaryAttentionOperationalClassLabel,
@@ -702,8 +704,8 @@ const Home = () => {
   );
 
   return (
-    <PageContainer width="full" className="space-y-5">
-      <PageIntro
+    <PageContainer width="full" className="space-y-6">
+      <PageHeader
         variant="plain"
         title="Central Operacional"
         description="Priorize pendencias de agenda; registre execucao real no Registrar. Historico, estado atual e sinais aparecem como leitura."
@@ -782,92 +784,200 @@ const Home = () => {
         }
       />
 
-      <section
-        aria-label="Resumo operacional"
-        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        {[
-          {
-            label: "Atrasadas",
-            value: overdueItems.length,
-            hint: "Pendencias vencidas",
-            tone: overdueItems.length > 0 ? "danger" : "neutral",
-            icon: AlertTriangle,
-          },
-          {
-            label: "Hoje",
-            value: todayItems.length,
-            hint: "Agenda do dia",
-            tone: todayItems.length > 0 ? "warning" : "neutral",
-            icon: CalendarClock,
-          },
-          {
-            label: "Animais ativos",
-            value: snapshot.animais,
-            hint: `${snapshot.lotes} lotes`,
-            tone: "success",
-            icon: Beef,
-          },
-          {
-            label: "Fila local",
-            value: snapshot.syncSummary.pendingCount,
-            hint: "A sincronizar",
-            tone: snapshot.syncSummary.pendingCount > 0 ? "warning" : "neutral",
-            icon: Clock3,
-          },
-          {
-            label: "Estrutura",
-            value: `${snapshot.lotes}L`,
-            hint: `${snapshot.pastos} pastos`,
-            tone: "neutral",
-            icon: CheckCircle2,
-          },
-          {
-            label: "Alertas sanitarios",
-            value: snapshot.sanitaryAttention.criticalCount,
-            hint: "Criticos no horizonte",
-            tone:
-              snapshot.sanitaryAttention.criticalCount > 0
+      <section aria-label="Panorama operacional" className="space-y-3">
+        <SectionHeader
+          level={2}
+          title="Panorama operacional"
+          description="Indicadores sinteticos de rebanho, rotina e sincronizacao"
+        />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              label: "Atrasadas",
+              value: overdueItems.length,
+              hint: "Pendencias vencidas",
+              tone: overdueItems.length > 0 ? "danger" : "neutral",
+              icon: AlertTriangle,
+            },
+            {
+              label: "Hoje",
+              value: todayItems.length,
+              hint: "Agenda do dia",
+              tone: todayItems.length > 0 ? "warning" : "neutral",
+              icon: CalendarClock,
+            },
+            {
+              label: "Animais ativos",
+              value: snapshot.animais,
+              hint: `${snapshot.lotes} lotes`,
+              tone: "success",
+              icon: Beef,
+            },
+            {
+              label: "Fila local",
+              value: snapshot.syncSummary.pendingCount,
+              hint: "A sincronizar",
+              tone: snapshot.syncSummary.pendingCount > 0 ? "warning" : "neutral",
+              icon: Clock3,
+            },
+            {
+              label: "Estrutura",
+              value: `${snapshot.lotes}L`,
+              hint: `${snapshot.pastos} pastos`,
+              tone: "neutral",
+              icon: CheckCircle2,
+            },
+            {
+              label: "Alertas sanitarios",
+              value: snapshot.sanitaryAttention.criticalCount,
+              hint: "Criticos no horizonte",
+              tone:
+                snapshot.sanitaryAttention.criticalCount > 0
+                  ? "danger"
+                  : "neutral",
+              icon: AlertTriangle,
+            },
+            {
+              label: "Reposicao",
+              value: snapshot.replenishmentAlerts.length,
+              hint: "Estoque no radar",
+              tone: snapshot.replenishmentAlerts.some(
+                (item) => item.severity === "critical",
+              )
                 ? "danger"
-                : "neutral",
-            icon: AlertTriangle,
-          },
-          {
-            label: "Reposicao",
-            value: snapshot.replenishmentAlerts.length,
-            hint: "Estoque no radar",
-            tone: snapshot.replenishmentAlerts.some(
-              (item) => item.severity === "critical",
-            )
-              ? "danger"
-              : snapshot.replenishmentAlerts.length > 0
-                ? "warning"
-                : "neutral",
-            icon: PackageSearch,
-          },
-        ].map((item) => (
-          <MetricCard
-            key={item.label}
-            label={item.label}
-            value={item.value}
-            hint={item.hint}
-            icon={<item.icon className="h-4 w-4" />}
-            tone={item.tone === "neutral" ? "default" : item.tone}
-          />
-        ))}
-
+                : snapshot.replenishmentAlerts.length > 0
+                  ? "warning"
+                  : "neutral",
+              icon: PackageSearch,
+            },
+          ].map((item) => (
+            <MetricCard
+              key={item.label}
+              label={item.label}
+              value={item.value}
+              hint={item.hint}
+              icon={<item.icon className="h-4 w-4" />}
+              tone={item.tone === "neutral" ? "default" : item.tone}
+            />
+          ))}
+        </div>
       </section>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle>Atalhos de registro</CardTitle>
-            <span className="text-sm text-muted-foreground">
-              Criam evento executado; nao autorizam venda, abate ou carencia
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <section aria-label="Prioridades do dia" className="space-y-3">
+        <SectionHeader
+          level={2}
+          title="Prioridades do dia"
+          description="Acompanhe pendencias vencidas e compromissos operacionais imediatos"
+        />
+        <div className="grid gap-4 xl:grid-cols-2">
+          <Card
+            className={
+              overdueItems.length > 0
+                ? "border-destructive/25 bg-destructive/10 shadow-none"
+                : "shadow-none"
+            }
+          >
+            <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <CardTitle>Pendencias atrasadas</CardTitle>
+                </div>
+                <StatusBadge
+                  tone={overdueItems.length > 0 ? "danger" : "success"}
+                >
+                  {overdueItems.length} atrasada
+                  {overdueItems.length === 1 ? "" : "s"}
+                </StatusBadge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {overdueItems.length === 0 ? (
+                <EmptyState
+                  icon={CalendarClock}
+                  title="Sem pendencias atrasadas no recorte carregado."
+                  className="min-h-[140px] border-dashed bg-background/60 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
+                />
+              ) : (
+                overdueItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-destructive/20 bg-background/70 p-4"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium">{item.titulo}</p>
+                          <StatusBadge tone="danger">Atrasado</StatusBadge>
+                        </div>
+                        <p className="text-sm leading-6 text-muted-foreground">
+                          {item.contexto}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock3 className="h-4 w-4" />
+                        <span>{formatDay(item.data)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-none">
+            <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <CardTitle>Agenda de hoje</CardTitle>
+                </div>
+                <StatusBadge tone={todayItems.length > 0 ? "info" : "neutral"}>
+                  {todayItems.length} hoje
+                </StatusBadge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {todayItems.length === 0 ? (
+                <EmptyState
+                  icon={CheckCircle2}
+                  title="Nada vence hoje no recorte carregado."
+                  className="min-h-[140px] border-dashed bg-muted/20 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
+                />
+              ) : (
+                todayItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-info/15 bg-info-muted/35 p-4"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium">{item.titulo}</p>
+                          <StatusBadge tone="info">Hoje</StatusBadge>
+                        </div>
+                        <p className="text-sm leading-6 text-muted-foreground">
+                          {item.contexto}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock3 className="h-4 w-4" />
+                        <span>{formatDay(item.data)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      <section aria-label="Atalhos operacionais" className="space-y-3">
+        <SectionHeader
+          level={2}
+          title="Atalhos de registro"
+          description="Criam evento executado; nao autorizam venda, abate ou carencia"
+        />
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
           {[
             ["Registrar vacinacao", "/registrar?dominio=sanitario"],
             ["Registrar pesagem", "/registrar?dominio=pesagem"],
@@ -879,112 +989,15 @@ const Home = () => {
               key={label}
               asChild
               variant="outline"
-              className="h-20 flex-col gap-2 rounded-xl"
+              className="h-16 flex-col gap-1.5 rounded-xl text-xs font-medium text-center"
             >
               <Link to={href}>
-                <PlusCircle className="h-5 w-5 text-primary" />
+                <PlusCircle className="h-4 w-4 text-primary" />
                 {label}
               </Link>
             </Button>
           ))}
-        </CardContent>
-      </Card>
-
-      <section className="grid gap-4 xl:grid-cols-2">
-        <Card
-          className={
-            overdueItems.length > 0
-              ? "border-destructive/25 bg-destructive/10"
-              : undefined
-          }
-        >
-          <CardHeader>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <CardTitle>Pendencias atrasadas</CardTitle>
-              </div>
-              <StatusBadge
-                tone={overdueItems.length > 0 ? "danger" : "success"}
-              >
-                {overdueItems.length} atrasada
-                {overdueItems.length === 1 ? "" : "s"}
-              </StatusBadge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {overdueItems.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/70 bg-background/60 p-4 text-sm text-muted-foreground">
-                Sem pendencias atrasadas no recorte carregado.
-              </div>
-            ) : (
-              overdueItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-destructive/20 bg-background/70 p-4"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium">{item.titulo}</p>
-                        <StatusBadge tone="danger">Atrasado</StatusBadge>
-                      </div>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {item.contexto}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock3 className="h-4 w-4" />
-                      <span>{formatDay(item.data)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <CardTitle>Agenda de hoje</CardTitle>
-              </div>
-              <StatusBadge tone={todayItems.length > 0 ? "info" : "neutral"}>
-                {todayItems.length} hoje
-              </StatusBadge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {todayItems.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
-                Nada vence hoje no recorte carregado.
-              </div>
-            ) : (
-              todayItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-info/15 bg-info-muted/35 p-4"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium">{item.titulo}</p>
-                        <StatusBadge tone="info">Hoje</StatusBadge>
-                      </div>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {item.contexto}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock3 className="h-4 w-4" />
-                      <span>{formatDay(item.data)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+        </div>
       </section>
 
       <OperationalInsightsPanel
@@ -1247,68 +1260,78 @@ const Home = () => {
         </Card>
       ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-[1.25fr_0.95fr_0.95fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Proximos manejos</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {upcomingItems.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-                Nenhum manejo futuro no recorte carregado.
-              </div>
-            ) : (
-              upcomingItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-border/70 bg-muted/35 p-4"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium">{item.titulo}</p>
-                        <StatusBadge
-                          tone={
-                            item.status === "atrasado"
-                              ? "warning"
+      <section aria-label="Acompanhamento e evolucao" className="space-y-3">
+        <SectionHeader
+          level={2}
+          title="Acompanhamento e evolucao"
+          description="Manejos futuros, transicoes de estagio no rebanho e configuracao inicial"
+        />
+        <div className="grid gap-4 xl:grid-cols-[1.25fr_0.95fr_0.95fr]">
+          <Card className="shadow-none">
+            <CardHeader>
+              <CardTitle>Proximos manejos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {upcomingItems.length === 0 ? (
+                <EmptyState
+                  icon={CalendarClock}
+                  title="Nenhum manejo futuro no recorte carregado."
+                  className="min-h-[140px] border-dashed bg-muted/20 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
+                />
+              ) : (
+                upcomingItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-border/70 bg-muted/35 p-4"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium">{item.titulo}</p>
+                          <StatusBadge
+                            tone={
+                              item.status === "atrasado"
+                                ? "warning"
+                                : item.status === "hoje"
+                                  ? "info"
+                                  : "neutral"
+                            }
+                          >
+                            {item.status === "atrasado"
+                              ? "Atrasado"
                               : item.status === "hoje"
-                                ? "info"
-                                : "neutral"
-                          }
-                        >
-                          {item.status === "atrasado"
-                            ? "Atrasado"
-                            : item.status === "hoje"
-                              ? "Hoje"
-                              : "Proximo"}
-                        </StatusBadge>
+                                ? "Hoje"
+                                : "Proximo"}
+                          </StatusBadge>
+                        </div>
+                        <p className="text-sm leading-6 text-muted-foreground">
+                          {item.contexto}
+                        </p>
                       </div>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {item.contexto}
-                      </p>
-                    </div>
 
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock3 className="h-4 w-4" />
-                      <span>{formatDay(item.data)}</span>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock3 className="h-4 w-4" />
+                        <span>{formatDay(item.data)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+                ))
+              )}
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Transicoes de estagio</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {snapshot.lifecyclePendings.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-                Nenhum animal precisa de transicao de estagio neste momento.
-              </div>
-            ) : (
+          <Card className="shadow-none">
+            <CardHeader>
+              <CardTitle>Transicoes de estagio</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {snapshot.lifecyclePendings.length === 0 ? (
+                <EmptyState
+                  icon={Beef}
+                  title="Nenhum animal precisa de transicao de estagio neste momento."
+                  className="min-h-[140px] border-dashed bg-muted/20 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
+                />
+              ) : (
               snapshot.lifecyclePendings.map((item) => (
                 <div
                   key={item.animalId}
@@ -1395,6 +1418,7 @@ const Home = () => {
             ))}
           </CardContent>
         </Card>
+        </div>
       </section>
 
       <SyncStatusPanel summary={snapshot.syncSummary} />

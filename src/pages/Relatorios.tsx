@@ -34,7 +34,9 @@ import { formatWeight } from "@/lib/format/weight";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageIntro } from "@/components/ui/page-intro";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PageHeader } from "@/components/ui/page-header";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
@@ -377,8 +379,8 @@ const Relatorios = () => {
   }
 
   return (
-    <div className="space-y-5">
-      <PageIntro
+    <PageContainer width="standard" className="space-y-6 pb-12">
+      <PageHeader
         variant="plain"
         title="Relatorios"
         description="Leituras derivadas de eventos, state_* e agenda. Indicadores parciais nao representam DRE, ROI, margem ou custo por arroba."
@@ -1636,9 +1638,11 @@ const Relatorios = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {report.recentEvents.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
-                Nenhum evento encontrado para o periodo selecionado.
-              </div>
+              <EmptyState
+                icon={FileText}
+                title="Nenhum evento encontrado para o periodo selecionado."
+                description="Os eventos registrados na fazenda aparecerão aqui."
+              />
             ) : (
               report.recentEvents.map((item) => (
                 <div
@@ -1663,7 +1667,7 @@ const Relatorios = () => {
           </CardContent>
         </Card>
       </section>
-    </div>
+    </PageContainer>
   );
 };
 

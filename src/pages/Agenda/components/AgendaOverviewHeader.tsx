@@ -1,7 +1,7 @@
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { PageIntro } from "@/components/ui/page-intro";
+import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 type HeaderBadgeTone = "neutral" | "info" | "success" | "warning" | "danger";
@@ -22,7 +22,7 @@ export function AgendaOverviewHeader({
   onGoToRegistrar,
 }: AgendaOverviewHeaderProps) {
   return (
-    <PageIntro
+    <PageHeader
       variant="plain"
       eyebrow="Rotina planejada"
       title="Agenda de manejo"
