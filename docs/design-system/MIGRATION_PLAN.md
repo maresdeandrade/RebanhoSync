@@ -1,13 +1,15 @@
 # Migration Plan — RebanhoSync
 
-Atualizado em: 2026-08-24
-Status: **Matriz P0–P3 da Fase 18 — cinco jornadas P1 migradas na Fase 20**
+Atualizado em: 2026-09-08
+Status: **Trilha D (D0–D6 / Rebaseline 2.0) ENCERRADA FORMALMENTE — 9 superfícies certificadas; retorno ao roadmap funcional/técnico**
 
-## Decisão da auditoria
+## Decisão da auditoria e fechamento da Trilha D
 
-**READY.** O inventário de código, rotas, componentes e tokens foi concluído. A inspeção autenticada real cobriu Home, Animais, AnimalDetalhe, Registrar e Agenda em 1440 × 900 e 390 × 844, nos temas claro e escuro. O Registrar também foi verificado em 768 × 1024 e 1024 × 768 para delimitar a quebra responsiva.
+**CONCLUÍDA E FECHADA (main@c2300d01d7cd6d71dcf89829a1cb2945146b96bb).** A iniciativa visual Rebaseline 2.0 (Trilha D — D0 a D6) foi integralmente executada e encerrada via PRs #122, #125, #126, #127 e #128. As nove superfícies prioritárias (Home, Animais, AnimalDetalhe, Lotes, Agenda, Registrar, Sanidade, Financeiro e Relatórios) e o shell transversal foram normalizados sob os componentes canônicos (`PageContainer`, `PageHeader`, `SectionHeader`, `MetricCard`, `EmptyState`, `StatusBadge`, `Table`, `Toolbar`), com regressão visual zero em 390px e 1440px (light/dark).
 
-**P0 aberto: 0.** O P0 responsivo do Registrar permanece resolvido. Na Fase 20, Home, Animais, AnimalDetalhe, Registrar e Agenda foram marcadas **MIGRATED** após inspeção autenticada em 390×844, 768×1024, 1024×768 e 1440×900, nos temas claro e escuro. A validação confirmou ausência de overlap, clipping e overflow estrutural, preservação de ações e separação semântica entre Evento, Agenda, `state_*` e Recommendation. Dívidas P2/P3 não bloqueantes permanecem destinadas às fases indicadas na matriz.
+**Diretriz permanente:** A iniciativa visual está encerrada. O desenvolvimento retorna às trilhas funcionais e técnicas do roadmap (Fase 22 em diante). Novas melhorias de UX devem ser tratadas como demandas novas com escopo independente, não como continuação automática da Rebaseline 2.0.
+
+**P0 aberto: 0. P1 aberto: 0.**
 
 ## Resultado da Fase 20
 
