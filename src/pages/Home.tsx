@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageIntro } from "@/components/ui/page-intro";
+import { MetricCard } from "@/components/ui/metric-card";
 import {
   getSanitaryAttentionOperationalClassLabel,
   summarizeSanitaryAgendaAttention,
@@ -845,32 +846,16 @@ const Home = () => {
             icon: PackageSearch,
           },
         ].map((item) => (
-          <Card
+          <MetricCard
             key={item.label}
-            className={cn(
-              "shadow-none",
-              item.tone === "danger" &&
-                "border-destructive/25 bg-destructive/10",
-              item.tone === "warning" &&
-                "border-warning/20 bg-warning-muted/60",
-              item.tone === "success" &&
-                "border-success/20 bg-success-muted/60",
-            )}
-          >
-            <CardContent className="space-y-3 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">
-                  {item.label}
-                </p>
-                <item.icon className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="text-3xl font-semibold tabular-nums text-foreground">
-                {item.value}
-              </p>
-              <p className="text-sm text-muted-foreground">{item.hint}</p>
-            </CardContent>
-          </Card>
+            label={item.label}
+            value={item.value}
+            hint={item.hint}
+            icon={<item.icon className="h-4 w-4" />}
+            tone={item.tone === "neutral" ? "default" : item.tone}
+          />
         ))}
+
       </section>
 
       <Card>

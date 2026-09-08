@@ -10,6 +10,8 @@ import {
   Weight,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { MetricCard as CanonicalMetricCard } from "@/components/ui/metric-card";
+import { cn } from "@/lib/utils";
 import type {
   DataStatus,
   LoteOccupancyMetrics,
@@ -36,9 +38,9 @@ function MetricCard({
   extraContent,
 }: MetricCardProps) {
   const statusColor: Partial<Record<DataStatus["status"], string>> = {
-    complete: "text-green-600",
-    partial: "text-yellow-600",
-    empty: "text-gray-400",
+    complete: "text-semantic-success",
+    partial: "text-semantic-warning",
+    empty: "text-muted-foreground",
   };
   const statusIcon: Partial<Record<DataStatus["status"], React.ReactNode>> = {
     complete: <CheckCircle2 className="h-4 w-4" />,
@@ -46,30 +48,37 @@ function MetricCard({
     empty: <HelpCircle className="h-4 w-4" />,
   };
 
+  const formattedValue = (
+    <>
+      {value === null ? "—" : typeof value === "number" ? value.toFixed(2) : value}
+      {value !== null && unit ? (
+        <span className="ml-2 text-sm font-medium text-muted-foreground">{unit}</span>
+      ) : null}
+    </>
+  );
+
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border/50 bg-gradient-to-br from-muted/40 to-muted/20 p-4 transition-all hover:border-border hover:shadow-sm">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          {icon && <div className="text-primary/60">{icon}</div>}
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+    <CanonicalMetricCard
+      label={label}
+      value={formattedValue}
+      icon={
+        <div className="flex items-center gap-1.5">
+          {icon ? <div className="text-primary/70">{icon}</div> : null}
+          {status ? (
+            <div
+              className={cn("flex items-center gap-1", statusColor[status])}
+              title={tooltip}
+            >
+              {statusIcon[status]}
+            </div>
+          ) : null}
         </div>
-        {status && (
-          <div
-            className={`flex items-center gap-1 ${statusColor[status]}`}
-            title={tooltip}
-          >
-            {statusIcon[status]}
-          </div>
-        )}
-      </div>
-      <p className="text-3xl font-bold text-foreground">
-        {value === null ? "—" : typeof value === "number" ? value.toFixed(2) : value}
-        {value !== null && unit && <span className="text-sm font-medium text-muted-foreground ml-2">{unit}</span>}
-      </p>
-      {extraContent}
-    </div>
+      }
+      extraContent={extraContent}
+    />
   );
 }
+
 
 function getWeightStatusTooltip(status: DataStatus["status"]) {
   switch (status) {
