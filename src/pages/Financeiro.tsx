@@ -46,6 +46,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PageIntro } from "@/components/ui/page-intro";
+import { SectionHeader } from "@/components/ui/section-header";
 import {
   Select,
   SelectContent,
@@ -683,12 +684,10 @@ const Financeiro = () => {
       />
 
       <section className="space-y-3" aria-label="Resultado economico observado">
-        <div>
-          <h2 className="text-lg font-semibold">Resultado economico observado</h2>
-          <p className="text-sm text-muted-foreground">
-            Escopo observado por paid_at. Nao demonstra lucro ou contabilidade completa.
-          </p>
-        </div>
+        <SectionHeader
+          title="Resultado economico observado"
+          description="Escopo observado por paid_at. Nao demonstra lucro ou contabilidade completa."
+        />
         <div className="grid gap-3 md:grid-cols-3">
           <Card className="border-border/70 shadow-none">
             <CardContent className="space-y-3 p-4">
@@ -742,12 +741,10 @@ const Financeiro = () => {
       </section>
 
       <section className="space-y-3" aria-label="Competência financeira">
-        <div>
-          <h2 className="text-lg font-semibold">Competência</h2>
-          <p className="text-sm text-muted-foreground">
-            Usa competence_date e não representa caixa realizado.
-          </p>
-        </div>
+        <SectionHeader
+          title="Competência"
+          description="Usa competence_date e não representa caixa realizado."
+        />
         <div className="grid gap-3 md:grid-cols-2">
           <Card className="border-border/70 shadow-none">
             <CardContent className="space-y-3 p-4">
@@ -773,13 +770,10 @@ const Financeiro = () => {
       </section>
 
       <section className="space-y-3" aria-label="Previsões e vencimentos">
-        <div>
-          <h2 className="text-lg font-semibold">Previsões e vencimentos</h2>
-          <p className="text-sm text-muted-foreground">
-            Usa due_date e status previsto; não comprova pagamento ou
-            recebimento.
-          </p>
-        </div>
+        <SectionHeader
+          title="Previsões e vencimentos"
+          description="Usa due_date e status previsto; não comprova pagamento ou recebimento."
+        />
         <div className="grid gap-3 md:grid-cols-4">
           <Card className="border-border/70 shadow-none">
             <CardContent className="space-y-3 p-4">
@@ -829,18 +823,16 @@ const Financeiro = () => {
       </p>
 
       <section className="space-y-3" aria-label="Operações comerciais">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Operações comerciais</h2>
-            <p className="text-sm text-muted-foreground">
-              Fatos comerciais não entram nos saldos sem lançamento financeiro
-              vinculado.
-            </p>
-          </div>
-          <StatusBadge tone="neutral">
-            {commercialRows.length} operação(ões)
-          </StatusBadge>
-        </div>
+        <SectionHeader
+          title="Operações comerciais"
+          description="Fatos comerciais não entram nos saldos sem lançamento financeiro vinculado."
+          badge={
+            <StatusBadge tone="neutral">
+              {commercialRows.length} operação(ões)
+            </StatusBadge>
+          }
+        />
+
         {commercialRows.length === 0 ? (
           <Card className="border-dashed shadow-none">
             <CardContent className="p-6 text-sm text-muted-foreground">

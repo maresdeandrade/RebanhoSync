@@ -53,7 +53,10 @@ export * from "./table";
 // Layout & misc
 export * from "./scroll-area";
 export * from "./loading-screen";
+export * from "./empty-state";
 export * from "./metric-card";
 export * from "./page-intro";
+export * from "./page-header";
+export * from "./section-header";
 export * from "./form-section";
 export * from "./toolbar";

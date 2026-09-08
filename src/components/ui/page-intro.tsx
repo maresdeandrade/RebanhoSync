@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-interface PageIntroProps extends Omit<
+export interface PageIntroProps extends Omit<
   React.HTMLAttributes<HTMLElement>,
   "title"
 > {
@@ -60,4 +60,4 @@ export function PageIntro({
   );
 }
 
-export { PageIntro as PageHeader };
+export { PageIntro as PageHeader, type PageIntroProps as PageHeaderProps };
