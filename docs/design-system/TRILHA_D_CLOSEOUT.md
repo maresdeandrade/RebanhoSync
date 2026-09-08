@@ -23,7 +23,7 @@ Todas as etapas planejadas (D0 a D6) foram executadas, validadas e integradas à
 | Subtrilha | Escopo | PR / Commit | Status |
 |---|---|---|---|
 | **D0** | Auditoria Visual 360°, inventário de tokens/rotas e fixação da baseline | `main@b110f0a5` | CLOSED |
-| **D1** | Tokens Semânticos & Theme Contract (paleta HSL, papéis semânticos, dark mode) | [PR #124](https://github.com/maresdeandrade/RebanhoSync/pull/124) | MERGED |
+| **D1** | Tokens Semânticos & Theme Contract (paleta HSL, papéis semânticos, dark mode) | [PR #122](https://github.com/maresdeandrade/RebanhoSync/pull/122) | MERGED |
 | **D2** | Shell e Layout Unificado (`AppShell`, `PageContainer`, `TopBar`, `SideNav`, `MobileBottomNav`) | [PR #125](https://github.com/maresdeandrade/RebanhoSync/pull/125) | MERGED |
 | **D3** | Componentes Estruturais Canônicos (`PageHeader`, `SectionHeader`, `MetricCard`, `EmptyState`, `Table`) | [PR #126](https://github.com/maresdeandrade/RebanhoSync/pull/126) | MERGED |
 | **D4** | Redesign Dirigido das 9 Páginas Prioritárias | [PR #127](https://github.com/maresdeandrade/RebanhoSync/pull/127) | MERGED |

@@ -1,7 +1,7 @@
 # D1 — Semantic Tokens & Theme Contract
 
 Atualizado em: 2026-09-08
-Status: **Contrato semântico implementado, certificado e integrado via PR #124; Trilha D (D0–D6) encerrada**
+Status: **Contrato semântico implementado, certificado e integrado via PR #122; Trilha D (D0–D6) encerrada**
 
 ## 1. Decisão
 

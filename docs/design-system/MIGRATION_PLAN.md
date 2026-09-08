@@ -5,7 +5,7 @@ Status: **Trilha D (D0–D6 / Rebaseline 2.0) ENCERRADA FORMALMENTE — 9 superf
 
 ## Decisão da auditoria e fechamento da Trilha D
 
-**CONCLUÍDA E FECHADA (main@c2300d01d7cd6d71dcf89829a1cb2945146b96bb).** A iniciativa visual Rebaseline 2.0 (Trilha D — D0 a D6) foi integralmente executada e encerrada via PRs #124 a #128. As nove superfícies prioritárias (Home, Animais, AnimalDetalhe, Lotes, Agenda, Registrar, Sanidade, Financeiro e Relatórios) e o shell transversal foram normalizados sob os componentes canônicos (`PageContainer`, `PageHeader`, `SectionHeader`, `MetricCard`, `EmptyState`, `StatusBadge`, `Table`, `Toolbar`), com regressão visual zero em 390px e 1440px (light/dark).
+**CONCLUÍDA E FECHADA (main@c2300d01d7cd6d71dcf89829a1cb2945146b96bb).** A iniciativa visual Rebaseline 2.0 (Trilha D — D0 a D6) foi integralmente executada e encerrada via PRs #122, #125, #126, #127 e #128. As nove superfícies prioritárias (Home, Animais, AnimalDetalhe, Lotes, Agenda, Registrar, Sanidade, Financeiro e Relatórios) e o shell transversal foram normalizados sob os componentes canônicos (`PageContainer`, `PageHeader`, `SectionHeader`, `MetricCard`, `EmptyState`, `StatusBadge`, `Table`, `Toolbar`), com regressão visual zero em 390px e 1440px (light/dark).
 
 **Diretriz permanente:** A iniciativa visual está encerrada. O desenvolvimento retorna às trilhas funcionais e técnicas do roadmap (Fase 22 em diante). Novas melhorias de UX devem ser tratadas como demandas novas com escopo independente, não como continuação automática da Rebaseline 2.0.
 

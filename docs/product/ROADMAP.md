@@ -33,7 +33,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 13. Fase 18 — Rebaseline Visual 360° — **concluída**.
 14. Fase 19 — Foundations + Shell + Branding — **concluída**.
 15. Fase 20 — Jornadas UX Críticas — **concluída**.
-16. Trilha D — UX/UI Rebaseline 2.0 (D0–D6) — **concluída e formalmente encerrada (PRs #124–#128)**.
+16. Trilha D — UX/UI Rebaseline 2.0 (D0–D6) — **concluída e formalmente encerrada (PRs #122, #125–#128)**.
 17. Fase 21 — Inteligência Operacional v2 — **concluída**.
 18. Fase 22 — Eficiência Produtiva e Econômica.
 19. Fase 23 — Simulação Produtiva e Comercial.
@@ -67,7 +67,7 @@ A Fase 20 migrou as cinco jornadas críticas para os padrões compartilhados, co
 - **Fase 18 — Rebaseline Visual 360°:** auditoria e inventário visual, Design System documental e matriz de migração P0–P3.
 - **Fase 19 — Foundations + Shell + Branding:** foundations visuais, shell da aplicação e identidade de marca.
 - **Fase 20 — Jornadas UX Críticas:** Home, Animais, AnimalDetalhe, Registrar e Agenda.
-- **Trilha D — UX/UI Rebaseline 2.0 (D0–D6):** consolidação definitiva dos tokens semânticos, shell, componentes canônicos e redesign dirigido das 9 superfícies prioritárias (PRs #124 a #128). A iniciativa visual está formalmente encerrada e o foco retorna às trilhas funcionais/técnicas; melhorias posteriores de UX devem ser tratadas como demandas novas.
+- **Trilha D — UX/UI Rebaseline 2.0 (D0–D6):** consolidação definitiva dos tokens semânticos, shell, componentes canônicos e redesign dirigido das 9 superfícies prioritárias (PRs #122, #125, #126, #127 e #128). A iniciativa visual está formalmente encerrada e o foco retorna às trilhas funcionais/técnicas; melhorias posteriores de UX devem ser tratadas como demandas novas.
 - **Fase 21 — Inteligência Operacional v2:** evolução da inteligência operacional reutilizando `MetricResult` e `DecisionRecommendation`.
 - **Fase 22 — Eficiência Produtiva e Econômica:** produtividade e economia; peso observado não equivale automaticamente a peso atual confiável, e o item 22C de lote/pasto depende de histórico de movimentação confiável (pré-requisito de pull padrão resolvido na Trilha B com `AUTOMATED_CONVERGENCE_VERIFIED`; validação remota E2E é gate de entrada da F22C).
 - **Fase 23 — Simulação Produtiva e Comercial:** simulações com premissas explícitas; projeção não é fato e simulação não é autorização comercial.
