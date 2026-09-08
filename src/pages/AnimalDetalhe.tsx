@@ -1737,6 +1737,7 @@ const AnimalDetalhe = () => {
                 variant="ghost"
                 size="icon"
                 className="rounded-full"
+                aria-label="Voltar para a lista de animais"
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
@@ -1899,8 +1900,8 @@ const AnimalDetalhe = () => {
               variant="outline"
               className={
                 animal.sexo === "F"
-                  ? "border-rose-200 bg-rose-50 text-rose-700"
-                  : "border-sky-200 bg-sky-50 text-sky-700"
+                  ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+                  : "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800/60 dark:bg-sky-950/40 dark:text-sky-200"
               }
             >
               {animal.sexo === "M" ? "Macho" : "Femea"}
@@ -2218,7 +2219,7 @@ const AnimalDetalhe = () => {
               {taxonomySnapshot.facts.prenhez_confirmada && (
                 <Badge
                   variant="outline"
-                  className="border-emerald-200 bg-emerald-50 text-emerald-800"
+                  className="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
                 >
                   Prenhez confirmada
                 </Badge>
@@ -2596,8 +2597,8 @@ const AnimalDetalhe = () => {
                       variant="outline"
                       className={
                         reproResumo.urgency === "atencao"
-                          ? "border-amber-200 bg-amber-50 text-amber-800"
-                          : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                          ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
+                          : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
                       }
                     >
                       {reproResumo.urgency === "atencao"
@@ -2730,8 +2731,8 @@ const AnimalDetalhe = () => {
                   variant="outline"
                   className={
                     maleReproductiveStatus === "apto"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-amber-200 bg-amber-50 text-amber-800"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
+                      : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
                   }
                 >
                   {getMaleReproductiveStatusLabel(maleReproductiveStatus) ??
@@ -2748,7 +2749,7 @@ const AnimalDetalhe = () => {
                   variant="outline"
                   className={
                     isBreedingMale
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
                       : "border-border bg-background/80 text-foreground"
                   }
                 >
@@ -3166,7 +3167,9 @@ const AnimalDetalhe = () => {
                     <div className="flex items-center justify-between border-b pb-2 border-border/40">
                       <span className={cn(
                         "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                        isCompra ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-blue-200 bg-blue-50 text-blue-800"
+                        isCompra
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
+                          : "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200",
                       )}>
                         {com.operation_type}
                       </span>
@@ -3363,7 +3366,7 @@ const AnimalDetalhe = () => {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
               Histórico anterior não registra execução da fazenda. Histórico
               anterior não movimenta estoque. Declaração sem documento pode não
               liberar pendências críticas.
@@ -3569,10 +3572,13 @@ const AnimalDetalhe = () => {
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-900">
+            <DialogTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
               <AlertTriangle className="h-5 w-5" />
               Abrir suspeita sanitaria para {animal.identificacao}
             </DialogTitle>
+            <DialogDescription>
+              Registre uma suspeita oficial ou clínica para este animal.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -3660,8 +3666,8 @@ const AnimalDetalhe = () => {
             </div>
 
             {selectedOfficialDiseaseSignals.length > 0 ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
-                <p className="text-sm font-medium text-amber-950">
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
+                <p className="text-sm font-medium text-amber-950 dark:text-amber-200">
                   Sinais oficiais de alerta
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -3679,11 +3685,11 @@ const AnimalDetalhe = () => {
             ) : null}
 
             {selectedOfficialDiseaseActions.length > 0 ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
-                <p className="text-sm font-medium text-amber-950">
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
+                <p className="text-sm font-medium text-amber-950 dark:text-amber-200">
                   Passos imediatos recomendados
                 </p>
-                <ul className="mt-2 space-y-1 text-sm text-amber-900">
+                <ul className="mt-2 space-y-1 text-sm text-amber-900 dark:text-amber-200">
                   {selectedOfficialDiseaseActions.map((action) => (
                     <li key={action}>- {action}</li>
                   ))}
@@ -3749,10 +3755,13 @@ const AnimalDetalhe = () => {
       >
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-900">
+            <DialogTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
               <AlertTriangle className="h-5 w-5" />
               Encerrar suspeita sanitaria
             </DialogTitle>
+            <DialogDescription>
+              Conclua o desfecho da ocorrência sanitária ativa.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">

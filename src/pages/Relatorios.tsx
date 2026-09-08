@@ -398,7 +398,7 @@ const Relatorios = () => {
               value={preset}
               onValueChange={(value) => setPreset(value as ReportPreset)}
             >
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]" aria-label="Selecionar período do relatório">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
