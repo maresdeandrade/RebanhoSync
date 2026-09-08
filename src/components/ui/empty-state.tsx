@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
-  icon: LucideIcon;
+  icon?: LucideIcon;
   title: string;
   description?: string;
   action?: {
@@ -30,7 +30,7 @@ export function EmptyState({
       )}
       {...props}
     >
-      <Icon className="mb-4 h-12 w-12 text-muted-foreground" />
+      {Icon ? <Icon className="mb-4 h-12 w-12 text-muted-foreground" /> : null}
       <h3 className="mb-2 text-lg font-semibold text-foreground">{title}</h3>
       {description ? (
         <p className="mb-4 max-w-sm text-sm leading-6 text-muted-foreground">

@@ -13,14 +13,16 @@ import {
   Upload,
 } from "lucide-react";
 
-import { EmptyState } from "@/components/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
 import { AnimalDemographicsCard } from "@/components/animals/AnimalDemographicsCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PageIntro } from "@/components/ui/page-intro";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionHeader } from "@/components/ui/section-header";
 import {
   Pagination,
   PaginationContent,
@@ -930,8 +932,8 @@ export default function Animais() {
 
   if (!animais || (animais.length === 0 && !hasFilters)) {
     return (
-      <div className="space-y-5">
-        <PageIntro
+      <PageContainer width="standard" className="space-y-6">
+        <PageHeader
           variant="plain"
           title="Animais"
           description="Lista operacional do rebanho, com filtros compactos e proximo evento em destaque."
@@ -956,18 +958,19 @@ export default function Animais() {
         <EmptyState
           icon={PawPrint}
           title="Nenhum animal cadastrado"
+          description="Cadastre animais individualmente ou importe uma planilha para iniciar o controle do rebanho."
           action={{
             label: "Cadastrar primeiro animal",
             onClick: () => navigate("/animais/novo"),
           }}
         />
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
-      <PageIntro
+    <PageContainer width="standard" className="space-y-6">
+      <PageHeader
         variant="plain"
         title="Animais"
         description="Lista operacional do rebanho, com filtros compactos e proximo evento em destaque."
@@ -1273,14 +1276,18 @@ export default function Animais() {
         </Card>
       ) : null}
 
-      <Card className="overflow-hidden border-transparent bg-transparent shadow-none">
-        <CardContent className="p-0">
-          <div className="mb-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
-            <span>Ultimo peso observado</span>
-            <span>GMD qualificado</span>
-            <span>Proximo evento</span>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <section aria-label="Rebanho listado" className="space-y-3">
+        <SectionHeader
+          level={2}
+          title="Rebanho listado"
+          description="Visao individualizada dos animais com peso, ganho e compromissos operacionais"
+        />
+        <div className="mb-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
+          <span>Ultimo peso observado</span>
+          <span>GMD qualificado</span>
+          <span>Proximo evento</span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {visibleAnimalRows.map(({ animal, depth }) => {
               const taxonomy = taxonomyByAnimal.get(animal.id);
               const categoriaLabel = taxonomy?.display.categoria ?? null;
@@ -1577,8 +1584,7 @@ export default function Animais() {
               </Pagination>
             </div>
           ) : null}
-        </CardContent>
-      </Card>
-    </div>
+      </section>
+    </PageContainer>
   );
 }

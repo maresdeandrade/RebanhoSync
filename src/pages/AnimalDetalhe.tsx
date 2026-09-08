@@ -58,7 +58,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageIntro } from "@/components/ui/page-intro";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageContainer } from "@/components/layout/PageContainer";
 import {
   Dialog,
   DialogContent,
@@ -1699,8 +1700,8 @@ const AnimalDetalhe = () => {
 
   if (animal === null) {
     return (
-      <div className="space-y-5">
-        <PageIntro
+      <PageContainer width="standard" className="space-y-6">
+        <PageHeader
           variant="plain"
           eyebrow="Rebanho"
           title="Animal não encontrado"
@@ -1711,7 +1712,7 @@ const AnimalDetalhe = () => {
             </Button>
           }
         />
-      </div>
+      </PageContainer>
     );
   }
 
@@ -1727,7 +1728,7 @@ const AnimalDetalhe = () => {
     clinicalCaseClosureNotesLength <= 1000;
 
   return (
-    <div className="space-y-5">
+    <PageContainer width="standard" className="space-y-6">
       <div className="rounded-xl border border-border/70 bg-card p-4 shadow-none">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
           <div className="flex items-start gap-3 sm:gap-4">
@@ -3913,7 +3914,7 @@ const AnimalDetalhe = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   );
 };
 

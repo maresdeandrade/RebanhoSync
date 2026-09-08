@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 
-import { EmptyState } from "@/components/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
@@ -17,7 +17,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PageIntro } from "@/components/ui/page-intro";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PageHeader } from "@/components/ui/page-header";
+import { MetricCard } from "@/components/ui/metric-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   buildSanitaryItemLimitationPresentationV2,
@@ -152,8 +154,8 @@ export default function SanitarioCatalogoV2() {
   }, [catalog, selectedProtocol]);
 
   return (
-    <div className="container mx-auto space-y-5 pb-10">
-      <PageIntro
+    <PageContainer width="standard" className="space-y-6 pb-12">
+      <PageHeader
         eyebrow="Sanitário"
         title="Catálogo sanitário v2"
         description="Consulta local/offline dos Protocolos Sanitários v2 importados. Esta superfície é somente leitura."
@@ -428,21 +430,12 @@ export default function SanitarioCatalogoV2() {
           )}
         </>
       ) : null}
-    </div>
+    </PageContainer>
   );
 }
 
 function Metric({ label, value }: { label: string; value: number | string }) {
-  return (
-    <Card>
-      <CardContent className="space-y-1 p-4">
-        <div className="text-xs font-medium uppercase text-muted-foreground">
-          {label}
-        </div>
-        <div className="text-2xl font-semibold text-foreground">{value}</div>
-      </CardContent>
-    </Card>
-  );
+  return <MetricCard label={label} value={value} />;
 }
 
 function Detail({

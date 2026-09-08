@@ -2,9 +2,11 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Beef, Layers, Plus, Upload } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { EmptyState } from "@/components/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { PageIntro } from "@/components/ui/page-intro";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionHeader } from "@/components/ui/section-header";
+import { MetricCard } from "@/components/ui/metric-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/offline/db";
@@ -103,8 +105,8 @@ const Lotes = () => {
   const comPasto = lotes?.filter((lote) => Boolean(lote.pasto_id)).length ?? 0;
 
   return (
-    <PageContainer width="standard" className="space-y-5">
-      <PageIntro
+    <PageContainer width="standard" className="space-y-6">
+      <PageHeader
         variant="plain"
         title="Lotes"
         description="Estado atual dos agrupamentos do rebanho. Movimentacoes e manejos executados ficam no historico do lote."
@@ -116,12 +118,12 @@ const Lotes = () => {
         }
         actions={
           <>
-            <Link to="/lotes/importar">
-              <Button variant="outline">
+            <Button asChild variant="outline">
+              <Link to="/lotes/importar">
                 <Upload className="mr-2 h-4 w-4" />
                 Importar planilha
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             <Button onClick={() => navigate("/lotes/novo")}>
               <Plus className="mr-2 h-4 w-4" />
               Novo lote
@@ -129,6 +131,32 @@ const Lotes = () => {
           </>
         }
       />
+
+      {lotes && lotes.length > 0 ? (
+        <section aria-label="Resumo dos lotes" className="grid gap-3 sm:grid-cols-3">
+          <MetricCard
+            label="Lotes ativos"
+            value={ativos}
+            hint={`De ${lotes.length} cadastrados`}
+            tone="success"
+            icon={<Layers className="h-4 w-4" />}
+          />
+          <MetricCard
+            label="Animais alocados"
+            value={typeof totalAnimais === "number" ? totalAnimais : "-"}
+            hint="Distribuidos nos lotes"
+            tone="default"
+            icon={<Beef className="h-4 w-4" />}
+          />
+          <MetricCard
+            label="Em pastejo"
+            value={comPasto}
+            hint={`De ${lotes.length} lotes com pasto`}
+            tone="info"
+            icon={<Layers className="h-4 w-4" />}
+          />
+        </section>
+      ) : null}
 
       {!lotes || lotes.length === 0 ? (
         <EmptyState
@@ -141,11 +169,18 @@ const Lotes = () => {
           }}
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {lotes.map((lote) => (
-            <LoteCard key={lote.id} lote={lote} />
-          ))}
-        </div>
+        <section aria-label="Agrupamentos de animais" className="space-y-3">
+          <SectionHeader
+            level={2}
+            title="Agrupamentos de animais"
+            description="Visao dos lotes com peso medio, pasto alocado e reprodutores vinculados"
+          />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {lotes.map((lote) => (
+              <LoteCard key={lote.id} lote={lote} />
+            ))}
+          </div>
+        </section>
       )}
     </PageContainer>
   );

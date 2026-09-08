@@ -45,7 +45,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PageIntro } from "@/components/ui/page-intro";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PageHeader } from "@/components/ui/page-header";
 import { SectionHeader } from "@/components/ui/section-header";
 import {
   Select,
@@ -661,8 +663,8 @@ const Financeiro = () => {
   };
 
   return (
-    <div className="space-y-5">
-      <PageIntro
+    <PageContainer width="standard" className="space-y-6 pb-12">
+      <PageHeader
         variant="plain"
         eyebrow="Ledger Gerencial Administrativo"
         title="Lançamentos Financeiros Gerenciais"
@@ -834,11 +836,11 @@ const Financeiro = () => {
         />
 
         {commercialRows.length === 0 ? (
-          <Card className="border-dashed shadow-none">
-            <CardContent className="p-6 text-sm text-muted-foreground">
-              Nenhuma operação comercial registrada.
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={Handshake}
+            title="Nenhuma operação comercial registrada."
+            description="Fatos comerciais não entram nos saldos sem lançamento financeiro vinculado."
+          />
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {commercialRows.map((row) => (
@@ -1025,17 +1027,11 @@ const Financeiro = () => {
 
       {/* Ledger Entries List */}
       {rows.length === 0 ? (
-        <Card className="shadow-none border-dashed">
-          <CardContent className="p-12 text-center text-muted-foreground">
-            <Receipt className="mx-auto mb-4 h-12 w-12 text-muted-foreground/60" />
-            <p className="font-medium text-base text-foreground">
-              Sem lançamentos gerenciais no filtro atual
-            </p>
-            <p className="text-sm mt-1">
-              Crie despesas e receitas usando o botão "Novo lançamento" acima.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Receipt}
+          title="Sem lançamentos gerenciais no filtro atual"
+          description='Crie despesas e receitas usando o botão "Novo lançamento" acima.'
+        />
       ) : (
         <div className="space-y-3">
           {rows.map((row) => (
@@ -1594,7 +1590,7 @@ const Financeiro = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 };
 

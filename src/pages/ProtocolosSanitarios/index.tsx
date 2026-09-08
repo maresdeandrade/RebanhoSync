@@ -4,14 +4,15 @@ import { BookOpenCheck, CalendarClock, History, ShieldCheck } from "lucide-react
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
-import { EmptyState } from "@/components/EmptyState";
+import { EmptyState } from "@/components/ui/empty-state";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
 import { SanitaryCompliancePanelV2 } from "@/components/sanitario/SanitaryCompliancePanelV2";
 import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PageIntro } from "@/components/ui/page-intro";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Select,
   SelectContent,
@@ -206,8 +207,8 @@ const ProtocolosSanitarios = () => {
   };
 
   return (
-    <div className="container mx-auto space-y-5 pb-10">
-      <PageIntro
+    <PageContainer width="standard" className="space-y-6 pb-12">
+      <PageHeader
         eyebrow="Sanitário"
         title="Central Sanitária"
         description="Acompanhe planejamentos sanitários locais e consulte as fontes separadas de catálogo e histórico executado."
@@ -347,7 +348,7 @@ const ProtocolosSanitarios = () => {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageContainer>
   );
 };
 
