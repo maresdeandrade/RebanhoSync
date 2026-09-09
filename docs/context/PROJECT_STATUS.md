@@ -1,6 +1,6 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-09-08
+Atualizado em: 2026-09-09
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
@@ -9,7 +9,7 @@ Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
 Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**.
 Próxima fase de desenvolvimento: **Fase 22 — encerramento formal e baseline unificada U0 (Trilha C / Convergência Técnica concluída: C5=CLOSED, C6=CLOSED, C7=CLOSED, TECHNICAL_CONVERGENCE=CLOSED; F23 desbloqueada)**.
-Próximo incremento: Convergência técnica de performance concluída (C5 = CLOSED [148 FKs mapeadas; 92 unindexed advisor info classificados como NO_ACTION após análise de carga], C6 = CLOSED [1.939 queries de pg_stat_statements analisadas em janela de 43 dias sem spills ou gargalos em 17/17 domínios], C7 = CLOSED [306 índices distintos mapeados; 94 unused advisor info preservados para sync, soft-delete, constraints e FKs; zero drops arriscados]); TECHNICAL_CONVERGENCE = CLOSED; F23 = UNBLOCKED; B3 inalterado (gate de release).
+Próximo incremento: F23 V1 em revisão no PR #134 (motor puro de simulação de cenários, UI dedicada com badges OBSERVADO/PREMISSA/SIMULADO, CTA contextual no detalhe do animal direcionando para rota dedicada /animais/:id/simulacao, sem persistência e sem recomendações automatizadas); TECHNICAL_CONVERGENCE = CLOSED; F23_V1 = PR_READY_FOR_REVIEW; B3 = PLATFORM_BLOCKED / FAIL_CLOSED; F24 = NOT STARTED.
 
 ## Objetivo
 
@@ -22,6 +22,8 @@ O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é 
 ## Estado atual
 
 RebanhoSync está em beta interno, com arquitetura offline-first e isolamento multi-tenant por `fazenda_id`.
+
+A **Fase 23 — Simulação Produtiva e Comercial (F23 V1)** está implementada sobre o branch `feat/f23-productive-commercial-simulation` aguardando revisão e merge no PR #134 a partir da baseline unificada `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`. A entrega introduz o motor de cálculo puro `src/lib/simulation/productiveCommercialSimulation.ts` baseado na fórmula canônica `FATOS OBSERVADOS + PREMISSAS EXPLÍCITAS = CENÁRIO SIMULADO`. O motor reutiliza os contratos de pesagem (`observedWeightEvidence.ts`, `latestObservedWeight.ts`, `gmdCalculation.ts`), o contrato de conversão comercial (`commercialPricing.ts`), assegura distinção estrita entre GMD factual observado e GMD assumido projetado, trata ausência de custos como cobertura parcial/não informada (nunca custo zero), calcula margem parcial simulada e break-even do cenário, e compara Vender Agora × Manter estritamente por deltas numéricos sem emitir qualquer recomendação ou autorização operacional. A UI dedicada `ProductiveCommercialSimulator.tsx` organiza a visualização em blocos rotulados com badges `OBSERVADO`, `PREMISSA` e `SIMULADO`, acessada via CTA contextual no detalhe do animal (`AnimalSimulacaoCta`) direcionando para a rota dedicada `/animais/:id/simulacao`. O ciclo é estritamente efêmero (zero tabelas, zero stores no Dexie, zero operações de fila, zero Eventos/Agendas e zero migrations). Status: `TECHNICAL_CONVERGENCE = CLOSED`, `F23_V1 = PR_READY_FOR_REVIEW`, `B3 = PLATFORM_BLOCKED / FAIL_CLOSED`, `F24 = NOT STARTED`.
 
 A Trilha D (UX/UI Rebaseline 2.0) foi integralmente executada e formalmente encerrada sobre `main@c2300d01d7cd6d71dcf89829a1cb2945146b96bb` (PRs #122, #125, #126, #127 e #128). O ciclo consolidou D0 (auditoria 360°), D1 (tokens semânticos e theme contract), D2 (shell e layout unificado), D3 (componentes estruturais canônicos), D4 (redesign dirigido de 9 páginas), D5 (responsividade, dark mode e acessibilidade) e D6 (regressão visual sistemática com zero regressões e fechamento verification-only). A iniciativa visual está formalmente encerrada e o foco retorna às trilhas funcionais/técnicas do roadmap (Fase 22+). Quaisquer melhorias adicionais de UX devem ser tratadas como demandas novas e independentes.
 

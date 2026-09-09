@@ -1,0 +1,293 @@
+/** @vitest-environment jsdom */
+import "@testing-library/jest-dom";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { ProductiveCommercialSimulator } from "../ProductiveCommercialSimulator";
+import { useAnimalWeightPresentation } from "@/hooks/useAnimalWeightPresentation";
+
+vi.mock("@/hooks/useAnimalWeightPresentation");
+
+const mockedUseAnimalWeightPresentation = vi.mocked(useAnimalWeightPresentation);
+
+describe("ProductiveCommercialSimulator (UI component)", () => {
+  const mockAnimal = {
+    id: "animal-123",
+    brinco: "BR-99",
+    nome: "Estrela",
+    fazenda_id: "fazenda-456",
+    deleted_at: null,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedUseAnimalWeightPresentation.mockReturnValue({
+      evidence: {
+        status: "available",
+        scopedEventCount: 2,
+        observations: [],
+        conflicts: [],
+        limitations: [],
+        referenceTimestamp: Date.now(),
+      },
+      latestObservedWeight: {
+        status: "available",
+        value: {
+          animalId: "animal-123",
+          fazendaId: "fazenda-456",
+          weight: 420,
+          unit: "kg",
+          measuredAt: "2026-08-15T12:00:00.000Z",
+          eventId: "evt-weight-2",
+          ageDays: 10,
+          limitations: [],
+        },
+      },
+      gmd: {
+        status: "CALCULATED",
+        animalId: "animal-123",
+        fazendaId: "fazenda-456",
+        initialWeightKg: 380,
+        finalWeightKg: 420,
+        initialMeasuredAt: "2026-07-15T12:00:00.000Z",
+        finalMeasuredAt: "2026-08-15T12:00:00.000Z",
+        intervalDays: 31,
+        weightDeltaKg: 40,
+        gmdKgPerDay: 1.29,
+        reliability: "UNCLASSIFIED",
+        operationalUse: "NOT_AUTHORIZED",
+        universalMinInterval: "CONTEXT_DEPENDENT",
+        limitations: [],
+      },
+      observations: [],
+    });
+  });
+
+  it("inicia com default seguro (peso-alvo, preço e rendimento vazios) bloqueando projeção comercial até preenchimento explícito", () => {
+    render(
+      <ProductiveCommercialSimulator
+        animal={mockAnimal}
+        fazendaId="fazenda-456"
+      />,
+    );
+
+    // Inputs de premissas obrigatórias iniciam vazios por padrão de segurança
+    const yieldInput = screen.getByLabelText(/Rendimento de carcaça \(%\)/i) as HTMLInputElement;
+    expect(yieldInput.value).toBe("");
+
+    const targetInput = screen.getByLabelText(/Peso-alvo vivo \(kg\)/i) as HTMLInputElement;
+    expect(targetInput.value).toBe("");
+
+    const priceInput = screen.getByLabelText(/Preço por arroba \(R\$\)/i) as HTMLInputElement;
+    expect(priceInput.value).toBe("");
+
+    // O simulador deve informar bloqueio pedindo preenchimento explícito das premissas
+    expect(screen.getByText("Simulação Bloqueada")).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/Rendimento de carcaça obrigatório e deve estar entre 0 e 100%/i).length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText(/Peso-alvo inválido \(deve ser maior que zero\)/i).length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText(/Preço por arroba inválido \(deve ser maior que zero\)/i).length,
+    ).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renderiza badges e seções distintas para OBSERVADO, PREMISSA e SIMULADO após preencher premissas", () => {
+    render(
+      <ProductiveCommercialSimulator
+        animal={mockAnimal}
+        fazendaId="fazenda-456"
+      />,
+    );
+
+    // Preenche premissas obrigatórias
+    fireEvent.change(screen.getByLabelText(/Peso-alvo vivo \(kg\)/i), { target: { value: "520" } });
+    fireEvent.change(screen.getByLabelText(/Preço por arroba \(R\$\)/i), { target: { value: "300" } });
+    fireEvent.change(screen.getByLabelText(/Rendimento de carcaça \(%\)/i), { target: { value: "50" } });
+
+    // Badges presentes e visíveis
+    expect(screen.getByText("OBSERVADO")).toBeInTheDocument();
+    expect(screen.getByText("PREMISSA")).toBeInTheDocument();
+    expect(screen.getAllByText("SIMULADO").length).toBeGreaterThanOrEqual(2);
+
+    // Factual: peso observado exibido
+    expect(screen.getAllByText("420,0 kg").length).toBeGreaterThanOrEqual(1);
+
+    // Simulado: ganho e dias calculados
+    expect(screen.getByText("Tempo estimado no cenário")).toBeInTheDocument();
+    expect(screen.getByText("Receita bruta simulada")).toBeInTheDocument();
+  });
+
+  it("garante que GMD factual observado é distinto do GMD assumido no formulário", () => {
+    render(
+      <ProductiveCommercialSimulator
+        animal={mockAnimal}
+        fazendaId="fazenda-456"
+      />,
+    );
+
+    // GMD factual exibido na seção factual
+    expect(screen.getByText("1,290 kg/dia")).toBeInTheDocument();
+
+    // Input de GMD assumido na seção de premissas é editável e preenchido com a sugestão factual
+    const gmdInput = screen.getByLabelText(/GMD assumido no cenário/i) as HTMLInputElement;
+    expect(gmdInput).toBeInTheDocument();
+    expect(gmdInput.value).toBe("1.29");
+  });
+
+  it("permite edição das premissas e recalcula a projeção dinamicamente", () => {
+    render(
+      <ProductiveCommercialSimulator
+        animal={mockAnimal}
+        fazendaId="fazenda-456"
+      />,
+    );
+
+    // Preenche premissas obrigatórias
+    fireEvent.change(screen.getByLabelText(/Preço por arroba \(R\$\)/i), { target: { value: "300" } });
+    fireEvent.change(screen.getByLabelText(/Rendimento de carcaça \(%\)/i), { target: { value: "50" } });
+
+    const targetInput = screen.getByLabelText(/Peso-alvo vivo \(kg\)/i);
+    const gmdInput = screen.getByLabelText(/GMD assumido no cenário/i);
+
+    // Altera peso-alvo para 620 kg (ganho necessário = 200 kg) e GMD para 2.0 kg/dia (dias = 100)
+    fireEvent.change(targetInput, { target: { value: "620" } });
+    fireEvent.change(gmdInput, { target: { value: "2.0" } });
+
+    // Ganho necessário esperado: 200 kg
+    expect(screen.getByText("200,0 kg")).toBeInTheDocument();
+    // Tempo estimado esperado: 100 dias
+    expect(screen.getByText("100 dias")).toBeInTheDocument();
+  });
+
+  it("custo ausente não aparece como zero e exibe cobertura adequada", () => {
+    render(
+      <ProductiveCommercialSimulator
+        animal={mockAnimal}
+        fazendaId="fazenda-456"
+      />,
+    );
+
+    // Preenche premissas obrigatórias para habilitar cálculo
+    fireEvent.change(screen.getByLabelText(/Peso-alvo vivo \(kg\)/i), { target: { value: "520" } });
+    fireEvent.change(screen.getByLabelText(/Preço por arroba \(R\$\)/i), { target: { value: "300" } });
+    fireEvent.change(screen.getByLabelText(/Rendimento de carcaça \(%\)/i), { target: { value: "50" } });
+
+    // Com inputs de custos vazios por padrão
+    expect(screen.getByText("Não informados")).toBeInTheDocument();
+    expect(screen.getByText("Indisponível sem cobertura completa")).toBeInTheDocument();
+
+    // Preenche apenas o custo diário (5.00), deixando custos adicionais ausentes
+    const dailyCostInput = screen.getByLabelText(/Custo diário incremental/i);
+    fireEvent.change(dailyCostInput, { target: { value: "5.00" } });
+
+    // Agora cobertura continua Parcial, e limitação explícita declarada
+    expect(screen.getByText("Parcial")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Custos ausentes não foram assumidos como zero/i),
+    ).toBeInTheDocument();
+  });
+
+  it("não emite nenhuma recomendação comercial ou de abate", () => {
+    render(
+      <ProductiveCommercialSimulator
+        animal={mockAnimal}
+        fazendaId="fazenda-456"
+      />,
+    );
+
+    const content = document.body.textContent?.toLowerCase() ?? "";
+
+    expect(content).not.toContain("recomendamos");
+    expect(content).not.toContain("melhor vender");
+    expect(content).not.toContain("melhor manter");
+    expect(content).not.toContain("deve abater");
+    expect(content).not.toContain("deve vender");
+  });
+
+  it("bloqueia com aviso explícito quando o peso observado está indisponível", () => {
+    mockedUseAnimalWeightPresentation.mockReturnValue({
+      evidence: {
+        status: "available",
+        scopedEventCount: 0,
+        observations: [],
+        conflicts: [],
+        limitations: [],
+        referenceTimestamp: Date.now(),
+      },
+      latestObservedWeight: {
+        status: "unavailable",
+        reason: "NO_OBSERVATION",
+        limitations: [],
+      },
+      gmd: {
+        status: "NOT_CALCULATED",
+        reason: "INSUFFICIENT_OBSERVATIONS",
+        source: {
+          status: "INSUFFICIENT_OBSERVATIONS",
+          observedCount: 0,
+          requiredCount: 2,
+          limitations: [],
+        },
+      },
+      observations: [],
+    });
+
+    render(
+      <ProductiveCommercialSimulator
+        animal={mockAnimal}
+        fazendaId="fazenda-456"
+      />,
+    );
+
+    expect(screen.getByText("Simulação Bloqueada")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Peso observado indisponível ou inválido.").length,
+    ).toBeGreaterThanOrEqual(1);
+  });
+
+  it("apresenta o comparativo com semântica estritamente simulada, sem rotular Venda Agora como Fato Observado nem usar termo líquido", () => {
+    render(
+      <ProductiveCommercialSimulator
+        animal={mockAnimal}
+        fazendaId="fazenda-456"
+      />,
+    );
+
+    // Preenche premissas obrigatórias e custos para ativar o comparativo
+    fireEvent.change(screen.getByLabelText(/Peso-alvo vivo \(kg\)/i), { target: { value: "520" } });
+    fireEvent.change(screen.getByLabelText(/Preço por arroba \(R\$\)/i), { target: { value: "300" } });
+    fireEvent.change(screen.getByLabelText(/Rendimento de carcaça \(%\)/i), { target: { value: "50" } });
+    fireEvent.change(screen.getByLabelText(/Custo diário incremental/i), { target: { value: "5.00" } });
+    fireEvent.change(screen.getByLabelText(/Custos adicionais pontuais/i), { target: { value: "50.00" } });
+
+    // [ ] card Venda Agora não é rotulado como Fato Observado
+    expect(screen.queryByText("Fato Observado")).not.toBeInTheDocument();
+    expect(screen.getByText("PESO OBSERVADO + PREMISSAS")).toBeInTheDocument();
+
+    // [ ] peso continua explicitamente identificado como observado
+    expect(screen.getByText("Peso vivo observado:")).toBeInTheDocument();
+
+    // [ ] comparação permanece SIMULADA
+    expect(screen.getByText("Comparação: Vender Agora × Manter até Alvo")).toBeInTheDocument();
+    expect(screen.getAllByText("SIMULADO").length).toBeGreaterThanOrEqual(2);
+
+    // [ ] nenhum termo "líquido" ou "lucro" é usado para resultado parcial
+    const content = document.body.textContent?.toLowerCase() ?? "";
+    expect(content).not.toContain("líquid");
+    expect(content).not.toContain("liquid");
+    expect(content).not.toContain("lucro");
+    expect(content).not.toContain("resultado real");
+
+    // [ ] rótulo de diferença parcial após custos informados está presente
+    expect(screen.getByText("Diferença parcial após custos informados:")).toBeInTheDocument();
+
+    // [ ] nenhuma recomendação automática existe
+    expect(content).not.toContain("recomendamos");
+    expect(content).not.toContain("melhor vender");
+    expect(content).not.toContain("melhor manter");
+    expect(content).not.toContain("deve abater");
+    expect(content).not.toContain("deve vender");
+  });
+});

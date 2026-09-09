@@ -36,6 +36,7 @@ import {
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
 import { AnimalWeightVariationBadge } from "@/components/animals/AnimalWeightVariationBadge";
+import { AnimalSimulacaoCta } from "@/features/productiveSimulation/AnimalSimulacaoCta";
 import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
 import { MoverAnimalLote } from "@/components/manejo/MoverAnimalLote";
 import {
@@ -3927,4 +3928,21 @@ const AnimalDetalhe = () => {
   );
 };
 
-export default AnimalDetalhe;
+function AnimalDetalhePage() {
+  const { id } = useParams<{ id: string }>();
+  return (
+    <>
+      <AnimalDetalhe />
+      {id && (
+        <div className="fixed bottom-6 right-6 z-40 shadow-lg rounded-md">
+          <AnimalSimulacaoCta
+            animalId={id}
+            className="bg-background hover:bg-muted border-primary/50 text-foreground font-medium shadow-md"
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+export default AnimalDetalhePage;
