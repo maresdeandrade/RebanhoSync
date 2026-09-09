@@ -109,41 +109,50 @@ function validateFactualInputs(factual: ProductiveCommercialSimulationFactualInp
   return issues;
 }
 
-function validateTargetAndGmd(targetWeightKg: number, assumedGmdKgDay: number): string[] {
-  const issues: string[] = [];
-  if (typeof targetWeightKg !== "number" || !Number.isFinite(targetWeightKg) || targetWeightKg <= 0) {
-    issues.push("Peso-alvo inválido (deve ser maior que zero).");
+function validateTargetWeight(weight: number): string | null {
+  if (typeof weight !== "number" || !Number.isFinite(weight) || weight <= 0) {
+    return "Peso-alvo inválido (deve ser maior que zero).";
   }
-  if (typeof assumedGmdKgDay !== "number" || !Number.isFinite(assumedGmdKgDay) || assumedGmdKgDay <= 0) {
-    issues.push("GMD do cenário deve ser maior que zero.");
-  }
-  return issues;
+  return null;
 }
 
-function validatePriceAndBasis(
-  pricePerArroba: number,
-  arrobaBasis: CommercialArrobaBasis,
-  carcassYieldPercent: number | null | undefined,
-): string[] {
-  const issues: string[] = [];
-  if (typeof pricePerArroba !== "number" || !Number.isFinite(pricePerArroba) || pricePerArroba <= 0) {
-    issues.push("Preço por arroba inválido (deve ser maior que zero).");
+function validateAssumedGmd(gmd: number): string | null {
+  if (typeof gmd !== "number" || !Number.isFinite(gmd) || gmd <= 0) {
+    return "GMD do cenário deve ser maior que zero.";
   }
-  if (arrobaBasis !== "carcass_weight" && arrobaBasis !== "live_weight_yield") {
-    issues.push("Base de cálculo da arroba inválida.");
-  } else if (arrobaBasis === "live_weight_yield") {
-    if (carcassYieldPercent == null || !Number.isFinite(carcassYieldPercent) || carcassYieldPercent <= 0 || carcassYieldPercent > 100) {
-      issues.push("Rendimento de carcaça obrigatório e deve estar entre 0 e 100% para a base informada.");
-    }
+  return null;
+}
+
+function validatePricePerArroba(price: number): string | null {
+  if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) {
+    return "Preço por arroba inválido (deve ser maior que zero).";
   }
-  return issues;
+  return null;
+}
+
+function validateArrobaBasis(
+  basis: CommercialArrobaBasis,
+  yieldPercent: number | null | undefined,
+): string | null {
+  if (basis === "carcass_weight") return null;
+  if (basis !== "live_weight_yield") return "Base de cálculo da arroba inválida.";
+  if (yieldPercent == null || !Number.isFinite(yieldPercent) || yieldPercent <= 0 || yieldPercent > 100) {
+    return "Rendimento de carcaça obrigatório e deve estar entre 0 e 100% para a base informada.";
+  }
+  return null;
 }
 
 function validateAssumptionsInputs(assumptions: ProductiveCommercialSimulationAssumptionsInput): string[] {
-  return [
-    ...validateTargetAndGmd(assumptions.targetWeightKg, assumptions.assumedGmdKgDay),
-    ...validatePriceAndBasis(assumptions.pricePerArroba, assumptions.arrobaBasis, assumptions.carcassYieldPercent),
-  ];
+  const issues: string[] = [];
+  const targetIssue = validateTargetWeight(assumptions.targetWeightKg);
+  if (targetIssue) issues.push(targetIssue);
+  const gmdIssue = validateAssumedGmd(assumptions.assumedGmdKgDay);
+  if (gmdIssue) issues.push(gmdIssue);
+  const priceIssue = validatePricePerArroba(assumptions.pricePerArroba);
+  if (priceIssue) issues.push(priceIssue);
+  const basisIssue = validateArrobaBasis(assumptions.arrobaBasis, assumptions.carcassYieldPercent);
+  if (basisIssue) issues.push(basisIssue);
+  return issues;
 }
 
 function calculateProductive(
