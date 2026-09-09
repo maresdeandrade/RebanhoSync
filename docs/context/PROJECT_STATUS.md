@@ -8,8 +8,8 @@ Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
 Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**.
-Próxima fase de desenvolvimento: **Fase 22 — encerramento formal e baseline unificada U0 (Trilha C: C4.1a implementado, C4 parcial)**.
-Próximo incremento: C4.1a concluído (3 de 23 grupos resolvidos em LOCAL e STAGING: 23 → 20; 120 policies ativas com 100% paridade); C4 = PARTIAL (20 grupos restantes); B3 e F23 inalterados.
+Próxima fase de desenvolvimento: **Fase 22 — encerramento formal e baseline unificada U0 (Trilha C: C4.1b implementado, C4 parcial)**.
+Próximo incremento: C4.1b concluído (14 de 20 grupos resolvidos em LOCAL e STAGING: 20 → 6; 148 policies ativas com 100% paridade); C4 = PARTIAL (6 grupos restantes: 2 legacy/no-grant, 1 intentional, 3 sanitario_v2); B3 e F23 inalterados.
 
 ## Objetivo
 
@@ -129,7 +129,7 @@ Estado dos subitens:
 - Admin Track: A1.1 + A2 + A2.1 + A4 operacionais em staging; provisionamento e smoke de SuperAdmin validados; produção pendente.
 - F16 Financeiro: migration aplicada em staging; produção pendente.
 - B4 Movimentação: `eventos_movimentacao` integrado em `STANDARD_EVENT_DETAIL_REMOTE_TABLES`; convergência automatizada e round-trip remoto A → staging → B, incluindo clean install, comprovados (`REMOTE_CONVERGENCE_VERIFIED`); gate técnico da F22C desbloqueado, sem iniciar a F22C.
-- Trilha C (Hardening Banco / Advisor): C0 (Inventário Autoritativo), C1 (Hardening SECURITY DEFINER & EXECUTE), C2 (Search Path & Auth Hardening) e C3 (auth_rls_initplan: 8 → 0 em LOCAL e STAGING com 114/114 policies e paridade comprovada) concluídos. C4_INVENTORY = CLOSED; C4_1A_EXACT_REDUNDANCIES = IMPLEMENTED (agenda_itens, animais, sanitario_casos: remoção de FOR ALL redundante sobre SELECT; grupos normalizados 23 → 20 em LOCAL e STAGING; 120/120 policies idênticas); C4 = PARTIAL (3 de 23 grupos resolvidos; 20 restantes); C5 (FK/index review), C6 (workload evidence) e C7 (unused indexes) bloqueadas em sequência.
+- Trilha C (Hardening Banco / Advisor): C0 (Inventário Autoritativo), C1 (Hardening SECURITY DEFINER & EXECUTE), C2 (Search Path & Auth Hardening), C3 (auth_rls_initplan: 8 → 0) e C4.1a (REDUNDANT_EXACT: 23 → 20) concluídos. C4_INVENTORY = CLOSED; C4_1A = CLOSED; C4_1B = IMPLEMENTED (14 tabelas operacionais: remoção de FOR ALL manager redundante sobre SELECT member comprovada por role_in_fazenda => has_membership; grupos normalizados 23 → 20 → 6 em LOCAL e STAGING; 148/148 policies idênticas); C4 = PARTIAL (6 grupos restantes: 2 legacy/no-grant [animais_sociedade_deprecated_20260529, categorias_zootecnicas], 1 intentional [insumo_movimentacoes:INSERT], 3 sanitario_v2 review [sanitario_fontes_tecnicas_v2, sanitario_protocolo_itens_versions_v2, sanitario_protocolos_v2]); C5 (FK/index review), C6 (workload evidence) e C7 (unused indexes) bloqueadas em sequência.
 - Produção: não alterada (100% preservada).
 
 - B3 Sync Sanitário v2:
@@ -157,7 +157,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-A Fase 22 está formalmente encerrada (**CLOSED**): F22A adotada canonicamente na Home (GMD observado sem ranking, `reliability = UNCLASSIFIED`, `operationalUse = NOT_AUTHORIZED`); F22B adotada via PR #123 com resultado econômico observado qualificado (`profit = NOT_DEMONSTRATED`, `completeAccounting = false`); F22C fechada com ocupação histórica, duração e performance observada factual. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`PLATFORM_BLOCKED`), mas não bloqueia desenvolvimento interno. Os ciclos C3 (auth_rls_initplan 8 → 0) e C4.1a (REDUNDANT_EXACT: 3 grupos resolvidos, normalized 23 → 20) foram concluídos. C4 permanece em andamento parcial (`C4 = PARTIAL`, 20 grupos restantes), seguido por F23 (Simulação Produtiva e Comercial) somente sobre a baseline unificada.
+A Fase 22 está formalmente encerrada (**CLOSED**): F22A adotada canonicamente na Home (GMD observado sem ranking, `reliability = UNCLASSIFIED`, `operationalUse = NOT_AUTHORIZED`); F22B adotada via PR #123 com resultado econômico observado qualificado (`profit = NOT_DEMONSTRATED`, `completeAccounting = false`); F22C fechada com ocupação histórica, duração e performance observada factual. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`PLATFORM_BLOCKED`), mas não bloqueia desenvolvimento interno. Os ciclos C3 (auth_rls_initplan 8 → 0), C4.1a (REDUNDANT_EXACT: 23 → 20) e C4.1b (REDUNDANT_SUBSUMED: 20 → 6) foram concluídos. C4 permanece em andamento parcial (`C4 = PARTIAL`, 6 grupos restantes), seguido por F23 (Simulação Produtiva e Comercial) somente sobre a baseline unificada.
 
 ## Fontes de detalhe
 
