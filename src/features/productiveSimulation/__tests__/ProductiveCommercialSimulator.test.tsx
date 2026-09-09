@@ -246,4 +246,48 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
       screen.getAllByText("Peso observado indisponível ou inválido.").length,
     ).toBeGreaterThanOrEqual(1);
   });
+
+  it("apresenta o comparativo com semântica estritamente simulada, sem rotular Venda Agora como Fato Observado nem usar termo líquido", () => {
+    render(
+      <ProductiveCommercialSimulator
+        animal={mockAnimal}
+        fazendaId="fazenda-456"
+      />,
+    );
+
+    // Preenche premissas obrigatórias e custos para ativar o comparativo
+    fireEvent.change(screen.getByLabelText(/Peso-alvo vivo \(kg\)/i), { target: { value: "520" } });
+    fireEvent.change(screen.getByLabelText(/Preço por arroba \(R\$\)/i), { target: { value: "300" } });
+    fireEvent.change(screen.getByLabelText(/Rendimento de carcaça \(%\)/i), { target: { value: "50" } });
+    fireEvent.change(screen.getByLabelText(/Custo diário incremental/i), { target: { value: "5.00" } });
+    fireEvent.change(screen.getByLabelText(/Custos adicionais pontuais/i), { target: { value: "50.00" } });
+
+    // [ ] card Venda Agora não é rotulado como Fato Observado
+    expect(screen.queryByText("Fato Observado")).not.toBeInTheDocument();
+    expect(screen.getByText("PESO OBSERVADO + PREMISSAS")).toBeInTheDocument();
+
+    // [ ] peso continua explicitamente identificado como observado
+    expect(screen.getByText("Peso vivo observado:")).toBeInTheDocument();
+
+    // [ ] comparação permanece SIMULADA
+    expect(screen.getByText("Comparação: Vender Agora × Manter até Alvo")).toBeInTheDocument();
+    expect(screen.getAllByText("SIMULADO").length).toBeGreaterThanOrEqual(2);
+
+    // [ ] nenhum termo "líquido" ou "lucro" é usado para resultado parcial
+    const content = document.body.textContent?.toLowerCase() ?? "";
+    expect(content).not.toContain("líquid");
+    expect(content).not.toContain("liquid");
+    expect(content).not.toContain("lucro");
+    expect(content).not.toContain("resultado real");
+
+    // [ ] rótulo de diferença parcial após custos informados está presente
+    expect(screen.getByText("Diferença parcial após custos informados:")).toBeInTheDocument();
+
+    // [ ] nenhuma recomendação automática existe
+    expect(content).not.toContain("recomendamos");
+    expect(content).not.toContain("melhor vender");
+    expect(content).not.toContain("melhor manter");
+    expect(content).not.toContain("deve abater");
+    expect(content).not.toContain("deve vender");
+  });
 });

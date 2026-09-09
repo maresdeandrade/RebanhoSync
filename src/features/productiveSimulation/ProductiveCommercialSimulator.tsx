@@ -554,7 +554,7 @@ function CommercialScenarioBlock({
         </div>
 
         <div className="rounded-md border p-2.5 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-200">
-          <strong>Aviso:</strong> Cálculo parcial com base apenas nos custos informados. Custos fixos da fazenda, mão de obra geral, aquisição de animais e carência não foram deduzidos. Nunca trate este valor como lucro líquido ou garantia financeira.
+          <strong>Aviso:</strong> Cálculo parcial com base apenas nos custos informados. Custos fixos da fazenda, mão de obra geral, aquisição de animais e carência não foram deduzidos. Nunca trate este valor como resultado financeiro fechado ou garantia.
         </div>
       </CardContent>
     </Card>
@@ -588,7 +588,7 @@ function ComparisonBlock({
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Cenário A • Venda Agora
               </span>
-              <Badge variant="secondary" className="text-[10px]">Fato Observado</Badge>
+              <Badge variant="outline" className="text-[10px]">PESO OBSERVADO + PREMISSAS</Badge>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
@@ -652,7 +652,7 @@ function ComparisonBlock({
               Diferença Numérica entre Cenários
             </span>
             <p className="text-muted-foreground mt-0.5">
-              Delta estritamente aritmético entre manter até o peso-alvo e vender nas condições atuais observadas.
+              Delta estritamente aritmético entre manter até o peso-alvo e vender com o peso observado e as premissas informadas.
             </p>
           </div>
           <div className="flex items-center gap-4 shrink-0">
@@ -665,7 +665,7 @@ function ComparisonBlock({
             </div>
             {comparison.difference.partialIncrementalResultDelta != null && (
               <div className="text-right border-l pl-4">
-                <span className="text-muted-foreground block text-[11px]">Diferença Parcial Líquida:</span>
+                <span className="text-muted-foreground block text-[11px]">Diferença parcial após custos informados:</span>
                 <span className="font-bold text-sm text-foreground">
                   {comparison.difference.partialIncrementalResultDelta >= 0 ? "+" : ""}
                   {formatCurrency(comparison.difference.partialIncrementalResultDelta)}

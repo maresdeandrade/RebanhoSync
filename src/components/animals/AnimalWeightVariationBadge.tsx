@@ -2,7 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import type { FarmWeightUnit } from "@/lib/farms/measurementConfig";
 import { formatWeight } from "@/lib/format/weight";
 
-
 type AnimalWeightVariationBadgeProps = {
   variationKg: number | null | undefined;
   weightUnit: FarmWeightUnit;
