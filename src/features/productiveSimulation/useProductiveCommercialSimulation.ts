@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import type { Animal } from "@/lib/offline/types";
 import { useAnimalWeightPresentation } from "@/hooks/useAnimalWeightPresentation";
 import {
@@ -25,18 +25,11 @@ function parseOptionalInputNumber(val: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function resolveInitialTargetWeight(observedWeightKg: number | null): string {
-  if (observedWeightKg != null && observedWeightKg > 0) {
-    return String(Math.round(observedWeightKg + 100));
-  }
-  return "500";
-}
-
-function resolveInitialAssumedGmd(factualGmdKgDay: number | null): string {
-  if (factualGmdKgDay != null && factualGmdKgDay > 0) {
+function resolveInitialAssumedGmd(factualGmdKgDay: number | null | undefined): string {
+  if (factualGmdKgDay != null && Number.isFinite(factualGmdKgDay) && factualGmdKgDay > 0) {
     return factualGmdKgDay.toFixed(2);
   }
-  return "1.00";
+  return "";
 }
 
 interface RawSimulationInputs {
@@ -99,13 +92,13 @@ export function useProductiveCommercialSimulation({
   const { observedWeightKg, observedAt, factualGmdKgDay, isWeightConflict } =
     resolvePresentationEvidence(weightPresentation);
 
-  const [targetWeightInput, setTargetWeightInput] = useState<string>(() =>
-    resolveInitialTargetWeight(observedWeightKg),
-  );
+  const userTouchedAssumedGmdRef = useRef<boolean>(false);
+
+  const [targetWeightInput, setTargetWeightInput] = useState<string>("");
   const [assumedGmdInput, setAssumedGmdInput] = useState<string>(() =>
     resolveInitialAssumedGmd(factualGmdKgDay),
   );
-  const [pricePerArrobaInput, setPricePerArrobaInput] = useState<string>("300.00");
+  const [pricePerArrobaInput, setPricePerArrobaInput] = useState<string>("");
   const [arrobaBasis, setArrobaBasis] = useState<CommercialArrobaBasis>("live_weight_yield");
   const [carcassYieldInput, setCarcassYieldInput] = useState<string>("");
   const [sellNowCarcassWeightInput, setSellNowCarcassWeightInput] = useState<string>("");
@@ -113,17 +106,26 @@ export function useProductiveCommercialSimulation({
   const [dailyCostInput, setDailyCostInput] = useState<string>("");
   const [additionalCostInput, setAdditionalCostInput] = useState<string>("");
 
-  useEffect(() => {
-    if (observedWeightKg != null && (!targetWeightInput || targetWeightInput === "500")) {
-      setTargetWeightInput(resolveInitialTargetWeight(observedWeightKg));
-    }
-  }, [observedWeightKg, targetWeightInput]);
+  const handleAssumedGmdChange = useCallback((val: string) => {
+    userTouchedAssumedGmdRef.current = true;
+    setAssumedGmdInput(val);
+  }, []);
 
   useEffect(() => {
-    if (factualGmdKgDay != null && factualGmdKgDay > 0 && (!assumedGmdInput || assumedGmdInput === "1.00")) {
-      setAssumedGmdInput(resolveInitialAssumedGmd(factualGmdKgDay));
+    if (
+      !userTouchedAssumedGmdRef.current &&
+      factualGmdKgDay != null &&
+      Number.isFinite(factualGmdKgDay) &&
+      factualGmdKgDay > 0
+    ) {
+      setAssumedGmdInput((current) => {
+        if (!userTouchedAssumedGmdRef.current && current === "") {
+          return factualGmdKgDay.toFixed(2);
+        }
+        return current;
+      });
     }
-  }, [factualGmdKgDay, assumedGmdInput]);
+  }, [factualGmdKgDay]);
 
   const inputs: RawSimulationInputs = useMemo(
     () => ({
@@ -179,7 +181,7 @@ export function useProductiveCommercialSimulation({
     inputs,
     setters: {
       setTargetWeightInput,
-      setAssumedGmdInput,
+      setAssumedGmdInput: handleAssumedGmdChange,
       setPricePerArrobaInput,
       setArrobaBasis,
       setCarcassYieldInput,

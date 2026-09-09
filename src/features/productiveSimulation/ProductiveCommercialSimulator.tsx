@@ -187,6 +187,7 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
               type="number"
               step="1"
               min="1"
+              placeholder="Ex: 500 (obrigatório)"
               value={props.targetWeightInput}
               onChange={(e) => props.setTargetWeightInput(e.target.value)}
               className="h-9"
@@ -205,6 +206,7 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
               type="number"
               step="0.05"
               min="0.01"
+              placeholder="Ex: 0.80 (obrigatório)"
               value={props.assumedGmdInput}
               onChange={(e) => props.setAssumedGmdInput(e.target.value)}
               className="h-9"
@@ -223,6 +225,7 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
               type="number"
               step="5"
               min="1"
+              placeholder="Ex: 300 (obrigatório)"
               value={props.pricePerArrobaInput}
               onChange={(e) => props.setPricePerArrobaInput(e.target.value)}
               className="h-9"

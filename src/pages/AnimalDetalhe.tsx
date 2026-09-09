@@ -35,7 +35,8 @@ import {
 } from "recharts";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
-import { AnimalWeightVariationBadge, AnimalSimulacaoCta } from "@/components/animals/AnimalWeightVariationBadge";
+import { AnimalWeightVariationBadge } from "@/components/animals/AnimalWeightVariationBadge";
+import { AnimalSimulacaoCta } from "@/features/productiveSimulation/AnimalSimulacaoCta";
 import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
 import { MoverAnimalLote } from "@/components/manejo/MoverAnimalLote";
 import {

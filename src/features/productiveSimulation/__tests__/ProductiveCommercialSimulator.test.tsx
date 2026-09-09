@@ -62,7 +62,7 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
     });
   });
 
-  it("inicia com default seguro (rendimento vazio) bloqueando projeção comercial até preenchimento explícito", () => {
+  it("inicia com default seguro (peso-alvo, preço e rendimento vazios) bloqueando projeção comercial até preenchimento explícito", () => {
     render(
       <ProductiveCommercialSimulator
         animal={mockAnimal}
@@ -70,14 +70,26 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
       />,
     );
 
-    // O input de rendimento de carcaça deve iniciar vazio por padrão de segurança
+    // Inputs de premissas obrigatórias iniciam vazios por padrão de segurança
     const yieldInput = screen.getByLabelText(/Rendimento de carcaça \(%\)/i) as HTMLInputElement;
     expect(yieldInput.value).toBe("");
 
-    // O simulador deve informar bloqueio pedindo rendimento explícito
+    const targetInput = screen.getByLabelText(/Peso-alvo vivo \(kg\)/i) as HTMLInputElement;
+    expect(targetInput.value).toBe("");
+
+    const priceInput = screen.getByLabelText(/Preço por arroba \(R\$\)/i) as HTMLInputElement;
+    expect(priceInput.value).toBe("");
+
+    // O simulador deve informar bloqueio pedindo preenchimento explícito das premissas
     expect(screen.getByText("Simulação Bloqueada")).toBeInTheDocument();
     expect(
       screen.getAllByText(/Rendimento de carcaça obrigatório e deve estar entre 0 e 100%/i).length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText(/Peso-alvo inválido \(deve ser maior que zero\)/i).length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText(/Preço por arroba inválido \(deve ser maior que zero\)/i).length,
     ).toBeGreaterThanOrEqual(1);
   });
 
@@ -89,9 +101,10 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
       />,
     );
 
-    // Preenche rendimento com 50%
-    const yieldInput = screen.getByLabelText(/Rendimento de carcaça \(%\)/i);
-    fireEvent.change(yieldInput, { target: { value: "50" } });
+    // Preenche premissas obrigatórias
+    fireEvent.change(screen.getByLabelText(/Peso-alvo vivo \(kg\)/i), { target: { value: "520" } });
+    fireEvent.change(screen.getByLabelText(/Preço por arroba \(R\$\)/i), { target: { value: "300" } });
+    fireEvent.change(screen.getByLabelText(/Rendimento de carcaça \(%\)/i), { target: { value: "50" } });
 
     // Badges presentes e visíveis
     expect(screen.getByText("OBSERVADO")).toBeInTheDocument();
@@ -117,7 +130,7 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
     // GMD factual exibido na seção factual
     expect(screen.getByText("1,290 kg/dia")).toBeInTheDocument();
 
-    // Input de GMD assumido na seção de premissas é editável
+    // Input de GMD assumido na seção de premissas é editável e preenchido com a sugestão factual
     const gmdInput = screen.getByLabelText(/GMD assumido no cenário/i) as HTMLInputElement;
     expect(gmdInput).toBeInTheDocument();
     expect(gmdInput.value).toBe("1.29");
@@ -131,8 +144,9 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
       />,
     );
 
-    const yieldInput = screen.getByLabelText(/Rendimento de carcaça \(%\)/i);
-    fireEvent.change(yieldInput, { target: { value: "50" } });
+    // Preenche premissas obrigatórias
+    fireEvent.change(screen.getByLabelText(/Preço por arroba \(R\$\)/i), { target: { value: "300" } });
+    fireEvent.change(screen.getByLabelText(/Rendimento de carcaça \(%\)/i), { target: { value: "50" } });
 
     const targetInput = screen.getByLabelText(/Peso-alvo vivo \(kg\)/i);
     const gmdInput = screen.getByLabelText(/GMD assumido no cenário/i);
@@ -155,8 +169,10 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
       />,
     );
 
-    const yieldInput = screen.getByLabelText(/Rendimento de carcaça \(%\)/i);
-    fireEvent.change(yieldInput, { target: { value: "50" } });
+    // Preenche premissas obrigatórias para habilitar cálculo
+    fireEvent.change(screen.getByLabelText(/Peso-alvo vivo \(kg\)/i), { target: { value: "520" } });
+    fireEvent.change(screen.getByLabelText(/Preço por arroba \(R\$\)/i), { target: { value: "300" } });
+    fireEvent.change(screen.getByLabelText(/Rendimento de carcaça \(%\)/i), { target: { value: "50" } });
 
     // Com inputs de custos vazios por padrão
     expect(screen.getByText("Não informados")).toBeInTheDocument();
