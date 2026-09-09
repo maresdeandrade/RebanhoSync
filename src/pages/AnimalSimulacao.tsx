@@ -22,11 +22,29 @@ export default function AnimalSimulacao() {
     [id, fazendaId],
   );
 
-  if (!fazendaId || !animal) {
+  if (!fazendaId || animal === undefined) {
     return (
       <PageContainer>
-        <div className="py-12 text-center text-muted-foreground">
+        <div className="py-12 text-center text-muted-foreground" data-testid="simulacao-loading">
           Carregando dados do animal...
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (animal === null) {
+    return (
+      <PageContainer>
+        <div className="py-12 text-center space-y-4" data-testid="simulacao-not-found">
+          <p className="text-muted-foreground">
+            Animal indisponível ou não encontrado nesta fazenda.
+          </p>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/animais">
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar para a lista de animais
+            </Link>
+          </Button>
         </div>
       </PageContainer>
     );

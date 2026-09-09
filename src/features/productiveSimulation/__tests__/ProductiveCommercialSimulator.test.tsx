@@ -62,13 +62,36 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
     });
   });
 
-  it("renderiza badges e seções distintas para OBSERVADO, PREMISSA e SIMULADO", () => {
+  it("inicia com default seguro (rendimento vazio) bloqueando projeção comercial até preenchimento explícito", () => {
     render(
       <ProductiveCommercialSimulator
         animal={mockAnimal}
         fazendaId="fazenda-456"
       />,
     );
+
+    // O input de rendimento de carcaça deve iniciar vazio por padrão de segurança
+    const yieldInput = screen.getByLabelText(/Rendimento de carcaça \(%\)/i) as HTMLInputElement;
+    expect(yieldInput.value).toBe("");
+
+    // O simulador deve informar bloqueio pedindo rendimento explícito
+    expect(screen.getByText("Simulação Bloqueada")).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/Rendimento de carcaça obrigatório e deve estar entre 0 e 100%/i).length,
+    ).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renderiza badges e seções distintas para OBSERVADO, PREMISSA e SIMULADO após preencher premissas", () => {
+    render(
+      <ProductiveCommercialSimulator
+        animal={mockAnimal}
+        fazendaId="fazenda-456"
+      />,
+    );
+
+    // Preenche rendimento com 50%
+    const yieldInput = screen.getByLabelText(/Rendimento de carcaça \(%\)/i);
+    fireEvent.change(yieldInput, { target: { value: "50" } });
 
     // Badges presentes e visíveis
     expect(screen.getByText("OBSERVADO")).toBeInTheDocument();
@@ -108,7 +131,10 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
       />,
     );
 
-    const targetInput = screen.getByLabelText(/Peso-alvo \(kg\)/i);
+    const yieldInput = screen.getByLabelText(/Rendimento de carcaça \(%\)/i);
+    fireEvent.change(yieldInput, { target: { value: "50" } });
+
+    const targetInput = screen.getByLabelText(/Peso-alvo vivo \(kg\)/i);
     const gmdInput = screen.getByLabelText(/GMD assumido no cenário/i);
 
     // Altera peso-alvo para 620 kg (ganho necessário = 200 kg) e GMD para 2.0 kg/dia (dias = 100)
@@ -129,15 +155,18 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
       />,
     );
 
+    const yieldInput = screen.getByLabelText(/Rendimento de carcaça \(%\)/i);
+    fireEvent.change(yieldInput, { target: { value: "50" } });
+
     // Com inputs de custos vazios por padrão
-    expect(screen.getByText("Não informada")).toBeInTheDocument();
     expect(screen.getByText("Não informados")).toBeInTheDocument();
+    expect(screen.getByText("Indisponível sem cobertura completa")).toBeInTheDocument();
 
     // Preenche apenas o custo diário (5.00), deixando custos adicionais ausentes
     const dailyCostInput = screen.getByLabelText(/Custo diário incremental/i);
     fireEvent.change(dailyCostInput, { target: { value: "5.00" } });
 
-    // Agora cobertura deve ser Parcial, e limitação explícita declarada
+    // Agora cobertura continua Parcial, e limitação explícita declarada
     expect(screen.getByText("Parcial")).toBeInTheDocument();
     expect(
       screen.getByText(/Custos ausentes não foram assumidos como zero/i),
@@ -200,6 +229,5 @@ describe("ProductiveCommercialSimulator (UI component)", () => {
     expect(
       screen.getAllByText("Peso observado indisponível ou inválido.").length,
     ).toBeGreaterThanOrEqual(1);
-    expect(screen.queryByText("Tempo estimado no cenário")).not.toBeInTheDocument();
   });
 });

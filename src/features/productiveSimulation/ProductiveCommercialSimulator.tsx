@@ -1,14 +1,13 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React from "react";
 import type { Animal } from "@/lib/offline/types";
-import { useAnimalWeightPresentation } from "@/hooks/useAnimalWeightPresentation";
 import {
-  calculateProductiveCommercialSimulation,
   type ProductiveCommercialSimulationResult,
   type ProductiveSimulationDerived,
   type CommercialSimulationDerived,
   type SimulationComparisonDerived,
 } from "@/lib/simulation/productiveCommercialSimulation";
 import type { CommercialArrobaBasis } from "@/lib/comercial/commercialPricing";
+import { useProductiveCommercialSimulation } from "./useProductiveCommercialSimulation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -140,22 +139,7 @@ function ObservedDataBlock({
   );
 }
 
-function AssumptionsBlock({
-  targetWeightInput,
-  setTargetWeightInput,
-  assumedGmdInput,
-  setAssumedGmdInput,
-  pricePerArrobaInput,
-  setPricePerArrobaInput,
-  arrobaBasis,
-  setArrobaBasis,
-  carcassYieldInput,
-  setCarcassYieldInput,
-  dailyCostInput,
-  setDailyCostInput,
-  additionalCostInput,
-  setAdditionalCostInput,
-}: {
+interface AssumptionsBlockProps {
   targetWeightInput: string;
   setTargetWeightInput: (v: string) => void;
   assumedGmdInput: string;
@@ -166,11 +150,17 @@ function AssumptionsBlock({
   setArrobaBasis: (v: CommercialArrobaBasis) => void;
   carcassYieldInput: string;
   setCarcassYieldInput: (v: string) => void;
+  sellNowCarcassWeightInput: string;
+  setSellNowCarcassWeightInput: (v: string) => void;
+  targetCarcassWeightInput: string;
+  setTargetCarcassWeightInput: (v: string) => void;
   dailyCostInput: string;
   setDailyCostInput: (v: string) => void;
   additionalCostInput: string;
   setAdditionalCostInput: (v: string) => void;
-}) {
+}
+
+function AssumptionsBlock(props: AssumptionsBlockProps) {
   return (
     <Card className="border-border/70 shadow-none">
       <CardHeader className="pb-3">
@@ -190,19 +180,19 @@ function AssumptionsBlock({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label htmlFor="targetWeightInput" className="text-xs font-semibold">
-              Peso-alvo (kg) *
+              Peso-alvo vivo (kg) *
             </Label>
             <Input
               id="targetWeightInput"
               type="number"
               step="1"
               min="1"
-              value={targetWeightInput}
-              onChange={(e) => setTargetWeightInput(e.target.value)}
+              value={props.targetWeightInput}
+              onChange={(e) => props.setTargetWeightInput(e.target.value)}
               className="h-9"
             />
             <span className="text-[11px] text-muted-foreground">
-              Peso final desejado para o cenário.
+              Peso vivo final desejado para a projeção biológica.
             </span>
           </div>
 
@@ -215,12 +205,12 @@ function AssumptionsBlock({
               type="number"
               step="0.05"
               min="0.01"
-              value={assumedGmdInput}
-              onChange={(e) => setAssumedGmdInput(e.target.value)}
+              value={props.assumedGmdInput}
+              onChange={(e) => props.setAssumedGmdInput(e.target.value)}
               className="h-9"
             />
             <span className="text-[11px] text-muted-foreground">
-              Sugerido pelo GMD factual, mas editável. O ganho histórico não garante ganho futuro.
+              Premissa editável. O ganho histórico não garante ganho futuro.
             </span>
           </div>
 
@@ -233,8 +223,8 @@ function AssumptionsBlock({
               type="number"
               step="5"
               min="1"
-              value={pricePerArrobaInput}
-              onChange={(e) => setPricePerArrobaInput(e.target.value)}
+              value={props.pricePerArrobaInput}
+              onChange={(e) => props.setPricePerArrobaInput(e.target.value)}
               className="h-9"
             />
             <span className="text-[11px] text-muted-foreground">
@@ -249,24 +239,24 @@ function AssumptionsBlock({
               Base de cálculo da arroba *
             </Label>
             <Select
-              value={arrobaBasis}
-              onValueChange={(val: CommercialArrobaBasis) => setArrobaBasis(val)}
+              value={props.arrobaBasis}
+              onValueChange={(val: CommercialArrobaBasis) => props.setArrobaBasis(val)}
             >
               <SelectTrigger id="arrobaBasisSelect" className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="carcass_weight">Peso de Carcaça (15 kg)</SelectItem>
-                <SelectItem value="live_weight_yield">Rendimento de Carcaça (%)</SelectItem>
+                <SelectItem value="live_weight_yield">Rendimento sobre peso vivo (%)</SelectItem>
+                <SelectItem value="carcass_weight">Pesos de carcaça diretos (15 kg/@)</SelectItem>
               </SelectContent>
             </Select>
             <span className="text-[11px] text-muted-foreground">
-              Regra de conversão entre kg vivo e arrobas comerciais.
+              Regra de conversão entre kg e arrobas comerciais.
             </span>
           </div>
 
-          {arrobaBasis === "live_weight_yield" ? (
-            <div className="space-y-1.5">
+          {props.arrobaBasis === "live_weight_yield" ? (
+            <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="carcassYieldInput" className="text-xs font-semibold">
                 Rendimento de carcaça (%) *
               </Label>
@@ -276,23 +266,59 @@ function AssumptionsBlock({
                 step="0.5"
                 min="1"
                 max="100"
-                value={carcassYieldInput}
-                onChange={(e) => setCarcassYieldInput(e.target.value)}
+                placeholder="Ex: 50 (obrigatório)"
+                value={props.carcassYieldInput}
+                onChange={(e) => props.setCarcassYieldInput(e.target.value)}
                 className="h-9"
               />
               <span className="text-[11px] text-muted-foreground">
-                Obrigatório para a base sobre peso vivo (ex: 50%).
+                Obrigatório para a base sobre peso vivo. Não possui default automático.
               </span>
             </div>
           ) : (
-            <div className="space-y-1.5 opacity-60">
-              <Label className="text-xs font-semibold">Rendimento de carcaça</Label>
-              <div className="h-9 flex items-center px-3 border rounded-md bg-muted/10 text-xs text-muted-foreground">
-                Não aplicável (fixo 15 kg/arroba)
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="sellNowCarcassWeightInput" className="text-xs font-semibold">
+                  Carcaça na venda agora (kg) *
+                </Label>
+                <Input
+                  id="sellNowCarcassWeightInput"
+                  type="number"
+                  step="0.5"
+                  min="1"
+                  placeholder="Ex: 210"
+                  value={props.sellNowCarcassWeightInput}
+                  onChange={(e) => props.setSellNowCarcassWeightInput(e.target.value)}
+                  className="h-9"
+                />
+                <span className="text-[11px] text-muted-foreground">
+                  Premissa de carcaça para a pesagem atual.
+                </span>
               </div>
-            </div>
-          )}
 
+              <div className="space-y-1.5">
+                <Label htmlFor="targetCarcassWeightInput" className="text-xs font-semibold">
+                  Carcaça no alvo pretendido (kg) *
+                </Label>
+                <Input
+                  id="targetCarcassWeightInput"
+                  type="number"
+                  step="0.5"
+                  min="1"
+                  placeholder="Ex: 260"
+                  value={props.targetCarcassWeightInput}
+                  onChange={(e) => props.setTargetCarcassWeightInput(e.target.value)}
+                  className="h-9"
+                />
+                <span className="text-[11px] text-muted-foreground">
+                  Premissa de carcaça projetada ao atingir o alvo.
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
           <div className="space-y-1.5">
             <Label htmlFor="dailyCostInput" className="text-xs font-semibold">
               Custo diário incremental (R$/dia)
@@ -303,17 +329,15 @@ function AssumptionsBlock({
               step="0.5"
               min="0"
               placeholder="Ex: 5.00 (opcional)"
-              value={dailyCostInput}
-              onChange={(e) => setDailyCostInput(e.target.value)}
+              value={props.dailyCostInput}
+              onChange={(e) => props.setDailyCostInput(e.target.value)}
               className="h-9"
             />
             <span className="text-[11px] text-muted-foreground">
               Custo de trato/nutrição incremental diário.
             </span>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
           <div className="space-y-1.5">
             <Label htmlFor="additionalCostInput" className="text-xs font-semibold">
               Custos adicionais pontuais (R$)
@@ -324,8 +348,8 @@ function AssumptionsBlock({
               step="10"
               min="0"
               placeholder="Ex: 50.00 (opcional)"
-              value={additionalCostInput}
-              onChange={(e) => setAdditionalCostInput(e.target.value)}
+              value={props.additionalCostInput}
+              onChange={(e) => props.setAdditionalCostInput(e.target.value)}
               className="h-9"
             />
             <span className="text-[11px] text-muted-foreground">
@@ -333,11 +357,11 @@ function AssumptionsBlock({
             </span>
           </div>
 
-          <div className="sm:col-span-2 flex items-center">
-            <div className="rounded-md border p-2.5 bg-muted/10 text-xs text-muted-foreground flex items-center gap-2">
+          <div className="flex items-center">
+            <div className="rounded-md border p-2.5 bg-muted/10 text-xs text-muted-foreground flex items-center gap-2 w-full">
               <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span>
-                <strong>Aviso sobre custos:</strong> Se algum componente de custo não for informado, a cobertura será parcial. Custos não preenchidos <em>nunca são assumidos como zero</em>.
+                <strong>Aviso sobre custos:</strong> Se algum custo for omitido, a cobertura será parcial. Custos não preenchidos <em>nunca são assumidos como zero</em>.
               </span>
             </div>
           </div>
@@ -428,16 +452,10 @@ function CommercialScenarioBlock({
   const coverageLabel =
     commercial.costCoverage === "COMPLETE"
       ? "Completa (informados)"
-      : commercial.costCoverage === "PARTIAL"
-      ? "Parcial"
-      : "Não informada";
+      : "Parcial";
 
   const coverageVariant =
-    commercial.costCoverage === "COMPLETE"
-      ? "default"
-      : commercial.costCoverage === "PARTIAL"
-      ? "secondary"
-      : "outline";
+    commercial.costCoverage === "COMPLETE" ? "default" : "secondary";
 
   return (
     <Card className="border-border/70 shadow-none">
@@ -469,7 +487,7 @@ function CommercialScenarioBlock({
               {formatNumber(commercial.targetArrobas, 2)} @
             </div>
             <span className="text-xs text-muted-foreground block mt-1">
-              Base: {arrobaBasis === "carcass_weight" ? "Carcaça (15kg)" : "Rend. vivo"}
+              Base: {arrobaBasis === "carcass_weight" ? "Carcaça direta (15kg)" : "Rend. vivo"}
             </span>
           </div>
 
@@ -493,11 +511,11 @@ function CommercialScenarioBlock({
               {formatCurrency(commercial.incrementalCost)}
             </div>
             <span className="text-xs text-muted-foreground block mt-1">
-              {commercial.costCoverage === "NONE"
+              {commercial.incrementalCost === null
                 ? "Não informados"
-                : commercial.costCoverage === "PARTIAL"
-                ? "Cobertura parcial"
-                : "Custos informados somados"}
+                : commercial.costCoverage === "COMPLETE"
+                ? "Custos informados somados"
+                : "Cobertura parcial"}
             </span>
           </div>
 
@@ -520,14 +538,14 @@ function CommercialScenarioBlock({
               Preço de equilíbrio do cenário (Break-even)
             </span>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Preço por arroba que igualaria os dois cenários considerando apenas as premissas e custos informados.
+              Preço por arroba que igualaria os dois cenários considerando apenas as premissas e custos completos informados.
             </p>
           </div>
           <div className="text-right shrink-0">
             <span className="text-xl font-black text-primary block">
               {commercial.breakEvenPricePerArroba != null
                 ? `${formatCurrency(commercial.breakEvenPricePerArroba)} / @`
-                : "Indisponível sem custos"}
+                : "Indisponível sem cobertura completa"}
             </span>
           </div>
         </div>
@@ -571,7 +589,7 @@ function ComparisonBlock({
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-muted-foreground">Peso considerado:</span>
+                <span className="text-muted-foreground">Peso vivo observado:</span>
                 <p className="font-semibold text-sm mt-0.5">{formatNumber(comparison.sellNow.weightKg, 1)} kg</p>
               </div>
               <div>
@@ -596,7 +614,7 @@ function ComparisonBlock({
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-muted-foreground">Peso considerado:</span>
+                <span className="text-muted-foreground">Peso vivo pretendido:</span>
                 <p className="font-semibold text-sm mt-0.5">{formatNumber(comparison.keepUntilTarget.targetWeightKg, 1)} kg</p>
               </div>
               <div>
@@ -681,18 +699,6 @@ function LimitationsBlock({ limitations }: { limitations: string[] }) {
   );
 }
 
-function parseInputNumber(val: string): number {
-  const norm = val.trim().replace(",", ".");
-  return norm === "" ? NaN : Number(norm);
-}
-
-function parseOptionalInputNumber(val: string): number | null {
-  const norm = val.trim().replace(",", ".");
-  if (norm === "") return null;
-  const n = Number(norm);
-  return Number.isFinite(n) ? n : null;
-}
-
 function SimulationActiveContent({
   simulation,
   observedWeightKg,
@@ -722,94 +728,18 @@ function SimulationActiveContent({
   );
 }
 
-// fallow-ignore-next-line complexity
 export function ProductiveCommercialSimulator({
   animal,
   fazendaId,
 }: ProductiveCommercialSimulatorProps) {
-  const weightPresentation = useAnimalWeightPresentation(animal, fazendaId);
-
-  const latestWeight =
-    weightPresentation?.latestObservedWeight?.status === "available"
-      ? weightPresentation.latestObservedWeight.value
-      : null;
-
-  const isWeightConflict =
-    weightPresentation?.latestObservedWeight?.status === "conflict";
-
-  const observedWeightKg = latestWeight?.weight ?? null;
-  const observedAt = latestWeight?.measuredAt ?? null;
-  const factualGmdKgDay =
-    weightPresentation?.gmd?.status === "CALCULATED"
-      ? weightPresentation.gmd.gmdKgPerDay
-      : null;
-
-  const [targetWeightInput, setTargetWeightInput] = useState<string>(() => {
-    return observedWeightKg != null && observedWeightKg > 0
-      ? String(Math.round(observedWeightKg + 100))
-      : "500";
-  });
-
-  const [assumedGmdInput, setAssumedGmdInput] = useState<string>(() => {
-    return factualGmdKgDay != null && factualGmdKgDay > 0
-      ? factualGmdKgDay.toFixed(2)
-      : "1.00";
-  });
-
-  const [pricePerArrobaInput, setPricePerArrobaInput] = useState<string>("300.00");
-  const [arrobaBasis, setArrobaBasis] = useState<CommercialArrobaBasis>("carcass_weight");
-  const [carcassYieldInput, setCarcassYieldInput] = useState<string>("50");
-  const [dailyCostInput, setDailyCostInput] = useState<string>("");
-  const [additionalCostInput, setAdditionalCostInput] = useState<string>("");
-
-  useEffect(() => {
-    if (observedWeightKg != null) {
-      setTargetWeightInput((prev) =>
-        !prev || prev === "500" ? String(Math.round(observedWeightKg + 100)) : prev,
-      );
-    }
-    if (factualGmdKgDay != null && factualGmdKgDay > 0) {
-      setAssumedGmdInput((prev) =>
-        !prev || prev === "1.00" ? factualGmdKgDay.toFixed(2) : prev,
-      );
-    }
-  }, [observedWeightKg, factualGmdKgDay]);
-
-  const simulation: ProductiveCommercialSimulationResult = useMemo(() => {
-    return calculateProductiveCommercialSimulation({
-      factual: {
-        animalId: animal.id,
-        fazendaId,
-        observedWeightKg: observedWeightKg ?? 0,
-        observedAt: observedAt ?? "",
-        factualGmdKgDay,
-        weightConflict: isWeightConflict,
-      },
-      assumptions: {
-        targetWeightKg: parseInputNumber(targetWeightInput),
-        assumedGmdKgDay: parseInputNumber(assumedGmdInput),
-        pricePerArroba: parseInputNumber(pricePerArrobaInput),
-        arrobaBasis,
-        carcassYieldPercent: parseOptionalInputNumber(carcassYieldInput),
-        dailyIncrementalCost: parseOptionalInputNumber(dailyCostInput),
-        additionalIncrementalCosts: parseOptionalInputNumber(additionalCostInput),
-      },
-    });
-  }, [
-    animal.id,
-    fazendaId,
+  const {
     observedWeightKg,
     observedAt,
     factualGmdKgDay,
-    isWeightConflict,
-    targetWeightInput,
-    assumedGmdInput,
-    pricePerArrobaInput,
-    arrobaBasis,
-    carcassYieldInput,
-    dailyCostInput,
-    additionalCostInput,
-  ]);
+    inputs,
+    setters,
+    simulation,
+  } = useProductiveCommercialSimulation({ animal, fazendaId });
 
   return (
     <div className="space-y-6" data-testid="productive-commercial-simulator">
@@ -837,20 +767,24 @@ export function ProductiveCommercialSimulator({
       />
 
       <AssumptionsBlock
-        targetWeightInput={targetWeightInput}
-        setTargetWeightInput={setTargetWeightInput}
-        assumedGmdInput={assumedGmdInput}
-        setAssumedGmdInput={setAssumedGmdInput}
-        pricePerArrobaInput={pricePerArrobaInput}
-        setPricePerArrobaInput={setPricePerArrobaInput}
-        arrobaBasis={arrobaBasis}
-        setArrobaBasis={setArrobaBasis}
-        carcassYieldInput={carcassYieldInput}
-        setCarcassYieldInput={setCarcassYieldInput}
-        dailyCostInput={dailyCostInput}
-        setDailyCostInput={setDailyCostInput}
-        additionalCostInput={additionalCostInput}
-        setAdditionalCostInput={setAdditionalCostInput}
+        targetWeightInput={inputs.targetWeightInput}
+        setTargetWeightInput={setters.setTargetWeightInput}
+        assumedGmdInput={inputs.assumedGmdInput}
+        setAssumedGmdInput={setters.setAssumedGmdInput}
+        pricePerArrobaInput={inputs.pricePerArrobaInput}
+        setPricePerArrobaInput={setters.setPricePerArrobaInput}
+        arrobaBasis={inputs.arrobaBasis}
+        setArrobaBasis={setters.setArrobaBasis}
+        carcassYieldInput={inputs.carcassYieldInput}
+        setCarcassYieldInput={setters.setCarcassYieldInput}
+        sellNowCarcassWeightInput={inputs.sellNowCarcassWeightInput}
+        setSellNowCarcassWeightInput={setters.setSellNowCarcassWeightInput}
+        targetCarcassWeightInput={inputs.targetCarcassWeightInput}
+        setTargetCarcassWeightInput={setters.setTargetCarcassWeightInput}
+        dailyCostInput={inputs.dailyCostInput}
+        setDailyCostInput={setters.setDailyCostInput}
+        additionalCostInput={inputs.additionalCostInput}
+        setAdditionalCostInput={setters.setAdditionalCostInput}
       />
 
       {simulation.status === "BLOCKED" && (

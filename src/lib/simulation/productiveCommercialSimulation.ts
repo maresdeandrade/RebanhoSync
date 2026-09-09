@@ -1,10 +1,11 @@
 import {
   calculateCommercialPricingLine,
   type CommercialArrobaBasis,
+  type CommercialPricingLineCalculation,
 } from "@/lib/comercial/commercialPricing";
 
 export type SimulationStatus = "READY" | "PARTIAL" | "BLOCKED";
-export type CostCoverage = "COMPLETE" | "PARTIAL" | "NONE";
+export type CostCoverage = "COMPLETE" | "PARTIAL";
 
 export interface ProductiveCommercialSimulationFactualInput {
   animalId: string;
@@ -21,6 +22,8 @@ export interface ProductiveCommercialSimulationAssumptionsInput {
   pricePerArroba: number;
   arrobaBasis: CommercialArrobaBasis;
   carcassYieldPercent?: number | null;
+  sellNowCarcassWeightKg?: number | null;
+  targetCarcassWeightKg?: number | null;
   dailyIncrementalCost?: number | null;
   additionalIncrementalCosts?: number | null;
 }
@@ -130,16 +133,39 @@ function validatePricePerArroba(price: number): string | null {
   return null;
 }
 
-function validateArrobaBasis(
-  basis: CommercialArrobaBasis,
-  yieldPercent: number | null | undefined,
-): string | null {
-  if (basis === "carcass_weight") return null;
-  if (basis !== "live_weight_yield") return "Base de cálculo da arroba inválida.";
+function validateLiveWeightYieldBasis(yieldPercent: number | null | undefined): string | null {
   if (yieldPercent == null || !Number.isFinite(yieldPercent) || yieldPercent <= 0 || yieldPercent > 100) {
     return "Rendimento de carcaça obrigatório e deve estar entre 0 e 100% para a base informada.";
   }
   return null;
+}
+
+function validateCarcassWeightBasis(
+  targetCarcassKg: number | null | undefined,
+  sellNowCarcassKg: number | null | undefined,
+): string[] {
+  const issues: string[] = [];
+  if (targetCarcassKg == null || !Number.isFinite(targetCarcassKg) || targetCarcassKg <= 0) {
+    issues.push("Peso de carcaça no peso-alvo é obrigatório para base carcaça.");
+  }
+  if (sellNowCarcassKg == null || !Number.isFinite(sellNowCarcassKg) || sellNowCarcassKg <= 0) {
+    issues.push("Peso de carcaça na venda agora é obrigatório para base carcaça.");
+  }
+  return issues;
+}
+
+function validateArrobaBasis(assumptions: ProductiveCommercialSimulationAssumptionsInput): string[] {
+  if (assumptions.arrobaBasis === "live_weight_yield") {
+    const yieldIssue = validateLiveWeightYieldBasis(assumptions.carcassYieldPercent);
+    return yieldIssue ? [yieldIssue] : [];
+  }
+  if (assumptions.arrobaBasis === "carcass_weight") {
+    return validateCarcassWeightBasis(
+      assumptions.targetCarcassWeightKg,
+      assumptions.sellNowCarcassWeightKg,
+    );
+  }
+  return ["Base de cálculo da arroba inválida."];
 }
 
 function validateAssumptionsInputs(assumptions: ProductiveCommercialSimulationAssumptionsInput): string[] {
@@ -150,8 +176,7 @@ function validateAssumptionsInputs(assumptions: ProductiveCommercialSimulationAs
   if (gmdIssue) issues.push(gmdIssue);
   const priceIssue = validatePricePerArroba(assumptions.pricePerArroba);
   if (priceIssue) issues.push(priceIssue);
-  const basisIssue = validateArrobaBasis(assumptions.arrobaBasis, assumptions.carcassYieldPercent);
-  if (basisIssue) issues.push(basisIssue);
+  issues.push(...validateArrobaBasis(assumptions));
   return issues;
 }
 
@@ -191,21 +216,105 @@ function resolveIncrementalCosts(
       incrementalCost: additionalCost,
     };
   }
-  return { costCoverage: "NONE", incrementalCost: null };
+  return { costCoverage: "PARTIAL", incrementalCost: null };
 }
 
-function buildLimitationsList(costCoverage: CostCoverage): string[] {
+function buildLimitationsList(costCoverage: CostCoverage, hasIncrementalCost: boolean): string[] {
   const list = [...CANONICAL_LIMITATIONS];
   if (costCoverage === "PARTIAL") {
-    list.push(
-      "Cálculo parcial com base apenas nos custos informados. Custos ausentes não foram assumidos como zero.",
-    );
-  } else if (costCoverage === "NONE") {
-    list.push(
-      "Custos incrementais não informados. Margem parcial simulada e preço de equilíbrio não foram calculados.",
-    );
+    if (hasIncrementalCost) {
+      list.push(
+        "Cálculo parcial com base apenas nos custos informados. Custos ausentes não foram assumidos como zero.",
+      );
+    } else {
+      list.push(
+        "Custos incrementais não informados. Margem parcial simulada e preço de equilíbrio não foram calculados.",
+      );
+    }
   }
   return list;
+}
+
+type SingleLineResult =
+  | { success: true; line: CommercialPricingLineCalculation }
+  | { success: false; issue: string };
+
+function resolveTargetPricingLine(
+  assumptions: ProductiveCommercialSimulationAssumptionsInput,
+): SingleLineResult {
+  const isLive = assumptions.arrobaBasis === "live_weight_yield";
+  const line = calculateCommercialPricingLine({
+    pricingMode: "per_arroba",
+    commercialWeight: {
+      unit: "kg",
+      amount: isLive ? assumptions.targetWeightKg : assumptions.targetCarcassWeightKg!,
+    },
+    pricePerArroba: assumptions.pricePerArroba,
+    arrobaBasis: assumptions.arrobaBasis,
+    carcassYieldPercent: isLive ? assumptions.carcassYieldPercent : undefined,
+  });
+
+  if (line.issue || line.arrobas === null || line.individualGrossValue === null) {
+    return { success: false, issue: line.issue || "Erro no cálculo comercial da arroba no peso-alvo." };
+  }
+  return { success: true, line };
+}
+
+function resolveSellNowPricingLine(
+  factual: ProductiveCommercialSimulationFactualInput,
+  assumptions: ProductiveCommercialSimulationAssumptionsInput,
+): SingleLineResult {
+  const isLive = assumptions.arrobaBasis === "live_weight_yield";
+  const line = calculateCommercialPricingLine({
+    pricingMode: "per_arroba",
+    commercialWeight: {
+      unit: "kg",
+      amount: isLive ? factual.observedWeightKg : assumptions.sellNowCarcassWeightKg!,
+    },
+    pricePerArroba: assumptions.pricePerArroba,
+    arrobaBasis: assumptions.arrobaBasis,
+    carcassYieldPercent: isLive ? assumptions.carcassYieldPercent : undefined,
+  });
+
+  if (line.issue || line.arrobas === null || line.individualGrossValue === null) {
+    return { success: false, issue: line.issue || "Erro no cálculo comercial da venda agora." };
+  }
+  return { success: true, line };
+}
+
+function buildComparisonScenario(
+  observedWeightKg: number,
+  targetWeightKg: number,
+  sellNowArrobas: number,
+  grossRevenueNow: number,
+  targetArrobas: number,
+  grossRevenueSimulated: number,
+  incrementalCost: number | null,
+  partialSimulatedMargin: number | null,
+): SimulationComparisonDerived {
+  return {
+    sellNow: {
+      label: "Venda agora",
+      weightKg: observedWeightKg,
+      arrobas: sellNowArrobas,
+      grossRevenue: grossRevenueNow,
+    },
+    keepUntilTarget: {
+      label: "Manter até peso-alvo",
+      targetWeightKg,
+      targetArrobas,
+      grossRevenue: grossRevenueSimulated,
+      incrementalCost,
+      partialIncrementalResult: partialSimulatedMargin,
+    },
+    difference: {
+      grossRevenueDelta: grossRevenueSimulated - grossRevenueNow,
+      partialIncrementalResultDelta:
+        incrementalCost !== null
+          ? (grossRevenueSimulated - incrementalCost) - grossRevenueNow
+          : null,
+    },
+  };
 }
 
 /**
@@ -249,29 +358,38 @@ export function calculateProductiveCommercialSimulation(
     assumptionsCopy.assumedGmdKgDay,
   );
 
-  const targetPricingLine = calculateCommercialPricingLine({
-    pricingMode: "per_arroba",
-    commercialWeight: { unit: "kg", amount: assumptionsCopy.targetWeightKg },
-    pricePerArroba: assumptionsCopy.pricePerArroba,
-    arrobaBasis: assumptionsCopy.arrobaBasis,
-    carcassYieldPercent: assumptionsCopy.carcassYieldPercent,
-  });
-
-  if (targetPricingLine.issue || targetPricingLine.arrobas === null || targetPricingLine.individualGrossValue === null) {
+  const targetRes = resolveTargetPricingLine(assumptionsCopy);
+  if (!targetRes.success) {
     return {
       status: "BLOCKED",
-      blockReasons: [targetPricingLine.issue || "Erro no cálculo comercial da arroba no peso-alvo."],
+      blockReasons: [targetRes.issue],
       factual: factualCopy,
       assumptions: assumptionsCopy,
       productive: null,
       commercial: null,
       comparison: null,
-      limitations: ["Erro no cálculo comercial da arroba."],
+      limitations: ["Erro no cálculo comercial da arroba.", targetRes.issue],
     };
   }
 
-  const targetArrobas = targetPricingLine.arrobas;
-  const grossRevenueSimulated = targetPricingLine.individualGrossValue;
+  const sellNowRes = resolveSellNowPricingLine(factualCopy, assumptionsCopy);
+  if (!sellNowRes.success) {
+    return {
+      status: "BLOCKED",
+      blockReasons: [sellNowRes.issue],
+      factual: factualCopy,
+      assumptions: assumptionsCopy,
+      productive: null,
+      commercial: null,
+      comparison: null,
+      limitations: ["Erro no cálculo comercial da venda agora.", sellNowRes.issue],
+    };
+  }
+
+  const targetArrobas = targetRes.line.arrobas!;
+  const grossRevenueSimulated = targetRes.line.individualGrossValue!;
+  const grossRevenueNow = sellNowRes.line.individualGrossValue!;
+  const sellNowArrobas = sellNowRes.line.arrobas!;
 
   const { costCoverage, incrementalCost } = resolveIncrementalCosts(
     productive.estimatedDays,
@@ -282,19 +400,8 @@ export function calculateProductiveCommercialSimulation(
   const partialSimulatedMargin =
     incrementalCost !== null ? grossRevenueSimulated - incrementalCost : null;
 
-  const sellNowPricingLine = calculateCommercialPricingLine({
-    pricingMode: "per_arroba",
-    commercialWeight: { unit: "kg", amount: factualCopy.observedWeightKg },
-    pricePerArroba: assumptionsCopy.pricePerArroba,
-    arrobaBasis: assumptionsCopy.arrobaBasis,
-    carcassYieldPercent: assumptionsCopy.carcassYieldPercent,
-  });
-
-  const grossRevenueNow = sellNowPricingLine.individualGrossValue ?? 0;
-  const sellNowArrobas = sellNowPricingLine.arrobas ?? 0;
-
   const breakEvenPricePerArroba =
-    incrementalCost !== null && targetArrobas > 0
+    costCoverage === "COMPLETE" && incrementalCost !== null && targetArrobas > 0
       ? (grossRevenueNow + incrementalCost) / targetArrobas
       : null;
 
@@ -307,29 +414,16 @@ export function calculateProductiveCommercialSimulation(
     breakEvenPricePerArroba,
   };
 
-  const comparison: SimulationComparisonDerived = {
-    sellNow: {
-      label: "Venda agora",
-      weightKg: factualCopy.observedWeightKg,
-      arrobas: sellNowArrobas,
-      grossRevenue: grossRevenueNow,
-    },
-    keepUntilTarget: {
-      label: "Manter até peso-alvo",
-      targetWeightKg: assumptionsCopy.targetWeightKg,
-      targetArrobas,
-      grossRevenue: grossRevenueSimulated,
-      incrementalCost,
-      partialIncrementalResult: partialSimulatedMargin,
-    },
-    difference: {
-      grossRevenueDelta: grossRevenueSimulated - grossRevenueNow,
-      partialIncrementalResultDelta:
-        incrementalCost !== null
-          ? (grossRevenueSimulated - incrementalCost) - grossRevenueNow
-          : null,
-    },
-  };
+  const comparison = buildComparisonScenario(
+    factualCopy.observedWeightKg,
+    assumptionsCopy.targetWeightKg,
+    sellNowArrobas,
+    grossRevenueNow,
+    targetArrobas,
+    grossRevenueSimulated,
+    incrementalCost,
+    partialSimulatedMargin,
+  );
 
   return {
     status: costCoverage === "COMPLETE" ? "READY" : "PARTIAL",
@@ -338,6 +432,6 @@ export function calculateProductiveCommercialSimulation(
     productive,
     commercial,
     comparison,
-    limitations: buildLimitationsList(costCoverage),
+    limitations: buildLimitationsList(costCoverage, incrementalCost !== null),
   };
 }

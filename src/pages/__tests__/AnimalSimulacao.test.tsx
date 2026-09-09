@@ -47,8 +47,8 @@ describe("AnimalSimulacao page", () => {
     expect(screen.getByText("Voltar para o detalhe do animal")).toBeInTheDocument();
   });
 
-  it("exibe mensagem de carregamento quando o animal não for encontrado imediatamente", () => {
-    vi.mocked(useLiveQuery).mockReturnValue(null);
+  it("exibe mensagem de carregamento quando o query está pendente (undefined)", () => {
+    vi.mocked(useLiveQuery).mockReturnValue(undefined);
 
     render(
       <MemoryRouter initialEntries={["/animais/animal-123/simulacao"]}>
@@ -58,6 +58,23 @@ describe("AnimalSimulacao page", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Carregando dados do animal...")).toBeInTheDocument();
+    expect(screen.getByTestId("simulacao-loading")).toHaveTextContent("Carregando dados do animal...");
+  });
+
+  it("exibe mensagem de animal indisponível com navegação de retorno quando não encontrado ou de outra fazenda (null)", () => {
+    vi.mocked(useLiveQuery).mockReturnValue(null);
+
+    render(
+      <MemoryRouter initialEntries={["/animais/animal-999/simulacao"]}>
+        <Routes>
+          <Route path="/animais/:id/simulacao" element={<AnimalSimulacao />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId("simulacao-not-found")).toHaveTextContent(
+      "Animal indisponível ou não encontrado nesta fazenda.",
+    );
+    expect(screen.getByText("Voltar para a lista de animais")).toBeInTheDocument();
   });
 });

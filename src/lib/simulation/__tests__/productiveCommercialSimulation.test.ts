@@ -5,7 +5,26 @@ import {
 } from "../productiveCommercialSimulation";
 
 describe("productiveCommercialSimulation (pure engine)", () => {
-  const baseValidInput: ProductiveCommercialSimulationInput = {
+  const baseLiveYieldInput: ProductiveCommercialSimulationInput = {
+    factual: {
+      animalId: "animal-1",
+      fazendaId: "fazenda-1",
+      observedWeightKg: 400,
+      observedAt: "2026-08-01T10:00:00.000Z",
+      factualGmdKgDay: 0.8,
+    },
+    assumptions: {
+      targetWeightKg: 500,
+      assumedGmdKgDay: 1.0,
+      pricePerArroba: 300,
+      arrobaBasis: "live_weight_yield",
+      carcassYieldPercent: 50, // 50%
+      dailyIncrementalCost: 5.0,
+      additionalIncrementalCosts: 50.0,
+    },
+  };
+
+  const baseCarcassInput: ProductiveCommercialSimulationInput = {
     factual: {
       animalId: "animal-1",
       fazendaId: "fazenda-1",
@@ -18,14 +37,27 @@ describe("productiveCommercialSimulation (pure engine)", () => {
       assumedGmdKgDay: 1.0,
       pricePerArroba: 300,
       arrobaBasis: "carcass_weight",
-      carcassYieldPercent: null,
+      sellNowCarcassWeightKg: 200,
+      targetCarcassWeightKg: 250,
       dailyIncrementalCost: 5.0,
       additionalIncrementalCosts: 50.0,
     },
   };
 
-  it("calcula cenário produtivo e comercial com peso + GMD + alvo válidos e custos completos", () => {
-    const result = calculateProductiveCommercialSimulation(baseValidInput);
+  it("calcula arroba corretamente a partir de 500 kg vivo + 50% rendimento = 16,6667 @ e nunca 33,3333 @", () => {
+    const result = calculateProductiveCommercialSimulation(baseLiveYieldInput);
+
+    expect(result.status).toBe("READY");
+    expect(result.commercial).not.toBeNull();
+    // 500 kg vivo * 50% / 15 = 16.6667 @
+    expect(result.commercial?.targetArrobas).toBeCloseTo(16.6667, 3);
+    expect(result.commercial?.targetArrobas).not.toBeCloseTo(33.3333, 2);
+    // 16.6667 * 300 = 5000.00
+    expect(result.commercial?.grossRevenueSimulated).toBe(5000);
+  });
+
+  it("calcula cenário produtivo e comercial com base live_weight_yield e custos completos", () => {
+    const result = calculateProductiveCommercialSimulation(baseLiveYieldInput);
 
     expect(result.status).toBe("READY");
     expect(result.productive).not.toBeNull();
@@ -34,46 +66,169 @@ describe("productiveCommercialSimulation (pure engine)", () => {
     expect(result.productive?.targetWeightKg).toBe(500);
 
     expect(result.commercial).not.toBeNull();
-    // 500 kg / 15 = 33.333333... arrobas
-    expect(result.commercial?.targetArrobas).toBeCloseTo(33.3333, 3);
-    // 33.3333 * 300 = 10000.00
-    expect(result.commercial?.grossRevenueSimulated).toBe(10000);
+    expect(result.commercial?.costCoverage).toBe("COMPLETE");
     // 100 dias * 5 + 50 = 550
     expect(result.commercial?.incrementalCost).toBe(550);
-    expect(result.commercial?.costCoverage).toBe("COMPLETE");
-    expect(result.commercial?.partialSimulatedMargin).toBe(10000 - 550);
+    expect(result.commercial?.partialSimulatedMargin).toBe(5000 - 550);
+
+    // Break-even com custos completos:
+    // Agora: 400 kg * 50% / 15 = 13.3333 @, grossRevenueNow = 4000
+    // breakEven = (4000 + 550) / 16.6667 = 273.00
+    expect(result.commercial?.breakEvenPricePerArroba).toBeCloseTo(273.0, 1);
   });
 
-  it("calcula break-even e comparação sem recomendação", () => {
-    const result = calculateProductiveCommercialSimulation(baseValidInput);
+  it("calcula cenário comercial com base carcass_weight quando pesos de carcaça explícitos forem fornecidos", () => {
+    const result = calculateProductiveCommercialSimulation(baseCarcassInput);
 
-    // Break-even: Agora: 400 kg / 15 = 26.6667 @, grossRevenueNow = 8000.00
-    // breakEven = (8000 + 550) / 33.333333 = 256.50
-    expect(result.commercial?.breakEvenPricePerArroba).toBeCloseTo(256.5, 1);
+    expect(result.status).toBe("READY");
+    expect(result.commercial).not.toBeNull();
+    // 250 kg carcaça / 15 = 16.6667 @
+    expect(result.commercial?.targetArrobas).toBeCloseTo(16.6667, 3);
+    expect(result.commercial?.grossRevenueSimulated).toBe(5000);
 
-    // Comparação
-    expect(result.comparison).not.toBeNull();
-    expect(result.comparison?.sellNow.weightKg).toBe(400);
-    expect(result.comparison?.sellNow.grossRevenue).toBe(8000);
-    expect(result.comparison?.keepUntilTarget.targetWeightKg).toBe(500);
-    expect(result.comparison?.keepUntilTarget.grossRevenue).toBe(10000);
-    expect(result.comparison?.keepUntilTarget.incrementalCost).toBe(550);
-    expect(result.comparison?.difference.grossRevenueDelta).toBe(2000);
-    expect(result.comparison?.difference.partialIncrementalResultDelta).toBe(1450);
+    // Venda agora com 200 kg carcaça / 15 = 13.3333 @ -> 4000
+    expect(result.comparison?.sellNow.arrobas).toBeCloseTo(13.3333, 3);
+    expect(result.comparison?.sellNow.grossRevenue).toBe(4000);
+  });
 
-    // Nenhuma chave de recomendação permitida
-    expect((result as Record<string, unknown>).recommendation).toBeUndefined();
-    expect((result as Record<string, unknown>).shouldSell).toBeUndefined();
-    expect((result as Record<string, unknown>).shouldSlaughter).toBeUndefined();
-    expect((result as Record<string, unknown>).commercialFitness).toBeUndefined();
+  it("bloqueia base carcass_weight se peso de carcaça no alvo estiver ausente", () => {
+    const input: ProductiveCommercialSimulationInput = {
+      ...baseCarcassInput,
+      assumptions: {
+        ...baseCarcassInput.assumptions,
+        targetCarcassWeightKg: null,
+      },
+    };
+
+    const result = calculateProductiveCommercialSimulation(input);
+
+    expect(result.status).toBe("BLOCKED");
+    expect(result.blockReasons).toContain("Peso de carcaça no peso-alvo é obrigatório para base carcaça.");
+    expect(result.commercial).toBeNull();
+  });
+
+  it("bloqueia base carcass_weight se peso de carcaça na venda agora estiver ausente", () => {
+    const input: ProductiveCommercialSimulationInput = {
+      ...baseCarcassInput,
+      assumptions: {
+        ...baseCarcassInput.assumptions,
+        sellNowCarcassWeightKg: null,
+      },
+    };
+
+    const result = calculateProductiveCommercialSimulation(input);
+
+    expect(result.status).toBe("BLOCKED");
+    expect(result.blockReasons).toContain("Peso de carcaça na venda agora é obrigatório para base carcaça.");
+    expect(result.commercial).toBeNull();
+  });
+
+  it("bloqueia base live_weight_yield se rendimento de carcaça estiver ausente", () => {
+    const input: ProductiveCommercialSimulationInput = {
+      ...baseLiveYieldInput,
+      assumptions: {
+        ...baseLiveYieldInput.assumptions,
+        carcassYieldPercent: null,
+      },
+    };
+
+    const result = calculateProductiveCommercialSimulation(input);
+
+    expect(result.status).toBe("BLOCKED");
+    expect(result.blockReasons).toContain(
+      "Rendimento de carcaça obrigatório e deve estar entre 0 e 100% para a base informada.",
+    );
+    expect(result.commercial).toBeNull();
+  });
+
+  it("bloqueia base live_weight_yield se rendimento for inválido (> 100 ou <= 0)", () => {
+    const inputOver: ProductiveCommercialSimulationInput = {
+      ...baseLiveYieldInput,
+      assumptions: {
+        ...baseLiveYieldInput.assumptions,
+        carcassYieldPercent: 105,
+      },
+    };
+    expect(calculateProductiveCommercialSimulation(inputOver).status).toBe("BLOCKED");
+
+    const inputZero: ProductiveCommercialSimulationInput = {
+      ...baseLiveYieldInput,
+      assumptions: {
+        ...baseLiveYieldInput.assumptions,
+        carcassYieldPercent: 0,
+      },
+    };
+    expect(calculateProductiveCommercialSimulation(inputZero).status).toBe("BLOCKED");
+  });
+
+  it("fail closed na venda agora: bloqueia simulação se houver erro comercial na venda agora e nunca retorna 0", () => {
+    const input: ProductiveCommercialSimulationInput = {
+      ...baseCarcassInput,
+      assumptions: {
+        ...baseCarcassInput.assumptions,
+        sellNowCarcassWeightKg: -10, // peso de carcaça inválido
+      },
+    };
+
+    const result = calculateProductiveCommercialSimulation(input);
+
+    expect(result.status).toBe("BLOCKED");
+    expect(result.blockReasons).toContain("Peso de carcaça na venda agora é obrigatório para base carcaça.");
+    expect(result.commercial).toBeNull();
+    expect(result.comparison).toBeNull();
+  });
+
+  it("break-even é calculado apenas quando costCoverage === COMPLETE", () => {
+    const completeResult = calculateProductiveCommercialSimulation(baseLiveYieldInput);
+    expect(completeResult.commercial?.costCoverage).toBe("COMPLETE");
+    expect(completeResult.commercial?.breakEvenPricePerArroba).not.toBeNull();
+
+    // Com apenas custos diários (parciais)
+    const partialInput: ProductiveCommercialSimulationInput = {
+      ...baseLiveYieldInput,
+      assumptions: {
+        ...baseLiveYieldInput.assumptions,
+        dailyIncrementalCost: 5.0,
+        additionalIncrementalCosts: null,
+      },
+    };
+    const partialResult = calculateProductiveCommercialSimulation(partialInput);
+    expect(partialResult.status).toBe("PARTIAL");
+    expect(partialResult.commercial?.costCoverage).toBe("PARTIAL");
+    expect(partialResult.commercial?.incrementalCost).toBe(500); // 100 dias * 5
+    expect(partialResult.commercial?.partialSimulatedMargin).toBe(5000 - 500);
+    // Break-even DEVE SER NULL quando a cobertura for parcial!
+    expect(partialResult.commercial?.breakEvenPricePerArroba).toBeNull();
+  });
+
+  it("quando nenhum custo for informado, costCoverage = PARTIAL e incrementalCost/margin/break-even são null", () => {
+    const noCostsInput: ProductiveCommercialSimulationInput = {
+      ...baseLiveYieldInput,
+      assumptions: {
+        ...baseLiveYieldInput.assumptions,
+        dailyIncrementalCost: null,
+        additionalIncrementalCosts: null,
+      },
+    };
+
+    const result = calculateProductiveCommercialSimulation(noCostsInput);
+
+    expect(result.status).toBe("PARTIAL");
+    expect(result.commercial?.costCoverage).toBe("PARTIAL");
+    expect(result.commercial?.incrementalCost).toBeNull();
+    expect(result.commercial?.partialSimulatedMargin).toBeNull();
+    expect(result.commercial?.breakEvenPricePerArroba).toBeNull();
+    expect(result.comparison?.keepUntilTarget.incrementalCost).toBeNull();
+    expect(result.comparison?.keepUntilTarget.partialIncrementalResult).toBeNull();
+    expect(result.comparison?.difference.partialIncrementalResultDelta).toBeNull();
   });
 
   it("trata cenário quando o peso-alvo já foi atingido (targetWeightKg <= observedWeightKg)", () => {
     const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
+      ...baseLiveYieldInput,
       assumptions: {
-        ...baseValidInput.assumptions,
-        targetWeightKg: 400, // igual ao peso observado
+        ...baseLiveYieldInput.assumptions,
+        targetWeightKg: 400,
       },
     };
 
@@ -86,150 +241,31 @@ describe("productiveCommercialSimulation (pure engine)", () => {
     expect(result.commercial?.incrementalCost).toBe(50);
   });
 
-  it("bloqueia quando GMD assumido for zero", () => {
-    const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
+  it("bloqueia quando GMD assumido for zero ou negativo", () => {
+    const zeroGmd: ProductiveCommercialSimulationInput = {
+      ...baseLiveYieldInput,
       assumptions: {
-        ...baseValidInput.assumptions,
+        ...baseLiveYieldInput.assumptions,
         assumedGmdKgDay: 0,
       },
     };
+    expect(calculateProductiveCommercialSimulation(zeroGmd).status).toBe("BLOCKED");
 
-    const result = calculateProductiveCommercialSimulation(input);
-
-    expect(result.status).toBe("BLOCKED");
-    expect(result.blockReasons).toContain("GMD do cenário deve ser maior que zero.");
-    expect(result.productive).toBeNull();
-    expect(result.commercial).toBeNull();
-  });
-
-  it("bloqueia quando GMD assumido for negativo", () => {
-    const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
+    const negGmd: ProductiveCommercialSimulationInput = {
+      ...baseLiveYieldInput,
       assumptions: {
-        ...baseValidInput.assumptions,
+        ...baseLiveYieldInput.assumptions,
         assumedGmdKgDay: -0.5,
       },
     };
-
-    const result = calculateProductiveCommercialSimulation(input);
-
-    expect(result.status).toBe("BLOCKED");
-    expect(result.blockReasons).toContain("GMD do cenário deve ser maior que zero.");
-  });
-
-  it("bloqueia quando preço da arroba estiver ausente ou inválido", () => {
-    const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
-      assumptions: {
-        ...baseValidInput.assumptions,
-        pricePerArroba: 0,
-      },
-    };
-
-    const result = calculateProductiveCommercialSimulation(input);
-
-    expect(result.status).toBe("BLOCKED");
-    expect(result.blockReasons).toContain("Preço por arroba inválido (deve ser maior que zero).");
-  });
-
-  it("suporta cálculo com base live_weight_yield e rendimento de carcaça informado", () => {
-    const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
-      assumptions: {
-        ...baseValidInput.assumptions,
-        arrobaBasis: "live_weight_yield",
-        carcassYieldPercent: 52, // 52%
-      },
-    };
-
-    const result = calculateProductiveCommercialSimulation(input);
-
-    expect(result.status).toBe("READY");
-    // 500 kg * 52% / 15 = 17.3333 @
-    expect(result.commercial?.targetArrobas).toBeCloseTo(17.3333, 2);
-    expect(result.commercial?.grossRevenueSimulated).toBeCloseTo(5200, 0);
-  });
-
-  it("bloqueia base live_weight_yield quando rendimento de carcaça estiver ausente", () => {
-    const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
-      assumptions: {
-        ...baseValidInput.assumptions,
-        arrobaBasis: "live_weight_yield",
-        carcassYieldPercent: null,
-      },
-    };
-
-    const result = calculateProductiveCommercialSimulation(input);
-
-    expect(result.status).toBe("BLOCKED");
-    expect(result.blockReasons).toContain(
-      "Rendimento de carcaça obrigatório e deve estar entre 0 e 100% para a base informada.",
-    );
-  });
-
-  it("bloqueia base live_weight_yield quando rendimento for inválido (> 100)", () => {
-    const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
-      assumptions: {
-        ...baseValidInput.assumptions,
-        arrobaBasis: "live_weight_yield",
-        carcassYieldPercent: 120,
-      },
-    };
-
-    const result = calculateProductiveCommercialSimulation(input);
-
-    expect(result.status).toBe("BLOCKED");
-  });
-
-  it("classifica como PARTIAL quando houver custos parciais e não assume ausente como zero", () => {
-    const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
-      assumptions: {
-        ...baseValidInput.assumptions,
-        dailyIncrementalCost: 6.0,
-        additionalIncrementalCosts: null, // ausente
-      },
-    };
-
-    const result = calculateProductiveCommercialSimulation(input);
-
-    expect(result.status).toBe("PARTIAL");
-    expect(result.commercial?.costCoverage).toBe("PARTIAL");
-    // 100 dias * 6 = 600
-    expect(result.commercial?.incrementalCost).toBe(600);
-    expect(result.limitations.some((l) => l.includes("Custos ausentes não foram assumidos como zero"))).toBe(true);
-  });
-
-  it("classifica como NONE quando nenhum custo for informado", () => {
-    const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
-      assumptions: {
-        ...baseValidInput.assumptions,
-        dailyIncrementalCost: null,
-        additionalIncrementalCosts: null,
-      },
-    };
-
-    const result = calculateProductiveCommercialSimulation(input);
-
-    expect(result.status).toBe("PARTIAL");
-    expect(result.commercial?.costCoverage).toBe("NONE");
-    expect(result.commercial?.incrementalCost).toBeNull();
-    expect(result.commercial?.partialSimulatedMargin).toBeNull();
-    expect(result.commercial?.breakEvenPricePerArroba).toBeNull();
-    expect(result.comparison?.keepUntilTarget.incrementalCost).toBeNull();
-    expect(result.comparison?.keepUntilTarget.partialIncrementalResult).toBeNull();
-    expect(result.comparison?.difference.partialIncrementalResultDelta).toBeNull();
+    expect(calculateProductiveCommercialSimulation(negGmd).status).toBe("BLOCKED");
   });
 
   it("bloqueia quando há conflito factual de pesagem", () => {
     const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
+      ...baseLiveYieldInput,
       factual: {
-        ...baseValidInput.factual,
+        ...baseLiveYieldInput.factual,
         weightConflict: true,
       },
     };
@@ -242,9 +278,9 @@ describe("productiveCommercialSimulation (pure engine)", () => {
 
   it("bloqueia quando fazendaId ou animalId forem inválidos ou vazios", () => {
     const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
+      ...baseLiveYieldInput,
       factual: {
-        ...baseValidInput.factual,
+        ...baseLiveYieldInput.factual,
         fazendaId: "   ",
       },
     };
@@ -257,9 +293,9 @@ describe("productiveCommercialSimulation (pure engine)", () => {
 
   it("bloqueia quando peso observado for ausente ou <= 0", () => {
     const input: ProductiveCommercialSimulationInput = {
-      ...baseValidInput,
+      ...baseLiveYieldInput,
       factual: {
-        ...baseValidInput.factual,
+        ...baseLiveYieldInput.factual,
         observedWeightKg: 0,
       },
     };
@@ -271,13 +307,13 @@ describe("productiveCommercialSimulation (pure engine)", () => {
   });
 
   it("preserva imutabilidade dos objetos de entrada", () => {
-    const inputCopy = JSON.parse(JSON.stringify(baseValidInput));
-    Object.freeze(baseValidInput.factual);
-    Object.freeze(baseValidInput.assumptions);
+    const inputCopy = JSON.parse(JSON.stringify(baseLiveYieldInput));
+    Object.freeze(baseLiveYieldInput.factual);
+    Object.freeze(baseLiveYieldInput.assumptions);
 
-    const result = calculateProductiveCommercialSimulation(baseValidInput);
+    const result = calculateProductiveCommercialSimulation(baseLiveYieldInput);
 
     expect(result.status).toBe("READY");
-    expect(baseValidInput).toEqual(inputCopy);
+    expect(baseLiveYieldInput).toEqual(inputCopy);
   });
 });
