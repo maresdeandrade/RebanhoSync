@@ -1,23 +1,37 @@
-# Handoff atual — Fase 22 encerrada (CLOSED) / Baseline Unificada U0
+# Handoff atual — Fase 23 encerrada (CLOSED) / Simulação Produtiva e Comercial
 
-Atualizado em: 2026-09-08
+Atualizado em: 2026-09-09
+Baseline autoritativo de saída da Fase 23: `main@28ee328e92b3cbaf4876cca170eb80e561facafe`
+Próxima fase: **Fase 24 — Release Hardening / Scale Readiness (NOT STARTED)**
+Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
+Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
+Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
 Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7956c01`
-Próxima fase: **Fase 22 — encerramento formal e baseline unificada U0 (próxima trilha técnica: C3)**
-Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
-Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
-Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`
-PR transversal integrado: `#96`
-Feature head do hardening transversal: `fcc977a9d6087ebbf76364e400bf03a9dd686bac`
+Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
-Baseline integrado da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Baseline autoritativo de saída documental da Fase 15: `main@0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Baseline efetivo de abertura da Fase 16.0: `2f3aaa449d39c39e5841461e0450e50b0b2e981a`
-Baseline de execução da Fase 16.1A: `feat/phase-16-finance-managerial@1734a5b`
-Merge commit da Fase 15: `0d425d1e8786d7cd50ea3d96594f836da99a2ecb`
-Status: **Fase 22 encerrada (CLOSED); F22A, F22B e F22C fechadas**
-Fase anterior: **Fase 21 — Inteligência Operacional v2 (CLOSED)**
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
+Status: **Fase 23 encerrada (CLOSED); PR #134 integrado (MERGED); transição para Fase 24 (NOT STARTED)**
+Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
+Fase atual: **Fase 23 — Simulação Produtiva e Comercial (CLOSED)**
+
+## Fase 23 — Simulação Produtiva e Comercial (CLOSED)
+
+A Fase 23 V1 foi concluída e integrada em `main` via PR #134 (merge commit `28ee328e92b3cbaf4876cca170eb80e561facafe`, head integrado `f1beae045e95f6133b07dd60534aaa52f544b2ea`, baseline posterior `origin/main@28ee328e92b3cbaf4876cca170eb80e561facafe`).
+
+Contratos e entregas integrados:
+- **Fórmula Canônica**: `FATOS OBSERVADOS + PREMISSAS EXPLÍCITAS = CENÁRIO SIMULADO`.
+- **Motor Puro de Simulação**: `src/lib/simulation/productiveCommercialSimulation.ts` (sem efeitos colaterais).
+- **Peso Observado Explícito**: Seleção canônica factual via `selectLatestObservedWeight` / `observedWeightEvidence`.
+- **Premissas Explícitas**: Parâmetros informados pelo usuário, sem defaults técnicos ocultos.
+- **GMD Factual vs Assumido**: GMD factual histórico sugerido separadamente do GMD diário assumido para o período, com proteção contra sobrescrita acidental.
+- **Base de Peso**: Diferenciação estrita entre peso vivo (`live_weight`) e peso de carcaça (`carcass_weight`).
+- **Cobertura de Custos**: Qualificação explícita `COMPLETE` vs `PARTIAL`; ausência de custo não é tratada como custo zero.
+- **Break-Even**: Calculado estritamente sob cobertura completa de custos (`COMPLETE`).
+- **Apresentação Semântica**: Comparação puramente numérica entre Vender Agora e Manter sem recomendações ou autorizações operacionais imperativas. Card A rotulado como `SIMULADO (PESO OBSERVADO + PREMISSAS)`.
+- **Ponto de Acesso**: CTA contextual no detalhe do animal direcionando para a rota dedicada `/animais/:id/simulacao`.
+- **Zero Persistência**: Zero tabelas, zero stores Dexie, zero operações de fila, zero Eventos, zero Agendas, zero `state_*` novo e zero migrations.
+
+Status: `F23_V1 = CLOSED`, `TECHNICAL_CONVERGENCE = CLOSED`, `B3 = PLATFORM_BLOCKED / FAIL_CLOSED`, `F24 = NOT STARTED`.
 
 ## Fase 22 — gate de fontes fechado
 
