@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-09-08
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
-Fase anterior: **Fase 21 — Inteligência Operacional v2 (CLOSED)**
+Atualizado em: 2026-09-09
+Fase atual: **Fase 23 — Simulação Produtiva e Comercial (CLOSED); transição para Fase 24 — Release Hardening / Scale Readiness (NOT STARTED)**
+Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 
 ## Objetivo
 
@@ -36,8 +36,8 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 16. Trilha D — UX/UI Rebaseline 2.0 (D0–D6) — **concluída e formalmente encerrada (PRs #122, #125–#128)**.
 17. Fase 21 — Inteligência Operacional v2 — **concluída**.
 18. Fase 22 — Eficiência Produtiva e Econômica — **concluída (F22A, F22B e F22C fechadas)**.
-19. Fase 23 — Simulação Produtiva e Comercial.
-20. Fase 24 — Release Hardening / Scale Readiness.
+19. Fase 23 — Simulação Produtiva e Comercial — **concluída / CLOSED**.
+20. Fase 24 — Release Hardening / Scale Readiness — **NOT STARTED**.
 
 O rollout do Sync Sanitário v2 permanece não autorizado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`. Isso não reabre o desenvolvimento técnico da Fase 12.
 
@@ -52,8 +52,8 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 ## Fase atual de desenvolvimento
 
 ```txt
-Fase 22 — Eficiência Produtiva e Econômica — CONCLUÍDA (F22A, F22B e F22C fechadas)
-→ Próxima fase técnica: Trilha C (C3+) / Fase 23 (Simulação Produtiva e Comercial)
+Fase 23 — Simulação Produtiva e Comercial — CLOSED
+→ Próxima fase: Fase 24 — Release Hardening / Scale Readiness — NOT STARTED
 ```
 
 A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está concluída e formalmente encerrada (**CLOSED**): F22A.1–F22A.3 implementam peso/GMD qualificado e F22A adotada canonicamente na Home (sem ranking, sem uso operacional); F22B.1/F22B.2 implementam coverage e resultado observado qualificado adotados com ressalva de não demonstração de lucro completo; a F22C está fechada com histórico animal→lote, composição animal→pasto, duração, agregação e performance observada factual adotados com coverage e não-autorização explícitos nos consumidores compatíveis.
@@ -70,8 +70,8 @@ A Fase 20 migrou as cinco jornadas críticas para os padrões compartilhados, co
 - **Trilha D — UX/UI Rebaseline 2.0 (D0–D6):** consolidação definitiva dos tokens semânticos, shell, componentes canônicos e redesign dirigido das 9 superfícies prioritárias (PRs #122, #125, #126, #127 e #128). A iniciativa visual está formalmente encerrada e o foco retorna às trilhas funcionais/técnicas; melhorias posteriores de UX devem ser tratadas como demandas novas.
 - **Fase 21 — Inteligência Operacional v2:** evolução da inteligência operacional reutilizando `MetricResult` e `DecisionRecommendation`.
 - **Fase 22 — Eficiência Produtiva e Econômica:** produtividade e economia (CLOSED); GMD observado com confiabilidade não classificada e uso operacional não autorizado; resultado econômico observado com lucro completo bloqueado; ocupação qualificada histórica adotada.
-- **Fase 23 — Simulação Produtiva e Comercial:** simulações com premissas explícitas; projeção não é fato e simulação não é autorização comercial.
-- **Fase 24 — Release Hardening / Scale Readiness:** offline prolongado, multi-device, RLS, recovery, observabilidade, performance, migrations/upgrades e release gates.
+- **Fase 23 — Simulação Produtiva e Comercial:** simulações com premissas explícitas; projeção não é fato e simulação não é autorização comercial (CLOSED).
+- **Fase 24 — Release Hardening / Scale Readiness:** offline prolongado, multi-device, RLS, recovery, observabilidade, performance, migrations/upgrades e release gates (NOT STARTED).
 
 Hardening proporcional permanece obrigatório em cada fase. A Fase 24 concentra o hardening sistêmico final para escala. Fases encerradas só reabrem diante de regressão concreta.
 

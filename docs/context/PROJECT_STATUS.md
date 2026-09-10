@@ -7,8 +7,8 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**.
-Próxima fase de desenvolvimento: **Fase 22 — encerramento formal e baseline unificada U0 (Trilha C / Convergência Técnica concluída: C5=CLOSED, C6=CLOSED, C7=CLOSED, TECHNICAL_CONVERGENCE=CLOSED; F23 desbloqueada)**.
+Fase atual: **Fase 23 — Simulação Produtiva e Comercial (CLOSED)**.
+Próxima fase de desenvolvimento: **Fase 24 — Release Hardening / Scale Readiness (NOT STARTED)**.
 Próximo incremento: F23 V1 concluída e integrada via PR #134 (merge commit `28ee328e92b3cbaf4876cca170eb80e561facafe`, head integrado `f1beae045e95f6133b07dd60534aaa52f544b2ea`, baseline posterior `origin/main@28ee328e92b3cbaf4876cca170eb80e561facafe`); TECHNICAL_CONVERGENCE = CLOSED; F23_V1 = CLOSED; B3 = PLATFORM_BLOCKED / FAIL_CLOSED; F24 = NOT STARTED.
 
 ## Objetivo
@@ -159,7 +159,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-A Fase 22 está formalmente encerrada (**CLOSED**): F22A adotada canonicamente na Home (GMD observado sem ranking, `reliability = UNCLASSIFIED`, `operationalUse = NOT_AUTHORIZED`); F22B adotada via PR #123 com resultado econômico observado qualificado (`profit = NOT_DEMONSTRATED`, `completeAccounting = false`); F22C fechada com ocupação histórica, duração e performance observada factual. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`PLATFORM_BLOCKED`), mas não bloqueia desenvolvimento interno. Os ciclos C3, C4, C5, C6 e C7 foram integralmente concluídos (`TECHNICAL_CONVERGENCE = CLOSED`), desbloqueando formalmente o desenvolvimento da Fase 23 (Simulação Produtiva e Comercial) sobre a baseline unificada.
+A Fase 22 está formalmente encerrada (**CLOSED**): F22A adotada canonicamente na Home (GMD observado sem ranking, `reliability = UNCLASSIFIED`, `operationalUse = NOT_AUTHORIZED`); F22B adotada via PR #123 com resultado econômico observado qualificado (`profit = NOT_DEMONSTRATED`, `completeAccounting = false`); F22C fechada com ocupação histórica, duração e performance observada factual. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`PLATFORM_BLOCKED`), mas não bloqueia desenvolvimento interno. Os ciclos C3, C4, C5, C6 e C7 foram integralmente concluídos (`TECHNICAL_CONVERGENCE = CLOSED`). A Fase 23 (Simulação Produtiva e Comercial — F23 V1) foi concluída e integrada via PR #134 (`F23_V1 = CLOSED`). A próxima fase de desenvolvimento é a Fase 24 (Release Hardening / Scale Readiness), cujo desenvolvimento técnico ainda não foi iniciado (`F24 = NOT STARTED`).
 
 ## Fontes de detalhe
 

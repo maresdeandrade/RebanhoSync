@@ -1,16 +1,16 @@
-# Plano ativo — Fase 22 / Eficiência Produtiva e Econômica
+# Plano ativo — Fase 23 / Simulação Produtiva e Comercial (CLOSED)
 
-Atualizado em: 2026-09-08
-Status: **Fase 22 encerrada (CLOSED); F22A, F22B e F22C fechadas**
-Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
-Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`.
-Baseline solicitado como referência: `main@f1418be9f5801fec31b220a887d41a678b828900`.
+Atualizado em: 2026-09-09
+Status: **Fase 23 encerrada (CLOSED); transição para Fase 24 — Release Hardening / Scale Readiness (NOT STARTED)**
+Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`.
+Baseline integrado da Fase 23: `main@28ee328e92b3cbaf4876cca170eb80e561facafe`.
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`.
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
-Fase atual: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
-Próxima fase: **Fase 22 — encerramento formal e baseline unificada U0 (próxima trilha técnica: C3)**
+Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
+Fase atual: **Fase 23 — Simulação Produtiva e Comercial (CLOSED)**
+Próxima fase: **Fase 24 — Release Hardening / Scale Readiness (NOT STARTED)**
 
-Este documento contém o plano corrente. Estado técnico detalhado, validações, matriz de fontes e riscos ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md).
+Este documento registra a transição de governança após o encerramento da Fase 23. O estado técnico integrado da Fase 23 (F23 V1) e histórico das fases anteriores ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md). O plano detalhado da Fase 24 será formalizado na abertura oficial da respectiva fase.
 
 ## Gate de fontes 22A/22B
 
