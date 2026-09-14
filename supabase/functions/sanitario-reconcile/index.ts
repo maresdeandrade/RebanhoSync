@@ -18,6 +18,20 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const RECONCILE_COOLDOWN_HOURS = 24
 
+type ReconcileClient = ReturnType<typeof createClient>
+type ReconcileResult = {
+  fazenda_id: string
+  inserted: number | null
+  error: string | null
+}
+
+function jsonResponse(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
 function getVerifiedJwtRole(authHeader: string | null): string | null {
   const token = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1]
   if (!token) return null
@@ -35,31 +49,55 @@ function getVerifiedJwtRole(authHeader: string | null): string | null {
   }
 }
 
-Deno.serve(async (req: Request) => {
-  const authHeader = req.headers.get('Authorization')
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    return new Response(
-      JSON.stringify({ error: 'Missing Supabase configuration' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } },
+async function reconcileFarm(
+  supabase: ReconcileClient,
+  farm: { fazenda_id: string },
+): Promise<ReconcileResult> {
+  try {
+    const { data: inserted, error: recomputeError } = await supabase.rpc(
+      'internal_sanitario_recompute_agenda_for_fazenda',
+      { _fazenda_id: farm.fazenda_id },
     )
-  }
 
-  // The platform verifies this JWT before invoking the handler. Authorize the
-  // verified role claim because the gateway may replace the original token.
-  if (getVerifiedJwtRole(authHeader) !== 'service_role') {
-    return new Response(JSON.stringify({ error: 'Forbidden' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
+    if (recomputeError) {
+      return {
+        fazenda_id: farm.fazenda_id,
+        inserted: null,
+        error: recomputeError.message,
+      }
+    }
+
+    await supabase
+      .from('fazenda_sanidade_config')
+      .update({
+        payload: supabase.rpc('jsonb_set_last_reconcile', {
+          _fazenda_id: farm.fazenda_id,
+          _ts: new Date().toISOString(),
+        }),
+      })
+      .eq('fazenda_id', farm.fazenda_id)
+
+    await supabase.rpc('sanitario_reconcile_touch', {
+      _fazenda_id: farm.fazenda_id,
     })
+
+    return {
+      fazenda_id: farm.fazenda_id,
+      inserted: inserted as number | null,
+      error: null,
+    }
+  } catch (err) {
+    return {
+      fazenda_id: farm.fazenda_id,
+      inserted: null,
+      error: err instanceof Error ? err.message : String(err),
+    }
   }
+}
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false },
-  })
-
+async function reconcileEligibleFarms(
+  supabase: ReconcileClient,
+): Promise<Response> {
   const cutoff = new Date(
     Date.now() - RECONCILE_COOLDOWN_HOURS * 60 * 60 * 1000,
   ).toISOString()
@@ -73,59 +111,13 @@ Deno.serve(async (req: Request) => {
 
   if (queryError) {
     console.error('Failed to query eligible farms:', queryError.message)
-    return new Response(
-      JSON.stringify({ error: 'Query failed', detail: queryError.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } },
-    )
+    return jsonResponse({ error: 'Query failed', detail: queryError.message }, 500)
   }
 
   const farms: Array<{ fazenda_id: string }> = eligibleFarms ?? []
-  const results: Array<{ fazenda_id: string; inserted: number | null; error: string | null }> = []
-
+  const results: ReconcileResult[] = []
   for (const farm of farms) {
-    try {
-      const { data: inserted, error: recomputeError } = await supabase.rpc(
-        'internal_sanitario_recompute_agenda_for_fazenda',
-        { _fazenda_id: farm.fazenda_id },
-      )
-
-      if (recomputeError) {
-        results.push({
-          fazenda_id: farm.fazenda_id,
-          inserted: null,
-          error: recomputeError.message,
-        })
-        continue
-      }
-
-      // Update last_reconcile_at in fazenda_sanidade_config.payload
-      await supabase
-        .from('fazenda_sanidade_config')
-        .update({
-          payload: supabase.rpc('jsonb_set_last_reconcile', {
-            _fazenda_id: farm.fazenda_id,
-            _ts: new Date().toISOString(),
-          }),
-        })
-        .eq('fazenda_id', farm.fazenda_id)
-
-      // Simpler approach: direct SQL update via RPC
-      await supabase.rpc('sanitario_reconcile_touch', {
-        _fazenda_id: farm.fazenda_id,
-      })
-
-      results.push({
-        fazenda_id: farm.fazenda_id,
-        inserted: inserted as number | null,
-        error: null,
-      })
-    } catch (err) {
-      results.push({
-        fazenda_id: farm.fazenda_id,
-        inserted: null,
-        error: err instanceof Error ? err.message : String(err),
-      })
-    }
+    results.push(await reconcileFarm(supabase, farm))
   }
 
   const reconciled = results.filter((r) => r.error === null).length
@@ -135,13 +127,27 @@ Deno.serve(async (req: Request) => {
     `sanitario-reconcile: ${reconciled} reconciled, ${failed} failed out of ${farms.length} eligible`,
   )
 
-  return new Response(
-    JSON.stringify({
-      reconciled,
-      failed,
-      total: farms.length,
-      results,
-    }),
-    { status: 200, headers: { 'Content-Type': 'application/json' } },
-  )
+  return jsonResponse({ reconciled, failed, total: farms.length, results }, 200)
+}
+
+Deno.serve(async (req: Request) => {
+  const authHeader = req.headers.get('Authorization')
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return jsonResponse({ error: 'Missing Supabase configuration' }, 500)
+  }
+
+  // The platform verifies this JWT before invoking the handler. Authorize the
+  // verified role claim because the gateway may replace the original token.
+  if (getVerifiedJwtRole(authHeader) !== 'service_role') {
+    return jsonResponse({ error: 'Forbidden' }, 403)
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  })
+
+  return reconcileEligibleFarms(supabase)
 })
