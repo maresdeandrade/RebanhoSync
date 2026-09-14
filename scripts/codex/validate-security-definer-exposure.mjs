@@ -45,8 +45,8 @@ async function runSecurityDefinerGate() {
     const { rows: functions } = await client.query(catalogQuery);
     console.log(`Total de funções SECURITY DEFINER encontradas: ${functions.length}`);
 
-    if (functions.length !== 34) {
-      throw new Error(`Esperado exatamente 34 funções SECURITY DEFINER em public, encontrado: ${functions.length}`);
+    if (functions.length !== 35) {
+      throw new Error(`Esperado exatamente 35 funções SECURITY DEFINER em public, encontrado: ${functions.length}`);
     }
 
     // 1.1 Nenhum privilégio EXECUTE concedido a PUBLIC
@@ -79,6 +79,8 @@ async function runSecurityDefinerGate() {
       "trg_sanitario_recompute_on_animal_mutation",
       "sanitario_reconcile_eligible_fazendas",
       "sanitario_reconcile_touch",
+      "internal_sanitario_recompute_agenda_for_fazenda",
+      "sanitario_recompute_agenda_core",
       "sanitario_recompute_agenda_core_without_dry_cow",
       "sanitario_recompute_dry_cow_therapy_agenda"
     ]);
@@ -89,7 +91,7 @@ async function runSecurityDefinerGate() {
         leakingAuthenticated.map(f => `  - ${f.name}(${f.identity_arguments})`).join("\n")
       );
     }
-    console.log("✓ Todas as funções de trigger (3), serviço interno (2) e legadas (2) têm EXECUTE revogado de 'authenticated'.");
+    console.log("✓ Funções de trigger, serviço interno, core e legadas têm EXECUTE revogado de 'authenticated'.");
 
     // 1.4 Verificação de search_path imutável em 100% das funções SECURITY DEFINER
     const mutableSearchPath = functions.filter(f => !f.config || !f.config.some(c => c.startsWith("search_path=")));
@@ -212,6 +214,8 @@ async function runSecurityDefinerGate() {
       { name: "trg_sanitario_recompute_on_animal_mutation", sql: `SELECT public.trg_sanitario_recompute_on_animal_mutation();` },
       { name: "sanitario_reconcile_eligible_fazendas", sql: `SELECT * FROM public.sanitario_reconcile_eligible_fazendas(now());` },
       { name: "sanitario_reconcile_touch", sql: `SELECT public.sanitario_reconcile_touch('${farmA}');` },
+      { name: "internal_sanitario_recompute_agenda_for_fazenda", sql: `SELECT public.internal_sanitario_recompute_agenda_for_fazenda('${farmA}', CURRENT_DATE);` },
+      { name: "sanitario_recompute_agenda_core", sql: `SELECT public.sanitario_recompute_agenda_core('${farmA}', null, CURRENT_DATE);` },
       { name: "sanitario_recompute_agenda_core_without_dry_cow", sql: `SELECT public.sanitario_recompute_agenda_core_without_dry_cow('${farmA}', null, CURRENT_DATE);` },
       { name: "sanitario_recompute_dry_cow_therapy_agenda", sql: `SELECT public.sanitario_recompute_dry_cow_therapy_agenda('${farmA}', null, CURRENT_DATE);` },
     ];
