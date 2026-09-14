@@ -8,7 +8,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
  *
  * For each fazenda with active animals and pending sanitary agenda:
  * - Skip if last reconcile was within 24h (via fazenda_sanidade_config.payload.last_reconcile_at)
- * - Call sanitario_recompute_agenda_for_fazenda(fazenda_id)
+ * - Call internal_sanitario_recompute_agenda_for_fazenda(fazenda_id)
  * - Update last_reconcile_at timestamp
  *
  * Schedule: daily via pg_cron or external scheduler
@@ -18,15 +18,25 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const RECONCILE_COOLDOWN_HOURS = 24
 
+function getVerifiedJwtRole(authHeader: string | null): string | null {
+  const token = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1]
+  if (!token) return null
+
+  try {
+    const payloadSegment = token.split('.')[1]
+    if (!payloadSegment) return null
+
+    const base64 = payloadSegment.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+    const payload = JSON.parse(atob(padded)) as { role?: unknown }
+    return typeof payload.role === 'string' ? payload.role : null
+  } catch {
+    return null
+  }
+}
+
 Deno.serve(async (req: Request) => {
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader) {
-    return new Response(JSON.stringify({ error: 'Missing authorization' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
@@ -35,6 +45,15 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({ error: 'Missing Supabase configuration' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     )
+  }
+
+  // The platform verifies this JWT before invoking the handler. Authorize the
+  // verified role claim because the gateway may replace the original token.
+  if (getVerifiedJwtRole(authHeader) !== 'service_role') {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
@@ -66,7 +85,7 @@ Deno.serve(async (req: Request) => {
   for (const farm of farms) {
     try {
       const { data: inserted, error: recomputeError } = await supabase.rpc(
-        'sanitario_recompute_agenda_for_fazenda',
+        'internal_sanitario_recompute_agenda_for_fazenda',
         { _fazenda_id: farm.fazenda_id },
       )
 
