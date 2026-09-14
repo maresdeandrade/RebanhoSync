@@ -52,6 +52,15 @@
   color: hsl(var(--text-primary));
 }
 
+/* The Rastro desktop sequence renders five stages plus four directional connectors. */
+@media (min-width: 640px) {
+  .marketing-site .sm\:grid-cols-5 {
+    grid-template-columns:
+      minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto
+      minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .marketing-site *,
   .marketing-site *::before,
