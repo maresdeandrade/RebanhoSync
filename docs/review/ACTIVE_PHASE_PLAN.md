@@ -1,16 +1,72 @@
-# Plano ativo — Fase 23 / Simulação Produtiva e Comercial (CLOSED)
+# Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-09-09
-Status: **Fase 23 encerrada (CLOSED); transição para Fase 24 — Release Hardening / Scale Readiness (NOT STARTED)**
+Atualizado em: 2026-09-14
+Status: **Fase 24 ativa; F24.1 TECHNICAL CLOSED / REPOSITORY CLOSEOUT PR READY; F24.1C DEFERRED; F24.2 READY_NOT_STARTED**
+Baseline da F24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`.
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`.
 Baseline integrado da Fase 23: `main@28ee328e92b3cbaf4876cca170eb80e561facafe`.
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`.
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
-Fase atual: **Fase 23 — Simulação Produtiva e Comercial (CLOSED)**
-Próxima fase: **Fase 24 — Release Hardening / Scale Readiness (NOT STARTED)**
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
+Próxima fase: **Fase 24 — F24.2 RLS / Auth / Tenant Isolation Final Gate**
 
-Este documento registra a transição de governança após o encerramento da Fase 23. O estado técnico integrado da Fase 23 (F23 V1) e histórico das fases anteriores ficam em [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md). A decisão arquitetural permanente está em [ADR-0007](../technical/adrs/ADR-0007-sync-remoto-sanitario-v2-integrado.md). O plano detalhado da Fase 24 será formalizado na abertura oficial da respectiva fase.
+Este documento aponta para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
+O backlog F24.1–F24.8, dependências, critérios de entrada/saída e release blockers estão
+registrados nessa baseline. Produção não está autorizada, o Sanitário v2 permanece
+`PLATFORM_BLOCKED`, e nenhuma frente posterior deve ser iniciada automaticamente.
+
+## Rebaseline F24.1D — ambiente descartável
+
+`zqloazqzhwauamcejmuz` foi reclassificado como `REMOTE_DEVELOPMENT_INTEGRATION` descartável.
+Não há produção operacional (`PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`)
+e o isolamento não é exigido antes de provisionar produção. A criação de segundo staging foi
+deferida. A reconstrução remota, o `sync-batch` e o `sanitario-reconcile` passaram após a
+correção F24.1D.1, incluindo negativos, E2E 1/1, replay e limpeza. F24.1 está fechada e F24.2
+está pronta, mas não iniciada. Evidência:
+[F24_1D_REMOTE_ACL_REHEARSAL.md](./F24_1D_REMOTE_ACL_REHEARSAL.md).
+
+## Registro histórico anterior ao rebaseline
+
+Os blocos F24.0–F24.1C abaixo preservam o plano formulado sob a premissa anterior. Referências
+a backend compartilhado ou criação obrigatória de staging não são instruções vigentes.
+
+## F24.0 — resultado
+
+```ini
+F24_RELEASE_BASELINE = ESTABLISHED
+MIGRATION_PRODUCTION_DELTA = BLOCKED
+RLS_RELEASE_GATE = NOT_TESTED
+OFFLINE_LONG_DURATION = NOT_TESTED
+MULTI_DEVICE_GATE = PARTIAL
+RECOVERY_GATE = PARTIAL
+OBSERVABILITY_GATE = PARTIAL
+PERFORMANCE_GATE = NOT_TESTED
+SANITARIO_V2 = PLATFORM_BLOCKED
+PRODUCTION_PROMOTION = NOT_AUTHORIZED
+STAGING_PRODUCTION_BACKEND = SHARED
+ENVIRONMENT_ISOLATION = BLOCKED
+F24.1 = READY_WITH_CAVEAT
+F24.2 = NOT_STARTED
+```
+
+## F24.1B — topologia de isolamento
+
+O [gate de topologia F24.1B](./F24_1B_ENVIRONMENT_ISOLATION_TOPOLOGY.md) foi fechado em
+modo read-only. Não existe staging seguro disponível: `zqloazqzhwauamcejmuz` é produção, e
+os projetos inativos não foram certificados para reutilização. A opção aprovada para uma
+etapa futura é criar um projeto Supabase dedicado em `sa-east-1`, PG 17, após autorização
+explícita. `STAGING_BASELINE_REPRODUCIBLE = PARTIAL`, `ACL_REMOTE_REHEARSAL_PLAN = READY`,
+`SCOPE_GATE = OPEN_GOVERNANCE_DEBT` e `F24.2 = NOT_STARTED`.
+
+O [contrato F24.1C.0](./F24_1C_STAGING_PROVISIONING_CONTRACT.md) fixa a reconstrução
+pré-F24.1 em uma cópia imutável da baseline, com 49 migrations e sem os dois repairs ou as
+duas candidatas. Auth, `APP_ORIGIN`, Storage `avatars`, Edge Functions e os gates de
+isolamento estão definidos. `F24.1C.1 = NOT_STARTED_REQUIRES_AUTHORIZATION` e
+`F24.1D = NOT_READY` até o staging existir.
+
+O conteúdo abaixo preserva o histórico da Fase 23 e das fases anteriores; não representa o
+plano corrente da F24.
 
 ## Gate de fontes 22A/22B
 

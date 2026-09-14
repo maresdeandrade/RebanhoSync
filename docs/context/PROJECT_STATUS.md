@@ -1,15 +1,15 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-09-09
+Atualizado em: 2026-09-14
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 23 — Simulação Produtiva e Comercial (CLOSED)**.
-Próxima fase de desenvolvimento: **Fase 24 — Release Hardening / Scale Readiness (NOT STARTED)**.
-Próximo incremento: F23 V1 concluída e integrada via PR #134 (merge commit `28ee328e92b3cbaf4876cca170eb80e561facafe`, head integrado `f1beae045e95f6133b07dd60534aaa52f544b2ea`, baseline posterior `origin/main@28ee328e92b3cbaf4876cca170eb80e561facafe`); TECHNICAL_CONVERGENCE = CLOSED; F23_V1 = CLOSED; B3 = PLATFORM_BLOCKED / FAIL_CLOSED; F24 = NOT STARTED.
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.1 TECHNICAL CLOSED / REPOSITORY CLOSEOUT PR READY)**.
+Próxima fase de desenvolvimento: **Fase 24 — F24.2 READY; F24.1C DEFERRED**.
+Baseline de release: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = PLATFORM_BLOCKED`.
 
 ## Objetivo
 
@@ -23,7 +23,48 @@ O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é 
 
 RebanhoSync está em beta interno, com arquitetura offline-first e isolamento multi-tenant por `fazenda_id`.
 
-A **Fase 23 — Simulação Produtiva e Comercial (F23 V1)** foi concluída e integrada em `main` via PR #134 (merge commit `28ee328e92b3cbaf4876cca170eb80e561facafe`, PR head commit `f1beae045e95f6133b07dd60534aaa52f544b2ea`, baseline posterior `origin/main@28ee328e92b3cbaf4876cca170eb80e561facafe`), a partir da baseline unificada de abertura `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`. A entrega introduz a simulação produtiva/comercial read-only através do motor de cálculo puro `src/lib/simulation/productiveCommercialSimulation.ts` baseado na fórmula canônica `FATOS OBSERVADOS + PREMISSAS EXPLÍCITAS = CENÁRIO SIMULADO`. O motor reutiliza os contratos de pesagem (`observedWeightEvidence.ts`, `latestObservedWeight.ts`, `gmdCalculation.ts`), o contrato de conversão comercial (`commercialPricing.ts`), assegura peso factual explícito, premissas humanas explícitas sem defaults técnicos silenciosos, distinção estrita entre GMD factual observado e GMD assumido projetado (com proteção explícita contra sobrescrita acidental), peso vivo separado de peso de carcaça (`live_weight` / `carcass_weight`), custos com qualificação de cobertura explícita (`COMPLETE` vs `PARTIAL`) sem assumir custo zero para custos ausentes, break-even somente com cobertura completa, e comparação numérica Vender Agora × Manter sem recomendação ou autorização operacional. A UI dedicada `ProductiveCommercialSimulator.tsx` organiza a visualização em blocos rotulados com badges `OBSERVADO`, `PREMISSA` e `SIMULADO`, acessada via CTA contextual no detalhe do animal (`AnimalSimulacaoCta`) direcionando para a rota dedicada `/animais/:id/simulacao`. O ciclo é estritamente efêmero (zero tabelas, zero stores no Dexie, zero operações de fila, zero Eventos, zero Agendas, zero `state_*` novo e zero migrations). Status: `TECHNICAL_CONVERGENCE = CLOSED`, `F23_V1 = CLOSED`, `B3 = PLATFORM_BLOCKED / FAIL_CLOSED`, `F24 = NOT STARTED`.
+Premissa ambiental autoritativa: `zqloazqzhwauamcejmuz` é
+`REMOTE_DEVELOPMENT_INTEGRATION`, classe `DISPOSABLE_INTEGRATION`, com reset permitido. O
+canal Vercel `Production` não representa produção operacional. Portanto,
+`PRODUCTION_BACKEND = NOT_PROVISIONED`, `PRODUCTION_DATA = NONE`,
+`ENVIRONMENT_ISOLATION = NOT_REQUIRED_PRE_PRODUCTION` e a criação F24.1C foi deferida. A
+[F24.1D](../review/F24_1D_REMOTE_ACL_REHEARSAL.md) verificou o baseline remoto, o
+`sync-batch` e, após a correção F24.1D.1, o `sanitario-reconcile` com matriz negativa, E2E
+1/1 e replay. `F24.1 = CLOSED`; `F24.2 = READY`, ainda não iniciada.
+
+Os parágrafos F24.0–F24.1C anteriores mantidos abaixo documentam a sequência histórica; onde
+classificam o mesmo project ref como produção compartilhada, prevalece o rebaseline acima.
+
+A [baseline F24.0](../review/F24_RELEASE_READINESS_BASELINE.md) foi estabelecida sobre
+`main@93c3d1dd8401488139454c69c2a6595ae46abaa5`. O fechamento é `READY WITH CAVEATS` para a
+auditoria, não para produção: delta produtivo, gate final de RLS, offline prolongado e
+performance permanecem `NOT_TESTED`; multi-device, recovery e observabilidade permanecem
+`PARTIAL`; o Sync Sanitário v2 permanece `PLATFORM_BLOCKED` e fail-closed.
+
+A [auditoria F24.1](../review/F24_1_PRODUCTION_MIGRATION_DELTA.md) verificou a proveniência
+dos repairs e a reentrada preparou a migration forward-only `20260913232253` para reconciliar
+table grants, function ACLs e defaults do owner `postgres`. Os caminhos repo puro e
+staging-equivalente convergiram para fingerprints idênticos, com gates locais aprovados. A
+F24.1A.1 separou o wrapper autenticado do wrapper backend do `sanitario-reconcile`; o fluxo
+local real com `service_role` passou. `STAGING_PROJECT_REF` e `PRODUCTION_PROJECT_REF` são
+`zqloazqzhwauamcejmuz`: `STAGING_PRODUCTION_BACKEND = SHARED`,
+`ENVIRONMENT_ISOLATION = BLOCKED`, nenhuma migration foi aplicada remotamente e F24.2 não
+foi iniciada.
+
+A [F24.1B](../review/F24_1B_ENVIRONMENT_ISOLATION_TOPOLOGY.md) confirmou por inventário
+read-only que não há staging isolado disponível. A topologia alvo é um novo projeto Supabase
+dedicado em `sa-east-1`, PG 17, com Preview/Staging separado de Production. A baseline vazia
+é `PARTIAL` por gaps declarativos de Auth hospedado, Storage `avatars`, `APP_ORIGIN` e
+roteamento Vercel. `F24.1B = CLOSED`, `F24.1C = READY` somente para solicitar/provisionar o
+ambiente com autorização explícita; produção e F24.2 permanecem intocadas.
+
+O [preflight F24.1C.0](../review/F24_1C_STAGING_PROVISIONING_CONTRACT.md) fechou o contrato
+de criação e reconstrução sem escrita remota. A baseline será materializada de
+`main@93c3d1dd8401488139454c69c2a6595ae46abaa5`, com exatamente 49 migrations. A criação
+do projeto e a definição literal do frontend origin ainda exigem autorização; F24.1D não está
+pronta enquanto o staging não existir.
+
+A **Fase 23 — Simulação Produtiva e Comercial (F23 V1)** foi concluída e integrada em `main` via PR #134 (merge commit `28ee328e92b3cbaf4876cca170eb80e561facafe`, PR head commit `f1beae045e95f6133b07dd60534aaa52f544b2ea`, baseline posterior `origin/main@28ee328e92b3cbaf4876cca170eb80e561facafe`), a partir da baseline unificada de abertura `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`. A entrega introduz a simulação produtiva/comercial read-only através do motor de cálculo puro `src/lib/simulation/productiveCommercialSimulation.ts` baseado na fórmula canônica `FATOS OBSERVADOS + PREMISSAS EXPLÍCITAS = CENÁRIO SIMULADO`. O motor reutiliza os contratos de pesagem (`observedWeightEvidence.ts`, `latestObservedWeight.ts`, `gmdCalculation.ts`), o contrato de conversão comercial (`commercialPricing.ts`), assegura peso factual explícito, premissas humanas explícitas sem defaults técnicos silenciosos, distinção estrita entre GMD factual observado e GMD assumido projetado (com proteção explícita contra sobrescrita acidental), peso vivo separado de peso de carcaça (`live_weight` / `carcass_weight`), custos com qualificação de cobertura explícita (`COMPLETE` vs `PARTIAL`) sem assumir custo zero para custos ausentes, break-even somente com cobertura completa, e comparação numérica Vender Agora × Manter sem recomendação ou autorização operacional. A UI dedicada `ProductiveCommercialSimulator.tsx` organiza a visualização em blocos rotulados com badges `OBSERVADO`, `PREMISSA` e `SIMULADO`, acessada via CTA contextual no detalhe do animal (`AnimalSimulacaoCta`) direcionando para a rota dedicada `/animais/:id/simulacao`. O ciclo é estritamente efêmero (zero tabelas, zero stores no Dexie, zero operações de fila, zero Eventos, zero Agendas, zero `state_*` novo e zero migrations). Status naquele fechamento: `TECHNICAL_CONVERGENCE = CLOSED`, `F23_V1 = CLOSED`, `B3 = PLATFORM_BLOCKED / FAIL_CLOSED`, `F24 = NOT STARTED`.
 
 A Trilha D (UX/UI Rebaseline 2.0) foi integralmente executada e formalmente encerrada sobre `main@c2300d01d7cd6d71dcf89829a1cb2945146b96bb` (PRs #122, #125, #126, #127 e #128). O ciclo consolidou D0 (auditoria 360°), D1 (tokens semânticos e theme contract), D2 (shell e layout unificado), D3 (componentes estruturais canônicos), D4 (redesign dirigido de 9 páginas), D5 (responsividade, dark mode e acessibilidade) e D6 (regressão visual sistemática com zero regressões e fechamento verification-only). A iniciativa visual está formalmente encerrada e o foco retorna às trilhas funcionais/técnicas do roadmap (Fase 22+). Quaisquer melhorias adicionais de UX devem ser tratadas como demandas novas e independentes.
 
@@ -53,7 +94,7 @@ A validação da Fase 15 confirmou 16 testes focados, `quality:gate`, build, typ
 
 A Fase 16 — Financeiro Gerencial — foi integralmente concluída e integrada via PR #94. A implementação incluiu hardening offline de `finance_transactions` e `finance_categories`, hardening semântico de valores e status do ledger, classificação canônica cruzada (Evento × ledger × comercial) para prevenir dupla contagem, e separação clara entre caixa, competência, previsão e vencidos. Os KPIs ganharam cobertura conservadora (ausência de dados não é zero factual). As categorias default passaram a usar UUID determinístico customizado baseado em SHA-256 com identidade convergente cliente/Postgres e resolução de colisão estrita. A Fase 16 também introduziu o estorno append-only (com a coluna `reverses_transaction_id`) e atualizou a Edge Function `sync-batch` e o Dexie para a v29. O RLS permaneceu preservado. A validação de upgrade legado isolado, 43 testes focados, gates de qualidade e build de produção passaram com sucesso.
 
-**Importante:** A migration `20260601000000_financeiro_estorno_categorias.sql` foi aplicada com sucesso em staging durante a Trilha B (alinhamento `42 local == 42 staging`). A promoção para produção permanece pendente.
+**Importante:** A migration `20260601000000_financeiro_estorno_categorias.sql` está presente no staging. A F24.0 inventariou 49 migrations canônicas presentes no staging e duas versões remotas adicionais de reparo; produção permanece `NOT_TESTED` e promoção não autorizada.
 
 ## Hardening transversal integrado — PR #96
 
@@ -126,7 +167,7 @@ Estado dos subitens:
 
 ## Ambiente e rollout
 
-- Supabase staging: `zqloazqzhwauamcejmuz` (42 migrations alinhadas: `42 local == 42 staging`).
+- Supabase staging: `zqloazqzhwauamcejmuz` (49 migrations canônicas presentes; duas versões remotas adicionais de reparo, `20260901192728` e `20260901192731`).
 - Auth / Grants: privilégios de tabelas autenticadas reconciliados (`20260826230107`), validado localmente, aplicado em staging; produção pendente.
 - Admin Track: A1.1 + A2 + A2.1 + A4 operacionais em staging; provisionamento e smoke de SuperAdmin validados; produção pendente.
 - F16 Financeiro: migration aplicada em staging; produção pendente.
@@ -159,7 +200,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-A Fase 22 está formalmente encerrada (**CLOSED**): F22A adotada canonicamente na Home (GMD observado sem ranking, `reliability = UNCLASSIFIED`, `operationalUse = NOT_AUTHORIZED`); F22B adotada via PR #123 com resultado econômico observado qualificado (`profit = NOT_DEMONSTRATED`, `completeAccounting = false`); F22C fechada com ocupação histórica, duração e performance observada factual. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`PLATFORM_BLOCKED`), mas não bloqueia desenvolvimento interno. Os ciclos C3, C4, C5, C6 e C7 foram integralmente concluídos (`TECHNICAL_CONVERGENCE = CLOSED`). A Fase 23 (Simulação Produtiva e Comercial — F23 V1) foi concluída e integrada via PR #134 (`F23_V1 = CLOSED`). A próxima fase de desenvolvimento é a Fase 24 (Release Hardening / Scale Readiness), cujo desenvolvimento técnico ainda não foi iniciado (`F24 = NOT STARTED`).
+A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`. A próxima ação recomendada é uma reentrada F24.1, não o início automático da F24.2. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`PLATFORM_BLOCKED`), e produção permanece `NOT_AUTHORIZED`.
 
 ## Fontes de detalhe
 

@@ -1,8 +1,8 @@
 ```md
 # Known Gaps — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-09-13
+**Baseline Commit:** `93c3d1dd8401488139454c69c2a6595ae46abaa5`
 
 ## Objetivo
 
@@ -310,7 +310,10 @@ KPI financeiro deve declarar fonte, período, inclusão/exclusão e limitação.
 
 ### Status
 
-Parcial conforme eventos e read models existentes. A convergência de pull de `eventos_movimentacao` foi resolvida em testes automatizados (`AUTOMATED_CONVERGENCE_VERIFIED`); a comprovação remota E2E permanece pendente antes da F22C.
+Parcial conforme eventos e read models existentes. A convergência de
+`eventos_movimentacao` está `REMOTE_CONVERGENCE_VERIFIED`: testes automatizados e round-trip
+Device A → staging → Device B, incluindo clean install e isolamento cross-farm, foram
+comprovados. Isso não certifica todos os fluxos multi-device da F24.
 
 ### Não inferir sem fonte
 
@@ -343,6 +346,26 @@ Se manual e código divergirem:
 1. confiar no código/migration ativa;
 2. corrigir o manual;
 3. registrar limitação se necessário.
+
+---
+
+## Release readiness F24
+
+### Status
+
+Baseline estabelecida com lacunas explícitas. Produção não está autorizada.
+
+Permanecem sem certificação de release:
+
+- delta e upgrade de produção;
+- RLS/Auth/tenant final por ambiente;
+- offline prolongado e recovery completo;
+- multi-device transversal;
+- observabilidade correlacionada ponta a ponta;
+- performance e escala de jornada.
+
+O Sync Sanitário v2 permanece `PLATFORM_BLOCKED`, com flag `false`, gate remoto desligado e
+rollout não autorizado. Detalhes: [baseline F24.0](../review/F24_RELEASE_READINESS_BASELINE.md).
 
 ---
 
