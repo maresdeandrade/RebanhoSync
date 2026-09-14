@@ -31,7 +31,7 @@ describe("Website marketing", () => {
     ).toBeGreaterThan(0);
     expect(screen.getByText(/Agenda e Eventos permanecem separados/i)).toBeInTheDocument();
 
-    expect(document.body).not.toHaveTextContent(/100% offline/i);
+    expect(document.body).not.toHaveTextContent(/tudo funciona sem internet/i);
     expect(document.body).not.toHaveTextContent(/nunca perde dados/i);
     expect(document.body).not.toHaveTextContent(/liberado para abate/i);
   });
