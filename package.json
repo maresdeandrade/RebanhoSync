@@ -26,7 +26,7 @@
     "audit:clean": "node scripts/antigravity/run_bash.mjs scripts/antigravity/check_clean_tree.sh",
     "gates:headers": "node scripts/antigravity/run_bash.mjs scripts/antigravity/validate_docs_headers.sh",
     "gates:derivation": "node scripts/antigravity/run_bash.mjs scripts/antigravity/validate_docs_continuity.sh",
-    "gates:scope": "node scripts/antigravity/run_bash.mjs scripts/antigravity/validate_docs_scope.sh",
+    "gates:scope": "node scripts/antigravity/run_bash.mjs scripts/antigravity/validate_f24_1_scope.sh",
     "gates:docs-scope": "node scripts/antigravity/run_bash.mjs scripts/antigravity/validate_docs_scope.sh"
   },
   "dependencies": {

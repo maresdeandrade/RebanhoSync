@@ -16,6 +16,7 @@ Catálogo operacional. Scripts complementam `AGENTS.md` e `.agents/rules/*`; nã
 
 - `antigravity/docs_gates.sh`: agrega explicitamente headers, continuidade e auditoria.
 - `antigravity/validate_docs_scope.sh`: allowlist de uma reconciliação documental controlada.
+- `antigravity/validate_f24_1_scope.sh`: allowlist exata do closeout versionado F24.1.
 - `antigravity/validate_docs_headers.sh`: headers e baselines atuais.
 - `antigravity/validate_docs_continuity.sh`: transição entre plano, handoff, status e roadmap.
 
@@ -39,6 +40,7 @@ Entry points `validate_scoped_changes.sh`, `validate_rev_d_headers.sh` e `valida
 - `pnpm run gates:docs`: estrutura e continuidade documental.
 - `pnpm run gates:docs-scope`: escopo documental, quando aplicável.
 - `pnpm run audit:agents`: auditoria estática de `.agents`.
-- `gates`, `gates:scope`, `gates:headers`, `gates:derivation` e `audit:data` são aliases temporários de compatibilidade.
+- `gates:scope`: escopo explícito do closeout F24.1; demais aliases de compatibilidade não ampliam autorização.
+- `gates`, `gates:headers`, `gates:derivation` e `audit:data` são aliases temporários de compatibilidade.
 
 Operações externas, destrutivas, `full`, imports, ambientes descartáveis e preservação de screenshots exigem autorização explícita da tarefa atual.
