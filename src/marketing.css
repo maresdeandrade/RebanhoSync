@@ -1,0 +1,64 @@
+.marketing-site {
+  --background: 45 33% 95%;
+  --surface: 0 0% 100%;
+  --surface-muted: 47 21% 92%;
+  --surface-elevated: 0 0% 100%;
+  --border: 96 6% 84%;
+  --border-strong: 143 5% 70%;
+  --text-primary: 167 16% 11%;
+  --text-secondary: 158 6% 36%;
+  --text-muted: 153 5% 43%;
+  --foreground: var(--text-primary);
+  --card: var(--surface);
+  --card-foreground: var(--text-primary);
+  --muted: var(--surface-muted);
+  --muted-foreground: var(--text-muted);
+  --input: 153 5% 55%;
+  --ring: 17 53% 47%;
+
+  --brand-primary: 174 44% 17%;
+  --brand-primary-foreground: 0 0% 100%;
+  --brand-primary-hover: 174 47% 13%;
+  --brand-primary-active: 173 49% 11%;
+  --brand-primary-subtle: 172 24% 91%;
+  --brand-secondary: 44 35% 57%;
+  --brand-secondary-foreground: 167 16% 11%;
+  --brand-accent: 17 53% 47%;
+  --brand-accent-foreground: 0 0% 100%;
+  --brand-background: 45 33% 95%;
+
+  min-height: 100vh;
+  background: hsl(var(--background));
+  color: hsl(var(--text-primary));
+}
+
+.marketing-heading {
+  font-family: "Archivo", "InterVariable", "Inter", system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  letter-spacing: -0.025em;
+}
+
+/* 52 px target used by the marketing form; scoped to avoid extending the app utility surface. */
+.marketing-site .h-13 {
+  height: 3.25rem;
+}
+
+.marketing-site section[id] {
+  scroll-margin-top: 5.5rem;
+}
+
+.marketing-site ::selection {
+  background: hsl(var(--brand-secondary) / 0.45);
+  color: hsl(var(--text-primary));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-site *,
+  .marketing-site *::before,
+  .marketing-site *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
