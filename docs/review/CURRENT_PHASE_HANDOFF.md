@@ -1,8 +1,9 @@
-# Handoff atual — Fase 23 encerrada (CLOSED) / Simulação Produtiva e Comercial
+# Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-09-09
-Baseline autoritativo de saída da Fase 23: `main@28ee328e92b3cbaf4876cca170eb80e561facafe`
-Próxima fase: **Fase 24 — Release Hardening / Scale Readiness (NOT STARTED)**
+Atualizado em: 2026-09-14
+Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
+Próxima fase: **Fase 24 — F24.2 RLS / Auth / Tenant Isolation Final Gate**
+Decisão: **F24.1 TECHNICAL CLOSED / REPOSITORY CLOSEOUT PR READY / F24.1C DEFERRED / REMOTE ACL REHEARSAL PASS**
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -10,9 +11,63 @@ Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
-Status: **Fase 23 encerrada (CLOSED); PR #134 integrado (MERGED); transição para Fase 24 (NOT STARTED)**
+Status: **Fase 24 ativa; integração remota descartável reconstruída; produção não provisionada; F24.2 pronta**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
-Fase atual: **Fase 23 — Simulação Produtiva e Comercial (CLOSED)**
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
+
+## F24.0 — baseline e handoff
+
+Premissa autoritativa atual: `zqloazqzhwauamcejmuz` é
+`REMOTE_DEVELOPMENT_INTEGRATION / DISPOSABLE_INTEGRATION`, com reset permitido. O canal
+Vercel `Production` não comprova produção operacional; `PRODUCTION_BACKEND = NOT_PROVISIONED`,
+`PRODUCTION_DATA = NONE` e `ENVIRONMENT_ISOLATION = NOT_REQUIRED_PRE_PRODUCTION`. A criação
+de segundo staging F24.1C foi deferida. A
+[F24.1D](./F24_1D_REMOTE_ACL_REHEARSAL.md) comprovou 51 migrations e convergência das seis
+superfícies e o E2E de `sync-batch`. A F24.1D.1 corrigiu a autorização HTTP do
+`sanitario-reconcile` e comprovou matriz negativa, execução `service_role`, E2E 1/1, replay
+e limpeza. F24.1 está fechada; F24.2 está pronta e ainda não foi iniciada.
+
+### Registro histórico anterior ao rebaseline
+
+Os fatos de handoff abaixo foram registrados sob a premissa ambiental anterior. As evidências
+continuam úteis, mas as conclusões de produção compartilhada e staging obrigatório estão
+superadas pelo bloco acima.
+
+A matriz repo × staging × produção, os release blockers e o backlog F24.1–F24.8 estão em
+[F24_RELEASE_READINESS_BASELINE.md](./F24_RELEASE_READINESS_BASELINE.md).
+
+Fatos de handoff:
+
+- HEAD e `origin/main` foram confirmados em `93c3d1dd8401488139454c69c2a6595ae46abaa5`;
+- 49 migrations canônicas estão presentes no backend compartilhado, acompanhado de duas
+  versões remotas adicionais de reparo;
+- baseline funcional Supabase e gate de 35 funções `SECURITY DEFINER` passaram localmente;
+- long offline, RLS final, performance e delta produtivo não foram certificados;
+- `SANITARIO_V2_E2E_PLATFORM_BLOCKED`, flag `false`, gate remoto `OFF` e rollout não
+  autorizado permanecem obrigatórios;
+- a F24.1/F24.1A.1 corrigiu o contrato `sanitario-reconcile → recompute`, convergiu os
+  rehearsals A/B e passou no fluxo Edge local com `service_role`;
+- staging e produção apontam para `zqloazqzhwauamcejmuz`; o backend compartilhado bloqueia
+  isolamento e promoção remota; F24.2 não foi iniciada.
+
+O detalhamento está em
+[F24_1_PRODUCTION_MIGRATION_DELTA.md](./F24_1_PRODUCTION_MIGRATION_DELTA.md).
+
+O inventário de ambientes e o plano de isolamento estão em
+[F24_1B_ENVIRONMENT_ISOLATION_TOPOLOGY.md](./F24_1B_ENVIRONMENT_ISOLATION_TOPOLOGY.md).
+Não há staging isolado disponível; um novo projeto Supabase dedicado em `sa-east-1`, PG 17,
+é a topologia recomendada e depende de autorização explícita. A baseline reconstruível é
+`PARTIAL`, o plano de rehearsal ACL é `READY`, nenhuma escrita remota foi realizada e F24.2
+permanece `NOT_STARTED`.
+
+O contrato executável de reconstrução está em
+[F24_1C_STAGING_PROVISIONING_CONTRACT.md](./F24_1C_STAGING_PROVISIONING_CONTRACT.md). Ele
+fixa a baseline pré-F24.1, os contratos de Auth, `APP_ORIGIN` e `avatars`, e os blobs Edge.
+Nenhum projeto foi criado. `sanitario-reconcile` deve permanecer sem deploy na C.1 e só entra
+na F24.1D depois das duas migrations ACL, evitando tanto o handler pré-F24.1 inseguro quanto
+o handler candidato sem seu wrapper.
+
+O restante deste documento preserva o histórico de F23 e das fases anteriores.
 
 ## Fase 23 — Simulação Produtiva e Comercial (CLOSED)
 
@@ -31,7 +86,7 @@ Contratos e entregas integrados:
 - **Ponto de Acesso**: CTA contextual no detalhe do animal direcionando para a rota dedicada `/animais/:id/simulacao`.
 - **Zero Persistência**: Zero tabelas, zero stores Dexie, zero operações de fila, zero Eventos, zero Agendas, zero `state_*` novo e zero migrations.
 
-Status: `F23_V1 = CLOSED`, `TECHNICAL_CONVERGENCE = CLOSED`, `B3 = PLATFORM_BLOCKED / FAIL_CLOSED`, `F24 = NOT STARTED`.
+Status naquele fechamento: `F23_V1 = CLOSED`, `TECHNICAL_CONVERGENCE = CLOSED`, `B3 = PLATFORM_BLOCKED / FAIL_CLOSED`, `F24 = NOT STARTED`.
 
 ## Fase 22 — gate de fontes fechado
 
@@ -143,13 +198,13 @@ Status: **Concluída e certificada**. Baseline de infraestrutura e sync alinhado
    - Não bloqueia abertura da Fase 21.
 
 6. **Ambientes:**
-   - Staging: operacional e alinhado (`42 local == 42 staging`).
+   - Estado histórico naquele fechamento: staging operacional e alinhado em 42 migrations. O inventário atual da F24.0 registra 49 canônicas presentes e duas versões remotas adicionais de reparo.
    - Produção: 100% inalterada.
 
 7. **Trilha C — Hardening de Banco e Advisor (C0/C1):**
    - C0: Inventário autoritativo de 34 funções `SECURITY DEFINER` e respectivos grants catalogados sem ambiguidade (`UNKNOWN = 0`).
    - C1: Hardening de privilégios `EXECUTE` via migrations `20260827100000`, `20260827110000`, `20260827120000`. Revogação de `PUBLIC` em 100% das funções; `anon` restrito às 2 funções intencionais (`get_invite_preview`, `reject_invite`); funções de trigger e internas revogadas de `authenticated`; `get_user_emails` reforçado contra enumeração/vazamento cross-tenant; `seed_default_finance_categories` corrigido com `search_path` fixado.
-   - Status: local = 100% validado (`validate-security-definer-exposure.mjs`), staging dry-run = aprovado (3 migrations pendentes de push), C2–C7 = pendentes como trilha técnica independente; Fase 21 apta para abertura.
+   - Estado histórico no fechamento C1: staging dry-run aprovado e três migrations então pendentes. Estado posterior: C2–C7 foram concluídos, `TECHNICAL_CONVERGENCE = CLOSED`; a baseline F24.0 substitui este snapshot para decisões de release.
 
 
 ## Fechamento da Fase 20
@@ -504,14 +559,16 @@ A Fase 12 está tecnicamente encerrada. A pendência externa do conflito não bl
 
 | Item | Estado confirmado |
 |---|---|
-| Supabase staging | `zqloazqzhwauamcejmuz` |
-| Produção | Não alterada |
+| Supabase staging | `zqloazqzhwauamcejmuz` — backend compartilhado, não isolado |
+| Produção | `zqloazqzhwauamcejmuz` — não alterada |
 | Gate sanitário remoto | Desligado |
 | Feature flag local | `false` |
 | Rollout para usuários | Não autorizado |
 | Fixtures sintéticas residuais | Zero |
 
-O staging não é produção. Este documento não registra credenciais, secrets, tokens ou dados pessoais de fixtures.
+`STAGING_PRODUCTION_BACKEND = SHARED` e `ENVIRONMENT_ISOLATION = BLOCKED`. Nenhuma promoção
+remota está autorizada. Este documento não registra credenciais, secrets, tokens ou dados
+pessoais de fixtures.
 
 ## Risco externo atual
 

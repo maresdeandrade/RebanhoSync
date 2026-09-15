@@ -14,6 +14,7 @@
     "test:integration": "vitest run tests/integration",
     "test:hotspots": "vitest run Agenda Registrar ProtocolosSanitarios",
     "test:smoke": "vitest run tests/smoke",
+    "validate:sanitario-reconcile-auth": "node scripts/codex/validate-sanitario-reconcile-auth-contract.mjs",
     "quality:gate": "pnpm run lint && pnpm run test:hotspots && pnpm run test:integration && pnpm run test:smoke",
     "test:e2e": "vitest run --maxWorkers=1 src/pages/__tests__/OnboardingInicial.e2e.test.tsx src/pages/__tests__/PastosImportar.e2e.test.tsx src/pages/__tests__/LotesImportar.e2e.test.tsx src/pages/__tests__/Relatorios.e2e.test.tsx src/pages/__tests__/AnimalPosParto.e2e.test.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
@@ -26,7 +27,8 @@
     "audit:clean": "node scripts/antigravity/run_bash.mjs scripts/antigravity/check_clean_tree.sh",
     "gates:headers": "node scripts/antigravity/run_bash.mjs scripts/antigravity/validate_docs_headers.sh",
     "gates:derivation": "node scripts/antigravity/run_bash.mjs scripts/antigravity/validate_docs_continuity.sh",
-    "gates:scope": "node scripts/antigravity/run_bash.mjs scripts/antigravity/validate_docs_scope.sh",
+    "gates:scope": "pnpm run gates:docs-scope",
+    "gates:f24-1-scope": "node scripts/antigravity/run_bash.mjs scripts/antigravity/validate_f24_1_scope.sh",
     "gates:docs-scope": "node scripts/antigravity/run_bash.mjs scripts/antigravity/validate_docs_scope.sh"
   },
   "dependencies": {

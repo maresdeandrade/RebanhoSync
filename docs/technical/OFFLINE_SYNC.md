@@ -1,6 +1,6 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-08-23
+Atualizado em: 2026-09-13
 
 ## Responsabilidade documental
 
@@ -120,8 +120,19 @@ Não aumentar timeout nem alterar RPC sem nova evidência.
 
 O fingerprint remoto cobre evento, detalhe e relações completos. Alterar referência, cobertura ou snapshot crítico com a mesma identidade gera conflito. O fallback legado de animais só é usado quando não existe relação canônica.
 
-## Próxima pendência
+## Lacunas de release F24
 
-Certificação remota acumulada quando o ambiente estiver estável e os gates forem liberados para teste. E2Es remotos permanecem pendentes, feature gates desligados, rollout não autorizado e Fase 12 aberta.
+A Fase 12 permanece tecnicamente encerrada. O bloqueio externo sanitário não a reabre.
 
-Detalhes: [plano ativo](../review/ACTIVE_PHASE_PLAN.md) e [handoff](../review/CURRENT_PHASE_HANDOFF.md).
+Para release, implementação e teste unitário/local ainda não certificam:
+
+- offline prolongado com fila grande e conexão intermitente;
+- crash/restart durante push e ACK remoto perdido em todos os domínios críticos;
+- upgrade Dexie/app com operações pendentes heterogêneas;
+- concorrência multi-device transversal e pull concorrente;
+- correlação ponta a ponta entre identidade, tentativa, ACK e reconcile.
+
+O inventário e a classificação por ambiente estão na
+[baseline F24.0](../review/F24_RELEASE_READINESS_BASELINE.md). A recertificação remota do
+Sanitário v2 continua condicional à estabilidade da plataforma; gates desligados e rollout
+não autorizado permanecem obrigatórios.
