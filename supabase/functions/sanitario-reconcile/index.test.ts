@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
@@ -9,10 +10,11 @@ const migrationSource = readFileSync(
   ),
   'utf8',
 )
-const supabaseConfig = readFileSync(
-  new URL('../../config.toml', import.meta.url),
-  'utf8',
-)
+const supabaseConfig = process.env.GITHUB_ACTIONS
+  ? execFileSync('git', ['show', 'HEAD:supabase/config.toml'], {
+      encoding: 'utf8',
+    })
+  : readFileSync(new URL('../../config.toml', import.meta.url), 'utf8')
 
 describe('sanitario-reconcile backend authorization contract', () => {
   it('versions the gateway JWT verification trust boundary', () => {
