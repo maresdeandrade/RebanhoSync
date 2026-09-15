@@ -1,7 +1,7 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-09-14
-Status: **Fase 24 ativa; F24.1 TECHNICAL CLOSED / REPOSITORY CLOSEOUT PR READY; F24.1C DEFERRED; F24.2 READY_NOT_STARTED**
+Atualizado em: 2026-09-15
+Status: **Fase 24 ativa; F24.1 TECHNICAL CLOSED; F24.2A READY_FOR_REVIEW; F24.2B NOT_STARTED**
 Baseline da F24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`.
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`.
 Baseline integrado da Fase 23: `main@28ee328e92b3cbaf4876cca170eb80e561facafe`.
@@ -9,12 +9,23 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
-Próxima fase: **Fase 24 — F24.2 RLS / Auth / Tenant Isolation Final Gate**
+Próxima fase: **Fase 24 — F24.2B Offline/Reconnect Hardening — NOT_STARTED**
 
 Este documento aponta para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
 O backlog F24.1–F24.8, dependências, critérios de entrada/saída e release blockers estão
 registrados nessa baseline. Produção não está autorizada, o Sanitário v2 permanece
 `PLATFORM_BLOCKED`, e nenhuma frente posterior deve ser iniciada automaticamente.
+
+## F24.2A — closeout diagnóstico offline/reconnect
+
+A F24.2A inventariou o pipeline offline/reconnect real e sua matriz de falhas sobre
+`main@155dab4ddee73aedc83a9a53c6e075de7a5bd3ad`. O resultado está em
+[F24_2A_OFFLINE_SYNC_INVENTORY.md](./F24_2A_OFFLINE_SYNC_INVENTORY.md),
+[F24_2A_FAILURE_MATRIX.md](./F24_2A_FAILURE_MATRIX.md) e
+[F24_2A_RECOMMENDED_PATCH_ORDER.md](./F24_2A_RECOMMENDED_PATCH_ORDER.md).
+
+`F24.2A = READY_FOR_REVIEW`; `F24.2B = NOT_STARTED`. Este closeout não conclui a F24.2,
+não altera código funcional e não autoriza rollout, migration, RPC ou correção de P0/P1.
 
 ## Rebaseline F24.1D — ambiente descartável
 
