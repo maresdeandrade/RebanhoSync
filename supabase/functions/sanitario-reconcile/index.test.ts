@@ -9,8 +9,18 @@ const migrationSource = readFileSync(
   ),
   'utf8',
 )
+const supabaseConfig = readFileSync(
+  new URL('../../config.toml', import.meta.url),
+  'utf8',
+)
 
 describe('sanitario-reconcile backend authorization contract', () => {
+  it('versions the gateway JWT verification trust boundary', () => {
+    expect(supabaseConfig).toMatch(
+      /\[functions\.sanitario-reconcile\]\s+verify_jwt\s*=\s*true/,
+    )
+  })
+
   it('requires the incoming service-role credential before using the backend client', () => {
     expect(edgeSource).toContain("req.headers.get('Authorization')")
     expect(edgeSource).toContain(

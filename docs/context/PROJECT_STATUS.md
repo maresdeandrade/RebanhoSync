@@ -8,7 +8,7 @@ Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.1 TECHNICAL CLOSED / REPOSITORY CLOSEOUT PR READY)**.
-Próxima fase de desenvolvimento: **Fase 24 — F24.2 READY; F24.1C DEFERRED**.
+Próxima fase de desenvolvimento: **Fase 24 — F24.2 READY_NOT_STARTED; F24.1C DEFERRED**.
 Baseline de release: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = PLATFORM_BLOCKED`.
 
 ## Objetivo
@@ -30,7 +30,8 @@ canal Vercel `Production` não representa produção operacional. Portanto,
 `ENVIRONMENT_ISOLATION = NOT_REQUIRED_PRE_PRODUCTION` e a criação F24.1C foi deferida. A
 [F24.1D](../review/F24_1D_REMOTE_ACL_REHEARSAL.md) verificou o baseline remoto, o
 `sync-batch` e, após a correção F24.1D.1, o `sanitario-reconcile` com matriz negativa, E2E
-1/1 e replay. `F24.1 = CLOSED`; `F24.2 = READY`, ainda não iniciada.
+1/1 e replay. `F24.1_TECHNICAL = CLOSED`;
+`F24.1_REPOSITORY_CLOSEOUT = PR_READY_FOR_REVIEW`; `F24.2 = READY_NOT_STARTED`.
 
 Os parágrafos F24.0–F24.1C anteriores mantidos abaixo documentam a sequência histórica; onde
 classificam o mesmo project ref como produção compartilhada, prevalece o rebaseline acima.

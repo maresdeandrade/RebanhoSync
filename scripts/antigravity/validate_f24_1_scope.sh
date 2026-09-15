@@ -3,6 +3,8 @@ set -euo pipefail
 
 # Validates the exact repository closeout surface authorized for F24.1.
 # Staged, unstaged and untracked files are all considered.
+# This is intentionally a local-worktree gate; committed PR history is
+# inspected independently by the CI changed-files step and PR review.
 
 readonly ALLOWED=(
   "docs/context/KNOWN_GAPS.md"
@@ -24,6 +26,7 @@ readonly ALLOWED=(
   "scripts/codex/validate-security-definer-exposure.mjs"
   "supabase/functions/sanitario-reconcile/index.test.ts"
   "supabase/functions/sanitario-reconcile/index.ts"
+  "supabase/config.toml"
   "supabase/migrations/20260913232253_f24_acl_forward_only_reconciliation.sql"
   "supabase/migrations/20260914014309_f24_1a1_sanitario_reconcile_backend_wrapper.sql"
 )
