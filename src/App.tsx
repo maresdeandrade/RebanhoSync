@@ -56,6 +56,32 @@ const SanitarioCatalogoV2 = lazy(() => import("./pages/SanitarioCatalogoV2"));
 const ReproductionDashboard = lazy(() => import("./pages/ReproductionDashboard"));
 const OnboardingInicial = lazy(() => import("./pages/OnboardingInicial"));
 
+const MarketingProduct = lazy(() =>
+  import("./pages/marketing/StaticPages").then((module) => ({
+    default: module.MarketingProduct,
+  })),
+);
+const MarketingHowItWorks = lazy(() =>
+  import("./pages/marketing/StaticPages").then((module) => ({
+    default: module.MarketingHowItWorks,
+  })),
+);
+const MarketingTrust = lazy(() =>
+  import("./pages/marketing/StaticPages").then((module) => ({
+    default: module.MarketingTrust,
+  })),
+);
+const MarketingFaq = lazy(() =>
+  import("./pages/marketing/StaticPages").then((module) => ({
+    default: module.MarketingFaq,
+  })),
+);
+const MarketingContact = lazy(() =>
+  import("./pages/marketing/StaticPages").then((module) => ({
+    default: module.MarketingContact,
+  })),
+);
+
 const App = () => (
   <BrowserRouter
     future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
@@ -63,6 +89,11 @@ const App = () => (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/produto" element={<MarketingProduct />} />
+        <Route path="/como-funciona" element={<MarketingHowItWorks />} />
+        <Route path="/seguranca-e-confianca" element={<MarketingTrust />} />
+        <Route path="/faq" element={<MarketingFaq />} />
+        <Route path="/contato" element={<MarketingContact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
 
