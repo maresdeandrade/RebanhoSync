@@ -361,7 +361,11 @@ describe("sync-batch rules: normalizeDbError", () => {
 
 describe("sync-batch rules: persisted operation replay", () => {
   it("aceita somente a mesma identidade de operação e gesture", () => {
-    const operation = op({ client_op_id: "op-replay-1" });
+    const operation = op({
+      client_op_id: "op-replay-1",
+      table: "eventos",
+      record: { id: "event-1" },
+    });
 
     expect(
       isPersistedOperationReplay(
@@ -384,6 +388,35 @@ describe("sync-batch rules: persisted operation replay", () => {
         "tx-replay-1",
       ),
     ).toBe(false);
+  });
+
+  it("não reconhece a mesma PK com identidade divergente como replay", () => {
+    const operation = op({
+      client_op_id: "op-2",
+      table: "eventos",
+      action: "INSERT",
+      record: { id: "event-1" },
+    });
+
+    expect(
+      isPersistedOperationReplay(
+        { id: "event-1", client_op_id: "op-1", client_tx_id: "tx-1" },
+        operation,
+        "tx-2",
+      ),
+    ).toBe(false);
+    expect(
+      normalizeDbError(
+        {
+          code: "23505",
+          message: 'duplicate key value violates unique constraint "eventos_pkey"',
+        },
+        operation,
+      ),
+    ).toMatchObject({
+      status: "REJECTED",
+      reason_code: "OPERATION_IDENTITY_CONFLICT",
+    });
   });
 });
 
@@ -411,6 +444,23 @@ describe("sync-batch rules: mutation key resolution", () => {
 
     const match = buildMutationMatch(operation, "faz-1");
     expect(match).toEqual({ id: "ani-1", fazenda_id: "faz-1" });
+  });
+
+  it("mantém o lookup da mesma identidade de registro isolado por fazenda", () => {
+    const operation = op({
+      table: "eventos",
+      action: "INSERT",
+      record: { id: "evt-shared", source_task_id: "agenda-shared" },
+    });
+
+    expect(buildMutationMatch(operation, "faz-1")).toEqual({
+      id: "evt-shared",
+      fazenda_id: "faz-1",
+    });
+    expect(buildMutationMatch(operation, "faz-2")).toEqual({
+      id: "evt-shared",
+      fazenda_id: "faz-2",
+    });
   });
 
   it("uses id for sanitario_casos", () => {

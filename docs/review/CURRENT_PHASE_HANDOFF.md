@@ -1,9 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-09-15
+Atualizado em: 2026-09-16
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
-Próxima fase: **Fase 24 — F24.2B Offline/Reconnect Hardening — NOT_STARTED**
-Decisão: **F24.2A READY_FOR_REVIEW / F24.2B NOT_STARTED / F24.2 NOT COMPLETED**
+Próxima fase: **Fase 24 — F24.2C Atomic Ack & SYNCING Recovery — NOT_STARTED**
+Decisão: **F24.2A CLOSED / F24.2B READY_FOR_CLOSEOUT / F24.2 IN_PROGRESS**
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -11,23 +11,25 @@ Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
-Status: **Fase 24 ativa; F24.2A diagnóstico concluído e pronto para revisão; F24.2B não iniciada**
+Status: **Fase 24 ativa; F24.2B1 pronta para revisão; hipótese P0 não confirmada**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
-## F24.2A — handoff de closeout
+## F24.2B1 — handoff de caracterização
 
-O inventário offline/reconnect, a failure matrix e a ordem recomendada de patches foram
-produzidos sobre `main@155dab4ddee73aedc83a9a53c6e075de7a5bd3ad`. O closeout é exclusivamente
-documental. O único P0 diagnosticado deve ser investigado em F24.2B por identidade estável
-de comando, proveniência do Evento e criação idempotente do fato; igualdade de conteúdo não
-prova replay, e execuções distintas com conteúdo igual podem produzir fatos distintos.
+O inventário B0 foi versionado em
+`d2c70c6e8ba44f58e6a3036b09d2671462e111b3`. A B1 comprovou por testes que a mesma
+identidade converge para um fato, colisão de PK com identidade divergente é conflito, e
+comandos distintos com conteúdo igual podem produzir fatos distintos. Não houve mudança
+funcional de runtime.
 
-Documentos: [inventário](./F24_2A_OFFLINE_SYNC_INVENTORY.md),
-[failure matrix](./F24_2A_FAILURE_MATRIX.md) e
-[ordem de patches](./F24_2A_RECOMMENDED_PATCH_ORDER.md).
+Documentos: [auditoria B0](./F24_2B0_EVENT_PROVENANCE_STABLE_IDENTITY_AUDIT.md),
+[caracterização B1](./F24_2B1_EVENT_IDENTITY_CHARACTERIZATION.md),
+[failure matrix](./F24_2A_FAILURE_MATRIX.md) e [ordem de patches](./F24_2A_RECOMMENDED_PATCH_ORDER.md).
 
-`F24.2A = READY_FOR_REVIEW`; `F24.2B = NOT_STARTED`; F24.2 permanece aberta.
+`F24.2B0 = CLOSED`; `F24.2B1 = READY_FOR_REVIEW`; `F24.2B = READY_FOR_CLOSEOUT`.
+`DUPLICATE_EVENT = NOT_CONFIRMED_AS_SYNC_FAILURE`. F24.2 permanece em progresso. O próximo
+risco comprovado recomendado é F24.2C, ack atômico e recovery de `SYNCING`, ainda não iniciado.
 
 ## F24.0 — baseline e handoff
 

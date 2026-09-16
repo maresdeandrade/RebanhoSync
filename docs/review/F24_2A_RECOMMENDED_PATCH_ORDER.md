@@ -2,14 +2,14 @@
 
 Esta é uma recomendação diagnóstica. Nenhum patch funcional foi iniciado e F24.2 não está concluída.
 
-## F24.2B — Identidade estável de comando e proveniência factual (P0)
+## F24.2B — Caracterização de identidade e proveniência factual (READY_FOR_CLOSEOUT)
 
-- **Objetivo:** investigar e proteger `stable command identity`, `event provenance` e `idempotent fact creation` nos caminhos factuais genéricos, sem usar comparação heurística de conteúdo como prova de replay.
-- **Arquivos prováveis:** a confirmar após inventário dirigido do schema e dos builders reais; candidatos de investigação incluem `src/lib/events/**`, envelopes offline e validação do `sync-batch`.
+- **Resultado:** B0 auditou `stable command identity`, `event provenance` e `idempotent fact creation`; B1 fixou o contrato por testes sem alteração funcional de runtime.
+- **Arquivos efetivos:** testes de Evento/Dexie/`sync-batch` e documentação de revisão; nenhuma migration, coluna, ledger, RPC ou schema Dexie.
 - **Invariante:** mesma execução/replay → um fato; execuções distintas com conteúdo igual → podem gerar fatos distintos. Evento continua append-only e correção continua novo Evento.
-- **Teste necessário:** mesma identidade estável/proveniência reapresentada em dois devices produz um fato; reutilização conflitante da mesma identidade é rejeitada; identidades de execuções distintas permanecem fatos distintos mesmo com conteúdo igual.
-- **Risco de regressão:** alto se identidade de comando for confundida com similaridade de conteúdo ou agrupar execuções legítimas.
-- **Dependências:** análise do schema real, da proveniência disponível e das identidades já persistidas por domínio. Não definir campo, constraint, tabela ou migration antes dessa análise.
+- **Evidência:** replay idêntico converge, response-lost preserva IDs, PK com identidade divergente conflita, payload igual com IDs distintos produz dois fatos, Agenda é idempotente e fazendas permanecem isoladas.
+- **Classificação:** `DUPLICATE_EVENT = NOT_CONFIRMED_AS_SYNC_FAILURE`; ambiguidade ad hoc cross-device sem origem causal compartilhada permanece `UNKNOWN`.
+- **Dependências:** nenhuma pendência funcional B1; fechamento formal ainda necessário.
 
 ## F24.2C — Ack atômico e recovery de estados intermediários
 
@@ -68,7 +68,7 @@ Esta é uma recomendação diagnóstica. Nenhum patch funcional foi iniciado e F
 ## Sequência mínima segura
 
 ```text
-F24.2B (P0 identidade estável/proveniência factual)
+F24.2B (caracterização concluída; P0 não confirmado)
 → F24.2C (ack/recovery)
 → F24.2D (retry/reconnect)
 → F24.2E (owner/farm isolation local)

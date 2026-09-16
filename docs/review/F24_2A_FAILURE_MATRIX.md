@@ -35,17 +35,19 @@ Legenda: `C` = CONFIRMED, `I` = INFERENCE, `U` = UNKNOWN. “Perda” considera 
 | SWITCH_FARM_WITH_PENDING_QUEUE | (C/I) fila é por fazenda e push usa fazenda do gesto; pull inicial `replace` limpa stores inteiros e preserva apenas pendências da fazenda puxada. | Troca não deve remover projeção/pending de outra fazenda. | fila sobrevive; projeção pode sumir até novo pull/push. | Sim | projeção recuperável / não / remoto não | P1 |
 | LOGOUT_WITH_PENDING_QUEUE | (C) logout para worker e remove active farm, mas mantém Dexie/fila. | Não perder fila; não transferir autoridade silenciosamente. | fila reaparece no próximo login. | Sim | não / baixo / servidor valida | P1 |
 | LOGIN_OTHER_USER_WITH_EXISTING_LOCAL_DATA | (C/I) Dexie e queue não têm `user_id`; novo AppShell processa todos os PENDING. Sem membership recebe 403; com membership na mesma fazenda pode enviar pendência anterior. | Fila deve ter ownership/session policy explícita. | Só membership/RLS remoto; sem detector local de troca de usuário. | Sim | não / baixo / cross-tenant remoto bloqueado | P1 |
-| DUPLICATE_EVENT | (C/I) replay da mesma identidade é bloqueado; comandos com identidades distintas são tratados como execuções distintas. O caminho genérico não registra proveniência suficiente para reconhecer a mesma execução reapresentada com identidade regenerada. | Mesma execução/replay → um fato; execuções distintas com conteúdo igual → podem gerar fatos distintos. | Proteções existem em fluxos especializados, mas não há contrato genérico de identidade estável/proveniência factual. | Apenas com identidade preservada | não / **sim** / não | **P0** |
+| DUPLICATE_EVENT | (C) B0/B1 não localizaram caminho que regenere identidade da mesma execução persistida. Replay conserva `event_id`/`client_tx_id`/`client_op_id`; mesma PK com identidade divergente conflita; comandos distintos com payload igual permanecem fatos distintos. | Mesma execução/replay → um fato; execuções distintas com conteúdo igual → podem gerar fatos distintos. | Testes de caracterização de replay, response-lost, conflito, payload igual, Agenda e fazenda. Ambiguidade humana cross-device sem origem causal compartilhada permanece UNKNOWN. | Sim, com identidade preservada | não comprovado / não comprovado / não | NOT_CONFIRMED |
 | AGENDA_INCORRECTLY_PROMOTED_TO_HISTORY | (C) `state_*` push direto é bloqueado; closure sanitária que alegue execução é bloqueada; execução histórica exige Evento. | Agenda continua intenção. | validações client/Edge e testes. | Sim | não / não / não | NONE |
 | STATE_MODEL_TEMPORARILY_INCONSISTENT | (C) optimistic state é esperado; post-sync pull pode falhar após op aplicada. Além disso, falha de `sanitario_recompute_agenda_for_fazenda` é apenas warning e resultados seguem APPLIED. | Read model deve convergir ou manter job/retry durável. | warning/log; restart/pull pode reparar parte local; recompute remoto não é reencaminhado. | U para recompute | recuperável / não / não | P1 |
 
-## P0 comprovado
+## P0 reclassificado
 
-### P0-01 — Mesma execução pode criar mais de um fato sem identidade estável/proveniência
+### DUPLICATE_EVENT — NOT_CONFIRMED_AS_SYNC_FAILURE
 
-**CONFIRMED:** o caminho genérico deduplica por PK + `client_op_id` + `client_tx_id`. O Edge trata comandos com identidades distintas como operações distintas. `source_task_id` protege o subconjunto originado de Agenda, e os fluxos sanitário/comercial/reprodutivo especializados possuem identidade/proveniência adicional; isso não cobre todo Evento genérico.
+**CONFIRMED:** a F24.2B0 não encontrou caminho técnico de retry, restart ou response-lost que regenere a identidade de uma execução persistida. A F24.2B1 comprovou por testes que replay da mesma identidade mantém um fato, mesma PK com identidade divergente é conflito, e identidades distintas com payload igual geram fatos distintos legitimamente.
 
-**INFERENCE de falha:** a mesma execução reapresentada por outro dispositivo ou fluxo com identidade regenerada pode persistir outro Evento histórico. Isso satisfaz a definição P0 fornecida (duplicação de fato histórico). Conteúdo igual, isoladamente, não prova replay: execuções distintas com conteúdo igual podem gerar fatos distintos. O cenário precisa de teste E2E específico antes de qualquer decisão de schema.
+**UNKNOWN preservado:** fatos ad hoc registrados independentemente em dispositivos distintos, sem identidade causal compartilhada, não permitem distinguir automaticamente duplicidade humana de execuções legítimas. Isso não comprova falha de replay e não autoriza deduplicação por conteúdo.
+
+Não há P0 comprovado nesta superfície na baseline caracterizada.
 
 ## P1 comprovados
 
@@ -60,4 +62,4 @@ Legenda: `C` = CONFIRMED, `I` = INFERENCE, `U` = UNKNOWN. “Perda” considera 
 
 1. Retry genérico não usa backoff/jitter e pode gerar rajadas a cada 5 s.
 2. Observabilidade é majoritariamente log/metric local; não há watchdog de gesto SYNCING nem razão estruturada para todos os erros.
-3. Cobertura não inclui crash/ack, login cruzado, farm switch pendente ou replay factual genérico sem identidade/proveniência preservada.
+3. Cobertura não inclui crash/ack, login cruzado ou farm switch pendente.

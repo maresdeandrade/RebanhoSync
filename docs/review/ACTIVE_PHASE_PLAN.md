@@ -1,7 +1,7 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-09-15
-Status: **Fase 24 ativa; F24.1 TECHNICAL CLOSED; F24.2A READY_FOR_REVIEW; F24.2B NOT_STARTED**
+Atualizado em: 2026-09-16
+Status: **Fase 24 ativa; F24.2A CLOSED; F24.2B READY_FOR_CLOSEOUT; F24.2 IN_PROGRESS**
 Baseline da F24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`.
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`.
 Baseline integrado da Fase 23: `main@28ee328e92b3cbaf4876cca170eb80e561facafe`.
@@ -9,7 +9,7 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
-Próxima fase: **Fase 24 — F24.2B Offline/Reconnect Hardening — NOT_STARTED**
+Próxima fase: **Fase 24 — F24.2C Atomic Ack & SYNCING Recovery — NOT_STARTED**
 
 Este documento aponta para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
 O backlog F24.1–F24.8, dependências, critérios de entrada/saída e release blockers estão
@@ -24,8 +24,10 @@ A F24.2A inventariou o pipeline offline/reconnect real e sua matriz de falhas so
 [F24_2A_FAILURE_MATRIX.md](./F24_2A_FAILURE_MATRIX.md) e
 [F24_2A_RECOMMENDED_PATCH_ORDER.md](./F24_2A_RECOMMENDED_PATCH_ORDER.md).
 
-`F24.2A = READY_FOR_REVIEW`; `F24.2B = NOT_STARTED`. Este closeout não conclui a F24.2,
-não altera código funcional e não autoriza rollout, migration, RPC ou correção de P0/P1.
+`F24.2A = CLOSED`; `F24.2B0 = CLOSED`; `F24.2B1 = READY_FOR_REVIEW` e
+`F24.2B = READY_FOR_CLOSEOUT`. A hipótese `DUPLICATE_EVENT` foi reclassificada como
+`NOT_CONFIRMED_AS_SYNC_FAILURE` após auditoria e testes de caracterização, sem mudança
+funcional. F24.2 permanece em progresso; F24.2C não foi iniciada.
 
 ## Rebaseline F24.1D — ambiente descartável
 
