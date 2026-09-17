@@ -110,6 +110,7 @@ export const startSyncWorker = () => {
       if (!startupRecoveryDone) {
         await recoverErroredGesturesOnce();
         await recoverBlockedSanitarioV2Operations("app_startup");
+        await recoverStaleSyncingGesturesOnce();
         startupRecoveryDone = true;
       }
 
@@ -615,6 +616,49 @@ export async function recoverErroredGesturesOnce() {
   console.warn(
     `[sync-worker] Re-queued ${recoverable.length} recoverable ERROR gesture(s)`,
   );
+}
+
+export async function recoverStaleSyncingGesturesOnce() {
+  const syncing = await db.queue_gestures
+    .where("status")
+    .equals("SYNCING")
+    .toArray();
+  if (syncing.length === 0) return 0;
+
+  let recovered = 0;
+  await db.transaction("rw", [db.queue_gestures, db.queue_ops], async () => {
+    for (const gesture of syncing) {
+      const current = await db.queue_gestures.get(gesture.client_tx_id);
+      if (current?.status !== "SYNCING") continue;
+
+      const operations = await db.queue_ops
+        .where("client_tx_id")
+        .equals(gesture.client_tx_id)
+        .toArray();
+      const hasNonTerminalOperation = operations.some(
+        (operation) =>
+          operation.sync_state !== "REJECTED" &&
+          operation.sync_state !== "BLOCKED_DEPENDENCY",
+      );
+      if (!hasNonTerminalOperation) continue;
+
+      await db.queue_gestures.update(gesture.client_tx_id, {
+        status: "PENDING",
+        sync_result: undefined,
+        completed_at: undefined,
+        last_error:
+          "Recovered interrupted sync; retrying with persisted identity",
+      });
+      recovered += 1;
+    }
+  });
+
+  if (recovered > 0) {
+    console.warn(
+      `[sync-worker] Re-queued ${recovered} interrupted SYNCING gesture(s)`,
+    );
+  }
+  return recovered;
 }
 
 export type SanitarioV2RecoveryTrigger =
@@ -1157,8 +1201,46 @@ export async function processGesture(gesture: Gesture) {
       );
       const refreshTables = new Set<string>();
 
-      await db.queue_ops.bulkDelete(
-        ops.map((operation) => operation.client_op_id),
+      await db.transaction(
+        "rw",
+        [db.queue_gestures, db.queue_ops],
+        async () => {
+          await db.queue_ops.bulkDelete(
+            ops.map((operation) => operation.client_op_id),
+          );
+          const remaining = await db.queue_ops
+            .where("client_tx_id")
+            .equals(gesture.client_tx_id)
+            .toArray();
+          const hasRemainingRejected = remaining.some(
+            (operation) => operation.sync_state === "REJECTED",
+          );
+          await db.queue_gestures.update(gesture.client_tx_id, {
+            status:
+              remaining.length === 0
+                ? "DONE"
+                : hasRemainingRejected
+                  ? "REJECTED"
+                  : "PENDING",
+            sync_result:
+              remaining.length === 0
+                ? syncResult
+                : hasRemainingRejected
+                  ? "REJECTED"
+                  : undefined,
+            completed_at:
+              remaining.length === 0 || hasRemainingRejected
+                ? completedAt
+                : undefined,
+            last_error: hasRemainingRejected
+              ? "Gesture ainda possui operações rejeitadas"
+              : undefined,
+            operation_results: mergeOperationAudit(
+              gesture.operation_results,
+              genericPlan.audits,
+            ),
+          });
+        },
       );
 
       if (hasCommercialPurchase) {
@@ -1244,44 +1326,6 @@ export async function processGesture(gesture: Gesture) {
         }
       }
 
-      await db.transaction(
-        "rw",
-        [db.queue_gestures, db.queue_ops],
-        async () => {
-          const remaining = await db.queue_ops
-            .where("client_tx_id")
-            .equals(gesture.client_tx_id)
-            .toArray();
-          const hasRemainingRejected = remaining.some(
-            (operation) => operation.sync_state === "REJECTED",
-          );
-          await db.queue_gestures.update(gesture.client_tx_id, {
-            status:
-              remaining.length === 0
-                ? "DONE"
-                : hasRemainingRejected
-                  ? "REJECTED"
-                  : "PENDING",
-            sync_result:
-              remaining.length === 0
-                ? syncResult
-                : hasRemainingRejected
-                  ? "REJECTED"
-                  : undefined,
-            completed_at:
-              remaining.length === 0 || hasRemainingRejected
-                ? completedAt
-                : undefined,
-            last_error: hasRemainingRejected
-              ? "Gesture ainda possui operações rejeitadas"
-              : undefined,
-            operation_results: mergeOperationAudit(
-              gesture.operation_results,
-              genericPlan.audits,
-            ),
-          });
-        },
-      );
       await trackPilotMetric({
         fazendaId: gesture.fazenda_id,
         eventName: "sync_success",

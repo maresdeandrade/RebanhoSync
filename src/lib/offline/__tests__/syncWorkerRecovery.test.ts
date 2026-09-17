@@ -5,8 +5,11 @@ import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "../db";
-import { recoverErroredGesturesOnce } from "../syncWorker";
-import type { Gesture } from "../types";
+import {
+  recoverErroredGesturesOnce,
+  recoverStaleSyncingGesturesOnce,
+} from "../syncWorker";
+import type { Gesture, Operation } from "../types";
 
 function makeGesture(overrides: Partial<Gesture> = {}): Gesture {
   return {
@@ -24,11 +27,11 @@ function makeGesture(overrides: Partial<Gesture> = {}): Gesture {
 
 describe("syncWorker recovery", () => {
   beforeEach(async () => {
-    await db.queue_gestures.clear();
+    await Promise.all([db.queue_gestures.clear(), db.queue_ops.clear()]);
   });
 
   afterEach(async () => {
-    await db.queue_gestures.clear();
+    await Promise.all([db.queue_gestures.clear(), db.queue_ops.clear()]);
   });
 
   it("requeues transient HTTP 503 gestures after local Edge Functions recover", async () => {
@@ -90,6 +93,68 @@ describe("syncWorker recovery", () => {
       sync_result: "ERROR",
       retry_count: 1,
       last_error: 'HTTP 403 - {"error":"Forbidden - no access to this farm"}',
+    });
+  });
+
+  it("requeues stale SYNCING only when persisted work is non-terminal", async () => {
+    const txId = "tx-stale-syncing";
+    const operation: Operation = {
+      client_tx_id: txId,
+      client_op_id: "op-stale-syncing",
+      table: "eventos",
+      action: "INSERT",
+      record: { id: "event-stale-syncing", fazenda_id: "farm-1" },
+      sync_state: "PENDING",
+      created_at: "2026-05-01T09:59:00.000Z",
+    };
+    await db.queue_gestures.add(
+      makeGesture({ client_tx_id: txId, status: "SYNCING" }),
+    );
+    await db.queue_ops.add(operation);
+
+    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(1);
+
+    expect(await db.queue_gestures.get(txId)).toMatchObject({
+      client_tx_id: txId,
+      status: "PENDING",
+      last_error:
+        "Recovered interrupted sync; retrying with persisted identity",
+    });
+    expect(await db.queue_ops.get(operation.client_op_id)).toEqual(operation);
+  });
+
+  it("leaves stale SYNCING without operations fail-closed", async () => {
+    const txId = "tx-stale-without-ops";
+    await db.queue_gestures.add(
+      makeGesture({ client_tx_id: txId, status: "SYNCING" }),
+    );
+
+    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(0);
+
+    expect(await db.queue_gestures.get(txId)).toMatchObject({
+      client_tx_id: txId,
+      status: "SYNCING",
+    });
+  });
+
+  it("leaves stale SYNCING with only terminal operations fail-closed", async () => {
+    const txId = "tx-stale-terminal";
+    await db.queue_gestures.add(
+      makeGesture({ client_tx_id: txId, status: "SYNCING" }),
+    );
+    await db.queue_ops.add({
+      client_tx_id: txId,
+      client_op_id: "op-stale-terminal",
+      table: "eventos",
+      action: "INSERT",
+      record: { id: "event-stale-terminal", fazenda_id: "farm-1" },
+      sync_state: "REJECTED",
+      created_at: "2026-05-01T09:59:00.000Z",
+    });
+
+    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(0);
+    expect(await db.queue_gestures.get(txId)).toMatchObject({
+      status: "SYNCING",
     });
   });
 });
