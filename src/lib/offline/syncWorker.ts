@@ -52,6 +52,82 @@ let startupRecoveryDone = false;
 let initialPullFarmId: string | null = null;
 let isInitialPullRunning = false;
 
+const localActiveGestureLocks = new Set<string>();
+
+export async function withGestureLock<T>(
+  clientTxId: string,
+  fn: (acquired: boolean) => Promise<T>,
+): Promise<T> {
+  const lockName = `rebanhosync:gesture:${clientTxId}`;
+
+  if (localActiveGestureLocks.has(clientTxId)) {
+    return fn(false);
+  }
+
+  if (typeof navigator !== "undefined" && navigator?.locks?.request) {
+    return new Promise<T>((resolve, reject) => {
+      navigator.locks
+        .request(lockName, { ifAvailable: true }, async (lock) => {
+          if (lock === null) {
+            try {
+              const res = await fn(false);
+              resolve(res);
+            } catch (err) {
+              reject(err);
+            }
+            return;
+          }
+
+          localActiveGestureLocks.add(clientTxId);
+          try {
+            const res = await fn(true);
+            resolve(res);
+          } catch (err) {
+            reject(err);
+          } finally {
+            localActiveGestureLocks.delete(clientTxId);
+          }
+        })
+        .catch(reject);
+    });
+  }
+
+  localActiveGestureLocks.add(clientTxId);
+  try {
+    return await fn(true);
+  } finally {
+    localActiveGestureLocks.delete(clientTxId);
+  }
+}
+
+export async function isGestureLockActive(
+  clientTxId: string,
+): Promise<boolean> {
+  if (localActiveGestureLocks.has(clientTxId)) {
+    return true;
+  }
+
+  if (typeof navigator !== "undefined" && navigator?.locks?.request) {
+    return new Promise<boolean>((resolve) => {
+      navigator.locks
+        .request(
+          `rebanhosync:gesture:${clientTxId}`,
+          { ifAvailable: true },
+          async (lock) => {
+            if (lock === null) {
+              resolve(true);
+              return;
+            }
+            resolve(false);
+          },
+        )
+        .catch(() => resolve(false));
+    });
+  }
+
+  return false;
+}
+
 const WORKER_INTERVAL_MS = 5000;
 const MAX_RETRIES = 3;
 const RECOVERABLE_ERROR_MARKERS = [
@@ -126,11 +202,24 @@ export const startSyncWorker = () => {
           const error = e instanceof Error ? e : new Error(String(e));
           console.error("[sync-worker] Error processing gesture:", error);
 
-          await db.queue_gestures.update(gesture.client_tx_id, {
-            status: "ERROR",
-            sync_result: "ERROR",
-            completed_at: new Date().toISOString(),
-            last_error: error.message,
+          await db.transaction("rw", [db.queue_gestures], async () => {
+            const current = await db.queue_gestures.get(gesture.client_tx_id);
+            if (
+              !current ||
+              current.status === "DONE" ||
+              current.status === "REJECTED"
+            ) {
+              return;
+            }
+            if (current.status !== "SYNCING") {
+              return;
+            }
+            await db.queue_gestures.update(gesture.client_tx_id, {
+              status: "ERROR",
+              sync_result: "ERROR",
+              completed_at: new Date().toISOString(),
+              last_error: error.message,
+            });
           });
         }
       }
@@ -171,6 +260,7 @@ export const stopSyncWorker = () => {
 
   isTickRunning = false;
   startupRecoveryDone = false;
+  localActiveGestureLocks.clear();
 };
 
 export async function runInitialOfflinePullForActiveFarmOnce() {
@@ -530,7 +620,13 @@ async function processSanitarioCanonicalResults(
   await db.transaction(
     "rw",
     [db.queue_gestures, db.queue_ops, db.queue_rejections],
+    // fallow-ignore-next-line complexity
     async () => {
+      const current = await db.queue_gestures.get(gesture.client_tx_id);
+      if (!current || current.status !== "SYNCING") {
+        return;
+      }
+
       if (deleteIds.size > 0) {
         await db.queue_ops.bulkDelete(Array.from(deleteIds));
       }
@@ -552,7 +648,7 @@ async function processSanitarioCanonicalResults(
         (op) => op.sync_state === "BLOCKED_DEPENDENCY",
       );
       const operationResults = mergeOperationAudit(
-        gesture.operation_results,
+        current.operation_results ?? gesture.operation_results,
         audits,
       );
 
@@ -571,7 +667,7 @@ async function processSanitarioCanonicalResults(
           status: "PENDING",
           sync_result: undefined,
           completed_at: undefined,
-          retry_count: (gesture.retry_count ?? 0) + 1,
+          retry_count: (current.retry_count ?? gesture.retry_count ?? 0) + 1,
           last_error: "sanitario_v2 retry scheduled with backoff",
           operation_results: operationResults,
         });
@@ -625,9 +721,20 @@ export async function recoverStaleSyncingGesturesOnce() {
     .toArray();
   if (syncing.length === 0) return 0;
 
+  const activeLockTxIds = new Set<string>();
+  for (const gesture of syncing) {
+    if (await isGestureLockActive(gesture.client_tx_id)) {
+      activeLockTxIds.add(gesture.client_tx_id);
+    }
+  }
+
   let recovered = 0;
   await db.transaction("rw", [db.queue_gestures, db.queue_ops], async () => {
     for (const gesture of syncing) {
+      if (activeLockTxIds.has(gesture.client_tx_id)) {
+        continue;
+      }
+
       const current = await db.queue_gestures.get(gesture.client_tx_id);
       if (current?.status !== "SYNCING") continue;
 
@@ -843,7 +950,13 @@ async function reconcileGenericOperationResults(
     ]),
   );
 
+  // fallow-ignore-next-line complexity
   await db.transaction("rw", transactionStores, async () => {
+    const current = await db.queue_gestures.get(gesture.client_tx_id);
+    if (!current || current.status !== "SYNCING") {
+      return;
+    }
+
     for (const op of [...rejectedOps].reverse()) {
       await rollbackOpLocal(op);
     }
@@ -909,7 +1022,7 @@ async function reconcileGenericOperationResults(
       completed_at: retryableOps.length > 0 ? undefined : recordedAt,
       last_error: rejectionSummary || "Gesture has rejected operations",
       operation_results: mergeOperationAudit(
-        gesture.operation_results,
+        current.operation_results ?? gesture.operation_results,
         plan.audits,
       ),
     });
@@ -1012,62 +1125,94 @@ function buildTerminalBlockedDependencyClassifier(
 }
 
 export async function processGesture(gesture: Gesture) {
-  const queuedOps = await db.queue_ops
-    .where("client_tx_id")
-    .equals(gesture.client_tx_id)
-    .toArray();
-  const readyOps = queuedOps.filter(
-    (op) => op.sync_state !== "REJECTED" && isOperationReadyForSync(op),
-  );
+  // fallow-ignore-next-line complexity
+  return withGestureLock(gesture.client_tx_id, async (acquired) => {
+    if (!acquired) {
+      // Loser worker: another processor is actively holding the lock for this gesture
+      return;
+    }
 
-  if (readyOps.length === 0) {
-    const hasDeferredRetry = queuedOps.some(
-      (op) => op.sync_state === "RETRYABLE",
+    // PATCH 1: Atomic claim inside exclusive Dexie transaction
+    const claimAcquired = await db.transaction(
+      "rw",
+      [db.queue_gestures],
+      async () => {
+        const current = await db.queue_gestures.get(gesture.client_tx_id);
+        if (!current || current.status !== "PENDING") {
+          return false;
+        }
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: "SYNCING",
+          sync_result: undefined,
+          completed_at: undefined,
+        });
+        return true;
+      },
     );
-    const hasBlockedDependency = queuedOps.some(
-      (op) => op.sync_state === "BLOCKED_DEPENDENCY",
+
+    if (!claimAcquired) {
+      // Gesture is not PENDING (already claimed, terminal, or completed)
+      return;
+    }
+
+    // PATCH 2: Revalidate work AFTER successful claim
+    const queuedOps = await db.queue_ops
+      .where("client_tx_id")
+      .equals(gesture.client_tx_id)
+      .toArray();
+    const readyOps = queuedOps.filter(
+      (op) => op.sync_state !== "REJECTED" && isOperationReadyForSync(op),
     );
-    const hasRejectedOperation = queuedOps.some(
-      (op) => op.sync_state === "REJECTED",
-    );
 
-    await db.queue_gestures.update(gesture.client_tx_id, {
-      status: hasDeferredRetry
-        ? "PENDING"
-        : hasRejectedOperation
-          ? "REJECTED"
-          : hasBlockedDependency
-            ? "ERROR"
-            : "DONE",
-      sync_result:
-        hasRejectedOperation && !hasDeferredRetry
-          ? "REJECTED"
-          : hasBlockedDependency && !hasDeferredRetry
-            ? "ERROR"
-            : undefined,
-      completed_at:
-        (hasRejectedOperation || hasBlockedDependency) && !hasDeferredRetry
-          ? new Date().toISOString()
-          : undefined,
-      last_error: hasDeferredRetry
-        ? "sanitario_v2 retry waiting for backoff"
-        : hasRejectedOperation
-          ? "Gesture possui operações rejeitadas aguardando reconciliação"
-          : hasBlockedDependency
-            ? "sanitario_v2 blocked by unavailable dependency"
-            : undefined,
-    });
-    return;
-  }
+    if (readyOps.length === 0) {
+      const hasDeferredRetry = queuedOps.some(
+        (op) => op.sync_state === "RETRYABLE",
+      );
+      const hasBlockedDependency = queuedOps.some(
+        (op) => op.sync_state === "BLOCKED_DEPENDENCY",
+      );
+      const hasRejectedOperation = queuedOps.some(
+        (op) => op.sync_state === "REJECTED",
+      );
 
-  const ops = sortOpsForSync(readyOps);
-  await db.queue_gestures.update(gesture.client_tx_id, {
-    status: "SYNCING",
-    sync_result: undefined,
-    completed_at: undefined,
-  });
+      // fallow-ignore-next-line complexity
+      await db.transaction("rw", [db.queue_gestures], async () => {
+        const current = await db.queue_gestures.get(gesture.client_tx_id);
+        if (current?.status !== "SYNCING") return;
 
-  try {
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: hasDeferredRetry
+            ? "PENDING"
+            : hasRejectedOperation
+              ? "REJECTED"
+              : hasBlockedDependency
+                ? "ERROR"
+                : "DONE",
+          sync_result:
+            hasRejectedOperation && !hasDeferredRetry
+              ? "REJECTED"
+              : hasBlockedDependency && !hasDeferredRetry
+                ? "ERROR"
+                : undefined,
+          completed_at:
+            (hasRejectedOperation || hasBlockedDependency) && !hasDeferredRetry
+              ? new Date().toISOString()
+              : undefined,
+          last_error: hasDeferredRetry
+            ? "sanitario_v2 retry waiting for backoff"
+            : hasRejectedOperation
+              ? "Gesture possui operações rejeitadas aguardando reconciliação"
+              : hasBlockedDependency
+                ? "sanitario_v2 blocked by unavailable dependency"
+                : undefined,
+        });
+      });
+      return;
+    }
+
+    const ops = sortOpsForSync(readyOps);
+
+    try {
     const { supabase, session } = await getValidSession();
     const commercialOperation = buildCommercialOperationEnvelope(
       ops,
@@ -1205,6 +1350,11 @@ export async function processGesture(gesture: Gesture) {
         "rw",
         [db.queue_gestures, db.queue_ops],
         async () => {
+          const current = await db.queue_gestures.get(gesture.client_tx_id);
+          if (!current || current.status !== "SYNCING") {
+            return;
+          }
+
           await db.queue_ops.bulkDelete(
             ops.map((operation) => operation.client_op_id),
           );
@@ -1236,7 +1386,7 @@ export async function processGesture(gesture: Gesture) {
               ? "Gesture ainda possui operações rejeitadas"
               : undefined,
             operation_results: mergeOperationAudit(
-              gesture.operation_results,
+              current.operation_results ?? gesture.operation_results,
               genericPlan.audits,
             ),
           });
@@ -1381,11 +1531,17 @@ export async function processGesture(gesture: Gesture) {
         .map((r) => `${r.reason_code ?? "UNKNOWN"}: ${r.reason_message ?? "-"}`)
         .join(" | ");
 
-      await db.queue_gestures.update(gesture.client_tx_id, {
-        status: "REJECTED",
-        sync_result: "REJECTED",
-        completed_at: completedAt,
-        last_error: rejectionSummary || "TX rejected by sync-batch",
+      await db.transaction("rw", [db.queue_gestures], async () => {
+        const current = await db.queue_gestures.get(gesture.client_tx_id);
+        if (!current || current.status !== "SYNCING") {
+          return;
+        }
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: "REJECTED",
+          sync_result: "REJECTED",
+          completed_at: completedAt,
+          last_error: rejectionSummary || "TX rejected by sync-batch",
+        });
       });
       console.warn(
         `[sync-worker] TX ${gesture.client_tx_id} rejected:`,
@@ -1557,47 +1713,58 @@ export async function processGesture(gesture: Gesture) {
     );
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
-    const retryCount = gesture.retry_count || 0;
 
-    if (isNonRetryableSyncError(error.message)) {
-      await db.queue_gestures.update(gesture.client_tx_id, {
-        status: "ERROR",
-        sync_result: "ERROR",
-        completed_at: new Date().toISOString(),
-        last_error: error.message,
-      });
-      await trackPilotMetric({
-        fazendaId: gesture.fazenda_id,
-        eventName: "sync_error",
-        status: "error",
-        entity: "sync-batch",
-        quantity: ops.length,
-        payload: {
-          op_count: ops.length,
-          message: error.message,
-          retryable: false,
-        },
-      });
+    const isStale = await db.transaction(
+      "rw",
+      [db.queue_gestures],
+      async () => {
+        const current = await db.queue_gestures.get(gesture.client_tx_id);
+        if (
+          !current ||
+          current.status === "DONE" ||
+          current.status === "REJECTED" ||
+          current.status !== "SYNCING"
+        ) {
+          return true;
+        }
+
+        const retryCount = current.retry_count ?? gesture.retry_count ?? 0;
+
+        if (isNonRetryableSyncError(error.message)) {
+          await db.queue_gestures.update(gesture.client_tx_id, {
+            status: "ERROR",
+            sync_result: "ERROR",
+            completed_at: new Date().toISOString(),
+            last_error: error.message,
+          });
+          return false;
+        }
+
+        if (retryCount < MAX_RETRIES) {
+          await db.queue_gestures.update(gesture.client_tx_id, {
+            status: "PENDING",
+            sync_result: undefined,
+            completed_at: undefined,
+            retry_count: retryCount + 1,
+            last_error: error.message,
+          });
+          return false;
+        }
+
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: "ERROR",
+          sync_result: "ERROR",
+          completed_at: new Date().toISOString(),
+          last_error: `Max retries: ${error.message}`,
+        });
+        return false;
+      },
+    );
+
+    if (isStale) {
       return;
     }
 
-    if (retryCount < MAX_RETRIES) {
-      await db.queue_gestures.update(gesture.client_tx_id, {
-        status: "PENDING",
-        sync_result: undefined,
-        completed_at: undefined,
-        retry_count: retryCount + 1,
-        last_error: error.message,
-      });
-      return;
-    }
-
-    await db.queue_gestures.update(gesture.client_tx_id, {
-      status: "ERROR",
-      sync_result: "ERROR",
-      completed_at: new Date().toISOString(),
-      last_error: `Max retries: ${error.message}`,
-    });
     await trackPilotMetric({
       fazendaId: gesture.fazenda_id,
       eventName: "sync_error",
@@ -1610,4 +1777,5 @@ export async function processGesture(gesture: Gesture) {
       },
     });
   }
+  });
 }

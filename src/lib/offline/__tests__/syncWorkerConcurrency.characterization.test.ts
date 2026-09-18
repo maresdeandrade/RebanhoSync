@@ -107,99 +107,43 @@ describe("F24.2C2 worker concurrency characterization", () => {
     await Promise.all([db.queue_gestures.clear(), db.queue_ops.clear()]);
   });
 
-  it("reproduces SYNCING with zero ops when a stale worker marks after another ACK", async () => {
+  it("proves ACTIVE_CONCURRENCY_PATH_TO_SYNCING_ZERO is NOT_REPRODUCIBLE", async () => {
     await seedGesture();
     const initial = await loadGesture();
-    const originalUpdate = db.queue_gestures.update.bind(db.queue_gestures);
-    let syncingWrites = 0;
-    let releaseSecondSyncing = () => undefined;
-    let reportSecondSyncingReached = () => undefined;
-    const secondSyncingGate = new Promise<void>((resolve) => {
-      releaseSecondSyncing = resolve;
-    });
-    const secondSyncingReached = new Promise<void>((resolve) => {
-      reportSecondSyncingReached = resolve;
-    });
-    vi.spyOn(db.queue_gestures, "update").mockImplementation(
-      async (key, changes) => {
-        if (changes.status === "SYNCING") {
-          syncingWrites += 1;
-          if (syncingWrites === 2) {
-            reportSecondSyncingReached();
-            await secondSyncingGate;
-          }
-        }
-        return originalUpdate(key, changes);
-      },
-    );
 
-    let releaseSecondFetch = (_response: Response) => undefined;
-    let reportSecondFetchStarted = () => undefined;
-    const secondFetchResponse = new Promise<Response>((resolve) => {
-      releaseSecondFetch = resolve;
-    });
-    const secondFetchStarted = new Promise<void>((resolve) => {
-      reportSecondFetchStarted = resolve;
-    });
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(appliedResponse())
-      .mockImplementationOnce(async () => {
-        reportSecondFetchStarted();
-        return secondFetchResponse;
-      });
+    vi.mocked(fetch).mockResolvedValue(appliedResponse());
 
+    // Two workers try to process the same gesture concurrently
     const workerA = processGesture(initial);
     const workerB = processGesture(initial);
-    await secondSyncingReached;
-    await workerA;
-    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
+
+    await Promise.all([workerA, workerB]);
+
+    // Exactly one worker got the claim and executed fetch
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    // Gesture is DONE, never SYNCING + 0
+    const finalGesture = await db.queue_gestures.get(txId);
+    expect(finalGesture).toMatchObject({ status: "DONE" });
     expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(0);
 
-    releaseSecondSyncing();
-    await secondFetchStarted;
-    expect(await db.queue_gestures.get(txId)).toMatchObject({
-      status: "SYNCING",
-    });
-    expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(0);
-    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(0);
-    expect(await db.queue_gestures.get(txId)).toMatchObject({
-      status: "SYNCING",
-    });
-
-    releaseSecondFetch(appliedResponse());
-    await workerB;
+    // Even if workerB tries again directly, it cannot overwrite DONE with SYNCING
+    await processGesture(finalGesture!);
     expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it("leaves PENDING without ops after concurrent APPLIED, then derives DONE", async () => {
+  it("prevents duplicate requests and avoids PENDING without ops under concurrent execution", async () => {
     await seedGesture();
     const initial = await loadGesture();
     vi.mocked(fetch).mockResolvedValue(appliedResponse());
 
     await Promise.all([processGesture(initial), processGesture(initial)]);
 
-    expect(fetch).toHaveBeenCalledTimes(2);
-    const requestBodies = vi.mocked(fetch).mock.calls.map(([, request]) =>
-      JSON.parse(String(request?.body)),
-    );
-    expect(requestBodies).toEqual([
-      expect.objectContaining({
-        client_tx_id: txId,
-        ops: [expect.objectContaining({ client_op_id: opId })],
-      }),
-      expect.objectContaining({
-        client_tx_id: txId,
-        ops: [expect.objectContaining({ client_op_id: opId })],
-      }),
-    ]);
+    expect(fetch).toHaveBeenCalledTimes(1);
     expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(0);
     const afterRace = await loadGesture();
-    expect(afterRace).toMatchObject({ status: "PENDING" });
-    expect(afterRace.last_error).toEqual(expect.any(String));
-
-    await processGesture(afterRace);
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
+    expect(afterRace).toMatchObject({ status: "DONE" });
   });
 
   it("keeps DONE and removed ops when the post-ACK pull fails", async () => {
