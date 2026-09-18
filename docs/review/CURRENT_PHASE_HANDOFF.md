@@ -1,9 +1,12 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-09-16
+Atualizado em: 2026-09-18
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
-Próxima fase: **Fase 24 — F24.2C Atomic Ack & SYNCING Recovery — NOT_STARTED**
-Decisão: **F24.2A CLOSED / F24.2B READY_FOR_CLOSEOUT / F24.2 IN_PROGRESS**
+Próxima fase: **Fase 24 — F24.2C3B Durable Reconciliation — UNBLOCKED**
+Decisão: **F24.2C3A CLOSED / F24.2C3 IN_PROGRESS / F24.2 IN_PROGRESS**
+Baseline C3 (abertura da trilha C3): `origin/main@def7976df3b61d5160972b0152fe722c907f47f8`
+Merge da C3A (PR #143): `4ba47a781aa4bf5ca3a3788cf780340af285d095`
+Baseline C3B: `origin/main@4ba47a781aa4bf5ca3a3788cf780340af285d095`
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -11,7 +14,7 @@ Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
-Status: **Fase 24 ativa; F24.2B1 pronta para revisão; hipótese P0 não confirmada**
+Status: **Fase 24 ativa; F24.2C3A fechada; F24.2C3B desbloqueada, não iniciada**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
@@ -30,6 +33,47 @@ Documentos: [auditoria B0](./F24_2B0_EVENT_PROVENANCE_STABLE_IDENTITY_AUDIT.md),
 `F24.2B0 = CLOSED`; `F24.2B1 = READY_FOR_REVIEW`; `F24.2B = READY_FOR_CLOSEOUT`.
 `DUPLICATE_EVENT = NOT_CONFIRMED_AS_SYNC_FAILURE`. F24.2 permanece em progresso. O próximo
 risco comprovado recomendado é F24.2C, ack atômico e recovery de `SYNCING`, ainda não iniciado.
+
+## F24.2C3A — closeout da auditoria de reconciliation durável
+
+A auditoria diagnóstica `DURABLE_POST_ACK_RECONCILIATION` foi integrada pelo PR #143
+(merge commit `4ba47a781aa4bf5ca3a3788cf780340af285d095`, head integrado
+`2bcd227e432b6780ec4aff8943e494e1283e1820`, baseline de abertura
+`origin/main@def7976df3b61d5160972b0152fe722c907f47f8`). Apenas documentação; nenhum runtime,
+schema, fila, store ou migration foi alterado. C0/C1/C2/C2.1 permanecem fechados com seus
+contratos certificados; `MULTI_TAB_CONCURRENCY = MITIGATED`; `ATOMIC_CLAIM` e
+`STALE_WRITE_PROTECTION = IMPLEMENTED`; `ACTIVE_CLAIM_RECOVERY = PROTECTED`.
+
+Classificações registradas:
+
+```ini
+POST_ACK_RECONCILIATION_DURABILITY = PARTIAL
+STARTUP_RECOVERY_COVERAGE = PARTIAL
+RECONCILIATION_SCOPE_ISOLATION = SAFE
+EXISTING_DURABLE_RECONCILIATION_PRIMITIVE = PARTIAL
+GAP-1 = P1
+GAP-2 = P1
+GAP-3 = P2
+GAP-4 = P2
+```
+
+Decisão arquitetural para a C3B: `C3B must persist reconciliation obligation before the
+post-ACK process can be lost.` O nome final de store/schema não foi definido nesta execução.
+Opções avaliadas e recomendação (Opção A — reuso de primitivas com upgrade condicionado)
+estão na [auditoria C3A](./F24_2C3A_DURABLE_RECONCILIATION_AUDIT.md) e na
+[failure matrix R1–R10](./F24_2C3A_RECONCILIATION_FAILURE_MATRIX.md).
+
+Gate documental local do fechamento: `LOCAL_DOC_GATE = FAILED_BY_PREEXISTING_OUT_OF_SCOPE_CHANGE`
+(atribuído à mudança preexistente fora do escopo em `AGENTS.md`; validadores de headers e
+continuidade dos novos documentos passaram; o CI do PR #143 sobre o estado commitado passou).
+
+```ini
+F24.2C3A = CLOSED
+F24.2C3B = UNBLOCKED
+F24.2C3 = IN_PROGRESS
+F24.2C = IN_PROGRESS
+F24.2 = IN_PROGRESS
+```
 
 ## F24.0 — baseline e handoff
 
