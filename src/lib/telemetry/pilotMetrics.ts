@@ -136,7 +136,7 @@ async function flushTelemetryBatch(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        apikey: env.supabaseAnonKey,
+        apikey: env.supabasePublishableKey,
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ events }),
