@@ -17,6 +17,7 @@ vi.mock("@/lib/supabase", () => ({
   },
 }));
 vi.mock("../pull", () => ({
+  DEFAULT_REMOTE_TABLES: [],
   pullDataForFarm: mocks.pullDataForFarm,
   pullInitialData: vi.fn(),
   pullSanitarioAgendaV2: vi.fn(),

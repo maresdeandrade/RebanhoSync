@@ -11,6 +11,10 @@ import type {
   SyncOperationAuditResult,
   SyncOperationResult,
 } from "./types";
+import type {
+  ReconciliationObligation,
+  ReconciliationScope,
+} from "./reconciliationTypes";
 import {
   getRemoteTableName,
   STANDARD_EVENT_DETAIL_REMOTE_TABLES,
@@ -29,7 +33,13 @@ import {
   pullInitialData,
   pullSanitarioAgendaV2,
   pullSanitarioV2CutoverState,
+  DEFAULT_REMOTE_TABLES,
 } from "./pull";
+import {
+  deleteReconciliationObligationIfGenerationMatches,
+  listReconciliationObligations,
+  upsertReconciliationObligations,
+} from "./reconciliationObligations";
 import { purgeRejections } from "./rejections";
 import {
   flushPilotMetrics,
@@ -161,6 +171,131 @@ const SYNCED_REPRODUCTION_TYPES = new Set(["diagnostico", "parto", "aborto"]);
 const SANITARIO_RETRY_BASE_MS = 5_000;
 const SANITARIO_RETRY_MAX_MS = 5 * 60_000;
 
+// F24.2C3B — durable reconciliation obligations.
+// Derivação compartilhada entre a obrigação persistida no ACK boundary e os
+// pulls executados depois, para impedir divergência entre ambos.
+interface ReconciliationRequirementInput {
+  fazendaId: string;
+  factualTables?: readonly string[];
+  reproduction?: boolean;
+  agendaV2?: boolean;
+  sanitarioV2?: boolean;
+}
+
+interface ReconciliationRequirement {
+  fazendaId: string;
+  scope: ReconciliationScope;
+  tables?: string[];
+}
+
+function deriveReconciliationRequirements(
+  input: ReconciliationRequirementInput,
+): ReconciliationRequirement[] {
+  const requirements: ReconciliationRequirement[] = [];
+  if (input.factualTables && input.factualTables.length > 0) {
+    requirements.push({
+      fazendaId: input.fazendaId,
+      scope: "factual",
+      tables: Array.from(new Set(input.factualTables)),
+    });
+  }
+  if (input.reproduction) {
+    requirements.push({ fazendaId: input.fazendaId, scope: "reproduction" });
+  }
+  if (input.agendaV2) {
+    requirements.push({ fazendaId: input.fazendaId, scope: "agenda-v2" });
+  }
+  if (input.sanitarioV2) {
+    requirements.push({ fazendaId: input.fazendaId, scope: "sanitario-v2" });
+  }
+  return requirements;
+}
+
+async function loadSyncingGestureAndPersistRequirements(
+  clientTxId: string,
+  requirements: ReconciliationRequirement[],
+): Promise<Gesture | undefined> {
+  const current = await db.queue_gestures.get(clientTxId);
+  if (!current || current.status !== "SYNCING") {
+    return undefined;
+  }
+  if (requirements.length > 0) {
+    await upsertReconciliationObligations(requirements);
+  }
+  return current;
+}
+
+// Decisão pura de scopes para resultados canônicos sanitário v2 (caminho P4).
+// Reutilizada tanto pela persistência da obrigação quanto pela reconciliação
+// de fato, para que a obrigação reflita exatamente o pull que seria executado.
+function isSanitarioAgendaCutoverRequired(
+  command: SanitarioSyncV2Command | undefined,
+  canonical: Record<string, unknown>,
+): boolean {
+  return (
+    command === "create_agenda" ||
+    command === "replace_agenda_animals" ||
+    command === "close_agenda" ||
+    typeof canonical.agenda_id === "string" ||
+    typeof canonical.closure_id === "string"
+  );
+}
+
+function isSanitarioFactualCutoverRequired(
+  command: SanitarioSyncV2Command | undefined,
+  canonical: Record<string, unknown>,
+): boolean {
+  return (
+    command === "apply_factual_core" || typeof canonical.evento_id === "string"
+  );
+}
+
+function isUnresolvedSanitarioConflict(
+  result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus },
+  command: SanitarioSyncV2Command | undefined,
+  hasAgendaEntity: boolean,
+  hasFactualEntity: boolean,
+): boolean {
+  return (
+    result.status === "CONFLICT" &&
+    !hasAgendaEntity &&
+    !hasFactualEntity &&
+    (!result.canonical_entity_id || !command)
+  );
+}
+
+function deriveSanitarioV2CutoverRequired(
+  matched: Array<{
+    op: Operation;
+    result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus };
+  }>,
+): boolean {
+  return matched.some(({ op, result }) => {
+    if (result.status !== "APPLIED" && result.status !== "CONFLICT") {
+      return false;
+    }
+    const command = readSanitarioCommand(op, result);
+    const canonical = isRecord(result.canonical_result)
+      ? result.canonical_result
+      : {};
+    const hasAgendaEntity =
+      typeof canonical.agenda_id === "string" ||
+      typeof canonical.closure_id === "string";
+    const hasFactualEntity = typeof canonical.evento_id === "string";
+
+    return (
+      isSanitarioAgendaCutoverRequired(command, canonical) ||
+      isSanitarioFactualCutoverRequired(command, canonical) ||
+      isUnresolvedSanitarioConflict(
+        result,
+        command,
+        hasAgendaEntity,
+        hasFactualEntity,
+      )
+    );
+  });
+}
+
 // Auto-purge: run at most once every 6 hours, persisted across reloads
 const PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const PURGE_LS_KEY = "rebanhosync:lastRejectionPurgeAt";
@@ -176,6 +311,15 @@ export const startSyncWorker = () => {
     console.debug("[sync-worker] Starting sync worker");
   }
   void runInitialOfflinePullForActiveFarmOnce();
+  void drainReconciliationObligations(getActiveFarmId());
+
+  if (!onlineWakeUpListener && typeof window !== "undefined") {
+    onlineWakeUpListener = () => {
+      wakeUpDurableSyncWork();
+    };
+    window.addEventListener("online", onlineWakeUpListener);
+  }
+
   intervalId = setInterval(async () => {
     if (isTickRunning) return;
     isTickRunning = true;
@@ -243,6 +387,10 @@ export const startSyncWorker = () => {
 
       // Auto-purge old rejections (>7d) at most once per 6h
       await tryPurgeOldRejections();
+
+      // F24.2C3B: drena obrigacoes de reconciliacao apos o processamento da
+      // fila de escrita, sem bloquear push novo.
+      await drainReconciliationObligations(getActiveFarmId());
     } catch (e: unknown) {
       const error = e instanceof Error ? e : new Error(String(e));
       console.error("[sync-worker] Worker tick failed:", error.message);
@@ -256,6 +404,11 @@ export const stopSyncWorker = () => {
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
+  }
+
+  if (onlineWakeUpListener && typeof window !== "undefined") {
+    window.removeEventListener("online", onlineWakeUpListener);
+    onlineWakeUpListener = null;
   }
 
   isTickRunning = false;
@@ -284,6 +437,103 @@ export async function runInitialOfflinePullForActiveFarmOnce() {
   } finally {
     isInitialPullRunning = false;
   }
+}
+
+// F24.2C3B — drain de obrigacoes duraveis de reconciliacao.
+const RECONCILIATION_DRAIN_LOCK_NAME = "rebanhosync:reconciliation-drain";
+let isReconciliationDrainRunning = false;
+let onlineWakeUpListener: (() => void) | null = null;
+
+// Lock global de drain: um dreno por processo; correctness nao depende dele
+// (pulls idempotentes + conditional delete por generation_id).
+async function withReconciliationDrainLock<T>(
+  fn: (acquired: boolean) => Promise<T>,
+): Promise<T> {
+  if (typeof navigator !== "undefined" && navigator?.locks?.request) {
+    return new Promise<T>((resolve, reject) => {
+      navigator.locks
+        .request(RECONCILIATION_DRAIN_LOCK_NAME, { ifAvailable: true }, async (lock) => {
+          if (lock === null) {
+            try {
+              resolve(await fn(false));
+            } catch (err) {
+              reject(err);
+            }
+            return;
+          }
+          try {
+            resolve(await fn(true));
+          } catch (err) {
+            reject(err);
+          }
+        })
+        .catch(reject);
+    });
+  }
+  return fn(true);
+}
+
+async function executeReconciliationForScope(
+  obligation: ReconciliationObligation,
+) {
+  const fazendaId = obligation.fazenda_id;
+  switch (obligation.scope) {
+    case "factual":
+      await pullDataForFarm(
+        fazendaId,
+        obligation.tables && obligation.tables.length > 0
+          ? obligation.tables
+          : DEFAULT_REMOTE_TABLES,
+      );
+      return;
+    case "reproduction":
+      await pullReproductionDiagnosisState(fazendaId);
+      return;
+    case "agenda-v2":
+      await pullSanitarioAgendaV2(fazendaId);
+      return;
+    case "sanitario-v2":
+      await pullSanitarioV2CutoverState(fazendaId);
+      await recoverBlockedSanitarioV2Operations("reconciliation_drain");
+      return;
+  }
+}
+
+export async function drainReconciliationObligations(
+  fazendaId: string | null,
+) {
+  if (!fazendaId || isReconciliationDrainRunning) return;
+
+  isReconciliationDrainRunning = true;
+  try {
+    await withReconciliationDrainLock(async (acquired) => {
+      if (!acquired) return;
+
+      const obligations = await listReconciliationObligations(fazendaId);
+      for (const obligation of obligations) {
+        try {
+          await executeReconciliationForScope(obligation);
+          await deleteReconciliationObligationIfGenerationMatches(
+            obligation.key,
+            obligation.generation_id,
+          );
+        } catch (e: unknown) {
+          const error = e instanceof Error ? e : new Error(String(e));
+          console.warn(
+            `[sync-worker] reconciliation drain failed for ${obligation.key}:`,
+            error.message,
+          );
+        }
+      }
+    });
+  } finally {
+    isReconciliationDrainRunning = false;
+  }
+}
+
+function wakeUpDurableSyncWork() {
+  void runInitialOfflinePullForActiveFarmOnce();
+  void drainReconciliationObligations(getActiveFarmId());
 }
 
 async function tryPurgeOldRejections() {
@@ -367,7 +617,22 @@ function readSanitarioCommand(
     : undefined;
 }
 
-function getSanitarioRetryUpdate(op: Operation, nowMs: number, reason: string) {
+type QueueOperationUpdate = Partial<
+  Pick<
+    Operation,
+    | "domain_op_id"
+    | "sync_state"
+    | "retry_count"
+    | "next_attempt_at"
+    | "blocked_reason"
+  >
+>;
+
+function getSanitarioRetryUpdate(
+  op: Operation,
+  nowMs: number,
+  reason: string,
+): QueueOperationUpdate {
   const retryCount = (op.retry_count ?? 0) + 1;
   const backoffMs = Math.min(
     SANITARIO_RETRY_BASE_MS * 2 ** Math.min(retryCount - 1, 8),
@@ -414,45 +679,9 @@ async function reconcileSanitarioV2Results(
     result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus };
   }>,
 ) {
-  let pullAgenda = false;
-  let pullFactual = false;
+  const cutoverRequired = deriveSanitarioV2CutoverRequired(matched);
 
-  for (const { op, result } of matched) {
-    if (result.status !== "APPLIED" && result.status !== "CONFLICT") continue;
-
-    const command = readSanitarioCommand(op, result);
-    const canonical = isRecord(result.canonical_result)
-      ? result.canonical_result
-      : {};
-    const hasAgendaEntity =
-      typeof canonical.agenda_id === "string" ||
-      typeof canonical.closure_id === "string";
-    const hasFactualEntity = typeof canonical.evento_id === "string";
-
-    if (
-      command === "create_agenda" ||
-      command === "replace_agenda_animals" ||
-      command === "close_agenda" ||
-      hasAgendaEntity
-    ) {
-      pullAgenda = true;
-    }
-    if (command === "apply_factual_core" || hasFactualEntity) {
-      pullFactual = true;
-      pullAgenda = true;
-    }
-    if (
-      result.status === "CONFLICT" &&
-      !hasAgendaEntity &&
-      !hasFactualEntity &&
-      (!result.canonical_entity_id || !command)
-    ) {
-      pullAgenda = true;
-      pullFactual = true;
-    }
-  }
-
-  if (pullAgenda || pullFactual) {
+  if (cutoverRequired) {
     try {
       await pullSanitarioV2CutoverState(fazendaId);
       const justBlocked = new Set(
@@ -498,7 +727,7 @@ async function processSanitarioCanonicalResults(
     op: Operation;
     result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus };
   }> = [];
-  const operationUpdates = new Map<string, Record<string, unknown>>();
+  const operationUpdates = new Map<string, QueueOperationUpdate>();
   let terminalRejection = false;
 
   for (const result of canonicalResults) {
@@ -617,14 +846,28 @@ async function processSanitarioCanonicalResults(
     );
   }
 
+  const sanitarioV2CutoverRequired =
+    deriveSanitarioV2CutoverRequired(matchedForReconcile);
+
   await db.transaction(
     "rw",
-    [db.queue_gestures, db.queue_ops, db.queue_rejections],
+    [
+      db.queue_gestures,
+      db.queue_ops,
+      db.queue_rejections,
+      db.sync_reconcile_obligations,
+    ],
     // fallow-ignore-next-line complexity
     async () => {
       const current = await db.queue_gestures.get(gesture.client_tx_id);
       if (!current || current.status !== "SYNCING") {
         return;
+      }
+
+      if (sanitarioV2CutoverRequired) {
+        await upsertReconciliationObligations([
+          { fazendaId: gesture.fazenda_id, scope: "sanitario-v2" },
+        ]);
       }
 
       if (deleteIds.size > 0) {
@@ -771,6 +1014,7 @@ export async function recoverStaleSyncingGesturesOnce() {
 export type SanitarioV2RecoveryTrigger =
   | "app_startup"
   | "reconcile_completed"
+  | "reconciliation_drain"
   | "contract_version_updated"
   | "remote_dependency_recovered";
 
@@ -868,7 +1112,7 @@ async function sendBatchRequest(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: env.supabaseAnonKey,
+      apikey: env.supabasePublishableKey,
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({
@@ -941,19 +1185,45 @@ async function reconcileGenericOperationResults(
     ...plan.retryable.map(({ op }) => op),
     ...plan.missing,
   ];
+  const factualRefreshTables = new Set<string>(
+    [...appliedOps, ...rejectedOps].map((operation) =>
+      getRemoteTableName(operation.table),
+    ),
+  );
+  if (
+    plan.rejected.some(
+      ({ result }) => result.reason_code === AGENDA_ALREADY_COMPLETED_REASON,
+    )
+  ) {
+    factualRefreshTables.add("agenda_itens");
+    factualRefreshTables.add("eventos");
+    factualRefreshTables.add("eventos_sanitario");
+  }
+  const agendaV2Required = plan.rejected.some(
+    ({ op }) => getRemoteTableName(op.table) === "sanitario_agenda_closures_v2",
+  );
+  const reconciliationRequirements = deriveReconciliationRequirements({
+    fazendaId: gesture.fazenda_id,
+    factualTables: Array.from(factualRefreshTables),
+    agendaV2: agendaV2Required,
+  });
   const transactionStores = Array.from(
     new Set([
       db.queue_gestures,
       db.queue_ops,
       db.queue_rejections,
+      db.sync_reconcile_obligations,
       ...getAffectedStores([...rejectedOps, ...appliedOps]),
     ]),
   );
 
   // fallow-ignore-next-line complexity
   await db.transaction("rw", transactionStores, async () => {
-    const current = await db.queue_gestures.get(gesture.client_tx_id);
-    if (!current || current.status !== "SYNCING") {
+    const current = await loadSyncingGestureAndPersistRequirements(
+      gesture.client_tx_id,
+      reconciliationRequirements,
+    );
+    if (!current) {
       return;
     }
 
@@ -1346,12 +1616,71 @@ export async function processGesture(gesture: Gesture) {
       );
       const refreshTables = new Set<string>();
 
+      if (hasCommercialPurchase) {
+        refreshTables.add("animais");
+        refreshTables.add("eventos");
+        refreshTables.add("eventos_comercial");
+      }
+
+      // Agenda pode ser gerada automaticamente por trigger ao inserir/atualizar animais.
+      if (remoteTablesTouched.has("animais")) {
+        refreshTables.add("agenda_itens");
+      }
+      // Conclusao de pendencia sanitária altera evento e agenda no servidor.
+      if (
+        remoteTablesTouched.has("eventos") ||
+        remoteTablesTouched.has("eventos_sanitario") ||
+        remoteTablesTouched.has("agenda_itens")
+      ) {
+        refreshTables.add("agenda_itens");
+        refreshTables.add("eventos");
+        refreshTables.add("eventos_sanitario");
+      }
+      if (
+        remoteTablesTouched.has("protocolos_sanitarios") ||
+        remoteTablesTouched.has("protocolos_sanitarios_itens") ||
+        remoteTablesTouched.has("fazenda_sanidade_config")
+      ) {
+        refreshTables.add("protocolos_sanitarios");
+        refreshTables.add("protocolos_sanitarios_itens");
+        refreshTables.add("agenda_itens");
+        refreshTables.add("fazenda_sanidade_config");
+      }
+      if (remoteTablesTouched.has("insumo_movimentacoes")) {
+        refreshTables.add("insumo_lotes");
+        refreshTables.add("insumo_movimentacoes");
+      }
+      for (const detailTable of STANDARD_EVENT_DETAIL_REMOTE_TABLES) {
+        if (remoteTablesTouched.has(detailTable)) {
+          refreshTables.add(detailTable);
+        }
+      }
+
+      const hasReproductionDetail = ops.some(
+        (op) =>
+          getRemoteTableName(op.table) === "eventos_reproducao" &&
+          op.action === "INSERT" &&
+          SYNCED_REPRODUCTION_TYPES.has(String(op.record?.tipo)),
+      );
+      const agendaV2Touched = Array.from(remoteTablesTouched).some((table) =>
+        SANITARIO_AGENDA_V2_REMOTE_TABLES.has(table),
+      );
+      const reconciliationRequirements = deriveReconciliationRequirements({
+        fazendaId: gesture.fazenda_id,
+        factualTables: Array.from(refreshTables),
+        reproduction: hasReproductionDetail,
+        agendaV2: agendaV2Touched,
+      });
+
       await db.transaction(
         "rw",
-        [db.queue_gestures, db.queue_ops],
+        [db.queue_gestures, db.queue_ops, db.sync_reconcile_obligations],
         async () => {
-          const current = await db.queue_gestures.get(gesture.client_tx_id);
-          if (!current || current.status !== "SYNCING") {
+          const current = await loadSyncingGestureAndPersistRequirements(
+            gesture.client_tx_id,
+            reconciliationRequirements,
+          );
+          if (!current) {
             return;
           }
 
@@ -1393,46 +1722,6 @@ export async function processGesture(gesture: Gesture) {
         },
       );
 
-      if (hasCommercialPurchase) {
-        refreshTables.add("animais");
-        refreshTables.add("eventos");
-        refreshTables.add("eventos_comercial");
-      }
-
-      // Agenda pode ser gerada automaticamente por trigger ao inserir/atualizar animais.
-      if (remoteTablesTouched.has("animais")) {
-        refreshTables.add("agenda_itens");
-      }
-      // Conclusao de pendencia sanitária altera evento e agenda no servidor.
-      if (
-        remoteTablesTouched.has("eventos") ||
-        remoteTablesTouched.has("eventos_sanitario") ||
-        remoteTablesTouched.has("agenda_itens")
-      ) {
-        refreshTables.add("agenda_itens");
-        refreshTables.add("eventos");
-        refreshTables.add("eventos_sanitario");
-      }
-      if (
-        remoteTablesTouched.has("protocolos_sanitarios") ||
-        remoteTablesTouched.has("protocolos_sanitarios_itens") ||
-        remoteTablesTouched.has("fazenda_sanidade_config")
-      ) {
-        refreshTables.add("protocolos_sanitarios");
-        refreshTables.add("protocolos_sanitarios_itens");
-        refreshTables.add("agenda_itens");
-        refreshTables.add("fazenda_sanidade_config");
-      }
-      if (remoteTablesTouched.has("insumo_movimentacoes")) {
-        refreshTables.add("insumo_lotes");
-        refreshTables.add("insumo_movimentacoes");
-      }
-      for (const detailTable of STANDARD_EVENT_DETAIL_REMOTE_TABLES) {
-        if (remoteTablesTouched.has(detailTable)) {
-          refreshTables.add(detailTable);
-        }
-      }
-
       if (refreshTables.size > 0) {
         try {
           await pullDataForFarm(gesture.fazenda_id, Array.from(refreshTables));
@@ -1443,12 +1732,6 @@ export async function processGesture(gesture: Gesture) {
           );
         }
       }
-      const hasReproductionDetail = ops.some(
-        (op) =>
-          getRemoteTableName(op.table) === "eventos_reproducao" &&
-          op.action === "INSERT" &&
-          SYNCED_REPRODUCTION_TYPES.has(String(op.record?.tipo)),
-      );
       if (hasReproductionDetail) {
         try {
           await pullReproductionDiagnosisState(gesture.fazenda_id, {
@@ -1461,11 +1744,7 @@ export async function processGesture(gesture: Gesture) {
           );
         }
       }
-      if (
-        Array.from(remoteTablesTouched).some((table) =>
-          SANITARIO_AGENDA_V2_REMOTE_TABLES.has(table),
-        )
-      ) {
+      if (agendaV2Touched) {
         try {
           await pullSanitarioAgendaV2(gesture.fazenda_id);
         } catch (refreshError) {
@@ -1531,11 +1810,45 @@ export async function processGesture(gesture: Gesture) {
         .map((r) => `${r.reason_code ?? "UNKNOWN"}: ${r.reason_message ?? "-"}`)
         .join(" | ");
 
-      await db.transaction("rw", [db.queue_gestures], async () => {
-        const current = await db.queue_gestures.get(gesture.client_tx_id);
-        if (!current || current.status !== "SYNCING") {
-          return;
-        }
+      const hasAgendaAlreadyCompletedRejection = rejectedResults.some(
+        (r) => r.reason_code === AGENDA_ALREADY_COMPLETED_REASON,
+      );
+      const hasAgendaClosureConflictRejection = rejectedResults.some(
+        (r) => r.reason_code === SANITARIO_AGENDA_CLOSURE_CONFLICT_REASON,
+      );
+      const isAgendaClosureOnlyGesture =
+        mappedOps.length > 0 &&
+        ops.every(
+          (op) =>
+            getRemoteTableName(op.table) === "sanitario_agenda_closures_v2",
+        );
+      const hasAppliedResults = result.results.some(
+        (entry) => entry.status === "APPLIED" || entry.status === "APPLIED_ALTERED",
+      );
+      const rejectionReconciliationRequirements =
+        deriveReconciliationRequirements({
+          fazendaId: gesture.fazenda_id,
+          factualTables: hasAgendaAlreadyCompletedRejection
+            ? ["agenda_itens", "eventos", "eventos_sanitario"]
+            : undefined,
+          agendaV2:
+            hasAgendaClosureConflictRejection ||
+            (isAgendaClosureOnlyGesture && hasAppliedResults),
+        });
+
+      await db.transaction(
+        "rw",
+        [db.queue_gestures, db.sync_reconcile_obligations],
+        async () => {
+          const current = await db.queue_gestures.get(gesture.client_tx_id);
+          if (!current || current.status !== "SYNCING") {
+            return;
+          }
+          if (rejectionReconciliationRequirements.length > 0) {
+            await upsertReconciliationObligations(
+              rejectionReconciliationRequirements,
+            );
+          }
         await db.queue_gestures.update(gesture.client_tx_id, {
           status: "REJECTED",
           sync_result: "REJECTED",
@@ -1576,12 +1889,6 @@ export async function processGesture(gesture: Gesture) {
       const appliedResults = result.results.filter(
         (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
       );
-      const isAgendaClosureOnlyGesture =
-        mappedOps.length > 0 &&
-        ops.every(
-          (op) =>
-            getRemoteTableName(op.table) === "sanitario_agenda_closures_v2",
-        );
 
       if (isAgendaClosureOnlyGesture && appliedResults.length > 0) {
         const appliedOpIds = new Set(
