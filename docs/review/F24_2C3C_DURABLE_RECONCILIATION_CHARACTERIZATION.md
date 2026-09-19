@@ -7,7 +7,7 @@ Date: 2026-09-19
 
 `F24.2C3C = READY_FOR_REVIEW`
 
-The integrated C3B implementation is characterized below. This document does not close C3 automatically.
+The integrated C3B implementation is characterized below. No additional C3C runtime implementation was started. F24.2D was not started.
 
 ## FACT CONFIRMED
 
@@ -57,3 +57,27 @@ Drain is farm-scoped. It does not execute `sendBatchRequest`, enqueue, or create
 - Independent browser tabs with a real `navigator.locks` implementation were not executed in local jsdom.
 - Auth/session failure during reconciliation was not separately injected; generic pull-failure retention is covered.
 - Remote factual idempotency was not re-certified against Supabase; no remote operation was executed.
+
+## Final classifications
+
+- `ACK_OBLIGATION_ATOMICITY = SAFE`
+- `POST_ACK_CRASH_RECOVERY = SAFE_BY_DURABLE_CONTRACT`
+- `RECONCILIATION_REPLAY_IDEMPOTENCY = SAFE_AT_WORKER_BOUNDARY`
+- `STALE_DRAIN_DELETE_PROTECTION = SAFE`
+- `RECONCILIATION_MULTI_CONTEXT_CORRECTNESS = SAFE_BY_INVARIANT`
+- `REAL_BROWSER_MULTI_TAB_EVIDENCE = PARTIAL`
+- `RECONNECT_RECOVERY = SAFE`
+- `FARM_SWITCH_OBLIGATION_RETENTION = SAFE`
+- `RECONCILIATION_FACTUAL_REPLAY = NOT_PRESENT`
+- `AUTH_SPECIFIC_RECONCILIATION_RECOVERY = NOT_DIRECTLY_TESTED`
+- `C3_CLOSEOUT_READINESS = READY`
+
+`GAP-1 = CLOSED`
+
+`GAP-2 = DURABLY_DEFERRED / MITIGATED`
+
+`NON_ACTIVE_FARM_BACKGROUND_RECONCILIATION = OPEN / FUTURE`
+
+`NEW_P0 = NONE_OBSERVED`
+
+`NEW_P1 = NONE_OBSERVED`
