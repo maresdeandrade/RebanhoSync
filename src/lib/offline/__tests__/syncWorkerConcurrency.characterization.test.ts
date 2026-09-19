@@ -163,7 +163,7 @@ describe("F24.2C2 worker concurrency characterization", () => {
     });
   });
 
-  it("characterizes the generic writer accepting an empty PENDING gesture", async () => {
+  it("characterizes the generic writer fail-closing an empty PENDING gesture", async () => {
     await createGesture(farmId, [], { clientTxId: txId, clientOpIds: [] });
 
     expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(0);
@@ -173,7 +173,14 @@ describe("F24.2C2 worker concurrency characterization", () => {
 
     await processGesture(await loadGesture());
     expect(fetch).not.toHaveBeenCalled();
-    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
+    // F24.2D1D: empty legacy gestures fail closed for manual reconciliation
+    // instead of fabricating an ACK-complete DONE without remote evidence.
+    expect(await db.queue_gestures.get(txId)).toMatchObject({
+      status: "ERROR",
+      sync_result: "ERROR",
+      last_error:
+        "Gesture sem operações enfileiradas; reconciliação manual necessária",
+    });
   });
 
   it("keeps later serial work pending while the first gesture fetch is unresolved", async () => {
