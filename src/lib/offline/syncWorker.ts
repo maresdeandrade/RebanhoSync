@@ -574,7 +574,22 @@ function readSanitarioCommand(
     : undefined;
 }
 
-function getSanitarioRetryUpdate(op: Operation, nowMs: number, reason: string) {
+type QueueOperationUpdate = Partial<
+  Pick<
+    Operation,
+    | "domain_op_id"
+    | "sync_state"
+    | "retry_count"
+    | "next_attempt_at"
+    | "blocked_reason"
+  >
+>;
+
+function getSanitarioRetryUpdate(
+  op: Operation,
+  nowMs: number,
+  reason: string,
+): QueueOperationUpdate {
   const retryCount = (op.retry_count ?? 0) + 1;
   const backoffMs = Math.min(
     SANITARIO_RETRY_BASE_MS * 2 ** Math.min(retryCount - 1, 8),
@@ -669,7 +684,7 @@ async function processSanitarioCanonicalResults(
     op: Operation;
     result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus };
   }> = [];
-  const operationUpdates = new Map<string, Record<string, unknown>>();
+  const operationUpdates = new Map<string, QueueOperationUpdate>();
   let terminalRejection = false;
 
   for (const result of canonicalResults) {
@@ -956,6 +971,7 @@ export async function recoverStaleSyncingGesturesOnce() {
 export type SanitarioV2RecoveryTrigger =
   | "app_startup"
   | "reconcile_completed"
+  | "reconciliation_drain"
   | "contract_version_updated"
   | "remote_dependency_recovered";
 
