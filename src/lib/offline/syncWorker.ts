@@ -142,10 +142,12 @@ export async function isGestureLockActive(
 
 const WORKER_INTERVAL_MS = 5000;
 const MAX_RETRIES = 3;
+// Transient server-side 5xx family: recoverable on startup after session retries.
 const RECOVERABLE_ERROR_MARKERS = [
   "HTTP 401",
   "Invalid JWT",
   "Unauthorized - invalid JWT",
+  "HTTP 500",
   "HTTP 502",
   "HTTP 503",
   "HTTP 504",
