@@ -142,11 +142,8 @@ export async function isGestureLockActive(
 
 const WORKER_INTERVAL_MS = 5000;
 const MAX_RETRIES = 3;
-// Transient server-side 5xx family: recoverable on startup after session retries.
+// Transient server-side 5xx / transport family: recoverable on startup.
 const RECOVERABLE_ERROR_MARKERS = [
-  "HTTP 401",
-  "Invalid JWT",
-  "Unauthorized - invalid JWT",
   "HTTP 500",
   "HTTP 502",
   "HTTP 503",
@@ -155,6 +152,15 @@ const RECOVERABLE_ERROR_MARKERS = [
   "NetworkError",
   "fetch failed",
   "name resolution failed",
+];
+// Authentication/session family: replay only allowed with a usable session.
+const AUTH_ERROR_MARKERS = [
+  "HTTP 401",
+  "Invalid JWT",
+  "Unauthorized - invalid JWT",
+  "Nao autenticado - sessao expirada",
+  "invalid refresh token",
+  "refresh_token_not_found",
 ];
 const AGENDA_ALREADY_COMPLETED_REASON = "agenda_already_completed_by_event";
 const SANITARIO_AGENDA_CLOSURE_CONFLICT_REASON =
@@ -538,6 +544,14 @@ export async function drainReconciliationObligations(
 }
 
 function wakeUpDurableSyncWork() {
+  // Re-run ERROR recovery on wakeup so auth-blocked gestures replay once a
+  // valid session (e.g. refreshed token) is available without an app reload.
+  void recoverErroredGesturesOnce().catch((error: unknown) => {
+    console.warn(
+      "[sync-worker] ERROR recovery on wakeup failed:",
+      error instanceof Error ? error.message : error,
+    );
+  });
   void runInitialOfflinePullForActiveFarmOnce();
   void drainReconciliationObligations(getActiveFarmId());
 }
@@ -569,6 +583,14 @@ function isRecoverableSyncError(errorMessage?: string): boolean {
   if (!errorMessage) return false;
   const normalizedMessage = errorMessage.toLowerCase();
   return RECOVERABLE_ERROR_MARKERS.some((marker) =>
+    normalizedMessage.includes(marker.toLowerCase()),
+  );
+}
+
+function isAuthSyncError(errorMessage?: string): boolean {
+  if (!errorMessage) return false;
+  const normalizedMessage = errorMessage.toLowerCase();
+  return AUTH_ERROR_MARKERS.some((marker) =>
     normalizedMessage.includes(marker.toLowerCase()),
   );
 }
@@ -941,13 +963,25 @@ export async function recoverErroredGesturesOnce() {
     .where("status")
     .equals("ERROR")
     .toArray();
-  const recoverable = errored.filter((gesture) =>
+  const transient = errored.filter((gesture) =>
     isRecoverableSyncError(gesture.last_error),
   );
+  const authBlocked = errored.filter((gesture) =>
+    isAuthSyncError(gesture.last_error),
+  );
+
+  // Auth-blocked gestures replay only when a usable session exists (directly
+  // or via refresh); otherwise they stay ERROR awaiting valid authentication.
+  let authRecoverable: typeof authBlocked = [];
+  if (authBlocked.length > 0 && (await tryGetUsableSession())) {
+    authRecoverable = authBlocked;
+  }
+
+  const recoverable = [...transient, ...authRecoverable];
 
   if (recoverable.length === 0) return;
 
-  for (const gesture of recoverable) {
+  for (const gesture of transient) {
     await db.queue_gestures.update(gesture.client_tx_id, {
       status: "PENDING",
       sync_result: undefined,
@@ -955,6 +989,16 @@ export async function recoverErroredGesturesOnce() {
       retry_count: 0,
       last_error:
         "Recovered transient sync error; retrying after worker startup",
+    });
+  }
+
+  for (const gesture of authRecoverable) {
+    await db.queue_gestures.update(gesture.client_tx_id, {
+      status: "PENDING",
+      sync_result: undefined,
+      completed_at: undefined,
+      retry_count: 0,
+      last_error: "Recovered auth session; retrying after worker startup",
     });
   }
 
@@ -1107,6 +1151,15 @@ async function getValidSession() {
   }
 
   return { supabase, session: refreshedSession };
+}
+
+async function tryGetUsableSession(): Promise<boolean> {
+  try {
+    await getValidSession();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function sendBatchRequest(
@@ -1412,6 +1465,7 @@ function buildTerminalBlockedDependencyClassifier(
   };
 }
 
+// fallow-ignore-next-line complexity
 export async function processGesture(gesture: Gesture) {
   // fallow-ignore-next-line complexity
   return withGestureLock(gesture.client_tx_id, async (acquired) => {
@@ -2039,9 +2093,8 @@ export async function processGesture(gesture: Gesture) {
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
 
-    const isStale = await db.transaction(
-      "rw",
-      [db.queue_gestures],
+    const isStale = await db.transaction("rw", [db.queue_gestures],
+      // fallow-ignore-next-line complexity
       async () => {
         const current = await db.queue_gestures.get(gesture.client_tx_id);
         if (
@@ -2056,6 +2109,18 @@ export async function processGesture(gesture: Gesture) {
         const retryCount = current.retry_count ?? gesture.retry_count ?? 0;
 
         if (isNonRetryableSyncError(error.message)) {
+          await db.queue_gestures.update(gesture.client_tx_id, {
+            status: "ERROR",
+            sync_result: "ERROR",
+            completed_at: new Date().toISOString(),
+            last_error: error.message,
+          });
+          return false;
+        }
+
+        if (isAuthSyncError(error.message)) {
+          // Terminal until a valid session exists: local work is preserved and
+          // recovery replays the same persisted identities after re-auth.
           await db.queue_gestures.update(gesture.client_tx_id, {
             status: "ERROR",
             sync_result: "ERROR",
