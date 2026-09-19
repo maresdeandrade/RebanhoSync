@@ -61,8 +61,10 @@ let isTickRunning = false;
 let startupRecoveryDone = false;
 let initialPullFarmId: string | null = null;
 let isInitialPullRunning = false;
+let activeRequestController: AbortController | null = null;
 
 const localActiveGestureLocks = new Set<string>();
+export const REQUEST_TIMEOUT_MS = 5_000;
 
 export async function withGestureLock<T>(
   clientTxId: string,
@@ -413,6 +415,8 @@ export const stopSyncWorker = () => {
 
   isTickRunning = false;
   startupRecoveryDone = false;
+  activeRequestController?.abort();
+  activeRequestController = null;
   localActiveGestureLocks.clear();
 };
 
@@ -1108,20 +1112,32 @@ async function sendBatchRequest(
   gesture: Gesture,
   ops: Record<string, unknown>[],
 ) {
-  return fetch(`${env.supabaseFunctionsUrl}/sync-batch`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: env.supabasePublishableKey,
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({
-      client_id: gesture.client_id,
-      fazenda_id: gesture.fazenda_id,
-      client_tx_id: gesture.client_tx_id,
-      ops,
-    }),
-  });
+  const controller = new AbortController();
+  activeRequestController = controller;
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    return await fetch(`${env.supabaseFunctionsUrl}/sync-batch`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: env.supabasePublishableKey,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        client_id: gesture.client_id,
+        fazenda_id: gesture.fazenda_id,
+        client_tx_id: gesture.client_tx_id,
+        ops,
+      }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+    if (activeRequestController === controller) {
+      activeRequestController = null;
+    }
+  }
 }
 
 export function mapOperationForSync(
