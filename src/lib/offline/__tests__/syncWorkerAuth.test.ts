@@ -316,6 +316,17 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
       "tx-transient-503",
       "Max retries: HTTP 503 - Service Unavailable",
     );
+    for (const txId of ["tx-auth-blocked", "tx-transient-503"]) {
+      await db.queue_ops.add({
+        client_tx_id: txId,
+        client_op_id: `op-${txId}`,
+        table: "lotes",
+        action: "INSERT",
+        record: { id: `lote-${txId}`, fazenda_id: farmId },
+        sync_state: "PENDING",
+        created_at: "2026-09-19T09:59:00.000Z",
+      });
+    }
 
     await recoverErroredGesturesOnce();
 
@@ -323,10 +334,12 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
       status: "ERROR",
       sync_result: "ERROR",
     });
+    expect(await db.queue_ops.get("op-tx-auth-blocked")).toBeDefined();
     expect(await db.queue_gestures.get("tx-transient-503")).toMatchObject({
       status: "PENDING",
       retry_count: 0,
     });
+    expect(await db.queue_ops.get("op-tx-transient-503")).toBeDefined();
   });
 
   it("T7 — nova sessão válida: mesma gesture/op identity volta ao fluxo e ACK", async () => {

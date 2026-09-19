@@ -42,6 +42,15 @@ describe("syncWorker recovery", () => {
         last_error: "HTTP 503 - name resolution failed",
       }),
     );
+    await db.queue_ops.add({
+      client_tx_id: txId,
+      client_op_id: "op-http-503",
+      table: "lotes",
+      action: "INSERT",
+      record: { id: "lote-http-503", fazenda_id: "farm-1" },
+      sync_state: "PENDING",
+      created_at: "2026-05-01T09:59:00.000Z",
+    });
 
     await recoverErroredGesturesOnce();
 
@@ -123,21 +132,26 @@ describe("syncWorker recovery", () => {
     expect(await db.queue_ops.get(operation.client_op_id)).toEqual(operation);
   });
 
-  it("leaves stale SYNCING without operations fail-closed", async () => {
+  it("classifies stale SYNCING without operations as manual reconciliation error", async () => {
     const txId = "tx-stale-without-ops";
     await db.queue_gestures.add(
       makeGesture({ client_tx_id: txId, status: "SYNCING" }),
     );
 
-    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(0);
+    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(1);
 
-    expect(await db.queue_gestures.get(txId)).toMatchObject({
+    const recovered = await db.queue_gestures.get(txId);
+    expect(recovered).toMatchObject({
       client_tx_id: txId,
-      status: "SYNCING",
+      status: "ERROR",
+      sync_result: "ERROR",
+      last_error:
+        "Gesture sem operações enfileiradas; reconciliação manual necessária",
     });
+    expect(recovered?.status).not.toBe("DONE");
   });
 
-  it("leaves stale SYNCING with only terminal operations fail-closed", async () => {
+  it("requeues stale SYNCING with only terminal operations for terminal settle", async () => {
     const txId = "tx-stale-terminal";
     await db.queue_gestures.add(
       makeGesture({ client_tx_id: txId, status: "SYNCING" }),
@@ -152,9 +166,13 @@ describe("syncWorker recovery", () => {
       created_at: "2026-05-01T09:59:00.000Z",
     });
 
-    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(0);
+    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(1);
     expect(await db.queue_gestures.get(txId)).toMatchObject({
-      status: "SYNCING",
+      status: "PENDING",
+      client_tx_id: txId,
+    });
+    expect(await db.queue_ops.get("op-stale-terminal")).toMatchObject({
+      sync_state: "REJECTED",
     });
   });
 });

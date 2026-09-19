@@ -177,6 +177,15 @@ describe("F24.2D1B — HTTP 500 transient recovery", () => {
         retry_count: 3,
         created_at: "2026-09-19T09:59:00.000Z",
       });
+      await db.queue_ops.add({
+        client_tx_id: txId,
+        client_op_id: `op-transient-${status}`,
+        table: "lotes",
+        action: "INSERT",
+        record: { id: `lote-transient-${status}`, fazenda_id: "farm-500" },
+        sync_state: "PENDING",
+        created_at: "2026-09-19T09:59:00.000Z",
+      });
 
       await recoverErroredGesturesOnce();
 

@@ -981,7 +981,16 @@ export async function recoverErroredGesturesOnce() {
 
   if (recoverable.length === 0) return;
 
+  let requeued = 0;
   for (const gesture of transient) {
+    // Zero-operation ERROR gestures have nothing to replay; fail closed for
+    // manual reconciliation instead of requeueing into fabricated DONE.
+    const queuedOps = await db.queue_ops
+      .where("client_tx_id")
+      .equals(gesture.client_tx_id)
+      .count();
+    if (queuedOps === 0) continue;
+
     await db.queue_gestures.update(gesture.client_tx_id, {
       status: "PENDING",
       sync_result: undefined,
@@ -990,9 +999,16 @@ export async function recoverErroredGesturesOnce() {
       last_error:
         "Recovered transient sync error; retrying after worker startup",
     });
+    requeued += 1;
   }
 
   for (const gesture of authRecoverable) {
+    const queuedOps = await db.queue_ops
+      .where("client_tx_id")
+      .equals(gesture.client_tx_id)
+      .count();
+    if (queuedOps === 0) continue;
+
     await db.queue_gestures.update(gesture.client_tx_id, {
       status: "PENDING",
       sync_result: undefined,
@@ -1000,11 +1016,14 @@ export async function recoverErroredGesturesOnce() {
       retry_count: 0,
       last_error: "Recovered auth session; retrying after worker startup",
     });
+    requeued += 1;
   }
 
-  console.warn(
-    `[sync-worker] Re-queued ${recoverable.length} recoverable ERROR gesture(s)`,
-  );
+  if (requeued > 0) {
+    console.warn(
+      `[sync-worker] Re-queued ${requeued} recoverable ERROR gesture(s)`,
+    );
+  }
 }
 
 export async function recoverStaleSyncingGesturesOnce() {
@@ -1040,7 +1059,23 @@ export async function recoverStaleSyncingGesturesOnce() {
           operation.sync_state !== "REJECTED" &&
           operation.sync_state !== "BLOCKED_DEPENDENCY",
       );
-      if (!hasNonTerminalOperation) continue;
+
+      if (operations.length === 0) {
+        // Legacy/corrupt gesture without operations: no persisted proof of a
+        // remote apply exists, so fail closed instead of fabricating DONE.
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: "ERROR",
+          sync_result: "ERROR",
+          completed_at: new Date().toISOString(),
+          last_error:
+            "Gesture sem operações enfileiradas; reconciliação manual necessária",
+        });
+        recovered += 1;
+        continue;
+      }
+      // Non-terminal operations retry with persisted identity; terminal-only
+      // operations are requeued for the existing zero-ready classification,
+      // which settles them terminally without factual replay.
 
       await db.queue_gestures.update(gesture.client_tx_id, {
         status: "PENDING",
@@ -1521,6 +1556,19 @@ export async function processGesture(gesture: Gesture) {
       await db.transaction("rw", [db.queue_gestures], async () => {
         const current = await db.queue_gestures.get(gesture.client_tx_id);
         if (current?.status !== "SYNCING") return;
+
+        // Legacy/corrupt gesture without queued operations: there is no
+        // persisted proof of any remote apply, so never fabricate DONE.
+        if (queuedOps.length === 0) {
+          await db.queue_gestures.update(gesture.client_tx_id, {
+            status: "ERROR",
+            sync_result: "ERROR",
+            completed_at: new Date().toISOString(),
+            last_error:
+              "Gesture sem operações enfileiradas; reconciliação manual necessária",
+          });
+          return;
+        }
 
         await db.queue_gestures.update(gesture.client_tx_id, {
           status: hasDeferredRetry
