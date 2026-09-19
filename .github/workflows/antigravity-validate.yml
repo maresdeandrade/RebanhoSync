@@ -30,8 +30,14 @@ jobs:
 
     env:
       CI: true
+
       VITE_SUPABASE_URL: ${{ vars.CI_SUPABASE_URL || 'https://example.supabase.co' }}
-      VITE_SUPABASE_ANON_KEY: ${{ vars.CI_SUPABASE_ANON_KEY || 'example-anon-key' }}
+
+      # Contrato atual do frontend.
+      # Durante a migração, aceita CI_SUPABASE_ANON_KEY como fallback para não
+      # quebrar imediatamente uma variável antiga já configurada no GitHub.
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.CI_SUPABASE_PUBLISHABLE_KEY || vars.CI_SUPABASE_ANON_KEY || 'example-publishable-key' }}
+
       VITE_SUPABASE_FUNCTIONS_URL: ${{ vars.CI_SUPABASE_FUNCTIONS_URL || 'https://example.supabase.co/functions/v1' }}
 
     steps:
@@ -55,11 +61,13 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
+
       - name: Install ripgrep
         run: |
           sudo apt-get update
           sudo apt-get install -y ripgrep
           rg --version
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
@@ -68,12 +76,15 @@ jobs:
       - name: Start disposable Supabase
         run: |
           set -euo pipefail
+
           cli_state="$RUNNER_TEMP/rebanhosync-supabase-cli-latest"
+
           if [[ -f supabase/.temp/cli-latest ]]; then
             cp supabase/.temp/cli-latest "$cli_state"
           else
             rm -f "$cli_state"
           fi
+
           supabase init --force
           supabase start
           supabase db reset --yes
@@ -81,11 +92,15 @@ jobs:
       - name: Export local Supabase test environment
         run: |
           set -euo pipefail
+
           env_file="$RUNNER_TEMP/rebanhosync-supabase.env"
+
           supabase status -o env > "$env_file"
+
           set -a
           source "$env_file"
           set +a
+
           {
             echo "REBANHOSYNC_TEST_DB_URL=$DB_URL"
             echo "REBANHOSYNC_TEST_API_URL=$API_URL"
@@ -107,17 +122,23 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
       - name: Stop disposable Supabase
         if: always()
         run: |
           set +e
+
           supabase stop --no-backup
           rm -f "$RUNNER_TEMP/rebanhosync-supabase.env"
+
           git restore --source=HEAD --worktree -- supabase/config.toml supabase/.gitignore
+
           cli_state="$RUNNER_TEMP/rebanhosync-supabase-cli-latest"
+
           if [[ -f "$cli_state" ]]; then
             cp "$cli_state" supabase/.temp/cli-latest
           fi
+
           rm -f "$cli_state"
 
       - name: Detect changed files
@@ -138,6 +159,7 @@ jobs:
 
       - name: Active document gates
         run: pnpm run gates:docs
+
       - name: Repository must remain clean
         run: |
           set -euo pipefail
