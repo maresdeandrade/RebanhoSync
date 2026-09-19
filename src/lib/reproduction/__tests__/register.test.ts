@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventValidationError } from "@/lib/events/validators";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
+import { supabase } from "@/lib/supabase";
 import { getBirthEventId } from "@/lib/reproduction/neonatal";
 import {
   buildReproductionGesture,
@@ -98,6 +99,15 @@ async function seedService({
 
 describe("buildReproductionGesture", () => {
   beforeEach(async () => {
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: { session: { user: { id: "user-a" } } } as never,
+      error: null,
+    });
+    await db.local_ownership.put({
+      key: "local-session",
+      owner_user_id: "user-a",
+      updated_at: new Date().toISOString(),
+    });
     vi.stubGlobal("localStorage", {
       getItem: () => null,
       setItem: () => undefined,
@@ -113,6 +123,8 @@ describe("buildReproductionGesture", () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
+    await db.local_ownership.clear();
     vi.unstubAllGlobals();
     await db.state_animais.clear();
     await db.event_eventos.clear();
@@ -1192,5 +1204,28 @@ describe("buildReproductionGesture", () => {
     ).toBeUndefined();
     expect(await db.queue_ops.count()).toBe(0);
     expect(await db.queue_gestures.count()).toBe(0);
+  });
+
+  it("blocks registration when the local owner differs from the session", async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { user: { id: "user-b" } } } as never,
+      error: null,
+    });
+
+    await expect(
+      registerReproductionGesture({
+        fazendaId: "farm-1",
+        animalId: "animal-mismatch",
+        eventId: "event-mismatch",
+        data: { tipo: "aborto" },
+      }),
+    ).rejects.toMatchObject({
+      decision: { status: "MISMATCH", ownerUserId: "user-a", currentUserId: "user-b" },
+    });
+
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await db.queue_gestures.count()).toBe(0);
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.state_animais.count()).toBe(0);
   });
 });

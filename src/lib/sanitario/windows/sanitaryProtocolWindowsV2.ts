@@ -1,5 +1,6 @@
 import { resolveAnimalClassificationSnapshot } from "@/lib/animals/classificationSnapshot";
 import { db } from "@/lib/offline/db";
+import { requireTenantSensitiveRead } from "@/lib/offline/localReadBoundary";
 import type {
   Animal,
   AnimalStatusEnum,
@@ -511,6 +512,7 @@ export function listSanitaryDocumentaryPendenciesV2(input: {
 export async function loadSanitaryProtocolWindowSourceV2(
   fazendaId: string,
 ): Promise<SanitaryProtocolWindowSourceV2> {
+  await requireTenantSensitiveRead();
   const [catalog, animals, lots, agendas, agendaAnimals] = await Promise.all([
     readLocalSanitaryProtocolCatalogV2(),
     db.state_animais.where("fazenda_id").equals(fazendaId).toArray(),

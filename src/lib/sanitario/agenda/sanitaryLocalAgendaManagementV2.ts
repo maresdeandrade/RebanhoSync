@@ -1,4 +1,5 @@
 import type { OfflineDB } from "@/lib/offline/db";
+import { requireTenantSensitiveAccess } from "@/lib/offline/localReadBoundary";
 import type {
   Animal,
   Lote,
@@ -168,6 +169,7 @@ export async function listLocalSanitaryAgendasV2(
   fazendaId: string,
   localDb?: LocalAgendaDbV2,
 ): Promise<SanitaryLocalAgendaListItemV2[]> {
+  await requireTenantSensitiveAccess();
   const db = localDb ?? (await getDefaultDb());
   const [agendas, agendaAnimals, animals, lots] = await Promise.all([
     db.ops_sanitario_agenda_v2.where("fazenda_id").equals(fazendaId).toArray(),
@@ -324,6 +326,7 @@ export async function rescheduleLocalSanitaryAgendaV2(
   input: { agendaId: string; fazendaId: string; plannedFor: string },
   localDb?: LocalAgendaDbV2,
 ) {
+  await requireTenantSensitiveAccess();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.plannedFor)) {
     throw new Error("DATA_PROGRAMADA_INVALIDA");
   }
@@ -345,6 +348,7 @@ export async function cancelLocalSanitaryAgendaV2(
   input: { agendaId: string; fazendaId: string },
   localDb?: LocalAgendaDbV2,
 ) {
+  await requireTenantSensitiveAccess();
   const db = localDb ?? (await getDefaultDb());
   const now = new Date().toISOString();
   await db.transaction(

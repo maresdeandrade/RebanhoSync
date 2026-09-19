@@ -1,5 +1,6 @@
 import { buildAnimalTaxonomyFactsPayload } from "@/lib/animals/taxonomy";
 import { db } from "@/lib/offline/db";
+import { requireTenantSensitiveAccess } from "@/lib/offline/localReadBoundary";
 import type { PullCursor, ReproTipoEnum } from "@/lib/offline/types";
 import { supabase } from "@/lib/supabase";
 import {
@@ -331,6 +332,7 @@ export async function pullReproductionDiagnosisState(
   fazendaId: string,
   options: { ignorePendingClientTxId?: string } = {},
 ) {
+  await requireTenantSensitiveAccess();
   const cursorKey = getCursorKey(fazendaId);
   const cursor = await db.sync_pull_cursors.get(cursorKey);
   let detailQuery = supabase

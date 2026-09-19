@@ -59,8 +59,11 @@ import {
   type SociedadePecuaria,
 } from "./types";
 import type { ReconciliationObligation } from "./reconciliationTypes";
+import type { LocalOwnership } from "./ownership";
 
 export class OfflineDB extends Dexie {
+  local_ownership!: Table<LocalOwnership, string>;
+
   // State Stores (Cópia local para leitura)
   state_animais!: Table<Animal, string>;
   state_lotes!: Table<Lote, string>;
@@ -793,6 +796,10 @@ export class OfflineDB extends Dexie {
     this.version(30).stores({
       sync_reconcile_obligations:
         "key, fazenda_id, scope, generation_id, updated_at, [fazenda_id+scope]",
+    });
+
+    this.version(31).stores({
+      local_ownership: "key, owner_user_id, updated_at",
     });
   }
 }

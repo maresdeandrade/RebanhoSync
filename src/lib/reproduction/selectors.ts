@@ -1,5 +1,6 @@
 
 import { db } from "@/lib/offline/db";
+import { requireTenantSensitiveRead } from "@/lib/offline/localReadBoundary";
 import type { Evento, EventoReproducao } from "@/lib/offline/types";
 
 export type ReproEventJoined = Evento & { details?: EventoReproducao };
@@ -9,6 +10,7 @@ export type ReproEventJoined = Evento & { details?: EventoReproducao };
  * optimized for bulk operations (Dashboard, specialized lists).
  */
 export async function getReproductionEventsJoined(fazendaId: string): Promise<ReproEventJoined[]> {
+  await requireTenantSensitiveRead();
   // 1. Fetch Headers (filtered by domain)
   const headers = await db.event_eventos
     .where("fazenda_id").equals(fazendaId)
@@ -40,6 +42,7 @@ export async function getReproductionEventsJoined(fazendaId: string): Promise<Re
  * Fetches full reproduction history for a single animal.
  */
 export async function getAnimalReproHistory(animalId: string): Promise<ReproEventJoined[]> {
+   await requireTenantSensitiveRead();
    const headers = await db.event_eventos
     .where("animal_id").equals(animalId)
     .filter(e => e.dominio === 'reproducao' && !e.deleted_at)

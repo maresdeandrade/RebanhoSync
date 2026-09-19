@@ -46,6 +46,7 @@ import {
   trackPilotMetric,
 } from "@/lib/telemetry/pilotMetrics";
 import { getActiveFarmId } from "@/lib/storage";
+import { evaluateLocalOwnership } from "./ownership";
 import { pullReproductionDiagnosisState } from "@/lib/reproduction/remoteSync";
 import {
   buildCommercialPurchaseEnvelope,
@@ -320,8 +321,7 @@ export const startSyncWorker = () => {
   if (import.meta.env.DEV) {
     console.debug("[sync-worker] Starting sync worker");
   }
-  void runInitialOfflinePullForActiveFarmOnce();
-  void drainReconciliationObligations(getActiveFarmId());
+  void runOwnedSyncWork();
 
   if (!onlineWakeUpListener && typeof window !== "undefined") {
     onlineWakeUpListener = () => {
@@ -335,14 +335,7 @@ export const startSyncWorker = () => {
     isTickRunning = true;
 
     try {
-      await runInitialOfflinePullForActiveFarmOnce();
-
-      if (!startupRecoveryDone) {
-        await recoverErroredGesturesOnce();
-        await recoverBlockedSanitarioV2Operations("app_startup");
-        await recoverStaleSyncingGesturesOnce();
-        startupRecoveryDone = true;
-      }
+      if (!(await runOwnedSyncWork())) return;
 
       const pending = await db.queue_gestures
         .where("status")
@@ -513,8 +506,13 @@ async function executeReconciliationForScope(
 
 export async function drainReconciliationObligations(
   fazendaId: string | null,
+  currentUserId?: string | null,
 ) {
   if (!fazendaId || isReconciliationDrainRunning) return;
+  if (currentUserId !== undefined) {
+    const ownership = await evaluateLocalOwnership(currentUserId);
+    if (ownership.status !== "OWNED") return;
+  }
 
   isReconciliationDrainRunning = true;
   try {
@@ -546,14 +544,7 @@ export async function drainReconciliationObligations(
 function wakeUpDurableSyncWork() {
   // Re-run ERROR recovery on wakeup so auth-blocked gestures replay once a
   // valid session (e.g. refreshed token) is available without an app reload.
-  void recoverErroredGesturesOnce().catch((error: unknown) => {
-    console.warn(
-      "[sync-worker] ERROR recovery on wakeup failed:",
-      error instanceof Error ? error.message : error,
-    );
-  });
-  void runInitialOfflinePullForActiveFarmOnce();
-  void drainReconciliationObligations(getActiveFarmId());
+  void runOwnedSyncWork();
 }
 
 async function tryPurgeOldRejections() {
@@ -1502,6 +1493,9 @@ function buildTerminalBlockedDependencyClassifier(
 
 // fallow-ignore-next-line complexity
 export async function processGesture(gesture: Gesture) {
+  const ownership = await getWorkerOwnership();
+  if (ownership.status !== "OWNED") return;
+
   // fallow-ignore-next-line complexity
   return withGestureLock(gesture.client_tx_id, async (acquired) => {
     if (!acquired) {
@@ -2216,4 +2210,41 @@ export async function processGesture(gesture: Gesture) {
     });
   }
   });
+}
+
+async function getWorkerOwnership() {
+  const sessionResult = await supabase.auth.getSession();
+  const session = sessionResult?.data?.session ?? sessionResult?.data ?? null;
+  const currentUserId = session?.user?.id ?? (session?.access_token ? "legacy-session-user" : null);
+  const decision = await evaluateLocalOwnership(currentUserId);
+  if (decision.status === "UNKNOWN" && currentUserId) {
+    return {
+      status: "OWNED" as const,
+      ownerUserId: currentUserId,
+      currentUserId,
+    };
+  }
+  if (decision.status === "UNKNOWN" && !currentUserId) {
+    return {
+      status: "OWNED" as const,
+      ownerUserId: null,
+      currentUserId: null,
+    };
+  }
+  return decision;
+}
+
+async function runOwnedSyncWork(): Promise<boolean> {
+  const ownership = await getWorkerOwnership();
+  if (ownership.status !== "OWNED") return false;
+
+  await runInitialOfflinePullForActiveFarmOnce();
+  await drainReconciliationObligations(getActiveFarmId());
+  if (!startupRecoveryDone) {
+    await recoverErroredGesturesOnce();
+    await recoverBlockedSanitarioV2Operations("app_startup");
+    await recoverStaleSyncingGesturesOnce();
+    startupRecoveryDone = true;
+  }
+  return true;
 }

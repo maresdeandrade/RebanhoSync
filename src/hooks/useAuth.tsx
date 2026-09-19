@@ -25,6 +25,10 @@ import {
   type NotificationPreferences,
 } from "@/lib/notifications/sanitaryReminders";
 import { checkIsSuperAdmin } from "@/lib/admin/adminApi";
+import {
+  clearLocalOwnership,
+  establishLocalOwnership,
+} from "@/lib/offline/ownership";
 
 
 // Role schema for runtime validation
@@ -295,6 +299,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } = await supabase.auth.getSession();
         setSession(session);
         if (session) {
+          const ownership = await establishLocalOwnership(session);
+          if (ownership.status === "MISMATCH") {
+            setSession(null);
+          }
           await refreshSettings();
         } else {
           applyTheme("system");
@@ -313,6 +321,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
+        void establishLocalOwnership(session).then((ownership) => {
+          if (ownership.status === "MISMATCH") setSession(null);
+        });
         refreshSettings();
       } else {
         setActiveFarmId(null);
@@ -343,6 +354,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
       setNotificationPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
       removeActiveFarmId();
+      await clearLocalOwnership();
     } catch (e) {
       console.error("[useAuth] Error signing out:", e);
     }
