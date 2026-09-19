@@ -18,13 +18,13 @@ defaults:
     shell: bash
 
 env:
-  # Garante que as JavaScript actions já rodem no runtime Node 24.
-  # Mantém o Node do projeto controlado em actions/setup-node abaixo.
+  # Garante que JavaScript actions rodem no runtime Node 24.
+  # O runtime do projeto continua controlado em actions/setup-node.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   validate:
-    name: Validate repository
+    name: Required validation
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
@@ -33,9 +33,8 @@ jobs:
 
       VITE_SUPABASE_URL: ${{ vars.CI_SUPABASE_URL || 'https://example.supabase.co' }}
 
-      # Contrato atual do frontend.
-      # Durante a migração, aceita CI_SUPABASE_ANON_KEY como fallback para não
-      # quebrar imediatamente uma variável antiga já configurada no GitHub.
+      # Contrato público atual do frontend.
+      # CI_SUPABASE_ANON_KEY permanece apenas como fallback transitório.
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.CI_SUPABASE_PUBLISHABLE_KEY || vars.CI_SUPABASE_ANON_KEY || 'example-publishable-key' }}
 
       VITE_SUPABASE_FUNCTIONS_URL: ${{ vars.CI_SUPABASE_FUNCTIONS_URL || 'https://example.supabase.co/functions/v1' }}
@@ -46,6 +45,110 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      # -----------------------------------------------------------------------
+      # Classificação de risco
+      # -----------------------------------------------------------------------
+
+      - name: Detect validation scope
+        id: scope
+        run: |
+          set -euo pipefail
+
+          BASE_SHA="${{ github.event.pull_request.base.sha || '' }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+
+          if [[ -n "$BASE_SHA" ]]; then
+            git diff --name-only "$BASE_SHA...$HEAD_SHA" > /tmp/changed-files.txt
+          else
+            git diff --name-only HEAD~1...HEAD > /tmp/changed-files.txt || true
+          fi
+
+          echo "Changed files:"
+          sed 's/^/changed: /' /tmp/changed-files.txt
+
+          docs_only=true
+          needs_app=false
+          needs_supabase=false
+
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+
+            # -----------------------------------------------------------------
+            # FAST
+            #
+            # Apenas documentação, handoffs e arquivos textuais de governança.
+            # -----------------------------------------------------------------
+
+            case "$file" in
+              docs/*|*.md|AGENTS.md)
+                ;;
+              *)
+                docs_only=false
+                needs_app=true
+                ;;
+            esac
+
+            # -----------------------------------------------------------------
+            # APPLICATION
+            #
+            # Código, testes e configuração da aplicação exigem lint,
+            # fallow, testes e build.
+            # -----------------------------------------------------------------
+
+            case "$file" in
+              src/*|tests/*|public/*|scripts/*|\
+              package.json|pnpm-lock.yaml|\
+              vite.config.*|vitest.config.*|\
+              tsconfig*.json|eslint.config.*)
+                needs_app=true
+                ;;
+            esac
+
+            # -----------------------------------------------------------------
+            # FULL / SUPABASE
+            #
+            # Mudanças com impacto em persistência, autenticação, domínio,
+            # sync, infraestrutura ou contratos transversais exigem stack
+            # Supabase descartável e validação completa.
+            # -----------------------------------------------------------------
+
+            case "$file" in
+              supabase/*|\
+              src/lib/offline/*|\
+              src/lib/auth/*|\
+              src/hooks/useAuth.*|\
+              src/lib/events/*|\
+              src/lib/comercial/*|\
+              src/lib/sanitario/*|\
+              src/lib/reproduction/*|\
+              src/lib/finance/*|\
+              src/lib/supabase.ts|\
+              src/lib/env.ts|\
+              scripts/ci/*|\
+              .github/workflows/*|\
+              .env.example|\
+              package.json|\
+              pnpm-lock.yaml)
+                needs_app=true
+                needs_supabase=true
+                ;;
+            esac
+          done < /tmp/changed-files.txt
+
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "needs_app=$needs_app" >> "$GITHUB_OUTPUT"
+          echo "needs_supabase=$needs_supabase" >> "$GITHUB_OUTPUT"
+
+          echo
+          echo "Validation classification:"
+          echo "docs_only=$docs_only"
+          echo "needs_app=$needs_app"
+          echo "needs_supabase=$needs_supabase"
+
+      # -----------------------------------------------------------------------
+      # Setup comum
+      # -----------------------------------------------------------------------
 
       - name: Setup pnpm
         uses: pnpm/setup@v2
@@ -68,12 +171,20 @@ jobs:
           sudo apt-get install -y ripgrep
           rg --version
 
+      # -----------------------------------------------------------------------
+      # Supabase — somente para alterações de alto risco
+      # -----------------------------------------------------------------------
+
       - name: Setup Supabase CLI
+        if: steps.scope.outputs.needs_supabase == 'true'
         uses: supabase/setup-cli@v3
         with:
+          # Mantido fixo para não misturar mudança de estratégia do CI
+          # com upgrade de runtime/CLI.
           version: 2.72.7
 
       - name: Start disposable Supabase
+        if: steps.scope.outputs.needs_supabase == 'true'
         run: |
           set -euo pipefail
 
@@ -90,6 +201,7 @@ jobs:
           supabase db reset --yes
 
       - name: Export local Supabase test environment
+        if: steps.scope.outputs.needs_supabase == 'true'
         run: |
           set -euo pipefail
 
@@ -108,30 +220,49 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Prepare commercial concurrency fixture
+        if: steps.scope.outputs.needs_supabase == 'true'
         run: node scripts/ci/prepare-commercial-concurrency-fixture.mjs
 
+      # -----------------------------------------------------------------------
+      # Validação de aplicação
+      #
+      # Não roda para PR exclusivamente documental.
+      # -----------------------------------------------------------------------
+
       - name: Lint
+        if: steps.scope.outputs.needs_app == 'true'
         run: pnpm run lint
 
       - name: Fallow audit
+        if: steps.scope.outputs.needs_app == 'true'
         run: pnpm exec fallow audit --gate new-only
 
       - name: Test
+        if: steps.scope.outputs.needs_app == 'true'
         timeout-minutes: 20
         run: pnpm exec vitest run --bail=1 --maxWorkers=50% --testTimeout=15000 --reporter=verbose
 
       - name: Build
+        if: steps.scope.outputs.needs_app == 'true'
         run: pnpm run build
 
+      # -----------------------------------------------------------------------
+      # Cleanup Supabase
+      #
+      # Precisa executar mesmo quando algum passo anterior falhar.
+      # -----------------------------------------------------------------------
+
       - name: Stop disposable Supabase
-        if: always()
+        if: always() && steps.scope.outputs.needs_supabase == 'true'
         run: |
           set +e
 
           supabase stop --no-backup
           rm -f "$RUNNER_TEMP/rebanhosync-supabase.env"
 
-          git restore --source=HEAD --worktree -- supabase/config.toml supabase/.gitignore
+          git restore --source=HEAD --worktree -- \
+            supabase/config.toml \
+            supabase/.gitignore
 
           cli_state="$RUNNER_TEMP/rebanhosync-supabase-cli-latest"
 
@@ -141,26 +272,29 @@ jobs:
 
           rm -f "$cli_state"
 
-      - name: Detect changed files
-        run: |
-          set -euo pipefail
+      # -----------------------------------------------------------------------
+      # Gates obrigatórios para qualquer PR
+      # -----------------------------------------------------------------------
 
-          BASE_SHA="${{ github.event.pull_request.base.sha || '' }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
-
-          if [[ -n "$BASE_SHA" ]]; then
-            git diff --name-only "$BASE_SHA...$HEAD_SHA" > /tmp/changed-files.txt
-          else
-            git diff --name-only HEAD~1...HEAD > /tmp/changed-files.txt || true
-          fi
-
-          echo "Changed files:"
-          sed 's/^/changed: /' /tmp/changed-files.txt
+      - name: Diff integrity
+        if: always()
+        run: git diff --check
 
       - name: Active document gates
+        if: always()
         run: pnpm run gates:docs
 
+      - name: Validation summary
+        if: always()
+        run: |
+          echo "Validation scope"
+          echo "----------------"
+          echo "docs_only=${{ steps.scope.outputs.docs_only }}"
+          echo "needs_app=${{ steps.scope.outputs.needs_app }}"
+          echo "needs_supabase=${{ steps.scope.outputs.needs_supabase }}"
+
       - name: Repository must remain clean
+        if: always()
         run: |
           set -euo pipefail
 
@@ -168,7 +302,8 @@ jobs:
           git status -sb
 
           if [[ -n "$(git status --porcelain=v1)" ]]; then
-            echo "Repository is dirty after validation. Generated or modified files must be committed." >&2
+            echo "Repository is dirty after validation." >&2
+            echo "Generated or modified files must be committed or explicitly restored." >&2
             git status --porcelain=v1
             exit 1
           fi
