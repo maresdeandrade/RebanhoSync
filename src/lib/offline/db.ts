@@ -37,6 +37,7 @@ import {
   type ProtocoloSanitarioItem,
   type PullCursor,
   type Rejection,
+  type ReconciliationObligation,
   type SanitarioAgendaAnimalLocalV2,
   type SanitarioAgendaClosureLocalV2,
   type SanitarioAgendaLocalV2,
@@ -100,6 +101,7 @@ export class OfflineDB extends Dexie {
   queue_ops!: Table<Operation, string>;
   queue_rejections!: Table<Rejection, number>;
   sync_pull_cursors!: Table<PullCursor, string>;
+  sync_reconcile_obligations!: Table<ReconciliationObligation, string>;
   sync_sanitario_v2_cutovers!: Table<SanitarioV2CutoverManifest, string>;
   metrics_events!: Table<PilotMetricEvent, string>;
   catalog_produtos_veterinarios!: Table<ProdutoVeterinarioCatalogEntry, string>;
@@ -785,6 +787,12 @@ export class OfflineDB extends Dexie {
     this.version(29).stores({
       state_finance_transactions:
         "id, fazenda_id, category_id, status, direction, occurred_at, source_event_id, reverses_transaction_id, deleted_at, [fazenda_id+status], [fazenda_id+category_id]",
+    });
+
+    // Version 30: F24.2C3B - obrigacoes duraveis de reconciliacao pos-ACK.
+    this.version(30).stores({
+      sync_reconcile_obligations:
+        "key, fazenda_id, scope, generation_id, updated_at, [fazenda_id+scope]",
     });
   }
 }

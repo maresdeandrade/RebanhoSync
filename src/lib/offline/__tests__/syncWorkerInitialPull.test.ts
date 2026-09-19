@@ -12,6 +12,7 @@ vi.mock("@/lib/storage", () => ({
 }));
 
 vi.mock("../pull", () => ({
+  DEFAULT_REMOTE_TABLES: [],
   pullDataForFarm: vi.fn(async () => undefined),
   pullInitialData: mocks.pullInitialData,
   pullSanitarioAgendaV2: vi.fn(async () => undefined),
