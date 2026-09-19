@@ -5,14 +5,16 @@ import { supabase } from "@/lib/supabase";
 import type {
   Gesture,
   Operation,
-  ReconciliationObligation,
-  ReconciliationScope,
   Rejection,
   SanitarioSyncV2Command,
   SanitarioSyncV2ResultStatus,
   SyncOperationAuditResult,
   SyncOperationResult,
 } from "./types";
+import type {
+  ReconciliationObligation,
+  ReconciliationScope,
+} from "./reconciliationTypes";
 import {
   getRemoteTableName,
   STANDARD_EVENT_DETAIL_REMOTE_TABLES,
@@ -209,18 +211,69 @@ function deriveReconciliationRequirements(
   return requirements;
 }
 
+async function loadSyncingGestureAndPersistRequirements(
+  clientTxId: string,
+  requirements: ReconciliationRequirement[],
+): Promise<Gesture | undefined> {
+  const current = await db.queue_gestures.get(clientTxId);
+  if (!current || current.status !== "SYNCING") {
+    return undefined;
+  }
+  if (requirements.length > 0) {
+    await upsertReconciliationObligations(requirements);
+  }
+  return current;
+}
+
 // Decisão pura de scopes para resultados canônicos sanitário v2 (caminho P4).
 // Reutilizada tanto pela persistência da obrigação quanto pela reconciliação
 // de fato, para que a obrigação reflita exatamente o pull que seria executado.
+function isSanitarioAgendaCutoverRequired(
+  command: SanitarioSyncV2Command | undefined,
+  canonical: Record<string, unknown>,
+): boolean {
+  return (
+    command === "create_agenda" ||
+    command === "replace_agenda_animals" ||
+    command === "close_agenda" ||
+    typeof canonical.agenda_id === "string" ||
+    typeof canonical.closure_id === "string"
+  );
+}
+
+function isSanitarioFactualCutoverRequired(
+  command: SanitarioSyncV2Command | undefined,
+  canonical: Record<string, unknown>,
+): boolean {
+  return (
+    command === "apply_factual_core" || typeof canonical.evento_id === "string"
+  );
+}
+
+function isUnresolvedSanitarioConflict(
+  result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus },
+  command: SanitarioSyncV2Command | undefined,
+  hasAgendaEntity: boolean,
+  hasFactualEntity: boolean,
+): boolean {
+  return (
+    result.status === "CONFLICT" &&
+    !hasAgendaEntity &&
+    !hasFactualEntity &&
+    (!result.canonical_entity_id || !command)
+  );
+}
+
 function deriveSanitarioV2CutoverRequired(
   matched: Array<{
     op: Operation;
     result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus };
   }>,
 ): boolean {
-  for (const { op, result } of matched) {
-    if (result.status !== "APPLIED" && result.status !== "CONFLICT") continue;
-
+  return matched.some(({ op, result }) => {
+    if (result.status !== "APPLIED" && result.status !== "CONFLICT") {
+      return false;
+    }
     const command = readSanitarioCommand(op, result);
     const canonical = isRecord(result.canonical_result)
       ? result.canonical_result
@@ -230,27 +283,17 @@ function deriveSanitarioV2CutoverRequired(
       typeof canonical.closure_id === "string";
     const hasFactualEntity = typeof canonical.evento_id === "string";
 
-    if (
-      command === "create_agenda" ||
-      command === "replace_agenda_animals" ||
-      command === "close_agenda" ||
-      hasAgendaEntity
-    ) {
-      return true;
-    }
-    if (command === "apply_factual_core" || hasFactualEntity) {
-      return true;
-    }
-    if (
-      result.status === "CONFLICT" &&
-      !hasAgendaEntity &&
-      !hasFactualEntity &&
-      (!result.canonical_entity_id || !command)
-    ) {
-      return true;
-    }
-  }
-  return false;
+    return (
+      isSanitarioAgendaCutoverRequired(command, canonical) ||
+      isSanitarioFactualCutoverRequired(command, canonical) ||
+      isUnresolvedSanitarioConflict(
+        result,
+        command,
+        hasAgendaEntity,
+        hasFactualEntity,
+      )
+    );
+  });
 }
 
 // Auto-purge: run at most once every 6 hours, persisted across reloads
@@ -1069,7 +1112,7 @@ async function sendBatchRequest(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: env.supabaseAnonKey,
+      apikey: env.supabasePublishableKey,
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({
@@ -1176,13 +1219,12 @@ async function reconcileGenericOperationResults(
 
   // fallow-ignore-next-line complexity
   await db.transaction("rw", transactionStores, async () => {
-    const current = await db.queue_gestures.get(gesture.client_tx_id);
-    if (!current || current.status !== "SYNCING") {
+    const current = await loadSyncingGestureAndPersistRequirements(
+      gesture.client_tx_id,
+      reconciliationRequirements,
+    );
+    if (!current) {
       return;
-    }
-
-    if (reconciliationRequirements.length > 0) {
-      await upsertReconciliationObligations(reconciliationRequirements);
     }
 
     for (const op of [...rejectedOps].reverse()) {
@@ -1634,15 +1676,12 @@ export async function processGesture(gesture: Gesture) {
         "rw",
         [db.queue_gestures, db.queue_ops, db.sync_reconcile_obligations],
         async () => {
-          const current = await db.queue_gestures.get(gesture.client_tx_id);
-          if (!current || current.status !== "SYNCING") {
+          const current = await loadSyncingGestureAndPersistRequirements(
+            gesture.client_tx_id,
+            reconciliationRequirements,
+          );
+          if (!current) {
             return;
-          }
-
-          if (reconciliationRequirements.length > 0) {
-            await upsertReconciliationObligations(
-              reconciliationRequirements,
-            );
           }
 
           await db.queue_ops.bulkDelete(

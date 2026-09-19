@@ -37,7 +37,6 @@ import {
   type ProtocoloSanitarioItem,
   type PullCursor,
   type Rejection,
-  type ReconciliationObligation,
   type SanitarioAgendaAnimalLocalV2,
   type SanitarioAgendaClosureLocalV2,
   type SanitarioAgendaLocalV2,
@@ -59,6 +58,7 @@ import {
   type SociedadeAnimal,
   type SociedadePecuaria,
 } from "./types";
+import type { ReconciliationObligation } from "./reconciliationTypes";
 
 export class OfflineDB extends Dexie {
   // State Stores (Cópia local para leitura)

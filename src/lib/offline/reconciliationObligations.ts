@@ -3,7 +3,7 @@ import { db } from "./db";
 import type {
   ReconciliationObligation,
   ReconciliationScope,
-} from "./types";
+} from "./reconciliationTypes";
 
 export const RECONCILIATION_OBLIGATIONS_STORE = "sync_reconcile_obligations";
 
