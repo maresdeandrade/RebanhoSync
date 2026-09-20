@@ -2,9 +2,23 @@
  * @vitest-environment jsdom
  */
 import "fake-indexeddb/auto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/supabase", () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn(async () => ({
+        data: {
+          session: { user: { id: "user-sync-worker-recovery" } },
+        },
+        error: null,
+      })),
+    },
+  },
+}));
 
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import {
   recoverErroredGesturesOnce,
   recoverStaleSyncingGesturesOnce,
@@ -27,11 +41,20 @@ function makeGesture(overrides: Partial<Gesture> = {}): Gesture {
 
 describe("syncWorker recovery", () => {
   beforeEach(async () => {
-    await Promise.all([db.queue_gestures.clear(), db.queue_ops.clear()]);
+    await Promise.all([
+      db.queue_gestures.clear(),
+      db.queue_ops.clear(),
+      db.local_ownership.clear(),
+    ]);
+    await seedLocalOwner("user-sync-worker-recovery");
   });
 
   afterEach(async () => {
-    await Promise.all([db.queue_gestures.clear(), db.queue_ops.clear()]);
+    await Promise.all([
+      db.queue_gestures.clear(),
+      db.queue_ops.clear(),
+      db.local_ownership.clear(),
+    ]);
   });
 
   it("requeues transient HTTP 503 gestures after local Edge Functions recover", async () => {
