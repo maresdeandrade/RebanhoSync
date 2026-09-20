@@ -1,8 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Client } from "pg";
 
-const connectionString =
-  "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+const connectionString = process.env.REBANHOSYNC_TEST_DB_URL;
 const occurredAt = "2026-08-13T12:00:00.000Z";
 const cleanupEvents = new Set<string>();
 const cleanupAnimals = new Set<string>();
@@ -164,34 +163,37 @@ async function apply(
   return result.rows[0]!.result;
 }
 
-beforeAll(async () => {
-  admin = new Client({ connectionString });
-  await admin.connect();
-  const membership = await admin.query<{ user_id: string; fazenda_id: string }>(
-    "select user_id, fazenda_id from public.user_fazendas where deleted_at is null order by created_at limit 1",
-  );
-  userId = membership.rows[0]!.user_id;
-  farmId = membership.rows[0]!.fazenda_id;
-});
+const describeDatabase = connectionString
+  ? describe.sequential
+  : describe.skip;
 
-afterAll(async () => {
-  await admin.query(
-    "delete from public.eventos_comercial where evento_id = any($1::uuid[])",
-    [[...cleanupEvents]],
-  );
-  await admin.query("delete from public.eventos where id = any($1::uuid[])", [
-    [...cleanupEvents],
-  ]);
-  await admin.query("delete from public.animais where id = any($1::uuid[])", [
-    [...cleanupAnimals],
-  ]);
-  await admin.query("delete from public.lotes where id = any($1::uuid[])", [
-    [...cleanupLots],
-  ]);
-  await admin.end();
-});
+describeDatabase("commercial_operation_v2 PostgreSQL concurrency", () => {
+  beforeAll(async () => {
+    admin = new Client({ connectionString });
+    await admin.connect();
+    const membership = await admin.query<{ user_id: string; fazenda_id: string }>(
+      "select user_id, fazenda_id from public.user_fazendas where deleted_at is null order by created_at limit 1",
+    );
+    userId = membership.rows[0]!.user_id;
+    farmId = membership.rows[0]!.fazenda_id;
+  });
 
-describe.sequential("commercial_operation_v2 PostgreSQL concurrency", () => {
+  afterAll(async () => {
+    await admin.query(
+      "delete from public.eventos_comercial where evento_id = any($1::uuid[])",
+      [[...cleanupEvents]],
+    );
+    await admin.query("delete from public.eventos where id = any($1::uuid[])", [
+      [...cleanupEvents],
+    ]);
+    await admin.query("delete from public.animais where id = any($1::uuid[])", [
+      [...cleanupAnimals],
+    ]);
+    await admin.query("delete from public.lotes where id = any($1::uuid[])", [
+      [...cleanupLots],
+    ]);
+    await admin.end();
+  });
   it("applies identical concurrent purchases once and replays the other", async () => {
     const operationId = crypto.randomUUID();
     const transactionId = crypto.randomUUID();
