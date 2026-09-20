@@ -2,7 +2,13 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 import pg from "pg";
+import {
+  CANONICAL_ARTIFACT_VERSION,
+  assertStableIdentity,
+  validateCanonicalTechnicalContract,
+} from "./sanitario-v2-contract.mjs";
 
 const { Client } = pg;
 
@@ -13,11 +19,16 @@ const PAYLOAD_PATH = path.join(ROOT, PAYLOAD_REL);
 
 const EXPECTED = {
   artifact: "sanitario_protocols_v2_canonical_payload",
-  artifactVersion: "12F10.0-canonical-candidate",
+  artifactVersion: CANONICAL_ARTIFACT_VERSION,
   protocols: 10,
   items: 20,
   groups: 4,
   memberRejections: 16,
+};
+
+const PIPELINE_STATUS = {
+  CANONICAL_VALIDATION_COMPLETE: true,
+  PUBLISHER_COMPLETE: false,
 };
 
 const LOCAL_DATABASE_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
@@ -103,32 +114,17 @@ function walk(value, visit, pathParts = []) {
   }
 }
 
-function rows(payload) {
+function rows(canonicalData) {
   return {
-    protocols: payload.payload?.sanitario_protocolos_v2?.rows ?? [],
-    items: payload.payload?.sanitario_protocolo_itens_versions_v2?.rows ?? [],
-    groups: payload.payload?.sanitario_product_class_groups_v2?.rows ?? [],
-    memberRejections: payload.rejections?.sanitario_product_class_group_members_v2 ?? [],
+    protocols: canonicalData.protocol_rows,
+    items: canonicalData.protocol_item_rows,
+    groups: canonicalData.product_class_group_rows,
+    memberRejections: canonicalData.memberRejections ?? [],
   };
 }
 
-function lookupFamily(token) {
-  const match = String(token).match(
-    /^\{\{lookup sanitario_protocolos_v2\.id by family_code=([^}]+)\}\}$/,
-  );
-  return match?.[1] ?? null;
-}
-
-function lookupGroupKey(token) {
-  if (token === null || token === undefined) return null;
-  const match = String(token).match(
-    /^\{\{lookup sanitario_product_class_groups_v2\.id by group_key=([^}]+)\}\}$/,
-  );
-  return match?.[1] ?? null;
-}
-
 function itemIdentity(item) {
-  return `${lookupFamily(item.protocol_id)}:${item.logical_item_key}:v${item.version}`;
+  return `${item.protocol_key}:${item.logical_item_key}:v${item.version}`;
 }
 
 function scopeForGroup(scope) {
@@ -194,7 +190,8 @@ function validateSourceRefs(value, label) {
 }
 
 function validateCanonicalPayload(payload) {
-  const data = rows(payload);
+  const contract = validateCanonicalTechnicalContract(payload);
+  const data = rows(contract.data);
 
   assert(payload.artifact === EXPECTED.artifact, "artifact canonico inesperado");
   assert(payload.artifact_version === EXPECTED.artifactVersion, "artifact_version 12F10 inesperada");
@@ -234,43 +231,41 @@ function validateCanonicalPayload(payload) {
   assert(b19Item.eligibility_rule?.age_max_months === 8, "B19 deve manter idade maxima 8 meses");
 
   const aftosa = data.protocols.find((row) => row.family_code === "febre_aftosa");
-  const aftosaItems = data.items.filter((row) => lookupFamily(row.protocol_id) === "febre_aftosa");
+  const aftosaItems = data.items.filter((row) => row.protocol_key === "febre_aftosa");
   assert(aftosa, "Aftosa ausente");
   assert(aftosa.legal_status === "bloqueado", "Aftosa deve manter legal_status bloqueado");
   assert(aftosa.status === "retired", "Aftosa deve manter status retired");
   assert(aftosa.metadata?.automationStatus === "blocked", "Aftosa deve manter automationStatus blocked");
   for (const item of aftosaItems) {
     assert(item.product_requirement_kind === "none", `${item.logical_item_key}: aftosa nao pode ter produto`);
-    assert(item.product_id === null, `${item.logical_item_key}: aftosa product_id deve ser null`);
-    assert(item.product_class === null, `${item.logical_item_key}: aftosa product_class deve ser null`);
-    assert(item.product_class_group_id === null, `${item.logical_item_key}: aftosa product_class_group_id deve ser null`);
+    assert(!item.product_key, `${item.logical_item_key}: aftosa product_id deve ser null`);
+    assert(!item.class_key, `${item.logical_item_key}: aftosa product_class deve ser null`);
+    assert(!item.group_key, `${item.logical_item_key}: aftosa product_class_group_id deve ser null`);
   }
 
   const groupKeys = new Set(data.groups.map((row) => row.group_key));
   for (const item of data.items) {
-    assert(!UUID_LIKE.test(item.protocol_id), `${item.logical_item_key}: protocol_id nao pode conter UUID artificial`);
     assert(item.allows_agenda_auto === false, `${item.logical_item_key}: allows_agenda_auto deve ser false`);
     assert(item.status === "draft", `${item.logical_item_key}: status deve ser draft`);
     assert(["specific_product", "product_class", "product_class_group", "none"].includes(item.product_requirement_kind), `${item.logical_item_key}: product_requirement_kind invalido`);
     if (item.product_requirement_kind === "product_class_group") {
-      const groupKey = lookupGroupKey(item.product_class_group_id);
-      assert(groupKey, `${item.logical_item_key}: product_class_group_id deve ser lookup por group_key`);
-      assert(groupKeys.has(groupKey), `${item.logical_item_key}: group_key ${groupKey} ausente do payload canonico`);
-      assert(item.product_class === null, `${item.logical_item_key}: ProductClassGroup nao pode virar ProductClass`);
-      assert(item.product_id === null, `${item.logical_item_key}: ProductClassGroup nao pode virar produto especifico`);
+      assert(item.group_key, `${item.logical_item_key}: product_class_group_id deve ser lookup por group_key`);
+      assert(groupKeys.has(item.group_key), `${item.logical_item_key}: group_key ${item.group_key} ausente do payload canonico`);
+      assert(!item.class_key, `${item.logical_item_key}: ProductClassGroup nao pode virar ProductClass`);
+      assert(!item.product_key, `${item.logical_item_key}: ProductClassGroup nao pode virar produto especifico`);
       assert(item.limitations?.includes("class_group_does_not_validate_execution"), `${item.logical_item_key}: grupo deve declarar que nao valida execucao`);
     }
     if (item.product_requirement_kind === "product_class") {
-      assert(item.product_class?.trim(), `${item.logical_item_key}: product_class exige valor`);
-      assert(item.product_class_group_id === null, `${item.logical_item_key}: product_class nao pode referenciar group`);
+      assert(item.class_key?.trim(), `${item.logical_item_key}: product_class exige valor`);
+      assert(!item.group_key, `${item.logical_item_key}: product_class nao pode referenciar group`);
     }
     if (item.product_requirement_kind === "none") {
-      assert(item.product_id === null && item.product_class === null && item.product_class_group_id === null, `${item.logical_item_key}: none deve permanecer sem produto/classe/grupo`);
+      assert(!item.product_key && !item.class_key && !item.group_key, `${item.logical_item_key}: none deve permanecer sem produto/classe/grupo`);
     }
     validateSourceRefs(item.source_refs_by_field, item.logical_item_key);
   }
 
-  const raivaItems = data.items.filter((row) => lookupFamily(row.protocol_id) === "raiva_herbivoros");
+  const raivaItems = data.items.filter((row) => row.protocol_key === "raiva_herbivoros");
   const raivaKeys = new Set(raivaItems.map((row) => row.logical_item_key));
   assert(!raivaKeys.has("raiva_area_risco_anual"), "raiva_area_risco_anual deve sair do payload canonico ativo");
   for (const expectedKey of [
@@ -282,8 +277,8 @@ function validateCanonicalPayload(payload) {
   }
   for (const item of raivaItems) {
     assert(item.product_requirement_kind === "product_class", `${item.logical_item_key}: raiva deve usar product_class`);
-    assert(item.product_class === "vacina_raiva_herbivoros", `${item.logical_item_key}: product_class de raiva invalida`);
-    assert(item.product_class_group_id === null, `${item.logical_item_key}: raiva nao deve usar ProductClassGroup`);
+    assert(item.class_key === "vacina_raiva_herbivoros", `${item.logical_item_key}: product_class de raiva invalida`);
+    assert(!item.group_key, `${item.logical_item_key}: raiva nao deve usar ProductClassGroup`);
     assert(item.allows_agenda_auto === false, `${item.logical_item_key}: raiva nao pode agenda_auto`);
     assert(item.status === "draft", `${item.logical_item_key}: raiva deve permanecer draft`);
     assert(
@@ -296,7 +291,7 @@ function validateCanonicalPayload(payload) {
     );
   }
 
-  const matrizesItems = data.items.filter((row) => lookupFamily(row.protocol_id) === "matrizes_pre_parto");
+  const matrizesItems = data.items.filter((row) => row.protocol_key === "matrizes_pre_parto");
   const matrizesKeys = new Set(matrizesItems.map((row) => row.logical_item_key));
   assert(
     !matrizesKeys.has("matrizes_pre_parto_lepto_reforco_situacional"),
@@ -309,7 +304,7 @@ function validateCanonicalPayload(payload) {
   assert(matrizesItems.length === 1, "matrizes_pre_parto deve manter apenas um item ativo");
   for (const item of matrizesItems) {
     assert(
-      item.product_class !== "vacina_leptospirose",
+      item.class_key !== "vacina_leptospirose",
       `${item.logical_item_key}: matrizes_pre_parto nao deve concorrer com leptospirose`,
     );
   }
@@ -390,6 +385,22 @@ function describeDatabase(dbUrl) {
   };
 }
 
+export function applyGateError(payload, publisherComplete) {
+  if (publisherComplete !== true) {
+    return "PUBLISHER_INCOMPLETE: --apply bloqueado enquanto o publisher escrever somente grupos, protocolos e itens.";
+  }
+  const gate = payload?.import_gate;
+  if (gate?.import_real_authorized !== true) {
+    return "IMPORT_REAL_NOT_AUTHORIZED: --apply bloqueado enquanto import_gate.import_real_authorized !== true.";
+  }
+  return null;
+}
+
+function assertApplyGate(payload) {
+  const error = applyGateError(payload, PIPELINE_STATUS.PUBLISHER_COMPLETE);
+  assert(!error, error);
+}
+
 function assertApplyAuthorized(dbUrl) {
   assert(
     process.env.ALLOW_SANITARIO_IMPORT === "1",
@@ -465,8 +476,7 @@ async function selectGroups(client, groups) {
 async function selectItems(client, items, protocolIdsByFamily) {
   const result = new Map();
   for (const item of sortedBy(items, "logical_item_key")) {
-    const familyCode = lookupFamily(item.protocol_id);
-    const protocolId = protocolIdsByFamily.get(familyCode);
+    const protocolId = protocolIdsByFamily.get(item.protocol_key);
     if (!protocolId || !UUID_LIKE.test(protocolId)) {
       result.set(itemIdentity(item), null);
       continue;
@@ -514,6 +524,7 @@ async function selectDeprecatedActiveItems(client, protocolIdsByFamily) {
 
 function protocolInsertRow(protocol) {
   return {
+    id: protocol.id,
     family_code: protocol.family_code,
     name: protocol.name,
     scope: protocol.scope,
@@ -535,6 +546,7 @@ function protocolInsertRow(protocol) {
 
 function groupInsertRow(group) {
   return {
+    id: group.id,
     fazenda_id: group.fazenda_id,
     scope: scopeForGroup(group.scope),
     group_key: group.group_key,
@@ -551,8 +563,9 @@ function groupInsertRow(group) {
   };
 }
 
-function itemInsertRow(item, protocolId, groupId) {
+export function itemInsertRow(item, protocolId, groupId) {
   return {
+    id: item.id,
     protocol_id: protocolId,
     logical_item_key: item.logical_item_key,
     version: item.version,
@@ -560,7 +573,7 @@ function itemInsertRow(item, protocolId, groupId) {
     action_type: item.action_type,
     product_requirement_kind: item.product_requirement_kind,
     product_id: null,
-    product_class: item.product_requirement_kind === "product_class" ? item.product_class : null,
+    product_class: item.product_requirement_kind === "product_class" ? item.class_key : null,
     product_class_group_id: item.product_requirement_kind === "product_class_group" ? groupId : null,
     eligibility_rule: item.eligibility_rule,
     operational_window_rule: item.operational_window_rule,
@@ -641,13 +654,13 @@ async function buildPlan(client, data) {
   const plannedProtocolIds = new Map();
   for (const protocol of data.protocols) {
     const existing = existingProtocols.get(protocol.family_code);
-    plannedProtocolIds.set(protocol.family_code, existing?.id ?? `planned:${protocol.family_code}`);
+    plannedProtocolIds.set(protocol.protocol_key, existing?.id ?? protocol.id);
   }
 
   const plannedGroupIds = new Map();
   for (const group of data.groups) {
     const existing = existingGroups.get(group.group_key);
-    plannedGroupIds.set(group.group_key, existing?.id ?? `planned:${group.group_key}`);
+    plannedGroupIds.set(group.group_key, existing?.id ?? group.id);
   }
 
   const existingItems = await selectItems(client, data.items, plannedProtocolIds);
@@ -657,6 +670,7 @@ async function buildPlan(client, data) {
   for (const group of sortedBy(data.groups, "group_key")) {
     const row = groupInsertRow(group);
     const existing = existingGroups.get(group.group_key);
+    if (existing) assertStableIdentity(existing, row, group.group_key);
     const changed = existing && compareGroup(existing, row);
     const reason = changed ? groupUpdateBlockReason(existing) : null;
     const action = reason ? "reject" : existing ? (changed ? "update" : "skip") : "create";
@@ -671,6 +685,7 @@ async function buildPlan(client, data) {
   for (const protocol of sortedBy(data.protocols, "family_code")) {
     const row = protocolInsertRow(protocol);
     const existing = existingProtocols.get(protocol.family_code);
+    if (existing) assertStableIdentity(existing, row, protocol.family_code);
     const changed = existing && compareProtocol(existing, row);
     const reason = changed ? protocolUpdateBlockReason(existing) : null;
     const action = reason ? "reject" : existing ? (changed ? "update" : "skip") : "create";
@@ -683,16 +698,16 @@ async function buildPlan(client, data) {
   }
 
   for (const item of sortedBy(data.items, "logical_item_key")) {
-    const familyCode = lookupFamily(item.protocol_id);
-    const protocolId = plannedProtocolIds.get(familyCode);
+    const protocolKey = item.protocol_key;
+    const protocolId = plannedProtocolIds.get(protocolKey);
     let action = "reject";
     let reason = "";
     let groupId = null;
 
     if (!protocolId) {
-      reason = `protocol_lookup_missing:${familyCode}`;
+      reason = `protocol_lookup_missing:${protocolKey}`;
     } else if (item.product_requirement_kind === "product_class_group") {
-      const groupKey = lookupGroupKey(item.product_class_group_id);
+      const groupKey = item.group_key;
       groupId = plannedGroupIds.get(groupKey);
       if (!groupId) {
         reason = `group_lookup_missing:${groupKey}`;
@@ -702,6 +717,7 @@ async function buildPlan(client, data) {
     if (!reason) {
       const row = itemInsertRow(item, protocolId, groupId);
       const existing = existingItems.get(itemIdentity(item));
+      if (existing) assertStableIdentity(existing, row, itemIdentity(item));
       const changed = existing && compareItem(existing, row);
       const blockReason = changed ? itemUpdateBlockReason(existing) : null;
       if (blockReason) {
@@ -714,7 +730,7 @@ async function buildPlan(client, data) {
 
     operations.push({
       table: "sanitario_protocolo_itens_versions_v2",
-      key: `${familyCode}:${item.logical_item_key}:v${item.version}`,
+      key: `${item.protocol_key}:${item.logical_item_key}:v${item.version}`,
       action,
       reason,
     });
@@ -770,13 +786,14 @@ async function upsertGroup(client, group) {
     const inserted = await client.query(
       `
         insert into public.sanitario_product_class_groups_v2(
-          fazenda_id, scope, group_key, name, requires_mv_for_other_class,
+          id, fazenda_id, scope, group_key, name, requires_mv_for_other_class,
           curation_status, automation_status, limitations, metadata
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         returning id
       `,
       [
+        row.id,
         row.fazenda_id,
         row.scope,
         row.group_key,
@@ -790,6 +807,7 @@ async function upsertGroup(client, group) {
     );
     return { id: inserted.rows[0].id, action: "create" };
   }
+  assertStableIdentity(existing, row, group.group_key);
   if (!compareGroup(existing, row)) return { id: existing.id, action: "skip" };
   assert(
     !groupUpdateBlockReason(existing),
@@ -826,13 +844,14 @@ async function upsertProtocol(client, protocol) {
     const inserted = await client.query(
       `
         insert into public.sanitario_protocolos_v2(
-          family_code, name, scope, fazenda_id, species_scope, jurisdiction_scope,
+          id, family_code, name, scope, fazenda_id, species_scope, jurisdiction_scope,
           legal_status, version, status, source_refs_snapshot, approval_status, metadata
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'draft', $11)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'draft', $12)
         returning id
       `,
       [
+        row.id,
         row.family_code,
         row.name,
         row.scope,
@@ -848,6 +867,7 @@ async function upsertProtocol(client, protocol) {
     );
     return { id: inserted.rows[0].id, action: "create" };
   }
+  assertStableIdentity(existing, row, protocol.family_code);
   if (!compareProtocol(existing, row)) return { id: existing.id, action: "skip" };
   assert(
     !protocolUpdateBlockReason(existing),
@@ -900,18 +920,19 @@ async function upsertItem(client, item, protocolId, groupId) {
     await client.query(
       `
         insert into public.sanitario_protocolo_itens_versions_v2(
-          protocol_id, logical_item_key, version, item_status, action_type,
+          id, protocol_id, logical_item_key, version, item_status, action_type,
           product_requirement_kind, product_id, product_class, product_class_group_id,
           eligibility_rule, operational_window_rule, dose_rule, route_rule, booster_rule,
           species_authorization, source_refs_by_field, limitations, snapshot_template,
           allows_agenda_auto, requires_mv_responsavel, status
         )
         values (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-          $15, $16, $17, $18, false, $19, 'draft'
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+          $16, $17, $18, $19, false, $20, 'draft'
         )
       `,
       [
+        row.id,
         row.protocol_id,
         row.logical_item_key,
         row.version,
@@ -935,6 +956,7 @@ async function upsertItem(client, item, protocolId, groupId) {
     );
     return "create";
   }
+  assertStableIdentity(existing.rows[0], row, item.logical_item_key);
   if (!compareItem(existing.rows[0], row)) return "skip";
   assert(
     !itemUpdateBlockReason(existing.rows[0]),
@@ -1047,10 +1069,10 @@ async function applyImport(client, data) {
     }
 
     for (const item of sortedBy(data.items, "logical_item_key")) {
-      const familyCode = lookupFamily(item.protocol_id);
-      const protocolId = protocolIds.get(familyCode);
-      assert(protocolId, `${item.logical_item_key}: protocol_id nao resolvido para ${familyCode}`);
-      const groupKey = lookupGroupKey(item.product_class_group_id);
+      const protocolKey = item.protocol_key;
+      const protocolId = protocolIds.get(protocolKey);
+      assert(protocolId, `${item.logical_item_key}: protocol_id nao resolvido para ${protocolKey}`);
+      const groupKey = item.group_key;
       const groupId = groupKey ? groupIds.get(groupKey) : null;
       assert(!groupKey || groupId, `${item.logical_item_key}: ProductClassGroup nao resolvido para ${groupKey}`);
       const action = await upsertItem(client, item, protocolId, groupId);
@@ -1079,6 +1101,7 @@ async function applyImport(client, data) {
 async function main() {
   const mode = parseMode(process.argv.slice(2));
   const payload = readJsonPayload();
+  if (mode === "apply") assertApplyGate(payload);
   const data = validateCanonicalPayload(payload);
 
   if (mode === "validate") {
@@ -1088,6 +1111,8 @@ async function main() {
         {
           payload: PAYLOAD_REL,
           artifact_version: payload.artifact_version,
+          canonical_validation_complete: PIPELINE_STATUS.CANONICAL_VALIDATION_COMPLETE,
+          publisher_complete: PIPELINE_STATUS.PUBLISHER_COMPLETE,
           protocols: data.protocols.length,
           items: data.items.length,
           product_class_groups: data.groups.length,
@@ -1110,6 +1135,9 @@ async function main() {
     if (mode === "dry-run") {
       const plan = await buildPlan(client, data);
       printPlan("dry-run", plan);
+      console.log(
+        `aviso: publisher_complete=false; plano parcial (somente grupos, protocolos e itens)`,
+      );
       return;
     }
 
@@ -1132,7 +1160,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(`12G importador sanitario v2 falhou: ${error.message}`);
-  process.exitCode = 1;
-});
+const INVOKED_AS_SCRIPT =
+  Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (INVOKED_AS_SCRIPT) {
+  main().catch((error) => {
+    console.error(`12G importador sanitario v2 falhou: ${error.message}`);
+    process.exitCode = 1;
+  });
+}
