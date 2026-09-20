@@ -442,18 +442,20 @@ describe("sync worker reconciliation drain", () => {
       { fazendaId: activeFarm, scope: "factual", tables: ["eventos"] },
     ]);
     startSyncWorker();
-    await flushMicrotasks();
+    await vi.waitFor(() => {
+      expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(1);
+    });
     // Startup drain drena a primeira obrigacao.
-    expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(1);
     expect(await listReconciliationObligations(activeFarm)).toHaveLength(0);
 
     await upsertReconciliationObligations([
       { fazendaId: activeFarm, scope: "factual", tables: ["eventos"] },
     ]);
     window.dispatchEvent(new Event("online"));
-    await flushMicrotasks();
+    await vi.waitFor(() => {
+      expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(2);
+    });
     // Reconnect retoma a obrigacao persistida.
-    expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(2);
     expect(await listReconciliationObligations(activeFarm)).toHaveLength(0);
 
     stopSyncWorker();
@@ -463,10 +465,11 @@ describe("sync worker reconciliation drain", () => {
       { fazendaId: activeFarm, scope: "factual", tables: ["eventos"] },
     ]);
     startSyncWorker();
-    await flushMicrotasks();
+    await vi.waitFor(() => {
+      expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(3);
+    });
     expect(addSpy).toHaveBeenCalledWith("online", expect.any(Function));
     // Startup drain do segundo start drena a obrigacao recriada.
-    expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(3);
 
     window.dispatchEvent(new Event("online"));
     await flushMicrotasks();

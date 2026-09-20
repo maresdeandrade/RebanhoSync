@@ -10,6 +10,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-c2-characterization",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -33,6 +34,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import { createGesture } from "../ops";
 import { pullDataForFarm } from "../pull";
 import {
@@ -100,6 +102,7 @@ describe("F24.2C2 worker concurrency characterization", () => {
       removeItem: () => undefined,
     });
     await Promise.all([db.queue_gestures.clear(), db.queue_ops.clear()]);
+    await seedLocalOwner("test-owner");
   });
 
   afterEach(async () => {

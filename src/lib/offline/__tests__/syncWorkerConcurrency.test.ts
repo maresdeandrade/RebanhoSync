@@ -10,6 +10,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-c2-1-concurrency",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "user-c2-1-concurrency" },
           },
         },
         error: null,
@@ -35,6 +36,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { db } from "../db";
 import { createGesture } from "../ops";
+import { establishLocalOwnership } from "../ownership";
 import { pullDataForFarm } from "../pull";
 import {
   isGestureLockActive,
@@ -106,7 +108,9 @@ describe("F24.2C2.1 — Atomic Claim & Stale Worker Protection (T1–T10)", () =
       db.queue_ops.clear(),
       db.event_eventos.clear(),
       db.event_eventos_pesagem.clear(),
+      db.local_ownership.clear(),
     ]);
+    await establishLocalOwnership({ user: { id: "user-c2-1-concurrency" } });
   });
 
   afterEach(async () => {
@@ -117,6 +121,7 @@ describe("F24.2C2.1 — Atomic Claim & Stale Worker Protection (T1–T10)", () =
       db.queue_ops.clear(),
       db.event_eventos.clear(),
       db.event_eventos_pesagem.clear(),
+      db.local_ownership.clear(),
     ]);
   });
 

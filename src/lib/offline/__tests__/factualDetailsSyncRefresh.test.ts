@@ -10,6 +10,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-factual-detail",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -33,6 +34,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 
 import { createGesture } from "../ops";
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import { pullDataForFarm } from "../pull";
 import { processGesture } from "../syncWorker";
 import { getLocalStoreName } from "../tableMap";
@@ -137,6 +139,7 @@ describe("standard factual detail post-sync refresh", () => {
     });
     vi.stubGlobal("fetch", vi.fn());
     await clearStores();
+    await seedLocalOwner("test-owner");
   });
 
   afterEach(async () => {

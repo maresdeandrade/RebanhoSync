@@ -3,6 +3,7 @@
 import { vi, describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import "fake-indexeddb/auto";
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import { processGesture } from "../syncWorker";
 import { getRemoteTableName, getLocalStoreName } from "../tableMap";
 import { randomUUID } from "node:crypto";
@@ -20,6 +21,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "test-token",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -29,6 +31,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "test-token",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -71,6 +74,7 @@ describe("syncWorker insumo_movimentacoes integration", () => {
 
   beforeAll(async () => {
     await db.open();
+    await seedLocalOwner("test-owner");
   });
 
   beforeEach(() => {

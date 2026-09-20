@@ -9,7 +9,13 @@ vi.mock("@/lib/supabase", () => ({
   supabase: {
     auth: {
       getSession: vi.fn(async () => ({
-        data: { session: { access_token: "token", expires_at: 9999999999 } },
+        data: {
+          session: {
+            access_token: "token",
+            expires_at: 9999999999,
+            user: { id: "user-commercial-worker" },
+          },
+        },
         error: null,
       })),
       refreshSession: vi.fn(),
@@ -37,6 +43,7 @@ import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import type { Animal } from "../types";
 import { db } from "../db";
 import { createGesture } from "../ops";
+import { establishLocalOwnership } from "../ownership";
 import { processGesture } from "../syncWorker";
 
 const farm = "10000000-0000-4000-8000-000000000001";
@@ -189,6 +196,7 @@ async function clear() {
       db.state_animais,
       db.event_eventos,
       db.event_eventos_comercial,
+      db.local_ownership,
     ],
     async () => {
       await db.queue_ops.clear();
@@ -197,6 +205,7 @@ async function clear() {
       await db.state_animais.clear();
       await db.event_eventos.clear();
       await db.event_eventos_comercial.clear();
+      await db.local_ownership.clear();
     },
   );
 }
@@ -210,6 +219,7 @@ describe("commercial purchase sync worker", () => {
     });
     vi.stubGlobal("fetch", vi.fn());
     await clear();
+    await establishLocalOwnership({ user: { id: "user-commercial-worker" } });
   });
   afterEach(async () => {
     vi.unstubAllGlobals();
