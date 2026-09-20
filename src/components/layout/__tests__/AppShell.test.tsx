@@ -24,6 +24,10 @@ vi.mock("@/lib/offline/syncWorker", () => ({
   stopSyncWorker: vi.fn(),
 }));
 
+vi.mock("@/lib/offline/localReadBoundary", () => ({
+  canReadLocalData: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock("../TopBar", () => ({
   TopBar: () => <header data-testid="topbar" />,
 }));
@@ -39,7 +43,7 @@ vi.mock("../MobileBottomNav", () => ({
 }));
 
 describe("AppShell", () => {
-  it("keeps one main landmark and the canonical shell regions", () => {
+  it("keeps one main landmark and the canonical shell regions", async () => {
     render(
       <MemoryRouter initialEntries={["/home"]}>
         <Routes>
@@ -50,7 +54,7 @@ describe("AppShell", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId("topbar")).toBeInTheDocument();
+    expect(await screen.findByTestId("topbar")).toBeInTheDocument();
     expect(
       screen.getByRole("navigation", { name: "Navegacao principal" }),
     ).toBeInTheDocument();
