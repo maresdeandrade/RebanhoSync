@@ -1,20 +1,16 @@
 import type { Session } from "@supabase/supabase-js";
 
-import { db } from "./db";
-
-const LOCAL_OWNERSHIP_KEY = "local-session";
+import {
+  db,
+  LOCAL_OWNERSHIP_KEY,
+  type LocalOwnership,
+} from "./db";
 
 export type LocalOwnershipStatus =
   | "UNINITIALIZED"
   | "OWNED"
   | "MISMATCH"
   | "UNKNOWN";
-
-export interface LocalOwnership {
-  key: string;
-  owner_user_id: string | null;
-  updated_at: string;
-}
 
 export interface LocalOwnershipDecision {
   status: LocalOwnershipStatus;
@@ -114,11 +110,4 @@ export async function evaluateLocalOwnership(
     ownerUserId: existing.owner_user_id,
     currentUserId,
   };
-}
-
-export async function clearLocalOwnership(): Promise<void> {
-  await db.local_ownership.update(LOCAL_OWNERSHIP_KEY, {
-    owner_user_id: null,
-    updated_at: new Date().toISOString(),
-  });
 }

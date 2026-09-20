@@ -1,10 +1,10 @@
 import "fake-indexeddb/auto";
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import Dexie from "dexie";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { db } from "../db";
+import { db, LOCAL_OWNERSHIP_KEY, OfflineDB } from "../db";
 import {
-  clearLocalOwnership,
   establishLocalOwnership,
   evaluateLocalOwnership,
 } from "../ownership";
@@ -21,8 +21,11 @@ const session = (userId: string) =>
     typeof establishLocalOwnership
   >[0];
 
-afterEach(async () => {
+beforeEach(async () => {
   await db.local_ownership.clear();
+});
+
+afterEach(() => {
   vi.restoreAllMocks();
 });
 
@@ -45,15 +48,80 @@ describe("local ownership", () => {
     });
   });
 
-  it("does not adopt unknown ownership after logout", async () => {
+  it("preserves owner provenance across logout and allows only same-user resume", async () => {
     await establishLocalOwnership(session("user-a"));
-    await clearLocalOwnership();
 
+    await expect(evaluateLocalOwnership(null)).resolves.toEqual({
+      status: "MISMATCH",
+      ownerUserId: "user-a",
+      currentUserId: null,
+    });
+    await expect(evaluateLocalOwnership("user-a")).resolves.toEqual({
+      status: "OWNED",
+      ownerUserId: "user-a",
+      currentUserId: "user-a",
+    });
     await expect(evaluateLocalOwnership("user-b")).resolves.toEqual({
-      status: "UNKNOWN",
-      ownerUserId: null,
+      status: "MISMATCH",
+      ownerUserId: "user-a",
       currentUserId: "user-b",
     });
+  });
+
+  it("keeps unknown ownership fail-closed even with an authenticated session", async () => {
+    await db.local_ownership.put({
+      key: LOCAL_OWNERSHIP_KEY,
+      owner_user_id: null,
+      updated_at: "2026-09-19T12:00:00.000Z",
+    });
+
+    await expect(establishLocalOwnership(session("user-a"))).resolves.toEqual({
+      status: "UNKNOWN",
+      ownerUserId: null,
+      currentUserId: "user-a",
+    });
+    await expect(evaluateLocalOwnership("user-a")).resolves.toEqual({
+      status: "UNKNOWN",
+      ownerUserId: null,
+      currentUserId: "user-a",
+    });
+  });
+
+  it("does not accept an access token without session.user.id", async () => {
+    await db.local_ownership.put({
+      key: LOCAL_OWNERSHIP_KEY,
+      owner_user_id: null,
+      updated_at: "2026-09-19T12:00:00.000Z",
+    });
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: { session: { access_token: "token-without-user" } } as never,
+      error: null,
+    });
+
+    await expect(canReadLocalData()).resolves.toBe(false);
+  });
+
+  it("marks a legacy v30 database as unknown during the v31 upgrade", async () => {
+    const databaseName = `RebanhoSync-legacy-${crypto.randomUUID()}`;
+    const legacyDb = new Dexie(databaseName);
+    legacyDb.version(30).stores({ state_animais: "id, fazenda_id" });
+    await legacyDb.table("state_animais").put({
+      id: "animal-legacy",
+      fazenda_id: "farm-legacy",
+    });
+    legacyDb.close();
+
+    const upgradedDb = new OfflineDB(databaseName);
+    try {
+      await upgradedDb.open();
+      await expect(
+        upgradedDb.local_ownership.get(LOCAL_OWNERSHIP_KEY),
+      ).resolves.toMatchObject({ owner_user_id: null });
+      await expect(upgradedDb.state_animais.get("animal-legacy")).resolves.toBeDefined();
+    } finally {
+      upgradedDb.close();
+      await Dexie.delete(databaseName);
+    }
   });
 
   it("allows tenant reads only for the compatible owner", async () => {

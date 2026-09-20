@@ -38,6 +38,7 @@ vi.mock("@/lib/supabase", () => ({
       getSession: vi.fn(async () => ({
         data: {
           session: {
+            user: { id: "user-c3b" },
             access_token: "token-c3b",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
           },
@@ -57,6 +58,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { db } from "../db";
 import { createGesture } from "../ops";
+import { establishLocalOwnership } from "../ownership";
 import {
   deleteReconciliationObligationIfGenerationMatches,
   listReconciliationObligations,
@@ -89,6 +91,7 @@ async function clearStores() {
       db.queue_gestures,
       db.queue_ops,
       db.sync_reconcile_obligations,
+      db.local_ownership,
     ],
     async () => {
       await db.event_eventos.clear();
@@ -96,6 +99,7 @@ async function clearStores() {
       await db.queue_gestures.clear();
       await db.queue_ops.clear();
       await db.sync_reconcile_obligations.clear();
+      await db.local_ownership.clear();
     },
   );
 }
@@ -252,6 +256,7 @@ describe("sync worker reconciliation drain", () => {
       removeItem: () => undefined,
     });
     await clearStores();
+    await establishLocalOwnership({ user: { id: "user-c3b" } });
   });
 
   afterEach(async () => {

@@ -14,7 +14,6 @@ type AuthSessionLike = {
   user?: {
     id?: string;
   } | null;
-  access_token?: string;
 } | null;
 
 export async function getCurrentLocalReadOwnership(): Promise<LocalOwnershipDecision> {
@@ -22,21 +21,9 @@ export async function getCurrentLocalReadOwnership(): Promise<LocalOwnershipDeci
     return evaluateLocalOwnership(null);
   }
   const sessionResult = await supabase.auth.getSession();
-  const session = sessionResult.data.session as AuthSessionLike;
+  const session = sessionResult?.data?.session as AuthSessionLike;
   const currentUserId = session?.user?.id ?? null;
-  const decision = await evaluateLocalOwnership(currentUserId);
-  if (
-    decision.status === "UNKNOWN" &&
-    !currentUserId &&
-    typeof session?.access_token === "string"
-  ) {
-    return {
-      status: "OWNED",
-      ownerUserId: null,
-      currentUserId: null,
-    };
-  }
-  return decision;
+  return evaluateLocalOwnership(currentUserId);
 }
 
 export async function canReadLocalData(): Promise<boolean> {

@@ -46,7 +46,7 @@ import {
   trackPilotMetric,
 } from "@/lib/telemetry/pilotMetrics";
 import { getActiveFarmId } from "@/lib/storage";
-import { evaluateLocalOwnership } from "./ownership";
+import { getCurrentLocalReadOwnership } from "./localReadBoundary";
 import { pullReproductionDiagnosisState } from "@/lib/reproduction/remoteSync";
 import {
   buildCommercialPurchaseEnvelope,
@@ -422,6 +422,9 @@ export const stopSyncWorker = () => {
 };
 
 export async function runInitialOfflinePullForActiveFarmOnce() {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return;
+
   const activeFarmId = getActiveFarmId();
   if (
     !activeFarmId ||
@@ -506,13 +509,11 @@ async function executeReconciliationForScope(
 
 export async function drainReconciliationObligations(
   fazendaId: string | null,
-  currentUserId?: string | null,
 ) {
   if (!fazendaId || isReconciliationDrainRunning) return;
-  if (currentUserId !== undefined) {
-    const ownership = await evaluateLocalOwnership(currentUserId);
-    if (ownership.status !== "OWNED") return;
-  }
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return;
+  if (isReconciliationDrainRunning) return;
 
   isReconciliationDrainRunning = true;
   try {
@@ -950,6 +951,9 @@ async function processSanitarioCanonicalResults(
 }
 
 export async function recoverErroredGesturesOnce() {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return;
+
   const errored = await db.queue_gestures
     .where("status")
     .equals("ERROR")
@@ -1018,6 +1022,9 @@ export async function recoverErroredGesturesOnce() {
 }
 
 export async function recoverStaleSyncingGesturesOnce() {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return 0;
+
   const syncing = await db.queue_gestures
     .where("status")
     .equals("SYNCING")
@@ -1098,6 +1105,9 @@ export async function recoverBlockedSanitarioV2Operations(
   trigger: SanitarioV2RecoveryTrigger,
   excludedOpIds: ReadonlySet<string> = new Set(),
 ) {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return 0;
+
   const blocked = await db.queue_ops
     .filter(
       (op) =>
@@ -1493,7 +1503,7 @@ function buildTerminalBlockedDependencyClassifier(
 
 // fallow-ignore-next-line complexity
 export async function processGesture(gesture: Gesture) {
-  const ownership = await getWorkerOwnership();
+  const ownership = await getCurrentLocalReadOwnership();
   if (ownership.status !== "OWNED") return;
 
   // fallow-ignore-next-line complexity
@@ -2212,30 +2222,8 @@ export async function processGesture(gesture: Gesture) {
   });
 }
 
-async function getWorkerOwnership() {
-  const sessionResult = await supabase.auth.getSession();
-  const session = sessionResult?.data?.session ?? sessionResult?.data ?? null;
-  const currentUserId = session?.user?.id ?? (session?.access_token ? "legacy-session-user" : null);
-  const decision = await evaluateLocalOwnership(currentUserId);
-  if (decision.status === "UNKNOWN" && currentUserId) {
-    return {
-      status: "OWNED" as const,
-      ownerUserId: currentUserId,
-      currentUserId,
-    };
-  }
-  if (decision.status === "UNKNOWN" && !currentUserId) {
-    return {
-      status: "OWNED" as const,
-      ownerUserId: null,
-      currentUserId: null,
-    };
-  }
-  return decision;
-}
-
 async function runOwnedSyncWork(): Promise<boolean> {
-  const ownership = await getWorkerOwnership();
+  const ownership = await getCurrentLocalReadOwnership();
   if (ownership.status !== "OWNED") return false;
 
   await runInitialOfflinePullForActiveFarmOnce();
