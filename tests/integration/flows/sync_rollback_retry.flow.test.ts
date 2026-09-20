@@ -11,6 +11,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-1",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "user-sync-rollback-retry" },
           },
         },
         error: null,
@@ -20,6 +21,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-2",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "user-sync-rollback-retry" },
           },
         },
         error: null,
@@ -39,6 +41,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 
 import { createGesture } from "@/lib/offline/ops";
 import { db } from "@/lib/offline/db";
+import { seedLocalOwner } from "@/lib/offline/__tests__/ownershipTestFixture";
 import { processGesture } from "@/lib/offline/syncWorker";
 
 async function seedAnimal(animalId: string) {
@@ -96,7 +99,9 @@ describe("flow: sync rollback + retry", () => {
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
+      db.local_ownership.clear(),
     ]);
+    await seedLocalOwner("user-sync-rollback-retry");
   });
 
   afterEach(async () => {
@@ -106,6 +111,7 @@ describe("flow: sync rollback + retry", () => {
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
+      db.local_ownership.clear(),
     ]);
   });
 
