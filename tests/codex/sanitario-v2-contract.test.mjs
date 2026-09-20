@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import {
@@ -395,16 +395,15 @@ describe("sanitario v2 canonical contract", () => {
   });
 
   function runImportScript(flags, env = process.env) {
-    try {
-      const stdout = execFileSync(process.execPath, [IMPORT_SCRIPT, ...flags], {
-        env,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      return { code: 0, stdout };
-    } catch (error) {
-      return { code: error.status ?? 1, stdout: `${error.stdout ?? ""}${error.stderr ?? ""}` };
-    }
+    const result = spawnSync(process.execPath, [IMPORT_SCRIPT, ...flags], {
+      env,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    return {
+      code: result.status ?? 1,
+      stdout: `${result.stdout ?? ""}${result.stderr ?? ""}`,
+    };
   }
 
   it("blocks the real CLI --apply before any database access", () => {

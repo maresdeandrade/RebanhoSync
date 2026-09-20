@@ -1,4 +1,4 @@
-export const CANONICAL_ENTITY_KEYS = {
+const CANONICAL_ENTITY_KEYS = {
   sources: "source_rows",
   coverage: "coverage_rows",
   products: "product_rows",
@@ -124,7 +124,7 @@ export function normalizeCanonicalData(payload) {
   return data;
 }
 
-export function extractCanonicalRows(payload) {
+function extractCanonicalRows(payload) {
   return Object.fromEntries(ENTITY_KEYS.map((key) => [key, rowsFrom(payload, key)]));
 }
 
@@ -512,5 +512,3 @@ export function validateCanonicalTechnicalContract(payload) {
 
   return { data, indexes };
 }
-
-export { UUID_PATTERN };
