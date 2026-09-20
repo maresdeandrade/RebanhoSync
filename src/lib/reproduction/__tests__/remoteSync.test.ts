@@ -6,7 +6,12 @@ import { supabase } from "@/lib/supabase";
 import { pullReproductionDiagnosisState } from "../remoteSync";
 
 vi.mock("@/lib/supabase", () => ({
-  supabase: { from: vi.fn() },
+  supabase: {
+    from: vi.fn(),
+    auth: {
+      getSession: vi.fn(),
+    },
+  },
 }));
 
 type Row = Record<string, unknown>;
@@ -223,6 +228,15 @@ function mockRemote(
 describe("reproduction diagnosis remote pull", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { user: { id: "user-a" } } } as never,
+      error: null,
+    });
+    await db.local_ownership.put({
+      key: "local-session",
+      owner_user_id: "user-a",
+      updated_at: now,
+    });
     await db.queue_ops.clear();
     await db.queue_gestures.clear();
     await db.sync_pull_cursors.clear();
@@ -594,5 +608,18 @@ describe("reproduction diagnosis remote pull", () => {
     ).rejects.toMatchObject({ message: "remote failure" });
     expect(await db.event_eventos.count()).toBe(0);
     expect(await db.event_eventos_reproducao.count()).toBe(0);
+  });
+
+  it("fails closed for a different authenticated owner before remote access", async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { user: { id: "user-b" } } } as never,
+      error: null,
+    });
+
+    const from = vi.mocked(supabase.from);
+    await expect(pullReproductionDiagnosisState("farm-1")).rejects.toMatchObject({
+      name: "LocalOwnershipError",
+    });
+    expect(from).not.toHaveBeenCalled();
   });
 });

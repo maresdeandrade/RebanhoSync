@@ -9,6 +9,7 @@ import { db } from "@/lib/offline/db";
 import type { Animal } from "@/lib/offline/types";
 import { registerReproductionGesture } from "@/lib/reproduction/register";
 import { getReproductionEventsJoined } from "@/lib/reproduction/selectors";
+import { supabase } from "@/lib/supabase";
 
 const FARM_ID = "farm-phase-13";
 
@@ -59,18 +60,29 @@ async function clearReproductionSmokeData() {
   await db.state_agenda_itens.clear();
   await db.queue_ops.clear();
   await db.queue_gestures.clear();
+  await db.local_ownership.clear();
 }
 
 describe("Fase 13 functional smoke", () => {
   beforeEach(async () => {
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: { session: { user: { id: "user-phase-13" } } } as never,
+      error: null,
+    });
     vi.stubGlobal("localStorage", {
       getItem: () => null,
       setItem: () => undefined,
     });
     await clearReproductionSmokeData();
+    await db.local_ownership.put({
+      key: "local-session",
+      owner_user_id: "user-phase-13",
+      updated_at: new Date().toISOString(),
+    });
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     await clearReproductionSmokeData();
   });

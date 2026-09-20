@@ -1,7 +1,9 @@
 import "fake-indexeddb/auto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/lib/offline/db";
+import { establishLocalOwnership } from "@/lib/offline/ownership";
+import { supabase } from "@/lib/supabase";
 import type { Animal, Lote, SanitarioAgendaLocalV2 } from "@/lib/offline/types";
 import {
   cancelLocalSanitaryAgendaV2,
@@ -72,10 +74,19 @@ async function clearScope() {
 describe("sanitaryLocalAgendaManagementV2", () => {
   beforeEach(async () => {
     await db.open();
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: { session: { user: { id: "user-a" } } } as never,
+      error: null,
+    });
+    await establishLocalOwnership({ user: { id: "user-a" } });
     await clearScope();
   });
 
-  afterEach(clearScope);
+  afterEach(async () => {
+    await clearScope();
+    await db.local_ownership.clear();
+    vi.restoreAllMocks();
+  });
 
   it("lista agendas locais com rótulos legíveis e atalho para a origem", async () => {
     await db.ops_sanitario_agenda_v2.bulkPut([
@@ -199,5 +210,34 @@ describe("sanitaryLocalAgendaManagementV2", () => {
     expect(await db.queue_ops.count()).toBe(0);
     expect(await db.event_eventos.count()).toBe(0);
     expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+  });
+
+  it("bloqueia leitura e escrita quando o local owner difere da sessão", async () => {
+    await db.ops_sanitario_agenda_v2.put(agenda());
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { user: { id: "user-b" } } } as never,
+      error: null,
+    });
+
+    await expect(listLocalSanitaryAgendasV2("farm-1", db)).rejects.toMatchObject({
+      decision: { status: "MISMATCH", ownerUserId: "user-a", currentUserId: "user-b" },
+    });
+    await expect(
+      rescheduleLocalSanitaryAgendaV2(
+        { agendaId: "agenda-1", fazendaId: "farm-1", plannedFor: "2026-07-15" },
+        db,
+      ),
+    ).rejects.toMatchObject({
+      decision: { status: "MISMATCH", ownerUserId: "user-a", currentUserId: "user-b" },
+    });
+    await expect(
+      cancelLocalSanitaryAgendaV2({ agendaId: "agenda-1", fazendaId: "farm-1" }, db),
+    ).rejects.toMatchObject({
+      decision: { status: "MISMATCH", ownerUserId: "user-a", currentUserId: "user-b" },
+    });
+
+    expect(await db.ops_sanitario_agenda_v2.get("agenda-1")).toEqual(agenda());
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await db.event_eventos.count()).toBe(0);
   });
 });

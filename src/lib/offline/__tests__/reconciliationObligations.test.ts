@@ -38,6 +38,7 @@ vi.mock("@/lib/supabase", () => ({
       getSession: vi.fn(async () => ({
         data: {
           session: {
+            user: { id: "user-c3b" },
             access_token: "token-c3b",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
           },
@@ -57,6 +58,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { db } from "../db";
 import { createGesture } from "../ops";
+import { establishLocalOwnership } from "../ownership";
 import {
   deleteReconciliationObligationIfGenerationMatches,
   listReconciliationObligations,
@@ -89,6 +91,7 @@ async function clearStores() {
       db.queue_gestures,
       db.queue_ops,
       db.sync_reconcile_obligations,
+      db.local_ownership,
     ],
     async () => {
       await db.event_eventos.clear();
@@ -96,6 +99,7 @@ async function clearStores() {
       await db.queue_gestures.clear();
       await db.queue_ops.clear();
       await db.sync_reconcile_obligations.clear();
+      await db.local_ownership.clear();
     },
   );
 }
@@ -252,6 +256,7 @@ describe("sync worker reconciliation drain", () => {
       removeItem: () => undefined,
     });
     await clearStores();
+    await establishLocalOwnership({ user: { id: "user-c3b" } });
   });
 
   afterEach(async () => {
@@ -437,18 +442,20 @@ describe("sync worker reconciliation drain", () => {
       { fazendaId: activeFarm, scope: "factual", tables: ["eventos"] },
     ]);
     startSyncWorker();
-    await flushMicrotasks();
+    await vi.waitFor(() => {
+      expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(1);
+    });
     // Startup drain drena a primeira obrigacao.
-    expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(1);
     expect(await listReconciliationObligations(activeFarm)).toHaveLength(0);
 
     await upsertReconciliationObligations([
       { fazendaId: activeFarm, scope: "factual", tables: ["eventos"] },
     ]);
     window.dispatchEvent(new Event("online"));
-    await flushMicrotasks();
+    await vi.waitFor(() => {
+      expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(2);
+    });
     // Reconnect retoma a obrigacao persistida.
-    expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(2);
     expect(await listReconciliationObligations(activeFarm)).toHaveLength(0);
 
     stopSyncWorker();
@@ -458,10 +465,11 @@ describe("sync worker reconciliation drain", () => {
       { fazendaId: activeFarm, scope: "factual", tables: ["eventos"] },
     ]);
     startSyncWorker();
-    await flushMicrotasks();
+    await vi.waitFor(() => {
+      expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(3);
+    });
     expect(addSpy).toHaveBeenCalledWith("online", expect.any(Function));
     // Startup drain do segundo start drena a obrigacao recriada.
-    expect(mocks.pullDataForFarm).toHaveBeenCalledTimes(3);
 
     window.dispatchEvent(new Event("online"));
     await flushMicrotasks();

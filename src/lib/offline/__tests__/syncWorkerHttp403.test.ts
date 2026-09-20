@@ -15,6 +15,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-1",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -45,6 +46,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 
 import { createGesture } from "../ops";
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import { processGesture } from "../syncWorker";
 
 function dateDaysAgo(days: number) {
@@ -100,6 +102,7 @@ describe("processGesture: HTTP 403 não retryável", () => {
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
     ]);
+    await seedLocalOwner("test-owner");
   });
 
   afterEach(async () => {

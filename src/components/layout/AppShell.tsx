@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { SanitaryNotificationManager } from "@/components/notifications/SanitaryNotificationManager";
 import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 import { startSyncWorker, stopSyncWorker } from "@/lib/offline/syncWorker";
+import { canReadLocalData } from "@/lib/offline/localReadBoundary";
 
 import { MobileBottomNav } from "./MobileBottomNav";
 import { SideNav } from "./SideNav";
@@ -15,15 +16,22 @@ import { BrandMark } from "./BrandMark";
 export const AppShell = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, session } = useAuth();
+  const [localReadAllowed, setLocalReadAllowed] = useState(false);
 
   useEffect(() => {
-    startSyncWorker();
+    let cancelled = false;
+
+    void canReadLocalData().then((allowed) => {
+      if (!cancelled) setLocalReadAllowed(allowed);
+      if (allowed) startSyncWorker();
+    });
 
     return () => {
+      cancelled = true;
       stopSyncWorker();
     };
-  }, []);
+  }, [session?.user.id]);
 
   useEffect(() => {
     void trackPilotMetric({
@@ -36,6 +44,10 @@ export const AppShell = () => {
       },
     });
   }, [activeFarmId, location.pathname]);
+
+  if (!localReadAllowed) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-dvh flex-col bg-background text-content-primary">

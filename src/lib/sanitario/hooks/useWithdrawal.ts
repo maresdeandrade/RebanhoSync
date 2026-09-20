@@ -1,5 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/offline/db";
+import { requireTenantSensitiveRead } from "@/lib/offline/localReadBoundary";
 import {
   computeAnimalWithdrawal,
   computeLoteWithdrawal,
@@ -16,6 +17,7 @@ export function useAnimalWithdrawal(
 ) {
   return useLiveQuery(async () => {
     if (!animalId || !activeFarmId) return null;
+    await requireTenantSensitiveRead();
 
     // 1. Busca todos os eventos do animal no Dexie
     const baseEvents = await db.event_eventos
@@ -82,6 +84,7 @@ export function useLoteWithdrawal(
 ) {
   return useLiveQuery(async () => {
     if (!loteId || !activeFarmId) return null;
+    await requireTenantSensitiveRead();
 
     // 1. Busca animais ativos atualmente vinculados a este lote
     // Exclui sumariamente animais mortos ou vendidos (regra 9 e 11)
@@ -241,6 +244,7 @@ export function usePastoWithdrawal(
 ) {
   return useLiveQuery(async () => {
     if (!pastoId || !activeFarmId) return null;
+    await requireTenantSensitiveRead();
 
     // 1. Busca todos os lotes vinculados a este pasto no Dexie
     const lotes = await db.state_lotes

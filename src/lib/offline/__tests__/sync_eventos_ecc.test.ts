@@ -3,6 +3,7 @@ import { vi } from "vitest";
 import "fake-indexeddb/auto";
 // src/lib/offline/__tests__/sync_eventos_ecc.test.ts
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import { processGesture } from "../syncWorker";
 import { getRemoteTableName, getLocalStoreName } from "../tableMap";
 import { randomUUID } from "node:crypto";
@@ -12,8 +13,8 @@ import { env } from "@/lib/env";
 vi.mock("@/lib/supabase", () => ({
   supabase: {
     auth: {
-      getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: "test-token", expires_at: Math.floor(Date.now() / 1000) + 3600 } }, error: null }),
-      refreshSession: vi.fn().mockResolvedValue({ data: { session: { access_token: "test-token", expires_at: Math.floor(Date.now() / 1000) + 3600 } }, error: null })
+      getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: "test-token", expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: "test-owner" } } }, error: null }),
+      refreshSession: vi.fn().mockResolvedValue({ data: { session: { access_token: "test-token", expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: "test-owner" } } }, error: null })
     }
   }
 }));
@@ -58,6 +59,7 @@ async function createGesture({
 describe("syncWorker eventos_ecc integration", () => {
   beforeAll(async () => {
     await db.open();
+    await seedLocalOwner("test-owner");
   });
 
   afterAll(async () => {

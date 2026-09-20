@@ -10,6 +10,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-atomic-ack",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -33,6 +34,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import { createGesture } from "../ops";
 import { pullDataForFarm } from "../pull";
 import { processGesture, recoverStaleSyncingGesturesOnce } from "../syncWorker";
@@ -107,6 +109,7 @@ describe("syncWorker atomic ACK and stale SYNCING recovery", () => {
       removeItem: () => undefined,
     });
     await clearStores();
+    await seedLocalOwner("test-owner");
   });
 
   afterEach(async () => {

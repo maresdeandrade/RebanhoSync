@@ -1,5 +1,6 @@
 import { env } from "@/lib/env";
 import { db } from "@/lib/offline/db";
+import { requireTenantSensitiveAccess } from "@/lib/offline/localReadBoundary";
 import type {
   PilotMetricEvent,
   PilotMetricEventName,
@@ -224,6 +225,11 @@ function toSortedCounts(map: Map<string, number>, limit = 5): PilotMetricCount[]
  */
 export async function flushPilotMetrics(): Promise<void> {
   if (typeof indexedDB === "undefined" || typeof fetch === "undefined") return;
+  try {
+    await requireTenantSensitiveAccess();
+  } catch {
+    return;
+  }
 
   const farmIds = (await db.metrics_events.orderBy("fazenda_id").uniqueKeys()).filter(
     (value): value is string => typeof value === "string" && value.length > 0,

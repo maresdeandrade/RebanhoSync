@@ -25,6 +25,7 @@ import {
   type NotificationPreferences,
 } from "@/lib/notifications/sanitaryReminders";
 import { checkIsSuperAdmin } from "@/lib/admin/adminApi";
+import { establishLocalOwnership } from "@/lib/offline/ownership";
 
 
 // Role schema for runtime validation
@@ -287,16 +288,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     ]);
   };
 
+  const applyAuthenticatedSession = useCallback(
+    async (nextSession: Session) => {
+      const ownership = await establishLocalOwnership(nextSession);
+      if (ownership.status !== "OWNED") {
+        setSession(null);
+        return;
+      }
+
+      setSession(nextSession);
+      await refreshSettings();
+    },
+    [refreshSettings],
+  );
+
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        setSession(session);
         if (session) {
-          await refreshSettings();
+          await applyAuthenticatedSession(session);
         } else {
+          setSession(null);
           applyTheme("system");
         }
       } catch (e) {
@@ -311,10 +326,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
       if (session) {
-        refreshSettings();
+        void applyAuthenticatedSession(session).finally(() => setLoading(false));
+        return;
       } else {
+        setSession(null);
         setActiveFarmId(null);
         setRole(null);
         setIsSuperAdmin(false);
@@ -330,7 +346,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [refreshSettings]);
+  }, [applyAuthenticatedSession]);
 
   const signOut = async () => {
     try {

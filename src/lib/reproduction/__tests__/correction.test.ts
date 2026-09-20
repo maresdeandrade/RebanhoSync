@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/offline/db";
+import { supabase } from "@/lib/supabase";
 import { getBirthEventId } from "@/lib/reproduction/neonatal";
 import { rebuildReproductiveProjection } from "../status";
 import { registerReproductionGesture } from "../register";
@@ -74,6 +75,15 @@ async function registerDiagnosis(input: {
 
 describe("append-only reproductive corrections", () => {
   beforeEach(async () => {
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: { session: { user: { id: "user-correction" } } } as never,
+      error: null,
+    });
+    await db.local_ownership.put({
+      key: "local-session",
+      owner_user_id: "user-correction",
+      updated_at: new Date().toISOString(),
+    });
     vi.stubGlobal("localStorage", {
       getItem: () => null,
       setItem: () => undefined,
@@ -87,6 +97,8 @@ describe("append-only reproductive corrections", () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
+    await db.local_ownership.clear();
     vi.unstubAllGlobals();
     await db.state_agenda_itens.clear();
     await db.state_animais.clear();

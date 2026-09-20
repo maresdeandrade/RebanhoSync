@@ -12,6 +12,7 @@ vi.mock("@/lib/supabase", () => ({
       getSession: vi.fn(async () => ({
         data: {
           session: {
+            user: { id: "user-auth" },
             access_token: "auth-token",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
           },
@@ -39,6 +40,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 import { supabase } from "@/lib/supabase";
 import { createGesture } from "../ops";
 import { db } from "../db";
+import { establishLocalOwnership } from "../ownership";
 import {
   processGesture,
   recoverErroredGesturesOnce,
@@ -48,6 +50,7 @@ const farmId = "farm-auth";
 
 function validSession() {
   return {
+    user: { id: "user-auth" },
     access_token: "auth-token",
     expires_at: Math.floor(Date.now() / 1000) + 3600,
   };
@@ -131,7 +134,9 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
       db.sync_reconcile_obligations.clear(),
+      db.local_ownership.clear(),
     ]);
+    await establishLocalOwnership({ user: { id: "user-auth" } });
   });
 
   afterEach(async () => {
@@ -142,10 +147,11 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
       db.sync_reconcile_obligations.clear(),
+      db.local_ownership.clear(),
     ]);
   });
 
-  it("T1 — sessão ausente + refresh OK: request executa e ACK normal", async () => {
+  it("T1 — sessão ausente bloqueia replay sem tentar refresh", async () => {
     mockAuth({
       session: null,
       sessionError: { message: "session missing" },
@@ -159,28 +165,25 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
         record: { id: "lote-auth-refresh", fazenda_id: farmId },
       },
     ]);
-    const opId = await queueOpId(txId);
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => appliedResponse(opId)),
-    );
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
 
     await processGesture(await loadGesture(txId));
 
-    expect(vi.mocked(supabase.auth.refreshSession)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(supabase.auth.refreshSession)).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(await db.queue_gestures.get(txId)).toMatchObject({
-      status: "DONE",
-      sync_result: "APPLIED",
+      status: "PENDING",
     });
     expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(
-      0,
+      1,
     );
   });
 
-  it("T2 — sessão ausente + refresh falha: fila preservada, sem DONE, sem remover ops", async () => {
+  it("T2 — access_token sem user.id bloqueia e preserva a fila", async () => {
     mockAuth({
-      session: null,
-      sessionError: { message: "session missing" },
+      session: { access_token: "token-without-user" },
+      sessionError: null,
       refreshedSession: null,
       refreshError: { message: "invalid refresh token" },
     });
@@ -197,13 +200,10 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
 
     const gesture = await db.queue_gestures.get(txId);
     expect(gesture).toMatchObject({
-      status: "ERROR",
-      sync_result: "ERROR",
+      status: "PENDING",
     });
     expect(gesture?.retry_count ?? 0).toBe(0);
-    expect(gesture?.last_error?.toLowerCase()).toContain(
-      "nao autenticado - sessao expirada",
-    );
+    expect(gesture?.last_error).toBeUndefined();
     expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(
       1,
     );
@@ -301,7 +301,7 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
     );
   });
 
-  it("T6 — restart com erro de auth sem sessão utilizável: permanece ERROR; 5xx segue recuperável", async () => {
+  it("T6 — sem sessão utilizável nenhuma gesture ERROR é reclassificada", async () => {
     mockAuth({
       session: null,
       sessionError: { message: "session missing" },
@@ -336,14 +336,16 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
     });
     expect(await db.queue_ops.get("op-tx-auth-blocked")).toBeDefined();
     expect(await db.queue_gestures.get("tx-transient-503")).toMatchObject({
-      status: "PENDING",
-      retry_count: 0,
+      status: "ERROR",
+      sync_result: "ERROR",
     });
     expect(await db.queue_ops.get("op-tx-transient-503")).toBeDefined();
   });
 
   it("T7 — nova sessão válida: mesma gesture/op identity volta ao fluxo e ACK", async () => {
     mockAuth({
+      session: null,
+      sessionError: { message: "session missing" },
       refreshedSession: null,
       refreshError: { message: "refresh token expired" },
     });
@@ -360,22 +362,11 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
       vi.fn(async () => unauthorizedResponse()),
     );
     await processGesture(await loadGesture(txId));
-    expect((await db.queue_gestures.get(txId))?.status).toBe("ERROR");
+    expect((await db.queue_gestures.get(txId))?.status).toBe("PENDING");
 
     mockAuth({ session: validSession(), sessionError: null });
     const fetchMock = vi.fn(async () => appliedResponse(opId));
     vi.stubGlobal("fetch", fetchMock);
-
-    await recoverErroredGesturesOnce();
-
-    expect(await db.queue_gestures.get(txId)).toMatchObject({
-      status: "PENDING",
-      retry_count: 0,
-    });
-    const recovered = await db.queue_gestures.get(txId);
-    expect(recovered?.last_error).toBe(
-      "Recovered auth session; retrying after worker startup",
-    );
 
     await processGesture(await loadGesture(txId));
 

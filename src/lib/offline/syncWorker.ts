@@ -46,6 +46,7 @@ import {
   trackPilotMetric,
 } from "@/lib/telemetry/pilotMetrics";
 import { getActiveFarmId } from "@/lib/storage";
+import { getCurrentLocalReadOwnership } from "./localReadBoundary";
 import { pullReproductionDiagnosisState } from "@/lib/reproduction/remoteSync";
 import {
   buildCommercialPurchaseEnvelope,
@@ -320,8 +321,7 @@ export const startSyncWorker = () => {
   if (import.meta.env.DEV) {
     console.debug("[sync-worker] Starting sync worker");
   }
-  void runInitialOfflinePullForActiveFarmOnce();
-  void drainReconciliationObligations(getActiveFarmId());
+  void runOwnedSyncWork();
 
   if (!onlineWakeUpListener && typeof window !== "undefined") {
     onlineWakeUpListener = () => {
@@ -335,14 +335,7 @@ export const startSyncWorker = () => {
     isTickRunning = true;
 
     try {
-      await runInitialOfflinePullForActiveFarmOnce();
-
-      if (!startupRecoveryDone) {
-        await recoverErroredGesturesOnce();
-        await recoverBlockedSanitarioV2Operations("app_startup");
-        await recoverStaleSyncingGesturesOnce();
-        startupRecoveryDone = true;
-      }
+      if (!(await runOwnedSyncWork())) return;
 
       const pending = await db.queue_gestures
         .where("status")
@@ -429,6 +422,9 @@ export const stopSyncWorker = () => {
 };
 
 export async function runInitialOfflinePullForActiveFarmOnce() {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return;
+
   const activeFarmId = getActiveFarmId();
   if (
     !activeFarmId ||
@@ -515,6 +511,9 @@ export async function drainReconciliationObligations(
   fazendaId: string | null,
 ) {
   if (!fazendaId || isReconciliationDrainRunning) return;
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return;
+  if (isReconciliationDrainRunning) return;
 
   isReconciliationDrainRunning = true;
   try {
@@ -546,14 +545,7 @@ export async function drainReconciliationObligations(
 function wakeUpDurableSyncWork() {
   // Re-run ERROR recovery on wakeup so auth-blocked gestures replay once a
   // valid session (e.g. refreshed token) is available without an app reload.
-  void recoverErroredGesturesOnce().catch((error: unknown) => {
-    console.warn(
-      "[sync-worker] ERROR recovery on wakeup failed:",
-      error instanceof Error ? error.message : error,
-    );
-  });
-  void runInitialOfflinePullForActiveFarmOnce();
-  void drainReconciliationObligations(getActiveFarmId());
+  void runOwnedSyncWork();
 }
 
 async function tryPurgeOldRejections() {
@@ -959,6 +951,9 @@ async function processSanitarioCanonicalResults(
 }
 
 export async function recoverErroredGesturesOnce() {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return;
+
   const errored = await db.queue_gestures
     .where("status")
     .equals("ERROR")
@@ -1027,6 +1022,9 @@ export async function recoverErroredGesturesOnce() {
 }
 
 export async function recoverStaleSyncingGesturesOnce() {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return 0;
+
   const syncing = await db.queue_gestures
     .where("status")
     .equals("SYNCING")
@@ -1107,6 +1105,9 @@ export async function recoverBlockedSanitarioV2Operations(
   trigger: SanitarioV2RecoveryTrigger,
   excludedOpIds: ReadonlySet<string> = new Set(),
 ) {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return 0;
+
   const blocked = await db.queue_ops
     .filter(
       (op) =>
@@ -1502,6 +1503,9 @@ function buildTerminalBlockedDependencyClassifier(
 
 // fallow-ignore-next-line complexity
 export async function processGesture(gesture: Gesture) {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return;
+
   // fallow-ignore-next-line complexity
   return withGestureLock(gesture.client_tx_id, async (acquired) => {
     if (!acquired) {
@@ -2216,4 +2220,19 @@ export async function processGesture(gesture: Gesture) {
     });
   }
   });
+}
+
+async function runOwnedSyncWork(): Promise<boolean> {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED") return false;
+
+  await runInitialOfflinePullForActiveFarmOnce();
+  await drainReconciliationObligations(getActiveFarmId());
+  if (!startupRecoveryDone) {
+    await recoverErroredGesturesOnce();
+    await recoverBlockedSanitarioV2Operations("app_startup");
+    await recoverStaleSyncingGesturesOnce();
+    startupRecoveryDone = true;
+  }
+  return true;
 }

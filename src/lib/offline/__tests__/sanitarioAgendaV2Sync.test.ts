@@ -10,6 +10,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-agenda-v2",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "user-agenda-v2" },
           },
         },
         error: null,
@@ -19,6 +20,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-agenda-v2-refresh",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "user-agenda-v2" },
           },
         },
         error: null,
@@ -41,6 +43,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 
 import { createGesture } from "../ops";
 import { db } from "../db";
+import { establishLocalOwnership } from "../ownership";
 import { pullDataForFarm, pullSanitarioAgendaV2 } from "../pull";
 import { processGesture } from "../syncWorker";
 
@@ -94,7 +97,9 @@ describe("Agenda Sanitaria v2 controlled offline push", () => {
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
+      db.local_ownership.clear(),
     ]);
+    await establishLocalOwnership({ user: { id: "user-agenda-v2" } });
   });
 
   afterEach(async () => {
@@ -109,6 +114,7 @@ describe("Agenda Sanitaria v2 controlled offline push", () => {
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
+      db.local_ownership.clear(),
     ]);
   });
 

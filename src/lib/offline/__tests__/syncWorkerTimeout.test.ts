@@ -9,6 +9,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "timeout-token",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -32,6 +33,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import {
   processGesture,
   REQUEST_TIMEOUT_MS,
@@ -87,6 +89,7 @@ describe("F24.2D1A — request timeout and worker liveness", () => {
       db.queue_ops.clear(),
       db.sync_reconcile_obligations.clear(),
     ]);
+    await seedLocalOwner("test-owner");
   });
 
   afterEach(async () => {

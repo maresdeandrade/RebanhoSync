@@ -5,6 +5,7 @@ import {
   type EventValidationIssue,
 } from "@/lib/events/validators";
 import { db } from "@/lib/offline/db";
+import { requireTenantSensitiveAccess } from "@/lib/offline/localReadBoundary";
 import { createGesture } from "@/lib/offline/ops";
 import type { EventGestureBuildResult } from "@/lib/events/types";
 import type {
@@ -1054,6 +1055,7 @@ export function buildReproductionGesture({
 export async function prepareReproductionGesture(
   input: BuildReproductionGestureInput,
 ) {
+  await requireTenantSensitiveAccess();
   input = await resolveCorrectionInput(input);
   const occurredAt = input.occurredAt ?? new Date().toISOString();
   const diagnostic = await validateDiagnosticEpisodeAndResolveDpp(
@@ -1284,6 +1286,7 @@ async function resolveExistingOperation(
 export async function registerReproductionGesture(
   input: BuildReproductionGestureInput,
 ) {
+  await requireTenantSensitiveAccess();
   const built = await prepareReproductionGesture(input);
   const existing = await resolveExistingOperation(input, built);
   if (existing) {

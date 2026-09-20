@@ -14,6 +14,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -41,6 +42,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import { createGesture } from "../ops";
 import { processGesture } from "../syncWorker";
 
@@ -100,6 +102,7 @@ describe("reproduction diagnosis sync worker", () => {
     await db.state_animais.clear();
     await db.ops_sanitario_agenda_animais_v2.clear();
     await db.ops_sanitario_agenda_v2.clear();
+    await seedLocalOwner("test-owner");
   });
 
   afterEach(async () => {

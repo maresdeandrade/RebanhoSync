@@ -10,6 +10,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "sanitario-worker-token",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "user-san-v2-worker" },
           },
         },
         error: null,
@@ -36,6 +37,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { db } from "../db";
+import { establishLocalOwnership } from "../ownership";
 import { pullSanitarioV2CutoverState } from "../pull";
 import {
   mapOperationForSync,
@@ -51,6 +53,7 @@ import type {
 
 const FAZENDA_ID = "farm-san-v2-worker";
 const CLIENT_ID = "client-san-v2-worker";
+const USER_ID = "user-san-v2-worker";
 
 async function seedGesture(
   commands: SanitarioSyncV2Command[],
@@ -111,7 +114,9 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
       db.event_eventos.clear(),
       db.event_eventos_sanitario.clear(),
       db.state_insumo_movimentacoes.clear(),
+      db.local_ownership.clear(),
     ]);
+    await establishLocalOwnership({ user: { id: USER_ID } });
   });
 
   afterEach(async () => {
@@ -123,6 +128,7 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
       db.event_eventos.clear(),
       db.event_eventos_sanitario.clear(),
       db.state_insumo_movimentacoes.clear(),
+      db.local_ownership.clear(),
     ]);
   });
 

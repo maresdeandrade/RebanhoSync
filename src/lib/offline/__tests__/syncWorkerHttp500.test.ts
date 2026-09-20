@@ -14,6 +14,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-500",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -38,6 +39,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 
 import { createGesture } from "../ops";
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import {
   processGesture,
   recoverErroredGesturesOnce,
@@ -62,6 +64,7 @@ describe("F24.2D1B — HTTP 500 transient recovery", () => {
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
     ]);
+    await seedLocalOwner("test-owner");
   });
 
   afterEach(async () => {

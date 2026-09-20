@@ -60,7 +60,17 @@ import {
 } from "./types";
 import type { ReconciliationObligation } from "./reconciliationTypes";
 
+export const LOCAL_OWNERSHIP_KEY = "local-session";
+
+export interface LocalOwnership {
+  key: string;
+  owner_user_id: string | null;
+  updated_at: string;
+}
+
 export class OfflineDB extends Dexie {
+  local_ownership!: Table<LocalOwnership, string>;
+
   // State Stores (Cópia local para leitura)
   state_animais!: Table<Animal, string>;
   state_lotes!: Table<Lote, string>;
@@ -167,8 +177,8 @@ export class OfflineDB extends Dexie {
     string
   >;
 
-  constructor() {
-    super("RebanhoSync");
+  constructor(name = "RebanhoSync") {
+    super(name);
 
     // Versão 1 - Schema inicial
     this.version(1).stores({
@@ -794,6 +804,18 @@ export class OfflineDB extends Dexie {
       sync_reconcile_obligations:
         "key, fazenda_id, scope, generation_id, updated_at, [fazenda_id+scope]",
     });
+
+    this.version(31)
+      .stores({
+        local_ownership: "key, owner_user_id, updated_at",
+      })
+      .upgrade((tx) =>
+        tx.table("local_ownership").put({
+          key: LOCAL_OWNERSHIP_KEY,
+          owner_user_id: null,
+          updated_at: new Date().toISOString(),
+        } satisfies LocalOwnership),
+      );
   }
 }
 

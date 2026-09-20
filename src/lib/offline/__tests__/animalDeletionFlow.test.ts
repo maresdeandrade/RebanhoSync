@@ -15,6 +15,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "token-delete-test",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -42,6 +43,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import { createGesture } from "../ops";
 import { pullDataForFarm } from "../pull";
 import { processGesture } from "../syncWorker";
@@ -138,6 +140,7 @@ describe("animal deletion offline flow", () => {
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
     ]);
+    await seedLocalOwner("test-owner");
     vi.stubGlobal("fetch", vi.fn());
   });
 

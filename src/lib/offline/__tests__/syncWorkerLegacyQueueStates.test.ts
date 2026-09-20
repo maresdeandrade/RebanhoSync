@@ -13,6 +13,7 @@ vi.mock("@/lib/supabase", () => ({
           session: {
             access_token: "legacy-token",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
+            user: { id: "test-owner" },
           },
         },
         error: null,
@@ -36,6 +37,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { db } from "../db";
+import { seedLocalOwner } from "./ownershipTestFixture";
 import {
   processGesture,
   recoverErroredGesturesOnce,
@@ -99,6 +101,7 @@ describe("F24.2D1D — legacy queue state recovery", () => {
       db.queue_rejections.clear(),
       db.sync_reconcile_obligations.clear(),
     ]);
+    await seedLocalOwner("test-owner");
   });
 
   afterEach(async () => {

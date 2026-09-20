@@ -2,6 +2,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/offline/db";
+import { establishLocalOwnership } from "@/lib/offline/ownership";
 import { supabase } from "@/lib/supabase";
 import type { PilotMetricEvent } from "@/lib/offline/types";
 import {
@@ -30,13 +31,14 @@ describe("buildPilotMetricsSummary", () => {
       await db.open();
     }
 
-    await db.metrics_events.clear();
+    await Promise.all([db.metrics_events.clear(), db.local_ownership.clear()]);
+    await establishLocalOwnership({ user: { id: "user-metrics" } });
     localStorage.clear();
     vi.restoreAllMocks();
   });
 
   afterEach(async () => {
-    await db.metrics_events.clear();
+    await Promise.all([db.metrics_events.clear(), db.local_ownership.clear()]);
     localStorage.clear();
     vi.unstubAllGlobals();
   });
@@ -93,6 +95,7 @@ describe("buildPilotMetricsSummary", () => {
     vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
       data: {
         session: {
+          user: { id: "user-metrics" },
           access_token: "token-1",
         },
       },
@@ -142,6 +145,7 @@ describe("buildPilotMetricsSummary", () => {
     vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
       data: {
         session: {
+          user: { id: "user-metrics" },
           access_token: "token-1",
         },
       },
@@ -150,6 +154,7 @@ describe("buildPilotMetricsSummary", () => {
     vi.spyOn(supabase.auth, "refreshSession").mockResolvedValue({
       data: {
         session: {
+          user: { id: "user-metrics" },
           access_token: "token-2",
         },
       },
