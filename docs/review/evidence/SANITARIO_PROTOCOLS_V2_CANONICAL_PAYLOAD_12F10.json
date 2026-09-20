@@ -1,6 +1,7 @@
 {
   "artifact": "sanitario_protocols_v2_canonical_payload",
-  "artifact_version": "12F10.0-canonical-candidate",
+  "artifact_version": "13.0.0-canonical-contract",
+  "canonical_representation": "payload.sanitario_*_v2.rows",
   "source_artifacts": [
     "docs/review/evidence/PAYLOAD_JSON_PROTOCOLOS_V2_12F9.json",
     "docs/review/evidence/PAYLOAD_JSON_ITENS_PROTOCOLOS_V2_12F9.json",
