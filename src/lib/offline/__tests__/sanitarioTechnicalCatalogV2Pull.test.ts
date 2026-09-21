@@ -29,6 +29,9 @@ const { localStores } = vi.hoisted(() => ({
 vi.mock("../db", () => ({
   db: {
     tables: localStores.map((name) => ({ name })),
+    queue_ops: {
+      toArray: vi.fn(async () => []),
+    },
     table: vi.fn(),
     transaction: vi.fn(),
   },
