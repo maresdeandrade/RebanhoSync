@@ -1,9 +1,10 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-09-16
+Atualizado em: 2026-09-21
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
-Próxima fase: **Fase 24 — F24.2C Atomic Ack & SYNCING Recovery — NOT_STARTED**
-Decisão: **F24.2A CLOSED / F24.2B READY_FOR_CLOSEOUT / F24.2 IN_PROGRESS**
+Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
+Próxima fase: **Fase 24 — F24.3 Offline Prolongado + Reconnect + Recovery — READY_NOT_STARTED**
+Decisão: **F24.2 CLOSED / F24.3 READY_NOT_STARTED**
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -11,25 +12,25 @@ Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
-Status: **Fase 24 ativa; F24.2B1 pronta para revisão; hipótese P0 não confirmada**
+Status: **Fase 24 ativa; F24.2 encerrada; produção não autorizada**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
-## F24.2B1 — handoff de caracterização
+## F24.2 — handoff de fechamento
 
-O inventário B0 foi versionado em
-`d2c70c6e8ba44f58e6a3036b09d2671462e111b3`. A B1 comprovou por testes que a mesma
-identidade converge para um fato, colisão de PK com identidade divergente é conflito, e
-comandos distintos com conteúdo igual podem produzir fatos distintos. Não houve mudança
-funcional de runtime.
+O PR #151 encerrou F24.2A–F24.2E em
+`main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`. O closeout autoritativo e o rebaseline de
+F24.3–F24.8 estão em
+[F24_2_CLOSEOUT_AND_REBASELINE.md](./F24_2_CLOSEOUT_AND_REBASELINE.md).
 
 Documentos: [auditoria B0](./F24_2B0_EVENT_PROVENANCE_STABLE_IDENTITY_AUDIT.md),
 [caracterização B1](./F24_2B1_EVENT_IDENTITY_CHARACTERIZATION.md),
 [failure matrix](./F24_2A_FAILURE_MATRIX.md) e [ordem de patches](./F24_2A_RECOMMENDED_PATCH_ORDER.md).
 
-`F24.2B0 = CLOSED`; `F24.2B1 = READY_FOR_REVIEW`; `F24.2B = READY_FOR_CLOSEOUT`.
-`DUPLICATE_EVENT = NOT_CONFIRMED_AS_SYNC_FAILURE`. F24.2 permanece em progresso. O próximo
-risco comprovado recomendado é F24.2C, ack atômico e recovery de `SYNCING`, ainda não iniciado.
+Identidade causal/replay, claim/ACK atômicos, recovery de fila e sessão, reconciliação
+pós-ACK e ownership local fail-closed não retornam ao backlog como implementação nova. A
+próxima frente é F24.3 `READY_NOT_STARTED`, limitada às jornadas prolongadas e gaps
+residuais registrados no closeout.
 
 ## F24.0 — baseline e handoff
 
@@ -41,7 +42,7 @@ de segundo staging F24.1C foi deferida. A
 [F24.1D](./F24_1D_REMOTE_ACL_REHEARSAL.md) comprovou 51 migrations e convergência das seis
 superfícies e o E2E de `sync-batch`. A F24.1D.1 corrigiu a autorização HTTP do
 `sanitario-reconcile` e comprovou matriz negativa, execução `service_role`, E2E 1/1, replay
-e limpeza. F24.1 está fechada; F24.2 está pronta e ainda não foi iniciada.
+e limpeza. F24.1 e F24.2 estão fechadas; F24.3 está `READY_NOT_STARTED`.
 
 ### Registro histórico anterior ao rebaseline
 

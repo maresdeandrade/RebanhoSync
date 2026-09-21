@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-09-16
-Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.2B READY_FOR_CLOSEOUT)**
-Próxima frente recomendada: **F24.2C NOT_STARTED — Atomic Ack & SYNCING Recovery**
+Atualizado em: 2026-09-21
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.2 CLOSED)**
+Próxima frente recomendada: **F24.3 READY_NOT_STARTED — Offline Prolongado + Reconnect + Recovery**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 
 ## Objetivo
@@ -38,7 +38,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 17. Fase 21 — Inteligência Operacional v2 — **concluída**.
 18. Fase 22 — Eficiência Produtiva e Econômica — **concluída (F22A, F22B e F22C fechadas)**.
 19. Fase 23 — Simulação Produtiva e Comercial — **concluída / CLOSED**.
-20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.2A CLOSED; F24.2B READY_FOR_CLOSEOUT; F24.2C NOT_STARTED**.
+20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.2 CLOSED; F24.3 READY_NOT_STARTED**.
 
 O rollout do Sync Sanitário v2 permanece não autorizado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`. Isso não reabre o desenvolvimento técnico da Fase 12.
 
@@ -56,9 +56,13 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 Fase 23 — Simulação Produtiva e Comercial — CLOSED
 → F24.0 — Release Readiness Baseline & Gap Audit — CLOSED
 → F24.1 — Production Migration Delta & Provenance — TECHNICAL CLOSED / REPOSITORY CLOSEOUT
-→ F24.2A — Offline/Reconnect Inventory & Failure Matrix — CLOSED
-→ F24.2B — Event Identity Characterization — READY_FOR_CLOSEOUT
-→ F24.2C — Atomic Ack & SYNCING Recovery — NOT_STARTED
+→ F24.2 — Offline/Sync/Auth/Ownership Hardening — CLOSED
+→ F24.3 — Offline Prolongado + Reconnect + Recovery — READY_NOT_STARTED
+→ F24.4 — Multi-device + Conflitos — NOT_STARTED
+→ F24.5 — Observabilidade — NOT_STARTED
+→ F24.6 — Performance / Escala — NOT_STARTED
+→ F24.7 — Sanitário v2 — EXTERNAL_BLOCKED
+→ F24.8 — Production Readiness — BLOCKED_BY_PREREQUISITES
 ```
 
 A Fase 21 encerrou com duas verticais distintas e explicáveis sobre read models existentes, sem persistência de recomendação nem ação factual. A Fase 22 está concluída e formalmente encerrada (**CLOSED**): F22A.1–F22A.3 implementam peso/GMD qualificado e F22A adotada canonicamente na Home (sem ranking, sem uso operacional); F22B.1/F22B.2 implementam coverage e resultado observado qualificado adotados com ressalva de não demonstração de lucro completo; a F22C está fechada com histórico animal→lote, composição animal→pasto, duração, agregação e performance observada factual adotados com coverage e não-autorização explícitos nos consumidores compatíveis.
@@ -76,7 +80,7 @@ A Fase 20 migrou as cinco jornadas críticas para os padrões compartilhados, co
 - **Fase 21 — Inteligência Operacional v2:** evolução da inteligência operacional reutilizando `MetricResult` e `DecisionRecommendation`.
 - **Fase 22 — Eficiência Produtiva e Econômica:** produtividade e economia (CLOSED); GMD observado com confiabilidade não classificada e uso operacional não autorizado; resultado econômico observado com lucro completo bloqueado; ocupação qualificada histórica adotada.
 - **Fase 23 — Simulação Produtiva e Comercial:** simulações com premissas explícitas; projeção não é fato e simulação não é autorização comercial (CLOSED).
-- **Fase 24 — Release Hardening / Scale Readiness:** baseline estabelecida em F24.0; offline prolongado, multi-device, RLS, recovery, observabilidade, performance, migrations/upgrades e release gates seguem no backlog autoritativo F24.1–F24.8.
+- **Fase 24 — Release Hardening / Scale Readiness:** F24.2 encerrada; somente os gaps residuais de offline prolongado, multi-device/conflitos, observabilidade, performance, bloqueio sanitário externo e production readiness seguem em F24.3–F24.8, conforme o [closeout](../review/F24_2_CLOSEOUT_AND_REBASELINE.md).
 
 Hardening proporcional permanece obrigatório em cada fase. A Fase 24 concentra o hardening sistêmico final para escala. Fases encerradas só reabrem diante de regressão concreta.
 
@@ -105,4 +109,4 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
 | 22 | Eficiência Produtiva e Econômica | **Gates F22A.4 e F22B.3 fechados; F22C fechada com histórico, duração, agregação e performance observada implementados**; lucro completo permanece bloqueado e novo incremento exige capacidade de produto explicitamente autorizada |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
-| 24 | Release Hardening / Scale Readiness | **F24.2A closed; F24.2B ready for closeout; F24.2C not started; produção não provisionada** |
+| 24 | Release Hardening / Scale Readiness | **F24.2 closed; F24.3 ready not started; produção não provisionada** |

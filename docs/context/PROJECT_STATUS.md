@@ -1,25 +1,25 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-09-16
+Atualizado em: 2026-09-21
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.2B READY_FOR_CLOSEOUT)**.
-Próxima fase de desenvolvimento: **Fase 24 — F24.2C Atomic Ack & SYNCING Recovery — NOT_STARTED**.
-Baseline de release: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = PLATFORM_BLOCKED`.
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.2 CLOSED)**.
+Próxima fase de desenvolvimento: **Fase 24 — F24.3 Offline Prolongado + Reconnect + Recovery — READY_NOT_STARTED**.
+Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 
 ## Objetivo
 
 Registrar o estado vivo do produto em formato curto. Este documento não substitui o [roadmap](../product/ROADMAP.md), o [plano ativo](../review/ACTIVE_PHASE_PLAN.md) nem o [handoff técnico](../review/CURRENT_PHASE_HANDOFF.md).
 
-A F24.2A está fechada. A F24.2B auditou e caracterizou identidade factual/replay sem mudança
-funcional de runtime: `F24.2B0 = CLOSED`, `F24.2B1 = READY_FOR_REVIEW` e
-`F24.2B = READY_FOR_CLOSEOUT`. `DUPLICATE_EVENT = NOT_CONFIRMED_AS_SYNC_FAILURE`; a
-ambiguidade cross-device sem origem causal compartilhada permanece `UNKNOWN`. F24.2 continua
-em progresso e F24.2C não foi iniciada.
+A F24.2A–F24.2E estão fechadas no
+[closeout autoritativo](../review/F24_2_CLOSEOUT_AND_REBASELINE.md). Identidade causal,
+replay idempotente, claim/ACK atômicos, recovery de fila e sessão, reconciliação pós-ACK e
+ownership local fail-closed não retornam ao backlog. F24.3 está `READY_NOT_STARTED` com os
+gaps de jornada prolongada, multi-farm e políticas genéricas de retry/retention.
 
 ## Referência arquitetural operacional
 
@@ -37,7 +37,8 @@ canal Vercel `Production` não representa produção operacional. Portanto,
 [F24.1D](../review/F24_1D_REMOTE_ACL_REHEARSAL.md) verificou o baseline remoto, o
 `sync-batch` e, após a correção F24.1D.1, o `sanitario-reconcile` com matriz negativa, E2E
 1/1 e replay. `F24.1_TECHNICAL = CLOSED`;
-`F24.1_REPOSITORY_CLOSEOUT = PR_READY_FOR_REVIEW`; `F24.2 = READY_NOT_STARTED`.
+`F24.1_REPOSITORY_CLOSEOUT = PR_READY_FOR_REVIEW`; `F24.2 = CLOSED`;
+`F24.3 = READY_NOT_STARTED`.
 
 Os parágrafos F24.0–F24.1C anteriores mantidos abaixo documentam a sequência histórica; onde
 classificam o mesmo project ref como produção compartilhada, prevalece o rebaseline acima.
@@ -46,7 +47,7 @@ A [baseline F24.0](../review/F24_RELEASE_READINESS_BASELINE.md) foi estabelecida
 `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`. O fechamento é `READY WITH CAVEATS` para a
 auditoria, não para produção: delta produtivo, gate final de RLS, offline prolongado e
 performance permanecem `NOT_TESTED`; multi-device, recovery e observabilidade permanecem
-`PARTIAL`; o Sync Sanitário v2 permanece `PLATFORM_BLOCKED` e fail-closed.
+`PARTIAL`; o Sync Sanitário v2 permanece `EXTERNAL_BLOCKED` e fail-closed.
 
 A [auditoria F24.1](../review/F24_1_PRODUCTION_MIGRATION_DELTA.md) verificou a proveniência
 dos repairs e a reentrada preparou a migration forward-only `20260913232253` para reconciliar
@@ -207,7 +208,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`. A F24.2A está fechada e a F24.2B está `READY_FOR_CLOSEOUT` após caracterizar identidade/replay e retirar o P0 não comprovado. A próxima frente recomendada é F24.2C — ack atômico e recovery de `SYNCING` — ainda `NOT_STARTED`. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`PLATFORM_BLOCKED`), e produção permanece `NOT_AUTHORIZED`.
+A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`. A F24.2A–F24.2E estão `CLOSED` em `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`. A próxima frente recomendada é F24.3 — Offline Prolongado + Reconnect + Recovery — `READY_NOT_STARTED`, sem reimplementar capacidades encerradas. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`EXTERNAL_BLOCKED`), e produção permanece `NOT_AUTHORIZED`.
 
 ## Fontes de detalhe
 
