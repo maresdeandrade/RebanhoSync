@@ -47,6 +47,11 @@ import { establishLocalOwnership } from "../ownership";
 import { pullDataForFarm } from "../pull";
 import { processGesture } from "../syncWorker";
 
+const session = (userId: string) =>
+  ({ user: { id: userId } }) as Parameters<
+    typeof establishLocalOwnership
+  >[0];
+
 function dateDaysAgo(days: number) {
   const value = new Date();
   value.setUTCDate(value.getUTCDate() - days);
@@ -70,6 +75,7 @@ async function seedAnimal(overrides: Partial<Record<string, unknown>> = {}) {
     mae_id: null,
     nome: null,
     rfid: null,
+    especie: null,
     origem: null,
     raca: null,
     papel_macho: null,
@@ -99,7 +105,8 @@ describe("sync partial batch: reconciliação por operação", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     vi.stubGlobal("localStorage", {
-      getItem: () => null,
+      getItem: (key: string) =>
+        key === "gestao_agro_active_fazenda_id" ? "farm-partial" : null,
       setItem: () => undefined,
       removeItem: () => undefined,
     });
@@ -113,7 +120,7 @@ describe("sync partial batch: reconciliação por operação", () => {
       db.queue_rejections.clear(),
       db.local_ownership.clear(),
     ]);
-    await establishLocalOwnership({ user: { id: "user-partial-batch" } });
+    await establishLocalOwnership(session("user-partial-batch"));
   });
 
   afterEach(async () => {
@@ -292,7 +299,11 @@ describe("sync partial batch: reconciliação por operação", () => {
     expect((await db.state_animais.get(animalId))?.observacoes).toBe(
       "remote-canonical-c",
     );
-    expect(pullDataForFarm).toHaveBeenCalledWith("farm-partial", ["animais"]);
+    expect(pullDataForFarm).toHaveBeenCalledWith(
+      "farm-partial",
+      ["animais"],
+      { mode: "replace" },
+    );
     expect((await getGesture(txId)).operation_results).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ op_id: opA.client_op_id, status: "APPLIED" }),
@@ -515,11 +526,11 @@ describe("sync partial batch: reconciliação por operação", () => {
     await processGesture(await getGesture(txId));
 
     expect(await db.event_eventos.get("evt-dup-local")).toBeUndefined();
-    expect(pullDataForFarm).toHaveBeenCalledWith("farm-partial", [
-      "agenda_itens",
-      "eventos",
-      "eventos_sanitario",
-    ]);
+    expect(pullDataForFarm).toHaveBeenCalledWith(
+      "farm-partial",
+      ["agenda_itens", "eventos", "eventos_sanitario"],
+      { mode: "replace" },
+    );
 
     const rejections = await db.queue_rejections.toArray();
     expect(rejections[0]).toMatchObject({

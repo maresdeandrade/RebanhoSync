@@ -47,6 +47,11 @@ import { establishLocalOwnership } from "../ownership";
 import { pullDataForFarm, pullSanitarioAgendaV2 } from "../pull";
 import { processGesture } from "../syncWorker";
 
+const ownershipSession = (userId: string) =>
+  ({ user: { id: userId } }) as Parameters<
+    typeof establishLocalOwnership
+  >[0];
+
 const fazendaId = "farm-agenda-sync";
 const now = "2026-06-13T10:00:00.000Z";
 
@@ -99,7 +104,7 @@ describe("Agenda Sanitaria v2 controlled offline push", () => {
       db.queue_rejections.clear(),
       db.local_ownership.clear(),
     ]);
-    await establishLocalOwnership({ user: { id: "user-agenda-v2" } });
+    await establishLocalOwnership(ownershipSession("user-agenda-v2"));
   });
 
   afterEach(async () => {

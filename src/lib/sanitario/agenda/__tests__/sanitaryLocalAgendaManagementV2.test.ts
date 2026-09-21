@@ -12,6 +12,11 @@ import {
   rescheduleLocalSanitaryAgendaV2,
 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
 
+const ownershipSession = (userId: string) =>
+  ({ user: { id: userId } }) as Parameters<
+    typeof establishLocalOwnership
+  >[0];
+
 const agenda = (overrides: Partial<SanitarioAgendaLocalV2> = {}): SanitarioAgendaLocalV2 => ({
   id: "agenda-1",
   fazenda_id: "farm-1",
@@ -78,7 +83,7 @@ describe("sanitaryLocalAgendaManagementV2", () => {
       data: { session: { user: { id: "user-a" } } } as never,
       error: null,
     });
-    await establishLocalOwnership({ user: { id: "user-a" } });
+    await establishLocalOwnership(ownershipSession("user-a"));
     await clearScope();
   });
 

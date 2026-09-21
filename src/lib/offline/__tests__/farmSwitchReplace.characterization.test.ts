@@ -1,12 +1,9 @@
 /**
  * @vitest-environment jsdom
  *
- * F24.3A — caracterizacao do replace A -> B -> A.
- *
- * Este teste registra o comportamento atual. Ele nao prescreve a correcao:
- * caches sincronizados de outra fazenda sao descartados e o trabalho pendente
- * continua na fila, mas a linha otimista da fazenda nao ativa nao sobrevive ao
- * clear global da store.
+ * F24.3B1 — regressao do replace A -> B -> A.
+ * O cache sincronizado continua descartavel, mas toda projecao local sustentada
+ * por operacao nao terminal deve sobreviver ao replace global da store.
  */
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -37,6 +34,7 @@ const farmB = "farm-switch-b";
 async function clearStores() {
   await Promise.all([
     db.state_animais.clear(),
+    db.queue_gestures.clear(),
     db.queue_ops.clear(),
     db.sync_pull_cursors.clear(),
     db.sync_reconcile_obligations.clear(),
@@ -44,7 +42,7 @@ async function clearStores() {
   ]);
 }
 
-describe("F24.3A — farm switch replace characterization", () => {
+describe("F24.3B1 — farm-aware replace", () => {
   beforeEach(async () => {
     await clearStores();
     remoteRows.byFarm.clear();
@@ -72,6 +70,9 @@ describe("F24.3A — farm switch replace characterization", () => {
         action: "UPDATE",
         record: { id: "animal-a-pending", fazenda_id: farmA },
         sync_state: "PENDING",
+        retry_count: 3,
+        next_attempt_at: "2026-09-21T10:10:00.000Z",
+        domain_op_id: "domain-op-a",
         created_at: "2026-09-21T10:00:00.000Z",
       },
       {
@@ -80,7 +81,28 @@ describe("F24.3A — farm switch replace characterization", () => {
         table: "animais",
         action: "UPDATE",
         record: { id: "animal-b-pending", fazenda_id: farmB },
-        sync_state: "PENDING",
+        sync_state: "RETRYABLE",
+        retry_count: 2,
+        next_attempt_at: "2026-09-21T10:05:00.000Z",
+        domain_op_id: "domain-op-b",
+        created_at: "2026-09-21T10:00:01.000Z",
+      },
+    ]);
+    await db.queue_gestures.bulkPut([
+      {
+        client_tx_id: "tx-a-pending",
+        fazenda_id: farmA,
+        client_id: "client-a",
+        status: "PENDING",
+        retry_count: 3,
+        created_at: "2026-09-21T10:00:00.000Z",
+      },
+      {
+        client_tx_id: "tx-b-pending",
+        fazenda_id: farmB,
+        client_id: "client-b",
+        status: "PENDING",
+        retry_count: 2,
         created_at: "2026-09-21T10:00:01.000Z",
       },
     ]);
@@ -137,12 +159,12 @@ describe("F24.3A — farm switch replace characterization", () => {
     await clearStores();
   });
 
-  it("mantem filas e metadados, mas perde a linha otimista pendente da fazenda nao ativa", async () => {
+  it("preserva pending A e B no ciclo A -> B -> A sem preservar cache descartavel", async () => {
     await pullDataForFarm(farmB, ["animais"], { mode: "replace" });
 
     expect(
       (await db.state_animais.toArray()).map((row) => row.id).sort(),
-    ).toEqual(["animal-b-pending", "animal-b-synced"]);
+    ).toEqual(["animal-a-pending", "animal-b-pending", "animal-b-synced"]);
     expect(await db.queue_ops.get("op-a-pending")).toBeDefined();
     expect(await db.queue_ops.get("op-b-pending")).toBeDefined();
 
@@ -150,15 +172,28 @@ describe("F24.3A — farm switch replace characterization", () => {
 
     expect(
       (await db.state_animais.toArray()).map((row) => row.id).sort(),
-    ).toEqual(["animal-a-synced"]);
-    expect(await db.state_animais.get("animal-a-pending")).toBeUndefined();
+    ).toEqual(["animal-a-pending", "animal-a-synced", "animal-b-pending"]);
     expect(await db.queue_ops.get("op-a-pending")).toMatchObject({
       client_tx_id: "tx-a-pending",
       sync_state: "PENDING",
+      retry_count: 3,
+      next_attempt_at: "2026-09-21T10:10:00.000Z",
+      domain_op_id: "domain-op-a",
     });
     expect(await db.queue_ops.get("op-b-pending")).toMatchObject({
       client_tx_id: "tx-b-pending",
-      sync_state: "PENDING",
+      sync_state: "RETRYABLE",
+      retry_count: 2,
+      next_attempt_at: "2026-09-21T10:05:00.000Z",
+      domain_op_id: "domain-op-b",
+    });
+    expect(await db.queue_gestures.get("tx-a-pending")).toMatchObject({
+      status: "PENDING",
+      retry_count: 3,
+    });
+    expect(await db.queue_gestures.get("tx-b-pending")).toMatchObject({
+      status: "PENDING",
+      retry_count: 2,
     });
 
     expect(await db.sync_pull_cursors.count()).toBe(2);
@@ -166,5 +201,18 @@ describe("F24.3A — farm switch replace characterization", () => {
     expect(await db.local_ownership.get(LOCAL_OWNERSHIP_KEY)).toMatchObject({
       owner_user_id: "user-farm-switch",
     });
+  });
+
+  it("merge de fazenda nao ativa nao limpa dados da fazenda ativa", async () => {
+    await pullDataForFarm(farmA, ["animais"], { mode: "merge" });
+
+    expect(
+      (await db.state_animais.toArray()).map((row) => row.id).sort(),
+    ).toEqual([
+      "animal-a-pending",
+      "animal-a-synced",
+      "animal-b-pending",
+      "animal-b-synced",
+    ]);
   });
 });

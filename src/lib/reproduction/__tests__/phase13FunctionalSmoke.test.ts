@@ -33,6 +33,7 @@ async function seedAnimal(
     mae_id: null,
     nome: null,
     rfid: null,
+    especie: "bovino",
     origem: null,
     raca: null,
     papel_macho: sexo === "M" ? "reprodutor" : null,
