@@ -154,6 +154,7 @@ async function flushMicrotasks() {
 describe("reconciliation obligations store", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    mocks.activeFarmId = "farm-c3b-active";
     await clearStores();
   });
 
@@ -228,9 +229,9 @@ describe("reconciliation obligations store", () => {
       stale!.generation_id,
     );
     expect(deleted).toBe(false);
-    expect(
-      (await getObligation(farmId, "agenda-v2"))?.generation_id,
-    ).toBe(fresh?.generation_id);
+    expect((await getObligation(farmId, "agenda-v2"))?.generation_id).toBe(
+      fresh?.generation_id,
+    );
   });
 
   it("list isola obrigacoes por fazenda (secao 15)", async () => {
@@ -249,6 +250,7 @@ describe("reconciliation obligations store", () => {
 describe("sync worker reconciliation drain", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    mocks.activeFarmId = "farm-c3b-active";
     vi.stubGlobal("fetch", vi.fn());
     vi.stubGlobal("localStorage", {
       getItem: () => null,
@@ -283,7 +285,17 @@ describe("sync worker reconciliation drain", () => {
       new Set(obligation?.tables),
     );
     expect(new Set(obligation?.tables)).toEqual(
-      new Set(["eventos", "eventos_sanitario", "agenda_itens", "eventos_pesagem"]),
+      new Set([
+        "eventos",
+        "eventos_sanitario",
+        "agenda_itens",
+        "eventos_pesagem",
+      ]),
+    );
+    expect(mocks.pullDataForFarm).toHaveBeenCalledWith(
+      farmId,
+      expect.any(Array),
+      { mode: "merge" },
     );
   });
 
@@ -298,9 +310,9 @@ describe("sync worker reconciliation drain", () => {
 
     const gesture = await db.queue_gestures.get(txId);
     expect(gesture?.status).not.toBe("DONE");
-    expect(
-      await db.queue_ops.where("client_tx_id").equals(txId).count(),
-    ).toBe(2);
+    expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(
+      2,
+    );
     expect(await listReconciliationObligations(farmId)).toHaveLength(0);
   });
 
@@ -315,9 +327,9 @@ describe("sync worker reconciliation drain", () => {
       status: "DONE",
     });
     expect(await getObligation(farmId, "factual")).toBeDefined();
-    expect(
-      await db.queue_ops.where("client_tx_id").equals(txId).count(),
-    ).toBe(0);
+    expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(
+      0,
+    );
   });
 
   it("obligation persistida sobrevive a crash e e drenada no restart (T2/T4/T8)", async () => {
@@ -332,10 +344,11 @@ describe("sync worker reconciliation drain", () => {
 
     await drainReconciliationObligations(farmId);
 
-    expect(mocks.pullDataForFarm).toHaveBeenCalledWith(farmId, [
-      "eventos",
-      "eventos_pesagem",
-    ]);
+    expect(mocks.pullDataForFarm).toHaveBeenCalledWith(
+      farmId,
+      ["eventos", "eventos_pesagem"],
+      { mode: "merge" },
+    );
     expect(
       await deleteReconciliationObligationIfGenerationMatches(
         seeded!.key,
@@ -395,6 +408,13 @@ describe("sync worker reconciliation drain", () => {
     const drainPromise = drainReconciliationObligations(farmId);
     await flushMicrotasks();
 
+    expect(await getObligation(farmId, "factual")).toMatchObject({
+      generation_id: stale?.generation_id,
+    });
+    expect(mocks.pullDataForFarm).toHaveBeenCalledWith(farmId, ["eventos"], {
+      mode: "merge",
+    });
+
     await upsertReconciliationObligations([
       { fazendaId: farmId, scope: "factual", tables: ["agenda_itens"] },
     ]);
@@ -402,9 +422,9 @@ describe("sync worker reconciliation drain", () => {
     releasePull();
     await drainPromise;
 
-    expect(
-      (await getObligation(farmId, "factual"))?.generation_id,
-    ).toBe(fresh?.generation_id);
+    expect((await getObligation(farmId, "factual"))?.generation_id).toBe(
+      fresh?.generation_id,
+    );
     expect(fresh?.generation_id).not.toBe(stale?.generation_id);
   });
 
@@ -431,6 +451,20 @@ describe("sync worker reconciliation drain", () => {
 
     expect(mocks.pullDataForFarm).not.toHaveBeenCalled();
     expect(await getObligation(farmId, "factual")).toBeDefined();
+  });
+
+  it("drain da fazenda ativa mantem replace", async () => {
+    mocks.activeFarmId = farmId;
+    await upsertReconciliationObligations([
+      { fazendaId: farmId, scope: "factual", tables: ["eventos"] },
+    ]);
+
+    await drainReconciliationObligations(farmId);
+
+    expect(mocks.pullDataForFarm).toHaveBeenCalledWith(farmId, ["eventos"], {
+      mode: "replace",
+    });
+    expect(await getObligation(farmId, "factual")).toBeUndefined();
   });
 
   it("listener online: start/stop/start nao acumula wake-up e drena obrigacao (T6/T15)", async () => {

@@ -87,7 +87,7 @@ describe("pullDataForFarm", () => {
 
     expect(db.transaction).toHaveBeenCalledWith(
       "rw",
-      [storeNameAnimais, storeNameLotes],
+      [storeNameAnimais, storeNameLotes, "queue_ops"],
       expect.any(Function),
     );
 
@@ -123,7 +123,7 @@ describe("pullDataForFarm", () => {
 
     expect(db.transaction).toHaveBeenCalledWith(
       "rw",
-      ["state_animais"],
+      ["state_animais", "queue_ops"],
       expect.any(Function),
     );
   });

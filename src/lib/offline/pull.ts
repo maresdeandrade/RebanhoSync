@@ -8,6 +8,7 @@ import {
 } from "./tableMap";
 import { getPendingCommercialPurchaseRecords } from "@/lib/comercial/animalPurchaseSync";
 import { getPendingCommercialOperationRecords } from "@/lib/comercial/commercialOperationSync";
+import type { IndexableType } from "dexie";
 import type { PullCursor, PullCursorScope } from "./types";
 
 export const DEFAULT_REMOTE_TABLES = [
@@ -72,6 +73,8 @@ export interface PullOptions {
 }
 
 type RemoteRow = Record<string, unknown>;
+type StoreUpdate = { remote: string; local: string };
+type PullMode = NonNullable<PullOptions["mode"]>;
 
 const PENDING_FACTUAL_REMOTE_TABLES = new Set<string>([
   "eventos",
@@ -82,14 +85,6 @@ const PENDING_FACTUAL_REMOTE_TABLES = new Set<string>([
   "insumo_movimentacoes",
   ...STANDARD_EVENT_DETAIL_REMOTE_TABLES,
 ]);
-
-function isStandardEventDetailRemoteTable(
-  remoteTable: string,
-): remoteTable is (typeof STANDARD_EVENT_DETAIL_REMOTE_TABLES)[number] {
-  return (STANDARD_EVENT_DETAIL_REMOTE_TABLES as readonly string[]).includes(
-    remoteTable,
-  );
-}
 
 function getFactualEventId(remoteTable: string, row: RemoteRow) {
   if (remoteTable === "eventos") return row.id;
@@ -288,18 +283,7 @@ async function getPendingRecordIds(
   remoteTables: readonly string[],
   fazendaId: string,
 ) {
-  const protectedTables = new Set(
-    remoteTables.filter(
-      (table) =>
-        table === "animais" ||
-        table === "eventos" ||
-        table === "eventos_comercial" ||
-        isStandardEventDetailRemoteTable(table) ||
-        table === "agenda_itens" ||
-        table === "finance_transactions" ||
-        table === "finance_categories",
-    ),
-  );
+  const protectedTables = new Set(remoteTables);
   const pendingIds = new Map<string, Set<string>>();
   if (protectedTables.size === 0) return pendingIds;
 
@@ -315,11 +299,9 @@ async function getPendingRecordIds(
       const remoteTable = getRemoteTableName(candidate.table);
       if (!protectedTables.has(remoteTable)) continue;
       if (candidate.record?.fazenda_id !== fazendaId) continue;
-      const id =
-        remoteTable === "eventos_comercial" ||
-        isStandardEventDetailRemoteTable(remoteTable)
-          ? getFactualEventId(remoteTable, candidate.record)
-          : candidate.record?.id;
+      const id = PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
+        ? getFactualEventId(remoteTable, candidate.record)
+        : candidate.record?.id;
       if (typeof id !== "string") continue;
       const ids = pendingIds.get(remoteTable) ?? new Set<string>();
       ids.add(id);
@@ -327,6 +309,110 @@ async function getPendingRecordIds(
     }
   }
   return pendingIds;
+}
+
+function asRemoteRow(value: unknown): RemoteRow | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as RemoteRow)
+    : null;
+}
+
+function getSanitarioPendingEventId(
+  operation: Awaited<ReturnType<typeof db.queue_ops.toArray>>[number],
+): string | null {
+  if (operation.table !== "sanitario_v2") return null;
+  const record = operation.record as RemoteRow;
+  if (record.command !== "apply_factual_core") return null;
+  const payload = asRemoteRow(record.payload);
+  const event = asRemoteRow(payload?.event);
+  return typeof event?.id === "string" ? event.id : null;
+}
+
+function getOperationCandidates(
+  operation: Awaited<ReturnType<typeof db.queue_ops.toArray>>[number],
+) {
+  const candidates: Array<{ table: string; record: RemoteRow }> = [
+    { table: operation.table, record: operation.record },
+    ...getPendingCommercialPurchaseRecords(operation),
+    ...getPendingCommercialOperationRecords(operation),
+  ];
+  const eventId = getSanitarioPendingEventId(operation);
+
+  if (eventId) {
+    candidates.push(
+      { table: "eventos", record: { id: eventId } },
+      { table: "eventos_sanitario", record: { evento_id: eventId } },
+    );
+  }
+
+  return candidates;
+}
+
+function getLocalPrimaryKey(
+  localStore: string,
+  record: RemoteRow,
+): IndexableType | null {
+  const keyPath = db.table(localStore).schema.primKey.keyPath;
+  if (typeof keyPath === "string") {
+    return (record[keyPath] as IndexableType | undefined) ?? null;
+  }
+  if (Array.isArray(keyPath)) {
+    const values = keyPath.map((key) => record[key]);
+    return values.every((value) => value !== undefined && value !== null)
+      ? (values as IndexableType[])
+      : null;
+  }
+  return null;
+}
+
+async function getPendingLocalRecordKeys(storesToUpdate: StoreUpdate[]) {
+  const storesByRemote = new Map(
+    storesToUpdate.map(({ remote, local }) => [remote, local]),
+  );
+  const keys = new Map<string, Map<string, IndexableType>>();
+  const operations = await db.queue_ops.toArray();
+
+  for (const operation of operations) {
+    if (operation.sync_state === "REJECTED") continue;
+    for (const candidate of getOperationCandidates(operation)) {
+      const remoteTable = getRemoteTableName(candidate.table);
+      const localStore = storesByRemote.get(remoteTable);
+      if (!localStore) continue;
+      const key = getLocalPrimaryKey(localStore, candidate.record);
+      if (key === null) continue;
+      const tableKeys =
+        keys.get(remoteTable) ?? new Map<string, IndexableType>();
+      tableKeys.set(JSON.stringify(key), key);
+      keys.set(remoteTable, tableKeys);
+    }
+  }
+
+  return new Map(
+    [...keys].map(([remoteTable, tableKeys]) => [
+      remoteTable,
+      [...tableKeys.values()],
+    ]),
+  );
+}
+
+async function getPendingLocalRows(
+  storesToUpdate: StoreUpdate[],
+  mode: PullMode,
+) {
+  const pendingRows = new Map<string, RemoteRow[]>();
+  if (mode !== "replace") return pendingRows;
+
+  const pendingKeys = await getPendingLocalRecordKeys(storesToUpdate);
+  for (const { remote, local } of storesToUpdate) {
+    const keys = pendingKeys.get(remote);
+    if (!keys?.length) continue;
+    const rows = await db.table(local).bulkGet(keys);
+    pendingRows.set(
+      remote,
+      rows.filter((row): row is RemoteRow => Boolean(row)),
+    );
+  }
+  return pendingRows;
 }
 
 function protectPendingRecordRows(
@@ -337,11 +423,9 @@ function protectPendingRecordRows(
   const ids = pendingRecordIds.get(remoteTable);
   if (!ids || ids.size === 0) return { rows, skipped: false };
   const safeRows = rows.filter((row) => {
-    const id =
-      remoteTable === "eventos_comercial" ||
-      isStandardEventDetailRemoteTable(remoteTable)
-        ? getFactualEventId(remoteTable, row)
-        : row.id;
+    const id = PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
+      ? getFactualEventId(remoteTable, row)
+      : row.id;
     return typeof id !== "string" || !ids.has(id);
   });
   return { rows: safeRows, skipped: safeRows.length !== rows.length };
@@ -363,6 +447,83 @@ function protectPendingFactualRows(
     return typeof eventId !== "string" || !pendingEventIds.has(eventId);
   });
   return { rows: safeRows, skipped: safeRows.length !== rows.length };
+}
+
+function buildEffectiveResults(
+  remoteTables: readonly string[],
+  results: Record<string, unknown[]>,
+  pendingEventIds: ReadonlySet<string>,
+  pendingRecordIds: ReadonlyMap<string, ReadonlySet<string>>,
+) {
+  const effectiveResults: Record<string, RemoteRow[]> = {};
+  for (const remoteTable of remoteTables) {
+    const protectedFacts = protectPendingFactualRows(
+      remoteTable,
+      (results[remoteTable] ?? []) as RemoteRow[],
+      pendingEventIds,
+    );
+    effectiveResults[remoteTable] = protectPendingRecordRows(
+      remoteTable,
+      protectedFacts.rows,
+      pendingRecordIds,
+    ).rows;
+  }
+  return effectiveResults;
+}
+
+async function writeFarmPullStore(
+  update: StoreUpdate,
+  rows: RemoteRow[],
+  pendingRows: RemoteRow[],
+  mode: PullMode,
+) {
+  const { remote, local } = update;
+  const store = db.table(local);
+  if (
+    mode === "replace" &&
+    remote !== "eventos" &&
+    remote !== "eventos_animais"
+  ) {
+    await store.clear();
+  }
+  if (rows.length > 0) {
+    if (remote === "eventos_animais") await appendEventoAnimais(store, rows);
+    else await store.bulkPut(rows);
+  }
+  if (pendingRows.length > 0) await store.bulkPut(pendingRows);
+  console.log(
+    `[pull] Synced ${rows.length} records for ${remote} -> ${local} (mode=${mode})`,
+  );
+}
+
+async function applyFarmPull(
+  fazendaId: string,
+  remoteTables: readonly string[],
+  storesToUpdate: StoreUpdate[],
+  results: Record<string, unknown[]>,
+  mode: PullMode,
+) {
+  const pendingEventIds = remoteTables.some((table) =>
+    PENDING_FACTUAL_REMOTE_TABLES.has(table),
+  )
+    ? await getPendingFactualEventIds()
+    : new Set<string>();
+  const pendingRecordIds = await getPendingRecordIds(remoteTables, fazendaId);
+  const pendingLocalRows = await getPendingLocalRows(storesToUpdate, mode);
+  const effectiveResults = buildEffectiveResults(
+    remoteTables,
+    results,
+    pendingEventIds,
+    pendingRecordIds,
+  );
+  for (const update of storesToUpdate) {
+    await writeFarmPullStore(
+      update,
+      effectiveResults[update.remote] ?? [],
+      pendingLocalRows.get(update.remote) ?? [],
+      mode,
+    );
+  }
 }
 
 async function writeMergeResults(
@@ -475,66 +636,12 @@ export const pullDataForFarm = async (
   }
 
   const storeNames = storesToUpdate.map((s) => s.local);
-  const pendingEventIds = remoteTables.some((table) =>
-    PENDING_FACTUAL_REMOTE_TABLES.has(table),
-  )
-    ? await getPendingFactualEventIds()
-    : new Set<string>();
-  const pendingRecordIds = await getPendingRecordIds(remoteTables, fazenda_id);
-  const pendingLocalRows = new Map<string, RemoteRow[]>();
-  for (const { remote, local } of storesToUpdate) {
-    const ids = pendingRecordIds.get(remote);
-    if (!ids || ids.size === 0) continue;
-    const rows = await db.table(local).bulkGet([...ids]);
-    pendingLocalRows.set(
-      remote,
-      rows.filter((row): row is RemoteRow => Boolean(row)),
-    );
-  }
-  const effectiveResults: Record<string, unknown[]> = { ...results };
-  for (const remoteTable of remoteTables) {
-    const protectedFacts = protectPendingFactualRows(
-      remoteTable,
-      (results[remoteTable] ?? []) as RemoteRow[],
-      pendingEventIds,
-    );
-    effectiveResults[remoteTable] = protectPendingRecordRows(
-      remoteTable,
-      protectedFacts.rows,
-      pendingRecordIds,
-    ).rows;
-  }
+  const transactionStores = [...new Set([...storeNames, "queue_ops"])];
 
   // 3. Write in a single transaction
-  await db.transaction("rw", storeNames, async () => {
-    for (const { remote, local } of storesToUpdate) {
-      const rows = effectiveResults[remote];
-      const store = db.table(local);
-
-      if (
-        mode === "replace" &&
-        remote !== "eventos" &&
-        remote !== "eventos_animais"
-      ) {
-        await store.clear();
-      }
-
-      if (rows.length > 0) {
-        if (remote === "eventos_animais") {
-          await appendEventoAnimais(store, rows as RemoteRow[]);
-        } else {
-          await store.bulkPut(rows);
-        }
-      }
-
-      const localPending = pendingLocalRows.get(remote) ?? [];
-      if (localPending.length > 0) await store.bulkPut(localPending);
-
-      console.log(
-        `[pull] Synced ${rows.length} records for ${remote} -> ${local} (mode=${mode})`,
-      );
-    }
-  });
+  await db.transaction("rw", transactionStores, async () =>
+    await applyFarmPull(fazenda_id, remoteTables, storesToUpdate, results, mode),
+  );
 };
 
 export const pullSanitarioProductClassV2Catalog = async (
