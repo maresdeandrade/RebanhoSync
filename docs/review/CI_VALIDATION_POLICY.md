@@ -154,6 +154,21 @@ Validações:
 
 A classificação é sempre conservadora.
 
+O workflow registra duas classificações independentes:
+
+* `PR_SCOPE`: risco total da PR contra a base (`DOCS`, `APP` ou `FULL`);
+* `DELTA_SCOPE`: risco introduzido pelo último `synchronize`
+  (`DOCS_ONLY`, `TEST_ONLY`, `APP`, `FULL` ou `UNKNOWN`).
+
+`before` e `after` só são usados no evento `pull_request/synchronize`, depois
+de validar que ambos existem como commits locais e que `after` corresponde ao
+head atual da PR. Qualquer referência ausente ou inconsistente produz
+`DELTA_SCOPE=UNKNOWN`.
+
+`UNKNOWN` nunca reduz validação: executa o nível indicado por `PR_SCOPE`.
+Um delta `TEST_ONLY` pode selecionar testes diretamente alterados e diretórios
+de teste relacionados; se não houver alvo seguro, a suíte global é o fallback.
+
 Se uma PR contém arquivos de níveis diferentes:
 
 ```text
@@ -288,6 +303,22 @@ Evitar usar filtros `on.pull_request.paths` para eliminar completamente o
 workflow em PRs de baixo risco quando o check fizer parte da branch protection.
 
 O check obrigatório deve existir em todas as PRs.
+
+PRs com `PR_SCOPE=FULL` continuam marcadas com
+`full_final_required=true`, mesmo quando o último delta é apenas de testes. A
+certificação final é o mesmo check `Required validation`, disparado por
+`merge_group/checks_requested` e sempre executado no nível FULL sobre o SHA do
+merge group.
+
+Para tornar essa certificação obrigatória antes do merge, a configuração remota
+de `main` deve:
+
+* manter `Required validation` como status check obrigatório;
+* habilitar merge queue e exigir que a PR passe por ela.
+
+O workflow não altera essa configuração remota. Sem merge queue obrigatória, o
+check incremental continua útil, mas o gate FULL final não é imposto pelo
+GitHub.
 
 ## 12. Regra de manutenção
 

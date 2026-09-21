@@ -3,6 +3,8 @@ name: antigravity-validate
 on:
   pull_request:
     branches: ["main"]
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 permissions:
@@ -10,7 +12,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: antigravity-validate-${{ github.event.pull_request.number || github.ref }}
+  group: antigravity-validate-${{ github.event.pull_request.number || github.event.merge_group.head_sha || github.ref }}
   cancel-in-progress: true
 
 defaults:
@@ -55,96 +57,52 @@ jobs:
         run: |
           set -euo pipefail
 
-          BASE_SHA="${{ github.event.pull_request.base.sha || '' }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          : > /tmp/pr-files.txt
+          : > /tmp/delta-files.txt
 
-          if [[ -n "$BASE_SHA" ]]; then
-            git diff --name-only "$BASE_SHA...$HEAD_SHA" > /tmp/changed-files.txt
-          else
-            git diff --name-only HEAD~1...HEAD > /tmp/changed-files.txt || true
+          pr_known=false
+          delta_known=false
+          final_gate=false
+
+          if [[ "$GITHUB_EVENT_NAME" == "merge_group" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            final_gate=true
+          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            event_action="$(jq -r '.action // empty' "$GITHUB_EVENT_PATH")"
+            base_sha="$(jq -r '.pull_request.base.sha // empty' "$GITHUB_EVENT_PATH")"
+            head_sha="$(jq -r '.pull_request.head.sha // empty' "$GITHUB_EVENT_PATH")"
+
+            if [[ -n "$base_sha" && -n "$head_sha" ]] &&
+               git cat-file -e "${base_sha}^{commit}" 2>/dev/null &&
+               git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
+              git diff --name-only "$base_sha...$head_sha" > /tmp/pr-files.txt
+              pr_known=true
+            fi
+
+            if [[ "$event_action" == "synchronize" ]]; then
+              before_sha="$(jq -r '.before // empty' "$GITHUB_EVENT_PATH")"
+              after_sha="$(jq -r '.after // empty' "$GITHUB_EVENT_PATH")"
+
+              if [[ -n "$before_sha" && -n "$after_sha" && "$after_sha" == "$head_sha" ]] &&
+                 git cat-file -e "${before_sha}^{commit}" 2>/dev/null &&
+                 git cat-file -e "${after_sha}^{commit}" 2>/dev/null; then
+                git diff --name-only "$before_sha" "$after_sha" > /tmp/delta-files.txt
+                delta_known=true
+              fi
+            fi
           fi
 
-          echo "Changed files:"
-          sed 's/^/changed: /' /tmp/changed-files.txt
-
-          docs_only=true
-          needs_app=false
-          needs_supabase=false
-
-          while IFS= read -r file; do
-            [[ -z "$file" ]] && continue
-
-            # -----------------------------------------------------------------
-            # FAST
-            #
-            # Apenas documentação, handoffs e arquivos textuais de governança.
-            # -----------------------------------------------------------------
-
-            case "$file" in
-              docs/*|*.md|AGENTS.md)
-                ;;
-              *)
-                docs_only=false
-                needs_app=true
-                ;;
-            esac
-
-            # -----------------------------------------------------------------
-            # APPLICATION
-            #
-            # Código, testes e configuração da aplicação exigem lint,
-            # fallow, testes e build.
-            # -----------------------------------------------------------------
-
-            case "$file" in
-              src/*|tests/*|public/*|scripts/*|\
-              package.json|pnpm-lock.yaml|\
-              vite.config.*|vitest.config.*|\
-              tsconfig*.json|eslint.config.*)
-                needs_app=true
-                ;;
-            esac
-
-            # -----------------------------------------------------------------
-            # FULL / SUPABASE
-            #
-            # Mudanças com impacto em persistência, autenticação, domínio,
-            # sync, infraestrutura ou contratos transversais exigem stack
-            # Supabase descartável e validação completa.
-            # -----------------------------------------------------------------
-
-            case "$file" in
-              supabase/*|\
-              src/lib/offline/*|\
-              src/lib/auth/*|\
-              src/hooks/useAuth.*|\
-              src/lib/events/*|\
-              src/lib/comercial/*|\
-              src/lib/sanitario/*|\
-              src/lib/reproduction/*|\
-              src/lib/finance/*|\
-              src/lib/supabase.ts|\
-              src/lib/env.ts|\
-              scripts/ci/*|\
-              .github/workflows/*|\
-              .env.example|\
-              package.json|\
-              pnpm-lock.yaml)
-                needs_app=true
-                needs_supabase=true
-                ;;
-            esac
-          done < /tmp/changed-files.txt
-
-          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
-          echo "needs_app=$needs_app" >> "$GITHUB_OUTPUT"
-          echo "needs_supabase=$needs_supabase" >> "$GITHUB_OUTPUT"
+          node scripts/ci/classify-validation-scope.mjs classify \
+            --pr-files /tmp/pr-files.txt \
+            --pr-known "$pr_known" \
+            --delta-files /tmp/delta-files.txt \
+            --delta-known "$delta_known" \
+            --final-gate "$final_gate" | tee -a "$GITHUB_OUTPUT"
 
           echo
-          echo "Validation classification:"
-          echo "docs_only=$docs_only"
-          echo "needs_app=$needs_app"
-          echo "needs_supabase=$needs_supabase"
+          echo "PR files:"
+          sed 's/^/pr: /' /tmp/pr-files.txt
+          echo "Delta files:"
+          sed 's/^/delta: /' /tmp/delta-files.txt
 
       # -----------------------------------------------------------------------
       # Setup comum
@@ -240,10 +198,26 @@ jobs:
       - name: Test
         if: steps.scope.outputs.needs_app == 'true'
         timeout-minutes: 20
-        run: pnpm exec vitest run --bail=1 --maxWorkers=50% --testTimeout=15000 --reporter=verbose
+        run: |
+          set -euo pipefail
+
+          vitest_args=(--bail=1 --maxWorkers=50% --testTimeout=15000 --reporter=verbose)
+
+          if [[ "${{ steps.scope.outputs.run_global_tests }}" == "true" ]]; then
+            pnpm exec vitest run "${vitest_args[@]}"
+          else
+            mapfile -t test_targets < <(node scripts/ci/classify-validation-scope.mjs test-targets /tmp/delta-files.txt)
+            if (( ${#test_targets[@]} == 0 )); then
+              echo "No safe incremental test target found; running the global suite."
+              pnpm exec vitest run "${vitest_args[@]}"
+            else
+              printf 'Incremental test target: %s\n' "${test_targets[@]}"
+              pnpm exec vitest run "${test_targets[@]}" "${vitest_args[@]}"
+            fi
+          fi
 
       - name: Build
-        if: steps.scope.outputs.needs_app == 'true'
+        if: steps.scope.outputs.needs_build == 'true'
         run: pnpm run build
 
       # -----------------------------------------------------------------------
@@ -289,9 +263,14 @@ jobs:
         run: |
           echo "Validation scope"
           echo "----------------"
-          echo "docs_only=${{ steps.scope.outputs.docs_only }}"
+          echo "pr_scope=${{ steps.scope.outputs.pr_scope }}"
+          echo "delta_scope=${{ steps.scope.outputs.delta_scope }}"
           echo "needs_app=${{ steps.scope.outputs.needs_app }}"
           echo "needs_supabase=${{ steps.scope.outputs.needs_supabase }}"
+          echo "needs_build=${{ steps.scope.outputs.needs_build }}"
+          echo "run_global_tests=${{ steps.scope.outputs.run_global_tests }}"
+          echo "full_final_required=${{ steps.scope.outputs.full_final_required }}"
+          echo "final_gate=${{ steps.scope.outputs.final_gate }}"
 
       - name: Repository must remain clean
         if: always()
