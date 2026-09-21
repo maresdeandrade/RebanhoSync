@@ -1,12 +1,12 @@
 # F24.0 — Release Readiness Baseline & Gap Audit
 
-Atualizado em: 2026-09-14
+Atualizado em: 2026-09-21
 
 Baseline auditada: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 
 Status: **CLOSED — READY WITH CAVEATS**
 
-Próxima frente recomendada: **F24.2 — RLS / Auth / Tenant Isolation Final Gate**
+Próxima frente recomendada: **F24.3 — Offline Prolongado + Reconnect + Recovery — READY_NOT_STARTED**
 
 ## Rebaseline de ambiente — 2026-09-14
 
@@ -22,7 +22,9 @@ F24.1C_STAGING_CREATION = DEFERRED
 ACL_REMOTE_REHEARSAL = PASS
 F24.1_TECHNICAL = CLOSED
 F24.1_REPOSITORY_CLOSEOUT = PR_READY_FOR_REVIEW
-F24.2 = READY_NOT_STARTED
+F24.2 = CLOSED
+F24.2_CLOSEOUT_BASELINE = main@41ffd254251bdcbf7ce440da9431ada2dfeaf993
+F24.3 = READY_NOT_STARTED
 ```
 
 A classificação anterior de backend compartilhado com produção foi uma inferência baseada no
@@ -52,7 +54,7 @@ RECOVERY_GATE = PARTIAL
 OBSERVABILITY_GATE = PARTIAL
 PERFORMANCE_GATE = NOT_TESTED
 
-SANITARIO_V2 = PLATFORM_BLOCKED
+SANITARIO_V2 = EXTERNAL_BLOCKED
 PRODUCTION_PROMOTION = NOT_AUTHORIZED
 ```
 
@@ -285,38 +287,36 @@ como dívida/insumo de F24.5/F24.6.
   e rehearsal reproduzível aprovado;
 - release blocker: **SIM**.
 
-### P0 — F24.2 RLS / Auth / Tenant Isolation Final Gate
+### Encerrada — F24.2 Offline/Sync/Auth/Ownership Hardening
 
-- status: `NOT_STARTED`;
-- evidência: gate local aprovado e paridade histórica staging, sem gate produtivo;
-- risco: acesso cross-farm, privilégio excedente ou RPC privilegiada fora do contrato;
-- dependências: F24.1 e matriz efetiva de grants/policies/RPCs por ambiente;
-- áreas: RLS, Auth, convites, SuperAdmin, `fazenda_id`, `SECURITY DEFINER`, grants/revokes;
-- testes: anon/authenticated por papel, outsider, cross-farm, convite e SuperAdmin;
-- entrada: delta de produção conhecido;
-- saída: privilégios mínimos e isolamento certificados nos ambientes autorizados;
-- release blocker: **SIM**.
+- status: `CLOSED`;
+- baseline: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`;
+- evidência e rebaseline: [F24_2_CLOSEOUT_AND_REBASELINE.md](F24_2_CLOSEOUT_AND_REBASELINE.md);
+- capacidades encerradas não retornam como implementação em F24.3–F24.8;
+- produção permanece não provisionada e não autorizada.
 
 ### P0 — F24.3 Offline Prolongado + Reconnect + Recovery
 
-- status: `NOT_STARTED`;
-- evidência: componentes locais parciais, sem jornada prolongada;
+- status: `READY_NOT_STARTED`;
+- evidência: hardening base encerrado na F24.2, sem certificação da jornada prolongada;
 - risco: perda, duplicação, loop ou bloqueio de fila após longa desconexão;
 - dependências: harness e dataset controlado;
-- áreas: Dexie v29, filas, worker, pull, retry, rollback e upgrade;
-- testes: long offline, intermitência, token expirado, fila grande, crash/restart e upgrade pending;
+- áreas: jornada long offline, fila grande, reconnect intermitente, crash/restart real,
+  upgrade pending heterogêneo, HTTP 429/`Retry-After`, backoff/jitter, farm-switch/hydrate,
+  reconciliação não ativa e eventual purge/retention;
+- gap explícito: `pullDataForFarm(..., mode="replace")` ainda usa `store.clear()` em diversas stores;
 - entrada: volumes e matriz de falhas definidos;
 - saída: retomada determinística sem perda/duplicação e com diagnóstico;
 - release blocker: **SIM**.
 
-### P0 — F24.4 Multi-device + Idempotência + Conflitos
+### P0 — F24.4 Multi-device + Conflitos
 
 - status: `NOT_STARTED`;
 - evidência: movimentação certificada; cobertura transversal parcial;
-- risco: stale write, conflito silencioso, reenvio ou overwrite de pending;
+- risco: stale write, conflito cross-device, pull concorrente ou interação incorreta de sucesso parcial;
 - dependências: F24.3 e ambientes controlados;
-- áreas: sync-batch, worker/reconcile, pull padrão/especializado e identidades;
-- testes: A offline/B online, concorrência, replay, stale write, partial success e pull concorrente;
+- áreas: writes no mesmo agregado, stale-write genérico, conflitos cross-device e pull concorrente;
+- testes: concorrência, partial success e multi-tab/multi-context em browser real;
 - entrada: recovery base aprovado;
 - saída: matriz crítica multi-device aprovada por operação/domínio;
 - release blocker: **SIM**.
@@ -327,7 +327,8 @@ como dívida/insumo de F24.5/F24.6.
 - evidência: campos distribuídos e telemetria parcial;
 - risco: incidente sem correlação de operação, dispositivo, ACK e reconcile;
 - dependências: eventos/estados definidos em F24.3/F24.4;
-- áreas: fila, rejeições, auditoria de sync, `metrics_events`, `telemetry-ingest`;
+- áreas: correlação de operação/dispositivo/tentativa/status/erro, ACK remoto, resultado de
+  reconcile, saúde de fila/reconcile, retenção e redaction;
 - testes: correlação de falhas, retries, ACK perdido e reconcile, com isolamento por fazenda;
 - entrada: cenários críticos enumerados;
 - saída: diagnóstico ponta a ponta, retenção e redaction documentados;
@@ -339,7 +340,8 @@ como dívida/insumo de F24.5/F24.6.
 - evidência: fixtures e workload parcial, sem benchmark de jornada;
 - risco: fila/bootstrap/pull/UI degradarem sob volume real;
 - dependências: F24.5 para medição confiável;
-- áreas: IndexedDB, batches, bootstrap, pull, paginação, queries, índices, payload, memória e build;
+- áreas: IndexedDB, fila grande, startup/bootstrap, pull, payload/batches, memória,
+  queries/índices, bundle/chunks e limites declarados;
 - testes: benchmarks com volumes declarados e orçamento de latência/memória;
 - entrada: cenários, hardware e budgets definidos;
 - saída: limites certificados ou gargalos comprovados com ação focal;
@@ -359,7 +361,7 @@ como dívida/insumo de F24.5/F24.6.
 
 ### P0 final — F24.8 Production Readiness / Canary / Rollback / Release Gate
 
-- status: `BLOCKED_BY_F24_1_TO_F24_7`;
+- status: `BLOCKED_BY_PREREQUISITES`;
 - evidência: nenhuma promoção autorizada;
 - risco: release sem rollback, observabilidade ou critérios de aborto;
 - dependências: blockers anteriores resolvidos ou escopo explicitamente fail-closed;
@@ -394,11 +396,12 @@ como dívida/insumo de F24.5/F24.6.
 O gate de escopo não foi alterado para acomodar a auditoria. Nenhuma validação remota de
 produção foi executada.
 
-## Próxima frente autorizada
+## Próxima frente recomendada
 
 ```txt
-NEXT_RECOMMENDED = F24.1 REENTRY — PRODUCTION READ-ONLY HISTORY + FORWARD-ONLY ACL PLAN
+NEXT_RECOMMENDED = F24.3 — OFFLINE PROLONGADO + RECONNECT + RECOVERY
+NEXT_STATUS = READY_NOT_STARTED
 ```
 
-Não iniciar F24.2 automaticamente. Não há autorização para commit, push, PR, merge, deploy,
-DDL remoto, reparo de histórico ou promoção de ambiente.
+Não iniciar F24.3 automaticamente. Não há autorização para merge, deploy, DDL remoto,
+reparo de histórico ou promoção de ambiente.

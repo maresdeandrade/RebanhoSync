@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-09-14
+Atualizado em: 2026-09-21
 
 ## Objetivo
 
@@ -9,7 +9,8 @@ estão na [baseline F24.0](./F24_RELEASE_READINESS_BASELINE.md).
 
 F24.1 foi fechada após a reconstrução remota, convergência ACL, `sync-batch` e a correção
 F24.1D.1 do `sanitario-reconcile`. O fechamento inclui matriz negativa, consumidor
-`service_role`, E2E 1/1, replay e limpeza. Não existe produção operacional.
+`service_role`, E2E 1/1, replay e limpeza. A F24.2 também está fechada no
+[closeout autoritativo](./F24_2_CLOSEOUT_AND_REBASELINE.md). Não existe produção operacional.
 
 ### F24.1B — isolamento de ambientes
 
@@ -28,46 +29,43 @@ evidência histórica, mas nenhum projeto foi ou deve ser criado agora. A F24.1D
 descartável existente e está registrada em
 [F24_1D_REMOTE_ACL_REHEARSAL.md](./F24_1D_REMOTE_ACL_REHEARSAL.md).
 
-## P0 — F24.2 RLS / Auth / Tenant Isolation Final Gate
+## P0 — F24.3 Offline Prolongado + Reconnect + Recovery
 
 Status: `READY_NOT_STARTED`
 Release blocker: `SIM`
 
-O gate local passou, mas o inventário e os testes finais por ambiente ainda não existem.
-Inclui RLS, grants/revokes, `fazenda_id`, convites, SuperAdmin, RPCs privilegiadas e
-`SECURITY DEFINER`.
+Restam jornada offline prolongada, fila grande, reconnect intermitente, crash/restart real,
+upgrade com pending heterogêneo, HTTP 429/`Retry-After`, backoff/jitter genérico,
+farm-switch/hydrate replace, reconciliação de fazenda não ativa e eventual purge/retention.
+`pullDataForFarm(..., mode="replace")` ainda usa `store.clear()` em diversas stores; não há
+certificação multi-farm.
 
-## P0 — F24.3 Offline Prolongado + Reconnect + Recovery
-
-Status: `NOT_STARTED`
-Release blocker: `SIM`
-
-Implementação e testes locais parciais existem; longa desconexão, fila grande, token expirado,
-crash/restart e upgrade com pending ainda não estão certificados como jornada.
-
-## P0 — F24.4 Multi-device + Idempotência + Conflitos
+## P0 — F24.4 Multi-device + Conflitos
 
 Status: `NOT_STARTED`
 Release blocker: `SIM`
 
-Movimentação foi certificada remotamente, mas não há matriz transversal para concorrência,
-stale writes, replay, sucesso parcial e pull concorrente.
+Restam writes concorrentes no mesmo agregado, política genérica de stale write, conflitos
+cross-device, pull concorrente, sucesso parcial e validação multi-tab/multi-context em browser
+real. Identidade estável e replay idempotente já foram encerrados na F24.2.
 
 ## P1 — F24.5 Observabilidade + Reconcile + Diagnóstico
 
 Status: `NOT_STARTED`
 Release blocker: `SIM_PARA_PRODUCAO_AMPLA`
 
-As identidades e os estados existem em superfícies distintas, sem correlação canônica por
-dispositivo, ACK remoto e resultado de reconcile.
+Faltam correlação de operação, identidade de dispositivo se adotada, tentativa/status/erro,
+ACK remoto, resultado de reconcile, saúde de fila/reconcile, retenção e redaction. Telemetria
+não é fonte factual nem regra de domínio.
 
 ## P1 — F24.6 Performance / Escala
 
 Status: `NOT_STARTED`
 Release blocker: `SIM_PARA_ESCALA_DECLARADA`
 
-Fixtures e workload histórico não equivalem a benchmark de IndexedDB, fila, bootstrap, pull,
-payload, memória ou chunks.
+Fixtures e workload histórico não equivalem a benchmark de IndexedDB, fila grande,
+startup/bootstrap, pull, payload/batches, memória, queries/índices, bundle/chunks ou limites
+de escala declarados.
 
 ## P1 condicional — F24.7 Recertificação Sync Sanitário v2
 
@@ -85,7 +83,7 @@ Release blocker do Sanitário v2: `SIM`
 
 ## P0 final — F24.8 Production Readiness / Canary / Rollback / Release Gate
 
-Status: `BLOCKED_BY_F24_1_TO_F24_7`
+Status: `BLOCKED_BY_PREREQUISITES`
 Release blocker: `SIM`
 
 Produção permanece `NOT_AUTHORIZED`. Canary, rollback e go/no-go dependem dos gates anteriores
@@ -109,5 +107,5 @@ sós, release blockers.
 
 - validação remota de movimentação: `RESOLVED / REMOTE_CONVERGENCE_VERIFIED`;
 - Trilha C C2–C7: `RESOLVED / TECHNICAL_CONVERGENCE = CLOSED`;
-- promoção de migrations e backoffice: `STILL_OPEN`, absorvida por F24.1/F24.2/F24.8;
+- promoção de migrations e backoffice: `STILL_OPEN`, preservada para F24.8;
 - bloqueio sanitário: `EXTERNAL_BLOCKED`, preservado sem reabrir a Fase 12.

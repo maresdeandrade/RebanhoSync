@@ -1,7 +1,8 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-09-16
-Status: **Fase 24 ativa; F24.2A CLOSED; F24.2B READY_FOR_CLOSEOUT; F24.2 IN_PROGRESS**
+Atualizado em: 2026-09-21
+Status: **Fase 24 ativa; F24.2 CLOSED; F24.3 READY_NOT_STARTED**
+Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`.
 Baseline da F24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`.
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`.
 Baseline integrado da Fase 23: `main@28ee328e92b3cbaf4876cca170eb80e561facafe`.
@@ -9,25 +10,30 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
-Próxima fase: **Fase 24 — F24.2C Atomic Ack & SYNCING Recovery — NOT_STARTED**
+Próxima fase: **Fase 24 — F24.3 Offline Prolongado + Reconnect + Recovery — READY_NOT_STARTED**
 
-Este documento aponta para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
+Este documento aponta para o [closeout autoritativo da F24.2](./F24_2_CLOSEOUT_AND_REBASELINE.md)
+e para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
 O backlog F24.1–F24.8, dependências, critérios de entrada/saída e release blockers estão
 registrados nessa baseline. Produção não está autorizada, o Sanitário v2 permanece
-`PLATFORM_BLOCKED`, e nenhuma frente posterior deve ser iniciada automaticamente.
+`EXTERNAL_BLOCKED`, e nenhuma frente posterior deve ser iniciada automaticamente.
 
-## F24.2A — closeout diagnóstico offline/reconnect
+## F24.2 — closeout
 
-A F24.2A inventariou o pipeline offline/reconnect real e sua matriz de falhas sobre
-`main@155dab4ddee73aedc83a9a53c6e075de7a5bd3ad`. O resultado está em
+A F24.2 foi encerrada pelo PR #151 em
+`main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`. F24.2A–F24.2E estão `CLOSED`; o resultado
+e o rebaseline posterior estão em
+[F24_2_CLOSEOUT_AND_REBASELINE.md](./F24_2_CLOSEOUT_AND_REBASELINE.md). Os inventários
+anteriores permanecem em
 [F24_2A_OFFLINE_SYNC_INVENTORY.md](./F24_2A_OFFLINE_SYNC_INVENTORY.md),
 [F24_2A_FAILURE_MATRIX.md](./F24_2A_FAILURE_MATRIX.md) e
 [F24_2A_RECOMMENDED_PATCH_ORDER.md](./F24_2A_RECOMMENDED_PATCH_ORDER.md).
 
-`F24.2A = CLOSED`; `F24.2B0 = CLOSED`; `F24.2B1 = READY_FOR_REVIEW` e
-`F24.2B = READY_FOR_CLOSEOUT`. A hipótese `DUPLICATE_EVENT` foi reclassificada como
-`NOT_CONFIRMED_AS_SYNC_FAILURE` após auditoria e testes de caracterização, sem mudança
-funcional. F24.2 permanece em progresso; F24.2C não foi iniciada.
+Identidade causal, replay idempotente, claim/ACK atômicos, recovery de fila e sessão,
+reconciliação pós-ACK e ownership local fail-closed são capacidades encerradas e não devem
+ser replanejadas. F24.3 mantém apenas os gaps de jornada prolongada, fila grande, reconnect
+intermitente, crash/restart real, upgrade heterogêneo, HTTP 429/backoff, farm-switch/hydrate,
+reconciliação de fazenda não ativa e eventual purge/retention.
 
 ## Rebaseline F24.1D — ambiente descartável
 
@@ -35,8 +41,8 @@ funcional. F24.2 permanece em progresso; F24.2C não foi iniciada.
 Não há produção operacional (`PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`)
 e o isolamento não é exigido antes de provisionar produção. A criação de segundo staging foi
 deferida. A reconstrução remota, o `sync-batch` e o `sanitario-reconcile` passaram após a
-correção F24.1D.1, incluindo negativos, E2E 1/1, replay e limpeza. F24.1 está fechada e F24.2
-está pronta, mas não iniciada. Evidência:
+correção F24.1D.1, incluindo negativos, E2E 1/1, replay e limpeza. F24.1 e F24.2 estão
+fechadas; F24.3 está `READY_NOT_STARTED`. Evidência:
 [F24_1D_REMOTE_ACL_REHEARSAL.md](./F24_1D_REMOTE_ACL_REHEARSAL.md).
 
 ## Registro histórico anterior ao rebaseline
@@ -55,7 +61,7 @@ MULTI_DEVICE_GATE = PARTIAL
 RECOVERY_GATE = PARTIAL
 OBSERVABILITY_GATE = PARTIAL
 PERFORMANCE_GATE = NOT_TESTED
-SANITARIO_V2 = PLATFORM_BLOCKED
+SANITARIO_V2 = EXTERNAL_BLOCKED
 PRODUCTION_PROMOTION = NOT_AUTHORIZED
 STAGING_PRODUCTION_BACKEND = SHARED
 ENVIRONMENT_ISOLATION = BLOCKED
