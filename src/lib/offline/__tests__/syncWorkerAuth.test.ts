@@ -46,6 +46,11 @@ import {
   recoverErroredGesturesOnce,
 } from "../syncWorker";
 
+const ownershipSession = (userId: string) =>
+  ({ user: { id: userId } }) as Parameters<
+    typeof establishLocalOwnership
+  >[0];
+
 const farmId = "farm-auth";
 
 function validSession() {
@@ -136,7 +141,7 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
       db.sync_reconcile_obligations.clear(),
       db.local_ownership.clear(),
     ]);
-    await establishLocalOwnership({ user: { id: "user-auth" } });
+    await establishLocalOwnership(ownershipSession("user-auth"));
   });
 
   afterEach(async () => {

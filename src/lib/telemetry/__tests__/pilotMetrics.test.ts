@@ -11,6 +11,11 @@ import {
   trackPilotMetric,
 } from "../pilotMetrics";
 
+const ownershipSession = (userId: string) =>
+  ({ user: { id: userId } }) as Parameters<
+    typeof establishLocalOwnership
+  >[0];
+
 function event(overrides: Partial<PilotMetricEvent>): PilotMetricEvent {
   return {
     id: overrides.id ?? crypto.randomUUID(),
@@ -32,7 +37,7 @@ describe("buildPilotMetricsSummary", () => {
     }
 
     await Promise.all([db.metrics_events.clear(), db.local_ownership.clear()]);
-    await establishLocalOwnership({ user: { id: "user-metrics" } });
+    await establishLocalOwnership(ownershipSession("user-metrics"));
     localStorage.clear();
     vi.restoreAllMocks();
   });

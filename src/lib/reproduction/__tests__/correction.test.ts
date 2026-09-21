@@ -22,6 +22,7 @@ async function seedAnimal(id: string, fazendaId = "farm-1") {
     mae_id: null,
     nome: null,
     rfid: null,
+    especie: "bovino",
     origem: null,
     raca: null,
     papel_macho: null,

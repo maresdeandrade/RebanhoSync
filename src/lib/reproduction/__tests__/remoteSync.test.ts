@@ -146,6 +146,7 @@ async function seedAnimal(id: string) {
     mae_id: null,
     nome: null,
     rfid: null,
+    especie: "bovino",
     origem: null,
     raca: null,
     papel_macho: null,

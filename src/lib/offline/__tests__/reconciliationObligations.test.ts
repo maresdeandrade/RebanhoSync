@@ -73,6 +73,11 @@ import {
 } from "../syncWorker";
 import type { ReconciliationObligation } from "../reconciliationTypes";
 
+const ownershipSession = (userId: string) =>
+  ({ user: { id: userId } }) as Parameters<
+    typeof establishLocalOwnership
+  >[0];
+
 const farmId = "10000000-0000-4000-8000-000000000001";
 const otherFarmId = "10000000-0000-4000-8000-000000000002";
 const eventId = "40000000-0000-4000-8000-000000000001";
@@ -258,7 +263,7 @@ describe("sync worker reconciliation drain", () => {
       removeItem: () => undefined,
     });
     await clearStores();
-    await establishLocalOwnership({ user: { id: "user-c3b" } });
+    await establishLocalOwnership(ownershipSession("user-c3b"));
   });
 
   afterEach(async () => {

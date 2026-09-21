@@ -45,6 +45,11 @@ import {
 } from "../syncWorker";
 import type { Gesture, Operation } from "../types";
 
+const ownershipSession = (userId: string) =>
+  ({ user: { id: userId } }) as Parameters<
+    typeof establishLocalOwnership
+  >[0];
+
 const farmId = "10000000-0000-4000-8000-000000000001";
 const txId = "50000000-0000-4000-8000-000000000001";
 const opId = "60000000-0000-4000-8000-000000000001";
@@ -110,7 +115,9 @@ describe("F24.2C2.1 — Atomic Claim & Stale Worker Protection (T1–T10)", () =
       db.event_eventos_pesagem.clear(),
       db.local_ownership.clear(),
     ]);
-    await establishLocalOwnership({ user: { id: "user-c2-1-concurrency" } });
+    await establishLocalOwnership(
+      ownershipSession("user-c2-1-concurrency"),
+    );
   });
 
   afterEach(async () => {

@@ -133,7 +133,8 @@ describe("standard factual detail post-sync refresh", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     vi.stubGlobal("localStorage", {
-      getItem: () => null,
+      getItem: (key: string) =>
+        key === "gestao_agro_active_fazenda_id" ? farm : null,
       setItem: () => undefined,
       removeItem: () => undefined,
     });
@@ -200,6 +201,7 @@ describe("standard factual detail post-sync refresh", () => {
       expect(pullDataForFarm).toHaveBeenCalledWith(
         farm,
         expect.arrayContaining([table]),
+        { mode: "replace" },
       );
       expect(await db.table(localStore).get(eventId)).toMatchObject({
         [valueKey]: remoteValue,
