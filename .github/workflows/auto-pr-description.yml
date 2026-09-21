@@ -7,7 +7,6 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  copilot-requests: write
 
 concurrency:
   group: auto-pr-description-${{ github.event.pull_request.number }}
@@ -26,11 +25,20 @@ jobs:
         shell: bash
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
+          set -euo pipefail
+
           if [[ -z "${PR_BODY//[[:space:]]/}" ]] || grep -q "Descreva o delta real do PR" <<< "$PR_BODY"; then
             echo "generate=true" >> "$GITHUB_OUTPUT"
           else
             echo "generate=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ -z "$OPENAI_API_KEY" ]]; then
+            echo "::error::Secret OPENAI_API_KEY não configurado no repositório."
+            exit 1
           fi
 
       - name: Checkout PR head
@@ -39,6 +47,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: Build PR context
         if: steps.guard.outputs.generate == 'true'
@@ -48,26 +57,27 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           set -euo pipefail
 
-          git show "$BASE_SHA:.github/pull_request_template.md" > /tmp/pr-template.md
           git log --format='- %s (%h)' "$BASE_SHA..$HEAD_SHA" > /tmp/pr-commits.txt
           git diff --name-status "$BASE_SHA...$HEAD_SHA" > /tmp/pr-files.txt
           git diff --no-ext-diff --unified=3 "$BASE_SHA...$HEAD_SHA" > /tmp/pr.diff
 
-          head -c 180000 /tmp/pr.diff > /tmp/pr-diff-capped.txt
+          # Limita custo sem perder o inventário completo de arquivos/commits.
+          head -c 100000 /tmp/pr.diff > /tmp/pr-diff-capped.txt
           DIFF_BYTES="$(wc -c < /tmp/pr.diff | tr -d ' ')"
           CAPPED_BYTES="$(wc -c < /tmp/pr-diff-capped.txt | tr -d ' ')"
 
-          cat > /tmp/pr-prompt.txt <<'PROMPT'
-          Você gera a descrição de Pull Request do projeto RebanhoSync.
+          cat > /tmp/pr-instructions.txt <<'PROMPT'
+          Você preenche a descrição de Pull Request do projeto RebanhoSync.
 
           Responda SOMENTE com o corpo final do PR em Markdown, sem introdução e sem cercas externas de código.
 
           Regras:
-          - Use exatamente as seções e a ordem do template fornecido.
-          - Preencha o template com base apenas nas evidências fornecidas.
+          - Preserve as seções e a ordem do template recebido.
+          - Preencha com base apenas nas evidências fornecidas.
           - Seja curto, objetivo e auditável.
           - Marque checkboxes somente quando o diff sustentar a marcação.
           - Não invente capability_id, infra_id, issue, testes, resultados, riscos ou comportamento.
@@ -75,14 +85,18 @@ jobs:
           - Em "Resumo", descreva o delta real em 2-5 linhas.
           - Em "Evidência / Governança", cite apenas paths/áreas observáveis no diff.
           - Não declare PASS, READY, CLOSED ou "todos os testes passaram" sem evidência explícita.
+          - Agenda = intenção futura; Evento = fato executado; state_* = estado atual/read model; Protocolo = regra/configuração.
           - Mudanças em Agenda, Evento, state_*, Protocolo, RLS, sync/offline ou fonte de verdade só devem ser afirmadas se aparecerem no diff.
+          - Não trate nomes de commits como prova suficiente de teste executado.
+          - Remova comentários HTML de instrução do template no resultado final.
+          - Garanta Markdown válido e feche qualquer bloco de código aberto pelo template.
           - Preserve o português do Brasil.
           PROMPT
 
           {
-            printf '\n## TEMPLATE ATUAL\n\n'
-            cat /tmp/pr-template.md
-            printf '\n\n## CONTEXTO DO PR\n\n'
+            printf '## TEMPLATE ATUAL DO PR\n\n'
+            printf '%s\n' "$PR_BODY"
+            printf '\n## CONTEXTO DO PR\n\n'
             printf 'Título: %s\n' "$PR_TITLE"
             printf 'Branch: %s\n\n' "$PR_BRANCH"
             printf '### Commits\n'
@@ -95,21 +109,43 @@ jobs:
             fi
             printf '\n\n'
             cat /tmp/pr-diff-capped.txt
-          } >> /tmp/pr-prompt.txt
+          } > /tmp/pr-context.txt
 
-      - name: Install Copilot CLI
-        if: steps.guard.outputs.generate == 'true'
-        run: npm install -g @github/copilot
-
-      - name: Generate PR description
+      - name: Generate PR description with OpenAI
         if: steps.guard.outputs.generate == 'true'
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          NO_COLOR: "1"
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.PR_SUMMARY_OPENAI_MODEL || 'gpt-5.6-luna' }}
         run: |
           set -euo pipefail
-          copilot -p "$(cat /tmp/pr-prompt.txt)" -s > /tmp/pr-body.md
+
+          jq -n             --arg model "$OPENAI_MODEL"             --rawfile instructions /tmp/pr-instructions.txt             --rawfile input /tmp/pr-context.txt             '{
+              model: $model,
+              instructions: $instructions,
+              input: $input,
+              max_output_tokens: 2500,
+              store: false
+            }' > /tmp/openai-request.json
+
+          HTTP_CODE="$(curl -sS             -o /tmp/openai-response.json             -w '%{http_code}'             https://api.openai.com/v1/responses             -H "Authorization: Bearer $OPENAI_API_KEY"             -H "Content-Type: application/json"             --data-binary @/tmp/openai-request.json)"
+
+          if [[ "$HTTP_CODE" -lt 200 || "$HTTP_CODE" -ge 300 ]]; then
+            echo "::error::OpenAI API retornou HTTP $HTTP_CODE."
+            jq -r '.error.message // "Erro sem mensagem."' /tmp/openai-response.json >&2 || true
+            exit 1
+          fi
+
+          jq -r '
+            [
+              .output[]?
+              | select(.type == "message")
+              | .content[]?
+              | select(.type == "output_text")
+              | .text
+            ]
+            | join("\n")
+          ' /tmp/openai-response.json > /tmp/pr-body.md
 
       - name: Validate generated description
         if: steps.guard.outputs.generate == 'true'
