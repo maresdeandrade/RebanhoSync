@@ -204,7 +204,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          vitest_args=(--bail=1 --maxWorkers=50% --testTimeout=15000 --reporter=verbose)
+          vitest_args=(--bail=1 --reporter=verbose)
 
           if [[ "${{ steps.scope.outputs.run_global_tests }}" == "true" ]]; then
             pnpm exec vitest run "${vitest_args[@]}"
