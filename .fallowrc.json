@@ -18,6 +18,7 @@
     "scripts/codex/validate-sanitario-sync-v2-expand.mjs",
     "scripts/codex/validate-security-definer-exposure.mjs",
     "scripts/fix-docs-encoding.mjs",
+    "scripts/ci/classify-validation-scope.test.mjs",
     "tests/codex/**/*.test.mjs"
   ],
 

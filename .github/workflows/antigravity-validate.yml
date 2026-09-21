@@ -129,6 +129,9 @@ jobs:
           sudo apt-get install -y ripgrep
           rg --version
 
+      - name: Validation scope classifier tests
+        run: node --test scripts/ci/classify-validation-scope.test.mjs
+
       # -----------------------------------------------------------------------
       # Supabase — somente para alterações de alto risco
       # -----------------------------------------------------------------------
