@@ -481,6 +481,10 @@ async function withReconciliationDrainLock<T>(
   return fn(true);
 }
 
+function getReconciliationPullMode(fazendaId: string) {
+  return getActiveFarmId() === fazendaId ? "replace" : "merge";
+}
+
 async function executeReconciliationForScope(
   obligation: ReconciliationObligation,
 ) {
@@ -492,6 +496,7 @@ async function executeReconciliationForScope(
         obligation.tables && obligation.tables.length > 0
           ? obligation.tables
           : DEFAULT_REMOTE_TABLES,
+        { mode: getReconciliationPullMode(fazendaId) },
       );
       return;
     case "reproduction":
@@ -1414,7 +1419,9 @@ async function reconcileGenericOperationResults(
   );
   if (remoteTables.length > 0) {
     try {
-      await pullDataForFarm(gesture.fazenda_id, remoteTables);
+      await pullDataForFarm(gesture.fazenda_id, remoteTables, {
+        mode: getReconciliationPullMode(gesture.fazenda_id),
+      });
     } catch (error) {
       console.warn(
         `[sync-worker] mixed-result pull failed for TX ${gesture.client_tx_id}:`,
@@ -1429,11 +1436,11 @@ async function reconcileGenericOperationResults(
     )
   ) {
     try {
-      await pullDataForFarm(gesture.fazenda_id, [
-        "agenda_itens",
-        "eventos",
-        "eventos_sanitario",
-      ]);
+      await pullDataForFarm(
+        gesture.fazenda_id,
+        ["agenda_itens", "eventos", "eventos_sanitario"],
+        { mode: getReconciliationPullMode(gesture.fazenda_id) },
+      );
     } catch (error) {
       console.warn(
         `[sync-worker] agenda reconciliation pull failed for TX ${gesture.client_tx_id}:`,
@@ -1848,7 +1855,11 @@ export async function processGesture(gesture: Gesture) {
 
       if (refreshTables.size > 0) {
         try {
-          await pullDataForFarm(gesture.fazenda_id, Array.from(refreshTables));
+          await pullDataForFarm(
+            gesture.fazenda_id,
+            Array.from(refreshTables),
+            { mode: getReconciliationPullMode(gesture.fazenda_id) },
+          );
         } catch (refreshError) {
           console.warn(
             `[sync-worker] post-sync pull failed for TX ${gesture.client_tx_id}:`,
@@ -2091,11 +2102,11 @@ export async function processGesture(gesture: Gesture) {
         )
       ) {
         try {
-          await pullDataForFarm(gesture.fazenda_id, [
-            "agenda_itens",
-            "eventos",
-            "eventos_sanitario",
-          ]);
+          await pullDataForFarm(
+            gesture.fazenda_id,
+            ["agenda_itens", "eventos", "eventos_sanitario"],
+            { mode: getReconciliationPullMode(gesture.fazenda_id) },
+          );
         } catch (refreshError) {
           console.warn(
             `[sync-worker] reconciliation pull failed for TX ${gesture.client_tx_id}:`,

@@ -48,6 +48,11 @@ import {
   runInitialOfflinePullForActiveFarmOnce,
 } from "../syncWorker";
 
+const ownershipSession = (userId: string) =>
+  ({ user: { id: userId } }) as Parameters<
+    typeof establishLocalOwnership
+  >[0];
+
 const userId = "user-runtime";
 
 describe("sync worker initial offline pull", () => {
@@ -63,7 +68,7 @@ describe("sync worker initial offline pull", () => {
       db.queue_gestures.clear(),
       db.sync_reconcile_obligations.clear(),
     ]);
-    await establishLocalOwnership({ user: { id: userId } });
+    await establishLocalOwnership(ownershipSession(userId));
   });
 
   it("executa pullInitialData para a fazenda ativa do runtime", async () => {

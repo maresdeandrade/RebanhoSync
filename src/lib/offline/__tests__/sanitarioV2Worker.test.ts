@@ -51,6 +51,11 @@ import type {
   SyncOperationResult,
 } from "../types";
 
+const ownershipSession = (userId: string) =>
+  ({ user: { id: userId } }) as Parameters<
+    typeof establishLocalOwnership
+  >[0];
+
 const FAZENDA_ID = "farm-san-v2-worker";
 const CLIENT_ID = "client-san-v2-worker";
 const USER_ID = "user-san-v2-worker";
@@ -116,7 +121,7 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
       db.state_insumo_movimentacoes.clear(),
       db.local_ownership.clear(),
     ]);
-    await establishLocalOwnership({ user: { id: USER_ID } });
+    await establishLocalOwnership(ownershipSession(USER_ID));
   });
 
   afterEach(async () => {

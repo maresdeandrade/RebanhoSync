@@ -50,6 +50,11 @@ const farm = "10000000-0000-4000-8000-000000000001";
 const animalId = "20000000-0000-4000-8000-000000000001";
 const eventId = "30000000-0000-4000-8000-000000000001";
 
+const session = (userId: string) =>
+  ({ user: { id: userId } }) as Parameters<
+    typeof establishLocalOwnership
+  >[0];
+
 async function createPurchase() {
   const event = buildEventGesture({
     dominio: "comercial",
@@ -214,12 +219,14 @@ describe("commercial purchase sync worker", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     vi.stubGlobal("localStorage", {
-      getItem: () => null,
+      getItem: (key: string) =>
+        key === "gestao_agro_active_fazenda_id" ? farm : null,
       setItem: () => undefined,
+      removeItem: () => undefined,
     });
     vi.stubGlobal("fetch", vi.fn());
     await clear();
-    await establishLocalOwnership({ user: { id: "user-commercial-worker" } });
+    await establishLocalOwnership(session("user-commercial-worker"));
   });
   afterEach(async () => {
     vi.unstubAllGlobals();
@@ -258,6 +265,7 @@ describe("commercial purchase sync worker", () => {
     expect(mocks.pullDataForFarm).toHaveBeenCalledWith(
       farm,
       expect.arrayContaining(["animais", "eventos", "eventos_comercial"]),
+      { mode: "replace" },
     );
     expect(await db.queue_gestures.get(txId)).toMatchObject({
       status: "DONE",
@@ -327,6 +335,7 @@ describe("commercial purchase sync worker", () => {
     expect(mocks.pullDataForFarm).toHaveBeenCalledWith(
       farm,
       expect.arrayContaining(["animais", "eventos", "eventos_comercial"]),
+      { mode: "replace" },
     );
     expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
   });
