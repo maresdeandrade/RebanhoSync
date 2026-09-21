@@ -1,0 +1,135 @@
+name: Auto-fill PR description
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  copilot-requests: write
+
+concurrency:
+  group: auto-pr-description-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  fill-description:
+    name: Fill PR description
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Check whether description should be generated
+        id: guard
+        shell: bash
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if [[ -z "${PR_BODY//[[:space:]]/}" ]] || grep -q "Descreva o delta real do PR" <<< "$PR_BODY"; then
+            echo "generate=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "generate=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout PR head
+        if: steps.guard.outputs.generate == 'true'
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Build PR context
+        if: steps.guard.outputs.generate == 'true'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+
+          git show "$BASE_SHA:.github/pull_request_template.md" > /tmp/pr-template.md
+          git log --format='- %s (%h)' "$BASE_SHA..$HEAD_SHA" > /tmp/pr-commits.txt
+          git diff --name-status "$BASE_SHA...$HEAD_SHA" > /tmp/pr-files.txt
+          git diff --no-ext-diff --unified=3 "$BASE_SHA...$HEAD_SHA" > /tmp/pr.diff
+
+          head -c 180000 /tmp/pr.diff > /tmp/pr-diff-capped.txt
+          DIFF_BYTES="$(wc -c < /tmp/pr.diff | tr -d ' ')"
+          CAPPED_BYTES="$(wc -c < /tmp/pr-diff-capped.txt | tr -d ' ')"
+
+          cat > /tmp/pr-prompt.txt <<'PROMPT'
+          Você gera a descrição de Pull Request do projeto RebanhoSync.
+
+          Responda SOMENTE com o corpo final do PR em Markdown, sem introdução e sem cercas externas de código.
+
+          Regras:
+          - Use exatamente as seções e a ordem do template fornecido.
+          - Preencha o template com base apenas nas evidências fornecidas.
+          - Seja curto, objetivo e auditável.
+          - Marque checkboxes somente quando o diff sustentar a marcação.
+          - Não invente capability_id, infra_id, issue, testes, resultados, riscos ou comportamento.
+          - Se um campo não puder ser confirmado, use N/A ou deixe desmarcado.
+          - Em "Resumo", descreva o delta real em 2-5 linhas.
+          - Em "Evidência / Governança", cite apenas paths/áreas observáveis no diff.
+          - Não declare PASS, READY, CLOSED ou "todos os testes passaram" sem evidência explícita.
+          - Mudanças em Agenda, Evento, state_*, Protocolo, RLS, sync/offline ou fonte de verdade só devem ser afirmadas se aparecerem no diff.
+          - Preserve o português do Brasil.
+          PROMPT
+
+          {
+            printf '\n## TEMPLATE ATUAL\n\n'
+            cat /tmp/pr-template.md
+            printf '\n\n## CONTEXTO DO PR\n\n'
+            printf 'Título: %s\n' "$PR_TITLE"
+            printf 'Branch: %s\n\n' "$PR_BRANCH"
+            printf '### Commits\n'
+            cat /tmp/pr-commits.txt
+            printf '\n### Arquivos alterados\n'
+            cat /tmp/pr-files.txt
+            printf '\n### Diff'
+            if [[ "$DIFF_BYTES" -gt "$CAPPED_BYTES" ]]; then
+              printf ' (truncado em %s de %s bytes)' "$CAPPED_BYTES" "$DIFF_BYTES"
+            fi
+            printf '\n\n'
+            cat /tmp/pr-diff-capped.txt
+          } >> /tmp/pr-prompt.txt
+
+      - name: Install Copilot CLI
+        if: steps.guard.outputs.generate == 'true'
+        run: npm install -g @github/copilot
+
+      - name: Generate PR description
+        if: steps.guard.outputs.generate == 'true'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          NO_COLOR: "1"
+        run: |
+          set -euo pipefail
+          copilot -p "$(cat /tmp/pr-prompt.txt)" -s > /tmp/pr-body.md
+
+      - name: Validate generated description
+        if: steps.guard.outputs.generate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s /tmp/pr-body.md
+          grep -q '^## Resumo' /tmp/pr-body.md
+          grep -q '^## Tipo de mudança' /tmp/pr-body.md
+          grep -q '^## Capability / Infra' /tmp/pr-body.md
+          grep -q '^## Escopo alterado' /tmp/pr-body.md
+          grep -q '^## Evidência / Governança' /tmp/pr-body.md
+
+      - name: Update PR description
+        if: steps.guard.outputs.generate == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          jq -Rs '{body: .}' /tmp/pr-body.md > /tmp/pr-body.json
+          gh api             --method PATCH             "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"             --input /tmp/pr-body.json
