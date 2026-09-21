@@ -28,3 +28,6 @@ tsc_output*.txt
 .env
 .vercel
 .env*.local
+
+# Local agent worktrees
+.kilo/worktrees/
