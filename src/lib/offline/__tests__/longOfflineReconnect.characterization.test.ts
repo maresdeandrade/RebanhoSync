@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  *
- * F24.3A — reconnect sem restart depois de esgotar retries de transporte.
+ * F24.3B3 — reconnect sem restart depois de falha de transporte.
  */
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -52,12 +52,10 @@ import { seedLocalOwner } from "./ownershipTestFixture";
 import { processGesture, startSyncWorker, stopSyncWorker } from "../syncWorker";
 
 async function flushWorkerStartup() {
-  await vi.waitFor(() => expect(mocks.pullInitialData).toHaveBeenCalled());
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 20));
 }
 
-describe("F24.3A — long offline reconnect characterization", () => {
+describe("F24.3B3 — long offline reconnect", () => {
   beforeEach(async () => {
     vi.stubGlobal("localStorage", {
       getItem: () => "farm-long-offline",
@@ -91,7 +89,7 @@ describe("F24.3A — long offline reconnect characterization", () => {
     ]);
   });
 
-  it("o evento online nao recupera ERROR de transporte quando startup recovery ja executou", async () => {
+  it("T6 — online recupera ERROR legado de transporte após startup recovery", async () => {
     startSyncWorker();
     await flushWorkerStartup();
 
@@ -107,32 +105,76 @@ describe("F24.3A — long offline reconnect characterization", () => {
       .equals(txId)
       .first())!;
 
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      await processGesture((await db.queue_gestures.get(txId))!);
-    }
+    await db.queue_gestures.update(txId, {
+      status: "ERROR",
+      sync_result: "ERROR",
+      completed_at: new Date().toISOString(),
+      retry_count: 3,
+      last_error: "Max retries: Failed to fetch",
+    });
     expect(await db.queue_gestures.get(txId)).toMatchObject({
       status: "ERROR",
       retry_count: 3,
       last_error: expect.stringContaining("Max retries: Failed to fetch"),
     });
 
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ results: [] }), { status: 200 }),
-      ),
-    );
+    vi.stubGlobal("fetch", vi.fn(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as {
+        ops: Array<{ client_op_id: string }>;
+      };
+      return new Response(
+        JSON.stringify({
+          results: body.ops.map((op) => ({
+            op_id: op.client_op_id,
+            client_op_id: op.client_op_id,
+            status: "APPLIED",
+          })),
+        }),
+        { status: 200 },
+      );
+    }));
     window.dispatchEvent(new Event("online"));
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await vi.waitFor(async () => {
+      expect((await db.queue_gestures.get(txId))?.status).toBe("DONE");
+    });
 
     expect(await db.queue_gestures.get(txId)).toMatchObject({
-      status: "ERROR",
-      retry_count: 3,
-    });
-    expect(await db.queue_ops.get(opBefore.client_op_id)).toMatchObject({
+      status: "DONE",
       client_tx_id: txId,
-      client_op_id: opBefore.client_op_id,
+    });
+    expect(opBefore.client_tx_id).toBe(txId);
+  });
+
+  it("T7 — online não antecipa Retry-After futuro de HTTP 429", async () => {
+    startSyncWorker();
+    await flushWorkerStartup();
+    const txId = await createGesture("farm-long-offline", [
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: { id: "animal-rate-limit", fazenda_id: "farm-long-offline" },
+      },
+    ]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify({ error: "rate limited" }), {
+          status: 429,
+          headers: { "Retry-After": "120" },
+        }),
+      ),
+    );
+
+    await processGesture((await db.queue_gestures.get(txId))!);
+    const scheduledAt = (await db.queue_gestures.get(txId))?.next_attempt_at;
+    window.dispatchEvent(new Event("online"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(await db.queue_gestures.get(txId)).toMatchObject({
+      status: "PENDING",
+      next_attempt_at: scheduledAt,
+      last_error: expect.stringContaining("HTTP 429"),
     });
   });
 });

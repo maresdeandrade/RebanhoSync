@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  *
- * F24.3A — caracterizacao da politica HTTP 429 no worker generico.
+ * F24.3B3 — política HTTP 429 no worker genérico.
  */
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -40,26 +40,39 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 import { db } from "../db";
 import { createGesture } from "../ops";
 import { seedLocalOwner } from "./ownershipTestFixture";
-import { processGesture, recoverErroredGesturesOnce } from "../syncWorker";
+import { processGesture } from "../syncWorker";
 
-function rateLimitedResponse() {
+function rateLimitedResponse(retryAfter: string) {
   return new Response(JSON.stringify({ error: "rate limited" }), {
     status: 429,
-    headers: { "Retry-After": "120" },
+    headers: { "Retry-After": retryAfter },
   });
 }
 
-describe("F24.3A — HTTP 429 generic retry characterization", () => {
+async function createRateLimitedGesture() {
+  const txId = await createGesture("farm-429", [
+    {
+      table: "lotes",
+      action: "INSERT",
+      record: { id: "lote-429", fazenda_id: "farm-429" },
+    },
+  ]);
+  const op = (await db.queue_ops
+    .where("client_tx_id")
+    .equals(txId)
+    .first())!;
+  return { txId, op };
+}
+
+describe("F24.3B3 — HTTP 429 generic retry", () => {
   beforeEach(async () => {
     vi.stubGlobal("localStorage", {
       getItem: () => null,
       setItem: () => undefined,
       removeItem: () => undefined,
     });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => rateLimitedResponse()),
-    );
+    vi.stubGlobal("fetch", vi.fn());
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
     await Promise.all([
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
@@ -80,50 +93,59 @@ describe("F24.3A — HTTP 429 generic retry characterization", () => {
     ]);
   });
 
-  it("ignora Retry-After, permite retry imediato e termina em ERROR apos o limite", async () => {
-    const txId = await createGesture("farm-429", [
-      {
-        table: "lotes",
-        action: "INSERT",
-        record: { id: "lote-429", fazenda_id: "farm-429" },
-      },
-    ]);
-    const opBefore = (await db.queue_ops
-      .where("client_tx_id")
-      .equals(txId)
-      .first())!;
+  it("T1 — respeita Retry-After delta-seconds e não tenta antes do prazo", async () => {
+    const now = Date.parse("2026-09-22T12:00:00.000Z");
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    vi.mocked(fetch).mockResolvedValue(rateLimitedResponse("120"));
+    const { txId, op } = await createRateLimitedGesture();
 
     await processGesture((await db.queue_gestures.get(txId))!);
-    await processGesture((await db.queue_gestures.get(txId))!);
-
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(await db.queue_gestures.get(txId)).toMatchObject({
+    const scheduled = await db.queue_gestures.get(txId);
+    expect(scheduled).toMatchObject({
       status: "PENDING",
-      retry_count: 2,
-    });
-    expect(
-      (await db.queue_ops.get(opBefore.client_op_id))?.next_attempt_at,
-    ).toBeUndefined();
-
-    await processGesture((await db.queue_gestures.get(txId))!);
-    await processGesture((await db.queue_gestures.get(txId))!);
-
-    expect(await db.queue_gestures.get(txId)).toMatchObject({
-      status: "ERROR",
-      sync_result: "ERROR",
-      retry_count: 3,
-      last_error: expect.stringContaining("Max retries: HTTP 429"),
-    });
-
-    await recoverErroredGesturesOnce();
-
-    expect(await db.queue_gestures.get(txId)).toMatchObject({
-      status: "ERROR",
-      retry_count: 3,
-    });
-    expect(await db.queue_ops.get(opBefore.client_op_id)).toMatchObject({
-      client_op_id: opBefore.client_op_id,
+      retry_count: 1,
       client_tx_id: txId,
     });
+    expect(Date.parse(scheduled?.next_attempt_at ?? "")).toBeGreaterThanOrEqual(
+      now + 120_000,
+    );
+
+    await processGesture((await db.queue_gestures.get(txId))!);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const opAfter = await db.queue_ops.get(op.client_op_id);
+    expect(opAfter).toMatchObject({
+      client_op_id: op.client_op_id,
+      client_tx_id: txId,
+    });
+    expect(opAfter?.domain_op_id).toBe(op.domain_op_id);
+  });
+
+  it("T2 — respeita Retry-After em HTTP-date", async () => {
+    const now = Date.parse("2026-09-22T12:00:00.000Z");
+    const retryAt = now + 90_000;
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    vi.mocked(fetch).mockResolvedValue(
+      rateLimitedResponse(new Date(retryAt).toUTCString()),
+    );
+    const { txId } = await createRateLimitedGesture();
+
+    await processGesture((await db.queue_gestures.get(txId))!);
+
+    expect(
+      Date.parse((await db.queue_gestures.get(txId))?.next_attempt_at ?? ""),
+    ).toBeGreaterThanOrEqual(retryAt);
+  });
+
+  it("T3 — Retry-After inválido cai no backoff genérico com jitter determinístico", async () => {
+    const now = Date.parse("2026-09-22T12:00:00.000Z");
+    vi.spyOn(Date, "now").mockReturnValue(now);
+    vi.mocked(fetch).mockResolvedValue(rateLimitedResponse("not-a-date"));
+    const { txId } = await createRateLimitedGesture();
+
+    await processGesture((await db.queue_gestures.get(txId))!);
+
+    expect((await db.queue_gestures.get(txId))?.next_attempt_at).toBe(
+      new Date(now + 5_000).toISOString(),
+    );
   });
 });

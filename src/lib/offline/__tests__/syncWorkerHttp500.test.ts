@@ -45,6 +45,14 @@ import {
   recoverErroredGesturesOnce,
 } from "../syncWorker";
 
+async function processWhenEligible(txId: string) {
+  const gesture = await db.queue_gestures.get(txId);
+  if (gesture?.next_attempt_at) {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse(gesture.next_attempt_at));
+  }
+  await processGesture(gesture!);
+}
+
 function http500Response() {
   return new Response(JSON.stringify({ error: "internal error" }), {
     status: 500,
@@ -93,6 +101,10 @@ describe("F24.2D1B — HTTP 500 transient recovery", () => {
     expect(after?.status).toBe("PENDING");
     expect(after?.last_error?.toLowerCase()).toContain("http 500");
     expect(after?.retry_count).toBe(1);
+    expect(Date.parse(after?.next_attempt_at ?? "")).toBeGreaterThan(Date.now());
+
+    await processGesture(after!);
+    expect(fetch).toHaveBeenCalledTimes(1);
 
     const opsLeft = await db.queue_ops
       .where("client_tx_id")
@@ -111,8 +123,7 @@ describe("F24.2D1B — HTTP 500 transient recovery", () => {
     ]);
 
     for (let attempt = 0; attempt < 4; attempt += 1) {
-      const gesture = await db.queue_gestures.get(txId);
-      await processGesture(gesture!);
+      await processWhenEligible(txId);
     }
 
     const terminal = await db.queue_gestures.get(txId);
@@ -133,8 +144,7 @@ describe("F24.2D1B — HTTP 500 transient recovery", () => {
     ]);
 
     for (let attempt = 0; attempt < 4; attempt += 1) {
-      const gesture = await db.queue_gestures.get(txId);
-      await processGesture(gesture!);
+      await processWhenEligible(txId);
     }
 
     expect((await db.queue_gestures.get(txId))?.status).toBe("ERROR");
