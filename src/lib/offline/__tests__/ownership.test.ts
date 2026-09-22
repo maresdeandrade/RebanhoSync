@@ -22,7 +22,14 @@ const session = (userId: string) =>
   >[0];
 
 beforeEach(async () => {
-  await db.local_ownership.clear();
+  await Promise.all([
+    db.local_ownership.clear(),
+    db.queue_gestures.clear(),
+    db.queue_ops.clear(),
+    db.queue_rejections.clear(),
+    db.event_eventos.clear(),
+    db.ops_sanitario_agenda_closures_v2.clear(),
+  ]);
 });
 
 afterEach(() => {
@@ -84,6 +91,104 @@ describe("local ownership", () => {
       status: "UNKNOWN",
       ownerUserId: null,
       currentUserId: "user-a",
+    });
+    await expect(establishLocalOwnership(session("user-b"))).resolves.toEqual({
+      status: "UNKNOWN",
+      ownerUserId: null,
+      currentUserId: "user-b",
+    });
+    await expect(db.local_ownership.get(LOCAL_OWNERSHIP_KEY)).resolves.toMatchObject({
+      owner_user_id: null,
+    });
+  });
+
+  it("does not treat queue, client, or same-farm membership fields as owner proof", async () => {
+    const userA = "00000000-0000-4000-8000-00000000000a";
+    const userB = "00000000-0000-4000-8000-00000000000b";
+    const farmId = "00000000-0000-4000-8000-00000000000f";
+
+    await db.local_ownership.put({
+      key: LOCAL_OWNERSHIP_KEY,
+      owner_user_id: null,
+      updated_at: "2026-09-19T12:00:00.000Z",
+    });
+    await db.queue_gestures.put({
+      client_tx_id: "tx-legacy-membership",
+      fazenda_id: farmId,
+      client_id: "browser:device-shared-by-a-and-b",
+      status: "PENDING",
+      created_at: "2026-09-18T10:00:00.000Z",
+    });
+    await db.queue_ops.put({
+      client_op_id: "op-legacy-membership",
+      client_tx_id: "tx-legacy-membership",
+      table: "user_fazendas",
+      action: "INSERT",
+      record: {
+        user_id: userB,
+        invited_by: userA,
+        fazenda_id: farmId,
+      },
+      created_at: "2026-09-18T10:00:00.000Z",
+    });
+    await db.queue_rejections.add({
+      client_tx_id: "tx-legacy-membership",
+      client_op_id: "op-legacy-membership",
+      fazenda_id: farmId,
+      table: "user_fazendas",
+      action: "INSERT",
+      reason_code: "LEGACY_REJECTION",
+      reason_message: "legacy membership payload",
+      created_at: "2026-09-18T10:01:00.000Z",
+      payload: { user_id: userB, invited_by: userA },
+    });
+
+    await expect(establishLocalOwnership(session(userB))).resolves.toEqual({
+      status: "UNKNOWN",
+      ownerUserId: null,
+      currentUserId: userB,
+    });
+    await expect(db.queue_gestures.get("tx-legacy-membership")).resolves.toMatchObject({
+      client_id: "browser:device-shared-by-a-and-b",
+      fazenda_id: farmId,
+      status: "PENDING",
+    });
+    await expect(db.queue_ops.get("op-legacy-membership")).resolves.toMatchObject({
+      client_op_id: "op-legacy-membership",
+      client_tx_id: "tx-legacy-membership",
+    });
+    await expect(db.local_ownership.get(LOCAL_OWNERSHIP_KEY)).resolves.toMatchObject({
+      owner_user_id: null,
+    });
+  });
+
+  it("does not treat domain actor fields as owner proof", async () => {
+    const actorUserId = "00000000-0000-4000-8000-00000000000b";
+    const farmId = "00000000-0000-4000-8000-00000000000f";
+
+    await db.local_ownership.put({
+      key: LOCAL_OWNERSHIP_KEY,
+      owner_user_id: null,
+      updated_at: "2026-09-19T12:00:00.000Z",
+    });
+    await db.table("event_eventos").put({
+      id: "event-created-by-b",
+      fazenda_id: farmId,
+      payload: { created_by: actorUserId },
+    });
+    await db.table("ops_sanitario_agenda_closures_v2").put({
+      id: "closure-by-b",
+      fazenda_id: farmId,
+      closed_by: actorUserId,
+    });
+
+    await expect(establishLocalOwnership(session(actorUserId))).resolves.toEqual({
+      status: "UNKNOWN",
+      ownerUserId: null,
+      currentUserId: actorUserId,
+    });
+    await expect(db.local_ownership.get(LOCAL_OWNERSHIP_KEY)).resolves.toMatchObject({
+      owner_user_id: null,
     });
   });
 
