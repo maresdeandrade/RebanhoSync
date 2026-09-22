@@ -25,7 +25,10 @@ import {
   type NotificationPreferences,
 } from "@/lib/notifications/sanitaryReminders";
 import { checkIsSuperAdmin } from "@/lib/admin/adminApi";
-import { establishLocalOwnership } from "@/lib/offline/ownership";
+import {
+  establishLocalOwnership,
+  type LocalOwnershipDecision,
+} from "@/lib/offline/ownership";
 
 
 // Role schema for runtime validation
@@ -35,6 +38,7 @@ type UserRole = z.infer<typeof RoleSchema>;
 interface AuthContextType {
   session: Session | null;
   user: User | null;
+  localOwnership: LocalOwnershipDecision | null;
   loading: boolean;
   isSuperAdmin: boolean | null;
   activeFarmId: string | null;
@@ -96,6 +100,8 @@ async function fetchFirstAccessibleFarmId(userId: string) {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
+  const [localOwnership, setLocalOwnership] =
+    useState<LocalOwnershipDecision | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null);
   const [activeFarmId, setActiveFarmId] = useState<string | null>(() => {
@@ -291,6 +297,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const applyAuthenticatedSession = useCallback(
     async (nextSession: Session) => {
       const ownership = await establishLocalOwnership(nextSession);
+      setLocalOwnership(ownership);
       if (ownership.status !== "OWNED") {
         setSession(null);
         return;
@@ -312,6 +319,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await applyAuthenticatedSession(session);
         } else {
           setSession(null);
+          setLocalOwnership(null);
           applyTheme("system");
         }
       } catch (e) {
@@ -331,6 +339,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       } else {
         setSession(null);
+        setLocalOwnership(null);
         setActiveFarmId(null);
         setRole(null);
         setIsSuperAdmin(false);
@@ -351,6 +360,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      setLocalOwnership(null);
       setActiveFarmId(null);
       setRole(null);
       setIsSuperAdmin(false);
@@ -369,6 +379,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         session,
         user: session?.user ?? null,
+        localOwnership,
         loading,
         isSuperAdmin,
         activeFarmId,

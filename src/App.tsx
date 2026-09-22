@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { RequireFarm } from "./components/auth/RequireFarm";
 import { RequireSuperAdmin } from "./components/auth/RequireSuperAdmin";
+import { LocalOwnershipBoundary } from "./components/auth/LocalOwnershipBoundary";
 import { AppShell } from "./components/layout/AppShell";
 import { LoadingScreen } from "./components/ui/loading-screen";
 
@@ -60,8 +61,9 @@ const App = () => (
   <BrowserRouter
     future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
   >
-    <Suspense fallback={<LoadingScreen />}>
-      <Routes>
+    <LocalOwnershipBoundary>
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
@@ -156,8 +158,9 @@ const App = () => (
         </Route>
 
         <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
+    </LocalOwnershipBoundary>
   </BrowserRouter>
 );
 
