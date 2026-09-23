@@ -1,6 +1,6 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-09-13
+Atualizado em: 2026-09-23
 
 ## Responsabilidade documental
 
@@ -124,13 +124,16 @@ O fingerprint remoto cobre evento, detalhe e relações completos. Alterar refer
 
 A Fase 12 permanece tecnicamente encerrada. O bloqueio externo sanitário não a reabre.
 
-Para release, implementação e teste unitário/local ainda não certificam:
+O [closeout F24.3](../review/F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md) certificou localmente
+farm-aware replace, reconciliação de fazenda não ativa, recovery `UNKNOWN`, retry genérico,
+HTTP 429/`Retry-After`, reconnect, reabertura Dexie e fila heterogênea multi-farm.
 
-- offline prolongado com fila grande e conexão intermitente;
-- crash/restart durante push e ACK remoto perdido em todos os domínios críticos;
-- upgrade Dexie/app com operações pendentes heterogêneas;
-- concorrência multi-device transversal e pull concorrente;
-- correlação ponta a ponta entre identidade, tentativa, ACK e reconcile.
+Permanecem fora dessa certificação:
+
+- `REAL_PROCESS_KILL = NOT_PROVEN`: kill/restart real com o mesmo perfil persistente;
+- concorrência multi-device transversal, stale writes e pull concorrente, planejados na F24.4;
+- correlação ponta a ponta entre identidade, tentativa, ACK e reconcile, planejada na F24.5;
+- benchmark de fila, IndexedDB, startup, memória e throughput, planejado na F24.6.
 
 O inventário e a classificação por ambiente estão na
 [baseline F24.0](../review/F24_RELEASE_READINESS_BASELINE.md). A recertificação remota do

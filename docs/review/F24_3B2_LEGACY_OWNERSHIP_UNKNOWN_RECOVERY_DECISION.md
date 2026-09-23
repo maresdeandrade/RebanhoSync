@@ -1,6 +1,13 @@
 # F24.3B2 — Legacy Ownership Unknown Recovery Decision
 
-Atualizado em: 2026-09-21
+Atualizado em: 2026-09-23
+
+Status: **DECISION PRESERVED — EXPLICIT UNKNOWN RESET IMPLEMENTED**
+
+> Status posterior: F24.3B2.1 implementou o caminho seguro recomendado neste documento.
+> `UNKNOWN` continua fail-closed e sem auto-adoption; somente confirmação destrutiva explícita
+> remove a base local não verificável, e o ownership canônico é estabelecido no bootstrap da
+> base nova. Evidências e matriz final: [closeout F24.3](./F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md).
 
 Baseline auditada: `origin/main@a19f1476a25dfb32363cef832fb919a174d020c8`
 
