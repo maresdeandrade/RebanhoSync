@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
 Atualizado em: 2026-09-23
-Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.3 CLOSED)**
-Próxima frente recomendada: **F24.4A NOT_STARTED — Conflict Inventory / Characterization**
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4A READY_FOR_REVIEW)**
+Próxima frente recomendada: **F24.4B NOT_STARTED — Concurrent Event Writes**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 
 ## Objetivo
@@ -38,7 +38,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 17. Fase 21 — Inteligência Operacional v2 — **concluída**.
 18. Fase 22 — Eficiência Produtiva e Econômica — **concluída (F22A, F22B e F22C fechadas)**.
 19. Fase 23 — Simulação Produtiva e Comercial — **concluída / CLOSED**.
-20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.3 CLOSED; F24.4A NOT_STARTED**.
+20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.4A READY_FOR_REVIEW; F24.4B NOT_STARTED**.
 
 O rollout do Sync Sanitário v2 permanece não autorizado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`. Isso não reabre o desenvolvimento técnico da Fase 12.
 
@@ -58,7 +58,8 @@ Fase 23 — Simulação Produtiva e Comercial — CLOSED
 → F24.1 — Production Migration Delta & Provenance — TECHNICAL CLOSED / REPOSITORY CLOSEOUT
 → F24.2 — Offline/Sync/Auth/Ownership Hardening — CLOSED
 → F24.3 — Offline Prolongado + Reconnect + Recovery — CLOSED
-→ F24.4A — Conflict Inventory / Characterization — NOT_STARTED
+→ F24.4A — Conflict Inventory / Characterization — READY_FOR_REVIEW
+→ F24.4B — Concurrent Event Writes — NOT_STARTED
 → F24.5 — Observabilidade — NOT_STARTED
 → F24.6 — Performance / Escala — NOT_STARTED
 → F24.7 — Sanitário v2 — EXTERNAL_BLOCKED
@@ -109,4 +110,4 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
 | 22 | Eficiência Produtiva e Econômica | **Gates F22A.4 e F22B.3 fechados; F22C fechada com histórico, duração, agregação e performance observada implementados**; lucro completo permanece bloqueado e novo incremento exige capacidade de produto explicitamente autorizada |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
-| 24 | Release Hardening / Scale Readiness | **F24.3 closed; F24.4A not started; produção não provisionada** |
+| 24 | Release Hardening / Scale Readiness | **F24.4A ready for review; F24.4B not started; produção não provisionada** |
