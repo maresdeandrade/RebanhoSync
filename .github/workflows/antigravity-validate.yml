@@ -207,9 +207,24 @@ jobs:
           vitest_args=(--bail=1 --reporter=verbose)
 
           if [[ "${{ steps.scope.outputs.run_global_tests }}" == "true" ]]; then
+            echo "Running global Vitest suite."
             pnpm exec vitest run "${vitest_args[@]}"
           else
-            mapfile -t test_targets < <(node scripts/ci/classify-validation-scope.mjs test-targets /tmp/delta-files.txt)
+            test_source="/tmp/delta-files.txt"
+
+            # No primeiro run do PR não existe delta incremental.
+            # Para um PR classificado como TEST_ONLY, os próprios arquivos
+            # completos do PR são a fonte segura dos targets incrementais.
+            if [[ "${{ steps.scope.outputs.delta_scope }}" == "UNKNOWN" ]]; then
+              test_source="/tmp/pr-files.txt"
+            fi
+
+            echo "Selecting incremental tests from: $test_source"
+
+            mapfile -t test_targets < <(
+              node scripts/ci/classify-validation-scope.mjs test-targets "$test_source"
+            )
+
             if (( ${#test_targets[@]} == 0 )); then
               echo "No safe incremental test target found; running the global suite."
               pnpm exec vitest run "${vitest_args[@]}"
