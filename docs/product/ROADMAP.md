@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-09-21
-Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.2 CLOSED)**
-Próxima frente recomendada: **F24.3 READY_NOT_STARTED — Offline Prolongado + Reconnect + Recovery**
+Atualizado em: 2026-09-23
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.3 CLOSED)**
+Próxima frente recomendada: **F24.4A NOT_STARTED — Conflict Inventory / Characterization**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 
 ## Objetivo
@@ -38,7 +38,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 17. Fase 21 — Inteligência Operacional v2 — **concluída**.
 18. Fase 22 — Eficiência Produtiva e Econômica — **concluída (F22A, F22B e F22C fechadas)**.
 19. Fase 23 — Simulação Produtiva e Comercial — **concluída / CLOSED**.
-20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.2 CLOSED; F24.3 READY_NOT_STARTED**.
+20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.3 CLOSED; F24.4A NOT_STARTED**.
 
 O rollout do Sync Sanitário v2 permanece não autorizado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`. Isso não reabre o desenvolvimento técnico da Fase 12.
 
@@ -57,8 +57,8 @@ Fase 23 — Simulação Produtiva e Comercial — CLOSED
 → F24.0 — Release Readiness Baseline & Gap Audit — CLOSED
 → F24.1 — Production Migration Delta & Provenance — TECHNICAL CLOSED / REPOSITORY CLOSEOUT
 → F24.2 — Offline/Sync/Auth/Ownership Hardening — CLOSED
-→ F24.3 — Offline Prolongado + Reconnect + Recovery — READY_NOT_STARTED
-→ F24.4 — Multi-device + Conflitos — NOT_STARTED
+→ F24.3 — Offline Prolongado + Reconnect + Recovery — CLOSED
+→ F24.4A — Conflict Inventory / Characterization — NOT_STARTED
 → F24.5 — Observabilidade — NOT_STARTED
 → F24.6 — Performance / Escala — NOT_STARTED
 → F24.7 — Sanitário v2 — EXTERNAL_BLOCKED
@@ -80,7 +80,7 @@ A Fase 20 migrou as cinco jornadas críticas para os padrões compartilhados, co
 - **Fase 21 — Inteligência Operacional v2:** evolução da inteligência operacional reutilizando `MetricResult` e `DecisionRecommendation`.
 - **Fase 22 — Eficiência Produtiva e Econômica:** produtividade e economia (CLOSED); GMD observado com confiabilidade não classificada e uso operacional não autorizado; resultado econômico observado com lucro completo bloqueado; ocupação qualificada histórica adotada.
 - **Fase 23 — Simulação Produtiva e Comercial:** simulações com premissas explícitas; projeção não é fato e simulação não é autorização comercial (CLOSED).
-- **Fase 24 — Release Hardening / Scale Readiness:** F24.2 encerrada; somente os gaps residuais de offline prolongado, multi-device/conflitos, observabilidade, performance, bloqueio sanitário externo e production readiness seguem em F24.3–F24.8, conforme o [closeout](../review/F24_2_CLOSEOUT_AND_REBASELINE.md).
+- **Fase 24 — Release Hardening / Scale Readiness:** F24.2 e F24.3 encerradas; multi-device/conflitos, observabilidade, performance, bloqueio sanitário externo e production readiness seguem em F24.4–F24.8, conforme o [closeout F24.3](../review/F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md). `REAL_PROCESS_KILL = NOT_PROVEN` permanece dívida E2E sem reabrir a F24.3.
 
 Hardening proporcional permanece obrigatório em cada fase. A Fase 24 concentra o hardening sistêmico final para escala. Fases encerradas só reabrem diante de regressão concreta.
 
@@ -109,4 +109,4 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
 | 22 | Eficiência Produtiva e Econômica | **Gates F22A.4 e F22B.3 fechados; F22C fechada com histórico, duração, agregação e performance observada implementados**; lucro completo permanece bloqueado e novo incremento exige capacidade de produto explicitamente autorizada |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
-| 24 | Release Hardening / Scale Readiness | **F24.2 closed; F24.3 ready not started; produção não provisionada** |
+| 24 | Release Hardening / Scale Readiness | **F24.3 closed; F24.4A not started; produção não provisionada** |

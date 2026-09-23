@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-09-21
+Atualizado em: 2026-09-23
 
 ## Objetivo
 
@@ -29,17 +29,6 @@ evidência histórica, mas nenhum projeto foi ou deve ser criado agora. A F24.1D
 descartável existente e está registrada em
 [F24_1D_REMOTE_ACL_REHEARSAL.md](./F24_1D_REMOTE_ACL_REHEARSAL.md).
 
-## P0 — F24.3 Offline Prolongado + Reconnect + Recovery
-
-Status: `READY_NOT_STARTED`
-Release blocker: `SIM`
-
-Restam jornada offline prolongada, fila grande, reconnect intermitente, crash/restart real,
-upgrade com pending heterogêneo, HTTP 429/`Retry-After`, backoff/jitter genérico,
-farm-switch/hydrate replace, reconciliação de fazenda não ativa e eventual purge/retention.
-`pullDataForFarm(..., mode="replace")` ainda usa `store.clear()` em diversas stores; não há
-certificação multi-farm.
-
 ## P0 — F24.4 Multi-device + Conflitos
 
 Status: `NOT_STARTED`
@@ -48,6 +37,14 @@ Release blocker: `SIM`
 Restam writes concorrentes no mesmo agregado, política genérica de stale write, conflitos
 cross-device, pull concorrente, sucesso parcial e validação multi-tab/multi-context em browser
 real. Identidade estável e replay idempotente já foram encerrados na F24.2.
+
+## P1 — Certificação E2E de process kill
+
+Status: `REAL_PROCESS_KILL = NOT_PROVEN`
+
+A F24.3 certificou restart lógico por reabertura Dexie, mas não kill/restart real do
+browser/processo com o mesmo perfil persistente e IndexedDB sobrevivente. A dívida não bloqueia
+o closeout F24.3; sua incorporação em F24.4D ou em gate posterior exige decisão explícita.
 
 ## P1 — F24.5 Observabilidade + Reconcile + Diagnóstico
 
@@ -105,6 +102,8 @@ sós, release blockers.
 
 ## Itens reconciliados
 
+- F24.3 Offline Prolongado + Reconnect + Recovery: `CLOSED`; matriz e limitação residual no
+  [closeout canônico](./F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md);
 - validação remota de movimentação: `RESOLVED / REMOTE_CONVERGENCE_VERIFIED`;
 - Trilha C C2–C7: `RESOLVED / TECHNICAL_CONVERGENCE = CLOSED`;
 - promoção de migrations e backoffice: `STILL_OPEN`, preservada para F24.8;

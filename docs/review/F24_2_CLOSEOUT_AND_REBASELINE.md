@@ -1,6 +1,10 @@
 # F24.2 — Closeout e rebaseline F24.3–F24.8
 
-Atualizado em: 2026-09-21
+Atualizado em: 2026-09-23
+
+> Status posterior: a F24.3 foi encerrada no
+> [closeout F24.3](./F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md). O rebaseline abaixo é preservado
+> como decisão de saída da F24.2.
 
 Baseline de fechamento: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 

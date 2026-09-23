@@ -1,12 +1,16 @@
 # F24.0 — Release Readiness Baseline & Gap Audit
 
-Atualizado em: 2026-09-21
+Atualizado em: 2026-09-23
 
 Baseline auditada: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 
 Status: **CLOSED — READY WITH CAVEATS**
 
-Próxima frente recomendada: **F24.3 — Offline Prolongado + Reconnect + Recovery — READY_NOT_STARTED**
+Próxima frente recomendada: **F24.4A — Conflict Inventory / Characterization — NOT_STARTED**
+
+> Status posterior: F24.3 foi encerrada no
+> [closeout canônico](./F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md). As lacunas abaixo permanecem o
+> snapshot da baseline F24.0; `REAL_PROCESS_KILL = NOT_PROVEN` é a limitação residual vigente.
 
 ## Rebaseline de ambiente — 2026-09-14
 
@@ -24,7 +28,7 @@ F24.1_TECHNICAL = CLOSED
 F24.1_REPOSITORY_CLOSEOUT = PR_READY_FOR_REVIEW
 F24.2 = CLOSED
 F24.2_CLOSEOUT_BASELINE = main@41ffd254251bdcbf7ce440da9431ada2dfeaf993
-F24.3 = READY_NOT_STARTED
+F24.3 = CLOSED
 ```
 
 A classificação anterior de backend compartilhado com produção foi uma inferência baseada no

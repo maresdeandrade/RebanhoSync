@@ -1,6 +1,6 @@
 # Review Docs — RebanhoSync
 
-Atualizado em: 2026-05-31  
+Atualizado em: 2026-09-23
 **Baseline Commit:** `91e0775`
 
 ## Objetivo
@@ -30,6 +30,9 @@ Se é histórico/fechado/substituído → docs/archive/
 | `AI_CONTEXT_OPTIMIZATION_REPORT.md` | Relatório ativo de otimização de contexto, agentes, prompts e tokens. |
 | `DOCS_RECONCILIATION_REPORT.md` | Relatório ativo de reorganização documental. |
 | `ACTIVE_REVIEW_INDEX.md` | Índice das revisões ativas. |
+| `ACTIVE_PHASE_PLAN.md` | Plano ativo da Fase 24. |
+| `CURRENT_PHASE_HANDOFF.md` | Handoff técnico vigente da Fase 24. |
+| `F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md` | Closeout F24.3 e planejamento F24.4–F24.6. |
 | `README.md` | Explica a pasta. |
 | `PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md` | Plano ativo da Fase 11.5 — Agenda Sanitária v2. |
 

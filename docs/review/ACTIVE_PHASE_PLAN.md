@@ -1,8 +1,9 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-09-21
-Status: **Fase 24 ativa; F24.2 CLOSED; F24.3 READY_NOT_STARTED**
+Atualizado em: 2026-09-23
+Status: **Fase 24 ativa; F24.3 CLOSED; F24.4A NOT_STARTED**
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`.
+Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`.
 Baseline da F24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`.
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`.
 Baseline integrado da Fase 23: `main@28ee328e92b3cbaf4876cca170eb80e561facafe`.
@@ -10,13 +11,25 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
-Próxima fase: **Fase 24 — F24.3 Offline Prolongado + Reconnect + Recovery — READY_NOT_STARTED**
+Próxima fase: **Fase 24 — F24.4A Conflict Inventory / Characterization — NOT_STARTED**
 
 Este documento aponta para o [closeout autoritativo da F24.2](./F24_2_CLOSEOUT_AND_REBASELINE.md)
 e para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
 O backlog F24.1–F24.8, dependências, critérios de entrada/saída e release blockers estão
 registrados nessa baseline. Produção não está autorizada, o Sanitário v2 permanece
 `EXTERNAL_BLOCKED`, e nenhuma frente posterior deve ser iniciada automaticamente.
+
+## F24.3 — closeout
+
+A F24.3 está formalmente encerrada no
+[closeout e planejamento subsequente](./F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md). Os gaps da
+characterization foram reconciliados por F24.3B1, F24.3B2/B2.1, F24.3B3 e F24.3C. A
+certificação cobre restart lógico por reabertura Dexie, fila heterogênea/multi-farm,
+identidades, retry durável e reconciliação; `REAL_PROCESS_KILL = NOT_PROVEN` permanece dívida
+E2E e não bloqueia o fechamento.
+
+O próximo incremento recomendado é F24.4A, exclusivamente de inventário/characterization.
+F24.4 não foi iniciada por este closeout.
 
 ## F24.2 — closeout
 
@@ -42,7 +55,7 @@ Não há produção operacional (`PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUC
 e o isolamento não é exigido antes de provisionar produção. A criação de segundo staging foi
 deferida. A reconstrução remota, o `sync-batch` e o `sanitario-reconcile` passaram após a
 correção F24.1D.1, incluindo negativos, E2E 1/1, replay e limpeza. F24.1 e F24.2 estão
-fechadas; F24.3 está `READY_NOT_STARTED`. Evidência:
+fechadas; a F24.3 foi posteriormente encerrada. Evidência:
 [F24_1D_REMOTE_ACL_REHEARSAL.md](./F24_1D_REMOTE_ACL_REHEARSAL.md).
 
 ## Registro histórico anterior ao rebaseline

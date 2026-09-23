@@ -1,25 +1,28 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-09-21
+Atualizado em: 2026-09-23
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.2 CLOSED)**.
-Próxima fase de desenvolvimento: **Fase 24 — F24.3 Offline Prolongado + Reconnect + Recovery — READY_NOT_STARTED**.
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.3 CLOSED)**.
+Próxima fase de desenvolvimento: **Fase 24 — F24.4A Conflict Inventory / Characterization — NOT_STARTED**.
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
+Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 
 ## Objetivo
 
 Registrar o estado vivo do produto em formato curto. Este documento não substitui o [roadmap](../product/ROADMAP.md), o [plano ativo](../review/ACTIVE_PHASE_PLAN.md) nem o [handoff técnico](../review/CURRENT_PHASE_HANDOFF.md).
 
 A F24.2A–F24.2E estão fechadas no
-[closeout autoritativo](../review/F24_2_CLOSEOUT_AND_REBASELINE.md). Identidade causal,
-replay idempotente, claim/ACK atômicos, recovery de fila e sessão, reconciliação pós-ACK e
-ownership local fail-closed não retornam ao backlog. F24.3 está `READY_NOT_STARTED` com os
-gaps de jornada prolongada, multi-farm e políticas genéricas de retry/retention.
+[closeout autoritativo](../review/F24_2_CLOSEOUT_AND_REBASELINE.md). A F24.3 também está
+formalmente encerrada no
+[closeout F24.3](../review/F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md): farm-aware replace,
+reconciliação de fazenda não ativa, recovery `UNKNOWN`, retry/429/reconnect e restart lógico
+com fila heterogênea foram certificados. Kill real de processo/browser permanece
+`NOT_PROVEN` sem bloquear esse fechamento.
 
 ## Referência arquitetural operacional
 
@@ -38,7 +41,7 @@ canal Vercel `Production` não representa produção operacional. Portanto,
 `sync-batch` e, após a correção F24.1D.1, o `sanitario-reconcile` com matriz negativa, E2E
 1/1 e replay. `F24.1_TECHNICAL = CLOSED`;
 `F24.1_REPOSITORY_CLOSEOUT = PR_READY_FOR_REVIEW`; `F24.2 = CLOSED`;
-`F24.3 = READY_NOT_STARTED`.
+`F24.3 = CLOSED`; `F24.4A = NOT_STARTED`.
 
 Os parágrafos F24.0–F24.1C anteriores mantidos abaixo documentam a sequência histórica; onde
 classificam o mesmo project ref como produção compartilhada, prevalece o rebaseline acima.
@@ -208,7 +211,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`. A F24.2A–F24.2E estão `CLOSED` em `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`. A próxima frente recomendada é F24.3 — Offline Prolongado + Reconnect + Recovery — `READY_NOT_STARTED`, sem reimplementar capacidades encerradas. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`EXTERNAL_BLOCKED`), e produção permanece `NOT_AUTHORIZED`.
+A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`; F24.2 e F24.3 estão `CLOSED`. A próxima frente recomendada é **F24.4A — Conflict Inventory / Characterization — `NOT_STARTED`**, sem início automático. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`EXTERNAL_BLOCKED`), e produção permanece `NOT_AUTHORIZED`.
 
 ## Fontes de detalhe
 

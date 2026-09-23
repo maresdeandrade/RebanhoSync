@@ -1,10 +1,11 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-09-21
+Atualizado em: 2026-09-23
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
-Próxima fase: **Fase 24 — F24.3 Offline Prolongado + Reconnect + Recovery — READY_NOT_STARTED**
-Decisão: **F24.2 CLOSED / F24.3 READY_NOT_STARTED**
+Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
+Próxima fase: **Fase 24 — F24.4A Conflict Inventory / Characterization — NOT_STARTED**
+Decisão: **F24.3 CLOSED / F24.4A NOT_STARTED**
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -12,9 +13,20 @@ Baseline de abertura da Fase 22: `origin/main@b110f0a566d9aa99c83769032d6b7ffdc7
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
-Status: **Fase 24 ativa; F24.2 encerrada; produção não autorizada**
+Status: **Fase 24 ativa; F24.3 encerrada; produção não autorizada**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
+
+## F24.3 — handoff de fechamento
+
+O [closeout F24.3](./F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md) consolida os PRs #157, #159,
+#160, #161 e #162. Estão fechados: farm-aware replace, reconciliação de fazenda não ativa,
+decisão de ownership legado `UNKNOWN`, reset explícito, retry genérico/HTTP 429/reconnect e
+certificação lógica de restart com fila heterogênea multi-farm.
+
+`REAL_PROCESS_KILL = NOT_PROVEN`: a reabertura Dexie no mesmo processo foi certificada, mas
+kill/restart real com o mesmo perfil persistente não foi executado. Essa dívida não reabre a
+F24.3. Próximo passo recomendado: F24.4A, sem implementação iniciada neste fechamento.
 
 ## F24.2 — handoff de fechamento
 
@@ -28,9 +40,9 @@ Documentos: [auditoria B0](./F24_2B0_EVENT_PROVENANCE_STABLE_IDENTITY_AUDIT.md),
 [failure matrix](./F24_2A_FAILURE_MATRIX.md) e [ordem de patches](./F24_2A_RECOMMENDED_PATCH_ORDER.md).
 
 Identidade causal/replay, claim/ACK atômicos, recovery de fila e sessão, reconciliação
-pós-ACK e ownership local fail-closed não retornam ao backlog como implementação nova. A
-próxima frente é F24.3 `READY_NOT_STARTED`, limitada às jornadas prolongadas e gaps
-residuais registrados no closeout.
+pós-ACK e ownership local fail-closed não retornaram ao backlog como implementação nova. A
+F24.3 tratou posteriormente as jornadas prolongadas e gaps residuais registrados naquele
+closeout.
 
 ## F24.0 — baseline e handoff
 
@@ -42,7 +54,7 @@ de segundo staging F24.1C foi deferida. A
 [F24.1D](./F24_1D_REMOTE_ACL_REHEARSAL.md) comprovou 51 migrations e convergência das seis
 superfícies e o E2E de `sync-batch`. A F24.1D.1 corrigiu a autorização HTTP do
 `sanitario-reconcile` e comprovou matriz negativa, execução `service_role`, E2E 1/1, replay
-e limpeza. F24.1 e F24.2 estão fechadas; F24.3 está `READY_NOT_STARTED`.
+e limpeza. F24.1 e F24.2 estão fechadas; a F24.3 foi posteriormente encerrada.
 
 ### Registro histórico anterior ao rebaseline
 

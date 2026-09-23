@@ -1,10 +1,15 @@
 # F24.3A — Offline prolongado / farm-switch / recovery characterization
 
-Atualizado em: 2026-09-21
+Atualizado em: 2026-09-23
 
 Baseline auditada: `origin/main@2104098d31b0dda20d2a65e6beceed213d034784`
 
-Status: **READY_FOR_REVIEW**
+Status: **HISTORICAL_CHARACTERIZATION — RESOLVED_BY_F24.3_CLOSEOUT**
+
+> Status posterior: os gaps caracterizados abaixo foram tratados por F24.3B1, F24.3B2/B2.1,
+> F24.3B3 e F24.3C. A matriz vigente está no
+> [closeout F24.3](./F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md). Este documento preserva o estado
+> observado na baseline auditada; `REAL_PROCESS_KILL = NOT_PROVEN` continua válido.
 
 ## Decisão
 
