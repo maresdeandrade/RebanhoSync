@@ -56,6 +56,7 @@ import {
   buildCommercialOperationEnvelope,
   isCommercialOperationEnvelope,
 } from "@/lib/comercial/commercialOperationSync";
+import { calculateGenericRetryAt, parseRetryAfter } from "./genericRetry";
 
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let isTickRunning = false;
@@ -153,6 +154,8 @@ const RECOVERABLE_ERROR_MARKERS = [
   "NetworkError",
   "fetch failed",
   "name resolution failed",
+  "name resolution failure",
+  "aborted",
 ];
 // Authentication/session family: replay only allowed with a usable session.
 const AUTH_ERROR_MARKERS = [
@@ -163,6 +166,25 @@ const AUTH_ERROR_MARKERS = [
   "invalid refresh token",
   "refresh_token_not_found",
 ];
+const NETWORK_ERROR_MARKERS = [
+  "Failed to fetch",
+  "NetworkError",
+  "fetch failed",
+  "name resolution failed",
+  "name resolution failure",
+  "aborted",
+];
+
+class HttpSyncError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+    readonly retryAfterAt?: number,
+  ) {
+    super(message);
+    this.name = "HttpSyncError";
+  }
+}
 const AGENDA_ALREADY_COMPLETED_REASON = "agenda_already_completed_by_event";
 const SANITARIO_AGENDA_CLOSURE_CONFLICT_REASON =
   "sanitario_agenda_closure_already_exists";
@@ -547,10 +569,38 @@ export async function drainReconciliationObligations(
   }
 }
 
-function wakeUpDurableSyncWork() {
-  // Re-run ERROR recovery on wakeup so auth-blocked gestures replay once a
-  // valid session (e.g. refreshed token) is available without an app reload.
-  void runOwnedSyncWork();
+async function accelerateNetworkRetriesOnReconnect() {
+  const pending = await db.queue_gestures
+    .where("status")
+    .equals("PENDING")
+    .toArray();
+
+  for (const gesture of pending) {
+    if (gesture.next_attempt_at && isNetworkSyncError(gesture.last_error)) {
+      await db.queue_gestures.update(gesture.client_tx_id, {
+        next_attempt_at: undefined,
+      });
+    }
+  }
+}
+
+async function wakeUpDurableSyncWork() {
+  if (!(await runOwnedSyncWork())) return;
+
+  // Startup recovery is intentionally one-shot, while an explicit reconnect
+  // must re-open legacy transport failures without requiring an app reload.
+  await recoverErroredGesturesOnce();
+  await accelerateNetworkRetriesOnReconnect();
+
+  const pending = await db.queue_gestures
+    .where("status")
+    .equals("PENDING")
+    .sortBy("created_at");
+  for (const gesture of pending) {
+    if (isGestureReadyForSync(gesture)) {
+      await processGesture(gesture);
+    }
+  }
 }
 
 async function tryPurgeOldRejections() {
@@ -582,6 +632,33 @@ function isRecoverableSyncError(errorMessage?: string): boolean {
   return RECOVERABLE_ERROR_MARKERS.some((marker) =>
     normalizedMessage.includes(marker.toLowerCase()),
   );
+}
+
+function isNetworkSyncError(errorMessage?: string): boolean {
+  if (!errorMessage) return false;
+  const normalizedMessage = errorMessage.toLowerCase();
+  return NETWORK_ERROR_MARKERS.some((marker) =>
+    normalizedMessage.includes(marker.toLowerCase()),
+  );
+}
+
+function isTransientSyncError(error: Error): boolean {
+  if (error instanceof HttpSyncError) {
+    return (
+      error.status === 429 ||
+      error.status === 500 ||
+      error.status === 502 ||
+      error.status === 503 ||
+      error.status === 504
+    );
+  }
+  return error.name === "AbortError" || isRecoverableSyncError(error.message);
+}
+
+function isGestureReadyForSync(gesture: Gesture, nowMs = Date.now()) {
+  if (!gesture.next_attempt_at) return true;
+  const nextAttemptAt = Date.parse(gesture.next_attempt_at);
+  return !Number.isFinite(nextAttemptAt) || nextAttemptAt <= nowMs;
 }
 
 function isAuthSyncError(errorMessage?: string): boolean {
@@ -996,6 +1073,7 @@ export async function recoverErroredGesturesOnce() {
       sync_result: undefined,
       completed_at: undefined,
       retry_count: 0,
+      next_attempt_at: undefined,
       last_error:
         "Recovered transient sync error; retrying after worker startup",
     });
@@ -1526,13 +1604,18 @@ export async function processGesture(gesture: Gesture) {
       [db.queue_gestures],
       async () => {
         const current = await db.queue_gestures.get(gesture.client_tx_id);
-        if (!current || current.status !== "PENDING") {
+        if (
+          !current ||
+          current.status !== "PENDING" ||
+          !isGestureReadyForSync(current)
+        ) {
           return false;
         }
         await db.queue_gestures.update(gesture.client_tx_id, {
           status: "SYNCING",
           sync_result: undefined,
           completed_at: undefined,
+          next_attempt_at: undefined,
         });
         return true;
       },
@@ -1666,6 +1749,10 @@ export async function processGesture(gesture: Gesture) {
     }
 
     if (!response.ok) {
+      const retryAfterAt =
+        response.status === 429
+          ? parseRetryAfter(response.headers.get("Retry-After"))
+          : undefined;
       let errorBody: string | null = null;
       try {
         errorBody = await response.text();
@@ -1679,8 +1766,10 @@ export async function processGesture(gesture: Gesture) {
         response.statusText,
         errorBody ? `- ${errorBody}` : "",
       );
-      throw new Error(
+      throw new HttpSyncError(
+        response.status,
         `HTTP ${response.status}${errorBody ? ` - ${errorBody}` : ""}`,
+        retryAfterAt,
       );
     }
 
@@ -2193,7 +2282,31 @@ export async function processGesture(gesture: Gesture) {
           return false;
         }
 
-        if (retryCount < MAX_RETRIES) {
+        const isTransient = isTransientSyncError(error);
+        const isRateLimited =
+          error instanceof HttpSyncError && error.status === 429;
+
+        if (isTransient && (retryCount < MAX_RETRIES || isRateLimited)) {
+          const nextRetryCount = retryCount + 1;
+          const nextAttemptAt = calculateGenericRetryAt({
+            retryCount: nextRetryCount,
+            retryAfterAt:
+              error instanceof HttpSyncError
+                ? error.retryAfterAt
+                : undefined,
+          });
+          await db.queue_gestures.update(gesture.client_tx_id, {
+            status: "PENDING",
+            sync_result: undefined,
+            completed_at: undefined,
+            retry_count: nextRetryCount,
+            next_attempt_at: new Date(nextAttemptAt).toISOString(),
+            last_error: error.message,
+          });
+          return false;
+        }
+
+        if (!isTransient && retryCount < MAX_RETRIES) {
           await db.queue_gestures.update(gesture.client_tx_id, {
             status: "PENDING",
             sync_result: undefined,

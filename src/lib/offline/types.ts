@@ -1880,6 +1880,7 @@ export interface Gesture {
   completed_at?: string;
   last_error?: string;
   retry_count?: number; // P1.3: For exponential backoff retry strategy
+  next_attempt_at?: string;
   created_at: string;
   operation_results?: SyncOperationAuditResult[];
 }
