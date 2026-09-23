@@ -1,6 +1,15 @@
 /** @vitest-environment jsdom */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { vi, describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
+import {
+  vi,
+  describe,
+  expect,
+  it,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from "vitest";
 import "fake-indexeddb/auto";
 import { db } from "../db";
 import { seedLocalOwner } from "./ownershipTestFixture";
@@ -44,10 +53,12 @@ vi.mock("@/lib/env", () => ({
   env: { supabaseFunctionsUrl: "http://localhost" },
 }));
 
-async function createInsumoMovimentacaoGesture(record: Record<string, unknown>) {
+async function createInsumoMovimentacaoGesture(
+  record: Record<string, unknown>,
+) {
   const client_tx_id = randomUUID();
   const client_op_id = randomUUID();
-  
+
   await db.queue_gestures.add({
     client_id: "test-client",
     client_tx_id,
@@ -92,8 +103,12 @@ describe("syncWorker insumo_movimentacoes integration", () => {
   });
 
   it("mapeia tabelas locais e remotas de movimentacoes corretamente", () => {
-    expect(getRemoteTableName("state_insumo_movimentacoes")).toBe("insumo_movimentacoes");
-    expect(getLocalStoreName("insumo_movimentacoes")).toBe("state_insumo_movimentacoes");
+    expect(getRemoteTableName("state_insumo_movimentacoes")).toBe(
+      "insumo_movimentacoes",
+    );
+    expect(getLocalStoreName("insumo_movimentacoes")).toBe(
+      "state_insumo_movimentacoes",
+    );
   });
 
   it("cria o payload correto para INSERT de insumo_movimentacoes com snapshot de custos e vinculo de evento", async () => {
@@ -107,7 +122,7 @@ describe("syncWorker insumo_movimentacoes integration", () => {
       source_evento_id: "evento-789",
       source_evento_dominio: "sanitario",
       custo_unitario_snapshot: 1.25,
-      custo_total_snapshot: 12.50,
+      custo_total_snapshot: 12.5,
       payload: { origem: "teste" },
     };
 
@@ -116,7 +131,7 @@ describe("syncWorker insumo_movimentacoes integration", () => {
     if (typeof global.fetch !== "function") {
       (global as any).fetch = vi.fn();
     }
-    
+
     const fetchMock = vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -125,11 +140,16 @@ describe("syncWorker insumo_movimentacoes integration", () => {
     } as any);
 
     // Executa a sincronizacao da transacao
-    await processGesture({ client_tx_id: gesture.client_tx_id, fazenda_id: gesture.fazenda_id } as any);
+    await processGesture({
+      client_tx_id: gesture.client_tx_id,
+      fazenda_id: gesture.fazenda_id,
+    } as any);
 
     expect(fetchMock).toHaveBeenCalled();
-    
-    const requestBody = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
+
+    const requestBody = JSON.parse(
+      (fetchMock.mock.calls[0][1] as any).body,
+    );
     const op = requestBody.ops[0];
 
     // Valida mapeamento para tabela remota e schema correto
@@ -144,7 +164,7 @@ describe("syncWorker insumo_movimentacoes integration", () => {
       source_evento_id: "evento-789",
       source_evento_dominio: "sanitario",
       custo_unitario_snapshot: 1.25,
-      custo_total_snapshot: 12.50,
+      custo_total_snapshot: 12.5,
     });
 
     // A edge function sync-batch exige o client_op_id deterministico no payload
@@ -172,21 +192,23 @@ describe("syncWorker insumo_movimentacoes integration", () => {
       (global as any).fetch = vi.fn();
     }
 
-    // Primeiro envio simula erro temporario
-    const fetchMock = vi.spyOn(global, "fetch")
+    // Primeiro envio simula erro temporario.
+    // O segundo envio representa o retry apos next_attempt_at.
+    const fetchMock = vi
+      .spyOn(global, "fetch")
       .mockResolvedValueOnce({
         ok: false,
         status: 503,
         statusText: "Service Unavailable",
         text: async () => "Unavailable",
       } as any)
-      // Segundo envio (retry) simula sucesso
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           results: [{ status: "APPLIED", op_id: gesture.client_op_id }],
         }),
       } as any);
+
     const consoleErrorSpy = vi
       .spyOn(console, "error")
       .mockImplementation((...args) => {
@@ -196,37 +218,82 @@ describe("syncWorker insumo_movimentacoes integration", () => {
         console.warn(...args);
       });
 
-    // Primeira tentativa falha temporariamente
-    await processGesture({ client_tx_id: gesture.client_tx_id, fazenda_id: gesture.fazenda_id } as any);
+    // Primeira tentativa falha temporariamente.
+    await processGesture({
+      client_tx_id: gesture.client_tx_id,
+      fazenda_id: gesture.fazenda_id,
+    } as any);
+
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       "[sync-worker] HTTP Error:",
       503,
       "Service Unavailable",
       "- Unavailable",
     );
-    
-    const gestureState = await db.queue_gestures.get(gesture.client_tx_id);
-    expect(gestureState?.status).toBe("PENDING"); // Re-enfileirado para retry
 
-    // Segunda tentativa (retry) roda e passa
-    await processGesture({ client_tx_id: gesture.client_tx_id, fazenda_id: gesture.fazenda_id } as any);
+    const gestureState = await db.queue_gestures.get(
+      gesture.client_tx_id,
+    );
+
+    expect(gestureState?.status).toBe("PENDING");
+    expect(gestureState?.retry_count).toBe(1);
+    expect(gestureState?.next_attempt_at).toBeTruthy();
+
+    // F24.3B3:
+    // uma tentativa imediata deve ser bloqueada pelo next_attempt_at persistido.
+    await processGesture({
+      client_tx_id: gesture.client_tx_id,
+      fazenda_id: gesture.fazenda_id,
+    } as any);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Avanca o relogio ate o prazo persistido.
+    const retryAt = Date.parse(gestureState!.next_attempt_at!);
+    expect(Number.isFinite(retryAt)).toBe(true);
+
+    const dateNowSpy = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(retryAt);
+
+    // Retry agora esta elegivel e deve reutilizar a identidade original.
+    await processGesture({
+      client_tx_id: gesture.client_tx_id,
+      fazenda_id: gesture.fazenda_id,
+    } as any);
+
+    dateNowSpy.mockRestore();
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
-    const call1Body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
-    const call2Body = JSON.parse((fetchMock.mock.calls[1][1] as any).body);
+    const call1Body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as any).body,
+    );
+    const call2Body = JSON.parse(
+      (fetchMock.mock.calls[1][1] as any).body,
+    );
 
-    // O client_op_id DEVE ser absolutamente identico em ambos os envios para garantir idempotencia
+    // O client_op_id deve permanecer absolutamente identico entre os envios.
     expect(call1Body.ops[0].client_op_id).toBe(gesture.client_op_id);
     expect(call2Body.ops[0].client_op_id).toBe(gesture.client_op_id);
+
     expect(call1Body.ops[0].record.id).toBe(eventId);
     expect(call2Body.ops[0].record.id).toBe(eventId);
+
     expect(call1Body.ops[0].record.source_evento_id).toBe(eventId);
     expect(call2Body.ops[0].record.source_evento_id).toBe(eventId);
+
     expect(call2Body.ops[0].record).toMatchObject({
       tipo: "consumo_nutricao",
       source_evento_dominio: "nutricao",
     });
+
+    const finalGestureState = await db.queue_gestures.get(
+      gesture.client_tx_id,
+    );
+
+    expect(finalGestureState?.status).toBe("DONE");
+    expect(finalGestureState?.client_tx_id).toBe(gesture.client_tx_id);
 
     fetchMock.mockRestore();
     consoleErrorSpy.mockRestore();
