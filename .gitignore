@@ -29,5 +29,9 @@ tsc_output*.txt
 .vercel
 .env*.local
 
+# Playwright
+playwright-report/
+test-results/
+
 # Local agent worktrees
 .kilo/worktrees/
