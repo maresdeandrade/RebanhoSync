@@ -93,7 +93,7 @@ function validPayload() {
       }],
       product_class_rows: [{
         id: ids.class,
-        class_key: "CLASS_TEST",
+        class_key: "class_test",
         scope: "global",
         name: "Classe sintetica",
         product_type: "vacina",
@@ -112,11 +112,11 @@ function validPayload() {
       product_class_group_member_rows: [{
         id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
         group_key: "GROUP_TEST",
-        class_key: "CLASS_TEST",
+        class_key: "class_test",
       }],
       product_class_default_rule_rows: [{
         id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
-        class_key: "CLASS_TEST",
+        class_key: "class_test",
         species_code: "bovino",
         aptitude: "all",
       }],
@@ -154,10 +154,52 @@ function expectInvalid(payload, text) {
   expect(() => validateCanonicalTechnicalContract(payload)).toThrow(text);
 }
 
+function payloadWithSourceKey(sourceKey) {
+  return JSON.parse(
+    JSON.stringify(validPayload()).replaceAll("SRC_TEST_LABEL", sourceKey),
+  );
+}
+
 describe("sanitario v2 canonical contract", () => {
   it("accepts a complete synthetic payload without database access", () => {
     const result = validateCanonicalTechnicalContract(validPayload());
     expect(result.indexes.protocols.keys.get("PROTOCOL_TEST")).toBe("protocol_rows[0]");
+  });
+
+  it.each([
+    "SRC_PNCEBT_BRUCELOSE",
+    "SRC_BULA_LEPTOFERM5",
+  ])("accepts canonical source_key %s", (sourceKey) => {
+    expect(() => validateCanonicalTechnicalContract(payloadWithSourceKey(sourceKey)))
+      .not.toThrow();
+  });
+
+  it.each([
+    "src_bula_x",
+    "SRC-BULA-X",
+    " SRC_X ",
+    "SRC_Á",
+  ])("rejects non-canonical source_key %s", (sourceKey) => {
+    expectInvalid(payloadWithSourceKey(sourceKey), "source_key deve seguir");
+  });
+
+  it("accepts canonical class_key vacina_clostridial", () => {
+    const payload = validPayload();
+    payload.payload.product_class_rows[0].class_key = "vacina_clostridial";
+    payload.payload.product_class_group_member_rows[0].class_key = "vacina_clostridial";
+    payload.payload.product_class_default_rule_rows[0].class_key = "vacina_clostridial";
+    expect(() => validateCanonicalTechnicalContract(payload)).not.toThrow();
+  });
+
+  it.each([
+    "Vacina_Clostridial",
+    "vacina-clostridial",
+  ])("rejects non-canonical class_key %s", (classKey) => {
+    const payload = validPayload();
+    payload.payload.product_class_rows[0].class_key = classKey;
+    payload.payload.product_class_group_member_rows[0].class_key = classKey;
+    payload.payload.product_class_default_rule_rows[0].class_key = classKey;
+    expectInvalid(payload, "class_key deve seguir");
   });
 
   it.each([
@@ -275,7 +317,7 @@ describe("sanitario v2 canonical contract", () => {
         }] },
         sanitario_product_classes_v2: { rows: [{
           id: ids.class,
-          class_key: "CLASS_TEST",
+          class_key: "class_test",
           scope: "global",
           name: "Classe sintetica",
           product_type: "vacina",
@@ -304,7 +346,7 @@ describe("sanitario v2 canonical contract", () => {
             action_type: "vacinacao",
             product_requirement_kind: "product_class",
             product_id: null,
-            product_class: "CLASS_TEST",
+            product_class: "class_test",
             product_class_group_id: null,
             eligibility_rule: { species: ["bovino"] },
             operational_window_rule: { type: "age" },
@@ -347,7 +389,7 @@ describe("sanitario v2 canonical contract", () => {
     const normalized = normalizeCanonicalData(payload);
     expect(normalized.protocol_rows[0].protocol_key).toBe("protocol_test");
     expect(normalized.protocol_item_rows[0].protocol_key).toBe("protocol_test");
-    expect(normalized.protocol_item_rows[0].class_key).toBe("CLASS_TEST");
+    expect(normalized.protocol_item_rows[0].class_key).toBe("class_test");
     expect(normalized.protocol_item_rows[1].protocol_key).toBe("protocol_test");
     expect(normalized.protocol_item_rows[1].group_key).toBe("GROUP_TEST");
     expect(normalizeCanonicalData(payload).memberRejections).toEqual([]);
@@ -358,7 +400,7 @@ describe("sanitario v2 canonical contract", () => {
     const validated = validateCanonicalTechnicalContract(payload);
     const itemClass = validated.data.protocol_item_rows[0];
     expect(itemClass.protocol_key).toBe("protocol_test");
-    expect(itemClass.class_key).toBe("CLASS_TEST");
+    expect(itemClass.class_key).toBe("class_test");
     expect(itemClass).not.toHaveProperty("protocol_id");
     expect(itemClass).not.toHaveProperty("product_class");
     expect(JSON.stringify(validated.data)).not.toContain("{{lookup");

@@ -1119,6 +1119,7 @@ export type SanitarioTechnicalWithdrawalApplicabilityV2 =
 
 export interface SanitarioFonteTecnicaLocalV2 {
   id: string;
+  source_key?: string | null;
   kind: SanitarioTechnicalSourceKindV2;
   scope: SanitarioTechnicalSourceScopeV2;
   fazenda_id: string | null;

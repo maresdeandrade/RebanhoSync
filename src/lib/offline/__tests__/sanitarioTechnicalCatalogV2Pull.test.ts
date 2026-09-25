@@ -130,6 +130,7 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
     sourceRowsByScope.global = [
       {
         id: "source-global",
+        source_key: "SRC_BULA_GLOBAL",
         scope: "global",
         fazenda_id: null,
         kind: "bula",
@@ -312,6 +313,7 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
     expect(writeLog[0].rows).toEqual([
       expect.objectContaining({
         id: "source-global",
+        source_key: "SRC_BULA_GLOBAL",
         scope: "global",
         fazenda_id: null,
         deleted_at: "2026-06-12T11:00:00Z",
