@@ -432,6 +432,21 @@ function validateOperationPayloadContracts(op: Operation) {
   assertValidAnimalTaxonomyFactsContract(taxonomyFacts);
 }
 
+async function persistExpectedAnimalRevision(
+  op: Operation,
+  existing: { revision?: unknown } | undefined,
+) {
+  if (op.table !== "animais" || op.expected_revision !== undefined) return;
+
+  const remoteRevision = existing?.revision;
+  if (!Number.isSafeInteger(remoteRevision) || Number(remoteRevision) < 1) return;
+
+  op.expected_revision = Number(remoteRevision);
+  await db.queue_ops.update(op.client_op_id, {
+    expected_revision: Number(remoteRevision),
+  });
+}
+
 export const applyOpLocal = async (op: Operation) => {
   const localStoreName = getLocalStoreName(op.table);
   const store = db.table(localStoreName);
@@ -456,15 +471,7 @@ export const applyOpLocal = async (op: Operation) => {
     }
 
     const existing = await store.get(recordKey);
-    if (op.table === "animais" && op.expected_revision === undefined) {
-      const remoteRevision = existing?.revision;
-      if (Number.isSafeInteger(remoteRevision) && remoteRevision >= 1) {
-        op.expected_revision = remoteRevision;
-        await db.queue_ops.update(op.client_op_id, {
-          expected_revision: remoteRevision,
-        });
-      }
-    }
+    await persistExpectedAnimalRevision(op, existing);
     if (!op.before_snapshot) {
       op.before_snapshot = existing;
       await db.queue_ops.update(op.client_op_id, { before_snapshot: existing });

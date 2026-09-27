@@ -1,6 +1,6 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-09-23
+Atualizado em: 2026-09-27
 
 ## Responsabilidade documental
 
@@ -31,6 +31,21 @@ Regras:
 - pull respeita `fazenda_id`, cursores e tombstones;
 - `catalog_*` permanece pull-only quando definido pelo contrato;
 - `state_*` não é superfície direta de push.
+
+## Concorrência de estado — F24.4C
+
+`UPDATE` de `animais` pelo caminho genérico usa controle otimista de concorrência. A
+`revision` é a última versão remota conhecida; `expected_revision` é o snapshot persistido na
+operação antes da mutação otimista. Retry/reload reutiliza `client_op_id`, `client_tx_id` e
+`expected_revision`, sem recalcular a versão esperada.
+
+O `sync-batch` resolve replay da mesma identidade antes do CAS e aceita o update somente por
+PK + `fazenda_id` + revision. Mismatch retorna `CONFLICT / STATE_REVISION_CONFLICT`, terminal e
+sem retry automático. Cliente legado sem `expected_revision` falha de modo fechado. Revision
+enviada no record não é autoridade client-side.
+
+O escopo é `ANIMAIS_ONLY`. Demais `state_*`, delete/tombstone completo, clock authority,
+field-level merge e multi-device físico não foram generalizados nem certificados.
 
 ## Sync Sanitário v2
 
@@ -131,7 +146,8 @@ HTTP 429/`Retry-After`, reconnect, reabertura Dexie e fila heterogênea multi-fa
 Permanecem fora dessa certificação:
 
 - `REAL_PROCESS_KILL = NOT_PROVEN`: kill/restart real com o mesmo perfil persistente;
-- concorrência multi-device transversal, stale writes e pull concorrente, planejados na F24.4;
+- stale write de `animais` protegido pela F24.4C; concorrência transversal dos demais
+  `state_*`, clock authority e multi-device físico permanecem na sequência F24.4;
 - correlação ponta a ponta entre identidade, tentativa, ACK e reconcile, planejada na F24.5;
 - benchmark de fila, IndexedDB, startup, memória e throughput, planejado na F24.6.
 

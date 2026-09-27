@@ -107,6 +107,7 @@ function withTimeout<T>(
   });
 }
 
+// fallow-ignore-next-line code-duplication -- handler-shell overlap with telemetry-ingest is inherited; domain bodies are unrelated.
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
   const corsHeaders = getCorsHeaders(origin);
