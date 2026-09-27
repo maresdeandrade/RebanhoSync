@@ -1,17 +1,18 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-09-23
+Atualizado em: 2026-09-24
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4A READY_FOR_REVIEW)**.
-Próxima fase de desenvolvimento: **Fase 24 — F24.4B Concurrent Event Writes — NOT_STARTED**.
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4B CLOSED)**.
+Próxima fase de desenvolvimento: **Fase 24 — F24.4C State Conflict Policy — NOT_STARTED**.
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.
+Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`; `REAL_POSTGRES_CONCURRENCY = NOT_PROVEN`.
 
 ## Objetivo
 
@@ -42,12 +43,17 @@ canal Vercel `Production` não representa produção operacional. Portanto,
 `sync-batch` e, após a correção F24.1D.1, o `sanitario-reconcile` com matriz negativa, E2E
 1/1 e replay. `F24.1_TECHNICAL = CLOSED`;
 `F24.1_REPOSITORY_CLOSEOUT = PR_READY_FOR_REVIEW`; `F24.2 = CLOSED`;
-`F24.3 = CLOSED`; `F24.4A = READY_FOR_REVIEW`; `F24.4B = NOT_STARTED`.
+`F24.3 = CLOSED`; `F24.4A = CLOSED`; `F24.4B = CLOSED`; `F24.4C = NOT_STARTED`.
 
 A [F24.4A](../review/F24_4A_CONFLICT_INVENTORY_CHARACTERIZATION.md) confirmou stale write
 genérico, projeção fora de ordem, delete/update e autoridade implícita de relógio cliente como
 gaps P1. Replay idempotente, ACK/reconcile, fazenda e ownership permaneceram preservados. Não
 houve mudança de runtime, schema, migration, RPC, RLS ou ambiente remoto.
+
+A [F24.4B](../review/F24_4B_CONCURRENT_EVENT_WRITES.md) separou replay técnico de causa de
+domínio e confirmou que fatos ad hoc cross-device sem origem compartilhada são ambíguos.
+Eventos legítimos semelhantes permaneceram preservados, e nenhuma deduplicação heurística foi
+introduzida. A próxima frente é F24.4C para conflitos de `state_*`.
 
 Os parágrafos F24.0–F24.1C anteriores mantidos abaixo documentam a sequência histórica; onde
 classificam o mesmo project ref como produção compartilhada, prevalece o rebaseline acima.
@@ -217,7 +223,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`; F24.2 e F24.3 estão `CLOSED`. A F24.4A está `READY_FOR_REVIEW`, e a próxima frente recomendada é **F24.4B — Concurrent Event Writes — `NOT_STARTED`**. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`EXTERNAL_BLOCKED`), e produção permanece `NOT_AUTHORIZED`.
+A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`; F24.2, F24.3, F24.4A e F24.4B estão `CLOSED`. A próxima frente recomendada é **F24.4C — State Conflict Policy — `NOT_STARTED`**. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`EXTERNAL_BLOCKED`), e produção permanece `NOT_AUTHORIZED`.
 
 ## Fontes de detalhe
 
