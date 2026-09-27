@@ -19,7 +19,8 @@ export const CANONICAL_ARTIFACT_VERSION = "13.0.0-canonical-contract";
 
 const ENTITY_KEYS = Object.values(CANONICAL_ENTITY_KEYS);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const SOURCE_REF_PATTERN = /^SRC_[A-Z0-9_]+$/;
+const SOURCE_KEY_PATTERN = /^SRC_[A-Z0-9_]+$/;
+const CLASS_KEY_PATTERN = /^[a-z0-9_]+$/;
 const LEGACY_UUID_EMBEDDED_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
 const LEGACY_PROTOCOL_LOOKUP_PATTERN = /\{\{lookup sanitario_protocolos_v2\.id by family_code=([^}]+)\}\}/;
 const LEGACY_GROUP_LOOKUP_PATTERN = /\{\{lookup sanitario_product_class_groups_v2\.id by group_key=([^}]+)\}\}/;
@@ -205,6 +206,9 @@ function validateSourceRows(rows, issues) {
   rows.forEach((row, index) => {
     const path = `source_rows[${index}]`;
     requireField(issues, row, "source_key", path);
+    if (typeof row.source_key === "string" && !SOURCE_KEY_PATTERN.test(row.source_key)) {
+      fail(issues, `${path}.source_key`, "source_key deve seguir ^SRC_[A-Z0-9_]+$");
+    }
     requireField(issues, row, "kind", path);
     requireField(issues, row, "scope", path);
     requireField(issues, row, "title", path);
@@ -326,6 +330,9 @@ function validateTechnicalRows(data, indexes, issues) {
     requireField(issues, row, "id", path);
     for (const field of ["class_key", "scope", "name", "product_type", "curation_status", "automation_status"]) {
       requireField(issues, row, field, path);
+    }
+    if (typeof row.class_key === "string" && !CLASS_KEY_PATTERN.test(row.class_key)) {
+      fail(issues, `${path}.class_key`, "class_key deve seguir ^[a-z0-9_]+$");
     }
     if (!Array.isArray(row.species_scope) || row.species_scope.length === 0) {
       fail(issues, `${path}.species_scope`, "species_scope exige array nao vazio");
@@ -502,7 +509,7 @@ export function validateCanonicalTechnicalContract(payload) {
   const sourceRefs = [];
   collectSourceRefs(payload, "payload", sourceRefs);
   for (const ref of sourceRefs) {
-    if (typeof ref.value !== "string" || !SOURCE_REF_PATTERN.test(ref.value)) fail(issues, ref.path, "source_ref deve usar chave SRC_* valida");
+    if (typeof ref.value !== "string" || !SOURCE_KEY_PATTERN.test(ref.value)) fail(issues, ref.path, "source_ref deve usar chave SRC_* valida");
     else if (!indexes.sources.keys.has(ref.value)) fail(issues, ref.path, `source_key inexistente: ${ref.value}`);
   }
 

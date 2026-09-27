@@ -52,6 +52,7 @@ describe("offline technical sanitary catalog v2 stores", () => {
   it("preserva fonte tecnica global e fonte da fazenda sem criar queue_ops", async () => {
     const globalSource: SanitarioFonteTecnicaLocalV2 = {
       id: "source-global",
+      source_key: "SRC_BULA_PRODUTO_X",
       kind: "bula",
       scope: "global",
       fazenda_id: null,
@@ -80,6 +81,7 @@ describe("offline technical sanitary catalog v2 stores", () => {
       scope: "fazenda",
       fazenda_id: "farm-1",
       title: "Responsavel tecnico da fazenda",
+      source_key: null,
       strength: "forte",
       evidence_status: "PRECISA_VALIDAR",
       deleted_at: "2026-06-12T14:00:00.000Z",
@@ -95,6 +97,7 @@ describe("offline technical sanitary catalog v2 stores", () => {
     ).resolves.toMatchObject({
       scope: "global",
       fazenda_id: null,
+      source_key: "SRC_BULA_PRODUTO_X",
       updated_at: later,
       deleted_at: null,
       metadata: { phase: "12E3", tags: ["source"] },
@@ -104,6 +107,7 @@ describe("offline technical sanitary catalog v2 stores", () => {
     ).resolves.toMatchObject({
       scope: "fazenda",
       fazenda_id: "farm-1",
+      source_key: null,
       deleted_at: "2026-06-12T14:00:00.000Z",
     });
     expect(await db.queue_ops.count()).toBe(0);
