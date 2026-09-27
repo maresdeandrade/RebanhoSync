@@ -21,6 +21,7 @@
     "coverage": 66,
     "protocols": 10,
     "protocol_items": 20,
+    "product_classes": 8,
     "product_class_groups": 4,
     "product_class_group_member_rejections": 16
   },
@@ -3122,6 +3123,247 @@
           "allows_agenda_auto": false,
           "requires_mv_responsavel": true,
           "status": "draft"
+        }
+      ]
+    },
+    "sanitario_product_classes_v2": {
+      "target_table": "sanitario_product_classes_v2",
+      "rows": [
+        {
+          "id": "6e3d48fe-851e-4db7-aa2f-c2c0d89f069d",
+          "class_key": "vacina_brucelose_b19",
+          "scope": "global",
+          "fazenda_id": null,
+          "name": "Vacina contra brucelose B19",
+          "product_type": "vacina",
+          "product_subtype": null,
+          "target_condition": "brucelose",
+          "species_scope": [
+            "bovino",
+            "bubalino"
+          ],
+          "curation_status": "needs_review",
+          "automation_status": "manual_only",
+          "limitations": [
+            "requires_real_product",
+            "product_specific_composition",
+            "product_specific_schedule",
+            "product_specific_species_authorization",
+            "withdrawal_by_executed_product",
+            "do_not_generalize_product_label"
+          ],
+          "metadata": {
+            "taxonomy_kind": "technical_product_class",
+            "can_validate_execution": false,
+            "requires_executed_product_for_withdrawal": true
+          },
+          "deleted_at": null
+        },
+        {
+          "id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+          "class_key": "vacina_clostridial",
+          "scope": "global",
+          "fazenda_id": null,
+          "name": "Vacina clostridial",
+          "product_type": "vacina",
+          "product_subtype": null,
+          "target_condition": "clostridioses",
+          "species_scope": [
+            "bovino"
+          ],
+          "curation_status": "needs_review",
+          "automation_status": "manual_only",
+          "limitations": [
+            "requires_real_product",
+            "product_specific_composition",
+            "product_specific_schedule",
+            "product_specific_species_authorization",
+            "withdrawal_by_executed_product",
+            "do_not_generalize_product_label"
+          ],
+          "metadata": {
+            "taxonomy_kind": "technical_product_class",
+            "can_validate_execution": false,
+            "requires_executed_product_for_withdrawal": true
+          },
+          "deleted_at": null
+        },
+        {
+          "id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+          "class_key": "vacina_raiva_herbivoros",
+          "scope": "global",
+          "fazenda_id": null,
+          "name": "Vacina contra raiva dos herbivoros",
+          "product_type": "vacina",
+          "product_subtype": null,
+          "target_condition": "raiva_dos_herbivoros",
+          "species_scope": [
+            "bovino",
+            "bubalino"
+          ],
+          "curation_status": "needs_review",
+          "automation_status": "manual_only",
+          "limitations": [
+            "requires_real_product",
+            "requires_regional_risk_context",
+            "product_specific_schedule",
+            "product_specific_species_authorization",
+            "withdrawal_by_executed_product",
+            "do_not_generalize_product_label"
+          ],
+          "metadata": {
+            "taxonomy_kind": "technical_product_class",
+            "can_validate_execution": false,
+            "requires_executed_product_for_withdrawal": true
+          },
+          "deleted_at": null
+        },
+        {
+          "id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+          "class_key": "vacina_leptospirose",
+          "scope": "global",
+          "fazenda_id": null,
+          "name": "Vacina contra leptospirose",
+          "product_type": "vacina",
+          "product_subtype": null,
+          "target_condition": "leptospirose",
+          "species_scope": [
+            "bovino"
+          ],
+          "curation_status": "needs_review",
+          "automation_status": "manual_only",
+          "limitations": [
+            "requires_real_product",
+            "product_specific_composition",
+            "product_specific_schedule",
+            "product_specific_reproductive_restrictions",
+            "withdrawal_by_executed_product",
+            "do_not_generalize_product_label"
+          ],
+          "metadata": {
+            "taxonomy_kind": "technical_product_class",
+            "can_validate_execution": false,
+            "requires_executed_product_for_withdrawal": true
+          },
+          "deleted_at": null
+        },
+        {
+          "id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+          "class_key": "lactonas_macrociclicas",
+          "scope": "global",
+          "fazenda_id": null,
+          "name": "Lactonas macrociclicas",
+          "product_type": "antiparasitario",
+          "product_subtype": null,
+          "target_condition": null,
+          "species_scope": [
+            "bovino"
+          ],
+          "curation_status": "needs_review",
+          "automation_status": "manual_only",
+          "limitations": [
+            "requires_real_product",
+            "product_specific_dose",
+            "product_specific_species_authorization",
+            "product_specific_reproductive_restrictions",
+            "withdrawal_by_executed_product",
+            "do_not_generalize_product_label"
+          ],
+          "metadata": {
+            "taxonomy_kind": "pharmacological_class",
+            "can_validate_execution": false,
+            "requires_executed_product_for_withdrawal": true
+          },
+          "deleted_at": null
+        },
+        {
+          "id": "cb2b48d3-25a0-4e09-b3da-39a30a1765d2",
+          "class_key": "benzimidazois",
+          "scope": "global",
+          "fazenda_id": null,
+          "name": "Benzimidazois",
+          "product_type": "antiparasitario",
+          "product_subtype": null,
+          "target_condition": null,
+          "species_scope": [
+            "bovino"
+          ],
+          "curation_status": "needs_review",
+          "automation_status": "manual_only",
+          "limitations": [
+            "requires_real_product",
+            "product_specific_dose",
+            "product_specific_species_authorization",
+            "product_specific_reproductive_restrictions",
+            "withdrawal_by_executed_product",
+            "do_not_generalize_product_label"
+          ],
+          "metadata": {
+            "taxonomy_kind": "pharmacological_class",
+            "can_validate_execution": false,
+            "requires_executed_product_for_withdrawal": true
+          },
+          "deleted_at": null
+        },
+        {
+          "id": "f7212d4a-1742-4f2a-80c9-ffec7f43b214",
+          "class_key": "imidazotiazoleis",
+          "scope": "global",
+          "fazenda_id": null,
+          "name": "Imidazotiazoleis",
+          "product_type": "antiparasitario",
+          "product_subtype": null,
+          "target_condition": null,
+          "species_scope": [
+            "bovino"
+          ],
+          "curation_status": "needs_review",
+          "automation_status": "manual_only",
+          "limitations": [
+            "requires_real_product",
+            "product_specific_dose",
+            "product_specific_species_authorization",
+            "product_specific_reproductive_restrictions",
+            "withdrawal_by_executed_product",
+            "do_not_generalize_product_label"
+          ],
+          "metadata": {
+            "taxonomy_kind": "pharmacological_class",
+            "can_validate_execution": false,
+            "requires_executed_product_for_withdrawal": true
+          },
+          "deleted_at": null
+        },
+        {
+          "id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+          "class_key": "vacina_ibr_bvd",
+          "scope": "global",
+          "fazenda_id": null,
+          "name": "Vacinas utilizadas no contexto funcional IBR/BVD",
+          "product_type": "vacina",
+          "product_subtype": null,
+          "target_condition": "ibr_bvd",
+          "species_scope": [
+            "bovino"
+          ],
+          "curation_status": "needs_review",
+          "automation_status": "manual_only",
+          "limitations": [
+            "requires_real_product",
+            "product_specific_composition",
+            "product_specific_schedule",
+            "product_specific_reproductive_restrictions",
+            "withdrawal_by_executed_product",
+            "do_not_generalize_product_label"
+          ],
+          "metadata": {
+            "taxonomy_kind": "restricted_functional_class",
+            "functional_scope": "ibr_bvd",
+            "products_are_not_equivalent": true,
+            "can_validate_execution": false,
+            "requires_executed_product_for_withdrawal": true
+          },
+          "deleted_at": null
         }
       ]
     },

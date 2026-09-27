@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import {
@@ -14,6 +15,9 @@ import {
 
 const IMPORT_SCRIPT = fileURLToPath(
   new URL("../../scripts/codex/import-sanitario-protocols-v2.mjs", import.meta.url),
+);
+const CANONICAL_PAYLOAD = fileURLToPath(
+  new URL("../../docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json", import.meta.url),
 );
 
 const ids = {
@@ -410,6 +414,60 @@ describe("sanitario v2 canonical contract", () => {
     const payload = realFormPayload();
     payload.payload.sanitario_protocolo_itens_versions_v2.rows[0].protocol_id = "123e4567-e89b-42d3-a456-426614174000";
     expect(() => validateCanonicalTechnicalContract(payload)).toThrow("UUID artificial");
+  });
+
+  it("materializes the C0.3 product classes with stable global identity", () => {
+    const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
+    const normalized = normalizeCanonicalData(payload);
+    const classes = normalized.product_class_rows;
+    const requiredClassKeys = [
+      "vacina_brucelose_b19",
+      "vacina_clostridial",
+      "vacina_raiva_herbivoros",
+      "vacina_leptospirose",
+      "lactonas_macrociclicas",
+      "benzimidazois",
+      "imidazotiazoleis",
+    ];
+
+    expect(classes).toHaveLength(8);
+    expect(payload.counts.product_classes).toBe(classes.length);
+    expect(new Set(classes.map((row) => row.id)).size).toBe(classes.length);
+    expect(new Set(classes.map((row) => row.class_key)).size).toBe(classes.length);
+    expect(classes.every((row) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(row.id))).toBe(true);
+    expect(classes.every((row) => row.scope === "global" && row.fazenda_id === null)).toBe(true);
+    expect(requiredClassKeys.every((classKey) => classes.some((row) => row.class_key === classKey))).toBe(true);
+  });
+
+  it("keeps IBR/BVD restricted and antiparasitic associations outside ProductClass", () => {
+    const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
+    const normalized = normalizeCanonicalData(payload);
+    const classKeys = new Set(normalized.product_class_rows.map((row) => row.class_key));
+    const ibrBvd = normalized.product_class_rows.find((row) => row.class_key === "vacina_ibr_bvd");
+    const classItems = normalized.protocol_item_rows.filter((row) => row.product_requirement_kind === "product_class");
+
+    expect(ibrBvd).toMatchObject({
+      scope: "global",
+      fazenda_id: null,
+      curation_status: "needs_review",
+      automation_status: "manual_only",
+    });
+    expect(ibrBvd.limitations).toEqual(expect.arrayContaining([
+      "requires_real_product",
+      "product_specific_composition",
+      "product_specific_schedule",
+      "product_specific_reproductive_restrictions",
+      "withdrawal_by_executed_product",
+      "do_not_generalize_product_label",
+    ]));
+    expect(ibrBvd.metadata.can_validate_execution).toBe(false);
+    expect(classKeys.has("associacoes_antiparasitarias")).toBe(false);
+    expect(normalized.product_class_group_member_rows).toEqual([]);
+    expect(classItems.every((item) => classKeys.has(item.class_key))).toBe(true);
+    expect(classItems.filter((item) => item.class_key === "vacina_ibr_bvd").map((item) => item.logical_item_key)).toEqual([
+      "ibr_bvd_primovac_dose1",
+      "ibr_bvd_primovac_dose2",
+    ]);
   });
 
   it("builds physical rows purely from canonical fields without lookup placeholders", () => {
