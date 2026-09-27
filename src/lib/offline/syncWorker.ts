@@ -683,6 +683,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isSanitarioCanonicalResult(
   result: SyncOperationResult,
+  knownSanitarioOpIds: ReadonlySet<string>,
 ): result is SyncOperationResult & { status: SanitarioSyncV2ResultStatus } {
   if (
     !SANITARIO_CANONICAL_STATUSES.has(
@@ -692,12 +693,14 @@ function isSanitarioCanonicalResult(
     return false;
   }
 
+  if (knownSanitarioOpIds.has(result.op_id)) return true;
+
   return (
-    typeof result.domain_op_id === "string" ||
-    typeof result.canonical_entity_id === "string" ||
-    typeof result.current_revision === "number" ||
-    typeof result.canonical_status === "string" ||
-    isRecord(result.canonical_result)
+    typeof result.client_op_id === "string" &&
+    typeof result.domain_op_id === "string" &&
+    (typeof result.canonical_entity_id === "string" ||
+      typeof result.canonical_status === "string" ||
+      isRecord(result.canonical_result))
   );
 }
 
@@ -817,8 +820,7 @@ async function processSanitarioCanonicalResults(
       .map((op) => op.client_op_id),
   );
   const canonicalResults = results.filter(
-    (result) =>
-      sanitarioOpIds.has(result.op_id) && isSanitarioCanonicalResult(result),
+    (result) => isSanitarioCanonicalResult(result, sanitarioOpIds),
   );
   if (canonicalResults.length === 0) return false;
 
