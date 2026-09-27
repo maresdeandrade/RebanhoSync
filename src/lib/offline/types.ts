@@ -394,6 +394,8 @@ export interface Animal {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  /** Última revisão remota conhecida; nunca é incrementada pelo device. */
+  revision?: number;
 }
 
 export interface Lote {
@@ -640,6 +642,8 @@ export interface Operation {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   before_snapshot?: any;
+  /** Revisão remota capturada quando o gesto de UPDATE foi criado. */
+  expected_revision?: number;
   /** Canonical sanitario_v2 identity returned by sync-batch. */
   domain_op_id?: string;
   /** Per-operation retry/blocking state; fields are intentionally not indexed. */
