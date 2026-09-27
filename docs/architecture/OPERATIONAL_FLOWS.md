@@ -3,6 +3,7 @@
 Status: **BASELINE OFICIAL CANDIDATO**
 Code baseline original: `main@9db4bb9ffeb0bc4d1bc07305cde48132cd638721`
 Functional state: baseline original + consolidated validated patches
+State conflict candidate: `main@cc51099c2f6efebb4ccb3e1bbbad01354e145dac` + `df5299d8d2d54f6f1ffe13e9a1cada30299cb950` e ajustes finais locais
 Document source: `docs/review/evidence/MAPA_FLUXOS_CONTRATOS_REBANHOSYNC_VALIDADO.md`
 
 > Quando existir um commit contendo código e documentação, o status e o hash poderão ser atualizados para esse commit final. Até lá, os patches validados pertencem ao candidate worktree e não recebem hash próprio.
@@ -53,6 +54,7 @@ O candidate worktree foi aprovado em gate consolidado. Nenhum hash deve ser inve
 20. Correção factual recebe nova identidade quando aplicável.
 21. Tombstone remoto não pode ressuscitar entidade operacional.
 22. Detail factual necessário ao read model precisa de caminho explícito de convergência.
+23. `UPDATE` de `animais` exige revision remota conhecida e conflito stale terminal.
 
 ## 4. Pipeline operacional comum
 
@@ -89,6 +91,12 @@ Status técnico de sync não transforma intenção em fato nem comprova aptidão
 ## 6. Animais
 
 `state_animais` contém identidade e estado operacional corrente. Criação, edição, importação e transições usam operações sobre a tabela remota `animais`, materializadas localmente em `state_animais`.
+
+Para `UPDATE` genérico, `revision` é a versão remota autoritativa e `expected_revision` é
+persistida com a operação antes da mutação otimista. O remoto aplica CAS por PK + `fazenda_id`
++ revision. Mismatch retorna `STATE_REVISION_CONFLICT`; cliente sem revision falha de modo
+fechado. Replay da mesma identidade é resolvido antes do CAS. Esse contrato não cobre todos os
+`state_*` nem transforma revision em fato histórico.
 
 Mudanças factuais de movimentação, compra, venda, pesagem, ECC, reprodução ou sanidade exigem Evento e detail quando o contrato do domínio assim determinar. Retry não pode duplicar identidade. Toda leitura operacional deve confirmar `fazenda_id`.
 
@@ -288,6 +296,9 @@ Reconstrução depende das superfícies incluídas em pull padrão ou especializ
 
 Retry do mesmo comando preserva `client_tx_id` e `client_op_id`. Correção factual usa nova identidade quando o domínio exige novo fato.
 
+Em `UPDATE` de `animais`, o retry também preserva `expected_revision`. Conflito stale é terminal
+e exige reconcile antes de uma nova operação; não há retry automático, LWW ou merge por campo.
+
 ## 22. Writers canônicos
 
 | Writer/compositor | Uso |
@@ -344,6 +355,7 @@ Builders canônicos devem ser reutilizados. Consumidores não podem duplicar par
 | Handler de exclusão | `AnimalEditarDelete.test.tsx` |
 | Delete, reload, rollback, pull e retry | `animalDeletionFlow.test.ts` |
 | Sucesso parcial e identidade | `syncPartialBatch.test.ts` |
+| Revision, stale write e CAS de animais | `stateExpectedRevision.characterization.test.ts`, `stateConflictConcurrency.test.ts` e `stateConflictSyncBatch.e2e.test.ts` |
 | Isolamento em detalhes | `detailFarmIsolation.test.ts` |
 | Timeline, peso e ECC de occupancy | `src/features/occupancy/__tests__/*` |
 | Import V2 | `importV2.test.ts`, `importV2Persistence.test.ts`, `importV2CreateGesture.test.ts` e E2Es das três telas |

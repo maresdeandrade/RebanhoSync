@@ -3,6 +3,42 @@ export interface Operation {
   table: string;
   action: "INSERT" | "UPDATE" | "DELETE";
   record: Record<string, unknown>;
+  expected_revision?: number;
+}
+
+const REVISION_PROTECTED_STATE_TABLES = new Set(["animais"]);
+
+export function validateStateExpectedRevision(op: Operation):
+  | { protected: false; ok: true }
+  | { protected: true; ok: true; expected_revision: number }
+  | {
+    protected: true;
+    ok: false;
+    reason_code: "STATE_EXPECTED_REVISION_REQUIRED";
+  } {
+  if (
+    op.action !== "UPDATE" ||
+    !REVISION_PROTECTED_STATE_TABLES.has(op.table)
+  ) {
+    return { protected: false, ok: true };
+  }
+
+  if (
+    !Number.isSafeInteger(op.expected_revision) ||
+    (op.expected_revision ?? 0) < 1
+  ) {
+    return {
+      protected: true,
+      ok: false,
+      reason_code: "STATE_EXPECTED_REVISION_REQUIRED",
+    };
+  }
+
+  return {
+    protected: true,
+    ok: true,
+    expected_revision: op.expected_revision as number,
+  };
 }
 
 const UUID_PATTERN =

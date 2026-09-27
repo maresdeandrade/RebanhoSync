@@ -11,6 +11,7 @@ import {
   readLinkedReproductionType,
   readReproductionPayload,
   sameSanitarioInventoryMovement,
+  validateStateExpectedRevision,
   validateSanitarioAgendaClosurePush,
   validateSanitarioInventoryMovementRecord,
   validateSanitarioInventoryMovementSource,
@@ -106,6 +107,7 @@ function withTimeout<T>(
   });
 }
 
+// fallow-ignore-next-line code-duplication -- handler-shell overlap with telemetry-ingest is inherited; domain bodies are unrelated.
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
   const corsHeaders = getCorsHeaders(origin);
@@ -769,6 +771,7 @@ Deno.serve(async (req: Request) => {
         }
 
         const primaryKey = resolveOperationPrimaryKey({ ...op, record });
+        let persistedOperation: Record<string, unknown> | null = null;
         if (primaryKey) {
           let replayQuery = supabase
             .from(op.table)
@@ -779,6 +782,7 @@ Deno.serve(async (req: Request) => {
           }
           const { data: existingOperation, error: replayLookupError } =
             await replayQuery.maybeSingle();
+          persistedOperation = existingOperation as Record<string, unknown> | null;
 
           if (replayLookupError) {
             results.push({
@@ -813,6 +817,45 @@ Deno.serve(async (req: Request) => {
             });
             continue;
           }
+        }
+
+        const stateRevisionPolicy = validateStateExpectedRevision(op);
+        if (!stateRevisionPolicy.ok) {
+          results.push({
+            op_id: op.client_op_id,
+            status: "REJECTED",
+            reason_code: stateRevisionPolicy.reason_code,
+            reason_message:
+              "State UPDATE requires the remote revision captured when the gesture was created",
+          });
+          continue;
+        }
+        if (stateRevisionPolicy.protected) {
+          const currentRevision = persistedOperation?.revision;
+          if (!persistedOperation) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "REJECTED",
+              reason_code: "STATE_TARGET_NOT_FOUND_OR_FORBIDDEN",
+              reason_message:
+                "State target was not found in the authenticated farm scope",
+            });
+            continue;
+          }
+          if (currentRevision !== stateRevisionPolicy.expected_revision) {
+            results.push({
+              op_id: op.client_op_id,
+              status: "CONFLICT",
+              retryable: false,
+              reason_code: "STATE_REVISION_CONFLICT",
+              reason_message: "State changed after the local snapshot was read",
+              ...(typeof currentRevision === "number"
+                ? { current_revision: currentRevision }
+                : {}),
+            });
+            continue;
+          }
+          delete record.revision;
         }
 
         if (op.table === "finance_categories" && op.action === "INSERT") {
@@ -1564,7 +1607,12 @@ Deno.serve(async (req: Request) => {
             });
             continue;
           }
-          query = supabase.from(op.table).update(record).match(match).select(); // Request representation to avoid PGRST204
+          const updateQuery = supabase.from(op.table).update(record).match(match);
+          query = stateRevisionPolicy.protected
+            ? updateQuery
+                .eq("revision", stateRevisionPolicy.expected_revision)
+                .select("revision")
+            : updateQuery.select(); // Request representation to avoid PGRST204
         } else if (op.action === "DELETE") {
           const match = buildMutationMatch(op, fazenda_id);
           if (!match) {
@@ -1588,7 +1636,7 @@ Deno.serve(async (req: Request) => {
             .select(); // Request representation to avoid PGRST204
         }
 
-        const { error } = await query!;
+        const { data, error } = await query!;
 
         if (error) {
           const normalized = normalizeDbError(error, op);
@@ -1608,6 +1656,35 @@ Deno.serve(async (req: Request) => {
               reason_message: normalized.reason_message,
             });
           }
+        } else if (
+          stateRevisionPolicy.protected &&
+          Array.isArray(data) &&
+          data.length === 0
+        ) {
+          let currentRevision: number | undefined;
+          if (primaryKey) {
+            let currentQuery = supabase
+              .from(op.table)
+              .select("revision")
+              .eq(primaryKey.field, primaryKey.value);
+            if (TABLES_WITH_FAZENDA.has(op.table)) {
+              currentQuery = currentQuery.eq("fazenda_id", fazenda_id);
+            }
+            const { data: current } = await currentQuery.maybeSingle();
+            if (typeof current?.revision === "number") {
+              currentRevision = current.revision;
+            }
+          }
+          results.push({
+            op_id: op.client_op_id,
+            status: "CONFLICT",
+            retryable: false,
+            reason_code: "STATE_REVISION_CONFLICT",
+            reason_message: "State changed concurrently during the update",
+            ...(currentRevision === undefined
+              ? {}
+              : { current_revision: currentRevision }),
+          });
         } else {
           if (
             op.table === "protocolos_sanitarios" ||

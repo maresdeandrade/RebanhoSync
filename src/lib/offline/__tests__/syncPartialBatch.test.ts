@@ -90,6 +90,7 @@ async function seedAnimal(overrides: Partial<Record<string, unknown>> = {}) {
     created_at: now,
     updated_at: now,
     deleted_at: null,
+    revision: Number(overrides.revision ?? 1),
   });
 
   return id;
@@ -231,6 +232,67 @@ describe("sync partial batch: reconciliação por operação", () => {
     );
     expect((firstOp.before_snapshot as { observacoes?: string })?.observacoes).toBe(
       "seed-obs",
+    );
+  });
+
+  it("CONFLICT é terminal, auditável e não entra em retry automático", async () => {
+    const animalId = await seedAnimal({
+      id: "animal-state-conflict",
+      observacoes: "remote-baseline",
+      revision: 4,
+    });
+    const txId = await createGesture("farm-partial", [
+      {
+        table: "animais",
+        action: "UPDATE",
+        record: { id: animalId, observacoes: "offline-stale" },
+      },
+    ]);
+    const [operation] = await db.queue_ops
+      .where("client_tx_id")
+      .equals(txId)
+      .toArray();
+    expect(operation.expected_revision).toBe(4);
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [
+            {
+              op_id: operation.client_op_id,
+              status: "CONFLICT",
+              retryable: false,
+              reason_code: "STATE_REVISION_CONFLICT",
+              reason_message: "state advanced",
+              current_revision: 5,
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await processGesture(await getGesture(txId));
+
+    expect(await getGesture(txId)).toMatchObject({
+      status: "REJECTED",
+      sync_result: "REJECTED",
+    });
+    expect(await db.queue_ops.get(operation.client_op_id)).toMatchObject({
+      expected_revision: 4,
+      sync_state: "REJECTED",
+      blocked_reason: "STATE_REVISION_CONFLICT",
+    });
+    expect(await db.queue_rejections.toArray()).toEqual([
+      expect.objectContaining({
+        client_op_id: operation.client_op_id,
+        reason_code: "STATE_REVISION_CONFLICT",
+      }),
+    ]);
+    expect(pullDataForFarm).toHaveBeenCalledWith(
+      "farm-partial",
+      ["animais"],
+      { mode: "replace" },
     );
   });
 
