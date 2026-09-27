@@ -1,15 +1,15 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
 Atualizado em: 2026-09-27
-Status: **Fase 24 ativa; F24.4C pronta para revisão; produção não autorizada**
-Próxima fase: **Fase 24 — F24.4D Clock Authority — NOT_STARTED após integração da F24.4C**
+Status: **Fase 24 ativa; F24.4C CLOSED; F24.4 IN_PROGRESS; produção não autorizada**
+Próxima fase: **F24.4D — Clock Authority (NEXT; NOT_STARTED)**
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`
 Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`
-Baseline candidata da F24.4C: `main@cc51099c2f6efebb4ccb3e1bbbad01354e145dac` + `df5299d8d2d54f6f1ffe13e9a1cada30299cb950` e ajustes finais locais
-Decisão: **F24.4A CLOSED / F24.4B CLOSED / F24.4C READY_FOR_REVIEW**
+F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27
+Decisão: **F24.4A CLOSED / F24.4B CLOSED / F24.4C CLOSED**
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -20,7 +20,7 @@ Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
-## F24.4C — handoff para revisão
+## F24.4C — closeout
 
 A [matriz F24.4C](./F24_4C_STATE_CONFLICT_POLICY.md) implementa controle otimista de
 concorrência para `UPDATE` de `animais`: revision server-authoritative, `expected_revision`
@@ -31,7 +31,10 @@ revision falha de modo fechado.
 A bateria relacionada passou 134/134, PostgreSQL real passou 3/3 e o E2E local
 Auth → Edge → RLS → PostgreSQL passou 2/2. Lint, Fallow new-only, build e baseline funcional
 Supabase passaram. Nenhuma migration foi aplicada remotamente. O escopo certificado é
-`ANIMAIS_ONLY`; F24.4D aguarda PR, CI, merge e rebaseline.
+`ANIMAIS_ONLY`; `CLOCK_AUTHORITY = DEFERRED_TO_F24.4D`; delete/tombstone completo permanece
+deferido; `REAL_MULTI_DEVICE = NOT_PROVEN`; política genérica de state não generalizada.
+O PR #169 foi integrado em `3b7ac50ed878d8d8d4b88874ad98c9d98816149b`; F24.4C fechada em
+2026-09-27. F24.4D é a próxima fase.
 
 ## F24.4B — handoff de fechamento
 

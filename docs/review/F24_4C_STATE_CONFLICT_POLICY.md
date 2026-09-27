@@ -5,8 +5,12 @@ Atualizado em: 2026-09-27
 ## Decisão
 
 ```ini
-F24_4C = READY_FOR_REVIEW
+F24_4C = CLOSED
 F24_4 = IN_PROGRESS
+
+MERGE_PR = #169
+MERGE_SHA = 3b7ac50ed878d8d8d4b88874ad98c9d98816149b
+CLOSED_AT = 2026-09-27
 
 RUNTIME_CHANGE = 1
 SCHEMA_CHANGE = 1
@@ -218,5 +222,6 @@ REAL_MULTI_DEVICE = NOT_PROVEN
 
 ## Próxima fase
 
-Abrir PR da F24.4C, revisar CI, fazer merge e rebaseline de `main`. Somente depois iniciar
-F24.4D. F24.4C permanece `READY_FOR_REVIEW`, não integrada nem `CLOSED`.
+A F24.4C foi integrada pelo PR #169 em `3b7ac50ed878d8d8d4b88874ad98c9d98816149b` e
+formalmente encerrada em 2026-09-27. As limitações e evidências técnicas acima permanecem
+inalteradas. Próxima fase: F24.4D — Clock Authority.

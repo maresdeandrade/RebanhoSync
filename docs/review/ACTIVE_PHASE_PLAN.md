@@ -1,8 +1,8 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
 Atualizado em: 2026-09-27
-Status: **Fase 24 ativa; F24.4A CLOSED; F24.4B CLOSED; F24.4C READY_FOR_REVIEW**
-Baseline candidata da F24.4C: `main@cc51099c2f6efebb4ccb3e1bbbad01354e145dac` + `df5299d8d2d54f6f1ffe13e9a1cada30299cb950` e ajustes finais locais.
+Status: **Fase 24 ativa; F24.4A CLOSED; F24.4B CLOSED; F24.4C CLOSED; F24.4 IN_PROGRESS**
+F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27.
 Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`.
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`.
@@ -14,7 +14,7 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
-Próxima fase: **Fase 24 — F24.4D Clock Authority — NOT_STARTED após integração da F24.4C**
+Próxima fase: **F24.4D — Clock Authority (NEXT; NOT_STARTED)**
 
 Este documento aponta para o [closeout autoritativo da F24.2](./F24_2_CLOSEOUT_AND_REBASELINE.md)
 e para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
@@ -49,14 +49,15 @@ heurística. A F24.4C tratou separadamente a política de concorrência de estad
 
 ## F24.4C — política de concorrência de estado
 
-A [matriz F24.4C](./F24_4C_STATE_CONFLICT_POLICY.md) está `READY_FOR_REVIEW`. O patch adota
+A [matriz F24.4C](./F24_4C_STATE_CONFLICT_POLICY.md) foi encerrada após integração pelo PR #169
+em `3b7ac50ed878d8d8d4b88874ad98c9d98816149b`. O patch adota
 revision autoritativa no servidor e CAS por `expected_revision` somente para `UPDATE` de
 `animais`, preservando replay, retry, RLS, ownership e isolamento por `fazenda_id`. Stale write
 termina em `STATE_REVISION_CONFLICT`; cliente legado sem revision falha de modo fechado.
 
 PostgreSQL real passou 3/3 e o E2E local Auth → Edge → RLS → PostgreSQL passou 2/2. A política
 genérica permanece parcial; clock authority, delete/tombstone completo e multi-device físico
-não foram certificados. F24.4D só inicia após PR, CI, merge e rebaseline de `main`.
+não foram certificados. Esses limites permanecem; F24.4D — Clock Authority é a próxima fase.
 
 ## F24.2 — closeout
 
