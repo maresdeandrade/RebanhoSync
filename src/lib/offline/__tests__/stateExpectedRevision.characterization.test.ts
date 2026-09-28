@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { db } from "../db";
 import { createGesture } from "../ops";
+import { mapOperationForSync } from "../syncWorker";
 
 describe("F24.4C — snapshot remoto de revision", () => {
   beforeEach(async () => {
@@ -46,6 +47,18 @@ describe("F24.4C — snapshot remoto de revision", () => {
       .toArray();
     expect(operation.expected_revision).toBe(7);
     expect((await db.state_animais.get("animal-revision-1") as { revision?: number })?.revision).toBe(7);
+
+    const firstEnvelope = mapOperationForSync(operation, "farm-revision-1");
+    expect(firstEnvelope).toMatchObject({
+      client_op_id: operation.client_op_id,
+      table: "animais",
+      action: "UPDATE",
+      expected_revision: 7,
+    });
+    await db.state_animais.update("animal-revision-1", { revision: 8 } as never);
+    const replayEnvelope = mapOperationForSync(operation, "farm-revision-1");
+    expect(replayEnvelope).toEqual(firstEnvelope);
+    expect(replayEnvelope.expected_revision).toBe(7);
   });
 
   it("não fabrica revisão para snapshot legado e deixa o servidor falhar fechado", async () => {
@@ -70,5 +83,8 @@ describe("F24.4C — snapshot remoto de revision", () => {
       .toArray();
     expect(operation.expected_revision).toBeUndefined();
     expect(operation.before_snapshot).toMatchObject({ lote_id: "lote-a" });
+    expect(mapOperationForSync(operation, "farm-revision-1")).not.toHaveProperty(
+      "expected_revision",
+    );
   });
 });

@@ -1355,6 +1355,11 @@ export function mapOperationForSync(
     client_op_id: op.client_op_id,
     table: remoteTable,
     action: op.action,
+    ...(remoteTable === "animais" &&
+    op.action === "UPDATE" &&
+    op.expected_revision !== undefined
+      ? { expected_revision: op.expected_revision }
+      : {}),
     record: normalizeTableMutationRecord(remoteTable, op.record, fazendaId),
   };
 }
