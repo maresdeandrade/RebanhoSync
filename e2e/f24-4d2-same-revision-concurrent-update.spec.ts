@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { Client } from "pg";
 
@@ -84,7 +84,7 @@ async function syncClient(page: Page, txId: string, farmId: string) {
   }, { txId, farmId });
 }
 
-test("F24.4D2: dois clientes offline com a mesma revision, A aplicado e B em conflito terminal", async ({ browser }) => {
+async function runSameRevisionScenario(browser: Browser, first: "A" | "B") {
   expect(apiUrl && anonKey && serviceRoleKey && databaseUrl, "Local Auth, Edge and PostgreSQL environment is required").toBeTruthy();
   expect(new URL(apiUrl!).hostname).toMatch(/^(127\.0\.0\.1|localhost)$/);
   expect(new URL(databaseUrl!).hostname).toMatch(/^(127\.0\.0\.1|localhost)$/);
@@ -94,8 +94,9 @@ test("F24.4D2: dois clientes offline com a mesma revision, A aplicado e B em con
   const userId = crypto.randomUUID();
   const farmId = crypto.randomUUID();
   const animalId = crypto.randomUUID();
-  const email = `f24-4d2-${userId}@example.test`;
-  const password = `F24.4D2-${crypto.randomUUID()}-Aa1!`;
+  const phase = first === "A" ? "F24.4D2" : "F24.4D3";
+  const email = `f24-4d-${first.toLowerCase()}-${userId}@example.test`;
+  const password = `${phase}-${crypto.randomUUID()}-Aa1!`;
   const noteA = `device-a-${crypto.randomUUID()}`;
   const noteB = `device-b-${crypto.randomUUID()}`;
   const contextA = await browser.newContext();
@@ -111,6 +112,9 @@ test("F24.4D2: dois clientes offline com a mesma revision, A aplicado e B em con
     await database.query("insert into public.fazendas (id, nome) values ($1, 'F24.4D2 E2E')", [farmId]);
     await database.query("insert into public.user_fazendas (user_id, fazenda_id, role, is_primary, accepted_at) values ($1, $2, 'owner', true, now())", [userId, farmId]);
     await database.query("insert into public.animais (id, fazenda_id, identificacao, sexo, observacoes) values ($1, $2, 'F24-4D2-E2E', 'F', 'baseline')", [animalId, farmId]);
+    const initialRemote = await database.query<{ revision: string; observacoes: string }>("select revision, observacoes from public.animais where id = $1", [animalId]);
+    expect(initialRemote.rows).toHaveLength(1);
+    expect(initialRemote.rows[0].observacoes).toBe("baseline");
 
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
@@ -123,6 +127,7 @@ test("F24.4D2: dois clientes offline com a mesma revision, A aplicado e B em con
     expect(initialA.ownership).toBe("OWNED");
     expect(initialB.ownership).toBe("OWNED");
     expect(initialA.revision).toBe(initialB.revision);
+    expect(initialA.revision).toBe(Number(initialRemote.rows[0].revision));
     expect(initialA.revision).toBeGreaterThanOrEqual(1);
     expect(initialA.observacoes).toBe("baseline");
     expect(initialB.observacoes).toBe("baseline");
@@ -143,41 +148,53 @@ test("F24.4D2: dois clientes offline com a mesma revision, A aplicado e B em con
     expect(beforeB.otherOpPresent).toBe(false);
     expect(beforeA.animal?.observacoes).toBe(noteA);
     expect(beforeB.animal?.observacoes).toBe(noteB);
-    console.log(JSON.stringify({ checkpoint: "both-offline", initialRevision: initialA.revision, queuedA, queuedB }));
+    console.log(JSON.stringify({ checkpoint: "both-offline", phase, first, initialRevision: initialA.revision, queuedA, queuedB }));
 
-    await contextA.setOffline(false);
-    await syncClient(pageA, queuedA.txId, farmId);
-    const afterA = await database.query<{ revision: string; observacoes: string }>("select revision, observacoes from public.animais where id = $1", [animalId]);
-    const localA = await readClient(pageA, queuedA.txId, queuedA.opId, animalId, queuedB.opId);
-    console.log(JSON.stringify({ checkpoint: "after-A", initialRevision: initialA.revision, remote: afterA.rows[0], local: localA }));
-    expect(Number(afterA.rows[0].revision)).toBe(initialA.revision + 1);
-    expect(afterA.rows[0].observacoes).toBe(noteA);
-    expect(localA.gesture?.syncResult).toBe("APPLIED");
-    expect(localA.op).toBeUndefined();
+    const firstContext = first === "A" ? contextA : contextB;
+    const firstPage = first === "A" ? pageA : pageB;
+    const firstQueued = first === "A" ? queuedA : queuedB;
+    const firstOtherOpId = first === "A" ? queuedB.opId : queuedA.opId;
+    const firstNote = first === "A" ? noteA : noteB;
+    const secondContext = first === "A" ? contextB : contextA;
+    const secondPage = first === "A" ? pageB : pageA;
+    const secondQueued = first === "A" ? queuedB : queuedA;
+    const secondOtherOpId = firstQueued.opId;
 
-    await contextB.setOffline(false);
-    await syncClient(pageB, queuedB.txId, farmId);
-    const afterB = await database.query<{ revision: string; observacoes: string }>("select revision, observacoes from public.animais where id = $1", [animalId]);
-    expect(afterB.rows).toEqual(afterA.rows);
-    const localB = await readClient(pageB, queuedB.txId, queuedB.opId, animalId, queuedA.opId);
-    expect(localB.gesture?.status).toBe("REJECTED");
-    expect(localB.gesture?.syncResult).toBe("REJECTED");
-    expect(localB.gesture?.nextAttemptAt).toBeUndefined();
-    expect(localB.op).toMatchObject({ syncState: "REJECTED", blockedReason: "STATE_REVISION_CONFLICT", expectedRevision: initialB.revision });
-    expect(localB.op?.nextAttemptAt).toBeUndefined();
-    expect(localB.gesture?.audit).toEqual(expect.arrayContaining([expect.objectContaining({ op_id: queuedB.opId, status: "CONFLICT", reason_code: "STATE_REVISION_CONFLICT", retryable: false })]));
-    expect(localB.rejections).toEqual(expect.arrayContaining([expect.objectContaining({ client_op_id: queuedB.opId, reason_code: "STATE_REVISION_CONFLICT" })]));
+    await firstContext.setOffline(false);
+    await syncClient(firstPage, firstQueued.txId, farmId);
+    const afterFirst = await database.query<{ revision: string; observacoes: string }>("select revision, observacoes from public.animais where id = $1", [animalId]);
+    const firstLocalAfterAck = await readClient(firstPage, firstQueued.txId, firstQueued.opId, animalId, firstOtherOpId);
+    console.log(JSON.stringify({ checkpoint: "after-first-ack", phase, first, remote: afterFirst.rows[0], local: firstLocalAfterAck }));
+    expect(Number(afterFirst.rows[0].revision)).toBe(initialA.revision + 1);
+    expect(afterFirst.rows[0].observacoes).toBe(firstNote);
+    expect(firstLocalAfterAck.gesture?.status).toBe("DONE");
+    expect(firstLocalAfterAck.gesture?.syncResult).toBe("APPLIED");
+    expect(firstLocalAfterAck.gesture?.audit).toEqual(expect.arrayContaining([expect.objectContaining({ op_id: firstQueued.opId, status: "APPLIED" })]));
+    expect(firstLocalAfterAck.op).toBeUndefined();
 
-    // Existing reconciliation runs in syncClient. Refresh A through the product pull path.
-    await pageA.evaluate(async (farmId) => {
+    await secondContext.setOffline(false);
+    await syncClient(secondPage, secondQueued.txId, farmId);
+    const afterSecond = await database.query<{ revision: string; observacoes: string }>("select revision, observacoes from public.animais where id = $1", [animalId]);
+    expect(afterSecond.rows).toEqual(afterFirst.rows);
+    const secondLocal = await readClient(secondPage, secondQueued.txId, secondQueued.opId, animalId, secondOtherOpId);
+    expect(secondLocal.gesture?.status).toBe("REJECTED");
+    expect(secondLocal.gesture?.syncResult).toBe("REJECTED");
+    expect(secondLocal.gesture?.nextAttemptAt).toBeUndefined();
+    expect(secondLocal.op).toMatchObject({ syncState: "REJECTED", blockedReason: "STATE_REVISION_CONFLICT", expectedRevision: initialA.revision });
+    expect(secondLocal.op?.nextAttemptAt).toBeUndefined();
+    expect(secondLocal.gesture?.audit).toEqual(expect.arrayContaining([expect.objectContaining({ op_id: secondQueued.opId, status: "CONFLICT", reason_code: "STATE_REVISION_CONFLICT", retryable: false })]));
+    expect(secondLocal.rejections).toEqual(expect.arrayContaining([expect.objectContaining({ client_op_id: secondQueued.opId, reason_code: "STATE_REVISION_CONFLICT" })]));
+
+    // The accepted client gets its remote revision through the existing pull path.
+    await firstPage.evaluate(async (farmId) => {
       const { pullDataForFarm } = await import("/src/lib/offline/pull.ts");
       await pullDataForFarm(farmId, ["animais"], { mode: "merge" });
     }, farmId);
     const finalA = await readClient(pageA, queuedA.txId, queuedA.opId, animalId, queuedB.opId);
     const finalB = await readClient(pageB, queuedB.txId, queuedB.opId, animalId, queuedA.opId);
-    expect(finalA.animal).toMatchObject({ revision: initialA.revision + 1, observacoes: noteA });
-    expect(finalB.animal).toMatchObject({ revision: initialA.revision + 1, observacoes: noteA });
-    console.log(JSON.stringify({ scenario: "F24.4D2", initialRevision: initialA.revision, expectedRevisionA: queuedA.expectedRevision, expectedRevisionB: queuedB.expectedRevision, opIdA: queuedA.opId, opIdB: queuedB.opId, remoteAfterA: afterA.rows[0], remoteAfterB: afterB.rows[0], localA: finalA, localB: finalB }));
+    expect(finalA.animal).toMatchObject({ revision: initialA.revision + 1, observacoes: firstNote });
+    expect(finalB.animal).toMatchObject({ revision: initialA.revision + 1, observacoes: firstNote });
+    console.log(JSON.stringify({ scenario: phase, first, initialRevision: initialA.revision, expectedRevisionA: queuedA.expectedRevision, expectedRevisionB: queuedB.expectedRevision, opIdA: queuedA.opId, opIdB: queuedB.opId, remoteAfterFirst: afterFirst.rows[0], remoteAfterSecond: afterSecond.rows[0], firstLocalAfterAck, localA: finalA, localB: finalB }));
   } finally {
     await Promise.all([contextA.close(), contextB.close()]);
     if (databaseConnected) {
@@ -188,4 +205,12 @@ test("F24.4D2: dois clientes offline com a mesma revision, A aplicado e B em con
     }
     if (userCreated) await admin.auth.admin.deleteUser(userId);
   }
+}
+
+test("F24.4D2: A reconecta primeiro, A aplicado e B em conflito terminal", async ({ browser }) => {
+  await runSameRevisionScenario(browser, "A");
+});
+
+test("F24.4D3: B reconecta primeiro, B aplicado e A em conflito terminal", async ({ browser }) => {
+  await runSameRevisionScenario(browser, "B");
 });
