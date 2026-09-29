@@ -1,15 +1,16 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-09-27
-Status: **Fase 24 ativa; F24.4C CLOSED; F24.4 IN_PROGRESS; produção não autorizada**
-Próxima fase: **F24.4D — Clock Authority (NEXT; NOT_STARTED)**
+Atualizado em: 2026-09-29
+Status: **Fase 24 ativa; F24.4D CLOSED; F24.4 IN_PROGRESS; produção não autorizada**
+Próxima fase: **F24.4E — Conflict Resolution Contract (NEXT; NOT_STARTED)**
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`
 Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27
-Decisão: **F24.4A CLOSED / F24.4B CLOSED / F24.4C CLOSED**
+F24.4D encerrada na branch `feat/f24-4d-cross-device-clock-authority` (commit final `faddf64`) em 2026-09-29
+Decisão: **F24.4A CLOSED / F24.4B CLOSED / F24.4C CLOSED / F24.4D CLOSED**
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -19,6 +20,31 @@ Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
+
+## F24.4D — closeout
+
+A [matriz F24.4D](./F24_4D_CROSS_DEVICE_CLOCK_AUTHORITY.md) encerra a caracterização de
+cross-device offline/reconnect e autoridade de relógio na branch
+`feat/f24-4d-cross-device-clock-authority` (commit final `faddf64`, status `BRANCH_ONLY`).
+
+O ciclo certificou os critical sync paths com Playwright multi-context:
+- **D1**: isolamento de IndexedDB e filas entre BrowserContexts independentes;
+- **D2/D3**: concorrência same-revision e simetria estrita de reconexão no CAS de `animais`;
+- **D2A**: gap de transporte corrigido (`expected_revision` incluída no envelope de sync);
+- **D4**: lost ACK com replay idempotente sem reexecução nem novo avanço de revisão;
+- **D5**: reconexão alternada, conflito stale terminal, reconciliação, nova intenção e convergência final;
+- **D6**: farm switch preservando pending, multi-tenant e revisão esperada;
+- **D7**: autoridade do CAS no servidor (`STATE_WINNER_AUTHORITY = SERVER_REVISION_CAS`); timestamps do cliente não afetam o vencedor de estado;
+- **D8**: clock skew local afeta elegibilidade de retry sem estagnação permanente, sem reabrir conflitos e sem duplicar operações após normalização do relógio.
+
+Limitações preservadas:
+- `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`;
+- `NON_ACTIVE_FARM_RECONCILIATION = NOT_TESTED`;
+- `ALL_DOMAIN_CLOCK_BEHAVIOR = NOT_PROVEN`;
+- `CLOCK_SKEW_CAN_BREAK_CAUSAL_DEPENDENCY = NOT_TESTED`;
+- `CLOCK_SKEW_CAN_CAUSE_UNBOUNDED_RETRY = NOT_OBSERVED`.
+
+Próxima fase: **F24.4E — Conflict Resolution Contract**.
 
 ## F24.4C — closeout
 
@@ -31,10 +57,9 @@ revision falha de modo fechado.
 A bateria relacionada passou 134/134, PostgreSQL real passou 3/3 e o E2E local
 Auth → Edge → RLS → PostgreSQL passou 2/2. Lint, Fallow new-only, build e baseline funcional
 Supabase passaram. Nenhuma migration foi aplicada remotamente. O escopo certificado é
-`ANIMAIS_ONLY`; `CLOCK_AUTHORITY = DEFERRED_TO_F24.4D`; delete/tombstone completo permanece
-deferido; `REAL_MULTI_DEVICE = NOT_PROVEN`; política genérica de state não generalizada.
+`ANIMAIS_ONLY`; delete/tombstone completo permanece deferido; política genérica de state não generalizada.
 O PR #169 foi integrado em `3b7ac50ed878d8d8d4b88874ad98c9d98816149b`; F24.4C fechada em
-2026-09-27. F24.4D é a próxima fase.
+2026-09-27. A F24.4D tratou subsequentemente a autoridade de relógio e reconexão cross-device.
 
 ## F24.4B — handoff de fechamento
 
@@ -56,8 +81,8 @@ Replay da mesma identidade, isolamento por fazenda e ownership permanecem proteg
 confirmados gaps P1 de stale write genérico, projeção fora de ordem, delete/update e relógio
 cliente influenciando read models. Não houve patch de runtime, schema ou ambiente remoto.
 
-F24.4A foi integrada pelo PR #166. F24.4D–F24.4F não foram iniciadas, e
-`REAL_MULTI_DEVICE` permanece `NOT_PROVEN`.
+F24.4A foi integrada pelo PR #166. F24.4E–F24.4F não foram iniciadas, e
+`REAL_PHYSICAL_MULTI_DEVICE` permanece `NOT_PROVEN`.
 
 ## F24.3 — handoff de fechamento
 

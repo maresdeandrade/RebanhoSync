@@ -44,7 +44,7 @@ Status: `REAL_PROCESS_KILL = NOT_PROVEN`
 
 A F24.3 certificou restart lógico por reabertura Dexie, mas não kill/restart real do
 browser/processo com o mesmo perfil persistente e IndexedDB sobrevivente. A dívida não bloqueia
-o closeout F24.3; sua incorporação em F24.4D ou em gate posterior exige decisão explícita.
+o closeout F24.3; sua incorporação em gate posterior exige decisão explícita.
 
 ## P1 — F24.5 Observabilidade + Reconcile + Diagnóstico
 

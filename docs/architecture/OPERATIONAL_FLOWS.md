@@ -296,8 +296,33 @@ Reconstrução depende das superfícies incluídas em pull padrão ou especializ
 
 Retry do mesmo comando preserva `client_tx_id` e `client_op_id`. Correção factual usa nova identidade quando o domínio exige novo fato.
 
-Em `UPDATE` de `animais`, o retry também preserva `expected_revision`. Conflito stale é terminal
-e exige reconcile antes de uma nova operação; não há retry automático, LWW ou merge por campo.
+### Concorrência cross-device e CAS (animais/UPDATE)
+
+Quando dois clientes emitem `UPDATE` concorrente sobre a mesma revisão:
+```txt
+Cliente A (offline, rev=N)  ──[reconnect]──► CAS aplica (rev=N+1) ──► APPLIED
+Cliente B (offline, rev=N)  ──[reconnect]──► CAS falha (stale)    ──► STATE_REVISION_CONFLICT (terminal)
+Cliente B                   ──[pull]───────► recebe rev=N+1       ──► reconcilia projeção local
+Cliente B (nova intenção)   ──[novo gesto]─► nova op (rev=N+1)    ──► APPLIED (rev=N+2) ──► convergência
+```
+A ordem de reconexão é simétrica: quem reconecta primeiro vence o CAS. Timestamps do cliente não decidem o vencedor (`STATE_WINNER_AUTHORITY = SERVER_REVISION_CAS`).
+
+### Replay de lost ACK
+
+Em caso de sucesso remoto com perda de rede antes do cliente receber o ACK:
+```txt
+Cliente ──[sync op_1]──► Servidor aplica (rev=N+1) ──[ACK perdido na rede]──x Cliente
+Cliente ──[replay op_1 com mesma identidade]────────► Servidor reconhece ledger ──► Sucesso (sem reaplicar)
+```
+Nenhuma segunda mutação ocorre e nenhum incremento espúrio de revisão é gerado.
+
+### Farm switch com pendências
+
+Trocar a fazenda ativa preserva operações pendentes no IndexedDB da fazenda anterior. Pulls da nova fazenda não tocam a fila nem contaminam os estados da fazenda inativa. Ao retornar à fazenda original, a fila retoma o sync preservando identidades e revisões esperadas.
+
+### Relógio local e agendamento de retry
+
+Campos `next_attempt_at` e `created_at` afetam apenas a fila local do cliente. Clock skew pode antecipar ou postergar temporariamente o retry, mas não altera identidades, não reabre conflitos terminais e restaura a elegibilidade normal imediatamente após o relógio ser corrigido.
 
 ## 22. Writers canônicos
 

@@ -32,20 +32,22 @@ Regras:
 - `catalog_*` permanece pull-only quando definido pelo contrato;
 - `state_*` não é superfície direta de push.
 
-## Concorrência de estado — F24.4C
+## Concorrência de estado e autoridade de relógio — F24.4C / F24.4D
 
 `UPDATE` de `animais` pelo caminho genérico usa controle otimista de concorrência. A
-`revision` é a última versão remota conhecida; `expected_revision` é o snapshot persistido na
-operação antes da mutação otimista. Retry/reload reutiliza `client_op_id`, `client_tx_id` e
-`expected_revision`, sem recalcular a versão esperada.
+`revision` é a versão remota autoritativa (`STATE_WINNER_AUTHORITY = SERVER_REVISION_CAS`);
+`expected_revision` é o snapshot persistido na operação antes da mutação otimista e
+transportado no envelope HTTP de sync (`mapOperationForSync`). Retry/reload reutiliza
+rigorosamente `client_op_id`, `client_tx_id` e `expected_revision`, sem recalcular a versão esperada.
 
-O `sync-batch` resolve replay da mesma identidade antes do CAS e aceita o update somente por
-PK + `fazenda_id` + revision. Mismatch retorna `CONFLICT / STATE_REVISION_CONFLICT`, terminal e
-sem retry automático. Cliente legado sem `expected_revision` falha de modo fechado. Revision
-enviada no record não é autoridade client-side.
+Contratos certificados na F24.4D:
+- **CAS server-authoritative:** O servidor valida `expected_revision` contra a `revision` persistida. Timestamps do cliente (`client_recorded_at`) não decidem o vencedor de estado. Divergência de revisão retorna `CONFLICT / STATE_REVISION_CONFLICT`, terminal e sem retry automático. Cliente legado sem `expected_revision` falha de modo fechado.
+- **Replay de lost ACK:** Reenvio da mesma identidade após sucesso remoto não reaplica a mutação nem incrementa a revisão remota (idempotência remota).
+- **Distinção entre ACK e convergência:** O ACK remoto apenas terminaliza o resultado da operação na fila local. A convergência da projeção local para o novo snapshot remoto ocorre via reconciliação/pull (`drainReconciliationObligations` + `pullDataForFarm`). Não há convergência automática presumida no mero recebimento do ACK de um conflito.
+- **Isolamento de farm switch:** Operações pendentes de uma fazenda permanecem isoladas no IndexedDB e não contaminam nem são contaminadas por pulls/writes de outra fazenda.
+- **Clock local no scheduling:** `next_attempt_at` e `created_at` afetam unicamente o agendamento local da fila e elegibilidade de retry (`isGestureReadyForSync`), sem alterar identidades, recalcular `expected_revision`, reabrir conflitos terminais ou causar estagnação permanente após retorno do relógio à normalidade.
 
-O escopo é `ANIMAIS_ONLY`. Demais `state_*`, delete/tombstone completo, clock authority,
-field-level merge e multi-device físico não foram generalizados nem certificados.
+O escopo é `ANIMAIS_ONLY`. Demais `state_*`, delete/tombstone completo, field-level merge e multi-device físico não foram generalizados nem certificados (`REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`).
 
 ## Sync Sanitário v2
 
@@ -146,8 +148,7 @@ HTTP 429/`Retry-After`, reconnect, reabertura Dexie e fila heterogênea multi-fa
 Permanecem fora dessa certificação:
 
 - `REAL_PROCESS_KILL = NOT_PROVEN`: kill/restart real com o mesmo perfil persistente;
-- stale write de `animais` protegido pela F24.4C; concorrência transversal dos demais
-  `state_*`, clock authority e multi-device físico permanecem na sequência F24.4;
+- stale write de `animais`, CAS server-authoritative, lost ACK replay idempotente e autoridade de relógio caracterizados por F24.4C/F24.4D (`STATE_WINNER_AUTHORITY = SERVER_REVISION_CAS`, `CLOCK_SKEW_BEHAVIOR = CHARACTERIZED_FOR_CRITICAL_SYNC_PATHS`); concorrência transversal dos demais `state_*`, dependências causais sob skew e multi-device físico permanecem na sequência F24.4 (`REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`);
 - correlação ponta a ponta entre identidade, tentativa, ACK e reconcile, planejada na F24.5;
 - benchmark de fila, IndexedDB, startup, memória e throughput, planejado na F24.6.
 
