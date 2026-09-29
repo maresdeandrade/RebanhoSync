@@ -2,7 +2,7 @@
 
 Atualizado em: 2026-09-29
 Status: **Fase 24 ativa; F24.4D CLOSED; F24.4 IN_PROGRESS; produção não autorizada**
-Próxima fase: **F24.4E — Conflict Resolution Contract (NEXT; NOT_STARTED)**
+Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (NEXT; NOT_STARTED)**
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`

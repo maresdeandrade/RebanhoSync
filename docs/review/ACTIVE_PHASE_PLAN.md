@@ -15,7 +15,7 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
-Próxima fase: **F24.4E — Conflict Resolution Contract (NEXT; NOT_STARTED)**
+Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (NEXT; NOT_STARTED)**
 
 Este documento aponta para o [closeout autoritativo da F24.2](./F24_2_CLOSEOUT_AND_REBASELINE.md)
 e para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
