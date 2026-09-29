@@ -1,7 +1,8 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-09-27
-Status: **Fase 24 ativa; F24.4A CLOSED; F24.4B CLOSED; F24.4C CLOSED; F24.4 IN_PROGRESS**
+Atualizado em: 2026-09-29
+Status: **Fase 24 ativa; F24.4A–F24.4D CLOSED; F24.4 IN_PROGRESS**
+F24.4D encerrada na branch `feat/f24-4d-cross-device-clock-authority` (commit final `faddf64`) em 2026-09-29.
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27.
 Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`.
@@ -14,7 +15,7 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
-Próxima fase: **F24.4D — Clock Authority (NEXT; NOT_STARTED)**
+Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (NEXT; NOT_STARTED)**
 
 Este documento aponta para o [closeout autoritativo da F24.2](./F24_2_CLOSEOUT_AND_REBASELINE.md)
 e para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
@@ -56,8 +57,27 @@ revision autoritativa no servidor e CAS por `expected_revision` somente para `UP
 termina em `STATE_REVISION_CONFLICT`; cliente legado sem revision falha de modo fechado.
 
 PostgreSQL real passou 3/3 e o E2E local Auth → Edge → RLS → PostgreSQL passou 2/2. A política
-genérica permanece parcial; clock authority, delete/tombstone completo e multi-device físico
-não foram certificados. Esses limites permanecem; F24.4D — Clock Authority é a próxima fase.
+genérica permanece parcial; delete/tombstone completo e multi-device físico
+não foram certificados. A F24.4D tratou subsequentemente a autoridade de relógio e reconexão cross-device.
+
+## F24.4D — cross-device offline/reconnect e autoridade de relógio
+
+A [matriz F24.4D](./F24_4D_CROSS_DEVICE_CLOCK_AUTHORITY.md) foi encerrada na branch
+`feat/f24-4d-cross-device-clock-authority` (commit final `faddf64`). O ciclo certificou os
+critical sync paths em BrowserContexts isolados:
+
+- D1: harness multi-context com isolamento de storage local (IndexedDB/filas);
+- D2/D3: concorrência same-revision e simetria estrita de reconexão no CAS de `animais`;
+- D2A: transporte corrigido de `expected_revision` no envelope de sync;
+- D4: lost ACK com replay idempotente sem reexecução nem avanço de revisão;
+- D5: reconnect alternado, conflito stale terminal, nova intenção e convergência final;
+- D6: farm switch preservando pending, tenant e revisão esperada;
+- D7: autoridade de relógio — `STATE_WINNER_AUTHORITY = SERVER_REVISION_CAS`; timestamps locais não afetam vencedor do CAS;
+- D8: clock skew local afeta elegibilidade de retry sem perda de identidade, sem loop infinito e sem estagnação permanente após normalização do relógio.
+
+Limitações preservadas: `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`;
+`NON_ACTIVE_FARM_RECONCILIATION = NOT_TESTED`; `ALL_DOMAIN_CLOCK_BEHAVIOR = NOT_PROVEN`.
+Próxima fase: F24.4E — Conflict Resolution Contract.
 
 ## F24.2 — closeout
 

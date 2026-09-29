@@ -1,6 +1,6 @@
 # Active Review Index — RebanhoSync
 
-Atualizado em: 2026-09-23
+Atualizado em: 2026-09-29
 
 ## Objetivo
 
@@ -29,9 +29,10 @@ Quando deixar de orientar ação:
 
 | Revisão | Arquivo | Status | Prioridade | Próxima ação |
 |---|---|---:|---:|---|
-| Plano da Fase 24 | `ACTIVE_PHASE_PLAN.md` | Ativo | P0 | F24.3 encerrada; F24.4A é a próxima frente, ainda não iniciada. |
-| Handoff da Fase 24 | `CURRENT_PHASE_HANDOFF.md` | Ativo | P0 | Preservar o closeout F24.3 e preparar F24.4A sem início automático. |
-| Closeout e planejamento F24.3 | `F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md` | Ativo | P0 | Matriz fechada; usar o planejamento para abrir F24.4A separadamente. |
+| Plano da Fase 24 | `ACTIVE_PHASE_PLAN.md` | Ativo | P0 | F24.4A–F24.4D encerradas; F24.4E é a próxima frente. |
+| Handoff da Fase 24 | `CURRENT_PHASE_HANDOFF.md` | Ativo | P0 | Preservar evidências da F24.4D e preparar F24.4E sem início automático. |
+| Closeout e planejamento F24.3 | `F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md` | Ativo | P0 | Matriz fechada; F24.4 em execução. |
+| Relatório F24.4D | `F24_4D_CROSS_DEVICE_CLOCK_AUTHORITY.md` | Ativo | P0 | Relatório canônico da F24.4D fechada; base para F24.4E. |
 | Checklist padrão de revisão | `REVIEW_CHECKLIST.md` | Ativo | P0 | Usar em toda revisão documental/técnica. |
 | Pendências abertas | `OPEN_REVIEW_ITEMS.md` | Ativo | P0 | Atualizar conforme itens forem resolvidos. |
 | Otimização de contexto/agentes | `AI_CONTEXT_OPTIMIZATION_REPORT.md` | Ativo | P1 | Incorporar recomendações em `.agents/` e docs. |
