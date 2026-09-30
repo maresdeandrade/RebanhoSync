@@ -491,7 +491,11 @@ export function validateCanonicalTechnicalContract(payload) {
   const classByKey = new Map(data.product_class_rows.map((row) => [row.class_key, row]));
   const groupByKey = new Map(data.product_class_group_rows.map((row) => [row.group_key, row]));
   const protocolByKey = new Map(data.protocol_rows.map((row) => [row.protocol_key, row]));
+  const memberPairs = new Set();
   for (const [index, row] of data.product_class_group_member_rows.entries()) {
+    const pair = `${row.group_key}:${row.class_key}`;
+    if (memberPairs.has(pair)) fail(issues, `product_class_group_member_rows[${index}]`, `membership duplicado: ${pair}`);
+    else memberPairs.add(pair);
     const group = groupByKey.get(row.group_key);
     const cls = classByKey.get(row.class_key);
     if (group && cls && (group.scope === "global" ? cls.scope !== "global" : cls.scope === "tenant" && cls.fazenda_id !== group.fazenda_id)) {

@@ -212,6 +212,12 @@ describe("sanitario v2 canonical contract", () => {
     ["missing source", (payload) => { payload.payload.protocol_item_rows[0].source_refs_by_field = { dose: [{ source_ref: "SRC_MISSING" }] }; }, "source_key inexistente"],
     ["missing product", (payload) => { payload.payload.protocol_item_rows[0].product_requirement_kind = "specific_product"; payload.payload.protocol_item_rows[0].product_key = "PRODUCT_MISSING"; delete payload.payload.protocol_item_rows[0].group_key; }, "product_key inexistente"],
     ["missing class", (payload) => { payload.payload.product_class_group_member_rows[0].class_key = "CLASS_MISSING"; }, "class_key inexistente"],
+    ["missing member group", (payload) => { payload.payload.product_class_group_member_rows[0].group_key = "GROUP_MISSING"; }, "group_key inexistente"],
+    ["missing group UUID", (payload) => { delete payload.payload.product_class_group_rows[0].id; }, "UUID estavel explicito obrigatorio"],
+    ["missing member UUID", (payload) => { delete payload.payload.product_class_group_member_rows[0].id; }, "UUID estavel explicito obrigatorio"],
+    ["duplicate group UUID", (payload) => { payload.payload.product_class_group_rows.push({ ...payload.payload.product_class_group_rows[0], group_key: "GROUP_OTHER" }); }, "UUID duplicado"],
+    ["duplicate member UUID", (payload) => { payload.payload.product_class_group_member_rows.push({ ...payload.payload.product_class_group_member_rows[0] }); }, "UUID duplicado"],
+    ["duplicate membership", (payload) => { payload.payload.product_class_group_member_rows.push({ ...payload.payload.product_class_group_member_rows[0], id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee" }); }, "membership duplicado"],
     ["missing group", (payload) => { payload.payload.protocol_item_rows[0].group_key = "GROUP_MISSING"; }, "group_key inexistente"],
     ["missing protocol", (payload) => { payload.payload.protocol_item_rows[0].protocol_key = "PROTOCOL_MISSING"; }, "protocol_key inexistente"],
     ["invalid dose", (payload) => { payload.payload.dose_rule_rows[0].dose_quantity = 0; }, "quantidade deve ser positiva"],
@@ -462,12 +468,71 @@ describe("sanitario v2 canonical contract", () => {
     ]));
     expect(ibrBvd.metadata.can_validate_execution).toBe(false);
     expect(classKeys.has("associacoes_antiparasitarias")).toBe(false);
-    expect(normalized.product_class_group_member_rows).toEqual([]);
+    expect(normalized.product_class_group_member_rows).toHaveLength(12);
+    expect(normalized.product_class_group_member_rows.some((row) => row.class_key === "associacoes_antiparasitarias")).toBe(false);
     expect(classItems.every((item) => classKeys.has(item.class_key))).toBe(true);
     expect(classItems.filter((item) => item.class_key === "vacina_ibr_bvd").map((item) => item.logical_item_key)).toEqual([
       "ibr_bvd_primovac_dose1",
       "ibr_bvd_primovac_dose2",
     ]);
+  });
+
+  it("keeps C0.4 group and member identities explicit, unique, and referentially complete", () => {
+    const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
+    const normalized = normalizeCanonicalData(payload);
+    const groups = normalized.product_class_group_rows;
+    const members = normalized.product_class_group_member_rows;
+    const classes = new Map(normalized.product_class_rows.map((row) => [row.class_key, row]));
+    const groupKeys = [
+      "pcg_antiparasitarios_recria_estrategicos",
+      "pcg_antiparasitarios_bezerros_pre_desmama",
+      "pcg_antiparasitarios_pre_confinamento",
+      "pcg_antiparasitarios_matrizes_pre_parto",
+    ];
+    const memberClasses = ["lactonas_macrociclicas", "benzimidazois", "imidazotiazoleis"];
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const groupIdentity = new Map(groups.map((row) => [row.group_key, row.id]));
+    const memberIdentity = new Map(members.map((row) => [`${row.group_key}:${row.class_key}`, row.id]));
+
+    expect(groups).toHaveLength(4);
+    expect([...groupIdentity.keys()].sort()).toEqual([...groupKeys].sort());
+    expect(groups.every((row) => uuid.test(row.id) && row.scope === "global" && row.fazenda_id === null)).toBe(true);
+    expect(new Set(groupIdentity.values()).size).toBe(4);
+    expect(members).toHaveLength(12);
+    expect(memberIdentity.size).toBe(12);
+    expect(members.every((row) => uuid.test(row.id) && groupIdentity.has(row.group_key) && classes.get(row.class_key)?.scope === "global")).toBe(true);
+    expect(new Set(memberIdentity.values()).size).toBe(12);
+    for (const groupKey of groupKeys) {
+      for (const classKey of memberClasses) expect(memberIdentity.has(`${groupKey}:${classKey}`)).toBe(true);
+    }
+    const again = normalizeCanonicalData(payload);
+    expect(new Map(again.product_class_group_rows.map((row) => [row.group_key, row.id]))).toEqual(groupIdentity);
+    expect(new Map(again.product_class_group_member_rows.map((row) => [`${row.group_key}:${row.class_key}`, row.id]))).toEqual(memberIdentity);
+
+    const rejections = normalized.memberRejections;
+    expect(rejections).toHaveLength(4);
+    expect(rejections.map((row) => row.group_key).sort()).toEqual([...groupKeys].sort());
+    expect(rejections.every((row) => row.class_key === "associacoes_antiparasitarias" && row.reason === "NOT_A_CLASS_CONFIRMED")).toBe(true);
+    expect(payload.import_gate.blocked_reasons).toEqual([
+      "IMPORT_REAL_NOT_AUTHORIZED",
+      "CATALOG_APPROVAL_NOT_GRANTED",
+      "AGENDA_AUTOMATION_NOT_ALLOWED",
+    ]);
+    expect(payload.import_gate.import_real_authorized).toBe(false);
+  });
+
+  it("isolates remaining canonical validation errors to C0.5 identities", () => {
+    const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
+    let message = "";
+    try {
+      validateCanonicalTechnicalContract(payload);
+    } catch (error) {
+      message = error.message;
+    }
+    const issues = message.split("\n").filter((line) => line.startsWith("- "));
+    expect(issues).toHaveLength(70);
+    expect(issues.filter((line) => line.startsWith("- protocol_rows["))).toHaveLength(30);
+    expect(issues.filter((line) => line.startsWith("- protocol_item_rows["))).toHaveLength(40);
   });
 
   it("builds physical rows purely from canonical fields without lookup placeholders", () => {

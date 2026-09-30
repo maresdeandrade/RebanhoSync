@@ -23,7 +23,8 @@
     "protocol_items": 20,
     "product_classes": 8,
     "product_class_groups": 4,
-    "product_class_group_member_rejections": 16
+    "product_class_group_members": 12,
+    "product_class_group_member_rejections": 4
   },
   "import_gate": {
     "import_real_authorized": false,
@@ -32,7 +33,6 @@
     "agenda_allowed_must_remain_false": true,
     "approved_for_catalog_must_remain_false": true,
     "blocked_reasons": [
-      "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
       "IMPORT_REAL_NOT_AUTHORIZED",
       "CATALOG_APPROVAL_NOT_GRANTED",
       "AGENDA_AUTOMATION_NOT_ALLOWED"
@@ -3371,6 +3371,7 @@
       "target_table": "sanitario_product_class_groups_v2",
       "rows": [
         {
+          "id": "04339cfd-20f9-4b2b-a2c5-dd9845343982",
           "group_key": "pcg_antiparasitarios_recria_estrategicos",
           "name": "Antiparasitarios recria estrategicos",
           "scope": "global",
@@ -3406,6 +3407,7 @@
           }
         },
         {
+          "id": "3c94ab0b-8d73-4df4-b112-cf3e4ca52756",
           "group_key": "pcg_antiparasitarios_bezerros_pre_desmama",
           "name": "Antiparasitarios bezerros pre-desmama",
           "scope": "global",
@@ -3441,6 +3443,7 @@
           }
         },
         {
+          "id": "11616c8f-d694-4151-93f7-5782dd730866",
           "group_key": "pcg_antiparasitarios_pre_confinamento",
           "name": "Antiparasitarios pre-confinamento ou pasto vedado",
           "scope": "global",
@@ -3476,6 +3479,7 @@
           }
         },
         {
+          "id": "1ad28475-b129-498c-9bf2-2b4012b12194",
           "group_key": "pcg_antiparasitarios_matrizes_pre_parto",
           "name": "Antiparasitarios matrizes pre-parto",
           "scope": "global",
@@ -3511,137 +3515,58 @@
           }
         }
       ]
+    },
+    "sanitario_product_class_group_members_v2": {
+      "target_table": "sanitario_product_class_group_members_v2",
+      "rows": [
+        { "id": "0f4c76bf-39e2-4d3a-9887-9ccdce68ad90", "group_key": "pcg_antiparasitarios_recria_estrategicos", "class_key": "lactonas_macrociclicas" },
+        { "id": "ba926a94-ecb2-428e-9882-ac9e76c67cd4", "group_key": "pcg_antiparasitarios_recria_estrategicos", "class_key": "benzimidazois" },
+        { "id": "f0157397-8571-49cf-ab4d-6e75e001954e", "group_key": "pcg_antiparasitarios_recria_estrategicos", "class_key": "imidazotiazoleis" },
+        { "id": "1664b2c7-cd15-40e2-a4f7-06542f98ee2c", "group_key": "pcg_antiparasitarios_bezerros_pre_desmama", "class_key": "lactonas_macrociclicas" },
+        { "id": "f72c8bce-3377-421a-8723-f2198f3233fc", "group_key": "pcg_antiparasitarios_bezerros_pre_desmama", "class_key": "benzimidazois" },
+        { "id": "8f7b44a0-3026-44ef-a8bd-616a74a91ca1", "group_key": "pcg_antiparasitarios_bezerros_pre_desmama", "class_key": "imidazotiazoleis" },
+        { "id": "50a0c8c7-f8ec-4160-8ba7-ad4825f19556", "group_key": "pcg_antiparasitarios_pre_confinamento", "class_key": "lactonas_macrociclicas" },
+        { "id": "c4551f5c-1532-4015-a7cc-618f3bacb208", "group_key": "pcg_antiparasitarios_pre_confinamento", "class_key": "benzimidazois" },
+        { "id": "42d157f5-2a13-4c05-aa77-6b2df5ee14af", "group_key": "pcg_antiparasitarios_pre_confinamento", "class_key": "imidazotiazoleis" },
+        { "id": "3e67a223-9f48-44ae-ac51-509c6cb0ab82", "group_key": "pcg_antiparasitarios_matrizes_pre_parto", "class_key": "lactonas_macrociclicas" },
+        { "id": "9a0e0336-88c4-473a-bd10-3800ca0c2cbf", "group_key": "pcg_antiparasitarios_matrizes_pre_parto", "class_key": "benzimidazois" },
+        { "id": "6362a7e5-4f03-4636-af31-daff68f80bde", "group_key": "pcg_antiparasitarios_matrizes_pre_parto", "class_key": "imidazotiazoleis" }
+      ]
     }
   },
   "rejections": {
     "sanitario_product_class_group_members_v2": [
       {
         "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_recria_lactonas",
-        "group_key": "pcg_antiparasitarios_recria_estrategicos",
-        "class_key": "lactonas_macrociclicas",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_recria_benzimidazois",
-        "group_key": "pcg_antiparasitarios_recria_estrategicos",
-        "class_key": "benzimidazois",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_recria_imidazotiazoleis",
-        "group_key": "pcg_antiparasitarios_recria_estrategicos",
-        "class_key": "imidazotiazoleis",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
         "member_key": "spcgmem_recria_associacoes",
         "group_key": "pcg_antiparasitarios_recria_estrategicos",
         "class_key": "associacoes_antiparasitarias",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_pre_desmama_lactonas",
-        "group_key": "pcg_antiparasitarios_bezerros_pre_desmama",
-        "class_key": "lactonas_macrociclicas",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_pre_desmama_benzimidazois",
-        "group_key": "pcg_antiparasitarios_bezerros_pre_desmama",
-        "class_key": "benzimidazois",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_pre_desmama_imidazotiazoleis",
-        "group_key": "pcg_antiparasitarios_bezerros_pre_desmama",
-        "class_key": "imidazotiazoleis",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
+        "reason": "NOT_A_CLASS_CONFIRMED",
+        "required_resolution": "nao materializar: associacoes_antiparasitarias nao e ProductClass"
       },
       {
         "target_table": "sanitario_product_class_group_members_v2",
         "member_key": "spcgmem_pre_desmama_associacoes",
         "group_key": "pcg_antiparasitarios_bezerros_pre_desmama",
         "class_key": "associacoes_antiparasitarias",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_pre_confinamento_lactonas",
-        "group_key": "pcg_antiparasitarios_pre_confinamento",
-        "class_key": "lactonas_macrociclicas",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_pre_confinamento_benzimidazois",
-        "group_key": "pcg_antiparasitarios_pre_confinamento",
-        "class_key": "benzimidazois",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_pre_confinamento_imidazotiazoleis",
-        "group_key": "pcg_antiparasitarios_pre_confinamento",
-        "class_key": "imidazotiazoleis",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
+        "reason": "NOT_A_CLASS_CONFIRMED",
+        "required_resolution": "nao materializar: associacoes_antiparasitarias nao e ProductClass"
       },
       {
         "target_table": "sanitario_product_class_group_members_v2",
         "member_key": "spcgmem_pre_confinamento_associacoes",
         "group_key": "pcg_antiparasitarios_pre_confinamento",
         "class_key": "associacoes_antiparasitarias",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_matrizes_lactonas",
-        "group_key": "pcg_antiparasitarios_matrizes_pre_parto",
-        "class_key": "lactonas_macrociclicas",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_matrizes_benzimidazois",
-        "group_key": "pcg_antiparasitarios_matrizes_pre_parto",
-        "class_key": "benzimidazois",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
-      },
-      {
-        "target_table": "sanitario_product_class_group_members_v2",
-        "member_key": "spcgmem_matrizes_imidazotiazoleis",
-        "group_key": "pcg_antiparasitarios_matrizes_pre_parto",
-        "class_key": "imidazotiazoleis",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
+        "reason": "NOT_A_CLASS_CONFIRMED",
+        "required_resolution": "nao materializar: associacoes_antiparasitarias nao e ProductClass"
       },
       {
         "target_table": "sanitario_product_class_group_members_v2",
         "member_key": "spcgmem_matrizes_associacoes",
         "group_key": "pcg_antiparasitarios_matrizes_pre_parto",
         "class_key": "associacoes_antiparasitarias",
-        "reason": "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-        "required_resolution": "resolver class_key para sanitario_product_classes_v2.id real antes de qualquer import"
+        "reason": "NOT_A_CLASS_CONFIRMED",
+        "required_resolution": "nao materializar: associacoes_antiparasitarias nao e ProductClass"
       }
     ]
   }
