@@ -1,0 +1,4679 @@
+{
+  "baseline": {
+    "branch": "feat/sanitario-v2-publisher-completion",
+    "head": "c5f49b91283f8081ac9b7d47546a486e073cbcab"
+  },
+  "environment": {
+    "host": "127.0.0.1",
+    "port": 54322,
+    "database": "sanitario_p3_ddaec9e004834e369039ef78eb50fca7",
+    "local_only": true,
+    "isolation": "new dedicated disposable database",
+    "auth_schema_sha256": "61b35043628f80596f642c8ea2a00156a17788e7c8165dce069f487701da13f7",
+    "version": "PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 13.2.0, 64-bit",
+    "cleaned_up": true
+  },
+  "migrations": [
+    {
+      "file": "00000000000000_rebuild_base_schema_sanitario.sql",
+      "sha256": "d7364c017258a4d72b3e4d3688c1d7c7bef7fd199cf04882d812473c62af984d"
+    },
+    {
+      "file": "20260508003000_pasto_ocupacoes.sql",
+      "sha256": "aafb2effd99da90e35e92bf05b909e55d6e1f31047ffff0d1f807a91222a44a9"
+    },
+    {
+      "file": "20260508004000_pastos_forrageira_manejo.sql",
+      "sha256": "c399a0ead468ecfea089cfd8970522f40a6077d6eccd0e18805b0989e7110f7e"
+    },
+    {
+      "file": "20260508005000_eventos_pasto_avaliacao.sql",
+      "sha256": "95e81847ced161b26040ee5df09896d6caeb2f7b9e0ff51f397925867c3576b6"
+    },
+    {
+      "file": "20260511000000_sanitario_complete_agenda_idempotency.sql",
+      "sha256": "bc6ae02f2b4a22bf462590d457f15f5b62af668a97fddd36bff9387d3737387e"
+    },
+    {
+      "file": "20260514000000_fix_create_fazenda_primary_membership.sql",
+      "sha256": "04b8f6e64927cabed10e2709f7005b8a4600f92c3b887443079c7fcf28580cdc"
+    },
+    {
+      "file": "20260524000000_dry_cow_therapy_agenda_recompute.sql",
+      "sha256": "b4e09b50c1b7e343184032390d21c57ecc5d0b4a995700e6f49b79295fe875ab"
+    },
+    {
+      "file": "20260525000000_insumos_inventory.sql",
+      "sha256": "a949becd7476834f1a5efb1c64c73e32fc56795c6494b2345328cef6592595d8"
+    },
+    {
+      "file": "20260526000000_anti_zombie_agenda.sql",
+      "sha256": "7fcfc485a8aec67ab66f7918804b94ec1c8a485d35a8f1e965752edec8d2b7c3"
+    },
+    {
+      "file": "20260526000100_recompute_on_animal_mutation.sql",
+      "sha256": "75f384bb8c5f04d7cf48271c7d4353fba719dbf959dd815e58e4f5efafeb4b9c"
+    },
+    {
+      "file": "20260526000200_reconcile_support_rpcs.sql",
+      "sha256": "62e0ab2bbf4f61bcce7df52c3a12161d84b73d647e9bea870103d8967314ee17"
+    },
+    {
+      "file": "20260526000300_vw_animais_peso_atual.sql",
+      "sha256": "a6bd7917f1853ca997caa52dbaf822e422d5a46364b210ebf4e3952794d54d9d"
+    },
+    {
+      "file": "20260526000400_vw_animais_carencia_ativa.sql",
+      "sha256": "f3eded9c60811e1ba57bb30c9f35cb0cf26a81843c07e79bd2b585dee48a63db"
+    },
+    {
+      "file": "20260526000500_idx_sanitary_completion_key.sql",
+      "sha256": "fb16fd442d0438197fc8be459a1c570f8a0a8c67d175ff0d4d5b06b8c62b152c"
+    },
+    {
+      "file": "20260526000600_idx_eventos_unique_source_task.sql",
+      "sha256": "dd49674271212d9dc6bbc216402794d7de55209bcd2d9fdbfde2ee3ee1f8c6c4"
+    },
+    {
+      "file": "20260528000001_add_eventos_ecc.sql",
+      "sha256": "9c072cbedf62985f7e85a329b698e5223638817c0c946843ff1a743ad76ed91f"
+    },
+    {
+      "file": "20260529000000_insumos_campos_custo_carencia.sql",
+      "sha256": "7dd9bc1f5eca3476e64206f551c46c9fe0373c807157f55b8b5fb2917d98a980"
+    },
+    {
+      "file": "20260529000100_update_vw_animais_carencia_ativa.sql",
+      "sha256": "7390997cea0f908e60c24a211bb56b0d89c9447744a9cbf49ada47e903cdc72e"
+    },
+    {
+      "file": "20260529000200_financeiro_gerencial.sql",
+      "sha256": "dc0c54f83b8ed954da7c5f8312371932603b33b6d601900bb2370f9a4196366d"
+    },
+    {
+      "file": "20260529000300_comercial_operations.sql",
+      "sha256": "f2209f2be80c74d4a000b446e6b329283bf3a4d0836900c03d807390e7c1a7c2"
+    },
+    {
+      "file": "20260529000400_sociedade_pecuaria.sql",
+      "sha256": "bcd192162eb075db2d46c9546c112f7970ef2ef0cedba785566f512adb12b509"
+    },
+    {
+      "file": "20260530000000_sociedade_pecuaria_sync_metadata.sql",
+      "sha256": "841b66ae3336da53a2e5d317ab049d9ad6636d308912dd7484005f843a371efa"
+    },
+    {
+      "file": "20260530000100_sociedade_pecuaria_status_retirado.sql",
+      "sha256": "9fc04be06409d4b80d9f406d1ab443e1e76658c3a39b6f126de5f1654f32bd1b"
+    },
+    {
+      "file": "20260531000000_protocolos_sanitarios_itens_immutable_versions.sql",
+      "sha256": "bd944a6dd48fb90721268eac6fff4bd939753758a66fdb4901c922ea318c92cf"
+    },
+    {
+      "file": "20260531001000_protocolos_sanitarios_drop_legacy_protocol_item_id.sql",
+      "sha256": "00868f92568be3f5b476a8f95709812a486862697e160ff47c3ec8300ac03ecb"
+    },
+    {
+      "file": "20260531002000_eventos_sanitario_operational_traceability.sql",
+      "sha256": "26df354eafb79a0da9e34abd4327897bc6d5724d208165bff5cb822887fa1a34"
+    },
+    {
+      "file": "20260601000000_financeiro_estorno_categorias.sql",
+      "sha256": "b6d2fc3af427668c6f0f6abd4c8fae380fb5a50072d659e3f39dfbb07dda19c4"
+    },
+    {
+      "file": "20260604090000_insumo_movimentacoes_consumo_nutricao_idempotency.sql",
+      "sha256": "6a9bca040ecfe388b2b4566dd404dd8f39c025829f7d288d6b31e2e28351d126"
+    },
+    {
+      "file": "20260606090000_sanitario_agenda_v2_clean_foundation.sql",
+      "sha256": "acbf65b29d94a90011f379b83067bad68875add6d48e515f96d771b1a5ac5f1c"
+    },
+    {
+      "file": "20260608090000_sanitario_protocol_product_source_v2.sql",
+      "sha256": "bc56133aa5d2e9bbfbac93e9cb84299f1600f46e26b36582f872773ef2e173a1"
+    },
+    {
+      "file": "20260610203500_sanitario_product_class_v2.sql",
+      "sha256": "d5244d274d490c1a0c775995bca948f59b97752c88d485cc0fcfb39fc0a6feee"
+    },
+    {
+      "file": "20260615120000_sanitario_protocol_item_product_class_group_v2.sql",
+      "sha256": "60aeefa2bd0b0217cac1137000473c75e23d96eac687696b96de3ee24d95be0a"
+    },
+    {
+      "file": "20260722102038_sanitario_sync_v2_expand_foundation.sql",
+      "sha256": "d79727c06284d7a56dbbadba151187ef492c3777bd5a6a6cc7cdf4d9993181f7"
+    },
+    {
+      "file": "20260808120000_individual_animal_purchase_sync.sql",
+      "sha256": "05b34004f90839d8eacce7f1cfd245045571246ac98aeb39b5ff4e80df0ab3e8"
+    },
+    {
+      "file": "20260813134853_commercial_operation_v2.sql",
+      "sha256": "bbf0ede014dc37a5d0e51207fe7be0955d65bab49a535daf1d3c5ca056e8917b"
+    },
+    {
+      "file": "20260813152618_harden_individual_animal_purchase_grants.sql",
+      "sha256": "e14ea82fd3ed0abc56796cdcc57ae57d1a22acc742d22582e73339be38e558a1"
+    },
+    {
+      "file": "20260821000000_fix_pgcrypto_digest_search_path.sql",
+      "sha256": "0d5d32a4c2eefe807bcf4b3923521cf2326fe88848e4a142d28e21457b2c53e6"
+    },
+    {
+      "file": "20260824100000_app_superadmin_foundation.sql",
+      "sha256": "efd0238418938aa163e43902f7e63b31cf7f859ed88ca35b04cb5bebf161a24b"
+    },
+    {
+      "file": "20260824110000_app_superadmin_read_rpcs.sql",
+      "sha256": "b16d168f750c3bf5533ca5e6a5cefd6bf11baea06128ebdda523cc9a0b6bf0bc"
+    },
+    {
+      "file": "20260824120000_harden_admin_invites_rpc.sql",
+      "sha256": "3e2b95c2f8409639da1b0fb7144550671d3dff0bb709f28156ad420d2173e7d4"
+    },
+    {
+      "file": "20260825080000_app_superadmin_can_create_farm_mutation.sql",
+      "sha256": "7982f81f4d77147ff1ff0f66a774c215c7611049790da2e0a74ada5a28756c8e"
+    },
+    {
+      "file": "20260826230107_reconcile_authenticated_table_privileges.sql",
+      "sha256": "8ffe9ffc625151b75e4f3712de9db517fc4422c2a610856135470d1ffe78c0ff"
+    },
+    {
+      "file": "20260827100000_harden_internal_and_trigger_function_privileges.sql",
+      "sha256": "e1dbaec815faf78481893218e7859053d9e9b81cc3c92942ea037f7a9189e040"
+    },
+    {
+      "file": "20260827110000_harden_domain_and_farm_admin_rpc_privileges.sql",
+      "sha256": "f16a448a6c84ac6a40039e08c4cd4a0ba708a4c6587fd36ded68a9744748856b"
+    },
+    {
+      "file": "20260827120000_harden_get_user_emails_rpc.sql",
+      "sha256": "87a9e216e9e4c52079895079e32f47da518fd019e68fa27a037bd1f31d2269c7"
+    },
+    {
+      "file": "20260829193636_c2_search_path_hardening.sql",
+      "sha256": "803e64df2c5ba99c00923f1959fd4b4ca9a88f62d482428f1099e310b75f3ee8"
+    },
+    {
+      "file": "20260908050000_c3_auth_rls_initplan_hardening.sql",
+      "sha256": "6b5001613ad43e98015621aca6c562ca32ca9b93e9842c7c5d9713d2f0572895"
+    },
+    {
+      "file": "20260908060000_c4_1a_exact_permissive_cleanup.sql",
+      "sha256": "f1f35c5554f8e19fd8af6c89c63fde83580b78f6106dc0de288023587478ce86"
+    },
+    {
+      "file": "20260908070000_c4_1b_subsumed_operational_cleanup.sql",
+      "sha256": "b8c04ffc452c06e0517ba6d9a4b91d4fccdce7bbd6c9c0cd5c21daea80664bf8"
+    },
+    {
+      "file": "20260913232253_f24_acl_forward_only_reconciliation.sql",
+      "sha256": "43d4f6b3ef1c4d72ac2ac65549709e6f41fadb7d7494006b1776566ad3d1ab33"
+    },
+    {
+      "file": "20260914014309_f24_1a1_sanitario_reconcile_backend_wrapper.sql",
+      "sha256": "d1238d854d6e53a2130b33f3c373335f70d0c6afa17d761ea98b065e6e39fe12"
+    },
+    {
+      "file": "20260923132000_sanitario_source_key_identity.sql",
+      "sha256": "57b47a920fdd8edf4753b72e582fac26a95895885bfb499b988dd3866a8009d8"
+    },
+    {
+      "file": "20260927120000_f24_4c_animais_state_revision.sql",
+      "sha256": "ce66713c4c3e5f4abb72b9dfeeb52c7a3d0c36b0e3e17cb96c0030c6e74a9caa"
+    }
+  ],
+  "cases": [
+    {
+      "name": "schema / RLS / role / ACL",
+      "result": "PASS",
+      "evidence": {
+        "tables": [
+          {
+            "relname": "sanitario_fonte_cobertura_campos_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_fontes_tecnicas_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_product_class_default_rules_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_product_class_group_members_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_product_class_groups_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_product_classes_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_produto_carencia_fontes_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_produto_carencia_rules_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_produto_dose_rules_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_produto_especie_autorizacao_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_produto_fontes_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_produtos_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_protocolo_itens_versions_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          },
+          {
+            "relname": "sanitario_protocolos_v2",
+            "relrowsecurity": true,
+            "relforcerowsecurity": false,
+            "authenticated_select": true,
+            "authenticated_insert": false,
+            "authenticated_update": false,
+            "authenticated_delete": false
+          }
+        ],
+        "role": {
+          "current_user": "postgres",
+          "rolsuper": false,
+          "rolbypassrls": true
+        },
+        "available_roles": [
+          {
+            "rolname": "anon",
+            "rolsuper": false,
+            "rolbypassrls": false
+          },
+          {
+            "rolname": "authenticated",
+            "rolsuper": false,
+            "rolbypassrls": false
+          },
+          {
+            "rolname": "postgres",
+            "rolsuper": false,
+            "rolbypassrls": true
+          },
+          {
+            "rolname": "service_role",
+            "rolsuper": false,
+            "rolbypassrls": true
+          },
+          {
+            "rolname": "supabase_admin",
+            "rolsuper": true,
+            "rolbypassrls": true
+          }
+        ],
+        "columns": [
+          {
+            "table_name": "sanitario_fonte_cobertura_campos_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_fonte_cobertura_campos_v2",
+            "column_name": "source_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fonte_cobertura_campos_v2",
+            "column_name": "field_key",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fonte_cobertura_campos_v2",
+            "column_name": "coverage_status",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_source_coverage_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fonte_cobertura_campos_v2",
+            "column_name": "notes",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fonte_cobertura_campos_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_fonte_cobertura_campos_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_fonte_cobertura_campos_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "kind",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_source_kind_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "scope",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_source_scope_v2_enum",
+            "is_nullable": "NO",
+            "column_default": "'global'::sanitario_source_scope_v2_enum"
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "fazenda_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "title",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "issuer",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "version",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "published_at",
+            "data_type": "date",
+            "udt_name": "date",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "accessed_at",
+            "data_type": "date",
+            "udt_name": "date",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "url",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "jurisdiction_country",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": "'BR'::text"
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "jurisdiction_uf",
+            "data_type": "USER-DEFINED",
+            "udt_name": "estado_uf_enum",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "jurisdiction_zone",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "strength",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_source_strength_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "evidence_status",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_evidence_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "limitations",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'[]'::jsonb"
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "metadata",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "created_by",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_fontes_tecnicas_v2",
+            "column_name": "source_key",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "fazenda_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "scope",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": "'global'::text"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "class_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "species_code",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "aptitude",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": "'all'::text"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "dose_rule",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "route_rule",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "withdrawal_rule",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "execution_product_policy",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": "'required_at_execution'::text"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "can_validate_execution",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "NO",
+            "column_default": "false"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "requires_executed_product_for_withdrawal",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "NO",
+            "column_default": "true"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "source_refs",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'[]'::jsonb"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "limitations",
+            "data_type": "ARRAY",
+            "udt_name": "_text",
+            "is_nullable": "NO",
+            "column_default": "'{}'::text[]"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "metadata",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "curation_status",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": "'candidate'::text"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_product_class_default_rules_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "fazenda_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "scope",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": "'global'::text"
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "group_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "class_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "is_allowed",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "NO",
+            "column_default": "true"
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "requires_mv_override",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "limitations",
+            "data_type": "ARRAY",
+            "udt_name": "_text",
+            "is_nullable": "NO",
+            "column_default": "'{}'::text[]"
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "metadata",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_product_class_group_members_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "fazenda_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "scope",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": "'global'::text"
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "group_key",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "name",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "requires_mv_for_other_class",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "NO",
+            "column_default": "true"
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "curation_status",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "automation_status",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "limitations",
+            "data_type": "ARRAY",
+            "udt_name": "_text",
+            "is_nullable": "NO",
+            "column_default": "'{}'::text[]"
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "metadata",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_product_class_groups_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "fazenda_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "scope",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": "'global'::text"
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "class_key",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "name",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "product_type",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "product_subtype",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "target_condition",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "species_scope",
+            "data_type": "ARRAY",
+            "udt_name": "_text",
+            "is_nullable": "NO",
+            "column_default": "'{}'::text[]"
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "curation_status",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "automation_status",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "limitations",
+            "data_type": "ARRAY",
+            "udt_name": "_text",
+            "is_nullable": "NO",
+            "column_default": "'{}'::text[]"
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "metadata",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_product_classes_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_fontes_v2",
+            "column_name": "withdrawal_rule_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_fontes_v2",
+            "column_name": "source_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_fontes_v2",
+            "column_name": "field_key",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_fontes_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "product_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "species_code",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_species_code_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "aptitude",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_aptitude_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "route",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "dose_basis",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_dose_basis_v2_enum",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "meat_days",
+            "data_type": "integer",
+            "udt_name": "int4",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "milk_days",
+            "data_type": "integer",
+            "udt_name": "int4",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "milk_hours",
+            "data_type": "integer",
+            "udt_name": "int4",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "applicability",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_withdrawal_applicability_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "zero_requires_explicit_source",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "NO",
+            "column_default": "true"
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "valid_from",
+            "data_type": "date",
+            "udt_name": "date",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "valid_until",
+            "data_type": "date",
+            "udt_name": "date",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "status_curatorial",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_curatorial_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": "'precisa_validar'::sanitario_curatorial_status_v2_enum"
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "limitations",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'[]'::jsonb"
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "metadata",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_produto_carencia_rules_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "product_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "species_code",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_species_code_v2_enum",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "aptitude",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_aptitude_v2_enum",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "route",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "dose_quantity",
+            "data_type": "numeric",
+            "udt_name": "numeric",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "dose_unit",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "dose_basis",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_dose_basis_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "min_weight_kg",
+            "data_type": "numeric",
+            "udt_name": "numeric",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "max_weight_kg",
+            "data_type": "numeric",
+            "udt_name": "numeric",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "limitations",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'[]'::jsonb"
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "status_curatorial",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_curatorial_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": "'precisa_validar'::sanitario_curatorial_status_v2_enum"
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_produto_dose_rules_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "product_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "species_code",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_species_code_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "authorization_status",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_evidence_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "aptitude",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_aptitude_v2_enum",
+            "is_nullable": "NO",
+            "column_default": "'all'::sanitario_aptitude_v2_enum"
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "sexo",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "idade_min_dias",
+            "data_type": "integer",
+            "udt_name": "int4",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "idade_max_dias",
+            "data_type": "integer",
+            "udt_name": "int4",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "lactacao_permitida",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "gestacao_permitida",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "requires_mv_responsavel",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "NO",
+            "column_default": "false"
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "limitations",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'[]'::jsonb"
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "metadata",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_produto_especie_autorizacao_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_fontes_v2",
+            "column_name": "product_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_fontes_v2",
+            "column_name": "source_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_fontes_v2",
+            "column_name": "field_key",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produto_fontes_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "nome_comercial",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "fabricante",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "registro_orgao",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "registro_numero",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "classe",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "principio_ativo",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "tipo_produto",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "apresentacao",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "status_curatorial",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_curatorial_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": "'precisa_validar'::sanitario_curatorial_status_v2_enum"
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "metadata",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_produtos_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "protocol_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "logical_item_key",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "version",
+            "data_type": "integer",
+            "udt_name": "int4",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "item_status",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_protocol_item_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "action_type",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_action_type_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "product_requirement_kind",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_product_requirement_kind_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "product_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "product_class",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "eligibility_rule",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "operational_window_rule",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "dose_rule",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "route_rule",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "booster_rule",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "species_authorization",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "source_refs_by_field",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "limitations",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'[]'::jsonb"
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "snapshot_template",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "allows_agenda_auto",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "NO",
+            "column_default": "true"
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "requires_mv_responsavel",
+            "data_type": "boolean",
+            "udt_name": "bool",
+            "is_nullable": "NO",
+            "column_default": "false"
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "status",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_protocol_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": "'draft'::sanitario_protocol_status_v2_enum"
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolo_itens_versions_v2",
+            "column_name": "product_class_group_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "NO",
+            "column_default": "gen_random_uuid()"
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "family_code",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "name",
+            "data_type": "text",
+            "udt_name": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "scope",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_protocol_scope_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "fazenda_id",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "species_scope",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'[]'::jsonb"
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "jurisdiction_scope",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "legal_status",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_protocol_legal_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "version",
+            "data_type": "integer",
+            "udt_name": "int4",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "status",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_protocol_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": "'draft'::sanitario_protocol_status_v2_enum"
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "source_refs_snapshot",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'[]'::jsonb"
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "approval_status",
+            "data_type": "USER-DEFINED",
+            "udt_name": "sanitario_protocol_approval_status_v2_enum",
+            "is_nullable": "NO",
+            "column_default": "'draft'::sanitario_protocol_approval_status_v2_enum"
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "created_by",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "approved_by",
+            "data_type": "uuid",
+            "udt_name": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "approved_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "metadata",
+            "data_type": "jsonb",
+            "udt_name": "jsonb",
+            "is_nullable": "NO",
+            "column_default": "'{}'::jsonb"
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "created_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "updated_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "table_name": "sanitario_protocolos_v2",
+            "column_name": "deleted_at",
+            "data_type": "timestamp with time zone",
+            "udt_name": "timestamptz",
+            "is_nullable": "YES",
+            "column_default": null
+          }
+        ],
+        "triggers": [
+          {
+            "relname": "sanitario_fonte_cobertura_campos_v2",
+            "tgname": "set_updated_at_sanitario_fonte_cobertura_campos_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_fonte_cobertura_campos_v2 BEFORE UPDATE ON public.sanitario_fonte_cobertura_campos_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_fontes_tecnicas_v2",
+            "tgname": "set_updated_at_sanitario_fontes_tecnicas_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_fontes_tecnicas_v2 BEFORE UPDATE ON public.sanitario_fontes_tecnicas_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_product_class_default_rules_v2",
+            "tgname": "set_updated_at_sanitario_product_class_default_rules_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_product_class_default_rules_v2 BEFORE UPDATE ON public.sanitario_product_class_default_rules_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_product_class_default_rules_v2",
+            "tgname": "trg_validate_product_class_default_rule_v2",
+            "definition": "CREATE TRIGGER trg_validate_product_class_default_rule_v2 BEFORE INSERT OR UPDATE ON public.sanitario_product_class_default_rules_v2 FOR EACH ROW EXECUTE FUNCTION fn_validate_product_class_default_rule_v2()"
+          },
+          {
+            "relname": "sanitario_product_class_group_members_v2",
+            "tgname": "set_updated_at_sanitario_product_class_group_members_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_product_class_group_members_v2 BEFORE UPDATE ON public.sanitario_product_class_group_members_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_product_class_group_members_v2",
+            "tgname": "trg_validate_product_class_group_member_v2",
+            "definition": "CREATE TRIGGER trg_validate_product_class_group_member_v2 BEFORE INSERT OR UPDATE ON public.sanitario_product_class_group_members_v2 FOR EACH ROW EXECUTE FUNCTION fn_validate_product_class_group_member_v2()"
+          },
+          {
+            "relname": "sanitario_product_class_groups_v2",
+            "tgname": "set_updated_at_sanitario_product_class_groups_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_product_class_groups_v2 BEFORE UPDATE ON public.sanitario_product_class_groups_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_product_classes_v2",
+            "tgname": "set_updated_at_sanitario_product_classes_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_product_classes_v2 BEFORE UPDATE ON public.sanitario_product_classes_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_produto_carencia_rules_v2",
+            "tgname": "set_updated_at_sanitario_produto_carencia_rules_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_produto_carencia_rules_v2 BEFORE UPDATE ON public.sanitario_produto_carencia_rules_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_produto_dose_rules_v2",
+            "tgname": "set_updated_at_sanitario_produto_dose_rules_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_produto_dose_rules_v2 BEFORE UPDATE ON public.sanitario_produto_dose_rules_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_produto_especie_autorizacao_v2",
+            "tgname": "set_updated_at_sanitario_produto_especie_autorizacao_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_produto_especie_autorizacao_v2 BEFORE UPDATE ON public.sanitario_produto_especie_autorizacao_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_produtos_v2",
+            "tgname": "set_updated_at_sanitario_produtos_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_produtos_v2 BEFORE UPDATE ON public.sanitario_produtos_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_protocolo_itens_versions_v2",
+            "tgname": "set_updated_at_sanitario_protocolo_itens_versions_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_protocolo_itens_versions_v2 BEFORE UPDATE ON public.sanitario_protocolo_itens_versions_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          },
+          {
+            "relname": "sanitario_protocolo_itens_versions_v2",
+            "tgname": "trg_validate_protocol_item_product_class_group_v2",
+            "definition": "CREATE TRIGGER trg_validate_protocol_item_product_class_group_v2 BEFORE INSERT OR UPDATE OF protocol_id, product_requirement_kind, product_class_group_id, allows_agenda_auto ON public.sanitario_protocolo_itens_versions_v2 FOR EACH ROW EXECUTE FUNCTION fn_validate_protocol_item_product_class_group_v2()"
+          },
+          {
+            "relname": "sanitario_protocolos_v2",
+            "tgname": "set_updated_at_sanitario_protocolos_v2",
+            "definition": "CREATE TRIGGER set_updated_at_sanitario_protocolos_v2 BEFORE UPDATE ON public.sanitario_protocolos_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+          }
+        ]
+      }
+    },
+    {
+      "name": "create 14/14 / bindings / canonical UUID / composite PK",
+      "result": "PASS",
+      "evidence": {
+        "counts": {
+          "create": 17,
+          "update": 0,
+          "skip": 0,
+          "reject": 0
+        },
+        "rows": {
+          "sanitario_fontes_tecnicas_v2": 1,
+          "sanitario_fonte_cobertura_campos_v2": 1,
+          "sanitario_produtos_v2": 1,
+          "sanitario_product_classes_v2": 1,
+          "sanitario_product_class_groups_v2": 1,
+          "sanitario_produto_especie_autorizacao_v2": 1,
+          "sanitario_produto_fontes_v2": 1,
+          "sanitario_produto_dose_rules_v2": 1,
+          "sanitario_produto_carencia_rules_v2": 1,
+          "sanitario_product_class_default_rules_v2": 1,
+          "sanitario_product_class_group_members_v2": 1,
+          "sanitario_produto_carencia_fontes_v2": 1,
+          "sanitario_protocolos_v2": 1,
+          "sanitario_protocolo_itens_versions_v2": 4
+        }
+      }
+    },
+    {
+      "name": "real SQL types / direct reads",
+      "result": "PASS",
+      "evidence": {
+        "jsonb": "persisted",
+        "arrays": "text[] persisted",
+        "dates": "date and timestamptz",
+        "numeric": {
+          "id": "30000000-0000-4000-8000-000000000005",
+          "product_id": "30000000-0000-4000-8000-000000000003",
+          "species_code": null,
+          "aptitude": null,
+          "route": "subcutanea",
+          "dose_quantity": "1.2345",
+          "dose_unit": "mL",
+          "dose_basis": "animal",
+          "min_weight_kg": "20.125",
+          "max_weight_kg": "500.875",
+          "limitations": [],
+          "status_curatorial": "precisa_validar",
+          "created_at": "2026-09-30T15:07:44.151Z",
+          "updated_at": "2026-09-30T15:07:44.151Z",
+          "deleted_at": null
+        },
+        "nullable_boolean": "persisted"
+      }
+    },
+    {
+      "name": "replay / post-commit / unchanged rows",
+      "result": "PASS",
+      "evidence": {
+        "create": 0,
+        "update": 0,
+        "skip": 17,
+        "reject": 0
+      }
+    },
+    {
+      "name": "convergent update / 12 mutable collections / replay",
+      "result": "PASS",
+      "evidence": {
+        "counts": {
+          "create": 0,
+          "update": 15,
+          "skip": 2,
+          "reject": 0
+        },
+        "replay": {
+          "create": 0,
+          "update": 0,
+          "skip": 17,
+          "reject": 0
+        }
+      }
+    },
+    {
+      "name": "protected / protocol approved",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "protocol_not_draft",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "protected / protocol active",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "protocol_not_draft",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "protected / group curated",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "group_already_curated_or_operational",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "protected / group operational",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "group_already_curated_or_operational",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "protected / class curated",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "class_already_curated_or_operational",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "protected / class blocked",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "class_already_curated_or_operational",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "protected / item active",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "item_not_draft",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "protected / product curated",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "technical_row_already_curated",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "protected / dose curated",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "technical_row_already_curated",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "protected / withdrawal curated",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "technical_row_already_curated",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "protected / default curated",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "default_rule_already_curated",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "UUID conflict / source_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / coverage_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / product_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / product_class_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / product_class_group_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / product_authorization_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / dose_rule_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / withdrawal_rule_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / product_class_default_rule_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / product_class_group_member_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / protocol_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "UUID conflict / protocol_item_rows",
+      "result": "PASS",
+      "evidence": "CANONICAL_UUID_OTHER_IDENTITY"
+    },
+    {
+      "name": "natural key conflict / source_rows",
+      "result": "PASS",
+      "evidence": "IDENTITY_CONFLICT"
+    },
+    {
+      "name": "natural key conflict / coverage_rows",
+      "result": "PASS",
+      "evidence": "IDENTITY_CONFLICT"
+    },
+    {
+      "name": "natural key conflict / product_rows",
+      "result": "PASS",
+      "evidence": "IDENTITY_CONFLICT"
+    },
+    {
+      "name": "natural key conflict / product_class_rows",
+      "result": "PASS",
+      "evidence": "IDENTITY_CONFLICT"
+    },
+    {
+      "name": "natural key conflict / product_class_group_rows",
+      "result": "PASS",
+      "evidence": "IDENTITY_CONFLICT"
+    },
+    {
+      "name": "natural key conflict / product_authorization_rows",
+      "result": "PASS",
+      "evidence": "IDENTITY_CONFLICT"
+    },
+    {
+      "name": "natural key conflict / product_class_default_rule_rows",
+      "result": "PASS",
+      "evidence": "IDENTITY_CONFLICT"
+    },
+    {
+      "name": "natural key conflict / product_class_group_member_rows",
+      "result": "PASS",
+      "evidence": "IDENTITY_CONFLICT"
+    },
+    {
+      "name": "natural key conflict / protocol_rows",
+      "result": "PASS",
+      "evidence": "IDENTITY_CONFLICT"
+    },
+    {
+      "name": "natural key conflict / protocol_item_rows",
+      "result": "PASS",
+      "evidence": "IDENTITY_CONFLICT"
+    },
+    {
+      "name": "tombstone reserved / source_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "IDENTITY_CONFLICT",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / coverage_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "IDENTITY_CONFLICT",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / product_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "IDENTITY_CONFLICT",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / product_class_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "IDENTITY_CONFLICT",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / product_class_group_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "IDENTITY_CONFLICT",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / product_authorization_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "IDENTITY_CONFLICT",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / dose_rule_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "not applicable: UUID-only rule has no independent natural key",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / withdrawal_rule_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "not applicable: UUID-only rule has no independent natural key",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / product_class_default_rule_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "IDENTITY_CONFLICT",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / product_class_group_member_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "IDENTITY_CONFLICT",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / protocol_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "IDENTITY_CONFLICT",
+        "restored": false
+      }
+    },
+    {
+      "name": "tombstone reserved / protocol_item_rows",
+      "result": "PASS",
+      "evidence": {
+        "rejection": "TOMBSTONE_IDENTITY_RESERVED",
+        "new_uuid_same_natural_key": "IDENTITY_CONFLICT",
+        "restored": false
+      }
+    },
+    {
+      "name": "absence does not tombstone / explicit deprecated draft contract",
+      "result": "PASS",
+      "evidence": {
+        "absent_preserved": true,
+        "retired_id": "30000000-0000-4000-8000-000000000033",
+        "counts": {
+          "create": 0,
+          "update": 1,
+          "skip": 17,
+          "reject": 0
+        },
+        "protected_rejected": true
+      }
+    },
+    {
+      "name": "duplicate PK / all 14 tables",
+      "result": "PASS",
+      "evidence": {
+        "sanitario_fontes_tecnicas_v2": "23505",
+        "sanitario_fonte_cobertura_campos_v2": "23505",
+        "sanitario_produtos_v2": "23505",
+        "sanitario_product_classes_v2": "23505",
+        "sanitario_product_class_groups_v2": "23505",
+        "sanitario_produto_especie_autorizacao_v2": "23505",
+        "sanitario_produto_fontes_v2": "23505",
+        "sanitario_produto_dose_rules_v2": "23505",
+        "sanitario_produto_carencia_rules_v2": "23505",
+        "sanitario_product_class_default_rules_v2": "23505",
+        "sanitario_product_class_group_members_v2": "23505",
+        "sanitario_produto_carencia_fontes_v2": "23505",
+        "sanitario_protocolos_v2": "23505",
+        "sanitario_protocolo_itens_versions_v2": "23505"
+      }
+    },
+    {
+      "name": "real foreign keys / product source authorization dose withdrawal coverage item",
+      "result": "PASS",
+      "evidence": {
+        "coverage_rows": "23503",
+        "product_authorization_rows": "23503",
+        "product_source_rows": "23503",
+        "dose_rule_rows": "23503",
+        "withdrawal_rule_rows": "23503",
+        "withdrawal_source_rows": "23503",
+        "protocol_item_rows": "23503"
+      }
+    },
+    {
+      "name": "natural uniques / source product authorization class group coverage protocol item default member",
+      "result": "PASS",
+      "evidence": {
+        "results": {
+          "source_rows": "23505",
+          "coverage_rows": "23505",
+          "product_rows": "23505",
+          "product_class_rows": "23505",
+          "product_class_group_rows": "23505",
+          "product_authorization_rows": "23505",
+          "product_class_default_rule_rows": "23505",
+          "product_class_group_member_rows": "23505",
+          "protocol_rows": "23505",
+          "protocol_item_rows": "23505"
+        },
+        "uuid_only_rules": "dose/withdrawal have no independent natural unique"
+      }
+    },
+    {
+      "name": "real scope triggers / cross-farm / tombstoned parents / default derivation",
+      "result": "PASS",
+      "evidence": {
+        "checks": {
+          "member cross-scope": "P0001",
+          "member cross-farm": "P0001",
+          "member missing group": "P0001",
+          "member missing class": "P0001",
+          "default incompatible supplied scope": "normalized from real parent by trigger (no rejection contract)",
+          "item group cross-scope": "23514",
+          "item group cross-farm": "23514",
+          "item missing group": "23514",
+          "item missing protocol": "23514",
+          "blocked group auto agenda": "23514",
+          "member/default inactive or missing class": "P0001",
+          "member/item tombstoned group": "P0001 / 23514",
+          "item tombstoned protocol": "23514"
+        },
+        "member_scope_derived": true,
+        "default_scope_derived": true
+      }
+    },
+    {
+      "name": "updated_at triggers / SQL checks / enum types",
+      "result": "PASS",
+      "evidence": {
+        "set_updated_at_sanitario_fonte_cobertura_campos_v2": "observed",
+        "set_updated_at_sanitario_fontes_tecnicas_v2": "observed",
+        "set_updated_at_sanitario_product_class_default_rules_v2": "observed",
+        "set_updated_at_sanitario_product_class_group_members_v2": "observed",
+        "set_updated_at_sanitario_product_class_groups_v2": "observed",
+        "set_updated_at_sanitario_product_classes_v2": "observed",
+        "set_updated_at_sanitario_produto_carencia_rules_v2": "observed",
+        "set_updated_at_sanitario_produto_dose_rules_v2": "observed",
+        "set_updated_at_sanitario_produto_especie_autorizacao_v2": "observed",
+        "set_updated_at_sanitario_produtos_v2": "observed",
+        "set_updated_at_sanitario_protocolo_itens_versions_v2": "observed",
+        "set_updated_at_sanitario_protocolos_v2": "observed",
+        "dose_rule_rows: dose_quantity=-1": "23514",
+        "dose_rule_rows: min_weight_kg=600,max_weight_kg=100": "23514",
+        "withdrawal_rule_rows: meat_days=-1": "23514",
+        "withdrawal_rule_rows: valid_until='2020-01-01'": "23514",
+        "source_rows: metadata='[]'::jsonb": "23514",
+        "source_rows: evidence_status='INVALID'": "22P02",
+        "protocol_item_rows: dose_rule='[]'::jsonb": "23514",
+        "product_class_default_rule_rows: can_validate_execution=true": "23514",
+        "product_class_default_rule_rows: source_refs='[]'::jsonb": "23514"
+      }
+    },
+    {
+      "name": "partial SQL failure / rollback / clean replay",
+      "result": "PASS",
+      "evidence": {
+        "successful_inserts_before_failure": 7,
+        "rollback": true,
+        "partial_rows_after_failure": 0,
+        "replay": {
+          "create": 17,
+          "update": 0,
+          "skip": 0,
+          "reject": 0
+        }
+      }
+    },
+    {
+      "name": "advisory lock / two publishers / real lock timeout",
+      "result": "PASS",
+      "evidence": {
+        "key": "rebanhosync:sanitario-protocols-v2:12F10",
+        "connections": [
+          70377,
+          70387
+        ],
+        "blockers": [
+          70377
+        ],
+        "second_publisher": "55P03 after engine lock_timeout",
+        "first_publisher": {
+          "create": 0,
+          "update": 0,
+          "skip": 17,
+          "reject": 0
+        },
+        "retry": {
+          "create": 0,
+          "update": 0,
+          "skip": 17,
+          "reject": 0
+        }
+      }
+    },
+    {
+      "name": "FOR UPDATE / concurrent modification timeout / rollback",
+      "result": "PASS",
+      "evidence": {
+        "blockers": [
+          70377
+        ],
+        "concurrent_update": "55P03",
+        "concurrent_transaction": "rollback",
+        "publisher": {
+          "create": 0,
+          "update": 1,
+          "skip": 16,
+          "reject": 0
+        },
+        "row": {
+          "name": "Protocolo P3 concurrent publisher",
+          "approval_status": "draft"
+        }
+      }
+    },
+    {
+      "name": "concurrent protected-state change / no silent stale write",
+      "result": "PASS",
+      "evidence": {
+        "blockers": [
+          70389
+        ],
+        "publisher": "rejected after reading committed protected state",
+        "row": {
+          "name": "Protocolo P3",
+          "approval_status": "approved"
+        }
+      }
+    },
+    {
+      "name": "authenticated ACL / global SELECT / direct writes denied",
+      "result": "PASS",
+      "evidence": {
+        "role": {
+          "current_user": "authenticated",
+          "rolbypassrls": false
+        },
+        "global_reads": {
+          "sanitario_fontes_tecnicas_v2": 1,
+          "sanitario_fonte_cobertura_campos_v2": 1,
+          "sanitario_produtos_v2": 1,
+          "sanitario_product_classes_v2": 1,
+          "sanitario_product_class_groups_v2": 1,
+          "sanitario_produto_especie_autorizacao_v2": 1,
+          "sanitario_produto_fontes_v2": 1,
+          "sanitario_produto_dose_rules_v2": 1,
+          "sanitario_produto_carencia_rules_v2": 1,
+          "sanitario_product_class_default_rules_v2": 1,
+          "sanitario_product_class_group_members_v2": 1,
+          "sanitario_produto_carencia_fontes_v2": 1,
+          "sanitario_protocolos_v2": 1,
+          "sanitario_protocolo_itens_versions_v2": 4
+        },
+        "direct_insert": "42501 on all 14"
+      }
+    },
+    {
+      "name": "domain safety / no operational rows",
+      "result": "PASS",
+      "evidence": {
+        "counts": {
+          "agenda_itens": 0,
+          "sanitario_agenda_v2": 0,
+          "sanitario_agenda_animais_v2": 0,
+          "sanitario_agenda_closures_v2": 0,
+          "eventos": 0,
+          "eventos_sanitario": 0,
+          "insumo_movimentacoes": 0,
+          "insumo_lotes": 0,
+          "insumos": 0,
+          "sanitario_casos": 0
+        },
+        "active_withdrawal": "no execution/factual rows; technical rules only"
+      }
+    }
+  ],
+  "status": "READY_FOR_REVIEW",
+  "gates": {
+    "PUBLISHER_COMPLETE": false,
+    "IMPORT_REAL_AUTHORIZED": false,
+    "execute_import": false
+  },
+  "schema": {
+    "tables": [
+      {
+        "relname": "sanitario_fonte_cobertura_campos_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_fontes_tecnicas_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_product_class_default_rules_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_product_class_group_members_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_product_class_groups_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_product_classes_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_produto_carencia_fontes_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_produto_carencia_rules_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_produto_dose_rules_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_produto_especie_autorizacao_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_produto_fontes_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_produtos_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_protocolo_itens_versions_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      },
+      {
+        "relname": "sanitario_protocolos_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "authenticated_select": true,
+        "authenticated_insert": false,
+        "authenticated_update": false,
+        "authenticated_delete": false
+      }
+    ],
+    "role": {
+      "current_user": "postgres",
+      "rolsuper": false,
+      "rolbypassrls": true
+    },
+    "available_roles": [
+      {
+        "rolname": "anon",
+        "rolsuper": false,
+        "rolbypassrls": false
+      },
+      {
+        "rolname": "authenticated",
+        "rolsuper": false,
+        "rolbypassrls": false
+      },
+      {
+        "rolname": "postgres",
+        "rolsuper": false,
+        "rolbypassrls": true
+      },
+      {
+        "rolname": "service_role",
+        "rolsuper": false,
+        "rolbypassrls": true
+      },
+      {
+        "rolname": "supabase_admin",
+        "rolsuper": true,
+        "rolbypassrls": true
+      }
+    ],
+    "columns": [
+      {
+        "table_name": "sanitario_fonte_cobertura_campos_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_fonte_cobertura_campos_v2",
+        "column_name": "source_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fonte_cobertura_campos_v2",
+        "column_name": "field_key",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fonte_cobertura_campos_v2",
+        "column_name": "coverage_status",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_source_coverage_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fonte_cobertura_campos_v2",
+        "column_name": "notes",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fonte_cobertura_campos_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_fonte_cobertura_campos_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_fonte_cobertura_campos_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "kind",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_source_kind_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "scope",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_source_scope_v2_enum",
+        "is_nullable": "NO",
+        "column_default": "'global'::sanitario_source_scope_v2_enum"
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "fazenda_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "title",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "issuer",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "version",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "published_at",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "accessed_at",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "url",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "jurisdiction_country",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": "'BR'::text"
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "jurisdiction_uf",
+        "data_type": "USER-DEFINED",
+        "udt_name": "estado_uf_enum",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "jurisdiction_zone",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "strength",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_source_strength_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "evidence_status",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_evidence_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "limitations",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'[]'::jsonb"
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "metadata",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "created_by",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_fontes_tecnicas_v2",
+        "column_name": "source_key",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "fazenda_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "scope",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": "'global'::text"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "class_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "species_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "aptitude",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": "'all'::text"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "dose_rule",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "route_rule",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "withdrawal_rule",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "execution_product_policy",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": "'required_at_execution'::text"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "can_validate_execution",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO",
+        "column_default": "false"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "requires_executed_product_for_withdrawal",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO",
+        "column_default": "true"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "source_refs",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'[]'::jsonb"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "limitations",
+        "data_type": "ARRAY",
+        "udt_name": "_text",
+        "is_nullable": "NO",
+        "column_default": "'{}'::text[]"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "metadata",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "curation_status",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": "'candidate'::text"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_product_class_default_rules_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "fazenda_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "scope",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": "'global'::text"
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "group_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "class_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "is_allowed",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO",
+        "column_default": "true"
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "requires_mv_override",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "limitations",
+        "data_type": "ARRAY",
+        "udt_name": "_text",
+        "is_nullable": "NO",
+        "column_default": "'{}'::text[]"
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "metadata",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_product_class_group_members_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "fazenda_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "scope",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": "'global'::text"
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "group_key",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "requires_mv_for_other_class",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO",
+        "column_default": "true"
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "curation_status",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "automation_status",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "limitations",
+        "data_type": "ARRAY",
+        "udt_name": "_text",
+        "is_nullable": "NO",
+        "column_default": "'{}'::text[]"
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "metadata",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_product_class_groups_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "fazenda_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "scope",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": "'global'::text"
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "class_key",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "product_type",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "product_subtype",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "target_condition",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "species_scope",
+        "data_type": "ARRAY",
+        "udt_name": "_text",
+        "is_nullable": "NO",
+        "column_default": "'{}'::text[]"
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "curation_status",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "automation_status",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "limitations",
+        "data_type": "ARRAY",
+        "udt_name": "_text",
+        "is_nullable": "NO",
+        "column_default": "'{}'::text[]"
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "metadata",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_product_classes_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_fontes_v2",
+        "column_name": "withdrawal_rule_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_fontes_v2",
+        "column_name": "source_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_fontes_v2",
+        "column_name": "field_key",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_fontes_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "product_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "species_code",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_species_code_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "aptitude",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_aptitude_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "route",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "dose_basis",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_dose_basis_v2_enum",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "meat_days",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "milk_days",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "milk_hours",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "applicability",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_withdrawal_applicability_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "zero_requires_explicit_source",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO",
+        "column_default": "true"
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "valid_from",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "valid_until",
+        "data_type": "date",
+        "udt_name": "date",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "status_curatorial",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_curatorial_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": "'precisa_validar'::sanitario_curatorial_status_v2_enum"
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "limitations",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'[]'::jsonb"
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "metadata",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_produto_carencia_rules_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "product_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "species_code",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_species_code_v2_enum",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "aptitude",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_aptitude_v2_enum",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "route",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "dose_quantity",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "dose_unit",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "dose_basis",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_dose_basis_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "min_weight_kg",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "max_weight_kg",
+        "data_type": "numeric",
+        "udt_name": "numeric",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "limitations",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'[]'::jsonb"
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "status_curatorial",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_curatorial_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": "'precisa_validar'::sanitario_curatorial_status_v2_enum"
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_produto_dose_rules_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "product_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "species_code",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_species_code_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "authorization_status",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_evidence_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "aptitude",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_aptitude_v2_enum",
+        "is_nullable": "NO",
+        "column_default": "'all'::sanitario_aptitude_v2_enum"
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "sexo",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "idade_min_dias",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "idade_max_dias",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "lactacao_permitida",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "gestacao_permitida",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "requires_mv_responsavel",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO",
+        "column_default": "false"
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "limitations",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'[]'::jsonb"
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "metadata",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_produto_especie_autorizacao_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_fontes_v2",
+        "column_name": "product_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_fontes_v2",
+        "column_name": "source_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_fontes_v2",
+        "column_name": "field_key",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produto_fontes_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "nome_comercial",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "fabricante",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "registro_orgao",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "registro_numero",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "classe",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "principio_ativo",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "tipo_produto",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "apresentacao",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "status_curatorial",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_curatorial_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": "'precisa_validar'::sanitario_curatorial_status_v2_enum"
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "metadata",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_produtos_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "protocol_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "logical_item_key",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "version",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "item_status",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_protocol_item_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "action_type",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_action_type_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "product_requirement_kind",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_product_requirement_kind_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "product_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "product_class",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "eligibility_rule",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "operational_window_rule",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "dose_rule",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "route_rule",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "booster_rule",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "species_authorization",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "source_refs_by_field",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "limitations",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'[]'::jsonb"
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "snapshot_template",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "allows_agenda_auto",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO",
+        "column_default": "true"
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "requires_mv_responsavel",
+        "data_type": "boolean",
+        "udt_name": "bool",
+        "is_nullable": "NO",
+        "column_default": "false"
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "status",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_protocol_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": "'draft'::sanitario_protocol_status_v2_enum"
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolo_itens_versions_v2",
+        "column_name": "product_class_group_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()"
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "family_code",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "name",
+        "data_type": "text",
+        "udt_name": "text",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "scope",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_protocol_scope_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "fazenda_id",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "species_scope",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'[]'::jsonb"
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "jurisdiction_scope",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "legal_status",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_protocol_legal_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "version",
+        "data_type": "integer",
+        "udt_name": "int4",
+        "is_nullable": "NO",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "status",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_protocol_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": "'draft'::sanitario_protocol_status_v2_enum"
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "source_refs_snapshot",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'[]'::jsonb"
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "approval_status",
+        "data_type": "USER-DEFINED",
+        "udt_name": "sanitario_protocol_approval_status_v2_enum",
+        "is_nullable": "NO",
+        "column_default": "'draft'::sanitario_protocol_approval_status_v2_enum"
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "created_by",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "approved_by",
+        "data_type": "uuid",
+        "udt_name": "uuid",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "approved_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "metadata",
+        "data_type": "jsonb",
+        "udt_name": "jsonb",
+        "is_nullable": "NO",
+        "column_default": "'{}'::jsonb"
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "NO",
+        "column_default": "now()"
+      },
+      {
+        "table_name": "sanitario_protocolos_v2",
+        "column_name": "deleted_at",
+        "data_type": "timestamp with time zone",
+        "udt_name": "timestamptz",
+        "is_nullable": "YES",
+        "column_default": null
+      }
+    ],
+    "triggers": [
+      {
+        "relname": "sanitario_fonte_cobertura_campos_v2",
+        "tgname": "set_updated_at_sanitario_fonte_cobertura_campos_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_fonte_cobertura_campos_v2 BEFORE UPDATE ON public.sanitario_fonte_cobertura_campos_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_fontes_tecnicas_v2",
+        "tgname": "set_updated_at_sanitario_fontes_tecnicas_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_fontes_tecnicas_v2 BEFORE UPDATE ON public.sanitario_fontes_tecnicas_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_product_class_default_rules_v2",
+        "tgname": "set_updated_at_sanitario_product_class_default_rules_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_product_class_default_rules_v2 BEFORE UPDATE ON public.sanitario_product_class_default_rules_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_product_class_default_rules_v2",
+        "tgname": "trg_validate_product_class_default_rule_v2",
+        "definition": "CREATE TRIGGER trg_validate_product_class_default_rule_v2 BEFORE INSERT OR UPDATE ON public.sanitario_product_class_default_rules_v2 FOR EACH ROW EXECUTE FUNCTION fn_validate_product_class_default_rule_v2()"
+      },
+      {
+        "relname": "sanitario_product_class_group_members_v2",
+        "tgname": "set_updated_at_sanitario_product_class_group_members_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_product_class_group_members_v2 BEFORE UPDATE ON public.sanitario_product_class_group_members_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_product_class_group_members_v2",
+        "tgname": "trg_validate_product_class_group_member_v2",
+        "definition": "CREATE TRIGGER trg_validate_product_class_group_member_v2 BEFORE INSERT OR UPDATE ON public.sanitario_product_class_group_members_v2 FOR EACH ROW EXECUTE FUNCTION fn_validate_product_class_group_member_v2()"
+      },
+      {
+        "relname": "sanitario_product_class_groups_v2",
+        "tgname": "set_updated_at_sanitario_product_class_groups_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_product_class_groups_v2 BEFORE UPDATE ON public.sanitario_product_class_groups_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_product_classes_v2",
+        "tgname": "set_updated_at_sanitario_product_classes_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_product_classes_v2 BEFORE UPDATE ON public.sanitario_product_classes_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_produto_carencia_rules_v2",
+        "tgname": "set_updated_at_sanitario_produto_carencia_rules_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_produto_carencia_rules_v2 BEFORE UPDATE ON public.sanitario_produto_carencia_rules_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_produto_dose_rules_v2",
+        "tgname": "set_updated_at_sanitario_produto_dose_rules_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_produto_dose_rules_v2 BEFORE UPDATE ON public.sanitario_produto_dose_rules_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_produto_especie_autorizacao_v2",
+        "tgname": "set_updated_at_sanitario_produto_especie_autorizacao_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_produto_especie_autorizacao_v2 BEFORE UPDATE ON public.sanitario_produto_especie_autorizacao_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_produtos_v2",
+        "tgname": "set_updated_at_sanitario_produtos_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_produtos_v2 BEFORE UPDATE ON public.sanitario_produtos_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_protocolo_itens_versions_v2",
+        "tgname": "set_updated_at_sanitario_protocolo_itens_versions_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_protocolo_itens_versions_v2 BEFORE UPDATE ON public.sanitario_protocolo_itens_versions_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      },
+      {
+        "relname": "sanitario_protocolo_itens_versions_v2",
+        "tgname": "trg_validate_protocol_item_product_class_group_v2",
+        "definition": "CREATE TRIGGER trg_validate_protocol_item_product_class_group_v2 BEFORE INSERT OR UPDATE OF protocol_id, product_requirement_kind, product_class_group_id, allows_agenda_auto ON public.sanitario_protocolo_itens_versions_v2 FOR EACH ROW EXECUTE FUNCTION fn_validate_protocol_item_product_class_group_v2()"
+      },
+      {
+        "relname": "sanitario_protocolos_v2",
+        "tgname": "set_updated_at_sanitario_protocolos_v2",
+        "definition": "CREATE TRIGGER set_updated_at_sanitario_protocolos_v2 BEFORE UPDATE ON public.sanitario_protocolos_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      }
+    ]
+  },
+  "create": {
+    "counts": {
+      "create": 17,
+      "update": 0,
+      "skip": 0,
+      "reject": 0
+    },
+    "rows": {
+      "sanitario_fontes_tecnicas_v2": 1,
+      "sanitario_fonte_cobertura_campos_v2": 1,
+      "sanitario_produtos_v2": 1,
+      "sanitario_product_classes_v2": 1,
+      "sanitario_product_class_groups_v2": 1,
+      "sanitario_produto_especie_autorizacao_v2": 1,
+      "sanitario_produto_fontes_v2": 1,
+      "sanitario_produto_dose_rules_v2": 1,
+      "sanitario_produto_carencia_rules_v2": 1,
+      "sanitario_product_class_default_rules_v2": 1,
+      "sanitario_product_class_group_members_v2": 1,
+      "sanitario_produto_carencia_fontes_v2": 1,
+      "sanitario_protocolos_v2": 1,
+      "sanitario_protocolo_itens_versions_v2": 4
+    }
+  },
+  "replay": {
+    "create": 0,
+    "update": 0,
+    "skip": 17,
+    "reject": 0
+  }
+}
