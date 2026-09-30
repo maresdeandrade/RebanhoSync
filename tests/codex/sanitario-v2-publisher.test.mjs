@@ -229,9 +229,13 @@ describe("sanitario v2 publisher P2 full contract", () => {
     },
   );
 
-  it("reports pending P3 PostgreSQL certification while preserving the closed publisher gate", () => {
-    expect(publicPublisher.applyGateError(JSON.parse(readFileSync(payloadUrl, "utf8")), false))
-      .toBe("PUBLISHER_INCOMPLETE: --apply bloqueado; certificacao PostgreSQL da P3 ainda pendente.");
+  it("keeps completed publisher blocked by the canonical import authorization gate", () => {
+    const payload = JSON.parse(readFileSync(payloadUrl, "utf8"));
+    expect(payload.import_gate.import_real_authorized).toBe(false);
+    expect(payload.execute_import).toBe(false);
+    expect(() => publicPublisher.assertApplyGate(payload)).toThrow("IMPORT_REAL_NOT_AUTHORIZED");
+    expect(publicPublisher.applyGateError(payload, false))
+      .toBe("PUBLISHER_INCOMPLETE: --apply bloqueado enquanto PUBLISHER_COMPLETE !== true.");
   });
 
   it("validates and normalizes synthetic 14/14 data through the canonical contract", async () => {
@@ -536,7 +540,7 @@ describe("sanitario v2 publisher P2 full contract", () => {
 describe("sanitario v2 publisher P1", () => {
   it("retains the canonical gate inside the private writer before any client effect", async () => {
     const client = new MemoryClient();
-    await expect(applyImportForTest(client)).rejects.toThrow("PUBLISHER_INCOMPLETE");
+    await expect(applyImportForTest(client)).rejects.toThrow("IMPORT_REAL_NOT_AUTHORIZED");
     expect(client.queries).toEqual([]);
     expect(client.rows).toEqual({});
     expect(client.snapshot).toBeUndefined();
@@ -551,7 +555,7 @@ describe("sanitario v2 publisher P1", () => {
     await expect(applyImportForTest(client, {
       ...canonicalPayload, import_gate: { import_real_authorized: true },
       publisherComplete: true, authorized: true, skipGate: true, forceApply: true,
-    })).rejects.toThrow("PUBLISHER_INCOMPLETE");
+    })).rejects.toThrow("IMPORT_REAL_NOT_AUTHORIZED");
     expect(client.queries).toEqual([]);
     expect(client.rows).toEqual({});
     expect(client.snapshot).toBeUndefined();
@@ -612,7 +616,7 @@ describe("sanitario v2 publisher P1", () => {
         throw new Error("database connection must not be attempted");
       } },
     );
-    await expect(blockedMain()).rejects.toThrow("PUBLISHER_INCOMPLETE");
+    await expect(blockedMain()).rejects.toThrow("IMPORT_REAL_NOT_AUTHORIZED");
     expect(connectionAttempts).toBe(0);
     expect(client.queries).toEqual([]);
   });

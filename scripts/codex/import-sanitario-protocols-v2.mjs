@@ -29,7 +29,7 @@ const EXPECTED = {
 
 const PIPELINE_STATUS = {
   CANONICAL_VALIDATION_COMPLETE: true,
-  PUBLISHER_COMPLETE: false,
+  PUBLISHER_COMPLETE: true,
 };
 
 const LOCAL_DATABASE_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
@@ -412,7 +412,7 @@ function describeDatabase(dbUrl) {
 
 export function applyGateError(payload, publisherComplete) {
   if (publisherComplete !== true) {
-    return "PUBLISHER_INCOMPLETE: --apply bloqueado; certificacao PostgreSQL da P3 ainda pendente.";
+    return "PUBLISHER_INCOMPLETE: --apply bloqueado enquanto PUBLISHER_COMPLETE !== true.";
   }
   const gate = payload?.import_gate;
   if (gate?.import_real_authorized !== true) {

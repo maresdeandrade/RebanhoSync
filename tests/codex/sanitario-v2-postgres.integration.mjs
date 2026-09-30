@@ -121,7 +121,7 @@ async function observeBlocked(observer, pid, blockerPid) {
 
 try {
   assert.equal(report.baseline.branch, "feat/sanitario-v2-publisher-completion");
-  assert.equal(engine.PIPELINE_STATUS.PUBLISHER_COMPLETE,false);
+  assert.equal(engine.PIPELINE_STATUS.PUBLISHER_COMPLETE,true);
   assert.equal(payload.execute_import,false);
   assert.equal(payload.import_gate.import_real_authorized,false);
   assert.notEqual(process.env.ALLOW_SANITARIO_IMPORT,"1");
@@ -129,8 +129,8 @@ try {
   assert.equal(publicPublisher.applyTransaction,undefined);
   assert.equal(publicPublisher.applyImport,undefined);
   assert.equal(publicPublisher.writeOperation,undefined);
-  assert.throws(() => publicPublisher.assertApplyGate(payload),/PUBLISHER_INCOMPLETE/);
-  report.gates = { PUBLISHER_COMPLETE: false, IMPORT_REAL_AUTHORIZED: false, execute_import: false };
+  assert.throws(() => publicPublisher.assertApplyGate(payload),/IMPORT_REAL_NOT_AUTHORIZED/);
+  report.gates = { PUBLISHER_COMPLETE: true, IMPORT_REAL_AUTHORIZED: false, execute_import: false };
   const endpoint = docker(["context", "inspect", "--format", "{{.Endpoints.docker.Host}}"] ).trim();
   assert.match(endpoint, /^(npipe:\/\/|unix:\/\/)/, "Docker must use a local engine socket");
   const bindings = JSON.parse(docker(["inspect", "--format", "{{json .NetworkSettings.Ports}}", container]));
