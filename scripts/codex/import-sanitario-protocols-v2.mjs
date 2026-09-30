@@ -412,7 +412,7 @@ function describeDatabase(dbUrl) {
 
 export function applyGateError(payload, publisherComplete) {
   if (publisherComplete !== true) {
-    return "PUBLISHER_INCOMPLETE: --apply bloqueado; cobertura P1 nao conclui as colecoes e requisitos da P2.";
+    return "PUBLISHER_INCOMPLETE: --apply bloqueado; certificacao PostgreSQL da P3 ainda pendente.";
   }
   const gate = payload?.import_gate;
   if (gate?.import_real_authorized !== true) {
@@ -531,15 +531,16 @@ function groupInsertRow(group) {
   };
 }
 
-export function itemInsertRow(item, protocolId, groupId) {
+export function itemInsertRow(item, protocolId, groupId, productId = null) {
+  assert(item.product_requirement_kind !== "specific_product" || productId, "specific_product_requires_explicit_product");
   return {
     id: item.id, protocol_id: protocolId, logical_item_key: item.logical_item_key, version: item.version,
     item_status: item.item_status, action_type: item.action_type, product_requirement_kind: item.product_requirement_kind,
-    product_id: null,
+    product_id: item.product_requirement_kind === "specific_product" ? productId : null,
     product_class: item.product_requirement_kind === "product_class" ? item.class_key : null,
     product_class_group_id: item.product_requirement_kind === "product_class_group" ? groupId : null,
     eligibility_rule: item.eligibility_rule, operational_window_rule: item.operational_window_rule,
-    dose_rule: null, route_rule: null, booster_rule: item.booster_rule ?? null,
+    dose_rule: item.dose_rule ?? null, route_rule: item.route_rule ?? null, booster_rule: item.booster_rule ?? null,
     species_authorization: item.species_authorization, source_refs_by_field: item.source_refs_by_field,
     limitations: item.limitations ?? [],
     snapshot_template: {
@@ -550,8 +551,55 @@ export function itemInsertRow(item, protocolId, groupId) {
   };
 }
 
-// Only P1 tables/columns are eligible for SQL. Symbols remain in CanonicalData.
-const P1_PUBLISHERS = [
+function productInsertRow(r) {
+  return {
+    id: r.id, nome_comercial: r.nome_comercial, fabricante: r.fabricante ?? null,
+    registro_orgao: r.registro_orgao ?? null, registro_numero: r.registro_numero ?? null,
+    classe: r.classe, principio_ativo: r.principio_ativo ?? null, tipo_produto: r.tipo_produto,
+    apresentacao: r.apresentacao ?? null, status_curatorial: r.status_curatorial, metadata: r.metadata ?? {},
+  };
+}
+
+function productReference(r, parents) {
+  const product = resolveParent(parents, "product_rows", r.product_key);
+  assert(r.product_id == null || r.product_id === product.id, "product_reference_uuid_mismatch");
+  return product.id;
+}
+
+function sourceReference(r, parents) {
+  const source = resolveParent(parents, "source_rows", r.source_key);
+  assert(r.source_id == null || r.source_id === source.id, "source_reference_uuid_mismatch");
+  // Sources may be global or farm scoped, as permitted by the link-table RLS.
+  assertScope(source, "source_rows");
+  return source.id;
+}
+
+function technicalUpdateBlockReason(existing) {
+  return existing.status_curatorial === "precisa_validar" ? null : "technical_row_already_curated";
+}
+
+function defaultRuleInsertRow(r, parents) {
+  const cls = resolveParent(parents, "product_class_rows", r.class_key);
+  assert(!classUpdateBlockReason(cls), "default_rule_protected_class");
+  assert(r.class_id == null || r.class_id === cls.id, "class_reference_uuid_mismatch");
+  assert(r.scope == null || r.scope === cls.scope, "default_rule_scope_mismatch");
+  assert(r.fazenda_id === undefined || r.fazenda_id === (cls.fazenda_id ?? null), "default_rule_fazenda_mismatch");
+  assert(r.can_validate_execution !== true && r.requires_executed_product_for_withdrawal !== false,
+    "default_rule_execution_invariant");
+  return {
+    id: r.id, class_id: cls.id, scope: cls.scope, fazenda_id: cls.fazenda_id ?? null,
+    species_code: r.species_code, aptitude: r.aptitude ?? "all",
+    dose_rule: r.dose_rule ?? null, route_rule: r.route_rule ?? null, withdrawal_rule: r.withdrawal_rule ?? null,
+    execution_product_policy: r.execution_product_policy ?? "required_at_execution",
+    can_validate_execution: false, requires_executed_product_for_withdrawal: true,
+    source_refs: r.source_refs ?? [], limitations: r.limitations ?? [], metadata: r.metadata ?? {},
+    curation_status: r.curation_status ?? "candidate",
+  };
+}
+
+// Physical columns and identity expressions follow the active migrations. Symbols
+// remain in CanonicalData. UUID-only rules deliberately have no natural lookup key.
+const PUBLISHERS = [
   {
     collection: "source_rows", table: "sanitario_fontes_tecnicas_v2",
     key: (r) => r.source_key, natural: ["scope", "fazenda_id", "source_key"],
@@ -561,6 +609,14 @@ const P1_PUBLISHERS = [
     collection: "coverage_rows", table: "sanitario_fonte_cobertura_campos_v2",
     key: (r) => `${r.source_key}:${r.field_key}`, natural: ["source_id", "field_key"],
     project: (r, parents) => coverageInsertRow(r, resolveParent(parents, "source_rows", r.source_key)),
+  },
+  {
+    collection: "product_rows", table: "sanitario_produtos_v2",
+    key: (r) => r.product_key, natural: ["nome_comercial", "registro_orgao", "registro_numero"],
+    expressions: { nome_comercial: "lower(nome_comercial)", registro_orgao: "coalesce(registro_orgao, '')",
+      registro_numero: "coalesce(registro_numero, '')" },
+    normalize: (field, value) => field === "nome_comercial" ? value?.toLowerCase() : value ?? "",
+    project: productInsertRow, json: ["metadata"], block: technicalUpdateBlockReason,
   },
   {
     collection: "product_class_rows", table: "sanitario_product_classes_v2",
@@ -573,12 +629,68 @@ const P1_PUBLISHERS = [
     project: groupInsertRow, json: ["metadata"], block: groupUpdateBlockReason,
   },
   {
+    collection: "product_authorization_rows", table: "sanitario_produto_especie_autorizacao_v2",
+    key: (r) => r.id, natural: ["product_id", "species_code", "aptitude", "sexo"],
+    expressions: { sexo: "coalesce(sexo, 'all')" },
+    normalize: (field, value) => field === "sexo" ? value ?? "all" : value,
+    project: (r, parents) => ({
+      id: r.id, product_id: productReference(r, parents), species_code: r.species_code,
+      aptitude: r.aptitude, sexo: r.sexo ?? null, authorization_status: r.authorization_status,
+      idade_min_dias: r.idade_min_dias ?? null, idade_max_dias: r.idade_max_dias ?? null,
+      lactacao_permitida: r.lactacao_permitida ?? null, gestacao_permitida: r.gestacao_permitida ?? null,
+      requires_mv_responsavel: r.requires_mv_responsavel ?? false, limitations: r.limitations ?? [], metadata: r.metadata ?? {},
+    }), json: ["limitations", "metadata"],
+  },
+  {
+    collection: "product_source_rows", table: "sanitario_produto_fontes_v2", composite: true,
+    key: (r) => `${r.product_key}:${r.source_key}:${r.field_key}`, natural: ["product_id", "source_id", "field_key"],
+    project: (r, parents) => ({ product_id: productReference(r, parents), source_id: sourceReference(r, parents), field_key: r.field_key }),
+  },
+  {
+    collection: "dose_rule_rows", table: "sanitario_produto_dose_rules_v2", key: (r) => r.id,
+    natural: ["id"], immutable: ["product_id", "species_code", "aptitude", "route", "dose_basis"],
+    project: (r, parents) => ({
+      id: r.id, product_id: productReference(r, parents), species_code: r.species_code ?? null, aptitude: r.aptitude ?? null,
+      route: r.route, dose_quantity: Number(r.dose_quantity), dose_unit: r.dose_unit, dose_basis: r.dose_basis,
+      min_weight_kg: r.min_weight_kg == null ? null : Number(r.min_weight_kg),
+      max_weight_kg: r.max_weight_kg == null ? null : Number(r.max_weight_kg),
+      limitations: r.limitations ?? [], status_curatorial: r.status_curatorial ?? "precisa_validar",
+    }), json: ["limitations"], numeric: ["dose_quantity", "min_weight_kg", "max_weight_kg"], block: technicalUpdateBlockReason,
+  },
+  {
+    collection: "withdrawal_rule_rows", table: "sanitario_produto_carencia_rules_v2", key: (r) => r.withdrawal_rule_key,
+    natural: ["id"], immutable: ["product_id", "species_code", "aptitude", "route", "dose_basis"],
+    project: (r, parents) => ({
+      id: r.id, product_id: productReference(r, parents), species_code: r.species_code, aptitude: r.aptitude,
+      route: r.route ?? null, dose_basis: r.dose_basis ?? null, meat_days: r.meat_days ?? null,
+      milk_days: r.milk_days ?? null, milk_hours: r.milk_hours ?? null, applicability: r.applicability,
+      zero_requires_explicit_source: r.zero_requires_explicit_source ?? true,
+      valid_from: r.valid_from ?? null, valid_until: r.valid_until ?? null,
+      status_curatorial: r.status_curatorial ?? "precisa_validar", limitations: r.limitations ?? [], metadata: r.metadata ?? {},
+    }), json: ["limitations", "metadata"], dates: ["valid_from", "valid_until"], block: technicalUpdateBlockReason,
+  },
+  {
+    collection: "product_class_default_rule_rows", table: "sanitario_product_class_default_rules_v2",
+    key: (r) => r.id, natural: ["scope", "fazenda_id", "class_id", "species_code", "aptitude"],
+    project: defaultRuleInsertRow, json: ["dose_rule", "route_rule", "withdrawal_rule", "source_refs", "metadata"],
+    block: (r) => ["candidate", "needs_review"].includes(r.curation_status) ? null : "default_rule_already_curated",
+  },
+  {
     collection: "product_class_group_member_rows", table: "sanitario_product_class_group_members_v2",
     key: (r) => `${r.group_key}:${r.class_key}`, natural: ["group_id", "class_id"],
     project: (r, parents) => memberInsertRow(r,
       resolveParent(parents, "product_class_group_rows", r.group_key),
       resolveParent(parents, "product_class_rows", r.class_key)),
     json: ["metadata"],
+  },
+  {
+    collection: "withdrawal_source_rows", table: "sanitario_produto_carencia_fontes_v2", composite: true,
+    key: (r) => `${r.withdrawal_rule_key}:${r.source_key}:${r.field_key}`, natural: ["withdrawal_rule_id", "source_id", "field_key"],
+    project: (r, parents) => {
+      const rule = resolveParent(parents, "withdrawal_rule_rows", r.withdrawal_rule_key);
+      assert(r.withdrawal_rule_id == null || r.withdrawal_rule_id === rule.id, "withdrawal_reference_uuid_mismatch");
+      return { withdrawal_rule_id: rule.id, source_id: sourceReference(r, parents), field_key: r.field_key };
+    },
   },
   {
     collection: "protocol_rows", table: "sanitario_protocolos_v2",
@@ -591,8 +703,6 @@ const P1_PUBLISHERS = [
     collection: "protocol_item_rows", table: "sanitario_protocolo_itens_versions_v2",
     key: itemIdentity, natural: ["protocol_id", "logical_item_key", "version"],
     project: (r, parents) => {
-      assert(r.product_requirement_kind !== "specific_product", "P2_REQUIRED:specific_product");
-      assert(r.dose_rule == null && r.route_rule == null, "P2_REQUIRED:item_dose_or_route");
       const protocol = resolveParent(parents, "protocol_rows", r.protocol_key);
       const group = r.product_requirement_kind === "product_class_group"
         ? resolveParent(parents, "product_class_group_rows", r.group_key) : null;
@@ -600,7 +710,8 @@ const P1_PUBLISHERS = [
       if (r.product_requirement_kind === "product_class") {
         assertCompatibleScope(protocol, resolveParent(parents, "product_class_rows", r.class_key), "item_class");
       }
-      return itemInsertRow(r, protocol.id, group?.id ?? null);
+      const productId = r.product_requirement_kind === "specific_product" ? productReference(r, parents) : null;
+      return itemInsertRow(r, protocol.id, group?.id ?? null, productId);
     },
     json: ["eligibility_rule", "operational_window_rule", "dose_rule", "route_rule",
       "booster_rule", "species_authorization", "source_refs_by_field", "limitations", "snapshot_template"],
@@ -638,33 +749,44 @@ function assertScope(row, collection) {
 }
 
 async function selectIdentity(client, publisher, row, lockRows) {
-  const values = publisher.natural.map((column) => row[column]);
-  const predicates = publisher.natural.map((column, index) => `${column} is not distinct from $${index + 1}`);
-  values.push(row.id);
+  const values = identityValues(publisher, row);
+  const predicates = publisher.natural.map((column, index) =>
+    `${publisher.expressions?.[column] ?? column} is not distinct from $${index + 1}`);
+  if (!publisher.composite) values.push(row.id);
   // Include tombstones and the UUID even when it belongs to a different natural key.
   return (await client.query(
     `select * from public.${publisher.table}
-     where (${predicates.join(" and ")}) or id = $${values.length}
-     order by id${lockRows ? " for update" : ""}`, values,
+     where (${predicates.join(" and ")})${publisher.composite ? "" : ` or id = $${values.length}`}
+     order by ${publisher.composite ? publisher.natural.join(", ") : "id"}${lockRows ? " for update" : ""}`, values,
   )).rows;
+}
+
+function identityValues(publisher, row) {
+  return publisher.natural.map((column) => publisher.normalize
+    ? publisher.normalize(column, row[column] ?? null) : row[column] ?? null);
 }
 
 function identityReason(publisher, row, existingRows) {
   if (existingRows.length > 1) return "IDENTITY_AMBIGUOUS";
   const existing = existingRows[0];
   if (!existing) return null;
-  if (existing.id !== row.id) return "IDENTITY_CONFLICT";
-  if (publisher.natural.some((field) => isDifferent(existing[field] ?? null, row[field] ?? null))) {
+  if (!publisher.composite && existing.id !== row.id) return "IDENTITY_CONFLICT";
+  if (isDifferent(identityValues(publisher, existing), identityValues(publisher, row)) ||
+      publisher.immutable?.some((field) => isDifferent(existing[field] ?? null, row[field] ?? null))) {
     return "CANONICAL_UUID_OTHER_IDENTITY";
   }
   if (existing.deleted_at) return "TOMBSTONE_IDENTITY_RESERVED";
-  assertStableIdentity(existing, row, publisher.key(row));
+  if (!publisher.composite) assertStableIdentity(existing, row, publisher.key(row));
   return null;
 }
 
 function compareRow(publisher, existing, row) {
   return Object.entries(row).some(([field, value]) => {
     let actual = existing[field] ?? null;
+    if (publisher.expressions?.[field]) {
+      return isDifferent(publisher.normalize(field, actual), publisher.normalize(field, value));
+    }
+    if (publisher.numeric?.includes(field) && actual !== null) actual = Number(actual);
     if (publisher.dates?.includes(field) && actual instanceof Date) {
       actual = `${actual.getFullYear()}-${String(actual.getMonth() + 1).padStart(2, "0")}-${String(actual.getDate()).padStart(2, "0")}`;
     }
@@ -691,22 +813,23 @@ async function selectDeprecatedActiveItems(client, data, lockRows = false) {
 }
 
 export async function buildPlan(client, data, { lockRows = false } = {}) {
-  const supported = new Set(P1_PUBLISHERS.map((p) => p.collection));
+  const supported = new Set(PUBLISHERS.map((p) => p.collection));
   for (const [collection, entries] of Object.entries(data)) {
     assert(collection === "memberRejections" || supported.has(collection) || entries.length === 0,
-      `P1_UNSUPPORTED_NONEMPTY_COLLECTION:${collection}`);
+      `UNSUPPORTED_NONEMPTY_COLLECTION:${collection}`);
   }
   const operations = [];
   const parents = new Map();
   const allIds = new Map();
-  for (const publisher of P1_PUBLISHERS) {
+  for (const publisher of PUBLISHERS.filter((p) => !p.composite)) {
     for (const canonical of data[publisher.collection] ?? []) {
       allIds.set(canonical.id, (allIds.get(canonical.id) ?? 0) + 1);
     }
   }
-  for (const publisher of P1_PUBLISHERS) {
+  for (const publisher of PUBLISHERS) {
     const entries = data[publisher.collection] ?? [];
     const projectedKeys = new Map();
+    const symbolicKeys = new Map();
     const resolved = new Map();
     parents.set(publisher.collection, resolved);
     for (const canonical of sortedBy(entries, "id")) {
@@ -716,12 +839,17 @@ export async function buildPlan(client, data, { lockRows = false } = {}) {
       let existing = null;
       let action = "reject";
       try {
-        assert(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(canonical.id), "EXPLICIT_UUID_REQUIRED");
-        assert(allIds.get(canonical.id) === 1, "DUPLICATE_CANONICAL_UUID");
+        if (!publisher.composite) {
+          assert(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(canonical.id), "EXPLICIT_UUID_REQUIRED");
+          assert(allIds.get(canonical.id) === 1, "DUPLICATE_CANONICAL_UUID");
+        }
+        assert(typeof key === "string" && key.length > 0, "CANONICAL_SYMBOL_REQUIRED");
+        if (!symbolicKeys.has(key)) symbolicKeys.set(key, []);
+        symbolicKeys.get(key).push(operations.length);
         assert(!canonical.deleted_at, "CANONICAL_TOMBSTONE_NOT_PUBLISHABLE");
         row = publisher.project(canonical, parents);
         assertScope(row, publisher.collection);
-        const naturalKey = stableStringify(publisher.natural.map((field) => row[field]));
+        const naturalKey = stableStringify(identityValues(publisher, row));
         if (!projectedKeys.has(naturalKey)) projectedKeys.set(naturalKey, []);
         projectedKeys.get(naturalKey).push(operations.length);
         const found = await selectIdentity(client, publisher, row, lockRows);
@@ -749,6 +877,15 @@ export async function buildPlan(client, data, { lockRows = false } = {}) {
       for (const position of positions) {
         Object.assign(operations[position], {
           action: "reject", reason: "DUPLICATE_CANONICAL_NATURAL_KEY", classification: "UNEXPECTED_CONFLICT",
+        });
+      }
+    }
+    for (const positions of symbolicKeys.values()) {
+      if (positions.length <= 1) continue;
+      for (const position of positions) {
+        if (operations[position].reason === "DUPLICATE_CANONICAL_NATURAL_KEY") continue;
+        Object.assign(operations[position], {
+          action: "reject", reason: "DUPLICATE_CANONICAL_SYMBOL", classification: "UNEXPECTED_CONFLICT",
         });
       }
     }
@@ -828,7 +965,7 @@ async function writeOperation(client, operation) {
     assert(result.rowCount === 1, "deprecated_item_concurrent_change");
     return;
   }
-  const publisher = P1_PUBLISHERS.find((p) => p.collection === operation.collection);
+  const publisher = PUBLISHERS.find((p) => p.collection === operation.collection);
   assert(publisher && operation.row, "UNSUPPORTED_WRITE_OPERATION");
   const columns = Object.keys(operation.row);
   const values = columns.map((field) => publisher.json?.includes(field) && operation.row[field] !== null
@@ -837,12 +974,13 @@ async function writeOperation(client, operation) {
   if (operation.action === "create") {
     result = await client.query(
       `insert into public.${publisher.table} (${columns.join(", ")})
-       values (${columns.map((_, i) => `$${i + 1}`).join(", ")}) returning id`, values,
+       values (${columns.map((_, i) => `$${i + 1}`).join(", ")}) returning ${publisher.composite ? publisher.natural.join(", ") : "id"}`, values,
     );
   } else {
     assert(operation.action === "update", "UNEXPECTED_WRITE_ACTION");
     // Read FOR UPDATE after the advisory lock. Natural identity columns are immutable.
-    const mutable = columns.filter((field) => field !== "id" && !publisher.natural.includes(field));
+    assert(!publisher.composite, "COMPOSITE_LINK_HAS_NO_MUTABLE_COLUMNS");
+    const mutable = columns.filter((field) => field !== "id" && !publisher.natural.includes(field) && !publisher.immutable?.includes(field));
     const updateValues = mutable.map((field) => values[columns.indexOf(field)]);
     updateValues.push(operation.row.id);
     result = await client.query(
@@ -922,7 +1060,7 @@ async function main() {
       const plan = await buildPlan(client, data);
       printPlan("dry-run", plan);
       console.log(
-        `aviso: publisher_complete=false; cobertura P1 do payload atual; sete colecoes e specific_product aguardam P2`,
+        `aviso: publisher_complete=false; cobertura estrutural 14/14; certificacao PostgreSQL aguarda P3`,
       );
       return;
     }
