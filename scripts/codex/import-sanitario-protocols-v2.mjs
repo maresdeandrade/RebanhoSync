@@ -197,6 +197,7 @@ function validateCanonicalPayload(payload) {
 
   assert(payload.artifact === EXPECTED.artifact, "artifact canonico inesperado");
   assert(payload.artifact_version === EXPECTED.artifactVersion, "artifact_version 12F10 inesperada");
+  assert(payload.identity_model === "VERSIONED_EXPLICIT_UUID", "identity_model deve ser VERSIONED_EXPLICIT_UUID");
   assert(payload.execute_import === false, "execute_import deve permanecer false");
   assert(payload.counts?.protocols === EXPECTED.protocols, "counts.protocols deve ser 10");
   assert(payload.counts?.protocol_items === EXPECTED.items, `counts.protocol_items deve ser ${EXPECTED.items}`);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import {
@@ -521,18 +522,89 @@ describe("sanitario v2 canonical contract", () => {
     expect(payload.import_gate.import_real_authorized).toBe(false);
   });
 
-  it("isolates remaining canonical validation errors to C0.5 identities", () => {
+  it("materializes C0.5 VERSIONED_EXPLICIT_UUID identities without orphans or regeneration", () => {
     const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
-    let message = "";
-    try {
-      validateCanonicalTechnicalContract(payload);
-    } catch (error) {
-      message = error.message;
+    const before = JSON.stringify(payload);
+    const rawProtocols = payload.payload.sanitario_protocolos_v2.rows;
+    const rawItems = payload.payload.sanitario_protocolo_itens_versions_v2.rows;
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const parents = new Map(rawProtocols.map((row) => [row.protocol_key, row.id]));
+    const mapping = {
+      protocols: rawProtocols.map((row) => [row.protocol_key, row.id]).sort(),
+      items: rawItems.map((row) => [row.protocol_key, row.logical_item_key, row.version, row.id, row.protocol_id]).sort(),
+    };
+
+    expect(payload.identity_model).toBe("VERSIONED_EXPLICIT_UUID");
+    expect(rawProtocols).toHaveLength(10);
+    expect(parents.size).toBe(10);
+    expect(new Set(parents.values()).size).toBe(10);
+    expect(rawProtocols.every((row) => uuid.test(row.id) && row.protocol_key === row.family_code && row.version === 1)).toBe(true);
+    expect(rawItems).toHaveLength(20);
+    expect(new Set(rawItems.map((row) => row.id)).size).toBe(20);
+    expect(rawItems.every((row) => uuid.test(row.id) && uuid.test(row.protocol_id) && row.version === 1 && parents.get(row.protocol_key) === row.protocol_id)).toBe(true);
+    // Permanent mapping: changing any UUID, parent, key or item version requires explicit review.
+    expect(createHash("sha256").update(JSON.stringify(mapping)).digest("hex"))
+      .toBe("187b4c0c6d4957aadd4b896edd3908b2d9096e364b503c4c4f0a517f5d5aa6b1");
+    expect(payload.payload.sanitario_protocolo_itens_versions_v2.defaults).not.toHaveProperty("protocol_id");
+
+    for (let replay = 0; replay < 2; replay += 1) {
+      const fresh = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
+      const { data } = validateCanonicalTechnicalContract(fresh);
+      expect(data.protocol_rows).toEqual(rawProtocols);
+      expect(data.protocol_item_rows.map((row) => [row.protocol_key, row.logical_item_key, row.version, row.id, row.protocol_id]).sort()).toEqual(mapping.items);
+      for (const item of data.protocol_item_rows) {
+        const physical = itemInsertRow(item, parents.get(item.protocol_key), null);
+        expect(physical.id).toBe(item.id);
+        expect(physical.protocol_id).toBe(item.protocol_id);
+      }
+      expect(JSON.stringify(fresh)).toBe(before);
     }
-    const issues = message.split("\n").filter((line) => line.startsWith("- "));
-    expect(issues).toHaveLength(70);
-    expect(issues.filter((line) => line.startsWith("- protocol_rows["))).toHaveLength(30);
-    expect(issues.filter((line) => line.startsWith("- protocol_item_rows["))).toHaveLength(40);
+    expect(JSON.stringify(payload)).toBe(before);
+  });
+
+  it("preserves all C0.4 content outside the materialized identity fields", () => {
+    const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
+    delete payload.identity_model;
+    for (const row of payload.payload.sanitario_protocolos_v2.rows) {
+      delete row.id;
+      delete row.protocol_key;
+    }
+    for (const row of payload.payload.sanitario_protocolo_itens_versions_v2.rows) {
+      delete row.id;
+      delete row.protocol_key;
+      delete row.protocol_id;
+    }
+    delete payload.payload.sanitario_protocolo_itens_versions_v2.defaults.protocol_id;
+    // Digest captured from e5dde1c before C0.5: sanitary content, classes, groups, members and gates.
+    expect(createHash("sha256").update(JSON.stringify(payload)).digest("hex"))
+      .toBe("6bdd48bb615518802f395be82fc2d20a77288f196e695ff621da9abba3f93fe6");
+  });
+
+  it.each([
+    ["missing protocol UUID", (p) => { delete p.payload.sanitario_protocolos_v2.rows[0].id; }, "protocol_rows[0].id"],
+    ["missing item UUID", (p) => { delete p.payload.sanitario_protocolo_itens_versions_v2.rows[0].id; }, "protocol_item_rows[0].id"],
+    ["duplicate protocol UUID", (p) => { p.payload.sanitario_protocolos_v2.rows[1].id = p.payload.sanitario_protocolos_v2.rows[0].id; }, "UUID duplicado"],
+    ["duplicate item UUID", (p) => { p.payload.sanitario_protocolo_itens_versions_v2.rows[1].id = p.payload.sanitario_protocolo_itens_versions_v2.rows[0].id; }, "UUID duplicado"],
+    ["missing explicit protocol key", (p) => { delete p.payload.sanitario_protocolos_v2.rows[0].protocol_key; }, "protocol_key"],
+    ["missing explicit parent UUID", (p) => { delete p.payload.sanitario_protocolo_itens_versions_v2.rows[0].protocol_id; }, "UUID explicito do protocolo pai obrigatorio"],
+    ["orphan item", (p) => { p.payload.sanitario_protocolo_itens_versions_v2.rows[0].protocol_id = ids.protocol; }, "protocol_id inexistente"],
+    ["wrong parent UUID", (p) => { p.payload.sanitario_protocolo_itens_versions_v2.rows[0].protocol_id = p.payload.sanitario_protocolos_v2.rows[1].id; }, "UUID nao corresponde"],
+    ["duplicate logical identity", (p) => { const rows = p.payload.sanitario_protocolo_itens_versions_v2.rows; rows[2].logical_item_key = rows[1].logical_item_key; }, "identidade de item duplicada"],
+    ["obsolete protocol lookup", (p) => { p.payload.sanitario_protocolo_itens_versions_v2.rows[0].protocol_id = "{{lookup sanitario_protocolos_v2.id by family_code=brucelose_b19}}"; }, "UUID explicito do protocolo pai obrigatorio"],
+    ["identity generation model", (p) => { p.identity_model = "RUNTIME_UUID"; }, "modelo esperado VERSIONED_EXPLICIT_UUID"],
+  ])("rejects C0.5 %s without generating identities", (_name, mutate, message) => {
+    const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
+    mutate(payload);
+    const before = JSON.stringify(payload);
+    expectInvalid(payload, message);
+    expect(JSON.stringify(payload)).toBe(before);
+  });
+
+  it.each(["sanitario_protocolos_v2", "sanitario_protocolo_itens_versions_v2"])("rejects replacing a canonical UUID in %s", (collection) => {
+    const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
+    const canonical = payload.payload[collection].rows[0];
+    expect(() => assertStableIdentity({ id: ids.protocol }, canonical, canonical.protocol_key))
+      .toThrow("IDENTITY_CONFLICT");
   });
 
   it("builds physical rows purely from canonical fields without lookup placeholders", () => {
@@ -578,10 +650,12 @@ describe("sanitario v2 canonical contract", () => {
     expect(result.stdout).not.toMatch(/ENOENT|DB_URL/);
   });
 
-  it("fails real CLI --validate on artifact content without supabase connection", () => {
+  it("validates the materialized artifact with the publisher gate closed and without database access", () => {
     const result = runImportScript(["--validate"], { ...process.env, DB_URL: "" });
-    expect(result.code).not.toBe(0);
-    expect(result.stdout).toContain("Contrato canonico v2 invalido");
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("12G validate OK");
+    expect(result.stdout).toContain('"publisher_complete": false');
+    expect(result.stdout).toContain('"execute_import": false');
     expect(result.stdout).not.toMatch(/ENOENT|DB_URL|pg_advisory/);
   });
 });

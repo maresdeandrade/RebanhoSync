@@ -969,7 +969,9 @@
               "execution_requires_marking_when_applicable",
               "execution_requires_real_product_snapshot"
             ]
-          }
+          },
+          "id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+          "protocol_key": "brucelose_b19"
         },
         {
           "family_code": "clostridioses",
@@ -1015,7 +1017,9 @@
               "product_specific_label_required",
               "do_not_generalize_class"
             ]
-          }
+          },
+          "id": "c033a955-0492-4f0f-b068-667c127c80ad",
+          "protocol_key": "clostridioses"
         },
         {
           "family_code": "raiva_herbivoros",
@@ -1120,7 +1124,9 @@
                 "review_due": "2027-01-15"
               }
             }
-          }
+          },
+          "id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+          "protocol_key": "raiva_herbivoros"
         },
         {
           "family_code": "leptospirose",
@@ -1163,7 +1169,9 @@
               "source_gap_bubalino",
               "source_gap_product_withdrawal_snapshot"
             ]
-          }
+          },
+          "id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+          "protocol_key": "leptospirose"
         },
         {
           "family_code": "ibr_bvd",
@@ -1209,7 +1217,9 @@
               "source_gap_product_withdrawal_snapshot",
               "source_gap_bubalino"
             ]
-          }
+          },
+          "id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+          "protocol_key": "ibr_bvd"
         },
         {
           "family_code": "controle_parasitario_recria_5_7_9",
@@ -1259,7 +1269,9 @@
               "dose_route_withdrawal_from_product_only": true,
               "regional_recommendation_may_not_supply_product_fields": true
             }
-          }
+          },
+          "id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+          "protocol_key": "controle_parasitario_recria_5_7_9"
         },
         {
           "family_code": "vermifugacao_pre_desmama",
@@ -1295,7 +1307,9 @@
               "source_gap_mv_decision",
               "source_gap_bubalino"
             ]
-          }
+          },
+          "id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+          "protocol_key": "vermifugacao_pre_desmama"
         },
         {
           "family_code": "vermifugacao_pre_confinamento_pasto_vedado",
@@ -1326,7 +1340,9 @@
               "requires_slaughter_withdrawal_review",
               "source_gap_bubalino"
             ]
-          }
+          },
+          "id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+          "protocol_key": "vermifugacao_pre_confinamento_pasto_vedado"
         },
         {
           "family_code": "matrizes_pre_parto",
@@ -1360,7 +1376,9 @@
               "source_gap_bubalino"
             ],
             "nonOperationalNotice": "avaliar protocolo de leptospirose conforme manejo reprodutivo e orientação técnica"
-          }
+          },
+          "id": "c51c944b-431f-4533-8505-65bea3bec156",
+          "protocol_key": "matrizes_pre_parto"
         },
         {
           "family_code": "febre_aftosa",
@@ -1399,7 +1417,9 @@
               "contingency_only",
               "productRequirementKind_none"
             ]
-          }
+          },
+          "id": "9bec9aff-af10-4960-b567-c5d4698f540f",
+          "protocol_key": "febre_aftosa"
         }
       ]
     },
@@ -1408,12 +1428,11 @@
       "defaults": {
         "version": 1,
         "status": "draft",
-        "allows_agenda_auto": false,
-        "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code}}"
+        "allows_agenda_auto": false
       },
       "rows": [
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=brucelose_b19}}",
+          "protocol_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
           "logical_item_key": "b19_femeas_3_8_meses",
           "version": 1,
           "item_status": "obrigatorio",
@@ -1531,10 +1550,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": true,
-          "status": "draft"
+          "status": "draft",
+          "id": "ce2995b6-098e-4c67-aee2-8e3325c9ce53",
+          "protocol_key": "brucelose_b19"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=clostridioses}}",
+          "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
           "logical_item_key": "clostridial_primovac_dose1",
           "version": 1,
           "item_status": "recomendado",
@@ -1616,10 +1637,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "b846a0ae-481e-47b3-a9ce-a3f43afb0484",
+          "protocol_key": "clostridioses"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=clostridioses}}",
+          "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
           "logical_item_key": "clostridial_primovac_dose2",
           "version": 1,
           "item_status": "recomendado",
@@ -1703,10 +1726,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "13340ea6-bc82-434a-a2a1-45548a9f4528",
+          "protocol_key": "clostridioses"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=clostridioses}}",
+          "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
           "logical_item_key": "clostridial_reforco_anual",
           "version": 1,
           "item_status": "recomendado",
@@ -1790,10 +1815,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "136af00d-eeeb-44b9-87c4-c153cc1fc28b",
+          "protocol_key": "clostridioses"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=raiva_herbivoros}}",
+          "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
           "logical_item_key": "raiva_primovac_dose1",
           "version": 1,
           "item_status": "condicional",
@@ -1889,10 +1916,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
+          "protocol_key": "raiva_herbivoros"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=raiva_herbivoros}}",
+          "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
           "logical_item_key": "raiva_primovac_reforco_30d",
           "version": 1,
           "item_status": "condicional",
@@ -1999,10 +2028,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "f62a7a12-0604-4539-8245-5564e4e3592e",
+          "protocol_key": "raiva_herbivoros"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=raiva_herbivoros}}",
+          "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
           "logical_item_key": "raiva_reforco_anual_area_risco",
           "version": 1,
           "item_status": "condicional",
@@ -2099,10 +2130,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "e5430f23-2f84-4812-9caa-85bb6596304d",
+          "protocol_key": "raiva_herbivoros"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=leptospirose}}",
+          "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
           "logical_item_key": "lepto_primovac_dose1",
           "version": 1,
           "item_status": "condicional",
@@ -2179,10 +2212,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "017e2c3e-fac6-45f0-ad63-e1795fb40730",
+          "protocol_key": "leptospirose"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=leptospirose}}",
+          "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
           "logical_item_key": "lepto_primovac_dose2",
           "version": 1,
           "item_status": "bloqueado",
@@ -2262,10 +2297,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "77c52cb2-069e-4d84-89d4-1cb26236ab5a",
+          "protocol_key": "leptospirose"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=leptospirose}}",
+          "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
           "logical_item_key": "lepto_reforco_anual_semestral",
           "version": 1,
           "item_status": "condicional",
@@ -2346,10 +2383,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "9791a745-6d5d-4a72-9a14-d7e0b9a99626",
+          "protocol_key": "leptospirose"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=ibr_bvd}}",
+          "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
           "logical_item_key": "ibr_bvd_primovac_dose1",
           "version": 1,
           "item_status": "recomendado",
@@ -2428,10 +2467,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "2a35a390-7e3a-4fa1-944c-9118ddeaaebe",
+          "protocol_key": "ibr_bvd"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=ibr_bvd}}",
+          "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
           "logical_item_key": "ibr_bvd_primovac_dose2",
           "version": 1,
           "item_status": "recomendado",
@@ -2512,10 +2553,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "943f74f0-7a82-4dfc-b3f5-8cd35d5bca01",
+          "protocol_key": "ibr_bvd"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=febre_aftosa}}",
+          "protocol_id": "9bec9aff-af10-4960-b567-c5d4698f540f",
           "logical_item_key": "fmd_historico_contingencia",
           "version": 1,
           "item_status": "bloqueado",
@@ -2583,10 +2626,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "dd09c61e-6686-4b1c-99b7-ef9c3f15dc6b",
+          "protocol_key": "febre_aftosa"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=febre_aftosa}}",
+          "protocol_id": "9bec9aff-af10-4960-b567-c5d4698f540f",
           "logical_item_key": "fmd_bloqueio_vacinacao_rotina",
           "version": 1,
           "item_status": "bloqueado",
@@ -2654,10 +2699,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "fa867ec0-acdf-4b8c-a12e-2620faca4e08",
+          "protocol_key": "febre_aftosa"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=controle_parasitario_recria_5_7_9}}",
+          "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
           "logical_item_key": "recria_maio",
           "version": 1,
           "item_status": "estrategico",
@@ -2735,10 +2782,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "38c59c96-d854-4583-8283-02e4bd3065a2",
+          "protocol_key": "controle_parasitario_recria_5_7_9"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=controle_parasitario_recria_5_7_9}}",
+          "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
           "logical_item_key": "recria_julho",
           "version": 1,
           "item_status": "estrategico",
@@ -2816,10 +2865,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "5501697e-d3de-499a-9bdb-405b277675c9",
+          "protocol_key": "controle_parasitario_recria_5_7_9"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=controle_parasitario_recria_5_7_9}}",
+          "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
           "logical_item_key": "recria_setembro",
           "version": 1,
           "item_status": "estrategico",
@@ -2897,10 +2948,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "f8d9ae48-213d-44b0-919e-14cc12e828c5",
+          "protocol_key": "controle_parasitario_recria_5_7_9"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=vermifugacao_pre_desmama}}",
+          "protocol_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
           "logical_item_key": "pre_desmama_situacional",
           "version": 1,
           "item_status": "condicional",
@@ -2971,10 +3024,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": true,
-          "status": "draft"
+          "status": "draft",
+          "id": "296b0b88-3105-471b-89b3-e4796bd74d47",
+          "protocol_key": "vermifugacao_pre_desmama"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=vermifugacao_pre_confinamento_pasto_vedado}}",
+          "protocol_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
           "logical_item_key": "pre_confinamento_dose_unica",
           "version": 1,
           "item_status": "estrategico",
@@ -3045,10 +3100,12 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
-          "status": "draft"
+          "status": "draft",
+          "id": "abf01867-fe1c-4638-8d4c-80929bbe0e00",
+          "protocol_key": "vermifugacao_pre_confinamento_pasto_vedado"
         },
         {
-          "protocol_id": "{{lookup sanitario_protocolos_v2.id by family_code=matrizes_pre_parto}}",
+          "protocol_id": "c51c944b-431f-4533-8505-65bea3bec156",
           "logical_item_key": "matrizes_pre_parto_antiparasitario",
           "version": 1,
           "item_status": "condicional",
@@ -3122,7 +3179,9 @@
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": true,
-          "status": "draft"
+          "status": "draft",
+          "id": "53006754-98ea-4ad0-8cf1-a20b8898f84b",
+          "protocol_key": "matrizes_pre_parto"
         }
       ]
     },
@@ -3569,5 +3628,6 @@
         "required_resolution": "nao materializar: associacoes_antiparasitarias nao e ProductClass"
       }
     ]
-  }
+  },
+  "identity_model": "VERSIONED_EXPLICIT_UUID"
 }
