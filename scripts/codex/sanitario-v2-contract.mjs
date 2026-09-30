@@ -110,12 +110,14 @@ export function normalizeCanonicalData(payload) {
   data.protocol_item_rows = rowsFrom(payload, "protocolItems").map((row, index) => {
     const rawProtocolId = String(row.protocol_id ?? "");
     const rawGroupId = String(row.product_class_group_id ?? "");
-    if (LEGACY_UUID_EMBEDDED_PATTERN.test(rawProtocolId) || LEGACY_UUID_EMBEDDED_PATTERN.test(rawGroupId)) {
+    const explicitProtocolId = UUID_PATTERN.test(rawProtocolId) && typeof row.protocol_key === "string" && row.protocol_key.trim();
+    if ((!explicitProtocolId && LEGACY_UUID_EMBEDDED_PATTERN.test(rawProtocolId)) || LEGACY_UUID_EMBEDDED_PATTERN.test(rawGroupId)) {
       throw new Error(`sanitario_protocolo_itens_versions_v2.rows[${index}]: lookup nao pode conter UUID artificial`);
     }
     const { protocol_id, product_class, product_class_group_id, product_id, ...rest } = row;
     return {
       ...rest,
+      ...(explicitProtocolId ? { protocol_id } : {}),
       protocol_key: rest.protocol_key ?? LEGACY_PROTOCOL_LOOKUP_PATTERN.exec(rawProtocolId)?.[1],
       product_key: rest.product_key ?? product_id,
       class_key: rest.class_key ?? product_class,
@@ -396,6 +398,8 @@ function validateTechnicalRows(data, indexes, issues) {
 }
 
 function validateProtocolRows(data, indexes, issues) {
+  const protocolsByKey = new Map(data.protocol_rows.map((row) => [row.protocol_key, row]));
+  const itemIdentities = new Set();
   data.protocol_rows.forEach((row, index) => {
     const path = `protocol_rows[${index}]`;
     requireField(issues, row, "id", path);
@@ -417,6 +421,15 @@ function validateProtocolRows(data, indexes, issues) {
     requireField(issues, row, "id", path);
     for (const field of ["protocol_key", "logical_item_key", "version", "item_status", "action_type", "product_requirement_kind"]) requireField(issues, row, field, path);
     reference(row.protocol_key, indexes.protocols.keys, issues, `${path}.protocol_key`, "protocol_key");
+    if (row.protocol_id !== undefined) {
+      reference(row.protocol_id, indexes.protocols.ids, issues, `${path}.protocol_id`, "protocol_id");
+      if (protocolsByKey.get(row.protocol_key)?.id !== row.protocol_id) {
+        fail(issues, `${path}.protocol_id`, "UUID nao corresponde ao protocol_key do pai");
+      }
+    }
+    const identity = `${row.protocol_key}:${row.logical_item_key}:v${row.version}`;
+    if (itemIdentities.has(identity)) fail(issues, path, `identidade de item duplicada: ${identity}`);
+    else itemIdentities.add(identity);
     enumValue(issues, row, "item_status", ENUMS.itemStatus, path);
     enumValue(issues, row, "action_type", ENUMS.actionType, path);
     enumValue(issues, row, "product_requirement_kind", ENUMS.requirementKind, path);
@@ -436,6 +449,21 @@ function validateProtocolRows(data, indexes, issues) {
 export function validateCanonicalTechnicalContract(payload) {
   const issues = [];
   const data = normalizeCanonicalData(payload);
+  if (payload.identity_model !== undefined) {
+    if (payload.identity_model !== "VERSIONED_EXPLICIT_UUID") {
+      fail(issues, "identity_model", "modelo esperado VERSIONED_EXPLICIT_UUID");
+    }
+    rowsFrom(payload, "protocol_rows").forEach((row, index) => {
+      requireField(issues, row, "protocol_key", `protocol_rows[${index}]`);
+    });
+    rowsFrom(payload, "protocol_item_rows").forEach((row, index) => {
+      const path = `protocol_item_rows[${index}]`;
+      requireField(issues, row, "protocol_key", path);
+      if (typeof row.protocol_id !== "string" || !UUID_PATTERN.test(row.protocol_id)) {
+        fail(issues, `${path}.protocol_id`, "UUID explicito do protocolo pai obrigatorio");
+      }
+    });
+  }
   if (payload.artifact_version !== CANONICAL_ARTIFACT_VERSION) {
     fail(issues, "artifact_version", `versao esperada ${CANONICAL_ARTIFACT_VERSION}`);
   }
@@ -491,7 +519,11 @@ export function validateCanonicalTechnicalContract(payload) {
   const classByKey = new Map(data.product_class_rows.map((row) => [row.class_key, row]));
   const groupByKey = new Map(data.product_class_group_rows.map((row) => [row.group_key, row]));
   const protocolByKey = new Map(data.protocol_rows.map((row) => [row.protocol_key, row]));
+  const memberPairs = new Set();
   for (const [index, row] of data.product_class_group_member_rows.entries()) {
+    const pair = `${row.group_key}:${row.class_key}`;
+    if (memberPairs.has(pair)) fail(issues, `product_class_group_member_rows[${index}]`, `membership duplicado: ${pair}`);
+    else memberPairs.add(pair);
     const group = groupByKey.get(row.group_key);
     const cls = classByKey.get(row.class_key);
     if (group && cls && (group.scope === "global" ? cls.scope !== "global" : cls.scope === "tenant" && cls.fazenda_id !== group.fazenda_id)) {

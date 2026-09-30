@@ -23,7 +23,8 @@ const EXPECTED = {
   protocols: 10,
   items: 20,
   groups: 4,
-  memberRejections: 16,
+  members: 12,
+  memberRejections: 4,
 };
 
 const PIPELINE_STATUS = {
@@ -119,6 +120,7 @@ function rows(canonicalData) {
     protocols: canonicalData.protocol_rows,
     items: canonicalData.protocol_item_rows,
     groups: canonicalData.product_class_group_rows,
+    members: canonicalData.product_class_group_member_rows,
     memberRejections: canonicalData.memberRejections ?? [],
   };
 }
@@ -195,18 +197,21 @@ function validateCanonicalPayload(payload) {
 
   assert(payload.artifact === EXPECTED.artifact, "artifact canonico inesperado");
   assert(payload.artifact_version === EXPECTED.artifactVersion, "artifact_version 12F10 inesperada");
+  assert(payload.identity_model === "VERSIONED_EXPLICIT_UUID", "identity_model deve ser VERSIONED_EXPLICIT_UUID");
   assert(payload.execute_import === false, "execute_import deve permanecer false");
   assert(payload.counts?.protocols === EXPECTED.protocols, "counts.protocols deve ser 10");
   assert(payload.counts?.protocol_items === EXPECTED.items, `counts.protocol_items deve ser ${EXPECTED.items}`);
   assert(payload.counts?.product_class_groups === EXPECTED.groups, "counts.product_class_groups deve ser 4");
+  assert(payload.counts?.product_class_group_members === EXPECTED.members, "counts.product_class_group_members deve ser 12");
   assert(
     payload.counts?.product_class_group_member_rejections === EXPECTED.memberRejections,
-    "counts.product_class_group_member_rejections deve ser 16",
+    "counts.product_class_group_member_rejections deve ser 4",
   );
   assert(data.protocols.length === EXPECTED.protocols, "payload deve conter 10 protocolos");
   assert(data.items.length === EXPECTED.items, `payload deve conter ${EXPECTED.items} itens`);
   assert(data.groups.length === EXPECTED.groups, "payload deve conter 4 ProductClassGroups");
-  assert(data.memberRejections.length === EXPECTED.memberRejections, "payload deve conter 16 rejeicoes de members");
+  assert(data.members.length === EXPECTED.members, "payload deve conter 12 ProductClassGroupMembers");
+  assert(data.memberRejections.length === EXPECTED.memberRejections, "payload deve conter 4 rejeicoes de members");
 
   walk(payload, (entry, pathParts) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return;
@@ -326,14 +331,34 @@ function validateCanonicalPayload(payload) {
     assert(Array.isArray(group.metadata?.principios_ativos_candidatos), `${group.group_key}: principios ativos devem ficar em metadata`);
   }
 
+  const validClassKeys = new Set(["lactonas_macrociclicas", "benzimidazois", "imidazotiazoleis"]);
+  const classKeys = new Set(contract.data.product_class_rows.map((row) => row.class_key));
+  const memberPairs = new Set();
+  for (const member of data.members) {
+    const pair = `${member.group_key}:${member.class_key}`;
+    assert(groupKeys.has(member.group_key), `${pair}: grupo de member inexistente`);
+    assert(validClassKeys.has(member.class_key) && classKeys.has(member.class_key), `${pair}: classe de member invalida`);
+    assert(!memberPairs.has(pair), `${pair}: member duplicado`);
+    memberPairs.add(pair);
+  }
+  for (const groupKey of groupKeys) {
+    for (const classKey of validClassKeys) {
+      assert(memberPairs.has(`${groupKey}:${classKey}`), `${groupKey}:${classKey}: member ausente`);
+    }
+  }
+  const rejectedGroups = new Set();
   for (const rejection of data.memberRejections) {
     assert(
-      rejection.reason === "PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER",
-      `${rejection.member_key}: motivo de rejeicao deve ser PRODUCT_CLASS_ID_REQUIRED_FOR_GROUP_MEMBER`,
+      rejection.reason === "NOT_A_CLASS_CONFIRMED" && rejection.class_key === "associacoes_antiparasitarias",
+      `${rejection.member_key}: motivo de rejeicao deve ser NOT_A_CLASS_CONFIRMED para associacoes_antiparasitarias`,
     );
+    assert(groupKeys.has(rejection.group_key), `${rejection.member_key}: grupo de rejection inexistente`);
+    assert(!rejectedGroups.has(rejection.group_key), `${rejection.member_key}: rejection duplicada para grupo`);
+    rejectedGroups.add(rejection.group_key);
     assert(!Object.hasOwn(rejection, "class_id"), `${rejection.member_key}: member nao pode importar sem class_id`);
     assert(!UUID_LIKE.test(stableStringify(rejection)), `${rejection.member_key}: rejeicao nao pode conter UUID artificial`);
   }
+  assert(rejectedGroups.size === groupKeys.size, "cada grupo deve ter uma rejection de associacoes_antiparasitarias");
 
   return data;
 }
