@@ -154,7 +154,7 @@ function isDifferent(a, b) {
 
 function protocolUpdateBlockReason(existing) {
   if (!existing) return null;
-  if (existing.approval_status !== "draft" || existing.approved_at) {
+  if (existing.approval_status !== "draft" || existing.approved_at || existing.status !== "draft") {
     return "protocol_not_draft";
   }
   return null;
@@ -164,7 +164,7 @@ function groupUpdateBlockReason(existing) {
   if (!existing) return null;
   if (
     existing.curation_status !== "needs_review" ||
-    existing.automation_status === "agenda_allowed"
+    ["agenda_allowed", "blocked"].includes(existing.automation_status)
   ) {
     return "group_already_curated_or_operational";
   }
@@ -360,7 +360,7 @@ function validateCanonicalPayload(payload) {
   }
   assert(rejectedGroups.size === groupKeys.size, "cada grupo deve ter uma rejection de associacoes_antiparasitarias");
 
-  return data;
+  return contract.data;
 }
 
 function readSupabaseStatusEnv() {
@@ -412,7 +412,7 @@ function describeDatabase(dbUrl) {
 
 export function applyGateError(payload, publisherComplete) {
   if (publisherComplete !== true) {
-    return "PUBLISHER_INCOMPLETE: --apply bloqueado enquanto o publisher escrever somente grupos, protocolos e itens.";
+    return "PUBLISHER_INCOMPLETE: --apply bloqueado; cobertura P1 nao conclui as colecoes e requisitos da P2.";
   }
   const gate = payload?.import_gate;
   if (gate?.import_real_authorized !== true) {
@@ -421,7 +421,7 @@ export function applyGateError(payload, publisherComplete) {
   return null;
 }
 
-function assertApplyGate(payload) {
+export function assertApplyGate(payload) {
   const error = applyGateError(payload, PIPELINE_STATUS.PUBLISHER_COMPLETE);
   assert(!error, error);
 }
@@ -454,675 +454,432 @@ async function connectDb(mode) {
   return { client, target };
 }
 
-async function selectProtocols(client, protocols) {
-  const result = new Map();
-  for (const protocol of sortedBy(protocols, "family_code")) {
-    const existing = await client.query(
-      `
-        select *
-        from public.sanitario_protocolos_v2
-        where deleted_at is null
-          and family_code = $1
-          and scope = $2
-          and fazenda_id is not distinct from $3::uuid
-          and version = $4
-        order by id
-      `,
-      [protocol.family_code, protocol.scope, protocol.fazenda_id, protocol.version],
-    );
-    assert(existing.rowCount <= 1, `${protocol.family_code}: lookup ambiguo em sanitario_protocolos_v2`);
-    result.set(protocol.family_code, existing.rows[0] ?? null);
-  }
-  return result;
+export function sourceInsertRow(source) {
+  return {
+    id: source.id, source_key: source.source_key, kind: source.kind, scope: source.scope,
+    fazenda_id: source.fazenda_id ?? null, title: source.title,
+    issuer: source.issuer ?? null, version: source.version ?? null,
+    published_at: source.published_at ?? null, accessed_at: source.accessed_at ?? null,
+    url: source.url ?? null, jurisdiction_country: source.jurisdiction_country ?? "BR",
+    jurisdiction_uf: source.jurisdiction_uf ?? null, jurisdiction_zone: source.jurisdiction_zone ?? null,
+    strength: source.strength, evidence_status: source.evidence_status,
+    limitations: source.limitations ?? [], metadata: source.metadata ?? {},
+  };
 }
 
-async function selectGroups(client, groups) {
-  const result = new Map();
-  for (const group of sortedBy(groups, "group_key")) {
-    const scope = scopeForGroup(group.scope);
-    const existing = await client.query(
-      `
-        select *
-        from public.sanitario_product_class_groups_v2
-        where deleted_at is null
-          and scope = $1
-          and fazenda_id is not distinct from $2::uuid
-          and group_key = $3
-        order by id
-      `,
-      [scope, group.fazenda_id, group.group_key],
-    );
-    assert(existing.rowCount <= 1, `${group.group_key}: lookup ambiguo em sanitario_product_class_groups_v2`);
-    result.set(group.group_key, existing.rows[0] ?? null);
-  }
-  return result;
+export function coverageInsertRow(coverage, source) {
+  assert(source && !source.deleted_at, `source_lookup_missing_or_tombstoned:${coverage.source_key}`);
+  return {
+    id: coverage.id, source_id: source.id, field_key: coverage.field_key,
+    coverage_status: coverage.coverage_status, notes: coverage.notes ?? null,
+  };
 }
 
-async function selectItems(client, items, protocolIdsByFamily) {
-  const result = new Map();
-  for (const item of sortedBy(items, "logical_item_key")) {
-    const protocolId = protocolIdsByFamily.get(item.protocol_key);
-    if (!protocolId || !UUID_LIKE.test(protocolId)) {
-      result.set(itemIdentity(item), null);
-      continue;
-    }
-    const existing = await client.query(
-      `
-        select *
-        from public.sanitario_protocolo_itens_versions_v2
-        where deleted_at is null
-          and protocol_id = $1
-          and logical_item_key = $2
-          and version = $3
-        order by id
-      `,
-      [protocolId, item.logical_item_key, item.version],
-    );
-    assert(existing.rowCount <= 1, `${item.logical_item_key}: lookup ambiguo em sanitario_protocolo_itens_versions_v2`);
-    result.set(itemIdentity(item), existing.rows[0] ?? null);
-  }
-  return result;
+export function classInsertRow(cls) {
+  return {
+    id: cls.id, scope: cls.scope, fazenda_id: cls.fazenda_id ?? null,
+    class_key: cls.class_key, name: cls.name, product_type: cls.product_type,
+    product_subtype: cls.product_subtype ?? null, target_condition: cls.target_condition ?? null,
+    species_scope: cls.species_scope, curation_status: cls.curation_status,
+    automation_status: cls.automation_status, limitations: cls.limitations ?? [], metadata: cls.metadata ?? {},
+  };
 }
 
-async function selectDeprecatedActiveItems(client, protocolIdsByFamily) {
-  const result = [];
-  for (const deprecatedItem of DEPRECATED_ACTIVE_ITEMS) {
-    const protocolId = protocolIdsByFamily.get(deprecatedItem.familyCode);
-    if (!protocolId || !UUID_LIKE.test(protocolId)) continue;
-    const existing = await client.query(
-      `
-        select id, protocol_id, logical_item_key, status, deleted_at
-        from public.sanitario_protocolo_itens_versions_v2
-        where deleted_at is null
-          and protocol_id = $1
-          and logical_item_key = $2
-        order by id
-      `,
-      [protocolId, deprecatedItem.logicalItemKey],
-    );
-    for (const row of existing.rows) {
-      result.push({ ...deprecatedItem, id: row.id, status: row.status });
-    }
-  }
-  return result;
+export function memberInsertRow(member, group, cls) {
+  assert(group && !group.deleted_at, `group_lookup_missing_or_tombstoned:${member.group_key}`);
+  assert(cls && !cls.deleted_at, `class_lookup_missing_or_tombstoned:${member.class_key}`);
+  assertCompatibleScope(group, cls, "member");
+  return {
+    id: member.id, group_id: group.id, class_id: cls.id,
+    scope: group.scope, fazenda_id: group.fazenda_id ?? null,
+    is_allowed: member.is_allowed ?? true, requires_mv_override: member.requires_mv_override ?? null,
+    limitations: member.limitations ?? [], metadata: member.metadata ?? {},
+  };
+}
+
+function assertCompatibleScope(parent, reference, label) {
+  const tenant = parent.scope === "tenant" || parent.scope === "fazenda";
+  assert(tenant
+    ? reference.scope === "global" ||
+      ((reference.scope === "tenant" || reference.scope === "fazenda") && reference.fazenda_id === parent.fazenda_id)
+    : reference.scope === "global", `${label}:cross_scope_reference`);
+}
+
+function classUpdateBlockReason(existing) {
+  return !["candidate", "needs_review"].includes(existing.curation_status) ||
+    ["agenda_allowed", "blocked"].includes(existing.automation_status) ? "class_already_curated_or_operational" : null;
 }
 
 function protocolInsertRow(protocol) {
   return {
-    id: protocol.id,
-    family_code: protocol.family_code,
-    name: protocol.name,
-    scope: protocol.scope,
-    fazenda_id: protocol.fazenda_id,
-    species_scope: protocol.species_scope,
-    jurisdiction_scope: protocol.jurisdiction_scope,
-    legal_status: protocol.legal_status,
-    version: protocol.version,
-    status: protocol.status,
-    source_refs_snapshot: protocol.source_refs_snapshot,
-    approval_status: "draft",
-    metadata: {
-      ...protocol.metadata,
-      agenda_allowed: false,
-      approved_for_catalog: false,
-    },
+    id: protocol.id, family_code: protocol.family_code, name: protocol.name,
+    scope: protocol.scope, fazenda_id: protocol.fazenda_id ?? null,
+    species_scope: protocol.species_scope ?? [], jurisdiction_scope: protocol.jurisdiction_scope ?? {},
+    legal_status: protocol.legal_status, version: protocol.version, status: protocol.status,
+    source_refs_snapshot: protocol.source_refs_snapshot ?? [], approval_status: "draft",
+    metadata: { ...protocol.metadata, agenda_allowed: false, approved_for_catalog: false },
   };
 }
 
 function groupInsertRow(group) {
   return {
-    id: group.id,
-    fazenda_id: group.fazenda_id,
-    scope: scopeForGroup(group.scope),
-    group_key: group.group_key,
-    name: group.name,
-    requires_mv_for_other_class: group.requires_mv_for_other_class,
-    curation_status: group.curation_status,
-    automation_status: group.automation_status,
-    limitations: group.limitations,
-    metadata: {
-      ...group.metadata,
-      agenda_allowed: false,
-      approved_for_catalog: false,
-    },
+    id: group.id, fazenda_id: group.fazenda_id ?? null, scope: scopeForGroup(group.scope),
+    group_key: group.group_key, name: group.name, requires_mv_for_other_class: group.requires_mv_for_other_class ?? true,
+    curation_status: group.curation_status, automation_status: group.automation_status,
+    limitations: group.limitations ?? [],
+    metadata: { ...group.metadata, agenda_allowed: false, approved_for_catalog: false },
   };
 }
 
 export function itemInsertRow(item, protocolId, groupId) {
   return {
-    id: item.id,
-    protocol_id: protocolId,
-    logical_item_key: item.logical_item_key,
-    version: item.version,
-    item_status: item.item_status,
-    action_type: item.action_type,
-    product_requirement_kind: item.product_requirement_kind,
+    id: item.id, protocol_id: protocolId, logical_item_key: item.logical_item_key, version: item.version,
+    item_status: item.item_status, action_type: item.action_type, product_requirement_kind: item.product_requirement_kind,
     product_id: null,
     product_class: item.product_requirement_kind === "product_class" ? item.class_key : null,
     product_class_group_id: item.product_requirement_kind === "product_class_group" ? groupId : null,
-    eligibility_rule: item.eligibility_rule,
-    operational_window_rule: item.operational_window_rule,
-    dose_rule: null,
-    route_rule: null,
-    booster_rule: item.booster_rule ?? null,
-    species_authorization: item.species_authorization,
-    source_refs_by_field: item.source_refs_by_field,
-    limitations: item.limitations,
+    eligibility_rule: item.eligibility_rule, operational_window_rule: item.operational_window_rule,
+    dose_rule: null, route_rule: null, booster_rule: item.booster_rule ?? null,
+    species_authorization: item.species_authorization, source_refs_by_field: item.source_refs_by_field,
+    limitations: item.limitations ?? [],
     snapshot_template: {
       ...(item.snapshot_template ?? {}),
-      metadata: {
-        ...(item.snapshot_template?.metadata ?? {}),
-        agenda_allowed: false,
-        approved_for_catalog: false,
-      },
+      metadata: { ...(item.snapshot_template?.metadata ?? {}), agenda_allowed: false, approved_for_catalog: false },
     },
-    allows_agenda_auto: false,
-    requires_mv_responsavel: item.requires_mv_responsavel,
-    status: "draft",
+    allows_agenda_auto: false, requires_mv_responsavel: item.requires_mv_responsavel ?? false, status: "draft",
   };
 }
 
-function compareProtocol(existing, row) {
-  if (!existing) return true;
-  return [
-    ["name", row.name],
-    ["species_scope", row.species_scope],
-    ["jurisdiction_scope", row.jurisdiction_scope],
-    ["legal_status", row.legal_status],
-    ["status", row.status],
-    ["source_refs_snapshot", row.source_refs_snapshot],
-    ["approval_status", row.approval_status],
-    ["metadata", row.metadata],
-  ].some(([key, value]) => isDifferent(existing[key], value));
+// Only P1 tables/columns are eligible for SQL. Symbols remain in CanonicalData.
+const P1_PUBLISHERS = [
+  {
+    collection: "source_rows", table: "sanitario_fontes_tecnicas_v2",
+    key: (r) => r.source_key, natural: ["scope", "fazenda_id", "source_key"],
+    project: sourceInsertRow, json: ["limitations", "metadata"], dates: ["published_at", "accessed_at"],
+  },
+  {
+    collection: "coverage_rows", table: "sanitario_fonte_cobertura_campos_v2",
+    key: (r) => `${r.source_key}:${r.field_key}`, natural: ["source_id", "field_key"],
+    project: (r, parents) => coverageInsertRow(r, resolveParent(parents, "source_rows", r.source_key)),
+  },
+  {
+    collection: "product_class_rows", table: "sanitario_product_classes_v2",
+    key: (r) => r.class_key, natural: ["scope", "fazenda_id", "class_key"],
+    project: classInsertRow, json: ["metadata"], block: classUpdateBlockReason,
+  },
+  {
+    collection: "product_class_group_rows", table: "sanitario_product_class_groups_v2",
+    key: (r) => r.group_key, natural: ["scope", "fazenda_id", "group_key"],
+    project: groupInsertRow, json: ["metadata"], block: groupUpdateBlockReason,
+  },
+  {
+    collection: "product_class_group_member_rows", table: "sanitario_product_class_group_members_v2",
+    key: (r) => `${r.group_key}:${r.class_key}`, natural: ["group_id", "class_id"],
+    project: (r, parents) => memberInsertRow(r,
+      resolveParent(parents, "product_class_group_rows", r.group_key),
+      resolveParent(parents, "product_class_rows", r.class_key)),
+    json: ["metadata"],
+  },
+  {
+    collection: "protocol_rows", table: "sanitario_protocolos_v2",
+    key: (r) => r.protocol_key, natural: ["family_code", "scope", "fazenda_id", "version"],
+    project: protocolInsertRow,
+    json: ["species_scope", "jurisdiction_scope", "source_refs_snapshot", "metadata"],
+    block: protocolUpdateBlockReason,
+  },
+  {
+    collection: "protocol_item_rows", table: "sanitario_protocolo_itens_versions_v2",
+    key: itemIdentity, natural: ["protocol_id", "logical_item_key", "version"],
+    project: (r, parents) => {
+      assert(r.product_requirement_kind !== "specific_product", "P2_REQUIRED:specific_product");
+      assert(r.dose_rule == null && r.route_rule == null, "P2_REQUIRED:item_dose_or_route");
+      const protocol = resolveParent(parents, "protocol_rows", r.protocol_key);
+      const group = r.product_requirement_kind === "product_class_group"
+        ? resolveParent(parents, "product_class_group_rows", r.group_key) : null;
+      if (group) assertCompatibleScope(protocol, group, "item_group");
+      if (r.product_requirement_kind === "product_class") {
+        assertCompatibleScope(protocol, resolveParent(parents, "product_class_rows", r.class_key), "item_class");
+      }
+      return itemInsertRow(r, protocol.id, group?.id ?? null);
+    },
+    json: ["eligibility_rule", "operational_window_rule", "dose_rule", "route_rule",
+      "booster_rule", "species_authorization", "source_refs_by_field", "limitations", "snapshot_template"],
+    block: itemUpdateBlockReason,
+  },
+];
+
+const EXPECTED_MEMBER_REJECTIONS = new Map([
+  ["spcgmem_recria_associacoes", "pcg_antiparasitarios_recria_estrategicos"],
+  ["spcgmem_pre_desmama_associacoes", "pcg_antiparasitarios_bezerros_pre_desmama"],
+  ["spcgmem_pre_confinamento_associacoes", "pcg_antiparasitarios_pre_confinamento"],
+  ["spcgmem_matrizes_associacoes", "pcg_antiparasitarios_matrizes_pre_parto"],
+]);
+
+function resolveParent(parents, collection, key) {
+  const parent = parents.get(collection)?.get(key);
+  assert(parent && parent.action !== "reject", `${collection}_lookup_missing_or_conflicted:${key}`);
+  assert(!parent.row.deleted_at, `${collection}_parent_tombstoned:${key}`);
+  return parent.row;
 }
 
-function compareGroup(existing, row) {
-  if (!existing) return true;
-  return [
-    ["name", row.name],
-    ["requires_mv_for_other_class", row.requires_mv_for_other_class],
-    ["curation_status", row.curation_status],
-    ["automation_status", row.automation_status],
-    ["limitations", row.limitations],
-    ["metadata", row.metadata],
-  ].some(([key, value]) => isDifferent(existing[key], value));
-}
-
-function compareItem(existing, row) {
-  if (!existing) return true;
-  return [
-    ["item_status", row.item_status],
-    ["action_type", row.action_type],
-    ["product_requirement_kind", row.product_requirement_kind],
-    ["product_id", row.product_id],
-    ["product_class", row.product_class],
-    ["product_class_group_id", row.product_class_group_id],
-    ["eligibility_rule", row.eligibility_rule],
-    ["operational_window_rule", row.operational_window_rule],
-    ["dose_rule", row.dose_rule],
-    ["route_rule", row.route_rule],
-    ["booster_rule", row.booster_rule],
-    ["species_authorization", row.species_authorization],
-    ["source_refs_by_field", row.source_refs_by_field],
-    ["limitations", row.limitations],
-    ["snapshot_template", row.snapshot_template],
-    ["allows_agenda_auto", row.allows_agenda_auto],
-    ["requires_mv_responsavel", row.requires_mv_responsavel],
-    ["status", row.status],
-  ].some(([key, value]) => isDifferent(existing[key], value));
-}
-
-async function buildPlan(client, data) {
-  const existingProtocols = await selectProtocols(client, data.protocols);
-  const existingGroups = await selectGroups(client, data.groups);
-
-  const plannedProtocolIds = new Map();
-  for (const protocol of data.protocols) {
-    const existing = existingProtocols.get(protocol.family_code);
-    plannedProtocolIds.set(protocol.protocol_key, existing?.id ?? protocol.id);
+function assertScope(row, collection) {
+  if (["source_rows", "product_class_rows", "product_class_group_rows", "protocol_rows"].includes(collection)) {
+    const tenantScope = collection === "source_rows" || collection === "protocol_rows" ? "fazenda" : "tenant";
+    assert((row.scope === "global" || (collection === "protocol_rows" && row.scope === "pack"))
+      ? row.fazenda_id === null : row.scope === tenantScope && Boolean(row.fazenda_id),
+    `${collection}:invalid_scope_fazenda`);
   }
-
-  const plannedGroupIds = new Map();
-  for (const group of data.groups) {
-    const existing = existingGroups.get(group.group_key);
-    plannedGroupIds.set(group.group_key, existing?.id ?? group.id);
+  if (collection === "source_rows" && row.kind === "mv_responsavel") {
+    assert(row.scope === "fazenda", "mv_responsavel_requires_fazenda");
   }
+  if (collection === "product_class_rows") {
+    assert(row.class_key !== "associacoes_antiparasitarias", "NOT_A_CLASS_CONFIRMED");
+  }
+}
 
-  const existingItems = await selectItems(client, data.items, plannedProtocolIds);
-  const deprecatedActiveItems = await selectDeprecatedActiveItems(client, plannedProtocolIds);
+async function selectIdentity(client, publisher, row, lockRows) {
+  const values = publisher.natural.map((column) => row[column]);
+  const predicates = publisher.natural.map((column, index) => `${column} is not distinct from $${index + 1}`);
+  values.push(row.id);
+  // Include tombstones and the UUID even when it belongs to a different natural key.
+  return (await client.query(
+    `select * from public.${publisher.table}
+     where (${predicates.join(" and ")}) or id = $${values.length}
+     order by id${lockRows ? " for update" : ""}`, values,
+  )).rows;
+}
+
+function identityReason(publisher, row, existingRows) {
+  if (existingRows.length > 1) return "IDENTITY_AMBIGUOUS";
+  const existing = existingRows[0];
+  if (!existing) return null;
+  if (existing.id !== row.id) return "IDENTITY_CONFLICT";
+  if (publisher.natural.some((field) => isDifferent(existing[field] ?? null, row[field] ?? null))) {
+    return "CANONICAL_UUID_OTHER_IDENTITY";
+  }
+  if (existing.deleted_at) return "TOMBSTONE_IDENTITY_RESERVED";
+  assertStableIdentity(existing, row, publisher.key(row));
+  return null;
+}
+
+function compareRow(publisher, existing, row) {
+  return Object.entries(row).some(([field, value]) => {
+    let actual = existing[field] ?? null;
+    if (publisher.dates?.includes(field) && actual instanceof Date) {
+      actual = `${actual.getFullYear()}-${String(actual.getMonth() + 1).padStart(2, "0")}-${String(actual.getDate()).padStart(2, "0")}`;
+    }
+    return isDifferent(actual, value);
+  });
+}
+
+async function selectDeprecatedActiveItems(client, data, lockRows = false) {
+  const result = [];
+  for (const deprecated of DEPRECATED_ACTIVE_ITEMS) {
+    const protocols = data.protocol_rows.filter((p) => p.family_code === deprecated.familyCode);
+    for (const protocol of protocols) {
+      const existing = await client.query(
+        `select id, protocol_id, logical_item_key, status, deleted_at
+         from public.sanitario_protocolo_itens_versions_v2
+         where deleted_at is null and protocol_id = $1 and logical_item_key = $2
+         order by id${lockRows ? " for update" : ""}`,
+        [protocol.id, deprecated.logicalItemKey],
+      );
+      for (const row of existing.rows) result.push({ ...deprecated, ...row });
+    }
+  }
+  return result;
+}
+
+export async function buildPlan(client, data, { lockRows = false } = {}) {
+  const supported = new Set(P1_PUBLISHERS.map((p) => p.collection));
+  for (const [collection, entries] of Object.entries(data)) {
+    assert(collection === "memberRejections" || supported.has(collection) || entries.length === 0,
+      `P1_UNSUPPORTED_NONEMPTY_COLLECTION:${collection}`);
+  }
   const operations = [];
-
-  for (const group of sortedBy(data.groups, "group_key")) {
-    const row = groupInsertRow(group);
-    const existing = existingGroups.get(group.group_key);
-    if (existing) assertStableIdentity(existing, row, group.group_key);
-    const changed = existing && compareGroup(existing, row);
-    const reason = changed ? groupUpdateBlockReason(existing) : null;
-    const action = reason ? "reject" : existing ? (changed ? "update" : "skip") : "create";
-    operations.push({
-      table: "sanitario_product_class_groups_v2",
-      key: group.group_key,
-      action,
-      reason: reason ?? "",
-    });
+  const parents = new Map();
+  const allIds = new Map();
+  for (const publisher of P1_PUBLISHERS) {
+    for (const canonical of data[publisher.collection] ?? []) {
+      allIds.set(canonical.id, (allIds.get(canonical.id) ?? 0) + 1);
+    }
   }
-
-  for (const protocol of sortedBy(data.protocols, "family_code")) {
-    const row = protocolInsertRow(protocol);
-    const existing = existingProtocols.get(protocol.family_code);
-    if (existing) assertStableIdentity(existing, row, protocol.family_code);
-    const changed = existing && compareProtocol(existing, row);
-    const reason = changed ? protocolUpdateBlockReason(existing) : null;
-    const action = reason ? "reject" : existing ? (changed ? "update" : "skip") : "create";
-    operations.push({
-      table: "sanitario_protocolos_v2",
-      key: protocol.family_code,
-      action,
-      reason: reason ?? "",
-    });
-  }
-
-  for (const item of sortedBy(data.items, "logical_item_key")) {
-    const protocolKey = item.protocol_key;
-    const protocolId = plannedProtocolIds.get(protocolKey);
-    let action = "reject";
-    let reason = "";
-    let groupId = null;
-
-    if (!protocolId) {
-      reason = `protocol_lookup_missing:${protocolKey}`;
-    } else if (item.product_requirement_kind === "product_class_group") {
-      const groupKey = item.group_key;
-      groupId = plannedGroupIds.get(groupKey);
-      if (!groupId) {
-        reason = `group_lookup_missing:${groupKey}`;
+  for (const publisher of P1_PUBLISHERS) {
+    const entries = data[publisher.collection] ?? [];
+    const projectedKeys = new Map();
+    const resolved = new Map();
+    parents.set(publisher.collection, resolved);
+    for (const canonical of sortedBy(entries, "id")) {
+      const key = publisher.key(canonical);
+      let row = null;
+      let reason = "";
+      let existing = null;
+      let action = "reject";
+      try {
+        assert(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(canonical.id), "EXPLICIT_UUID_REQUIRED");
+        assert(allIds.get(canonical.id) === 1, "DUPLICATE_CANONICAL_UUID");
+        assert(!canonical.deleted_at, "CANONICAL_TOMBSTONE_NOT_PUBLISHABLE");
+        row = publisher.project(canonical, parents);
+        assertScope(row, publisher.collection);
+        const naturalKey = stableStringify(publisher.natural.map((field) => row[field]));
+        if (!projectedKeys.has(naturalKey)) projectedKeys.set(naturalKey, []);
+        projectedKeys.get(naturalKey).push(operations.length);
+        const found = await selectIdentity(client, publisher, row, lockRows);
+        existing = found[0] ?? null;
+        reason = identityReason(publisher, row, found) ?? "";
+        if (!reason) {
+          const changed = existing && compareRow(publisher, existing, row);
+          reason = changed ? (publisher.block?.(existing) ?? "") : "";
+          action = reason ? "reject" : existing ? (changed ? "update" : "skip") : "create";
+        }
+      } catch (error) {
+        reason = error.message;
+      }
+      const operation = {
+        collection: publisher.collection, table: publisher.table, key, canonical_id: canonical.id,
+        action, reason, classification: action === "reject" ? "UNEXPECTED_CONFLICT" : "CANONICAL_ROW",
+        row, existing,
+      };
+      operations.push(operation);
+      resolved.set(key, operation);
+    }
+    // Mark every duplicate, including its first occurrence; descendants cannot resolve it.
+    for (const positions of projectedKeys.values()) {
+      if (positions.length <= 1) continue;
+      for (const position of positions) {
+        Object.assign(operations[position], {
+          action: "reject", reason: "DUPLICATE_CANONICAL_NATURAL_KEY", classification: "UNEXPECTED_CONFLICT",
+        });
       }
     }
-
-    if (!reason) {
-      const row = itemInsertRow(item, protocolId, groupId);
-      const existing = existingItems.get(itemIdentity(item));
-      if (existing) assertStableIdentity(existing, row, itemIdentity(item));
-      const changed = existing && compareItem(existing, row);
-      const blockReason = changed ? itemUpdateBlockReason(existing) : null;
-      if (blockReason) {
-        action = "reject";
-        reason = blockReason;
-      } else {
-        action = existing ? (changed ? "update" : "skip") : "create";
-      }
-    }
-
+  }
+  const rejectionKeys = new Set();
+  for (const rejection of data.memberRejections ?? []) {
+    const expected = !rejectionKeys.has(rejection.member_key) &&
+      EXPECTED_MEMBER_REJECTIONS.get(rejection.member_key) === rejection.group_key &&
+      rejection.class_key === "associacoes_antiparasitarias" && rejection.reason === "NOT_A_CLASS_CONFIRMED" &&
+      rejection.target_table === "sanitario_product_class_group_members_v2" &&
+      !rejection.id && !rejection.class_id && parents.get("product_class_group_rows")?.has(rejection.group_key);
+    rejectionKeys.add(rejection.member_key);
     operations.push({
-      table: "sanitario_protocolo_itens_versions_v2",
-      key: `${item.protocol_key}:${item.logical_item_key}:v${item.version}`,
-      action,
-      reason,
+      table: "sanitario_product_class_group_members_v2", key: rejection.member_key,
+      action: "reject", reason: rejection.reason,
+      classification: expected ? "EXPECTED_REJECTION" : "UNEXPECTED_CONFLICT",
     });
   }
-
-  for (const rejection of sortedBy(data.memberRejections, "member_key")) {
+  for (const item of await selectDeprecatedActiveItems(client, data, lockRows)) {
     operations.push({
-      table: "sanitario_product_class_group_members_v2",
-      key: rejection.member_key,
-      action: "reject",
-      reason: rejection.reason,
+      table: "sanitario_protocolo_itens_versions_v2", key: `${item.protocol_id}:${item.logical_item_key}:deprecated`,
+      action: item.status === "draft" ? "update" : "reject",
+      reason: item.status === "draft" ? `replaced_by:${item.replacementKeys.join(",")}` : "deprecated_item_not_draft",
+      classification: item.status === "draft" ? "DEPRECATED_ITEM" : "UNEXPECTED_CONFLICT",
+      existing: item,
     });
   }
-
-  for (const item of deprecatedActiveItems) {
-    const blocked = item.status !== "draft";
-    operations.push({
-      table: "sanitario_protocolo_itens_versions_v2",
-      key: `${item.familyCode}:${item.logicalItemKey}:deprecated`,
-      action: blocked ? "reject" : "update",
-      reason: blocked
-        ? "deprecated_item_not_draft"
-        : `replaced_by:${item.replacementKeys.join(",")}`,
-    });
-  }
-
+  const expectedCount = [...supported].reduce((count, collection) => count + (data[collection]?.length ?? 0), 0);
+  assert(operations.filter((op) => supported.has(op.collection)).length === expectedCount, "CANONICAL_PLAN_COVERAGE_MISMATCH");
   return operations;
 }
 
+export function assertPublishablePlan(operations) {
+  const expectedKeys = new Set();
+  const conflicts = operations.filter((op) => {
+    if (op.action !== "reject") return false;
+    const expected = op.classification === "EXPECTED_REJECTION" &&
+      op.table === "sanitario_product_class_group_members_v2" &&
+      EXPECTED_MEMBER_REJECTIONS.has(op.key) && op.reason === "NOT_A_CLASS_CONFIRMED" &&
+      !op.collection && !op.row && !expectedKeys.has(op.key);
+    if (expected) expectedKeys.add(op.key);
+    return !expected;
+  });
+  assert(conflicts.length === 0,
+    `UNEXPECTED_CONFLICT: ${stableStringify(conflicts.map(({ table, key, reason }) => ({ table, key, reason })))}`);
+}
+
+export function assertConvergedPlan(operations) {
+  assertPublishablePlan(operations);
+  const unstable = operations.filter((op) => op.action !== "skip" && op.classification !== "EXPECTED_REJECTION");
+  assert(unstable.length === 0,
+    `Import nao ficou idempotente antes do commit: ${stableStringify(unstable.map(({ table, key, action }) => ({ table, key, action })))}`);
+}
+
 function summarize(operations) {
-  return operations.reduce(
-    (acc, op) => {
-      acc[op.action] += 1;
-      return acc;
-    },
-    { create: 0, update: 0, skip: 0, reject: 0 },
-  );
+  return operations.reduce((acc, op) => { acc[op.action] += 1; return acc; },
+    { create: 0, update: 0, skip: 0, reject: 0 });
 }
 
 function printPlan(mode, operations) {
   console.log(`12G sanitario protocols v2 ${mode}`);
   for (const op of operations) {
-    const suffix = op.reason ? ` reason=${op.reason}` : "";
+    const suffix = op.reason ? ` reason=${op.reason} classification=${op.classification}` : "";
     console.log(`${op.action.padEnd(6)} ${op.table} ${op.key}${suffix}`);
   }
   console.log(`summary ${JSON.stringify(summarize(operations))}`);
 }
 
-async function upsertGroup(client, group) {
-  const row = groupInsertRow(group);
-  const existing = await selectGroups(client, [group]).then((map) => map.get(group.group_key));
-  if (!existing) {
-    const inserted = await client.query(
-      `
-        insert into public.sanitario_product_class_groups_v2(
-          id, fazenda_id, scope, group_key, name, requires_mv_for_other_class,
-          curation_status, automation_status, limitations, metadata
-        )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        returning id
-      `,
-      [
-        row.id,
-        row.fazenda_id,
-        row.scope,
-        row.group_key,
-        row.name,
-        row.requires_mv_for_other_class,
-        row.curation_status,
-        row.automation_status,
-        row.limitations,
-        asJsonb(row.metadata),
-      ],
-    );
-    return { id: inserted.rows[0].id, action: "create" };
-  }
-  assertStableIdentity(existing, row, group.group_key);
-  if (!compareGroup(existing, row)) return { id: existing.id, action: "skip" };
-  assert(
-    !groupUpdateBlockReason(existing),
-    `${group.group_key}: grupo curado/operacional nao pode ser sobrescrito pelo importador`,
-  );
-  await client.query(
-    `
-      update public.sanitario_product_class_groups_v2
-      set name = $2,
-          requires_mv_for_other_class = $3,
-          curation_status = $4,
-          automation_status = $5,
-          limitations = $6,
-          metadata = $7
-      where id = $1
-    `,
-    [
-      existing.id,
-      row.name,
-      row.requires_mv_for_other_class,
-      row.curation_status,
-      row.automation_status,
-      row.limitations,
-      asJsonb(row.metadata),
-    ],
-  );
-  return { id: existing.id, action: "update" };
-}
-
-async function upsertProtocol(client, protocol) {
-  const row = protocolInsertRow(protocol);
-  const existing = await selectProtocols(client, [protocol]).then((map) => map.get(protocol.family_code));
-  if (!existing) {
-    const inserted = await client.query(
-      `
-        insert into public.sanitario_protocolos_v2(
-          id, family_code, name, scope, fazenda_id, species_scope, jurisdiction_scope,
-          legal_status, version, status, source_refs_snapshot, approval_status, metadata
-        )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'draft', $12)
-        returning id
-      `,
-      [
-        row.id,
-        row.family_code,
-        row.name,
-        row.scope,
-        row.fazenda_id,
-        asJsonb(row.species_scope),
-        asJsonb(row.jurisdiction_scope),
-        row.legal_status,
-        row.version,
-        row.status,
-        asJsonb(row.source_refs_snapshot),
-        asJsonb(row.metadata),
-      ],
-    );
-    return { id: inserted.rows[0].id, action: "create" };
-  }
-  assertStableIdentity(existing, row, protocol.family_code);
-  if (!compareProtocol(existing, row)) return { id: existing.id, action: "skip" };
-  assert(
-    !protocolUpdateBlockReason(existing),
-    `${protocol.family_code}: protocolo aprovado nao pode ser rebaixado para draft`,
-  );
-  await client.query(
-    `
-      update public.sanitario_protocolos_v2
-      set name = $2,
-          species_scope = $3,
-          jurisdiction_scope = $4,
-          legal_status = $5,
-          status = $6,
-          source_refs_snapshot = $7,
-          approval_status = 'draft',
-          approved_by = null,
-          approved_at = null,
-          metadata = $8
-      where id = $1
-    `,
-    [
-      existing.id,
-      row.name,
-      asJsonb(row.species_scope),
-      asJsonb(row.jurisdiction_scope),
-      row.legal_status,
-      row.status,
-      asJsonb(row.source_refs_snapshot),
-      asJsonb(row.metadata),
-    ],
-  );
-  return { id: existing.id, action: "update" };
-}
-
-async function upsertItem(client, item, protocolId, groupId) {
-  const row = itemInsertRow(item, protocolId, groupId);
-  const existing = await client.query(
-    `
-      select *
-      from public.sanitario_protocolo_itens_versions_v2
-      where deleted_at is null
-        and protocol_id = $1
-        and logical_item_key = $2
-        and version = $3
-    `,
-    [protocolId, item.logical_item_key, item.version],
-  );
-  assert(existing.rowCount <= 1, `${item.logical_item_key}: lookup ambiguo no apply`);
-  if (existing.rowCount === 0) {
-    await client.query(
-      `
-        insert into public.sanitario_protocolo_itens_versions_v2(
-          id, protocol_id, logical_item_key, version, item_status, action_type,
-          product_requirement_kind, product_id, product_class, product_class_group_id,
-          eligibility_rule, operational_window_rule, dose_rule, route_rule, booster_rule,
-          species_authorization, source_refs_by_field, limitations, snapshot_template,
-          allows_agenda_auto, requires_mv_responsavel, status
-        )
-        values (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-          $16, $17, $18, $19, false, $20, 'draft'
-        )
-      `,
-      [
-        row.id,
-        row.protocol_id,
-        row.logical_item_key,
-        row.version,
-        row.item_status,
-        row.action_type,
-        row.product_requirement_kind,
-        row.product_id,
-        row.product_class,
-        row.product_class_group_id,
-        asJsonb(row.eligibility_rule),
-        asJsonb(row.operational_window_rule),
-        row.dose_rule === null ? null : asJsonb(row.dose_rule),
-        row.route_rule === null ? null : asJsonb(row.route_rule),
-        row.booster_rule === null ? null : asJsonb(row.booster_rule),
-        asJsonb(row.species_authorization),
-        asJsonb(row.source_refs_by_field),
-        asJsonb(row.limitations),
-        asJsonb(row.snapshot_template),
-        row.requires_mv_responsavel,
-      ],
-    );
-    return "create";
-  }
-  assertStableIdentity(existing.rows[0], row, item.logical_item_key);
-  if (!compareItem(existing.rows[0], row)) return "skip";
-  assert(
-    !itemUpdateBlockReason(existing.rows[0]),
-    `${item.logical_item_key}: item nao-draft exige nova versao; update in-place bloqueado`,
-  );
-  await client.query(
-    `
-      update public.sanitario_protocolo_itens_versions_v2
-      set item_status = $2,
-          action_type = $3,
-          product_requirement_kind = $4,
-          product_id = $5,
-          product_class = $6,
-          product_class_group_id = $7,
-          eligibility_rule = $8,
-          operational_window_rule = $9,
-          dose_rule = $10,
-          route_rule = $11,
-          booster_rule = $12,
-          species_authorization = $13,
-          source_refs_by_field = $14,
-          limitations = $15,
-          snapshot_template = $16,
-          allows_agenda_auto = false,
-          requires_mv_responsavel = $17,
-          status = 'draft'
-      where id = $1
-    `,
-    [
-      existing.rows[0].id,
-      row.item_status,
-      row.action_type,
-      row.product_requirement_kind,
-      row.product_id,
-      row.product_class,
-      row.product_class_group_id,
-      asJsonb(row.eligibility_rule),
-      asJsonb(row.operational_window_rule),
-      row.dose_rule === null ? null : asJsonb(row.dose_rule),
-      row.route_rule === null ? null : asJsonb(row.route_rule),
-      row.booster_rule === null ? null : asJsonb(row.booster_rule),
-      asJsonb(row.species_authorization),
-      asJsonb(row.source_refs_by_field),
-      asJsonb(row.limitations),
-      asJsonb(row.snapshot_template),
-      row.requires_mv_responsavel,
-    ],
-  );
-  return "update";
-}
-
-async function tombstoneDeprecatedActiveItems(client, protocolIds) {
-  let count = 0;
-  for (const deprecatedItem of DEPRECATED_ACTIVE_ITEMS) {
-    const protocolId = protocolIds.get(deprecatedItem.familyCode);
-    if (!protocolId) continue;
-    const existing = await client.query(
-      `
-        select id, status
-        from public.sanitario_protocolo_itens_versions_v2
-        where deleted_at is null
-          and protocol_id = $1
-          and logical_item_key = $2
-        order by id
-      `,
-      [protocolId, deprecatedItem.logicalItemKey],
-    );
-    assert(
-      existing.rows.every((row) => row.status === "draft"),
-      `${deprecatedItem.logicalItemKey}: tombstone de item nao-draft exige decisao/versionamento proprio`,
-    );
+async function writeOperation(client, operation) {
+  if (operation.action === "skip" || operation.classification === "EXPECTED_REJECTION") return;
+  if (operation.classification === "DEPRECATED_ITEM") {
     const result = await client.query(
-      `
-        update public.sanitario_protocolo_itens_versions_v2
-        set deleted_at = now(),
-            status = 'retired',
-            allows_agenda_auto = false
-        where deleted_at is null
-          and protocol_id = $1
-          and logical_item_key = $2
-          and status = 'draft'
-      `,
-      [protocolId, deprecatedItem.logicalItemKey],
+      `update public.sanitario_protocolo_itens_versions_v2
+       set deleted_at = now(), status = 'retired', allows_agenda_auto = false
+       where id = $1 and deleted_at is null and status = 'draft'`, [operation.existing.id],
     );
-    count += result.rowCount ?? 0;
+    assert(result.rowCount === 1, "deprecated_item_concurrent_change");
+    return;
   }
-  return count;
+  const publisher = P1_PUBLISHERS.find((p) => p.collection === operation.collection);
+  assert(publisher && operation.row, "UNSUPPORTED_WRITE_OPERATION");
+  const columns = Object.keys(operation.row);
+  const values = columns.map((field) => publisher.json?.includes(field) && operation.row[field] !== null
+    ? asJsonb(operation.row[field]) : operation.row[field]);
+  let result;
+  if (operation.action === "create") {
+    result = await client.query(
+      `insert into public.${publisher.table} (${columns.join(", ")})
+       values (${columns.map((_, i) => `$${i + 1}`).join(", ")}) returning id`, values,
+    );
+  } else {
+    assert(operation.action === "update", "UNEXPECTED_WRITE_ACTION");
+    // Read FOR UPDATE after the advisory lock. Natural identity columns are immutable.
+    const mutable = columns.filter((field) => field !== "id" && !publisher.natural.includes(field));
+    const updateValues = mutable.map((field) => values[columns.indexOf(field)]);
+    updateValues.push(operation.row.id);
+    result = await client.query(
+      `update public.${publisher.table}
+       set ${mutable.map((field, i) => `${field} = $${i + 1}`).join(", ")}
+       where id = $${updateValues.length} and deleted_at is null returning id`, updateValues,
+    );
+  }
+  assert(result.rowCount === 1, `${operation.key}:WRITE_ROW_COUNT_CONFLICT`);
 }
 
-async function applyImport(client, data) {
-  const counts = { create: 0, update: 0, skip: 0, reject: 0 };
+// Caller-supplied data/flags cannot authorize publication: read the canonical artifact.
+async function applyImport(client) {
+  const payload = readJsonPayload();
+  assertApplyGate(payload);
+  const data = validateCanonicalPayload(payload);
+  return applyTransaction(client, data);
+}
+
+// Private engine: all production calls must pass through the authorized entrypoint.
+async function applyTransaction(client, data) {
   await client.query("begin");
   try {
     await client.query("set local lock_timeout = '5s'");
     await client.query("set local statement_timeout = '60s'");
     await client.query("select pg_advisory_xact_lock(hashtext($1))", [IMPORT_LOCK_KEY]);
-
-    const groupIds = new Map();
-    for (const group of sortedBy(data.groups, "group_key")) {
-      const result = await upsertGroup(client, group);
-      groupIds.set(group.group_key, result.id);
-      counts[result.action] += 1;
-    }
-
-    const protocolIds = new Map();
-    for (const protocol of sortedBy(data.protocols, "family_code")) {
-      const result = await upsertProtocol(client, protocol);
-      protocolIds.set(protocol.family_code, result.id);
-      counts[result.action] += 1;
-    }
-
-    for (const item of sortedBy(data.items, "logical_item_key")) {
-      const protocolKey = item.protocol_key;
-      const protocolId = protocolIds.get(protocolKey);
-      assert(protocolId, `${item.logical_item_key}: protocol_id nao resolvido para ${protocolKey}`);
-      const groupKey = item.group_key;
-      const groupId = groupKey ? groupIds.get(groupKey) : null;
-      assert(!groupKey || groupId, `${item.logical_item_key}: ProductClassGroup nao resolvido para ${groupKey}`);
-      const action = await upsertItem(client, item, protocolId, groupId);
-      counts[action] += 1;
-    }
-
-    counts.update += await tombstoneDeprecatedActiveItems(client, protocolIds);
-    counts.reject += data.memberRejections.length;
-
-    const verificationPlan = await buildPlan(client, data);
-    const unstableOperations = verificationPlan.filter((operation) =>
-      ["create", "update"].includes(operation.action),
-    );
-    assert(
-      unstableOperations.length === 0,
-      `Import nao ficou idempotente antes do commit: ${stableStringify(unstableOperations)}`,
-    );
+    const plan = await buildPlan(client, data, { lockRows: true });
+    assertPublishablePlan(plan);
+    for (const operation of plan) await writeOperation(client, operation);
+    assertConvergedPlan(await buildPlan(client, data, { lockRows: true }));
     await client.query("commit");
+    return summarize(plan);
   } catch (error) {
     await client.query("rollback");
     throw error;
   }
-  return counts;
 }
-
 async function main() {
   const mode = parseMode(process.argv.slice(2));
   const payload = readJsonPayload();
@@ -1138,9 +895,13 @@ async function main() {
           artifact_version: payload.artifact_version,
           canonical_validation_complete: PIPELINE_STATUS.CANONICAL_VALIDATION_COMPLETE,
           publisher_complete: PIPELINE_STATUS.PUBLISHER_COMPLETE,
-          protocols: data.protocols.length,
-          items: data.items.length,
-          product_class_groups: data.groups.length,
+          protocols: data.protocol_rows.length,
+          items: data.protocol_item_rows.length,
+          sources: data.source_rows.length,
+          coverage: data.coverage_rows.length,
+          product_classes: data.product_class_rows.length,
+          product_class_groups: data.product_class_group_rows.length,
+          product_class_group_members: data.product_class_group_member_rows.length,
           member_rejections: data.memberRejections.length,
           execute_import: payload.execute_import,
         },
@@ -1161,23 +922,15 @@ async function main() {
       const plan = await buildPlan(client, data);
       printPlan("dry-run", plan);
       console.log(
-        `aviso: publisher_complete=false; plano parcial (somente grupos, protocolos e itens)`,
+        `aviso: publisher_complete=false; cobertura P1 do payload atual; sete colecoes e specific_product aguardam P2`,
       );
       return;
     }
 
     const preflightPlan = await buildPlan(client, data);
-    const unexpectedRejections = preflightPlan.filter(
-      (operation) =>
-        operation.action === "reject" &&
-        operation.table !== "sanitario_product_class_group_members_v2",
-    );
-    assert(
-      unexpectedRejections.length === 0,
-      `Apply bloqueado por registros imutaveis ou lookups ausentes: ${stableStringify(unexpectedRejections)}`,
-    );
+    assertPublishablePlan(preflightPlan);
     printPlan("apply-plan", preflightPlan);
-    const counts = await applyImport(client, data);
+    const counts = await applyImport(client);
     console.log("12G apply OK");
     console.log(`summary ${JSON.stringify(counts)}`);
   } finally {
