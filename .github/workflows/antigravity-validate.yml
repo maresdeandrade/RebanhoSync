@@ -158,6 +158,16 @@ jobs:
           fi
 
           supabase init --force
+
+          # Supabase CLI 2.72.7 / edge-runtime 1.70.0 rejects local ES256 user
+          # JWTs at the gateway before sync-batch runs. Disable only the local
+          # gateway verification for this disposable runner; sync-batch still
+          # validates the JWT with GoTrue and uses a user-scoped client/RLS.
+          cat >> supabase/config.toml <<'EOF'
+          [functions.sync-batch]
+          verify_jwt = false
+          EOF
+
           supabase start
           supabase db reset --yes
 
