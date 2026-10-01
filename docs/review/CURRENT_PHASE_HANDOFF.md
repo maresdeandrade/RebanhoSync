@@ -1,16 +1,17 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-09-29
-Status: **Fase 24 ativa; F24.4D CLOSED; F24.4 IN_PROGRESS; produção não autorizada**
-Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (NEXT; NOT_STARTED)**
+Atualizado em: 2026-10-01
+Status: **Fase 24 ativa; F24.4D CLOSED; F24.4E IN_PROGRESS; F24.4 IN_PROGRESS; produção não autorizada**
+Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (IN_PROGRESS)**
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`
 Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27
-F24.4D encerrada na branch `feat/f24-4d-cross-device-clock-authority` (commit final `faddf64`) em 2026-09-29
-Decisão: **F24.4A CLOSED / F24.4B CLOSED / F24.4C CLOSED / F24.4D CLOSED**
+F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29
+Baseline auditada de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`
+Decisão: **F24.4A CLOSED / F24.4B CLOSED / F24.4C CLOSED / F24.4D CLOSED / F24.4E IN_PROGRESS**
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -20,6 +21,14 @@ Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
+
+## F24.4E — characterization ativa
+
+A [matriz F24.4E](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) consolida o tratamento de conflitos por domínio sem autorizar resolução genérica. O baseline remoto foi revalidado em `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`; os 12 commits posteriores ao PR #170 estão limitados à trilha de publisher/certificação Sanitário v2 e não alteram `src/lib/offline`, `sync-batch`, migrations/RLS ou os contratos da F24.4.
+
+A characterization confirma `RECONCILE_THEN_NEW_INTENT` para stale `UPDATE animais`, `RETRY_SAME_IDENTITY` para replay persistido e `PRESERVE_BOTH` para Eventos factuais distintos. Não existe autorização para field-level merge. Os gaps prioritários são `DELETE_VS_UPDATE` em `animais`, política de revisão dos demais `state_*`, convergência Evento→estado em conflitos parciais e duplicidade humana ad hoc. O Sanitário v2 continua com conflito de revisão produzido no PostgreSQL, porém transporte E2E bloqueado por timeout; essa limitação permanece explícita.
+
+Nenhuma implementação E1 foi iniciada.
 
 ## F24.4D — closeout
 

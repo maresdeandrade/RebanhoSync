@@ -1,6 +1,6 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-09-29
+Atualizado em: 2026-10-01
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
@@ -8,13 +8,14 @@ Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4 IN_PROGRESS)**.
-Próxima fase de desenvolvimento: **Fase 24 — F24.4E — Conflict Resolution Contract (NEXT; NOT_STARTED)**.
+Próxima fase de desenvolvimento: **Fase 24 — F24.4E — Conflict Resolution Contract (IN_PROGRESS)**.
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.
 Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`; `REAL_POSTGRES_CONCURRENCY = NOT_PROVEN`.
 F24.4C encerrada pelo PR #169, merge em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b`, em 2026-09-27; `REAL_POSTGRES_STATE_CONCURRENCY = PROVEN`; `LOCAL_EDGE_RLS_POSTGRES_E2E = PROVEN`.
-F24.4D encerrada na branch `feat/f24-4d-cross-device-clock-authority` (commit final `faddf64`), em 2026-09-29; `PLAYWRIGHT_MULTI_CONTEXT_HARNESS = PROVEN`; `STATE_WINNER_AUTHORITY = SERVER_REVISION_CAS`; `CLOCK_SKEW_BEHAVIOR = CHARACTERIZED_FOR_CRITICAL_SYNC_PATHS`; `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`.
+F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae`, em 2026-09-29; `PLAYWRIGHT_MULTI_CONTEXT_HARNESS = PROVEN`; `STATE_WINNER_AUTHORITY = SERVER_REVISION_CAS`; `CLOCK_SKEW_BEHAVIOR = CHARACTERIZED_FOR_CRITICAL_SYNC_PATHS`; `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`.
+Baseline auditada de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`; a `main` avançou 12 commits após o PR #170 somente na trilha de publisher/certificação do Sanitário v2, sem tocar os contratos de sync/conflito da F24.4.
 
 ## Objetivo
 
@@ -45,7 +46,7 @@ canal Vercel `Production` não representa produção operacional. Portanto,
 `sync-batch` e, após a correção F24.1D.1, o `sanitario-reconcile` com matriz negativa, E2E
 1/1 e replay. `F24.1_TECHNICAL = CLOSED`;
 `F24.1_REPOSITORY_CLOSEOUT = PR_READY_FOR_REVIEW`; `F24.2 = CLOSED`;
-`F24.3 = CLOSED`; `F24.4A = CLOSED`; `F24.4B = CLOSED`; `F24.4C = CLOSED`; `F24.4D = CLOSED`.
+`F24.3 = CLOSED`; `F24.4A = CLOSED`; `F24.4B = CLOSED`; `F24.4C = CLOSED`; `F24.4D = CLOSED`; `F24.4E = IN_PROGRESS`.
 
 A [F24.4A](../review/F24_4A_CONFLICT_INVENTORY_CHARACTERIZATION.md) confirmou stale write
 genérico, projeção fora de ordem, delete/update e autoridade implícita de relógio cliente como
@@ -70,6 +71,8 @@ contaminação e independência de clock do cliente no vencedor de estado (`STAT
 SERVER_REVISION_CAS`). Clock skew afeta agendamento de retry local sem quebrar identidade,
 sem reabrir conflitos e sem estagnação permanente após retorno do relógio à normalidade.
 `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`; `NON_ACTIVE_FARM_RECONCILIATION = NOT_TESTED`.
+
+A [F24.4E](../review/F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) foi aberta em modo de characterization, sem alteração de runtime, schema, migration ou RLS. O contrato confirmado de `UPDATE animais` permanece CAS por revisão; replay factual mantém identidade; Eventos distintos permanecem fatos independentes. Gaps ativos incluem `DELETE`/tombstone sem CAS, demais `state_*` sem política de revisão, conflito cruzado Evento→estado em movimentação, duplicidade humana ad hoc sem causa compartilhada e transporte E2E do conflito Sanitário v2 ainda bloqueado pela plataforma. `AUTO_MERGE = NOT_AUTHORIZED`.
 
 Os parágrafos F24.0–F24.1C anteriores mantidos abaixo documentam a sequência histórica; onde
 classificam o mesmo project ref como produção compartilhada, prevalece o rebaseline acima.

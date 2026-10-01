@@ -1,6 +1,6 @@
 # Active Review Index — RebanhoSync
 
-Atualizado em: 2026-09-29
+Atualizado em: 2026-10-01
 
 ## Objetivo
 
@@ -29,10 +29,11 @@ Quando deixar de orientar ação:
 
 | Revisão | Arquivo | Status | Prioridade | Próxima ação |
 |---|---|---:|---:|---|
-| Plano da Fase 24 | `ACTIVE_PHASE_PLAN.md` | Ativo | P0 | F24.4A–F24.4D encerradas; F24.4E é a próxima frente. |
-| Handoff da Fase 24 | `CURRENT_PHASE_HANDOFF.md` | Ativo | P0 | Preservar evidências da F24.4D e preparar F24.4E sem início automático. |
+| Plano da Fase 24 | `ACTIVE_PHASE_PLAN.md` | Ativo | P0 | F24.4A–F24.4D encerradas; F24.4E em characterization. |
+| Handoff da Fase 24 | `CURRENT_PHASE_HANDOFF.md` | Ativo | P0 | Preservar contratos da F24.4D e executar F24.4E sem auto-merge. |
+| Characterization F24.4E | `F24_4E_CONFLICT_RESOLUTION_CONTRACT.md` | Ativo | P0 | Revisar matriz; primeira implementação focal proposta é `DELETE animais` com CAS/versionamento. |
 | Closeout e planejamento F24.3 | `F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md` | Ativo | P0 | Matriz fechada; F24.4 em execução. |
-| Relatório F24.4D | `F24_4D_CROSS_DEVICE_CLOCK_AUTHORITY.md` | Ativo | P0 | Relatório canônico da F24.4D fechada; base para F24.4E. |
+| Relatório F24.4D | `F24_4D_CROSS_DEVICE_CLOCK_AUTHORITY.md` | Ativo | P0 | Relatório histórico canônico da F24.4D fechada. |
 | Checklist padrão de revisão | `REVIEW_CHECKLIST.md` | Ativo | P0 | Usar em toda revisão documental/técnica. |
 | Pendências abertas | `OPEN_REVIEW_ITEMS.md` | Ativo | P0 | Atualizar conforme itens forem resolvidos. |
 | Otimização de contexto/agentes | `AI_CONTEXT_OPTIMIZATION_REPORT.md` | Ativo | P1 | Incorporar recomendações em `.agents/` e docs. |

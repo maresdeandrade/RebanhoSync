@@ -1,8 +1,9 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-09-29
-Status: **Fase 24 ativa; F24.4A–F24.4D CLOSED; F24.4 IN_PROGRESS**
-F24.4D encerrada na branch `feat/f24-4d-cross-device-clock-authority` (commit final `faddf64`) em 2026-09-29.
+Atualizado em: 2026-10-01
+Status: **Fase 24 ativa; F24.4A–F24.4D CLOSED; F24.4E IN_PROGRESS; F24.4 IN_PROGRESS**
+F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29.
+Baseline de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`.
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27.
 Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`.
@@ -15,7 +16,7 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
-Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (NEXT; NOT_STARTED)**
+Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (IN_PROGRESS)**
 
 Este documento aponta para o [closeout autoritativo da F24.2](./F24_2_CLOSEOUT_AND_REBASELINE.md)
 e para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
@@ -77,7 +78,22 @@ critical sync paths em BrowserContexts isolados:
 
 Limitações preservadas: `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`;
 `NON_ACTIVE_FARM_RECONCILIATION = NOT_TESTED`; `ALL_DOMAIN_CLOCK_BEHAVIOR = NOT_PROVEN`.
-Próxima fase: F24.4E — Conflict Resolution Contract.
+
+## F24.4E — conflict resolution contract
+
+A [characterization F24.4E](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS / READY_FOR_REVIEW`, aberta sobre `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`. A primeira execução é documental e de auditoria: `RUNTIME_CHANGE = 0`, `SCHEMA_CHANGE = 0`, `MIGRATION_CHANGE = 0`, `RLS_CHANGE = 0`.
+
+Contratos já determinados:
+
+- `UPDATE animais` stale: `RECONCILE_THEN_NEW_INTENT`, sem reciclar operação stale;
+- replay da mesma identidade: `RETRY_SAME_IDENTITY`;
+- Eventos factuais distintos: `PRESERVE_BOTH`;
+- duplicidade humana sem causa compartilhada: `USER_RESOLUTION_REQUIRED`, sem dedup heurístico;
+- merge por campo: `AUTO_MERGE = NOT_AUTHORIZED`.
+
+Gaps de implementação confirmados concentram-se primeiro em `DELETE`/tombstone de `animais`, que ainda não captura nem transporta `expected_revision`, e depois nos demais `state_*` mutáveis e na convergência cross-domain Evento→estado. O bloqueio de transporte de conflito do Sanitário v2 permanece na trilha F24.7 e não será mascarado por aumento de timeout.
+
+Próxima implementação focal proposta, ainda não iniciada: F24.4E1 — CAS/versionamento de `DELETE animais` e contrato `DELETE_VS_UPDATE`.
 
 ## F24.2 — closeout
 

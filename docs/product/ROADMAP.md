@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-09-29
+Atualizado em: 2026-10-01
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4 IN_PROGRESS)**
-Próxima frente: **F24.4E — Conflict Resolution Contract (NEXT; NOT_STARTED)**
+Próxima frente: **F24.4E — Conflict Resolution Contract (IN_PROGRESS)**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 
 ## Objetivo
@@ -38,7 +38,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 17. Fase 21 — Inteligência Operacional v2 — **concluída**.
 18. Fase 22 — Eficiência Produtiva e Econômica — **concluída (F22A, F22B e F22C fechadas)**.
 19. Fase 23 — Simulação Produtiva e Comercial — **concluída / CLOSED**.
-20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.4A–F24.4D CLOSED; F24.4E NEXT**.
+20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.4A–F24.4D CLOSED; F24.4E IN_PROGRESS**.
 
 O rollout do Sync Sanitário v2 permanece não autorizado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`. Isso não reabre o desenvolvimento técnico da Fase 12.
 
@@ -62,7 +62,8 @@ Fase 23 — Simulação Produtiva e Comercial — CLOSED
 → F24.4B — Concurrent Event Writes — CLOSED
 → F24.4C — State Conflict Policy — CLOSED (PR #169; `3b7ac50ed878d8d8d4b88874ad98c9d98816149b`)
 → F24.4D — Cross-device Offline/Reconnect + Clock Authority — CLOSED (branch `feat/f24-4d-cross-device-clock-authority`; `faddf64`)
-→ F24.4E — Conflict Resolution Contract — NEXT / NOT_STARTED
+→ F24.4E — Conflict Resolution Contract — IN_PROGRESS
+→ F24.4F — Integrated Certification — PLANNED_AFTER_F24.4E
 → F24.5 — Observabilidade — NOT_STARTED
 → F24.6 — Performance / Escala — NOT_STARTED
 → F24.7 — Sanitário v2 — EXTERNAL_BLOCKED

@@ -1,6 +1,6 @@
 # Review Docs — RebanhoSync
 
-Atualizado em: 2026-09-23
+Atualizado em: 2026-10-01
 **Baseline Commit:** `91e0775`
 
 ## Objetivo
@@ -32,6 +32,7 @@ Se é histórico/fechado/substituído → docs/archive/
 | `ACTIVE_REVIEW_INDEX.md` | Índice das revisões ativas. |
 | `ACTIVE_PHASE_PLAN.md` | Plano ativo da Fase 24. |
 | `CURRENT_PHASE_HANDOFF.md` | Handoff técnico vigente da Fase 24. |
+| `F24_4E_CONFLICT_RESOLUTION_CONTRACT.md` | Characterization ativa da F24.4E e matriz de resolução de conflitos por domínio. |
 | `F24_4D_CROSS_DEVICE_CLOCK_AUTHORITY.md` | Relatório canônico da F24.4D (Cross-device Offline/Reconnect + Clock Authority). |
 | `F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md` | Closeout F24.3 e planejamento F24.4–F24.6. |
 | `README.md` | Explica a pasta. |
