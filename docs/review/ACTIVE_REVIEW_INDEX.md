@@ -31,7 +31,7 @@ Quando deixar de orientar ação:
 |---|---|---:|---:|---|
 | Plano da Fase 24 | `ACTIVE_PHASE_PLAN.md` | Ativo | P0 | F24.4A–F24.4D encerradas; F24.4E em characterization. |
 | Handoff da Fase 24 | `CURRENT_PHASE_HANDOFF.md` | Ativo | P0 | Preservar contratos da F24.4D e executar F24.4E sem auto-merge. |
-| Characterization F24.4E | `F24_4E_CONFLICT_RESOLUTION_CONTRACT.md` | Ativo | P0 | Revisar matriz; primeira implementação focal proposta é `DELETE animais` com CAS/versionamento. |
+| Characterization F24.4E | `F24_4E_CONFLICT_RESOLUTION_CONTRACT.md` | Ativo | P0 | E1 DELETE animais CAS = READY_FOR_REVIEW; próxima characterization proposta é E2 Evento→state. |
 | Closeout e planejamento F24.3 | `F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md` | Ativo | P0 | Matriz fechada; F24.4 em execução. |
 | Relatório F24.4D | `F24_4D_CROSS_DEVICE_CLOCK_AUTHORITY.md` | Ativo | P0 | Relatório histórico canônico da F24.4D fechada. |
 | Checklist padrão de revisão | `REVIEW_CHECKLIST.md` | Ativo | P0 | Usar em toda revisão documental/técnica. |

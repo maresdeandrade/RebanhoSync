@@ -26,9 +26,11 @@ Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
 A [matriz F24.4E](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) consolida o tratamento de conflitos por domínio sem autorizar resolução genérica. O baseline remoto foi revalidado em `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`; os 12 commits posteriores ao PR #170 estão limitados à trilha de publisher/certificação Sanitário v2 e não alteram `src/lib/offline`, `sync-batch`, migrations/RLS ou os contratos da F24.4.
 
-A characterization confirma `RECONCILE_THEN_NEW_INTENT` para stale `UPDATE animais`, `RETRY_SAME_IDENTITY` para replay persistido e `PRESERVE_BOTH` para Eventos factuais distintos. Não existe autorização para field-level merge. Os gaps prioritários são `DELETE_VS_UPDATE` em `animais`, política de revisão dos demais `state_*`, convergência Evento→estado em conflitos parciais e duplicidade humana ad hoc. O Sanitário v2 continua com conflito de revisão produzido no PostgreSQL, porém transporte E2E bloqueado por timeout; essa limitação permanece explícita.
+A characterization confirma `RECONCILE_THEN_NEW_INTENT` para stale state, `RETRY_SAME_IDENTITY` para replay persistido e `PRESERVE_BOTH` para Eventos factuais distintos. Não existe autorização para field-level merge.
 
-Nenhuma implementação E1 foi iniciada.
+`F24.4E1 — ANIMAIS_DELETE_TOMBSTONE_CAS = READY_FOR_REVIEW` no PR #173. O DELETE de `animais` agora captura/persiste/transporta `expected_revision`, executa CAS atômico por PK + fazenda + revision e preserva replay antes do CAS. `UPDATE→DELETE` stale e `DELETE→UPDATE` stale foram comprovados em PostgreSQL e no E2E Auth → Edge → RLS → PostgreSQL. Workflow `36869086650`: 417/417 arquivos, 3401/3401 testes, lint, Fallow, build, docs gates, diff integrity e repository-clean PASS. Schema, migration e RLS permaneceram inalterados.
+
+Gaps prioritários restantes: política de revisão dos demais `state_*`, convergência Evento→estado em conflitos parciais e duplicidade humana ad hoc. O Sanitário v2 continua com conflito de revisão produzido no PostgreSQL, porém transporte E2E bloqueado por timeout; essa limitação permanece explícita. F24.4E2 ainda não foi iniciada.
 
 ## F24.4D — closeout
 

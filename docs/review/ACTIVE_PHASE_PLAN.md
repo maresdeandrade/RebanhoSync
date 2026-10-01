@@ -80,7 +80,7 @@ Limitações preservadas: `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`;
 
 ## F24.4E — conflict resolution contract
 
-A [characterization F24.4E](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS / READY_FOR_REVIEW`, aberta sobre `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`. A primeira execução é documental e de auditoria: `RUNTIME_CHANGE = 0`, `SCHEMA_CHANGE = 0`, `MIGRATION_CHANGE = 0`, `RLS_CHANGE = 0`.
+A [characterization F24.4E](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS / READY_FOR_REVIEW`, aberta sobre `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`. A subfase `F24.4E1 — ANIMAIS_DELETE_TOMBSTONE_CAS` está `READY_FOR_REVIEW` no PR #173: houve mudança localizada de runtime no cliente offline e `sync-batch`, com `SCHEMA_CHANGE = 0`, `MIGRATION_CHANGE = 0` e `RLS_CHANGE = 0`.
 
 Contratos já determinados:
 
@@ -90,9 +90,9 @@ Contratos já determinados:
 - duplicidade humana sem causa compartilhada: `USER_RESOLUTION_REQUIRED`, sem dedup heurístico;
 - merge por campo: `AUTO_MERGE = NOT_AUTHORIZED`.
 
-Gaps de implementação confirmados concentram-se primeiro em `DELETE`/tombstone de `animais`, que ainda não captura nem transporta `expected_revision`, e depois nos demais `state_*` mutáveis e na convergência cross-domain Evento→estado. O bloqueio de transporte de conflito do Sanitário v2 permanece na trilha F24.7 e não será mascarado por aumento de timeout.
+A E1 resolveu no branch a assimetria `DELETE_VS_UPDATE` de `animais`: DELETE captura/persiste/transporta `expected_revision`, usa CAS server-authoritative e preserva replay idempotente; stale DELETE/UPDATE exige reconciliation + nova intenção. A validação completa observada no workflow `36869086650` foi 417/417 arquivos e 3401/3401 testes, com 3/3 do E2E Auth → Edge → RLS → PostgreSQL da política de state.
 
-Próxima implementação focal proposta, ainda não iniciada: F24.4E1 — CAS/versionamento de `DELETE animais` e contrato `DELETE_VS_UPDATE`.
+Permanecem abertos os demais `state_*` mutáveis, convergência cross-domain Evento→estado, duplicidade humana ad hoc e as limitações transversais já registradas. Próxima subfase proposta, ainda não iniciada: F24.4E2 — `MOVEMENT_EVENT_STATE_CONVERGENCE`.
 
 ## F24.2 — closeout
 

@@ -72,7 +72,7 @@ SERVER_REVISION_CAS`). Clock skew afeta agendamento de retry local sem quebrar i
 sem reabrir conflitos e sem estagnação permanente após retorno do relógio à normalidade.
 `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`; `NON_ACTIVE_FARM_RECONCILIATION = NOT_TESTED`.
 
-A [F24.4E](../review/F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) foi aberta em modo de characterization, sem alteração de runtime, schema, migration ou RLS. O contrato confirmado de `UPDATE animais` permanece CAS por revisão; replay factual mantém identidade; Eventos distintos permanecem fatos independentes. Gaps ativos incluem `DELETE`/tombstone sem CAS, demais `state_*` sem política de revisão, conflito cruzado Evento→estado em movimentação, duplicidade humana ad hoc sem causa compartilhada e transporte E2E do conflito Sanitário v2 ainda bloqueado pela plataforma. `AUTO_MERGE = NOT_AUTHORIZED`.
+A [F24.4E](../review/F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS`. A characterization permanece `READY_FOR_REVIEW` e a `F24.4E1 — ANIMAIS_DELETE_TOMBSTONE_CAS` está `READY_FOR_REVIEW` no PR #173. UPDATE e DELETE de `animais` usam CAS por `revision`; replay preserva identidade; stale mutation é terminal e exige reconciliation + nova intenção. O workflow `36869086650` comprovou 417/417 arquivos e 3401/3401 testes, incluindo 3/3 do E2E Auth → Edge → RLS → PostgreSQL. Não houve mudança de schema, migration ou RLS. Gaps ativos permanecem nos demais `state_*`, conflito cruzado Evento→estado em movimentação, duplicidade humana ad hoc e transporte E2E do conflito Sanitário v2. `AUTO_MERGE = NOT_AUTHORIZED`.
 
 Os parágrafos F24.0–F24.1C anteriores mantidos abaixo documentam a sequência histórica; onde
 classificam o mesmo project ref como produção compartilhada, prevalece o rebaseline acima.
