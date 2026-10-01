@@ -2,6 +2,7 @@
 
 Atualizado em: 2026-10-01
 Status: **Fase 24 ativa; F24.4A–F24.4D CLOSED; F24.4E IN_PROGRESS; F24.4 IN_PROGRESS**
+Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (IN_PROGRESS)**
 F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29.
 Baseline de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`.
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27.
@@ -16,8 +17,6 @@ Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Baseline de abertura da Fase 21: `main@4e1c67fc7e0c4d5222a074980f1ae577ef2600fd`.
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
-Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (IN_PROGRESS)**
-
 Este documento aponta para o [closeout autoritativo da F24.2](./F24_2_CLOSEOUT_AND_REBASELINE.md)
 e para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
 O backlog F24.1–F24.8, dependências, critérios de entrada/saída e release blockers estão
