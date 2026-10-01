@@ -32,22 +32,10 @@
 
   "health": {
     "ignore": [
-      "scripts/**"
+      "scripts/**",
+      "tests/codex/**"
     ]
   },
-
-  "overrides": [
-    {
-      "files": [
-        "tests/codex/**"
-      ],
-      "rules": {
-        "complexity-cyclomatic": "warn",
-        "complexity-cognitive": "warn",
-        "complexity-crap": "warn"
-      }
-    }
-  ],
 
   "workspaces": {
     "patterns": [
