@@ -262,17 +262,38 @@ describeLocal("F24.4C sync-batch state conflict E2E local", () => {
       observacoes: "update-before-delete",
     });
 
+    const deleteFirstTxId = crypto.randomUUID();
+    const deleteFirstOp = deleteOperation({
+      animalId: animalDeleteThenUpdate,
+      expectedRevision: 1,
+    });
     const deleteFirst = await invoke({
-      txId: crypto.randomUUID(),
-      op: deleteOperation({
-        animalId: animalDeleteThenUpdate,
-        expectedRevision: 1,
-      }),
+      txId: deleteFirstTxId,
+      op: deleteFirstOp,
     });
     expect(deleteFirst).toMatchObject({
       status: 200,
       body: { results: [{ status: "APPLIED" }] },
     });
+
+    const deleteReplay = await invoke({
+      txId: deleteFirstTxId,
+      op: deleteFirstOp,
+    });
+    expect(deleteReplay).toMatchObject({
+      status: 200,
+      body: { results: [{ status: "APPLIED" }] },
+    });
+
+    const afterDeleteReplay = await database.query<{
+      revision: string;
+      deleted_at: Date | null;
+    }>(
+      "select revision, deleted_at from public.animais where id = $1 and fazenda_id = $2",
+      [animalDeleteThenUpdate, farmA],
+    );
+    expect(afterDeleteReplay.rows[0]?.revision).toBe("2");
+    expect(afterDeleteReplay.rows[0]?.deleted_at).not.toBeNull();
 
     const staleUpdate = await invoke({
       txId: crypto.randomUUID(),
@@ -364,6 +385,26 @@ describeLocal("F24.4C sync-batch state conflict E2E local", () => {
           animalId: animalB,
           expectedRevision: 1,
           note: "cross-farm",
+        }),
+      }),
+    ).toMatchObject({
+      status: 200,
+      body: {
+        results: [
+          {
+            status: "REJECTED",
+            reason_code: "STATE_TARGET_NOT_FOUND_OR_FORBIDDEN",
+          },
+        ],
+      },
+    });
+
+    expect(
+      await invoke({
+        txId: crypto.randomUUID(),
+        op: deleteOperation({
+          animalId: animalB,
+          expectedRevision: 1,
         }),
       }),
     ).toMatchObject({

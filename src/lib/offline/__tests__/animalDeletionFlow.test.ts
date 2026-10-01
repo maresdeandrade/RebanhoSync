@@ -301,6 +301,21 @@ describe("animal deletion offline flow", () => {
 
     await processGesture(await getGesture(clientTxId));
 
+    const syncRequest = JSON.parse(
+      String(vi.mocked(fetch).mock.calls[0]?.[1]?.body),
+    ) as {
+      ops: Array<{
+        client_op_id: string;
+        action: string;
+        expected_revision?: number;
+      }>;
+    };
+    expect(syncRequest.ops[0]).toMatchObject({
+      client_op_id: operation.client_op_id,
+      action: "DELETE",
+      expected_revision: 1,
+    });
+
     expect(await db.queue_ops.get(operation.client_op_id)).toMatchObject({
       sync_state: "REJECTED",
       expected_revision: 1,

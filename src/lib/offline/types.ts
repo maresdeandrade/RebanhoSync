@@ -642,7 +642,7 @@ export interface Operation {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   before_snapshot?: any;
-  /** Revisão remota capturada quando o gesto de UPDATE foi criado. */
+  /** Revisão remota capturada quando uma mutação state protegida foi criada. */
   expected_revision?: number;
   /** Canonical sanitario_v2 identity returned by sync-batch. */
   domain_op_id?: string;
