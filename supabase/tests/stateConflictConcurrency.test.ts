@@ -6,6 +6,8 @@ const farmA = crypto.randomUUID();
 const farmB = crypto.randomUUID();
 const animalA = crypto.randomUUID();
 const animalB = crypto.randomUUID();
+const animalUpdateThenDelete = crypto.randomUUID();
+const animalDeleteThenUpdate = crypto.randomUUID();
 let admin: Client;
 
 const describeDatabase = connectionString ? describe.sequential : describe.skip;
@@ -30,6 +32,25 @@ async function updateWithExpectedRevision(
   );
 }
 
+async function softDeleteWithExpectedRevision(
+  client: Client,
+  input: {
+    animalId: string;
+    farmId: string;
+    expectedRevision: number;
+  },
+) {
+  return client.query<{ revision: string; deleted_at: Date | null }>(
+    `update public.animais
+       set deleted_at = now()
+     where id = $1
+       and fazenda_id = $2
+       and revision = $3
+     returning revision, deleted_at`,
+    [input.animalId, input.farmId, input.expectedRevision],
+  );
+}
+
 describeDatabase("F24.4C animais state revision PostgreSQL concurrency", () => {
   beforeAll(async () => {
     admin = new Client({ connectionString });
@@ -43,14 +64,23 @@ describeDatabase("F24.4C animais state revision PostgreSQL concurrency", () => {
         (id, fazenda_id, identificacao, sexo, observacoes)
        values
         ($1, $2, 'STATE-CAS', 'F', 'baseline'),
-        ($3, $4, 'STATE-CAS', 'F', 'baseline')`,
-      [animalA, farmA, animalB, farmB],
+        ($3, $4, 'STATE-CAS', 'F', 'baseline'),
+        ($5, $2, 'STATE-CAS-UPDATE-DELETE', 'F', 'baseline'),
+        ($6, $2, 'STATE-CAS-DELETE-UPDATE', 'F', 'baseline')`,
+      [
+        animalA,
+        farmA,
+        animalB,
+        farmB,
+        animalUpdateThenDelete,
+        animalDeleteThenUpdate,
+      ],
     );
   });
 
   afterAll(async () => {
     await admin.query("delete from public.animais where id = any($1::uuid[])", [
-      [animalA, animalB],
+      [animalA, animalB, animalUpdateThenDelete, animalDeleteThenUpdate],
     ]);
     await admin.query("delete from public.fazendas where id = any($1::uuid[])", [
       [farmA, farmB],
@@ -108,6 +138,67 @@ describeDatabase("F24.4C animais state revision PostgreSQL concurrency", () => {
       note: "sequential",
     });
     expect(sequential.rows[0]?.revision).toBe("3");
+  });
+
+  it("UPDATE vencedor torna DELETE stale inofensivo", async () => {
+    const updated = await updateWithExpectedRevision(admin, {
+      animalId: animalUpdateThenDelete,
+      farmId: farmA,
+      expectedRevision: 1,
+      note: "update-before-delete",
+    });
+    expect(updated.rows[0]?.revision).toBe("2");
+
+    const staleDelete = await softDeleteWithExpectedRevision(admin, {
+      animalId: animalUpdateThenDelete,
+      farmId: farmA,
+      expectedRevision: 1,
+    });
+    expect(staleDelete.rowCount).toBe(0);
+
+    const current = await admin.query<{
+      revision: string;
+      deleted_at: Date | null;
+      observacoes: string | null;
+    }>(
+      "select revision, deleted_at, observacoes from public.animais where id = $1 and fazenda_id = $2",
+      [animalUpdateThenDelete, farmA],
+    );
+    expect(current.rows[0]).toMatchObject({
+      revision: "2",
+      deleted_at: null,
+      observacoes: "update-before-delete",
+    });
+  });
+
+  it("DELETE vencedor torna UPDATE stale inofensivo sem ressuscitar a row", async () => {
+    const deleted = await softDeleteWithExpectedRevision(admin, {
+      animalId: animalDeleteThenUpdate,
+      farmId: farmA,
+      expectedRevision: 1,
+    });
+    expect(deleted.rows[0]?.revision).toBe("2");
+    expect(deleted.rows[0]?.deleted_at).not.toBeNull();
+
+    const staleUpdate = await updateWithExpectedRevision(admin, {
+      animalId: animalDeleteThenUpdate,
+      farmId: farmA,
+      expectedRevision: 1,
+      note: "stale-after-delete",
+    });
+    expect(staleUpdate.rowCount).toBe(0);
+
+    const current = await admin.query<{
+      revision: string;
+      deleted_at: Date | null;
+      observacoes: string | null;
+    }>(
+      "select revision, deleted_at, observacoes from public.animais where id = $1 and fazenda_id = $2",
+      [animalDeleteThenUpdate, farmA],
+    );
+    expect(current.rows[0]?.revision).toBe("2");
+    expect(current.rows[0]?.deleted_at).not.toBeNull();
+    expect(current.rows[0]?.observacoes).toBe("baseline");
   });
 
   it("mantém revisão isolada por fazenda e ignora revisão fabricada pelo cliente", async () => {

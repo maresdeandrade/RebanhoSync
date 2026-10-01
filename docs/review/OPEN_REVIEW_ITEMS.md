@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-09-23
+Atualizado em: 2026-10-01
 
 ## Objetivo
 
@@ -31,12 +31,10 @@ descartável existente e está registrada em
 
 ## P0 — F24.4 Multi-device + Conflitos
 
-Status: `NOT_STARTED`
+Status: `IN_PROGRESS — F24.4E CHARACTERIZATION READY_FOR_REVIEW / F24.4E1 READY_FOR_REVIEW`
 Release blocker: `SIM`
 
-Restam writes concorrentes no mesmo agregado, política genérica de stale write, conflitos
-cross-device, pull concorrente, sucesso parcial e validação multi-tab/multi-context em browser
-real. Identidade estável e replay idempotente já foram encerrados na F24.2.
+F24.4A–F24.4D estão encerradas e a F24.4E está ativa. O CAS de `UPDATE animais` e `DELETE animais`, replay de lost ACK, cross-device reconnect, farm-switch e clock authority foram comprovados nos escopos documentados. Permanecem abertos: demais `state_*` sem política de revisão, conflito cross-domain Evento→estado em sucesso parcial, duplicidade humana ad hoc sem causa compartilhada, certificação em dispositivo físico real, reconciliação de fazenda não ativa e transporte E2E do conflito Sanitário v2. `AUTO_MERGE = NOT_AUTHORIZED`.
 
 ## P1 — Certificação E2E de process kill
 

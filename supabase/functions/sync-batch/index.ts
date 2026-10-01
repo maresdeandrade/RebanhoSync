@@ -826,7 +826,7 @@ Deno.serve(async (req: Request) => {
             status: "REJECTED",
             reason_code: stateRevisionPolicy.reason_code,
             reason_message:
-              "State UPDATE requires the remote revision captured when the gesture was created",
+              "State mutation requires the remote revision captured when the gesture was created",
           });
           continue;
         }
@@ -1607,12 +1607,11 @@ Deno.serve(async (req: Request) => {
             });
             continue;
           }
-          const updateQuery = supabase.from(op.table).update(record).match(match);
-          query = stateRevisionPolicy.protected
-            ? updateQuery
-                .eq("revision", stateRevisionPolicy.expected_revision)
-                .select("revision")
-            : updateQuery.select(); // Request representation to avoid PGRST204
+          query = supabase
+            .from(op.table)
+            .update(record)
+            .match(match)
+            .select(); // Request representation to avoid PGRST204
         } else if (op.action === "DELETE") {
           const match = buildMutationMatch(op, fazenda_id);
           if (!match) {
@@ -1680,7 +1679,7 @@ Deno.serve(async (req: Request) => {
             status: "CONFLICT",
             retryable: false,
             reason_code: "STATE_REVISION_CONFLICT",
-            reason_message: "State changed concurrently during the update",
+            reason_message: "State changed concurrently during the mutation",
             ...(currentRevision === undefined
               ? {}
               : { current_revision: currentRevision }),

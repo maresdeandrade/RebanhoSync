@@ -11,6 +11,10 @@ const LEGACY_KEYS = [
 
 const SCANNED_DIRS = ["src", "tests", "scripts", join("supabase", "migrations")];
 const SKIPPED_DIRS = new Set(["node_modules", "dist", "coverage", ".git"]);
+
+function isNonOperationalEvidence(file: string) {
+  return file.endsWith(".evidence.json");
+}
 const TECHNICAL_CLEANUP_MIGRATION = join(
   "supabase",
   "migrations",
@@ -39,7 +43,11 @@ describe("contrato final de itens de protocolo sanitario", () => {
   it("nao reintroduz chaves operacionais legadas fora da migration tecnica de contracao", () => {
     const files = SCANNED_DIRS.flatMap((dir) => collectFiles(join(ROOT, dir)));
     const violations = files
-      .filter((file) => relative(ROOT, file) !== TECHNICAL_CLEANUP_MIGRATION)
+      .filter(
+        (file) =>
+          relative(ROOT, file) !== TECHNICAL_CLEANUP_MIGRATION &&
+          !isNonOperationalEvidence(file),
+      )
       .flatMap((file) => {
         const content = readFileSync(file, "utf8");
 

@@ -17,7 +17,7 @@ export function validateStateExpectedRevision(op: Operation):
     reason_code: "STATE_EXPECTED_REVISION_REQUIRED";
   } {
   if (
-    op.action !== "UPDATE" ||
+    (op.action !== "UPDATE" && op.action !== "DELETE") ||
     !REVISION_PROTECTED_STATE_TABLES.has(op.table)
   ) {
     return { protected: false, ok: true };
@@ -437,10 +437,18 @@ export function isPersistedOperationReplay(
 export function buildMutationMatch(
   op: Operation,
   fazenda_id: string,
-): Record<string, string> | null {
+): Record<string, string | number> | null {
   const pk = resolveOperationPrimaryKey(op);
   if (!pk) return null;
-  return { [pk.field]: pk.value, fazenda_id };
+
+  const stateRevisionPolicy = validateStateExpectedRevision(op);
+  return {
+    [pk.field]: pk.value,
+    fazenda_id,
+    ...(stateRevisionPolicy.ok && stateRevisionPolicy.protected
+      ? { revision: stateRevisionPolicy.expected_revision }
+      : {}),
+  };
 }
 
 export function inferAgendaSourceTaskIdForEventInsert(

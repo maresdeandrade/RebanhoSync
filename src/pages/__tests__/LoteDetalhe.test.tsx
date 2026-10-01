@@ -364,7 +364,7 @@ describe("LoteDetalhe page", () => {
       id: "animal-1",
       fazenda_id: "farm-1",
       identificacao: "BR-001",
-      sexo: "F",
+      sexo: "M",
       status: "ativo",
       lote_id: "lote-1",
       data_nascimento: "2026-01-01",
