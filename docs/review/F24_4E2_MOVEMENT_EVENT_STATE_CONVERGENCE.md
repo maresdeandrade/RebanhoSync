@@ -1,0 +1,847 @@
+# F24.4E2 — Movement Event/State Design Contract
+
+Atualizado em: 2026-10-01
+
+Subfase: `F24.4E2 — MOVEMENT_EVENT_STATE_CONVERGENCE`
+
+Modo: `DOCUMENTATION` com auditoria e characterization local
+
+Status: `DESIGN_CONTRACT = DEFINED`; `E2.1_COMMAND_CONTRACT = DEFINED`; `RUNTIME_IMPLEMENTATION = NOT_STARTED`
+
+## 1. Baseline e escopo
+
+```ini
+repository = maresdeandrade/RebanhoSync
+branch = feat/f24-4e2-movement-event-state-convergence
+HEAD = 040c3c0605ff4f6ecabeedec1b28c5017455f6ac
+origin/main = 040c3c0605ff4f6ecabeedec1b28c5017455f6ac
+worktree = C:/Users/mares/dyad-apps/GestaoAgro
+initial_worktree = DIRTY_TWO_UNTRACKED_FILES
+F24_4E = IN_PROGRESS
+F24_4E1_ANIMAIS_DELETE_TOMBSTONE_CAS = INTEGRATED
+PR_173_MERGE_COMMIT = 040c3c0605ff4f6ecabeedec1b28c5017455f6ac
+F24_4E2_CHARACTERIZATION = LOCAL_OBSERVED_WITH_LIMITATIONS
+F24_4E2_DESIGN_CONTRACT = DEFINED
+F24_4E2_RUNTIME = NOT_STARTED
+```
+
+`git fetch origin --prune` e comparação de refs confirmaram o baseline. Antes do patch,
+este documento e `src/lib/offline/__tests__/movementEventStateConvergence.characterization.test.ts`
+eram **existentes e untracked**, não committed nem tracked. Não havia alterações tracked ou
+staged. O relato anterior de worktree clean era incorreto. As outras worktrees inventariadas
+não foram alteradas. Status/diffs delimitam esta execução; não certificam ausência de
+processos externos concorrentes.
+
+Escopo: este design, fortalecimento do teste existente e correção dos apontadores ativos de
+E1/E2. Sem runtime, migration, schema, RLS, RPC, trigger, deploy, merge, push ou acesso a
+dados remotos. Não inicia E3/F24.4F.
+
+## 2. Comportamento atual e gap
+
+```ini
+ARCHITECTURE_CURRENT = MODEL_E
+EVENT_STATE_ATOMICITY = NOT_IMPLEMENTED_FOR_GENERIC_MOVEMENT
+DOMAIN_MOVEMENT_RECONCILER = ABSENT_IN_AUDITED_PATH
+GENERIC_PULL_REBUILDS_MOVEMENT_STATE = NO
+F24_4E_G3 = CONFIRMED_BY_CODE_AND_LOCAL_CHARACTERIZATION
+LOTE_PASTO_CAS = ABSENT_IN_GENERIC_SYNC_PATH
+```
+
+O caminho genérico admite `eventos = APPLIED`, `eventos_movimentacao = APPLIED` e
+`animais = CONFLICT / STATE_REVISION_CONFLICT`. O worker preserva fatos, reverte operações
+rejeitadas, registra rejeição e obrigação durável de pull. O pull copia `animais` remoto;
+não calcula `lote_id` pelos Eventos. Convergência da cópia local ao snapshot remoto não
+resolve o efeito de domínio do fato conflitante.
+
+“Commit order wins” era impreciso no documento anterior: entre mutações da mesma revision,
+vence o CAS que efetivamente atualizar a linha primeiro. Revisões sucessivas podem permitir
+mais de uma aplicação. Ordem HTTP, recebimento, commit e tempo factual são coisas distintas.
+Não há sequenciador factual de movimentação implementado nesse caminho.
+
+## 3. Fontes de verdade auditadas
+
+| Estrutura | Evidência do contrato atual |
+| --- | --- |
+| `eventos` | PK `id` = `eventId` do builder; `fazenda_id`, `occurred_at`, `animal_id`, `lote_id`, `source_task_id`, `source_tx_id`, `source_client_op_id`, `corrige_evento_id`. `buildEventGesture.ts:36`, `types.ts:1581`, baseline SQL:506. |
+| `eventos_movimentacao` | PK/FK real `evento_id`, não `event_id`; `from_lote_id`, `to_lote_id`, `from_pasto_id`, `to_pasto_id`, tenant. Baseline SQL:630. |
+| `animais.lote_id` | Localização corrente, com revision remota. Migration `20260927120000_f24_4c_animais_state_revision.sql` incrementa revision em UPDATE. |
+| `animais.pasto_id` | Ausente do schema ativo auditado e da interface Animal. A menção defensiva na regra anti-teleporte não comprova existência. Pasto atual é derivado do lote corrente e `lotes.pasto_id`. |
+| `lotes.pasto_id` | Localização corrente do lote; FK tenant-scoped; sem revision/CAS no caminho genérico auditado. |
+| `pastos` | Cadastro/estado do pasto. Mover lote não altera cadastro do pasto. |
+| Stores Dexie | `tableMap.ts`: animais→state_animais; lotes→state_lotes; pastos→state_pastos; eventos→event_eventos; eventos_movimentacao→event_eventos_movimentacao; pasto_ocupacoes→state_pasto_ocupacoes. Não presumir tabela remota `state_*`. |
+| `pasto_ocupacoes` | Read model de períodos, referências entrada_evento_id/saida_evento_id; uma ocupação aberta por fazenda+lote. Migration `20260508003000_pasto_ocupacoes.sql`. |
+| Occupancy calculada | `buildAnimalOccupancyTimeline` ordena occurred_at para períodos, sem escrever animais. `historicalLotPastureOccupancy.ts:336` marca correção `UNSUPPORTED_CORRECTION`. Análise histórica não arbitra current state. |
+
+Migrations são evidência do contrato versionado, não inspeção do banco remoto nesta execução.
+FKs compostas preservam tenant de animal, lote, pasto e correção. `prevalidateAntiTeleport`
+exige base/detail correlatos para UPDATE de localização do animal, mas não compara origem
+com state corrente, nem protege UPDATE de lote pelo mesmo contrato. O validator local
+bloqueia destino ausente/origem=destino conforme o tipo; UI não é barreira de autorização.
+
+### Append-only e correção atuais
+
+O builder carrega `corrige_evento_id` na nova base; a FK valida tenant, mas não domínio,
+sujeito, ciclo ou ramificação. Movimento com esse campo ainda emite UPDATE comum de animal.
+Não foi encontrado resolvedor canônico de correção no writer/worker/Edge/pull auditados.
+
+A baseline `00000000000000_rebuild_base_schema_sanitario.sql:16/2131` define
+`prevent_business_update` e triggers em base/detail. Impede alteração de negócio, mas
+permite updated_at/deleted_at/server_received_at, cobre UPDATE e não DELETE físico;
+há FKs on-delete set-null/cascade. Não é imutabilidade absoluta contra operador privilegiado.
+A ACL forward-only existente deve ser preservada. **O design proíbe** editar/apagar/tombstonar
+fato aplicado para corrigir state. Correção é novo Evento e nova decisão auditável.
+
+## 4. Pipeline real e boundaries atuais
+
+| Etapa | Arquivo/função real | Boundary / limite |
+| --- | --- | --- |
+| UI animal | `src/components/manejo/MoverAnimalLote.tsx`, handleConfirm | Origem local, destino e clock; builder→gesture. |
+| UI lote | `src/components/manejo/MudarPastoLote.tsx`, handleConfirm | movementKind=lote_pasto; acrescenta occupancy. |
+| Builder | `src/lib/events/buildEventGesture.ts`, buildBaseEventOp/buildEventGesture | INSERT base+detail e UPDATE animal ou opt-in lote. |
+| Occupancy | `src/lib/pastos/pastoOcupacoes.ts`, buildPastoOcupacaoOps | Fecha/abre períodos. Comentário “atômicas” não comprova transação remota. |
+| Local/enqueue | `src/lib/offline/ops.ts`, createGesture/applyOpLocal/persistExpectedAnimalRevision | Transação Dexie: gesto, ops, optimistic; before_snapshot/revision persistidos; sem incrementar revision local. |
+| Transporte | `src/lib/offline/syncWorker.ts`, processGesture/mapOperationForSync/sendBatchRequest | Identidades/revision no envelope; Web Locks/claim local, não lock PostgreSQL. |
+| Edge | `supabase/functions/sync-batch/index.ts`, handler Deno.serve | Autenticação/membership/tenant; loop por op. Movimento sem RPC de domínio. |
+| Replay | `rules.ts`, isPersistedOperationReplay; handler:773 | client_op_id+client_tx_id antes do CAS; PK com outra identidade é conflito, não dedup por conteúdo. |
+| INSERTs remotos | handler:1588 | PostgREST individual; base/detail/state não compartilham transação PostgreSQL. |
+| CAS animal | validateStateExpectedRevision/buildMutationMatch; handler:826/1599 | UPDATE/DELETE por PK+fazenda+revision; missing revision rejeita; mismatch/zero rows terminal. |
+| Lote/occupancy | mutações genéricas | PK+fazenda, sem CAS revision. Constraints não dão atomicidade conjunta. |
+| Resultado/rollback | reconcileGenericOperationResults, syncWorker:1376; rollbackOpLocal | Rejeitadas revertidas em ordem reversa, aplicadas reaplicadas; fatos aceitos preservados. |
+| Compensação | caminho genérico auditado | Não há compensação remota nem apagar Evento para corrigir state. |
+| Obligations | sync_reconcile_obligations; upsertReconciliationObligations/drainReconciliationObligations | ACK/resultado com persistência local; fazenda+scope+generation; failure preserva obrigação. |
+| Pull | `pull.ts`, pullDataForFarm/applyFarmPull/writeMergeResults | Fetch tenant-scoped+transação Dexie; pending protegido; copia dados sem rebuild factual de localização. |
+| Consumo | state_animais/state_lotes/state_pastos/useOccupancyData | Current state e análises históricas separados. |
+
+Replay genérico de state consulta a identidade atualmente na linha, não um ledger durável
+de toda mutação antiga após outras escritas. O boundary novo precisa de resultado persistido
+por identidade mesmo depois do avanço da projeção.
+
+## 5. Decisão de autoridade e tempo (D1–D4)
+
+**Escolha: comando de domínio transacional no servidor com CAS e classificação durável
+do efeito.** Receber fato válido não significa que venceu state. Convergência significa
+projeção explicável, cópias locais convergentes e conflitos expostos; não inventar ordem física
+total para fatos ambíguos.
+
+```ini
+MOVEMENT_HISTORY_AUTHORITY = EVENTOS_PLUS_EVENTOS_MOVIMENTACAO
+MOVEMENT_CURRENT_STATE_AUTHORITY = SERVER_DOMAIN_DECISION_WITH_CAS
+MOVEMENT_PROJECTION_ORDER = PER_SUBJECT_SERVER_SERIALIZED_ACCEPTED_TRANSITIONS
+CLIENT_CLOCK_STATE_AUTHORITY = NONE
+STATE_WINNER_AUTHORITY = SERVER_REVISION_CAS
+CLIENT_CLOCK_STATE_AUTHORITY_FOR_ANIMAIS = NONE_FOR_ANIMAIS_CAS
+EVENT_TIME_AUTHORITY = DOMAIN_FACTUAL_INPUT_OR_CLIENT_CLOCK_FALLBACK
+EVENT_STATE_BOUNDARY = POSTGRES_DOMAIN_TRANSACTION_FACT_DETAIL_EFFECT_DECISION_AND_DUE_STATE
+EVENT_STATE_WRITE_BOUNDARY = POSTGRES_DOMAIN_TRANSACTION_FACT_DETAIL_EFFECT_DECISION_AND_DUE_STATE
+LATE_EVENT_POLICY = HISTORY_ONLY_IF_EXPLICIT_OR_CAUSALLY_SUPERSEDED_OTHERWISE_CONFLICT
+SAME_TIME_TIE_BREAK = SERVER_SERIALIZED_CAS_ACCEPTANCE
+TIE_BREAK_POLICY = SERVER_SERIALIZED_CAS_ACCEPTANCE_NO_TIMESTAMP_COMPARISON
+CORRECTION_POLICY = APPEND_EVENT_AND_EXPLICIT_EFFECT_DECISION_NO_ORIGINAL_EDIT
+LEGACY_CLIENT_POLICY = EDGE_VERSIONED_ADAPTER_PRESERVE_IDENTITIES_FAIL_CLOSED_ON_AMBIGUITY
+ANIMAL_MOVEMENT_POLICY = SERVER_MOVEMENT_VERSION_AND_MATCHING_ORIGIN_AND_PROJECTION_HEAD
+LOT_PASTURE_MOVEMENT_POLICY = DEDICATED_LOCATION_CAS_WITH_OCCUPANCY_IN_SAME_BOUNDARY
+SERVER_TRIGGER_BY_OCCURRED_AT = NOT_AUTHORIZED
+CLIENT_FORCE_RECONCILER = NOT_AUTHORIZED
+FIELD_LEVEL_MERGE = NOT_AUTHORIZED
+AUTO_MERGE = NOT_AUTHORIZED
+```
+
+Comandos, resultados e metadados abaixo são **contrato proposto**, não schema/enum/API
+implementados. Definir semântica não autoriza migration/rollout.
+
+STATE_WINNER_AUTHORITY acima descreve o CAS genérico existente de animal (F24.4D/C/E1).
+E2.1 decide explicitamente a especialização futura R2 de movimentação; ambas as autoridades
+são servidor, sem relógio do cliente. Não altera o runtime ou o CAS genérico nesta etapa.
+
+### D1 — Critérios comparados
+
+| Candidato | Decisão / razão |
+| --- | --- |
+| server revision | CAS genérico existente para animal; freshness do registro inteiro, não tempo factual. E2.1 mantém esse contrato e especializa o novo comando. |
+| server commit sequence | Serialização das transições elegíveis aceitas sob lock/CAS por sujeito; não último fato recebido. |
+| occurred_at | Histórico/períodos; não escolhe localização atual. |
+| server_received_at | Auditoria de recebimento; não cronologia offline nem desempate transacional. |
+| Sequência factual especializada | Ausente; E2.1 define referência imutável ao predecessor, validada pela decisão e pelo token de saída dele. Não é rebase. |
+| Versão de projeção | Metadado server-authoritative por sujeito detecta ABA e invalidação de elegibilidade. Não substitui revision genérica nem vira fato. |
+| Combinação escolhida | Token especializado+origem+cabeça+elegibilidade; efeito/versão/identidade persistidos no mesmo commit. Conflitos explícitos, sem merge. |
+
+Sujeito = fazenda+animal para animal→lote; fazenda+lote para lote→pasto. Sem ordem global
+entre sujeitos independentes. Revision de animal avança por qualquer UPDATE. O token
+especializado também invalida snapshots após mudança de status/tombstone; uma invalidação
+não cria Evento de movimentação nem altera a cabeça factual (detalhes em E2.1).
+
+Para A/B do mesmo snapshot, primeiro CAS elegível que efetivamente atualiza e commita vence;
+o outro fato recebe conflito de efeito e permanece no histórico. Isso desempata operação,
+sem provar qual fato foi fisicamente mais recente. Dois fatos distintos nunca são deduplicados
+por mesma origem/destino/data. Revisões sucessivas seguem transições aceitas.
+
+### D2 — T2 recebido antes de T1
+
+| Evidência | Tratamento definido |
+| --- | --- |
+| T2 já influenciou state, T1 tem snapshot/cabeça anteriores | T1 não altera state. HISTORY_ONLY se precedência factual for explícita, senão HISTORY_CONFLICT. |
+| T1 explicitamente histórico | HISTORY_ONLY; origem não precisa ser localização corrente. |
+| T2 declara dependência T1 ainda ausente | Preservar T2 como PENDING_CAUSAL_DEPENDENCY, sem state; servidor retoma usando o token de saída de T1, sem reescrever input. |
+| T1 elegível e T2 referencia T1 explicitamente | T2 pode aplicar se origem, cabeça e token de saída de T1 continuam atuais e elegibilidade é válida. |
+| T2 legado carrega apenas revision antiga | Mantém CAS estrito legado; não inferir sucessão nem atualizar expected_revision. |
+| Causalidade desconhecida | Hora menor não prova atraso; preservar conflito, sem ordenar ou criar nova intenção silenciosamente. |
+
+E2.1 define encadeamento por identidade factual imutável. O sucessor recebe offline um
+seletor simbólico do predecessor, não uma revision numérica fabricada. O servidor resolve
+somente o token de saída registrado daquele predecessor; token/cabeça atuais diferentes
+produzem conflito. Filas legadas sem esse vínculo podem exigir resolução após reconnect.
+
+A pendência causal é durável no servidor, vinculada ao Evento dependente. Ao aceitar o
+predecessor, o comando de domínio deve registrar uma nova decisão vinculada para os
+dependentes do mesmo sujeito: dependência satisfeita e seletor causal original ainda válido
+permitem efeito; caso contrário, conflito explícito. Não depende de um cliente permanecer aberto.
+Nenhuma reavaliação altera o resultado original de replay ou o seletor capturado. Pendência
+não satisfeita continua consultável e pode ser tratada por resolução operacional explícita.
+
+`resolve_projection` é comando explícito que referencia fatos preservados, snapshot atual
+reconciliado, escolha/evidência da localização e ator autorizado. É nova intenção de resolução
+auditada, não novo movimento fictício nem retry técnico do perdedor. Novo CAS stale conflita;
+não ressuscita animal tombstonado/inativo. Replay do comando original mantém resultado original.
+
+Não é possível demonstrar ordem física T1/T2 somente por clocks não confiáveis. Sem evidência
+causal ou decisão operacional, não há inferência inequívoca de “histórico atrasado”.
+
+### D3 — Clock skew +55/-55 minutos
+
+Horários permanecem como input factual com proveniência. Invertê-los não muda revision,
+cabeça, origem ou predicado CAS. Clock servidor também não prova tempo físico.
+Scheduling pode variar, mas não pode reabrir conflito terminal. Datas de períodos
+inconsistentes geram pendência/limitação; não timestamps corrigidos silenciosamente.
+
+### D4 — Mesmo occurred_at
+
+Sem sort por timestamp, UUID cliente ou ordem de array para escolher state. Desempate
+operacional = CAS serializado servidor, com versão persistida. Replay consulta resultado
+antes do CAS. Histórico pode exibir empate/ambiguidade; versão operacional não prova
+precedência física. Rebuild técnico usa ordem inequívoca de versões aceitas.
+
+## 6. Correções e origem (D5–D6)
+
+### D5 — Correção append-only
+
+Validar tenant/domínio/sujeito, detalhe completo, referência existente, ciclos e ramificação.
+Correções formam cadeia explícita; ramificação é conflito, não última hora vencedora.
+A projeção reconhece original substituído por corrige_evento_id validado + decisão persistida;
+ambos os Eventos permanecem.
+
+- Correção apenas de data/metadado/história: sem efeito na localização corrente.
+- Correção de destino do Evento ainda na cabeça: pode substituir efeito por CAS atual+cabeça,
+  validando original/correção. Não representa movimento físico realizado agora.
+- Correção de ancestral com sucessores: não retrocede state nem reexecuta cadeia por hora;
+  marca impactos/conflitos históricos. Alterar localização exige resolve_projection explícito.
+- Correção concorrente/stale: preserva correção válida com conflito de efeito; sem editar
+  original, apagar fato aplicado ou fabricar contra-movimento físico.
+
+Decisão posterior é outro registro vinculado; não reescreve o ACK/replay original.
+
+### D6 — Origem factual
+
+Movimento normal que quer alterar current state exige from_lote_id igual à origem persistida
+sob lock/CAS, incluindo null explícito, e snapshot/cabeça válidos. Destino, atividade, tenant
+e mudança efetiva são revalidados. Valor igual sem versão é insuficiente (ABA).
+
+Histórico descreve origem factual, não precisa coincidir com state atual. Origem divergente
+em história sem modo/causalidade explícitos = HISTORY_CONFLICT, não dedução automática de atraso.
+No comando operacional E2.1, guard de origem/token falho é PROJECTION_CONFLICT; em ambos
+os casos, fato válido é preservado sem efeito automático.
+Tenant/FKs/sujeito/identidade inválidos rejeitam antes da inserção. Fato válido incompatível
+com projeção é preservado com conflito. Correção compara efeito original (D5); sua origem
+antiga não precisa ser o destino atual. Sem certificação de GTA/liberação sanitária nesta etapa.
+
+## 7. Lote→pasto (D7)
+
+`REVISION_PROTECTED_STATE_TABLES` em rules.ts:9 contém apenas animais. Lotes/occupancy não
+capturam revision nem recebem predicado CAS. Índice de ocupação aberta não impede LWW
+em lotes.pasto_id nem fechamento parcial.
+
+Contrato lote: token monotônico dedicado da localização/cabeça, CAS fazenda+lote+token+origem
+e lock da linha do lote. Não generaliza revision para todos os state_*. Cadastro de pasto
+não muda. Animal segue no lote; não exige UPDATE de cada animal nem cria animais.pasto_id.
+
+Base/detail/decisão, lotes.pasto_id, fechamento/abertura de pasto_ocupacoes e token pertencem
+à mesma transação. to_pasto_id=null remove lote do pasto mantendo sujeito lote identificado.
+Somente efeito aceito atualiza occupancy; históricos/conflitos não fecham a ocupação vigente.
+Identidades de occupancy são estáveis no replay, com referências factuais de entrada/saída.
+
+Se intervalo factual viola saida_em>=entrada_em, não recortar datas nem apagar período.
+Efeito composto recebe conflito/pendência temporal, sem commit parcial de lote/occupancy;
+fato+decisão permanecem. Pode exigir correção de data antes da projeção: limitação explícita,
+não arbitragem por “hora mais recente”. Clock não elege vencedor, embora data inválida
+possa impedir materialização dos períodos.
+
+## 8. Clientes antigos e cutover (D8)
+
+**Adapter versionado no Edge antes de qualquer escrita de movimentação do bundle.**
+Servidor novo interpreta envelope antigo; nenhum cutover/deploy está autorizado agora.
+
+| Entrada legado | Estratégia definida |
+| --- | --- |
+| Base+detail+UPDATE animal com expected_revision | Converter ao comando preservando event ID e identidades ops/tx; não buscar revision nova para autorizar state. |
+| Animal pré-CAS sem expected_revision | Preservar base/detail válidos; UPDATE REJECTED/STATE_EXPECTED_REVISION_REQUIRED; sem efeito; reconciliação+nova decisão. |
+| Lote→pasto sem token | Preservar fato; não fabricar token nem fazer LWW. Rejeição terminal versionada de projeção/occupancy, confirmação por cliente atualizado. |
+| Base/detail sem UPDATE | HISTORY_ONLY se modo explícito; legado sem modo = LEGACY_HISTORY_UNCLASSIFIED, sem state. |
+| UPDATE redundante do bundle já comandado | Não executar novamente; devolver resultado original por identidade; nunca APPLIED para efeito rejeitado. |
+| Fragmentos aplicados antes do cutover | Reconhecer cada PK+identidade+tenant, completar apenas fragmentos compatíveis. Sem prova de efeito, não inferir por destino atual: pendência legada e decisão explícita. |
+| Bundle incompleto/associação ambígua | Dependência durável; vínculo inválido terminal. UPDATE jamais cai no genérico por falha de parsing. |
+| Mesma identidade/outro conteúdo | Rejeição de identidade divergente, sem heurística de dedup. |
+
+Resposta antiga por op_id: base/detail persistidos = APPLIED; state aceito = APPLIED;
+state animal conflita = CONFLICT/STATE_REVISION_CONFLICT; sem revision = rejeição existente.
+Lote sem token usa reason específico versionado. Occupancy segue resultado do efeito.
+Cliente novo recebe classificação/cabeça/versão/revision/pendência. Cliente antigo pode
+mostrar gesto misto rejeitado; ACK factual não significa sucesso operacional.
+
+Ledger preserva todas as identidades, digest e resultado por op, inclusive replay após
+avanço posterior. Resolução é outra decisão, consultável pelo pull, sem alterar ACK original.
+Associação por fazenda+tx+Evento+op e vínculos exatos; source_task_id, conteúdo ou hora
+semelhantes não deduplicam fatos.
+
+Adapter sozinho não impede PostgREST direto de cliente antigo. Cutover precisa inventariar
+todos os writers de localização/occupancy e enforcement server-side que impeça bypass,
+preservando cadastro/comercial e suas filas. Isso exige futuro escopo de banco; não houve
+mudança de grants/RLS agora. Gate desligado mantém comportamento atual. Ativação só após
+testes de legados completos/parciais e comunicação explícita das rejeições. Processável não
+significa aceitar silenciosamente mutação insegura.
+
+## 9. Alternativas arquiteturais
+
+| Critério | A — comando transacional | B — trigger | C — reconciliador cliente | D — rebuild por Eventos |
+| --- | --- | --- | --- | --- |
+| Fonte histórica | Base/detail preservados | Preserva se contrato completo | Preservar remoto obrigatório | Preserva se sem edição |
+| Autoridade state | CAS+decisão durável | Precisa resolver mesma autoridade de A | Cliente não arbitra disputa | Histórico bruto insuficiente |
+| Offline longo | Enqueue; conflitos explícitos | Reconnect exige contrato completo | Depende de app/rede | Exige histórico/checkpoint |
+| Idempotência | Ledger antes de CAS | Precisa ledger/head | Precisa resultado remoto | Determinismo com versões/decisões |
+| Concorrência | Lock+CAS sujeito | INSERT isolado não resolve ordem | Reenvio nova revision é arbitragem | Timestamp não resolve disputa |
+| Partial success | Fato+detail+classificação atômicos, state devido junto | Não torna INSERT base separado atômico | Não elimina parcial remoto | Não cria boundary no writer |
+| Clock skew | Clock não elege state | occurred_at sozinho viola contrato | Comparar hora viola contrato | Fold por occurred_at viola contrato |
+| Farm switch | Tenant revalidado; obligation | Tenant/FKs obrigatórios | Drain por fazenda necessário | Particionar por tenant |
+| Crash/restart | Replay consulta ledger | Precisa dedup durável | Retomada exige persistência extra | Versão/checkpoint necessários |
+| Clientes antigos | Adapter+enforcement | UPDATE legado sobrescreve/duplica | Legado não tem resolvedor | UPDATE legado diverge |
+| Auditoria | Fato/efeito separados | Precisa ledger para explicar | Exige autoridade remota | Explicar inclusões/correções |
+| Reversibilidade | Expand+gate, sem backfill cego | Side effects em qualquer INSERT | Código menor, contrato inadequado | Histórico/backfill/leitores amplos |
+
+**Escolha A.** Rejeitado B simples por occurred_at; trigger não é boundary primário.
+C permanece para pull/apresentação de decisão explícita, nunca force UPDATE.
+D serve futuramente para verificar/reconstruir projeção por **decisões aceitas**, usando
+checkpoint+versões+Eventos+correções, não ordenar todo histórico por clock. Custo cresce
+com histórico por sujeito; checkpoint evita pull integral contínuo. Sem decisões/baseline,
+não se reconstrói current state inequívoco do histórico bruto existente.
+
+## 10. Boundary e menor patch implementável
+
+Comando conceitual apply_movement_operation: versão, tenant/sujeito, identidades, base/detail,
+modo, origem/destino e seletor imutável snapshot/predecessor. expected_revision é autoridade
+somente na conversão privada de legado. Input e limites da primeira vertical estão em E2.1.
+Edge autentica/adapta; transação revalida membership/papel, tenant, FKs, atividade e contrato.
+
+1. Validar autorização/integridade/identidade; replay durável antes de CAS.
+2. Reservar identidade com unicidade transacional, bloquear sujeito, verificar snapshot,
+   cabeça e origem. Dependência desconhecida não autoriza state.
+3. Persistir base+detail e efeito: STATE_APPLIED, HISTORY_ONLY, HISTORY_CONFLICT,
+   PROJECTION_CONFLICT, PENDING_CAUSAL_DEPENDENCY ou LEGACY_HISTORY_UNCLASSIFIED.
+4. Efeito elegível atualiza projeção/versão no mesmo commit (lote inclui occupancy).
+   Constraint no efeito desfaz todo sub-bloco de projeção e registra conflito no commit
+   externo com fato/detail preservados. Falha de infraestrutura antes do commit desfaz
+   tudo; não devolver APPLIED sem commit.
+5. Persistir resultado/identidades/auditoria. Conflito de negócio é resultado durável,
+   não exception que desfaz fato válido depois de inserido.
+6. ACK+obrigação local durável+pull de snapshot/classificação. Sem elevar expected_revision
+   nem reconstruir pelo relógio. Resolve_projection é comando novo, explícito e auditado.
+
+Metadados mínimos futuros: ledger tenant/sujeito/Evento/identidades/digest/contrato/resultado/
+efeito/cabeça/versão/revisions antes-depois/ator-motivo; token dedicado por sujeito; decisão
+vinculada de resolução. São suporte técnico de projeção, **não histórico paralelo**.
+Checkpoint de ativação preserva state existente com proveniência legada, sem inventar
+Evento vencedor. Novas estruturas exigirão evolução forward-only local/remota autorizada.
+
+Menor incremento animal = command+ledger+dependência durável+adapter+token especializado+
+resultado/pull, preservando revision genérica e reutilizando fila existente. Incremento lote
+exige seu próprio token+occupancy no mesmo boundary. Não
+declarar ambos resolvidos entregando só animal. Cutover/enforcement/legado integram o patch,
+não são dívida opcional. Sem refatoração geral, trigger temporal ou dependência nova prevista.
+
+Arquivos potencialmente afetados em execução futura, **não modificados nesta etapa**:
+
+- src/lib/events/types.ts, buildEventGesture.ts, validators/movimentacao.ts.
+- src/lib/offline/types.ts, ops.ts, syncWorker.ts, pull.ts, tableMap.ts; db.ts somente se necessário.
+- supabase/functions/sync-batch/index.ts, adapter de domínio novo e testes focados.
+- Migration forward-only nova para boundary/ledger/token/enforcement, após escopo explícito
+  e skill de banco; nenhuma criada agora.
+- src/lib/pastos/pastoOcupacoes.ts, componentes de manejo e consumidores occupancy somente
+  para opt-in novo e exibição de pendências/correções.
+
+## 11. Validações e evidência
+
+O teste anterior tinha quatro casos: worker/Dexie com ACKs mockados em E2.1/E2.2, helper de
+replay em E2.3 e apenas identidades em E2.6. Comentários não eram execução de concorrência.
+Removidas alegações não exercitadas e ampliado o mesmo arquivo.
+
+| Cenário | Evidência executada | Limite |
+| --- | --- | --- |
+| Evento APPLIED + state CONFLICT | E2.1/E2.2: rollback, fatos, rejeição, obligations | ACK Edge fixture, sem commit remoto |
+| Lost ACK + replay | E2.3 helper; E2.8 falha transporte/reenvio idêntico/revision original/DONE | Replay remoto APPLIED simulado |
+| Pull após partial success | E2.9 pullDataForFarm real+Dexie, query Supabase mockada | Revision remota 6, lote divergente preservado; sem servidor real |
+| Dois Eventos/conteúdo igual | E2.6/E2.7+crossDeviceCausalIdentity | Sem dedup local; sem devices físicos |
+| Fora de ordem | E2.7 T2 antes de T1 | CAS fixture, command novo inexistente |
+| Clock +55/-55 | E2.7 envelope/matcher só revision | Não executa CAS remoto |
+| Mesmo occurred_at | E2.7 envelope/terminalidade | Não testa sequenciador futuro |
+| Farm switch | E2.10+reconciliationObligations | Drain por fazenda, sem ampliar certificação |
+| Lote→pasto sem CAS | E2.11+mudarPastoLote | Builder/queue/matcher reais; sem concorrência PostgreSQL |
+| Cliente legado | E2.12 missing revision | Não existe adapter novo |
+| Correção | E2.13+auditoria schema/occupancy | UPDATE comum, resolvedor novo ausente |
+| Crash/restart obligation | Suíte reconciliationObligations existente | Retomada lógica; sem kill real |
+
+```powershell
+pnpm test -- src/lib/offline/__tests__/movementEventStateConvergence.characterization.test.ts src/lib/offline/__tests__/reconciliationObligations.test.ts src/lib/offline/__tests__/crossDeviceCausalIdentity.characterization.test.ts src/lib/events/__tests__/mudarPastoLote.test.ts
+```
+
+Resultado observado: **4/4 arquivos, 50/50 testes passaram**: E2 14, obligations 17,
+identidade causal 5, lote→pasto 14. Logs de rede falha são fixtures esperadas.
+Prettier somente no teste alterado. Inspeção final: status untracked, diffs tracked/staged,
+diff --check e whitespace dos dois untracked. `pnpm run gates:docs` passou (headers,
+continuidade e auditoria de governança). ESLint focado no teste terminou com exit code 0.
+Após fortalecer E2.7 com destinos distintos e confirmar ausência de reenvio do conflito
+terminal, o arquivo E2 foi reexecutado: 14/14 testes passaram; demais suítes não foram
+repetidas porque não mudaram. Os dois untracked foram também verificados com
+`git diff --no-index --check -- /dev/null <arquivo>`; removidos espaços finais do cabeçalho.
+
+Não executados regressão global/build/E2E remoto/banco real/devices físicos/validação funcional
+Supabase, pois sem runtime/banco. Nenhum teste implementa decisão futura inexistente.
+
+Antes de implementação/ativação: PostgreSQL e Auth→Edge→RLS→PostgreSQL focados em A/B real,
+falha entre base/detail/projeção/ledger, replay após outro vencedor, identidade divergente,
+origem/tenant/tombstone, T2→T1 com/sem causalidade, skew/empates, correções cabeça/ancestral/
+ramificação, lote/occupancy com falha/datas inválidas, legados completos/incompletos/parciais/
+missing revision-token, direct-write bypass/cutover. Cliente: restart/farm switch/ACK
+desconhecido e nova intenção explícita stale.
+
+## 12. Riscos residuais e próximo passo
+
+1. Ambiguidade factual: sem causalidade/evidência confiável, clock não determina ordem física.
+   Conflitos reais e cadeias legadas sem vínculo podem exigir decisão humana; datas de occupancy
+   requerem correção/limitação explícita.
+2. Compatibilidade/cutover: fragmentos antigos sem prova de efeito não ganham autoridade
+   inventada. Adapter/ledger/enforcement/checkpoint e rejeição explicada exigem validação,
+   preservando writers de cadastro/comercial.
+3. Gap ainda em runtime: MODEL_E, lote sem CAS e correções sem resolvedor persistem.
+   Nova transação/ledger ainda inexistentes e sem certificação PostgreSQL.
+
+Próximo passo: revisar contrato definido e delimitar execução posterior de banco/adapter/cliente
+com os critérios acima. Design definido não fecha F24.4E nem remove G3 no produto.
+
+## 13. F24.4E2.1 — Movement Domain Command Contract
+
+### 13.1 Escopo, baseline e problema
+
+**PROPOSED_CONTRACT = DEFINED; RUNTIME = NOT_STARTED.** Primeira vertical futura:
+Animal→Lote. Esta seção congela somente causalidade offline e concorrência de localização.
+Preserva a arquitetura A, as fontes históricas e a ausência de autoridade do clock.
+Lote→pasto, occupancy, resolvedor de correção/resolução e E3/F não entram na implementação
+desta vertical. Desenhos dessas extensões nas seções anteriores permanecem propostas.
+
+Em E2.1 foram novamente observados branch/HEAD/origin/main da seção 1, após fetch.
+Entrada desta execução: três apontadores ativos tracked modified, este documento e o teste
+untracked, staged vazio; alterações produzidas na etapa E2 anterior foram preservadas.
+Esta execução altera somente este documento e o teste de characterization existente.
+Os três apontadores não precisam de nova alteração: E2 já estava DESIGN_CONTRACT=DEFINED.
+
+**CURRENT_BEHAVIOR:** A→B e B→C offline podem capturar a mesma revision remota. A primeira
+aplicação tornaria a segunda stale pelo CAS atual. Uma edição de nome também avança essa
+revision, embora não altere localização. Resolver ambos buscando current_revision apagaria
+a distinção entre sucessão legítima e arbitragem silenciosa de concorrentes.
+
+### 13.2 Auditoria de identidade e dependências existentes
+
+| Mecanismo atual | O que representa | Expressa T2 predecessor T1? |
+| --- | --- | --- |
+| event_id conceitual / eventos.id / detalhe.evento_id | Identidade estável do fato; builder aceita eventId ou cria UUID | Identifica T1, mas não contém vínculo causal |
+| client_tx_id / gesture | Agrupa ops de um gesto; createGesture pode preservar identidade fornecida | Não entre gestos distintos |
+| client_op_id | Identidade de cada mutação/envelope e replay | Não; state é uma op distinta da base/detail |
+| source_task_id | Proveniência da intenção Agenda | Não é ordem factual ou predecessor de movimentação |
+| corrige_evento_id | Referência de correção factual | Não; usá-la para sucessão mudaria sua semântica |
+| op_order | Índice emitido por createGesture; compareOpsForSync ordena operações | Ordem interna do gesto, sem causalidade entre Eventos |
+| before_snapshot / expected_revision | Snapshot otimista e revision remota capturada | Não; snapshot pode conter lote otimista com revision antiga |
+| dependencies / BLOCKED_DEPENDENCY | Regras específicas e estado de processamento | Não há resolvedor de cadeia de movimentação no caminho auditado |
+
+Evidência: `src/lib/events/types.ts` (BaseEventInput/MovimentacaoEventInput),
+`buildEventGesture.ts`, `src/lib/offline/types.ts` (Operation), `ops.ts`
+(createGesture/persistExpectedAnimalRevision), `syncOrder.ts` (compareOpsForSync),
+`syncWorker.ts` (isOperationReadyForSync/buildTerminalBlockedDependencyClassifier),
+`syncReconciliation.ts` (planOperationReconciliation) e
+`supabase/functions/sync-batch/inventory-dependency.ts`.
+Há dependência reprodução detalhe→sua própria base e dependência sanitária especializada;
+nenhuma prova T2→T1 de movimentação. BLOCKED_DEPENDENCY por si só não define essa relação.
+
+### 13.3 Decisão causal: seletor imutável, não refresh de revision
+
+Nomes conceituais comparados: previous_movement_event_id seria claro para a cadeia, porém
+um campo opcional junto a expected_location_version permitiria inputs contraditórios.
+expected_projection_head sozinho não diferencia predecessor ainda pendente de cabeça
+remota já confirmada. **Escolha: união discriminada movement_base**, com uma só autorização
+de efeito por comando. Não reutilizar source_task_id, corrige_evento_id ou domain_op_id
+especializado de outro domínio.
+
+```text
+movement_base =
+  { kind: snapshot, movement_version: <decimal string>, head_event_id: <UUID|null> }
+  | { kind: after_movement, event_id: <UUID do predecessor>, command_digest: <digest do input original dele> }
+```
+
+Snapshot vem de pull/resultado canônico confirmado. Token começa em 0 no checkpoint de
+ativação por animal; cabeça null significa ausência de vencedor factual conhecido nesse
+checkpoint. Não criar Evento vencedor retroativo. O token é monotônico servidor, nunca
+incrementado/estimado pelo cliente. String decimal evita perda de precisão no transporte.
+
+T1 recebe snapshot confirmado. T2 nasce com after_movement(T1), T3 com after_movement(T2),
+incluindo o digest do comando pai persistido offline. A versão contratual define a mesma
+normalização/digest no cliente e servidor; digest não é segredo nem credencial.
+O seletor é persistido antes do enqueue, no mesmo gesto local; crash/restart/farm-switch
+não o substituem por snapshot posterior. Um gesto novo sobre estado otimista de movimento
+pendente deve referenciar esse predecessor, inclusive se o ACK dele está desconhecido.
+Sem predecessor identificável não converter lote otimista em snapshot confirmado: impedir
+efeito automático até obter snapshot ou decisão explícita. Legado continua na regra 13.9.
+
+Sob lock, after_movement só é elegível se:
+
+1. O predecessor possui decisão automática STATE_APPLIED, na mesma fazenda e animal,
+   com token de saída conhecido e proveniência canônica. Seu digest original é exatamente
+   o command_digest referido pelo filho; identidade reutilizada com outro input não serve.
+2. from_lote_id do filho é exatamente to_lote_id do predecessor, incluindo null explícito.
+3. Cabeça atual é o Evento predecessor e movement_version atual é exatamente o token
+   de saída **gravado na decisão dele**; nenhum movimento/invalidação interveniente ocorreu.
+4. Origem persistida, autorização, atividade e tombstone satisfazem os mesmos guards do root.
+5. Não há autoreferência/ciclo, referência a correção como sucessor operacional ou outra
+   relação incompatível com o sujeito/modo. Validar ciclos também em dependências pendentes.
+
+Isso prova encadeamento do comando declarado e aceito, não a ordem física independente
+da declaração factual do usuário. client_id/dispositivo não é credencial nem prova de
+causalidade. Identidade+decisão servidor+head/token validam o vínculo; conteúdo/hora não.
+Resolver token de saída do predecessor é execução do input original, não pegar token atual
+para reviver um perdedor. Relação imutável é incluída no digest de identidade.
+
+```ini
+MOVEMENT_CAUSAL_IDENTITY = FAZENDA_ANIMAL_EVENT_ID
+MOVEMENT_PREDECESSOR_REFERENCE = MOVEMENT_BASE_AFTER_MOVEMENT_EVENT_ID_AND_ORIGINAL_COMMAND_DIGEST
+OFFLINE_SUCCESSOR_POLICY = APPLY_ONLY_FROM_ACCEPTED_PARENT_OUTPUT_TOKEN_AND_CURRENT_HEAD
+MISSING_PREDECESSOR_POLICY = DURABLE_SERVER_PENDING_NO_STATE_NO_CLIENT_LIVENESS_REQUIREMENT
+FAILED_PREDECESSOR_POLICY = TERMINAL_NO_EFFECT_PRESERVE_VALID_CHILD_FACT
+CAUSAL_REPLAY_POLICY = ORIGINAL_RECEIPT_BEFORE_CAS_NEVER_REBASE_CHILD_SELECTOR
+```
+
+### 13.4 C1–C6: efeitos, espera e retomada
+
+| Caso | Contrato definido |
+| --- | --- |
+| C1 A→B→C | T1 snapshot(v,h) aplica e grava (v+1,T1). T2 after_movement(T1) usa exatamente essa saída; aplica se ainda vigente. Rename entre ambos não invalida o token especializado. |
+| C2 A→B versus A→C independentes | Ambos snapshot(v,h), sem vínculo. Um efeito aceita CAS; outro PROJECTION_CONFLICT. Ambos os fatos válidos permanecem. Filhos irmãos do mesmo predecessor também disputam um único efeito. |
+| C3 T2 antes de T1 | Evento+detail+receipt PENDING_CAUSAL_DEPENDENCY+trabalho durável no servidor, sem efeito. Após decisão de T1, retomar no mesmo comando/boundary; não exige app aberto. |
+| C4 T1 não elegível/rejeitado | Decisão acessível de rejeição, HISTORY_ONLY, HISTORY_CONFLICT ou PROJECTION_CONFLICT termina efeito de T2 com PREDECESSOR_NOT_STATE_APPLIED. Digest do pai divergente também impede efeito, mesmo se existir outro comando aceito sob o mesmo event_id. Origem inválida de T1 não autoriza filho por destino coincidente. Fato válido do filho permanece. |
+| C5 commit T1 / lost ACK / restart | Replay T1 devolve receipt original, mesmo após outros commits. T2 mantém after_movement(T1); aplica apenas se saída de T1 ainda é vigente, senão conflito terminal. |
+| C6 A→B→C→D e além | Repetir a mesma regra por aresta. Drain iterativo com limite de trabalho por transação e continuação durável; sem regra especial para duas etapas. |
+
+Tenant inválido, animal inexistente ou identidade divergente podem impedir até o fato de
+T1: não inserir fato inválido para satisfazer dependência. Rejeição autenticada no tenant
+permitido pode ter receipt negativo sem fato. Não escrever nem revelar ledger de fazenda
+sem autorização. T2 que também referencia animal inexistente é REJECTED, não fato válido.
+Referência de outro sujeito/ciclo detectáveis no tenant é inválida; fato próprio válido
+pode permanecer com HISTORY_CONFLICT/INVALID_CAUSAL_RELATION e nenhum efeito.
+Referência inexistente ou inacessível de outro tenant não revela existência/resultado:
+fica missing/pending, nunca efeito automático por fallback. Orfandade requer ação explícita;
+timeout sozinho não transforma pendência em autorização de state.
+
+Servidor mantém trabalho de dependência transacional e retomável após crash. Processador
+interno revalida autorização do ator original/membership, tenant e elegibilidade, não usa
+service_role como autorização de domínio. Recepção do pai sinaliza filhos; varredura
+durável recupera sinal perdido. Locks por sujeito e ordem estável de intake servidor para
+irmãos pendentes (sequência persistida, não hora/UUID cliente) evitam desempate indeterminado.
+Não é ordenação factual nem prioridade de occurred_at. Relações ilegais/ciclos são terminais;
+pai ausente permanece consultável. Worker/retries servidor são futuros, não existentes.
+
+### 13.5 Revision × versão: escolha R2
+
+| Modelo | Segurança/ABA | Cadastro concorrente | Legado/replay | Decisão |
+| --- | --- | --- | --- | --- |
+| R1 revision+origem+head | Seguro sob lock; revision detecta ABA | Rename provoca falso conflito | Preserva E1; replay antigo ainda exige ledger durável | Manter no genérico e conversão legado, não novo comando |
+| R2 movement_version+origem+head+elegibilidade | Token monotônico e invalidação crítica detectam ABA | Nome/observação não invalidam movimento | Novo ledger preserva ACK; legado não ganha token fabricado | Escolhido para novo Animal→Lote |
+| R3 revision genérica E token especializado | Seguro, mas mantém conflito falso de R1 | Rename ainda bloqueia | Mais metadados sem resolver problema | Rejeitado |
+| R3 somente origem/head ou clocks/vetor cliente | Valores/head podem voltar; não detecta ciclo de status | Falta freshness crítica | Sem contrato existente que justifique vetor | Rejeitado |
+
+`movement_version` é o nome escolhido para o token de localização **e elegibilidade de
+movimentação**. location_version puro esconderia a invalidação necessária por status.
+Token/cabeça/ledger são infraestrutura técnica; animais.lote_id continua current state e
+Evento+detail continuam histórico. Não há segunda tabela factual nem merge de campos.
+
+Quem cria/incrementa: exclusivamente servidor, na mesma transação que altera localização
+ou tuple crítico `(lote_id, status, deleted_at)`. Todo writer permitido deve respeitar isso,
+inclusive venda/morte/retirada/restauração e legado. Uma transição aceita incrementa uma
+vez, mesmo se mudar vários campos críticos; o comando não soma de novo sobre mecanismo de
+invalidação. Mudança crítica sem movimento incrementa token e mantém head; não fabrica fato.
+Novo efeito de localização grava também a cabeça. Não resetar contador após correção/ABA.
+Alteração explícita de cabeça por resolução futura também deve invalidar token.
+
+Futuro enforcement servidor deve cobrir todos os writers e impedir atualização de localização
+fora da boundary autorizada. Um hook de invalidação por mudança real de campos pode compor
+esse enforcement; **não é trigger de projeção por occurred_at e não foi criado nesta etapa**.
+Nome/observação/cadastro sem mudança crítica avançam apenas revision genérica. Replay,
+INSERT factual sem efeito, rejeição, pendência e consulta não incrementam token.
+
+Contrato genérico E1/F24.4C intacto: revision aumenta em todo UPDATE e continua obrigatório
+no CAS genérico de UPDATE/DELETE animais. Uma movimentação aceita também é UPDATE, portanto
+avança revision a partir do valor servidor atual. O novo comando atualiza apenas localização
+e metadados de efeito, nunca reaplica registro cadastral inteiro capturado offline.
+
+**CAS exato do novo comando**, resolvido sob lock da linha animal e com destino protegido
+contra mudança concorrente durante a validação:
+
+```text
+animal.id = subject_id
+AND animal.fazenda_id = fazenda_id
+AND animal.movement_version = resolved_original_movement_base_version
+AND animal.projection_head IS NOT DISTINCT FROM resolved_original_head_event_id
+AND animal.lote_id IS NOT DISTINCT FROM from_lote_id
+AND animal.status = 'ativo'
+AND animal.deleted_at IS NULL
+AND authorized_actor_and_active_tenant_membership
+AND destination_lot_same_tenant_active_not_deleted
+```
+
+Snapshot resolve sua própria versão/head; after_movement resolve a saída imutável do pai.
+Não há AND animais.revision no novo lane R2. Destino Animal→Lote é lote interno não-null;
+remoção/venda/óbito não entram como destino null desse comando. from null é válido para
+animal ativo ainda sem lote, desde que snapshot/head/token correspondam. Destino distinto
+da origem; validar FKs e domínio antes de persistir. Elegibilidade crítica é status ativo,
+animal não tombstonado e destino ativo/não tombstonado; nenhum guard apenas na UI.
+
+```ini
+ANIMAL_GENERIC_REVISION_AUTHORITY = EXISTING_SERVER_REVISION_CAS_UNCHANGED
+MOVEMENT_LOCATION_VERSION_AUTHORITY = SERVER_MONOTONIC_MOVEMENT_VERSION_PER_FARM_ANIMAL
+MOVEMENT_CAS_PREDICATE = PK_TENANT_TOKEN_HEAD_ORIGIN_ACTIVE_NOT_DELETED_AND_AUTHORIZED_DESTINATION
+ABA_PROTECTION = NEVER_RESET_TOKEN_INCREMENT_ON_LOCATION_OR_CRITICAL_ELIGIBILITY_CHANGE
+NON_LOCATION_UPDATE_EFFECT_ON_MOVEMENT = NONE_UNLESS_CRITICAL_STATUS_OR_TOMBSTONE_CHANGES
+CRITICAL_STATUS_REVALIDATION = LOCKED_SAME_TRANSACTION_ACTIVE_ONLY_AND_TOKEN_INVALIDATION
+TOMBSTONE_REVALIDATION = LOCKED_SAME_TRANSACTION_DELETED_AT_NULL_AND_TOKEN_INVALIDATION
+```
+
+| Caso | Resultado proposto |
+| --- | --- |
+| R-A nome mudou, lote/head/token iguais | Movimento não conflita por rename; preservar nome atual. Revision genérica avança no UPDATE aceito. |
+| R-B vendido/morto/retirado/tombstone | Sem efeito automático; PROJECTION_CONFLICT com motivo de inelegibilidade/token. Revalidar na transação, inclusive processamento de pendência. |
+| R-C outro movimento venceu | Token/head divergem; PROJECTION_CONFLICT, sem rebase. |
+| R-D A→B→A | Token avançou duas vezes; snapshot do primeiro A rejeitado mesmo com origem novamente A. ativo→vendido→ativo também invalida token duas vezes. |
+| R-E cadastro depois de movimento aplicado | Replay consulta ledger antes de olhar state; receipt antigo, zero novo UPDATE/efeito. |
+
+“Inativo” é conceito de inelegibilidade no enunciado; AnimalStatusEnum auditado contém
+ativo/vendido/morto/retirado, não inativo. Não adicionar enum. Se outra condição crítica
+entrar no domínio futuro, revisar explicitamente tuple/guards, sem inferência silenciosa.
+
+### 13.6 Input mínimo conceitual
+
+`apply_movement_operation` é nome conceitual, não função disponível. Novo envelope:
+
+| Campo | Obrigação e finalidade |
+| --- | --- |
+| contract_version | Versão explícita do contrato Animal→Lote; versão desconhecida rejeitada de forma versionada |
+| fazenda_id, subject_type=animal, subject_id | Tenant e animal; eventos.animal_id deve corresponder |
+| event_id | Identidade factual estável; eventos.id e detalhe.evento_id |
+| client_tx_id, client_op_id | Gesto e comando estáveis; aliases client_op_ids de base/detail/state no adapter legado |
+| movement_mode | operational ou history_only na primeira vertical; não inferir modo por timestamp |
+| from_lote_id, to_lote_id | Origem explícita nullable e destino interno não-null; detalhe factual |
+| occurred_at | Input factual/proveniência; nunca guard de winner |
+| movement_base | Obrigatório em operational; exatamente snapshot OU after_movement. Ausente em history_only |
+| source_task_id, corrige_evento_id, observacoes, payload | Opcionais quando houver proveniência/conteúdo factual; nunca causality fallback |
+
+Não expor legacy_revision como opção livre a clientes novos. Conversão privada legado usa
+expected_revision capturada, sem exigir novo token que o cliente antigo não possui.
+Não adicionar domain_op_id redundante: event_id identifica domínio, client_op_id transporte.
+Base.lote_id/contexto factual legado é preservado e validado no adapter; não é estado atual.
+Campos/tokens desconhecidos/inconsistentes não autorizam state.
+
+Correção mantém D5: corrige_evento_id não é predecessor. Na primeira vertical, correção
+factual em history_only é preservada com referência tenant/sujeito/ciclo validada, sem state.
+Pedido de efeito de correção recebe HISTORY_CONFLICT/CORRECTION_EFFECT_NOT_IN_VERTICAL,
+preservando fato válido. Resolver cabeça/ancestral corrigido exige extensão explícita D5;
+não implementar resolvedor de correção ou resolve_projection nesta vertical.
+
+### 13.7 Resultados e persistência
+
+Classificação de domínio é distinta dos ACKs por op. Estado abaixo é **semântica proposta**:
+
+| Resultado | Evento/detail | State / token | Ledger | Retry / nova intenção / humano |
+| --- | --- | --- | --- | --- |
+| STATE_APPLIED | Ambos persistidos | Atualiza lote+head; token +1 e revision +1 | Receipt+decisão final no mesmo commit | Sem retry de efeito; lost ACK replay mesma identidade; sem nova intenção |
+| HISTORY_ONLY | Ambos persistidos | Nenhum | Receipt final | Sem retry/nova intenção; só resolução explícita se quiser efeito futuro |
+| HISTORY_CONFLICT | Ambos, se fato válido | Nenhum | Receipt final com motivo | Sem retry automático; esclarecer história/relação/correção; decisão humana se houver efeito desejado |
+| PENDING_CAUSAL_DEPENDENCY | Ambos persistidos | Nenhum nesta decisão | Receipt imutável+trabalho durável | Servidor retoma automaticamente; cliente não refaz intenção; órfão pode exigir resolução humana |
+| PROJECTION_CONFLICT | Ambos persistidos | Nenhum nesta decisão | Receipt final+guard que falhou | Terminal automático; pull e decisão explícita se usuário quiser resolver, nunca refresh técnico |
+| REJECTED | Não inserir fatos inválidos; fatos anteriores preservados | Nenhum | Receipt negativo no tenant autorizado quando possível; sem sobrescrever identidade anterior | Corrigir input/autorização; não reexecutar identidade com payload diferente |
+| REPLAY | Exatamente persistência anterior | Zero novo efeito/incremento | Consulta receipt original, replayed=true | Sem recalcular; pendência atual consultada separadamente |
+
+REPLAY é marca ortogonal, não substitui outcome original. Falha de infraestrutura sem ACK
+durável permite retransmitir a mesma identidade/input; não é PROJECTION_CONFLICT retryable.
+Fato válido com animal existente porém agora vendido/tombstonado pode continuar histórico;
+inelegibilidade bloqueia efeito, não apaga fato. Erros de tenant/FK/identidade estrutural
+impedem inserção inválida. STATE_APPLIED só depois do commit.
+
+Boundary permanece:
+
+```ini
+EVENT_STATE_BOUNDARY = POSTGRES_DOMAIN_TRANSACTION_FACT_DETAIL_EFFECT_DECISION_AND_DUE_STATE
+```
+
+Intake válido persiste fato+detail+receipt+efeito devido ou classificação de não efeito na
+mesma transação. Pendência retorna decisão explícita, não sucesso operacional. Retomada
+servidor persiste nova decisão vinculada+state devido+token+head+conclusão do trabalho em
+uma transação de domínio. Limite de drain deixa continuação durável, nunca metade de efeito.
+Falha entre essas escritas desfaz transação; fatos preexistentes não são apagados.
+
+### 13.8 Ledger durável e replay após avanço
+
+- Chave canônica única: `(fazenda_id, apply_movement_operation, event_id)`; sujeito e versão
+  de contrato fazem parte do conteúdo vinculado. Aliases op_id/tx/bundle preservados;
+  alias já vinculado a outra identidade é conflito. Nova event_id com conteúdo igual é fato distinto.
+- Digest SHA-256 de payload canônico normalizado: tenant/sujeito/identidade/modo, base+detail
+  factual, occurred_at, referência de correção e **movement_base original**; registrar aliases
+  e verificar sua consistência. Excluir retry counters, tempos de transporte e campos técnicos
+  servidor. Mesma identidade com outro digest não altera receipt nem fato anterior.
+- Normalização versionada comum cliente/servidor: UUIDs em lowercase, timestamps válidos
+  em UTC ISO, token decimal canônico, defaults opcionais explícitos e objetos JSON com
+  chaves ordenadas recursivamente, sem undefined/NaN. Não incluir metadados injetados pelo
+  transporte como se fossem input factual. Mesmo envelope persistido calcula o mesmo digest
+  offline e no servidor; publicar essa função pura no patch futuro, com fixtures compartilhadas.
+- Receipt imutável: resultado original, classificação, event_id/sujeito, motivo, seleção causal,
+  head/token antes-depois, revision animal antes-depois quando conhecida, ator autenticado,
+  identidades, contract_version, created_at/tempo servidor e proveniência canônica/legada.
+  Valores desconhecidos legados são null explícito, nunca estimados.
+- Decisão posterior de pendência é append vinculada ao receipt, com evidência do pai e
+  processador/ator/motivo. Unicidade da decisão automática final impede dois efeitos para o
+  mesmo comando. Expor current_effect/decision no pull/consulta, separado do receipt inicial.
+- Replay retorna sempre **receipt inicial** antes do CAS, inclusive PENDING original já
+  resolvido. Consulta da decisão atual informa conclusão; replay não reinterpreta ACK histórico.
+  Depois de movimento/cadastro/avanço de ambas as versões, devolve mesma decisão antiga.
+- Reservar identidade/unicidade sob transação; chamadas concorrentes esperam e leem receipt.
+  Trabalho interno at-least-once consulta decisão final antes do CAS; crash após commit não
+  reaplica state. Autorização é revalidada antes de expor receipt, sem vazamento entre fazendas.
+
+Ledger é auditoria/infraestrutura de efeito; não substitui eventos para histórico factual.
+Sem retenção que elimine identidades ainda reapresentáveis por cliente offline. Política
+de compactação futura precisará preservar chave/digest/receipt, não apagar prova de replay.
+
+### 13.9 Legado: adapter versionado sem causalidade fabricada
+
+Agrupar exatamente farm+tx+Evento+op IDs e referências base/detail/state, antes de executar
+qualquer UPDATE de localização. Bundle legado reconhecido com UPDATE é convertido em
+operational no lane privado R1; não exige movement_mode que o cliente antigo não envia.
+Base/detail sem UPDATE ou modo explícito não autorizam state: receipt HISTORY_CONFLICT com
+motivo LEGACY_HISTORY_UNCLASSIFIED, preservando fatos válidos. Formato não reconhecido e
+bundle ambíguo falham fechado; não inferir modo apenas por conteúdo ou horário semelhantes.
+O adapter chama mesma boundary com lane privado R1: `expected_revision` original+PK+tenant+
+origem+status/tombstone/destino sob lock. Não busca movement_version atual para autorizar;
+a própria revision capturada protege freshness/ABA legado. Head/checkpoint só é observado
+para auditoria; legado não declara cabeça/predecessor inexistentes.
+
+| Situação | Conversão definida |
+| --- | --- |
+| Bundle completo com expected_revision | Efeito só com CAS R1 original e guards válidos; se aceito, incrementa movement_version servidor e grava head/ledger. Rename pode continuar causando conflito legado. |
+| Sem expected_revision | Fatos válidos preservados; state REJECTED/STATE_EXPECTED_REVISION_REQUIRED, nenhum token fabricado. |
+| Dois gestos offline antigos A→B→C | Não inferir cadeia de origem/destino, op_order, horário ou cliente; T2 pode conflitar pela revision antiga. |
+| Base aplicada, detail pendente (ou ambos aplicados) | Validar PK+tenant+identidades+conteúdo exato, completar apenas partes compatíveis sem editar fato. UPDATE pendente continua no CAS R1 original. |
+| Bundle fragmentado/incompleto | Guardar fragments/dependência durável ou responder bloqueio técnico explícito; não declarar Evento APPLIED só porque fragmento foi bufferizado. Nunca executar UPDATE genérico como fallback. |
+| UPDATE após novo ledger / lost ACK | Devolver resultado original por aliases, zero segundo UPDATE. Fatos APPLIED não tornam state conflitante APPLIED. |
+| UPDATE já aplicado antes do ledger / lost ACK | Adotar efeito legado apenas com prova positiva da identidade state op_id+tx ainda persistida na linha, destino exato e base/detail compatíveis. Não executar UPDATE novamente. |
+| Linha já mudou e prova antiga de UPDATE desapareceu | LEGACY_EFFECT_UNPROVEN/PROJECTION_CONFLICT, fatos preservados; destino coincidente não prova aplicação. Resolução explícita, sem reaplicar. |
+
+Adoção legada grava receipt com proveniência LEGACY_ADOPTED, versões históricas desconhecidas
+explicitamente null; não inventa resultado canônico pretérito. Não fornece saída causal R2
+para filhos: cliente novo precisa de snapshot confirmado para novo movimento. Lost ACK de
+comando que já possui ledger conserva o resultado original sem essa limitação de inferência.
+Identidade divergente de fragmento/alias rejeita sem modificar o fato original.
+
+Resposta antiga mapeia base/detail efetivamente persistidos para APPLIED; state aceito/adotado
+para APPLIED, conflito para CONFLICT/STATE_REVISION_CONFLICT e missing revision para rejeição
+existente. Bundle incompleto usa bloqueio técnico retryable com identidades originais,
+antes de haver receipt canônico do comando completo; retransmissão pode completar o intake.
+Legado não declara predecessor, portanto não recebe PENDING_CAUSAL_DEPENDENCY como efeito.
+Após receipt canônico, replay retorna resultado original terminal. Client novo
+separa receipt/effect atual e pendência de sincronização técnica. Nenhuma mensagem promete
+sucesso operacional a cliente antigo apenas porque histórico chegou.
+
+Enforcement precisa impedir bypass por atribuição de localização Animal→Lote, preservando
+writers genéricos já autorizados de cadastro/saída/status/delete e seu CAS E1. Não bloquear
+cegamente toda alteração lote_id: o builder financeiro/venda já emite status=vendido+lote_id=null,
+e prevalidateAntiTeleport admite essa saída com base/detalhe financeiro correlatos. Essa lane
+existente deve continuar validada no servidor, invalidar movement_version uma vez e manter
+a última cabeça de movimentação; não é destino null do novo comando. Não ampliar permissões
+de outros domínios nem corrigir seus gaps nesta vertical. Critério de cutover inclui esses
+writers e seus testes atuais. Migration/adapter/gate/cutover só na execução posterior,
+com validação de filas antigas; gate desligado mantém comportamento atual e G3.
+
+### 13.10 Menor patch posterior e arquivos potenciais
+
+1. **Boundary servidor Animal→Lote:** metadados movement_version/head/checkpoint,
+   comando+ledger/decisões+trabalho causal durável, invalidação crítica e enforcement de
+   writers. Idempotência antes de CAS, drain retomável, nenhum timestamp winner.
+2. **Adapter Edge versionado:** preservar aliases, lane legado R1, fragmentos/preaplicados,
+   resultado por op e gate de cutover. Sem fallback de localização ao UPDATE genérico.
+3. **Cliente opt-in:** capturar/persistir snapshot OU predecessor no gesto existente,
+   transportar input estável e pull de token/head/receipt/decisão; reconcile sem rebase,
+   restart/farm-switch preservados. Sem mudar schema Dexie se campos aditivos já bastarem.
+
+Esse é o menor conjunto coerente, não entrega runtime nesta execução. Nenhuma etapa isolada
+pode ser anunciada como G3 resolvido. Não inclui lote→pasto/occupancy nem resolver correções.
+Arquivos potencialmente afetados: `src/lib/events/types.ts`, `buildEventGesture.ts`,
+`validators/movimentacao.ts`; `src/lib/offline/types.ts`, `ops.ts`, `syncWorker.ts`, `pull.ts`;
+`supabase/functions/sync-batch/index.ts` e adapter/testes de domínio futuros; migration
+forward-only futura e writers críticos identificados no inventário. Não criar nomes de
+arquivos/migrations inexistentes como se já estivessem presentes. Skill de banco somente
+quando execução de banco tiver escopo concreto autorizado.
+
+### 13.11 Validações desta execução e da implementação futura
+
+**CURRENT_BEHAVIOR executado:** teste acrescentado ao arquivo existente usa builder,
+createGesture/Dexie e mapOperationForSync reais para A→B→C→D. Observa três gestos distintos,
+op_order 0/1/2 em cada gesto, revision 5 nas três ops, origem otimista sucessiva e ausência
+de movement_base/previous_movement_event_id. Sem request remoto; não testa command proposto.
+
+Comando: `pnpm test -- src/lib/offline/__tests__/movementEventStateConvergence.characterization.test.ts`.
+Resultado observado nesta execução: **1 arquivo, 15/15 testes passaram**. Evidências 50/50
+da seção 11 pertencem à etapa E2 anterior; não foram repetidas nesta etapa. PROPOSED_CONTRACT
+é decisão documental, sem testes fictícios de RPC/migration inexistentes.
+
+ESLint focado no mesmo teste terminou com exit code 0. git diff --check não encontrou
+problemas. Checks --no-index dos dois untracked não emitiram diagnósticos de whitespace
+(exit 1 corresponde à presença de diff com /dev/null). Os três apontadores ativos mantiveram
+os hashes SHA-256 da entrada; staged vazio e mesmas refs/path set no status final.
+Não executar novamente regressão global/build/E2E/DB remoto para este patch docs+characterization.
+
+Validações necessárias antes de ativação futura:
+
+- C1–C6 no PostgreSQL real: T2 antes de T1, irmãos concorrentes, pai inválido/ausente/tenant
+  inacessível/ciclo, retomada sem cliente e crash antes/depois de cada commit/drain.
+- R-A–R-E: rename sem falso conflito R2, status/tombstone e ABA de localização/eligibilidade,
+  locks com venda/delete/destino inativo e todos os writers críticos invalidando token uma vez.
+- Replay depois de cadastro/outro movimento/ambas as versões avançadas; receipt pending
+  imutável e decisão final consultável; digest divergente, aliases concorrentes, fatos distintos.
+- Legado completo/missing revision/fragmentado/base/detail preaplicados/UPDATE pendente,
+  lost ACK com/sem prova antiga, bypass direto, cutover/gate e reversibilidade operacional.
+- Cliente preserva seletor offline em restart/farm-switch, não promove optimistic snapshot,
+  pull de metadados/decisões, skew +55/-55 e empate sem influência no winner.
+- Auth/membership/tenant revalidados no intake e trabalho servidor, sem credenciais no cliente.
+
+### 13.12 Riscos residuais e próximo passo
+
+1. **G3 permanece no runtime.** Novo token, command, ledger e retomada servidor não existem;
+   characterization local não certifica PostgreSQL/concorrência real. Lote→pasto segue fora.
+2. **Enforcement e cutover.** Writer crítico sem invalidação ou localização fora da boundary
+   quebraria freshness. Legado parcial pode perder prova de efeito antigo; não preencher
+   lacuna por destino/clock nem prometer encadeamento a fila que não declara predecessor.
+3. **Causalidade declarada e orfandade.** Vínculo prova sucessão operacional validada, não
+   cronologia física. Pai inacessível/ausente pode permanecer pendente; conflitos reais,
+   correções e ambiguidade legada exigem resolução explícita, fora desta vertical.
+
+Próximo passo: usar este contrato congelado para delimitar e autorizar a execução posterior
+Animal→Lote com as validações acima. Nenhuma implementação iniciada em F24.4E2.1.

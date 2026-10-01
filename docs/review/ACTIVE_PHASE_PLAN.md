@@ -80,7 +80,7 @@ Limitações preservadas: `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`;
 
 ## F24.4E — conflict resolution contract
 
-A [characterization F24.4E](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS / READY_FOR_REVIEW`, aberta sobre `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`. A subfase `F24.4E1 — ANIMAIS_DELETE_TOMBSTONE_CAS` está `READY_FOR_REVIEW` no PR #173: houve mudança localizada de runtime no cliente offline e `sync-batch`, com `SCHEMA_CHANGE = 0`, `MIGRATION_CHANGE = 0` e `RLS_CHANGE = 0`.
+A [characterization F24.4E](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS`, aberta sobre `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`. A subfase `F24.4E1 — ANIMAIS_DELETE_TOMBSTONE_CAS` está `INTEGRATED` pelo PR #173 em `main@040c3c0605ff4f6ecabeedec1b28c5017455f6ac`: houve mudança localizada de runtime no cliente offline e `sync-batch`, com `SCHEMA_CHANGE = 0`, `MIGRATION_CHANGE = 0` e `RLS_CHANGE = 0`.
 
 Contratos já determinados:
 
@@ -90,9 +90,9 @@ Contratos já determinados:
 - duplicidade humana sem causa compartilhada: `USER_RESOLUTION_REQUIRED`, sem dedup heurístico;
 - merge por campo: `AUTO_MERGE = NOT_AUTHORIZED`.
 
-A E1 resolveu no branch a assimetria `DELETE_VS_UPDATE` de `animais`: DELETE captura/persiste/transporta `expected_revision`, usa CAS server-authoritative e preserva replay idempotente; stale DELETE/UPDATE exige reconciliation + nova intenção. A validação completa observada no workflow `36869086650` foi 417/417 arquivos e 3401/3401 testes, com 3/3 do E2E Auth → Edge → RLS → PostgreSQL da política de state.
+A E1 integrou a proteção da assimetria `DELETE_VS_UPDATE` de `animais`: DELETE captura/persiste/transporta `expected_revision`, usa CAS server-authoritative e preserva replay idempotente; stale DELETE/UPDATE exige reconciliation + nova intenção. A validação completa observada no workflow `36869086650` foi 417/417 arquivos e 3401/3401 testes, com 3/3 do E2E Auth → Edge → RLS → PostgreSQL da política de state.
 
-Permanecem abertos os demais `state_*` mutáveis, convergência cross-domain Evento→estado, duplicidade humana ad hoc e as limitações transversais já registradas. Próxima subfase proposta, ainda não iniciada: F24.4E2 — `MOVEMENT_EVENT_STATE_CONVERGENCE`.
+Permanecem abertos os demais `state_*` mutáveis, convergência cross-domain Evento→estado, duplicidade humana ad hoc e as limitações transversais já registradas. A [F24.4E2 — MOVEMENT_EVENT_STATE_CONVERGENCE](./F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md) tem `CHARACTERIZATION = LOCAL_OBSERVED_WITH_LIMITATIONS`, `DESIGN_CONTRACT = DEFINED` e `RUNTIME = NOT_STARTED`, no baseline integrado da E1. Decisão: comando transacional servidor com CAS e efeito auditado, sem trigger temporal ou force-reconcile cliente. Validação local: 4 arquivos/50 testes focados. Próximo passo: revisão do contrato e delimitação de implementação posterior; E3/F24.4F não iniciadas.
 
 ## F24.2 — closeout
 
