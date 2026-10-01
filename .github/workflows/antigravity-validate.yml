@@ -177,6 +177,7 @@ jobs:
           {
             echo "REBANHOSYNC_TEST_DB_URL=$DB_URL"
             echo "REBANHOSYNC_TEST_API_URL=$API_URL"
+            echo "REBANHOSYNC_TEST_ANON_KEY=$ANON_KEY"
             echo "REBANHOSYNC_TEST_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
           } >> "$GITHUB_ENV"
 
