@@ -1,5 +1,6 @@
 {
   "$schema": "https://docs.fallow.tools/schema.json",
+
   "entry": [
     "src/main.tsx",
     "index.html",
@@ -22,22 +23,39 @@
     "tests/codex/**/*.test.mjs",
     "tests/codex/**/*.integration.mjs"
   ],
+
   "duplicates": {
     "ignore": [
       "scripts/**"
     ]
   },
+
   "health": {
     "ignore": [
       "scripts/**"
     ]
   },
+
+  "overrides": [
+    {
+      "files": [
+        "tests/codex/**"
+      ],
+      "rules": {
+        "complexity-cyclomatic": "warn",
+        "complexity-cognitive": "warn",
+        "complexity-crap": "warn"
+      }
+    }
+  ],
+
   "workspaces": {
     "patterns": [
       ".",
       "eslint-plugin-ds-tokens"
     ]
   },
+
   "audit": {
     "gate": "new-only"
   }
