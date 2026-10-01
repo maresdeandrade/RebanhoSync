@@ -11,6 +11,7 @@ import {
 } from "../../scripts/codex/sanitario-v2-contract.mjs";
 import {
   applyGateError,
+  assertApplyGate,
   itemInsertRow,
 } from "../../scripts/codex/import-sanitario-protocols-v2.mjs";
 
@@ -643,18 +644,21 @@ describe("sanitario v2 canonical contract", () => {
     };
   }
 
-  it("blocks the real CLI --apply before any database access", () => {
-    const result = runImportScript(["--apply"], { ...process.env, DB_URL: "" });
-    expect(result.code).not.toBe(0);
-    expect(result.stdout).toContain("PUBLISHER_INCOMPLETE");
-    expect(result.stdout).not.toMatch(/ENOENT|DB_URL/);
+  it("blocks the actual apply gate without invoking --apply or accessing a database", () => {
+    // Exercise the guard used before connectDb; P1 does not authorize CLI --apply.
+    const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
+    expect(() => assertApplyGate(payload)).toThrow("IMPORT_REAL_NOT_AUTHORIZED");
+    const script = readFileSync(IMPORT_SCRIPT, "utf8");
+    const mainBody = script.slice(script.indexOf("async function main()"));
+    expect(mainBody.indexOf("assertApplyGate(payload)")).toBeGreaterThan(-1);
+    expect(mainBody.indexOf("assertApplyGate(payload)")).toBeLessThan(mainBody.indexOf("await connectDb(mode)"));
   });
 
   it("validates the materialized artifact with the publisher gate closed and without database access", () => {
     const result = runImportScript(["--validate"], { ...process.env, DB_URL: "" });
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("12G validate OK");
-    expect(result.stdout).toContain('"publisher_complete": false');
+    expect(result.stdout).toContain('"publisher_complete": true');
     expect(result.stdout).toContain('"execute_import": false');
     expect(result.stdout).not.toMatch(/ENOENT|DB_URL|pg_advisory/);
   });

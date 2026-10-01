@@ -1,5 +1,6 @@
 {
   "$schema": "https://docs.fallow.tools/schema.json",
+
   "entry": [
     "src/main.tsx",
     "index.html",
@@ -19,7 +20,8 @@
     "scripts/codex/validate-security-definer-exposure.mjs",
     "scripts/fix-docs-encoding.mjs",
     "scripts/ci/classify-validation-scope.node-test.mjs",
-    "tests/codex/**/*.test.mjs"
+    "tests/codex/**/*.test.mjs",
+    "tests/codex/**/*.integration.mjs"
   ],
 
   "duplicates": {
@@ -27,17 +29,21 @@
       "scripts/**"
     ]
   },
+
   "health": {
     "ignore": [
-      "scripts/**"
+      "scripts/**",
+      "tests/codex/**"
     ]
   },
+
   "workspaces": {
     "patterns": [
       ".",
       "eslint-plugin-ds-tokens"
     ]
   },
+
   "audit": {
     "gate": "new-only"
   }
