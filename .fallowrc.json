@@ -19,9 +19,9 @@
     "scripts/codex/validate-security-definer-exposure.mjs",
     "scripts/fix-docs-encoding.mjs",
     "scripts/ci/classify-validation-scope.node-test.mjs",
-    "tests/codex/**/*.test.mjs"
+    "tests/codex/**/*.test.mjs",
+    "tests/codex/**/*.integration.mjs"
   ],
-
   "duplicates": {
     "ignore": [
       "scripts/**"
