@@ -461,17 +461,18 @@ export const applyOpLocal = async (op: Operation) => {
     return;
   }
 
-  if (op.action === "UPDATE") {
-    const recordKey = getRecordKey(op.record);
-    if (!recordKey) {
-      console.error(
-        `[ops] UPDATE skipped for ${op.table}: missing primary key in record`,
-      );
-      return;
-    }
+  const recordKey = getRecordKey(op.record);
+  if (!recordKey) {
+    console.error(
+      `[ops] ${op.action} skipped for ${op.table}: missing primary key in record`,
+    );
+    return;
+  }
 
-    const existing = await store.get(recordKey);
-    await persistExpectedAnimalRevision(op, existing);
+  const existing = await store.get(recordKey);
+  await persistExpectedAnimalRevision(op, existing);
+
+  if (op.action === "UPDATE") {
     if (!op.before_snapshot) {
       op.before_snapshot = existing;
       await db.queue_ops.update(op.client_op_id, { before_snapshot: existing });
@@ -483,21 +484,9 @@ export const applyOpLocal = async (op: Operation) => {
     return;
   }
 
-  if (op.action === "DELETE") {
-    const recordKey = getRecordKey(op.record);
-    if (!recordKey) {
-      console.error(
-        `[ops] DELETE skipped for ${op.table}: missing primary key in record`,
-      );
-      return;
-    }
-
-    const existing = await store.get(recordKey);
-    await persistExpectedAnimalRevision(op, existing);
-    op.before_snapshot = existing;
-    await db.queue_ops.update(op.client_op_id, { before_snapshot: existing });
-    await store.update(recordKey, { deleted_at: new Date().toISOString() });
-  }
+  op.before_snapshot = existing;
+  await db.queue_ops.update(op.client_op_id, { before_snapshot: existing });
+  await store.update(recordKey, { deleted_at: new Date().toISOString() });
 };
 
 export const reapplyOpLocal = async (op: Operation) => {

@@ -1319,6 +1319,17 @@ async function sendBatchRequest(
   }
 }
 
+function shouldTransportStateExpectedRevision(
+  op: Operation,
+  remoteTable: string,
+) {
+  return (
+    remoteTable === "animais" &&
+    (op.action === "UPDATE" || op.action === "DELETE") &&
+    op.expected_revision !== undefined
+  );
+}
+
 export function mapOperationForSync(
   op: Operation,
   fazendaId: string,
@@ -1355,9 +1366,7 @@ export function mapOperationForSync(
     client_op_id: op.client_op_id,
     table: remoteTable,
     action: op.action,
-    ...(remoteTable === "animais" &&
-    (op.action === "UPDATE" || op.action === "DELETE") &&
-    op.expected_revision !== undefined
+    ...(shouldTransportStateExpectedRevision(op, remoteTable)
       ? { expected_revision: op.expected_revision }
       : {}),
     record: normalizeTableMutationRecord(remoteTable, op.record, fazendaId),

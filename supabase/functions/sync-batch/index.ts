@@ -1607,12 +1607,11 @@ Deno.serve(async (req: Request) => {
             });
             continue;
           }
-          const updateQuery = supabase.from(op.table).update(record).match(match);
-          query = stateRevisionPolicy.protected
-            ? updateQuery
-                .eq("revision", stateRevisionPolicy.expected_revision)
-                .select("revision")
-            : updateQuery.select(); // Request representation to avoid PGRST204
+          query = supabase
+            .from(op.table)
+            .update(record)
+            .match(match)
+            .select(); // Request representation to avoid PGRST204
         } else if (op.action === "DELETE") {
           const match = buildMutationMatch(op, fazenda_id);
           if (!match) {
@@ -1624,7 +1623,7 @@ Deno.serve(async (req: Request) => {
             });
             continue;
           }
-          const deleteQuery = supabase
+          query = supabase
             .from(op.table)
             .update({
               deleted_at: new Date().toISOString(),
@@ -1632,12 +1631,8 @@ Deno.serve(async (req: Request) => {
               client_op_id: op.client_op_id,
               client_tx_id,
             })
-            .match(match);
-          query = stateRevisionPolicy.protected
-            ? deleteQuery
-                .eq("revision", stateRevisionPolicy.expected_revision)
-                .select("revision")
-            : deleteQuery.select(); // Request representation to avoid PGRST204
+            .match(match)
+            .select(); // Request representation to avoid PGRST204
         }
 
         const { data, error } = await query!;

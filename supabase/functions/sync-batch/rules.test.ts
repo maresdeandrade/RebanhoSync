@@ -473,15 +473,32 @@ describe("sync-batch rules: mutation key resolution", () => {
     expect(match).toEqual({ evento_id: "evt-1", fazenda_id: "faz-1" });
   });
 
-  it("uses id for regular tables", () => {
-    const operation = op({
+  it("uses id for regular tables and adds revision only to protected state mutations", () => {
+    const legacyOperation = op({
       table: "animais",
       action: "UPDATE",
       record: { id: "ani-1", lote_id: "lote-2" },
     });
+    expect(buildMutationMatch(legacyOperation, "faz-1")).toEqual({
+      id: "ani-1",
+      fazenda_id: "faz-1",
+    });
 
-    const match = buildMutationMatch(operation, "faz-1");
-    expect(match).toEqual({ id: "ani-1", fazenda_id: "faz-1" });
+    for (const action of ["UPDATE", "DELETE"] as const) {
+      const protectedOperation: Operation = {
+        ...op({
+          table: "animais",
+          action,
+          record: { id: "ani-1" },
+        }),
+        expected_revision: 4,
+      };
+      expect(buildMutationMatch(protectedOperation, "faz-1")).toEqual({
+        id: "ani-1",
+        fazenda_id: "faz-1",
+        revision: 4,
+      });
+    }
   });
 
   it("mantém o lookup da mesma identidade de registro isolado por fazenda", () => {
