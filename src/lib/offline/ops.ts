@@ -493,6 +493,7 @@ export const applyOpLocal = async (op: Operation) => {
     }
 
     const existing = await store.get(recordKey);
+    await persistExpectedAnimalRevision(op, existing);
     op.before_snapshot = existing;
     await db.queue_ops.update(op.client_op_id, { before_snapshot: existing });
     await store.update(recordKey, { deleted_at: new Date().toISOString() });

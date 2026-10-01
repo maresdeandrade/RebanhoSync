@@ -1356,7 +1356,7 @@ export function mapOperationForSync(
     table: remoteTable,
     action: op.action,
     ...(remoteTable === "animais" &&
-    op.action === "UPDATE" &&
+    (op.action === "UPDATE" || op.action === "DELETE") &&
     op.expected_revision !== undefined
       ? { expected_revision: op.expected_revision }
       : {}),

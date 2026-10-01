@@ -14,6 +14,8 @@ const farmA = crypto.randomUUID();
 const farmB = crypto.randomUUID();
 const animalA = crypto.randomUUID();
 const animalB = crypto.randomUUID();
+const animalUpdateThenDelete = crypto.randomUUID();
+const animalDeleteThenUpdate = crypto.randomUUID();
 const email = `f24-4c-${userId}@example.test`;
 const password = `F24.4C-${crypto.randomUUID()}-Aa1!`;
 let admin: SupabaseClient;
@@ -23,9 +25,9 @@ let accessToken: string;
 type SyncOp = {
   client_op_id: string;
   table: "animais";
-  action: "UPDATE";
+  action: "UPDATE" | "DELETE";
   expected_revision?: number;
-  record: { id: string; observacoes: string };
+  record: { id: string; observacoes?: string };
 };
 
 function operation(input: {
@@ -41,6 +43,21 @@ function operation(input: {
     record: {
       id: input.animalId ?? animalA,
       observacoes: input.note,
+    },
+  };
+}
+
+function deleteOperation(input: {
+  animalId?: string;
+  expectedRevision?: number;
+}): SyncOp {
+  return {
+    client_op_id: crypto.randomUUID(),
+    table: "animais",
+    action: "DELETE",
+    expected_revision: input.expectedRevision,
+    record: {
+      id: input.animalId ?? animalA,
     },
   };
 }
@@ -112,8 +129,17 @@ describeLocal("F24.4C sync-batch state conflict E2E local", () => {
         (id, fazenda_id, identificacao, sexo, observacoes)
        values
         ($1, $2, 'F24-4C-E2E', 'F', 'baseline'),
-        ($3, $4, 'F24-4C-E2E', 'F', 'baseline')`,
-      [animalA, farmA, animalB, farmB],
+        ($3, $4, 'F24-4C-E2E', 'F', 'baseline'),
+        ($5, $2, 'F24-4E1-UPD-DEL', 'F', 'baseline'),
+        ($6, $2, 'F24-4E1-DEL-UPD', 'F', 'baseline')`,
+      [
+        animalA,
+        farmA,
+        animalB,
+        farmB,
+        animalUpdateThenDelete,
+        animalDeleteThenUpdate,
+      ],
     );
 
     const auth = createClient(apiUrl!, anonKey!, {
@@ -133,7 +159,7 @@ describeLocal("F24.4C sync-batch state conflict E2E local", () => {
     if (!admin) return;
     if (database) {
       await database.query("delete from public.animais where id = any($1::uuid[])", [
-        [animalA, animalB],
+        [animalA, animalB, animalUpdateThenDelete, animalDeleteThenUpdate],
       ]);
       await database.query("delete from public.user_fazendas where user_id = $1", [
         userId,
@@ -187,6 +213,102 @@ describeLocal("F24.4C sync-batch state conflict E2E local", () => {
     });
   });
 
+  it("aplica CAS no DELETE nas duas ordens contra UPDATE concorrente", async () => {
+    const updateFirst = await invoke({
+      txId: crypto.randomUUID(),
+      op: operation({
+        animalId: animalUpdateThenDelete,
+        expectedRevision: 1,
+        note: "update-before-delete",
+      }),
+    });
+    expect(updateFirst).toMatchObject({
+      status: 200,
+      body: { results: [{ status: "APPLIED" }] },
+    });
+
+    const staleDelete = await invoke({
+      txId: crypto.randomUUID(),
+      op: deleteOperation({
+        animalId: animalUpdateThenDelete,
+        expectedRevision: 1,
+      }),
+    });
+    expect(staleDelete).toMatchObject({
+      status: 200,
+      body: {
+        results: [
+          {
+            status: "CONFLICT",
+            retryable: false,
+            reason_code: "STATE_REVISION_CONFLICT",
+            current_revision: 2,
+          },
+        ],
+      },
+    });
+
+    const afterUpdateFirst = await database.query<{
+      revision: string;
+      deleted_at: Date | null;
+      observacoes: string | null;
+    }>(
+      "select revision, deleted_at, observacoes from public.animais where id = $1 and fazenda_id = $2",
+      [animalUpdateThenDelete, farmA],
+    );
+    expect(afterUpdateFirst.rows[0]).toMatchObject({
+      revision: "2",
+      deleted_at: null,
+      observacoes: "update-before-delete",
+    });
+
+    const deleteFirst = await invoke({
+      txId: crypto.randomUUID(),
+      op: deleteOperation({
+        animalId: animalDeleteThenUpdate,
+        expectedRevision: 1,
+      }),
+    });
+    expect(deleteFirst).toMatchObject({
+      status: 200,
+      body: { results: [{ status: "APPLIED" }] },
+    });
+
+    const staleUpdate = await invoke({
+      txId: crypto.randomUUID(),
+      op: operation({
+        animalId: animalDeleteThenUpdate,
+        expectedRevision: 1,
+        note: "stale-after-delete",
+      }),
+    });
+    expect(staleUpdate).toMatchObject({
+      status: 200,
+      body: {
+        results: [
+          {
+            status: "CONFLICT",
+            retryable: false,
+            reason_code: "STATE_REVISION_CONFLICT",
+            current_revision: 2,
+          },
+        ],
+      },
+    });
+
+    const afterDeleteFirst = await database.query<{
+      revision: string;
+      deleted_at: Date | null;
+      observacoes: string | null;
+    }>(
+      "select revision, deleted_at, observacoes from public.animais where id = $1 and fazenda_id = $2",
+      [animalDeleteThenUpdate, farmA],
+    );
+    expect(afterDeleteFirst.rows[0]?.revision).toBe("2");
+    expect(afterDeleteFirst.rows[0]?.deleted_at).not.toBeNull();
+    expect(afterDeleteFirst.rows[0]?.observacoes).toBe("baseline");
+  });
+
   it("rejeita stale offline, cliente legado, cross-farm e ownership inválido", async () => {
     expect(
       await invoke({
@@ -211,6 +333,20 @@ describeLocal("F24.4C sync-batch state conflict E2E local", () => {
       await invoke({
         txId: crypto.randomUUID(),
         op: operation({ note: "legacy-without-revision" }),
+      }),
+    ).toMatchObject({
+      status: 200,
+      body: {
+        results: [
+          { status: "REJECTED", reason_code: "STATE_EXPECTED_REVISION_REQUIRED" },
+        ],
+      },
+    });
+
+    expect(
+      await invoke({
+        txId: crypto.randomUUID(),
+        op: deleteOperation({ animalId: animalA }),
       }),
     ).toMatchObject({
       status: 200,

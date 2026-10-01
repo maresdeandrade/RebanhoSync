@@ -17,7 +17,7 @@ export function validateStateExpectedRevision(op: Operation):
     reason_code: "STATE_EXPECTED_REVISION_REQUIRED";
   } {
   if (
-    op.action !== "UPDATE" ||
+    (op.action !== "UPDATE" && op.action !== "DELETE") ||
     !REVISION_PROTECTED_STATE_TABLES.has(op.table)
   ) {
     return { protected: false, ok: true };

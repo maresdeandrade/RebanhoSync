@@ -826,7 +826,7 @@ Deno.serve(async (req: Request) => {
             status: "REJECTED",
             reason_code: stateRevisionPolicy.reason_code,
             reason_message:
-              "State UPDATE requires the remote revision captured when the gesture was created",
+              "State mutation requires the remote revision captured when the gesture was created",
           });
           continue;
         }
@@ -1624,7 +1624,7 @@ Deno.serve(async (req: Request) => {
             });
             continue;
           }
-          query = supabase
+          const deleteQuery = supabase
             .from(op.table)
             .update({
               deleted_at: new Date().toISOString(),
@@ -1632,8 +1632,12 @@ Deno.serve(async (req: Request) => {
               client_op_id: op.client_op_id,
               client_tx_id,
             })
-            .match(match)
-            .select(); // Request representation to avoid PGRST204
+            .match(match);
+          query = stateRevisionPolicy.protected
+            ? deleteQuery
+                .eq("revision", stateRevisionPolicy.expected_revision)
+                .select("revision")
+            : deleteQuery.select(); // Request representation to avoid PGRST204
         }
 
         const { data, error } = await query!;
@@ -1680,7 +1684,7 @@ Deno.serve(async (req: Request) => {
             status: "CONFLICT",
             retryable: false,
             reason_code: "STATE_REVISION_CONFLICT",
-            reason_message: "State changed concurrently during the update",
+            reason_message: "State changed concurrently during the mutation",
             ...(currentRevision === undefined
               ? {}
               : { current_revision: currentRevision }),

@@ -103,26 +103,30 @@ describe("sync-batch rules: narrowing reprodutivo e erro interno", () => {
   });
 });
 
-describe("F24.4C — política de revisão do state", () => {
-  it("exige expected_revision em UPDATE de animais", () => {
-    expect(
-      validateStateExpectedRevision(
-        op({ table: "animais", action: "UPDATE", record: { id: "animal-1" } }),
-      ),
-    ).toEqual({
-      protected: true,
-      ok: false,
-      reason_code: "STATE_EXPECTED_REVISION_REQUIRED",
-    });
+describe("F24.4C/F24.4E1 — política de revisão do state", () => {
+  it("exige expected_revision em UPDATE e DELETE de animais", () => {
+    for (const action of ["UPDATE", "DELETE"] as const) {
+      expect(
+        validateStateExpectedRevision(
+          op({ table: "animais", action, record: { id: "animal-1" } }),
+        ),
+      ).toEqual({
+        protected: true,
+        ok: false,
+        reason_code: "STATE_EXPECTED_REVISION_REQUIRED",
+      });
+    }
   });
 
-  it("aceita revisão inteira positiva e não amplia CAS a INSERT/DELETE", () => {
-    expect(
-      validateStateExpectedRevision({
-        ...op({ table: "animais", action: "UPDATE", record: { id: "animal-1" } }),
-        expected_revision: 3,
-      }),
-    ).toEqual({ protected: true, ok: true, expected_revision: 3 });
+  it("aceita revisão inteira positiva em UPDATE/DELETE e não amplia CAS a INSERT/outros state", () => {
+    for (const action of ["UPDATE", "DELETE"] as const) {
+      expect(
+        validateStateExpectedRevision({
+          ...op({ table: "animais", action, record: { id: "animal-1" } }),
+          expected_revision: 3,
+        }),
+      ).toEqual({ protected: true, ok: true, expected_revision: 3 });
+    }
     expect(
       validateStateExpectedRevision(
         op({ table: "animais", action: "INSERT", record: { id: "animal-1" } }),

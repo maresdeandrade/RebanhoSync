@@ -84,6 +84,7 @@ function makeAnimal(overrides: Partial<Animal> = {}): Animal {
     created_at: timestamp,
     updated_at: timestamp,
     deleted_at: null,
+    revision: 1,
     ...overrides,
   };
 }
@@ -168,9 +169,11 @@ describe("animal deletion offline flow", () => {
       client_tx_id: clientTxId,
       table: "animais",
       action: "DELETE",
+      expected_revision: 1,
       record: { id: animalId, fazenda_id: farmId },
     });
     expect(operation.before_snapshot).toMatchObject({
+      revision: 1,
       id: animalId,
       identificacao: animal.identificacao,
       observacoes: animal.observacoes,
@@ -193,6 +196,7 @@ describe("animal deletion offline flow", () => {
       client_op_id: operation.client_op_id,
       client_tx_id: clientTxId,
       action: "DELETE",
+      expected_revision: 1,
     });
     expect(reloadedOperation?.sync_state ?? "PENDING").toBe("PENDING");
     expect(reloadedOperation?.before_snapshot).toMatchObject({
@@ -270,6 +274,56 @@ describe("animal deletion offline flow", () => {
     expect(await db.state_animais.get("other-farm-animal")).toBeUndefined();
   });
 
+  it("rejeita DELETE stale, restaura e reconcilia para o snapshot remoto mais novo", async () => {
+    const { clientTxId, operation, animal } = await createConfirmedDelete();
+    const remoteUpdatedAt = "2026-08-23T12:30:00.000Z";
+    remote.rows.set("animais", [
+      {
+        ...animal,
+        observacoes: "remote-newer",
+        revision: 2,
+        updated_at: remoteUpdatedAt,
+        deleted_at: null,
+      },
+    ]);
+    vi.mocked(fetch).mockResolvedValueOnce(
+      syncResponse([
+        {
+          op_id: operation.client_op_id,
+          status: "CONFLICT",
+          retryable: false,
+          reason_code: "STATE_REVISION_CONFLICT",
+          reason_message: "State changed after the local snapshot was read",
+          current_revision: 2,
+        },
+      ]),
+    );
+
+    await processGesture(await getGesture(clientTxId));
+
+    expect(await db.queue_ops.get(operation.client_op_id)).toMatchObject({
+      sync_state: "REJECTED",
+      expected_revision: 1,
+      blocked_reason: "STATE_REVISION_CONFLICT",
+    });
+    expect(await getGesture(clientTxId)).toMatchObject({
+      status: "REJECTED",
+      sync_result: "REJECTED",
+    });
+    expect(await db.queue_rejections.toArray()).toEqual([
+      expect.objectContaining({
+        client_op_id: operation.client_op_id,
+        reason_code: "STATE_REVISION_CONFLICT",
+      }),
+    ]);
+    expect(await db.state_animais.get(animalId)).toMatchObject({
+      observacoes: "remote-newer",
+      revision: 2,
+      deleted_at: null,
+    });
+    expect(await operationalAnimals()).toHaveLength(1);
+  });
+
   it("aceita tombstone remoto apos APPLIED sem ressuscitar o animal", async () => {
     const { clientTxId, operation, animal } = await createConfirmedDelete();
     const deletedAt = "2026-08-23T13:00:00.000Z";
@@ -327,7 +381,7 @@ describe("animal deletion offline flow", () => {
       JSON.parse(String(init?.body)),
     ) as Array<{
       client_tx_id: string;
-      ops: Array<{ client_op_id: string }>;
+      ops: Array<{ client_op_id: string; expected_revision?: number }>;
     }>;
     expect(requests.map((request) => request.client_tx_id)).toEqual([
       clientTxId,
@@ -336,6 +390,10 @@ describe("animal deletion offline flow", () => {
     expect(requests.map((request) => request.ops[0]?.client_op_id)).toEqual([
       operation.client_op_id,
       operation.client_op_id,
+    ]);
+    expect(requests.map((request) => request.ops[0]?.expected_revision)).toEqual([
+      1,
+      1,
     ]);
     expect(await db.queue_ops.where("client_tx_id").equals(clientTxId).count()).toBe(0);
     expect(await getGesture(clientTxId)).toMatchObject({
