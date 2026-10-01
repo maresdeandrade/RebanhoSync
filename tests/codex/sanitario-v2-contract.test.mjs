@@ -647,7 +647,7 @@ describe("sanitario v2 canonical contract", () => {
   it("blocks the actual apply gate without invoking --apply or accessing a database", () => {
     // Exercise the guard used before connectDb; P1 does not authorize CLI --apply.
     const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
-    expect(() => assertApplyGate(payload)).toThrow("PUBLISHER_INCOMPLETE");
+    expect(() => assertApplyGate(payload)).toThrow("IMPORT_REAL_NOT_AUTHORIZED");
     const script = readFileSync(IMPORT_SCRIPT, "utf8");
     const mainBody = script.slice(script.indexOf("async function main()"));
     expect(mainBody.indexOf("assertApplyGate(payload)")).toBeGreaterThan(-1);
@@ -658,7 +658,7 @@ describe("sanitario v2 canonical contract", () => {
     const result = runImportScript(["--validate"], { ...process.env, DB_URL: "" });
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("12G validate OK");
-    expect(result.stdout).toContain('"publisher_complete": false');
+    expect(result.stdout).toContain('"publisher_complete": true');
     expect(result.stdout).toContain('"execute_import": false');
     expect(result.stdout).not.toMatch(/ENOENT|DB_URL|pg_advisory/);
   });
