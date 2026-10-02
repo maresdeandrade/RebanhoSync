@@ -406,7 +406,7 @@ describeDatabase("F24.4E2.1A Animal→Lote real PostgreSQL foundation", () => {
     ).toBe(parent.event_id);
     expect((await apply(parent)).status).toBe("STATE_APPLIED");
     expect(await apply(child)).toEqual({ ...initial, replayed: true });
-    expect((await current(id)).lote_id).toBe(lots[1]); // Executor deliberately deferred.
+    expect((await current(id)).lote_id).toBe(lots[2]); // Server resolves durable pending.
   });
 
   it("P11 cross-farm subject/destination and outsider fail before any facts", async () => {

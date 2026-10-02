@@ -106,6 +106,18 @@ try {
     await isolated.query(migration);
     await isolated.query("commit");
   }
+  const completionApplied = await isolated.query(
+    "select to_regclass('public.animal_lot_movement_effect_decisions') as relation",
+  );
+  if (!completionApplied.rows[0].relation) {
+    const completion = readFileSync(
+      "supabase/migrations/20261002005751_f24_4e211a_server_completion_gate.sql",
+      "utf8",
+    );
+    await isolated.query("begin");
+    await isolated.query(completion);
+    await isolated.query("commit");
+  }
   // Existing commercial concurrency suite requires one real membership; no source data copied.
   const user = randomUUID();
   const farm = randomUUID();
@@ -130,6 +142,7 @@ try {
       "node_modules/vitest/vitest.mjs",
       "run",
       "supabase/tests/animalLotMovementFoundation.test.ts",
+      "supabase/tests/animalLotMovementCompletion.test.ts",
       "supabase/tests/stateConflictConcurrency.test.ts",
       "supabase/tests/commercialOperationV2Concurrency.test.ts",
     ],
