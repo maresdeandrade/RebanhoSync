@@ -6,7 +6,7 @@ Subfase: `F24.4E2 — MOVEMENT_EVENT_STATE_CONVERGENCE`
 
 Modo atual: `IMPLEMENTATION` — fundação PostgreSQL Animal→Lote; design/characterization anteriores preservados abaixo.
 
-Status: `DESIGN_CONTRACT = DEFINED`; `E2.1_COMMAND_CONTRACT = DEFINED`; `E2.1A = SERVER_FOUNDATION_LOCAL_VALIDATED`; `E2.1A.1 = READY_FOR_REVIEW`; `G3 = OPEN`. Evidência atual na seção 15; seções 1–14 registram as etapas anteriores.
+Status: `DESIGN_CONTRACT = DEFINED`; `E2.1_COMMAND_CONTRACT = DEFINED`; `E2.1A = SERVER_FOUNDATION_LOCAL_VALIDATED`; `E2.1A.1 = READY_FOR_REVIEW`; `E2.1B = READY_FOR_REVIEW`; `G3 = OPEN`. Evidência atual na seção 16; seções 1–15 registram as etapas anteriores.
 
 ## 1. Baseline e escopo
 
@@ -1290,3 +1290,253 @@ Os checks de whitespace dos dois arquivos novos com git diff --no-index --check 
 emitiram diagnóstico. Gate documental e formatting terminaram com exit 0.
 Sem bloqueador local identificado no escopo. Review/integração continuam pendentes;
 este veredito não autoriza operação remota nem comprova transporte do novo comando.
+
+## 16. F24.4E2.1B — Edge / transport integration
+
+Atualizado em: 2026-10-01
+
+### 16.1 Decisão e baseline
+
+`F24.4E2.1B = READY_FOR_REVIEW`, transporte local certificado; sem opt-in produtivo do cliente.
+Esta seção é a referência atual de transporte e sucede a seção 15. Não fecha G3 ou F24.4E2.
+
+```ini
+repository = maresdeandrade/RebanhoSync
+branch = feat/f24-4e2-movement-event-state-convergence
+HEAD_initial = 4d1d21e5f95e4bea1ea29ce33b8f766c5c8230de
+HEAD_final = 4d1d21e5f95e4bea1ea29ce33b8f766c5c8230de
+origin/main = 040c3c0605ff4f6ecabeedec1b28c5017455f6ac
+ahead = 3
+behind = 0
+worktree = C:/Users/mares/dyad-apps/GestaoAgro
+initial_worktree = CLEAN
+patch = UNCOMMITTED
+EDGE_MOVEMENT_DISPATCH = PROVEN
+GENERIC_FALLBACK_FOR_MOVEMENT_V1 = BLOCKED
+AUTH_EDGE_RPC_POSTGRES = PROVEN_LOCAL
+TENANT_ISOLATION = PROVEN
+STATE_APPLIED_TRANSPORT = PROVEN
+PROJECTION_CONFLICT_TRANSPORT = PROVEN
+PENDING_TRANSPORT = PROVEN
+LOST_ACK_REPLAY_EDGE_PATH = PROVEN
+REMOTE_SINGLE_APPLICATION = PROVEN
+PENDING_CHILD_PARENT_EDGE_PATH = PROVEN
+SERVER_AUTONOMOUS_RESOLUTION = PRESERVED
+CLIENT_RUNTIME_OPT_IN = NOT_STARTED
+LEGACY_DATA_COMPATIBILITY = NOT_REQUIRED
+LEGACY_CLIENT_COMPATIBILITY = NOT_REQUIRED
+REMOTE_DATA_CHANGED = NO
+```
+
+Status, branch, quatro commits, fetch/prune, refs, worktrees, ahead/behind, diff e staged
+foram verificados antes do patch. Não houve commit/push/merge/deploy/migration remota.
+
+### 16.2 Transport contract
+
+O request continua usando o envelope compartilhado de sync-batch:
+
+```json
+{
+  "client_id": "<identidade existente do cliente>",
+  "fazenda_id": "<fazenda autorizada>",
+  "client_tx_id": "<UUID da transação persistida>",
+  "ops": [{
+    "domain": "movement_v1",
+    "command": "apply_animal_lot",
+    "contract_version": 1,
+    "fazenda_id": "<mesma fazenda do envelope>",
+    "subject_type": "animal",
+    "subject_id": "<UUID do animal>",
+    "event_id": "<UUID do fato>",
+    "client_op_id": "<UUID da operação persistida>",
+    "client_tx_id": "<mesma transação do envelope>",
+    "movement_mode": "operational",
+    "from_lote_id": null,
+    "to_lote_id": "<UUID do destino>",
+    "occurred_at": "<timestamp factual com timezone>",
+    "movement_base": {"kind":"snapshot","movement_version":"0","head_event_id":null},
+    "observacoes": "<opcional>",
+    "payload": {},
+    "detail_payload": {}
+  }]
+}
+```
+
+Exemplo conceitual, com placeholders; não cria identidades nem constitui fixture executável.
+O input é plano, adicionando somente `domain` e `command` ao contrato v1 PostgreSQL.
+`source_task_id` opcional e os demais campos da foundation são preservados. Selector
+`after_movement` leva somente event_id e command_digest do predecessor. History-only
+usa movement_base=null. Nenhum token futuro, ator, role, head arbitrário ou resultado
+pretendido é aceito no envelope. A correção factual continua não suportada pelo banco.
+
+`movement-v1.ts` valida somente discriminadores, shape, identidades, tamanho, tenant e
+client_tx_id; retira `domain/command` e chama `apply_animal_lot_movement_v1(p_command)`.
+Não calcula SHA, não materializa fatos/estado e não replica o CAS, elegibilidade ou causalidade.
+O limite de transporte é 64 KiB; o limite SQL independente permanece em vigor.
+
+O recognizer aceita declarações parciais de movement (domain movement_* ou command
+apply_animal_lot) antes dos adapters existentes e antes da validação/writer genéricos.
+Formato inválido/futuro falha fechado; um `continue` impede fallback mesmo em rejeição.
+Movement não entra na prevalidação genérica anti-teleport nem no caminho service_role
+sanitário. Operações genéricas antigas sem esses discriminadores não são removidas ou
+adaptadas nesta subfase. O guard server-side da foundation é preservado.
+
+Auth continua `auth.getUser(jwt)` real, membership precoce por request fazenda e RPC
+com client user-scoped (Authorization do usuário), sem service_role no movement.
+Tenant/transação divergentes são rejeitados antes da RPC; PostgreSQL revalida membership,
+RLS e referências. Nenhuma nova identidade é gerada no Edge.
+
+### 16.3 Result mapping
+
+Todos os resultados por operação incluem op_id; resultados duráveis retornam o receipt
+original em `canonical_result`, sem consultar ou substituir por decisão posterior.
+`reconciliation_required=true` orienta a futura E2.1C tanto para projeção/fatos aceitos
+quanto para desfazer intenção otimista rejeitada. Não transforma rejeição em fato.
+
+| Resultado PostgreSQL | Status externo | retryable | terminal | reason_code | state_effect |
+|---|---|---|---|---|---|
+| STATE_APPLIED | APPLIED | false | true | reason original ou MOVEMENT_STATE_APPLIED | true |
+| HISTORY_ONLY | APPLIED | false | true | reason original ou MOVEMENT_HISTORY_ONLY | false |
+| HISTORY_CONFLICT | CONFLICT | false | true | reason original ou MOVEMENT_HISTORY_CONFLICT | false |
+| PENDING_CAUSAL_DEPENDENCY | BLOCKED_DEPENDENCY | false | false | PREDECESSOR_MISSING/PREDECESSOR_PENDING do receipt | false |
+| PROJECTION_CONFLICT | CONFLICT | false | true | reason original (eligibilidade/origem/CAS/predecessor) | false |
+| REJECTED | REJECTED | false | true | reason original; envelope inválido tem reason de transporte | false quando retornado pela RPC |
+| CONFLICT de identidade | CONFLICT | false | true | IDENTITY_DIVERGENCE original | false |
+| Infra/RPC error | RETRYABLE | true | false | MOVEMENT_RPC_ERROR | não confirmado |
+| Timeout/network sem ACK | RETRYABLE | true | false | MOVEMENT_RPC_UNCONFIRMED | não confirmado |
+| Resposta RPC ilegível/desconhecida | RETRYABLE | true | false | MOVEMENT_RPC_RESULT_INVALID | não confirmado |
+
+Infraestrutura retorna `commit_unknown=true` e não inventa `canonical_result`, receipt
+rejeitado ou estado factual. A RPC tem timeout de 12s; o timeout não prova rollback e
+não cancela/desfaz fatos possivelmente commitados. Replay da mesma identidade resolve
+a incerteza. Resultado de domínio é resposta HTTP 200 por operação, não HTTP 500.
+JWT inválido e falta de membership mantêm os HTTP 401/403 atuais do handler.
+
+Pending é uma espera por decisão do servidor: `retryable=false` e `terminal=false`
+devem ser consumidos explicitamente pelo worker futuro. Não reemitir child em loop;
+reconciliation/pull de decisões pode terminalizar a obrigação local. O ACK histórico
+não é reescrito; replay do child continua retornando seu PENDING original, mesmo promovido.
+Conflito operacional nunca vira APPLIED apenas porque o fato foi persistido.
+
+### 16.4 Identidade, digest e ACK
+
+event_id/client_op_id/client_tx_id/fazenda_id atravessam Edge/RPC sem substituição.
+O receipt normalizado pelo servidor conserva essas identidades e o ator real da sessão.
+`animal_lot_movement_command_digest_v1` permanece autoridade canônica. Nenhuma
+canonicalização TypeScript foi criada. O teste causal obtém o digest via PostgreSQL.
+
+Requisito explícito da E2.1C: antes de emitir cadeias offline nunca enviadas, implementar
+e provar equivalência byte/semântica do digest local com fixtures douradas PostgreSQL:
+defaults/null, ordem de keys, escala numérica, Unicode UTF-8, UUIDs e timestamp UTC
+com microssegundos. Não supor que JSON.stringify equivale ao canonicalizador SQL.
+Um digest já retornado pelo servidor pode ser retido, mas não resolve sozinho uma cadeia
+offline montada antes da primeira chamada. Isso permanece pendente, não certificado aqui.
+
+O adapter aguarda a resposta da transação PostgREST antes de classificar o receipt.
+Unit test mantém a Promise RPC suspensa e prova ausência de ACK antecipado. T1 lê state
+commitado após HTTP; T3 corta efetivamente a conexão HTTP após retorno Edge e confirmação
+SQL do incremento, descarta o ACK e reenvia o mesmo envelope. Zero segundo Evento,
+detail, receipt, state effect ou incremento. O proxy existe somente no teste local.
+
+### 16.5 E2E local observado
+
+| Cenário | Resultado |
+|---|---|
+| T1 | Sessão Auth real → Edge → RPC → PostgreSQL: 1 Evento/detail/receipt, lote B, version=1/head=event_id; payload preservado |
+| T2 | Duas requisições HTTP simultâneas; barreira SQL observa dois backends RPC em Lock antes de liberar animal; dois fatos e um efeito, outro PROJECTION_CONFLICT |
+| T3 | Proxy rompe HTTP após confirmar commit; replay retornou receipt original/replayed=true; contagens e state/token iguais |
+| T4 | Request child encerra antes do parent; parent provoca resolução SQL autônoma, lote C/version=2/head=child; view lida autenticada expõe decisão; replay do child permanece PENDING original |
+| T5 | JWT inválido=401, outsider=403, divergência de fazenda e destino cross-farm=REJECTED; zero fato nos casos |
+| T6 | Nova sessão Auth e nova requisição HTTP após outro movimento retornam receipt original, sem reaplicar |
+| Fail-closed HTTP | Envelope movement parcial com table/action/record genéricos é REJECTED; zero INSERT do record disfarçado |
+| History/identity HTTP | HISTORY_ONLY retorna APPLIED sem efeito; alteração de conteúdo sob mesma identidade retorna CONFLICT/IDENTITY_DIVERGENCE |
+
+O runner exige REBANHOSYNC_DISPOSABLE_LOCAL_DB=1, valida localhost nos endpoints DB/API,
+prepara somente migrations locais existentes ausentes nesse ambiente designado e recarrega
+o schema PostgREST. Nesta execução a completion foi preparada no banco local; não foi
+editada migration nem aplicado nada remotamente. Fixtures factuais são preservadas.
+
+Primeiro T1 recebeu 403 transitório imediatamente após preparação/reload do schema;
+os testes posteriores já passavam com o mesmo usuário. O setup agora aguarda visibilidade
+autenticada da membership antes de emitir qualquer movimento, sem retry de comando/ACK.
+O motivo interno daquele 403 não foi confirmado; associação ao reload é inferência.
+A execução corrigida passou 11/11, incluindo 3 E2E existentes de state-conflict.
+
+ES256/gateway: não houve o erro CryptoKey nesta execução e nenhum workaround/configuração
+nova foi aplicado. O runtime local existente foi reutilizado; o handler validou sessões
+reais e RLS. Isso não certifica gateway/deploy remoto.
+
+### 16.6 Pull / reconciliation contract para E2.1C
+
+| Superfície | Tipo / ownership | Contrato para o próximo incremento |
+|---|---|---|
+| animais | tabela remota, projeção server-authoritative; local state_animais | Pull existente, tokens/head servidor; preservar intents pending e impedir overwrite cego de otimista |
+| eventos | tabela factual; event_eventos local | Histórico append-only e proteção de fatos pending existentes |
+| eventos_movimentacao | detalhe factual; event_eventos_movimentacao local | Já pertence ao pull padrão de detalhes; preservar vínculos/composite tenant |
+| animal_lot_movement_receipts | tabela técnica imutável, leitura authenticated por membership | Persistir separadamente do fato/state; PK composta fazenda/command_type/event_id; ACK original nunca muda |
+| animal_lot_movement_effect_decisions | tabela técnica append-only, leitura authenticated por membership | Drain dedicado por created_at servidor + identidade estável; decisão nova terminaliza obrigação local e exige pull da projeção |
+| animal_lot_movement_effective_results | view security_invoker, não tabela writable | Lookup autenticado de resultado efetivo por fazenda/event_id; leitura semântica, não cursor original de receipt |
+| animal_lot_movement_command_rejections | tabela técnica de rejeição normalizada, read-only | Consultar/persistir quando necessária à reconciliação de comando sem Evento; nunca converter em histórico |
+| apply_animal_lot_movement_v1 / digest_v1 | RPC-only | Escrita especializada / canonicalização pura; não são stores/tabelas de pull |
+
+Receipt.created_at não avança quando uma decisão posterior é inserida. Portanto cursor
+pela data original da view não descobre promoções tardias: usar stream/cursor das decisões
+ou lookup explícito de obrigações pendentes. Nunca inferir efeito efetivo de ACK APPLIED
+do pai ou reavaliar selector contra state local. Proteger tenant/farm switch, retries,
+reabertura e lost ACK; qualquer store/cursor/schema novo exige desenho na E2.1C.
+Não foram adicionados receipts/decisions/view/rejeições ao tableMap/pull padrão ou Dexie.
+
+### 16.7 Arquivos e validações
+
+Arquivos deste patch, relativos à worktree acima:
+
+- supabase/functions/sync-batch/movement-v1.ts (novo adapter).
+- supabase/functions/sync-batch/movement-v1.test.ts (novo, 24 testes).
+- supabase/functions/sync-batch/index.ts (dispatch/união/exclusão dos preflights genéricos).
+- supabase/functions/sync-batch/handler-order.test.ts (ordem/continue/fail-closed).
+- supabase/functions/sync-batch/rules.ts (apenas união de tipo: CONFLICT já era retornado).
+- supabase/tests/animalLotMovementTransport.e2e.test.ts (novo, 8 E2E reais).
+- scripts/codex/validate-movement-transport.mjs (novo runner exclusivamente local).
+- docs/review/F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md (contrato/evidências seção 16).
+- docs/context/PROJECT_STATUS.md.
+- docs/review/CURRENT_PHASE_HANDOFF.md.
+- docs/review/ACTIVE_PHASE_PLAN.md.
+
+Resultados observados:
+
+- Unitários iniciais focados: 71/71; após timeout, suite completa sync-batch **146/146 em 15 arquivos**.
+- Runner movement HTTP: **11/11** (8 movement + 3 state-conflict), sem mocks de Auth/Edge/RPC.
+- Runner foundation/completion PostgreSQL: **57/57**, banco isolado removido após testes.
+- Baseline funcional local: **5/5**, run `2dd022c3`, RLS/papéis/FKs e Edge existentes preservados.
+- ESLint nos sete arquivos JS/TS alterados, Deno check do handler/adapter e node --check do runner: exit 0.
+- Deno fmt do adapter e Prettier dos testes/runner: PASS.
+- Deno fmt global de index.ts: falha **preexistente**, reproduzida com `git show HEAD:... | deno fmt --check --ext=ts -`. Não houve reformatação ampla do handler.
+- gates:docs e git diff --check: PASS no fechamento documental.
+- Build/regressão global frontend não executados: zero alteração em src ou bundle/runtime frontend.
+
+Fixtures sintéticas preservadas, sem tokens/credenciais em artefatos:
+HTTP aprovado: fazendas `4a16e568-f18a-4af3-9750-10caa542507f` e
+`009121f8-0768-4e3d-81c3-e749f5b01a6a`; client_id `movement-http-e2e`.
+Primeira execução parcial: fazendas `3a758b13-b3fe-42b7-a2a7-b277cccb28a8` e
+`ed7d149d-d70a-4d0e-b964-83bc83a28896`.
+Baseline: fazendas `9abe595e-260f-4f51-8c3e-e67cef1fcac2` e
+`1e314fa7-ef9d-4ac7-a845-037e5462a3ed`; client_id `baseline-functional`.
+Não foi executada limpeza destrutiva do ambiente local existente.
+
+FATO CONFIRMADO: transporte local autenticado, isolamento, lost ACK/replay, conflitos e
+pending/autoresolução passaram pelos componentes reais; não há alteração produtiva do cliente.
+INFERÊNCIA: o protocolo aplica-se a reenvios equivalentes em outras intercalações; testes
+locais não provam gateway remoto, multi-device físico ou readiness do futuro worker.
+
+### 16.8 Riscos residuais e próximo passo
+
+1. E2.1C ainda precisa opt-in do writer, identidade local durável, equivalência do digest
+   offline, tratamento de pending/terminal e pull dedicado. G3 permanece aberto no produto.
+2. A certificação usa Supabase local descartável e runtime existente. Gateway remoto,
+   deploy, volume de backlog/drain e todas as intercalações de produção não foram certificados.
+3. Formatação Deno do handler é dívida preexistente preservada. Migration completion foi
+   preparada localmente pelo runner, sem registrar uma nova operação remota; fixtures
+   locais permanecem para descarte futuro explicitamente autorizado.
+
+`REMOTE_DATA_CHANGED = NO`. Próximo passo: F24.4E2.1C Client opt-in + local persistence +
+pull/reconciliation, após review do transporte. Não iniciar automaticamente o cutover.

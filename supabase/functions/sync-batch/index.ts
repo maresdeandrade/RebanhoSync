@@ -61,6 +61,11 @@ import {
   executeCommercialOperationV2,
   isCommercialOperationV2,
 } from "./commercial-operation-v2.ts";
+import {
+  executeMovementV1,
+  isMovementV1Operation,
+  type MovementV1,
+} from "./movement-v1.ts";
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -206,6 +211,7 @@ Deno.serve(async (req: Request) => {
       | SanitarioSyncV2Operation
       | CommercialPurchaseOperation
       | CommercialOperationV2
+      | MovementV1
     > = Array.isArray(rawOps) ? rawOps : [];
     console.log(
       `[sync-batch] Processing TX ${client_tx_id} for farm ${fazenda_id}`,
@@ -266,6 +272,7 @@ Deno.serve(async (req: Request) => {
 
     const hasSanitarioInventoryMovements = ops.some(
       (op) =>
+        !isMovementV1Operation(op) &&
         !isCommercialPurchaseOperation(op) &&
         !isCommercialOperationV2(op) &&
         isSanitarioInventoryMovementOperation(op),
@@ -303,6 +310,7 @@ Deno.serve(async (req: Request) => {
 
     const legacyOps = ops.filter(
       (op): op is Operation =>
+        !isMovementV1Operation(op) &&
         !isSanitarioSyncV2Operation(op) &&
         !isCommercialPurchaseOperation(op) &&
         !isCommercialOperationV2(op),
@@ -377,6 +385,15 @@ Deno.serve(async (req: Request) => {
 
     for (const rawOp of ops) {
       try {
+        if (isMovementV1Operation(rawOp)) {
+          results.push(
+            await executeMovementV1(supabase, rawOp, {
+              fazendaId: fazenda_id,
+              clientTxId: client_tx_id,
+            }),
+          );
+          continue;
+        }
         if (isCommercialOperationV2(rawOp)) {
           results.push(
             await executeCommercialOperationV2(supabase, rawOp, {

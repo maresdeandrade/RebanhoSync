@@ -4,18 +4,33 @@ import { describe, expect, it } from "vitest";
 
 function readHandler() {
   return readFileSync(
-    join(
-      process.cwd(),
-      "supabase",
-      "functions",
-      "sync-batch",
-      "index.ts",
-    ),
+    join(process.cwd(), "supabase", "functions", "sync-batch", "index.ts"),
     "utf8",
   );
 }
 
 describe("sync-batch handler initialization order", () => {
+  it("dispatches recognized movement before generic validation and writes, with unconditional continue", () => {
+    const handler = readHandler();
+    const loop = handler.slice(handler.indexOf("for (const rawOp of ops)"));
+    const start = loop.indexOf("if (isMovementV1Operation(rawOp))");
+    const next = loop.indexOf("if (isCommercialOperationV2(rawOp))");
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(next).toBeGreaterThan(start);
+    expect(loop.slice(start, next)).toContain(
+      "await executeMovementV1(supabase, rawOp",
+    );
+    expect(loop.slice(start, next)).toContain("continue;");
+    expect(loop.indexOf("const op = rawOp as Operation;")).toBeGreaterThan(
+      next,
+    );
+    expect(
+      handler.slice(
+        handler.indexOf("const legacyOps"),
+        handler.indexOf("if (featureFlags.strictAntiTeleport)"),
+      ),
+    ).toContain("!isMovementV1Operation(op)");
+  });
   it("inicializa op e record antes do tratamento de finance_categories", () => {
     const handler = readHandler();
     const loopStart = handler.indexOf("for (const rawOp of ops)");

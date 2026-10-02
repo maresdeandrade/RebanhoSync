@@ -311,7 +311,7 @@ export function normalizeDbError(
 ):
   | { status: "APPLIED_ALTERED"; altered: { dedup: "collision_noop" } }
   | { status: "APPLIED" }
-  | { status: "REJECTED"; reason_code: string; reason_message: string } {
+  | { status: "REJECTED" | "CONFLICT"; reason_code: string; reason_message: string } {
   const dbCode = error.code ?? "UNKNOWN_DB_ERROR";
 
   if (dbCode === "23505") {
