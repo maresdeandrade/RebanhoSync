@@ -294,7 +294,6 @@ export default function AnimaisTransicoes() {
             loteId: row.animal.lote_id ?? null,
             fromLoteId: row.animal.lote_id ?? null,
             toLoteId: destinationLoteId,
-            applyAnimalStateUpdate: false,
             observacoes: "Movimentacao de lote via mutacao em lote de estagios",
             payload: {
               kind: "batch_lifecycle_transition",
@@ -341,7 +340,6 @@ export default function AnimaisTransicoes() {
             payload,
             papel_macho,
             habilitado_monta,
-            ...(loteChanged ? { lote_id: destinationLoteId } : {}),
             updated_at: occurredAt,
           },
         });

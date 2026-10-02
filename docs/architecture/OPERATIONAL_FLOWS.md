@@ -114,11 +114,25 @@ Exclusão de pasto: `NÃO APLICÁVEL` no código atual.
 
 ## 9. Movimentações
 
-Movimentação interna usa `buildEventGesture` e produz:
+Animal→Lote usa `buildEventGesture` → `createGesture` para persistir um único comando
+`movement_v1/apply_animal_lot` na fila existente. O submit captura snapshot conhecido ou
+selector `after_movement`, identidade e digest; não consulta o servidor nem incrementa
+token/head local. Evento/detail e projeção otimista são materializados localmente, sem
+operações genéricas correspondentes na fila remota. O worker transporta o comando original
+para `apply_animal_lot_movement_v1`, preserva receipt original e reconcilia resultado efetivo
+por obrigação durável e pull autenticado de animais/eventos/detail. Pending não é sucesso
+de estado; conflito exige pull e nova intenção explícita. `history_only` não move o animal.
+
+O writer genérico Animal→Lote foi desabilitado. A migração local Dexie v32 invalida bundles
+antigos incompatíveis com evidência de rejeição e obrigação de pull, sem fabricar selectors.
+Venda/óbito/retirada mantêm seus writers de elegibilidade existentes. O contrato certificado
+e os limites locais constam na seção 17 da [F24.4E2](../review/F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md).
+
+Lote→pasto mantém seu contrato independente via `buildEventGesture` e produz:
 
 - Evento-base em `event_eventos`;
 - detail em `event_eventos_movimentacao`;
-- atualização do estado atual do animal ou lote;
+- atualização do estado atual do lote quando explicitamente solicitada;
 - uma gesture agregada quando a ação é coletiva.
 
 Origem e destino devem ser explícitos. O Evento preserva o fato; `state_*` responde apenas onde o animal/lote está agora.

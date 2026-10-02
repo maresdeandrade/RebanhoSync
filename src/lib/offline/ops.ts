@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { prepareMovementIntents } from "./movement";
 import type {
   Gesture,
   Operation,
@@ -167,6 +168,20 @@ export const createGesture = async (
     clientOpIds?: readonly string[];
   } = {},
 ) => {
+  // Old Animal→Lote bundles are never reinterpreted as commands.
+  if (ops_input.some(op => op.table === "eventos" && op.record?.dominio === "movimentacao" && op.record?.animal_id)) {
+    throw new Error("LEGACY_ANIMAL_MOVEMENT_WRITER_DISABLED");
+  }
+  if (ops_input.some(op => op.table === "animais" && op.action === "UPDATE" && Object.prototype.hasOwnProperty.call(op.record, "lote_id") && !["vendido", "morto", "retirado"].includes(op.record.status))) {
+    throw new Error("GENERIC_ANIMAL_LOCATION_WRITER_DISABLED");
+  }
+  const movementTx = options.clientTxId ?? crypto.randomUUID();
+  const movement = ops_input.some(op => op.table === "movement_v1")
+    ? await prepareMovementIntents(fazenda_id, ops_input, movementTx, options.clientOpIds) : null;
+  if (movement) {
+    ops_input = movement.local;
+    options = { ...options, clientTxId: movementTx, clientOpIds: movement.ids };
+  }
   for (const [operationIndex, op] of ops_input.entries()) {
     try {
       assertAllowedOfflinePushSurface(op);
@@ -343,6 +358,11 @@ export const createGesture = async (
       : ops),
     ...sanitarioAgendaV2.flatMap(({ queueOp }) => (queueOp ? [queueOp] : [])),
   ];
+  if (movement) {
+    const remaining = queueOps.filter(op => !op.movement_group);
+    queueOps.splice(0, queueOps.length, ...remaining, ...movement.prepared);
+    queueOps.forEach((op, index) => { op.op_order = index; });
+  }
 
   for (const [operationIndex, op] of queueOps.entries()) {
     try {
@@ -368,12 +388,14 @@ export const createGesture = async (
         db.queue_gestures,
         db.queue_ops,
         ...getAffectedStores(ops),
+        ...(movement ? [db.state_animais] : []),
         ...(sanitarioAgendaV2.length > 0
           ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
           : []),
       ],
       async () => {
         transactionStage = "write-gesture";
+        await movement?.verify();
         await db.queue_gestures.add(gesture);
         transactionStage = "write-operations";
         await db.queue_ops.bulkAdd(queueOps);

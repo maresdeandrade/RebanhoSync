@@ -1,5 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { db } from "./db";
+import { isMovementOperation } from "./movement";
+import { recordMovementResults, reconcileMovementForFarm, hasRejectedMovement } from "./movementReconciliation";
 import { env } from "@/lib/env";
 import { supabase } from "@/lib/supabase";
 import type {
@@ -512,6 +514,9 @@ async function executeReconciliationForScope(
 ) {
   const fazendaId = obligation.fazenda_id;
   switch (obligation.scope) {
+    case "movement-v1":
+      await reconcileMovementForFarm(fazendaId);
+      return;
     case "factual":
       await pullDataForFarm(
         fazendaId,
@@ -754,6 +759,7 @@ function getSanitarioRetryUpdate(
 }
 
 function isOperationReadyForSync(op: Operation, nowMs = Date.now()) {
+  if (op.sync_state === "RECONCILE") return false;
   if (op.sync_state === "BLOCKED_DEPENDENCY") return false;
   if (!op.next_attempt_at) return true;
 
@@ -1334,6 +1340,12 @@ export function mapOperationForSync(
   op: Operation,
   fazendaId: string,
 ): Record<string, unknown> {
+  if (isMovementOperation(op)) {
+    if (op.record.client_op_id !== op.client_op_id || op.record.client_tx_id !== op.client_tx_id || op.record.fazenda_id !== fazendaId) {
+      throw new Error("MOVEMENT_QUEUED_IDENTITY_MISMATCH");
+    }
+    return { ...op.record };
+  }
   if (isRecord(op.record) && op.record.domain === "sanitario_v2") {
     if (
       op.record.client_op_id !== op.client_op_id ||
@@ -1661,6 +1673,11 @@ export async function processGesture(gesture: Gesture) {
       const hasBlockedDependency = queuedOps.some(
         (op) => op.sync_state === "BLOCKED_DEPENDENCY",
       );
+      if (queuedOps.some(isMovementOperation)) {
+        await db.queue_gestures.update(gesture.client_tx_id, { status: "PENDING", completed_at: undefined,
+          last_error: "Movimentação aguarda retry ou resultado efetivo/reconciliação" });
+        return;
+      }
       const hasRejectedOperation = queuedOps.some(
         (op) => op.sync_state === "REJECTED",
       );
@@ -1713,7 +1730,7 @@ export async function processGesture(gesture: Gesture) {
       return;
     }
 
-    const ops = sortOpsForSync(readyOps);
+    let ops = sortOpsForSync(readyOps);
 
     try {
     const { supabase, session } = await getValidSession();
@@ -1795,6 +1812,14 @@ export async function processGesture(gesture: Gesture) {
     const result = (await response.json()) as SyncBatchResponse;
     if (!Array.isArray(result.results)) {
       throw new Error("Invalid sync-batch response: results missing");
+    }
+    const movementOps = ops.filter(isMovementOperation);
+    if (movementOps.length) {
+      await recordMovementResults(gesture, movementOps, result.results, ops.length !== movementOps.length);
+      await drainReconciliationObligations(gesture.fazenda_id);
+      ops = ops.filter(op => !isMovementOperation(op));
+      result.results = result.results.filter(row => !movementOps.some(op => op.client_op_id === row.op_id));
+      if (!ops.length) return;
     }
     const handledSanitarioV2 = await processSanitarioCanonicalResults(
       gesture,
@@ -1933,16 +1958,17 @@ export async function processGesture(gesture: Gesture) {
           const hasRemainingRejected = remaining.some(
             (operation) => operation.sync_state === "REJECTED",
           );
+          const movementRejected = hasRejectedMovement(current);
           await db.queue_gestures.update(gesture.client_tx_id, {
             status:
               remaining.length === 0
-                ? "DONE"
+                ? movementRejected ? "REJECTED" : "DONE"
                 : hasRemainingRejected
                   ? "REJECTED"
                   : "PENDING",
             sync_result:
               remaining.length === 0
-                ? syncResult
+                ? movementRejected ? "REJECTED" : syncResult
                 : hasRemainingRejected
                   ? "REJECTED"
                   : undefined,

@@ -4,9 +4,9 @@ Atualizado em: 2026-10-01
 
 Subfase: `F24.4E2 — MOVEMENT_EVENT_STATE_CONVERGENCE`
 
-Modo atual: `IMPLEMENTATION` — fundação PostgreSQL Animal→Lote; design/characterization anteriores preservados abaixo.
+Modo atual: `FINALIZATION_COMPLETE` — vertical Animal→Lote fechada localmente; design/characterization anteriores preservados como histórico.
 
-Status: `DESIGN_CONTRACT = DEFINED`; `E2.1_COMMAND_CONTRACT = DEFINED`; `E2.1A = SERVER_FOUNDATION_LOCAL_VALIDATED`; `E2.1A.1 = READY_FOR_REVIEW`; `E2.1B = READY_FOR_REVIEW`; `G3 = OPEN`. Evidência atual na seção 16; seções 1–15 registram as etapas anteriores.
+Status: `F24_4E2_ANIMAL_TO_LOTE = CLOSED`; `F24_4E_G3_ANIMAL_TO_LOTE = RESOLVED`; `REMOTE_DATA_CHANGED = NO`. Evidência atual na seção 17, que substitui os próximos passos e gaps históricos das seções 1–16. F24.4E permanece IN_PROGRESS; lote→pasto e occupancy não foram certificados nesta missão.
 
 ## 1. Baseline e escopo
 
@@ -1540,3 +1540,177 @@ locais não provam gateway remoto, multi-device físico ou readiness do futuro w
 
 `REMOTE_DATA_CHANGED = NO`. Próximo passo: F24.4E2.1C Client opt-in + local persistence +
 pull/reconciliation, após review do transporte. Não iniciar automaticamente o cutover.
+
+## 17. Finalization — fechamento Animal→Lote
+
+### DECISÃO
+
+```ini
+baseline = CLEAN_TRACKED_STAGED_UNTRACKED
+branch = feat/f24-4e2-movement-event-state-convergence
+HEAD_inicial = 36e66c42c2387a3f975a9797c66c0300017c5e50
+HEAD_final = 36e66c42c2387a3f975a9797c66c0300017c5e50
+origin/main = 040c3c0605ff4f6ecabeedec1b28c5017455f6ac
+ahead = 4
+behind = 0
+worktree = C:/Users/mares/dyad-apps/GestaoAgro
+final_worktree = UNCOMMITTED_FINALIZATION_PATCH
+F24_4E2 = CLOSED_ANIMAL_TO_LOTE
+F24_4E2_ANIMAL_TO_LOTE = CLOSED
+F24_4E_G3_ANIMAL_TO_LOTE = RESOLVED
+F24_4E = IN_PROGRESS
+REMOTE_DATA_CHANGED = NO
+```
+
+Baseline real obtido antes dos edits, com fetch/refs/worktrees inventariadas. Não houve
+commit, push, PR, merge, deploy, migration nova/remota ou reset. As demais worktrees não
+foram alteradas. Esta missão fecha conjuntamente cliente/fila/worker/pull/cutover/E2E,
+sem abrir E2.1C/E2.1D. Seções anteriores são histórico, não gates atuais.
+
+### CLIENT WRITER / PATCH
+
+- `buildEventGesture` emite uma intenção Animal→Lote especializada; `createGesture`
+  prepara exatamente um comando por movimento na fila existente, com identidade original.
+- Materialização local de Evento/detail e estado otimista usa a mesma identidade factual;
+  essas três mutações locais não são três operações de push. Nenhuma duplicação remota.
+- Transições de estágio, pós-parto e desmame usam esse writer para localização. Campos
+  não relacionados continuam em operações genéricas. A UI informa intenção local pendente.
+- `history_only` preserva origem factual e não altera projeção. Correção de movimento e
+  destino nulo falham fechados, conforme os limites do contrato servidor v1 existente.
+
+### OFFLINE CAUSALITY
+
+- Primeiro movimento captura version/head persistidos em `state_animais`; valores ausentes
+  ou numéricos inseguros exigem atualização do snapshot. Submit não faz consulta remota.
+- Sucessor referencia event_id/digest do predecessor persistido; tip causal é identificado
+  por referências, independentemente da ordenação lexical de UUIDs. Nenhum token futuro.
+- Snapshot e fila são revalidados na transação Dexie antes de qualquer efeito. Comando,
+  selector, digest e IDs sobrevivem à reabertura do BrowserContext nativo persistente.
+
+### DIGEST PARITY
+
+- Normalização UTC com microssegundos, UUIDs, defaults/null, números JSON, arrays/objetos
+  recursivos e ordem UTF-8/C; SHA-256 calculado antes do enqueue, nunca pelo retry.
+- Seis vetores sintéticos obtidos do PostgreSQL real incluem Unicode/escaping, ordenação,
+  exponentes/escala/números extremos, timezone equivalente, snapshot e after_movement.
+- JSON normalizado, bytes canônicos e SHA coincidiram exatamente. Os vetores ficam em
+  `movementDigest.vectors.json`; seis golden tests independentes de banco e seis testes
+  de paridade PostgreSQL passaram juntos (12/12). Não há aproximação de hash.
+
+### WORKER
+
+- Transporte usa o envelope original via dispatch Edge/RPC existente. Não há fallback
+  genérico, recálculo de digest/selector, rebase ou nova identidade no retry.
+- APPLIED/HISTORY_ONLY, CONFLICT, REJECTED, BLOCKED_DEPENDENCY e RETRYABLE recebem
+  tratamento explícito. Receipt original é auditável e imutável no cliente.
+- Pending preserva obrigação durável; decisão posterior é armazenada separadamente.
+  RECONCILE impede reenvio após ACK terminal até concluir pull. Gestures mistas mantêm
+  operações genéricas e não apagam conflito anterior ao receber um ACK posterior.
+
+### PULL / RECONCILIATION
+
+- Scope movement-v1 usa o mecanismo de obrigações já existente. Lookup autenticado por
+  fazenda/event_id em effective_results e effect_decisions descobre promoções tardias,
+  sem cursor baseado no created_at do receipt original.
+- Pull animais/eventos/eventos_movimentacao respeita ownership, fazenda, tombstones e
+  proteção de intents não terminalizadas. ACK terminal libera proteção otimista, aplica
+  snapshot remoto e só então encerra a operação. Falha de pull mantém obrigação e ACK.
+- Rejeição sem fato remoto remove apenas materialização local daquele Evento/detail.
+  Conflitos factuais permanecem no histórico com classificação e rejeição auditáveis.
+
+### CUTOVER
+
+```ini
+old_generic_animal_movement_writer = DISABLED
+new_specialized_animal_movement_writer = ENABLED
+dual_write = NO
+```
+
+Bundles antigos e UPDATE genérico operacional de lote são recusados. Dexie v32 invalida
+movimentos genéricos locais incompatíveis, registra rejeição e obrigação de pull; nunca
+fabrica selector/digest nem toca dados remotos. Operações não relacionadas são preservadas.
+Writers de elegibilidade de venda/óbito/retirada continuam nos contratos existentes.
+Lote→pasto permanece no contrato genérico independente, fora deste fechamento.
+
+### E2E — componentes reais locais
+
+| Caso | Resultado observado |
+|---|---|
+| E1 | PASS: service → Dexie/fila → worker → Auth/Edge/RPC/PostgreSQL → pull, um fato/detail/receipt e um efeito |
+| E2 | PASS: intenção offline simples, reconnect e convergência |
+| E3 | PASS: A→B→C→D offline com selectors causais, três fatos/efeitos e head final D |
+| E4 | PASS: chegada T3/T2/T1; decisões servidor resolvem pending sem reenvio dos filhos; ACK original permanece BLOCKED_DEPENDENCY |
+| E5 | PASS: dois BrowserContexts/IndexedDB independentes disputam snapshot, dois fatos e um efeito; ambos convergem após pull |
+| E6 | PASS: interceptação descarta ACK somente após resposta real e prova SQL de commit; restart/replay mantém comando e zero duplicação |
+| E7 | PASS: fechamento/reabertura real de perfil Chromium persistente mantém selector/digest/IDs e conclui sync |
+| E8 | PASS: farm switch preserva intenção A durante pull de B e retoma corretamente em A |
+| E9 | PASS: movimento offline contra venda/status concorrente; boundary rejeita projeção e pull observa vendido |
+| E10 | PASS: dois testes, óbito e tombstone concorrentes; boundary rejeita projeção e pull observa estado terminal |
+
+Playwright passou 11/11 sem mocks de Auth/Edge/RPC/PostgreSQL nem IndexedDB. E9/E10
+usam sessão SQL independente com claim do owner para o writer de elegibilidade, enquanto
+o cliente está offline: não são certificação do formulário de venda/óbito. O runner SQL
+também revalidou writers sobrepostos e sessões concorrentes reais. Perfis persistentes
+temporários são fechados/removidos; não se exportam tokens, traces ou storageState.
+
+Uma execução intermediária teve falha na preparação Auth de E1 (objeto não serializado);
+causa interna não confirmada. Adicionado diagnóstico somente por code/status, sem segredo.
+As execuções posteriores completas passaram. Isso não é classificado como falha de comando.
+
+### TESTS / BUILD
+
+| Comando | Evidência |
+|---|---|
+| `pnpm exec vitest run src/lib/offline src/lib/events src/lib/reproduction src/pages/__tests__/AnimalPosParto.e2e.test.tsx supabase/functions/sync-batch` | 655 PASS, 6 SQL skipped sem variável DB; esses seis executados no runner SQL separado |
+| `pnpm exec vitest run src/components/manejo/__tests__/AdicionarAnimaisLote.test.tsx` | 3/3; seleção/inelegibilidade bulk preservadas, um intent especializado por animal e feedback pendente |
+| `node scripts/codex/validate-movement-finalization.mjs --digest` | 12/12: seis golden + seis paridades PostgreSQL reais |
+| `node scripts/codex/validate-movement-finalization.mjs` | 11/11 native BrowserContext, E1–E10 |
+| `node scripts/codex/validate-movement-server-foundation.mjs` | 57/57 PostgreSQL; banco isolado criado/removido, sem copiar dados de aplicação |
+| `node scripts/codex/validate-movement-transport.mjs` | 11/11 Auth→Edge→RPC→PostgreSQL, incluindo três state-conflict existentes |
+| `node scripts/codex/validate-supabase-baseline-functional.mjs` | 5/5; RLS, papéis, FKs e Edge; run 91bc0d1a |
+| `pnpm run lint` e lint dos últimos testes alterados | PASS, exit 0 |
+| `node --check scripts/codex/validate-movement-finalization.mjs` | PASS |
+| Typecheck app comparado ao HEAD inicial | 248 diagnósticos idênticos em ambos, zero novo; erro novo Dexie corrigido |
+| `pnpm run build` | PASS, execução final 32.68s; warnings Browserslist, importação mista Dexie e chunks >500kB |
+| `pnpm run gates:docs` / `git diff --check` | PASS no fechamento |
+
+Runners com fatos persistentes exigem `REBANHOSYNC_DISPOSABLE_LOCAL_DB=1`; endpoints
+localhost são validados, credenciais permanecem em memória. Fixtures sintéticas HTTP/Browser
+e baseline são preservadas no ambiente local designado; nenhum reset executado.
+
+Typecheck pertinente: `node node_modules/typescript/bin/tsc -p tsconfig.app.json --noEmit
+--ignoreDeprecations 5.0`. O config global usa ignoreDeprecations=6.0 incompatível com o
+TypeScript instalado. Comparação com exportação limpa de HEAD, mesmas dependências e
+mesmo comando, removeu apenas paths/posições de linha e comprovou os mesmos 248 erros.
+Não há PASS global de TypeScript. Não foi necessária regressão global de todos os domínios;
+a bateria ampliada cobre os caminhos alterados, callers e servidor diretamente afetados.
+
+Arquivos produtivos alterados/adicionados: `movement.ts`, `movementDigest.ts`,
+`movementReconciliation.ts`, `buildEventGesture.ts`, `ops.ts`, `db.ts`, `pull.ts`,
+`syncWorker.ts`, `types.ts`, `reconciliationTypes.ts`, `postPartum.ts`, `calfJourney.ts`,
+`AnimaisTransicoes.tsx`, `MoverAnimalLote.tsx` e `AdicionarAnimaisLote.tsx`. Testes: movementOffline, movementDigest
+PostgreSQL/goldens, movementEventStateConvergence, crossDeviceCausalIdentity,
+stateExpectedRevision, buildEventGesture, postPartum, AdicionarAnimaisLote e Playwright finalization; config/runner
+Playwright locais adicionados. Documentação: este documento, PROJECT_STATUS,
+ACTIVE_PHASE_PLAN, CURRENT_PHASE_HANDOFF e delta canônico de OPERATIONAL_FLOWS seção 9.
+Servidor, migrations, RLS, dependências e demais domínios não foram editados nesta missão.
+
+### FATO CONFIRMADO / G3
+
+Pode existir Evento de movimentação aplicado sem que o sistema possua decisão explícita
+e reconciliável sobre seu efeito no current state? **NÃO, para Animal→Lote pelo writer
+certificado.** Estados explícitos: STATE_APPLIED, HISTORY_ONLY, HISTORY_CONFLICT,
+PENDING_CAUSAL_DEPENDENCY, PROJECTION_CONFLICT e REJECTED. Pending é obrigação durável,
+nunca sucesso de estado. Nenhum caminho Animal→Lote certificado deixa um fato sem classe.
+
+### RISCOS RESIDUAIS / PRÓXIMO PASSO
+
+1. Certificação local: não prova deploy/gateway remoto, dispositivos físicos ou escala de backlog.
+2. TypeScript global mantém 248 diagnósticos preexistentes; ausência de regressão comprovada,
+   sem declarar o repositório globalmente type-clean.
+3. Intents genéricos locais incompatíveis são invalidados no upgrade; exigem pull e nova
+   intenção explícita. Fixtures sintéticas locais permanecem para descarte autorizado futuro.
+
+`REMOTE_DATA_CHANGED = NO`. Sem blocker remanescente desta vertical. Próximo passo:
+revisar o patch de fechamento e seguir ao próximo item real da F24.4E, sem início automático
+de lote→pasto, occupancy, E3/F24.4F ou operação remota.

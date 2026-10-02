@@ -44,6 +44,7 @@ export type OperationQueueSyncState =
   | "PENDING"
   | "RETRYABLE"
   | "REJECTED"
+  | "RECONCILE"
   | "BLOCKED_DEPENDENCY";
 export type SanitarioV2CutoverStatus =
   | "PREPARED"
@@ -396,6 +397,8 @@ export interface Animal {
   deleted_at: string | null;
   /** Última revisão remota conhecida; nunca é incrementada pelo device. */
   revision?: number;
+  movement_version?: string | number;
+  movement_head_event_id?: string | null;
 }
 
 export interface Lote {
@@ -644,6 +647,11 @@ export interface Operation {
   before_snapshot?: any;
   /** Revisão remota capturada quando uma mutação state protegida foi criada. */
   expected_revision?: number;
+  movement_group?: string;
+  command_digest?: string;
+  movement_result?: SyncOperationResult;
+  movement_effective_result?: string;
+  movement_effective_decision?: Record<string, unknown>;
   /** Canonical sanitario_v2 identity returned by sync-batch. */
   domain_op_id?: string;
   /** Per-operation retry/blocking state; fields are intentionally not indexed. */
@@ -1967,6 +1975,8 @@ export interface SyncOperationResult {
 }
 
 export interface SyncOperationAuditResult extends SyncOperationResult {
+  movement_effective_result?: string;
+  movement_effective_decision?: Record<string, unknown>;
   matched: boolean;
   recorded_at: string;
   command?: SanitarioSyncV2Command;

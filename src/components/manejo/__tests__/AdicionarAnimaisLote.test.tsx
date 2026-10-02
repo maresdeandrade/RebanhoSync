@@ -85,11 +85,10 @@ function capturedOperations(): OperationInput[] {
 }
 
 function expectMovementComposition(ops: OperationInput[], count: number) {
-  expect(ops.filter((op) => op.table === "eventos")).toHaveLength(count);
-  expect(ops.filter((op) => op.table === "eventos_movimentacao")).toHaveLength(
-    count,
-  );
-  expect(ops.filter((op) => op.table === "animais")).toHaveLength(count);
+  expect(ops).toHaveLength(count);
+  expect(ops.every((op) => op.table === "movement_v1" && op.record.movement_mode === "operational")).toBe(true);
+  expect(new Set(ops.map(op => op.record.subject_id)).size).toBe(count);
+  expect(ops.every(op => op.record.to_lote_id === targetLotId)).toBe(true);
 }
 
 describe("AdicionarAnimaisLote bulk feedback", () => {
@@ -121,7 +120,7 @@ describe("AdicionarAnimaisLote bulk feedback", () => {
     await waitFor(() => expect(createGesture).toHaveBeenCalledTimes(1));
     expectMovementComposition(capturedOperations(), 10);
     expect(showSuccess).toHaveBeenCalledWith(
-      "10 animal(is) adicionado(s) ao lote Lote Destino.",
+      "Movimentação de 10 animal(is) para Lote Destino registrada localmente; aguardando confirmação do servidor.",
     );
   });
 
@@ -149,12 +148,12 @@ describe("AdicionarAnimaisLote bulk feedback", () => {
     const ops = capturedOperations();
     expectMovementComposition(ops, 8);
     const processedIds = ops
-      .filter((op) => op.table === "animais")
-      .map((op) => op.record.id);
+      .filter((op) => op.table === "movement_v1")
+      .map((op) => op.record.subject_id);
     expect(processedIds).not.toContain("animal-9");
     expect(processedIds).not.toContain("animal-10");
     expect(showSuccess).toHaveBeenCalledWith(
-      "8 animal(is) adicionado(s) ao lote Lote Destino.",
+      "Movimentação de 8 animal(is) para Lote Destino registrada localmente; aguardando confirmação do servidor.",
     );
   });
 

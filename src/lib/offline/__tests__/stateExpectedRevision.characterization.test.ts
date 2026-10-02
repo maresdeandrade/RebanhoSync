@@ -37,7 +37,7 @@ describe("F24.4C/F24.4E1 — snapshot remoto de revision", () => {
       {
         table: "animais",
         action: "UPDATE",
-        record: { id: "animal-revision-1", lote_id: "lote-b" },
+        record: { id: "animal-revision-1", observacoes: "new note" },
       },
     ]);
 
@@ -117,7 +117,7 @@ describe("F24.4C/F24.4E1 — snapshot remoto de revision", () => {
       {
         table: "animais",
         action: "UPDATE",
-        record: { id: "animal-legacy-1", lote_id: "lote-b" },
+        record: { id: "animal-legacy-1", observacoes: "new note" },
       },
     ]);
 

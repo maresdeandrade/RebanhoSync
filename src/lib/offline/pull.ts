@@ -9,7 +9,7 @@ import {
 import { getPendingCommercialPurchaseRecords } from "@/lib/comercial/animalPurchaseSync";
 import { getPendingCommercialOperationRecords } from "@/lib/comercial/commercialOperationSync";
 import type { IndexableType } from "dexie";
-import type { PullCursor, PullCursorScope } from "./types";
+import type { Operation, PullCursor, PullCursorScope } from "./types";
 
 export const DEFAULT_REMOTE_TABLES = [
   "pastos",
@@ -246,6 +246,9 @@ async function getPendingFactualEventIds() {
     operations
       .filter((operation) => operation.sync_state !== "REJECTED")
       .flatMap((operation) => {
+        if (operation.table === "movement_v1") {
+          return operation.sync_state === "RECONCILE" ? [] : [String(operation.record.event_id)];
+        }
         const commercialRecords = [
           ...getPendingCommercialPurchaseRecords(operation),
           ...getPendingCommercialOperationRecords(operation),
@@ -279,6 +282,16 @@ async function getPendingFactualEventIds() {
   );
 }
 
+function getMovementPendingCandidates(operation: Operation) {
+  if (operation.table !== "movement_v1" || operation.sync_state === "RECONCILE" || operation.sync_state === "REJECTED") return [];
+  const record = operation.record;
+  return [
+    { table: "animais", record: { id: record.subject_id, fazenda_id: record.fazenda_id } },
+    { table: "eventos", record: { id: record.event_id, fazenda_id: record.fazenda_id } },
+    { table: "eventos_movimentacao", record: { evento_id: record.event_id, fazenda_id: record.fazenda_id } },
+  ];
+}
+
 async function getPendingRecordIds(
   remoteTables: readonly string[],
   fazendaId: string,
@@ -292,6 +305,7 @@ async function getPendingRecordIds(
     if (operation.sync_state === "REJECTED") continue;
     const candidates = [
       { table: operation.table, record: operation.record },
+      ...getMovementPendingCandidates(operation),
       ...getPendingCommercialPurchaseRecords(operation),
       ...getPendingCommercialOperationRecords(operation),
     ];
@@ -333,6 +347,7 @@ function getOperationCandidates(
 ) {
   const candidates: Array<{ table: string; record: RemoteRow }> = [
     { table: operation.table, record: operation.record },
+    ...getMovementPendingCandidates(operation),
     ...getPendingCommercialPurchaseRecords(operation),
     ...getPendingCommercialOperationRecords(operation),
   ];

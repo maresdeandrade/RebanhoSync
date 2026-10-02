@@ -167,23 +167,21 @@ describe("buildEventGesture", () => {
     );
   });
 
-  it("builds movimentacao with animal update (including null destination when allowed)", () => {
+  it("builds specialized Animal→Lote intent and fails closed for null destination", () => {
+    expect(() => buildEventGesture({ dominio: "movimentacao", fazendaId: "farm-1", animalId: "animal-1",
+      fromLoteId: "lote-old", toLoteId: null, allowDestinationNull: true })).toThrow("MOVEMENT_DESTINATION_REQUIRED");
     const result = buildEventGesture({
       dominio: "movimentacao",
       fazendaId: "farm-1",
       animalId: "animal-1",
       loteId: "lote-old",
       fromLoteId: "lote-old",
-      toLoteId: null,
+      toLoteId: "lote-new",
       allowDestinationNull: true,
     });
 
-    expect(result.ops.map((o) => o.table)).toEqual([
-      "eventos",
-      "eventos_movimentacao",
-      "animais",
-    ]);
-    expect(result.ops[2].record.lote_id).toBeNull();
+    expect(result.ops.map((o) => o.table)).toEqual(["movement_v1"]);
+    expect(result.ops[0].record).toMatchObject({ subject_id: "animal-1", to_lote_id: "lote-new", movement_mode: "operational" });
   });
 
   it("builds sanitary alert with animal payload update", () => {
