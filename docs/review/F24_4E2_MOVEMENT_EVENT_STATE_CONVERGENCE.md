@@ -4,9 +4,9 @@ Atualizado em: 2026-10-01
 
 Subfase: `F24.4E2 — MOVEMENT_EVENT_STATE_CONVERGENCE`
 
-Modo: `DOCUMENTATION` com auditoria e characterization local
+Modo atual: `IMPLEMENTATION` — fundação PostgreSQL Animal→Lote; design/characterization anteriores preservados abaixo.
 
-Status: `DESIGN_CONTRACT = DEFINED`; `E2.1_COMMAND_CONTRACT = DEFINED`; `RUNTIME_IMPLEMENTATION = NOT_STARTED`
+Status: `DESIGN_CONTRACT = DEFINED`; `E2.1_COMMAND_CONTRACT = DEFINED`; `E2.1A = SERVER_FOUNDATION_LOCAL_VALIDATED`; `G3 = OPEN`. Evidência atual na seção 14; seções 1–13 registram as etapas anteriores.
 
 ## 1. Baseline e escopo
 
@@ -845,3 +845,231 @@ Validações necessárias antes de ativação futura:
 
 Próximo passo: usar este contrato congelado para delimitar e autorizar a execução posterior
 Animal→Lote com as validações acima. Nenhuma implementação iniciada em F24.4E2.1.
+
+## 14. F24.4E2.1A — Animal→Lote Server Foundation
+
+### 14.1 Baseline e escopo autorizado
+
+Baseline inicial real: `98b4455f67d39d94f3f2480bb7412141a5dde05d`, branch
+`feat/f24-4e2-movement-event-state-convergence`; `origin/main` após fetch permanece
+`040c3c0605ff4f6ecabeedec1b28c5017455f6ac` (ahead 1 / behind 0). Worktree inicial limpa,
+staged vazio. O commit anterior contém somente design/characterization/apontadores.
+
+Nova decisão explícita do usuário: LEGACY_DATA_COMPATIBILITY=NOT_REQUIRED e
+LEGACY_CLIENT_COMPATIBILITY=NOT_REQUIRED. Supersede o adapter/cutover legado das seções
+8 e 13.9 para esta vertical. Não criar receipts/predecessores/heads históricos artificiais.
+Inicialização técnica neutra 0/null não declara vencedor factual. Não há autorização para
+migration/deploy/destruição remotos. Somente migration local forward-only e banco descartável.
+Cliente, builder, worker, pull, UI, lote→pasto e occupancy não são editados.
+
+### 14.2 Inventário concluído antes da migration
+
+| Writer real | Campos críticos | Boundary atual | CAS atual | Invalida token? |
+| --- | --- | --- | --- | --- |
+| sync-batch/index.ts, INSERT/UPDATE genérico | lote_id/status; envelope pode conter deleted_at | PostgREST por operação | UPDATE animais por revision | Mudança crítica sim; nova atribuição operacional direta será bloqueada |
+| sync-batch/index.ts, DELETE | deleted_at (soft delete) | UPDATE PostgREST | Revision E1 | Sim |
+| buildEventGesture.ts, movimentação; MoverAnimalLote/AdicionarAnimaisLote | lote_id | Fato/detail/UPDATE separados via gesture | Revision no UPDATE remoto | Sim, porém UPDATE legado será bloqueado; nova RPC é a boundary |
+| buildEventGesture.ts, comercial/financeiro | status=vendido, lote_id=null | Gesture genérica | Revision | Sim, uma vez mesmo mudando ambos |
+| buildEventGesture.ts, óbito | status=morto, lote_id=null | Gesture genérica | Revision; anti-teleporte existente não generalizado | Sim; não corrige outro domínio |
+| apply_commercial_operation_v2, migration 20260813134853 | Compra INSERT inicial; venda status/lote_id=null | RPC transacional | Lock/snapshot comercial; sem CAS revision da venda | Venda invalida; compra inicia 0/null |
+| apply_individual_animal_purchase, migration 20260808120000 | INSERT inicial status/lote_id | RPC transacional | Identidade/PK, não UPDATE | Inicialização neutra |
+| AnimalNovo / animals/registration.ts; import/importV2.ts | INSERT inicial status/lote_id | createGesture → INSERT | PK/identidade | Inicialização neutra, não Evento inventado |
+| reproduction/register.ts, cria | INSERT inicial status/lote_id; outros UPDATEs de cadastro/payload | Gesture | Revision para UPDATE | Só campos críticos invalidam |
+| AnimalEditar | Preserva status; DELETE; edição cadastral | Gesture | Revision | Cadastro sem mudança crítica não; tombstone sim |
+| trg_animais_state_revision | revision em todo UPDATE | BEFORE UPDATE | Incremento servidor | Mantido; não é autoridade do movement_version |
+| trg_animais_updated_at / trg_animais_sanitario_recompute | updated_at / recompute sanitário | BEFORE/AFTER UPDATE | Não aplicável | Não escrevem tuple crítico de animais |
+| PostgREST direto / service_role / FK on-delete set-null | UPDATE potencial de tuple crítico | Escrita SQL/RLS/FK | Não há CAS obrigatório no banco genérico | Trigger cobre invalidação e bloqueio de atribuição operacional |
+
+Busca dirigida nas migrations/functions ativas encontrou somente as duas RPCs comerciais
+como DML literal de animais; sync-batch usa tabela dinâmica. Pull/rollback/materialização
+Dexie não são writers remotos. Outros UPDATEs observados em reprodução/sanitário/Registrar
+alteram payload/cadastro, não localização/status/tombstone. Nenhum runtime fora da migration
+será modificado para contornar o novo guard.
+
+### 14.3 Autoridade escolhida
+
+`movement_version` permanece o nome: representa validade da projeção e elegibilidade,
+nunca ordem física ou revision genérica. Um único BEFORE INSERT/UPDATE guard inicializa
+0/null e incrementa exatamente uma vez por mudança real de lote_id/status/deleted_at.
+A RPC não incrementa o contador. Head é atualizado somente pela boundary especializada;
+saída/status/tombstone genéricos invalidam token e conservam a última cabeça factual.
+Mudança real de head também invalida o token no mesmo incremento, sem contador paralelo.
+Papel interno sem login separa a autoridade da RPC dos callers authenticated/service_role;
+nenhum GUC fornecido pelo cliente autoriza bypass. Administração de DDL é fronteira confiável,
+não segurança contra administrador capaz de desabilitar triggers.
+
+```ini
+TOKEN_NAME = movement_version
+TOKEN_OWNER = trg_animais_movement_projection_guard
+TOKEN_INCREMENT_RULE = ONE_PER_UPDATE_CHANGING_LOTE_STATUS_DELETED_AT_OR_HEAD
+HEAD_FIELD = movement_head_event_id
+ANIMAL_GENERIC_REVISION_AUTHORITY = EXISTING_SERVER_REVISION_CAS_UNCHANGED
+MOVEMENT_HISTORY_AUTHORITY = EVENTOS_PLUS_EVENTOS_MOVIMENTACAO
+MOVEMENT_CURRENT_STATE_AUTHORITY = SERVER_DOMAIN_DECISION_WITH_LOCATION_CAS
+CLIENT_CLOCK_STATE_AUTHORITY = NONE
+EVENT_STATE_BOUNDARY = POSTGRES_DOMAIN_TRANSACTION_FACT_DETAIL_EFFECT_RECEIPT_AND_DUE_STATE
+```
+
+### 14.4 Schema, ledger e enforcement implementados
+
+Única migration nova: `supabase/migrations/20261001200402_f24_4e21a_animal_lot_movement_foundation.sql`.
+Não altera migration aplicada. Adiciona `animais.movement_version bigint NOT NULL DEFAULT 0`,
+check não negativo, `movement_head_event_id uuid` e FK composta head/fazenda para Eventos.
+Inicialização técnica neutra em registros existentes/novos; sem backfill factual ou limpeza.
+
+`animal_lot_movement_receipts` representa decisão técnica, não histórico paralelo. PK
+`(fazenda_id, command_type, event_id)`, command_type fixo `apply_movement_operation`, alias
+único `(fazenda_id, client_op_id)`; client_tx_id não é único, pois um gesto pode ter várias
+operações. Guarda input normalizado, digest, result/effect, reason, origem/destino, actor,
+timestamp servidor, versões/head/revision antes/depois e JSON original do receipt.
+FKs compostas isolam animal, Evento e lotes por fazenda. Predecessor ausente não recebe FK;
+seu event_id/digest/input ficam duráveis no ledger, com índice parcial de dependências pending.
+
+Ledger possui RLS de leitura para membros e INSERT exclusivo do executor com actor real.
+Authenticated tem SELECT, sem escrita; anon/service_role não recebem grants. Triggers
+proíbem UPDATE/DELETE de receipt e de Eventos/detalhes gerenciados pelo comando, inclusive
+tombstone do fato. Correção não edita o original: input corrige_evento_id não nulo é rejeitado.
+
+O guard é SECURITY INVOKER e verifica current_user, sem GUC de autorização. Bloqueia token
+fornecido, head externo, mudança de PK/fazenda, atribuição de novo lote fora da RPC e hard
+DELETE por API/service_role. Saídas existentes podem limpar lote somente junto de status
+não ativo ou tombstone; invalidam exatamente uma vez. INSERT cadastral pode definir lote
+inicial com token 0/head null. Status/tombstone não fabricam nova cabeça factual.
+
+RPC SECURITY DEFINER pertence a `rebanhosync_movement_executor`, NOLOGIN/NOINHERIT/NOBYPASSRLS,
+sem membership para authenticated/service_role/authenticator e sem CREATE no schema após
+instalação. Grants mínimos e RLS existentes continuam aplicáveis. Política interna de lotes
+permite o lock FOR SHARE para membro operacional, com WITH CHECK(false), sem autorizar
+UPDATE efetivo. search_path fixo pg_catalog, referências qualificadas. Accessor privado
+`animal_lot_movement_actor_uid_v1()` consulta auth.uid() do JWT atual; payload não escolhe actor.
+O schema auth da plataforma não teve privilégios ampliados. DDL administrativo permanece
+fronteira confiável; não se promete proteção contra administrador capaz de remover guards.
+
+### 14.5 Comando, digest, replay e causalidade
+
+RPC real: `public.apply_animal_lot_movement_v1(p_command jsonb) RETURNS jsonb`.
+EXECUTE somente authenticated; autorização por UID/membership antes da leitura de replay.
+Contrato v1 aceita subject_type=animal, UUIDs fazenda/subject/event/client_op/client_tx,
+from_lote_id explícito (nullable), to_lote_id interno não nulo e diferente da origem,
+occurred_at ISO com timezone, movement_mode=operational/history_only; source_task_id,
+observacoes, payload e detail_payload opcionais. Campo desconhecido/shape inválido falha
+fechado. Correção não suportada é REJECTED, sem fato/receipt. Limite de input: 64 KiB.
+
+Seletores operacionais (exatamente três campos):
+
+```json
+{"kind":"snapshot","movement_version":"0","head_event_id":null}
+{"kind":"after_movement","event_id":"<predecessor UUID>","command_digest":"<SHA-256 original>"}
+```
+
+Token é string decimal canônica para preservar bigint em transporte; history_only não usa
+seletor. Normalização tipa UUIDs, aplica defaults explícitos e converte timestamp para UTC
+com microssegundos. `animal_lot_movement_command_digest_v1` calcula SHA-256 do input
+normalizado em UTF-8: objetos ordenados por chave COLLATE C, arrays em ordem original,
+números com escala normalizada. Inclui identidades, tempo factual, seletor e ambos payloads;
+não inclui horário de recepção/output. Ordem de chaves, escala numérica e representação
+equivalente do fuso não mudam digest. Cliente offline ainda precisa implementar esse contrato.
+
+Lock advisory transacional por identidade serializa replay; lotes em ordem estável são
+bloqueados FOR SHARE antes do animal FOR UPDATE. Revalida tenant, origem/destino existentes,
+source_task do mesmo tenant, status ativo/tombstone do animal e elegibilidade do destino.
+CAS: PK + fazenda + movement_version + head null-safe + origem null-safe + status ativo +
+deleted_at IS NULL. Revision genérica é auditada, não usada como CAS de localização.
+occurred_at não participa da arbitragem: primeiro efeito que satisfaz CAS vence; perdedor
+válido preserva fato com PROJECTION_CONFLICT, sem rebase/auto-merge.
+
+Fato base + detalhe + UPDATE devido + decisão/receipt ficam na mesma transação PostgreSQL.
+Falha estrutural no último INSERT reverte todas as escritas. Erro de infraestrutura/serialização
+propaga para retry da mesma identidade. A função não executa COMMIT próprio; seu JSON calculado
+em uma transação SQL explícita só é definitivo após COMMIT externo. O futuro transporte deve
+emitir ACK definitivo apenas após confirmação de commit; Edge novo não foi implementado.
+
+Mesma identidade/digest retorna JSON persistido original com `replayed=true`, antes de CAS ou
+elegibilidade, mesmo após rename/movimento subsequente. Identidade/alias divergente retorna
+CONFLICT/IDENTITY_DIVERGENCE sem segundo efeito. Eventos distintos nunca são deduplicados por
+conteúdo. REJECTED/CONFLICT de input/identidade não produzem receipt factual novo.
+Resultados persistidos: STATE_APPLIED, HISTORY_ONLY, HISTORY_CONFLICT (ciclo detectado),
+PENDING_CAUSAL_DEPENDENCY e PROJECTION_CONFLICT.
+
+Sucessor exige predecessor do mesmo tenant/animal, digest exato, destino do pai = origem do
+filho e receipt STATE_APPLIED. Usa version_after/head_after do pai e exige que ainda sejam
+correntes; jamais recebe token atual por conveniência. Snapshot com head não nulo precisa
+de receipt aceito do mesmo animal. T1/T2/T3 construídos antes de qualquer aplicação podem
+avançar A→B→C→D sem conhecer tokens futuros. Pai errado/falhado/superado não autoriza filho.
+
+Pai ausente/pending preserva fato/detail/input e referência durável, sem state effect.
+**EXECUTOR_DE_DEPENDENCIAS = NOT_IMPLEMENTED.** Chegada posterior do pai não modifica o receipt
+pending original; replay continua pending. Retomada automática precisará de incremento servidor
+explícito e decisão final append-only separada, sem transformar replay em nova arbitragem.
+Assim, processamento fora de ordem completo e drain sem cliente não são certificados aqui.
+
+### 14.6 Validações observadas e reprodução local
+
+`node scripts/codex/validate-movement-server-foundation.mjs`: exit 0, **3/3 arquivos, 33/33 testes**
+(24 foundation, 5 revision E1, 4 comercial v2). Runner exige Supabase local, cria banco
+`f24_movement_<UUID>` descartável, copia apenas schemas public/auth/extensions e owners/ACLs,
+usa pgcrypto real e instala a migration se a origem ainda não a contém. Não copia dados.
+Restaura objetos da plataforma pelo administrador do container; credenciais ficam no ambiente,
+sem logs/arquivos. Encerra conexões e remove somente seu banco temporário. Zero bancos desse
+prefixo restantes foi observado após execução. Não houve reset do banco Supabase de origem.
+
+| Evidência PostgreSQL real | Resultado observado |
+| --- | --- |
+| P1–P3: movimento/replay após rename e outro efeito/divergência | Um efeito, receipt original, divergência sem nova escrita |
+| P4: duas sessões sobrepostas, login authenticator → authenticated | Segunda sessão observada em wait_event_type=Lock antes do COMMIT da primeira; um STATE_APPLIED e um PROJECTION_CONFLICT, dois fatos, token +1 |
+| P5: rename de outra sessão | Revision avança, movement_version não; movimento aceita |
+| P6–P8: vendido/morto/retirado, tombstone, ABA | Invalidação única e intenção stale sem efeito |
+| P9: cadeia offline A→B→C→D | Digests construídos antes do intake; três efeitos aceitos |
+| P10: filho antes do pai e nova sessão | Dependência durável; pai aplica, replay do filho mantém pending |
+| P11–P12: tenant/outsider/FK impossível/correção | Fail closed sem fato/detail/receipt |
+| Skew +55/-55, ordem invertida e mesmo occurred_at | Clock não supera CAS aceito |
+| Token/head/GUC/tenant/SET ROLE/service_role/hard DELETE | Bypass relevante bloqueado; papéis API não assumem executor |
+| Canonicalização, fatos distintos, immutabilidade/RLS | Digest equivalente, identidades preservadas, receipt/fatos protegidos |
+| Falha injetada no último INSERT de receipt | Rollback de fato/detail/state/token/revision |
+
+`REAL_POSTGRES_CONCURRENCY = PROVEN` somente para o cenário local P4 observado; não é E2E
+novo nem prova de todas as combinações de writers. Os testes usam sessões API reais via
+authenticator, não SESSION_USER postgres que poderia assumir arbitrariamente o executor.
+
+`supabase migration up --local`: exit 0, aplicada somente a migration 20261001200402 ao
+Supabase local. Consulta posterior confirmou versão, owner da RPC, SECURITY DEFINER,
+search_path, ausência de CREATE no schema e ausência de membership API no executor.
+Warning de AGENTS.md ignorado pelo CLI e aviso de atualização de CLI não impediram aplicação.
+
+`$env:REBANHOSYNC_DISPOSABLE_LOCAL_DB='1'; node scripts/codex/validate-supabase-baseline-functional.mjs`:
+exit 0, run_id `77e08e70`; owner/manager/cowboy/outsider, estrutura produtiva, FK composta
+cross-tenant, Sanitário factual/inventário/RLS, sync-batch Edge real e partial success passaram.
+Essa baseline valida os fluxos existentes após migration, não o novo transporte de movimentação.
+Fixtures factuais locais do script foram preservadas: client_id baseline-functional, fazendas
+`f9514f46-ac48-4e56-b528-fc472892f83d` e `99550993-e571-413f-b578-46dfd4a824af`; não remover
+histórico como limpeza automática. LOCAL_RESET_USED=NO; REMOTE_DATA_CHANGED=NO.
+
+ESLint focado nos dois arquivos JS/TS novos e node --check do runner: exit 0.
+Build e regressão global não executados: nenhum runtime/build de cliente ou Edge foi editado;
+validação proporcional de banco usa os três arquivos PostgreSQL e a baseline funcional.
+`pnpm run gates:docs`: exit 0; headers/baselines, continuidade e data contract passaram.
+`git diff --check`: exit 0. Checks --no-index dos três arquivos novos não emitiram diagnósticos
+de whitespace (exit 1 indica diff contra /dev/null). Revisados tracked, staged vazio e cada
+untracked: quatro documentos modificados, migration/teste/runner novos; nenhum arquivo de
+cliente/Edge ou migration anterior alterado. Marcador temporário do CLI restaurado ao conteúdo
+inicial, sem incorporá-lo ao patch. HEAD final igual ao inicial, ahead 1 / behind 0.
+
+### 14.7 Limitações, review e próximo incremento
+
+Fundação implementada e validada localmente, ainda sem commit/push/merge/deploy desta entrega.
+Verification gate: **READY WITH CAVEAT**, restrito à review da foundation; validação de banco
+e baseline passaram, build global não executado pela delimitação deste incremento. Não é gate
+de ativação do produto nem autorização de PR/merge/deploy.
+Compatibilidade legada foi explicitamente dispensada; UPDATE genérico de novo lote agora é
+bloqueado no banco local. O cliente atual ainda não chama a nova boundary; G3 permanece aberto
+no produto e F24.4E2 não está encerrada. Histórico legítimo pode ter classificação sem efeito,
+sem compensação destrutiva. Não houve alteração de dados/infraestrutura remotos.
+
+1. Executor de dependências/decisão final posterior ausente: pending é durável, não resolvido.
+2. Edge/cliente/pull não integrados; ativação exige revisão e validação do transporte, inclusive
+   ACK pós-commit e paridade do digest offline. Baseline funcional não certifica esse E2E novo.
+3. Correções, lote→pasto/occupancy e todas as intercalações de writers críticos estão fora da
+   evidência desta foundation; DDL administrativo continua confiável, sem proteção contra owner.
+
+Próximo passo: review desta foundation; depois delimitar F24.4E2.1B Edge/transport integration.
+Não começar E3/F24.4F nem ampliar autorização de ambiente remoto.
