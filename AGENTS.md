@@ -33,7 +33,7 @@ Use um único modo principal:
 - `IMPLEMENTATION` — modificar somente o escopo autorizado;
 - `VERIFICATION` — validar uma entrega já implementada;
 - `DOCUMENTATION` — alterar documentação sem mudar runtime;
-- `PR_PREPARATION` — preparar entrega já validada.
+- `PR_PREPARATION` — produzir título e descrição do PR a partir de entrega já validada, sem revalidar nem alterar implementação.
 
 Revisão, diagnóstico ou auditoria não autorizam implementação.
 Descoberta não autoriza correção automática.
@@ -229,8 +229,10 @@ verification gate
 PR preparation
 ```
 Essas etapas não devem ser confundidas.
-Após implementação, use rebanhosync-verification-gate quando aplicável.
-Use prepare-pr somente após a entrega estar tecnicamente validada e classificada como pronta.
+Após implementação, use `rebanhosync-verification-gate` quando aplicável.
+Use `prepare-pr` somente após a entrega estar tecnicamente validada e classificada como `READY`.
+`prepare-pr` é a autoridade interna para a narrativa final do PR em `PR_PREPARATION`; deve usar o template atual do repositório e apenas evidência já verificada.
+Workflows de CI validam estrutura e comportamento automatizável, mas não substituem revisão técnica, verification gate nem geram a narrativa autoritativa do PR.
 
 ---
 
