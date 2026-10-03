@@ -1,26 +1,27 @@
-name: Capability Gap / Tech Debt
-description: Registrar gap ligado a capability_id do Catalog ou infra.* fora do catálogo funcional
-title: "[<capability_id>] <resumo curto>"
-labels: ["capability", "tech-debt"]
+name: Capability / Infra Gap
+description: Registrar gap rastreável de capability, infraestrutura, segurança, arquitetura ou governança
+title: "[GAP] "
+labels: ["capability"]
 body:
   - type: markdown
     attributes:
       value: |
-        Use este template para registrar gaps rastreáveis de capacidade, infraestrutura, segurança, arquitetura ou governança.
+        Use este formulário para registrar um gap com evidência suficiente para posterior priorização e implementação.
 
         Regras:
-        - Use capability_id para itens do Catalog.
-        - Use infra.* para itens fora do catálogo funcional.
-        - Inclua evidência PM sempre que possível.
-        - Critério de aceite deve ser mensurável.
-        - Não misture diagnóstico, solução e escopo de patch no mesmo campo.
+        - A issue registra diagnóstico/backlog; não autoriza implementação, migration, deploy, merge ou operação remota.
+        - Use `capability_id` quando existir identificador ativo aplicável; use `infra.*` para infraestrutura/governança fora do catálogo funcional.
+        - Código e migrations ativas têm precedência factual. Documentação e relato de agente não comprovam comportamento isoladamente.
+        - Diferencie fato confirmado de inferência.
+        - Critério de aceite deve ser verificável e não prescrever refatoração maior que o necessário.
+        - Validação esperada deve ser proporcional ao risco e ao escopo.
 
   - type: input
     id: capability_id
     attributes:
       label: capability_id ou infra_id
-      description: "Ex.: movimentacao.anti_teleport_client, pesagem.registro, infra.rbac_hardening"
-      placeholder: "movimentacao.anti_teleport_client"
+      description: Informe o identificador existente quando conhecido. Não crie um novo ID apenas para preencher este campo; use N/A se ainda não houver identificação canônica.
+      placeholder: "ex.: sanitario.registro, movimentacao.registro, infra.rls_hardening ou N/A"
     validations:
       required: true
 
@@ -28,22 +29,24 @@ body:
     id: track
     attributes:
       label: Track
-      description: Informe se o gap pertence ao catálogo funcional ou à infraestrutura/governança.
+      description: Classifique sem transformar roadmap em pendência técnica.
       options:
         - Catalog
-        - Infra (out-of-catalog)
+        - Infra / Out-of-catalog
+        - Ainda não classificado
     validations:
       required: true
 
   - type: dropdown
     id: severity
     attributes:
-      label: Severidade
-      description: P0 bloqueia operação/segurança; P1 degrada fluxo crítico; P2 é dívida técnica ou melhoria relevante.
+      label: Severidade técnica
+      description: Classifique pelo impacto observado, não pela urgência desejada.
       options:
-        - P0
-        - P1
-        - P2
+        - BLOCKER — segurança, perda/corrupção de dados, isolamento multi-tenant, operação destrutiva ou contrato crítico quebrado
+        - HIGH — bug funcional provável ou regressão relevante sem mitigação adequada
+        - MEDIUM — falha real de robustez, edge case relevante ou cobertura insuficiente com impacto limitado
+        - LOW — problema menor e objetivo, sem risco crítico
     validations:
       required: true
 
@@ -52,11 +55,13 @@ body:
     attributes:
       label: Domínio principal
       options:
+        - animais
         - sanitario
         - biosseguranca
         - pesagem
         - nutricao
         - movimentacao
+        - lotes_pastos
         - reproducao
         - compra_venda
         - estoque_insumos
@@ -64,10 +69,13 @@ body:
         - agenda
         - insights
         - sync
+        - auth
         - security
         - platform
+        - mobile
         - docs
         - ci_governanca
+        - outro
     validations:
       required: true
 
@@ -75,25 +83,67 @@ body:
     id: affected_layers
     attributes:
       label: Camadas afetadas
-      description: Marque todas as camadas afetadas pelo gap.
+      description: Marque somente superfícies sustentadas pela evidência disponível.
       options:
         - label: UI / UX
         - label: Domínio / regra de negócio
         - label: Dexie / offline local
         - label: Supabase / SQL / migrations
         - label: RLS / RPC / Edge Functions
-        - label: Sync / queue / rollback
+        - label: Sync / queue / retry / replay / reconciliação
+        - label: Auth / sessão / ownership
         - label: Testes
-        - label: Docs derivados
+        - label: Documentação
         - label: CI / governança
+
+  - type: checkboxes
+    id: contracts
+    attributes:
+      label: Contratos potencialmente afetados
+      description: Marque apenas quando o gap realmente tocar o contrato.
+      options:
+        - label: Agenda — intenção/tarefa futura
+        - label: Eventos — fato executado/histórico
+        - label: state_* — estado atual/read model
+        - label: Protocolo — regra/configuração
+        - label: RLS / multi-tenant / fazenda_id
+        - label: Offline-first / sync / idempotência
+        - label: Fonte de verdade
+        - label: Nenhum dos contratos acima
 
   - type: textarea
     id: current_behavior
     attributes:
-      label: Comportamento atual
-      description: Descreva o que ocorre hoje. Evite propor solução neste campo.
+      label: Comportamento atual confirmado
+      description: Descreva somente o comportamento observado. Não proponha solução neste campo.
       placeholder: |
-        Hoje o sistema permite origem == destino na movimentação, gerando rejeição tardia no fluxo de sync.
+        FATO CONFIRMADO:
+        - cenário observado
+        - resultado atual
+        - condição em que ocorre
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidência confirmada — PM / P
+      description: Inclua paths/trechos, comandos/resultados, logs não sensíveis ou passos reproduzíveis. Não use relatório de agente como única prova.
+      placeholder: |
+        PM: caminho/arquivo.ts:trecho — o que o código comprova
+        P: comando executado → resultado observado
+    validations:
+      required: true
+
+  - type: textarea
+    id: inference
+    attributes:
+      label: Inferências / hipóteses ainda não comprovadas
+      description: Registre separadamente o que ainda precisa ser validado. Use N/A se não houver.
+      placeholder: |
+        INFERÊNCIA:
+        - hipótese
+        - evidência que ainda falta
     validations:
       required: true
 
@@ -101,20 +151,9 @@ body:
     id: expected_behavior
     attributes:
       label: Comportamento esperado
-      description: Descreva o resultado correto esperado.
+      description: Descreva o resultado correto sem prescrever implementação específica quando ela ainda não estiver determinada.
       placeholder: |
-        A UI deve impedir origem == destino antes da criação do gesto.
-    validations:
-      required: true
-
-  - type: textarea
-    id: evidence
-    attributes:
-      label: Evidência PM / P
-      description: Inclua paths, linhas aproximadas, prints, comandos ou passos reproduzíveis.
-      placeholder: |
-        PM: src/pages/Registrar.tsx:~L1066 — não bloqueia origem == destino
-        P: rg -n "toLote|fromLote|origem|destino" src/pages/Registrar.tsx src
+        O fluxo deve preservar <contrato> e produzir <resultado observável> sob <condição>.
     validations:
       required: true
 
@@ -122,12 +161,12 @@ body:
     id: impact
     attributes:
       label: Risco / impacto
-      description: Explique o risco operacional, técnico, de segurança, dados ou UX.
+      description: Explique mecanismo, cenário e impacto operacional, técnico, de segurança, dados ou UX.
       placeholder: |
-        - UX degradada
-        - Rejeições no sync
-        - Integridade operacional dependente apenas do servidor
-        - Potencial divergência entre UI otimista e estado reconciliado
+        - mecanismo da falha
+        - cenário concreto
+        - impacto
+        - alcance conhecido
     validations:
       required: true
 
@@ -135,78 +174,77 @@ body:
     id: proposed_scope
     attributes:
       label: Escopo sugerido
-      description: Liste o que deve e o que não deve ser alterado.
+      description: Direção mínima e reversível, sem autorizar implementação. Liste também exclusões importantes.
       placeholder: |
         Incluir:
-        - Validação client-side antes de criar gesture
-        - Teste unitário/focal do fluxo inválido
+        - menor superfície necessária para corrigir/provar o gap
+        - testes diretamente relacionados
 
         Não incluir:
-        - Alteração em migrations
-        - Refatoração ampla do Registrar
-        - Mudança no contrato de sync
+        - refatoração transversal não necessária
+        - migration/RLS/sync sem necessidade comprovada
     validations:
       required: false
 
   - type: textarea
     id: acceptance
     attributes:
-      label: Critério de aceite mensurável
-      description: Deve permitir fechar o gap em IMPLEMENTATION_STATUS, TECH_DEBT e/ou ROADMAP.
+      label: Critérios de aceite verificáveis
+      description: Critérios observáveis para considerar o gap resolvido. Não dependem de declaração de agente.
       placeholder: |
-        - UI impede origem == destino
-        - Teste cobre tentativa inválida
-        - E2E Fluxo 3 passa sem depender de rejeição server-side
-        - Docs derivados atualizados quando aplicável
+        - comportamento incorreto não é mais reproduzível
+        - contrato afetado permanece preservado
+        - teste focal cobre o cenário
+        - documentação ativa é reconciliada somente se houver delta real
     validations:
       required: true
 
   - type: textarea
-    id: test_plan
+    id: validation_plan
     attributes:
-      label: Plano mínimo de teste
-      description: Liste os comandos mínimos esperados para validar o fechamento.
+      label: Validação proporcional esperada
+      description: Liste validações diretamente relacionadas. Não peça regressão global, build ou E2E por rotina sem justificativa.
       placeholder: |
-        - pnpm run lint
-        - pnpm test
-        - pnpm run build
-        - Teste específico: pnpm exec vitest run <arquivo>
+        - teste(s) focal(is): <arquivo/comando conhecido>
+        - lint/build somente se o escopo justificar
+        - gate específico de docs/agentes somente quando aplicável
     validations:
       required: true
 
-  - type: textarea
+  - type: checkboxes
     id: docs_impact
     attributes:
-      label: Impacto em documentação derivada
-      description: Informe se exige atualização de IMPLEMENTATION_STATUS, TECH_DEBT, ROADMAP ou RECONCILIACAO_REPORT.
-      placeholder: |
-        - IMPLEMENTATION_STATUS: sim/não
-        - TECH_DEBT: sim/não
-        - ROADMAP: sim/não
-        - RECONCILIACAO_REPORT: sim/não
-        - Baseline esperado: <hash ou pendente>
-    validations:
-      required: true
+      label: Documentação ativa potencialmente afetada
+      description: Marque somente documentos vivos que possam precisar de reconciliação após mudança real.
+      options:
+        - label: docs/context/PROJECT_STATUS.md
+        - label: docs/review/ACTIVE_PHASE_PLAN.md
+        - label: docs/review/CURRENT_PHASE_HANDOFF.md
+        - label: docs/product/CAPABILITY_MAP.md
+        - label: docs/product/ROADMAP.md
+        - label: docs/context/SOURCE_OF_TRUTH.md
+        - label: Outro documento ativo
+        - label: Nenhuma atualização documental esperada
 
   - type: textarea
     id: depends_on
     attributes:
-      label: depends_on
-      description: Lista opcional de capability_id ou infra_id que precisam ser resolvidos antes.
+      label: Dependências / bloqueadores
+      description: IDs, issues, contratos ou evidências que precisam existir antes da implementação. Use N/A quando não houver.
       placeholder: |
-        - movimentacao.registro
-        - infra.sync_contract_audit
+        - issue/capability/infra relacionada
+        - decisão ou evidência ainda pendente
     validations:
       required: false
 
   - type: textarea
-    id: rollback
+    id: recovery
     attributes:
-      label: Rollback / mitigação
-      description: Informe como reverter ou mitigar caso o patch gere regressão.
+      label: Recuperação / mitigação
+      description: Não presuma rollback. Quando relevante, indique rollback, compensação, reconciliação ou convergência idempotente compatível com o contrato real.
       placeholder: |
-        - Reverter PR
-        - Desabilitar CTA/fluxo afetado
-        - Restaurar migration anterior, se aplicável
+        - estratégia de mitigação
+        - condição de reversão, se realmente suportada
+        - reconciliação/compensação necessária em falha parcial
     validations:
       required: false
