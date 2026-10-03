@@ -29,6 +29,7 @@ Não carregue todo o repositório, todos os documentos, rules, skills ou outros 
 Use um único modo principal:
 - `DISCOVERY` — localizar contratos, arquivos, dependências ou causa provável;
 - `DIAGNOSIS` — analisar comportamento sem alterar arquivos;
+- `REVIEW` — revisar diff, PR, commit ou entrega sem modificar arquivos;
 - `IMPLEMENTATION` — modificar somente o escopo autorizado;
 - `VERIFICATION` — validar uma entrega já implementada;
 - `DOCUMENTATION` — alterar documentação sem mudar runtime;
@@ -266,6 +267,51 @@ Antes de executar comando desconhecido, confirme sua existência quando necessá
 Não repita testes se nenhuma alteração puder modificar o resultado.
 Não execute regressão global, build completo ou E2E por rotina.
 Inspecione tracked, staged e untracked ao revisar ou fechar uma entrega.
+
+### Revisão técnica
+
+Ao revisar PR, commit, patch ou entrega:
+
+1. defina o alvo exato da revisão: PR, intervalo base/head, commit, working tree ou arquivos indicados;
+2. confirme baseline e escopo antes de concluir sobre regressão ou ampliação indevida;
+3. revise primeiro o diff real e expanda contexto somente para provar ou refutar um achado;
+4. não trate descrição de PR, relatório de agente ou comentário como evidência suficiente;
+5. priorize defeitos de correção, segurança, perda de dados, autorização e quebra de contrato antes de estilo ou preferência;
+6. verifique testes existentes e alterados contra o comportamento que o patch realmente modifica;
+7. não corrija automaticamente findings durante `REVIEW`; correção exige autorização de implementação.
+
+Quando aplicável ao escopo, procure explicitamente por:
+- quebra de fonte de verdade ou contrato de domínio;
+- regressão de RLS, autorização, isolamento por `fazenda_id` ou exposição de segredo;
+- concorrência, stale write, duplicidade, idempotência, retry/replay e reprocessamento;
+- sucesso parcial, falha intermediária, crash/restart, offline/reconnect e auth expirada;
+- incompatibilidade entre estado local/remoto, farm-switch ou clientes antigos com operações pendentes;
+- migration destrutiva, mudança não forward-compatible ou ausência de caminho seguro de convergência;
+- testes que passam sem cobrir o risco introduzido, mocks que ocultam o comportamento real ou validações alegadas sem evidência;
+- arquivos gerados, lockfiles, migrations, configs ou mudanças laterais fora do escopo declarado.
+
+Classifique findings por impacto:
+- `BLOCKER` — risco de segurança, perda/corrupção de dados, isolamento multi-tenant, operação destrutiva ou contrato crítico quebrado;
+- `HIGH` — bug funcional provável ou regressão relevante sem mitigação adequada;
+- `MEDIUM` — falha real de robustez, edge case relevante ou cobertura insuficiente com impacto limitado;
+- `LOW` — problema menor e objetivo; não use para preferência estética sem efeito técnico.
+
+Todo finding deve:
+- apontar arquivo e trecho/símbolo afetado quando identificável;
+- explicar o mecanismo da falha, não apenas o sintoma;
+- descrever condição de reprodução ou cenário concreto;
+- separar fato observado de hipótese ainda não comprovada;
+- indicar impacto e, quando útil, a menor direção de correção sem implementar.
+
+Não:
+- infira bug apenas porque o código poderia ser diferente;
+- transforme ausência de evidência em confirmação de defeito;
+- esconda incerteza;
+- sobrecarregue a revisão com nitpicks de estilo sem impacto;
+- declare `PASS` apenas porque nenhum finding foi encontrado.
+
+Se não houver findings bloqueantes, registre o escopo efetivamente revisado, validações observadas e riscos residuais relevantes.
+Use `.agents/rules/RESPONSE_FORMATS.md` para estruturar a saída.
 
 ---
 
