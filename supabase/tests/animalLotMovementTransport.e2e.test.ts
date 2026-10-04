@@ -8,10 +8,23 @@ const apiUrl = process.env.REBANHOSYNC_TEST_API_URL;
 const anonKey = process.env.REBANHOSYNC_TEST_ANON_KEY;
 const serviceKey = process.env.REBANHOSYNC_TEST_SERVICE_ROLE_KEY;
 const dbUrl = process.env.REBANHOSYNC_TEST_DB_URL;
-const describeLocal =
-  apiUrl && anonKey && serviceKey && dbUrl
-    ? describe.sequential
-    : describe.skip;
+function isDisposableLocalEnvironment() {
+  if (
+    process.env.REBANHOSYNC_DISPOSABLE_LOCAL_DB !== "1" ||
+    !apiUrl || !anonKey || !serviceKey || !dbUrl
+  )
+    return false;
+  try {
+    return [apiUrl, dbUrl].every((value) =>
+      ["localhost", "127.0.0.1", "[::1]"].includes(new URL(value).hostname),
+    );
+  } catch {
+    return false;
+  }
+}
+const describeLocal = isDisposableLocalEnvironment()
+  ? describe.sequential
+  : describe.skip;
 const farm = crypto.randomUUID(),
   foreignFarm = crypto.randomUUID();
 const lots = Array.from({ length: 3 }, () => crypto.randomUUID()),

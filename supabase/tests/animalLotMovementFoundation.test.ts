@@ -2,7 +2,22 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Client } from "pg";
 
 const connectionString = process.env.REBANHOSYNC_TEST_DB_URL;
-const describeDatabase = connectionString ? describe.sequential : describe.skip;
+function isDisposableMovementDatabase() {
+  if (process.env.REBANHOSYNC_MOVEMENT_DISPOSABLE_DB !== "1" || !connectionString)
+    return false;
+  try {
+    const target = new URL(connectionString);
+    return (
+      ["localhost", "127.0.0.1", "[::1]"].includes(target.hostname) &&
+      target.pathname.startsWith("/f24_movement_")
+    );
+  } catch {
+    return false;
+  }
+}
+const describeDatabase = isDisposableMovementDatabase()
+  ? describe.sequential
+  : describe.skip;
 type Command = Record<string, unknown>;
 type Receipt = Record<string, unknown> & {
   status: string;
