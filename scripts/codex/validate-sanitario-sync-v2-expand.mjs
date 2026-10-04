@@ -394,7 +394,7 @@ async function main() {
         actorId: ownerId, farmId: farmA, clientOpId: randomUUID(), domainOpId: randomUUID(),
         expectedRevision: 99, agendaId, animalIds: [animalA1],
       }),
-      "conflito revision", ["40001"], "SANITARIO_AGENDA_REVISION_CONFLICT",
+      "conflito revision", ["PT409"], "SANITARIO_AGENDA_REVISION_CONFLICT",
     );
     await expectError(
       () => callReplaceAnimals(db, {
@@ -483,7 +483,7 @@ async function main() {
     assert(concurrentResults.filter((result) => result.status === "rejected").length === 1, "uma execucao concorrente deve conflitar");
     const loser = concurrentResults.find((result) => result.status === "rejected");
     assert(
-      loser?.reason?.code === "40001" || loser?.reason?.message?.includes("SANITARIO_AGENDA_REVISION_CONFLICT"),
+      loser?.reason?.code === "PT409" && loser?.reason?.message?.includes("SANITARIO_AGENDA_REVISION_CONFLICT"),
       `execucao perdedora deve falhar por revision: ${loser?.reason?.message ?? "erro ausente"}`,
     );
     const winnerIndex = concurrentResults.findIndex((result) => result.status === "fulfilled");

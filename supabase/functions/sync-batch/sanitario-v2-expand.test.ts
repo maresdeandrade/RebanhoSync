@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -12,6 +12,48 @@ function readMigration() {
 }
 
 describe("Sync Sanitario v2 expand foundation", () => {
+  it("substitui somente os SQLSTATEs stale nas três RPCs autoritativas", () => {
+    const migrationPath = join(process.cwd(), "supabase", "migrations");
+    const patchName =
+      "20261004210000_sanitario_sync_v2_revision_conflict_pt409.sql";
+    const patch = readFileSync(join(migrationPath, patchName), "utf8");
+    const functionPattern =
+      /create or replace function public\.internal_sanitario_sync_v2_(?:replace_agenda_animals|apply_factual_core|close_agenda)\([\s\S]*?\n\$\$;/g;
+    const originalFunctions = readMigration().match(functionPattern) ?? [];
+    const patchedFunctions = patch.match(functionPattern) ?? [];
+    expect(originalFunctions).toHaveLength(3);
+    expect(patchedFunctions).toHaveLength(3);
+    for (const [index, original] of originalFunctions.entries()) {
+      expect(patchedFunctions[index]).toBe(
+        original.replace("errcode = '40001'", "errcode = 'PT409'"),
+      );
+    }
+    // No grant, policy, schema, data or other function changes in this migration.
+    expect(
+      patch
+        .replace(functionPattern, "")
+        .replace(/^--.*$/gm, "")
+        .trim(),
+    ).toBe("");
+
+    const authoritative = new Map<string, string>();
+    for (const name of readdirSync(migrationPath)
+      .filter((name) => name.endsWith(".sql"))
+      .sort()) {
+      const sql = readFileSync(join(migrationPath, name), "utf8");
+      for (const definition of sql.match(functionPattern) ?? []) {
+        const name = definition.match(/function public\.(\w+)/)?.[1];
+        if (name) authoritative.set(name, definition);
+      }
+    }
+    expect(authoritative.size).toBe(3);
+    for (const definition of authoritative.values()) {
+      expect(definition).toContain(
+        "'SANITARIO_AGENDA_REVISION_CONFLICT current_revision=%', v_agenda.revision using errcode = 'PT409'",
+      );
+      expect(definition).not.toContain("errcode = '40001'");
+    }
+  });
   it("mantem as funcoes internas SECURITY INVOKER e exclusivas de service_role", () => {
     const sql = readMigration();
     const functions = [

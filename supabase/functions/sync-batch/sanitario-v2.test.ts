@@ -493,25 +493,44 @@ describe("sync-batch sanitario v2: RPC e resultado canônico", () => {
     expect(replay).toEqual(first);
   });
 
-  it("classifica revision divergente como CONFLICT com revisão atual", async () => {
-    const deps = dependencies({
-      rpcError: {
-        code: "40001",
-        message: "SANITARIO_AGENDA_REVISION_CONFLICT current_revision=7",
-      },
-    });
+  it.each(["40001", "PT409", "P0001", undefined])(
+    "classifica revision divergente (%s) como CONFLICT com revisão atual",
+    async (code) => {
+      const deps = dependencies({
+        rpcError: {
+          code,
+          message: "SANITARIO_AGENDA_REVISION_CONFLICT current_revision=7",
+        },
+      });
+      const result = await executeSanitarioSyncV2Operation(
+        createAgendaOperation(),
+        context,
+        deps,
+      );
+
+      expect(result).toMatchObject({
+        status: "CONFLICT",
+        reason_code: "SANITARIO_AGENDA_REVISION_CONFLICT",
+        current_revision: 7,
+        retryable: false,
+      });
+    },
+  );
+
+  it("não classifica PT409 genérico como stale Sanitário", async () => {
     const result = await executeSanitarioSyncV2Operation(
       createAgendaOperation(),
       context,
-      deps,
+      dependencies({
+        rpcError: { code: "PT409", message: "Generic conflict" },
+      }),
     );
-
     expect(result).toMatchObject({
-      status: "CONFLICT",
-      reason_code: "SANITARIO_AGENDA_REVISION_CONFLICT",
-      current_revision: 7,
+      status: "REJECTED",
+      reason_code: "SANITARIO_RPC_REJECTED",
       retryable: false,
     });
+    expect(result.current_revision).toBeUndefined();
   });
 
   it("não converte 23505 não idempotente em APPLIED", async () => {
@@ -549,7 +568,11 @@ describe("sync-batch sanitario v2: RPC e resultado canônico", () => {
       }),
     );
 
-    expect(timeout).toMatchObject({ status: "RETRYABLE", retryable: true });
+    expect(timeout).toMatchObject({
+      status: "RETRYABLE",
+      reason_code: "SANITARIO_RPC_TIMEOUT",
+      retryable: true,
+    });
     expect(dependency).toMatchObject({
       status: "BLOCKED_DEPENDENCY",
       reason_code: "SANITARIO_SYNC_V2_DEPENDENCY_UNAVAILABLE",

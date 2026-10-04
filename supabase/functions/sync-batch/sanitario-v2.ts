@@ -1029,6 +1029,7 @@ export function classifySanitarioSyncV2Error(
   }
   if (
     error.code === "40001" ||
+    databaseReason === "SANITARIO_AGENDA_REVISION_CONFLICT" ||
     error.code === "23505" ||
     databaseReason === "SANITARIO_AGENDA_NOT_EXECUTABLE"
   ) {
