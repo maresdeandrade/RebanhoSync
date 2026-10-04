@@ -3,6 +3,24 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const migrationName = "20260722102038_sanitario_sync_v2_expand_foundation.sql";
+const migrationPath = join(process.cwd(), "supabase", "migrations");
+const functionPattern =
+  /create or replace function public\.internal_sanitario_sync_v2_(?:replace_agenda_animals|apply_factual_core|close_agenda)\([\s\S]*?\n\$\$;/g;
+
+function readAuthoritativeFunctions() {
+  const authoritative = new Map<string, string>();
+  const names = readdirSync(migrationPath)
+    .filter((name) => name.endsWith(".sql"))
+    .sort();
+  for (const name of names) {
+    const sql = readFileSync(join(migrationPath, name), "utf8");
+    for (const definition of sql.match(functionPattern) ?? []) {
+      const functionName = definition.match(/function public\.(\w+)/)?.[1];
+      if (functionName) authoritative.set(functionName, definition);
+    }
+  }
+  return authoritative;
+}
 
 function readMigration() {
   return readFileSync(
@@ -13,12 +31,9 @@ function readMigration() {
 
 describe("Sync Sanitario v2 expand foundation", () => {
   it("substitui somente os SQLSTATEs stale nas três RPCs autoritativas", () => {
-    const migrationPath = join(process.cwd(), "supabase", "migrations");
     const patchName =
       "20261004210000_sanitario_sync_v2_revision_conflict_pt409.sql";
     const patch = readFileSync(join(migrationPath, patchName), "utf8");
-    const functionPattern =
-      /create or replace function public\.internal_sanitario_sync_v2_(?:replace_agenda_animals|apply_factual_core|close_agenda)\([\s\S]*?\n\$\$;/g;
     const originalFunctions = readMigration().match(functionPattern) ?? [];
     const patchedFunctions = patch.match(functionPattern) ?? [];
     expect(originalFunctions).toHaveLength(3);
@@ -35,17 +50,10 @@ describe("Sync Sanitario v2 expand foundation", () => {
         .replace(/^--.*$/gm, "")
         .trim(),
     ).toBe("");
+  });
 
-    const authoritative = new Map<string, string>();
-    for (const name of readdirSync(migrationPath)
-      .filter((name) => name.endsWith(".sql"))
-      .sort()) {
-      const sql = readFileSync(join(migrationPath, name), "utf8");
-      for (const definition of sql.match(functionPattern) ?? []) {
-        const name = definition.match(/function public\.(\w+)/)?.[1];
-        if (name) authoritative.set(name, definition);
-      }
-    }
+  it("mantém PT409 nas três definições finais autoritativas sem 40001", () => {
+    const authoritative = readAuthoritativeFunctions();
     expect(authoritative.size).toBe(3);
     for (const definition of authoritative.values()) {
       expect(definition).toContain(

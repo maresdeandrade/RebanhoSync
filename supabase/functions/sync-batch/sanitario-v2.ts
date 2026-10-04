@@ -1008,6 +1008,15 @@ function normalizeCanonicalResult(
   };
 }
 
+function isSanitarioConflictError(
+  error: SanitarioDbError,
+  databaseReason: string | null,
+): boolean {
+  return ["40001", "23505"].includes(error.code ?? "") ||
+    ["SANITARIO_AGENDA_REVISION_CONFLICT", "SANITARIO_AGENDA_NOT_EXECUTABLE"]
+      .includes(databaseReason ?? "");
+}
+
 export function classifySanitarioSyncV2Error(
   operation: SanitarioSyncV2Operation,
   error: SanitarioDbError,
@@ -1027,12 +1036,7 @@ export function classifySanitarioSyncV2Error(
       "BLOCKED_DEPENDENCY",
     );
   }
-  if (
-    error.code === "40001" ||
-    databaseReason === "SANITARIO_AGENDA_REVISION_CONFLICT" ||
-    error.code === "23505" ||
-    databaseReason === "SANITARIO_AGENDA_NOT_EXECUTABLE"
-  ) {
+  if (isSanitarioConflictError(error, databaseReason)) {
     return {
       ...reject(
         operation,
