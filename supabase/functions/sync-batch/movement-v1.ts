@@ -17,7 +17,10 @@ export interface MovementV1 extends Record<string, unknown> {
 }
 
 type RpcClient = {
-  rpc(name: string, args: Record<string, unknown>): PromiseLike<{
+  rpc(
+    name: string,
+    args: Record<string, unknown>,
+  ): PromiseLike<{
     data: unknown;
     error: { message?: string } | null;
   }>;
@@ -48,10 +51,11 @@ function record(value: unknown): value is Record<string, unknown> {
 
 // Recognize partial declarations BEFORE generic dispatch; validation is separate.
 export function isMovementV1Operation(value: unknown): value is MovementV1 {
-  return record(value) && (
-    (typeof value.domain === "string" &&
+  return (
+    record(value) &&
+    ((typeof value.domain === "string" &&
       /^movement(?:_|$)/.test(value.domain)) ||
-    value.command === "apply_animal_lot"
+      value.command === "apply_animal_lot")
   );
 }
 
@@ -60,10 +64,12 @@ export function validateMovementV1(
   context: { fazendaId: string; clientTxId: string },
 ): string | null {
   if (
-    op.domain !== "movement_v1" || op.command !== "apply_animal_lot" ||
-    op.contract_version !== 1 || op.subject_type !== "animal" ||
-    Object.keys(op).some((key) =>
-      !inputKeys.has(key) && key !== "domain" && key !== "command"
+    op.domain !== "movement_v1" ||
+    op.command !== "apply_animal_lot" ||
+    op.contract_version !== 1 ||
+    op.subject_type !== "animal" ||
+    Object.keys(op).some(
+      (key) => !inputKeys.has(key) && key !== "domain" && key !== "command",
     ) ||
     [
       op.fazenda_id,
@@ -72,8 +78,7 @@ export function validateMovementV1(
       op.client_op_id,
       op.client_tx_id,
       op.to_lote_id,
-    ]
-      .some((value) => typeof value !== "string" || !uuid.test(value)) ||
+    ].some((value) => typeof value !== "string" || !uuid.test(value)) ||
     !Object.hasOwn(op, "from_lote_id") ||
     (op.from_lote_id !== null &&
       (typeof op.from_lote_id !== "string" || !uuid.test(op.from_lote_id))) ||
@@ -97,6 +102,7 @@ export function validateMovementV1(
 
 function unknownResult(op: MovementV1, reason: string) {
   return {
+    operation_identity: operationIdentity(op),
     op_id: op.client_op_id,
     status: "RETRYABLE",
     retryable: true,
@@ -104,6 +110,15 @@ function unknownResult(op: MovementV1, reason: string) {
     reconciliation_required: true,
     commit_unknown: true,
     reason_code: reason,
+  };
+}
+
+function operationIdentity(op: MovementV1) {
+  return {
+    fazenda_id: op.fazenda_id,
+    event_id: op.event_id,
+    client_op_id: op.client_op_id,
+    client_tx_id: op.client_tx_id,
   };
 }
 
@@ -115,6 +130,7 @@ export async function executeMovementV1(
   const issue = validateMovementV1(op, context);
   if (issue) {
     return {
+      operation_identity: operationIdentity(op),
       op_id: op.client_op_id,
       status: "REJECTED",
       retryable: false,
@@ -149,7 +165,8 @@ export async function executeMovementV1(
   if (response.error) return unknownResult(op, "MOVEMENT_RPC_ERROR");
   const receipt = response.data;
   if (
-    !record(receipt) || ![
+    !record(receipt) ||
+    ![
       "STATE_APPLIED",
       "HISTORY_ONLY",
       "HISTORY_CONFLICT",
@@ -158,25 +175,28 @@ export async function executeMovementV1(
       "REJECTED",
       "CONFLICT",
     ].includes(String(receipt.status))
-  ) return unknownResult(op, "MOVEMENT_RPC_RESULT_INVALID");
+  )
+    return unknownResult(op, "MOVEMENT_RPC_RESULT_INVALID");
   const status =
     receipt.status === "STATE_APPLIED" || receipt.status === "HISTORY_ONLY"
       ? "APPLIED"
       : receipt.status === "PENDING_CAUSAL_DEPENDENCY"
-      ? "BLOCKED_DEPENDENCY"
-      : receipt.status === "REJECTED"
-      ? "REJECTED"
-      : "CONFLICT";
+        ? "BLOCKED_DEPENDENCY"
+        : receipt.status === "REJECTED"
+          ? "REJECTED"
+          : "CONFLICT";
   return {
+    operation_identity: operationIdentity(op),
     op_id: op.client_op_id,
     status,
     retryable: false,
     terminal: receipt.status !== "PENDING_CAUSAL_DEPENDENCY",
     reconciliation_required: true,
     state_effect: receipt.status === "STATE_APPLIED",
-    reason_code: typeof receipt.reason_code === "string"
-      ? receipt.reason_code
-      : `MOVEMENT_${receipt.status}`,
+    reason_code:
+      typeof receipt.reason_code === "string"
+        ? receipt.reason_code
+        : `MOVEMENT_${receipt.status}`,
     // Original receipt, including original PENDING, even after a later effect decision.
     canonical_result: receipt,
   };

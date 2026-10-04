@@ -53,6 +53,22 @@ try {
       );
     }
   }
+  if (
+    !(
+      await db.query(
+        "select to_regprocedure('public.guard_animal_lot_fact_insert_v1()') as guard",
+      )
+    ).rows[0].guard
+  ) {
+    await db.query("begin");
+    await db.query(
+      readFileSync(
+        "supabase/migrations/20261003120000_f24_4e2_close_generic_animal_lot_fact_boundary.sql",
+        "utf8",
+      ),
+    );
+    await db.query("commit");
+  }
   await db.query("notify pgrst, 'reload schema'");
 } finally {
   await db.end();
@@ -63,6 +79,8 @@ const child = spawn(
   [
     "node_modules/vitest/vitest.mjs",
     "run",
+    "--maxWorkers=1",
+    ...process.argv.slice(2),
     "supabase/tests/animalLotMovementTransport.e2e.test.ts",
     "supabase/tests/stateConflictSyncBatch.e2e.test.ts",
   ],

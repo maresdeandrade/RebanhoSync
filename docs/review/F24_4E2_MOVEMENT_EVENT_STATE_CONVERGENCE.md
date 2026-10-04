@@ -1,12 +1,12 @@
 # F24.4E2 — Movement Event/State Design Contract
 
-Atualizado em: 2026-10-01
+Atualizado em: 2026-10-03
 
 Subfase: `F24.4E2 — MOVEMENT_EVENT_STATE_CONVERGENCE`
 
-Modo atual: `FINALIZATION_COMPLETE` — vertical Animal→Lote fechada localmente; design/characterization anteriores preservados como histórico.
+Modo atual: `CLOSURE_RECERTIFIED` — remediação B1/M1/M2/M3 e recertificação local na mesma F24.4E2, sem nova subfase.
 
-Status: `F24_4E2_ANIMAL_TO_LOTE = CLOSED`; `F24_4E_G3_ANIMAL_TO_LOTE = RESOLVED`; `REMOTE_DATA_CHANGED = NO`. Evidência atual na seção 17, que substitui os próximos passos e gaps históricos das seções 1–16. F24.4E permanece IN_PROGRESS; lote→pasto e occupancy não foram certificados nesta missão.
+Status: `F24_4E2_ANIMAL_TO_LOTE = CLOSED`; `F24_4E_G3_ANIMAL_TO_LOTE = RESOLVED`; `REMOTE_DATA_CHANGED = NO`. Evidência atual na seção 18. O fechamento da seção 17 foi invalidado pelo review adversarial de 02/10/2026; não é prova deste gate. F24.4E permanece IN_PROGRESS; lote→pasto e occupancy não foram certificados nesta missão.
 
 ## 1. Baseline e escopo
 
@@ -1543,6 +1543,9 @@ pull/reconciliation, após review do transporte. Não iniciar automaticamente o 
 
 ## 17. Finalization — fechamento Animal→Lote
 
+Registro histórico da entrega anterior, invalidado pelo review adversarial em B1/M1/M2/M3.
+As alegações CLOSED/RESOLVED e contagens abaixo não certificam o gate atual; ver seção 18.
+
 ### DECISÃO
 
 ```ini
@@ -1714,3 +1717,147 @@ nunca sucesso de estado. Nenhum caminho Animal→Lote certificado deixa um fato 
 `REMOTE_DATA_CHANGED = NO`. Sem blocker remanescente desta vertical. Próximo passo:
 revisar o patch de fechamento e seguir ao próximo item real da F24.4E, sem início automático
 de lote→pasto, occupancy, E3/F24.4F ou operação remota.
+
+## 18. Closure remediation & recertification — B1/M1/M2/M3
+
+Data: 03/10/2026. Mesma F24.4E2, sem nova subfase. Esta seção substitui a certificação
+da seção 17, invalidada pelo relatório adversarial `F24.4E2-final-closure-review` de
+02/10/2026. Documentos anteriores CLOSED/RESOLVED não foram usados como prova.
+
+### Decisão e baseline confirmado
+
+```ini
+branch = feat/f24-4e2-movement-event-state-convergence
+HEAD_inicial = 400d7f17f9cf730fcd7bd841b28f590286906823
+HEAD_final = 400d7f17f9cf730fcd7bd841b28f590286906823
+origin/main = 040c3c0605ff4f6ecabeedec1b28c5017455f6ac
+ahead = 5
+behind = 0
+initial_worktree = CLEAN_TRACKED_STAGED_UNTRACKED
+final_worktree = LOCAL_UNCOMMITTED_REMEDIATION_PATCH
+REMOTE_DATA_CHANGED = NO
+```
+
+Status/diffs/ref/fetch foram observados antes de editar. Nenhum commit, push, merge,
+deploy, migration remota ou reset foi executado. A migration nova foi aplicada somente
+em PostgreSQL local explicitamente descartável; fixtures sintéticas foram preservadas.
+
+### Patch e fronteiras
+
+- **B1:** INSERT genérico de `eventos` com `dominio=movimentacao` e `animal_id` é
+  recusado antes de replay/INSERT na Edge. Detail com endpoints de lote ou ligado a
+  essa base também é recusado. São discriminadores de schema, não texto de payload.
+  O caminho genérico usa JWT do usuário; grants INSERT e policies membership permitem
+  PostgREST direto, confirmado por SQL e chamadas autenticadas. A migration
+  `20261003120000_f24_4e2_close_generic_animal_lot_fact_boundary.sql` impõe o mesmo
+  guard no banco. Bypass é exclusivamente `current_user=rebanhosync_movement_executor`,
+  papel privado NOLOGIN/NOBYPASSRLS já proprietário da RPC; API authenticated não é membro.
+  Não há GUC/payload de autorização. Cadastro inicial com lote, Lote→Pasto e outro
+  Evento passaram como controles. Writer especializado continua STATE_APPLIED.
+- **M1:** toda resposta Edge contém `operation_identity` com farm/event/op/tx originais
+  da request; `canonical_result` mantém o resultado/receipt original sem fabricar IDs.
+  Consumidor valida o envelope contra a queue op e compara os campos de identidade/digest
+  presentes no receipt. REJECTED e CONFLICT sem receipt factual completo são consumíveis.
+  REJECTED real, replay da rejeição e IDENTITY_DIVERGENCE atravessaram servidor/Edge/ACK;
+  envelopes de outra farm/event/op/tx são recusados. Infra mantém identidade e retry.
+- **M2:** RECONCILE integra os conjuntos de proteção factual, animal, detail e registros
+  pendentes até instalação e conclusão. Replace exclui somente linhas da farm consultada,
+  preservando outras farms e pending sem clear global. O ciclo A→ACK→pull falho→restart
+  Dexie/app→replace B vazio preservou obrigação, animal/detail e intenção de A; retorno
+  a A com leitura bem-sucedida permitiu conclusão e retirada da obrigação.
+- **M3:** snapshot persistido das queue ops e `generation_id` da obrigação antecede as
+  leituras. Observações são dirigidas aos IDs capturados; nenhum trabalho novo é incluído
+  por listagem tardia. A transação de instalação revalida geração, identidade e resultado;
+  exige state e, quando factual, Evento/detail/effective result e decisão tardia necessária.
+  Estado mais antigo que a versão do efeito não conclui a operação. Uma intenção ainda
+  protegida para o mesmo animal impede conclusão prematura. Aplicação, conclusão e remoção
+  da obrigação ocorrem na mesma transação Dexie. ACK concorrente fica RECONCILE para outro
+  ciclo. Sem sleep, debounce, created_at ou timestamp como barreira.
+- **N1: DEFERRED.** Reentrada createGesture com IDs explícitos continua fora da remediação;
+  retry/replay de transporte reutiliza o comando persistido e foi certificado separadamente.
+
+### Probes permanentes e regressão observada
+
+Inventário do patch (21 arquivos, sem dependência nova):
+
+- Runtime: `src/lib/offline/movementReconciliation.ts`, `src/lib/offline/pull.ts`,
+  `src/lib/offline/types.ts`, `supabase/functions/sync-batch/index.ts`,
+  `supabase/functions/sync-batch/movement-v1.ts`.
+- Banco: `supabase/migrations/20261003120000_f24_4e2_close_generic_animal_lot_fact_boundary.sql`.
+- Testes: `src/lib/offline/__tests__/movementClosureReview.test.ts`,
+  `src/lib/offline/__tests__/movementEventStateConvergence.characterization.test.ts`,
+  `src/lib/offline/__tests__/pull.test.ts`,
+  `src/lib/offline/__tests__/farmSwitchReplace.characterization.test.ts`,
+  `supabase/functions/sync-batch/movement-v1.test.ts`,
+  `supabase/tests/animalLotMovementTransport.e2e.test.ts`,
+  `e2e/f24-4e2-movement-finalization.spec.ts`.
+- Runners: `scripts/codex/validate-movement-finalization.mjs`,
+  `scripts/codex/validate-movement-server-foundation.mjs`,
+  `scripts/codex/validate-movement-transport.mjs`.
+- Documentação: este documento, `docs/architecture/OPERATIONAL_FLOWS.md`,
+  `docs/context/PROJECT_STATUS.md`, `docs/review/ACTIVE_PHASE_PLAN.md`,
+  `docs/review/CURRENT_PHASE_HANDOFF.md`.
+
+`src/lib/offline/__tests__/movementClosureReview.test.ts` incorpora R1/R2/R3 e o controle
+de upgrade R8 com Dexie real/fake-indexeddb; somente respostas remotas são simuladas.
+`supabase/tests/animalLotMovementTransport.e2e.test.ts` incorpora R5/R6, com Auth, Edge,
+PostgREST, RPC e PostgreSQL locais reais, e executa o consumidor ACK real para rejeição/replay/
+divergência. O novo R2 nativo está em `e2e/f24-4e2-movement-finalization.spec.ts`.
+
+Os probes negativos foram executados primeiro: R1/R2/R3 locais PASS e R5/R6 HTTP PASS.
+Depois foi executada a bateria ampliada, sem trocar expectativas para preservar o defeito.
+Testes antigos que pressupunham clear global agora exigem replace restrito à fazenda.
+Gestures mistas concluem após o ciclo que consegue instalar o state, preservando rejeições.
+
+| Validação | Resultado observado |
+| --- | --- |
+| movementClosureReview, movementOffline, movementEventStateConvergence, movement-v1, pull/farm-switch/factualDetails/reconciliationObligations, postPartum, calfJourney, buildEventGesture, AdicionarAnimaisLote; Vitest workers=1 | 13 arquivos, 122/122 PASS |
+| `validate-movement-server-foundation.mjs` | 57/57 PASS; banco isolado removido |
+| `validate-movement-transport.mjs` | 13/13 PASS, incluindo R5/R6 e três casos state-conflict |
+| `validate-movement-finalization.mjs --digest` | 12/12 PASS |
+| `validate-supabase-baseline-functional.mjs` | 5/5 PASS; run ff50a6e0; RLS/papéis/FKs/Edge |
+| `validate-movement-finalization.mjs` | 12/12 PASS, E1–E10 e novo R2; um worker |
+| ESLint focado nos TS/TSX/scripts alterados | PASS, exit 0 |
+| `deno check` index.ts e movement-v1.ts | PASS, exit 0 |
+| Typecheck app comparativo, mesmas dependências/flags | baseline 248; patch 248; NEW_TYPESCRIPT_DIAGNOSTICS=0 |
+| `pnpm run build` | PASS; Browserslist desatualizado e chunks grandes como warnings |
+| `pnpm run gates:docs` | PASS; headers, continuidade e data contract |
+| `git diff --check` e inspeção tracked/staged/untracked | PASS; 19 tracked alterados, 2 novos, staged vazio |
+
+Typecheck: `node node_modules/typescript/bin/tsc -p tsconfig.app.json --noEmit
+--pretty false --ignoreDeprecations 5.0`, comparado a exportação limpa do HEAD inicial.
+Flags contornam somente o ignoreDeprecations=6.0 incompatível com a versão instalada;
+normalização da comparação remove paths de exportação e posições, não diagnósticos.
+Não há PASS global de TypeScript.
+
+A primeira bateria nativa focada teve timeout na navegação inicial de E1; a repetição
+isolada passou, seguida de bateria completa 12/12. Não houve novo OOM nem PASS presumido.
+E9/E10 mantêm fixtures SQL de elegibilidade, não certificação dos formulários completos.
+Uma exportação de baseline foi descoberta indevidamente pelo runner durante validação
+intermediária; foi isolada fora do checkout antes das contagens finais acima.
+
+### Gate final
+
+```ini
+B1_GENERIC_FACT_BYPASS = BLOCKED
+M1_RESPONSE_IDENTITY = PROVEN
+M2_RECONCILE_PROTECTION = PROVEN
+M3_PULL_GENERATION_BARRIER = PROVEN
+ANIMAL_TO_LOTE_SINGLE_WRITER = PROVEN
+OFFLINE_SELECTOR_IMMUTABILITY = PROVEN
+DIGEST_PARITY = PROVEN
+RETRY_IDEMPOTENCY = PROVEN
+PENDING_RECONCILIATION = PROVEN
+FARM_ISOLATION = PROVEN
+CUTOVER = PROVEN
+F24_4E2_ANIMAL_TO_LOTE = CLOSED
+G3_ANIMAL_TO_LOTE = RESOLVED
+VEREDITO = READY_FOR_PR
+```
+
+Riscos residuais: certificação local não prova deploy/dispositivos físicos/escala;
+248 diagnósticos TypeScript preexistentes; N1 adiado e paginação global do pull fora
+do escopo. Não há blocker remanescente B1/M1/M2/M3.
+
+Próximo passo exclusivamente: review final do diff, push/PR autorizado e merge/rebaseline.
+Sem nova missão/subfase de fechamento ou início de outro item F24.4E.

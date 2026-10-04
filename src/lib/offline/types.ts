@@ -1961,6 +1961,12 @@ export interface SyncBatchResponse {
 
 export interface SyncOperationResult {
   op_id: string;
+  operation_identity?: {
+    fazenda_id: string;
+    event_id: string;
+    client_op_id: string;
+    client_tx_id: string;
+  };
   client_op_id?: string;
   domain_op_id?: string;
   status: SanitarioSyncV2ResultStatus | "APPLIED_ALTERED";

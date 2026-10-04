@@ -376,6 +376,64 @@ test("E8 farm switch preserves pending A without contaminating B", async ({
   await sync(page, queued.tx);
   await remote(1, lots[1], queued.event);
 });
+test("R2 ACK then pull failure, restart and farm switch preserves the reconciliation obligation", async ({
+  page,
+}) => {
+  await prepare(page);
+  const queued = await move(page, lots[1]);
+  await page.route("**/rest/v1/animais*", (route) =>
+    route.request().url().includes(farm)
+      ? route.abort("failed")
+      : route.continue(),
+  );
+  await sync(page, queued.tx);
+  expect((await read(page, queued.tx)).ops[0].sync_state).toBe("RECONCILE");
+  await page.evaluate(async () => {
+    const { db } = await import("/src/lib/offline/db.ts");
+    db.close();
+  });
+  await page.reload();
+  await page.evaluate(async (other) => {
+    const { stopSyncWorker } = await import("/src/lib/offline/syncWorker.ts");
+    const { db } = await import("/src/lib/offline/db.ts");
+    const { setActiveFarmId } = await import("/src/lib/storage.ts");
+    const { pullDataForFarm } = await import("/src/lib/offline/pull.ts");
+    stopSyncWorker();
+    await db.open();
+    setActiveFarmId(other);
+    await pullDataForFarm(
+      other,
+      ["animais", "eventos", "eventos_movimentacao"],
+      { mode: "replace" },
+    );
+  }, otherFarm);
+  const retained = await read(page, queued.tx);
+  expect(retained.animal?.lote_id).toBe(lots[1]);
+  expect(retained.ops[0].record).toEqual(queued.op.record);
+  expect(
+    await page.evaluate(
+      async ({ farm, event }) => {
+        const { db } = await import("/src/lib/offline/db.ts");
+        return {
+          obligation: !!(await db.sync_reconcile_obligations.get(
+            `${farm}:movement-v1`,
+          )),
+          detail: !!(await db.event_eventos_movimentacao.get(event)),
+        };
+      },
+      { farm, event: queued.event },
+    ),
+  ).toEqual({ obligation: true, detail: true });
+  await page.unroute("**/rest/v1/animais*");
+  await page.evaluate(async (farm) => {
+    const { setActiveFarmId } = await import("/src/lib/storage.ts");
+    const { drainReconciliationObligations } =
+      await import("/src/lib/offline/syncWorker.ts");
+    setActiveFarmId(farm);
+    await drainReconciliationObligations(farm);
+  }, farm);
+  await done(page, queued.tx, lots[1]);
+});
 for (const kind of ["venda", "obito", "tombstone"] as const)
   test(`${kind === "venda" ? "E9" : "E10"} concurrent ${kind} wins server eligibility boundary`, async ({
     page,

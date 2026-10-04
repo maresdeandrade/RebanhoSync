@@ -3,7 +3,13 @@ import "fake-indexeddb/auto";
 import { webcrypto } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
-  pull: vi.fn(async () => undefined),
+  pull: vi.fn(
+    async (
+      _farm: string,
+      _tables?: readonly string[],
+      _options?: import("../pull").PullOptions,
+    ) => undefined,
+  ),
   rows: [] as Record<string, unknown>[],
   decisions: [] as Record<string, unknown>[],
 }));
@@ -109,6 +115,12 @@ function result(
     op_id: op.client_op_id,
     status,
     canonical_result: receipt(op, canonical),
+    operation_identity: {
+      fazenda_id: farm,
+      event_id: String(op.record.event_id),
+      client_op_id: op.client_op_id,
+      client_tx_id: op.client_tx_id,
+    },
     retryable: false,
   };
 }
@@ -141,7 +153,50 @@ describe("F24.4E2 finalization — durable movement result and reconciliation", 
     mocks.rows = [];
     mocks.decisions = [];
     mocks.pull.mockReset();
-    mocks.pull.mockResolvedValue(undefined);
+    mocks.pull.mockImplementation(async (_farm, _tables, options) => {
+      if (!options?.reconciliation) return;
+      const ops = (await db.queue_ops.toArray()).filter(
+        (op) => op.table === "movement_v1" && op.sync_state === "RECONCILE",
+      );
+      const rows: Record<string, unknown[]> = {
+        animais: [{ id: animal, fazenda_id: farm, movement_version: "1" }],
+        eventos: ops.map((op) => ({
+          id: op.record.event_id,
+          fazenda_id: farm,
+        })),
+        eventos_movimentacao: ops.map((op) => ({
+          evento_id: op.record.event_id,
+          fazenda_id: farm,
+        })),
+        animal_lot_movement_effective_results: ops.map((op) => ({
+          event_id: op.record.event_id,
+          fazenda_id: farm,
+          animal_id: animal,
+          command_digest: op.command_digest,
+          effective_movement_version_after: "1",
+          effective_result:
+            op.movement_effective_result ??
+            op.movement_result?.canonical_result?.status,
+        })),
+        animal_lot_movement_effect_decisions: mocks.decisions,
+      };
+      await db.transaction(
+        "rw",
+        [
+          db.queue_ops,
+          db.queue_gestures,
+          db.queue_rejections,
+          db.sync_reconcile_obligations,
+          db.state_animais,
+          db.event_eventos,
+          db.event_eventos_movimentacao,
+        ],
+        async () => {
+          const selected = await options.reconciliation.select(rows);
+          await options.reconciliation.complete(selected);
+        },
+      );
+    });
   });
   afterEach(() => vi.unstubAllGlobals());
   it.each([
@@ -239,6 +294,12 @@ describe("F24.4E2 finalization — durable movement result and reconciliation", 
     await record(op, {
       op_id: op.client_op_id,
       status: "RETRYABLE",
+      operation_identity: {
+        fazenda_id: farm,
+        event_id: String(op.record.event_id),
+        client_op_id: op.client_op_id,
+        client_tx_id: op.client_tx_id,
+      },
       retryable: true,
     });
     const current = (await db.queue_ops.get(op.client_op_id))!;
@@ -312,6 +373,9 @@ describe("F24.4E2 finalization — durable movement result and reconciliation", 
         ),
       );
       await processGesture((await db.queue_gestures.get(op.client_tx_id))!);
+      // Generic ACK releases its row protection; movement completes on the next
+      // reconciliation, rather than claiming installation while it is protected.
+      await drainReconciliationObligations(farm);
       expect(
         await db.queue_ops
           .where("client_tx_id")

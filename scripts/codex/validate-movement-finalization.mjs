@@ -28,6 +28,7 @@ const args = process.argv.includes("--digest")
       "test",
       "--config",
       "playwright.movement.config.ts",
+      ...process.argv.slice(2),
     ];
 const child = spawn(process.execPath, args, {
   stdio: "inherit",

@@ -78,7 +78,11 @@ describe("pullDataForFarm", () => {
     );
 
     const mockStore = {
+      schema: { primKey: { keyPath: "id" } },
       clear: vi.fn(),
+      filter: vi.fn((_predicate: (row: unknown) => boolean) => ({
+        delete: vi.fn(),
+      })),
       bulkPut: vi.fn(),
     };
     (db.table as unknown as Mock).mockReturnValue(mockStore);
@@ -93,7 +97,15 @@ describe("pullDataForFarm", () => {
 
     expect(db.table).toHaveBeenCalledWith(storeNameAnimais);
     expect(db.table).toHaveBeenCalledWith(storeNameLotes);
-    expect(mockStore.clear).toHaveBeenCalledTimes(2);
+    expect(mockStore.clear).not.toHaveBeenCalled();
+    expect(mockStore.filter).toHaveBeenCalledTimes(2);
+    const predicate = mockStore.filter.mock.calls[0][0] as (
+      row: unknown,
+    ) => boolean;
+    expect(predicate({ id: "other-farm", fazenda_id: "fazenda-2" })).toBe(
+      false,
+    );
+    expect(predicate({ id: "same-farm", fazenda_id: fazendaId })).toBe(true);
     expect(mockStore.bulkPut).toHaveBeenCalledTimes(2);
   });
 
@@ -116,7 +128,11 @@ describe("pullDataForFarm", () => {
       },
     );
 
-    const mockStore = { clear: vi.fn(), bulkPut: vi.fn() };
+    const mockStore = {
+      clear: vi.fn(),
+      bulkPut: vi.fn(),
+      filter: vi.fn(() => ({ delete: vi.fn() })),
+    };
     (db.table as unknown as Mock).mockReturnValue(mockStore);
 
     await pullDataForFarm(fazendaId, remoteTables);

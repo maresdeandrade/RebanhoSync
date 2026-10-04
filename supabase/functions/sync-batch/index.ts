@@ -787,6 +787,27 @@ Deno.serve(async (req: Request) => {
           record.fazenda_id = fazenda_id; // Always use request fazenda_id
         }
 
+        // Close the old factual lane before replay or INSERT. Lote→Pasto has
+        // pasture endpoints and no animal subject; initial cadastro is not an Evento.
+        let genericAnimalMovement = op.action === "INSERT" &&
+          op.table === "eventos" && record.dominio === "movimentacao" &&
+          record.animal_id != null;
+        if (op.action === "INSERT" && op.table === "eventos_movimentacao") {
+          genericAnimalMovement = record.from_lote_id != null || record.to_lote_id != null;
+          if (!genericAnimalMovement) {
+            const parent = await supabase.from("eventos").select("dominio,animal_id")
+              .eq("id", record.evento_id).eq("fazenda_id", fazenda_id).maybeSingle();
+            if (parent.error) throw parent.error;
+            genericAnimalMovement = parent.data?.dominio === "movimentacao" &&
+              parent.data?.animal_id != null;
+          }
+        }
+        if (genericAnimalMovement) {
+          results.push({ op_id: op.client_op_id, status: "REJECTED",
+            reason_code: "GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED", retryable: false });
+          continue;
+        }
+
         const primaryKey = resolveOperationPrimaryKey({ ...op, record });
         let persistedOperation: Record<string, unknown> | null = null;
         if (primaryKey) {

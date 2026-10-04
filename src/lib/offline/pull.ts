@@ -67,9 +67,19 @@ export const SANITARIO_AGENDA_V2_REMOTE_TABLES = [
 ] as const;
 
 export interface PullOptions {
-  // replace: clear local store then write remote snapshot
+  // replace: replace only this farm, preserving pending rows
   // merge: upsert remote rows without clearing local store
   mode?: "replace" | "merge";
+  observations?: Record<string, { key: string; ids: string[] }>;
+  // Movement reconciliation releases protection and completes captured operations
+  // in the same transaction that installs the remote observations.
+  reconciliation?: {
+    stores: string[];
+    select: (
+      results: Record<string, unknown[]>,
+    ) => Promise<ReadonlySet<string>>;
+    complete: (selected: ReadonlySet<string>) => Promise<void>;
+  };
 }
 
 type RemoteRow = Record<string, unknown>;
@@ -240,14 +250,20 @@ async function appendEventoAnimais(
   }
 }
 
-async function getPendingFactualEventIds() {
+async function getPendingFactualEventIds(
+  reconciled = new Set<string>() as ReadonlySet<string>,
+) {
   const operations = await db.queue_ops.toArray();
   return new Set(
     operations
-      .filter((operation) => operation.sync_state !== "REJECTED")
+      .filter(
+        (operation) =>
+          operation.sync_state !== "REJECTED" &&
+          !reconciled.has(operation.client_op_id),
+      )
       .flatMap((operation) => {
         if (operation.table === "movement_v1") {
-          return operation.sync_state === "RECONCILE" ? [] : [String(operation.record.event_id)];
+          return [String(operation.record.event_id)];
         }
         const commercialRecords = [
           ...getPendingCommercialPurchaseRecords(operation),
@@ -283,18 +299,29 @@ async function getPendingFactualEventIds() {
 }
 
 function getMovementPendingCandidates(operation: Operation) {
-  if (operation.table !== "movement_v1" || operation.sync_state === "RECONCILE" || operation.sync_state === "REJECTED") return [];
+  if (operation.table !== "movement_v1" || operation.sync_state === "REJECTED")
+    return [];
   const record = operation.record;
   return [
-    { table: "animais", record: { id: record.subject_id, fazenda_id: record.fazenda_id } },
-    { table: "eventos", record: { id: record.event_id, fazenda_id: record.fazenda_id } },
-    { table: "eventos_movimentacao", record: { evento_id: record.event_id, fazenda_id: record.fazenda_id } },
+    {
+      table: "animais",
+      record: { id: record.subject_id, fazenda_id: record.fazenda_id },
+    },
+    {
+      table: "eventos",
+      record: { id: record.event_id, fazenda_id: record.fazenda_id },
+    },
+    {
+      table: "eventos_movimentacao",
+      record: { evento_id: record.event_id, fazenda_id: record.fazenda_id },
+    },
   ];
 }
 
 async function getPendingRecordIds(
   remoteTables: readonly string[],
   fazendaId: string,
+  reconciled = new Set<string>() as ReadonlySet<string>,
 ) {
   const protectedTables = new Set(remoteTables);
   const pendingIds = new Map<string, Set<string>>();
@@ -302,7 +329,11 @@ async function getPendingRecordIds(
 
   const operations = await db.queue_ops.toArray();
   for (const operation of operations) {
-    if (operation.sync_state === "REJECTED") continue;
+    if (
+      operation.sync_state === "REJECTED" ||
+      reconciled.has(operation.client_op_id)
+    )
+      continue;
     const candidates = [
       { table: operation.table, record: operation.record },
       ...getMovementPendingCandidates(operation),
@@ -491,6 +522,7 @@ async function writeFarmPullStore(
   rows: RemoteRow[],
   pendingRows: RemoteRow[],
   mode: PullMode,
+  fazendaId: string,
 ) {
   const { remote, local } = update;
   const store = db.table(local);
@@ -499,7 +531,16 @@ async function writeFarmPullStore(
     remote !== "eventos" &&
     remote !== "eventos_animais"
   ) {
-    await store.clear();
+    const pendingKeys = new Set(
+      pendingRows.map((row) => JSON.stringify(getLocalPrimaryKey(local, row))),
+    );
+    await store
+      .filter(
+        (row) =>
+          row.fazenda_id === fazendaId &&
+          !pendingKeys.has(JSON.stringify(getLocalPrimaryKey(local, row))),
+      )
+      .delete();
   }
   if (rows.length > 0) {
     if (remote === "eventos_animais") await appendEventoAnimais(store, rows);
@@ -517,13 +558,18 @@ async function applyFarmPull(
   storesToUpdate: StoreUpdate[],
   results: Record<string, unknown[]>,
   mode: PullMode,
+  reconciled = new Set<string>() as ReadonlySet<string>,
 ) {
   const pendingEventIds = remoteTables.some((table) =>
     PENDING_FACTUAL_REMOTE_TABLES.has(table),
   )
-    ? await getPendingFactualEventIds()
+    ? await getPendingFactualEventIds(reconciled)
     : new Set<string>();
-  const pendingRecordIds = await getPendingRecordIds(remoteTables, fazendaId);
+  const pendingRecordIds = await getPendingRecordIds(
+    remoteTables,
+    fazendaId,
+    reconciled,
+  );
   const pendingLocalRows = await getPendingLocalRows(storesToUpdate, mode);
   const effectiveResults = buildEffectiveResults(
     remoteTables,
@@ -537,6 +583,7 @@ async function applyFarmPull(
       effectiveResults[update.remote] ?? [],
       pendingLocalRows.get(update.remote) ?? [],
       mode,
+      fazendaId,
     );
   }
 }
@@ -616,11 +663,17 @@ export const pullDataForFarm = async (
   // 1. Fetch all data first (fail fast)
   const results: Record<string, unknown[]> = {};
 
-  for (const remoteTable of remoteTables) {
-    const { data, error } = await supabase
+  for (const remoteTable of new Set([
+    ...remoteTables,
+    ...Object.keys(options.observations ?? {}),
+  ])) {
+    let query = supabase
       .from(remoteTable)
       .select("*")
       .eq("fazenda_id", fazenda_id); // includes tombstones via deleted_at
+    const observation = options.observations?.[remoteTable];
+    if (observation) query = query.in(observation.key, observation.ids);
+    const { data, error } = await query;
 
     if (error) {
       console.error(`[pull] Error pulling ${remoteTable}:`, error);
@@ -651,12 +704,28 @@ export const pullDataForFarm = async (
   }
 
   const storeNames = storesToUpdate.map((s) => s.local);
-  const transactionStores = [...new Set([...storeNames, "queue_ops"])];
+  const transactionStores = [
+    ...new Set([
+      ...storeNames,
+      "queue_ops",
+      ...(options.reconciliation?.stores ?? []),
+    ]),
+  ];
 
   // 3. Write in a single transaction
-  await db.transaction("rw", transactionStores, async () =>
-    await applyFarmPull(fazenda_id, remoteTables, storesToUpdate, results, mode),
-  );
+  await db.transaction("rw", transactionStores, async () => {
+    const reconciled =
+      (await options.reconciliation?.select(results)) ?? new Set<string>();
+    await applyFarmPull(
+      fazenda_id,
+      remoteTables,
+      storesToUpdate,
+      results,
+      mode,
+      reconciled,
+    );
+    await options.reconciliation?.complete(reconciled);
+  });
 };
 
 export const pullSanitarioProductClassV2Catalog = async (

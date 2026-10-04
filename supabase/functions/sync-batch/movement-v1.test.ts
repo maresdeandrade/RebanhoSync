@@ -166,6 +166,10 @@ describe("movement_v1 transport", () => {
         canonical_result: receipt,
       });
       expect(result.canonical_result).toBe(receipt);
+      expect(result.operation_identity).toMatchObject({
+        fazenda_id: farm,
+        client_tx_id: tx,
+      });
     },
   );
   it.each(["returned", "thrown", "malformed"])(

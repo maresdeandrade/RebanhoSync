@@ -138,6 +138,214 @@ async function facts(op: MovementV1, n: number) {
 }
 
 describeLocal("F24.4E2.1B real Auth→Edge→RPC→PostgreSQL", () => {
+  it("R5 real rejection, replay and identity divergence pass the ACK consumer", async () => {
+    await import("fake-indexeddb/auto");
+    const { db: local } = await import("../../src/lib/offline/db");
+    const { recordMovementResults } =
+      await import("../../src/lib/offline/movementReconciliation");
+    const op = command(await animal(), { to_lote_id: crypto.randomUUID() });
+    const rejected = await invoke(op),
+      replay = await invoke(op);
+    expect(rejected.status).toBe("REJECTED");
+    expect(rejected.canonical_result?.client_op_id).toBeUndefined();
+    expect(replay.canonical_result?.replayed).toBe(true);
+    const different = {
+      ...op,
+      client_op_id: crypto.randomUUID(),
+      client_tx_id: crypto.randomUUID(),
+      to_lote_id: lots[2],
+    };
+    const conflict = await invoke(different);
+    expect(conflict).toMatchObject({
+      status: "CONFLICT",
+      reason_code: "IDENTITY_DIVERGENCE",
+    });
+    await local.open();
+    for (const [input, response] of [
+      [op, rejected],
+      [op, replay],
+      [different, conflict],
+    ] as const) {
+      expect(response.operation_identity).toEqual({
+        fazenda_id: farm,
+        event_id: input.event_id,
+        client_op_id: input.client_op_id,
+        client_tx_id: input.client_tx_id,
+      });
+      const gesture = {
+        client_tx_id: input.client_tx_id,
+        fazenda_id: farm,
+        status: "PENDING",
+        created_at: new Date().toISOString(),
+        client_id: "test",
+      };
+      const operation = {
+        client_op_id: input.client_op_id,
+        client_tx_id: input.client_tx_id,
+        table: "movement_v1",
+        action: "INSERT",
+        record: input,
+        command_digest: String(
+          response.canonical_result?.command_digest ?? "divergence",
+        ),
+        sync_state: "PENDING",
+        created_at: gesture.created_at,
+      };
+      await local.queue_gestures.put(gesture as never);
+      await local.queue_ops.put(operation as never);
+      await recordMovementResults(
+        gesture as never,
+        [operation as never],
+        [response as never],
+      );
+      expect((await local.queue_ops.get(input.client_op_id))?.sync_state).toBe(
+        "RECONCILE",
+      );
+      await local.queue_ops.delete(input.client_op_id);
+      await local.queue_gestures.delete(input.client_tx_id);
+    }
+    local.close();
+  });
+  it("R6 generic animal movement is blocked at HTTP and direct PostgREST; controls remain valid", async () => {
+    const id = await animal(),
+      event = crypto.randomUUID(),
+      tx = crypto.randomUUID();
+    const base = {
+      id: event,
+      animal_id: id,
+      lote_id: lots[0],
+      dominio: "movimentacao",
+      occurred_at: "2026-10-01T12:00:00.000Z",
+      occurred_on: "2026-10-01",
+      payload: {},
+    };
+    const detail = {
+      evento_id: event,
+      from_lote_id: lots[0],
+      to_lote_id: lots[1],
+      payload: {},
+    };
+    const generic = async (ops: unknown[]) => {
+      const response = await fetch(`${apiUrl}/functions/v1/sync-batch`, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          apikey: anonKey!,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          fazenda_id: farm,
+          client_id: "closure-regression",
+          client_tx_id: tx,
+          ops,
+        }),
+      });
+      expect(response.status).toBe(200);
+      return (await response.json()).results;
+    };
+    const result = await generic([
+      {
+        client_op_id: crypto.randomUUID(),
+        table: "eventos",
+        action: "INSERT",
+        record: base,
+      },
+      {
+        client_op_id: crypto.randomUUID(),
+        table: "eventos_movimentacao",
+        action: "INSERT",
+        record: detail,
+      },
+    ]);
+    expect(result.map((row: Result) => row.status)).toEqual([
+      "REJECTED",
+      "REJECTED",
+    ]);
+    for (const [table, key] of [
+      ["eventos", "id"],
+      ["eventos_movimentacao", "evento_id"],
+      ["animal_lot_movement_receipts", "event_id"],
+      ["animal_lot_movement_effect_decisions", "event_id"],
+    ])
+      expect(
+        (
+          await db.query(
+            `select count(*)::int n from public.${table} where ${key}=$1`,
+            [event],
+          )
+        ).rows[0].n,
+      ).toBe(0);
+    const member = createClient(apiUrl!, anonKey!, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false },
+    });
+    expect(
+      (await member.from("eventos").insert({ ...base, fazenda_id: farm })).error
+        ?.message,
+    ).toContain("GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED");
+    expect(
+      (
+        await member
+          .from("eventos_movimentacao")
+          .insert({ ...detail, fazenda_id: farm })
+      ).error?.message,
+    ).toContain("GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED");
+    expect(
+      (
+        await db.query(
+          "select has_table_privilege('authenticated','public.eventos','INSERT') fact, has_table_privilege('authenticated','public.eventos_movimentacao','INSERT') detail, pg_has_role('authenticated','rebanhosync_movement_executor','MEMBER') executor",
+        )
+      ).rows[0],
+    ).toEqual({ fact: true, detail: true, executor: false });
+    expect((await invoke(command(id))).canonical_result?.status).toBe(
+      "STATE_APPLIED",
+    );
+    const initial = crypto.randomUUID();
+    expect(
+      (
+        await member
+          .from("animais")
+          .insert({
+            id: initial,
+            fazenda_id: farm,
+            identificacao: initial,
+            sexo: "F",
+            lote_id: lots[0],
+          })
+      ).error,
+    ).toBeNull();
+    const pasture = crypto.randomUUID(),
+      lotEvent = crypto.randomUUID();
+    await db.query(
+      "insert into public.pastos(id,fazenda_id,nome) values($1,$2,'closure pasture')",
+      [pasture, farm],
+    );
+    const controls = await generic([
+      {
+        client_op_id: crypto.randomUUID(),
+        table: "eventos",
+        action: "INSERT",
+        record: { ...base, id: lotEvent, animal_id: null },
+      },
+      {
+        client_op_id: crypto.randomUUID(),
+        table: "eventos_movimentacao",
+        action: "INSERT",
+        record: { evento_id: lotEvent, to_pasto_id: pasture, payload: {} },
+      },
+      {
+        client_op_id: crypto.randomUUID(),
+        table: "eventos",
+        action: "INSERT",
+        record: { ...base, id: crypto.randomUUID(), dominio: "pesagem" },
+      },
+    ]);
+    expect(controls.map((row: Result) => row.status)).toEqual([
+      "APPLIED",
+      "APPLIED",
+      "APPLIED",
+    ]);
+  });
   beforeAll(async () => {
     if (
       process.env.REBANHOSYNC_DISPOSABLE_LOCAL_DB !== "1" ||

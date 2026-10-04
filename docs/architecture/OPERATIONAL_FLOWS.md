@@ -123,10 +123,22 @@ para `apply_animal_lot_movement_v1`, preserva receipt original e reconcilia resu
 por obrigação durável e pull autenticado de animais/eventos/detail. Pending não é sucesso
 de estado; conflito exige pull e nova intenção explícita. `history_only` não move o animal.
 
-O writer genérico Animal→Lote foi desabilitado. A migração local Dexie v32 invalida bundles
+O writer genérico Animal→Lote é bloqueado no `sync-batch` e em INSERTs diretos no banco;
+somente o executor privado da RPC especializada pode gravar esses fatos. Cadastro inicial,
+Lote→Pasto e outros domínios preservam suas boundaries. A identidade de transporte
+(`fazenda_id`, `event_id`, `client_op_id`, `client_tx_id`) é retornada separadamente do
+receipt original, inclusive em rejeição, divergência de identidade e falha de infraestrutura.
+
+ACK não libera a proteção local de operações `RECONCILE`. Replace substitui somente os
+registros da fazenda consultada. Reconciliação captura operações e geração da obrigação
+antes das leituras, observa estado/fatos/efeito necessários e instala os resultados junto
+da conclusão das operações capturadas na mesma transação Dexie. ACK posterior permanece
+protegido e exige outro ciclo; não há terminalização por timestamp ou por lista tardia.
+
+A migração local Dexie v32 invalida bundles
 antigos incompatíveis com evidência de rejeição e obrigação de pull, sem fabricar selectors.
 Venda/óbito/retirada mantêm seus writers de elegibilidade existentes. O contrato certificado
-e os limites locais constam na seção 17 da [F24.4E2](../review/F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md).
+e os limites locais constam na seção 18 da [F24.4E2](../review/F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md).
 
 Lote→pasto mantém seu contrato independente via `buildEventGesture` e produz:
 

@@ -43,6 +43,18 @@ export async function recordMovementResults(
           ?.operation_results ?? [];
       for (const op of movement) {
         const result = results.find((r) => r.op_id === op.client_op_id);
+        if (result) {
+          const identity = result.operation_identity;
+          if (
+            !identity ||
+            identity.event_id !== op.record.event_id ||
+            identity.client_op_id !== op.client_op_id ||
+            identity.client_tx_id !== op.client_tx_id ||
+            identity.fazenda_id !== gesture.fazenda_id ||
+            op.record.fazenda_id !== gesture.fazenda_id
+          )
+            throw new Error("MOVEMENT_RECEIPT_IDENTITY_MISMATCH");
+        }
         if (!result || result.status === "RETRYABLE") {
           await db.queue_ops.update(op.client_op_id, {
             sync_state: "RETRYABLE",
@@ -58,15 +70,34 @@ export async function recordMovementResults(
         )
           throw new Error("MOVEMENT_RESULT_INVALID");
         const receipt = result.canonical_result;
-        if (!receipt && result.status !== "REJECTED")
+        if (!receipt && !["REJECTED", "CONFLICT"].includes(result.status))
           throw new Error("MOVEMENT_RECEIPT_REQUIRED");
+        const identity = result.operation_identity;
         if (
-          receipt &&
-          (receipt.event_id !== op.record.event_id ||
-            receipt.client_op_id !== op.client_op_id ||
-            receipt.client_tx_id !== op.client_tx_id ||
-            receipt.fazenda_id !== gesture.fazenda_id ||
-            receipt.command_digest !== op.command_digest)
+          !identity ||
+          identity.event_id !== op.record.event_id ||
+          identity.client_op_id !== op.client_op_id ||
+          identity.client_tx_id !== op.client_tx_id ||
+          identity.fazenda_id !== gesture.fazenda_id ||
+          op.record.fazenda_id !== gesture.fazenda_id ||
+          (receipt &&
+            [
+              "event_id",
+              "fazenda_id",
+              "client_op_id",
+              "client_tx_id",
+              "command_digest",
+            ].some(
+              (key) =>
+                receipt[key] !== undefined &&
+                receipt[key] !==
+                  (
+                    {
+                      ...identity,
+                      command_digest: op.command_digest,
+                    } as Record<string, unknown>
+                  )[key],
+            ))
         )
           throw new Error("MOVEMENT_RECEIPT_IDENTITY_MISMATCH");
         await db.queue_ops.update(op.client_op_id, {
@@ -151,94 +182,237 @@ export async function reconcileMovementForFarm(farm: string) {
       });
     }
   }
-  // Terminal ACKs stop protecting optimistic rows; unsent/retryable/pending intents stay protected.
-  await pullDataForFarm(farm, ["animais", "eventos", "eventos_movimentacao"], {
-    mode: "merge",
-  });
-  await db.transaction(
-    "rw",
-    [
-      db.queue_ops,
-      db.queue_gestures,
-      db.queue_rejections,
-      db.event_eventos,
-      db.event_eventos_movimentacao,
-    ],
-    async () => {
-      const current = (await db.queue_ops.toArray()).filter(
+  // Capture durable identities before any remote reads. A later ACK changes the
+  // obligation generation and cannot be completed or installed by this pull.
+  const snapshot = await db.transaction(
+    "r",
+    [db.queue_ops, db.sync_reconcile_obligations],
+    async () => ({
+      obligation: await db.sync_reconcile_obligations.get(
+        `${farm}:movement-v1`,
+      ),
+      ops: (await db.queue_ops.toArray()).filter(
         (op) =>
           isMovementOperation(op) &&
           op.record.fazenda_id === farm &&
           op.sync_state === "RECONCILE",
-      );
-      for (const op of current) {
-        const result = op.movement_result!;
-        const effective =
-          op.movement_effective_result ??
-          String(result.canonical_result?.status ?? result.status);
-        const rejected = [
-          "PROJECTION_CONFLICT",
-          "HISTORY_CONFLICT",
-          "CONFLICT",
-          "REJECTED",
-        ].includes(effective);
-        if (effective === "REJECTED") {
-          await db.event_eventos.delete(op.record.event_id);
-          await db.event_eventos_movimentacao.delete(op.record.event_id);
-        }
-        if (rejected)
-          await db.queue_rejections.add({
-            client_tx_id: op.client_tx_id,
-            client_op_id: op.client_op_id,
-            fazenda_id: farm,
-            table: "movement_v1",
-            action: "INSERT",
-            reason_code: String(
-              op.movement_effective_decision?.reason_code ??
-                result.reason_code ??
-                effective,
-            ),
-            reason_message:
-              "Movimentação reconciliada; nova intenção exige ação explícita",
-            created_at: new Date().toISOString(),
-            payload: { original_result: result, effective_result: effective },
-          });
-        const gesture = await db.queue_gestures.get(op.client_tx_id);
-        await db.queue_ops.delete(op.client_op_id);
-        const remaining = await db.queue_ops
-          .where("client_tx_id")
-          .equals(op.client_tx_id)
-          .count();
-        if (gesture) {
-          const operationResults = gesture.operation_results?.map((row) =>
-            row.op_id === op.client_op_id
-              ? {
-                  ...row,
-                  movement_effective_result: effective,
-                  movement_effective_decision: op.movement_effective_decision,
-                }
-              : row,
-          );
-          const gestureRejected =
-            rejected ||
-            hasRejectedMovement({
-              ...gesture,
-              operation_results: operationResults,
-            });
-          await db.queue_gestures.update(op.client_tx_id, {
-            operation_results: operationResults,
-            ...(remaining === 0
-              ? {
-                  status: gestureRejected ? "REJECTED" : "DONE",
-                  sync_result: gestureRejected ? "REJECTED" : "APPLIED",
-                  completed_at: new Date().toISOString(),
-                }
-              : {}),
-          });
-        }
-      }
-    },
+      ),
+    }),
   );
+  const observations = {
+    animais: {
+      key: "id",
+      ids: [...new Set(snapshot.ops.map((op) => String(op.record.subject_id)))],
+    },
+    eventos: {
+      key: "id",
+      ids: snapshot.ops.map((op) => String(op.record.event_id)),
+    },
+    eventos_movimentacao: {
+      key: "evento_id",
+      ids: snapshot.ops.map((op) => String(op.record.event_id)),
+    },
+    animal_lot_movement_effective_results: {
+      key: "event_id",
+      ids: snapshot.ops.map((op) => String(op.record.event_id)),
+    },
+    animal_lot_movement_effect_decisions: {
+      key: "event_id",
+      ids: snapshot.ops.map((op) => String(op.record.event_id)),
+    },
+  };
+  await pullDataForFarm(farm, ["animais", "eventos", "eventos_movimentacao"], {
+    mode: "merge",
+    observations,
+    reconciliation: {
+      stores: [
+        "queue_gestures",
+        "queue_rejections",
+        "sync_reconcile_obligations",
+      ],
+      async select(rows) {
+        const selected = new Set<string>();
+        const obligation = await db.sync_reconcile_obligations.get(
+          `${farm}:movement-v1`,
+        );
+        if (
+          !snapshot.obligation ||
+          obligation?.generation_id !== snapshot.obligation.generation_id
+        )
+          return selected;
+        const remote = (table: string, key: string, id: unknown) =>
+          (rows[table] as Record<string, unknown>[]).find(
+            (row) => row[key] === id && row.fazenda_id === farm,
+          );
+        for (const captured of snapshot.ops) {
+          const op = await db.queue_ops.get(captured.client_op_id);
+          if (
+            !op ||
+            op.sync_state !== "RECONCILE" ||
+            op.client_tx_id !== captured.client_tx_id ||
+            op.record.event_id !== captured.record.event_id ||
+            op.command_digest !== captured.command_digest ||
+            JSON.stringify(op.movement_result) !==
+              JSON.stringify(captured.movement_result) ||
+            op.movement_effective_result !== captured.movement_effective_result
+          )
+            continue;
+          const effective =
+            op.movement_effective_result ??
+            String(
+              op.movement_result?.canonical_result?.status ??
+                op.movement_result?.status,
+            );
+          const state = remote("animais", "id", op.record.subject_id);
+          if (!state) continue;
+          if (!["REJECTED", "CONFLICT"].includes(effective)) {
+            const effect = remote(
+              "animal_lot_movement_effective_results",
+              "event_id",
+              op.record.event_id,
+            );
+            const event = remote("eventos", "id", op.record.event_id);
+            const detail = remote(
+              "eventos_movimentacao",
+              "evento_id",
+              op.record.event_id,
+            );
+            if (
+              !event ||
+              !detail ||
+              !effect ||
+              effect.animal_id !== op.record.subject_id ||
+              effect.command_digest !== op.command_digest ||
+              effect.effective_result !== effective
+            )
+              continue;
+            const decision = remote(
+              "animal_lot_movement_effect_decisions",
+              "event_id",
+              op.record.event_id,
+            );
+            if (
+              op.movement_effective_result &&
+              (!decision || decision.result !== effective)
+            )
+              continue;
+            const version = effect.effective_movement_version_after;
+            if (
+              version == null ||
+              state.movement_version == null ||
+              BigInt(String(state.movement_version)) < BigInt(String(version))
+            )
+              continue;
+          }
+          selected.add(op.client_op_id);
+        }
+        // A newer intent for the same animal still protects its optimistic row.
+        // Do not complete an ACK if that protection prevents installing its state.
+        const pending = await db.queue_ops.toArray();
+        for (const captured of snapshot.ops) {
+          if (
+            pending.some(
+              (op) =>
+                !selected.has(op.client_op_id) &&
+                op.sync_state !== "REJECTED" &&
+                op.record.fazenda_id === farm &&
+                ((isMovementOperation(op) &&
+                  op.record.subject_id === captured.record.subject_id) ||
+                  (op.table === "animais" &&
+                    op.record.id === captured.record.subject_id)),
+            )
+          )
+            selected.delete(captured.client_op_id);
+        }
+        return selected;
+      },
+      async complete(selected) {
+        const current = snapshot.ops.filter((op) =>
+          selected.has(op.client_op_id),
+        );
+        for (const op of current) {
+          const result = op.movement_result!;
+          const effective =
+            op.movement_effective_result ??
+            String(result.canonical_result?.status ?? result.status);
+          const rejected = [
+            "PROJECTION_CONFLICT",
+            "HISTORY_CONFLICT",
+            "CONFLICT",
+            "REJECTED",
+          ].includes(effective);
+          if (effective === "REJECTED") {
+            await db.event_eventos.delete(op.record.event_id);
+            await db.event_eventos_movimentacao.delete(op.record.event_id);
+          }
+          if (rejected)
+            await db.queue_rejections.add({
+              client_tx_id: op.client_tx_id,
+              client_op_id: op.client_op_id,
+              fazenda_id: farm,
+              table: "movement_v1",
+              action: "INSERT",
+              reason_code: String(
+                op.movement_effective_decision?.reason_code ??
+                  result.reason_code ??
+                  effective,
+              ),
+              reason_message:
+                "Movimentação reconciliada; nova intenção exige ação explícita",
+              created_at: new Date().toISOString(),
+              payload: { original_result: result, effective_result: effective },
+            });
+          const gesture = await db.queue_gestures.get(op.client_tx_id);
+          await db.queue_ops.delete(op.client_op_id);
+          const remaining = await db.queue_ops
+            .where("client_tx_id")
+            .equals(op.client_tx_id)
+            .count();
+          if (gesture) {
+            const operationResults = gesture.operation_results?.map((row) =>
+              row.op_id === op.client_op_id
+                ? {
+                    ...row,
+                    movement_effective_result: effective,
+                    movement_effective_decision: op.movement_effective_decision,
+                  }
+                : row,
+            );
+            const gestureRejected =
+              rejected ||
+              hasRejectedMovement({
+                ...gesture,
+                operation_results: operationResults,
+              });
+            await db.queue_gestures.update(op.client_tx_id, {
+              operation_results: operationResults,
+              ...(remaining === 0
+                ? {
+                    status: gestureRejected ? "REJECTED" : "DONE",
+                    sync_result: gestureRejected ? "REJECTED" : "APPLIED",
+                    completed_at: new Date().toISOString(),
+                  }
+                : {}),
+            });
+          }
+        }
+        if (
+          !(await db.queue_ops.toArray()).some(
+            (op) => isMovementOperation(op) && op.record.fazenda_id === farm,
+          )
+        ) {
+          const obligation = await db.sync_reconcile_obligations.get(
+            `${farm}:movement-v1`,
+          );
+          if (
+            snapshot.obligation &&
+            obligation?.generation_id === snapshot.obligation.generation_id
+          )
+            await db.sync_reconcile_obligations.delete(obligation.key);
+        }
+      },
+    },
+  });
   if (
     (await db.queue_ops.toArray()).some(
       (op) => isMovementOperation(op) && op.record.fazenda_id === farm,

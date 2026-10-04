@@ -118,6 +118,20 @@ try {
     await isolated.query(completion);
     await isolated.query("commit");
   }
+  if (
+    !(
+      await isolated.query(
+        "select to_regprocedure('public.guard_animal_lot_fact_insert_v1()') as guard",
+      )
+    ).rows[0].guard
+  ) {
+    await isolated.query(
+      readFileSync(
+        "supabase/migrations/20261003120000_f24_4e2_close_generic_animal_lot_fact_boundary.sql",
+        "utf8",
+      ),
+    );
+  }
   // Existing commercial concurrency suite requires one real membership; no source data copied.
   const user = randomUUID();
   const farm = randomUUID();
@@ -141,6 +155,7 @@ try {
     [
       "node_modules/vitest/vitest.mjs",
       "run",
+      "--maxWorkers=1",
       "supabase/tests/animalLotMovementFoundation.test.ts",
       "supabase/tests/animalLotMovementCompletion.test.ts",
       "supabase/tests/stateConflictConcurrency.test.ts",
