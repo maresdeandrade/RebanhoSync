@@ -73,6 +73,17 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
 
   const eventId = input.eventId ?? crypto.randomUUID();
   const occurredAt = input.occurredAt ?? new Date().toISOString();
+  if (input.dominio === "movimentacao" && input.animalId) {
+    if (input.toLoteId == null) throw new Error("MOVEMENT_DESTINATION_REQUIRED");
+    if (input.corrigeEventoId) throw new Error("MOVEMENT_CORRECTION_NOT_SUPPORTED");
+    return { eventId, ops: [{ table: "movement_v1", action: "INSERT", record: {
+      subject_id: input.animalId, event_id: eventId, to_lote_id: input.toLoteId,
+      from_lote_id: input.fromLoteId ?? null,
+      occurred_at: occurredAt, movement_mode: input.applyAnimalStateUpdate === false ? "history_only" : "operational",
+      source_task_id: input.sourceTaskId ?? null, observacoes: input.observacoes ?? null,
+      payload: input.payload ?? {}, detail_payload: input.payload ?? {},
+    } }] };
+  }
   const sanitarioCasoId = resolveSanitarioCasoId(input);
   const ops: OperationInput[] = [];
 
@@ -323,22 +334,6 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
         payload: input.payload ?? {},
       },
     });
-
-    // Animal lote update (movimentação de animal entre lotes)
-    if (
-      input.applyAnimalStateUpdate !== false &&
-      input.animalId &&
-      input.toLoteId !== undefined
-    ) {
-      ops.push({
-        table: "animais",
-        action: "UPDATE",
-        record: {
-          id: input.animalId,
-          lote_id: input.toLoteId,
-        },
-      });
-    }
 
     // Lote pasto update (movimentação de lote entre pastos).
     // Requer opt-in explícito: applyLoteStateUpdate === true && movementKind === "lote_pasto".

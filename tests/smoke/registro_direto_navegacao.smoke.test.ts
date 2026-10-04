@@ -36,7 +36,7 @@ describe("smoke: registro direto e navegacao critica", () => {
           fromLoteId: "lote-a",
           toLoteId: "lote-b",
         } as const,
-        detalheEsperado: "eventos_movimentacao",
+        detalheEsperado: "movement_v1",
       },
       {
         nome: "nutricao",
@@ -76,8 +76,12 @@ describe("smoke: registro direto e navegacao critica", () => {
       const result = buildEventGesture(caso.input);
       const tabelas = result.ops.map((op) => op.table);
 
-      expect(tabelas[0]).toBe("eventos");
-      expect(tabelas).toContain(caso.detalheEsperado);
+      if (caso.nome === "movimentacao") {
+        expect(tabelas).toEqual(["movement_v1"]);
+      } else {
+        expect(tabelas[0]).toBe("eventos");
+        expect(tabelas).toContain(caso.detalheEsperado);
+      }
     }
   });
 

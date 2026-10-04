@@ -1,4 +1,5 @@
 export type ReconciliationScope =
+  | "movement-v1"
   | "factual"
   | "sanitario-v2"
   | "agenda-v2"

@@ -61,7 +61,12 @@ describe("buildPostPartumOps", () => {
     expect(result.weighedCount).toBe(1);
     expect(result.umbigoCount).toBe(1);
     expect(result.agendaCount).toBe(14);
-    expect(result.ops).toHaveLength(22);
+    expect(result.ops).toHaveLength(21);
+    expect(result.ops.filter(op => op.table === "movement_v1")).toEqual([
+      expect.objectContaining({ record: expect.objectContaining({ subject_id: "cria-1", to_lote_id: "bezerreiro", movement_mode: "operational" }) }),
+    ]);
+    expect(result.ops.filter(op => op.table === "animais" && op.action === "UPDATE")
+      .every(op => !Object.hasOwn(op.record, "lote_id"))).toBe(true);
 
     const firstAnimalUpdate = result.ops.find(
       (op) => op.table === "animais" && op.action === "UPDATE" && op.record.id === "cria-1",
@@ -73,7 +78,6 @@ describe("buildPostPartumOps", () => {
         id: "cria-1",
         identificacao: "BZ-001",
         nome: "Aurora",
-        lote_id: "bezerreiro",
       },
     });
     expect(firstAnimalUpdate?.record.payload.neonatal_setup).toMatchObject({

@@ -1,6 +1,6 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-09-27
+Atualizado em: 2026-10-03
 
 ## Responsabilidade documental
 
@@ -48,6 +48,31 @@ Contratos certificados na F24.4D:
 - **Clock local no scheduling:** `next_attempt_at` e `created_at` afetam unicamente o agendamento local da fila e elegibilidade de retry (`isGestureReadyForSync`), sem alterar identidades, recalcular `expected_revision`, reabrir conflitos terminais ou causar estagnação permanente após retorno do relógio à normalidade.
 
 O escopo é `ANIMAIS_ONLY`. Demais `state_*`, delete/tombstone completo, field-level merge e multi-device físico não foram generalizados nem certificados (`REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`).
+
+## Animal→Lote — F24.4E2
+
+O [contrato operacional](../architecture/OPERATIONAL_FLOWS.md#9-movimentações) e a
+[recertificação F24.4E2, seção 18](../review/F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md#18-closure-remediation--recertification--b1m1m2m3)
+registram o writer único `movement_v1/apply_animal_lot`, ativo na fila compartilhada.
+Inserts factuais genéricos Animal→Lote são bloqueados na Edge e no banco. O seletor
+original e o digest persistidos são imutáveis em retry/replay; não há dual-write.
+
+`operation_identity` associa a resposta à farm/event/op/tx original, separadamente do
+receipt técnico imutável. REJECTED e IDENTITY_DIVERGENCE não exigem receipt factual
+completo para consumo seguro; resposta de outra operação não pode ser consumida.
+Pending causal é retomado pelo servidor com decisão técnica append-only; sua resolução
+não depende de reenviar o filho. O cliente observa o resultado efetivo pelo pull.
+
+ACK remoto não equivale à reconciliação concluída: operações em `RECONCILE` preservam
+animal, Evento, detail e intenção otimista até instalação local do resultado remoto. Replace de uma fazenda substitui
+somente seus registros não protegidos, sem clear global. O pull captura identidades e
+`generation_id` da obrigação antes das leituras e conclui somente as operações capturadas,
+com geração ainda igual e resultados necessários observados, na transação de instalação.
+ACK posterior permanece protegido para outro ciclo, inclusive após restart/farm-switch.
+
+E2 Animal→Lote está CLOSED e G3 dessa vertical RESOLVED; F24.4E permanece IN_PROGRESS.
+Lote→Pasto, occupancy, correção de movimento e paginação global do pull não são certificados
+por essa entrega; N1 reentrada de `createGesture` permanece DEFERRED.
 
 ## Sync Sanitário v2
 

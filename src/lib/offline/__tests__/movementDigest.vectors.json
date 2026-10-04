@@ -1,0 +1,201 @@
+[
+  {
+    "name": "defaults/null",
+    "jsonInput": "{\"contract_version\":1,\"fazenda_id\":\"AAAAAAAA-0000-4000-8000-000000000001\",\"subject_type\":\"animal\",\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"movement_mode\":\"operational\",\"from_lote_id\":null,\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\",\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"movement_base\":{\"kind\":\"snapshot\",\"movement_version\":\"0\",\"head_event_id\":null}}",
+    "normalized": {
+      "payload": {},
+      "event_id": "aaaaaaaa-0000-4000-8000-000000000003",
+      "fazenda_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "to_lote_id": "aaaaaaaa-0000-4000-8000-000000000006",
+      "observacoes": null,
+      "occurred_at": "2026-10-01T12:34:56.123456Z",
+      "client_op_id": "aaaaaaaa-0000-4000-8000-000000000004",
+      "client_tx_id": "aaaaaaaa-0000-4000-8000-000000000005",
+      "from_lote_id": null,
+      "subject_type": "animal",
+      "movement_base": {
+        "kind": "snapshot",
+        "head_event_id": null,
+        "movement_version": "0"
+      },
+      "movement_mode": "operational",
+      "detail_payload": {},
+      "source_task_id": null,
+      "contract_version": 1,
+      "corrige_evento_id": null
+    },
+    "canonical": "{\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"contract_version\":1,\"corrige_evento_id\":null,\"detail_payload\":{},\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"fazenda_id\":\"aaaaaaaa-0000-4000-8000-000000000001\",\"from_lote_id\":null,\"movement_base\":{\"head_event_id\":null,\"kind\":\"snapshot\",\"movement_version\":\"0\"},\"movement_mode\":\"operational\",\"observacoes\":null,\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"payload\":{},\"source_task_id\":null,\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"subject_type\":\"animal\",\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\"}",
+    "digest": "7d8cf42d9b341ee14fa9fdbb9d164147c2cbee74a4490bb600335dc85794738c"
+  },
+  {
+    "name": "Unicode/C key ordering",
+    "jsonInput": "{\"contract_version\":1,\"fazenda_id\":\"AAAAAAAA-0000-4000-8000-000000000001\",\"subject_type\":\"animal\",\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"movement_mode\":\"operational\",\"from_lote_id\":null,\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\",\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"movement_base\":{\"kind\":\"snapshot\",\"movement_version\":\"0\",\"head_event_id\":null},\"payload\":{\"😀\":\"ação\\n\\t\",\"\":\"á\",\"z\":null,\"a\":[true,false,\"雪\"]}}",
+    "normalized": {
+      "payload": {
+        "a": [
+          true,
+          false,
+          "雪"
+        ],
+        "z": null,
+        "": "á",
+        "😀": "ação\n\t"
+      },
+      "event_id": "aaaaaaaa-0000-4000-8000-000000000003",
+      "fazenda_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "to_lote_id": "aaaaaaaa-0000-4000-8000-000000000006",
+      "observacoes": null,
+      "occurred_at": "2026-10-01T12:34:56.123456Z",
+      "client_op_id": "aaaaaaaa-0000-4000-8000-000000000004",
+      "client_tx_id": "aaaaaaaa-0000-4000-8000-000000000005",
+      "from_lote_id": null,
+      "subject_type": "animal",
+      "movement_base": {
+        "kind": "snapshot",
+        "head_event_id": null,
+        "movement_version": "0"
+      },
+      "movement_mode": "operational",
+      "detail_payload": {},
+      "source_task_id": null,
+      "contract_version": 1,
+      "corrige_evento_id": null
+    },
+    "canonical": "{\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"contract_version\":1,\"corrige_evento_id\":null,\"detail_payload\":{},\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"fazenda_id\":\"aaaaaaaa-0000-4000-8000-000000000001\",\"from_lote_id\":null,\"movement_base\":{\"head_event_id\":null,\"kind\":\"snapshot\",\"movement_version\":\"0\"},\"movement_mode\":\"operational\",\"observacoes\":null,\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"payload\":{\"a\":[true,false,\"雪\"],\"z\":null,\"\":\"á\",\"😀\":\"ação\\n\\t\"},\"source_task_id\":null,\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"subject_type\":\"animal\",\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\"}",
+    "digest": "993a7f366e123dd4b87632f6f83a221e1fc1c8828570bcb89e8d2bd681dc58df"
+  },
+  {
+    "name": "numeric exponent/scale/nested",
+    "jsonInput": "{\"contract_version\":1,\"fazenda_id\":\"AAAAAAAA-0000-4000-8000-000000000001\",\"subject_type\":\"animal\",\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"movement_mode\":\"operational\",\"from_lote_id\":null,\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\",\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"movement_base\":{\"kind\":\"snapshot\",\"movement_version\":\"0\",\"head_event_id\":null},\"payload\":{\"small\":1e-7,\"large\":1e+21,\"max\":1.7976931348623157e+308,\"min\":5e-324,\"zero\":0,\"nested\":[{\"n\":1.230000},null]}}",
+    "normalized": {
+      "payload": {
+        "max": 1.7976931348623157e+308,
+        "min": 5e-324,
+        "zero": 0,
+        "large": 1e+21,
+        "small": 1e-7,
+        "nested": [
+          {
+            "n": 1.23
+          },
+          null
+        ]
+      },
+      "event_id": "aaaaaaaa-0000-4000-8000-000000000003",
+      "fazenda_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "to_lote_id": "aaaaaaaa-0000-4000-8000-000000000006",
+      "observacoes": null,
+      "occurred_at": "2026-10-01T12:34:56.123456Z",
+      "client_op_id": "aaaaaaaa-0000-4000-8000-000000000004",
+      "client_tx_id": "aaaaaaaa-0000-4000-8000-000000000005",
+      "from_lote_id": null,
+      "subject_type": "animal",
+      "movement_base": {
+        "kind": "snapshot",
+        "head_event_id": null,
+        "movement_version": "0"
+      },
+      "movement_mode": "operational",
+      "detail_payload": {},
+      "source_task_id": null,
+      "contract_version": 1,
+      "corrige_evento_id": null
+    },
+    "canonical": "{\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"contract_version\":1,\"corrige_evento_id\":null,\"detail_payload\":{},\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"fazenda_id\":\"aaaaaaaa-0000-4000-8000-000000000001\",\"from_lote_id\":null,\"movement_base\":{\"head_event_id\":null,\"kind\":\"snapshot\",\"movement_version\":\"0\"},\"movement_mode\":\"operational\",\"observacoes\":null,\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"payload\":{\"large\":1000000000000000000000,\"max\":179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,\"min\":0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005,\"nested\":[{\"n\":1.23},null],\"small\":0.0000001,\"zero\":0},\"source_task_id\":null,\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"subject_type\":\"animal\",\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\"}",
+    "digest": "9035981ed76ec6615fe661c35476adb9899bdf1ecd802b2e58c9581f3cf29862"
+  },
+  {
+    "name": "timezone equivalent",
+    "jsonInput": "{\"contract_version\":1,\"fazenda_id\":\"AAAAAAAA-0000-4000-8000-000000000001\",\"subject_type\":\"animal\",\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"movement_mode\":\"operational\",\"from_lote_id\":null,\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\",\"occurred_at\":\"2026-10-01T09:34:56.123456-03:00\",\"movement_base\":{\"kind\":\"snapshot\",\"movement_version\":\"0\",\"head_event_id\":null},\"detail_payload\":{\"array\":[null,{\"b\":2,\"a\":1}]}}",
+    "normalized": {
+      "payload": {},
+      "event_id": "aaaaaaaa-0000-4000-8000-000000000003",
+      "fazenda_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "to_lote_id": "aaaaaaaa-0000-4000-8000-000000000006",
+      "observacoes": null,
+      "occurred_at": "2026-10-01T12:34:56.123456Z",
+      "client_op_id": "aaaaaaaa-0000-4000-8000-000000000004",
+      "client_tx_id": "aaaaaaaa-0000-4000-8000-000000000005",
+      "from_lote_id": null,
+      "subject_type": "animal",
+      "movement_base": {
+        "kind": "snapshot",
+        "head_event_id": null,
+        "movement_version": "0"
+      },
+      "movement_mode": "operational",
+      "detail_payload": {
+        "array": [
+          null,
+          {
+            "a": 1,
+            "b": 2
+          }
+        ]
+      },
+      "source_task_id": null,
+      "contract_version": 1,
+      "corrige_evento_id": null
+    },
+    "canonical": "{\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"contract_version\":1,\"corrige_evento_id\":null,\"detail_payload\":{\"array\":[null,{\"a\":1,\"b\":2}]},\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"fazenda_id\":\"aaaaaaaa-0000-4000-8000-000000000001\",\"from_lote_id\":null,\"movement_base\":{\"head_event_id\":null,\"kind\":\"snapshot\",\"movement_version\":\"0\"},\"movement_mode\":\"operational\",\"observacoes\":null,\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"payload\":{},\"source_task_id\":null,\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"subject_type\":\"animal\",\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\"}",
+    "digest": "fbd9277643012b568aa5a5aab627fd62692a4bb53b20e032a4b3af8ed1bfd500"
+  },
+  {
+    "name": "after_movement",
+    "jsonInput": "{\"contract_version\":1,\"fazenda_id\":\"AAAAAAAA-0000-4000-8000-000000000001\",\"subject_type\":\"animal\",\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"movement_mode\":\"operational\",\"from_lote_id\":null,\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\",\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"movement_base\":{\"kind\":\"after_movement\",\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000007\",\"command_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+    "normalized": {
+      "payload": {},
+      "event_id": "aaaaaaaa-0000-4000-8000-000000000003",
+      "fazenda_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "to_lote_id": "aaaaaaaa-0000-4000-8000-000000000006",
+      "observacoes": null,
+      "occurred_at": "2026-10-01T12:34:56.123456Z",
+      "client_op_id": "aaaaaaaa-0000-4000-8000-000000000004",
+      "client_tx_id": "aaaaaaaa-0000-4000-8000-000000000005",
+      "from_lote_id": null,
+      "subject_type": "animal",
+      "movement_base": {
+        "kind": "after_movement",
+        "event_id": "aaaaaaaa-0000-4000-8000-000000000007",
+        "command_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "movement_mode": "operational",
+      "detail_payload": {},
+      "source_task_id": null,
+      "contract_version": 1,
+      "corrige_evento_id": null
+    },
+    "canonical": "{\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"contract_version\":1,\"corrige_evento_id\":null,\"detail_payload\":{},\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"fazenda_id\":\"aaaaaaaa-0000-4000-8000-000000000001\",\"from_lote_id\":null,\"movement_base\":{\"command_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000007\",\"kind\":\"after_movement\"},\"movement_mode\":\"operational\",\"observacoes\":null,\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"payload\":{},\"source_task_id\":null,\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"subject_type\":\"animal\",\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\"}",
+    "digest": "5703f7d3438e521d9d9c4c545f0f033a4d753351972e94f3d0cb2af75d87521d"
+  },
+  {
+    "name": "history only",
+    "jsonInput": "{\"contract_version\":1,\"fazenda_id\":\"AAAAAAAA-0000-4000-8000-000000000001\",\"subject_type\":\"animal\",\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"movement_mode\":\"history_only\",\"from_lote_id\":null,\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\",\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"movement_base\":null}",
+    "normalized": {
+      "payload": {},
+      "event_id": "aaaaaaaa-0000-4000-8000-000000000003",
+      "fazenda_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "subject_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "to_lote_id": "aaaaaaaa-0000-4000-8000-000000000006",
+      "observacoes": null,
+      "occurred_at": "2026-10-01T12:34:56.123456Z",
+      "client_op_id": "aaaaaaaa-0000-4000-8000-000000000004",
+      "client_tx_id": "aaaaaaaa-0000-4000-8000-000000000005",
+      "from_lote_id": null,
+      "subject_type": "animal",
+      "movement_base": null,
+      "movement_mode": "history_only",
+      "detail_payload": {},
+      "source_task_id": null,
+      "contract_version": 1,
+      "corrige_evento_id": null
+    },
+    "canonical": "{\"client_op_id\":\"aaaaaaaa-0000-4000-8000-000000000004\",\"client_tx_id\":\"aaaaaaaa-0000-4000-8000-000000000005\",\"contract_version\":1,\"corrige_evento_id\":null,\"detail_payload\":{},\"event_id\":\"aaaaaaaa-0000-4000-8000-000000000003\",\"fazenda_id\":\"aaaaaaaa-0000-4000-8000-000000000001\",\"from_lote_id\":null,\"movement_base\":null,\"movement_mode\":\"history_only\",\"observacoes\":null,\"occurred_at\":\"2026-10-01T12:34:56.123456Z\",\"payload\":{},\"source_task_id\":null,\"subject_id\":\"aaaaaaaa-0000-4000-8000-000000000002\",\"subject_type\":\"animal\",\"to_lote_id\":\"aaaaaaaa-0000-4000-8000-000000000006\"}",
+    "digest": "f6c38d95d0f05cef0125ff1186626df63e242b42dd80422391afa2d1a37336fb"
+  }
+]

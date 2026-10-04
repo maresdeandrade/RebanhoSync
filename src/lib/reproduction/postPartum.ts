@@ -109,7 +109,6 @@ export function buildPostPartumOps({
     };
 
     if (loteChanged) {
-      animalUpdateRecord.lote_id = draft.loteId;
       const movEvent = buildEventGesture({
         dominio: "movimentacao",
         fazendaId,
@@ -118,7 +117,6 @@ export function buildPostPartumOps({
         occurredAt,
         fromLoteId: calf.lote_id,
         toLoteId: draft.loteId,
-        applyAnimalStateUpdate: false, // We're already updating the animal in this loop
         observacoes: `Movimentacao inicial (pos-parto da matriz ${mother.identificacao})`,
       });
       ops.push(...movEvent.ops);

@@ -61,6 +61,11 @@ import {
   executeCommercialOperationV2,
   isCommercialOperationV2,
 } from "./commercial-operation-v2.ts";
+import {
+  executeMovementV1,
+  isMovementV1Operation,
+  type MovementV1,
+} from "./movement-v1.ts";
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -206,6 +211,7 @@ Deno.serve(async (req: Request) => {
       | SanitarioSyncV2Operation
       | CommercialPurchaseOperation
       | CommercialOperationV2
+      | MovementV1
     > = Array.isArray(rawOps) ? rawOps : [];
     console.log(
       `[sync-batch] Processing TX ${client_tx_id} for farm ${fazenda_id}`,
@@ -266,6 +272,7 @@ Deno.serve(async (req: Request) => {
 
     const hasSanitarioInventoryMovements = ops.some(
       (op) =>
+        !isMovementV1Operation(op) &&
         !isCommercialPurchaseOperation(op) &&
         !isCommercialOperationV2(op) &&
         isSanitarioInventoryMovementOperation(op),
@@ -303,6 +310,7 @@ Deno.serve(async (req: Request) => {
 
     const legacyOps = ops.filter(
       (op): op is Operation =>
+        !isMovementV1Operation(op) &&
         !isSanitarioSyncV2Operation(op) &&
         !isCommercialPurchaseOperation(op) &&
         !isCommercialOperationV2(op),
@@ -377,6 +385,15 @@ Deno.serve(async (req: Request) => {
 
     for (const rawOp of ops) {
       try {
+        if (isMovementV1Operation(rawOp)) {
+          results.push(
+            await executeMovementV1(supabase, rawOp, {
+              fazendaId: fazenda_id,
+              clientTxId: client_tx_id,
+            }),
+          );
+          continue;
+        }
         if (isCommercialOperationV2(rawOp)) {
           results.push(
             await executeCommercialOperationV2(supabase, rawOp, {
@@ -768,6 +785,27 @@ Deno.serve(async (req: Request) => {
         );
         if (TABLES_WITH_FAZENDA.has(op.table)) {
           record.fazenda_id = fazenda_id; // Always use request fazenda_id
+        }
+
+        // Close the old factual lane before replay or INSERT. Lote→Pasto has
+        // pasture endpoints and no animal subject; initial cadastro is not an Evento.
+        let genericAnimalMovement = op.action === "INSERT" &&
+          op.table === "eventos" && record.dominio === "movimentacao" &&
+          record.animal_id != null;
+        if (op.action === "INSERT" && op.table === "eventos_movimentacao") {
+          genericAnimalMovement = record.from_lote_id != null || record.to_lote_id != null;
+          if (!genericAnimalMovement) {
+            const parent = await supabase.from("eventos").select("dominio,animal_id")
+              .eq("id", record.evento_id).eq("fazenda_id", fazenda_id).maybeSingle();
+            if (parent.error) throw parent.error;
+            genericAnimalMovement = parent.data?.dominio === "movimentacao" &&
+              parent.data?.animal_id != null;
+          }
+        }
+        if (genericAnimalMovement) {
+          results.push({ op_id: op.client_op_id, status: "REJECTED",
+            reason_code: "GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED", retryable: false });
+          continue;
         }
 
         const primaryKey = resolveOperationPrimaryKey({ ...op, record });

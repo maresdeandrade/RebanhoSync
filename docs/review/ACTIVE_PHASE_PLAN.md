@@ -1,6 +1,6 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-10-01
+Atualizado em: 2026-10-03
 Status: **Fase 24 ativa; F24.4A–F24.4D CLOSED; F24.4E IN_PROGRESS; F24.4 IN_PROGRESS**
 Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (IN_PROGRESS)**
 F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29.
@@ -80,7 +80,7 @@ Limitações preservadas: `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`;
 
 ## F24.4E — conflict resolution contract
 
-A [characterization F24.4E](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS / READY_FOR_REVIEW`, aberta sobre `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`. A subfase `F24.4E1 — ANIMAIS_DELETE_TOMBSTONE_CAS` está `READY_FOR_REVIEW` no PR #173: houve mudança localizada de runtime no cliente offline e `sync-batch`, com `SCHEMA_CHANGE = 0`, `MIGRATION_CHANGE = 0` e `RLS_CHANGE = 0`.
+A [characterization F24.4E](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS`, aberta sobre `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`. A subfase `F24.4E1 — ANIMAIS_DELETE_TOMBSTONE_CAS` está `INTEGRATED` pelo PR #173 em `main@040c3c0605ff4f6ecabeedec1b28c5017455f6ac`: houve mudança localizada de runtime no cliente offline e `sync-batch`, com `SCHEMA_CHANGE = 0`, `MIGRATION_CHANGE = 0` e `RLS_CHANGE = 0`.
 
 Contratos já determinados:
 
@@ -90,9 +90,9 @@ Contratos já determinados:
 - duplicidade humana sem causa compartilhada: `USER_RESOLUTION_REQUIRED`, sem dedup heurístico;
 - merge por campo: `AUTO_MERGE = NOT_AUTHORIZED`.
 
-A E1 resolveu no branch a assimetria `DELETE_VS_UPDATE` de `animais`: DELETE captura/persiste/transporta `expected_revision`, usa CAS server-authoritative e preserva replay idempotente; stale DELETE/UPDATE exige reconciliation + nova intenção. A validação completa observada no workflow `36869086650` foi 417/417 arquivos e 3401/3401 testes, com 3/3 do E2E Auth → Edge → RLS → PostgreSQL da política de state.
+A E1 integrou a proteção da assimetria `DELETE_VS_UPDATE` de `animais`: DELETE captura/persiste/transporta `expected_revision`, usa CAS server-authoritative e preserva replay idempotente; stale DELETE/UPDATE exige reconciliation + nova intenção. A validação completa observada no workflow `36869086650` foi 417/417 arquivos e 3401/3401 testes, com 3/3 do E2E Auth → Edge → RLS → PostgreSQL da política de state.
 
-Permanecem abertos os demais `state_*` mutáveis, convergência cross-domain Evento→estado, duplicidade humana ad hoc e as limitações transversais já registradas. Próxima subfase proposta, ainda não iniciada: F24.4E2 — `MOVEMENT_EVENT_STATE_CONVERGENCE`.
+Permanecem abertos os demais `state_*` mutáveis, convergência cross-domain Evento→estado fora da vertical Animal→Lote certificada, duplicidade humana ad hoc e as limitações transversais já registradas. A [F24.4E2](./F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md) foi recertificada em 03/10/2026 após remediação B1/M1/M2/M3 sobre `400d7f17f9cf730fcd7bd841b28f590286906823`; o patch foi posteriormente commitado e rebaseado, com HEAD documental pré-PR `d39922f7d694d53372b3a9859c595b602f165b5f` sobre `origin/main@1e98f51785177f8c75435d21737462830d48cb55` (ahead 6 / behind 0): `F24_4E2_ANIMAL_TO_LOTE = CLOSED` e `F24_4E_G3_ANIMAL_TO_LOTE = RESOLVED`. A seção 18 registra o gate certificado, o baseline pós-rebase e substitui o fechamento anterior invalidado pelo review adversarial. A reconciliação pré-PR é somente documental; as evidências técnicas abaixo pertencem à recertificação anterior. Inserts genéricos Animal→Lote são bloqueados na Edge e no banco; respostas separam identidade de transporte e receipt imutável; RECONCILE permanece protegido; replace é restrito à fazenda; conclusão exige snapshot de identidade/geração e instalação atômica dos resultados observados. Probes R1/R2/R3/R5/R6 passaram, com testes permanentes. Evidência: 122 testes em 13 arquivos, 57 PostgreSQL, 13 transporte autenticado, 12 digest, 12 BrowserContext nativos (E1–E10 e novo R2), baseline funcional 5/5, lint focado, Deno check e build. Typecheck app: 248 diagnósticos no baseline e no patch; zero novos. G3 está resolvido somente para Animal→Lote. Próximo passo exclusivamente: review final do diff, push/PR autorizado e merge/rebaseline; sem nova subfase ou início de outro item F24.4E. `REMOTE_DATA_CHANGED = NO`.
 
 ## F24.2 — closeout
 

@@ -560,12 +560,16 @@ export function buildCalfJourneyCompletionOps({
     ops.push(...built.ops);
 
     const currentPayload = getAnimalPayloadRecord(calf.payload);
+    if (destinationLoteId && destinationLoteId !== calf.lote_id) {
+      ops.push(...buildEventGesture({ dominio: "movimentacao", fazendaId, animalId: calf.id,
+        fromLoteId: calf.lote_id, toLoteId: destinationLoteId, occurredAt, sourceTaskId: agendaItem.id,
+        observacoes: `Movimentação no desmame da cria ${calf.identificacao}` }).ops);
+    }
     ops.push({
       table: "animais",
       action: "UPDATE",
       record: {
         id: calf.id,
-        lote_id: destinationLoteId ?? calf.lote_id ?? null,
         payload: {
           ...currentPayload,
           weaning: {

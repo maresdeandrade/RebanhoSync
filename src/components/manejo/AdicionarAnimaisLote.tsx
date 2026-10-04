@@ -154,7 +154,7 @@ export function AdicionarAnimaisLote({
     try {
       await createGesture(lote.fazenda_id, ops);
       showSuccess(
-        `${processedAnimalIds.length} animal(is) adicionado(s) ao lote ${lote.nome}.`,
+        `Movimentação de ${processedAnimalIds.length} animal(is) para ${lote.nome} registrada localmente; aguardando confirmação do servidor.`,
       );
       setSelectedAnimais(new Set());
       setSearch("");

@@ -1,6 +1,6 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-10-01
+Atualizado em: 2026-10-03
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
@@ -72,7 +72,7 @@ SERVER_REVISION_CAS`). Clock skew afeta agendamento de retry local sem quebrar i
 sem reabrir conflitos e sem estagnação permanente após retorno do relógio à normalidade.
 `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`; `NON_ACTIVE_FARM_RECONCILIATION = NOT_TESTED`.
 
-A [F24.4E](../review/F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS`. A characterization permanece `READY_FOR_REVIEW` e a `F24.4E1 — ANIMAIS_DELETE_TOMBSTONE_CAS` está `READY_FOR_REVIEW` no PR #173. UPDATE e DELETE de `animais` usam CAS por `revision`; replay preserva identidade; stale mutation é terminal e exige reconciliation + nova intenção. O workflow `36869086650` comprovou 417/417 arquivos e 3401/3401 testes, incluindo 3/3 do E2E Auth → Edge → RLS → PostgreSQL. Não houve mudança de schema, migration ou RLS. Gaps ativos permanecem nos demais `state_*`, conflito cruzado Evento→estado em movimentação, duplicidade humana ad hoc e transporte E2E do conflito Sanitário v2. `AUTO_MERGE = NOT_AUTHORIZED`.
+A [F24.4E](../review/F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS`. A `F24.4E1 — ANIMAIS_DELETE_TOMBSTONE_CAS` está `INTEGRATED` pelo PR #173 em `main@040c3c0605ff4f6ecabeedec1b28c5017455f6ac`. UPDATE e DELETE de `animais` usam CAS por `revision`; replay preserva identidade; stale mutation é terminal e exige reconciliation + nova intenção. O workflow `36869086650` comprovou 417/417 arquivos e 3401/3401 testes, incluindo 3/3 do E2E Auth → Edge → RLS → PostgreSQL. Na E1 não houve mudança de schema, migration ou RLS. A [F24.4E2](../review/F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md) foi recertificada em 03/10/2026 após remediação B1/M1/M2/M3 sobre `400d7f17f9cf730fcd7bd841b28f590286906823`; o patch foi posteriormente commitado e rebaseado, com HEAD documental pré-PR `d39922f7d694d53372b3a9859c595b602f165b5f` sobre `origin/main@1e98f51785177f8c75435d21737462830d48cb55` (ahead 6 / behind 0): `F24_4E2_ANIMAL_TO_LOTE = CLOSED` e `F24_4E_G3_ANIMAL_TO_LOTE = RESOLVED`. A seção 18 registra o gate certificado, o baseline pós-rebase e substitui o fechamento anterior invalidado pelo review adversarial. A reconciliação pré-PR é somente documental; as evidências técnicas abaixo pertencem à recertificação anterior. Inserts genéricos Animal→Lote são bloqueados na Edge e no banco; respostas separam identidade de transporte e receipt imutável; RECONCILE permanece protegido; replace é restrito à fazenda; conclusão exige snapshot de identidade/geração e instalação atômica dos resultados observados. Probes R1/R2/R3/R5/R6 passaram, com testes permanentes. Evidência: 122 testes em 13 arquivos, 57 PostgreSQL, 13 transporte autenticado, 12 digest, 12 BrowserContext nativos (E1–E10 e novo R2), baseline funcional 5/5, lint focado, Deno check e build. Typecheck app: 248 diagnósticos no baseline e no patch; zero novos. G3 está resolvido somente para Animal→Lote. Próximo passo exclusivamente: review final do diff, push/PR autorizado e merge/rebaseline; sem nova subfase ou início de outro item F24.4E. `REMOTE_DATA_CHANGED = NO`.
 
 Os parágrafos F24.0–F24.1C anteriores mantidos abaixo documentam a sequência histórica; onde
 classificam o mesmo project ref como produção compartilhada, prevalece o rebaseline acima.
@@ -242,7 +242,7 @@ Não há evidência atual de defeito no SQL ou na regra de domínio. Não aument
 
 ## Próximo desenvolvimento
 
-A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`; F24.2, F24.3, F24.4A, F24.4B, F24.4C e F24.4D estão `CLOSED`. A F24.4D encerrou a caracterização cross-device e autoridade de relógio na branch `feat/f24-4d-cross-device-clock-authority`; a F24.4 permanece `IN_PROGRESS` e **F24.4E — Conflict Resolution Contract** é a próxima fase. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`EXTERNAL_BLOCKED`), e produção permanece `NOT_AUTHORIZED`.
+A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`; F24.2, F24.3, F24.4A, F24.4B, F24.4C e F24.4D estão `CLOSED`. A F24.4D encerrou a caracterização cross-device e autoridade de relógio na branch `feat/f24-4d-cross-device-clock-authority`; a F24.4 permanece `IN_PROGRESS` e **F24.4E — Conflict Resolution Contract** permanece em andamento; E1 está integrada e E2 Animal→Lote está fechada, com G3 resolvido somente nessa vertical. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`EXTERNAL_BLOCKED`), e produção permanece `NOT_AUTHORIZED`.
 
 ## Fontes de detalhe
 

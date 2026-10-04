@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import "fake-indexeddb/auto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { webcrypto } from "node:crypto";
 
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { db } from "@/lib/offline/db";
@@ -61,12 +62,13 @@ async function enqueueFromClient(input: {
 
 describe("F24.4B: concurrent event writes and causal identity", () => {
   beforeEach(async () => {
+    vi.stubGlobal("crypto", webcrypto);
     localStorage.clear();
     await db.open();
     await clearStores();
   });
 
-  afterEach(clearStores);
+  afterEach(async () => { await clearStores(); vi.unstubAllGlobals(); });
 
   it("replays the same persisted identity without duplicating the fact", async () => {
     const input = {
@@ -178,6 +180,7 @@ describe("F24.4B: concurrent event writes and causal identity", () => {
   });
 
   it("preserves both movement facts when reconnect order is inverted", async () => {
+    await db.state_animais.put({ id: animalId, fazenda_id: farmId, lote_id: null } as never);
     const later = buildEventGesture({
       dominio: "movimentacao",
       fazendaId: farmId,

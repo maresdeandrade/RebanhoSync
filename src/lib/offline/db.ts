@@ -68,6 +68,23 @@ export interface LocalOwnership {
   updated_at: string;
 }
 
+function belongsToLegacyMovementBundle(op: Operation, event: Operation) {
+  if (op.client_tx_id !== event.client_tx_id) return false;
+  if (op.client_op_id === event.client_op_id) return true;
+  if (op.table === "eventos_movimentacao")
+    return op.record?.evento_id === event.record.id;
+  return isLegacyAnimalLocationUpdate(op, event);
+}
+
+function isLegacyAnimalLocationUpdate(op: Operation, event: Operation) {
+  return (
+    op.table === "animais" &&
+    op.action === "UPDATE" &&
+    op.record?.id === event.record.animal_id &&
+    Object.prototype.hasOwnProperty.call(op.record, "lote_id")
+  );
+}
+
 export class OfflineDB extends Dexie {
   local_ownership!: Table<LocalOwnership, string>;
 
@@ -816,6 +833,32 @@ export class OfflineDB extends Dexie {
           updated_at: new Date().toISOString(),
         } satisfies LocalOwnership),
       );
+    // Animal→Lote cutover: invalidate old local bundles, never fabricate selectors.
+    this.version(32).stores({}).upgrade(async tx => {
+      const ops: Operation[] = await tx.table("queue_ops").toArray();
+      const oldEvents = ops.filter(op => op.table === "eventos" && op.record?.dominio === "movimentacao" && op.record?.animal_id);
+      for (const event of oldEvents) {
+        const bundle = ops.filter(op => belongsToLegacyMovementBundle(op, event));
+        for (const op of bundle) {
+          await tx.table("queue_ops").delete(op.client_op_id);
+          if (op.table === "animais" && op.before_snapshot) await tx.table("state_animais").put(op.before_snapshot);
+          else if (op.table === "animais") await tx.table("state_animais").delete(event.record.animal_id);
+        }
+        await tx.table("event_eventos").delete(event.record.id);
+        await tx.table("event_eventos_movimentacao").delete(event.record.id);
+        await tx.table("queue_rejections").add({ client_tx_id: event.client_tx_id, client_op_id: event.client_op_id,
+          fazenda_id: event.record.fazenda_id, table: "movement_v1", action: "INSERT",
+          reason_code: "LEGACY_ANIMAL_MOVEMENT_INVALIDATED", reason_message: "Intenção local incompatível; atualizar snapshot e registrar novamente",
+          created_at: new Date().toISOString() });
+        const farm = event.record.fazenda_id;
+        if (typeof farm === "string") await tx.table("sync_reconcile_obligations").put({
+          key: `${farm}:movement-v1`, fazenda_id: farm, scope: "movement-v1", generation_id: crypto.randomUUID(),
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        });
+        const remaining = await tx.table("queue_ops").where("client_tx_id").equals(event.client_tx_id).count();
+        if (!remaining) await tx.table("queue_gestures").update(event.client_tx_id, { status: "REJECTED", sync_result: "REJECTED", last_error: "LEGACY_ANIMAL_MOVEMENT_INVALIDATED" });
+      }
+    });
   }
 }
 

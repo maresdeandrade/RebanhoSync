@@ -2,8 +2,7 @@
  * @vitest-environment jsdom
  *
  * F24.3B1 — regressao do replace A -> B -> A.
- * O cache sincronizado continua descartavel, mas toda projecao local sustentada
- * por operacao nao terminal deve sobreviver ao replace global da store.
+ * Replace substitui somente a fazenda consultada e preserva pendências.
  */
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -159,12 +158,17 @@ describe("F24.3B1 — farm-aware replace", () => {
     await clearStores();
   });
 
-  it("preserva pending A e B no ciclo A -> B -> A sem preservar cache descartavel", async () => {
+  it("preserva dados e pending da outra fazenda no ciclo A -> B -> A", async () => {
     await pullDataForFarm(farmB, ["animais"], { mode: "replace" });
 
     expect(
       (await db.state_animais.toArray()).map((row) => row.id).sort(),
-    ).toEqual(["animal-a-pending", "animal-b-pending", "animal-b-synced"]);
+    ).toEqual([
+      "animal-a-pending",
+      "animal-a-synced",
+      "animal-b-pending",
+      "animal-b-synced",
+    ]);
     expect(await db.queue_ops.get("op-a-pending")).toBeDefined();
     expect(await db.queue_ops.get("op-b-pending")).toBeDefined();
 
@@ -172,7 +176,12 @@ describe("F24.3B1 — farm-aware replace", () => {
 
     expect(
       (await db.state_animais.toArray()).map((row) => row.id).sort(),
-    ).toEqual(["animal-a-pending", "animal-a-synced", "animal-b-pending"]);
+    ).toEqual([
+      "animal-a-pending",
+      "animal-a-synced",
+      "animal-b-pending",
+      "animal-b-synced",
+    ]);
     expect(await db.queue_ops.get("op-a-pending")).toMatchObject({
       client_tx_id: "tx-a-pending",
       sync_state: "PENDING",

@@ -4,6 +4,10 @@
   "entry": [
     "src/main.tsx",
     "index.html",
+    "playwright.movement.config.ts",
+    "scripts/codex/validate-movement-finalization.mjs",
+    "scripts/codex/validate-movement-server-foundation.mjs",
+    "scripts/codex/validate-movement-transport.mjs",
     "scripts/create-and-grant-superadmin.mjs",
     "scripts/grant-superadmin.mjs",
     "scripts/codex/validate-superadmin-security-gate.mjs",

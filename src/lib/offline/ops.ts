@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { prepareMovementIntents } from "./movement";
 import type {
   Gesture,
   Operation,
@@ -157,16 +158,75 @@ function assertAllowedOfflinePushSurface(op: OperationInput) {
   }
 }
 
+type CreateGestureOptions = {
+  sanitarioAgendaV2?: readonly SanitarioAgendaCreateDraftV2[];
+  enqueueSanitarioAgendaV2?: boolean;
+  clientTxId?: string;
+  clientOpIds?: readonly string[];
+};
+
+function hasExistingOperationSet(
+  existingOps: Operation[],
+  ops_input: OperationInput[],
+  clientOpIds: readonly string[] | undefined,
+) {
+  const expectedOpIds = clientOpIds ?? [];
+  return (
+    expectedOpIds.length === ops_input.length &&
+    expectedOpIds.every((clientOpId) =>
+      existingOps.some((operation) => operation.client_op_id === clientOpId),
+    )
+  );
+}
+
+function materializeGestureMovement(
+  ops_input: OperationInput[],
+  options: CreateGestureOptions,
+  movement: Awaited<ReturnType<typeof prepareMovementIntents>> | null,
+  movementTx: string,
+) {
+  if (!movement) return { ops_input, options };
+  return {
+    ops_input: movement.local,
+    options: { ...options, clientTxId: movementTx, clientOpIds: movement.ids },
+  };
+}
+
+function assertMovementWriterBoundary(ops_input: OperationInput[]) {
+  // Old Animal→Lote bundles are never reinterpreted as commands.
+  if (
+    ops_input.some(
+      (op) =>
+        op.table === "eventos" &&
+        op.record?.dominio === "movimentacao" &&
+        op.record?.animal_id,
+    )
+  ) {
+    throw new Error("LEGACY_ANIMAL_MOVEMENT_WRITER_DISABLED");
+  }
+  if (
+    ops_input.some(
+      (op) =>
+        op.table === "animais" &&
+        op.action === "UPDATE" &&
+        Object.prototype.hasOwnProperty.call(op.record, "lote_id") &&
+        !["vendido", "morto", "retirado"].includes(op.record.status),
+    )
+  ) {
+    throw new Error("GENERIC_ANIMAL_LOCATION_WRITER_DISABLED");
+  }
+}
+
 export const createGesture = async (
   fazenda_id: string,
   ops_input: OperationInput[],
-  options: {
-    sanitarioAgendaV2?: readonly SanitarioAgendaCreateDraftV2[];
-    enqueueSanitarioAgendaV2?: boolean;
-    clientTxId?: string;
-    clientOpIds?: readonly string[];
-  } = {},
+  options: CreateGestureOptions = {},
 ) => {
+  assertMovementWriterBoundary(ops_input);
+  const movementTx = options.clientTxId ?? crypto.randomUUID();
+  const movement = ops_input.some(op => op.table === "movement_v1")
+    ? await prepareMovementIntents(fazenda_id, ops_input, movementTx, options.clientOpIds) : null;
+  ({ ops_input, options } = materializeGestureMovement(ops_input, options, movement, movementTx));
   for (const [operationIndex, op] of ops_input.entries()) {
     try {
       assertAllowedOfflinePushSurface(op);
@@ -209,12 +269,7 @@ export const createGesture = async (
       .where("client_tx_id")
       .equals(client_tx_id)
       .toArray();
-    const expectedOpIds = options.clientOpIds ?? [];
-    const sameOperationSet =
-      expectedOpIds.length === ops_input.length &&
-      expectedOpIds.every((clientOpId) =>
-        existingOps.some((operation) => operation.client_op_id === clientOpId),
-      );
+    const sameOperationSet = hasExistingOperationSet(existingOps, ops_input, options.clientOpIds);
     if (!sameOperationSet) {
       throw new Error("CLIENT_TX_ID_REUSE_CONFLICT");
     }
@@ -343,6 +398,11 @@ export const createGesture = async (
       : ops),
     ...sanitarioAgendaV2.flatMap(({ queueOp }) => (queueOp ? [queueOp] : [])),
   ];
+  if (movement) {
+    const remaining = queueOps.filter(op => !op.movement_group);
+    queueOps.splice(0, queueOps.length, ...remaining, ...movement.prepared);
+    queueOps.forEach((op, index) => { op.op_order = index; });
+  }
 
   for (const [operationIndex, op] of queueOps.entries()) {
     try {
@@ -368,12 +428,14 @@ export const createGesture = async (
         db.queue_gestures,
         db.queue_ops,
         ...getAffectedStores(ops),
+        ...(movement ? [db.state_animais] : []),
         ...(sanitarioAgendaV2.length > 0
           ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
           : []),
       ],
       async () => {
         transactionStage = "write-gesture";
+        await movement?.verify();
         await db.queue_gestures.add(gesture);
         transactionStage = "write-operations";
         await db.queue_ops.bulkAdd(queueOps);

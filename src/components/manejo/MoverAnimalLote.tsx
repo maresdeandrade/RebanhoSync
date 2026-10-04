@@ -110,7 +110,7 @@ export function MoverAnimalLote({
       });
 
       await createGesture(animal.fazenda_id, ops);
-      showSuccess(`Animal ${animal.identificacao} movido para o novo lote.`);
+      showSuccess(`Movimentação de ${animal.identificacao} registrada localmente; aguardando confirmação do servidor.`);
       setNovoLoteId("");
       onSuccess();
       onOpenChange(false);
