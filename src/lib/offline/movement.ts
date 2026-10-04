@@ -1,11 +1,99 @@
 import { db } from "./db";
 import { movementCommandDigest } from "./movementDigest";
-import type { Operation, OperationInput } from "./types";
+import type { Animal, Operation, OperationInput } from "./types";
 
 export const isMovementOperation = (op: Operation) =>
   op.table === "movement_v1";
 const signature = (animal: unknown, ops: Operation[]) =>
   JSON.stringify([animal, ops.filter(isMovementOperation)]);
+
+type LocalMovementAnimal = Animal;
+
+function movementPredecessor(
+  queue: Operation[],
+  farm: string,
+  animalId: string,
+) {
+  const predecessors = queue.filter(
+    (op) =>
+      isMovementOperation(op) &&
+      op.record.fazenda_id === farm &&
+      op.record.subject_id === animalId &&
+      op.sync_state !== "REJECTED",
+  );
+  const referenced = new Set(
+    predecessors.map((op) => op.record.movement_base?.event_id),
+  );
+  const tails = predecessors.filter(
+    (op) =>
+      !referenced.has(op.record.event_id) &&
+      op.record.movement_mode === "operational",
+  );
+  if (tails.length > 1) throw new Error("MOVEMENT_LOCAL_CHAIN_AMBIGUOUS");
+  return tails[0];
+}
+
+function validateMovementSnapshot(
+  fact: Record<string, unknown>,
+  animal: LocalMovementAnimal,
+  parent: Operation | undefined,
+) {
+  if (
+    fact.movement_mode === "operational" &&
+    !parent &&
+    animal.movement_version == null
+  )
+    throw new Error("MOVEMENT_SNAPSHOT_REQUIRED_PULL");
+  if (
+    fact.movement_mode === "operational" &&
+    !parent &&
+    ((typeof animal.movement_version === "number" &&
+      !Number.isSafeInteger(animal.movement_version)) ||
+      !/^(0|[1-9][0-9]*)$/.test(String(animal.movement_version)))
+  )
+    throw new Error("MOVEMENT_SNAPSHOT_TOKEN_UNSAFE");
+}
+
+function movementOrigin(
+  fact: Record<string, unknown>,
+  animal: LocalMovementAnimal,
+  parent: Operation | undefined,
+) {
+  return fact.movement_mode === "history_only"
+    ? fact.from_lote_id
+    : parent
+      ? parent.record.to_lote_id
+      : animal.lote_id;
+}
+
+function movementBase(
+  fact: Record<string, unknown>,
+  animal: LocalMovementAnimal,
+  parent: Operation | undefined,
+) {
+  return fact.movement_mode === "history_only"
+    ? null
+    : parent
+      ? {
+          kind: "after_movement",
+          event_id: parent.record.event_id,
+          command_digest: parent.command_digest,
+        }
+      : {
+          kind: "snapshot",
+          movement_version: String(animal.movement_version),
+          head_event_id: animal.movement_head_event_id ?? null,
+        };
+}
+
+function movementOptionalFields(fact: Record<string, unknown>) {
+  return {
+    source_task_id: fact.source_task_id ?? null,
+    observacoes: fact.observacoes ?? null,
+    payload: fact.payload ?? {},
+    detail_payload: fact.detail_payload ?? {},
+  };
+}
 
 export async function prepareMovementIntents(
   farm: string,
@@ -31,37 +119,8 @@ export async function prepareMovementIntents(
       throw new Error("MOVEMENT_LOCAL_ANIMAL_UNAVAILABLE");
     if (!snapshots.has(animalId))
       snapshots.set(animalId, signature(animal, queue));
-    const predecessors = [...queue, ...prepared].filter(
-      (op) =>
-        isMovementOperation(op) &&
-        op.record.fazenda_id === farm &&
-        op.record.subject_id === animalId &&
-        op.sync_state !== "REJECTED",
-    );
-    const referenced = new Set(
-      predecessors.map((op) => op.record.movement_base?.event_id),
-    );
-    const tails = predecessors.filter(
-      (op) =>
-        !referenced.has(op.record.event_id) &&
-        op.record.movement_mode === "operational",
-    );
-    if (tails.length > 1) throw new Error("MOVEMENT_LOCAL_CHAIN_AMBIGUOUS");
-    const parent = tails[0];
-    if (
-      fact.movement_mode === "operational" &&
-      !parent &&
-      animal.movement_version == null
-    )
-      throw new Error("MOVEMENT_SNAPSHOT_REQUIRED_PULL");
-    if (
-      fact.movement_mode === "operational" &&
-      !parent &&
-      ((typeof animal.movement_version === "number" &&
-        !Number.isSafeInteger(animal.movement_version)) ||
-        !/^(0|[1-9][0-9]*)$/.test(String(animal.movement_version)))
-    )
-      throw new Error("MOVEMENT_SNAPSHOT_TOKEN_UNSAFE");
+    const parent = movementPredecessor([...queue, ...prepared], farm, animalId);
+    validateMovementSnapshot(fact, animal, parent);
     const opId = clientOpIds?.[draftIndex] ?? crypto.randomUUID();
     const command = {
       domain: "movement_v1",
@@ -74,32 +133,11 @@ export async function prepareMovementIntents(
       client_op_id: opId,
       client_tx_id: tx,
       movement_mode: fact.movement_mode,
-      from_lote_id:
-        fact.movement_mode === "history_only"
-          ? fact.from_lote_id
-          : parent
-            ? parent.record.to_lote_id
-            : animal.lote_id,
+      from_lote_id: movementOrigin(fact, animal, parent),
       to_lote_id: fact.to_lote_id,
       occurred_at: fact.occurred_at,
-      movement_base:
-        fact.movement_mode === "history_only"
-          ? null
-          : parent
-            ? {
-                kind: "after_movement",
-                event_id: parent.record.event_id,
-                command_digest: parent.command_digest,
-              }
-            : {
-                kind: "snapshot",
-                movement_version: String(animal.movement_version),
-                head_event_id: animal.movement_head_event_id ?? null,
-              },
-      source_task_id: fact.source_task_id ?? null,
-      observacoes: fact.observacoes ?? null,
-      payload: fact.payload ?? {},
-      detail_payload: fact.detail_payload ?? {},
+      movement_base: movementBase(fact, animal, parent),
+      ...movementOptionalFields(fact),
     };
     const input = Object.fromEntries(
       Object.entries(command).filter(

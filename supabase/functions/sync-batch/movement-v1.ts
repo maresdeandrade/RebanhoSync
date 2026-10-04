@@ -59,18 +59,20 @@ export function isMovementV1Operation(value: unknown): value is MovementV1 {
   );
 }
 
-export function validateMovementV1(
-  op: MovementV1,
-  context: { fazendaId: string; clientTxId: string },
-): string | null {
-  if (
+function invalidMovementHeader(op: MovementV1) {
+  return (
     op.domain !== "movement_v1" ||
     op.command !== "apply_animal_lot" ||
     op.contract_version !== 1 ||
     op.subject_type !== "animal" ||
     Object.keys(op).some(
       (key) => !inputKeys.has(key) && key !== "domain" && key !== "command",
-    ) ||
+    )
+  );
+}
+
+function invalidMovementIdentifiers(op: MovementV1) {
+  return (
     [
       op.fazenda_id,
       op.subject_id,
@@ -81,17 +83,46 @@ export function validateMovementV1(
     ].some((value) => typeof value !== "string" || !uuid.test(value)) ||
     !Object.hasOwn(op, "from_lote_id") ||
     (op.from_lote_id !== null &&
-      (typeof op.from_lote_id !== "string" || !uuid.test(op.from_lote_id))) ||
+      (typeof op.from_lote_id !== "string" || !uuid.test(op.from_lote_id)))
+  );
+}
+
+function invalidMovementSelector(op: MovementV1) {
+  return (
     typeof op.occurred_at !== "string" ||
     !["operational", "history_only"].includes(op.movement_mode) ||
     !Object.hasOwn(op, "movement_base") ||
     (op.movement_mode === "operational" && !record(op.movement_base)) ||
-    (op.movement_mode === "history_only" && op.movement_base !== null) ||
+    (op.movement_mode === "history_only" && op.movement_base !== null)
+  );
+}
+
+function invalidMovementPayload(op: MovementV1) {
+  return (
     (op.payload !== undefined && !record(op.payload)) ||
     (op.detail_payload !== undefined && !record(op.detail_payload))
+  );
+}
+
+function validateMovementV1(
+  op: MovementV1,
+  context: { fazendaId: string; clientTxId: string },
+): string | null {
+  if (
+    invalidMovementHeader(op) ||
+    invalidMovementIdentifiers(op) ||
+    invalidMovementSelector(op) ||
+    invalidMovementPayload(op)
   ) {
     return "MOVEMENT_ENVELOPE_INVALID";
   }
+  return validateMovementTransportIdentity(op, context);
+}
+
+function validateMovementTransportIdentity(
+  op: MovementV1,
+  context: { fazendaId: string; clientTxId: string },
+): string | null {
   if (op.fazenda_id !== context.fazendaId) return "MOVEMENT_FARM_MISMATCH";
   if (op.client_tx_id !== context.clientTxId) return "MOVEMENT_TX_MISMATCH";
   if (new TextEncoder().encode(JSON.stringify(op)).byteLength > 65536) {

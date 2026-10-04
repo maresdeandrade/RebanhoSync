@@ -346,7 +346,34 @@ describeLocal("F24.4E2.1B real Auth→Edge→RPC→PostgreSQL", () => {
       "APPLIED",
     ]);
   });
-  beforeAll(async () => {
+  async function awaitMembershipVisibility() {
+    // The runner may have just reloaded PostgREST after applying local schema.
+    // Await authenticated membership visibility in setup; never retry a command/ACK.
+    const memberClient = createClient(apiUrl!, anonKey!, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    let visible = false;
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const { data, error } = await memberClient
+        .from("user_fazendas")
+        .select("role")
+        .eq("user_id", users[0]!)
+        .eq("fazenda_id", farm)
+        .single();
+      if (!error && data?.role === "owner") {
+        visible = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    if (!visible)
+      throw new Error(
+        "Local authenticated membership not ready after schema reload",
+      );
+  }
+
+  function assertDisposableLocalEnvironment() {
     if (
       process.env.REBANHOSYNC_DISPOSABLE_LOCAL_DB !== "1" ||
       ![apiUrl!, dbUrl!].every((value) =>
@@ -354,6 +381,10 @@ describeLocal("F24.4E2.1B real Auth→Edge→RPC→PostgreSQL", () => {
       )
     )
       throw new Error("Designated disposable LOCAL environment required");
+  }
+
+  beforeAll(async () => {
+    assertDisposableLocalEnvironment();
     admin = createClient(apiUrl!, serviceKey!, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -386,30 +417,7 @@ describeLocal("F24.4E2.1B real Auth→Edge→RPC→PostgreSQL", () => {
     );
     token = await login();
     outsideToken = await login(1);
-    // The runner may have just reloaded PostgREST after applying local schema.
-    // Await authenticated membership visibility in setup; never retry a command/ACK.
-    const memberClient = createClient(apiUrl!, anonKey!, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    let visible = false;
-    for (let attempt = 0; attempt < 60; attempt++) {
-      const { data, error } = await memberClient
-        .from("user_fazendas")
-        .select("role")
-        .eq("user_id", users[0]!)
-        .eq("fazenda_id", farm)
-        .single();
-      if (!error && data?.role === "owner") {
-        visible = true;
-        break;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-    if (!visible)
-      throw new Error(
-        "Local authenticated membership not ready after schema reload",
-      );
+    await awaitMembershipVisibility();
   });
   afterAll(async () => {
     // Immutable facts remain in this designated local environment; never delete receipts.

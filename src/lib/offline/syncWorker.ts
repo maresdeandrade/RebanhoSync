@@ -1336,16 +1336,22 @@ function shouldTransportStateExpectedRevision(
   );
 }
 
+function mapMovementForSync(op: Operation, fazendaId: string) {
+  if (
+    op.record.client_op_id !== op.client_op_id ||
+    op.record.client_tx_id !== op.client_tx_id ||
+    op.record.fazenda_id !== fazendaId
+  ) {
+    throw new Error("MOVEMENT_QUEUED_IDENTITY_MISMATCH");
+  }
+  return { ...op.record };
+}
+
 export function mapOperationForSync(
   op: Operation,
   fazendaId: string,
 ): Record<string, unknown> {
-  if (isMovementOperation(op)) {
-    if (op.record.client_op_id !== op.client_op_id || op.record.client_tx_id !== op.client_tx_id || op.record.fazenda_id !== fazendaId) {
-      throw new Error("MOVEMENT_QUEUED_IDENTITY_MISMATCH");
-    }
-    return { ...op.record };
-  }
+  if (isMovementOperation(op)) return mapMovementForSync(op, fazendaId);
   if (isRecord(op.record) && op.record.domain === "sanitario_v2") {
     if (
       op.record.client_op_id !== op.client_op_id ||

@@ -434,6 +434,28 @@ test("R2 ACK then pull failure, restart and farm switch preserves the reconcilia
   }, farm);
   await done(page, queued.tx, lots[1]);
 });
+type EligibilityWriterKind = "venda" | "obito" | "tombstone";
+
+function eligibilityMutation(kind: EligibilityWriterKind): [string, string[]] {
+  if (kind === "tombstone")
+    return [
+      "update public.animais set deleted_at=clock_timestamp() where id=$1",
+      [animal],
+    ];
+  return [
+    "update public.animais set status=$2 where id=$1",
+    [animal, kind === "venda" ? "vendido" : "morto"],
+  ];
+}
+
+function assertEligibilityState(
+  kind: EligibilityWriterKind,
+  current: Awaited<ReturnType<typeof read>>["animal"],
+) {
+  if (kind === "tombstone") expect(current?.deleted_at).toBeTruthy();
+  else expect(current?.status).toBe(kind === "venda" ? "vendido" : "morto");
+}
+
 for (const kind of ["venda", "obito", "tombstone"] as const)
   test(`${kind === "venda" ? "E9" : "E10"} concurrent ${kind} wins server eligibility boundary`, async ({
     page,
@@ -446,14 +468,7 @@ for (const kind of ["venda", "obito", "tombstone"] as const)
     await sql.query("select set_config('request.jwt.claim.sub',$1,false)", [
       owner,
     ]);
-    await sql.query(
-      kind === "tombstone"
-        ? "update public.animais set deleted_at=clock_timestamp() where id=$1"
-        : "update public.animais set status=$2 where id=$1",
-      kind === "tombstone"
-        ? [animal]
-        : [animal, kind === "venda" ? "vendido" : "morto"],
-    );
+    await sql.query(...eligibilityMutation(kind));
     await context.setOffline(false);
     await sync(page, queued.tx);
     const row = await read(page, queued.tx);
@@ -461,9 +476,7 @@ for (const kind of ["venda", "obito", "tombstone"] as const)
     expect(row.gesture?.status).toBe("REJECTED");
     expect(row.animal?.lote_id).toBe(lots[0]);
     expect(String(row.animal?.movement_version)).toBe("1");
-    if (kind === "tombstone") expect(row.animal?.deleted_at).toBeTruthy();
-    else
-      expect(row.animal?.status).toBe(kind === "venda" ? "vendido" : "morto");
+    assertEligibilityState(kind, row.animal);
     expect(row.gesture?.operation_results?.[0].canonical_result?.status).toBe(
       "PROJECTION_CONFLICT",
     );

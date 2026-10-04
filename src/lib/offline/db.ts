@@ -68,6 +68,23 @@ export interface LocalOwnership {
   updated_at: string;
 }
 
+function belongsToLegacyMovementBundle(op: Operation, event: Operation) {
+  if (op.client_tx_id !== event.client_tx_id) return false;
+  if (op.client_op_id === event.client_op_id) return true;
+  if (op.table === "eventos_movimentacao")
+    return op.record?.evento_id === event.record.id;
+  return isLegacyAnimalLocationUpdate(op, event);
+}
+
+function isLegacyAnimalLocationUpdate(op: Operation, event: Operation) {
+  return (
+    op.table === "animais" &&
+    op.action === "UPDATE" &&
+    op.record?.id === event.record.animal_id &&
+    Object.prototype.hasOwnProperty.call(op.record, "lote_id")
+  );
+}
+
 export class OfflineDB extends Dexie {
   local_ownership!: Table<LocalOwnership, string>;
 
@@ -821,10 +838,7 @@ export class OfflineDB extends Dexie {
       const ops: Operation[] = await tx.table("queue_ops").toArray();
       const oldEvents = ops.filter(op => op.table === "eventos" && op.record?.dominio === "movimentacao" && op.record?.animal_id);
       for (const event of oldEvents) {
-        const bundle = ops.filter(op => op.client_tx_id === event.client_tx_id && (
-          op.client_op_id === event.client_op_id ||
-          (op.table === "eventos_movimentacao" && op.record?.evento_id === event.record.id) ||
-          (op.table === "animais" && op.action === "UPDATE" && op.record?.id === event.record.animal_id && Object.prototype.hasOwnProperty.call(op.record, "lote_id"))));
+        const bundle = ops.filter(op => belongsToLegacyMovementBundle(op, event));
         for (const op of bundle) {
           await tx.table("queue_ops").delete(op.client_op_id);
           if (op.table === "animais" && op.before_snapshot) await tx.table("state_animais").put(op.before_snapshot);
