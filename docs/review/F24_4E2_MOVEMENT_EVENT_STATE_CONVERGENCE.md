@@ -1,12 +1,28 @@
 # F24.4E2 — Movement Event/State Design Contract
 
-Atualizado em: 2026-10-03
+Atualizado em: 2026-10-04
 
 Subfase: `F24.4E2 — MOVEMENT_EVENT_STATE_CONVERGENCE`
 
-Modo atual: `CLOSURE_RECERTIFIED` — remediação B1/M1/M2/M3 e recertificação local na mesma F24.4E2, sem nova subfase.
+Modo atual: `CLOSED_INTEGRATED` — remediação B1/M1/M2/M3 e recertificação local na mesma F24.4E2, sem nova subfase.
 
-Status: `F24_4E2_ANIMAL_TO_LOTE = CLOSED`; `F24_4E_G3_ANIMAL_TO_LOTE = RESOLVED`; `REMOTE_DATA_CHANGED = NO`. Evidência atual na seção 18. O fechamento da seção 17 foi invalidado pelo review adversarial de 02/10/2026; não é prova deste gate. F24.4E permanece IN_PROGRESS; lote→pasto e occupancy não foram certificados nesta missão.
+Status: `F24_4E2_ANIMAL_TO_LOTE = CLOSED / INTEGRATED`; `F24_4E_G3_ANIMAL_TO_LOTE = RESOLVED`; `REMOTE_DATA_CHANGED = NO`. Evidência atual na seção 18. O fechamento da seção 17 foi invalidado pelo review adversarial de 02/10/2026; não é prova deste gate. F24.4E permanece IN_PROGRESS; lote→pasto e occupancy não foram certificados nesta missão.
+
+## Integração em main — estado atual
+
+```ini
+PR_175 = MERGED
+F24_4E2_ANIMAL_TO_LOTE = CLOSED
+F24_4E2_INTEGRATION = INTEGRATED
+G3_ANIMAL_TO_LOTE = RESOLVED
+CURRENT_BASELINE = main@1456de00a8b19f555e99a3541394ec5cc97db797
+F24_4E = IN_PROGRESS
+```
+
+Merge confirmado em 04/10/2026. A seção 18 preserva os hashes e resultados observados
+antes do merge; READY_FOR_PR e próximos passos pré-PR ali registrados são históricos,
+completados pela integração do PR #175. Este registro documental não reexecuta testes
+nem declara deploy, certificação de Lote→Pasto/occupancy ou fechamento de F24.4E inteira.
 
 > **HISTORICAL_CORRECT / SUPERSEDED:** seções 1–12 registram characterization/design
 > anterior à implementação. “Atual”, G3 aberto, runtime NOT_STARTED e bundle genérico
@@ -1895,7 +1911,7 @@ E9/E10 mantêm fixtures SQL de elegibilidade, não certificação dos formulári
 Uma exportação de baseline foi descoberta indevidamente pelo runner durante validação
 intermediária; foi isolada fora do checkout antes das contagens finais acima.
 
-### Gate final
+### Gate final da recertificação anterior ao merge
 
 ```ini
 B1_GENERIC_FACT_BYPASS = BLOCKED
@@ -1924,5 +1940,6 @@ Riscos residuais: certificação local não prova deploy/dispositivos físicos/e
 248 diagnósticos TypeScript preexistentes; N1 adiado e paginação global do pull fora
 do escopo. Não há blocker remanescente B1/M1/M2/M3.
 
-Próximo passo exclusivamente: review final do diff, push/PR autorizado e merge/rebaseline.
+Próximo passo registrado na recertificação, já cumprido pelo merge do PR #175:
+review final do diff, push/PR autorizado e merge/rebaseline.
 Sem nova missão/subfase de fechamento ou início de outro item F24.4E.

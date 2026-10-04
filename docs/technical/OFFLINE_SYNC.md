@@ -1,6 +1,6 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-10-03
+Atualizado em: 2026-10-04
 
 ## Responsabilidade documental
 
@@ -70,7 +70,8 @@ somente seus registros não protegidos, sem clear global. O pull captura identid
 com geração ainda igual e resultados necessários observados, na transação de instalação.
 ACK posterior permanece protegido para outro ciclo, inclusive após restart/farm-switch.
 
-E2 Animal→Lote está CLOSED e G3 dessa vertical RESOLVED; F24.4E permanece IN_PROGRESS.
+E2 Animal→Lote está CLOSED / INTEGRATED pelo PR #175 (`MERGED`), no baseline atual
+`main@1456de00a8b19f555e99a3541394ec5cc97db797`. G3 dessa vertical está RESOLVED; F24.4E permanece IN_PROGRESS.
 Lote→Pasto, occupancy, correção de movimento e paginação global do pull não são certificados
 por essa entrega; N1 reentrada de `createGesture` permanece DEFERRED.
 

@@ -1,6 +1,6 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-10-03
+Atualizado em: 2026-10-04
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4 IN_PROGRESS)**
 Próxima frente: **F24.4E — Conflict Resolution Contract (IN_PROGRESS)**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
@@ -53,8 +53,8 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 ## Fase atual de desenvolvimento
 
 O fechamento E2 é restrito a Animal→Lote; não certifica Lote→Pasto, occupancy ou
-correção de movimento. O próximo passo dessa entrega é review final do diff e
-push/PR autorizado, seguido de merge/rebaseline, sem iniciar nova subfase.
+correção de movimento. A entrega está integrada pelo PR #175 (`MERGED`)
+no baseline atual `main@1456de00a8b19f555e99a3541394ec5cc97db797`, sem iniciar nova subfase.
 O [plano ativo](../review/ACTIVE_PHASE_PLAN.md) mantém os demais itens não certificados.
 
 ```txt
@@ -69,7 +69,7 @@ Fase 23 — Simulação Produtiva e Comercial — CLOSED
 → F24.4D — Cross-device Offline/Reconnect + Clock Authority — CLOSED (branch `feat/f24-4d-cross-device-clock-authority`; `faddf64`)
 → F24.4E — Conflict Resolution Contract — IN_PROGRESS
   E1 — animais CAS/tombstone — INTEGRATED (PR #173)
-  E2 — Animal→Lote — CLOSED; G3 Animal→Lote — RESOLVED
+  E2 — Animal→Lote — CLOSED / INTEGRATED (PR #175); G3 Animal→Lote — RESOLVED
 → F24.4F — Integrated Certification — PLANNED_AFTER_F24.4E
 → F24.5 — Observabilidade — NOT_STARTED
 → F24.6 — Performance / Escala — NOT_STARTED
@@ -121,4 +121,4 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
 | 22 | Eficiência Produtiva e Econômica | **Gates F22A.4 e F22B.3 fechados; F22C fechada com histórico, duração, agregação e performance observada implementados**; lucro completo permanece bloqueado e novo incremento exige capacidade de produto explicitamente autorizada |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
-| 24 | Release Hardening / Scale Readiness | **F24.4A–F24.4D closed; F24.4E IN_PROGRESS; E1 INTEGRATED; E2 Animal→Lote CLOSED / G3 RESOLVED; produção não provisionada** |
+| 24 | Release Hardening / Scale Readiness | **F24.4A–F24.4D closed; F24.4E IN_PROGRESS; E1 INTEGRATED; E2 Animal→Lote CLOSED / INTEGRATED (PR #175) / G3 RESOLVED; produção não provisionada** |

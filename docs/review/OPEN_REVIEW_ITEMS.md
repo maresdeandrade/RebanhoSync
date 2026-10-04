@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-10-03
+Atualizado em: 2026-10-04
 
 ## Objetivo
 
@@ -31,10 +31,10 @@ descartável existente e está registrada em
 
 ## P0 — F24.4 Multi-device + Conflitos
 
-Status: `IN_PROGRESS — F24.4E1 INTEGRATED / F24.4E2 ANIMAL_TO_LOTE CLOSED / G3_ANIMAL_TO_LOTE RESOLVED`
+Status: `IN_PROGRESS — F24.4E1 INTEGRATED / F24.4E2 ANIMAL_TO_LOTE CLOSED / INTEGRATED / G3_ANIMAL_TO_LOTE RESOLVED`
 Release blocker: `SIM`
 
-F24.4A–F24.4D estão encerradas e a F24.4E está ativa. O CAS de `UPDATE animais` e `DELETE animais`, replay de lost ACK, cross-device reconnect, farm-switch e clock authority foram comprovados nos escopos documentados. Permanecem abertos: demais `state_*` sem política de revisão, conflito cross-domain Evento→estado em sucesso parcial fora da vertical Animal→Lote certificada, duplicidade humana ad hoc sem causa compartilhada, certificação em dispositivo físico real, reconciliação de fazenda não ativa e transporte E2E do conflito Sanitário v2. `AUTO_MERGE = NOT_AUTHORIZED`. Animal→Lote foi recertificada na [seção 18 da F24.4E2](./F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md); Lote→Pasto/occupancy continuam fora desse gate. O próximo passo da entrega é review final do diff, push/PR autorizado e merge/rebaseline.
+F24.4A–F24.4D estão encerradas e a F24.4E está ativa. O CAS de `UPDATE animais` e `DELETE animais`, replay de lost ACK, cross-device reconnect, farm-switch e clock authority foram comprovados nos escopos documentados. Permanecem abertos: demais `state_*` sem política de revisão, conflito cross-domain Evento→estado em sucesso parcial fora da vertical Animal→Lote certificada, duplicidade humana ad hoc sem causa compartilhada, certificação em dispositivo físico real, reconciliação de fazenda não ativa e transporte E2E do conflito Sanitário v2. `AUTO_MERGE = NOT_AUTHORIZED`. Animal→Lote foi recertificada na [seção 18 da F24.4E2](./F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md); Lote→Pasto/occupancy continuam fora desse gate. PR #175 está `MERGED`; Animal→Lote está integrada no baseline atual `main@1456de00a8b19f555e99a3541394ec5cc97db797`. Não é pendência de review/merge.
 
 ## P1 — Certificação E2E de process kill
 
