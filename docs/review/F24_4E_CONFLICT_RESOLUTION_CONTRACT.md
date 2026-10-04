@@ -1,6 +1,21 @@
 # F24.4E — Conflict Resolution Contract
 
-Atualizado em: 2026-10-01
+Atualizado em: 2026-10-03
+
+## Estado operacional atual
+
+`F24_4E = IN_PROGRESS`; `F24_4E1 = INTEGRATED` pelo PR #173;
+`F24_4E2_ANIMAL_TO_LOTE = CLOSED`; `G3_ANIMAL_TO_LOTE = RESOLVED`.
+A [seção 18 da F24.4E2](./F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md#18-closure-remediation--recertification--b1m1m2m3)
+é a referência certificada para Animal→Lote: writer especializado ativo, fronteira genérica
+bloqueada, identidade de resposta, proteção RECONCILE e barreira de geração no pull.
+Lote→Pasto/occupancy e demais contratos fora dessa vertical continuam não certificados.
+Próximo passo dessa entrega: review final do diff, push/PR autorizado e merge/rebaseline.
+
+> **HISTORICAL_CORRECT / SUPERSEDED:** as seções 1–13 abaixo preservam a execução de
+> characterization/E1 em 01/10/2026, suas matrizes e evidências. READY_FOR_REVIEW da E1,
+> G3 DEFERRED e abertura futura de E2 descrevem aquele baseline, não o estado atual.
+> Não generalizar o gate Animal→Lote para F24.4E inteira.
 
 ## 1. Decisão
 

@@ -129,6 +129,11 @@ Lote→Pasto e outros domínios preservam suas boundaries. A identidade de trans
 (`fazenda_id`, `event_id`, `client_op_id`, `client_tx_id`) é retornada separadamente do
 receipt original, inclusive em rejeição, divergência de identidade e falha de infraestrutura.
 
+`animais.lote_id` é o estado atual; `movement_version` é o token server-authoritative
+da validade da projeção e `movement_head_event_id` aponta sua proveniência factual.
+Evento/detail constituem o histórico de domínio. Receipt é resultado técnico imutável;
+effect decision é decisão técnica posterior append-only, sem substituir esse histórico.
+
 ACK não libera a proteção local de operações `RECONCILE`. Replace substitui somente os
 registros da fazenda consultada. Reconciliação captura operações e geração da obrigação
 antes das leituras, observa estado/fatos/efeito necessários e instala os resultados junto

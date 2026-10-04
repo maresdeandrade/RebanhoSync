@@ -8,6 +8,12 @@ Modo atual: `CLOSURE_RECERTIFIED` — remediação B1/M1/M2/M3 e recertificaçã
 
 Status: `F24_4E2_ANIMAL_TO_LOTE = CLOSED`; `F24_4E_G3_ANIMAL_TO_LOTE = RESOLVED`; `REMOTE_DATA_CHANGED = NO`. Evidência atual na seção 18. O fechamento da seção 17 foi invalidado pelo review adversarial de 02/10/2026; não é prova deste gate. F24.4E permanece IN_PROGRESS; lote→pasto e occupancy não foram certificados nesta missão.
 
+> **HISTORICAL_CORRECT / SUPERSEDED:** seções 1–12 registram characterization/design
+> anterior à implementação. “Atual”, G3 aberto, runtime NOT_STARTED e bundle genérico
+> nessas seções referem-se ao baseline histórico, não ao contrato operacional vigente.
+> Seções 13–16 preservam incrementos anteriores, explicitamente marcados abaixo;
+> seção 17 é o fechamento invalidado. Somente a seção 18 sustenta o gate atual.
+
 ## 1. Baseline e escopo
 
 ```ini
@@ -436,6 +442,10 @@ com os critérios acima. Design definido não fecha F24.4E nem remove G3 no prod
 
 ## 13. F24.4E2.1 — Movement Domain Command Contract
 
+> **HISTORICAL_CORRECT / SUPERSEDED:** design anterior à implementação. Runtime
+> NOT_STARTED, adapter legado e próximos incrementos não são estado/plano atuais.
+> O contrato implementado e a recertificação constam na seção 18.
+
 ### 13.1 Escopo, baseline e problema
 
 **PROPOSED_CONTRACT = DEFINED; RUNTIME = NOT_STARTED.** Primeira vertical futura:
@@ -848,6 +858,10 @@ Animal→Lote com as validações acima. Nenhuma implementação iniciada em F24
 
 ## 14. F24.4E2.1A — Animal→Lote Server Foundation
 
+> **HISTORICAL_CORRECT / SUPERSEDED:** foundation servidor anterior à integração.
+> Limitações e próximos passos desta execução foram sucedidos pelas seções seguintes;
+> o gate atual está na seção 18.
+
 ### 14.1 Baseline e escopo autorizado
 
 Baseline inicial real: `98b4455f67d39d94f3f2480bb7412141a5dde05d`, branch
@@ -1076,6 +1090,10 @@ Não começar E3/F24.4F nem ampliar autorização de ambiente remoto.
 
 ## 15. F24.4E2.1A.1 — Server completion gate
 
+> **HISTORICAL_CORRECT / SUPERSEDED:** completion servidor antes do transporte/cliente.
+> RUNTIME_EDGE_CLIENT NOT_STARTED e G3 aberto descrevem esse momento.
+> O gate atual está na seção 18.
+
 Atualizado em: 2026-10-01
 
 ### 15.1 Decisão e baseline
@@ -1293,12 +1311,16 @@ este veredito não autoriza operação remota nem comprova transporte do novo co
 
 ## 16. F24.4E2.1B — Edge / transport integration
 
+> **HISTORICAL_CORRECT / SUPERSEDED:** transporte antes da finalização/recertificação.
+> CLIENT_RUNTIME_OPT_IN NOT_STARTED, G3 aberto e E2.1C como próximo passo não são atuais.
+> O envelope de resposta e a reconciliação vigentes constam na seção 18.
+
 Atualizado em: 2026-10-01
 
 ### 16.1 Decisão e baseline
 
 `F24.4E2.1B = READY_FOR_REVIEW`, transporte local certificado; sem opt-in produtivo do cliente.
-Esta seção é a referência atual de transporte e sucede a seção 15. Não fecha G3 ou F24.4E2.
+Naquela execução, esta seção era a referência de transporte e sucedia a seção 15. Não fechava G3 ou F24.4E2.
 
 ```ini
 repository = maresdeandrade/RebanhoSync
@@ -1724,7 +1746,44 @@ Data: 03/10/2026. Mesma F24.4E2, sem nova subfase. Esta seção substitui a cert
 da seção 17, invalidada pelo relatório adversarial `F24.4E2-final-closure-review` de
 02/10/2026. Documentos anteriores CLOSED/RESOLVED não foram usados como prova.
 
-### Decisão e baseline confirmado
+### Baseline pós-rebase e reconciliação documental pré-PR
+
+Observado em 03/10/2026, antes deste patch exclusivamente documental:
+
+```ini
+branch = feat/f24-4e2-movement-event-state-convergence
+HEAD = d39922f7d694d53372b3a9859c595b602f165b5f
+origin/main = 1e98f51785177f8c75435d21737462830d48cb55
+merge_base = 1e98f51785177f8c75435d21737462830d48cb55
+ahead = 6
+behind = 0
+initial_worktree = CLEAN_TRACKED_STAGED_UNTRACKED
+PATCH_SCOPE = DOCUMENTATION_ONLY
+```
+
+Fetch/ref/diff confirmam o rebase sobre a main atual. O patch técnico já está commitado
+no HEAD acima; não foi reexecutada sua bateria técnica nesta reconciliação. Hashes,
+contagens e worktree sem commit abaixo são o registro da recertificação anterior,
+preservado sem reatribuir resultados a uma nova execução.
+
+Classificação das referências relevantes encontradas pela busca dirigida em `docs/`,
+sem usar `docs/archive/**` como fonte operacional:
+
+| Referências / documentos | Classificação e ação |
+| --- | --- |
+| OPERATIONAL_FLOWS seção 9 | CURRENT_CORRECT; explicitada a separação entre histórico, estado, token/head e resultado/decisão técnicos |
+| PROJECT_STATUS, ACTIVE_PHASE_PLAN, CURRENT_PHASE_HANDOFF | STALE: patch sem commit apresentado como atual; corrigido para o baseline pós-rebase e evidência histórica; delimitados gaps fora de Animal→Lote |
+| Este documento, seções 1–16 | AMBIGUOUS → HISTORICAL_CORRECT: marcadas SUPERSEDED, preservando runtime NOT_STARTED, generic bundle, G3 e próximos passos antigos |
+| Este documento, seção 17 | HISTORICAL_CORRECT como registro invalidado; não é prova do gate |
+| Este documento, seção 18 | CURRENT_CORRECT no contrato/gate; baseline da recertificação separado do snapshot documental pós-rebase |
+| F24_4E_CONFLICT_RESOLUTION_CONTRACT | AMBIGUOUS → HISTORICAL_CORRECT nas matrizes/execução originais; cabeçalho operacional atual acrescentado com E1 integrada e G3 Animal→Lote resolvido |
+| OPEN_REVIEW_ITEMS | STALE: E1 ainda READY_FOR_REVIEW e gaps sem excluir Animal→Lote; corrigidos os apontadores atuais |
+| OFFLINE_SYNC | AMBIGUOUS: contrato de ACK genérico sem explicitar RECONCILE do movimento; acrescentado contrato específico e link canônico |
+| ROADMAP | STALE: F24.4E “next” na tabela; alinhado a IN_PROGRESS com E1/E2 e limites |
+| SOURCE_OF_TRUTH, CAPABILITY_MAP | CURRENT_CORRECT; preservados sem alteração |
+| F24.3A, F24.4A, F24.2 closeout, F24.0 baseline, B4 e mapa validado em review/evidence, F22C | HISTORICAL_CORRECT: characterization/evidência com data e escopo próprios; não usados como prova atual nem reescritos |
+
+### Decisão e baseline confirmado na recertificação técnica anterior
 
 ```ini
 branch = feat/f24-4e2-movement-event-state-convergence
@@ -1778,7 +1837,7 @@ em PostgreSQL local explicitamente descartável; fixtures sintéticas foram pres
 
 ### Probes permanentes e regressão observada
 
-Inventário do patch (21 arquivos, sem dependência nova):
+Inventário do patch de remediação anterior (21 arquivos, sem dependência nova):
 
 - Runtime: `src/lib/offline/movementReconciliation.ts`, `src/lib/offline/pull.ts`,
   `src/lib/offline/types.ts`, `supabase/functions/sync-batch/index.ts`,
@@ -1850,10 +1909,16 @@ RETRY_IDEMPOTENCY = PROVEN
 PENDING_RECONCILIATION = PROVEN
 FARM_ISOLATION = PROVEN
 CUTOVER = PROVEN
+OLD_GENERIC_ANIMAL_LOT_REMOTE_WRITER = BLOCKED
+NEW_MOVEMENT_V1_WRITER = ENABLED
+F24_4E = IN_PROGRESS
 F24_4E2_ANIMAL_TO_LOTE = CLOSED
 G3_ANIMAL_TO_LOTE = RESOLVED
 VEREDITO = READY_FOR_PR
 ```
+
+Limites: Lote→Pasto e occupancy não são certificados por esta entrega; correção de
+movimento está fora da vertical v1.
 
 Riscos residuais: certificação local não prova deploy/dispositivos físicos/escala;
 248 diagnósticos TypeScript preexistentes; N1 adiado e paginação global do pull fora
