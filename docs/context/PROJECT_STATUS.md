@@ -1,6 +1,6 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-10-04
+Atualizado em: 2026-10-05
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
@@ -81,7 +81,7 @@ A [baseline F24.0](../review/F24_RELEASE_READINESS_BASELINE.md) foi estabelecida
 `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`. O fechamento é `READY WITH CAVEATS` para a
 auditoria, não para produção: delta produtivo, gate final de RLS, offline prolongado e
 performance permanecem `NOT_TESTED`; multi-device, recovery e observabilidade permanecem
-`PARTIAL`; o Sync Sanitário v2 permanece `EXTERNAL_BLOCKED` e fail-closed.
+`PARTIAL`; naquele snapshot, o Sync Sanitário v2 estava `EXTERNAL_BLOCKED` e fail-closed. O blocker foi fechado em 05/10/2026 conforme a recertificação abaixo; rollout continua não autorizado.
 
 A [auditoria F24.1](../review/F24_1_PRODUCTION_MIGRATION_DELTA.md) verificou a proveniência
 dos repairs e a reentrada preparou a migration forward-only `20260913232253` para reconciliar
@@ -219,8 +219,8 @@ Estado dos subitens:
 
 - B3 Sync Sanitário v2:
   - `B3_IMPLEMENTATION = CLOSED`
-  - `B3_REMOTE_MULTI_DEVICE_GATE = PLATFORM_BLOCKED`
-  - `B3_FEATURE_FLAG = FAIL_CLOSED`
+  - `B3_REMOTE_MULTI_DEVICE_GATE = PARTIAL` (stale remoto certificado; multi-device completo não recertificado)
+  - `B3_FEATURE_FLAG = false` (fail-closed)
   - `B3_BLOCKS_CURRENT_MAIN = NO`
   - `B3_BLOCKS_RELEASE = YES`
 - Gate sanitário remoto: desligado (`fail-closed`).
@@ -228,21 +228,38 @@ Estado dos subitens:
 - Rollout para usuários: não autorizado.
 - Fixtures sintéticas residuais: zero.
 
-## Bloqueio externo
+## Recertificação remota stale Sanitário v2 — 05/10/2026
 
-`SANITARIO_V2_E2E_PLATFORM_BLOCKED`:
+FATO CONFIRMADO: PR #176 integrada em `main@04e9be10c32c72afc240b080769d25f6b734feef`. A migration remota `20261004210000_sanitario_sync_v2_revision_conflict_pt409.sql` está aplicada; as três RPCs autoritativas usam `PT409` para stale revision. Ambiente `zqloazqzhwauamcejmuz`: `REMOTE_DEVELOPMENT_INTEGRATION / DISPOSABLE_INTEGRATION`; PostgreSQL `17.11.0.002`, PostgREST `14.18` e `sync-batch` ACTIVE v27.
 
-- criação de agenda, replay e substituição de animais foram aprovados;
-- a revisão chegou corretamente a `1`;
-- PostgreSQL produz imediatamente `SQLSTATE 40001 / SANITARIO_AGENDA_REVISION_CONFLICT`;
-- a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout;
-- o worker recebe `RETRYABLE / SANITARIO_RPC_TIMEOUT`.
+```ini
+SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED
+B3_FEATURE_FLAG = false
+B3_REMOTE_GATE = OFF
+B3_ROLLOUT = NOT_AUTHORIZED
+IMPORT_REAL_AUTHORIZED = false
+```
 
-Não há evidência atual de defeito no SQL ou na regra de domínio. Não aumentar timeout, criar workaround ou reescrever preventivamente a RPC. O bloqueio impede rollout, mas não o desenvolvimento das próximas fases.
+A recertificação cobriu especificamente `replace_agenda_animals`: fixture isolada com usuário, fazenda, membership, dois animais e gate restrito; Agenda criada em revisão 0, mutação válida 0 → 1 e stale com `expected_revision=0`. Cada transporte usou novos `client_op_id`/`domain_op_id`, sem replay mascarando o conflito.
+
+| Caminho | Latência | Resposta observada | Retry observado |
+| --- | --- | --- | --- |
+| PostgreSQL direto | 8,496 ms | `PT409 / SANITARIO_AGENDA_REVISION_CONFLICT current_revision=1` | exceção imediata capturada |
+| PostgREST HTTP | 463 ms | HTTP 409, `PT409`, mensagem canônica e `current_revision=1` | uma tentativa |
+| supabase-js 2.95.0 | 71 ms | `PT409`, mensagem canônica; sem `TimeoutError` | `fetch_count=1` |
+| Edge v27 | 1978 ms | HTTP 200; `CONFLICT`, `SANITARIO_AGENDA_REVISION_CONFLICT`, `current_revision=1`, `retryable=false` | uma RPC stale |
+
+Logs da janela de 05/10/2026, 13:47:15–13:47:29 UTC (10:47:15–10:47:29 em São Paulo): três conflitos `PT409` remotos em três virtual transactions; uma tentativa por RPC, sem amplificação massiva ou retry storm. A exceção SQL direta foi capturada e não integra esse contador. HTTP/Edge foram correlacionados por request IDs; transações PostgreSQL por função e janela temporal. A diferença aproximada de cinco segundos entre relógios cliente/servidor foi considerada.
+
+Invariantes consultadas após os probes: Agenda permaneceu `revision=1`, `programada`; target permaneceu A2, `planejado`, conforme a mutação válida. Nenhum stale criou Evento, closure, alteração de target ou ledger adicional. Ledger continha somente criação e substituição válidas. Cleanup comprovou zero gates, agendas, targets, closures, fazendas, animais, memberships, usuários, ledger e queries ativas sintéticos; sessão encerrada e nenhum Evento append-only apagado.
+
+Histórico preservado: antes da correção, PostgreSQL produzia `40001`; PostgREST 14.5 reexecutava massivamente, o request não respondia e supabase-js/Edge terminavam em timeout ou `RETRYABLE / SANITARIO_RPC_TIMEOUT`. A evidência de 05/10/2026 fecha esse blocker no cenário certificado.
+
+Limites: as outras RPCs autoritativas não foram exercitadas nessa recertificação E2E; não houve regressão completa do Sanitário v2. Warning de collation `153.120 → 153.121` foi observado, não impediu os probes e não foi corrigido. O fechamento não autoriza rollout, publicação de catálogo, importação real ou alteração de produção, nem encerra F24 inteira.
 
 ## Próximo desenvolvimento
 
-A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`; F24.2, F24.3, F24.4A, F24.4B, F24.4C e F24.4D estão `CLOSED`. A F24.4D encerrou a caracterização cross-device e autoridade de relógio na branch `feat/f24-4d-cross-device-clock-authority`; a F24.4 permanece `IN_PROGRESS` e **F24.4E — Conflict Resolution Contract** permanece em andamento; E1 está integrada e E2 Animal→Lote está fechada e integrada pelo PR #175, com G3 resolvido somente nessa vertical. O Sync Sanitário v2 permanece bloqueado para release por plataforma externa (`EXTERNAL_BLOCKED`), e produção permanece `NOT_AUTHORIZED`.
+A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`; F24.2, F24.3, F24.4A, F24.4B, F24.4C e F24.4D estão `CLOSED`. A F24.4D encerrou a caracterização cross-device e autoridade de relógio na branch `feat/f24-4d-cross-device-clock-authority`; a F24.4 permanece `IN_PROGRESS` e **F24.4E — Conflict Resolution Contract** permanece em andamento; E1 está integrada e E2 Animal→Lote está fechada e integrada pelo PR #175, com G3 resolvido somente nessa vertical. O blocker stale Sanitário v2 foi fechado em 05/10/2026; certificação remota completa e autorização de rollout continuam pendentes, e produção permanece `NOT_AUTHORIZED`.
 
 ## Fontes de detalhe
 

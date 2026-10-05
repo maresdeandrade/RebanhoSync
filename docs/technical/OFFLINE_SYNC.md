@@ -138,13 +138,13 @@ Snapshots técnicos e de carência fazem round-trip dentro de `eventos_sanitario
 - evento e detalhe: implementados, com E2E remoto pendente;
 - retry/replay/idempotência: implementados, com validação remota parcial;
 - sucesso parcial: validado localmente, remoto pendente;
-- conflito multi-dispositivo: código e SQL validados, plataforma bloqueada.
+- conflito stale de `replace_agenda_animals`: recertificado remotamente em 05/10/2026; multi-dispositivo completo não recertificado.
 - movimento de estoque 3.9: implementado e validado localmente;
 - recálculo após pull 3.13: implementado e validado localmente;
 - produto/fonte 4, correção append-only 5 e carência operacional 6: implementados e validados localmente;
 - hardening integrado local de 3.9, 3.13, 4, 5 e 6: executado e aprovado.
 
-`SANITARIO_V2_E2E_PLATFORM_BLOCKED` ocorre porque o PostgreSQL produz `SQLSTATE 40001 / SANITARIO_AGENDA_REVISION_CONFLICT`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout. O worker recebe `RETRYABLE / SANITARIO_RPC_TIMEOUT`.
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026 após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`. Historicamente, `40001` não retornava pelo transporte antes do timeout e o worker recebia `RETRYABLE / SANITARIO_RPC_TIMEOUT`. Ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados; outras RPCs não foram recertificadas.
 
 Não aumentar timeout nem alterar RPC sem nova evidência.
 
@@ -165,7 +165,7 @@ O fingerprint remoto cobre evento, detalhe e relações completos. Alterar refer
 
 ## Lacunas de release F24
 
-A Fase 12 permanece tecnicamente encerrada. O bloqueio externo sanitário não a reabre.
+A Fase 12 permanece tecnicamente encerrada. O fechamento do blocker externo em 05/10/2026 não a reabre nem encerra F24.
 
 O [closeout F24.3](../review/F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md) certificou localmente
 farm-aware replace, reconciliação de fazenda não ativa, recovery `UNKNOWN`, retry genérico,

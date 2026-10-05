@@ -231,7 +231,9 @@ Fatos confirmados:
 Conclusão: `PERFORMANCE_GATE = NOT_TESTED`. A evidência existente ajuda a desenhar F24.6,
 mas não define volume máximo certificado.
 
-## Sync Sanitário v2
+## Sync Sanitário v2 — snapshot histórico F24.0
+
+> **Status posterior — 05/10/2026:** `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`; ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados. Outras RPCs não foram recertificadas; F24 não foi encerrada. O relato de 40001/timeout abaixo permanece histórico e superseded quanto ao blocker.
 
 ```ini
 SANITARIO_V2_E2E_PLATFORM_BLOCKED = TRUE

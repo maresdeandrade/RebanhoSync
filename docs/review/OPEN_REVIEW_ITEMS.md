@@ -64,17 +64,17 @@ de escala declarados.
 
 ## P1 condicional — F24.7 Recertificação Sync Sanitário v2
 
-Status: `EXTERNAL_BLOCKED`
+Status: `NOT_STARTED` para certificação completa; blocker de plataforma fechado em 05/10/2026.
 
-Código: `SANITARIO_V2_E2E_PLATFORM_BLOCKED`
+Código: `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED`
 
-Release blocker do Sanitário v2: `SIM`
+Release Sanitário v2: não autorizado; demais RPCs e regressão completa continuam pendentes. Ver [evidência canônica de 05/10/2026](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026): PT409, PostgREST 14.18 HTTP 409, supabase-js sem timeout, Edge v27 CONFLICT terminal, ausência de retry storm, stale sem efeitos e cleanup zero.
 
 - manter gate remoto desligado;
 - manter feature flag local `false`;
 - não autorizar rollout;
 - não aumentar timeout nem alterar RPC/SQL sem nova evidência;
-- reexecutar os E2Es somente quando a plataforma estiver estável.
+- manter importação real não autorizada; recertificação stale não inicia nova fase nem encerra F24.
 
 ## P0 final — F24.8 Production Readiness / Canary / Rollback / Release Gate
 
@@ -105,4 +105,4 @@ sós, release blockers.
 - validação remota de movimentação: `RESOLVED / REMOTE_CONVERGENCE_VERIFIED`;
 - Trilha C C2–C7: `RESOLVED / TECHNICAL_CONVERGENCE = CLOSED`;
 - promoção de migrations e backoffice: `STILL_OPEN`, preservada para F24.8;
-- bloqueio sanitário: `EXTERNAL_BLOCKED`, preservado sem reabrir a Fase 12.
+- blocker sanitário: `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026, sem reabrir a Fase 12 ou autorizar rollout.

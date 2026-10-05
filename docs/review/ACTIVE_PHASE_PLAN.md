@@ -20,8 +20,8 @@ Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 Este documento aponta para o [closeout autoritativo da F24.2](./F24_2_CLOSEOUT_AND_REBASELINE.md)
 e para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
 O backlog F24.1–F24.8, dependências, critérios de entrada/saída e release blockers estão
-registrados nessa baseline. Produção não está autorizada, o Sanitário v2 permanece
-`EXTERNAL_BLOCKED`, e nenhuma frente posterior deve ser iniciada automaticamente.
+registrados nessa baseline. Produção e rollout Sanitário v2 não estão autorizados; o blocker
+stale foi fechado em 05/10/2026 conforme a [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Nenhuma frente posterior deve ser iniciada automaticamente.
 
 ## F24.3 — closeout
 
@@ -126,7 +126,9 @@ fechadas; a F24.3 foi posteriormente encerrada. Evidência:
 Os blocos F24.0–F24.1C abaixo preservam o plano formulado sob a premissa anterior. Referências
 a backend compartilhado ou criação obrigatória de staging não são instruções vigentes.
 
-## F24.0 — resultado
+## F24.0 — resultado histórico
+
+Snapshot preservado; o blocker sanitário foi posteriormente fechado em 05/10/2026 conforme a [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026).
 
 ```ini
 F24_RELEASE_BASELINE = ESTABLISHED
@@ -687,7 +689,7 @@ O `sync-batch` v20 foi publicado somente no staging `zqloazqzhwauamcejmuz`. Um �
 - Rollout para usuários: não autorizado.
 - Fixtures sintéticas residuais: zero.
 
-O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` continua impedindo rollout, sem invalidar o desenvolvimento técnico concluído da Fase 12. Não criar workaround, aumentar timeout nem reescrever preventivamente a RPC.
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026 após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`; ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout `NOT_AUTHORIZED` e importação real não autorizada permanecem preservados. Demais RPCs não recertificadas; F24 segue em andamento.
 
 ## Sequência após o fechamento formal
 

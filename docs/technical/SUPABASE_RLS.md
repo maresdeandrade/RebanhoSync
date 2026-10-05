@@ -42,7 +42,7 @@ A fundação de RLS e isolamento multi-tenant/fazenda do Sync Sanitário v2 est�
 
 O `sync-batch` autentica e valida membership antes da execução server-side. As funções internas revalidam tenant, `fazenda_id`, revisão, estado e idempotência. `service_role` não é exposto no cliente.
 
-O bloqueio `SANITARIO_V2_E2E_PLATFORM_BLOCKED` é classificado como externo: PostgreSQL produz o conflito esperado `SQLSTATE 40001`, mas o caminho Edge Function/PostgREST/gateway não devolve a resposta antes do timeout. Não atribuir defeito ao SQL sem nova evidência.
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026 após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`. Historicamente, `40001` não retornava pelo transporte antes do timeout. Ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados; outras RPCs não foram recertificadas.
 
 ---
 

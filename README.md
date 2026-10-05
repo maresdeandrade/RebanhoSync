@@ -10,7 +10,7 @@ Plataforma offline-first para gestão pecuária, com React/TypeScript, Dexie e S
 - Documentação curta do Sanitário v2 local concluída.
 - Sync Sanitário v2 concluído tecnicamente e certificado funcionalmente no staging com `sync-batch` v20.
 - Hardening integrado local desses incrementos executado e documentado.
-- Rollout sanitário bloqueado pela pendência externa `SANITARIO_V2_E2E_PLATFORM_BLOCKED`, sem bloquear a Fase 13.
+- `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026 após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`; [evidência canônica](docs/context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Rollout e importação real continuam não autorizados.
 - Gate sanitário remoto desligado; feature flag local `false`; rollout não autorizado.
 - Próxima fase: **Fase 13 — Reprodução Operacional v1**.
 
