@@ -7,6 +7,7 @@ describe("smoke: registro avulso de multiplos dominios", () => {
     const casos = [
       {
         nome: "pesagem avulsa",
+        contract: "generic_event" as const,
         input: {
           dominio: "pesagem",
           fazendaId: "farm-1",
@@ -18,6 +19,7 @@ describe("smoke: registro avulso de multiplos dominios", () => {
       },
       {
         nome: "movimentacao avulsa",
+        contract: "movement_v1" as const,
         input: {
           dominio: "movimentacao",
           fazendaId: "farm-1",
@@ -25,10 +27,10 @@ describe("smoke: registro avulso de multiplos dominios", () => {
           toLoteId: "lote-dest",
           sourceTaskId: undefined, // Avulso
         } as const,
-        detalheTabela: "eventos_movimentacao",
       },
       {
         nome: "nutricao avulsa",
+        contract: "generic_event" as const,
         input: {
           dominio: "nutricao",
           fazendaId: "farm-1",
@@ -41,6 +43,7 @@ describe("smoke: registro avulso de multiplos dominios", () => {
       },
       {
         nome: "sanitario avulso",
+        contract: "generic_event" as const,
         input: {
           dominio: "sanitario",
           fazendaId: "farm-1",
@@ -55,6 +58,18 @@ describe("smoke: registro avulso de multiplos dominios", () => {
 
     for (const caso of casos) {
       const { eventId, ops } = buildEventGesture(caso.input);
+
+      if (caso.contract === "movement_v1") {
+        expect(ops).toHaveLength(1);
+        const movement = ops[0];
+        expect(movement.table).toBe("movement_v1");
+        expect(movement.action).toBe("INSERT");
+        expect(movement.record.event_id).toBe(eventId);
+        expect(movement.record.subject_id).toBe("animal-1");
+        expect(movement.record.to_lote_id).toBe("lote-dest");
+        expect(movement.record.source_task_id).toBeNull();
+        continue;
+      }
 
       // Deve ter pelo menos a base (eventos) e o detalhe
       expect(ops.length).toBeGreaterThanOrEqual(2);
