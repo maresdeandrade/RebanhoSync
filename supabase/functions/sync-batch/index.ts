@@ -4,6 +4,7 @@ import {
   buildMutationMatch,
   inferAgendaSourceTaskIdForEventInsert,
   isPersistedOperationReplay,
+  isGenericAnimalMovementEvent,
   normalizeDbError,
   resolveOperationPrimaryKey,
   type Operation,
@@ -787,13 +788,12 @@ Deno.serve(async (req: Request) => {
           record.fazenda_id = fazenda_id; // Always use request fazenda_id
         }
 
-        // Close the old factual lane before replay or INSERT. Lote→Pasto has
-        // pasture endpoints and no animal subject; initial cadastro is not an Evento.
-        let genericAnimalMovement = op.action === "INSERT" &&
-          op.table === "eventos" && record.dominio === "movimentacao" &&
-          record.animal_id != null;
+        // Classify by factual subject, not lot endpoints (also used by Lote→Pasto).
+        // Scan the complete batch so a rejected or later parent cannot hide its detail.
+        let genericAnimalMovement = isGenericAnimalMovementEvent({ ...op, record });
         if (op.action === "INSERT" && op.table === "eventos_movimentacao") {
-          genericAnimalMovement = record.from_lote_id != null || record.to_lote_id != null;
+          genericAnimalMovement = legacyOps.filter(isGenericAnimalMovementEvent)
+            .some((parent) => parent.record.id === record.evento_id);
           if (!genericAnimalMovement) {
             const parent = await supabase.from("eventos").select("dominio,animal_id")
               .eq("id", record.evento_id).eq("fazenda_id", fazenda_id).maybeSingle();

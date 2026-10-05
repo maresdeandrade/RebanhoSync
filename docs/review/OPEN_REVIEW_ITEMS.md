@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-10-04
+Atualizado em: 2026-10-05
 
 ## Objetivo
 
@@ -31,10 +31,10 @@ descartável existente e está registrada em
 
 ## P0 — F24.4 Multi-device + Conflitos
 
-Status: `IN_PROGRESS — F24.4E1 INTEGRATED / F24.4E2 ANIMAL_TO_LOTE CLOSED / INTEGRATED / G3_ANIMAL_TO_LOTE RESOLVED`
+Status: `IN_PROGRESS — F24.4E CLOSED LOCAL / F24.4F READY_TO_START_AFTER_MERGE`
 Release blocker: `SIM`
 
-F24.4A–F24.4D estão encerradas e a F24.4E está ativa. O CAS de `UPDATE animais` e `DELETE animais`, replay de lost ACK, cross-device reconnect, farm-switch e clock authority foram comprovados nos escopos documentados. Permanecem abertos: demais `state_*` sem política de revisão, conflito cross-domain Evento→estado em sucesso parcial fora da vertical Animal→Lote certificada, duplicidade humana ad hoc sem causa compartilhada, certificação em dispositivo físico real, reconciliação de fazenda não ativa e transporte E2E do conflito Sanitário v2. `AUTO_MERGE = NOT_AUTHORIZED`. Animal→Lote foi recertificada na [seção 18 da F24.4E2](./F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md); Lote→Pasto/occupancy continuam fora desse gate. PR #175 está `MERGED`; Animal→Lote está integrada no baseline atual `main@1456de00a8b19f555e99a3541394ec5cc97db797`. Não é pendência de review/merge.
+F24.4A–F24.4D estão encerradas; E tem [closeout local READY](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md#14-closeout-local-da-f244e--05102026), ainda sem integração desta correção. G1, G4, G5 e G3 Animal→Lote estão resolvidos; a regressão do guard Lote→Pasto também foi corrigida e validada localmente. Animal→Lote permanece integrada pelo PR #175. Permanecem deferidos: demais `state_*` e resíduos Evento→estado no backlog F24.4; matriz integrada, dispositivos físicos, non-active farm cross-device e clock transversal em F24.4F; observabilidade em F24.5. CAS de lote/occupancy e atomicidade universal não foram certificados. Duplicidade humana exige resolução explícita, sem dedup/merge automático. O blocker stale Sanitário foi fechado em 05/10; certificação sanitária completa continua F24.7, sem rollout. A F24.4 permanece release blocker até seu gate integrado; isso não reabre E.
 
 ## P1 — Certificação E2E de process kill
 

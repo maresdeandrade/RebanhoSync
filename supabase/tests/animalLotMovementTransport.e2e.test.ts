@@ -11,7 +11,10 @@ const dbUrl = process.env.REBANHOSYNC_TEST_DB_URL;
 function isDisposableLocalEnvironment() {
   if (
     process.env.REBANHOSYNC_DISPOSABLE_LOCAL_DB !== "1" ||
-    !apiUrl || !anonKey || !serviceKey || !dbUrl
+    !apiUrl ||
+    !anonKey ||
+    !serviceKey ||
+    !dbUrl
   )
     return false;
   try {
@@ -220,6 +223,10 @@ describeLocal("F24.4E2.1B real Auth→Edge→RPC→PostgreSQL", () => {
     local.close();
   });
   it("R6 generic animal movement is blocked at HTTP and direct PostgREST; controls remain valid", async () => {
+    // Builder dependencies initialize Dexie; install IndexedDB before loading them.
+    await import("fake-indexeddb/auto");
+    const { buildEventGesture } =
+      await import("../../src/lib/events/buildEventGesture");
     const id = await animal(),
       event = crypto.randomUUID(),
       tx = crypto.randomUUID();
@@ -256,7 +263,7 @@ describeLocal("F24.4E2.1B real Auth→Edge→RPC→PostgreSQL", () => {
       expect(response.status).toBe(200);
       return (await response.json()).results;
     };
-    const result = await generic([
+    const blockedOps = [
       {
         client_op_id: crypto.randomUUID(),
         table: "eventos",
@@ -269,11 +276,28 @@ describeLocal("F24.4E2.1B real Auth→Edge→RPC→PostgreSQL", () => {
         action: "INSERT",
         record: detail,
       },
-    ]);
-    expect(result.map((row: Result) => row.status)).toEqual([
-      "REJECTED",
-      "REJECTED",
-    ]);
+    ];
+    // The parent never reaches PostgreSQL. Batch lookup must be order-independent,
+    // including details whose endpoints do not identify their factual subject.
+    for (const batch of [
+      blockedOps,
+      [...blockedOps].reverse(),
+      [
+        blockedOps[0],
+        {
+          ...blockedOps[1],
+          record: { evento_id: event, to_pasto_id: lots[1], payload: {} },
+        },
+      ],
+    ]) {
+      const result = await generic(batch);
+      expect(result).toHaveLength(2);
+      for (const row of result)
+        expect(row).toMatchObject({
+          status: "REJECTED",
+          reason_code: "GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED",
+        });
+    }
     for (const [table, key] of [
       ["eventos", "id"],
       ["eventos_movimentacao", "evento_id"],
@@ -296,13 +320,15 @@ describeLocal("F24.4E2.1B real Auth→Edge→RPC→PostgreSQL", () => {
       (await member.from("eventos").insert({ ...base, fazenda_id: farm })).error
         ?.message,
     ).toContain("GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED");
+    // A detail with no parent cannot bypass the composite FK. Its absent subject
+    // is not inferred from endpoints by the guard.
     expect(
       (
         await member
           .from("eventos_movimentacao")
           .insert({ ...detail, fazenda_id: farm })
-      ).error?.message,
-    ).toContain("GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED");
+      ).error?.code,
+    ).toBe("23503");
     expect(
       (
         await db.query(
@@ -310,42 +336,113 @@ describeLocal("F24.4E2.1B real Auth→Edge→RPC→PostgreSQL", () => {
         )
       ).rows[0],
     ).toEqual({ fact: true, detail: true, executor: false });
-    expect((await invoke(command(id))).canonical_result?.status).toBe(
+    const specialized = command(id);
+    expect((await invoke(specialized)).canonical_result?.status).toBe(
       "STATE_APPLIED",
     );
+    // An actually persisted Animal→Lote parent remains guarded, even when a
+    // generic batch supplies a contradictory lot-only parent with the same ID.
+    const persistedDetail = { ...detail, evento_id: specialized.event_id };
+    expect(
+      await generic([
+        {
+          ...blockedOps[0],
+          record: { ...base, id: specialized.event_id, animal_id: null },
+        },
+        { ...blockedOps[1], record: persistedDetail },
+      ]),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          op_id: blockedOps[1].client_op_id,
+          status: "REJECTED",
+          reason_code: "GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED",
+        }),
+      ]),
+    );
+    const directAnimalDetail = await member
+      .from("eventos_movimentacao")
+      .insert({ ...persistedDetail, fazenda_id: farm });
+    expect(directAnimalDetail.error).toMatchObject({
+      code: "42501",
+      message: "GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED",
+    });
     const initial = crypto.randomUUID();
     expect(
       (
-        await member
-          .from("animais")
-          .insert({
-            id: initial,
-            fazenda_id: farm,
-            identificacao: initial,
-            sexo: "F",
-            lote_id: lots[0],
-          })
+        await member.from("animais").insert({
+          id: initial,
+          fazenda_id: farm,
+          identificacao: initial,
+          sexo: "F",
+          lote_id: lots[0],
+        })
       ).error,
     ).toBeNull();
     const pasture = crypto.randomUUID(),
-      lotEvent = crypto.randomUUID();
+      pastureBefore = crypto.randomUUID();
     await db.query(
-      "insert into public.pastos(id,fazenda_id,nome) values($1,$2,'closure pasture')",
-      [pasture, farm],
+      "insert into public.pastos(id,fazenda_id,nome) values($1,$2,'closure pasture'),($3,$2,'closure origin')",
+      [pasture, farm, pastureBefore],
     );
+    for (const destination of [pasture, null]) {
+      const built = buildEventGesture({
+        dominio: "movimentacao",
+        fazendaId: farm,
+        loteId: lots[0],
+        fromLoteId: lots[0],
+        toLoteId: lots[0],
+        movementKind: "lote_pasto",
+        fromPastoId: pastureBefore,
+        toPastoId: destination,
+        allowDestinationNull: true,
+        applyAnimalStateUpdate: false,
+        occurredAt: base.occurred_at,
+        payload: { tipo_movimentacao: "lote_pasto" },
+      });
+      expect(built.ops[1].record).toMatchObject({
+        from_lote_id: lots[0],
+        to_lote_id: lots[0],
+        from_pasto_id: pastureBefore,
+        to_pasto_id: destination,
+      });
+      const controls = await generic(
+        built.ops.map((op) => ({
+          ...op,
+          client_op_id: crypto.randomUUID(),
+        })),
+      );
+      expect(controls.map((row: Result) => row.status)).toEqual([
+        "APPLIED",
+        "APPLIED",
+      ]);
+      const directEvent = crypto.randomUUID();
+      expect(
+        (
+          await member.from("eventos").insert({
+            ...built.ops[0].record,
+            id: directEvent,
+            fazenda_id: farm,
+          })
+        ).error,
+      ).toBeNull();
+      expect(
+        (
+          await member.from("eventos_movimentacao").insert({
+            ...built.ops[1].record,
+            evento_id: directEvent,
+            fazenda_id: farm,
+          })
+        ).error,
+      ).toBeNull();
+      const crossFarmDetail = await member.from("eventos_movimentacao").insert({
+        ...built.ops[1].record,
+        evento_id: directEvent,
+        fazenda_id: foreignFarm,
+      });
+      expect(crossFarmDetail.error?.code).toBe("42501");
+    }
     const controls = await generic([
-      {
-        client_op_id: crypto.randomUUID(),
-        table: "eventos",
-        action: "INSERT",
-        record: { ...base, id: lotEvent, animal_id: null },
-      },
-      {
-        client_op_id: crypto.randomUUID(),
-        table: "eventos_movimentacao",
-        action: "INSERT",
-        record: { evento_id: lotEvent, to_pasto_id: pasture, payload: {} },
-      },
       {
         client_op_id: crypto.randomUUID(),
         table: "eventos",
@@ -353,11 +450,7 @@ describeLocal("F24.4E2.1B real Auth→Edge→RPC→PostgreSQL", () => {
         record: { ...base, id: crypto.randomUUID(), dominio: "pesagem" },
       },
     ]);
-    expect(controls.map((row: Result) => row.status)).toEqual([
-      "APPLIED",
-      "APPLIED",
-      "APPLIED",
-    ]);
+    expect(controls.map((row: Result) => row.status)).toEqual(["APPLIED"]);
   });
   async function awaitMembershipVisibility() {
     // The runner may have just reloaded PostgREST after applying local schema.

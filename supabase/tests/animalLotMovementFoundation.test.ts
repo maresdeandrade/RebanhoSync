@@ -3,7 +3,10 @@ import { Client } from "pg";
 
 const connectionString = process.env.REBANHOSYNC_TEST_DB_URL;
 function isDisposableMovementDatabase() {
-  if (process.env.REBANHOSYNC_MOVEMENT_DISPOSABLE_DB !== "1" || !connectionString)
+  if (
+    process.env.REBANHOSYNC_MOVEMENT_DISPOSABLE_DB !== "1" ||
+    !connectionString
+  )
     return false;
   try {
     const target = new URL(connectionString);
@@ -163,6 +166,76 @@ describeDatabase("F24.4E2.1A Animal→Lote real PostgreSQL foundation", () => {
     // Facts/receipts are intentionally not deleted. The runner disposes the entire named DB.
     await member?.end();
     await admin?.end();
+  });
+
+  it("factual subject guard permits lot-pasture endpoints and removal but blocks animal details", async () => {
+    const pastures = [crypto.randomUUID(), crypto.randomUUID()];
+    await admin.query(
+      "insert into public.pastos(id,fazenda_id,nome) values($1,$2,'Boundary A'),($3,$2,'Boundary B')",
+      [pastures[0], farm, pastures[1]],
+    );
+    for (const destination of [pastures[1], null]) {
+      const event = crypto.randomUUID();
+      await member.query(
+        "insert into public.eventos(id,fazenda_id,dominio,occurred_at,lote_id) values($1,$2,'movimentacao',now(),$3)",
+        [event, farm, lots[0]],
+      );
+      await member.query(
+        "insert into public.eventos_movimentacao(evento_id,fazenda_id,from_lote_id,to_lote_id,from_pasto_id,to_pasto_id) values($1,$2,$3,$3,$4,$5)",
+        [event, farm, lots[0], pastures[0], destination],
+      );
+      expect(
+        (
+          await member.query(
+            "select from_lote_id,to_lote_id,from_pasto_id,to_pasto_id from public.eventos_movimentacao where evento_id=$1",
+            [event],
+          )
+        ).rows[0],
+      ).toEqual({
+        from_lote_id: lots[0],
+        to_lote_id: lots[0],
+        from_pasto_id: pastures[0],
+        to_pasto_id: destination,
+      });
+    }
+    const id = await animal();
+    await expect(
+      member.query(
+        "insert into public.eventos(id,fazenda_id,dominio,occurred_at,animal_id) values($1,$2,'movimentacao',now(),$3)",
+        [crypto.randomUUID(), farm, id],
+      ),
+    ).rejects.toMatchObject({
+      code: "42501",
+      message: "GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED",
+    });
+    const input = command(id);
+    expect((await apply(input)).status).toBe("STATE_APPLIED");
+    await expect(
+      member.query(
+        "insert into public.eventos_movimentacao(evento_id,fazenda_id,from_lote_id,to_lote_id) values($1,$2,$3,$4)",
+        [input.event_id, farm, lots[0], lots[1]],
+      ),
+    ).rejects.toMatchObject({
+      code: "42501",
+      message: "GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED",
+    });
+    const outside = await actorClient(outsider);
+    try {
+      await expect(
+        outside.query(
+          "insert into public.eventos(id,fazenda_id,dominio,occurred_at,lote_id) values($1,$2,'movimentacao',now(),$3)",
+          [crypto.randomUUID(), farm, lots[0]],
+        ),
+      ).rejects.toMatchObject({ code: "42501" });
+    } finally {
+      await outside.end();
+    }
+    await expect(
+      member.query(
+        "insert into public.eventos(id,fazenda_id,dominio,occurred_at,lote_id) values($1,$2,'movimentacao',now(),$3)",
+        [crypto.randomUUID(), farm, otherLot],
+      ),
+    ).rejects.toMatchObject({ code: "23503" });
   });
 
   it("P1 simple movement commits fact/detail/state/receipt and increments both tokens once", async () => {
