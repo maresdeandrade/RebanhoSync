@@ -1,8 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
 Atualizado em: 2026-10-05
-Status: **Fase 24 ativa; F24.4A–F24.4E CLOSED (E closeout local); F24.4 IN_PROGRESS; produção não autorizada**
-Próxima fase: **Fase 24 — F24.4F — Integrated Certification (READY_TO_START_AFTER_MERGE)**
+Status: **Fase 24 ativa; F24.4A–F24.4E CLOSED / INTEGRATED; F24.4 IN_PROGRESS; produção não autorizada**
+Próxima fase: **Fase 24 — F24.4F — Integrated Certification (READY_TO_START)**
+Baseline F24.4E integrada / entrada F24.4F: `main@bc84040d17e704b30df4c5f34f9d20337d54a631`; PR #178 `MERGED`.
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -11,7 +12,7 @@ Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27
 F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29
 Baseline auditada de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`
-Decisão: **F24.4A–F24.4E CLOSED (E closeout local, integração pendente)**
+Decisão: **F24.4A–F24.4E CLOSED / INTEGRATED**
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -22,16 +23,16 @@ Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
-## F24.4E — closeout local
+## F24.4E — closeout integrado
 
-Em 05/10/2026, sobre `origin/main@e15083ce2b531ccffa6c12b73e94f68945a10d93`, o guard
-Lote→Pasto foi corrigido por sujeito factual, sem alterar builder/CAS/RLS/`movement_v1`.
+Em 05/10/2026, o PR #178 foi integrado em `main@bc84040d17e704b30df4c5f34f9d20337d54a631`.
+O guard Lote→Pasto foi corrigido por sujeito factual, sem alterar builder/CAS/RLS/`movement_v1`.
 Builder 32/32, transporte 13/13, PostgreSQL isolado 58/58, baseline funcional 5/5, Deno,
 lint focado e Fallow new-only passaram. [Evidência e gaps canônicos](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md#14-closeout-local-da-f244e--05102026).
-`F24_4E = CLOSED`, `F24_4E_CLOSEOUT = READY`; F24.4F somente após merge/rebaseline.
+`F24_4E = CLOSED`, `F24_4E_INTEGRATION = COMPLETE`; F24.4F `READY_TO_START` no mesmo baseline.
 G2 deferido no backlog F24.4; G6/F24.5 e G7/F24.4F preservados. Stale sanitário fechado,
-certificação completa/F24.7 e rollout não autorizados preservados. Sem commit, PR,
-merge, deploy, migration remota ou nova subfase nesta entrega.
+certificação completa/F24.7 e rollout não autorizados preservados. Este rebaseline
+documental não inicia F24.4F nem executa deploy ou migration remota.
 
 **HISTORICAL_CORRECT / SUPERSEDED:** a abertura e integração E1/E2 abaixo preservam
 seus baselines/resultados. E IN_PROGRESS e Sanitário timeout aberto não são status atuais.

@@ -31,10 +31,11 @@ descartável existente e está registrada em
 
 ## P0 — F24.4 Multi-device + Conflitos
 
-Status: `IN_PROGRESS — F24.4E CLOSED LOCAL / F24.4F READY_TO_START_AFTER_MERGE`
+Status: `IN_PROGRESS — F24.4E CLOSED / INTEGRATED / F24.4F READY_TO_START`
+Baseline de integração / entrada F24.4F: `main@bc84040d17e704b30df4c5f34f9d20337d54a631`; PR #178 `MERGED`.
 Release blocker: `SIM`
 
-F24.4A–F24.4D estão encerradas; E tem [closeout local READY](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md#14-closeout-local-da-f244e--05102026), ainda sem integração desta correção. G1, G4, G5 e G3 Animal→Lote estão resolvidos; a regressão do guard Lote→Pasto também foi corrigida e validada localmente. Animal→Lote permanece integrada pelo PR #175. Permanecem deferidos: demais `state_*` e resíduos Evento→estado no backlog F24.4; matriz integrada, dispositivos físicos, non-active farm cross-device e clock transversal em F24.4F; observabilidade em F24.5. CAS de lote/occupancy e atomicidade universal não foram certificados. Duplicidade humana exige resolução explícita, sem dedup/merge automático. O blocker stale Sanitário foi fechado em 05/10; certificação sanitária completa continua F24.7, sem rollout. A F24.4 permanece release blocker até seu gate integrado; isso não reabre E.
+F24.4A–F24.4D estão encerradas; E está [CLOSED / INTEGRATED pelo PR #178](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md#estado-operacional-atual). G1, G4, G5 e G3 Animal→Lote estão resolvidos; a regressão do guard Lote→Pasto também foi corrigida, validada localmente e integrada. Animal→Lote permanece integrada pelo PR #175. Permanecem deferidos: demais `state_*` e resíduos Evento→estado no backlog F24.4; matriz integrada, dispositivos físicos, non-active farm cross-device e clock transversal em F24.4F; observabilidade em F24.5. CAS de lote/occupancy e atomicidade universal não foram certificados. Duplicidade humana exige resolução explícita, sem dedup/merge automático. O blocker stale Sanitário foi fechado em 05/10; certificação sanitária completa continua F24.7, sem rollout. A F24.4 permanece release blocker até seu gate integrado; isso não reabre E.
 
 ## P1 — Certificação E2E de process kill
 

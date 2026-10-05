@@ -6,9 +6,18 @@ Atualizado em: 2026-10-05
 
 > **Status posterior — 05/10/2026:** `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`; ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados. Outras RPCs não foram recertificadas; F24 não foi encerrada. As referências ao blocker e 40001/timeout nas seções históricas abaixo estão superseded quanto a esse cenário.
 
-`F24_4E = CLOSED` no closeout local de 05/10/2026; `F24_4E_CLOSEOUT = READY`;
-`F24_4F = READY_TO_START_AFTER_MERGE`. Evidências e limites na seção 14 abaixo.
-Implementação e documentação locais, ainda sem commit/PR/merge/deploy ou migration remota.
+```ini
+F24_4E = CLOSED
+F24_4E_CLOSEOUT = READY
+F24_4E_INTEGRATION = COMPLETE
+PR_178 = MERGED
+F24_4E_BASELINE = main@bc84040d17e704b30df4c5f34f9d20337d54a631
+F24_4F = READY_TO_START
+F24_4F_BASELINE = main@bc84040d17e704b30df4c5f34f9d20337d54a631
+```
+
+PR #178 integrado em 05/10/2026. Evidências locais e limites na seção 14 abaixo;
+este rebaseline documental não inicia F24.4F nem executa deploy ou migration remota.
 `F24_4E1 = INTEGRATED` pelo PR #173;
 `F24_4E2_ANIMAL_TO_LOTE = CLOSED / INTEGRATED` pelo PR #175 (`MERGED`); `G3_ANIMAL_TO_LOTE = RESOLVED`.
 A [seção 18 da F24.4E2](./F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md#18-closure-remediation--recertification--b1m1m2m3)
@@ -16,8 +25,8 @@ A [seção 18 da F24.4E2](./F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md#18-closu
 bloqueada, identidade de resposta, proteção RECONCILE e barreira de geração no pull.
 O guard Lote→Pasto foi corrigido e validado localmente; CAS de lote/occupancy e
 convergência global continuam não certificados. Baseline de integração da E2:
-`main@1456de00a8b19f555e99a3541394ec5cc97db797`; closeout local sobre
-`origin/main@e15083ce2b531ccffa6c12b73e94f68945a10d93`. Nenhuma nova subfase iniciada.
+`main@1456de00a8b19f555e99a3541394ec5cc97db797`; integração do closeout E pelo PR #178 em
+`main@bc84040d17e704b30df4c5f34f9d20337d54a631`. Nenhuma nova subfase iniciada.
 
 > **HISTORICAL_CORRECT / SUPERSEDED:** as seções 1–13 abaixo preservam a execução de
 > characterization/E1 em 01/10/2026, suas matrizes e evidências. READY_FOR_REVIEW da E1,
@@ -260,6 +269,10 @@ Revisar o PR #173 e a F24.4E1. Se integrada, rebaselinear a `main` e então abri
 Não iniciar F24.4E2 automaticamente antes da revisão/integração da E1.
 
 ## 14. Closeout local da F24.4E — 05/10/2026
+
+> **HISTORICAL_CORRECT / SUPERSEDED quanto ao estado pré-merge:** esta seção preserva
+> a execução local anterior ao PR #178, incluindo baseline, testes e próximo passo daquele
+> momento. A integração está COMPLETE; o estado vigente é o cabeçalho operacional acima.
 
 Esta seção sucede os status de fase aberta nas seções anteriores, sem reatribuir
 suas evidências históricas à execução atual. O objetivo original é determinar rejeição,
