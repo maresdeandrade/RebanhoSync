@@ -10,6 +10,8 @@
 
 ## Problema
 
+> **Status posterior — 05/10/2026:** `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`; ver [evidência canônica](../../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados. Outras RPCs não foram recertificadas; F24 não foi encerrada. O status de 04/08/2026 acima preserva a decisão histórica e está superseded quanto ao blocker.
+
 A execução e a Conformidade Sanitária v2 estão validadas localmente, mas o contrato local não pode ser enviado diretamente ao schema remoto atual. Existem incompatibilidades de identidade, relacionamentos, produto executado, estados de agenda e tratamento de falhas.
 
 Implementar apenas o caminho feliz de push criaria riscos de duplicação de evento e baixa de estoque, sobrescrita entre dispositivos, perda de fatos locais pendentes no pull e acesso cross-tenant. Por isso, sync remoto, RLS, isolamento por `fazenda_id`, idempotência, retry/replay, sucesso parcial e conflitos multi-dispositivo formam um único bloco arquitetural e um único gate de rollout.

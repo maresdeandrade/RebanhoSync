@@ -83,7 +83,7 @@ A arquitetura está implementada sob gate, mas o Sync Sanitário v2 e a Fase 12 
 
 ## Risco externo
 
-`SANITARIO_V2_E2E_PLATFORM_BLOCKED` bloqueia o rollout: o PostgreSQL gera imediatamente o conflito esperado `SQLSTATE 40001`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout. Não há evidência atual de defeito no SQL ou na regra de domínio.
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026 após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`. Historicamente, `40001` não retornava pelo transporte antes do timeout. Ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados; outras RPCs não foram recertificadas.
 
 ## Critério de aceite arquitetural
 

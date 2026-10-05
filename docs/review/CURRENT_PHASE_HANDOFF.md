@@ -150,8 +150,8 @@ Fatos de handoff:
   versões remotas adicionais de reparo;
 - baseline funcional Supabase e gate de 35 funções `SECURITY DEFINER` passaram localmente;
 - long offline, RLS final, performance e delta produtivo não foram certificados;
-- `SANITARIO_V2_E2E_PLATFORM_BLOCKED`, flag `false`, gate remoto `OFF` e rollout não
-  autorizado permanecem obrigatórios;
+- naquele baseline, `SANITARIO_V2_E2E_PLATFORM_BLOCKED` estava aberto; status posterior:
+  `CLOSED` em 05/10/2026. Flag `false`, gate remoto `OFF` e rollout não autorizado permanecem;
 - a F24.1/F24.1A.1 corrigiu o contrato `sanitario-reconcile → recompute`, convergiu os
   rehearsals A/B e passou no fluxo Edge local com `service_role`;
 - staging e produção apontam para `zqloazqzhwauamcejmuz`; o backend compartilhado bloqueia
@@ -301,7 +301,7 @@ Status: **Concluída e certificada**. Baseline de infraestrutura e sync alinhado
 
 
 5. **Sync Sanitário v2:**
-   - Mantido estritamente em `SANITARIO_V2_E2E_PLATFORM_BLOCKED` (fail-closed, feature flag local `false`, gate remoto desligado).
+   - Naquele fechamento: `SANITARIO_V2_E2E_PLATFORM_BLOCKED` aberto; status posterior `CLOSED` em 05/10/2026. Fail-closed, feature flag `false` e gate remoto desligado preservados.
    - Não bloqueia abertura da Fase 21.
 
 6. **Ambientes:**
@@ -611,7 +611,7 @@ Planos encerrados e evidências em `docs/review/evidence/` permanecem histórico
 | 6 Carência sanitária operacional | Concluído |
 | Hardening integrado local | Concluído |
 
-A Fase 12 está tecnicamente encerrada. A pendência externa do conflito não bloqueia o desenvolvimento das próximas fases.
+A Fase 12 está tecnicamente encerrada. Naquele fechamento, a pendência externa do conflito não bloqueava as próximas fases; o blocker foi posteriormente fechado em 05/10/2026, sem autorizar rollout.
 
 ## Componentes implementados
 
@@ -677,30 +677,15 @@ A Fase 12 está tecnicamente encerrada. A pendência externa do conflito não bl
 remota está autorizada. Este documento não registra credenciais, secrets, tokens ou dados
 pessoais de fixtures.
 
-## Risco externo atual
+## Fechamento do blocker externo — 05/10/2026
 
-Código: `SANITARIO_V2_E2E_PLATFORM_BLOCKED`
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`. PR #176 integrada; migration PT409 remota aplicada; PostgreSQL 17.11.0.002 e Edge ACTIVE v27. Ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026).
 
-Fatos confirmados:
+PostgreSQL retornou PT409; HTTP retornou 409 em 463 ms; supabase-js retornou PT409 em 71 ms com um fetch; Edge retornou CONFLICT, reason canônico, current_revision=1 e retryable=false. Logs: três PT409, três virtual transactions, uma tentativa por RPC, sem retry storm. Agenda/target preservados, nenhum Evento, closure ou ledger stale, cleanup zero.
 
-- criação de Agenda remota aprovada;
-- replay aprovado;
-- substituição de animais aprovada;
-- revisão chegou corretamente a `1`;
-- PostgreSQL produz imediatamente `SQLSTATE 40001 / SANITARIO_AGENDA_REVISION_CONFLICT`;
-- no caminho Edge Function/PostgREST/gateway, a resposta não retorna antes do timeout;
-- o worker recebe `RETRYABLE / SANITARIO_RPC_TIMEOUT`.
+Historicamente, PostgreSQL produzia `40001`, mas Edge/PostgREST/gateway expirava e retornava `RETRYABLE / SANITARIO_RPC_TIMEOUT`. Esse incidente foi superado no cenário stale certificado. Warning de collation 153.120 → 153.121 não impediu os probes e não foi corrigido.
 
-Inferência vedada: não há evidência atual para atribuir defeito ao SQL ou à regra de domínio.
-
-Conduta:
-
-- não aumentar timeout;
-- não alterar RPC sem nova evidência;
-- manter rollout bloqueado;
-- continuar desenvolvimento sob gate remoto desligado e feature flag local `false`.
-
-IDs e rastros detalhados da execução remota devem permanecer em relatório técnico/evidência específica, sem reprodução nas fontes resumidas.
+Gate remoto `OFF`, flag `false`, rollout `NOT_AUTHORIZED` e importação real não autorizada permanecem preservados. Demais RPCs não foram exercitadas; não houve regressão completa nem fechamento de F24. Produção não foi alterada e nenhuma nova fase foi criada.
 
 ## Validações registradas nos incrementos recentes
 
@@ -716,7 +701,7 @@ IDs e rastros detalhados da execução remota devem permanecer em relatório té
 
 ## Recertificação mínima de `BLOCKED_DEPENDENCY`
 
-O staging `zqloazqzhwauamcejmuz` recebeu o `sync-batch` v20 com `verify_jwt=true`. No único batch sintético, o fato deliberadamente inválido retornou `REJECTED` e o movimento dependente retornou `BLOCKED_DEPENDENCY / SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED`. Não houve Evento, detalhe, relação, ledger ou movimento persistido; o saldo permaneceu `10.000`. O cleanup removeu usuário Auth, fazenda, membership, animal, insumo, lote e gate, com zero gates habilitados ao final. O defeito de dependência está encerrado; o conflito `SQLSTATE 40001` continua como bloqueio externo independente.
+O staging `zqloazqzhwauamcejmuz` recebeu o `sync-batch` v20 com `verify_jwt=true`. No único batch sintético, o fato deliberadamente inválido retornou `REJECTED` e o movimento dependente retornou `BLOCKED_DEPENDENCY / SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED`. Não houve Evento, detalhe, relação, ledger ou movimento persistido; o saldo permaneceu `10.000`. O cleanup removeu usuário Auth, fazenda, membership, animal, insumo, lote e gate, com zero gates habilitados ao final. O defeito de dependência está encerrado; naquele momento, o conflito `SQLSTATE 40001` continuava como bloqueio externo independente, fechado posteriormente em 05/10/2026.
 
 No incremento 3.8 foram reexecutados: preflight e validação agregada, testes focados do domínio/sync, suíte completa com 2.241 testes em 310 arquivos, lint, build, `deno fmt --check`, `deno check --no-lock` e baseline funcional Supabase com 5/5 verificações. Não houve migration, alteração de RPC, deploy ou push.
 
@@ -754,7 +739,7 @@ Fatos confirmados:
 - schema, migrations, RPCs, `db.ts`, `tableMap.ts` e `syncWorker.ts` permaneceram inalterados;
 - nenhuma carência nova, Conformidade recalculada ou autorização de venda, abate ou leite foi criada.
 
-Validação local concluída com testes focados, suíte completa, lint, build, Deno fmt/check e baseline funcional Supabase 5/5. O movimento e seu `BLOCKED_DEPENDENCY` foram posteriormente certificados no staging; `SANITARIO_V2_E2E_PLATFORM_BLOCKED` permanece como pendência externa sem autorizar rollout.
+Validação local concluída com testes focados, suíte completa, lint, build, Deno fmt/check e baseline funcional Supabase 5/5. O movimento e seu `BLOCKED_DEPENDENCY` foram posteriormente certificados no staging; `SANITARIO_V2_E2E_PLATFORM_BLOCKED` era a pendência externa daquele baseline; status posterior `CLOSED` em 05/10/2026, sem autorizar rollout.
 
 ## Resultado do incremento 3.13
 

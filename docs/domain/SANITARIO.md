@@ -468,16 +468,16 @@ O Sync Sanitário v2 está implementado sob gates desligados, mas não concluíd
 - evento e detalhe: implementados, com E2E remoto pendente;
 - retry/replay/idempotência: implementados, com validação remota parcial;
 - sucesso parcial: validado localmente, com E2E remoto pendente;
-- conflito multi-dispositivo: código e SQL validados, plataforma bloqueada;
+- conflito stale de `replace_agenda_animals`: recertificado remotamente em 05/10/2026; multi-dispositivo completo não recertificado;
 - histórico externo/documental: implementado e validado localmente, com E2E remoto não executado;
 - movimento de estoque sanitário: pendente;
 - recálculo explícito da Conformidade após pull: pendente.
 
 O gate remoto está desligado, a feature flag local é `false` e o rollout não está autorizado. Produção não foi alterada.
 
-`SANITARIO_V2_E2E_PLATFORM_BLOCKED` impede rollout: o PostgreSQL gera o conflito esperado `SQLSTATE 40001`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout. Não há evidência atual de defeito no SQL ou na regra de domínio.
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026 após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`. Historicamente, `40001` não retornava pelo transporte antes do timeout. Ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados; outras RPCs não foram recertificadas.
 
-Os itens 3.9, 3.13, 4, 5 e 6 estão validados localmente; o hardening integrado local foi executado. E2Es remotos, rollout e fechamento da Fase 12 permanecem pendentes.
+Os itens 3.9, 3.13, 4, 5 e 6 estão validados localmente; o hardening integrado local foi executado. Demais E2Es remotos, rollout e fechamento da Fase 12 permanecem pendentes; a recertificação stale não amplia esse escopo.
 
 ---
 
@@ -855,7 +855,7 @@ Relatórios não devem transformar sinal em fonte primária.
 
 O Sync Sanitário v2 usa o staging `zqloazqzhwauamcejmuz`. Produção não foi alterada, o gate remoto permanece desligado, a feature flag local permanece `false`, o rollout não foi autorizado e não restaram fixtures sintéticas.
 
-Validações locais cobrem multi-tenant, RLS, retry/replay, idempotência, sucesso parcial, cutover e reconcile. O E2E remoto permanece parcial pelo bloqueio externo descrito no handoff atual.
+Validações locais cobrem multi-tenant, RLS, retry/replay, idempotência, sucesso parcial, cutover e reconcile. O E2E remoto permanece parcial; o blocker stale de `replace_agenda_animals` foi fechado em 05/10/2026, sem recertificar as demais RPCs.
 
 ### Roadmap sanitário consolidado
 

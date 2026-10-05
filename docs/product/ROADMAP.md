@@ -40,7 +40,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 19. Fase 23 — Simulação Produtiva e Comercial — **concluída / CLOSED**.
 20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.4A–F24.4D CLOSED; F24.4E IN_PROGRESS**.
 
-O rollout do Sync Sanitário v2 permanece não autorizado por `SANITARIO_V2_E2E_PLATFORM_BLOCKED`. Isso não reabre o desenvolvimento técnico da Fase 12.
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026. Rollout e importação real permanecem não autorizados; isso não reabre a Fase 12 nem encerra F24.
 
 ## Fase 13 — resultado encerrado
 
@@ -73,7 +73,7 @@ Fase 23 — Simulação Produtiva e Comercial — CLOSED
 → F24.4F — Integrated Certification — PLANNED_AFTER_F24.4E
 → F24.5 — Observabilidade — NOT_STARTED
 → F24.6 — Performance / Escala — NOT_STARTED
-→ F24.7 — Sanitário v2 — EXTERNAL_BLOCKED
+→ F24.7 — Sanitário v2 — NOT_STARTED (blocker stale CLOSED em 05/10/2026; certificação completa pendente)
 → F24.8 — Production Readiness — BLOCKED_BY_PREREQUISITES
 ```
 
@@ -92,19 +92,19 @@ A Fase 20 migrou as cinco jornadas críticas para os padrões compartilhados, co
 - **Fase 21 — Inteligência Operacional v2:** evolução da inteligência operacional reutilizando `MetricResult` e `DecisionRecommendation`.
 - **Fase 22 — Eficiência Produtiva e Econômica:** produtividade e economia (CLOSED); GMD observado com confiabilidade não classificada e uso operacional não autorizado; resultado econômico observado com lucro completo bloqueado; ocupação qualificada histórica adotada.
 - **Fase 23 — Simulação Produtiva e Comercial:** simulações com premissas explícitas; projeção não é fato e simulação não é autorização comercial (CLOSED).
-- **Fase 24 — Release Hardening / Scale Readiness:** F24.2 e F24.3 encerradas; multi-device/conflitos, observabilidade, performance, bloqueio sanitário externo e production readiness seguem em F24.4–F24.8, conforme o [closeout F24.3](../review/F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md). `REAL_PROCESS_KILL = NOT_PROVEN` permanece dívida E2E sem reabrir a F24.3.
+- **Fase 24 — Release Hardening / Scale Readiness:** F24.2 e F24.3 encerradas; multi-device/conflitos, observabilidade, performance, certificação sanitária completa e production readiness seguem em F24.4–F24.8, conforme o [closeout F24.3](../review/F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md). `REAL_PROCESS_KILL = NOT_PROVEN` permanece dívida E2E sem reabrir a F24.3.
 
 Hardening proporcional permanece obrigatório em cada fase. A Fase 24 concentra o hardening sistêmico final para escala. Fases encerradas só reabrem diante de regressão concreta.
 
 ## Risco de rollout
 
-`SANITARIO_V2_E2E_PLATFORM_BLOCKED` bloqueia o rollout do Sync Sanitário v2. O PostgreSQL produz o conflito esperado `SQLSTATE 40001 / SANITARIO_AGENDA_REVISION_CONFLICT`, mas a resposta não retorna pelo caminho Edge Function/PostgREST/gateway antes do timeout.
+`SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026 após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`. Historicamente, `40001` não retornava pelo transporte antes do timeout. Ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026).
 
-Não há evidência atual de defeito no SQL ou na regra de domínio. Não aumentar timeout nem alterar RPC sem nova evidência. O desenvolvimento pode continuar sob gates desligados.
+Gate remoto `OFF`, flag `false`, rollout `NOT_AUTHORIZED` e importação real não autorizada permanecem preservados. As demais RPCs e a regressão completa não foram recertificadas; F24 segue em andamento.
 
 ## Fases anteriores
 
-Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e evidências. O bloqueio de rollout sanitário permanece registrado separadamente e não altera essa sequência de desenvolvimento.
+Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e evidências. A ausência de autorização de rollout sanitário permanece registrada separadamente e não altera essa sequência de desenvolvimento.
 
 ## Sequência futura
 

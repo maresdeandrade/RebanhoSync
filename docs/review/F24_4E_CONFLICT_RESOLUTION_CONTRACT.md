@@ -4,6 +4,8 @@ Atualizado em: 2026-10-04
 
 ## Estado operacional atual
 
+> **Status posterior — 05/10/2026:** `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`; ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados. Outras RPCs não foram recertificadas; F24 não foi encerrada. As referências ao blocker e 40001/timeout nas seções históricas abaixo estão superseded quanto a esse cenário.
+
 `F24_4E = IN_PROGRESS`; `F24_4E1 = INTEGRATED` pelo PR #173;
 `F24_4E2_ANIMAL_TO_LOTE = CLOSED / INTEGRATED` pelo PR #175 (`MERGED`); `G3_ANIMAL_TO_LOTE = RESOLVED`.
 A [seção 18 da F24.4E2](./F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md#18-closure-remediation--recertification--b1m1m2m3)
