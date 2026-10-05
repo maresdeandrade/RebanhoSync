@@ -21,7 +21,7 @@ extract_phase() {
   local file="$1" pattern="$2"
   head -n 24 "$file" \
     | tr -d '\r' \
-    | rg --max-count 1 "$pattern" \
+    | grep -Em 1 "$pattern" \
     | sed -E 's/.*Fase[[:space:]]+([0-9]+).*/\1/' || true
 }
 
@@ -47,11 +47,11 @@ for pair in \
   fi
 done
 
-if ! head -n 18 "$PLAN_DOC" | rg -qi '^Status:.*(encerrada|fechada|ativa|em andamento)'; then
+if ! head -n 18 "$PLAN_DOC" | grep -Eqi '^Status:.*(encerrada|fechada|ativa|em andamento)'; then
   echo "FAIL: plan status is not explicit." >&2
   fail=1
 fi
-if ! head -n 18 "$HANDOFF_DOC" | rg -qi '^Status:.*(encerrada|fechada|ativa|em andamento)'; then
+if ! head -n 18 "$HANDOFF_DOC" | grep -Eqi '^Status:.*(encerrada|fechada|ativa|em andamento)'; then
   echo "FAIL: handoff status is not explicit." >&2
   fail=1
 fi

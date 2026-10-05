@@ -20,9 +20,15 @@ defaults:
     shell: bash
 
 env:
-  # Garante que JavaScript actions rodem no runtime Node 24.
-  # O runtime do projeto continua controlado em actions/setup-node.
+  CI: true
+
+  # JavaScript actions usam Node 24.
+  # O runtime do projeto continua controlado por actions/setup-node.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+  VITE_SUPABASE_URL: ${{ vars.CI_SUPABASE_URL || 'https://example.supabase.co' }}
+  VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.CI_SUPABASE_PUBLISHABLE_KEY || vars.CI_SUPABASE_ANON_KEY || 'example-publishable-key' }}
+  VITE_SUPABASE_FUNCTIONS_URL: ${{ vars.CI_SUPABASE_FUNCTIONS_URL || 'https://example.supabase.co/functions/v1' }}
 
 jobs:
   validate:
@@ -30,18 +36,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
-    env:
-      CI: true
-
-      VITE_SUPABASE_URL: ${{ vars.CI_SUPABASE_URL || 'https://example.supabase.co' }}
-
-      # Contrato público atual do frontend.
-      # CI_SUPABASE_ANON_KEY permanece apenas como fallback transitório.
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.CI_SUPABASE_PUBLISHABLE_KEY || vars.CI_SUPABASE_ANON_KEY || 'example-publishable-key' }}
-
-      VITE_SUPABASE_FUNCTIONS_URL: ${{ vars.CI_SUPABASE_FUNCTIONS_URL || 'https://example.supabase.co/functions/v1' }}
-
     steps:
+      # -----------------------------------------------------------------------
+      # Checkout
+      # -----------------------------------------------------------------------
+
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -49,7 +48,10 @@ jobs:
           persist-credentials: false
 
       # -----------------------------------------------------------------------
-      # Classificação de risco
+      # 1. Classificação de risco
+      #
+      # Usa o Node já disponível no runner.
+      # Nenhum setup do projeto é necessário para classificar o PR.
       # -----------------------------------------------------------------------
 
       - name: Detect validation scope
@@ -66,6 +68,7 @@ jobs:
 
           if [[ "$GITHUB_EVENT_NAME" == "merge_group" || "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             final_gate=true
+
           elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             event_action="$(jq -r '.action // empty' "$GITHUB_EVENT_PATH")"
             base_sha="$(jq -r '.pull_request.base.sha // empty' "$GITHUB_EVENT_PATH")"
@@ -96,24 +99,44 @@ jobs:
             --pr-known "$pr_known" \
             --delta-files /tmp/delta-files.txt \
             --delta-known "$delta_known" \
-            --final-gate "$final_gate" | tee -a "$GITHUB_OUTPUT"
+            --final-gate "$final_gate" |
+            tee -a "$GITHUB_OUTPUT"
 
           echo
           echo "PR files:"
           sed 's/^/pr: /' /tmp/pr-files.txt
+
+          echo
           echo "Delta files:"
           sed 's/^/delta: /' /tmp/delta-files.txt
 
       # -----------------------------------------------------------------------
-      # Setup comum
+      # 2. Fast path DOCS
+      #
+      # PR exclusivamente documental NÃO precisa:
+      # - pnpm
+      # - setup-node do projeto
+      # - node_modules
+      # - lint
+      # - Vitest
+      # - build
+      # - Supabase
+      #
+      # Tudo abaixo deste bloco pesado é condicional.
+      # -----------------------------------------------------------------------
+
+      # -----------------------------------------------------------------------
+      # 3. Bootstrap do projeto
       # -----------------------------------------------------------------------
 
       - name: Setup pnpm
+        if: steps.scope.outputs.pr_scope != 'DOCS'
         uses: pnpm/setup@v2
         with:
           install: false
 
       - name: Setup Node.js
+        if: steps.scope.outputs.pr_scope != 'DOCS'
         uses: actions/setup-node@v6
         with:
           node-version: 20
@@ -121,27 +144,26 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
+        if: steps.scope.outputs.pr_scope != 'DOCS'
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Install ripgrep
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ripgrep
-          rg --version
-
+      # Testa o próprio mecanismo de classificação somente quando o PR
+      # não é puramente documental.
+      #
+      # Alterações em scripts/ci/** ou no próprio workflow deixam de ser DOCS,
+      # portanto continuam cobertas.
       - name: Validation scope classifier tests
+        if: steps.scope.outputs.pr_scope != 'DOCS'
         run: node --test scripts/ci/classify-validation-scope.node-test.mjs
 
       # -----------------------------------------------------------------------
-      # Supabase — somente para alterações de alto risco
+      # 4. Supabase — somente alto risco
       # -----------------------------------------------------------------------
 
       - name: Setup Supabase CLI
         if: steps.scope.outputs.needs_supabase == 'true'
         uses: supabase/setup-cli@v3
         with:
-          # Mantido fixo para não misturar mudança de estratégia do CI
-          # com upgrade de runtime/CLI.
           version: 2.72.7
 
       - name: Start disposable Supabase
@@ -159,10 +181,6 @@ jobs:
 
           supabase init --force
 
-          # Supabase CLI 2.72.7 / edge-runtime 1.70.0 rejects local ES256 user
-          # JWTs at the gateway before sync-batch runs. Disable only the local
-          # gateway verification for this disposable runner; sync-batch still
-          # validates the JWT with GoTrue and uses a user-scoped client/RLS.
           cat >> supabase/config.toml <<'EOF'
           [functions.sync-batch]
           verify_jwt = false
@@ -196,9 +214,7 @@ jobs:
         run: node scripts/ci/prepare-commercial-concurrency-fixture.mjs
 
       # -----------------------------------------------------------------------
-      # Validação de aplicação
-      #
-      # Não roda para PR exclusivamente documental.
+      # 5. Aplicação
       # -----------------------------------------------------------------------
 
       - name: Lint
@@ -223,9 +239,6 @@ jobs:
           else
             test_source="/tmp/delta-files.txt"
 
-            # No primeiro run do PR não existe delta incremental.
-            # Para um PR classificado como TEST_ONLY, os próprios arquivos
-            # completos do PR são a fonte segura dos targets incrementais.
             if [[ "${{ steps.scope.outputs.delta_scope }}" == "UNKNOWN" ]]; then
               test_source="/tmp/pr-files.txt"
             fi
@@ -233,15 +246,18 @@ jobs:
             echo "Selecting incremental tests from: $test_source"
 
             mapfile -t test_targets < <(
-              node scripts/ci/classify-validation-scope.mjs test-targets "$test_source"
+              node scripts/ci/classify-validation-scope.mjs \
+                test-targets "$test_source"
             )
 
             if (( ${#test_targets[@]} == 0 )); then
-              echo "No safe incremental test target found; running the global suite."
+              echo "No safe incremental test target found; running global suite."
               pnpm exec vitest run "${vitest_args[@]}"
             else
               printf 'Incremental test target: %s\n' "${test_targets[@]}"
-              pnpm exec vitest run "${test_targets[@]}" "${vitest_args[@]}"
+              pnpm exec vitest run \
+                "${test_targets[@]}" \
+                "${vitest_args[@]}"
             fi
           fi
 
@@ -250,9 +266,7 @@ jobs:
         run: pnpm run build
 
       # -----------------------------------------------------------------------
-      # Cleanup Supabase
-      #
-      # Precisa executar mesmo quando algum passo anterior falhar.
+      # 6. Cleanup Supabase
       # -----------------------------------------------------------------------
 
       - name: Stop disposable Supabase
@@ -276,16 +290,55 @@ jobs:
           rm -f "$cli_state"
 
       # -----------------------------------------------------------------------
-      # Gates obrigatórios para qualquer PR
+      # 7. Gates universais
       # -----------------------------------------------------------------------
 
+      # Valida o diff que pertence de fato ao PR.
       - name: Diff integrity
         if: always()
-        run: git diff --check
+        run: |
+          set -euo pipefail
 
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              base_sha="$(jq -r '.pull_request.base.sha // empty' "$GITHUB_EVENT_PATH")"
+              head_sha="$(jq -r '.pull_request.head.sha // empty' "$GITHUB_EVENT_PATH")"
+              ;;
+            merge_group)
+              base_sha="$(jq -r '.merge_group.base_sha // empty' "$GITHUB_EVENT_PATH")"
+              head_sha="$(jq -r '.merge_group.head_sha // empty' "$GITHUB_EVENT_PATH")"
+              ;;
+            workflow_dispatch)
+              # Sem base de PR: audita o delta do commit selecionado pelo evento.
+              head_sha="${GITHUB_SHA:?Missing workflow_dispatch commit}"
+              git cat-file -e "${head_sha}^{commit}"
+              base_sha="$(git rev-parse --verify "${head_sha}^" 2>/dev/null || git hash-object -t tree /dev/null)"
+              git diff --check "$base_sha" "$head_sha"
+              exit 0
+              ;;
+            *)
+              echo "Unsupported event for diff integrity: $GITHUB_EVENT_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          if [[ -z "$base_sha" || -z "$head_sha" ]]; then
+            echo "Unable to resolve event diff for git diff --check." >&2
+            exit 1
+          fi
+          git cat-file -e "${base_sha}^{commit}"
+          git cat-file -e "${head_sha}^{commit}"
+          git diff --check "$base_sha...$head_sha"
+
+      # Chamada direta ao gate documental.
+      # Não exige pnpm nem instalação das dependências do projeto.
       - name: Active document gates
         if: always()
-        run: pnpm run gates:docs
+        run: bash scripts/antigravity/docs_gates.sh
+
+      # -----------------------------------------------------------------------
+      # 8. Resumo
+      # -----------------------------------------------------------------------
 
       - name: Validation summary
         if: always()
@@ -300,6 +353,10 @@ jobs:
           echo "run_global_tests=${{ steps.scope.outputs.run_global_tests }}"
           echo "full_final_required=${{ steps.scope.outputs.full_final_required }}"
           echo "final_gate=${{ steps.scope.outputs.final_gate }}"
+
+      # -----------------------------------------------------------------------
+      # 9. Garantia de não mutação
+      # -----------------------------------------------------------------------
 
       - name: Repository must remain clean
         if: always()

@@ -24,7 +24,7 @@ require_header() {
   if [[ ! -f "$file" ]]; then
     echo "FAIL: missing active document: $file" >&2
     fail=1
-  elif ! head -n 18 "$file" | tr -d '\r' | rg -q "$pattern"; then
+  elif ! head -n 18 "$file" | tr -d '\r' | grep -Eq "$pattern"; then
     echo "FAIL: $file missing or invalid $label header." >&2
     fail=1
   fi
@@ -54,7 +54,7 @@ while IFS= read -r baseline; do
   fi
 done < <(head -n 18 "$STATUS_DOC" "$PLAN_DOC" "$HANDOFF_DOC" \
   | tr -d '\r' \
-  | rg -o '(main@)?[0-9a-f]{7,40}' \
+  | grep -Eo '(main@)?[0-9a-f]{7,40}' \
   | sed 's/^main@//' \
   | sort -u)
 
