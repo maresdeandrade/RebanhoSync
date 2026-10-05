@@ -1,6 +1,6 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-10-04
+Atualizado em: 2026-10-05
 
 ## Responsabilidade documental
 
@@ -71,7 +71,13 @@ com geração ainda igual e resultados necessários observados, na transação d
 ACK posterior permanece protegido para outro ciclo, inclusive após restart/farm-switch.
 
 E2 Animal→Lote está CLOSED / INTEGRATED pelo PR #175 (`MERGED`), no baseline atual
-`main@1456de00a8b19f555e99a3541394ec5cc97db797`. G3 dessa vertical está RESOLVED; F24.4E permanece IN_PROGRESS.
+`main@1456de00a8b19f555e99a3541394ec5cc97db797`. G3 dessa vertical está RESOLVED.
+F24.4E está CLOSED no [closeout local de 05/10/2026](../review/F24_4E_CONFLICT_RESOLUTION_CONTRACT.md#14-closeout-local-da-f244e--05102026),
+com F24.4F pronta após merge/rebaseline. O guard local discrimina detalhe pelo sujeito
+do Evento pai (persistido ou no batch inteiro na Edge), sem inferir animal dos endpoints
+de lote. Lote→Pasto real, inclusive remoção, passou na Edge e em INSERT direto; Animal→Lote
+genérico continua bloqueado. Migration forward-only `20261005175412`, sem mudar RLS,
+executor privado, builder, CAS ou `movement_v1`. Nenhuma aplicação remota nesta entrega.
 Lote→Pasto, occupancy, correção de movimento e paginação global do pull não são certificados
 por essa entrega; N1 reentrada de `createGesture` permanece DEFERRED.
 

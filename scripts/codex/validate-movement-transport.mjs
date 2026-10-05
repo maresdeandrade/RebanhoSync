@@ -69,6 +69,14 @@ try {
     );
     await db.query("commit");
   }
+  await db.query("begin");
+  await db.query(
+    readFileSync(
+      "supabase/migrations/20261005175412_f24_4e_lot_pasture_subject_boundary.sql",
+      "utf8",
+    ),
+  );
+  await db.query("commit");
   await db.query("notify pgrst, 'reload schema'");
 } finally {
   await db.end();

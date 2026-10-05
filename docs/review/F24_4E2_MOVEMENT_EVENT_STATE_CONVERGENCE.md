@@ -1,6 +1,8 @@
 # F24.4E2 — Movement Event/State Design Contract
 
-Atualizado em: 2026-10-04
+Atualizado em: 2026-10-05
+
+> **Status posterior — 05/10/2026:** F24.4E CLOSED no [closeout local](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md#14-closeout-local-da-f244e--05102026), ainda sem integrar esta correção. O guard B1 foi corrigido para preservar o envelope real Lote→Pasto; o controle R6 anterior omitia endpoints de lote e sua alegação de preservação desse writer fica superseded. Demais evidências E2 são preservadas. Referências F24.4E IN_PROGRESS abaixo são históricas; F24.4F somente após merge/rebaseline. CAS de lote/occupancy e G3 global não são certificados.
 
 Subfase: `F24.4E2 — MOVEMENT_EVENT_STATE_CONVERGENCE`
 

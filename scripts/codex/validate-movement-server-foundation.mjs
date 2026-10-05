@@ -132,6 +132,12 @@ try {
       ),
     );
   }
+  await isolated.query(
+    readFileSync(
+      "supabase/migrations/20261005175412_f24_4e_lot_pasture_subject_boundary.sql",
+      "utf8",
+    ),
+  );
   // Existing commercial concurrency suite requires one real membership; no source data copied.
   const user = randomUUID();
   const farm = randomUUID();

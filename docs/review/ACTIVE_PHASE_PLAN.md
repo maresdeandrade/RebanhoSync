@@ -1,8 +1,8 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-10-04
-Status: **Fase 24 ativa; F24.4A–F24.4D CLOSED; F24.4E IN_PROGRESS; F24.4 IN_PROGRESS**
-Próxima fase: **Fase 24 — F24.4E — Conflict Resolution Contract (IN_PROGRESS)**
+Atualizado em: 2026-10-05
+Status: **Fase 24 ativa; F24.4A–F24.4E CLOSED (E closeout local); F24.4 IN_PROGRESS**
+Próxima fase: **Fase 24 — F24.4F — Integrated Certification (READY_TO_START_AFTER_MERGE)**
 F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29.
 Baseline de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`.
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27.
@@ -79,6 +79,20 @@ Limitações preservadas: `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`;
 `NON_ACTIVE_FARM_RECONCILIATION = NOT_TESTED`; `ALL_DOMAIN_CLOCK_BEHAVIOR = NOT_PROVEN`.
 
 ## F24.4E — conflict resolution contract
+
+**Closeout local de 05/10/2026:** `F24_4E = CLOSED`, `F24_4E_CLOSEOUT = READY` sobre
+`origin/main@e15083ce2b531ccffa6c12b73e94f68945a10d93`. Guard Lote→Pasto corrigido por
+sujeito factual na Edge e migration forward-only local, sem alterar builder/RLS/CAS.
+Builder 32/32, transporte 13/13, PostgreSQL isolado 58/58 e baseline funcional 5/5 passaram;
+Deno, lint focado e Fallow new-only passaram. Evidência autoritativa e matriz G1–G7:
+[closeout F24.4E, seção 14](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md#14-closeout-local-da-f244e--05102026).
+G2 permanece deferido no backlog F24.4, G6 em F24.5, G7 em F24.4F; G4 é resolução humana
+contratual, sem dedup/merge automático. Certificação sanitária completa continua F24.7.
+F24.4F é NEXT, pronta para iniciar após merge/rebaseline. Nenhum commit/PR/merge/deploy
+ou migration remota foi executado; nenhuma nova subfase criada.
+
+**HISTORICAL_CORRECT / SUPERSEDED:** os parágrafos seguintes preservam a abertura e
+integração E1/E2; seus status E IN_PROGRESS e baseline atual descrevem aquele momento.
 
 A [characterization F24.4E](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md) está `IN_PROGRESS`, aberta sobre `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`. A subfase `F24.4E1 — ANIMAIS_DELETE_TOMBSTONE_CAS` está `INTEGRATED` pelo PR #173 em `main@040c3c0605ff4f6ecabeedec1b28c5017455f6ac`: houve mudança localizada de runtime no cliente offline e `sync-batch`, com `SCHEMA_CHANGE = 0`, `MIGRATION_CHANGE = 0` e `RLS_CHANGE = 0`.
 

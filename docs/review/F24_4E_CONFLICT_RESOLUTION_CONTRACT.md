@@ -1,18 +1,23 @@
 # F24.4E — Conflict Resolution Contract
 
-Atualizado em: 2026-10-04
+Atualizado em: 2026-10-05
 
 ## Estado operacional atual
 
 > **Status posterior — 05/10/2026:** `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`; ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados. Outras RPCs não foram recertificadas; F24 não foi encerrada. As referências ao blocker e 40001/timeout nas seções históricas abaixo estão superseded quanto a esse cenário.
 
-`F24_4E = IN_PROGRESS`; `F24_4E1 = INTEGRATED` pelo PR #173;
+`F24_4E = CLOSED` no closeout local de 05/10/2026; `F24_4E_CLOSEOUT = READY`;
+`F24_4F = READY_TO_START_AFTER_MERGE`. Evidências e limites na seção 14 abaixo.
+Implementação e documentação locais, ainda sem commit/PR/merge/deploy ou migration remota.
+`F24_4E1 = INTEGRATED` pelo PR #173;
 `F24_4E2_ANIMAL_TO_LOTE = CLOSED / INTEGRATED` pelo PR #175 (`MERGED`); `G3_ANIMAL_TO_LOTE = RESOLVED`.
 A [seção 18 da F24.4E2](./F24_4E2_MOVEMENT_EVENT_STATE_CONVERGENCE.md#18-closure-remediation--recertification--b1m1m2m3)
 é a referência certificada para Animal→Lote: writer especializado ativo, fronteira genérica
 bloqueada, identidade de resposta, proteção RECONCILE e barreira de geração no pull.
-Lote→Pasto/occupancy e demais contratos fora dessa vertical continuam não certificados.
-Entrega integrada; baseline atual `main@1456de00a8b19f555e99a3541394ec5cc97db797`. Nenhuma nova subfase iniciada.
+O guard Lote→Pasto foi corrigido e validado localmente; CAS de lote/occupancy e
+convergência global continuam não certificados. Baseline de integração da E2:
+`main@1456de00a8b19f555e99a3541394ec5cc97db797`; closeout local sobre
+`origin/main@e15083ce2b531ccffa6c12b73e94f68945a10d93`. Nenhuma nova subfase iniciada.
 
 > **HISTORICAL_CORRECT / SUPERSEDED:** as seções 1–13 abaixo preservam a execução de
 > characterization/E1 em 01/10/2026, suas matrizes e evidências. READY_FOR_REVIEW da E1,
@@ -253,3 +258,101 @@ Workflow `antigravity-validate` run `36869086650`, HEAD funcional `05946b63cddf5
 Revisar o PR #173 e a F24.4E1. Se integrada, rebaselinear a `main` e então abrir somente a characterization da F24.4E2 — `MOVEMENT_EVENT_STATE_CONVERGENCE`.
 
 Não iniciar F24.4E2 automaticamente antes da revisão/integração da E1.
+
+## 14. Closeout local da F24.4E — 05/10/2026
+
+Esta seção sucede os status de fase aberta nas seções anteriores, sem reatribuir
+suas evidências históricas à execução atual. O objetivo original é determinar rejeição,
+reconciliação, merge ou intervenção por classe; CAS transversal e execução da matriz
+integrada não são critérios obrigatórios de saída da E.
+
+Baseline após fetch: `origin/main@e15083ce2b531ccffa6c12b73e94f68945a10d93`.
+Branch `fix/f24-4e-lot-pasture-boundary`, HEAD inicial igual ao baseline, worktree
+inicial limpa. Patch local sem commit, push, PR, merge, deploy ou alteração remota.
+
+### Blocker corrigido
+
+O guard B1 confundia endpoints de lote com sujeito animal. O writer real Lote→Pasto
+usa `animal_id=null`, `lote_id=LOT` e `from_lote_id=to_lote_id=LOT`; seu detalhe era
+rejeitado. O controle R6 anterior omitia os endpoints de lote e não provava esse writer.
+Essa limitação da evidência anterior fica superseded pela regressão real abaixo.
+
+Edge discrimina Evento `movimentacao` com `animal_id` preenchido; para detalhe,
+consulta pais no batch inteiro ou persistidos, sem depender da ordem/aplicação do pai.
+Um pai contraditório no batch não libera detalhe de pai animal persistido. PostgreSQL
+discrimina pelo pai factual da mesma fazenda, com o bypass privado existente.
+Migration forward-only local: `20261005175412_f24_4e_lot_pasture_subject_boundary.sql`.
+Migration anterior, builder, RLS, grants, roles, CAS e `movement_v1` preservados.
+Detalhe órfão continua rejeitado pela FK; não recebe sujeito inferido dos endpoints.
+
+```ini
+GENERIC_ANIMAL_TO_LOTE_EDGE = BLOCKED
+GENERIC_ANIMAL_TO_LOTE_DB = BLOCKED
+LOTE_TO_PASTURE_EDGE = ALLOWED
+LOTE_TO_PASTURE_DB = ALLOWED
+LOTE_TO_NO_PASTURE = ALLOWED
+SPECIALIZED_MOVEMENT_V1 = PRESERVED
+TENANT_ISOLATION = PRESERVED
+RLS = PRESERVED
+```
+
+### Evidências desta execução
+
+| Validação | Resultado observado |
+| --- | --- |
+| `pnpm test -- src/lib/events/__tests__/mudarPastoLote.test.ts src/lib/events/__tests__/buildEventGesture.test.ts` | 32/32 PASS, dois arquivos; nenhum teste específico adicional do componente encontrado |
+| `node scripts/codex/validate-movement-transport.mjs`, ambiente local designado | 13/13 PASS: Auth/Edge/PostgREST/RPC/PostgreSQL, R5/R6 e três state-conflict |
+| `node scripts/codex/validate-movement-server-foundation.mjs` | 58/58 PASS; 25 foundation, 24 completion, 5 state-conflict, 4 comercial; banco isolado removido |
+| `node scripts/codex/validate-supabase-baseline-functional.mjs`, ambiente local designado | 5/5 PASS, run `3ea6b15c`; owner/manager/cowboy/outsider, RLS, FKs compostas e sucesso parcial |
+| `deno check --no-lock supabase/functions/sync-batch/index.ts` | PASS |
+| ESLint focado em handler, rules, dois testes e dois runners | PASS |
+| `pnpm exec fallow audit --gate new-only` | PASS; findings herdados excluídos, sem supressão/config nova |
+| `pnpm test -- supabase/functions/sync-batch/rules.test.ts supabase/functions/sync-batch/handler-order.test.ts` | 39/39 PASS, dois arquivos |
+| `pnpm run gates:docs` | PASS; headers/baselines, continuidade e governança |
+| `git diff --check` | PASS |
+
+R6 usa `buildEventGesture` real para mudança e remoção de pasto, comprovando base/detail
+APPLIED na Edge e INSERT direto permitido. Negativos cobrem pai animal rejeitado no mesmo
+batch, ordem invertida, endpoints de lote ausentes, pai persistido/contraditório, detalhe
+direto 42501, órfão por FK e tenant não autorizado. Foundation repete a boundary com
+sessão SQL authenticated, incluindo outsider e FK de lote cross-tenant.
+
+Falhas intermediárias: o R6 ampliado falhou antes do patch; uma bateria teve HTTP 503
+por DNS local; o import estático do builder inicializou Dexie antes do fake IndexedDB.
+O teste passou a carregar o builder após instalar IndexedDB, sem mocks de transporte.
+Uma lambda nova ultrapassou o gate Fallow; a classificação factual foi extraída em
+helper puro reutilizado, sem refatoração do handler. A bateria final passou.
+Fixtures factuais permanecem no ambiente local descartável; não houve reset/limpeza
+destrutiva, browser E1–E10, build, regressão global ou validação remota nesta missão.
+
+### Classificação final dos gaps
+
+| Gap | Classificação final | Limite / responsabilidade posterior |
+| --- | --- | --- |
+| G1 | RESOLVED | UPDATE/DELETE animais CAS; E1 integrada, sem extensão a outras tabelas |
+| G2 | ACCEPTED_DEFERMENT | Inventário incremental após E1 no backlog F24.4; ausência de CAS não exige patch genérico nesta missão |
+| G3 Animal→Lote | RESOLVED | E2 integrada; decisões e reconciliação da vertical preservadas |
+| G3 regressão guard Lote→Pasto | RESOLVED | Boundary local corrigida; não certifica CAS de lote nem atomicidade Evento→occupancy |
+| G4 | RESOLVED | Política USER_RESOLUTION_REQUIRED, fatos preservados; AUTO_DEDUP/AUTO_MERGE NOT_AUTHORIZED |
+| G5 | RESOLVED | Blocker stale fechado em 05/10; certificação sanitária completa continua F24.7 |
+| G6 | ACCEPTED_DEFERMENT_TO_F24_5 | Observabilidade/retenção; rejeição operacional não vira histórico factual |
+| G7 | ACCEPTED_DEFERMENT_TO_F24_4F | Certificação integrada, dispositivos físicos, non-active farm e clock transversal |
+
+```ini
+F24_4E_G1 = RESOLVED
+F24_4E_G2 = ACCEPTED_DEFERMENT
+F24_4E_G3_ANIMAL_TO_LOTE = RESOLVED
+F24_4E_G3_LOTE_PASTO_GUARD_REGRESSION = RESOLVED
+F24_4E_G4 = RESOLVED
+F24_4E_G5 = RESOLVED
+F24_4E_G6 = ACCEPTED_DEFERMENT_TO_F24_5
+F24_4E_G7 = ACCEPTED_DEFERMENT_TO_F24_4F
+F24_4E_CLOSEOUT = READY
+F24_4E = CLOSED
+F24_4F = READY_TO_START_AFTER_MERGE
+```
+
+Próximo passo: review/integração autorizados deste patch, merge/rebaseline e somente
+então F24.4F. Não há nova subfase. G3 global, CAS transversal, correção de movimento,
+N1/reentrada e paginação global do pull permanecem fora da certificação; F24 não fecha.
+Sanitário: gate OFF, flag false, rollout e importação real continuam não autorizados.

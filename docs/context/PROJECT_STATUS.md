@@ -8,7 +8,7 @@ Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4 IN_PROGRESS)**.
-Próxima fase de desenvolvimento: **Fase 24 — F24.4E — Conflict Resolution Contract (IN_PROGRESS)**.
+Próxima fase de desenvolvimento: **Fase 24 — F24.4F — Integrated Certification (READY_TO_START_AFTER_MERGE)**.
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.
@@ -34,6 +34,18 @@ com fila heterogênea foram certificados. Kill real de processo/browser permanec
 O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é a referência arquitetural canônica dos fluxos operacionais. Código e migrations ativas mantêm precedência factual; os resumos deste `PROJECT_STATUS.md` registram estado e contexto, mas não redefinem contratos do mapa.
 
 ## Estado atual
+
+**Closeout local — 05/10/2026:** `F24_4E = CLOSED`, `F24_4E_CLOSEOUT = READY` sobre
+`origin/main@e15083ce2b531ccffa6c12b73e94f68945a10d93`, na branch
+`fix/f24-4e-lot-pasture-boundary`. Corrigida a regressão do guard Lote→Pasto na Edge
+e em migration forward-only local, preservando bloqueio genérico Animal→Lote e `movement_v1`.
+Builder 32/32, transporte 13/13, PostgreSQL 58/58 e baseline funcional 5/5 (run `3ea6b15c`)
+passaram; Deno, lint focado e Fallow new-only passaram. Matriz e limites no
+[closeout canônico](../review/F24_4E_CONFLICT_RESOLUTION_CONTRACT.md#14-closeout-local-da-f244e--05102026).
+G2 permanece ACCEPTED_DEFERMENT; G6 vai para F24.5 e G7 para F24.4F. G4 é política de
+resolução humana; G5 está resolvido no stale sanitário certificado, sem rollout.
+`F24_4F = READY_TO_START_AFTER_MERGE`; patch local sem commit/PR/merge/deploy/migration
+remota. Este status sucede as referências E IN_PROGRESS preservadas nos relatos abaixo.
 
 RebanhoSync está em beta interno, com arquitetura offline-first e isolamento multi-tenant por `fazenda_id`.
 
@@ -258,6 +270,10 @@ Histórico preservado: antes da correção, PostgreSQL produzia `40001`; PostgRE
 Limites: as outras RPCs autoritativas não foram exercitadas nessa recertificação E2E; não houve regressão completa do Sanitário v2. Warning de collation `153.120 → 153.121` foi observado, não impediu os probes e não foi corrigido. O fechamento não autoriza rollout, publicação de catálogo, importação real ou alteração de produção, nem encerra F24 inteira.
 
 ## Próximo desenvolvimento
+
+**Transição vigente:** closeout local da F24.4E pronto; F24.4F somente após integração
+e rebaseline. O parágrafo seguinte preserva o estado anterior à correção do guard;
+E IN_PROGRESS está superseded por este closeout, sem reescrever a evidência E1/E2.
 
 A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`; F24.2, F24.3, F24.4A, F24.4B, F24.4C e F24.4D estão `CLOSED`. A F24.4D encerrou a caracterização cross-device e autoridade de relógio na branch `feat/f24-4d-cross-device-clock-authority`; a F24.4 permanece `IN_PROGRESS` e **F24.4E — Conflict Resolution Contract** permanece em andamento; E1 está integrada e E2 Animal→Lote está fechada e integrada pelo PR #175, com G3 resolvido somente nessa vertical. O blocker stale Sanitário v2 foi fechado em 05/10/2026; certificação remota completa e autorização de rollout continuam pendentes, e produção permanece `NOT_AUTHORIZED`.
 

@@ -1,8 +1,8 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-10-04
+Atualizado em: 2026-10-05
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4 IN_PROGRESS)**
-Próxima frente: **F24.4E — Conflict Resolution Contract (IN_PROGRESS)**
+Próxima frente: **F24.4F — Integrated Certification (READY_TO_START_AFTER_MERGE)**
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 
 ## Objetivo
@@ -38,7 +38,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 17. Fase 21 — Inteligência Operacional v2 — **concluída**.
 18. Fase 22 — Eficiência Produtiva e Econômica — **concluída (F22A, F22B e F22C fechadas)**.
 19. Fase 23 — Simulação Produtiva e Comercial — **concluída / CLOSED**.
-20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.4A–F24.4D CLOSED; F24.4E IN_PROGRESS**.
+20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.4A–F24.4E CLOSED (E closeout local); F24.4F NEXT após merge**.
 
 `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026. Rollout e importação real permanecem não autorizados; isso não reabre a Fase 12 nem encerra F24.
 
@@ -51,6 +51,12 @@ Cobertura/IA, diagnóstico, PRENHA/VAZIA e DPP reconstruíveis, parto, aborto/pe
 A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `main@7a1e7e5b3eef307b79428a87b5268c3c5d4fb078`. As operações comerciais individual e em lote foram integradas, o contrato kg/@ foi preservado, precificação e simulação comercial foram integradas, e a simulação permaneceu não factual. A Importação V2 foi integrada com preview, versionamento, chunks, idempotência e offline-first. Nenhuma nova fonte de verdade foi criada.
 
 ## Fase atual de desenvolvimento
+
+F24.4E tem [closeout local READY em 05/10/2026](../review/F24_4E_CONFLICT_RESOLUTION_CONTRACT.md#14-closeout-local-da-f244e--05102026)
+sobre `origin/main@e15083ce2b531ccffa6c12b73e94f68945a10d93`: guard Lote→Pasto corrigido,
+deferments G2/G6/G7 preservados e F24.4F NEXT após merge/rebaseline. Nenhuma nova subfase,
+commit/PR/merge/deploy ou migration remota nesta entrega. A certificação do guard não
+certifica CAS de lote/occupancy ou G3 global.
 
 O fechamento E2 é restrito a Animal→Lote; não certifica Lote→Pasto, occupancy ou
 correção de movimento. A entrega está integrada pelo PR #175 (`MERGED`)
@@ -67,10 +73,10 @@ Fase 23 — Simulação Produtiva e Comercial — CLOSED
 → F24.4B — Concurrent Event Writes — CLOSED
 → F24.4C — State Conflict Policy — CLOSED (PR #169; `3b7ac50ed878d8d8d4b88874ad98c9d98816149b`)
 → F24.4D — Cross-device Offline/Reconnect + Clock Authority — CLOSED (branch `feat/f24-4d-cross-device-clock-authority`; `faddf64`)
-→ F24.4E — Conflict Resolution Contract — IN_PROGRESS
+→ F24.4E — Conflict Resolution Contract — CLOSED (closeout local; integração pendente)
   E1 — animais CAS/tombstone — INTEGRATED (PR #173)
   E2 — Animal→Lote — CLOSED / INTEGRATED (PR #175); G3 Animal→Lote — RESOLVED
-→ F24.4F — Integrated Certification — PLANNED_AFTER_F24.4E
+→ F24.4F — Integrated Certification — READY_TO_START_AFTER_MERGE
 → F24.5 — Observabilidade — NOT_STARTED
 → F24.6 — Performance / Escala — NOT_STARTED
 → F24.7 — Sanitário v2 — NOT_STARTED (blocker stale CLOSED em 05/10/2026; certificação completa pendente)
@@ -121,4 +127,4 @@ Fases 1 a 12 e a Fase 11.5 permanecem concluídas conforme seus relatórios e ev
 | 21 | Inteligência Operacional v2 | **Concluída**; V1, V2 e consolidação integradas |
 | 22 | Eficiência Produtiva e Econômica | **Gates F22A.4 e F22B.3 fechados; F22C fechada com histórico, duração, agregação e performance observada implementados**; lucro completo permanece bloqueado e novo incremento exige capacidade de produto explicitamente autorizada |
 | 23 | Simulação Produtiva e Comercial | Premissas explícitas e separação entre projeção, fato e autorização |
-| 24 | Release Hardening / Scale Readiness | **F24.4A–F24.4D closed; F24.4E IN_PROGRESS; E1 INTEGRATED; E2 Animal→Lote CLOSED / INTEGRATED (PR #175) / G3 RESOLVED; produção não provisionada** |
+| 24 | Release Hardening / Scale Readiness | **F24.4A–F24.4E closed (E closeout local); F24.4F NEXT após merge/rebaseline; E1/E2 integradas; G3 Animal→Lote e regressão guard Lote→Pasto resolvidos; produção não provisionada** |

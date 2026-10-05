@@ -8,6 +8,13 @@ export interface Operation {
 
 const REVISION_PROTECTED_STATE_TABLES = new Set(["animais"]);
 
+export function isGenericAnimalMovementEvent(op: Operation): boolean {
+  if (op.table !== "eventos" || op.action !== "INSERT") return false;
+  const record = op.record;
+  if (!record) return false;
+  return record.dominio === "movimentacao" && record.animal_id != null;
+}
+
 export function validateStateExpectedRevision(op: Operation):
   | { protected: false; ok: true }
   | { protected: true; ok: true; expected_revision: number }
