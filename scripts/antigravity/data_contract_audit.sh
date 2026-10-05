@@ -68,11 +68,6 @@ if ! root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
 fi
 cd "$root"
 
-if ! command -v rg >/dev/null 2>&1; then
-  echo "ERROR: ripgrep (rg) is required." >&2
-  exit 2
-fi
-
 fail=0
 for file in "${REQUIRED_FILES[@]}"; do
   if [[ ! -f "$file" ]]; then
@@ -82,34 +77,34 @@ for file in "${REQUIRED_FILES[@]}"; do
 done
 
 if [[ "$fail" -eq 0 ]]; then
-  if ! rg -q 'context/PROJECT_STATUS\.md' docs/README.md README.md; then
+  if ! grep -Eq 'context/PROJECT_STATUS\.md' docs/README.md README.md; then
     echo "FAIL: documentation indexes do not link PROJECT_STATUS.md." >&2
     fail=1
   fi
 
-  if ! rg -q 'product/ROADMAP\.md' docs/README.md README.md; then
+  if ! grep -Eq 'product/ROADMAP\.md' docs/README.md README.md; then
     echo "FAIL: documentation indexes do not link the active ROADMAP.md." >&2
     fail=1
   fi
 
-  if ! rg -q 'review/ACTIVE_PHASE_PLAN\.md' docs/README.md README.md; then
+  if ! grep -Eq 'review/ACTIVE_PHASE_PLAN\.md' docs/README.md README.md; then
     echo "FAIL: documentation indexes do not link ACTIVE_PHASE_PLAN.md." >&2
     fail=1
   fi
 
-  if ! rg -q 'review/CURRENT_PHASE_HANDOFF\.md' docs/README.md README.md; then
+  if ! grep -Eq 'review/CURRENT_PHASE_HANDOFF\.md' docs/README.md README.md; then
     echo "FAIL: documentation indexes do not link CURRENT_PHASE_HANDOFF.md." >&2
     fail=1
   fi
 
   for term in 'Agenda' 'Evento' 'state_\*' 'Protocolo'; do
-    if ! rg -q "$term" docs/context/SOURCE_OF_TRUTH.md .agents/rules/CORE_RULES.md; then
+    if ! grep -Eq "$term" docs/context/SOURCE_OF_TRUTH.md .agents/rules/CORE_RULES.md; then
       echo "FAIL: source-of-truth contract missing term: $term" >&2
       fail=1
     fi
   done
 
-  if ! rg -q 'docs/archive/' docs/README.md AGENTS.md .agents/rules/CORE_RULES.md; then
+  if ! grep -Eq 'docs/archive/' docs/README.md AGENTS.md .agents/rules/CORE_RULES.md; then
     echo "FAIL: archive separation is not documented in active governance files." >&2
     fail=1
   fi
@@ -122,26 +117,37 @@ if [[ "$fail" -eq 0 ]]; then
     'audit:agents' \
     'gates:docs' \
     '\.agents/archive/\*\*'; do
-    if ! rg -q "$agents_contract" AGENTS.md; then
+    if ! grep -Eq "$agents_contract" AGENTS.md; then
       echo "FAIL: AGENTS.md missing dispatcher contract: $agents_contract" >&2
       fail=1
     fi
   done
 
-  if rg -n --pcre2 'powershell[^\r\n]*validate\.ps1(?![^\r\n]*-Profile)' \
+  mapfile -d '' -t profile_markdown < <(find \
     AGENTS.md .agents scripts docs/technical src/lib/sanitario/AGENTS.md src/lib/insights/README.md \
-    --glob '*.md' --glob '!**/archive/**' --glob '!**/_archive/**' >/dev/null; then
+    -type f -name '*.md' ! -path '*/archive/*' ! -path '*/_archive/*' -print0)
+  # Match through the last validate.ps1 on a line, then inspect only its suffix.
+  # A -Profile before that invocation does not satisfy the original lookahead.
+  profile_errors="$(awk '
+    {
+      line=$0
+      sub(/\r.*/, "", line)
+      if (match(line, /powershell.*validate[.]ps1/) &&
+          substr(line, RSTART + RLENGTH) !~ /-Profile/)
+        print FILENAME ":" FNR ":" $0
+    }
+  ' "${profile_markdown[@]}")"
+  if [[ -n "$profile_errors" ]]; then
     echo "FAIL: active documentation invokes validate.ps1 without an explicit profile." >&2
-    rg -n --pcre2 'powershell[^\r\n]*validate\.ps1(?![^\r\n]*-Profile)' \
-      AGENTS.md .agents scripts docs/technical src/lib/sanitario/AGENTS.md src/lib/insights/README.md \
-      --glob '*.md' --glob '!**/archive/**' --glob '!**/_archive/**' >&2 || true
+    printf '%s\n' "$profile_errors" >&2
     fail=1
   fi
 
   readonly LEGACY_PATH_PATTERN='docs/(ARCHITECTURE|OFFLINE|CONTRACTS|RLS|E2E_MVP|PROCESS|IMPLEMENTATION_STATUS|TECH_DEBT)\.md'
-  if rg -n "$LEGACY_PATH_PATTERN" "${ACTIVE_CONTROL_FILES[@]}" >/dev/null 2>&1; then
+  mapfile -d '' -t active_control_files < <(find "${ACTIVE_CONTROL_FILES[@]}" -type f -print0)
+  if grep -HnIE "$LEGACY_PATH_PATTERN" "${active_control_files[@]}" >/dev/null; then
     echo "FAIL: active governance still references a deprecated root-level docs path." >&2
-    rg -n "$LEGACY_PATH_PATTERN" "${ACTIVE_CONTROL_FILES[@]}" >&2 || true
+    grep -HnIE "$LEGACY_PATH_PATTERN" "${active_control_files[@]}" >&2 || true
     fail=1
   fi
 
@@ -150,16 +156,17 @@ if [[ "$fail" -eq 0 ]]; then
     fail=1
   fi
 
-  if rg -n 'supabase[[:space:]]+db[[:space:]]+reset' scripts --glob '!README.md' >/dev/null; then
+  mapfile -d '' -t operational_scripts < <(find scripts -type f ! -name README.md -print0)
+  if grep -HnIE 'supabase[[:space:]]+db[[:space:]]+reset' "${operational_scripts[@]}" >/dev/null; then
     echo "FAIL: operational script still references destructive Supabase reset." >&2
     fail=1
   fi
-  if rg -n 'validate_derivation_active\.sh|if[[:space:]]+\[\[[[:space:]]+-f.*SCRIPT_DIR' scripts/antigravity/docs_gates.sh >/dev/null; then
+  if grep -nE 'validate_derivation_active\.sh|if[[:space:]]+\[\[[[:space:]]+-f.*SCRIPT_DIR' scripts/antigravity/docs_gates.sh >/dev/null; then
     echo "FAIL: docs_gates.sh contains an implicit optional gate hook." >&2
     fail=1
   fi
   for package_contract in '"gates:docs"' '"audit:agents"' 'validate_docs_scope\.sh'; do
-    if ! rg -q "$package_contract" package.json; then
+    if ! grep -Eq "$package_contract" package.json; then
       echo "FAIL: package.json missing scripts contract: $package_contract" >&2
       fail=1
     fi
@@ -208,16 +215,16 @@ if [[ "$fail" -eq 0 ]]; then
   done
 
   readonly DESTRUCTIVE_COMMAND_PATTERN='^[[:space:]]*(supabase[[:space:]]+db[[:space:]]+reset|git[[:space:]]+(reset|clean)|rm[[:space:]]+-rf)([[:space:]]|$)'
-  if rg -n --glob 'SKILL.md' "$DESTRUCTIVE_COMMAND_PATTERN" .agents/skills >/dev/null; then
+  if grep -HnE "$DESTRUCTIVE_COMMAND_PATTERN" /dev/null "${active_skills[@]}" >/dev/null; then
     echo "FAIL: prohibited destructive command in active skill." >&2
-    rg -n --glob 'SKILL.md' "$DESTRUCTIVE_COMMAND_PATTERN" .agents/skills >&2
+    grep -HnE "$DESTRUCTIVE_COMMAND_PATTERN" /dev/null "${active_skills[@]}" >&2
     fail=1
   fi
-  if rg -n --glob 'SKILL.md' '^[[:space:]]*(rtk[[:space:]]+)?graphify[[:space:]]+update([[:space:]]|$)' .agents/skills >/dev/null; then
+  if grep -HnE '^[[:space:]]*(rtk[[:space:]]+)?graphify[[:space:]]+update([[:space:]]|$)' /dev/null "${active_skills[@]}" >/dev/null; then
     echo "FAIL: Graphify update must be governed by GRAPHIFY_USAGE.md, not required by a skill." >&2
     fail=1
   fi
-  if rg -q '`resolved`' .agents/skills/sanitario-catalogo-regulatorio-compliance/SKILL.md; then
+  if grep -Eq '`resolved`' .agents/skills/sanitario-catalogo-regulatorio-compliance/SKILL.md; then
     echo "FAIL: unsupported RegulatoryOverlayActionability value 'resolved'." >&2
     fail=1
   fi
@@ -232,7 +239,7 @@ if [[ "$fail" -eq 0 ]]; then
       echo "FAIL: missing explicit reference in $source_file: $reference" >&2
       fail=1
     fi
-  done < <(rg -n -o '`(\.agents|docs|scripts)/[^`*<>]+`' "${active_skills[@]}" | sort -u || true)
+  done < <(grep -HnEo '`(\.agents|docs|scripts)/[^`*<>]+`' /dev/null "${active_skills[@]}" | sort -u || true)
 
   mapfile -t governance_markdown < <(find .agents/rules .agents/prompts -type f -name '*.md' | sort)
   markdown_errors="$(awk '
