@@ -1,7 +1,19 @@
 # F24.4F — Integrated Certification
 
-Atualizado em: 2026-10-05
-Tipo: evidência de certificação local; proposta sujeita a revisão técnica.
+Atualizado em: 2026-10-06
+Tipo: evidência de certificação local integrada; execução original preservada.
+
+## Estado operacional atual — integração em 06/10/2026
+
+`F24_4F = CLOSED / INTEGRATED`; `F24_4 = CLOSED / INTEGRATED` no escopo da matriz
+abaixo. PR #181 MERGED em `main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`;
+candidate integrado `e7fc3b56e2c0051a84f0d54ba2364b3168d0f0b4`.
+O fetch e a comparação de árvores no closeout documental de 06/10 confirmaram a
+integração do patch. Testes abaixo são resultados da execução original, sem nova
+certificação funcional neste closeout. Resíduos aceitos e produção não autorizada
+permanecem. Próxima trilha: F24.5 IN_PROGRESS; F24.5A READY_FOR_REVIEW (review APPROVED),
+F24.5B NEXT / abertura lógica. O relatório a seguir é HISTORICAL_CORRECT / SUPERSEDED
+quanto a READY_FOR_REVIEW, baseline pré-merge e próximo passo de revisão.
 
 ## Decisão e baseline real
 

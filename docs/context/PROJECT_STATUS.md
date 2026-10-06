@@ -1,14 +1,14 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-10-05
+Atualizado em: 2026-10-06
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4 IN_PROGRESS)**.
-Próxima fase de desenvolvimento: **Fase 24 — F24.4F — Integrated Certification (READY_TO_START)**.
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4 / F24.4F CLOSED / INTEGRATED; F24.5 IN_PROGRESS; F24.5A READY_FOR_REVIEW)**.
+Próxima fase de desenvolvimento: **Fase 24 — F24.5B — Structured Diagnostics (NEXT / READY_TO_START)**.
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.
@@ -35,7 +35,19 @@ O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é 
 
 ## Estado atual
 
-**Closeout integrado — 05/10/2026:** `F24_4E = CLOSED`, `F24_4E_INTEGRATION = COMPLETE`,
+**Transição vigente — 06/10/2026:** F24.4/F24.4F CLOSED / INTEGRATED pelo PR #181,
+`main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`. A
+[certificação F24.4F](../review/F24_4F_INTEGRATED_CERTIFICATION.md) inclui reconcile
+de animais pós-ACK com outra fazenda ativa; garantias limitadas à matriz certificada.
+
+F24.5 IN_PROGRESS; [F24.5A](../review/F24_5A_OBSERVABILITY_BASELINE.md)
+READY_FOR_REVIEW, review documental APPROVED e pacote READY_FOR_COMMIT.
+`OBSERVABILITY_BASELINE = ESTABLISHED`; F24.5A não está CLOSED/integrada.
+[F24.5B](../review/F24_5B_STRUCTURED_DIAGNOSTICS_PLAN.md) é NEXT / READY_TO_START
+lógico, sem implementação. Base limpa pós-F24.4F; pacote documental local na branch
+`codex/f24-5a-doc-closeout`, sem novo SHA pós-F24.5A. Produção/rollout não autorizados.
+
+**HISTORICAL_CORRECT / SUPERSEDED — closeout integrado em 05/10/2026:** `F24_4E = CLOSED`, `F24_4E_INTEGRATION = COMPLETE`,
 PR #178 `MERGED` em `main@bc84040d17e704b30df4c5f34f9d20337d54a631`.
 Corrigida a regressão do guard Lote→Pasto na Edge e em migration forward-only versionada,
 preservando bloqueio genérico Animal→Lote e `movement_v1`.
@@ -272,9 +284,11 @@ Limites: as outras RPCs autoritativas não foram exercitadas nessa recertificaç
 
 ## Próximo desenvolvimento
 
-**Transição vigente:** F24.4E CLOSED / INTEGRATED pelo PR #178; F24.4F READY_TO_START
-no baseline `main@bc84040d17e704b30df4c5f34f9d20337d54a631`. O parágrafo seguinte preserva o estado anterior à correção do guard;
-E IN_PROGRESS está superseded por este closeout, sem reescrever a evidência E1/E2.
+**Transição vigente:** F24.4/F24.4F CLOSED / INTEGRATED pelo PR #181;
+F24.5 IN_PROGRESS, F24.5A READY_FOR_REVIEW (review APPROVED) e F24.5B NEXT.
+Base operacional `main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`;
+plano de B vinculado acima. O parágrafo seguinte é HISTORICAL_CORRECT / SUPERSEDED:
+preserva o estado anterior à correção do guard e à integração F24.4F, sem reescrever E1/E2.
 
 A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`; F24.2, F24.3, F24.4A, F24.4B, F24.4C e F24.4D estão `CLOSED`. A F24.4D encerrou a caracterização cross-device e autoridade de relógio na branch `feat/f24-4d-cross-device-clock-authority`; a F24.4 permanece `IN_PROGRESS` e **F24.4E — Conflict Resolution Contract** permanece em andamento; E1 está integrada e E2 Animal→Lote está fechada e integrada pelo PR #175, com G3 resolvido somente nessa vertical. O blocker stale Sanitário v2 foi fechado em 05/10/2026; certificação remota completa e autorização de rollout continuam pendentes, e produção permanece `NOT_AUTHORIZED`.
 

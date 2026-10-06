@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-10-05
+Atualizado em: 2026-10-06
 
 ## Objetivo
 
@@ -29,11 +29,19 @@ evidência histórica, mas nenhum projeto foi ou deve ser criado agora. A F24.1D
 descartável existente e está registrada em
 [F24_1D_REMOTE_ACL_REHEARSAL.md](./F24_1D_REMOTE_ACL_REHEARSAL.md).
 
-## P0 — F24.4 Multi-device + Conflitos
+## F24.4 — fechamento integrado e resíduos aceitos
 
-Status: `IN_PROGRESS — F24.4E CLOSED / INTEGRATED / F24.4F READY_TO_START`
-Baseline de integração / entrada F24.4F: `main@bc84040d17e704b30df4c5f34f9d20337d54a631`; PR #178 `MERGED`.
-Release blocker: `SIM`
+Status: `F24.4 / F24.4F CLOSED / INTEGRATED`
+Baseline integrado: `main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`; PR #181 `MERGED`.
+Release blocker da matriz F24.4: `RESOLVED_IN_CERTIFIED_SCOPE`.
+
+A [certificação F24.4F](./F24_4F_INTEGRATED_CERTIFICATION.md) concluiu a matriz
+integrada e non-active farm cross-device no cenário certificado. Dispositivos
+físicos, kill real e clock em todos os domínios continuam NOT_PROVEN / ACCEPTED_RESIDUAL;
+demais estados/occupancy/atomicidade universal não foram generalizados. Observabilidade
+permanece em F24.5 e certificação sanitária completa em F24.7, sem rollout.
+
+**HISTORICAL_CORRECT / SUPERSEDED — entrada F24.4F em 05/10/2026:**
 
 F24.4A–F24.4D estão encerradas; E está [CLOSED / INTEGRATED pelo PR #178](./F24_4E_CONFLICT_RESOLUTION_CONTRACT.md#estado-operacional-atual). G1, G4, G5 e G3 Animal→Lote estão resolvidos; a regressão do guard Lote→Pasto também foi corrigida, validada localmente e integrada. Animal→Lote permanece integrada pelo PR #175. Permanecem deferidos: demais `state_*` e resíduos Evento→estado no backlog F24.4; matriz integrada, dispositivos físicos, non-active farm cross-device e clock transversal em F24.4F; observabilidade em F24.5. CAS de lote/occupancy e atomicidade universal não foram certificados. Duplicidade humana exige resolução explícita, sem dedup/merge automático. O blocker stale Sanitário foi fechado em 05/10; certificação sanitária completa continua F24.7, sem rollout. A F24.4 permanece release blocker até seu gate integrado; isso não reabre E.
 
@@ -47,12 +55,15 @@ o closeout F24.3; sua incorporação em gate posterior exige decisão explícita
 
 ## P1 — F24.5 Observabilidade + Reconcile + Diagnóstico
 
-Status: `NOT_STARTED`
+Status: `IN_PROGRESS — F24.5A READY_FOR_REVIEW / REVIEW_APPROVED; F24.5B NEXT`
 Release blocker: `SIM_PARA_PRODUCAO_AMPLA`
 
-Faltam correlação de operação, identidade de dispositivo se adotada, tentativa/status/erro,
-ACK remoto, resultado de reconcile, saúde de fila/reconcile, retenção e redaction. Telemetria
-não é fonte factual nem regra de domínio.
+O [baseline F24.5A](./F24_5A_OBSERVABILITY_BASELINE.md) está estabelecido e o pacote
+documental READY_FOR_COMMIT, sem CLOSED/integrado. A [abertura lógica F24.5B](./F24_5B_STRUCTURED_DIAGNOSTICS_PLAN.md)
+prioriza G02/G01 (P1) e G06/G08 (P2) com IDs existentes. G03/G04/G07 ficam em C;
+G05 em D; G09/G10 continuam NOT_PROVEN para certificação E. Há fila, audit e
+exportação existentes: a lacuna é a reconstrução histórica parcial, não ausência
+total de mecanismos. Telemetria não é fonte factual nem regra de domínio.
 
 ## P1 — F24.6 Performance / Escala
 
