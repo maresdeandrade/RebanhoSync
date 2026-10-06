@@ -1886,6 +1886,12 @@ export async function processGesture(gesture: Gesture) {
       );
       const refreshTables = new Set<string>();
 
+      // UPDATE advances the server CAS revision. Reconcile that snapshot even
+      // for APPLIED, so a drained obligation cannot leave the next intent stale.
+      if (ops.some((op) => getRemoteTableName(op.table) === "animais" && op.action === "UPDATE")) {
+        refreshTables.add("animais");
+      }
+
       if (hasCommercialPurchase) {
         refreshTables.add("animais");
         refreshTables.add("eventos");

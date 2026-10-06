@@ -12,7 +12,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: antigravity-validate-${{ github.event.pull_request.number || github.event.merge_group.head_sha || github.ref }}
+  group: antigravity-validate-${{ github.event.pull_request.number || (github.event_name == 'merge_group' && github.sha) || github.ref }}
   cancel-in-progress: true
 
 defaults:
@@ -26,9 +26,10 @@ env:
   # O runtime do projeto continua controlado por actions/setup-node.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-  VITE_SUPABASE_URL: ${{ vars.CI_SUPABASE_URL || 'https://example.supabase.co' }}
-  VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.CI_SUPABASE_PUBLISHABLE_KEY || vars.CI_SUPABASE_ANON_KEY || 'example-publishable-key' }}
-  VITE_SUPABASE_FUNCTIONS_URL: ${{ vars.CI_SUPABASE_FUNCTIONS_URL || 'https://example.supabase.co/functions/v1' }}
+  # O mapa dinamico preserva variaveis opcionais sem exigir cadastro no editor.
+  VITE_SUPABASE_URL: ${{ fromJSON(toJSON(vars)).CI_SUPABASE_URL || 'https://example.supabase.co' }}
+  VITE_SUPABASE_PUBLISHABLE_KEY: ${{ fromJSON(toJSON(vars)).CI_SUPABASE_PUBLISHABLE_KEY || fromJSON(toJSON(vars)).CI_SUPABASE_ANON_KEY || 'example-publishable-key' }}
+  VITE_SUPABASE_FUNCTIONS_URL: ${{ fromJSON(toJSON(vars)).CI_SUPABASE_FUNCTIONS_URL || 'https://example.supabase.co/functions/v1' }}
 
 jobs:
   validate:

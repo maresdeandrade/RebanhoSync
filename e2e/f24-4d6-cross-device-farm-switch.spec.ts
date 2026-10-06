@@ -216,6 +216,7 @@ test("F24.4D6: farm switch real preserva pending, identidade e isolamento entre 
     expect(denied.error).toBeNull();
     expect(denied.data).toEqual([]);
     expect(await readRemote()).toEqual(initialRemote);
+    if (hidden.data === null || denied.data === null) throw new Error("RLS_RESULT_MISSING");
     console.log(JSON.stringify({ checkpoint, selectRows: hidden.data.length, updateRows: denied.data.length }));
 
     checkpoint = "login-and-selection";
@@ -268,13 +269,27 @@ test("F24.4D6: farm switch real preserva pending, identidade e isolamento entre 
     expect(afterBPull.localA.activeFarm).toBe(farmB.id);
     expect(afterBPull.localA.snapshots).toContainEqual({ id: farmB.animalId, fazenda_id: farmB.id, revision: Number(initialAnimalB.revision), observacoes: farmB.baseline });
 
-    checkpoint = "return-B-to-A";
-    await selectFarm(pageA, farmA, farmB);
-    await pullFarm(pageA, farmA.id, "replace");
-    const returned = await capture("returned-to-A");
-    assertPending(returned);
-    expect(returned.localA.activeFarm).toBe(farmA.id);
+    // Certification F24.4F: reconnect and apply A while B remains active.
+    // Selection requires online membership; exercise a new offline/reconnect
+    // boundary after the real selector has installed B, without changing farms.
+    await contextA.setOffline(true);
+    const inactivePending = await capture("offline-A-with-B-active");
+    assertPending(inactivePending);
+    expect(inactivePending.localA.activeFarm).toBe(farmB.id);
+    await contextA.setOffline(false);
 
+    // Lose only the immediate animal refresh after ACK. The later obligation
+    // drain must recover the authoritative revision through the real pull.
+    let blockedAnimalRefreshes = 0;
+    await pageA.route("**/rest/v1/animais?*", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get("fazenda_id") === `eq.${farmA.id}`) {
+        blockedAnimalRefreshes += 1;
+        await route.abort("failed");
+      } else {
+        await route.continue();
+      }
+    });
     checkpoint = "sync-original-A";
     await pageA.evaluate(async (txId) => {
       const { db } = await import("/src/lib/offline/db.ts");
@@ -284,11 +299,40 @@ test("F24.4D6: farm switch real preserva pending, identidade e isolamento entre 
       await processGesture(gesture);
     }, txId);
     const applied = await capture("original-A-applied");
+    expect(applied.localA.activeFarm).toBe(farmB.id);
+    expect(applied.localB).toEqual(afterBPull.localB);
+    const cachedB = afterBPull.localA.snapshots.find((row) => row.id === farmB.animalId)!;
+    expect(applied.localA.snapshots).toContainEqual(cachedB);
     expect(applied.remote.find((row) => row.id === farmA.animalId)).toMatchObject({ fazenda_id: farmA.id, observacoes: noteA, revision: String(revisionA + 1), client_op_id: original.opId, client_tx_id: txId });
     expect(applied.remote.find((row) => row.id === farmB.animalId)).toEqual(initialAnimalB);
     expect(applied.localA.ops).toEqual([]);
     expect(applied.localA.gestures).toContainEqual(expect.objectContaining({ txId, farmId: farmA.id, status: "DONE", syncResult: "APPLIED", audit: expect.arrayContaining([expect.objectContaining({ op_id: original.opId, status: "APPLIED" })]) }));
-    expect(applied.localA.obligations.every((item) => item.fazenda_id === farmA.id)).toBe(true);
+    expect(applied.localA.obligations).toEqual([
+      expect.objectContaining({ fazenda_id: farmA.id, scope: "factual", tables: expect.arrayContaining(["animais"]) }),
+    ]);
+    expect(blockedAnimalRefreshes).toBeGreaterThan(0);
+    expect(applied.localA.snapshots).toContainEqual({ id: farmA.animalId, fazenda_id: farmA.id, revision: revisionA, observacoes: noteA });
+    await pageA.unroute("**/rest/v1/animais?*");
+
+    // Only drain the ACK-created obligation. No explicit pull/mode override:
+    // the worker must select its own non-active-farm reconciliation semantics.
+    checkpoint = "drain-non-active-A";
+    await pageA.evaluate(async (farmId) => {
+      const { drainReconciliationObligations } = await import("/src/lib/offline/syncWorker.ts");
+      await drainReconciliationObligations(farmId);
+    }, farmA.id);
+    const reconciledInactive = await capture("non-active-A-reconciled-with-B-active");
+    expect(reconciledInactive.localA.activeFarm).toBe(farmB.id);
+    expect(reconciledInactive.localA.obligations).toEqual([]);
+    expect(reconciledInactive.localA.ops).toEqual([]);
+    expect(reconciledInactive.localA.gestures).toEqual(applied.localA.gestures);
+    expect(reconciledInactive.localA.snapshots).toContainEqual({ id: farmA.animalId, fazenda_id: farmA.id, revision: revisionA + 1, observacoes: noteA });
+    expect(reconciledInactive.localA.snapshots).toContainEqual(cachedB);
+    expect(reconciledInactive.localB).toEqual(afterBPull.localB);
+    expect(reconciledInactive.remote).toEqual(applied.remote);
+
+    checkpoint = "return-B-to-A";
+    await selectFarm(pageA, farmA, farmB);
 
     await pullFarm(pageA, farmA.id, "replace");
     await pullFarm(pageB, farmB.id, "replace");
@@ -309,7 +353,7 @@ test("F24.4D6: farm switch real preserva pending, identidade e isolamento entre 
     }
     expect(final.remote).toEqual(applied.remote);
     await Promise.all(responseReads);
-    console.log(JSON.stringify({ scenario: "F24.4D6", original, afterReturn: returned.localA.ops[0], responses, final, nonActiveFarmReconciliation: "NOT_TESTED" }));
+    console.log(JSON.stringify({ scenario: "F24.4D6/F24.4F", original, inactivePending, reconciledInactive, responses, final, nonActiveFarmReconciliation: "PROVEN" }));
   } catch (error) {
     await Promise.all(responseReads);
     const diagnostics = await Promise.allSettled([inspectClient(pageA), inspectClient(pageB), ...(databaseConnected ? [readRemote()] : [])]);
