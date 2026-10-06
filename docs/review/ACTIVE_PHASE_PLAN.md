@@ -1,9 +1,9 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-10-05
-Status: **Fase 24 ativa; F24.4A–F24.4E CLOSED / INTEGRATED; F24.4 IN_PROGRESS**
-Próxima fase: **Fase 24 — F24.4F — Integrated Certification (READY_TO_START)**
-Baseline F24.4E integrada / entrada F24.4F: `main@bc84040d17e704b30df4c5f34f9d20337d54a631`; PR #178 `MERGED`.
+Atualizado em: 2026-10-06
+Status: **Fase 24 ativa; F24.4 / F24.4F CLOSED / INTEGRATED; F24.5 IN_PROGRESS; F24.5A READY_FOR_REVIEW**
+Próxima fase: **Fase 24 — F24.5B — Structured Diagnostics (NEXT / READY_TO_START)**
+Baseline operacional pós-F24.4F / base F24.5A–B: `main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`; PR #181 `MERGED`.
 F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29.
 Baseline de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`.
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27.
@@ -23,6 +23,24 @@ e para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
 O backlog F24.1–F24.8, dependências, critérios de entrada/saída e release blockers estão
 registrados nessa baseline. Produção e rollout Sanitário v2 não estão autorizados; o blocker
 stale foi fechado em 05/10/2026 conforme a [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Nenhuma frente posterior deve ser iniciada automaticamente.
+
+## F24.5 — continuidade documental e próxima subfase
+
+F24.4/F24.4F estão CLOSED / INTEGRATED pelo PR #181. A
+[certificação F24.4F](./F24_4F_INTEGRATED_CERTIFICATION.md) preserva a evidência
+local e os resíduos aceitos, sem certificar todos os estados/domínios ou kill físico.
+
+O [inventário F24.5A](./F24_5A_OBSERVABILITY_BASELINE.md) foi revisado:
+`OBSERVABILITY_BASELINE = ESTABLISHED`, `REVIEW_F24_5A = APPROVED` e
+`F24_5A = READY_FOR_REVIEW`; pacote documental `READY_FOR_COMMIT`, sem CLOSED.
+F24.5 permanece IN_PROGRESS. A [abertura lógica F24.5B](./F24_5B_STRUCTURED_DIAGNOSTICS_PLAN.md)
+define G02/G01 como P1 e G06/G08 como P2; G03/G04/G07 pertencem a C e G05 a D.
+Não houve implementação da F24.5B nem criação de store, ID, endpoint ou schema.
+
+Branch de closeout: `codex/f24-5a-doc-closeout`, criada sobre o SHA acima.
+Base Git limpa; pacote documental local ainda não commitado/integrado. Não existe
+SHA pós-F24.5A integrado. Antes de implementar B, revalidar HEAD/origin/main e
+separar o pacote documental de qualquer patch funcional.
 
 ## F24.3 — closeout
 
@@ -81,7 +99,7 @@ Limitações preservadas: `REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`;
 
 ## F24.4E — conflict resolution contract
 
-**Closeout integrado em 05/10/2026:** `F24_4E = CLOSED`, `F24_4E_INTEGRATION = COMPLETE`,
+**HISTORICAL_CORRECT / SUPERSEDED — closeout integrado em 05/10/2026:** `F24_4E = CLOSED`, `F24_4E_INTEGRATION = COMPLETE`,
 PR #178 `MERGED` em `main@bc84040d17e704b30df4c5f34f9d20337d54a631`. Guard Lote→Pasto corrigido por
 sujeito factual na Edge e migration forward-only versionada, sem alterar builder/RLS/CAS.
 Builder 32/32, transporte 13/13, PostgreSQL isolado 58/58 e baseline funcional 5/5 passaram;

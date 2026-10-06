@@ -1,9 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-10-05
-Status: **Fase 24 ativa; F24.4A–F24.4E CLOSED / INTEGRATED; F24.4 IN_PROGRESS; produção não autorizada**
-Próxima fase: **Fase 24 — F24.4F — Integrated Certification (READY_TO_START)**
-Baseline F24.4E integrada / entrada F24.4F: `main@bc84040d17e704b30df4c5f34f9d20337d54a631`; PR #178 `MERGED`.
+Atualizado em: 2026-10-06
+Status: **Fase 24 ativa; F24.4 / F24.4F CLOSED / INTEGRATED; F24.5 IN_PROGRESS; F24.5A READY_FOR_REVIEW; produção não autorizada**
+Próxima fase: **Fase 24 — F24.5B — Structured Diagnostics (NEXT / READY_TO_START)**
+Baseline operacional pós-F24.4F / base F24.5A–B: `main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`; PR #181 `MERGED`.
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -12,7 +12,7 @@ Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27
 F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29
 Baseline auditada de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`
-Decisão: **F24.4A–F24.4E CLOSED / INTEGRATED**
+Decisão: **F24.4A–F24.4F e F24.4 CLOSED / INTEGRATED; F24.5 IN_PROGRESS**
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -23,7 +23,25 @@ Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
-## F24.4E — closeout integrado
+## F24.5A — review e entrada lógica F24.5B
+
+O PR #181 integrou a [F24.4F](./F24_4F_INTEGRATED_CERTIFICATION.md) em 06/10/2026,
+incluindo a correção mínima de reconcile pós-ACK de animais com outra fazenda ativa.
+F24.4/F24.4F estão CLOSED / INTEGRATED no escopo certificado; resíduos físicos e
+transversais permanecem aceitos, sem generalização de garantias.
+
+[F24.5A](./F24_5A_OBSERVABILITY_BASELINE.md): review documental APPROVED,
+baseline estabelecido, fase READY_FOR_REVIEW e pacote READY_FOR_COMMIT, sem CLOSED.
+G01/G06–G08 continuam PARTIAL_COVERAGE, G02–G05 GAP_CONFIRMED e G09/G10 NOT_PROVEN.
+Nenhuma correção funcional foi executada.
+
+[F24.5B](./F24_5B_STRUCTURED_DIAGNOSTICS_PLAN.md) é NEXT / READY_TO_START lógico:
+G02/G01 prioritários, G06/G08 secundários; G03/G04 em C e G05 em D. Preparação em
+`codex/f24-5a-doc-closeout`, baseada em `origin/main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`.
+O pacote documental está local e não commitado: não há baseline integrado pós-A.
+Rebaseline e escopo explícito de implementação são necessários na próxima execução.
+
+## F24.4E — closeout integrado (histórico superseded pela transição acima)
 
 Em 05/10/2026, o PR #178 foi integrado em `main@bc84040d17e704b30df4c5f34f9d20337d54a631`.
 O guard Lote→Pasto foi corrigido por sujeito factual, sem alterar builder/CAS/RLS/`movement_v1`.
