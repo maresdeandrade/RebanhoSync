@@ -1,5 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { db } from "./db";
+import { recordGestureDiagnostic, recordAcknowledgementIfCommitted, recordDrainAttempt,
+  recordDrainFailure, recordDrainCompletion, sanitizeDiagnosticError } from "./syncDiagnostics";
 import { isMovementOperation } from "./movement";
 import { recordMovementResults, reconcileMovementForFarm, hasRejectedMovement } from "./movementReconciliation";
 import { env } from "@/lib/env";
@@ -249,13 +251,16 @@ function deriveReconciliationRequirements(
 async function loadSyncingGestureAndPersistRequirements(
   clientTxId: string,
   requirements: ReconciliationRequirement[],
+  clientOpIds: string[],
 ): Promise<Gesture | undefined> {
   const current = await db.queue_gestures.get(clientTxId);
   if (!current || current.status !== "SYNCING") {
     return undefined;
   }
   if (requirements.length > 0) {
-    await upsertReconciliationObligations(requirements);
+    await upsertReconciliationObligations(requirements.map(entry => ({ ...entry,
+      origins: [{ client_tx_id: clientTxId, client_op_ids: clientOpIds }],
+    })));
   }
   return current;
 }
@@ -554,17 +559,20 @@ export async function drainReconciliationObligations(
 
       const obligations = await listReconciliationObligations(fazendaId);
       for (const obligation of obligations) {
+        await recordDrainAttempt(obligation);
         try {
           await executeReconciliationForScope(obligation);
+          await recordDrainCompletion(obligation);
           await deleteReconciliationObligationIfGenerationMatches(
             obligation.key,
             obligation.generation_id,
           );
         } catch (e: unknown) {
-          const error = e instanceof Error ? e : new Error(String(e));
+          await recordDrainFailure(obligation, e);
+          const error = sanitizeDiagnosticError(e);
           console.warn(
             `[sync-worker] reconciliation drain failed for ${obligation.key}:`,
-            error.message,
+            error.code, error.message,
           );
         }
       }
@@ -962,6 +970,7 @@ async function processSanitarioCanonicalResults(
   const sanitarioV2CutoverRequired =
     deriveSanitarioV2CutoverRequired(matchedForReconcile);
 
+  let ackCommitted = false;
   await db.transaction(
     "rw",
     [
@@ -979,7 +988,9 @@ async function processSanitarioCanonicalResults(
 
       if (sanitarioV2CutoverRequired) {
         await upsertReconciliationObligations([
-          { fazendaId: gesture.fazenda_id, scope: "sanitario-v2" },
+          { fazendaId: gesture.fazenda_id, scope: "sanitario-v2",
+            origins: [{ client_tx_id: gesture.client_tx_id,
+              client_op_ids: matchedForReconcile.map(result => result.op_id) }] },
         ]);
       }
 
@@ -1036,8 +1047,10 @@ async function processSanitarioCanonicalResults(
           operation_results: operationResults,
         });
       }
+      ackCommitted = true;
     },
   );
+  await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
 
   await reconcileSanitarioV2Results(gesture.fazenda_id, matchedForReconcile);
   return true;
@@ -1444,11 +1457,13 @@ async function reconcileGenericOperationResults(
     ]),
   );
 
+  let ackCommitted = false;
   // fallow-ignore-next-line complexity
   await db.transaction("rw", transactionStores, async () => {
     const current = await loadSyncingGestureAndPersistRequirements(
       gesture.client_tx_id,
       reconciliationRequirements,
+      [...appliedOps, ...rejectedOps].map(op => op.client_op_id),
     );
     if (!current) {
       return;
@@ -1523,7 +1538,9 @@ async function reconcileGenericOperationResults(
         plan.audits,
       ),
     });
+    ackCommitted = true;
   });
+  await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
 
   const remoteTables = Array.from(
     new Set(
@@ -1662,6 +1679,10 @@ export async function processGesture(gesture: Gesture) {
       // Gesture is not PENDING (already claimed, terminal, or completed)
       return;
     }
+    await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
+      last_attempt_started_at: new Date().toISOString(),
+      result_received_at: undefined, ack_installed_at: undefined, blocked: undefined,
+    });
 
     // PATCH 2: Revalidate work AFTER successful claim
     const queuedOps = await db.queue_ops
@@ -1671,6 +1692,9 @@ export async function processGesture(gesture: Gesture) {
     const readyOps = queuedOps.filter(
       (op) => op.sync_state !== "REJECTED" && isOperationReadyForSync(op),
     );
+    await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
+      client_op_ids: readyOps.map(op => op.client_op_id),
+    });
 
     if (readyOps.length === 0) {
       const hasDeferredRetry = queuedOps.some(
@@ -1819,6 +1843,12 @@ export async function processGesture(gesture: Gesture) {
     if (!Array.isArray(result.results)) {
       throw new Error("Invalid sync-batch response: results missing");
     }
+    if (result.results.every(row => isRecord(row) && typeof row.op_id === "string" &&
+      ["APPLIED", "APPLIED_ALTERED", "RETRYABLE", "REJECTED", "CONFLICT", "BLOCKED_DEPENDENCY"].includes(String(row.status)))) {
+      await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
+        result_received_at: new Date().toISOString(),
+      });
+    }
     const movementOps = ops.filter(isMovementOperation);
     if (movementOps.length) {
       await recordMovementResults(gesture, movementOps, result.results, ops.length !== movementOps.length);
@@ -1948,6 +1978,7 @@ export async function processGesture(gesture: Gesture) {
         agendaV2: agendaV2Touched,
       });
 
+      let ackCommitted = false;
       await db.transaction(
         "rw",
         [db.queue_gestures, db.queue_ops, db.sync_reconcile_obligations],
@@ -1955,6 +1986,7 @@ export async function processGesture(gesture: Gesture) {
           const current = await loadSyncingGestureAndPersistRequirements(
             gesture.client_tx_id,
             reconciliationRequirements,
+            ops.map(op => op.client_op_id),
           );
           if (!current) {
             return;
@@ -1996,8 +2028,10 @@ export async function processGesture(gesture: Gesture) {
               genericPlan.audits,
             ),
           });
+          ackCommitted = true;
         },
       );
+      await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
 
       if (refreshTables.size > 0) {
         try {
@@ -2117,6 +2151,7 @@ export async function processGesture(gesture: Gesture) {
             (isAgendaClosureOnlyGesture && hasAppliedResults),
         });
 
+      let ackCommitted = false;
       await db.transaction(
         "rw",
         [db.queue_gestures, db.sync_reconcile_obligations],
@@ -2127,7 +2162,10 @@ export async function processGesture(gesture: Gesture) {
           }
           if (rejectionReconciliationRequirements.length > 0) {
             await upsertReconciliationObligations(
-              rejectionReconciliationRequirements,
+              rejectionReconciliationRequirements.map(entry => ({ ...entry,
+                origins: [{ client_tx_id: gesture.client_tx_id,
+                  client_op_ids: rejectedResults.map(result => result.op_id) }],
+              })),
             );
           }
         await db.queue_gestures.update(gesture.client_tx_id, {
@@ -2136,7 +2174,9 @@ export async function processGesture(gesture: Gesture) {
           completed_at: completedAt,
           last_error: rejectionSummary || "TX rejected by sync-batch",
         });
+        ackCommitted = true;
       });
+      await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
       console.warn(
         `[sync-worker] TX ${gesture.client_tx_id} rejected:`,
         rejectedResults.map((r) => ({
@@ -2386,6 +2426,11 @@ export async function processGesture(gesture: Gesture) {
 
     if (isStale) {
       return;
+    }
+    if (isAuthSyncError(error.message)) {
+      await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
+        blocked: { code: "AUTH_UNAVAILABLE", observed_at: new Date().toISOString() },
+      });
     }
 
     await trackPilotMetric({

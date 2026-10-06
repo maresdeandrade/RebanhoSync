@@ -4,6 +4,12 @@ Atualizado em: 2026-10-06
 Tipo: proposta documental de escopo; nenhuma implementação iniciada.
 Status: `F24_5B = NEXT`; `F24_5B = READY_TO_START` lógico.
 
+Nota de continuidade (2026-10-06): a abertura abaixo preserva a proposta e o
+baseline histórico do closeout A. A implementação autorizada de B, baseada no
+merge F24.5A `32f629df9f49c7f1a14253a771c5f206e7b8982d` (PR #182), está registrada
+na [evidência F24.5B](./F24_5B_STRUCTURED_DIAGNOSTICS.md). Os estados e afirmações
+de ausência de implementação abaixo descrevem a abertura, não o patch atual.
+
 ## Decisão e baseline
 
 Tornar reconstruível, com IDs já existentes, a sequência operacional crítica

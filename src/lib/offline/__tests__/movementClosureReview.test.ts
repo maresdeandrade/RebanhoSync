@@ -176,6 +176,11 @@ it("R2 ACK then failed pull then restart then replace B preserves unreconciled A
   await reconcileMovementForFarm(farm);
   expect(await db.queue_ops.get(op.client_op_id)).toBeUndefined();
   expect(await db.sync_reconcile_obligations.count()).toBe(0);
+  const diagnostics = (await db.queue_gestures.get(op.client_tx_id))?.diagnostics;
+  expect(diagnostics?.ack_installed_at).toBeDefined();
+  expect(diagnostics?.reconciliation?.[0]).toMatchObject({
+    key: `${farm}:movement-v1`, scope: "movement-v1", completed_at: expect.any(String),
+  });
 });
 it("R3 an ACK arriving after animal fetch cannot be terminalized by an older pull", async () => {
   const first = await enqueue();

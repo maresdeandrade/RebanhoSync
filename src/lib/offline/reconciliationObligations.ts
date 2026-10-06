@@ -25,6 +25,7 @@ export interface ReconciliationObligationUpsert {
   fazendaId: string;
   scope: ReconciliationScope;
   tables?: string[];
+  origins?: NonNullable<ReconciliationObligation["diagnostics"]>["origins"];
 }
 
 /**
@@ -61,8 +62,58 @@ export async function upsertReconciliationObligations(
       updated_at: now,
     };
 
-    await db.sync_reconcile_obligations.put(obligation);
+    await persistObligationWithDiagnostics(obligation, buildDiagnostics(current, entry));
   }
+}
+
+function buildDiagnostics(current: ReconciliationObligation | undefined, entry: ReconciliationObligationUpsert) {
+  try {
+    const existing = current?.diagnostics;
+    if (existing || entry.origins?.length) {
+      return {
+        ...existing,
+        origins: mergeOrigins(existing?.origins ?? [], entry.origins ?? []),
+      };
+    }
+  } catch {
+    // Only optional metadata construction is best-effort, never the functional shape.
+  }
+}
+
+async function persistObligationWithDiagnostics(
+  obligation: ReconciliationObligation,
+  diagnostics: ReconciliationObligation["diagnostics"],
+) {
+  if (diagnostics) {
+    try {
+      await db.sync_reconcile_obligations.put({ ...obligation, diagnostics });
+      return;
+    } catch (error) {
+      // A smaller record can recover quota/clone failures. Other storage failures
+      // are not attributable to enrichment and must still abort the functional ACK.
+      if (!error || typeof error !== "object" || !("name" in error) ||
+        (error.name !== "QuotaExceededError" && error.name !== "DataCloneError")) throw error;
+    }
+  }
+  // Reuse this ACK's generation and merged tables. If this write also fails,
+  // propagate it: diagnostic failure must never conceal functional failure.
+  await db.sync_reconcile_obligations.put(obligation);
+}
+
+function mergeOrigins(
+  current: NonNullable<ReconciliationObligation["diagnostics"]>["origins"],
+  incoming: NonNullable<ReconciliationObligation["diagnostics"]>["origins"],
+) {
+  const origins = new Map(current.map(origin => [origin.client_tx_id, origin]));
+  for (const origin of incoming) {
+    origins.set(origin.client_tx_id, {
+      client_tx_id: origin.client_tx_id,
+      client_op_ids: Array.from(new Set([
+        ...(origins.get(origin.client_tx_id)?.client_op_ids ?? []), ...origin.client_op_ids,
+      ])).sort(),
+    });
+  }
+  return Array.from(origins.values());
 }
 
 export function listReconciliationObligations(
