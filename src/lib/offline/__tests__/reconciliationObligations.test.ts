@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   activeFarmId: "farm-c3b-active",
-  pullDataForFarm: vi.fn(async () => undefined),
+  pullDataForFarm: vi.fn<typeof import("../pull").pullDataForFarm>(async () => undefined),
   pullInitialData: vi.fn(async () => undefined),
   pullSanitarioAgendaV2: vi.fn(async () => undefined),
   pullSanitarioV2CutoverState: vi.fn(async () => undefined),
@@ -93,6 +93,7 @@ async function clearStores() {
     [
       db.event_eventos,
       db.event_eventos_pesagem,
+      db.state_animais,
       db.queue_gestures,
       db.queue_ops,
       db.sync_reconcile_obligations,
@@ -101,6 +102,7 @@ async function clearStores() {
     async () => {
       await db.event_eventos.clear();
       await db.event_eventos_pesagem.clear();
+      await db.state_animais.clear();
       await db.queue_gestures.clear();
       await db.queue_ops.clear();
       await db.sync_reconcile_obligations.clear();
@@ -286,7 +288,7 @@ describe("sync worker reconciliation drain", () => {
     expect(obligation).toBeDefined();
 
     const [, pulledTables] = vi.mocked(mocks.pullDataForFarm).mock.calls[0];
-    expect(new Set(pulledTables as string[])).toEqual(
+    expect(new Set(pulledTables)).toEqual(
       new Set(obligation?.tables),
     );
     expect(new Set(obligation?.tables)).toEqual(
@@ -302,6 +304,32 @@ describe("sync worker reconciliation drain", () => {
       expect.any(Array),
       { mode: "merge" },
     );
+  });
+
+  it("UPDATE animais APPLIED inclui snapshot CAS na obligation e drena com merge em fazenda nao ativa", async () => {
+    const animalId = "20000000-0000-4000-8000-000000000001";
+    await db.state_animais.put({ id: animalId, fazenda_id: farmId, revision: 7 } as never);
+    await createGesture(farmId, [
+      { table: "animais", action: "UPDATE", record: { id: animalId, observacoes: "updated" } },
+    ], { clientTxId: txId, clientOpIds: [opIds[0]] });
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({
+      results: [{ op_id: opIds[0], status: "APPLIED" }],
+    }), { status: 200 }));
+    // Failure of the immediate post-ACK pull must retain the complete obligation.
+    mocks.pullDataForFarm.mockRejectedValueOnce(new Error("Failed to fetch"));
+
+    await processGesture(await loadGesture());
+
+    expect(await getObligation(farmId, "factual")).toMatchObject({
+      tables: expect.arrayContaining(["animais", "agenda_itens"]),
+    });
+    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
+    expect(await db.queue_ops.toArray()).toEqual([]);
+    mocks.pullDataForFarm.mockClear();
+    await drainReconciliationObligations(farmId);
+    expect(mocks.pullDataForFarm).toHaveBeenCalledWith(farmId,
+      expect.arrayContaining(["animais", "agenda_itens"]), { mode: "merge" });
+    expect(await getObligation(farmId, "factual")).toBeUndefined();
   });
 
   it("falha na escrita da obligation aborta o ACK terminal (secao 17)", async () => {

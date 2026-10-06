@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.app.json",
+  "compilerOptions": {
+    "ignoreDeprecations": "5.0",
+    "types": ["node"],
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["./src/*"],
+      "/src/*": ["./src/*"]
+    }
+  },
+  "include": ["./**/*.ts", "../src/vite-env.d.ts"],
+  "exclude": []
+}
