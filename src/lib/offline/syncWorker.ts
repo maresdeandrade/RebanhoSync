@@ -1,6 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 import { db } from "./db";
-import { recordGestureDiagnostic, recordAcknowledgement, recordDrainAttempt,
+import { recordGestureDiagnostic, recordAcknowledgementIfCommitted, recordDrainAttempt,
   recordDrainFailure, recordDrainCompletion, sanitizeDiagnosticError } from "./syncDiagnostics";
 import { isMovementOperation } from "./movement";
 import { recordMovementResults, reconcileMovementForFarm, hasRejectedMovement } from "./movementReconciliation";
@@ -1050,7 +1050,7 @@ async function processSanitarioCanonicalResults(
       ackCommitted = true;
     },
   );
-  if (ackCommitted) await recordAcknowledgement(gesture.client_tx_id, gesture.fazenda_id);
+  await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
 
   await reconcileSanitarioV2Results(gesture.fazenda_id, matchedForReconcile);
   return true;
@@ -1540,7 +1540,7 @@ async function reconcileGenericOperationResults(
     });
     ackCommitted = true;
   });
-  if (ackCommitted) await recordAcknowledgement(gesture.client_tx_id, gesture.fazenda_id);
+  await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
 
   const remoteTables = Array.from(
     new Set(
@@ -2031,7 +2031,7 @@ export async function processGesture(gesture: Gesture) {
           ackCommitted = true;
         },
       );
-      if (ackCommitted) await recordAcknowledgement(gesture.client_tx_id, gesture.fazenda_id);
+      await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
 
       if (refreshTables.size > 0) {
         try {
@@ -2176,7 +2176,7 @@ export async function processGesture(gesture: Gesture) {
         });
         ackCommitted = true;
       });
-      if (ackCommitted) await recordAcknowledgement(gesture.client_tx_id, gesture.fazenda_id);
+      await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
       console.warn(
         `[sync-worker] TX ${gesture.client_tx_id} rejected:`,
         rejectedResults.map((r) => ({

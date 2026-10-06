@@ -145,6 +145,16 @@ async function loadGesture() {
   return gesture;
 }
 
+async function loadFirstReconciliationLink(tx: string) {
+  return (await db.queue_gestures.get(tx))?.diagnostics?.reconciliation?.[0];
+}
+
+function expectPendingRaceObligation(pending: ReconciliationObligation | undefined, generation: string | undefined) {
+  expect(pending?.generation_id).toBe(generation);
+  expect(pending?.tables).toEqual(expect.arrayContaining(["animais", "eventos_pesagem"]));
+  expect(pending?.diagnostics?.origins).toHaveLength(2);
+}
+
 async function getObligation(
   farm: string,
   scope: "factual" | "sanitario-v2" | "agenda-v2" | "reproduction",
@@ -394,15 +404,13 @@ describe("sync worker reconciliation drain", () => {
     release();
     await draining;
     const pending = await getObligation(farmId, "factual");
-    expect(pending?.generation_id).toBe(generation);
-    expect(pending?.tables).toEqual(expect.arrayContaining(["animais", "eventos_pesagem"]));
-    expect(pending?.diagnostics?.origins).toHaveLength(2);
+    expectPendingRaceObligation(pending, generation);
     expect((await db.queue_gestures.get(newTx))?.diagnostics?.ack_installed_at).toBeDefined();
-    expect((await db.queue_gestures.get(newTx))?.diagnostics?.reconciliation?.[0]?.completed_at).toBeUndefined();
-    expect((await loadGesture()).diagnostics?.reconciliation?.[0]?.completed_at).toBeUndefined();
+    expect((await loadFirstReconciliationLink(newTx))?.completed_at).toBeUndefined();
+    expect((await loadFirstReconciliationLink(txId))?.completed_at).toBeUndefined();
     await drainReconciliationObligations(farmId);
-    expect((await db.queue_gestures.get(newTx))?.diagnostics?.reconciliation?.[0]?.completed_at).toBeDefined();
-    expect((await loadGesture()).diagnostics?.reconciliation?.[0]?.completed_at).toBeDefined();
+    expect((await loadFirstReconciliationLink(newTx))?.completed_at).toBeDefined();
+    expect((await loadFirstReconciliationLink(txId))?.completed_at).toBeDefined();
   });
 
   it("F24.5B diagnostic write failure does not block ACK or obligation deletion", async () => {

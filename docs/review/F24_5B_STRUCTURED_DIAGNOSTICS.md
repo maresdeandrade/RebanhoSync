@@ -204,3 +204,40 @@ Não se alterou nem adicionou teste da lógica de generation/conditional delete.
 `PIPELINE_SAFETY = OK`: falha recuperável exclusiva do enriquecimento não
 derruba ACK; falha da persistência funcional permanece falha. `NEW_STORE = NO`,
 `DEXIE_VERSION_CHANGE = NO`; generation e retry/replay preservados.
+
+## Correção local do CI — PR #183 / Fallow new-only
+
+Baseline: branch codex/f24-5b-structured-diagnostics, HEAD
+`20270ebfa6132f75d0591e107f56ebda4dddb3b4`; origin/main permaneceu em
+`32f629df9f49c7f1a14253a771c5f206e7b8982d`; worktree inicialmente limpa.
+O run 37453525169 falhou no Fallow. O audit local sem base explícita comparou
+HEAD ao upstream da própria branch e analisou zero arquivos; esse resultado
+não foi usado para certificar o PR. A reprodução fixou `FALLOW_AUDIT_BASE=origin/main`.
+
+| Blocker novo confirmado no audit | Correção |
+| --- | --- |
+| upsertReconciliationObligations: complexidade | Extrair construção diagnóstica e persistência com fallback; mesma transação/geração/tabelas e propagação de erros |
+| recordAcknowledgement: callback complexo | Extrair construção do link, preservando a condição de completion por generation |
+| recordDrainCompletion: callback complexo | Extrair predicado equivalente de generation |
+| reconcileGenericOperationResults: complexidade acrescida pelo guard diagnóstico | Encapsular somente o guard pós-commit em recordAcknowledgementIfCommitted; usar chamada simples nos quatro caminhos existentes |
+| Teste G1/G2: callback complexo | Extrair leitura e assertions locais, mantendo cenário e todas as verificações |
+| Drain attempt/failure: clone novo | Unificar apenas a transação diagnóstica e seu guard em updateDrainDiagnostic |
+
+Não houve suppression. Complexity herdada de processSanitarioCanonicalResults,
+callbacks antigos do worker, dependências e clones históricos foi excluída
+pelo próprio new-only e permaneceu fora do patch. Não houve mudança de retry,
+terminalidade, seleção, writers, autorização, stores ou schema Dexie v32.
+
+Validação local após as extrações:
+
+- `FALLOW_AUDIT_BASE=origin/main pnpm exec fallow audit --gate new-only`: exit 0;
+  13 arquivos do delta PR analisados, 11 findings herdados excluídos.
+- `pnpm exec vitest run src/lib/offline/__tests__/reconciliationObligations.test.ts`:
+  29/29 aprovados, incluindo fallback positivo/negativo, clone real e race.
+- ESLint dos quatro TypeScript alterados: exit 0; `git diff --check`: exit 0.
+
+O audit inicial registrou warning de node_modules ausente no snapshot temporário
+usado na atribuição; a reprodução com base explícita identificou os mesmos
+blockers do CI. Não se mudou configuração, threshold ou baseline para ocultá-los.
+Entrega somente local: `PR_183_FIX = READY_FOR_REVIEW`; sem commit/push/merge.
+O run remoto falho não foi reexecutado nesta correção local.

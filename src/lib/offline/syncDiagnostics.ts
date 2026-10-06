@@ -44,12 +44,7 @@ export function recordAcknowledgement(tx: string, farm: string) {
     for (const obligation of obligations) {
       if (!obligation.diagnostics?.origins.some(origin => origin.client_tx_id === tx)) continue;
       const old = links.get(obligation.key);
-      links.set(obligation.key, {
-        key: obligation.key, scope: obligation.scope, generation_id: obligation.generation_id,
-        required_at: old?.required_at ?? now,
-        // A new generation is pending, even if an older generation completed.
-        completed_at: old?.generation_id === obligation.generation_id ? old.completed_at : undefined,
-      });
+      links.set(obligation.key, acknowledgementLink(obligation, old, now));
     }
     await db.queue_gestures.update(tx, { diagnostics: {
       ...gesture.diagnostics, ack_installed_at: now, reconciliation: Array.from(links.values()),
@@ -57,34 +52,57 @@ export function recordAcknowledgement(tx: string, farm: string) {
   }));
 }
 
-export function recordDrainAttempt(snapshot: ReconciliationObligation) {
+type ReconciliationLink = NonNullable<GestureDiagnostics["reconciliation"]>[number];
+
+function acknowledgementLink(obligation: ReconciliationObligation, old: ReconciliationLink | undefined, now: string): ReconciliationLink {
+  return {
+    key: obligation.key, scope: obligation.scope, generation_id: obligation.generation_id,
+    required_at: old?.required_at ?? now,
+    // A new generation is pending, even if an older generation completed.
+    completed_at: old?.generation_id === obligation.generation_id ? old.completed_at : undefined,
+  };
+}
+
+export async function recordAcknowledgementIfCommitted(committed: boolean, tx: string, farm: string) {
+  if (committed) await recordAcknowledgement(tx, farm);
+}
+
+function updateDrainDiagnostic(snapshot: ReconciliationObligation,
+  update: (current: ReconciliationObligation) => Partial<NonNullable<ReconciliationObligation["diagnostics"]>>,
+) {
   return observe(() => db.transaction("rw", db.sync_reconcile_obligations, async () => {
     const current = await db.sync_reconcile_obligations.get(snapshot.key);
     if (!current || current.generation_id !== snapshot.generation_id) return;
     await db.sync_reconcile_obligations.update(snapshot.key, { diagnostics: {
       ...current.diagnostics, origins: current.diagnostics?.origins ?? [],
-      drain_attempts: (current.diagnostics?.drain_attempts ?? 0) + 1,
-      last_attempt_at: new Date().toISOString(),
+      ...update(current),
     } });
   }));
 }
 
-export function recordDrainFailure(snapshot: ReconciliationObligation, error: unknown) {
-  return observe(() => db.transaction("rw", db.sync_reconcile_obligations, async () => {
-    const current = await db.sync_reconcile_obligations.get(snapshot.key);
-    if (!current || current.generation_id !== snapshot.generation_id) return;
-    await db.sync_reconcile_obligations.update(snapshot.key, { diagnostics: {
-      ...current.diagnostics, origins: current.diagnostics?.origins ?? [],
-      last_error_at: new Date().toISOString(), last_error: sanitizeDiagnosticError(error),
-    } });
+export function recordDrainAttempt(snapshot: ReconciliationObligation) {
+  return updateDrainDiagnostic(snapshot, current => ({
+    drain_attempts: (current.diagnostics?.drain_attempts ?? 0) + 1,
+    last_attempt_at: new Date().toISOString(),
   }));
+}
+
+export function recordDrainFailure(snapshot: ReconciliationObligation, error: unknown) {
+  return updateDrainDiagnostic(snapshot, () => ({
+    last_error_at: new Date().toISOString(), last_error: sanitizeDiagnosticError(error),
+  }));
+}
+
+function completionGenerationMatches(current: ReconciliationObligation | undefined,
+  snapshot: ReconciliationObligation, deletedByCommittedInstallation: boolean) {
+  return current ? current.generation_id === snapshot.generation_id : deletedByCommittedInstallation;
 }
 
 export function recordDrainCompletion(snapshot: ReconciliationObligation, deletedByCommittedInstallation = false) {
   return observe(() => db.transaction("rw", db.queue_gestures, db.sync_reconcile_obligations, async () => {
     const current = await db.sync_reconcile_obligations.get(snapshot.key);
     // Conservative coverage: a generation changed during pull is never declared complete.
-    if (current ? current.generation_id !== snapshot.generation_id : !deletedByCommittedInstallation) return;
+    if (!completionGenerationMatches(current, snapshot, deletedByCommittedInstallation)) return;
     for (const origin of snapshot.diagnostics?.origins ?? []) {
       const gesture = await db.queue_gestures.get(origin.client_tx_id);
       if (!gesture || gesture.fazenda_id !== snapshot.fazenda_id) continue;
