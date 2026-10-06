@@ -72,6 +72,7 @@ import {
   stopSyncWorker,
 } from "../syncWorker";
 import type { ReconciliationObligation } from "../reconciliationTypes";
+import { exportSyncDiagnostics } from "../rejections";
 
 const ownershipSession = (userId: string) =>
   ({ user: { id: userId } }) as Parameters<
@@ -306,7 +307,227 @@ describe("sync worker reconciliation drain", () => {
     );
   });
 
+  it("F24.5B distinguishes persisted attempt, received result and committed ACK", async () => {
+    await seedWeightGesture();
+    let releaseResponse!: (response: Response) => void;
+    vi.mocked(fetch).mockImplementationOnce(() => new Promise(resolve => { releaseResponse = resolve; }));
+    const processing = processGesture(await loadGesture());
+    await vi.waitFor(async () => {
+      expect((await loadGesture()).diagnostics?.last_attempt_started_at).toBeDefined();
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+    expect((await loadGesture()).diagnostics?.result_received_at).toBeUndefined();
+    expect((await loadGesture()).diagnostics?.ack_installed_at).toBeUndefined();
+    const remove = db.queue_ops.bulkDelete.bind(db.queue_ops);
+    vi.spyOn(db.queue_ops, "bulkDelete").mockImplementationOnce(async ids => {
+      const diagnostic = (await loadGesture()).diagnostics;
+      expect(diagnostic?.result_received_at).toBeDefined();
+      expect(diagnostic?.ack_installed_at).toBeUndefined();
+      return remove(ids);
+    });
+    releaseResponse(appliedResponse());
+    await processing;
+    const gesture = await loadGesture();
+    const obligation = await getObligation(farmId, "factual");
+    expect(gesture.diagnostics).toMatchObject({
+      client_op_ids: opIds, ack_installed_at: expect.any(String),
+      reconciliation: [{ key: obligation?.key, scope: "factual", generation_id: obligation?.generation_id }],
+    });
+    expect(obligation?.diagnostics?.origins).toEqual([{ client_tx_id: txId, client_op_ids: opIds }]);
+    expect(gesture.retry_count).toBeUndefined();
+  });
+
+  it("F24.5B never records ACK when the local ACK transaction aborts", async () => {
+    await seedWeightGesture();
+    vi.mocked(fetch).mockResolvedValue(appliedResponse());
+    vi.spyOn(db.sync_reconcile_obligations, "put").mockRejectedValueOnce(new Error("injected"));
+    await processGesture(await loadGesture());
+    expect((await loadGesture()).diagnostics?.result_received_at).toBeDefined();
+    expect((await loadGesture()).diagnostics?.ack_installed_at).toBeUndefined();
+    expect(await db.queue_ops.count()).toBe(2);
+  });
+
+  it("F24.5B persists sanitized drain failure through close/reopen of the same Dexie", async () => {
+    await seedWeightGesture();
+    vi.mocked(fetch).mockResolvedValue(appliedResponse());
+    await processGesture(await loadGesture());
+    mocks.pullDataForFarm.mockRejectedValueOnce(new Error(
+      "Failed to fetch https://user:password@example.test?token=private Authorization: Bearer secret cookie=session record=payload",
+    ));
+    await drainReconciliationObligations(farmId);
+    db.close();
+    await db.open();
+    const obligation = await getObligation(farmId, "factual");
+    expect(obligation?.diagnostics).toMatchObject({ drain_attempts: 1,
+      last_attempt_at: expect.any(String), last_error_at: expect.any(String),
+      last_error: { code: "NETWORK_FAILURE", message: "Falha de rede." } });
+    expect(JSON.stringify(obligation?.diagnostics)).not.toMatch(/password|private|secret|session|payload/);
+    expect((await loadGesture()).diagnostics?.ack_installed_at).toBeDefined();
+    expect((await loadGesture()).diagnostics?.reconciliation?.[0].completed_at).toBeUndefined();
+    await drainReconciliationObligations(farmId);
+    expect(await getObligation(farmId, "factual")).toBeUndefined();
+    db.close();
+    await db.open();
+    expect((await loadGesture()).diagnostics?.reconciliation?.[0].completed_at).toBeDefined();
+  });
+
+  it("F24.5B generation race retains all origins/tables without premature completion", async () => {
+    await seedWeightGesture();
+    vi.mocked(fetch).mockResolvedValue(appliedResponse());
+    await processGesture(await loadGesture());
+    let release!: () => void;
+    mocks.pullDataForFarm.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+    const draining = drainReconciliationObligations(farmId);
+    await vi.waitFor(() => expect(release).toBeDefined());
+    const newTx = "50000000-0000-4000-8000-000000000002";
+    const newOp = "60000000-0000-4000-8000-000000000003";
+    const animalId = "20000000-0000-4000-8000-000000000002";
+    await db.state_animais.put({ id: animalId, fazenda_id: farmId, revision: 7 } as never);
+    await createGesture(farmId, [{ table: "animais", action: "UPDATE",
+      record: { id: animalId, observacoes: "updated" } }],
+    { clientTxId: newTx, clientOpIds: [newOp] });
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({
+      results: [{ op_id: newOp, status: "APPLIED" }],
+    }), { status: 200 }));
+    await processGesture((await db.queue_gestures.get(newTx))!);
+    const generation = (await getObligation(farmId, "factual"))?.generation_id;
+    release();
+    await draining;
+    const pending = await getObligation(farmId, "factual");
+    expect(pending?.generation_id).toBe(generation);
+    expect(pending?.tables).toEqual(expect.arrayContaining(["animais", "eventos_pesagem"]));
+    expect(pending?.diagnostics?.origins).toHaveLength(2);
+    expect((await db.queue_gestures.get(newTx))?.diagnostics?.ack_installed_at).toBeDefined();
+    expect((await db.queue_gestures.get(newTx))?.diagnostics?.reconciliation?.[0]?.completed_at).toBeUndefined();
+    expect((await loadGesture()).diagnostics?.reconciliation?.[0]?.completed_at).toBeUndefined();
+    await drainReconciliationObligations(farmId);
+    expect((await db.queue_gestures.get(newTx))?.diagnostics?.reconciliation?.[0]?.completed_at).toBeDefined();
+    expect((await loadGesture()).diagnostics?.reconciliation?.[0]?.completed_at).toBeDefined();
+  });
+
+  it("F24.5B diagnostic write failure does not block ACK or obligation deletion", async () => {
+    await seedWeightGesture();
+    vi.mocked(fetch).mockResolvedValue(appliedResponse());
+    const update = db.queue_gestures.update.bind(db.queue_gestures);
+    vi.spyOn(db.queue_gestures, "update").mockImplementation((key, changes) => {
+      if ("diagnostics" in changes) return Promise.reject(new Error("injected diagnostic storage failure")) as never;
+      return update(key, changes);
+    });
+    await processGesture(await loadGesture());
+    expect((await loadGesture()).status).toBe("DONE");
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await getObligation(farmId, "factual")).toBeDefined();
+    await drainReconciliationObligations(farmId);
+    expect(await getObligation(farmId, "factual")).toBeUndefined();
+  });
+
+  it.each([false, true])("F24.5B enriched obligation quota failure preserves functional ACK (existing=%s)", async existing => {
+    if (existing) await upsertReconciliationObligations([{ fazendaId: farmId,
+      scope: "factual", tables: ["animais"],
+      origins: [{ client_tx_id: "previous-tx", client_op_ids: ["previous-op"] }] }]);
+    const previous = await getObligation(farmId, "factual");
+    await seedWeightGesture();
+    vi.mocked(fetch).mockResolvedValue(appliedResponse());
+    const put = db.sync_reconcile_obligations.put.bind(db.sync_reconcile_obligations);
+    const attempted: ReconciliationObligation[] = [];
+    vi.spyOn(db.sync_reconcile_obligations, "put").mockImplementation(value => {
+      attempted.push(structuredClone(value));
+      if (value.diagnostics) return Promise.reject(new DOMException(
+        "Only the enriched record exceeds the available quota", "QuotaExceededError",
+      )) as never;
+      return put(value);
+    });
+
+    await processGesture(await loadGesture());
+
+    expect(attempted).toHaveLength(2);
+    const [enriched, minimal] = attempted;
+    expect(enriched.diagnostics?.origins).toContainEqual({ client_tx_id: txId, client_op_ids: opIds });
+    expect(minimal).toEqual({ ...enriched, diagnostics: undefined });
+    expect(minimal).not.toHaveProperty("diagnostics");
+    expect(minimal.generation_id).toBe(enriched.generation_id);
+    if (previous) expect(minimal.generation_id).not.toBe(previous.generation_id);
+    const persisted = await getObligation(farmId, "factual");
+    expect(persisted).toEqual(minimal);
+    expect(persisted?.tables).toEqual(expect.arrayContaining([
+      "eventos", "eventos_pesagem", ...(existing ? ["animais"] : []),
+    ]));
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await loadGesture()).toMatchObject({ status: "DONE", sync_result: "APPLIED" });
+    expect((await loadGesture()).retry_count ?? 0).toBe(0);
+    expect((await loadGesture()).next_attempt_at).toBeUndefined();
+  });
+
+  it("F24.5B functional fallback failure still aborts ACK safely", async () => {
+    await seedWeightGesture();
+    vi.mocked(fetch).mockResolvedValue(appliedResponse());
+    const shapes: boolean[] = [];
+    vi.spyOn(db.sync_reconcile_obligations, "put").mockImplementation(value => {
+      shapes.push(Boolean(value.diagnostics));
+      return Promise.reject(new DOMException("Storage quota unavailable", "QuotaExceededError")) as never;
+    });
+
+    await processGesture(await loadGesture());
+
+    expect(shapes).toEqual([true, false]);
+    expect(await getObligation(farmId, "factual")).toBeUndefined();
+    expect(await db.queue_ops.count()).toBe(2);
+    expect((await loadGesture()).status).not.toBe("DONE");
+    expect((await loadGesture()).diagnostics?.ack_installed_at).toBeUndefined();
+    expect((await loadGesture()).retry_count).toBe(1);
+  });
+
+  it("F24.5B recovers an actual Dexie diagnostic clone error inside the ACK transaction", async () => {
+    await seedWeightGesture();
+    vi.mocked(fetch).mockResolvedValue(appliedResponse());
+    const put = db.sync_reconcile_obligations.put.bind(db.sync_reconcile_obligations);
+    vi.spyOn(db.sync_reconcile_obligations, "put").mockImplementation(value =>
+      put(value.diagnostics ? { ...value, diagnostics: {
+        ...value.diagnostics, nonCloneable: () => undefined,
+      } } as ReconciliationObligation : value));
+
+    await processGesture(await loadGesture());
+
+    expect(await loadGesture()).toMatchObject({ status: "DONE", sync_result: "APPLIED" });
+    expect((await loadGesture()).retry_count ?? 0).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await getObligation(farmId, "factual")).toBeDefined();
+    expect((await getObligation(farmId, "factual"))?.diagnostics).toBeUndefined();
+  });
+
+  it("F24.5B legacy obligation and gesture without metadata remain valid", async () => {
+    await seedWeightGesture();
+    expect((await loadGesture()).diagnostics).toBeUndefined();
+    await upsertReconciliationObligations([{ fazendaId: farmId, scope: "factual", tables: ["eventos"] }]);
+    await drainReconciliationObligations(farmId);
+    expect(await getObligation(farmId, "factual")).toBeUndefined();
+    expect((await loadGesture()).diagnostics).toBeUndefined();
+  });
+
+  it("F24.5B exports only requested farm and refuses incompatible ownership", async () => {
+    await seedWeightGesture();
+    vi.mocked(fetch).mockResolvedValue(appliedResponse());
+    await processGesture(await loadGesture());
+    await db.queue_gestures.put({ ...(await loadGesture()), client_tx_id: "other-tx", fazenda_id: otherFarmId });
+    const { blob } = await exportSyncDiagnostics(farmId);
+    const text = await blob.text();
+    const data = JSON.parse(text);
+    expect(data.baseline).toBe("UNKNOWN");
+    expect(data.gestures).toHaveLength(1);
+    expect(data.obligations).toHaveLength(1);
+    expect(text).not.toMatch(/other-tx|token-c3b|before_snapshot|pesoKg/);
+    // Use the actual persisted singleton key, without adopting any pending work.
+    await db.local_ownership.toCollection().modify({ owner_user_id: "different-owner" });
+    await expect(exportSyncDiagnostics(farmId)).rejects.toThrow();
+    expect((await loadGesture()).status).toBe("DONE");
+  });
+
   it("UPDATE animais APPLIED inclui snapshot CAS na obligation e drena com merge em fazenda nao ativa", async () => {
+    mocks.activeFarmId = otherFarmId;
+    const otherTx = "other-farm-pending";
+    await db.queue_gestures.put({ client_tx_id: otherTx, fazenda_id: otherFarmId,
+      client_id: "other-client", status: "PENDING", created_at: new Date().toISOString() });
+    const otherBefore = await db.queue_gestures.get(otherTx);
     const animalId = "20000000-0000-4000-8000-000000000001";
     await db.state_animais.put({ id: animalId, fazenda_id: farmId, revision: 7 } as never);
     await createGesture(farmId, [
@@ -330,6 +551,8 @@ describe("sync worker reconciliation drain", () => {
     expect(mocks.pullDataForFarm).toHaveBeenCalledWith(farmId,
       expect.arrayContaining(["animais", "agenda_itens"]), { mode: "merge" });
     expect(await getObligation(farmId, "factual")).toBeUndefined();
+    expect((await loadGesture()).diagnostics?.reconciliation?.[0].completed_at).toBeDefined();
+    expect(await db.queue_gestures.get(otherTx)).toEqual(otherBefore);
   });
 
   it("falha na escrita da obligation aborta o ACK terminal (secao 17)", async () => {

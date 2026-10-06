@@ -177,6 +177,7 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
 
     expect(vi.mocked(supabase.auth.refreshSession)).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
+    expect((await loadGesture(txId)).diagnostics).toBeUndefined();
     expect(await db.queue_gestures.get(txId)).toMatchObject({
       status: "PENDING",
     });
@@ -268,6 +269,10 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
     });
     expect(gesture?.retry_count ?? 0).toBe(0);
     expect(gesture?.last_error?.toLowerCase()).toContain("http 401");
+    expect(gesture?.diagnostics?.blocked).toMatchObject({
+      code: "AUTH_UNAVAILABLE", observed_at: expect.any(String),
+    });
+    expect(gesture?.diagnostics?.ack_installed_at).toBeUndefined();
     expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(
       1,
     );

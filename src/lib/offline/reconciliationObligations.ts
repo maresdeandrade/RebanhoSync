@@ -25,6 +25,7 @@ export interface ReconciliationObligationUpsert {
   fazendaId: string;
   scope: ReconciliationScope;
   tables?: string[];
+  origins?: NonNullable<ReconciliationObligation["diagnostics"]>["origins"];
 }
 
 /**
@@ -61,8 +62,48 @@ export async function upsertReconciliationObligations(
       updated_at: now,
     };
 
+    let diagnostics: ReconciliationObligation["diagnostics"];
+    try {
+      if (current?.diagnostics || entry.origins?.length) {
+        diagnostics = {
+          ...current?.diagnostics,
+          origins: mergeOrigins(current?.diagnostics?.origins ?? [], entry.origins ?? []),
+        };
+      }
+    } catch {
+      // Only optional metadata construction is best-effort, never the functional shape.
+    }
+    if (diagnostics) {
+      try {
+        await db.sync_reconcile_obligations.put({ ...obligation, diagnostics });
+        continue;
+      } catch (error) {
+        // A smaller record can recover quota/clone failures. Other storage failures
+        // are not attributable to enrichment and must still abort the functional ACK.
+        if (!error || typeof error !== "object" || !("name" in error) ||
+          (error.name !== "QuotaExceededError" && error.name !== "DataCloneError")) throw error;
+      }
+    }
+    // Reuse this ACK's generation and merged tables. If this write also fails,
+    // propagate it: diagnostic failure must never conceal functional failure.
     await db.sync_reconcile_obligations.put(obligation);
   }
+}
+
+function mergeOrigins(
+  current: NonNullable<ReconciliationObligation["diagnostics"]>["origins"],
+  incoming: NonNullable<ReconciliationObligation["diagnostics"]>["origins"],
+) {
+  const origins = new Map(current.map(origin => [origin.client_tx_id, origin]));
+  for (const origin of incoming) {
+    origins.set(origin.client_tx_id, {
+      client_tx_id: origin.client_tx_id,
+      client_op_ids: Array.from(new Set([
+        ...(origins.get(origin.client_tx_id)?.client_op_ids ?? []), ...origin.client_op_ids,
+      ])).sort(),
+    });
+  }
+  return Array.from(origins.values());
 }
 
 export function listReconciliationObligations(

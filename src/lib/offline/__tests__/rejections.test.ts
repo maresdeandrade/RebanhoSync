@@ -182,7 +182,7 @@ describe("rejections module", () => {
       expect(data.schema_version).toBe(1);
       expect(data.fazenda_id).toBe(FARM_A);
       expect(data.count).toBe(2);
-      expect(data.baseline).toBe("d0278ce");
+      expect(data.baseline).toBe("UNKNOWN");
       expect(data.exported_at).toBeDefined();
       expect(data.rejections).toHaveLength(2);
       expect(data.rejections[0]).toHaveProperty("reason_code");

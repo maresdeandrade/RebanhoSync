@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { pullDataForFarm } from "./pull";
 import { isMovementOperation } from "./movement";
 import { upsertReconciliationObligations } from "./reconciliationObligations";
+import { recordAcknowledgement, recordDrainCompletion } from "./syncDiagnostics";
 import type { Gesture, Operation, SyncOperationResult } from "./types";
 
 function assertMovementResultIdentity(
@@ -338,7 +339,10 @@ export async function recordMovementResults(
       for (const op of movement)
         await recordMovementResult(gesture, op, results, audit);
       await upsertReconciliationObligations([
-        { fazendaId: gesture.fazenda_id, scope: "movement-v1" },
+        { fazendaId: gesture.fazenda_id, scope: "movement-v1",
+          origins: [{ client_tx_id: gesture.client_tx_id,
+            client_op_ids: movement.filter(op => results.some(result => result.op_id === op.client_op_id))
+              .map(op => op.client_op_id) }] },
       ]);
       await db.queue_gestures.update(gesture.client_tx_id, {
         status: keepSyncing ? "SYNCING" : "PENDING",
@@ -346,6 +350,7 @@ export async function recordMovementResults(
       });
     },
   );
+  await recordAcknowledgement(gesture.client_tx_id, gesture.fazenda_id);
   return true;
 }
 
@@ -453,6 +458,7 @@ export async function reconcileMovementForFarm(farm: string) {
       ids: snapshot.ops.map((op) => String(op.record.event_id)),
     },
   };
+  let deletedByInstallation = false;
   await pullDataForFarm(farm, ["animais", "eventos", "eventos_movimentacao"], {
     mode: "merge",
     observations,
@@ -508,12 +514,17 @@ export async function reconcileMovementForFarm(farm: string) {
           if (
             snapshot.obligation &&
             obligation?.generation_id === snapshot.obligation.generation_id
-          )
+          ) {
             await db.sync_reconcile_obligations.delete(obligation.key);
+            deletedByInstallation = true;
+          }
         }
       },
     },
   });
+  // The pull promise resolves only after the local installation has committed.
+  if (deletedByInstallation && snapshot.obligation)
+    await recordDrainCompletion(snapshot.obligation, true);
   if (
     (await db.queue_ops.toArray()).some(
       (op) => isMovementOperation(op) && op.record.fazenda_id === farm,

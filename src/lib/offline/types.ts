@@ -1885,6 +1885,7 @@ export interface EventoComercial {
 }
 
 export interface Gesture {
+  diagnostics?: import("./reconciliationTypes").GestureDiagnostics;
   client_tx_id: string;
   fazenda_id: string;
   client_id: string;
