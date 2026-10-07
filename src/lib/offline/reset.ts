@@ -26,6 +26,7 @@ const FARM_SCOPED_TABLES = [
   db.queue_ops,
   db.queue_rejections,
   db.metrics_events,
+  db.telemetry_flush_cursors,
 ] as const;
 
 export async function resetOfflineFarmData(fazendaId: string) {

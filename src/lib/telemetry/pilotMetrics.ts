@@ -7,6 +7,7 @@ import type {
   PilotMetricStatus,
 } from "@/lib/offline/types";
 import { supabase } from "@/lib/supabase";
+import { readTelemetryFlushCursor, writeTelemetryFlushCursor } from "./telemetryFlushCursor";
 
 export interface TrackPilotMetricInput {
   fazendaId: string | null | undefined;
@@ -42,45 +43,6 @@ export interface PilotMetricsSummary {
 
 const TELEMETRY_FLUSH_BATCH_SIZE = 100;
 const TELEMETRY_REQUEST_TIMEOUT_MS = 15_000;
-const TELEMETRY_FLUSH_CURSOR_PREFIX = "rebanhosync:telemetry-flush:";
-
-interface TelemetryFlushCursor {
-  createdAt: string;
-  idsAtCursor: string[];
-}
-
-function getTelemetryFlushCursorKey(fazendaId: string) {
-  return `${TELEMETRY_FLUSH_CURSOR_PREFIX}${fazendaId}`;
-}
-
-function readTelemetryFlushCursor(fazendaId: string): TelemetryFlushCursor | null {
-  if (typeof localStorage === "undefined") return null;
-  const raw = localStorage.getItem(getTelemetryFlushCursorKey(fazendaId));
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<TelemetryFlushCursor>;
-    if (
-      typeof parsed.createdAt === "string" &&
-      Array.isArray(parsed.idsAtCursor) &&
-      parsed.idsAtCursor.every((value) => typeof value === "string")
-    ) {
-      return {
-        createdAt: parsed.createdAt,
-        idsAtCursor: parsed.idsAtCursor,
-      };
-    }
-  } catch {
-    // Ignore malformed local cursor and rebuild from the next successful flush.
-  }
-
-  return null;
-}
-
-function writeTelemetryFlushCursor(fazendaId: string, cursor: TelemetryFlushCursor) {
-  if (typeof localStorage === "undefined") return;
-  localStorage.setItem(getTelemetryFlushCursorKey(fazendaId), JSON.stringify(cursor));
-}
 
 async function getTelemetryAccessToken(): Promise<string | null> {
   const {
@@ -105,24 +67,24 @@ async function getTelemetryAccessToken(): Promise<string | null> {
 }
 
 async function loadTelemetryBatch(fazendaId: string): Promise<PilotMetricEvent[]> {
-  const cursor = readTelemetryFlushCursor(fazendaId);
+  const cursor = await readTelemetryFlushCursor(fazendaId);
   const collection = cursor
     ? db.metrics_events
         .where("[fazenda_id+created_at]")
-        .between([fazendaId, cursor.createdAt], [fazendaId, "\uffff"], true, true)
+        .between([fazendaId, cursor.created_at], [fazendaId, "\uffff"], true, true)
     : db.metrics_events
         .where("[fazenda_id+created_at]")
         .between([fazendaId, ""], [fazendaId, "\uffff"], true, true);
 
   const rows = await collection
-    .limit(TELEMETRY_FLUSH_BATCH_SIZE + (cursor?.idsAtCursor.length ?? 0) + 5)
+    .limit(TELEMETRY_FLUSH_BATCH_SIZE + (cursor?.ids_at_cursor.length ?? 0) + 5)
     .toArray();
 
   const filteredRows = cursor
     ? rows.filter(
         (event) =>
-          event.created_at !== cursor.createdAt ||
-          !cursor.idsAtCursor.includes(event.id),
+          event.created_at !== cursor.created_at ||
+          !cursor.ids_at_cursor.includes(event.id),
       )
     : rows;
 
@@ -185,18 +147,9 @@ async function flushTelemetryForFarm(fazendaId: string): Promise<number> {
     .filter((event) => event.created_at === lastCreatedAt)
     .map((event) => event.id);
 
-  writeTelemetryFlushCursor(fazendaId, {
-    createdAt: lastCreatedAt,
-    idsAtCursor: mergeConfirmedCursorIds(readTelemetryFlushCursor(fazendaId), lastCreatedAt, idsAtCursor),
-  });
+  await writeTelemetryFlushCursor(fazendaId, lastCreatedAt, idsAtCursor);
 
   return pendingEvents.length;
-}
-
-function mergeConfirmedCursorIds(previous: TelemetryFlushCursor | null, createdAt: string, ids: string[]) {
-  return previous?.createdAt === createdAt
-    ? Array.from(new Set([...previous.idsAtCursor, ...ids]))
-    : ids;
 }
 
 export async function trackPilotMetric(

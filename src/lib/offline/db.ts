@@ -1,4 +1,5 @@
 import Dexie, { type Table } from "dexie";
+import type { TelemetryFlushCursor } from "./types";
 import {
   type AgendaItem,
   type AnimaisSociedade,
@@ -131,6 +132,7 @@ export class OfflineDB extends Dexie {
   sync_reconcile_obligations!: Table<ReconciliationObligation, string>;
   sync_sanitario_v2_cutovers!: Table<SanitarioV2CutoverManifest, string>;
   metrics_events!: Table<PilotMetricEvent, string>;
+  telemetry_flush_cursors!: Table<TelemetryFlushCursor, string>;
   catalog_produtos_veterinarios!: Table<ProdutoVeterinarioCatalogEntry, string>;
   catalog_protocolos_oficiais!: Table<CatalogoProtocoloOficial, string>;
   catalog_protocolos_oficiais_itens!: Table<
@@ -859,6 +861,8 @@ export class OfflineDB extends Dexie {
         if (!remaining) await tx.table("queue_gestures").update(event.client_tx_id, { status: "REJECTED", sync_result: "REJECTED", last_error: "LEGACY_ANIMAL_MOVEMENT_INVALIDATED" });
       }
     });
+    // F24.5E1: additive delivery checkpoint; never backfill or infer historical ACKs.
+    this.version(33).stores({ telemetry_flush_cursors: "fazenda_id" });
   }
 }
 
