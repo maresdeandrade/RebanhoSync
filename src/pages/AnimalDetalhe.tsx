@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
+import { getAgendaScheduleBucket, type AgendaScheduleBucket } from "@/lib/agenda/groupOrdering";
 import {
   Activity,
   AlertTriangle,
@@ -267,6 +268,32 @@ function formatCivilDate(value: string | null | undefined) {
   const [year, month, day] = value.split("-");
   return `${day}/${month}/${year}`;
 }
+
+const HISTORY_FILTERS = [
+  { label: "Todos", domains: [], empty: "Nenhum evento registrado." },
+  { label: "Pesagem", domains: ["pesagem"], empty: "Nenhum evento de pesagem registrado." },
+  { label: "Reprodução", domains: ["reproducao"], empty: "Nenhum evento de reprodução registrado." },
+  { label: "Sanidade", domains: ["sanitario", "alerta_sanitario", "conformidade"], empty: "Nenhum evento de sanidade registrado." },
+  { label: "Movimentação", domains: ["movimentacao"], empty: "Nenhum evento de movimentação registrado." },
+  { label: "Comercial", domains: ["comercial"], empty: "Nenhum evento comercial registrado." },
+  { label: "ECC", domains: ["ecc"], empty: "Nenhum evento de ECC registrado." },
+  { label: "Outros", domains: [], empty: "Nenhum evento de outros domínios registrado." },
+];
+
+function matchesHistoryFilter(domain: string, label: string) {
+  if (label === "Todos") return true;
+  if (label === "Outros") {
+    return !HISTORY_FILTERS.some((filter) => filter.domains.includes(domain));
+  }
+  return HISTORY_FILTERS.find((filter) => filter.label === label)?.domains.includes(domain) ?? false;
+}
+
+const AGENDA_SECTIONS: Array<{ bucket: AgendaScheduleBucket; label: string }> = [
+  { bucket: "overdue", label: "Atrasadas" },
+  { bucket: "today", label: "Hoje" },
+  { bucket: "future", label: "Próximas" },
+  { bucket: "closed", label: "Encerradas" },
+];
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "-";
@@ -1008,18 +1035,17 @@ const AnimalDetalhe = () => {
       .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at));
   }, [animal?.id, fazendaId]);
 
-  const proximaAgenda = useMemo(() => {
-    const hoje = new Date().toISOString().split("T")[0];
-
-    return (
-      agenda?.find(
-        (entry) =>
-          entry.item.status === "agendado" &&
-          entry.item.data_prevista >= hoje &&
-          (!entry.item.deleted_at || entry.item.deleted_at === null),
-      ) ?? null
-    );
-  }, [agenda]);
+  const [historyFilter, setHistoryFilter] = useState("Todos");
+  const filteredEvents = eventos?.filter((event) => matchesHistoryFilter(event.dominio, historyFilter));
+  const agendaReferenceDate = new Date();
+  const agendaSections = AGENDA_SECTIONS.map((section) => ({
+    ...section,
+    entries: agenda?.filter((entry) => getAgendaScheduleBucket(entry.item, agendaReferenceDate) === section.bucket)
+      .sort((left, right) => left.item.data_prevista.localeCompare(right.item.data_prevista)) ?? [],
+  }));
+  const overdueCount = agendaSections[0].entries.length;
+  const prioritySection = agendaSections.find((section) => section.bucket !== "closed" && section.entries.length > 0);
+  const proximaAgenda = prioritySection?.entries[0] ?? null;
 
   const contraparte = useLiveQuery(async () => {
     if (!sociedadeAtiva?.contraparte_id || !fazendaId) return null;
@@ -2034,19 +2060,22 @@ const AnimalDetalhe = () => {
         <Card className="col-span-2 border-border/70 bg-card shadow-none sm:col-span-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs uppercase text-muted-foreground">
-              Próxima tarefa prevista
+              Agenda
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="break-words text-xl font-semibold tracking-tight">
-              {proximaAgenda
-                ? formatDate(proximaAgenda.item.data_prevista)
-                : "Sem tarefa futura encontrada"}
+              {agenda === undefined ? "Carregando Agenda…"
+                : overdueCount > 0 ? `${overdueCount} ${overdueCount === 1 ? "tarefa atrasada" : "tarefas atrasadas"}`
+                : prioritySection?.bucket === "today" ? "Hoje"
+                : proximaAgenda ? `Próxima: ${formatCivilDate(proximaAgenda.item.data_prevista)}`
+                : "Sem tarefa pendente na Agenda"}
             </div>
             {proximaAgenda ? (
               <div className="mt-3 space-y-2">
                 <p className="text-sm font-medium text-foreground">
                   {formatAgendaTipoLabel(proximaAgenda.item.tipo)}
+                  {overdueCount > 0 ? ` · ${formatCivilDate(proximaAgenda.item.data_prevista)}` : ""}
                 </p>
                 {proximaAgenda.scheduleLabel ? (
                   <p className="text-xs text-muted-foreground">
@@ -2863,18 +2892,34 @@ const AnimalDetalhe = () => {
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-6">
+          <div role="group" aria-label="Filtrar histórico por domínio" className="mb-4 flex flex-wrap gap-2">
+            {HISTORY_FILTERS.map((filter) => (
+              <Button
+                key={filter.label}
+                size="sm"
+                variant={historyFilter === filter.label ? "secondary" : "outline"}
+                className="aria-pressed:border-primary aria-pressed:bg-primary/10"
+                aria-pressed={historyFilter === filter.label}
+                onClick={() => setHistoryFilter(filter.label)}
+              >
+                {filter.label} ({eventos === undefined ? "…" : eventos.filter((event) => matchesHistoryFilter(event.dominio, filter.label)).length})
+              </Button>
+            ))}
+          </div>
           <div className="space-y-3">
-            {eventos?.length === 0 ? (
+            {eventos === undefined ? (
+              <p role="status" className="py-4 text-muted-foreground">Carregando histórico…</p>
+            ) : filteredEvents?.length === 0 ? (
               <p className="py-4 text-muted-foreground">
-                Nenhum evento registrado.
+                {HISTORY_FILTERS.find((filter) => filter.label === historyFilter)?.empty}
               </p>
             ) : (
-              eventos?.map((evt) => (
+              filteredEvents?.map((evt) => (
                 <article
                   key={evt.id}
-                  className="rounded-xl border border-border/70 bg-background/95 p-4 shadow-none"
+                  className="min-w-0 break-words rounded-xl border border-border/70 bg-background/95 p-4 shadow-none"
                 >
-                  <div className="mb-1 flex items-start justify-between">
+                  <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                     <h4 className="text-sm font-semibold capitalize">
                       {evt.dominio === "reproducao" && evt.details
                         ? `Reproducao: ${evt.details.tipo}`
@@ -2884,10 +2929,11 @@ const AnimalDetalhe = () => {
                             ? `Operação Comercial: ${evt.detailsComercial.operation_type === "compra" ? "Compra" : "Venda"}`
                             : evt.dominio}
                     </h4>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                       {formatDate(evt.occurred_at)}
                     </span>
                   </div>
+                  <p className="mb-2 text-xs capitalize text-muted-foreground">Domínio: {evt.dominio.replaceAll("_", " ")}</p>
                   <p className="text-xs text-muted-foreground">
                     {evt.dominio === "alerta_sanitario"
                       ? describeSanitaryAlertEvent(evt.payload)
@@ -3037,57 +3083,77 @@ const AnimalDetalhe = () => {
         </TabsContent>
 
         <TabsContent value="agenda" className="mt-6">
-          <div className="grid gap-3">
-            {agenda?.map((entry) => (
-              <Card
-                key={entry.item.id}
-                className={
-                  entry.item.status === "agendado"
-                    ? "border-warning/25 bg-warning-muted/40 shadow-none"
-                    : "shadow-none"
-                }
-              >
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">
-                        {formatAgendaTipoLabel(entry.item.tipo)}
-                      </p>
-                      {entry.scheduleModeLabel || entry.scheduleAnchorLabel ? (
-                        <div className="mt-1 flex flex-wrap gap-2">
-                          {entry.scheduleModeLabel ? (
-                            <Badge variant="outline" className="text-[10px]">
-                              {entry.scheduleModeLabel}
-                            </Badge>
-                          ) : null}
-                          {entry.scheduleAnchorLabel ? (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {entry.scheduleAnchorLabel}
-                            </Badge>
-                          ) : null}
-                        </div>
-                      ) : null}
-                      <p className="text-[10px] text-muted-foreground">
-                        Previsto: {formatDate(entry.item.data_prevista)}
-                        {entry.scheduleLabel ? ` | ${entry.scheduleLabel}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge
-                    variant={
-                      entry.item.status === "agendado" ? "default" : "secondary"
+          <div className="space-y-6">
+            {agenda === undefined ? (
+              <p role="status" className="py-4 text-muted-foreground">Carregando Agenda…</p>
+            ) : agendaSections.map((section) => (
+              <section key={section.bucket} aria-label={section.label} className="space-y-3">
+                <h3 className="flex items-center gap-2 text-base font-semibold">
+                  {section.label} <Badge variant="secondary">{section.entries.length}</Badge>
+                </h3>
+                {section.bucket === "closed" && section.entries.length > 0 ? (
+                  <p className="text-xs text-muted-foreground">Tarefas encerradas. A execução é registrada no Histórico por Eventos.</p>
+                ) : null}
+                {section.entries.map((entry) => (
+                  <Card
+                    key={entry.item.id}
+                    className={
+                      entry.item.status === "agendado"
+                        ? "border-warning/25 bg-warning-muted/40 shadow-none"
+                        : "shadow-none"
                     }
-                    className="text-[10px]"
                   >
-                    {entry.item.status}
-                  </Badge>
-                </CardContent>
-              </Card>
+                    <CardContent className="flex flex-wrap items-start justify-between gap-3 p-4">
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
+                        <Calendar className="h-5 w-5 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0 break-words">
+                          <p className="text-sm font-medium">
+                            {formatAgendaTipoLabel(entry.item.tipo)}
+                          </p>
+                          {entry.scheduleModeLabel || entry.scheduleAnchorLabel ? (
+                            <div className="mt-1 flex flex-wrap gap-2">
+                              {entry.scheduleModeLabel ? (
+                                <Badge variant="outline" className="text-[10px]">
+                                  {entry.scheduleModeLabel}
+                                </Badge>
+                              ) : null}
+                              {entry.scheduleAnchorLabel ? (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {entry.scheduleAnchorLabel}
+                                </Badge>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          <p className="text-xs text-muted-foreground">
+                            Previsto: {formatCivilDate(entry.item.data_prevista)}
+                            {entry.scheduleLabel ? ` | ${entry.scheduleLabel}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge
+                        variant={
+                          entry.item.status === "agendado" ? "default" : "secondary"
+                        }
+                        className="shrink-0 text-xs"
+                      >
+                        {entry.item.status}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+                {section.entries.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {section.bucket === "overdue" ? "Nenhuma tarefa atrasada."
+                      : section.bucket === "today" ? "Nenhuma tarefa para hoje."
+                      : section.bucket === "future" ? "Nenhuma tarefa futura."
+                      : "Nenhuma tarefa encerrada."}
+                  </p>
+                ) : null}
+              </section>
             ))}
             {agenda?.length === 0 && (
               <p className="py-8 text-center text-muted-foreground">
-                Sem tarefas agendadas.
+                Nenhuma tarefa na Agenda.
               </p>
             )}
           </div>
