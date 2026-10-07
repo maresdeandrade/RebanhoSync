@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 
@@ -199,10 +199,10 @@ describe("AnimalDetalhe", () => {
           }
           return mockResponses.historicoEcc ?? [];
         }
-        return mockResponses.eventos ?? [];
+        return "eventos" in mockResponses ? mockResponses.eventos : [];
       }
       if (str.includes("state_agenda_itens")) {
-        return mockResponses.agenda ?? [];
+        return "agenda" in mockResponses ? mockResponses.agenda : [];
       }
       if (str.includes("catalog_doencas_notificaveis")) {
         return mockResponses.officialDiseases ?? [];
@@ -257,6 +257,10 @@ describe("AnimalDetalhe", () => {
     } as ReturnType<typeof useAuth>);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const renderDetail = () => render(
     <MemoryRouter initialEntries={["/animais/animal-1"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes><Route path="/animais/:id" element={<AnimalDetalhe />} /></Routes>
@@ -286,6 +290,125 @@ describe("AnimalDetalhe", () => {
     expect(screen.getByText(/Encerrar caso clinico/i)).toBeVisible();
   });
 
+  it("filtra a coleção factual sem perder ordem, domínios ou detalhes especializados", async () => {
+    const user = userEvent.setup();
+    const domains = ["pesagem", "reproducao", "sanitario", "alerta_sanitario", "conformidade", "movimentacao", "comercial", "ecc", "nutricao", "pastagem", "financeiro", "obito", "dominio_novo"];
+    const events = domains.map((dominio, index) => ({
+      ...makeEvento({ id: `event-${index}`, dominio: dominio as Evento["dominio"], observacoes: `Fato ${dominio}` }),
+      ...(dominio === "comercial" ? { detailsComercial: {
+        operation_type: "venda", contraparte_nome: "Comprador teste", quantidade_animais: 2,
+        peso_vivo_total: 800, valor_bruto: 9000, valor_liquido_derivado: 8500,
+        observacoes: "Detalhe comercial preservado",
+      } } : {}),
+      ...(dominio === "reproducao" ? { details: { tipo: "diagnostico", macho_id: "pai-teste", payload: { resultado: "positivo" } }, machoIdentificacao: "TOURO-01" } : {}),
+      ...(dominio === "alerta_sanitario" ? { payload: { route_label: "Rota teste", immediate_actions: ["Isolar animal"] } } : {}),
+    }));
+    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }), eventos: events });
+    renderDetail();
+    await user.click(screen.getByRole("tab", { name: "Histórico" }));
+    const panel = screen.getByRole("tabpanel");
+    const articles = () => Array.from(panel.querySelectorAll("article"));
+    expect(articles()).toHaveLength(domains.length);
+    expect(articles().map((article) => within(article).getByText(/^Domínio:/).textContent)).toEqual(domains.map((domain) => `Domínio: ${domain.replaceAll("_", " ")}`));
+    expect(screen.getByRole("button", { name: "Todos (13)" })).toHaveAttribute("aria-pressed", "true");
+    await user.click(screen.getByRole("button", { name: "Pesagem (1)" }));
+    expect(articles()).toHaveLength(1);
+    expect(within(panel).getByText("Fato pesagem")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Sanidade (3)" }));
+    expect(articles()).toHaveLength(3);
+    expect(articles().map((article) => within(article).getByText(/^Domínio:/).textContent)).toEqual(["Domínio: sanitario", "Domínio: alerta sanitario", "Domínio: conformidade"]);
+    expect(within(panel).getByText("Rota: Rota teste")).toBeVisible();
+    expect(within(panel).getByText("Passos: Isolar animal")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Comercial (1)" }));
+    expect(articles()).toHaveLength(1);
+    expect(within(panel).getByText(/Comprador teste/)).toBeVisible();
+    expect(within(panel).getByText("Quantidade: 2 cab.")).toBeVisible();
+    expect(within(panel).getByText('Obs: "Detalhe comercial preservado"')).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Reprodução (1)" }));
+    expect(within(panel).getByText("Reprodutor: TOURO-01")).toBeVisible();
+    expect(within(panel).getByText("Diagnostico: positivo")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Outros (5)" }));
+    expect(articles()).toHaveLength(5);
+    for (const domain of domains.slice(8)) expect(within(panel).getByText(`Fato ${domain}`)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Todos (13)" }));
+    expect(articles()).toHaveLength(domains.length);
+  });
+
+  it("mostra vazio específico do filtro mesmo quando há outros eventos", async () => {
+    const user = userEvent.setup();
+    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }), eventos: [makeEvento()] });
+    renderDetail();
+    await user.click(screen.getByRole("tab", { name: "Histórico" }));
+    await user.click(screen.getByRole("button", { name: "Pesagem (0)" }));
+    expect(screen.getByText("Nenhum evento de pesagem registrado.")).toBeVisible();
+    expect(screen.queryByText("Nenhum evento registrado.")).not.toBeInTheDocument();
+  });
+
+  it("separa atrasadas, hoje, próximas e encerradas e prioriza atraso no card", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 7, 0, 30));
+    const user = userEvent.setup();
+    const items = [
+      makeAgendaItem({ id: "future-later", tipo: "futura_tardia", data_prevista: "2026-10-15" }),
+      makeAgendaItem({ id: "done", tipo: "tarefa_concluida", data_prevista: "2026-10-01", status: "concluido" }),
+      makeAgendaItem({ id: "future", tipo: "vermifugacao", data_prevista: "2026-10-12" }),
+      makeAgendaItem({ id: "overdue-later", tipo: "atraso_recente", data_prevista: "2026-10-06" }),
+      makeAgendaItem({ id: "today", tipo: "pesagem", data_prevista: "2026-10-07" }),
+      makeAgendaItem({ id: "cancelled", tipo: "tarefa_cancelada", data_prevista: "2026-10-20", status: "cancelado" }),
+      makeAgendaItem({ id: "overdue", tipo: "vacinacao", data_prevista: "2026-10-05" }),
+    ];
+    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }), agenda: items.map((item) => ({ item })) });
+    renderDetail();
+    expect(screen.getByText("2 tarefas atrasadas")).toBeVisible();
+    expect(screen.getByText("vacinacao · 05/10/2026")).toBeVisible();
+    await user.click(screen.getByRole("tab", { name: "Agenda" }));
+    const sections = ["Atrasadas", "Hoje", "Próximas", "Encerradas"].map((name) => screen.getByRole("region", { name }));
+    const expected = [["vacinacao", "atraso recente"], ["pesagem"], ["vermifugacao", "futura tardia"], ["tarefa concluida", "tarefa cancelada"]];
+    sections.forEach((section, index) => {
+      for (const label of expected[index]) expect(within(section).getByText(label)).toBeVisible();
+    });
+    for (const label of expected.flat()) expect(within(screen.getByRole("tabpanel")).getAllByText(label)).toHaveLength(1);
+    expect(sections[0].textContent?.indexOf("vacinacao")).toBeLessThan(sections[0].textContent?.indexOf("atraso recente") ?? 0);
+    expect(sections[2].textContent?.indexOf("vermifugacao")).toBeLessThan(sections[2].textContent?.indexOf("futura tardia") ?? 0);
+    expect(within(sections[1]).getByText("Previsto: 07/10/2026")).toBeVisible();
+    expect(within(sections[3]).getByText("concluido")).toBeVisible();
+    expect(within(sections[3]).getByText("cancelado")).toBeVisible();
+    await user.click(screen.getByRole("tab", { name: "Histórico" }));
+    expect(screen.getByText("Nenhum evento registrado.")).toBeVisible();
+  });
+
+  it.each([
+    { status: "agendado" as const, date: "2026-10-07", summary: "Hoje" },
+    { status: "agendado" as const, date: "2026-10-12", summary: "Próxima: 12/10/2026" },
+    { status: "concluido" as const, date: "2026-10-05", summary: "Sem tarefa pendente na Agenda" },
+    { status: "cancelado" as const, date: "2026-10-12", summary: "Sem tarefa pendente na Agenda" },
+  ])("card reflete $status em $date com data civil", ({ status, date, summary }) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 7, 23, 30));
+    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }), agenda: [{ item: makeAgendaItem({ id: "task", tipo: "pesagem", status, data_prevista: date }) }] });
+    renderDetail();
+    expect(screen.getByText(summary)).toBeVisible();
+  });
+
+  it("distingue carregamento de listas carregadas vazias", async () => {
+    const user = userEvent.setup();
+    const responses: MockLiveQueryResponses = { animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }), agenda: undefined, eventos: undefined };
+    setupMockLiveQuery(responses);
+    const view = renderDetail();
+    expect(screen.getByText("Carregando Agenda…")).toBeVisible();
+    expect(screen.queryByText("Sem tarefa pendente na Agenda")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Histórico" }));
+    expect(screen.getByText("Carregando histórico…")).toBeVisible();
+    expect(screen.queryByText("Nenhum evento registrado.")).not.toBeInTheDocument();
+    responses.eventos = [];
+    responses.agenda = [];
+    view.rerender(<MemoryRouter initialEntries={["/animais/animal-1"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><Routes><Route path="/animais/:id" element={<AnimalDetalhe />} /></Routes></MemoryRouter>);
+    expect(screen.getByText("Nenhum evento registrado.")).toBeVisible();
+    expect(screen.getByText("Sem tarefa pendente na Agenda")).toBeVisible();
+    await user.click(screen.getByRole("tab", { name: "Agenda" }));
+    expect(screen.getByText("Nenhuma tarefa na Agenda.")).toBeVisible();
+  });
+
   it("não confunde tarefa vencida com ausência de pendências e mantém a Agenda", async () => {
     const user = userEvent.setup();
     setupMockLiveQuery({
@@ -293,7 +416,7 @@ describe("AnimalDetalhe", () => {
       agenda: [{ item: makeAgendaItem({ id: "expired", tipo: "vacina_brucelose", data_prevista: "2020-01-01" }) }],
     });
     renderDetail();
-    expect(screen.getByText("Sem tarefa futura encontrada")).toBeVisible();
+    expect(screen.getByText("1 tarefa atrasada")).toBeVisible();
     expect(screen.queryByText("Sem pendências")).not.toBeInTheDocument();
     expect(screen.queryByText("Sem agenda")).not.toBeInTheDocument();
     expect(screen.getAllByText("Sem lote definido").length).toBeGreaterThan(0);
@@ -425,7 +548,7 @@ describe("AnimalDetalhe", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Próxima tarefa prevista")).toBeInTheDocument();
+    expect(screen.getByText("Agenda", { selector: "h3" })).toBeInTheDocument();
 
     expect(screen.getByRole("tab", { name: /agenda/i })).toBeInTheDocument();
     expect(
