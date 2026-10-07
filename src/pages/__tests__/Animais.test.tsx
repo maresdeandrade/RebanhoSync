@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -194,14 +194,14 @@ describe("Animais page", () => {
               {
                 animalId: mother.id,
                 ultimoPesoKg: 450,
-                ultimoPesoData: "2026-04-01T00:00:00.000Z",
+                ultimoPesoData: "2026-04-01T12:00:00.000Z",
                 ganhoMedioDiaKg: 0.4,
                 totalPesagens: 3,
               },
               {
                 animalId: calf.id,
                 ultimoPesoKg: 62,
-                ultimoPesoData: "2026-04-03T00:00:00.000Z",
+                ultimoPesoData: "2026-04-03T12:00:00.000Z",
                 ganhoMedioDiaKg: 0.7,
                 totalPesagens: 2,
               },
@@ -240,9 +240,11 @@ describe("Animais page", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Ultimo peso observado")).toBeInTheDocument();
-    expect(screen.getByText("GMD qualificado")).toBeInTheDocument();
-    expect(screen.getByText("Proximo evento")).toBeInTheDocument();
+    expect(screen.getAllByText("Último peso")).toHaveLength(2);
+    expect(screen.getAllByText("Próxima ação")).toHaveLength(2);
+    expect(screen.getAllByText(/Confiabilidade nao classificada/)).toHaveLength(2);
+    expect(screen.getByText("01/04/2026")).toHaveAttribute("datetime", "2026-04-01T12:00:00.000Z");
+    expect(screen.getByText("03/04/2026")).toHaveAttribute("datetime", "2026-04-03T12:00:00.000Z");
     expect(screen.queryByText("Fase vet.")).not.toBeInTheDocument();
     expect(screen.queryByText("Vinculo")).not.toBeInTheDocument();
     expect(screen.queryByText(/junto da matriz/i)).not.toBeInTheDocument();
@@ -253,6 +255,151 @@ describe("Animais page", () => {
     expect(screen.getAllByText("Nascimento").length).toBeGreaterThan(0);
     expect(screen.getByText("Aplicar entre 3 e 8 meses")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Abrir matriz" })).toBeInTheDocument();
+  });
+
+  function mockList(
+    animals: Animal[] | undefined,
+    weights: Array<{
+      animalId: string;
+      ultimoPesoKg: number | null;
+      ultimoPesoData: string | null;
+      ganhoMedioDiaKg: number | null;
+      blocked?: boolean;
+    }> = [],
+    loading: { weight?: boolean; agenda?: boolean; regulatory?: boolean; pending?: boolean } = {},
+  ) {
+    let callCount = 0;
+    mockedUseLiveQuery.mockImplementation((query, deps) => {
+      const index = callCount++ % 7;
+      if (index === 0) return (animals ?? []) as ReturnType<typeof useLiveQuery>;
+      if (index === 2) return (loading.weight ? undefined : weights) as ReturnType<typeof useLiveQuery>;
+      if (index === 3 && loading.agenda) return undefined;
+      if (index === 4) return (loading.regulatory ? undefined : emptyRegulatoryReadModel) as ReturnType<typeof useLiveQuery>;
+      if (index === 5 && loading.pending) return undefined;
+      if (index !== 6) return [] as ReturnType<typeof useLiveQuery>;
+      const search = String(deps?.[1] ?? "").toLowerCase();
+      return animals?.filter(animal => animal.identificacao.toLowerCase().includes(search)) as ReturnType<typeof useLiveQuery>;
+    });
+  }
+
+  function renderList() {
+    return render(
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Animais />
+      </MemoryRouter>,
+    );
+  }
+
+  it("anuncia carregamento sem afirmar ausencia de animais", () => {
+    mockList(undefined);
+    renderList();
+    expect(screen.getByRole("status")).toHaveTextContent("Carregando animais...");
+    expect(screen.queryByText(/Nenhum animal/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Novo animal" })).toHaveAttribute("href", "/animais/novo");
+  });
+
+  it("mantem a identidade enquanto as fontes auxiliares carregam e so depois afirma ausencia", () => {
+    const animals = [makeAnimal({ id: "animal-1", identificacao: "BR-001", sexo: "F" })];
+    mockList(animals, [], { weight: true, agenda: true, regulatory: true, pending: true });
+    const view = renderList();
+
+    expect(screen.getByRole("link", { name: "BR-001" })).toHaveAttribute("href", "/animais/animal-1");
+    expect(screen.getByText("Carregando peso...")).toBeInTheDocument();
+    expect(screen.getByText("Carregando ganho...")).toBeInTheDocument();
+    expect(screen.getByText("Carregando agenda...")).toBeInTheDocument();
+    expect(screen.getByText("Restrições carregando")).toBeInTheDocument();
+    expect(screen.getByText("Fila local carregando")).toBeInTheDocument();
+    expect(screen.queryByText("Sem pesagem")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sem agenda aberta.")).not.toBeInTheDocument();
+
+    mockList(animals);
+    view.rerender(
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Animais />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Sem pesagem")).toBeInTheDocument();
+    expect(screen.getByText("Sem agenda aberta.")).toBeInTheDocument();
+    expect(screen.queryByText(/carregando/i)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["calendarMode=janela_etaria", { agenda: true }],
+    ["overlayImpact=sale", { regulatory: true }],
+  ])("nao afirma recorte vazio enquanto a fonte do filtro %s carrega", (filter, loading) => {
+    mockList([makeAnimal({ id: "animal-1", identificacao: "BR-001", sexo: "F" })], [], loading);
+    render(
+      <MemoryRouter
+        initialEntries={[`/animais?${filter}`]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Animais />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Carregando recorte")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Carregando dados do recorte");
+    expect(screen.queryByText(/Nenhum animal/)).not.toBeInTheDocument();
+  });
+
+  it("mantem a diferenca visual entre vendido, morto e retirado", () => {
+    mockList([
+      makeAnimal({ id: "sold", identificacao: "V-001", sexo: "F", status: "vendido" }),
+      makeAnimal({ id: "dead", identificacao: "M-001", sexo: "F", status: "morto" }),
+      makeAnimal({ id: "removed", identificacao: "R-001", sexo: "M", status: "retirado" }),
+    ]);
+    renderList();
+
+    expect(screen.getByText("vendido", { exact: true })).toHaveClass("bg-semantic-warning-muted");
+    expect(screen.getByText("morto", { exact: true })).toHaveClass("bg-semantic-error-muted");
+    expect(screen.getByText("retirado", { exact: true })).toHaveClass("bg-semantic-error-muted");
+  });
+
+  it("explica o recorte de ativos e permite consultar outros filtros quando vazio", () => {
+    mockList([]);
+    renderList();
+    expect(screen.getByRole("status")).toHaveTextContent("Nenhum animal ativo neste recorte");
+    expect(screen.queryByText("Nenhum animal cadastrado")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Buscar animal" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Mostrar filtros/ }));
+    expect(screen.getByRole("combobox", { name: "Lote" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Bezerra$/ }));
+    expect(screen.getByRole("status")).toHaveTextContent("Nenhum animal no recorte atual");
+    expect(screen.getByRole("button", { name: /^Bezerra$/ })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("distingue busca sem resultado e recupera a lista ao limpar a busca", () => {
+    mockList([makeAnimal({ id: "animal-1", identificacao: "BR-001", sexo: "F" })]);
+    renderList();
+    const search = screen.getByRole("textbox", { name: "Buscar animal" });
+    fireEvent.change(search, { target: { value: "BR-999" } });
+    expect(screen.getByRole("status")).toHaveTextContent("Nenhum animal encontrado na busca");
+    expect(screen.queryByRole("link", { name: "BR-001" })).not.toBeInTheDocument();
+    fireEvent.change(search, { target: { value: "" } });
+    expect(screen.getByRole("link", { name: "BR-001" })).toHaveAttribute("href", "/animais/animal-1");
+  });
+
+  it("preserva unidade configurada, data ausente e conflito sem inventar peso", () => {
+    mockedUseAuth.mockReturnValue({
+      activeFarmId: "farm-1",
+      farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+      farmMeasurementConfig: { weight_unit: "arroba" },
+    } as ReturnType<typeof useAuth>);
+    mockList([
+      makeAnimal({ id: "weighted", identificacao: "P-001", sexo: "F" }),
+      makeAnimal({ id: "blocked", identificacao: "P-002", sexo: "M" }),
+      makeAnimal({ id: "missing", identificacao: "P-003", sexo: "M" }),
+    ], [
+      { animalId: "weighted", ultimoPesoKg: 450, ultimoPesoData: null, ganhoMedioDiaKg: -0.4 },
+      { animalId: "blocked", ultimoPesoKg: null, ultimoPesoData: null, ganhoMedioDiaKg: null, blocked: true },
+    ]);
+    renderList();
+    expect(within(screen.getByText("30,00 arroba").parentElement!).getByText("Data não informada")).toBeInTheDocument();
+    expect(screen.getByText("-0,03 arroba/dia")).toBeInTheDocument();
+    expect(screen.getAllByText("Conflito factual")).toHaveLength(2);
+    expect(screen.getByText("Sem pesagem")).toBeInTheDocument();
+    expect(screen.queryByText("Peso atual")).not.toBeInTheDocument();
   });
 
   it("pagina o recorte quando a tabela excede cem animais", () => {

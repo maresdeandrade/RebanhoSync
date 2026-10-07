@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
 import { AnimalDemographicsCard } from "@/components/animals/AnimalDemographicsCard";
@@ -559,13 +560,17 @@ export default function Animais() {
       },
     );
   }, [activeFarmId]);
-  const regulatoryReadModel =
+  const regulatoryReadModelQuery =
     useLiveQuery(async () => {
       if (!activeFarmId) return EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
       return buildRegulatoryOperationalReadModel(
         await loadRegulatorySurfaceSource(activeFarmId),
       );
-    }, [activeFarmId]) ?? EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
+    }, [activeFarmId]);
+  const regulatoryReadModel = regulatoryReadModelQuery ?? EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
+  const isWeightLoading = weightSummaries === undefined;
+  const isAgendaLoading = nextAgendaSummaries === undefined;
+  const isRegulatoryLoading = regulatoryReadModelQuery === undefined || animaisFamilia === undefined;
 
   const lotesMap = useMemo(
     () => new Map((lotes ?? []).map((lote) => [lote.id, lote])),
@@ -764,6 +769,10 @@ export default function Animais() {
     regulatoryImpactFilter !== "all" ||
     regulatorySubareaFilter !== "all";
 
+  const isFilteredDataLoading =
+    (isAgendaLoading && (calendarModeFilter !== "all" || calendarAnchorFilter !== "all")) ||
+    (isRegulatoryLoading && (regulatoryImpactFilter !== "all" || regulatorySubareaFilter !== "all"));
+
   useEffect(() => {
     setPage(1);
   }, [
@@ -930,7 +939,7 @@ export default function Animais() {
     );
   }
 
-  if (!animais || (animais.length === 0 && !hasFilters)) {
+  if (!animais) {
     return (
       <PageContainer width="standard" className="space-y-6">
         <PageHeader
@@ -955,15 +964,14 @@ export default function Animais() {
           }
         />
 
-        <EmptyState
-          icon={PawPrint}
-          title="Nenhum animal cadastrado"
-          description="Cadastre animais individualmente ou importe uma planilha para iniciar o controle do rebanho."
-          action={{
-            label: "Cadastrar primeiro animal",
-            onClick: () => navigate("/animais/novo"),
-          }}
-        />
+        <div role="status" aria-live="polite" className="space-y-3">
+          <p className="text-sm text-muted-foreground">Carregando animais...</p>
+          <div aria-hidden="true" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 3 }, (_, index) => (
+              <Skeleton key={index} className="h-64 rounded-xl" />
+            ))}
+          </div>
+        </div>
       </PageContainer>
     );
   }
@@ -977,7 +985,7 @@ export default function Animais() {
         meta={
           <>
             <StatusBadge tone="neutral">
-              {animalRows.length} animais
+              {isFilteredDataLoading ? "Carregando recorte" : `${animalRows.length} animais`}
             </StatusBadge>
             {lifecyclePendingCount > 0 ? (
               <StatusBadge tone="warning">
@@ -1055,7 +1063,7 @@ export default function Animais() {
                     Lote
                   </p>
                   <Select value={loteFilter} onValueChange={setLoteFilter}>
-                    <SelectTrigger className="h-9 w-full bg-background">
+                    <SelectTrigger aria-label="Lote" className="w-full bg-background">
                       <SelectValue placeholder="Lote" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1102,7 +1110,7 @@ export default function Animais() {
                     value={productiveStateFilter}
                     onValueChange={setProductiveStateFilter}
                   >
-                    <SelectTrigger className="h-9 w-full bg-background">
+                    <SelectTrigger aria-label="Estado produtivo" className="w-full bg-background">
                       <SelectValue placeholder="Estado produtivo" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1125,7 +1133,7 @@ export default function Animais() {
                       setRegulatoryImpactFilter(value as RegulatoryImpactFilter)
                     }
                   >
-                    <SelectTrigger className="h-9 w-full bg-background">
+                    <SelectTrigger aria-label="Impacto operacional" className="w-full bg-background">
                       <SelectValue placeholder="Impacto regulatorio" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1150,7 +1158,7 @@ export default function Animais() {
                       )
                     }
                   >
-                    <SelectTrigger className="h-9 w-full bg-background">
+                    <SelectTrigger aria-label="Subarea regulatoria" className="w-full bg-background">
                       <SelectValue placeholder="Subarea regulatoria" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1173,7 +1181,7 @@ export default function Animais() {
                       setCalendarModeFilter(value as AnimalCalendarModeFilter)
                     }
                   >
-                    <SelectTrigger className="h-9 w-full bg-background">
+                    <SelectTrigger aria-label="Calendario" className="w-full bg-background">
                       <SelectValue placeholder="Calendario" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1198,7 +1206,7 @@ export default function Animais() {
                       )
                     }
                   >
-                    <SelectTrigger className="h-9 w-full bg-background">
+                    <SelectTrigger aria-label="Ancora" className="w-full bg-background">
                       <SelectValue placeholder="Ancora" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1218,7 +1226,7 @@ export default function Animais() {
                     aria-label="Limpar filtros"
                     variant="ghost"
                     size="sm"
-                    className="min-h-9"
+                    className="min-h-11"
                     onClick={() => {
                       setSearch("");
                       setLoteFilter("all");
@@ -1242,11 +1250,11 @@ export default function Animais() {
         )}
       </div>
 
-      <AnimalDemographicsCard
+      {!isFilteredDataLoading && <AnimalDemographicsCard
         animalRows={animalRows}
         taxonomyByAnimal={taxonomyByAnimal}
         sexoFilter={sexoFilter}
-      />
+      />}
 
       {lifecyclePendingCount > 0 ? (
         <Card className="border-warning/20 bg-warning-muted/70 shadow-none">
@@ -1280,13 +1288,8 @@ export default function Animais() {
         <SectionHeader
           level={2}
           title="Rebanho listado"
-          description="Visao individualizada dos animais com peso, ganho e compromissos operacionais"
+          description="Identificação, último peso registrado e próximas tarefas do recorte atual."
         />
-        <div className="mb-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
-          <span>Ultimo peso observado</span>
-          <span>GMD qualificado</span>
-          <span>Proximo evento</span>
-        </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {visibleAnimalRows.map(({ animal, depth }) => {
               const taxonomy = taxonomyByAnimal.get(animal.id);
@@ -1314,11 +1317,11 @@ export default function Animais() {
                   className={cn(
                     "overflow-hidden border-border/70 shadow-none transition-colors hover:border-primary/25",
                     lifecyclePending && "border-warning/30 bg-warning-muted/40",
-                    regulatoryProfile.hasBlockingIssues &&
+                    !isRegulatoryLoading && regulatoryProfile.hasBlockingIssues &&
                       "border-destructive/30 bg-destructive/10",
                   )}
                 >
-                  <CardContent className="flex h-full flex-col gap-4 p-4">
+                  <CardContent className="flex h-full flex-col gap-3 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-start gap-3">
                         <AnimalVisualAvatar
@@ -1329,12 +1332,12 @@ export default function Animais() {
                         <div className="min-w-0">
                           <Link
                             to={`/animais/${animal.id}`}
-                            className="text-lg font-semibold tabular-nums text-foreground hover:underline"
+                            className="block min-h-11 break-words py-2 text-xl font-semibold leading-tight tabular-nums text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card [overflow-wrap:anywhere]"
                           >
                             {animal.identificacao}
                           </Link>
                           {animal.nome ? (
-                            <p className="truncate text-sm text-muted-foreground">
+                            <p className="break-words text-sm text-muted-foreground">
                               {animal.nome}
                             </p>
                           ) : null}
@@ -1355,38 +1358,47 @@ export default function Animais() {
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
                         <StatusBadge
-                          tone={
-                            animal.status === "ativo" ? "success" : "warning"
-                          }
+                          tone={getProductiveTone(animal.status)}
                         >
                           {animal.status}
                         </StatusBadge>
-                        {pendingAnimalIds.has(animal.id) && (
+                        {pendingOps === undefined ? (
+                          <StatusBadge tone="unknown">Fila local carregando</StatusBadge>
+                        ) : pendingAnimalIds.has(animal.id) && (
                           <StatusBadge tone="warning">No aparelho</StatusBadge>
                         )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 border-t border-border/50 pt-3 text-sm">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
                         <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                          Peso
+                          Último peso
                         </p>
-                        <p className="font-semibold tabular-nums text-foreground">
-                          {weightSummary?.ultimoPesoKg != null
+                        <p className="text-lg font-semibold tabular-nums text-foreground">
+                          {isWeightLoading ? "Carregando peso..." : weightSummary?.ultimoPesoKg != null
                             ? formatWeight(
                                 weightSummary.ultimoPesoKg,
                                 farmMeasurementConfig.weight_unit,
                               )
                             : weightSummary?.blocked ? "Conflito factual" : "Sem pesagem"}
                         </p>
+                        {!isWeightLoading && weightSummary?.ultimoPesoKg != null ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {weightSummary.ultimoPesoData ? (
+                              <time dateTime={weightSummary.ultimoPesoData}>
+                                {formatDate(weightSummary.ultimoPesoData)}
+                              </time>
+                            ) : "Data não informada"}
+                          </p>
+                        ) : null}
                       </div>
                       <div>
                         <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                           Ganho/dia
                         </p>
                         <p className="font-semibold tabular-nums text-foreground">
-                          {weightSummary?.ganhoMedioDiaKg != null
+                          {isWeightLoading ? "Carregando ganho..." : weightSummary?.ganhoMedioDiaKg != null
                             ? formatWeightPerDay(
                                 weightSummary.ganhoMedioDiaKg,
                                 farmMeasurementConfig.weight_unit,
@@ -1397,40 +1409,26 @@ export default function Animais() {
                           Confiabilidade nao classificada; uso operacional nao autorizado.
                         </p>
                       </div>
-                      <div>
-                        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                          Lote
-                        </p>
-                        <p className="truncate font-medium text-foreground">
-                          {animal.lote_id
-                            ? (lotesMap.get(animal.lote_id)?.nome ?? "Lote")
-                            : "Sem lote"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                          Idade
-                        </p>
-                        <p className="font-medium text-foreground">
-                          {calcularIdade(animal.data_nascimento) || "Sem idade"}
-                        </p>
-                      </div>
                     </div>
 
                     <div className="border-t border-border/50 pt-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                          Agenda
+                          Próxima ação
                         </p>
-                        {nextAgenda ? (
+                        {!isAgendaLoading && nextAgenda ? (
                           <StatusBadge tone={getAgendaTone(nextAgenda.status)}>
                             {getAgendaStatusLabel(nextAgenda.status)}
                           </StatusBadge>
                         ) : null}
                       </div>
-                      {nextAgenda ? (
+                      {isAgendaLoading ? (
+                        <p role="status" className="mt-2 text-sm text-muted-foreground">
+                          Carregando agenda...
+                        </p>
+                      ) : nextAgenda ? (
                         <div className="mt-2 space-y-1">
-                          <p className="truncate text-sm font-semibold text-foreground">
+                          <p className="break-words text-sm font-semibold text-foreground">
                             {nextAgenda.titulo}
                           </p>
                           <p className="text-xs text-muted-foreground">
@@ -1461,6 +1459,23 @@ export default function Animais() {
                       )}
                     </div>
 
+                    <dl className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="min-w-0">
+                        <dt className="text-xs text-muted-foreground">Lote</dt>
+                        <dd className="break-words text-muted-foreground">
+                          {animal.lote_id
+                            ? (lotesMap.get(animal.lote_id)?.nome ?? "Lote")
+                            : "Sem lote"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Idade</dt>
+                        <dd className="text-muted-foreground">
+                          {calcularIdade(animal.data_nascimento) || "Sem idade"}
+                        </dd>
+                      </div>
+                    </dl>
+
                     <div className="flex flex-wrap gap-2">
                       {lifecyclePending ? (
                         <StatusBadge
@@ -1479,7 +1494,9 @@ export default function Animais() {
                           {taxonomy.display.estado_alias}
                         </StatusBadge>
                       ) : null}
-                      {regulatoryProfile.restrictions.map((restriction) => (
+                      {isRegulatoryLoading ? (
+                        <StatusBadge tone="unknown">Restrições carregando</StatusBadge>
+                      ) : regulatoryProfile.restrictions.map((restriction) => (
                         <StatusBadge
                           key={restriction.key}
                           tone={restriction.tone}
@@ -1492,7 +1509,7 @@ export default function Animais() {
                           asChild
                           variant="ghost"
                           size="sm"
-                          className="h-8 px-2"
+                          className="px-2"
                         >
                           <Link to={`/animais/${mother.id}`}>Abrir matriz</Link>
                         </Button>
@@ -1503,7 +1520,7 @@ export default function Animais() {
                       asChild
                       variant="outline"
                       size="sm"
-                      className="mt-auto min-h-10 w-full"
+                      className="mt-auto w-full"
                     >
                       <Link to={`/animais/${animal.id}`}>
                         Abrir ficha do animal
@@ -1513,10 +1530,27 @@ export default function Animais() {
                 </Card>
               );
             })}
-            {animalRows.length === 0 && hasFilters ? (
-              <div className="rounded-lg border bg-card py-8 text-center text-muted-foreground md:col-span-2 xl:col-span-3">
-                Nenhum animal encontrado com os filtros aplicados.
-              </div>
+            {animalRows.length === 0 ? (
+              <EmptyState
+                icon={PawPrint}
+                role="status"
+                aria-live="polite"
+                className="min-h-[240px] md:col-span-2 xl:col-span-3"
+                title={isFilteredDataLoading
+                  ? "Carregando dados do recorte"
+                  : debouncedSearch
+                  ? "Nenhum animal encontrado na busca"
+                  : hasFilters
+                    ? "Nenhum animal no recorte atual"
+                    : "Nenhum animal ativo neste recorte"}
+                description={isFilteredDataLoading
+                  ? "Aguarde a leitura da agenda e das restrições usadas pelos filtros."
+                  : debouncedSearch
+                  ? "Revise a identificação buscada ou os filtros aplicados."
+                  : hasFilters
+                    ? "Revise os filtros para consultar outro recorte do rebanho."
+                    : "O recorte padrão mostra animais ativos. Use os filtros para consultar outros status."}
+              />
             ) : null}
           </div>
 
