@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -257,6 +257,73 @@ describe("AnimalDetalhe", () => {
     } as ReturnType<typeof useAuth>);
   });
 
+  const renderDetail = () => render(
+    <MemoryRouter initialEntries={["/animais/animal-1"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Routes><Route path="/animais/:id" element={<AnimalDetalhe />} /></Routes>
+    </MemoryRouter>,
+  );
+
+  it("abre Visão geral e mantém casos e suas ações dentro de Sanidade", async () => {
+    const user = userEvent.setup();
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "V2-001", sexo: "F", data_nascimento: "2026-10-06" }),
+      sanitaryCases: [makeSanitarioCaso()],
+    });
+    renderDetail();
+
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent?.trim())).toEqual([
+      "Visão geral", "Histórico", "Sanidade", "Agenda", "Comercial",
+    ]);
+    expect(screen.getByRole("tab", { name: "Visão geral" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Identificação complementar")).toBeVisible();
+    expect(screen.getByText("06/10/2026")).toBeVisible();
+    expect(screen.queryByText("Tratamento em acompanhamento")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Sanidade" }));
+    const cases = screen.getByRole("region", { name: "Casos sanitários" });
+    expect(within(cases).getByText("Tratamento em acompanhamento")).toBeVisible();
+    await user.click(within(cases).getByRole("button", { name: /Encerrar caso/i }));
+    expect(screen.getByRole("dialog")).toBeVisible();
+    expect(screen.getByText(/Encerrar caso clinico/i)).toBeVisible();
+  });
+
+  it("não confunde tarefa vencida com ausência de pendências e mantém a Agenda", async () => {
+    const user = userEvent.setup();
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "V2-002", sexo: "M", lote_id: null }),
+      agenda: [{ item: makeAgendaItem({ id: "expired", tipo: "vacina_brucelose", data_prevista: "2020-01-01" }) }],
+    });
+    renderDetail();
+    expect(screen.getByText("Sem tarefa futura encontrada")).toBeVisible();
+    expect(screen.queryByText("Sem pendências")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sem agenda")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Sem lote definido").length).toBeGreaterThan(0);
+    expect(screen.getByText("Último peso registrado")).toBeVisible();
+    await user.click(screen.getByRole("tab", { name: "Agenda" }));
+    expect(screen.getByText(/Previsto:/)).toBeVisible();
+    expect(screen.getByText("agendado")).toBeVisible();
+  });
+
+  it("mantém bloqueio e confirmação de estágio visíveis com detalhes técnicos fechados", () => {
+    setupMockLiveQuery({
+      animal: makeAnimal({
+        id: "animal-1", identificacao: "V2-003", sexo: "F",
+        payload: {
+          lifecycle: { estagio_vida: "cria_neonatal" },
+          sanidade_alerta: { status: "suspeita_aberta", movement_blocked: true },
+        },
+      }),
+    });
+    const { container } = renderDetail();
+    expect(screen.getByText("Movimentacao bloqueada")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Registrar manejo" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Confirmar transicao" })).toBeVisible();
+    const disclosures = container.querySelectorAll("details");
+    expect(disclosures).toHaveLength(2);
+    disclosures.forEach((disclosure) => expect(disclosure).not.toHaveAttribute("open"));
+    expect(screen.getByText("Regra usada")).not.toBeVisible();
+    expect(screen.getByText("Aliases:", { exact: false })).not.toBeVisible();
+  });
+
   it("exibe sociedade exclusivamente pelo contrato vigente após reconstrução", () => {
     setupMockLiveQuery({
       animal: makeAnimal({
@@ -358,7 +425,7 @@ describe("AnimalDetalhe", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Proximo manejo")).toBeInTheDocument();
+    expect(screen.getByText("Próxima tarefa prevista")).toBeInTheDocument();
 
     expect(screen.getByRole("tab", { name: /agenda/i })).toBeInTheDocument();
     expect(
