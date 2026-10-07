@@ -89,7 +89,8 @@ export function isTenantSensitiveReadTable(
     tableName === "sync_pull_cursors" ||
     tableName === "sync_reconcile_obligations" ||
     tableName.startsWith("queue_") ||
-    tableName === "metrics_events"
+    tableName === "metrics_events" ||
+    tableName === "telemetry_flush_cursors"
   );
 }
 

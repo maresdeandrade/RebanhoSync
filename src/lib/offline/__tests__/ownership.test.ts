@@ -37,6 +37,13 @@ afterEach(() => {
 });
 
 describe("local ownership", () => {
+  it("classifies telemetry checkpoints as tenant-sensitive", async () => {
+    expect(isTenantSensitiveReadTable("telemetry_flush_cursors")).toBe(true);
+    expect(isGlobalReadTable("telemetry_flush_cursors")).toBe(false);
+    await establishLocalOwnership(session("user-a"));
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({ data: { session: session("user-b") }, error: null } as never);
+    expect(await canReadLocalTable("telemetry_flush_cursors")).toBe(false);
+  });
   it("establishes ownership from the canonical auth user id", async () => {
     await expect(establishLocalOwnership(session("user-a"))).resolves.toEqual({
       status: "OWNED",

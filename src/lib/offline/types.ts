@@ -1917,6 +1917,13 @@ export interface Rejection {
   payload?: Record<string, unknown>;
 }
 
+export interface TelemetryFlushCursor {
+  fazenda_id: string;
+  created_at: string;
+  ids_at_cursor: string[];
+  updated_at: string;
+}
+
 export interface PilotMetricEvent {
   id: string;
   fazenda_id: string;
