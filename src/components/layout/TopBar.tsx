@@ -29,10 +29,8 @@ import {
   SyncStatusBadge,
   OfflinePill,
 } from "@/components/ui/sync-status-badge";
-import {
-  EMPTY_FARM_SYNC_SUMMARY,
-  loadFarmSyncSummary,
-} from "@/lib/offline/syncQueries";
+import { loadFarmSyncSummary } from "@/lib/offline/syncQueries";
+import { selectFarmSyncSummary } from "@/lib/offline/syncPresentation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -47,10 +45,10 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
 
-  const syncSummary =
-    useLiveQuery(async () => {
-      return loadFarmSyncSummary(activeFarmId);
-    }, [activeFarmId]) || EMPTY_FARM_SYNC_SUMMARY;
+  const loadedSyncSummary = useLiveQuery(async () => {
+    return loadFarmSyncSummary(activeFarmId);
+  }, [activeFarmId]);
+  const syncSummary = selectFarmSyncSummary(loadedSyncSummary, activeFarmId);
 
   useEffect(() => {
     const fetchFarmName = async () => {
@@ -174,7 +172,11 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
 
           {activeFarmId && (
             <Link
-              to={syncSummary.rejectionCount > 0 ? "/reconciliacao" : "/home"}
+              to={
+                (syncSummary?.rejectionCount ?? 0) > 0
+                  ? "/reconciliacao"
+                  : "/home"
+              }
               className="flex min-h-11 items-center rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <SyncStatusBadge summary={syncSummary} />

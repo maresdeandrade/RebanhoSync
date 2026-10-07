@@ -27,6 +27,7 @@ export const EMPTY_FARM_SYNC_SUMMARY: FarmSyncSummary = {
   pendingCount: 0,
   rejectionCount: 0,
   errorCount: 0,
+  reconcileCount: 0,
   syncedAlteredCount: 0,
   lastCompletedStage: null,
 };
@@ -100,6 +101,7 @@ export async function loadFarmSyncSummary(
     errorCount,
     syncedAlteredCount,
     rejectionCount,
+    reconcileCount,
     ...latestCompletedCandidates
   ] = await Promise.all([
     countFarmGesturesByStatus(fazendaId, "PENDING"),
@@ -111,6 +113,7 @@ export async function loadFarmSyncSummary(
       (gesture) => gesture.sync_result === "APPLIED_ALTERED",
     ),
     db.queue_rejections.where("fazenda_id").equals(fazendaId).count(),
+    db.sync_reconcile_obligations.where("fazenda_id").equals(fazendaId).count(),
     ...COMPLETED_GESTURE_STATUSES.map((status) =>
       getLatestCompletedGestureByStatus(fazendaId, status),
     ),
@@ -124,11 +127,13 @@ export async function loadFarmSyncSummary(
       )[0] ?? null;
 
   return {
+    fazendaId,
     savedLocalCount,
     syncingCount,
     pendingCount: savedLocalCount + syncingCount,
     rejectionCount,
     errorCount,
+    reconcileCount,
     syncedAlteredCount,
     lastCompletedAt: latestCompletedGesture?.completed_at,
     lastCompletedStage: latestCompletedGesture

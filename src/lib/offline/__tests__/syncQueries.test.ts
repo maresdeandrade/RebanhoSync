@@ -12,6 +12,7 @@ import {
   loadFarmSyncSummary,
 } from "../syncQueries";
 import type { Gesture, Rejection } from "../types";
+import { getFarmSyncHealth } from "../syncPresentation";
 
 const FARM_A = "farm-sync-a";
 const FARM_B = "farm-sync-b";
@@ -53,11 +54,13 @@ describe("syncQueries", () => {
   beforeEach(async () => {
     await db.queue_gestures.clear();
     await db.queue_rejections.clear();
+    await db.sync_reconcile_obligations.clear();
   });
 
   afterEach(async () => {
     await db.queue_gestures.clear();
     await db.queue_rejections.clear();
+    await db.sync_reconcile_obligations.clear();
   });
 
   it("builds per-farm sync summary from indexed gesture counts", async () => {
@@ -120,9 +123,54 @@ describe("syncQueries", () => {
   });
 
   it("returns empty defaults when no farm is active", async () => {
-    await expect(loadFarmSyncSummary(null)).resolves.toEqual(EMPTY_FARM_SYNC_SUMMARY);
+    await expect(loadFarmSyncSummary(null)).resolves.toEqual(
+      EMPTY_FARM_SYNC_SUMMARY,
+    );
     await expect(loadFarmOperationalGestureStats(undefined)).resolves.toEqual(
       EMPTY_FARM_OPERATIONAL_GESTURE_STATS,
+    );
+  });
+
+  it("does not inherit errors or reconciliation across farms or A → B → A", async () => {
+    await db.queue_gestures.add(makeGesture(FARM_A, { status: "ERROR" }));
+    await db.sync_reconcile_obligations.put({
+      key: `${FARM_A}:factual`,
+      fazenda_id: FARM_A,
+      scope: "factual",
+      generation_id: "generation-a",
+      created_at: "2026-10-07T10:00:00Z",
+      updated_at: "2026-10-07T10:00:00Z",
+    });
+    for (const farm of [FARM_A, FARM_B, FARM_A]) {
+      const summary = await loadFarmSyncSummary(farm);
+      expect(summary.fazendaId).toBe(farm);
+      expect(summary.errorCount).toBe(farm === FARM_A ? 1 : 0);
+      expect(summary.reconcileCount).toBe(farm === FARM_A ? 1 : 0);
+      expect(getFarmSyncHealth(summary).stage).toBe(
+        farm === FARM_A ? "error" : "healthy",
+      );
+    }
+  });
+
+  it("keeps DONE with an empty functional queue unhealthy until its obligation is removed", async () => {
+    await db.queue_gestures.add(
+      makeGesture(FARM_A, { status: "DONE", sync_result: "APPLIED" }),
+    );
+    const key = `${FARM_A}:movement-v1`;
+    await db.sync_reconcile_obligations.put({
+      key,
+      fazenda_id: FARM_A,
+      scope: "movement-v1",
+      generation_id: "generation-a",
+      created_at: "2026-10-07T10:00:00Z",
+      updated_at: "2026-10-07T10:00:00Z",
+    });
+    const summary = await loadFarmSyncSummary(FARM_A);
+    expect(summary.pendingCount).toBe(0);
+    expect(getFarmSyncHealth(summary).stage).toBe("reconcile");
+    await db.sync_reconcile_obligations.delete(key);
+    expect(getFarmSyncHealth(await loadFarmSyncSummary(FARM_A)).stage).toBe(
+      "healthy",
     );
   });
 });

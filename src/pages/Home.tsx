@@ -20,7 +20,10 @@ import {
 } from "@/lib/animals/lifecycle";
 import { supabase } from "@/lib/supabase";
 import { db } from "@/lib/offline/db";
-import type { FarmSyncSummary } from "@/lib/offline/syncPresentation";
+import {
+  selectFarmSyncSummary,
+  type FarmSyncSummary,
+} from "@/lib/offline/syncPresentation";
 import { loadFarmSyncSummary } from "@/lib/offline/syncQueries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1422,7 +1425,9 @@ const Home = () => {
         </div>
       </section>
 
-      <SyncStatusPanel summary={snapshot.syncSummary} />
+      <SyncStatusPanel
+        summary={selectFarmSyncSummary(snapshot.syncSummary, activeFarmId)}
+      />
     </PageContainer>
   );
 };
