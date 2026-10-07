@@ -10,6 +10,7 @@ import {
   flushPilotMetrics,
   trackPilotMetric,
 } from "../pilotMetrics";
+import { backlogByFarm } from "@/lib/offline/syncDiagnostics";
 
 const ownershipSession = (userId: string) =>
   ({ user: { id: userId } }) as Parameters<
@@ -95,7 +96,7 @@ describe("buildPilotMetricsSummary", () => {
   });
 
   it("flushes pending pilot metrics to the remote ingest endpoint once", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, inserted: 2 }) });
     vi.stubGlobal("fetch", fetchMock);
     vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
       data: {
@@ -145,7 +146,7 @@ describe("buildPilotMetricsSummary", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({ ok: false })
-      .mockResolvedValueOnce({ ok: true });
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, inserted: 1 }) });
     vi.stubGlobal("fetch", fetchMock);
     vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
       data: {
@@ -176,5 +177,84 @@ describe("buildPilotMetricsSummary", () => {
     await flushPilotMetrics();
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["network", () => Promise.reject(new TypeError("Failed to fetch"))],
+    ["abort", () => Promise.reject(new DOMException("Aborted", "AbortError"))],
+    ["HTTP", () => Promise.resolve({ ok: false })],
+    ["invalid JSON", () => Promise.resolve({ ok: true, json: async () => { throw new SyntaxError(); } })],
+    ["invalid receipt", () => Promise.resolve({ ok: true, json: async () => ({ success: false, inserted: 1 }) })],
+    ["missing count", () => Promise.resolve({ ok: true, json: async () => ({ success: true }) })],
+    ["impossible count", () => Promise.resolve({ ok: true, json: async () => ({ success: true, inserted: 2 }) })],
+  ])("keeps the checkpoint and retries the same IDs after %s failure", async (_name, fail) => {
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: { session: { access_token: "test-token", user: { id: "user-metrics" } } }, error: null,
+    } as never);
+    const previous = { createdAt: "2026-03-28T10:00:00.000Z", idsAtCursor: ["delivered"] };
+    const key = "rebanhosync:telemetry-flush:farm-1";
+    localStorage.setItem(key, JSON.stringify(previous));
+    const pending = event({ id: "retry-same-id" });
+    await db.metrics_events.put(pending);
+    const fetchMock = vi.fn().mockImplementation(fail);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(flushPilotMetrics()).rejects.toThrow("Falha ao enviar telemetria remota.");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(localStorage.getItem(key)!)).toEqual(previous);
+    expect(await db.metrics_events.get(pending.id)).toEqual(pending);
+
+    // Lost ACK replay is accepted even when ingest inserts no new rows.
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ success: true, inserted: 0 }) });
+    await flushPilotMetrics();
+    const bodies = fetchMock.mock.calls.map(([, request]) => JSON.parse(request.body));
+    expect(bodies).toEqual([{ events: [pending] }, { events: [pending] }, { events: [pending] }]);
+    expect(JSON.parse(localStorage.getItem(key)!)).toEqual({ createdAt: pending.created_at, idsAtCursor: [pending.id] });
+  });
+
+  it("retains all confirmed IDs across batches sharing a timestamp", async () => {
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: { session: { access_token: "test-token", user: { id: "user-metrics" } } }, error: null,
+    } as never);
+    await db.metrics_events.bulkPut(Array.from({ length: 101 }, (_, index) => event({ id: `same-time-${index}` })));
+    const fetchMock = vi.fn().mockImplementation(async (_url, request) => ({
+      ok: true, json: async () => ({ success: true, inserted: JSON.parse(request.body).events.length }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    await flushPilotMetrics();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await flushPilotMetrics();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(localStorage.getItem("rebanhosync:telemetry-flush:farm-1")!).idsAtCursor).toHaveLength(101);
+  });
+
+  it("aborts a hung telemetry request without confirming delivery", async () => {
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: { session: { access_token: "test-token", user: { id: "user-metrics" } } }, error: null,
+    } as never);
+    await db.metrics_events.put(event({ id: "hung-request" }));
+    // Accelerate only the telemetry timer; IndexedDB scheduling remains real.
+    const schedule = globalThis.setTimeout;
+    vi.spyOn(globalThis, "setTimeout").mockImplementation((callback, delay, ...args) =>
+      schedule(callback, delay === 15_000 ? 0 : delay, ...args));
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((_url, request) => new Promise((_resolve, reject) => {
+      request.signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+    })));
+    await expect(flushPilotMetrics()).rejects.toThrow("Falha ao enviar telemetria remota.");
+    expect(localStorage.getItem("rebanhosync:telemetry-flush:farm-1")).toBeNull();
+    expect(await db.metrics_events.get("hung-request")).toBeDefined();
+  });
+
+  it("persists backlog metrics with the count of each declared farm", async () => {
+    for (const backlog of backlogByFarm([
+      { fazenda_id: "farm-A" }, { fazenda_id: "farm-B" },
+      { fazenda_id: "farm-A" }, { fazenda_id: "farm-B" }, { fazenda_id: "farm-B" },
+    ])) {
+      await trackPilotMetric({ ...backlog, eventName: "sync_backlog" });
+    }
+    const metrics = await db.metrics_events.toArray();
+    expect(metrics.map(row => ({ farm: row.fazenda_id, quantity: row.quantity })))
+      .toEqual(expect.arrayContaining([{ farm: "farm-A", quantity: 2 }, { farm: "farm-B", quantity: 3 }]));
+    expect(metrics).toHaveLength(2);
   });
 });

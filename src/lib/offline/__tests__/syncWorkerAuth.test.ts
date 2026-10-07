@@ -234,6 +234,10 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
 
     await processGesture(await loadGesture(txId));
 
+    expect((await db.queue_gestures.get(txId))?.diagnostics?.last_failure).toMatchObject({
+      code: "HTTP_401", cause_code: "HTTP_401", retry_count: 0,
+    });
+
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(vi.mocked(supabase.auth.refreshSession)).toHaveBeenCalledTimes(1);
     expect(await db.queue_gestures.get(txId)).toMatchObject({

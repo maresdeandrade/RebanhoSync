@@ -1,7 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { db } from "./db";
 import { recordGestureDiagnostic, recordAcknowledgementIfCommitted, recordDrainAttempt,
-  recordDrainFailure, recordDrainCompletion, sanitizeDiagnosticError } from "./syncDiagnostics";
+  recordDrainFailure, recordDrainCompletion, sanitizeDiagnosticError, backlogByFarm } from "./syncDiagnostics";
 import { isMovementOperation } from "./movement";
 import { recordMovementResults, reconcileMovementForFarm, hasRejectedMovement } from "./movementReconciliation";
 import { env } from "@/lib/env";
@@ -402,14 +402,12 @@ export const startSyncWorker = () => {
 
       // Flush pilot metrics (non-blocking)
       try {
-        const pendingCount = pending.length;
-        if (pendingCount > 0) {
-          // Pick the fazenda_id of the first pending gesture (if there are multiple, it's fine, it's just telemetry)
+        for (const backlog of backlogByFarm(pending)) {
           await trackPilotMetric({
-            fazendaId: pending[0].fazenda_id,
+            fazendaId: backlog.fazendaId,
             eventName: "sync_backlog",
             status: "info",
-            quantity: pendingCount,
+            quantity: backlog.quantity,
           });
         }
         await flushPilotMetrics();
@@ -1791,6 +1789,10 @@ export async function processGesture(gesture: Gesture) {
     );
 
     if (response.status === 401) {
+      await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
+        last_failure: { code: "HTTP_401", cause_code: "HTTP_401",
+          observed_at: new Date().toISOString(), retry_count: gesture.retry_count ?? 0 },
+      });
       console.warn(
         "[sync-worker] HTTP 401 on sync-batch, attempting refresh + single retry",
       );
@@ -2342,6 +2344,8 @@ export async function processGesture(gesture: Gesture) {
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
 
+    let retryExhausted = false;
+    let observedRetryCount = gesture.retry_count ?? 0;
     const isStale = await db.transaction("rw", [db.queue_gestures],
       // fallow-ignore-next-line complexity
       async () => {
@@ -2356,6 +2360,7 @@ export async function processGesture(gesture: Gesture) {
         }
 
         const retryCount = current.retry_count ?? gesture.retry_count ?? 0;
+        observedRetryCount = retryCount;
 
         if (isNonRetryableSyncError(error.message)) {
           await db.queue_gestures.update(gesture.client_tx_id, {
@@ -2385,6 +2390,7 @@ export async function processGesture(gesture: Gesture) {
 
         if (isTransient && (retryCount < MAX_RETRIES || isRateLimited)) {
           const nextRetryCount = retryCount + 1;
+          observedRetryCount = nextRetryCount;
           const nextAttemptAt = calculateGenericRetryAt({
             retryCount: nextRetryCount,
             retryAfterAt:
@@ -2404,6 +2410,7 @@ export async function processGesture(gesture: Gesture) {
         }
 
         if (!isTransient && retryCount < MAX_RETRIES) {
+          observedRetryCount = retryCount + 1;
           await db.queue_gestures.update(gesture.client_tx_id, {
             status: "PENDING",
             sync_result: undefined,
@@ -2414,6 +2421,7 @@ export async function processGesture(gesture: Gesture) {
           return false;
         }
 
+        retryExhausted = true;
         await db.queue_gestures.update(gesture.client_tx_id, {
           status: "ERROR",
           sync_result: "ERROR",
@@ -2427,6 +2435,12 @@ export async function processGesture(gesture: Gesture) {
     if (isStale) {
       return;
     }
+    const failure = sanitizeDiagnosticError(e, "SYNC_FAILURE");
+    const failureCode = retryExhausted ? "RETRY_EXHAUSTED" : failure.code;
+    await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
+      last_failure: { code: failureCode, cause_code: failure.code,
+        observed_at: new Date().toISOString(), retry_count: observedRetryCount },
+    });
     if (isAuthSyncError(error.message)) {
       await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
         blocked: { code: "AUTH_UNAVAILABLE", observed_at: new Date().toISOString() },
@@ -2439,9 +2453,13 @@ export async function processGesture(gesture: Gesture) {
       status: "error",
       entity: "sync-batch",
       quantity: ops.length,
+      reasonCode: failureCode,
       payload: {
         op_count: ops.length,
-        message: error.message,
+        client_tx_id: gesture.client_tx_id,
+        client_op_ids: ops.map(op => op.client_op_id),
+        cause_code: failure.code,
+        retry_count: observedRetryCount,
       },
     });
   }
