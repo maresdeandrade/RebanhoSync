@@ -33,11 +33,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
+import { AnimalDetailHeader } from "@/components/animals/AnimalDetailHeader";
+import { AnimalTechnicalDetails } from "@/components/animals/AnimalTechnicalDetails";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
 import { AnimalWeightVariationBadge } from "@/components/animals/AnimalWeightVariationBadge";
 import { AnimalSimulacaoCta } from "@/features/productiveSimulation/AnimalSimulacaoCta";
-import { AnimalVisualAvatar } from "@/components/animals/AnimalVisualAvatar";
 import { MoverAnimalLote } from "@/components/manejo/MoverAnimalLote";
 import {
   AlertDialog,
@@ -261,6 +261,12 @@ const SANITARY_ENTRY_HISTORY_EVIDENCE_OPTIONS: Array<{
   { value: "declaracao_produtor", label: "Declaração do produtor" },
   { value: "outro", label: "Outro" },
 ];
+
+function formatCivilDate(value: string | null | undefined) {
+  if (!value) return "-";
+  const [year, month, day] = value.split("-");
+  return `${day}/${month}/${year}`;
+}
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "-";
@@ -1730,58 +1736,16 @@ const AnimalDetalhe = () => {
 
   return (
     <PageContainer width="standard" className="space-y-6">
-      <div className="rounded-xl border border-border/70 bg-card p-4 shadow-none">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <Link to="/animais">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-                aria-label="Voltar para a lista de animais"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <AnimalVisualAvatar
-              categoriaLabel={categoriaLabel}
-              sexo={animal.sexo}
-              size="lg"
-              className="border-border bg-muted text-primary"
-            />
-            <div className="min-w-0 flex-1 space-y-3">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-3xl font-semibold tracking-normal text-foreground">
-                    {animal.identificacao}
-                  </h1>
-                  <Badge variant="outline">
-                    {animal.sexo === "M" ? "Macho" : "Femea"}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {[
-                    animal.raca ? getAnimalBreedLabel(animal.raca) : null,
-                    animalLote ? `Lote: ${animalLote.nome}` : "Sem lote definido",
-                    animal.nome ? `Nome: ${animal.nome}` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" - ")}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
-                <Badge variant="outline">
-                  Estado atual: {animal.status}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Estado, status e classificacao sao leitura operacional; nao
-                autorizam venda ou abate.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 lg:ml-auto lg:justify-end">
+      <AnimalDetailHeader
+        identification={animal.identificacao}
+        name={animal.nome}
+        sex={animal.sexo}
+        sexLabel={animal.sexo === "M" ? "Macho" : "Fêmea"}
+        breedLabel={animal.raca ? getAnimalBreedLabel(animal.raca) : null}
+        categoryLabel={categoriaLabel}
+        status={animal.status}
+        lotLabel={animalLote ? `Lote: ${animalLote.nome}` : "Sem lote definido"}
+      >
             {hasMovementBlockedSanitaryAlert && (
               <Button
                 size="sm"
@@ -1795,23 +1759,23 @@ const AnimalDetalhe = () => {
               </Button>
             )}
             {animal.status === "ativo" && !hasMovementBlockedSanitaryAlert ? (
-              <Button size="sm" asChild>
+              <Button size="default" asChild>
                 <Link to={registrarAnimalPath}>
                   <ClipboardCheck className="mr-2 h-4 w-4" />
                   Registrar manejo
                 </Link>
               </Button>
             ) : (
-              <Button size="sm" disabled>
+              <Button size="default" disabled>
                 <ClipboardCheck className="mr-2 h-4 w-4" />
                 Registrar manejo
               </Button>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <MoreHorizontal className="mr-2 h-4 w-4" />
-                  Mais acoes
+                <Button variant="outline" size="default" className="min-w-12 px-3 sm:px-5">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only sm:not-sr-only">Mais acoes</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -1855,148 +1819,7 @@ const AnimalDetalhe = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Card className="border-border/70 shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase text-muted-foreground">
-              Ultimo peso observado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {ultimoPeso ? (
-              <div>
-                <div className="flex items-center gap-2 text-2xl font-bold">
-                  <Scale className="h-5 w-5 text-primary" />
-                  {formatWeight(
-                    ultimoPeso.peso_kg,
-                    farmMeasurementConfig.weight_unit,
-                  )}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {formatDate(ultimoPeso.data)}
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-2xl font-bold text-muted-foreground">
-                <Scale className="h-5 w-5" />
-                Sem pesagem
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/70 shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Informacoes basicas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
-            <Badge
-              variant="outline"
-              className={
-                animal.sexo === "F"
-                  ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
-                  : "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800/60 dark:bg-sky-950/40 dark:text-sky-200"
-              }
-            >
-              {animal.sexo === "M" ? "Macho" : "Femea"}
-            </Badge>
-            <Badge variant="default">{animal.status}</Badge>
-            {animal.origem && animal.origem !== "nascimento" && (
-              <Badge variant="secondary">
-                {animal.origem.charAt(0).toUpperCase() + animal.origem.slice(1)}
-              </Badge>
-            )}
-            {animal.raca && (
-              <Badge variant="outline">
-                {getAnimalBreedLabel(animal.raca)}
-              </Badge>
-            )}
-            {animal.sexo === "M" && maleDestination && (
-              <Badge variant="outline">
-                {getAnimalProductiveDestinationLabel(maleDestination)}
-              </Badge>
-            )}
-            {sociedadeAtiva && (
-              <Badge variant="secondary">
-                <Handshake className="h-3 w-3 mr-1" />
-                Sociedade {sociedadeAtiva.percentual_fazenda}/{sociedadeAtiva.percentual_parceiro}
-              </Badge>
-            )}
-            {animal.sexo === "M" && maleReproductiveStatus && (
-              <Badge
-                variant="outline"
-                className={
-                  maleReproductiveStatus === "apto"
-                    ? "border-semantic-success-border bg-semantic-success-muted text-semantic-success-foreground"
-                    : "border-semantic-warning-border bg-semantic-warning-muted text-semantic-warning-foreground"
-                }
-              >
-                {getMaleReproductiveStatusLabel(maleReproductiveStatus)}
-              </Badge>
-            )}
-            {animal.sexo === "M" && effectiveTransitionMode && (
-              <Badge variant="secondary">
-                {getTransitionModeLabel(effectiveTransitionMode)}
-              </Badge>
-            )}
-            {sociedadeAtiva && contraparte && (
-              <Badge variant="default">
-                {contraparte.nome}
-                {` (${sociedadeAtiva.percentual_fazenda}%)`}
-              </Badge>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/70 bg-card shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase text-muted-foreground">
-              Proximo manejo
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold tracking-tight">
-              {proximaAgenda
-                ? formatDate(proximaAgenda.item.data_prevista)
-                : "Sem agenda"}
-            </div>
-            {proximaAgenda ? (
-              <div className="mt-3 space-y-2">
-                <p className="text-sm font-medium text-foreground">
-                  {formatAgendaTipoLabel(proximaAgenda.item.tipo)}
-                </p>
-                {proximaAgenda.scheduleLabel ? (
-                  <p className="text-xs text-muted-foreground">
-                    {proximaAgenda.scheduleLabel}
-                  </p>
-                ) : null}
-                {proximaAgenda.scheduleModeLabel ||
-                proximaAgenda.scheduleAnchorLabel ? (
-                  <div className="flex flex-wrap gap-2">
-                    {proximaAgenda.scheduleModeLabel ? (
-                      <Badge variant="outline" className="text-[10px]">
-                        {proximaAgenda.scheduleModeLabel}
-                      </Badge>
-                    ) : null}
-                    {proximaAgenda.scheduleAnchorLabel ? (
-                      <Badge variant="secondary" className="text-[10px]">
-                        {proximaAgenda.scheduleAnchorLabel}
-                      </Badge>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      </div>
+      </AnimalDetailHeader>
 
       {(animal.payload as Record<string, unknown> | undefined)?.compliance_state === "catch_up_required" ||
       (animal.payload as Record<string, unknown> | undefined)?.history_confidence === "unknown" ? (
@@ -2166,12 +1989,129 @@ const AnimalDetalhe = () => {
         </Card>
       ) : null}
 
+      <WithdrawalBadgePanel readModel={carenciaModel} className="mb-6" />
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Card className="border-border/70 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs uppercase text-muted-foreground">
+              Último peso registrado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {ultimoPeso ? (
+              <div>
+                <div className="flex items-center gap-2 text-xl font-bold sm:text-2xl">
+                  <Scale className="hidden h-5 w-5 shrink-0 text-primary sm:block" />
+                  {formatWeight(
+                    ultimoPeso.peso_kg,
+                    farmMeasurementConfig.weight_unit,
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formatDate(ultimoPeso.data)}
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground sm:text-2xl">
+                <Scale className="hidden h-5 w-5 shrink-0 sm:block" />
+                Sem pesagem
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/70 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs uppercase text-muted-foreground">Localização atual</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="break-words text-xl font-semibold">{animalLote?.nome ?? "Sem lote definido"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Lote atual</p>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-2 border-border/70 bg-card shadow-none sm:col-span-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs uppercase text-muted-foreground">
+              Próxima tarefa prevista
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="break-words text-xl font-semibold tracking-tight">
+              {proximaAgenda
+                ? formatDate(proximaAgenda.item.data_prevista)
+                : "Sem tarefa futura encontrada"}
+            </div>
+            {proximaAgenda ? (
+              <div className="mt-3 space-y-2">
+                <p className="text-sm font-medium text-foreground">
+                  {formatAgendaTipoLabel(proximaAgenda.item.tipo)}
+                </p>
+                {proximaAgenda.scheduleLabel ? (
+                  <p className="text-xs text-muted-foreground">
+                    {proximaAgenda.scheduleLabel}
+                  </p>
+                ) : null}
+                {proximaAgenda.scheduleModeLabel ||
+                proximaAgenda.scheduleAnchorLabel ? (
+                  <div className="flex flex-wrap gap-2">
+                    {proximaAgenda.scheduleModeLabel ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        {proximaAgenda.scheduleModeLabel}
+                      </Badge>
+                    ) : null}
+                    {proximaAgenda.scheduleAnchorLabel ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {proximaAgenda.scheduleAnchorLabel}
+                      </Badge>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="overview" className="min-w-0 w-full">
+        <div className="overflow-x-auto pb-1">
+          <TabsList aria-label="Seções do animal" className="h-auto w-max min-w-full justify-start gap-1 bg-muted/40 p-1">
+            <TabsTrigger value="overview" className="min-h-12 gap-2 rounded-md">Visão geral</TabsTrigger>
+            <TabsTrigger value="timeline" className="min-h-12 gap-2 rounded-md"><History className="h-4 w-4" /> Histórico</TabsTrigger>
+            <TabsTrigger value="sanidade" className="min-h-12 gap-2 rounded-md"><Syringe className="h-4 w-4" /> Sanidade</TabsTrigger>
+            <TabsTrigger value="agenda" className="min-h-12 gap-2 rounded-md"><Calendar className="h-4 w-4" /> Agenda</TabsTrigger>
+            <TabsTrigger value="comercial" className="min-h-12 gap-2 rounded-md"><DollarSign className="h-4 w-4" /> Comercial</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="overview" className="mt-6 space-y-6">
+          <Card className="border-border/70 shadow-none">
+            <CardHeader className="pb-3"><CardTitle className="text-base">Identificação complementar</CardTitle></CardHeader>
+            <CardContent>
+              <dl className="grid gap-4 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="text-muted-foreground">Nascimento</dt>
+                  <dd className="mt-1 font-medium">
+                    {formatCivilDate(animal.data_nascimento)}
+                  </dd>
+                </div>
+                <div><dt className="text-muted-foreground">Origem</dt><dd className="mt-1 font-medium capitalize">{animal.origem ?? "Não registrada"}</dd></div>
+                <div><dt className="text-muted-foreground">RFID</dt><dd className="mt-1 break-words font-medium">{animal.rfid ?? "Não registrado"}</dd></div>
+              </dl>
+            </CardContent>
+          </Card>
       {taxonomySnapshot && (
         <Card className="shadow-none">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Taxonomia canônica</CardTitle>
+            <CardTitle className="text-base">Situação atual</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Estado produtivo/reprodutivo</p>
+              <p className="mt-1 font-medium">{taxonomySnapshot.display.estado_alias}</p>
+            </div>
+            <AnimalTechnicalDetails label="Ver detalhes técnicos da taxonomia">
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
                 <p className="text-xs uppercase text-muted-foreground">
@@ -2210,6 +2150,9 @@ const AnimalDetalhe = () => {
                 )}
               </div>
             </div>
+
+
+            </AnimalTechnicalDetails>
 
             <div className="flex flex-wrap gap-2">
               {taxonomySnapshot.facts.data_desmama && (
@@ -2258,9 +2201,6 @@ const AnimalDetalhe = () => {
                   Atual:{" "}
                   {getAnimalLifeStageLabel(lifecycleSnapshot.currentStage)}
                 </Badge>
-                <Badge variant="secondary">
-                  {getTransitionModeLabel(lifecycleSnapshot.transitionMode)}
-                </Badge>
                 {lifecycleSnapshot.currentStageSource === "inferred" && (
                   <Badge variant="outline">Estagio ainda nao registrado</Badge>
                 )}
@@ -2268,6 +2208,8 @@ const AnimalDetalhe = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <AnimalTechnicalDetails label="Ver detalhes técnicos do estágio">
+              <p className="text-sm text-muted-foreground">{getTransitionModeLabel(lifecycleSnapshot.transitionMode)}</p>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
                 <p className="text-xs uppercase text-muted-foreground">
@@ -2294,6 +2236,9 @@ const AnimalDetalhe = () => {
                 </p>
               </div>
             </div>
+
+
+            </AnimalTechnicalDetails>
 
             {lifecycleSnapshot.shouldSuggestTransition ? (
               <div className="rounded-xl border border-warning/25 bg-warning-muted/50 p-4">
@@ -2879,6 +2824,12 @@ const AnimalDetalhe = () => {
                   </p>
                 </div>
               )}
+              {sociedadeAtiva.percentual_parceiro != null && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Participação do parceiro</p>
+                  <p className="font-semibold">{sociedadeAtiva.percentual_parceiro}%</p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -2905,31 +2856,11 @@ const AnimalDetalhe = () => {
         </Card>
       )}
 
-      <WithdrawalBadgePanel readModel={carenciaModel} className="mb-6" />
 
-      <Tabs defaultValue="timeline" className="w-full">
-        <div className="overflow-x-auto pb-1">
-        <TabsList
-          aria-label="Seções do animal"
-          className="grid min-w-[680px] max-w-[760px] grid-cols-5 bg-muted/40 p-1"
-        >
-          <TabsTrigger value="timeline" className="gap-2 rounded-md">
-            <History className="h-4 w-4" /> Timeline
-          </TabsTrigger>
-          <TabsTrigger value="casos" className="gap-2 rounded-md">
-            <HeartPulse className="h-4 w-4" /> Casos
-          </TabsTrigger>
-          <TabsTrigger value="sanidade" className="gap-2 rounded-md">
-            <Syringe className="h-4 w-4" /> Sanidade
-          </TabsTrigger>
-          <TabsTrigger value="agenda" className="gap-2 rounded-md">
-            <Calendar className="h-4 w-4" /> Agenda
-          </TabsTrigger>
-          <TabsTrigger value="comercial" className="gap-2 rounded-md">
-            <DollarSign className="h-4 w-4" /> Comercial
-          </TabsTrigger>
-        </TabsList>
-        </div>
+          <div className="flex justify-end">
+            <AnimalSimulacaoCta animalId={animal.id} />
+          </div>
+        </TabsContent>
 
         <TabsContent value="timeline" className="mt-6">
           <div className="space-y-3">
@@ -3059,7 +2990,12 @@ const AnimalDetalhe = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="casos" className="mt-6">
+
+
+        <TabsContent value="sanidade" className="mt-6 space-y-6">
+          <section aria-label="Casos sanitários" className="space-y-4">
+            <h2 className="text-lg font-semibold">Casos sanitários</h2>
+
           {!hasMovementBlockedSanitaryAlert && animal.status === "ativo" && (
             <div className="mb-4">
               <Button
@@ -3079,9 +3015,8 @@ const AnimalDetalhe = () => {
             eventsByCase={sanitaryEventsByCase}
             onCloseClinicalCase={handleOpenCloseClinicalCaseDialog}
           />
-        </TabsContent>
 
-        <TabsContent value="sanidade" className="mt-6">
+          </section>
           <SanitaryAnimalSummaryPanelV2
             animal={sanitaryPrecheckAnimalV2}
             animalId={animal.id}
@@ -3929,20 +3864,7 @@ const AnimalDetalhe = () => {
 };
 
 function AnimalDetalhePage() {
-  const { id } = useParams<{ id: string }>();
-  return (
-    <>
-      <AnimalDetalhe />
-      {id && (
-        <div className="fixed bottom-6 right-6 z-40 shadow-lg rounded-md">
-          <AnimalSimulacaoCta
-            animalId={id}
-            className="bg-background hover:bg-muted border-primary/50 text-foreground font-medium shadow-md"
-          />
-        </div>
-      )}
-    </>
-  );
+  return <AnimalDetalhe />;
 }
 
 export default AnimalDetalhePage;
