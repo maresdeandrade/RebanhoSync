@@ -41,6 +41,7 @@ export interface PilotMetricsSummary {
 }
 
 const TELEMETRY_FLUSH_BATCH_SIZE = 100;
+const TELEMETRY_REQUEST_TIMEOUT_MS = 15_000;
 const TELEMETRY_FLUSH_CURSOR_PREFIX = "rebanhosync:telemetry-flush:";
 
 interface TelemetryFlushCursor {
@@ -132,6 +133,8 @@ async function flushTelemetryBatch(
   accessToken: string,
   events: PilotMetricEvent[],
 ): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TELEMETRY_REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch(`${env.supabaseFunctionsUrl}/telemetry-ingest`, {
       method: "POST",
@@ -141,16 +144,20 @@ async function flushTelemetryBatch(
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ events }),
+      signal: controller.signal,
     });
 
-    return response.ok;
-  } catch (error) {
-    // TD-021: telemetry-ingest Edge Function not yet deployed.
-    // Gracefully degrade if endpoint is unavailable (404, network error, etc.)
-    console.debug("[pilot-metrics] telemetry flush skipped (endpoint unavailable)", {
-      reason: error instanceof Error ? error.message : "Unknown error",
-    });
-    return true; // Treat as success to avoid infinite retry loop
+    if (!response.ok) return false;
+    const receipt = await response.json();
+    // Duplicate IDs are accepted by ingest's ignoreDuplicates upsert, so a
+    // replay may insert zero rows. HTTP success alone is not a receipt.
+    return receipt?.success === true && Number.isInteger(receipt.inserted) &&
+      receipt.inserted >= 0 && receipt.inserted <= events.length;
+  } catch {
+    console.debug("[pilot-metrics] telemetry delivery unconfirmed");
+    return false;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -180,10 +187,16 @@ async function flushTelemetryForFarm(fazendaId: string): Promise<number> {
 
   writeTelemetryFlushCursor(fazendaId, {
     createdAt: lastCreatedAt,
-    idsAtCursor,
+    idsAtCursor: mergeConfirmedCursorIds(readTelemetryFlushCursor(fazendaId), lastCreatedAt, idsAtCursor),
   });
 
   return pendingEvents.length;
+}
+
+function mergeConfirmedCursorIds(previous: TelemetryFlushCursor | null, createdAt: string, ids: string[]) {
+  return previous?.createdAt === createdAt
+    ? Array.from(new Set([...previous.idsAtCursor, ...ids]))
+    : ids;
 }
 
 export async function trackPilotMetric(

@@ -37,9 +37,11 @@ import { db } from "../db";
 import { createGesture } from "../ops";
 import { processGesture } from "../syncWorker";
 import { seedLocalOwner } from "./ownershipTestFixture";
+import { trackPilotMetric } from "@/lib/telemetry/pilotMetrics";
 
 describe("F24.3B3 — generic network retry", () => {
   beforeEach(async () => {
+    vi.clearAllMocks();
     vi.stubGlobal("localStorage", {
       getItem: () => null,
       setItem: () => undefined,
@@ -108,6 +110,9 @@ describe("F24.3B3 — generic network retry", () => {
       retry_count: 1,
       next_attempt_at: new Date(now + 5_000).toISOString(),
     });
+    expect(persisted?.diagnostics?.last_failure).toMatchObject({
+      code: "NETWORK_FAILURE", cause_code: "NETWORK_FAILURE", retry_count: 1,
+    });
 
     await processGesture(persisted!);
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -123,5 +128,33 @@ describe("F24.3B3 — generic network retry", () => {
       client_tx_id: txId,
       client_op_id: opBefore.client_op_id,
     });
+  });
+
+  it.each([
+    ["network", () => Promise.reject(new TypeError("Failed to fetch")), 0, "PENDING", "NETWORK_FAILURE", "NETWORK_FAILURE"],
+    ["abort", () => Promise.reject(new DOMException("Aborted", "AbortError")), 0, "PENDING", "REQUEST_ABORTED", "REQUEST_ABORTED"],
+    ["503", () => Promise.resolve(new Response("private response", { status: 503 })), 0, "PENDING", "HTTP_503", "HTTP_503"],
+    ["403", () => Promise.resolve(new Response("private response", { status: 403 })), 0, "ERROR", "HTTP_403", "HTTP_403"],
+    ["429 past max", () => Promise.resolve(new Response("private response", { status: 429 })), 10, "PENDING", "HTTP_429", "HTTP_429"],
+    ["exhaustion", () => Promise.reject(new TypeError("Failed to fetch private response")), 10, "ERROR", "RETRY_EXHAUSTED", "NETWORK_FAILURE"],
+  ])("observes %s without changing retry decisions or persisting response text", async (_name, fail, retryCount, status, code, cause) => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(fail));
+    const tx = await createGesture("farm-generic-retry", [{
+      table: "lotes", action: "INSERT",
+      record: { id: "failure-lot", fazenda_id: "farm-generic-retry" },
+    }]);
+    await db.queue_gestures.update(tx, { retry_count: retryCount });
+    const op = (await db.queue_ops.where("client_tx_id").equals(tx).first())!;
+    await processGesture((await db.queue_gestures.get(tx))!);
+    const persisted = await db.queue_gestures.get(tx);
+    expect(persisted?.status).toBe(status);
+    expect(persisted?.diagnostics?.last_failure).toMatchObject({ code, cause_code: cause });
+    expect(persisted?.diagnostics?.client_op_ids).toContain(op.client_op_id);
+    const metric = vi.mocked(trackPilotMetric).mock.calls.find(([input]) => input.eventName === "sync_error")?.[0];
+    expect(metric).toMatchObject({ fazendaId: "farm-generic-retry", reasonCode: code,
+      payload: { client_tx_id: tx, client_op_ids: [op.client_op_id], cause_code: cause } });
+    expect(JSON.stringify(metric)).not.toContain("private response");
+    expect(JSON.stringify(persisted?.diagnostics)).not.toContain("private response");
+    expect(await db.queue_ops.get(op.client_op_id)).toBeDefined();
   });
 });

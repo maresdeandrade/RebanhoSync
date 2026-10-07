@@ -2,17 +2,27 @@ import { db } from "./db";
 import type { GestureDiagnostics, ReconciliationObligation } from "./reconciliationTypes";
 
 /** Diagnostics never supply a functional decision or expose the original error. */
-export function sanitizeDiagnosticError(error: unknown) {
+export function sanitizeDiagnosticError(error: unknown, fallbackCode = "RECONCILIATION_FAILURE") {
   const value = error instanceof Error ? error.message : "";
-  const status = /\b(?:HTTP\s+)(401|403|409|412|429|500|502|503|504)\b/i.exec(value)?.[1];
+  const status = /\b(?:HTTP\s+)(401|403|409|412|429|5\d{2})\b/i.exec(value)?.[1];
   if (status) return { code: `HTTP_${status}`, message: `Falha HTTP ${status}.` };
-  if (error instanceof Error && (error.name === "AbortError" || value === "Requisição interrompida.")) {
+  const name = error && typeof error === "object" && "name" in error ? error.name : undefined;
+  if (name === "AbortError" || name === "TimeoutError" || value === "Requisição interrompida.") {
     return { code: "REQUEST_ABORTED", message: "Requisição interrompida." };
   }
-  if (/failed to fetch|network|offline|^Falha de rede\.$/i.test(value)) {
+  if (/failed to fetch|fetch failed|network|offline|name resolution fail|^Falha de rede\.$/i.test(value)) {
     return { code: "NETWORK_FAILURE", message: "Falha de rede." };
   }
-  return { code: "RECONCILIATION_FAILURE", message: "Falha na reconciliação." };
+  return { code: fallbackCode, message: fallbackCode === "RECONCILIATION_FAILURE"
+    ? "Falha na reconciliação." : "Falha na sincronização." };
+}
+
+export function backlogByFarm(pending: readonly { fazenda_id: string }[]) {
+  const counts = new Map<string, number>();
+  for (const gesture of pending) {
+    counts.set(gesture.fazenda_id, (counts.get(gesture.fazenda_id) ?? 0) + 1);
+  }
+  return Array.from(counts, ([fazendaId, quantity]) => ({ fazendaId, quantity }));
 }
 
 async function observe(action: () => Promise<unknown>) {

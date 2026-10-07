@@ -28,6 +28,12 @@ export interface GestureDiagnostics {
   result_received_at?: string;
   ack_installed_at?: string;
   blocked?: { code: "AUTH_UNAVAILABLE"; observed_at: string };
+  last_failure?: {
+    code: string;
+    cause_code: string;
+    observed_at: string;
+    retry_count: number;
+  };
   reconciliation?: {
     key: string;
     scope: ReconciliationScope;
