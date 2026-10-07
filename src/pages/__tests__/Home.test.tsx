@@ -18,6 +18,7 @@ type HomeSnapshotStub = {
   agendaHoje: number;
   agendaAtrasada: number;
   syncSummary: {
+    fazendaId: string;
     pendingCount: number;
     savedLocalCount: number;
     syncingCount: number;
@@ -134,10 +135,10 @@ vi.mock("@/components/offline/SyncStatusPanel", () => ({
   SyncStatusPanel: ({
     summary,
   }: {
-    summary: HomeSnapshotStub["syncSummary"];
+    summary?: HomeSnapshotStub["syncSummary"];
   }) => (
     <section aria-label="Estado de sync">
-      Rejeicoes {summary.rejectionCount}
+      {summary ? `Rejeicoes ${summary.rejectionCount}` : "Verificando sincronização"}
     </section>
   ),
 }));
@@ -167,6 +168,7 @@ function createSnapshot(
     agendaHoje: 0,
     agendaAtrasada: 0,
     syncSummary: {
+      fazendaId: "farm-1",
       pendingCount: 0,
       savedLocalCount: 0,
       syncingCount: 0,
@@ -330,6 +332,7 @@ describe("Home", () => {
   it("keeps sync status visible", () => {
     currentSnapshot = createSnapshot({
       syncSummary: {
+        fazendaId: "farm-1",
         pendingCount: 1,
         savedLocalCount: 1,
         syncingCount: 0,
@@ -344,6 +347,15 @@ describe("Home", () => {
     expect(
       screen.getByRole("region", { name: /estado de sync/i }),
     ).toHaveTextContent("Rejeicoes 2");
+  });
+
+  it("does not present a previous farm's sync snapshot while the selected farm loads", () => {
+    currentSnapshot = createSnapshot();
+    currentSnapshot.syncSummary.fazendaId = "previous-farm";
+    currentSnapshot.syncSummary.rejectionCount = 3;
+    renderHome();
+    expect(screen.getByRole("region", { name: /estado de sync/i })).toHaveTextContent("Verificando sincronização");
+    expect(screen.queryByText("Rejeicoes 3")).not.toBeInTheDocument();
   });
 
   it("renders passive inventory replenishment alerts", () => {

@@ -1,13 +1,7 @@
 /**
  * SyncStatusBadge — versão compacta do estado de sincronização para o header.
  *
- * Segue a regra de prioridade definida no Design System §19.2:
- *   1. Rejeitados > 0  → "Revisão necessária" (danger)
- *   2. Sincronizando > 0 → "Sincronizando" (info)
- *   3. No aparelho > 0  → "Salvo localmente" (warning)
- *   4. Último com ajuste → "Confirmado com ajuste" (warning)
- *   5. Tudo certo        → "Em dia" (success)
- *
+ * Projeta a prioridade compartilhada de sync/reconcile.
  * Tap/click abre o painel de sincronização completo.
  */
 import * as React from "react";
@@ -19,11 +13,14 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { FarmSyncSummary } from "@/lib/offline/syncPresentation";
+import {
+  getFarmSyncHealth,
+  type FarmSyncSummary,
+} from "@/lib/offline/syncPresentation";
 
 interface SyncStatusBadgeProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  summary: FarmSyncSummary;
+  summary?: FarmSyncSummary;
   /** Se `true`, mostra apenas o ícone (toolbar densa). Sempre exige aria-label. */
   iconOnly?: boolean;
 }
@@ -37,41 +34,17 @@ interface BadgeState {
   spin?: boolean;
 }
 
-function getBadgeState(summary: FarmSyncSummary): BadgeState {
-  if (summary.rejectionCount > 0) {
-    return {
-      tone: "danger",
-      label: "Revisão necessária",
-      Icon: CloudAlert,
-    };
-  }
-  if (summary.syncingCount > 0) {
-    return {
-      tone: "info",
-      label: "Sincronizando",
-      Icon: Loader2,
-      spin: true,
-    };
-  }
-  if (summary.savedLocalCount > 0) {
-    return {
-      tone: "warning",
-      label: "Salvo localmente",
-      Icon: CloudUpload,
-    };
-  }
-  if (summary.lastCompletedStage === "synced_altered") {
-    return {
-      tone: "warning",
-      label: "Confirmado com ajuste",
-      Icon: CloudUpload,
-    };
-  }
-  return {
-    tone: "success",
-    label: "Em dia",
-    Icon: CheckCircle2,
-  };
+function getBadgeState(summary?: FarmSyncSummary): BadgeState {
+  const health = getFarmSyncHealth(summary);
+  const Icon =
+    health.stage === "checking" || health.stage === "syncing"
+      ? Loader2
+      : health.tone === "danger" || health.stage === "reconcile"
+        ? CloudAlert
+        : health.stage === "healthy"
+          ? CheckCircle2
+          : CloudUpload;
+  return { ...health, Icon, spin: Icon === Loader2 };
 }
 
 const toneStyles: Record<Tone, string> = {
