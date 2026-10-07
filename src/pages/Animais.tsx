@@ -1057,8 +1057,8 @@ export default function Animais() {
             className="rounded-xl border border-border/70 bg-muted/20 p-3 shadow-none sm:p-4"
           >
             <div className="grid gap-3">
-              <div className="grid gap-3 lg:grid-cols-[minmax(180px,220px)_1fr]">
-                <div className="space-y-2">
+              <div className="flex flex-col gap-3 lg:flex-row">
+                <div className="space-y-2 lg:w-56 lg:shrink-0">
                   <p className="text-xs font-semibold uppercase text-muted-foreground">
                     Lote
                   </p>
@@ -1078,7 +1078,7 @@ export default function Animais() {
                   </Select>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid min-w-0 flex-1 gap-3 md:grid-cols-2">
                   <FilterChipGroup
                     label="Sexo"
                     value={sexoFilter}
@@ -1535,7 +1535,7 @@ export default function Animais() {
                 icon={PawPrint}
                 role="status"
                 aria-live="polite"
-                className="min-h-[240px] md:col-span-2 xl:col-span-3"
+                className="min-h-60 md:col-span-2 xl:col-span-3"
                 title={isFilteredDataLoading
                   ? "Carregando dados do recorte"
                   : debouncedSearch

@@ -268,15 +268,18 @@ describe("Animais page", () => {
     }> = [],
     loading: { weight?: boolean; agenda?: boolean; regulatory?: boolean; pending?: boolean } = {},
   ) {
+    const sources = [
+      animals ?? [],
+      [],
+      loading.weight ? undefined : weights,
+      loading.agenda ? undefined : [],
+      loading.regulatory ? undefined : emptyRegulatoryReadModel,
+      loading.pending ? undefined : [],
+    ];
     let callCount = 0;
     mockedUseLiveQuery.mockImplementation((query, deps) => {
       const index = callCount++ % 7;
-      if (index === 0) return (animals ?? []) as ReturnType<typeof useLiveQuery>;
-      if (index === 2) return (loading.weight ? undefined : weights) as ReturnType<typeof useLiveQuery>;
-      if (index === 3 && loading.agenda) return undefined;
-      if (index === 4) return (loading.regulatory ? undefined : emptyRegulatoryReadModel) as ReturnType<typeof useLiveQuery>;
-      if (index === 5 && loading.pending) return undefined;
-      if (index !== 6) return [] as ReturnType<typeof useLiveQuery>;
+      if (index !== 6) return sources[index] as ReturnType<typeof useLiveQuery>;
       const search = String(deps?.[1] ?? "").toLowerCase();
       return animals?.filter(animal => animal.identificacao.toLowerCase().includes(search)) as ReturnType<typeof useLiveQuery>;
     });
