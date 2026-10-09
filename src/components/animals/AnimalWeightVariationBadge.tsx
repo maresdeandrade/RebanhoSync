@@ -17,13 +17,20 @@ export function AnimalWeightVariationBadge({
     <Badge
       variant="outline"
       className={
-        variationKg >= 0
-          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-          : "border-amber-200 bg-amber-50 text-amber-800"
+        variationKg > 0
+          ? "border-success/30 bg-success-muted text-foreground"
+          : variationKg < 0
+            ? "border-warning/30 bg-warning-muted text-foreground"
+            : "border-border bg-muted text-muted-foreground"
       }
     >
-      {variationKg >= 0 ? "+" : ""}
-      {formatWeight(Math.abs(variationKg), weightUnit)} no periodo
+      {variationKg > 0 ? "+" : variationKg < 0 ? "−" : ""}
+      {formatWeight(Math.abs(variationKg), weightUnit)}
+      {variationKg > 0
+        ? " · ganho"
+        : variationKg < 0
+          ? " · perda"
+          : " · sem variação"}
     </Badge>
   );
 }
