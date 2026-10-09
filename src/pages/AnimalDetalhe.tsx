@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { getAgendaScheduleBucket, type AgendaScheduleBucket } from "@/lib/agenda/groupOrdering";
 import {
-  Activity,
   AlertTriangle,
   ArrowLeftRight,
   Calendar,
@@ -25,19 +24,11 @@ import {
   Syringe,
   Trash2,
 } from "lucide-react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { AnimalDetailHeader } from "@/components/animals/AnimalDetailHeader";
 import { AnimalTechnicalDetails } from "@/components/animals/AnimalTechnicalDetails";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
-import { AnimalWeightVariationBadge } from "@/components/animals/AnimalWeightVariationBadge";
+import { AnimalWeightSection } from "@/components/animals/AnimalWeightSection";
+import { AnimalBodyConditionSection } from "@/components/animals/AnimalBodyConditionSection";
 import { AnimalSimulacaoCta } from "@/features/productiveSimulation/AnimalSimulacaoCta";
 import { MoverAnimalLote } from "@/components/manejo/MoverAnimalLote";
 import {
@@ -151,8 +142,6 @@ import {
 } from "@/lib/sanitario/history/sanitaryEntryHistoryV2";
 import {
   formatWeight,
-  formatWeightPerDay,
-  formatWeightValue,
 } from "@/lib/format/weight";
 import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
 import { loadSanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
@@ -162,7 +151,6 @@ import {
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import {
   buildAnimalWeightHistory,
-  buildAnimalWeightSummary,
 } from "@/lib/insights/animalWeightPresentation";
 import { showError, showSuccess } from "@/utils/toast";
 import {
@@ -1274,7 +1262,6 @@ const AnimalDetalhe = () => {
 
     return dashboard.animals[0] ?? null;
   }, [animal, isReproductionEligible, animalLote, eventos]);
-  const resumoPeso = buildAnimalWeightSummary(weightPresentation);
   const pendingNeonatalCount = useMemo(
     () =>
       (crias ?? []).filter((calf) => hasPendingNeonatalSetup(calf.payload))
@@ -2313,240 +2300,24 @@ const AnimalDetalhe = () => {
         </Card>
       )}
 
-      <Card className="border-border/70 shadow-none">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base">Evolucao de peso</CardTitle>
-            <div className="flex flex-wrap items-center gap-2">
-              <AnimalWeightVariationBadge
-                variationKg={resumoPeso?.variacaoKg}
-                weightUnit={farmMeasurementConfig.weight_unit}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const params = new URLSearchParams();
-                  params.set("dominio", "pesagem");
-                  params.set("animalId", animal.id);
-                  if (animal.lote_id) {
-                    params.set("loteId", animal.lote_id);
-                  }
-                  navigate(`/registrar?${params.toString()}`);
-                }}
-              >
-                Registrar pesagem
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {historicoPeso && historicoPeso.length > 0 ? (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    Pesagens
-                  </p>
-                  <p className="mt-1 text-xl font-semibold">
-                    {resumoPeso?.totalPesagens ?? 0}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    Primeiro registro
-                  </p>
-                  <p className="mt-1 text-xl font-semibold">
-                    {resumoPeso
-                      ? formatWeight(
-                          resumoPeso.primeiro.pesoKg,
-                          farmMeasurementConfig.weight_unit,
-                        )
-                      : "-"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {resumoPeso?.primeiro.dataLabel ?? "Sem data"}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    Ultimo registro
-                  </p>
-                  <p className="mt-1 text-xl font-semibold">
-                    {resumoPeso
-                      ? formatWeight(
-                          resumoPeso.ultimo.pesoKg,
-                          farmMeasurementConfig.weight_unit,
-                        )
-                      : "-"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {resumoPeso?.ultimo.dataLabel ?? "Sem data"}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    GMD
-                  </p>
-                  <p className="mt-1 text-xl font-semibold">
-                    {formatWeightPerDay(
-                      resumoPeso?.ganhoMedioDiaKg,
-                      farmMeasurementConfig.weight_unit,
-                    )}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Duas ultimas observacoes factuais. Confiabilidade nao classificada; uso operacional nao autorizado.
-                  </p>
-                  {resumoPeso?.gmdStatus !== "CALCULATED" ? (
-                    <p className="text-xs text-muted-foreground">Indisponivel: evidencia insuficiente ou conflitante.</p>
-                  ) : null}
-                </div>
-              </div>
+      <AnimalWeightSection
+        presentation={weightPresentation}
+        history={historicoPeso}
+        weightUnit={farmMeasurementConfig.weight_unit}
+        onRegister={() => {
+          const params = new URLSearchParams();
+          params.set("dominio", "pesagem");
+          params.set("animalId", animal.id);
+          if (animal.lote_id) params.set("loteId", animal.lote_id);
+          navigate(`/registrar?${params.toString()}`);
+        }}
+      />
 
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={historicoPeso}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="dataLabel"
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      tickLine={false}
-                      axisLine={false}
-                      width={56}
-                      tickFormatter={(value) =>
-                        formatWeightValue(
-                          value,
-                          farmMeasurementConfig.weight_unit,
-                        )
-                      }
-                    />
-                    <Tooltip
-                      formatter={(value: number) => [
-                        formatWeight(value, farmMeasurementConfig.weight_unit),
-                        "Peso",
-                      ]}
-                      labelFormatter={(label) => `Data: ${label}`}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="pesoKg"
-                      stroke="#059669"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Sem historico de pesagem para acompanhar a evolucao deste animal.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/70 shadow-none">
-        <CardHeader className="pb-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Activity className="h-4 w-4 text-muted-foreground" />
-              Escore de Condição Corporal (ECC)
-            </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                navigate(`/registrar?dominio=ecc&animalId=${encodeURIComponent(animal.id)}`);
-              }}
-            >
-              Registrar ECC
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {ultimoEcc ? (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-border/70 bg-muted/20 p-3 flex flex-col justify-between">
-                  <div>
-                    <p className="text-xs uppercase text-muted-foreground font-semibold">
-                      Último ECC Factual
-                    </p>
-                    <p className="mt-2 text-3xl font-extrabold text-primary">
-                      {ultimoEcc.ecc.toFixed(2)}
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Escala: {ultimoEcc.escala_min.toFixed(1)} a {ultimoEcc.escala_max.toFixed(1)} (passo {ultimoEcc.escala_passo.toFixed(2)})
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-border/70 bg-muted/20 p-3 flex flex-col justify-between">
-                  <div>
-                    <p className="text-xs uppercase text-muted-foreground font-semibold">
-                      Data da Avaliação
-                    </p>
-                    <p className="mt-2 text-xl font-bold text-foreground">
-                      {formatDate(ultimoEcc.occurred_at)}
-                    </p>
-                  </div>
-                  {ultimoEcc.observacoes ? (
-                    <p className="text-xs text-muted-foreground mt-2 italic truncate">
-                      obs: "{ultimoEcc.observacoes}"
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground mt-2">Sem observações</p>
-                  )}
-                </div>
-              </div>
-
-              {historicoEcc && historicoEcc.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Histórico de Avaliações ({historicoEcc.length})
-                  </p>
-                  <div className="rounded-xl border border-border/40 overflow-hidden bg-background">
-                    <div className="max-h-60 overflow-y-auto divide-y divide-border/40">
-                      {historicoEcc.map((item) => (
-                        <div key={item.id} className="flex justify-between items-start gap-4 p-3 hover:bg-muted/10 transition-colors">
-                          <div className="space-y-0.5">
-                            <p className="text-sm font-medium">{item.dataLabel}</p>
-                            {item.observacoes && (
-                              <p className="text-xs text-muted-foreground italic leading-relaxed">
-                                {item.observacoes}
-                              </p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <span className="text-sm font-semibold text-primary">
-                              {item.ecc.toFixed(2)}
-                            </span>
-                            <p className="text-[10px] text-muted-foreground">
-                              escala: {item.escalaMin.toFixed(0)}-{item.escalaMax.toFixed(0)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <p className="text-sm text-muted-foreground">Sem ECC factual registrado</p>
-              <p className="text-xs text-muted-foreground/60 mt-1 max-w-xs">
-                Registre avaliações regulares de escore de condição corporal para acompanhar a evolução nutricional.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <AnimalBodyConditionSection
+        latest={ultimoEcc}
+        history={historicoEcc}
+        onRegister={() => navigate(`/registrar?dominio=ecc&animalId=${encodeURIComponent(animal.id)}`)}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {animal.sexo === "F" && (

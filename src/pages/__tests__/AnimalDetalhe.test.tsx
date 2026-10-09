@@ -3,10 +3,13 @@ import "@testing-library/jest-dom";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useAnimalWeightPresentation } from "@/hooks/useAnimalWeightPresentation";
+import { selectAnimalWeightPresentation } from "@/lib/insights/animalWeightPresentation";
+import { formatWeightPerDay } from "@/lib/format/weight";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import { DEFAULT_FARM_MEASUREMENT_CONFIG } from "@/lib/farms/measurementConfig";
 import type {
@@ -22,6 +25,7 @@ import AnimalDetalhe, { AnimalSanitaryCasesPanel } from "@/pages/AnimalDetalhe";
 import type { SanitaryProtocolCatalogReadModelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 
 vi.mock("@/hooks/useAuth");
+vi.mock("@/hooks/useAnimalWeightPresentation");
 vi.mock("dexie-react-hooks", () => ({
   useLiveQuery: vi.fn(),
 }));
@@ -153,6 +157,26 @@ function makeEvento(overrides: Partial<Evento> = {}): Evento {
   };
 }
 
+function makeWeightPresentation(weights: number[], sameInstant = false, measuredAt?: string[]) {
+  const animal = makeAnimal({ id: "animal-1", identificacao: "PESO-01", sexo: "M" });
+  return selectAnimalWeightPresentation({
+    fazendaId: "farm-1", animalId: animal.id, animal,
+    events: weights.map((_, index) => makeEvento({
+      id: `weight-${index}`, dominio: "pesagem",
+      occurred_at: measuredAt?.[index] ?? `2026-01-${sameInstant ? "01" : String(index + 1).padStart(2, "0")}T12:00:00.000Z`,
+    })),
+    weightDetails: weights.map((weight, index) => ({
+      evento_id: `weight-${index}`, fazenda_id: "farm-1", peso_kg: weight,
+    })),
+    referenceDate: "2026-02-01T12:00:00.000Z",
+  });
+}
+
+function RegistrationDestination() {
+  const { search } = useLocation();
+  return <p>Registro: {search}</p>;
+}
+
 describe("AnimalDetalhe", () => {
   const mockedUseAuth = vi.mocked(useAuth);
   const mockedUseLiveQuery = vi.mocked(useLiveQuery);
@@ -248,7 +272,9 @@ describe("AnimalDetalhe", () => {
   };
 
   beforeEach(() => {
+    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
     vi.clearAllMocks();
+    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation([]));
     mockedUseAuth.mockReturnValue({
       activeFarmId: "farm-1",
       role: "owner",
@@ -258,12 +284,16 @@ describe("AnimalDetalhe", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
   const renderDetail = () => render(
     <MemoryRouter initialEntries={["/animais/animal-1"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <Routes><Route path="/animais/:id" element={<AnimalDetalhe />} /></Routes>
+      <Routes>
+        <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        <Route path="/registrar" element={<RegistrationDestination />} />
+      </Routes>
     </MemoryRouter>,
   );
 
@@ -420,7 +450,7 @@ describe("AnimalDetalhe", () => {
     expect(screen.queryByText("Sem pendências")).not.toBeInTheDocument();
     expect(screen.queryByText("Sem agenda")).not.toBeInTheDocument();
     expect(screen.getAllByText("Sem lote definido").length).toBeGreaterThan(0);
-    expect(screen.getByText("Último peso registrado")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Último peso registrado" })).toBeVisible();
     await user.click(screen.getByRole("tab", { name: "Agenda" }));
     expect(screen.getByText(/Previsto:/)).toBeVisible();
     expect(screen.getByText("agendado")).toBeVisible();
@@ -1104,7 +1134,8 @@ describe("AnimalDetalhe", () => {
     ).toBeInTheDocument();
   });
 
-  it("exibe ultimo ECC e historico em ordem decrescente de data", () => {
+  it("exibe ultimo ECC e preserva o historico recolhido em ordem decrescente", async () => {
+    const user = userEvent.setup();
     const animal = makeAnimal({
       id: "animal-1",
       identificacao: "BR-001",
@@ -1165,10 +1196,125 @@ describe("AnimalDetalhe", () => {
     );
 
     expect(screen.getAllByText("4.25").length).toBeGreaterThan(0);
-    expect(screen.getByText("Último ECC Factual")).toBeInTheDocument();
+    expect(screen.getByText("Último ECC factual")).toBeInTheDocument();
     expect(screen.getAllByText("25/05/2026").length).toBeGreaterThan(0);
-    expect(screen.getByText("10/05/2026")).toBeInTheDocument();
-    expect(screen.getAllByText(/obs: "Gorda"/i).length).toBeGreaterThan(0);
-    expect(screen.getByText("Escore bom")).toBeInTheDocument();
+    const disclosure = screen.getByText("Histórico de avaliações (2)").closest("details");
+    expect(disclosure).not.toHaveAttribute("open");
+    expect(screen.getByText("Observações: Gorda")).toBeVisible();
+    await user.click(screen.getByText("Histórico de avaliações (2)"));
+    expect(disclosure).toHaveAttribute("open");
+    expect(screen.getByText("10/05/2026")).toBeVisible();
+    expect(screen.getByText("Escore bom")).toBeVisible();
+    expect(disclosure?.textContent?.indexOf("25/05/2026")).toBeLessThan(disclosure?.textContent?.indexOf("10/05/2026") ?? 0);
+  });
+
+  it.each([
+    { weights: [300, 312], variation: "+12,0 kg · ganho", gmd: "12,0 kg/dia" },
+    { weights: [312, 300], variation: "−12,0 kg · perda", gmd: "-12,0 kg/dia" },
+    { weights: [300, 300], variation: "0,0 kg · sem variação", gmd: "0,0 kg/dia" },
+  ])("apresenta variação $variation e GMD factual qualificado", ({ weights, variation, gmd }) => {
+    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation(weights));
+    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "PESO-01", sexo: "M" }) });
+    renderDetail();
+    const section = within(screen.getByLabelText("Peso e GMD"));
+    expect(section.getByText(`${weights[1].toFixed(1).replace(".", ",")} kg`)).toBeVisible();
+    expect(section.getByText(variation)).toBeVisible();
+    expect(section.getByText(gmd)).toBeVisible();
+    expect(section.getByText("01/01/2026 a 02/01/2026")).toBeVisible();
+    expect(section.getByText("Intervalo: 1 dia")).toBeVisible();
+    expect(section.getByText(/Confiabilidade não classificada/)).toBeVisible();
+    expect(section.getByText(/Uso operacional não autorizado/)).toBeVisible();
+  });
+
+  it.each([
+    { durationMs: 60_000, interval: "1 minuto" },
+    { durationMs: 30_000, interval: "30 segundos" },
+    { durationMs: 500, interval: "menos de 1 segundo" },
+    { durationMs: 1, interval: "menos de 1 segundo" },
+    { durationMs: 90_000, interval: "1,5 minutos" },
+    { durationMs: 61_100, interval: "aproximadamente 1,02 minutos" },
+    { durationMs: 3_600_000, interval: "1 hora" },
+    { durationMs: 86_400_000, interval: "1 dia" },
+  ])("formata intervalo positivo de $durationMs ms sem zerar ou alterar o GMD", ({ durationMs, interval }) => {
+    const initial = "2026-01-01T12:00:00.000Z";
+    const final = new Date(Date.parse(initial) + durationMs).toISOString();
+    const presentation = makeWeightPresentation([300, 301], false, [initial, final]);
+    expect(presentation.gmd.status).toBe("CALCULATED");
+    if (presentation.gmd.status !== "CALCULATED") throw new Error("GMD não calculado no cenário factual");
+    const upstreamGmd = presentation.gmd.gmdKgPerDay;
+    if (durationMs === 60_000) expect(upstreamGmd).toBe(1440);
+    vi.mocked(useAnimalWeightPresentation).mockReturnValue(presentation);
+    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "PESO-01", sexo: "M" }) });
+    renderDetail();
+    const section = within(screen.getByLabelText("Peso e GMD"));
+    expect(section.getByText(`Intervalo: ${interval}`)).toBeVisible();
+    expect(section.queryByText("Intervalo: 0 dias")).not.toBeInTheDocument();
+    expect(section.getByText(formatWeightPerDay(upstreamGmd, "kg"))).toBeVisible();
+    expect(section.getByText("+1,0 kg · ganho")).toBeVisible();
+    expect(presentation.gmd.gmdKgPerDay).toBe(upstreamGmd);
+    expect(section.getByText(/Uso operacional não autorizado/)).toBeVisible();
+  });
+
+  it.each([
+    { weights: [], conflict: false, message: "Sem pesagem factual disponível.", source: "Observações elegíveis: 0 de 2." },
+    { weights: [300], conflict: false, message: "São necessárias duas observações factuais elegíveis.", source: "Observações elegíveis: 1 de 2." },
+    { weights: [300, 310], conflict: true, message: "Peso indisponível: conflito factual.", source: "Há conflito entre registros de pesagem." },
+  ])("distingue ausência, insuficiência e conflito: $message", ({ weights, conflict, message, source }) => {
+    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation(weights, conflict));
+    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "PESO-01", sexo: "M" }) });
+    renderDetail();
+    const section = within(screen.getByLabelText("Peso e GMD"));
+    expect(section.getByText(message)).toBeVisible();
+    expect(section.getByText(source)).toBeVisible();
+    expect(section.getByText("GMD indisponível")).toBeVisible();
+    expect(section.queryByText(/^Intervalo:/)).not.toBeInTheDocument();
+    expect(section.queryByText("0,0 kg/dia")).not.toBeInTheDocument();
+    expect(section.queryByText("0,0 kg")).not.toBeInTheDocument();
+    if (conflict) expect(section.getByText(/Histórico indisponível: conflito/)).toBeVisible();
+  });
+
+  it("usa a unidade da fazenda e navega para registrar pesagem com animal e lote", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation([300, 315]));
+    mockedUseAuth.mockReturnValue({
+      activeFarmId: "farm-1", role: "owner", farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+      farmMeasurementConfig: { ...DEFAULT_FARM_MEASUREMENT_CONFIG, weight_unit: "arroba" },
+    } as ReturnType<typeof useAuth>);
+    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "PESO-01", sexo: "M" }) });
+    renderDetail();
+    const section = within(screen.getByLabelText("Peso e GMD"));
+    expect(section.getByText("21,00 arroba")).toBeVisible();
+    expect(section.getByText("+1,00 arroba · ganho")).toBeVisible();
+    expect(section.getByText("1,00 arroba/dia")).toBeVisible();
+    await user.click(section.getByRole("button", { name: "Registrar pesagem" }));
+    expect(screen.getByText("Registro: ?dominio=pesagem&animalId=animal-1&loteId=lote-1")).toBeVisible();
+  });
+
+  it("preserva escala ECC personalizada e observação longa; foca e expande histórico e registra ECC", async () => {
+    const user = userEvent.setup();
+    const notes = "Avaliação registrada com escala específica. ".repeat(12);
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "ECC-01", sexo: "M" }),
+      ultimoEcc: { ecc: 6.25, occurred_at: "2026-05-25T12:00:00.000Z", escala_min: 1.5, escala_max: 9.5, escala_passo: 0.25, observacoes: notes },
+      historicoEcc: [
+        { id: "ecc-2", ecc: 6.25, dataLabel: "25/05/2026", escalaMin: 1.5, escalaMax: 9.5, escalaPasso: 0.25, observacoes: notes },
+        { id: "ecc-1", ecc: 3.5, dataLabel: "10/05/2026", escalaMin: 1, escalaMax: 5, escalaPasso: 0.5, observacoes: "Escala anterior preservada" },
+      ],
+    });
+    renderDetail();
+    const section = within(screen.getByLabelText("Escore de Condição Corporal"));
+    expect(section.getAllByText("Escala: 1.5 a 9.5 (passo 0.25)").length).toBe(2);
+    const observation = section.getByText(`Observações: ${notes.trim()}`);
+    expect(observation).toBeVisible();
+    expect(observation).not.toHaveClass("truncate");
+    const summary = section.getByText("Histórico de avaliações (2)");
+    summary.focus();
+    expect(summary).toHaveFocus();
+    await user.click(summary);
+    expect(summary.closest("details")).toHaveAttribute("open");
+    expect(section.getByText("Escala anterior preservada")).toBeVisible();
+    expect(section.getByText("Escala: 1 a 5 (passo 0.5)")).toBeVisible();
+    await user.click(section.getByRole("button", { name: "Registrar ECC" }));
+    expect(screen.getByText("Registro: ?dominio=ecc&animalId=animal-1")).toBeVisible();
   });
 });
