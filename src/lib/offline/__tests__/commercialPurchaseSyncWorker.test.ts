@@ -39,6 +39,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { buildCommercialOperationGesture } from "@/lib/comercial/commercialOperationCommand";
+import { loadAnimalAcquisitionHistory } from "@/lib/comercial/animalCommercialHistory";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import type { Animal } from "../types";
 import { db } from "../db";
@@ -397,6 +398,11 @@ describe("commercial purchase sync worker", () => {
       .mocked(fetch)
       .mock.calls.map((call) => JSON.parse(String(call[1]?.body)));
     expect(requestBodies[1].ops[0]).toEqual(requestBodies[0].ops[0]);
+    expect(await db.event_eventos.count()).toBe(1);
+    expect(await db.event_eventos_comercial.count()).toBe(1);
+    const acquisitions = await loadAnimalAcquisitionHistory(farm, animalId);
+    expect(acquisitions).toHaveLength(1);
+    expect(acquisitions[0]).toMatchObject({ eventId, weight: 20, weightUnit: "@" });
     expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
     expect(await db.queue_ops.count()).toBe(0);
   });

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
+import { loadAnimalCommercialHistory, loadAnimalAcquisitionHistory, projectAnimalCommercialValues } from "@/lib/comercial/animalCommercialHistory";
 import { getAgendaScheduleBucket, type AgendaScheduleBucket } from "@/lib/agenda/groupOrdering";
 import {
   AlertTriangle,
@@ -873,12 +874,15 @@ const AnimalDetalhe = () => {
     );
   }, [animal?.id, fazendaId]);
 
-  const animalComerciais = useMemo(() => {
-    if (!eventos) return [];
-    return eventos
-      .filter((evt) => evt.dominio === "comercial" && evt.detailsComercial && !evt.deleted_at)
-      .map((evt) => evt.detailsComercial!);
-  }, [eventos]);
+  const animalComerciais = useLiveQuery(async () => {
+    if (!animal?.id || !fazendaId) return [];
+    return loadAnimalCommercialHistory(fazendaId, animal.id);
+  }, [animal?.id, fazendaId], []);
+
+  const aquisicoes = useLiveQuery(async () => {
+    if (!animal?.id || !fazendaId) return [];
+    return loadAnimalAcquisitionHistory(fazendaId, animal.id);
+  }, [animal?.id, fazendaId], []);
 
   const agenda = useLiveQuery(async () => {
     if (!animal?.id || !fazendaId) return [];
@@ -2300,6 +2304,23 @@ const AnimalDetalhe = () => {
         </Card>
       )}
 
+      {aquisicoes.length > 0 && (
+        <Card className="border-border/70 shadow-none">
+          <CardHeader className="pb-2"><CardTitle className="text-base">Aquisição</CardTitle></CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            {aquisicoes.map((fact) => (
+              <dl key={fact.eventId} className="space-y-2 rounded-xl border p-3 text-sm">
+                <div><dt className="text-muted-foreground">Origem</dt><dd>{fact.origin === "compra" ? "Compra" : "Sociedade"}</dd></div>
+                <div><dt className="text-muted-foreground">Data de aquisição/entrada</dt><dd>{fact.occurredAt.split("T")[0]}</dd></div>
+                <div><dt className="text-muted-foreground">Peso de aquisição</dt><dd className="font-semibold">{fact.weight !== null ? `${fact.weight} ${fact.weightUnit}` : "Não informado"}</dd></div>
+                {fact.weightBasis === "carcass_weight" && <p className="text-xs text-muted-foreground">Peso de carcaça declarado na aquisição.</p>}
+                <div><dt className="text-muted-foreground">{fact.origin === "compra" ? "Valor de aquisição" : "Condição econômica"}</dt><dd>{fact.origin === "compra" ? fact.value !== null ? `R$ ${fact.value.toFixed(2)}` : "Não informado" : "Participação societária; valor individual não registrado neste fato."}</dd></div>
+              </dl>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <AnimalWeightSection
         presentation={weightPresentation}
         history={historicoPeso}
@@ -2935,6 +2956,7 @@ const AnimalDetalhe = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               {animalComerciais.map((com) => {
                 const isCompra = com.operation_type === "compra";
+                const individual = projectAnimalCommercialValues(com, animal.id);
                 return (
                   <div key={com.evento_id} className="rounded-xl border p-4 bg-muted/10 space-y-3">
                     <div className="flex items-center justify-between border-b pb-2 border-border/40">
@@ -2951,6 +2973,14 @@ const AnimalDetalhe = () => {
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground font-medium">{isCompra ? "Peso de aquisição deste animal:" : "Peso comercial de venda deste animal:"}</span>
+                        <p className="font-semibold mt-0.5">{individual.weight !== null ? `${individual.weight} ${individual.weightUnit}` : "—"}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground font-medium">{isCompra ? "Valor de compra deste animal:" : "Valor de venda deste animal:"}</span>
+                        <p className="font-semibold mt-0.5">{individual.value !== null ? `R$ ${individual.value.toFixed(2)}` : "—"}</p>
+                      </div>
                       <div>
                         <span className="text-muted-foreground font-medium">Quantidade:</span>
                         <p className="font-semibold mt-0.5">{com.quantidade_animais} cab.</p>

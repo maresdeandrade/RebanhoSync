@@ -20,6 +20,7 @@ import {
   Users,
   Scale
 } from "lucide-react";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { createGesture } from "@/lib/offline/ops";
 import { ANIMAL_BREED_OPTIONS, type AnimalBreedEnum } from "@/lib/animals/catalogs";
 import { canManageLivestockSociety } from "@/lib/society/animalSocietyRegistration";
@@ -286,35 +287,22 @@ export function RegistrarSociedadeSection(props: {
       });
 
       if (weight !== null) {
-        const pesoEventoId = crypto.randomUUID();
-        ops.push({
-          table: "eventos",
-          action: "INSERT",
-          record: {
-            id: pesoEventoId,
+        try {
+          const entryWeight = buildEventGesture({
             dominio: "pesagem",
-            occurred_at: dataEntrada,
-            animal_id: animalId,
-            lote_id: normalizedLoteId,
-            source_task_id: null,
-            corrige_evento_id: null,
-            sanitario_caso_id: null,
+            fazendaId: props.fazendaId,
+            occurredAt: dataEntrada,
+            animalId,
+            loteId: normalizedLoteId,
+            pesoKg: weight,
             observacoes: "Peso inicial registrado na entrada em sociedade",
-            payload: {
-              tipo_acao: "entrada_sociedade"
-            }
-          }
-        });
-
-        ops.push({
-          table: "eventos_pesagem",
-          action: "INSERT",
-          record: {
-            evento_id: pesoEventoId,
-            peso_kg: weight,
-            payload: {}
-          }
-        });
+            payload: { tipo_acao: "entrada_sociedade", sociedade_id: finalSocId },
+          });
+          ops.push(...entryWeight.ops);
+        } catch (error) {
+          alert(error instanceof Error ? error.message : "Peso de aquisição inválido.");
+          return;
+        }
       }
     }
 
@@ -755,11 +743,12 @@ export function RegistrarSociedadeSection(props: {
                     <div className="space-y-2">
                       <Label className="flex items-center gap-1">
                         <Scale className="h-3.5 w-3.5 text-primary" />
-                        <span>Peso Inicial (kg)</span>
+                        <span>Peso de aquisição (kg)</span>
                       </Label>
                       <Input 
                         type="number" 
                         step="0.01" 
+                        aria-label={`Peso de aquisição animal ${idx + 1} (kg)`}
                         value={draft.pesoKg} 
                         onChange={e => updateDraftField(draft.localId, "pesoKg", e.target.value)} 
                         placeholder="Ex: 180"

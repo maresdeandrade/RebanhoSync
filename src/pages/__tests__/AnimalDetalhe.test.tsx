@@ -188,6 +188,8 @@ describe("AnimalDetalhe", () => {
     pai?: unknown;
     crias?: unknown;
     eventos?: unknown;
+    comerciais?: unknown;
+    aquisicoes?: unknown;
     agenda?: unknown;
     officialDiseases?: unknown;
     ultimoPeso?: unknown;
@@ -206,6 +208,8 @@ describe("AnimalDetalhe", () => {
     mockedUseLiveQuery.mockImplementation((fn: unknown) => {
       if (typeof fn !== "function") return null;
       const str = fn.toString();
+      if (str.includes("loadAnimalAcquisitionHistory")) return mockResponses.aquisicoes ?? [];
+      if (str.includes("loadAnimalCommercialHistory")) return mockResponses.comerciais ?? [];
 
       if (str.includes("readAnimalInActiveFarm")) {
         return mockResponses.animal ?? null;
@@ -296,6 +300,74 @@ describe("AnimalDetalhe", () => {
       </Routes>
     </MemoryRouter>,
   );
+
+  it("exibe peso comercial e valor individuais da compra por lote", () => {
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "COMPRA-001", sexo: "F" }),
+      comerciais: [{
+        evento_id: "compra-1", operation_type: "compra", scope: "lote",
+        occurred_at: "2026-08-13", animal_ids: ["animal-1", "animal-2"],
+        quantidade_animais: 2, valor_bruto: 7000,
+        snapshot: { pricing: { lines: [
+          { animal_id: "animal-1", commercial_weight: 250, commercial_weight_unit: "kg", individual_gross_value: 3000 },
+          { animal_id: "animal-2", commercial_weight: 350, commercial_weight_unit: "kg", individual_gross_value: 4000 },
+        ] } },
+      }],
+    });
+    render(<MemoryRouter initialEntries={["/animais/animal-1"]}><Routes><Route path="/animais/:id" element={<AnimalDetalhe />} /></Routes></MemoryRouter>);
+    fireEvent.mouseDown(screen.getByRole("tab", { name: /Comercial/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /Comercial/i }));
+    expect(screen.getByText("Peso de aquisição deste animal:")).toBeInTheDocument();
+    expect(screen.getByText("250 kg")).toBeInTheDocument();
+    expect(screen.getByText("R$ 3000.00")).toBeInTheDocument();
+    expect(screen.queryByText("R$ 4000.00")).not.toBeInTheDocument();
+  });
+
+  it.each(["compra", "sociedade"])("separa aquisição %s de última pesagem e não inventa valor societário", (origin) => {
+    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation([410]));
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "ENTRADA-001", sexo: "F" }),
+      aquisicoes: [{ eventId: "entrada-1", origin, occurredAt: "2026-08-13",
+        weight: 320, weightUnit: "kg", value: origin === "compra" ? 0 : null }],
+      comerciais: [{
+        evento_id: "venda-1", operation_type: "venda", scope: "animal",
+        occurred_at: "2026-09-02", animal_ids: ["animal-1"], quantidade_animais: 1,
+        snapshot: { animals: [{ id: "animal-1", weight_considered_kg: 480, valor_individual: 6000 }] },
+      }],
+    });
+    render(<MemoryRouter initialEntries={["/animais/animal-1"]}><Routes><Route path="/animais/:id" element={<AnimalDetalhe />} /></Routes></MemoryRouter>);
+    expect(screen.getByText("Aquisição")).toBeInTheDocument();
+    expect(screen.getByText("Peso de aquisição")).toBeInTheDocument();
+    expect(screen.getByText("320 kg")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("Peso e GMD")).getByText("410,0 kg")).toBeVisible();
+    if (origin === "compra") expect(screen.getByText("R$ 0.00")).toBeInTheDocument();
+    else {
+      expect(screen.getByText(/Participação societária; valor individual não registrado/)).toBeInTheDocument();
+      expect(screen.queryByText("R$ 0.00")).not.toBeInTheDocument();
+    }
+    fireEvent.mouseDown(screen.getByRole("tab", { name: /Comercial/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /Comercial/i }));
+    expect(screen.getByText("Peso comercial de venda deste animal:")).toBeVisible();
+    expect(screen.getByText("480 kg")).toBeVisible();
+    expect(screen.queryByText("320 kg")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    { identificacao: "A", weight: 320, label: "320 kg" },
+    { identificacao: "B", weight: null, label: "Não informado" },
+    { identificacao: "C", weight: 355, label: "355 kg" },
+  ])("apresenta aquisição individual $identificacao sem fallback da pesagem atual", ({ identificacao, weight, label }) => {
+    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation([410]));
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao, sexo: "F" }),
+      aquisicoes: [{ eventId: "compra-1", origin: "compra", occurredAt: "2026-08-13", weight, weightUnit: "kg", value: null }],
+    });
+    renderDetail();
+    const weightField = screen.getByText("Peso de aquisição").parentElement!;
+    expect(within(weightField).getByText(label)).toBeVisible();
+    expect(within(weightField).queryByText(/410/)).not.toBeInTheDocument();
+    expect(within(screen.getByLabelText("Peso e GMD")).getByText("410,0 kg")).toBeVisible();
+  });
 
   it("abre Visão geral e mantém casos e suas ações dentro de Sanidade", async () => {
     const user = userEvent.setup();

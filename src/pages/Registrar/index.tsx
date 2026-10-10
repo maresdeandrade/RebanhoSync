@@ -825,6 +825,7 @@ const Registrar = () => {
   ]);
 
   const comercialBlockingIssues = useMemo(() => {
+    if (comercialData.simulationOnly) return ["Simulação não gera registro. Selecione uma operação para registrar um fato."];
     if (!comercialCalculationSummary) return [];
     const calculationIssues = comercialCalculationSummary.issues
       .filter((i) => i.severity === "blocking")
@@ -1494,6 +1495,10 @@ const Registrar = () => {
 
   const handleFinalize = useCallback(async () => {
     if (isFinalizing) return;
+    if (tipoManejo === "comercial" && comercialData.simulationOnly) {
+      showError("Simulação não gera registro patrimonial.");
+      return;
+    }
 
     // Guard: block finalize if there are unresolved commercial blocking issues
     if (tipoManejo === "comercial" && comercialBlockingIssues.length > 0) {
@@ -1569,6 +1574,7 @@ const Registrar = () => {
         comercial:
           tipoManejo === "comercial"
             ? {
+                simulationOnly: comercialData.simulationOnly,
                 operationType: comercialData.operationType,
                 scope: comercialData.scope,
                 occurredAt: comercialData.occurredAt,

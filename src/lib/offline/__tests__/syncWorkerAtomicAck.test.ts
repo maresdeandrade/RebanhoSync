@@ -33,6 +33,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { loadAnimalAcquisitionHistory } from "@/lib/comercial/animalCommercialHistory";
 import { db } from "../db";
 import { seedLocalOwner } from "./ownershipTestFixture";
 import { createGesture } from "../ops";
@@ -65,7 +66,7 @@ async function clearStores() {
   );
 }
 
-async function seedWeightGesture() {
+async function seedWeightGesture(societyEntry = false) {
   const built = buildEventGesture({
     dominio: "pesagem",
     fazendaId: farmId,
@@ -73,9 +74,9 @@ async function seedWeightGesture() {
     animalId: "20000000-0000-4000-8000-000000000001",
     occurredAt: "2026-09-17T12:00:00.000Z",
     sourceTaskId: null,
-    pesoKg: 250.5,
+    pesoKg: societyEntry ? 320 : 250.5,
     observacoes: "F24.2C1 atomic ack",
-    payload: { source: "f24_2c1" },
+    payload: societyEntry ? { tipo_acao: "entrada_sociedade", sociedade_id: "sociedade-1" } : { source: "f24_2c1" },
   });
   await createGesture(farmId, built.ops, {
     clientTxId: txId,
@@ -116,6 +117,26 @@ describe("syncWorker atomic ACK and stale SYNCING recovery", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     await clearStores();
+  });
+
+  it("reenvia entrada em sociedade após ACK indisponível sem mudar identidade ou duplicar aquisição", async () => {
+    await seedWeightGesture(true);
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError("ACK unavailable"))
+      .mockResolvedValueOnce(appliedResponse());
+    await processGesture(await loadGesture());
+    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "PENDING" });
+    db.close(); await db.open();
+    await processGesture(await loadGesture());
+    const requests = vi.mocked(fetch).mock.calls.map((call) => JSON.parse(String(call[1]?.body)));
+    expect(requests).toHaveLength(2);
+    expect(requests[1].client_tx_id).toBe(requests[0].client_tx_id);
+    expect(requests[1].ops).toEqual(requests[0].ops);
+    expect(await db.event_eventos.count()).toBe(1);
+    expect(await db.event_eventos_pesagem.count()).toBe(1);
+    const facts = await loadAnimalAcquisitionHistory(farmId, "20000000-0000-4000-8000-000000000001");
+    expect(facts).toHaveLength(1);
+    expect(facts[0]).toMatchObject({ eventId, origin: "sociedade", weight: 320 });
+    expect(await db.queue_gestures.get(txId)).toMatchObject({ status: "DONE" });
   });
 
   it("recovers SYNCING and replays the persisted identities without a new event", async () => {

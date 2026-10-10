@@ -219,6 +219,9 @@ function buildPricingCalculations(input: CommercialOperationCommandInput) {
 export function validateCommercialOperationCommand(
   input: CommercialOperationCommandInput,
 ): string | null {
+  if (input.operationType !== "compra" && input.operationType !== "venda") {
+    return "Tipo de operação factual inválido. Simulação não gera Evento.";
+  }
   const occurredAt = new Date(input.occurredAt);
   if (Number.isNaN(occurredAt.getTime())) return "Data da operação inválida.";
   if (input.declaredQuantity < 1 || !Number.isInteger(input.declaredQuantity)) {
@@ -398,12 +401,9 @@ export function buildCommercialOperationGesture(
           line.animal_id,
           line.individual_gross_value,
         ])
-      : input.newAnimals
-          .filter((item) => item.valorIndividual != null)
-          .map((item, index) => [
-            newAnimalRecords[index]!.id,
-            item.valorIndividual!,
-          ]),
+      : input.newAnimals.flatMap((item, index) => item.valorIndividual != null
+          ? [[newAnimalRecords[index]!.id, item.valorIndividual]]
+          : []),
   );
   const animalSnapshot =
     input.operationType === "compra"
@@ -411,10 +411,11 @@ export function buildCommercialOperationGesture(
           id: animal.id,
           identificacao: animal.identificacao,
           lote_id: animal.lote_id,
-          // Peso comercial não é uma pesagem zootécnica do cadastro.
+          // Peso factual da aquisição fica no snapshot; não cria pesagem.
           peso_kg: null,
           weight_considered_kg:
             pricingCalculations?.[index]?.calculation.weightConsideredKg ??
+            (!input.pricing ? input.newAnimals[index]?.commercialWeight : null) ??
             null,
           valor_individual:
             pricingCalculations?.[index]?.calculation.individualGrossValue ??

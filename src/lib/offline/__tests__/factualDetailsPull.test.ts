@@ -23,6 +23,7 @@ vi.mock("@/lib/supabase", () => ({
 import { buildWeightGainForOccupancy } from "@/features/occupancy/buildWeightGainForOccupancy";
 import type { AnimalOccupancyPeriod } from "@/features/occupancy/occupancyTypes";
 import { db } from "../db";
+import { loadAnimalAcquisitionHistory } from "@/lib/comercial/animalCommercialHistory";
 import {
   DEFAULT_REMOTE_TABLES,
   pullDataForFarm,
@@ -99,6 +100,25 @@ describe("standard factual detail pull", () => {
   });
 
   afterEach(clearStores);
+
+  it("preserva a aquisição em sociedade após pull, replay e reabertura", async () => {
+    mocks.rows.set("eventos", [
+      baseEvent("entrada", { payload: { tipo_acao: "entrada_sociedade" } }),
+      baseEvent("posterior", { occurred_at: "2026-09-01T12:00:00.000Z" }),
+    ]);
+    mocks.rows.set("eventos_pesagem", [
+      { evento_id: "entrada", fazenda_id: farm, peso_kg: 320 },
+      { evento_id: "posterior", fazenda_id: farm, peso_kg: 410 },
+    ]);
+    await pullDataForFarm(farm, ["eventos", "eventos_pesagem"]);
+    await pullDataForFarm(farm, ["eventos", "eventos_pesagem"]);
+    db.close();
+    await db.open();
+    const facts = await loadAnimalAcquisitionHistory(farm, "animal-1");
+    expect(facts).toHaveLength(1);
+    expect(facts[0]).toMatchObject({ origin: "sociedade", weight: 320, value: null });
+    expect(await loadAnimalAcquisitionHistory(otherFarm, "animal-1")).toEqual([]);
+  });
 
   it("includes ECC, pesagem and financeiro in the default pull contract", () => {
     expect(DEFAULT_REMOTE_TABLES).toEqual(
