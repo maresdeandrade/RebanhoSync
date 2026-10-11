@@ -2973,36 +2973,20 @@ const AnimalDetalhe = () => {
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-muted-foreground font-medium">{isCompra ? "Peso de aquisição deste animal:" : "Peso comercial de venda deste animal:"}</span>
-                        <p className="font-semibold mt-0.5">{individual.weight !== null ? `${individual.weight} ${individual.weightUnit}` : "—"}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground font-medium">{isCompra ? "Valor de compra deste animal:" : "Valor de venda deste animal:"}</span>
-                        <p className="font-semibold mt-0.5">{individual.value !== null ? `R$ ${individual.value.toFixed(2)}` : "—"}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground font-medium">Quantidade:</span>
-                        <p className="font-semibold mt-0.5">{com.quantidade_animais} cab.</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground font-medium">Peso Vivo Total:</span>
-                        <p className="font-semibold mt-0.5">{com.peso_vivo_total ? `${com.peso_vivo_total} kg` : "—"}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground font-medium">Peso Médio:</span>
-                        <p className="font-semibold mt-0.5">
-                          {com.peso_medio_derivado ? `${com.peso_medio_derivado.toFixed(1)} kg` : "—"}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground font-medium">Valor Bruto:</span>
-                        <p className="font-semibold mt-0.5">{com.valor_bruto ? `R$ ${com.valor_bruto.toFixed(2)}` : "—"}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground font-medium">Valor Líquido Estimado:</span>
-                        <p className="font-semibold mt-0.5">{com.valor_liquido_derivado ? `R$ ${com.valor_liquido_derivado.toFixed(2)}` : "—"}</p>
-                      </div>
+                      {[
+                        [isCompra ? "Peso de aquisição deste animal:" : "Peso comercial de venda deste animal:", individual.weight !== null ? `${individual.weight} ${individual.weightUnit}` : "—"],
+                        [isCompra ? "Valor de compra deste animal:" : "Valor de venda deste animal:", individual.value !== null ? `R$ ${individual.value.toFixed(2)}` : "—"],
+                        ["Quantidade:", `${com.quantidade_animais} cab.`],
+                        ["Peso Vivo Total:", com.peso_vivo_total ? `${com.peso_vivo_total} kg` : "—"],
+                        ["Peso Médio:", com.peso_medio_derivado ? `${com.peso_medio_derivado.toFixed(1)} kg` : "—"],
+                        ["Valor Bruto:", com.valor_bruto ? `R$ ${com.valor_bruto.toFixed(2)}` : "—"],
+                        ["Valor Líquido Estimado:", com.valor_liquido_derivado ? `R$ ${com.valor_liquido_derivado.toFixed(2)}` : "—"],
+                      ].map(([label, value]) => (
+                        <div key={label}>
+                          <span className="text-muted-foreground font-medium">{label}</span>
+                          <p className="font-semibold mt-0.5">{value}</p>
+                        </div>
+                      ))}
                       <div className="col-span-2 border-t pt-2 border-border/20">
                         <span className="text-muted-foreground font-medium">Contraparte:</span>
                         <p className="font-semibold mt-0.5">{com.contraparte_nome || "—"}</p>

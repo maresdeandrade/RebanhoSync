@@ -36,6 +36,10 @@ interface AnimalDraft {
   pesoKg: string;
 }
 
+function entryWeightErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Peso de aquisição inválido.";
+}
+
 export function RegistrarSociedadeSection(props: {
   selectedAnimalIds: string[];
   contrapartes: { id: string; nome: string }[] | undefined;
@@ -180,64 +184,15 @@ export function RegistrarSociedadeSection(props: {
     setDrafts(prev => prev.map(d => d.localId === localId ? { ...d, [field]: value } : d));
   };
 
-  // Confirmar Entrada de Animais
-  const handleEntradaSociedade = async () => {
-    if (!canManageSociety) {
-      alert("Apenas owner/manager pode registrar sociedade pecuária.");
-      return;
-    }
-    let finalSocId = selectedSocId;
-    const ops: OperationInput[] = [];
-
-    // 1. Validar e criar sociedade se for nova
-    if (selectedSocId === "new") {
-      if (!nome || !contraparteId || !percFazenda || !percParceiro) {
-        alert("Preencha todos os campos da nova sociedade.");
-        return;
-      }
-      const fz = parseFloat(percFazenda);
-      const pa = parseFloat(percParceiro);
-      if (Math.abs((fz + pa) - 100) > 0.0001) {
-        alert("A soma dos percentuais da sociedade deve ser 100%.");
-        return;
-      }
-
-      finalSocId = crypto.randomUUID();
-      ops.push({
-        table: "sociedades_pecuarias",
-        action: "INSERT",
-        record: {
-          id: finalSocId,
-          fazenda_id: props.fazendaId,
-          contraparte_id: contraparteId,
-          nome,
-          status: "ativa",
-          data_inicio: dataEntrada,
-          data_fim: null,
-          percentual_fazenda: fz,
-          percentual_parceiro: pa,
-          regra_custos: "proporcional",
-          regra_perdas: "proporcional",
-          regra_receita: "proporcional",
-          observacoes: null,
-          payload: {}
-        }
-      });
-    }
-
-    if (!finalSocId || finalSocId === "new") {
-      alert("Selecione ou crie uma sociedade válida.");
-      return;
-    }
-
-    const normalizedLoteId = selectedLoteId === "null" || selectedLoteId === "" ? null : selectedLoteId;
-
-    // 2. Validar rascunhos de animais
-    for (const d of drafts) {
-      if (!d.identificacao.trim()) {
-        alert("A identificação é obrigatória para todos os animais.");
-        return;
-      }
+  const appendSocietyAnimalOperations = (
+    ops: OperationInput[],
+    finalSocId: string,
+    normalizedLoteId: string | null,
+  ): boolean => {
+    // Validar todos os rascunhos antes de gerar operações.
+    if (drafts.find((draft) => !draft.identificacao.trim())) {
+      alert("A identificação é obrigatória para todos os animais.");
+      return false;
     }
 
     // 3. Gerar operações de inserção
@@ -300,11 +255,74 @@ export function RegistrarSociedadeSection(props: {
           });
           ops.push(...entryWeight.ops);
         } catch (error) {
-          alert(error instanceof Error ? error.message : "Peso de aquisição inválido.");
-          return;
+          alert(entryWeightErrorMessage(error));
+          return false;
         }
       }
     }
+
+    return true;
+  };
+
+  const validateNewSocietyShares = () => {
+    if (!nome || !contraparteId || !percFazenda || !percParceiro) {
+      alert("Preencha todos os campos da nova sociedade.");
+      return null;
+    }
+    const fz = parseFloat(percFazenda);
+    const pa = parseFloat(percParceiro);
+    if (Math.abs((fz + pa) - 100) > 0.0001) {
+      alert("A soma dos percentuais da sociedade deve ser 100%.");
+      return null;
+    }
+    return { fz, pa };
+  };
+
+  // Confirmar Entrada de Animais
+  const handleEntradaSociedade = async () => {
+    if (!canManageSociety) {
+      alert("Apenas owner/manager pode registrar sociedade pecuária.");
+      return;
+    }
+    let finalSocId = selectedSocId;
+    const ops: OperationInput[] = [];
+
+    // 1. Validar e criar sociedade se for nova
+    if (selectedSocId === "new") {
+      const shares = validateNewSocietyShares();
+      if (!shares) return;
+
+      finalSocId = crypto.randomUUID();
+      ops.push({
+        table: "sociedades_pecuarias",
+        action: "INSERT",
+        record: {
+          id: finalSocId,
+          fazenda_id: props.fazendaId,
+          contraparte_id: contraparteId,
+          nome,
+          status: "ativa",
+          data_inicio: dataEntrada,
+          data_fim: null,
+          percentual_fazenda: shares.fz,
+          percentual_parceiro: shares.pa,
+          regra_custos: "proporcional",
+          regra_perdas: "proporcional",
+          regra_receita: "proporcional",
+          observacoes: null,
+          payload: {}
+        }
+      });
+    }
+
+    if (!finalSocId || finalSocId === "new") {
+      alert("Selecione ou crie uma sociedade válida.");
+      return;
+    }
+
+    const normalizedLoteId = selectedLoteId === "null" || selectedLoteId === "" ? null : selectedLoteId;
+
+    if (!appendSocietyAnimalOperations(ops, finalSocId, normalizedLoteId)) return;
 
     await createGesture(props.fazendaId, ops);
     alert("Entrada em sociedade registrada com sucesso!");

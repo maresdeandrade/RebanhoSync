@@ -62,6 +62,24 @@ function declaredNumber(value: unknown) {
     : null;
 }
 
+function firstDeclaredNumber(...values: unknown[]): number | null {
+  for (const value of values) {
+    const number = declaredNumber(value);
+    if (number !== null) return number;
+  }
+  return null;
+}
+
+function isIndividualCommercialDetail(
+  detail: EventoComercial,
+  animalId: string,
+  parentAnimalId?: string | null,
+) {
+  return detail.quantidade_animais === 1 &&
+    ((detail.animal_ids?.length === 1 && detail.animal_ids[0] === animalId) ||
+      (!detail.animal_ids?.length && detail.scope === "animal" && parentAnimalId === animalId));
+}
+
 /** Projeção do snapshot, sem converter unidades nem inferir peso atual. */
 export function projectAnimalCommercialValues(
   detail: EventoComercial,
@@ -73,30 +91,27 @@ export function projectAnimalCommercialValues(
   const line = matchingRow(pricing?.lines, "animal_id", animalId);
   const animal = matchingRow(snapshot?.animals, "id", animalId);
   const values = asRecord(snapshot?.valor_por_animal);
-  const individual =
-    detail.quantidade_animais === 1 &&
-    ((detail.animal_ids?.length === 1 && detail.animal_ids[0] === animalId) ||
-      (!detail.animal_ids?.length &&
-        detail.scope === "animal" &&
-        parentAnimalId === animalId));
+  const individual = isIndividualCommercialDetail(detail, animalId, parentAnimalId);
   const directWeight = declaredNumber(line?.commercial_weight);
   return {
-    weight:
-      directWeight ??
-      declaredNumber(line?.weight_considered_kg) ??
-      declaredNumber(animal?.weight_considered_kg) ??
-      declaredNumber(animal?.peso_kg) ??
-      (individual ? declaredNumber(detail.peso_vivo_total) : null),
+    weight: firstDeclaredNumber(
+      directWeight,
+      line?.weight_considered_kg,
+      animal?.weight_considered_kg,
+      animal?.peso_kg,
+      individual ? detail.peso_vivo_total : null,
+    ),
     weightUnit:
       directWeight !== null &&
       (line?.commercial_weight_unit ?? pricing?.weight_unit) === "arroba"
         ? "@"
         : "kg",
-    value:
-      declaredNumber(line?.individual_gross_value) ??
-      declaredNumber(animal?.valor_individual) ??
-      declaredNumber(values?.[animalId]) ??
-      (individual ? declaredNumber(detail.valor_bruto) : null),
+    value: firstDeclaredNumber(
+      line?.individual_gross_value,
+      animal?.valor_individual,
+      values?.[animalId],
+      individual ? detail.valor_bruto : null,
+    ),
   };
 }
 
