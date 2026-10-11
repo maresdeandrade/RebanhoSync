@@ -31,11 +31,11 @@ export function RegistrarStickyActionBar({
   return (
     <div
       aria-busy={isFinalizing}
-      className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-40 -mx-4 -mb-4 mt-4 rounded-b-xl border-t bg-card px-4 py-3 shadow-soft sm:-mx-5 sm:-mb-5 sm:px-5 md:bottom-0"
+      className="relative -mx-4 -mb-4 mt-4 rounded-b-xl border-t bg-card px-4 py-2 sm:-mx-5 sm:-mb-5 sm:px-5 md:sticky md:bottom-0 md:z-40 md:py-3 md:shadow-soft"
     >
       {isChooseActionStep && actionStepIssues.length > 0 && (
         <StateBanner
-          className="mb-4"
+          className="mb-2 p-2 text-xs md:mb-4 md:p-4 md:text-base"
           tone="error"
           live="assertive"
           title="Revise antes de continuar"
@@ -43,14 +43,14 @@ export function RegistrarStickyActionBar({
         />
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex items-center gap-2 sm:gap-3">
         <Button variant="outline" onClick={onBack}>
           <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
 
         {isChooseActionStep && (
           <Button
-            className="flex-1"
+            className="h-auto min-h-12 min-w-0 flex-1 whitespace-normal px-2 text-xs sm:px-4 sm:text-sm md:h-12 md:px-5"
             disabled={!tipoManejo || !canAdvanceToConfirm}
             onClick={onNext}
           >
@@ -60,7 +60,7 @@ export function RegistrarStickyActionBar({
 
         {isConfirmStep && (
           <Button
-            className="min-h-12 flex-1 text-base font-semibold shadow-sm"
+            className="h-auto min-h-12 min-w-0 flex-1 whitespace-normal px-2 text-sm font-semibold shadow-sm sm:px-4 sm:text-base md:h-12 md:px-5"
             onClick={onFinalize}
             disabled={isFinalizing}
           >
