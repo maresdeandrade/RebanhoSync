@@ -70,7 +70,10 @@ export interface PullOptions {
   // replace: replace only this farm, preserving pending rows
   // merge: upsert remote rows without clearing local store
   mode?: "replace" | "merge";
+  tableModes?: Record<string, "replace" | "merge">;
   observations?: Record<string, { key: string; ids: string[] }>;
+  // Required raw snapshot coverage, before pending protection or any writes.
+  requiredAnimalIds?: readonly string[];
   // Movement reconciliation releases protection and completes captured operations
   // in the same transaction that installs the remote observations.
   reconciliation?: {
@@ -443,13 +446,13 @@ async function getPendingLocalRecordKeys(storesToUpdate: StoreUpdate[]) {
 
 async function getPendingLocalRows(
   storesToUpdate: StoreUpdate[],
-  mode: PullMode,
+  modes: ReadonlyMap<string, PullMode>,
 ) {
   const pendingRows = new Map<string, RemoteRow[]>();
-  if (mode !== "replace") return pendingRows;
-
-  const pendingKeys = await getPendingLocalRecordKeys(storesToUpdate);
-  for (const { remote, local } of storesToUpdate) {
+  const replacementStores = storesToUpdate.filter(({ remote }) => modes.get(remote) === "replace");
+  if (replacementStores.length === 0) return pendingRows;
+  const pendingKeys = await getPendingLocalRecordKeys(replacementStores);
+  for (const { remote, local } of replacementStores) {
     const keys = pendingKeys.get(remote);
     if (!keys?.length) continue;
     const rows = await db.table(local).bulkGet(keys);
@@ -557,7 +560,7 @@ async function applyFarmPull(
   remoteTables: readonly string[],
   storesToUpdate: StoreUpdate[],
   results: Record<string, unknown[]>,
-  mode: PullMode,
+  modes: ReadonlyMap<string, PullMode>,
   reconciled = new Set<string>() as ReadonlySet<string>,
 ) {
   const pendingEventIds = remoteTables.some((table) =>
@@ -570,7 +573,7 @@ async function applyFarmPull(
     fazendaId,
     reconciled,
   );
-  const pendingLocalRows = await getPendingLocalRows(storesToUpdate, mode);
+  const pendingLocalRows = await getPendingLocalRows(storesToUpdate, modes);
   const effectiveResults = buildEffectiveResults(
     remoteTables,
     results,
@@ -582,7 +585,7 @@ async function applyFarmPull(
       update,
       effectiveResults[update.remote] ?? [],
       pendingLocalRows.get(update.remote) ?? [],
-      mode,
+      modes.get(update.remote)!,
       fazendaId,
     );
   }
@@ -652,12 +655,67 @@ async function writeMergeResults(
   });
 }
 
+function validateTablePullMode(
+  mode: PullMode,
+  options: PullOptions,
+  table: string,
+) {
+  if (mode !== "merge" && mode !== "replace") throw new Error("INVALID_PULL_MODE");
+  if (options.observations?.[table] && mode !== "merge") throw new Error("PARTIAL_PULL_REPLACE_FORBIDDEN");
+}
+
+function resolvePullModes(remoteTables: readonly string[], options: PullOptions, mode: PullMode) {
+  const modes = new Map<string, PullMode>();
+  for (const table of remoteTables) {
+    const resolved = options.tableModes?.[table] ?? mode;
+    validateTablePullMode(resolved, options, table);
+    modes.set(table, resolved);
+  }
+  if (Object.keys(options.tableModes ?? {}).some(table => !modes.has(table))) {
+    throw new Error("UNKNOWN_PULL_TABLE_MODE");
+  }
+  return modes;
+}
+
+function hasRequiredAnimalIdObservation(requiredIds: readonly string[], observedIds: readonly string[]) {
+  return requiredIds.length === 1 && observedIds.length === 1 &&
+    requiredIds[0] === observedIds[0] &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requiredIds[0]);
+}
+
+function validateRequiredAnimalObservation(modes: ReadonlyMap<string, PullMode>, options: PullOptions) {
+  if (options.requiredAnimalIds) {
+    const observation = options.observations?.animais;
+    if (!modes.has("animais") || !observation || observation.key !== "id" ||
+      !hasRequiredAnimalIdObservation(options.requiredAnimalIds, observation.ids)) {
+      throw new Error("INVALID_REQUIRED_ANIMAL_OBSERVATION");
+    }
+  }
+}
+
+function validateRequiredAnimalSnapshot(
+  fazenda_id: string,
+  results: Record<string, unknown[]>,
+  options: PullOptions,
+) {
+  if (options.requiredAnimalIds) {
+    const rows = results.animais as RemoteRow[];
+    if (rows.length !== 1 || rows[0].id !== options.requiredAnimalIds[0] ||
+      rows[0].fazenda_id !== fazenda_id || !Number.isSafeInteger(rows[0].revision) ||
+      (rows[0].revision as number) < 1) {
+      throw new Error("REQUIRED_ANIMAL_SNAPSHOT_NOT_COVERED");
+    }
+  }
+}
+
 export const pullDataForFarm = async (
   fazenda_id: string,
   remoteTables: readonly string[] = DEFAULT_REMOTE_TABLES,
   options: PullOptions = {},
 ) => {
   const mode = options.mode ?? "replace";
+  const modes = resolvePullModes(remoteTables, options, mode);
+  validateRequiredAnimalObservation(modes, options);
   console.log(`[pull] Starting pull for farm ${fazenda_id} (mode=${mode})`);
 
   // 1. Fetch all data first (fail fast)
@@ -683,9 +741,14 @@ export const pullDataForFarm = async (
     results[remoteTable] = data ?? [];
   }
 
+  validateRequiredAnimalSnapshot(fazenda_id, results, options);
+
   // 2. Determine valid local stores involved
   // We filter out invalid stores to prevent transaction failure, but log warning
   const validTableNames = new Set(db.tables.map((t) => t.name));
+  if (options.requiredAnimalIds && remoteTables.some(table => !validTableNames.has(getLocalStoreName(table)))) {
+    throw new Error("REQUIRED_PULL_STORE_MISSING");
+  }
   const storesToUpdate = remoteTables
     .map((rt) => ({ remote: rt, local: getLocalStoreName(rt) }))
     .filter(({ remote, local }) => {
@@ -721,7 +784,7 @@ export const pullDataForFarm = async (
       remoteTables,
       storesToUpdate,
       results,
-      mode,
+      modes,
       reconciled,
     );
     await options.reconciliation?.complete(reconciled);

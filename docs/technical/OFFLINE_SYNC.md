@@ -1,6 +1,6 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-10-05
+Atualizado em: 2026-10-10
 
 ## Responsabilidade documental
 
@@ -48,6 +48,26 @@ Contratos certificados na F24.4D:
 - **Clock local no scheduling:** `next_attempt_at` e `created_at` afetam unicamente o agendamento local da fila e elegibilidade de retry (`isGestureReadyForSync`), sem alterar identidades, recalcular `expected_revision`, reabrir conflitos terminais ou causar estagnação permanente após retorno do relógio à normalidade.
 
 O escopo é `ANIMAIS_ONLY`. Demais `state_*`, delete/tombstone completo, field-level merge e multi-device físico não foram generalizados nem certificados (`REAL_PHYSICAL_MULTI_DEVICE = NOT_PROVEN`).
+
+### Refresh pós-ACK restrito — F24.6A1-E1
+
+Uma única operação genérica `UPDATE animais`, com resultado individual exatamente
+`APPLIED`, identidade/fazenda/metadados reconhecidos, `expected_revision` válido e
+somente `observacoes` como campo de negócio, recebe refresh imediato por ID e
+fazenda. Shapes legados/desconhecidos, operações adicionais, resultados mistos e
+writers canônicos mantêm o refresh integral existente.
+
+O mesmo pull busca todas as tabelas derivadas antes de instalar: `animais` dirigido
+sempre usa merge; `agenda_itens` continua integral, replace da fazenda ativa ou
+merge da inativa. Um plano filtrado com replace é rejeitado antes de consultar.
+Cobertura bruta do alvo exige ID/fazenda/revision válidos, incluindo tombstone;
+ausência/incompletude aborta a instalação conjunta. Pending continua protegido.
+
+O ACK continua atômico com a obrigação durável e remoção das operações. Refresh
+dirigido não conclui a obrigação integral nem avança cursor completo. Outro animal
+alterado por outro cliente converge no drain integral existente; farm inativa
+continua dependendo de atendimento/drain explícito. Receipt não instala snapshot
+e revisões já capturadas não são recalculadas. Sem mudança de scheduler ou retry.
 
 ## Animal→Lote — F24.4E2
 

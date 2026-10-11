@@ -72,6 +72,60 @@ let activeRequestController: AbortController | null = null;
 const localActiveGestureLocks = new Set<string>();
 export const REQUEST_TIMEOUT_MS = 5_000;
 
+const isPostAckUuid = (value: unknown): value is string => typeof value === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
+function hasAppliedObservationReceipt(op: Operation, result: SyncOperationResult) {
+  return result.status === "APPLIED" && result.op_id === op.client_op_id &&
+    (result.client_op_id === undefined || result.client_op_id === op.client_op_id) &&
+    !result.operation_identity && !result.domain_op_id && !result.altered;
+}
+
+function isObservationUpdateApplied(op: Operation, result: SyncOperationResult) {
+  return op.table === "animais" && op.action === "UPDATE" &&
+    hasAppliedObservationReceipt(op, result) &&
+    !op.movement_group && !op.command_digest && !op.domain_op_id;
+}
+
+function hasObservationOnlyFields(record: Operation["record"]) {
+  if (!record || typeof record !== "object" || Array.isArray(record)) return false;
+  const keys = new Set(["id", "observacoes", "fazenda_id", "client_id", "client_tx_id", "client_op_id", "client_recorded_at"]);
+  return !Object.keys(record).some(key => !keys.has(key)) &&
+    Object.prototype.hasOwnProperty.call(record, "observacoes") &&
+    (record.observacoes === null || typeof record.observacoes === "string");
+}
+
+function hasObservationIdentity(gesture: Gesture, op: Operation, record: Operation["record"]) {
+  return isPostAckUuid(record.id) && isPostAckUuid(gesture.fazenda_id) &&
+    isPostAckUuid(gesture.client_tx_id) && isPostAckUuid(op.client_op_id) &&
+    op.client_tx_id === gesture.client_tx_id &&
+    record.fazenda_id === gesture.fazenda_id && record.client_tx_id === gesture.client_tx_id &&
+    record.client_op_id === op.client_op_id && record.client_id === gesture.client_id;
+}
+
+function hasObservationClientMetadata(gesture: Gesture, record: Operation["record"]) {
+  return typeof gesture.client_id === "string" && Boolean(gesture.client_id) &&
+    typeof record.client_recorded_at === "string" &&
+    Number.isFinite(Date.parse(record.client_recorded_at));
+}
+
+// Closed class: a receipt confirms execution, never supplies the state snapshot.
+export function selectPostAckAnimalObservation(
+  gesture: Gesture,
+  ops: readonly Operation[],
+  results: readonly SyncOperationResult[],
+): string | null {
+  if (ops.length !== 1 || results.length !== 1) return null;
+  const op = ops[0];
+  const result = results[0];
+  const record = op.record;
+  if (!isObservationUpdateApplied(op, result) ||
+    !Number.isSafeInteger(op.expected_revision) || op.expected_revision! < 1 ||
+    !hasObservationOnlyFields(record) || !hasObservationIdentity(gesture, op, record) ||
+    !hasObservationClientMetadata(gesture, record)) return null;
+  return record.id;
+}
+
 export async function withGestureLock<T>(
   clientTxId: string,
   fn: (acquired: boolean) => Promise<T>,
@@ -2037,10 +2091,20 @@ export async function processGesture(gesture: Gesture) {
 
       if (refreshTables.size > 0) {
         try {
+          const animalId = ackCommitted
+            ? selectPostAckAnimalObservation(gesture, queuedOps, result.results)
+            : null;
           await pullDataForFarm(
             gesture.fazenda_id,
             Array.from(refreshTables),
-            { mode: getReconciliationPullMode(gesture.fazenda_id) },
+            {
+              mode: getReconciliationPullMode(gesture.fazenda_id),
+              ...(animalId ? {
+                tableModes: { animais: "merge" as const },
+                observations: { animais: { key: "id", ids: [animalId] } },
+                requiredAnimalIds: [animalId],
+              } : {}),
+            },
           );
         } catch (refreshError) {
           console.warn(

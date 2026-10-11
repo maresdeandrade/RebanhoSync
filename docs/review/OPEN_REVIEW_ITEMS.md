@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-10-06
+Atualizado em: 2026-10-11
 
 ## Objetivo
 
@@ -53,21 +53,20 @@ A F24.3 certificou restart lógico por reabertura Dexie, mas não kill/restart r
 browser/processo com o mesmo perfil persistente e IndexedDB sobrevivente. A dívida não bloqueia
 o closeout F24.3; sua incorporação em gate posterior exige decisão explícita.
 
-## P1 — F24.5 Observabilidade + Reconcile + Diagnóstico
+## F24.5 — reconciliada / CLOSED / INTEGRATED
 
-Status: `IN_PROGRESS — F24.5A READY_FOR_REVIEW / REVIEW_APPROVED; F24.5B NEXT`
-Release blocker: `SIM_PARA_PRODUCAO_AMPLA`
-
-O [baseline F24.5A](./F24_5A_OBSERVABILITY_BASELINE.md) está estabelecido e o pacote
-documental READY_FOR_COMMIT, sem CLOSED/integrado. A [abertura lógica F24.5B](./F24_5B_STRUCTURED_DIAGNOSTICS_PLAN.md)
-prioriza G02/G01 (P1) e G06/G08 (P2) com IDs existentes. G03/G04/G07 ficam em C;
-G05 em D; G09/G10 continuam NOT_PROVEN para certificação E. Há fila, audit e
-exportação existentes: a lacuna é a reconstrução histórica parcial, não ausência
-total de mecanismos. Telemetria não é fonte factual nem regra de domínio.
+PR #190 integrada em `4b1c46696c137ae3ec6a24626123804709bcb37c`. A [certificação F24.5E](./F24_5E_INTEGRATED_OBSERVABILITY_CERTIFICATION.md) comprova retenção/G09 e preserva os limites aceitos de evidência. F24.5 não permanece item aberto; volume de telemetry/retention será medido em F24.6, sem reabrir seu contrato.
 
 ## P1 — F24.6 Performance / Escala
 
-Status: `NOT_STARTED`
+**F24.6A1-E2 — estado vigente:** [Seed e comparação A/B](./F24_6A1E2_SEED_DIAGNOSIS_AND_AB_COMPLETION.md) = `READY_FOR_REVIEW`. Série independente do patch final: 5/5 originais e 5/5 otimizados, 100 gestos/duas fazendas, todos íntegros. Medianas: 4.550.194→287.621 bytes, 5200→300 linhas, 16.825,40→16.097,00ms; requests/pulls preservados e intervalos de latência sobrepostos. Instrumentação somente no harness, fontes funcionais e 93 arquivos anteriores preservados. Causa do seed antigo LIMIT_NOT_PROVEN; perda de diagnóstico do wrapper corrigida e prova artificial de captura aprovada, sem atribuir quota real. Probes pequenos e sete checks funcionais PASS; ambiente próprio removido, compartilhado inalterado. Reconnect 1k NÃO CERTIFICADO; sem otimização adicional ou integração autorizada. Checagem final: origin/main avançou para 35df487c2b21b3e98fc27fdd255cf82b80748140 (PRs #193/#194, somente layout Registrar); HEAD e benchmark preservam baseline fixa 3b3bc96d, sem impacto nos módulos exercitados.
+
+**F24.6A1-E1 — snapshot anterior:** [Implementação restrita pós-ACK](./F24_6A1E1_POST_ACK_REFRESH_IMPLEMENTATION.md) = `PARTIAL / BLOCKED_WITH_REASON`. Dois módulos funcionais alterados; 148 testes focados e sete checks com dois clientes reais PASS, inclusive reabertura após fechamento durante o pull. Patch final: 1/5 runs originais e 2/5 otimizados de 100 gestos completos; original 2 falhou durante seed com BROWSER_OPERATION_FAILURE, antes do workload, sem causa capturada. Não substituído por retry. 5200→300 linhas e ~4.55MB→0.288MB nas amostras completas, requests/pulls preservados; sem ganho geral de latência declarado. Cinco amostras por variante ainda não comprovadas; 1k/10k não executados. Três ambientes locais próprios removidos, compartilhado/artifacts antigos preservados. Pendente diagnóstico sanitizado do seed e comparação final completa. Histórico de abertura/caracterização abaixo não substitui essa decisão.
+
+F24.6A0-B: `F24_6A0_BACKEND = READY_FOR_P0_BENCHMARKS`. [Backend local isolado certificado](./F24_6A0B_ISOLATED_LOCAL_BACKEND_CERTIFICATION.md) com 60 migrations, schema/RLS/Auth/PostgREST/Edge verificados, probes pequenos de pull/reconnect aprovados e cleanup confirmado. Banco compartilhado com 54 migrations preservado. [F24.6A1](./F24_6A1_P0_LOCAL_BENCHMARK_CHARACTERIZATION.md): PARTIAL / BLOCKED_WITH_REASON. IndexedDB/fila 60/60; reconnect 100 gestos 5/5, 1k 4/5 com ACK_NOT_CONFIRMED no quinto run; 10k não executado pelo gate. Cleanup e preservação do compartilhado verificados. Não há capacidade geral declarada nem otimização autorizada. [F24.6A1-D](./F24_6A1D_ACK_AND_READ_AMPLIFICATION_DIAGNOSIS.md): diagnóstico PARTIAL; reprodução limitada parou em 240s após 836 ACKs, sem falha de ACK reproduzida; pulls inline consumiram 54.72% do prefixo e 99.8% das linhas em snapshots comparáveis eram equivalentes. Causa original LIMIT_NOT_PROVEN; sem otimização ou 10k. [F24.6A1-E0](./F24_6A1E0_POST_ACK_REFRESH_OPTIMIZATION_DESIGN.md): READY_FOR_IMPLEMENTATION somente para desenho C+D de UPDATE observacoes único, merge dirigido de animais e transação conjunta com agenda integral; nenhuma implementação nesta etapa.
+
+Status: `ACTIVE — F24.6A PERFORMANCE / SCALE BASELINE`
+Preparação: [F24.6A0 — Benchmark Rebaseline + Harness Contract](./F24_6A0_BENCHMARK_REBASELINE_AND_HARNESS_CONTRACT.md).
 Release blocker: `SIM_PARA_ESCALA_DECLARADA`
 
 Fixtures e workload histórico não equivalem a benchmark de IndexedDB, fila grande,
