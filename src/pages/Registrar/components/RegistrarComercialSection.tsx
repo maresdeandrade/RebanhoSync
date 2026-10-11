@@ -861,7 +861,7 @@ export function RegistrarComercialSection(
       {/* Tipo de Operação (Sempre Visível) */}
       <div className="space-y-3">
         <Label>Tipo de Operação</Label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {(
             [
               { value: "compra", label: "Compra" },
