@@ -1,8 +1,4 @@
 export const BASELINE_SHA = "3b3bc96db331c2917167cf8370024332f505d9f7";
-export const P0_DATASETS = {
-  indexeddb: [{ animals: 1000, events: 10000 }, { animals: 10000, events: 100000 }, { animals: 50000, events: 500000 }],
-  queue: [100, 1000, 10000],
-};
 
 export function parseOptions(args) {
   const options = { workload: "indexeddb", animals: 100, events: 1000, gestures: 100, farms: 2, runs: 3, mode: "cold", purpose: "proof" };

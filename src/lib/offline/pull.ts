@@ -655,33 +655,67 @@ async function writeMergeResults(
   });
 }
 
+function validateTablePullMode(
+  mode: PullMode,
+  options: PullOptions,
+  table: string,
+) {
+  if (mode !== "merge" && mode !== "replace") throw new Error("INVALID_PULL_MODE");
+  if (options.observations?.[table] && mode !== "merge") throw new Error("PARTIAL_PULL_REPLACE_FORBIDDEN");
+}
+
+function resolvePullModes(remoteTables: readonly string[], options: PullOptions, mode: PullMode) {
+  const modes = new Map<string, PullMode>();
+  for (const table of remoteTables) {
+    const resolved = options.tableModes?.[table] ?? mode;
+    validateTablePullMode(resolved, options, table);
+    modes.set(table, resolved);
+  }
+  if (Object.keys(options.tableModes ?? {}).some(table => !modes.has(table))) {
+    throw new Error("UNKNOWN_PULL_TABLE_MODE");
+  }
+  return modes;
+}
+
+function hasRequiredAnimalIdObservation(requiredIds: readonly string[], observedIds: readonly string[]) {
+  return requiredIds.length === 1 && observedIds.length === 1 &&
+    requiredIds[0] === observedIds[0] &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requiredIds[0]);
+}
+
+function validateRequiredAnimalObservation(modes: ReadonlyMap<string, PullMode>, options: PullOptions) {
+  if (options.requiredAnimalIds) {
+    const observation = options.observations?.animais;
+    if (!modes.has("animais") || !observation || observation.key !== "id" ||
+      !hasRequiredAnimalIdObservation(options.requiredAnimalIds, observation.ids)) {
+      throw new Error("INVALID_REQUIRED_ANIMAL_OBSERVATION");
+    }
+  }
+}
+
+function validateRequiredAnimalSnapshot(
+  fazenda_id: string,
+  results: Record<string, unknown[]>,
+  options: PullOptions,
+) {
+  if (options.requiredAnimalIds) {
+    const rows = results.animais as RemoteRow[];
+    if (rows.length !== 1 || rows[0].id !== options.requiredAnimalIds[0] ||
+      rows[0].fazenda_id !== fazenda_id || !Number.isSafeInteger(rows[0].revision) ||
+      (rows[0].revision as number) < 1) {
+      throw new Error("REQUIRED_ANIMAL_SNAPSHOT_NOT_COVERED");
+    }
+  }
+}
+
 export const pullDataForFarm = async (
   fazenda_id: string,
   remoteTables: readonly string[] = DEFAULT_REMOTE_TABLES,
   options: PullOptions = {},
 ) => {
   const mode = options.mode ?? "replace";
-  const modes = new Map<string, PullMode>();
-  for (const table of remoteTables) {
-    const resolved = options.tableModes?.[table] ?? mode;
-    if (resolved !== "merge" && resolved !== "replace") throw new Error("INVALID_PULL_MODE");
-    if (options.observations?.[table] && resolved !== "merge") {
-      throw new Error("PARTIAL_PULL_REPLACE_FORBIDDEN");
-    }
-    modes.set(table, resolved);
-  }
-  if (Object.keys(options.tableModes ?? {}).some(table => !modes.has(table))) {
-    throw new Error("UNKNOWN_PULL_TABLE_MODE");
-  }
-  if (options.requiredAnimalIds) {
-    const observation = options.observations?.animais;
-    if (!modes.has("animais") || !observation || observation.key !== "id" ||
-      options.requiredAnimalIds.length !== 1 || observation.ids.length !== 1 ||
-      options.requiredAnimalIds[0] !== observation.ids[0] ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(options.requiredAnimalIds[0])) {
-      throw new Error("INVALID_REQUIRED_ANIMAL_OBSERVATION");
-    }
-  }
+  const modes = resolvePullModes(remoteTables, options, mode);
+  validateRequiredAnimalObservation(modes, options);
   console.log(`[pull] Starting pull for farm ${fazenda_id} (mode=${mode})`);
 
   // 1. Fetch all data first (fail fast)
@@ -707,14 +741,7 @@ export const pullDataForFarm = async (
     results[remoteTable] = data ?? [];
   }
 
-  if (options.requiredAnimalIds) {
-    const rows = results.animais as RemoteRow[];
-    if (rows.length !== 1 || rows[0].id !== options.requiredAnimalIds[0] ||
-      rows[0].fazenda_id !== fazenda_id || !Number.isSafeInteger(rows[0].revision) ||
-      (rows[0].revision as number) < 1) {
-      throw new Error("REQUIRED_ANIMAL_SNAPSHOT_NOT_COVERED");
-    }
-  }
+  validateRequiredAnimalSnapshot(fazenda_id, results, options);
 
   // 2. Determine valid local stores involved
   // We filter out invalid stores to prevent transaction failure, but log warning

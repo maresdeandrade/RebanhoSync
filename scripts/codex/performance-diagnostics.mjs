@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 
 export const DIAGNOSTIC_LIMITS = { duration_ms: 240000, requests: 4000, received_bytes: 600 * 1048576, heap_bytes: 512 * 1048576 };
 export const identity = value => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(value) ? value : null;
-export const code = value => typeof value === 'string' && /^[A-Z][A-Z0-9_]{0,79}$/.test(value) ? value : null;
+const code = value => typeof value === 'string' && /^[A-Z][A-Z0-9_]{0,79}$/.test(value) ? value : null;
 export function transportCode(value) {
   return typeof value === 'string' ? value.match(/(?:net::)?(ERR_[A-Z_]+)/)?.[1] ?? 'TRANSPORT_OTHER' : 'TRANSPORT_UNKNOWN';
 }
