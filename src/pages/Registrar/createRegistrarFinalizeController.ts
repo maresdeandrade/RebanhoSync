@@ -331,6 +331,7 @@ export type RegistrarFinalizeControllerInput = {
     } | null;
   } | null;
   comercial?: {
+    simulationOnly?: boolean;
     operationType: "compra" | "venda" | "sociedade";
     scope: "animal" | "lote";
     occurredAt?: string;
@@ -368,6 +369,10 @@ export function createRegistrarFinalizeController(
     const { context, selection, finance, sanitary, operationData, comercial } =
       input;
     if (!context.tipoManejo) return;
+    if (context.tipoManejo === "comercial" && comercial?.simulationOnly) {
+      deps.feedback.showError("Simulação não gera registro patrimonial.");
+      return;
+    }
 
     const fazendaId = context.activeFarmId ?? context.fallbackFarmId;
     if (!fazendaId) return;

@@ -74,6 +74,20 @@ function baseInput(): CommercialOperationCommandInput {
 }
 
 describe("commercial_operation_v2 domain command", () => {
+  it("mantém o valor legado no animal correto quando a primeira linha não tem valor", () => {
+    const input = baseInput();
+    input.scope = "lote";
+    input.loteId = lot;
+    input.declaredQuantity = 2;
+    input.newAnimals.push({ ...input.newAnimals[0], id: "30000000-0000-4000-8000-000000000002", localId: "row-2", identificacao: "BR-002", valorIndividual: 2500 });
+    const built = buildCommercialOperationGesture(input);
+    const detail = built.ops.find((op) => op.table === "eventos_comercial")!.record;
+    expect(detail.snapshot.valor_por_animal).toEqual({ "30000000-0000-4000-8000-000000000002": 2500 });
+  });
+  it("rejeita simulação na fronteira factual antes de construir operações", () => {
+    const input = { ...baseInput(), operationType: "simulacao" } as unknown as CommercialOperationCommandInput;
+    expect(() => buildCommercialOperationGesture(input)).toThrow(/Simulação não gera Evento/);
+  });
   it("rejects a divergent direct-arroba snapshot before writing", () => {
     expect(
       validateCommercialPricingSnapshotLine("arroba", {

@@ -69,6 +69,7 @@ import {
 // ---------------------------------------------------------------------------
 
 export type ComercialFormData = {
+  simulationOnly?: boolean;
   operationType: "compra" | "venda" | "sociedade";
   scope: "animal" | "lote";
   occurredAt: string;

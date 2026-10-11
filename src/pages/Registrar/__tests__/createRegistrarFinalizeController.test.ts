@@ -130,6 +130,25 @@ function buildFinalizeInput() {
 }
 
 describe("createRegistrarFinalizeController", () => {
+  it("bloqueia simulação antes de planejar ou persistir fatos", async () => {
+    const deps = buildControllerDeps();
+    const input = {
+      ...buildFinalizeInput(),
+      context: { ...buildFinalizeInput().context, tipoManejo: "comercial" as const },
+      comercial: {
+        simulationOnly: true, operationType: "compra" as const, scope: "animal" as const,
+        quantidadeAnimais: 1, pesoVivoTotal: 250, valorBruto: 3000, frete: null,
+        comissao: null, descontos: null, taxasImpostos: null, bonificacoes: null,
+        contraparteId: null, contraparteNome: null, animalIds: null, loteId: null,
+        financeTransactionId: null,
+      },
+    };
+    await createRegistrarFinalizeController(deps)(input);
+    expect(deps.feedback.showError).toHaveBeenCalledWith("Simulação não gera registro patrimonial.");
+    expect(deps.tracks.resolveNonFinancialFinalizePlan).not.toHaveBeenCalled();
+    expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
+    expect(deps.commit.buildAgendaCompletionOp).not.toHaveBeenCalled();
+  });
   it("interrompe no preflight e reporta erro", async () => {
     const deps = buildControllerDeps();
     const finalize = createRegistrarFinalizeController(deps);

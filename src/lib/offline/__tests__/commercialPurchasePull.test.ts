@@ -14,6 +14,7 @@ vi.mock("@/lib/supabase", () => ({
 }));
 
 import { db } from "../db";
+import { loadAnimalAcquisitionHistory } from "@/lib/comercial/animalCommercialHistory";
 import { pullDataForFarm } from "../pull";
 import type { Operation } from "../types";
 
@@ -202,6 +203,24 @@ describe("commercial purchase pull protection", () => {
     expect((await db.event_eventos_comercial.get(eventId))?.snapshot).toEqual(
       detail.snapshot,
     );
+  });
+
+  it("reconstrói pesos de aquisição individuais após pull e replay do snapshot", async () => {
+    const op = compoundV2Op();
+    const envelope = op.record as Record<string, unknown>;
+    const event = { ...envelope.event as Record<string, unknown>, occurred_at: "2026-08-13", animal_id: null };
+    const detail = { ...envelope.detail as Record<string, unknown>, operation_type: "compra",
+      quantidade_animais: 2, animal_ids: [animalId, "animal-2"],
+      snapshot: { animals: [{ id: animalId, weight_considered_kg: 320, valor_individual: 0 },
+        { id: "animal-2", weight_considered_kg: 355, valor_individual: 4000 }] } };
+    mocks.rows.set("eventos", [event]);
+    mocks.rows.set("eventos_comercial", [detail]);
+    await pullDataForFarm(farm, ["eventos", "eventos_comercial"]);
+    await pullDataForFarm(farm, ["eventos", "eventos_comercial"]);
+    db.close(); await db.open();
+    expect((await loadAnimalAcquisitionHistory(farm, animalId))[0]).toMatchObject({ weight: 320, value: 0 });
+    expect((await loadAnimalAcquisitionHistory(farm, "animal-2"))[0]).toMatchObject({ weight: 355, value: 4000 });
+    expect(await db.event_eventos_comercial.count()).toBe(1);
   });
 
   it("keeps a legacy pricing snapshot without weight_unit byte-for-byte", async () => {

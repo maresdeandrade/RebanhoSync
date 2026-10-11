@@ -20,6 +20,7 @@ import {
   Users,
   Scale
 } from "lucide-react";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { createGesture } from "@/lib/offline/ops";
 import { ANIMAL_BREED_OPTIONS, type AnimalBreedEnum } from "@/lib/animals/catalogs";
 import { canManageLivestockSociety } from "@/lib/society/animalSocietyRegistration";
@@ -33,6 +34,10 @@ interface AnimalDraft {
   raca: string;
   dataNascimento: string;
   pesoKg: string;
+}
+
+function entryWeightErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Peso de aquisição inválido.";
 }
 
 export function RegistrarSociedadeSection(props: {
@@ -179,64 +184,15 @@ export function RegistrarSociedadeSection(props: {
     setDrafts(prev => prev.map(d => d.localId === localId ? { ...d, [field]: value } : d));
   };
 
-  // Confirmar Entrada de Animais
-  const handleEntradaSociedade = async () => {
-    if (!canManageSociety) {
-      alert("Apenas owner/manager pode registrar sociedade pecuária.");
-      return;
-    }
-    let finalSocId = selectedSocId;
-    const ops: OperationInput[] = [];
-
-    // 1. Validar e criar sociedade se for nova
-    if (selectedSocId === "new") {
-      if (!nome || !contraparteId || !percFazenda || !percParceiro) {
-        alert("Preencha todos os campos da nova sociedade.");
-        return;
-      }
-      const fz = parseFloat(percFazenda);
-      const pa = parseFloat(percParceiro);
-      if (Math.abs((fz + pa) - 100) > 0.0001) {
-        alert("A soma dos percentuais da sociedade deve ser 100%.");
-        return;
-      }
-
-      finalSocId = crypto.randomUUID();
-      ops.push({
-        table: "sociedades_pecuarias",
-        action: "INSERT",
-        record: {
-          id: finalSocId,
-          fazenda_id: props.fazendaId,
-          contraparte_id: contraparteId,
-          nome,
-          status: "ativa",
-          data_inicio: dataEntrada,
-          data_fim: null,
-          percentual_fazenda: fz,
-          percentual_parceiro: pa,
-          regra_custos: "proporcional",
-          regra_perdas: "proporcional",
-          regra_receita: "proporcional",
-          observacoes: null,
-          payload: {}
-        }
-      });
-    }
-
-    if (!finalSocId || finalSocId === "new") {
-      alert("Selecione ou crie uma sociedade válida.");
-      return;
-    }
-
-    const normalizedLoteId = selectedLoteId === "null" || selectedLoteId === "" ? null : selectedLoteId;
-
-    // 2. Validar rascunhos de animais
-    for (const d of drafts) {
-      if (!d.identificacao.trim()) {
-        alert("A identificação é obrigatória para todos os animais.");
-        return;
-      }
+  const appendSocietyAnimalOperations = (
+    ops: OperationInput[],
+    finalSocId: string,
+    normalizedLoteId: string | null,
+  ): boolean => {
+    // Validar todos os rascunhos antes de gerar operações.
+    if (drafts.find((draft) => !draft.identificacao.trim())) {
+      alert("A identificação é obrigatória para todos os animais.");
+      return false;
     }
 
     // 3. Gerar operações de inserção
@@ -286,37 +242,87 @@ export function RegistrarSociedadeSection(props: {
       });
 
       if (weight !== null) {
-        const pesoEventoId = crypto.randomUUID();
-        ops.push({
-          table: "eventos",
-          action: "INSERT",
-          record: {
-            id: pesoEventoId,
+        try {
+          const entryWeight = buildEventGesture({
             dominio: "pesagem",
-            occurred_at: dataEntrada,
-            animal_id: animalId,
-            lote_id: normalizedLoteId,
-            source_task_id: null,
-            corrige_evento_id: null,
-            sanitario_caso_id: null,
+            fazendaId: props.fazendaId,
+            occurredAt: dataEntrada,
+            animalId,
+            loteId: normalizedLoteId,
+            pesoKg: weight,
             observacoes: "Peso inicial registrado na entrada em sociedade",
-            payload: {
-              tipo_acao: "entrada_sociedade"
-            }
-          }
-        });
-
-        ops.push({
-          table: "eventos_pesagem",
-          action: "INSERT",
-          record: {
-            evento_id: pesoEventoId,
-            peso_kg: weight,
-            payload: {}
-          }
-        });
+            payload: { tipo_acao: "entrada_sociedade", sociedade_id: finalSocId },
+          });
+          ops.push(...entryWeight.ops);
+        } catch (error) {
+          alert(entryWeightErrorMessage(error));
+          return false;
+        }
       }
     }
+
+    return true;
+  };
+
+  const validateNewSocietyShares = () => {
+    if (!nome || !contraparteId || !percFazenda || !percParceiro) {
+      alert("Preencha todos os campos da nova sociedade.");
+      return null;
+    }
+    const fz = parseFloat(percFazenda);
+    const pa = parseFloat(percParceiro);
+    if (Math.abs((fz + pa) - 100) > 0.0001) {
+      alert("A soma dos percentuais da sociedade deve ser 100%.");
+      return null;
+    }
+    return { fz, pa };
+  };
+
+  // Confirmar Entrada de Animais
+  const handleEntradaSociedade = async () => {
+    if (!canManageSociety) {
+      alert("Apenas owner/manager pode registrar sociedade pecuária.");
+      return;
+    }
+    let finalSocId = selectedSocId;
+    const ops: OperationInput[] = [];
+
+    // 1. Validar e criar sociedade se for nova
+    if (selectedSocId === "new") {
+      const shares = validateNewSocietyShares();
+      if (!shares) return;
+
+      finalSocId = crypto.randomUUID();
+      ops.push({
+        table: "sociedades_pecuarias",
+        action: "INSERT",
+        record: {
+          id: finalSocId,
+          fazenda_id: props.fazendaId,
+          contraparte_id: contraparteId,
+          nome,
+          status: "ativa",
+          data_inicio: dataEntrada,
+          data_fim: null,
+          percentual_fazenda: shares.fz,
+          percentual_parceiro: shares.pa,
+          regra_custos: "proporcional",
+          regra_perdas: "proporcional",
+          regra_receita: "proporcional",
+          observacoes: null,
+          payload: {}
+        }
+      });
+    }
+
+    if (!finalSocId || finalSocId === "new") {
+      alert("Selecione ou crie uma sociedade válida.");
+      return;
+    }
+
+    const normalizedLoteId = selectedLoteId === "null" || selectedLoteId === "" ? null : selectedLoteId;
+
+    if (!appendSocietyAnimalOperations(ops, finalSocId, normalizedLoteId)) return;
 
     await createGesture(props.fazendaId, ops);
     alert("Entrada em sociedade registrada com sucesso!");
@@ -755,11 +761,12 @@ export function RegistrarSociedadeSection(props: {
                     <div className="space-y-2">
                       <Label className="flex items-center gap-1">
                         <Scale className="h-3.5 w-3.5 text-primary" />
-                        <span>Peso Inicial (kg)</span>
+                        <span>Peso de aquisição (kg)</span>
                       </Label>
                       <Input 
                         type="number" 
                         step="0.01" 
+                        aria-label={`Peso de aquisição animal ${idx + 1} (kg)`}
                         value={draft.pesoKg} 
                         onChange={e => updateDraftField(draft.localId, "pesoKg", e.target.value)} 
                         placeholder="Ex: 180"
