@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { verifyABEquivalence } from '../../scripts/codex/performance-ab-equivalence.mjs';
 const fixture = () => ({independent_series:'E2-independent',post_ack_series:['original','optimized'].map(variant => ({variant,run:1,evidence:{post_ack_variant:variant,independent_series:'E2-independent',harness_sha256:'same-harness',dataset:{gestures:100,farms:2},effective_product_sha256:{pull:variant}}}))});

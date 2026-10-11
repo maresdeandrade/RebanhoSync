@@ -111,7 +111,7 @@ Sem stress em staging, migrations, alteração de produção ou cleanup remoto.
 Executar no worktree adotado, um runner por vez:
 
 ```powershell
-node --test tests/codex/performance-contract.test.mjs
+pnpm exec vitest run tests/codex/performance-contract.test.mjs tests/codex/performance-diagnostics.test.mjs tests/codex/performance-ab-equivalence.test.mjs tests/codex/performance-seed-diagnostics.test.mjs
 node scripts/codex/performance-baseline.mjs --workload indexeddb --animals 100 --events 1000 --farms 2 --runs 3 --mode cold
 node scripts/codex/performance-baseline.mjs --workload queue --animals 101 --events 1001 --gestures 101 --farms 3 --runs 3 --mode warm
 ```

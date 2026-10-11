@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 import { parseOptions, summarize, assertLocalUrl, assertMigrationBaseline } from "../../scripts/codex/performance-contract.mjs";
 
 test("rejects nonlocal targets, malformed workloads and unsafe sizes", () => {

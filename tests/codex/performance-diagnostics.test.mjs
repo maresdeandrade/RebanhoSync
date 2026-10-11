@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { receiptSummary, transportCode, diagnosticTransform, DIAGNOSTIC_LIMITS } from '../../scripts/codex/performance-diagnostics.mjs';

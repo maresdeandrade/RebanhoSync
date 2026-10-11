@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { safeSeedError } from '../../scripts/codex/performance-seed-diagnostics.mjs';
 test('seed errors retain type/code and strip credentials, URLs, JSON and literals', () => {
