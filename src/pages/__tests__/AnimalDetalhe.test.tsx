@@ -7,6 +7,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { useAuth } from "@/hooks/useAuth";
+import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
 import { useAnimalWeightPresentation } from "@/hooks/useAnimalWeightPresentation";
 import { selectAnimalWeightPresentation } from "@/lib/insights/animalWeightPresentation";
 import { formatWeightPerDay } from "@/lib/format/weight";
@@ -16,6 +17,7 @@ import type {
   AgendaItem,
   Animal,
   Evento,
+  ReproTipoEnum,
   SanitarioCaso,
 } from "@/lib/offline/types";
 import { buildClinicalProtocolEventPayload } from "@/lib/sanitario/compliance/clinicalProtocols";
@@ -66,7 +68,8 @@ function makeAnimal(
 }
 
 function makeAgendaItem(
-  overrides: Partial<AgendaItem> & Pick<AgendaItem, "id" | "tipo" | "data_prevista">,
+  overrides: Partial<AgendaItem> &
+    Pick<AgendaItem, "id" | "tipo" | "data_prevista">,
 ): AgendaItem {
   return {
     id: overrides.id,
@@ -98,7 +101,9 @@ function makeAgendaItem(
   };
 }
 
-function makeSanitarioCaso(overrides: Partial<SanitarioCaso> = {}): SanitarioCaso {
+function makeSanitarioCaso(
+  overrides: Partial<SanitarioCaso> = {},
+): SanitarioCaso {
   return {
     id: "caso-1",
     fazenda_id: "farm-1",
@@ -157,16 +162,65 @@ function makeEvento(overrides: Partial<Evento> = {}): Evento {
   };
 }
 
-function makeWeightPresentation(weights: number[], sameInstant = false, measuredAt?: string[]) {
-  const animal = makeAnimal({ id: "animal-1", identificacao: "PESO-01", sexo: "M" });
+function makeReproEvento(input: {
+  id: string;
+  tipo: ReproTipoEnum;
+  occurredAt: string;
+  payload?: Record<string, unknown>;
+}) {
+  return {
+    ...makeEvento({
+      id: input.id,
+      dominio: "reproducao",
+      occurred_at: input.occurredAt,
+      sanitario_caso_id: null,
+      payload: {},
+    }),
+    details: {
+      evento_id: input.id,
+      fazenda_id: "farm-1",
+      tipo: input.tipo,
+      macho_id: null,
+      payload: input.payload ?? {},
+      client_id: "client-1",
+      client_op_id: `detail-${input.id}`,
+      client_tx_id: null,
+      client_recorded_at: input.occurredAt,
+      server_received_at: input.occurredAt,
+      created_at: input.occurredAt,
+      updated_at: input.occurredAt,
+      deleted_at: null,
+    },
+  };
+}
+
+function makeWeightPresentation(
+  weights: number[],
+  sameInstant = false,
+  measuredAt?: string[],
+) {
+  const animal = makeAnimal({
+    id: "animal-1",
+    identificacao: "PESO-01",
+    sexo: "M",
+  });
   return selectAnimalWeightPresentation({
-    fazendaId: "farm-1", animalId: animal.id, animal,
-    events: weights.map((_, index) => makeEvento({
-      id: `weight-${index}`, dominio: "pesagem",
-      occurred_at: measuredAt?.[index] ?? `2026-01-${sameInstant ? "01" : String(index + 1).padStart(2, "0")}T12:00:00.000Z`,
-    })),
+    fazendaId: "farm-1",
+    animalId: animal.id,
+    animal,
+    events: weights.map((_, index) =>
+      makeEvento({
+        id: `weight-${index}`,
+        dominio: "pesagem",
+        occurred_at:
+          measuredAt?.[index] ??
+          `2026-01-${sameInstant ? "01" : String(index + 1).padStart(2, "0")}T12:00:00.000Z`,
+      }),
+    ),
     weightDetails: weights.map((weight, index) => ({
-      evento_id: `weight-${index}`, fazenda_id: "farm-1", peso_kg: weight,
+      evento_id: `weight-${index}`,
+      fazenda_id: "farm-1",
+      peso_kg: weight,
     })),
     referenceDate: "2026-02-01T12:00:00.000Z",
   });
@@ -208,8 +262,10 @@ describe("AnimalDetalhe", () => {
     mockedUseLiveQuery.mockImplementation((fn: unknown) => {
       if (typeof fn !== "function") return null;
       const str = fn.toString();
-      if (str.includes("loadAnimalAcquisitionHistory")) return mockResponses.aquisicoes ?? [];
-      if (str.includes("loadAnimalCommercialHistory")) return mockResponses.comerciais ?? [];
+      if (str.includes("loadAnimalAcquisitionHistory"))
+        return mockResponses.aquisicoes ?? [];
+      if (str.includes("loadAnimalCommercialHistory"))
+        return mockResponses.comerciais ?? [];
 
       if (str.includes("readAnimalInActiveFarm")) {
         return mockResponses.animal ?? null;
@@ -261,13 +317,13 @@ describe("AnimalDetalhe", () => {
       }
       if (str.includes("state_animais")) {
         if (str.includes("mae_id === animal.id")) {
-          return mockResponses.crias ?? [];
+          return "crias" in mockResponses ? mockResponses.crias : [];
         }
         if (str.includes("mae_id")) {
-          return mockResponses.mae ?? null;
+          return "mae" in mockResponses ? mockResponses.mae : null;
         }
         if (str.includes("pai_id")) {
-          return mockResponses.pai ?? null;
+          return "pai" in mockResponses ? mockResponses.pai : null;
         }
         return mockResponses.animal ?? null;
       }
@@ -276,9 +332,18 @@ describe("AnimalDetalhe", () => {
   };
 
   beforeEach(() => {
-    vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
     vi.clearAllMocks();
-    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation([]));
+    vi.mocked(useAnimalWeightPresentation).mockReturnValue(
+      makeWeightPresentation([]),
+    );
     mockedUseAuth.mockReturnValue({
       activeFarmId: "farm-1",
       role: "owner",
@@ -292,158 +357,342 @@ describe("AnimalDetalhe", () => {
     vi.useRealTimers();
   });
 
-  const renderDetail = () => render(
-    <MemoryRouter initialEntries={["/animais/animal-1"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <Routes>
-        <Route path="/animais/:id" element={<AnimalDetalhe />} />
-        <Route path="/registrar" element={<RegistrationDestination />} />
-      </Routes>
-    </MemoryRouter>,
-  );
+  const renderDetail = () =>
+    render(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+          <Route path="/registrar" element={<RegistrationDestination />} />
+        </Routes>
+      </MemoryRouter>,
+    );
 
   it("exibe peso comercial e valor individuais da compra por lote", () => {
     setupMockLiveQuery({
-      animal: makeAnimal({ id: "animal-1", identificacao: "COMPRA-001", sexo: "F" }),
-      comerciais: [{
-        evento_id: "compra-1", operation_type: "compra", scope: "lote",
-        occurred_at: "2026-08-13", animal_ids: ["animal-1", "animal-2"],
-        quantidade_animais: 2, valor_bruto: 7000,
-        snapshot: { pricing: { lines: [
-          { animal_id: "animal-1", commercial_weight: 250, commercial_weight_unit: "kg", individual_gross_value: 3000 },
-          { animal_id: "animal-2", commercial_weight: 350, commercial_weight_unit: "kg", individual_gross_value: 4000 },
-        ] } },
-      }],
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "COMPRA-001",
+        sexo: "F",
+      }),
+      comerciais: [
+        {
+          evento_id: "compra-1",
+          operation_type: "compra",
+          scope: "lote",
+          occurred_at: "2026-08-13",
+          animal_ids: ["animal-1", "animal-2"],
+          quantidade_animais: 2,
+          valor_bruto: 7000,
+          snapshot: {
+            pricing: {
+              lines: [
+                {
+                  animal_id: "animal-1",
+                  commercial_weight: 250,
+                  commercial_weight_unit: "kg",
+                  individual_gross_value: 3000,
+                },
+                {
+                  animal_id: "animal-2",
+                  commercial_weight: 350,
+                  commercial_weight_unit: "kg",
+                  individual_gross_value: 4000,
+                },
+              ],
+            },
+          },
+        },
+      ],
     });
-    render(<MemoryRouter initialEntries={["/animais/animal-1"]}><Routes><Route path="/animais/:id" element={<AnimalDetalhe />} /></Routes></MemoryRouter>);
+    render(
+      <MemoryRouter initialEntries={["/animais/animal-1"]}>
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
     fireEvent.mouseDown(screen.getByRole("tab", { name: /Comercial/i }));
     fireEvent.click(screen.getByRole("tab", { name: /Comercial/i }));
-    expect(screen.getByText("Peso de aquisição deste animal:")).toBeInTheDocument();
+    expect(
+      screen.getByText("Peso de aquisição deste animal:"),
+    ).toBeInTheDocument();
     expect(screen.getByText("250 kg")).toBeInTheDocument();
     expect(screen.getByText("R$ 3000.00")).toBeInTheDocument();
     expect(screen.queryByText("R$ 4000.00")).not.toBeInTheDocument();
   });
 
-  it.each(["compra", "sociedade"])("separa aquisição %s de última pesagem e não inventa valor societário", (origin) => {
-    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation([410]));
-    setupMockLiveQuery({
-      animal: makeAnimal({ id: "animal-1", identificacao: "ENTRADA-001", sexo: "F" }),
-      aquisicoes: [{ eventId: "entrada-1", origin, occurredAt: "2026-08-13",
-        weight: 320, weightUnit: "kg", value: origin === "compra" ? 0 : null }],
-      comerciais: [{
-        evento_id: "venda-1", operation_type: "venda", scope: "animal",
-        occurred_at: "2026-09-02", animal_ids: ["animal-1"], quantidade_animais: 1,
-        snapshot: { animals: [{ id: "animal-1", weight_considered_kg: 480, valor_individual: 6000 }] },
-      }],
-    });
-    render(<MemoryRouter initialEntries={["/animais/animal-1"]}><Routes><Route path="/animais/:id" element={<AnimalDetalhe />} /></Routes></MemoryRouter>);
-    expect(screen.getByText("Aquisição")).toBeInTheDocument();
-    expect(screen.getByText("Peso de aquisição")).toBeInTheDocument();
-    expect(screen.getByText("320 kg")).toBeInTheDocument();
-    expect(within(screen.getByLabelText("Peso e GMD")).getByText("410,0 kg")).toBeVisible();
-    if (origin === "compra") expect(screen.getByText("R$ 0.00")).toBeInTheDocument();
-    else {
-      expect(screen.getByText(/Participação societária; valor individual não registrado/)).toBeInTheDocument();
-      expect(screen.queryByText("R$ 0.00")).not.toBeInTheDocument();
-    }
-    fireEvent.mouseDown(screen.getByRole("tab", { name: /Comercial/i }));
-    fireEvent.click(screen.getByRole("tab", { name: /Comercial/i }));
-    expect(screen.getByText("Peso comercial de venda deste animal:")).toBeVisible();
-    expect(screen.getByText("480 kg")).toBeVisible();
-    expect(screen.queryByText("320 kg")).not.toBeInTheDocument();
-  });
+  it.each(["compra", "sociedade"])(
+    "separa aquisição %s de última pesagem e não inventa valor societário",
+    (origin) => {
+      vi.mocked(useAnimalWeightPresentation).mockReturnValue(
+        makeWeightPresentation([410]),
+      );
+      setupMockLiveQuery({
+        animal: makeAnimal({
+          id: "animal-1",
+          identificacao: "ENTRADA-001",
+          sexo: "F",
+        }),
+        aquisicoes: [
+          {
+            eventId: "entrada-1",
+            origin,
+            occurredAt: "2026-08-13",
+            weight: 320,
+            weightUnit: "kg",
+            value: origin === "compra" ? 0 : null,
+          },
+        ],
+        comerciais: [
+          {
+            evento_id: "venda-1",
+            operation_type: "venda",
+            scope: "animal",
+            occurred_at: "2026-09-02",
+            animal_ids: ["animal-1"],
+            quantidade_animais: 1,
+            snapshot: {
+              animals: [
+                {
+                  id: "animal-1",
+                  weight_considered_kg: 480,
+                  valor_individual: 6000,
+                },
+              ],
+            },
+          },
+        ],
+      });
+      render(
+        <MemoryRouter initialEntries={["/animais/animal-1"]}>
+          <Routes>
+            <Route path="/animais/:id" element={<AnimalDetalhe />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+      expect(screen.getByText("Aquisição")).toBeInTheDocument();
+      expect(screen.getByText("Peso de aquisição")).toBeInTheDocument();
+      expect(screen.getByText("320 kg")).toBeInTheDocument();
+      expect(
+        within(screen.getByLabelText("Peso e GMD")).getByText("410,0 kg"),
+      ).toBeVisible();
+      if (origin === "compra")
+        expect(screen.getByText("R$ 0.00")).toBeInTheDocument();
+      else {
+        expect(
+          screen.getByText(
+            /Participação societária; valor individual não registrado/,
+          ),
+        ).toBeInTheDocument();
+        expect(screen.queryByText("R$ 0.00")).not.toBeInTheDocument();
+      }
+      fireEvent.mouseDown(screen.getByRole("tab", { name: /Comercial/i }));
+      fireEvent.click(screen.getByRole("tab", { name: /Comercial/i }));
+      expect(
+        screen.getByText("Peso comercial de venda deste animal:"),
+      ).toBeVisible();
+      expect(screen.getByText("480 kg")).toBeVisible();
+      expect(screen.queryByText("320 kg")).not.toBeInTheDocument();
+    },
+  );
 
   it.each([
     { identificacao: "A", weight: 320, label: "320 kg" },
     { identificacao: "B", weight: null, label: "Não informado" },
     { identificacao: "C", weight: 355, label: "355 kg" },
-  ])("apresenta aquisição individual $identificacao sem fallback da pesagem atual", ({ identificacao, weight, label }) => {
-    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation([410]));
-    setupMockLiveQuery({
-      animal: makeAnimal({ id: "animal-1", identificacao, sexo: "F" }),
-      aquisicoes: [{ eventId: "compra-1", origin: "compra", occurredAt: "2026-08-13", weight, weightUnit: "kg", value: null }],
-    });
-    renderDetail();
-    const weightField = screen.getByText("Peso de aquisição").parentElement!;
-    expect(within(weightField).getByText(label)).toBeVisible();
-    expect(within(weightField).queryByText(/410/)).not.toBeInTheDocument();
-    expect(within(screen.getByLabelText("Peso e GMD")).getByText("410,0 kg")).toBeVisible();
-  });
+  ])(
+    "apresenta aquisição individual $identificacao sem fallback da pesagem atual",
+    ({ identificacao, weight, label }) => {
+      vi.mocked(useAnimalWeightPresentation).mockReturnValue(
+        makeWeightPresentation([410]),
+      );
+      setupMockLiveQuery({
+        animal: makeAnimal({ id: "animal-1", identificacao, sexo: "F" }),
+        aquisicoes: [
+          {
+            eventId: "compra-1",
+            origin: "compra",
+            occurredAt: "2026-08-13",
+            weight,
+            weightUnit: "kg",
+            value: null,
+          },
+        ],
+      });
+      renderDetail();
+      const weightField = screen.getByText("Peso de aquisição").parentElement!;
+      expect(within(weightField).getByText(label)).toBeVisible();
+      expect(within(weightField).queryByText(/410/)).not.toBeInTheDocument();
+      expect(
+        within(screen.getByLabelText("Peso e GMD")).getByText("410,0 kg"),
+      ).toBeVisible();
+    },
+  );
 
   it("abre Visão geral e mantém casos e suas ações dentro de Sanidade", async () => {
     const user = userEvent.setup();
     setupMockLiveQuery({
-      animal: makeAnimal({ id: "animal-1", identificacao: "V2-001", sexo: "F", data_nascimento: "2026-10-06" }),
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "V2-001",
+        sexo: "F",
+        data_nascimento: "2026-10-06",
+      }),
       sanitaryCases: [makeSanitarioCaso()],
     });
     renderDetail();
 
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent?.trim())).toEqual([
-      "Visão geral", "Histórico", "Sanidade", "Agenda", "Comercial",
-    ]);
-    expect(screen.getByRole("tab", { name: "Visão geral" })).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.getAllByRole("tab").map((tab) => tab.textContent?.trim()),
+    ).toEqual(["Visão geral", "Histórico", "Sanidade", "Agenda", "Comercial"]);
+    expect(screen.getByRole("tab", { name: "Visão geral" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     expect(screen.getByText("Identificação complementar")).toBeVisible();
     expect(screen.getByText("06/10/2026")).toBeVisible();
-    expect(screen.queryByText("Tratamento em acompanhamento")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Tratamento em acompanhamento"),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Sanidade" }));
     const cases = screen.getByRole("region", { name: "Casos sanitários" });
-    expect(within(cases).getByText("Tratamento em acompanhamento")).toBeVisible();
-    await user.click(within(cases).getByRole("button", { name: /Encerrar caso/i }));
+    expect(
+      within(cases).getByText("Tratamento em acompanhamento"),
+    ).toBeVisible();
+    await user.click(
+      within(cases).getByRole("button", { name: /Encerrar caso/i }),
+    );
     expect(screen.getByRole("dialog")).toBeVisible();
     expect(screen.getByText(/Encerrar caso clinico/i)).toBeVisible();
   });
 
   it("filtra a coleção factual sem perder ordem, domínios ou detalhes especializados", async () => {
     const user = userEvent.setup();
-    const domains = ["pesagem", "reproducao", "sanitario", "alerta_sanitario", "conformidade", "movimentacao", "comercial", "ecc", "nutricao", "pastagem", "financeiro", "obito", "dominio_novo"];
+    const domains = [
+      "pesagem",
+      "reproducao",
+      "sanitario",
+      "alerta_sanitario",
+      "conformidade",
+      "movimentacao",
+      "comercial",
+      "ecc",
+      "nutricao",
+      "pastagem",
+      "financeiro",
+      "obito",
+      "dominio_novo",
+    ];
     const events = domains.map((dominio, index) => ({
-      ...makeEvento({ id: `event-${index}`, dominio: dominio as Evento["dominio"], observacoes: `Fato ${dominio}` }),
-      ...(dominio === "comercial" ? { detailsComercial: {
-        operation_type: "venda", contraparte_nome: "Comprador teste", quantidade_animais: 2,
-        peso_vivo_total: 800, valor_bruto: 9000, valor_liquido_derivado: 8500,
-        observacoes: "Detalhe comercial preservado",
-      } } : {}),
-      ...(dominio === "reproducao" ? { details: { tipo: "diagnostico", macho_id: "pai-teste", payload: { resultado: "positivo" } }, machoIdentificacao: "TOURO-01" } : {}),
-      ...(dominio === "alerta_sanitario" ? { payload: { route_label: "Rota teste", immediate_actions: ["Isolar animal"] } } : {}),
+      ...makeEvento({
+        id: `event-${index}`,
+        dominio: dominio as Evento["dominio"],
+        observacoes: `Fato ${dominio}`,
+      }),
+      ...(dominio === "comercial"
+        ? {
+            detailsComercial: {
+              operation_type: "venda",
+              contraparte_nome: "Comprador teste",
+              quantidade_animais: 2,
+              peso_vivo_total: 800,
+              valor_bruto: 9000,
+              valor_liquido_derivado: 8500,
+              observacoes: "Detalhe comercial preservado",
+            },
+          }
+        : {}),
+      ...(dominio === "reproducao"
+        ? {
+            details: {
+              tipo: "diagnostico",
+              macho_id: "pai-teste",
+              payload: { resultado: "positivo" },
+            },
+            machoIdentificacao: "TOURO-01",
+          }
+        : {}),
+      ...(dominio === "alerta_sanitario"
+        ? {
+            payload: {
+              route_label: "Rota teste",
+              immediate_actions: ["Isolar animal"],
+            },
+          }
+        : {}),
     }));
-    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }), eventos: events });
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }),
+      eventos: events,
+    });
     renderDetail();
     await user.click(screen.getByRole("tab", { name: "Histórico" }));
     const panel = screen.getByRole("tabpanel");
     const articles = () => Array.from(panel.querySelectorAll("article"));
     expect(articles()).toHaveLength(domains.length);
-    expect(articles().map((article) => within(article).getByText(/^Domínio:/).textContent)).toEqual(domains.map((domain) => `Domínio: ${domain.replaceAll("_", " ")}`));
-    expect(screen.getByRole("button", { name: "Todos (13)" })).toHaveAttribute("aria-pressed", "true");
+    expect(
+      articles().map(
+        (article) => within(article).getByText(/^Domínio:/).textContent,
+      ),
+    ).toEqual(
+      domains.map((domain) => `Domínio: ${domain.replaceAll("_", " ")}`),
+    );
+    expect(screen.getByRole("button", { name: "Todos (13)" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await user.click(screen.getByRole("button", { name: "Pesagem (1)" }));
     expect(articles()).toHaveLength(1);
     expect(within(panel).getByText("Fato pesagem")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Sanidade (3)" }));
     expect(articles()).toHaveLength(3);
-    expect(articles().map((article) => within(article).getByText(/^Domínio:/).textContent)).toEqual(["Domínio: sanitario", "Domínio: alerta sanitario", "Domínio: conformidade"]);
+    expect(
+      articles().map(
+        (article) => within(article).getByText(/^Domínio:/).textContent,
+      ),
+    ).toEqual([
+      "Domínio: sanitario",
+      "Domínio: alerta sanitario",
+      "Domínio: conformidade",
+    ]);
     expect(within(panel).getByText("Rota: Rota teste")).toBeVisible();
     expect(within(panel).getByText("Passos: Isolar animal")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Comercial (1)" }));
     expect(articles()).toHaveLength(1);
     expect(within(panel).getByText(/Comprador teste/)).toBeVisible();
     expect(within(panel).getByText("Quantidade: 2 cab.")).toBeVisible();
-    expect(within(panel).getByText('Obs: "Detalhe comercial preservado"')).toBeVisible();
+    expect(
+      within(panel).getByText('Obs: "Detalhe comercial preservado"'),
+    ).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Reprodução (1)" }));
     expect(within(panel).getByText("Reprodutor: TOURO-01")).toBeVisible();
     expect(within(panel).getByText("Diagnostico: positivo")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Outros (5)" }));
     expect(articles()).toHaveLength(5);
-    for (const domain of domains.slice(8)) expect(within(panel).getByText(`Fato ${domain}`)).toBeVisible();
+    for (const domain of domains.slice(8))
+      expect(within(panel).getByText(`Fato ${domain}`)).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Todos (13)" }));
     expect(articles()).toHaveLength(domains.length);
   });
 
   it("mostra vazio específico do filtro mesmo quando há outros eventos", async () => {
     const user = userEvent.setup();
-    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }), eventos: [makeEvento()] });
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }),
+      eventos: [makeEvento()],
+    });
     renderDetail();
     await user.click(screen.getByRole("tab", { name: "Histórico" }));
     await user.click(screen.getByRole("button", { name: "Pesagem (0)" }));
-    expect(screen.getByText("Nenhum evento de pesagem registrado.")).toBeVisible();
-    expect(screen.queryByText("Nenhum evento registrado.")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Nenhum evento de pesagem registrado."),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Nenhum evento registrado."),
+    ).not.toBeInTheDocument();
   });
 
   it("separa atrasadas, hoje, próximas e encerradas e prioriza atraso no card", async () => {
@@ -451,27 +700,75 @@ describe("AnimalDetalhe", () => {
     vi.setSystemTime(new Date(2026, 9, 7, 0, 30));
     const user = userEvent.setup();
     const items = [
-      makeAgendaItem({ id: "future-later", tipo: "futura_tardia", data_prevista: "2026-10-15" }),
-      makeAgendaItem({ id: "done", tipo: "tarefa_concluida", data_prevista: "2026-10-01", status: "concluido" }),
-      makeAgendaItem({ id: "future", tipo: "vermifugacao", data_prevista: "2026-10-12" }),
-      makeAgendaItem({ id: "overdue-later", tipo: "atraso_recente", data_prevista: "2026-10-06" }),
-      makeAgendaItem({ id: "today", tipo: "pesagem", data_prevista: "2026-10-07" }),
-      makeAgendaItem({ id: "cancelled", tipo: "tarefa_cancelada", data_prevista: "2026-10-20", status: "cancelado" }),
-      makeAgendaItem({ id: "overdue", tipo: "vacinacao", data_prevista: "2026-10-05" }),
+      makeAgendaItem({
+        id: "future-later",
+        tipo: "futura_tardia",
+        data_prevista: "2026-10-15",
+      }),
+      makeAgendaItem({
+        id: "done",
+        tipo: "tarefa_concluida",
+        data_prevista: "2026-10-01",
+        status: "concluido",
+      }),
+      makeAgendaItem({
+        id: "future",
+        tipo: "vermifugacao",
+        data_prevista: "2026-10-12",
+      }),
+      makeAgendaItem({
+        id: "overdue-later",
+        tipo: "atraso_recente",
+        data_prevista: "2026-10-06",
+      }),
+      makeAgendaItem({
+        id: "today",
+        tipo: "pesagem",
+        data_prevista: "2026-10-07",
+      }),
+      makeAgendaItem({
+        id: "cancelled",
+        tipo: "tarefa_cancelada",
+        data_prevista: "2026-10-20",
+        status: "cancelado",
+      }),
+      makeAgendaItem({
+        id: "overdue",
+        tipo: "vacinacao",
+        data_prevista: "2026-10-05",
+      }),
     ];
-    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }), agenda: items.map((item) => ({ item })) });
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }),
+      agenda: items.map((item) => ({ item })),
+    });
     renderDetail();
     expect(screen.getByText("2 tarefas atrasadas")).toBeVisible();
     expect(screen.getByText("vacinacao · 05/10/2026")).toBeVisible();
     await user.click(screen.getByRole("tab", { name: "Agenda" }));
-    const sections = ["Atrasadas", "Hoje", "Próximas", "Encerradas"].map((name) => screen.getByRole("region", { name }));
-    const expected = [["vacinacao", "atraso recente"], ["pesagem"], ["vermifugacao", "futura tardia"], ["tarefa concluida", "tarefa cancelada"]];
+    const sections = ["Atrasadas", "Hoje", "Próximas", "Encerradas"].map(
+      (name) => screen.getByRole("region", { name }),
+    );
+    const expected = [
+      ["vacinacao", "atraso recente"],
+      ["pesagem"],
+      ["vermifugacao", "futura tardia"],
+      ["tarefa concluida", "tarefa cancelada"],
+    ];
     sections.forEach((section, index) => {
-      for (const label of expected[index]) expect(within(section).getByText(label)).toBeVisible();
+      for (const label of expected[index])
+        expect(within(section).getByText(label)).toBeVisible();
     });
-    for (const label of expected.flat()) expect(within(screen.getByRole("tabpanel")).getAllByText(label)).toHaveLength(1);
-    expect(sections[0].textContent?.indexOf("vacinacao")).toBeLessThan(sections[0].textContent?.indexOf("atraso recente") ?? 0);
-    expect(sections[2].textContent?.indexOf("vermifugacao")).toBeLessThan(sections[2].textContent?.indexOf("futura tardia") ?? 0);
+    for (const label of expected.flat())
+      expect(
+        within(screen.getByRole("tabpanel")).getAllByText(label),
+      ).toHaveLength(1);
+    expect(sections[0].textContent?.indexOf("vacinacao")).toBeLessThan(
+      sections[0].textContent?.indexOf("atraso recente") ?? 0,
+    );
+    expect(sections[2].textContent?.indexOf("vermifugacao")).toBeLessThan(
+      sections[2].textContent?.indexOf("futura tardia") ?? 0,
+    );
     expect(within(sections[1]).getByText("Previsto: 07/10/2026")).toBeVisible();
     expect(within(sections[3]).getByText("concluido")).toBeVisible();
     expect(within(sections[3]).getByText("cancelado")).toBeVisible();
@@ -481,30 +778,78 @@ describe("AnimalDetalhe", () => {
 
   it.each([
     { status: "agendado" as const, date: "2026-10-07", summary: "Hoje" },
-    { status: "agendado" as const, date: "2026-10-12", summary: "Próxima: 12/10/2026" },
-    { status: "concluido" as const, date: "2026-10-05", summary: "Sem tarefa pendente na Agenda" },
-    { status: "cancelado" as const, date: "2026-10-12", summary: "Sem tarefa pendente na Agenda" },
-  ])("card reflete $status em $date com data civil", ({ status, date, summary }) => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date(2026, 9, 7, 23, 30));
-    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }), agenda: [{ item: makeAgendaItem({ id: "task", tipo: "pesagem", status, data_prevista: date }) }] });
-    renderDetail();
-    expect(screen.getByText(summary)).toBeVisible();
-  });
+    {
+      status: "agendado" as const,
+      date: "2026-10-12",
+      summary: "Próxima: 12/10/2026",
+    },
+    {
+      status: "concluido" as const,
+      date: "2026-10-05",
+      summary: "Sem tarefa pendente na Agenda",
+    },
+    {
+      status: "cancelado" as const,
+      date: "2026-10-12",
+      summary: "Sem tarefa pendente na Agenda",
+    },
+  ])(
+    "card reflete $status em $date com data civil",
+    ({ status, date, summary }) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(2026, 9, 7, 23, 30));
+      setupMockLiveQuery({
+        animal: makeAnimal({
+          id: "animal-1",
+          identificacao: "V2-B",
+          sexo: "M",
+        }),
+        agenda: [
+          {
+            item: makeAgendaItem({
+              id: "task",
+              tipo: "pesagem",
+              status,
+              data_prevista: date,
+            }),
+          },
+        ],
+      });
+      renderDetail();
+      expect(screen.getByText(summary)).toBeVisible();
+    },
+  );
 
   it("distingue carregamento de listas carregadas vazias", async () => {
     const user = userEvent.setup();
-    const responses: MockLiveQueryResponses = { animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }), agenda: undefined, eventos: undefined };
+    const responses: MockLiveQueryResponses = {
+      animal: makeAnimal({ id: "animal-1", identificacao: "V2-B", sexo: "M" }),
+      agenda: undefined,
+      eventos: undefined,
+    };
     setupMockLiveQuery(responses);
     const view = renderDetail();
     expect(screen.getByText("Carregando Agenda…")).toBeVisible();
-    expect(screen.queryByText("Sem tarefa pendente na Agenda")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Sem tarefa pendente na Agenda"),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Histórico" }));
     expect(screen.getByText("Carregando histórico…")).toBeVisible();
-    expect(screen.queryByText("Nenhum evento registrado.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Nenhum evento registrado."),
+    ).not.toBeInTheDocument();
     responses.eventos = [];
     responses.agenda = [];
-    view.rerender(<MemoryRouter initialEntries={["/animais/animal-1"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><Routes><Route path="/animais/:id" element={<AnimalDetalhe />} /></Routes></MemoryRouter>);
+    view.rerender(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
     expect(screen.getByText("Nenhum evento registrado.")).toBeVisible();
     expect(screen.getByText("Sem tarefa pendente na Agenda")).toBeVisible();
     await user.click(screen.getByRole("tab", { name: "Agenda" }));
@@ -514,15 +859,30 @@ describe("AnimalDetalhe", () => {
   it("não confunde tarefa vencida com ausência de pendências e mantém a Agenda", async () => {
     const user = userEvent.setup();
     setupMockLiveQuery({
-      animal: makeAnimal({ id: "animal-1", identificacao: "V2-002", sexo: "M", lote_id: null }),
-      agenda: [{ item: makeAgendaItem({ id: "expired", tipo: "vacina_brucelose", data_prevista: "2020-01-01" }) }],
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "V2-002",
+        sexo: "M",
+        lote_id: null,
+      }),
+      agenda: [
+        {
+          item: makeAgendaItem({
+            id: "expired",
+            tipo: "vacina_brucelose",
+            data_prevista: "2020-01-01",
+          }),
+        },
+      ],
     });
     renderDetail();
     expect(screen.getByText("1 tarefa atrasada")).toBeVisible();
     expect(screen.queryByText("Sem pendências")).not.toBeInTheDocument();
     expect(screen.queryByText("Sem agenda")).not.toBeInTheDocument();
     expect(screen.getAllByText("Sem lote definido").length).toBeGreaterThan(0);
-    expect(screen.getByRole("heading", { name: "Último peso registrado" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Último peso registrado" }),
+    ).toBeVisible();
     await user.click(screen.getByRole("tab", { name: "Agenda" }));
     expect(screen.getByText(/Previsto:/)).toBeVisible();
     expect(screen.getByText("agendado")).toBeVisible();
@@ -531,20 +891,31 @@ describe("AnimalDetalhe", () => {
   it("mantém bloqueio e confirmação de estágio visíveis com detalhes técnicos fechados", () => {
     setupMockLiveQuery({
       animal: makeAnimal({
-        id: "animal-1", identificacao: "V2-003", sexo: "F",
+        id: "animal-1",
+        identificacao: "V2-003",
+        sexo: "F",
         payload: {
           lifecycle: { estagio_vida: "cria_neonatal" },
-          sanidade_alerta: { status: "suspeita_aberta", movement_blocked: true },
+          sanidade_alerta: {
+            status: "suspeita_aberta",
+            movement_blocked: true,
+          },
         },
       }),
     });
     const { container } = renderDetail();
     expect(screen.getByText("Movimentacao bloqueada")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Registrar manejo" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Confirmar transicao" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Registrar manejo" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Confirmar transicao" }),
+    ).toBeVisible();
     const disclosures = container.querySelectorAll("details");
     expect(disclosures).toHaveLength(2);
-    disclosures.forEach((disclosure) => expect(disclosure).not.toHaveAttribute("open"));
+    disclosures.forEach((disclosure) =>
+      expect(disclosure).not.toHaveAttribute("open"),
+    );
     expect(screen.getByText("Regra usada")).not.toBeVisible();
     expect(screen.getByText("Aliases:", { exact: false })).not.toBeVisible();
   });
@@ -592,9 +963,17 @@ describe("AnimalDetalhe", () => {
     const querySources = mockedUseLiveQuery.mock.calls.map(([query]) =>
       typeof query === "function" ? query.toString() : "",
     );
-    expect(querySources.some((source) => source.includes("state_sociedade_animais"))).toBe(true);
-    expect(querySources.some((source) => source.includes("state_sociedades_pecuarias"))).toBe(true);
-    expect(querySources.some((source) => source.includes("state_animais_sociedade"))).toBe(false);
+    expect(
+      querySources.some((source) => source.includes("state_sociedade_animais")),
+    ).toBe(true);
+    expect(
+      querySources.some((source) =>
+        source.includes("state_sociedades_pecuarias"),
+      ),
+    ).toBe(true);
+    expect(
+      querySources.some((source) => source.includes("state_animais_sociedade")),
+    ).toBe(false);
   });
 
   it("nao renderiza animal de outra fazenda", () => {
@@ -679,11 +1058,15 @@ describe("AnimalDetalhe", () => {
 
     expect(screen.getByText("Manejo clinico")).toBeInTheDocument();
     expect(screen.getByText("em acompanhamento")).toBeInTheDocument();
-    expect(screen.getByText("Tratamento em acompanhamento")).toBeInTheDocument();
+    expect(
+      screen.getByText("Tratamento em acompanhamento"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Timeline do caso")).toBeInTheDocument();
     expect(screen.getByText("medicamento")).toBeInTheDocument();
     expect(
-      screen.getByText("Suspeita TPB: aplicado anti-inflamatorio e reavaliar em 48h"),
+      screen.getByText(
+        "Suspeita TPB: aplicado anti-inflamatorio e reavaliar em 48h",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText("Apoio clinico")).toBeInTheDocument();
     expect(screen.getByText("Contexto")).toBeInTheDocument();
@@ -696,19 +1079,24 @@ describe("AnimalDetalhe", () => {
         /Apoio clinico informativo; nao gera agenda, evento ou baixa de estoque\./i,
       ),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /Registrar conduta/i })[0]).toHaveAttribute(
-      "href",
-      expect.stringContaining("produto=Diminazeno"),
-    );
-    expect(screen.getAllByRole("link", { name: /Registrar conduta/i })[0]).toHaveAttribute(
+    expect(
+      screen.getAllByRole("link", { name: /Registrar conduta/i })[0],
+    ).toHaveAttribute("href", expect.stringContaining("produto=Diminazeno"));
+    expect(
+      screen.getAllByRole("link", { name: /Registrar conduta/i })[0],
+    ).toHaveAttribute(
       "href",
       expect.stringContaining("clinicalProtocolId=med-tpb"),
     );
-    expect(screen.getAllByRole("link", { name: /Registrar conduta/i })[0]).toHaveAttribute(
+    expect(
+      screen.getAllByRole("link", { name: /Registrar conduta/i })[0],
+    ).toHaveAttribute(
       "href",
       expect.stringContaining("clinicalProtocolItemId=tpb-diminazeno"),
     );
-    expect(screen.getByRole("link", { name: /Registrar manejo/i })).toHaveAttribute(
+    expect(
+      screen.getByRole("link", { name: /Registrar manejo/i }),
+    ).toHaveAttribute(
       "href",
       "/registrar?dominio=sanitario&animalId=animal-1&sanitarioTipo=medicamento&sanitarioCasoId=caso-1",
     );
@@ -737,15 +1125,21 @@ describe("AnimalDetalhe", () => {
     );
 
     expect(screen.getByText("Selecionado")).toBeInTheDocument();
-    expect(screen.getByText("Terapia de Vaca Seca (Mastite)")).toBeInTheDocument();
+    expect(
+      screen.getByText("Terapia de Vaca Seca (Mastite)"),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("Antibiotico Intramamario (Vaca Seca)"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Registrar conduta/i })).toHaveAttribute(
+    expect(
+      screen.getByRole("link", { name: /Registrar conduta/i }),
+    ).toHaveAttribute(
       "href",
       expect.stringContaining("produto=Antibiotico+Intramamario"),
     );
-    expect(screen.getByRole("link", { name: /Registrar conduta/i })).toHaveAttribute(
+    expect(
+      screen.getByRole("link", { name: /Registrar conduta/i }),
+    ).toHaveAttribute(
       "href",
       expect.stringContaining("clinicalProtocolId=med-mastite-seca"),
     );
@@ -860,7 +1254,9 @@ describe("AnimalDetalhe", () => {
     );
 
     expect(screen.getByText("1 de 2 casos")).toBeInTheDocument();
-    expect(screen.getByText("Caso com conduta de mastite.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Caso com conduta de mastite."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Caso com conduta TPB.")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /^Todos$/i }));
@@ -966,13 +1362,18 @@ describe("AnimalDetalhe", () => {
     expect(screen.getByText("Pendências principais")).toBeInTheDocument();
     expect(screen.getByText("Histórico de entrada")).toBeInTheDocument();
     expect(screen.getAllByText("Agenda futura").length).toBeGreaterThan(0);
-    expect(screen.queryByText("Preview manual sanitário")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Preview manual sanitário"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("Candidatas")).not.toBeInTheDocument();
     expect(screen.queryByText("Bloqueadas")).not.toBeInTheDocument();
     expect(screen.queryByText("Não aplicáveis")).not.toBeInTheDocument();
-    expect(screen.queryByText("Pré-checagem sanitária")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Planejar agenda/i }))
-      .not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Pré-checagem sanitária"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Planejar agenda/i }),
+    ).not.toBeInTheDocument();
 
     await user.click(
       screen.getByRole("button", {
@@ -984,8 +1385,9 @@ describe("AnimalDetalhe", () => {
     expect(
       screen.getByText("Catálogo sanitário local ainda não sincronizado"),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /criar agenda/i }))
-      .not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /criar agenda/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("exibe pendência documental B19 no resumo da aba Sanidade", async () => {
@@ -1062,18 +1464,25 @@ describe("AnimalDetalhe", () => {
 
     await user.click(screen.getByRole("tab", { name: /sanidade/i }));
 
-    expect(screen.getByText("Fêmea adulta exige comprovação documental de B19.")).toBeInTheDocument();
-    expect(screen.getAllByText("Pendência documental").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: /Abrir conformidade na Central/i }))
-      .toHaveAttribute(
-        "href",
-        "/protocolos-sanitarios?tab=conformidade&animalId=animal-1&loteId=lote-1",
-      );
+    expect(
+      screen.getByText("Fêmea adulta exige comprovação documental de B19."),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Pendência documental").length).toBeGreaterThan(
+      0,
+    );
+    expect(
+      screen.getByRole("link", { name: /Abrir conformidade na Central/i }),
+    ).toHaveAttribute(
+      "href",
+      "/protocolos-sanitarios?tab=conformidade&animalId=animal-1&loteId=lote-1",
+    );
   });
 
   it("exibe acao de registrar historico anterior sem usar marcar como vacinado", async () => {
     const user = userEvent.setup();
-    const warningSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warningSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     const animal = makeAnimal({
       id: "animal-1",
       identificacao: "BR-001",
@@ -1163,7 +1572,9 @@ describe("AnimalDetalhe", () => {
     expect(
       warningSpy.mock.calls.some((call) =>
         call.some((message) =>
-          String(message).includes("Missing `Description` or `aria-describedby={undefined}`"),
+          String(message).includes(
+            "Missing `Description` or `aria-describedby={undefined}`",
+          ),
         ),
       ),
     ).toBe(false);
@@ -1270,33 +1681,56 @@ describe("AnimalDetalhe", () => {
     expect(screen.getAllByText("4.25").length).toBeGreaterThan(0);
     expect(screen.getByText("Último ECC factual")).toBeInTheDocument();
     expect(screen.getAllByText("25/05/2026").length).toBeGreaterThan(0);
-    const disclosure = screen.getByText("Histórico de avaliações (2)").closest("details");
+    const disclosure = screen
+      .getByText("Histórico de avaliações (2)")
+      .closest("details");
     expect(disclosure).not.toHaveAttribute("open");
     expect(screen.getByText("Observações: Gorda")).toBeVisible();
     await user.click(screen.getByText("Histórico de avaliações (2)"));
     expect(disclosure).toHaveAttribute("open");
     expect(screen.getByText("10/05/2026")).toBeVisible();
     expect(screen.getByText("Escore bom")).toBeVisible();
-    expect(disclosure?.textContent?.indexOf("25/05/2026")).toBeLessThan(disclosure?.textContent?.indexOf("10/05/2026") ?? 0);
+    expect(disclosure?.textContent?.indexOf("25/05/2026")).toBeLessThan(
+      disclosure?.textContent?.indexOf("10/05/2026") ?? 0,
+    );
   });
 
   it.each([
     { weights: [300, 312], variation: "+12,0 kg · ganho", gmd: "12,0 kg/dia" },
     { weights: [312, 300], variation: "−12,0 kg · perda", gmd: "-12,0 kg/dia" },
-    { weights: [300, 300], variation: "0,0 kg · sem variação", gmd: "0,0 kg/dia" },
-  ])("apresenta variação $variation e GMD factual qualificado", ({ weights, variation, gmd }) => {
-    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation(weights));
-    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "PESO-01", sexo: "M" }) });
-    renderDetail();
-    const section = within(screen.getByLabelText("Peso e GMD"));
-    expect(section.getByText(`${weights[1].toFixed(1).replace(".", ",")} kg`)).toBeVisible();
-    expect(section.getByText(variation)).toBeVisible();
-    expect(section.getByText(gmd)).toBeVisible();
-    expect(section.getByText("01/01/2026 a 02/01/2026")).toBeVisible();
-    expect(section.getByText("Intervalo: 1 dia")).toBeVisible();
-    expect(section.getByText(/Confiabilidade não classificada/)).toBeVisible();
-    expect(section.getByText(/Uso operacional não autorizado/)).toBeVisible();
-  });
+    {
+      weights: [300, 300],
+      variation: "0,0 kg · sem variação",
+      gmd: "0,0 kg/dia",
+    },
+  ])(
+    "apresenta variação $variation e GMD factual qualificado",
+    ({ weights, variation, gmd }) => {
+      vi.mocked(useAnimalWeightPresentation).mockReturnValue(
+        makeWeightPresentation(weights),
+      );
+      setupMockLiveQuery({
+        animal: makeAnimal({
+          id: "animal-1",
+          identificacao: "PESO-01",
+          sexo: "M",
+        }),
+      });
+      renderDetail();
+      const section = within(screen.getByLabelText("Peso e GMD"));
+      expect(
+        section.getByText(`${weights[1].toFixed(1).replace(".", ",")} kg`),
+      ).toBeVisible();
+      expect(section.getByText(variation)).toBeVisible();
+      expect(section.getByText(gmd)).toBeVisible();
+      expect(section.getByText("01/01/2026 a 02/01/2026")).toBeVisible();
+      expect(section.getByText("Intervalo: 1 dia")).toBeVisible();
+      expect(
+        section.getByText(/Confiabilidade não classificada/),
+      ).toBeVisible();
+      expect(section.getByText(/Uso operacional não autorizado/)).toBeVisible();
+    },
+  );
 
   it.each([
     { durationMs: 60_000, interval: "1 minuto" },
@@ -1307,75 +1741,169 @@ describe("AnimalDetalhe", () => {
     { durationMs: 61_100, interval: "aproximadamente 1,02 minutos" },
     { durationMs: 3_600_000, interval: "1 hora" },
     { durationMs: 86_400_000, interval: "1 dia" },
-  ])("formata intervalo positivo de $durationMs ms sem zerar ou alterar o GMD", ({ durationMs, interval }) => {
-    const initial = "2026-01-01T12:00:00.000Z";
-    const final = new Date(Date.parse(initial) + durationMs).toISOString();
-    const presentation = makeWeightPresentation([300, 301], false, [initial, final]);
-    expect(presentation.gmd.status).toBe("CALCULATED");
-    if (presentation.gmd.status !== "CALCULATED") throw new Error("GMD não calculado no cenário factual");
-    const upstreamGmd = presentation.gmd.gmdKgPerDay;
-    if (durationMs === 60_000) expect(upstreamGmd).toBe(1440);
-    vi.mocked(useAnimalWeightPresentation).mockReturnValue(presentation);
-    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "PESO-01", sexo: "M" }) });
-    renderDetail();
-    const section = within(screen.getByLabelText("Peso e GMD"));
-    expect(section.getByText(`Intervalo: ${interval}`)).toBeVisible();
-    expect(section.queryByText("Intervalo: 0 dias")).not.toBeInTheDocument();
-    expect(section.getByText(formatWeightPerDay(upstreamGmd, "kg"))).toBeVisible();
-    expect(section.getByText("+1,0 kg · ganho")).toBeVisible();
-    expect(presentation.gmd.gmdKgPerDay).toBe(upstreamGmd);
-    expect(section.getByText(/Uso operacional não autorizado/)).toBeVisible();
-  });
+  ])(
+    "formata intervalo positivo de $durationMs ms sem zerar ou alterar o GMD",
+    ({ durationMs, interval }) => {
+      const initial = "2026-01-01T12:00:00.000Z";
+      const final = new Date(Date.parse(initial) + durationMs).toISOString();
+      const presentation = makeWeightPresentation([300, 301], false, [
+        initial,
+        final,
+      ]);
+      expect(presentation.gmd.status).toBe("CALCULATED");
+      if (presentation.gmd.status !== "CALCULATED")
+        throw new Error("GMD não calculado no cenário factual");
+      const upstreamGmd = presentation.gmd.gmdKgPerDay;
+      if (durationMs === 60_000) expect(upstreamGmd).toBe(1440);
+      vi.mocked(useAnimalWeightPresentation).mockReturnValue(presentation);
+      setupMockLiveQuery({
+        animal: makeAnimal({
+          id: "animal-1",
+          identificacao: "PESO-01",
+          sexo: "M",
+        }),
+      });
+      renderDetail();
+      const section = within(screen.getByLabelText("Peso e GMD"));
+      expect(section.getByText(`Intervalo: ${interval}`)).toBeVisible();
+      expect(section.queryByText("Intervalo: 0 dias")).not.toBeInTheDocument();
+      expect(
+        section.getByText(formatWeightPerDay(upstreamGmd, "kg")),
+      ).toBeVisible();
+      expect(section.getByText("+1,0 kg · ganho")).toBeVisible();
+      expect(presentation.gmd.gmdKgPerDay).toBe(upstreamGmd);
+      expect(section.getByText(/Uso operacional não autorizado/)).toBeVisible();
+    },
+  );
 
   it.each([
-    { weights: [], conflict: false, message: "Sem pesagem factual disponível.", source: "Observações elegíveis: 0 de 2." },
-    { weights: [300], conflict: false, message: "São necessárias duas observações factuais elegíveis.", source: "Observações elegíveis: 1 de 2." },
-    { weights: [300, 310], conflict: true, message: "Peso indisponível: conflito factual.", source: "Há conflito entre registros de pesagem." },
-  ])("distingue ausência, insuficiência e conflito: $message", ({ weights, conflict, message, source }) => {
-    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation(weights, conflict));
-    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "PESO-01", sexo: "M" }) });
-    renderDetail();
-    const section = within(screen.getByLabelText("Peso e GMD"));
-    expect(section.getByText(message)).toBeVisible();
-    expect(section.getByText(source)).toBeVisible();
-    expect(section.getByText("GMD indisponível")).toBeVisible();
-    expect(section.queryByText(/^Intervalo:/)).not.toBeInTheDocument();
-    expect(section.queryByText("0,0 kg/dia")).not.toBeInTheDocument();
-    expect(section.queryByText("0,0 kg")).not.toBeInTheDocument();
-    if (conflict) expect(section.getByText(/Histórico indisponível: conflito/)).toBeVisible();
-  });
+    {
+      weights: [],
+      conflict: false,
+      message: "Sem pesagem factual disponível.",
+      source: "Observações elegíveis: 0 de 2.",
+    },
+    {
+      weights: [300],
+      conflict: false,
+      message: "São necessárias duas observações factuais elegíveis.",
+      source: "Observações elegíveis: 1 de 2.",
+    },
+    {
+      weights: [300, 310],
+      conflict: true,
+      message: "Peso indisponível: conflito factual.",
+      source: "Há conflito entre registros de pesagem.",
+    },
+  ])(
+    "distingue ausência, insuficiência e conflito: $message",
+    ({ weights, conflict, message, source }) => {
+      vi.mocked(useAnimalWeightPresentation).mockReturnValue(
+        makeWeightPresentation(weights, conflict),
+      );
+      setupMockLiveQuery({
+        animal: makeAnimal({
+          id: "animal-1",
+          identificacao: "PESO-01",
+          sexo: "M",
+        }),
+      });
+      renderDetail();
+      const section = within(screen.getByLabelText("Peso e GMD"));
+      expect(section.getByText(message)).toBeVisible();
+      expect(section.getByText(source)).toBeVisible();
+      expect(section.getByText("GMD indisponível")).toBeVisible();
+      expect(section.queryByText(/^Intervalo:/)).not.toBeInTheDocument();
+      expect(section.queryByText("0,0 kg/dia")).not.toBeInTheDocument();
+      expect(section.queryByText("0,0 kg")).not.toBeInTheDocument();
+      if (conflict)
+        expect(
+          section.getByText(/Histórico indisponível: conflito/),
+        ).toBeVisible();
+    },
+  );
 
   it("usa a unidade da fazenda e navega para registrar pesagem com animal e lote", async () => {
     const user = userEvent.setup();
-    vi.mocked(useAnimalWeightPresentation).mockReturnValue(makeWeightPresentation([300, 315]));
+    vi.mocked(useAnimalWeightPresentation).mockReturnValue(
+      makeWeightPresentation([300, 315]),
+    );
     mockedUseAuth.mockReturnValue({
-      activeFarmId: "farm-1", role: "owner", farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
-      farmMeasurementConfig: { ...DEFAULT_FARM_MEASUREMENT_CONFIG, weight_unit: "arroba" },
+      activeFarmId: "farm-1",
+      role: "owner",
+      farmLifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+      farmMeasurementConfig: {
+        ...DEFAULT_FARM_MEASUREMENT_CONFIG,
+        weight_unit: "arroba",
+      },
     } as ReturnType<typeof useAuth>);
-    setupMockLiveQuery({ animal: makeAnimal({ id: "animal-1", identificacao: "PESO-01", sexo: "M" }) });
+    setupMockLiveQuery({
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "PESO-01",
+        sexo: "M",
+      }),
+    });
     renderDetail();
     const section = within(screen.getByLabelText("Peso e GMD"));
     expect(section.getByText("21,00 arroba")).toBeVisible();
     expect(section.getByText("+1,00 arroba · ganho")).toBeVisible();
     expect(section.getByText("1,00 arroba/dia")).toBeVisible();
-    await user.click(section.getByRole("button", { name: "Registrar pesagem" }));
-    expect(screen.getByText("Registro: ?dominio=pesagem&animalId=animal-1&loteId=lote-1")).toBeVisible();
+    await user.click(
+      section.getByRole("button", { name: "Registrar pesagem" }),
+    );
+    expect(
+      screen.getByText(
+        "Registro: ?dominio=pesagem&animalId=animal-1&loteId=lote-1",
+      ),
+    ).toBeVisible();
   });
 
   it("preserva escala ECC personalizada e observação longa; foca e expande histórico e registra ECC", async () => {
     const user = userEvent.setup();
     const notes = "Avaliação registrada com escala específica. ".repeat(12);
     setupMockLiveQuery({
-      animal: makeAnimal({ id: "animal-1", identificacao: "ECC-01", sexo: "M" }),
-      ultimoEcc: { ecc: 6.25, occurred_at: "2026-05-25T12:00:00.000Z", escala_min: 1.5, escala_max: 9.5, escala_passo: 0.25, observacoes: notes },
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "ECC-01",
+        sexo: "M",
+      }),
+      ultimoEcc: {
+        ecc: 6.25,
+        occurred_at: "2026-05-25T12:00:00.000Z",
+        escala_min: 1.5,
+        escala_max: 9.5,
+        escala_passo: 0.25,
+        observacoes: notes,
+      },
       historicoEcc: [
-        { id: "ecc-2", ecc: 6.25, dataLabel: "25/05/2026", escalaMin: 1.5, escalaMax: 9.5, escalaPasso: 0.25, observacoes: notes },
-        { id: "ecc-1", ecc: 3.5, dataLabel: "10/05/2026", escalaMin: 1, escalaMax: 5, escalaPasso: 0.5, observacoes: "Escala anterior preservada" },
+        {
+          id: "ecc-2",
+          ecc: 6.25,
+          dataLabel: "25/05/2026",
+          escalaMin: 1.5,
+          escalaMax: 9.5,
+          escalaPasso: 0.25,
+          observacoes: notes,
+        },
+        {
+          id: "ecc-1",
+          ecc: 3.5,
+          dataLabel: "10/05/2026",
+          escalaMin: 1,
+          escalaMax: 5,
+          escalaPasso: 0.5,
+          observacoes: "Escala anterior preservada",
+        },
       ],
     });
     renderDetail();
-    const section = within(screen.getByLabelText("Escore de Condição Corporal"));
-    expect(section.getAllByText("Escala: 1.5 a 9.5 (passo 0.25)").length).toBe(2);
+    const section = within(
+      screen.getByLabelText("Escore de Condição Corporal"),
+    );
+    expect(section.getAllByText("Escala: 1.5 a 9.5 (passo 0.25)").length).toBe(
+      2,
+    );
     const observation = section.getByText(`Observações: ${notes.trim()}`);
     expect(observation).toBeVisible();
     expect(observation).not.toHaveClass("truncate");
@@ -1387,6 +1915,426 @@ describe("AnimalDetalhe", () => {
     expect(section.getByText("Escala anterior preservada")).toBeVisible();
     expect(section.getByText("Escala: 1 a 5 (passo 0.5)")).toBeVisible();
     await user.click(section.getByRole("button", { name: "Registrar ECC" }));
-    expect(screen.getByText("Registro: ?dominio=ecc&animalId=animal-1")).toBeVisible();
+    expect(
+      screen.getByText("Registro: ?dominio=ecc&animalId=animal-1"),
+    ).toBeVisible();
+  });
+
+  it("separa situação derivada, projeção e Agenda sem inferir aptidão quando não há histórico", () => {
+    setupMockLiveQuery({
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "REP-VAZIA",
+        sexo: "F",
+        data_nascimento: "2022-01-01",
+      }),
+      eventos: [],
+      agenda: [],
+    });
+
+    renderDetail();
+
+    expect(screen.getByText(/Situação derivada:\s*vazia/i)).toBeVisible();
+    expect(screen.getByText("Sem histórico factual")).toBeVisible();
+    expect(screen.getByText("Sem episódio ativo")).toBeVisible();
+    expect(
+      screen.getByText("Avaliar próximo manejo reprodutivo"),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Nenhuma tarefa reprodutiva registrada"),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Projeção do fluxo; não cria tarefa na Agenda."),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        /A ausência de eventos não comprova aptidão reprodutiva/i,
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/Apta para cobertura \/ IA/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Último marco/i)).not.toBeInTheDocument();
+  });
+
+  it("preserva evento definidor e episódio factual e usa datas civis nas projeções e Agenda", () => {
+    const service = makeReproEvento({
+      id: "repro-service-1",
+      tipo: "IA",
+      occurredAt: "2026-01-15T12:00:00.000Z",
+    });
+    const diagnosis = makeReproEvento({
+      id: "repro-diagnosis-1",
+      tipo: "diagnostico",
+      occurredAt: "2026-02-15T12:00:00.000Z",
+      payload: {
+        schema_version: 1,
+        resultado: "positivo",
+        episode_evento_id: service.id,
+        data_prevista_parto: "2026-10-22",
+      },
+    });
+
+    setupMockLiveQuery({
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "REP-PRENHA",
+        sexo: "F",
+        data_nascimento: "2022-01-01",
+      }),
+      eventos: [diagnosis, service],
+      agenda: [
+        {
+          item: makeAgendaItem({
+            id: "agenda-repro-1",
+            dominio: "reproducao",
+            tipo: "reavaliacao_reprodutiva",
+            data_prevista: "2026-10-18",
+          }),
+        },
+      ],
+    });
+
+    renderDetail();
+
+    expect(screen.getByText(/Situação derivada:\s*prenha/i)).toBeVisible();
+    expect(screen.getByText("Evento que define a situação")).toBeVisible();
+    expect(screen.getByText("Diagnostico")).toBeVisible();
+    expect(screen.getByText("IA vinculada")).toBeVisible();
+    expect(screen.getByText("22/10/2026")).toBeVisible();
+    const registeredAgenda = screen
+      .getByText("Agenda registrada")
+      .closest("div");
+    expect(registeredAgenda).not.toBeNull();
+    expect(
+      within(registeredAgenda as HTMLElement).getByText(
+        "reavaliacao reprodutiva",
+      ),
+    ).toBeVisible();
+    expect(
+      within(registeredAgenda as HTMLElement).getByText("Previsto: 18/10/2026"),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Projeção do fluxo; não cria tarefa na Agenda."),
+    ).toBeVisible();
+  });
+
+  it("mantém o evento definidor quando um diagnóstico mais recente pertence a episódio anterior", () => {
+    const previous = makeReproEvento({
+      id: "previous",
+      tipo: "cobertura",
+      occurredAt: "2026-01-01T12:00:00.000Z",
+    });
+    const current = makeReproEvento({
+      id: "current",
+      tipo: "IA",
+      occurredAt: "2026-02-01T12:00:00.000Z",
+    });
+    const staleDiagnosis = makeReproEvento({
+      id: "stale",
+      tipo: "diagnostico",
+      occurredAt: "2026-02-10T12:00:00.000Z",
+      payload: {
+        schema_version: 1,
+        resultado: "positivo",
+        episode_evento_id: previous.id,
+      },
+    });
+    setupMockLiveQuery({
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "REP-STALE",
+        sexo: "F",
+        data_nascimento: "2022-01-01",
+      }),
+      eventos: [staleDiagnosis, current, previous],
+    });
+    renderDetail();
+    const definingEvent = screen
+      .getByText("Evento que define a situação")
+      .closest("div");
+    expect(definingEvent).not.toBeNull();
+    expect(within(definingEvent as HTMLElement).getByText("IA")).toBeVisible();
+    expect(
+      within(definingEvent as HTMLElement).getByText("01/02/2026"),
+    ).toBeVisible();
+    expect(screen.getByText(/Situação derivada:\s*servida/i)).toBeVisible();
+    expect(screen.getByText("IA vinculada")).toBeVisible();
+  });
+
+  it.each(["eventos", "agenda"] as const)(
+    "distingue carregamento de %s de ausência de histórico ou tarefas",
+    (collection) => {
+      setupMockLiveQuery({
+        animal: makeAnimal({
+          id: "animal-1",
+          identificacao: "REP-LOAD",
+          sexo: "F",
+          data_nascimento: "2022-01-01",
+        }),
+        [collection]: undefined,
+      });
+      renderDetail();
+      const panel =
+        screen.getByText("Ciclo reprodutivo").parentElement?.parentElement;
+      expect(panel).not.toBeNull();
+      expect(
+        within(panel as HTMLElement).getByRole("status"),
+      ).toHaveTextContent(
+        collection === "eventos"
+          ? "Carregando histórico reprodutivo…"
+          : "Carregando Agenda…",
+      );
+      expect(
+        screen.queryByText(
+          collection === "eventos"
+            ? "Sem histórico factual"
+            : "Nenhuma tarefa reprodutiva registrada",
+        ),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it("mostra o modo de transição efetivo da fazenda sem convertê-lo em aptidão técnica", () => {
+    mockedUseAuth.mockReturnValue({
+      activeFarmId: "farm-1",
+      role: "owner",
+      farmLifecycleConfig: {
+        ...DEFAULT_FARM_LIFECYCLE_CONFIG,
+        default_transition_mode: "automatico",
+      },
+      farmMeasurementConfig: DEFAULT_FARM_MEASUREMENT_CONFIG,
+    } as ReturnType<typeof useAuth>);
+
+    setupMockLiveQuery({
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "MACHO-01",
+        sexo: "M",
+        data_nascimento: "2022-01-01",
+        payload: {
+          lifecycle: { destino_produtivo: "reprodutor" },
+          male_profile: { status_reprodutivo: "apto" },
+        },
+      }),
+    });
+
+    renderDetail();
+
+    const maleProfile = screen.getByText("Perfil de manejo do macho")
+      .parentElement?.parentElement;
+    expect(maleProfile).not.toBeNull();
+    expect(
+      within(maleProfile as HTMLElement).getByText("Transicao automatica"),
+    ).toBeVisible();
+    const modeCard = screen
+      .getByText("Modo efetivo de transição")
+      .closest("div");
+    expect(modeCard).not.toBeNull();
+    expect(
+      within(modeCard as HTMLElement).getByText("automatico"),
+    ).toBeVisible();
+    expect(
+      within(modeCard as HTMLElement).getByText(
+        "Modo efetivo herdado da configuração da fazenda.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Não comprovam fertilidade, capacidade de monta/i),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Elegivel para touro de lote"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("mantém mãe e pai canônicos e torna crias maternas adicionais acessíveis por teclado", async () => {
+    const user = userEvent.setup();
+    setupMockLiveQuery({
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "MATRIZ-01",
+        sexo: "F",
+        data_nascimento: "2022-01-01",
+        mae_id: "mother-1",
+        pai_id: "father-1",
+      }),
+      mae: makeAnimal({ id: "mother-1", identificacao: "MAE-01", sexo: "F" }),
+      pai: makeAnimal({ id: "father-1", identificacao: "PAI-01", sexo: "M" }),
+      crias: ["C-001", "C-002", "C-003", "C-004"].map((identificacao, index) =>
+        makeAnimal({
+          id: `calf-${index + 1}`,
+          identificacao,
+          sexo: index % 2 === 0 ? "F" : "M",
+          mae_id: "animal-1",
+        }),
+      ),
+    });
+
+    renderDetail();
+
+    expect(screen.getByRole("link", { name: "Matriz MAE-01" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Pai PAI-01" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Cria C-001" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Cria C-002" })).toBeVisible();
+
+    const disclosure = screen.getByText("Ver +2 cria(s)");
+    disclosure.focus();
+    expect(disclosure).toHaveFocus();
+    await user.click(disclosure);
+
+    expect(screen.getByRole("link", { name: "Cria C-003" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Cria C-004" })).toBeVisible();
+    expect(screen.getByText(/não infere descendência paterna/i)).toBeVisible();
+    expect(
+      screen.getByText("Crias pela relação materna cadastrada: 4."),
+    ).toBeVisible();
+  });
+
+  it.each([
+    { field: "mae_id", relation: "mae", label: "Mãe" },
+    { field: "pai_id", relation: "pai", label: "Pai" },
+  ])(
+    "distingue vínculo cadastrado indisponível de ausência: $label",
+    ({ field, relation, label }) => {
+      setupMockLiveQuery({
+        animal: makeAnimal({
+          id: "animal-1",
+          identificacao: "GEN-UNAVAILABLE",
+          sexo: "M",
+          [field]: "parent-unavailable",
+        }),
+        [relation]: null,
+        crias: [],
+      });
+      renderDetail();
+      expect(
+        screen.getByText(
+          `${label}: vínculo cadastrado indisponível na fazenda ativa`,
+        ),
+      ).toBeVisible();
+      expect(
+        screen.queryByText("Sem vínculo genealógico cadastrado."),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/excluído/i)).not.toBeInTheDocument();
+      expect(
+        screen.getByText("Vínculo genealógico cadastrado indisponível."),
+      ).toBeVisible();
+    },
+  );
+
+  it.each([
+    { field: "mae_id", relation: "mae", label: "Mãe" },
+    { field: "pai_id", relation: "pai", label: "Pai" },
+  ])(
+    "preserva carregamento do vínculo cadastrado: $label",
+    ({ field, relation, label }) => {
+      setupMockLiveQuery({
+        animal: makeAnimal({
+          id: "animal-1",
+          identificacao: "GEN-PENDING",
+          sexo: "M",
+          [field]: "parent-pending",
+        }),
+        [relation]: undefined,
+        crias: [],
+      });
+      renderDetail();
+      expect(
+        screen.getByText("Carregando vínculos familiares…"),
+      ).toHaveAttribute("role", "status");
+      expect(
+        screen.queryByText("Sem vínculo genealógico cadastrado."),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(
+          `${label}: vínculo cadastrado indisponível na fazenda ativa`,
+        ),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it("preserva consumidores sem IDs e mantém a expansão de crias opt-in", () => {
+    const calves = [1, 2, 3].map((number) =>
+      makeAnimal({
+        id: `calf-${number}`,
+        identificacao: `C-${number}`,
+        sexo: "F",
+      }),
+    );
+    const view = render(
+      <MemoryRouter>
+        <AnimalKinshipBadges calves={calves} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: "Cria C-1" })).toHaveAttribute(
+      "href",
+      "/animais/calf-1",
+    );
+    expect(screen.getByText("+1 cria(s)")).toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: "Cria C-3" }),
+    ).not.toBeInTheDocument();
+    expect(view.container.querySelector("details")).toBeNull();
+    view.rerender(
+      <MemoryRouter>
+        <AnimalKinshipBadges />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText("Nenhum vínculo genealógico disponível para exibição."),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Sem vínculo genealógico cadastrado."),
+    ).not.toBeInTheDocument();
+    view.rerender(
+      <MemoryRouter>
+        <AnimalKinshipBadges motherId={null} fatherId={null} />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.queryByText("Sem vínculo genealógico cadastrado."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("distingue carregamento e ausência de vínculos genealógicos", () => {
+    setupMockLiveQuery({
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "GEN-LOAD",
+        sexo: "M",
+      }),
+      crias: undefined,
+    });
+
+    const view = renderDetail();
+    expect(screen.getByText("Carregando vínculos familiares…")).toHaveAttribute(
+      "role",
+      "status",
+    );
+
+    setupMockLiveQuery({
+      animal: makeAnimal({
+        id: "animal-1",
+        identificacao: "GEN-EMPTY",
+        sexo: "M",
+      }),
+      crias: [],
+    });
+    view.rerender(
+      <MemoryRouter
+        initialEntries={["/animais/animal-1"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText("Sem vínculo genealógico cadastrado."),
+    ).toBeVisible();
+    expect(screen.getByText("Mãe: não cadastrada")).toBeVisible();
+    expect(screen.getByText("Pai: não cadastrado")).toBeVisible();
   });
 });

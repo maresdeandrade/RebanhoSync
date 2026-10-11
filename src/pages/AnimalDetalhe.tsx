@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { loadAnimalCommercialHistory, loadAnimalAcquisitionHistory, projectAnimalCommercialValues } from "@/lib/comercial/animalCommercialHistory";
-import { getAgendaScheduleBucket, type AgendaScheduleBucket } from "@/lib/agenda/groupOrdering";
+import {
+  loadAnimalCommercialHistory,
+  loadAnimalAcquisitionHistory,
+  projectAnimalCommercialValues,
+} from "@/lib/comercial/animalCommercialHistory";
+import {
+  getAgendaScheduleBucket,
+  type AgendaScheduleBucket,
+} from "@/lib/agenda/groupOrdering";
 import {
   AlertTriangle,
   ArrowLeftRight,
@@ -111,6 +118,7 @@ import type {
 } from "@/lib/offline/types";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { buildReproductionDashboard } from "@/lib/reproduction/dashboard";
+import { rebuildReproductiveProjection } from "@/lib/reproduction/status";
 import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
 import {
   getBirthEventId,
@@ -141,18 +149,14 @@ import {
   type SanitaryEntryHistoryEvidenceTypeV2,
   type SanitaryEntryHistorySourceV2,
 } from "@/lib/sanitario/history/sanitaryEntryHistoryV2";
-import {
-  formatWeight,
-} from "@/lib/format/weight";
+import { formatWeight } from "@/lib/format/weight";
 import { resolveSanitaryAgendaItemScheduleMeta } from "@/lib/sanitario/infrastructure/agendaSchedule";
 import { loadSanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 import {
   formatSanitaryProtocolItemLabelV2,
   readLocalSanitaryProtocolCatalogV2,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
-import {
-  buildAnimalWeightHistory,
-} from "@/lib/insights/animalWeightPresentation";
+import { buildAnimalWeightHistory } from "@/lib/insights/animalWeightPresentation";
 import { showError, showSuccess } from "@/utils/toast";
 import {
   CLINICAL_CASE_CLOSURE_REASONS,
@@ -260,13 +264,37 @@ function formatCivilDate(value: string | null | undefined) {
 
 const HISTORY_FILTERS = [
   { label: "Todos", domains: [], empty: "Nenhum evento registrado." },
-  { label: "Pesagem", domains: ["pesagem"], empty: "Nenhum evento de pesagem registrado." },
-  { label: "Reprodução", domains: ["reproducao"], empty: "Nenhum evento de reprodução registrado." },
-  { label: "Sanidade", domains: ["sanitario", "alerta_sanitario", "conformidade"], empty: "Nenhum evento de sanidade registrado." },
-  { label: "Movimentação", domains: ["movimentacao"], empty: "Nenhum evento de movimentação registrado." },
-  { label: "Comercial", domains: ["comercial"], empty: "Nenhum evento comercial registrado." },
+  {
+    label: "Pesagem",
+    domains: ["pesagem"],
+    empty: "Nenhum evento de pesagem registrado.",
+  },
+  {
+    label: "Reprodução",
+    domains: ["reproducao"],
+    empty: "Nenhum evento de reprodução registrado.",
+  },
+  {
+    label: "Sanidade",
+    domains: ["sanitario", "alerta_sanitario", "conformidade"],
+    empty: "Nenhum evento de sanidade registrado.",
+  },
+  {
+    label: "Movimentação",
+    domains: ["movimentacao"],
+    empty: "Nenhum evento de movimentação registrado.",
+  },
+  {
+    label: "Comercial",
+    domains: ["comercial"],
+    empty: "Nenhum evento comercial registrado.",
+  },
   { label: "ECC", domains: ["ecc"], empty: "Nenhum evento de ECC registrado." },
-  { label: "Outros", domains: [], empty: "Nenhum evento de outros domínios registrado." },
+  {
+    label: "Outros",
+    domains: [],
+    empty: "Nenhum evento de outros domínios registrado.",
+  },
 ];
 
 function matchesHistoryFilter(domain: string, label: string) {
@@ -274,15 +302,20 @@ function matchesHistoryFilter(domain: string, label: string) {
   if (label === "Outros") {
     return !HISTORY_FILTERS.some((filter) => filter.domains.includes(domain));
   }
-  return HISTORY_FILTERS.find((filter) => filter.label === label)?.domains.includes(domain) ?? false;
+  return (
+    HISTORY_FILTERS.find((filter) => filter.label === label)?.domains.includes(
+      domain,
+    ) ?? false
+  );
 }
 
-const AGENDA_SECTIONS: Array<{ bucket: AgendaScheduleBucket; label: string }> = [
-  { bucket: "overdue", label: "Atrasadas" },
-  { bucket: "today", label: "Hoje" },
-  { bucket: "future", label: "Próximas" },
-  { bucket: "closed", label: "Encerradas" },
-];
+const AGENDA_SECTIONS: Array<{ bucket: AgendaScheduleBucket; label: string }> =
+  [
+    { bucket: "overdue", label: "Atrasadas" },
+    { bucket: "today", label: "Hoje" },
+    { bucket: "future", label: "Próximas" },
+    { bucket: "closed", label: "Encerradas" },
+  ];
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "-";
@@ -368,8 +401,9 @@ export function AnimalSanitaryCasesPanel({
           .filter(
             (
               summary,
-            ): summary is NonNullable<ReturnType<typeof buildClinicalProtocolTimelineSummary>> =>
-              Boolean(summary),
+            ): summary is NonNullable<
+              ReturnType<typeof buildClinicalProtocolTimelineSummary>
+            > => Boolean(summary),
           );
 
         return {
@@ -400,19 +434,16 @@ export function AnimalSanitaryCasesPanel({
           title: summary.protocolTitle,
         })),
       ].filter(
-        (
-          summary,
-        ): summary is { protocolId: string; title: string } => summary !== null,
+        (summary): summary is { protocolId: string; title: string } =>
+          summary !== null,
       );
 
       for (const summary of summaries) {
-        const current =
-          byProtocol.get(summary.protocolId) ??
-          {
-            protocolId: summary.protocolId,
-            title: summary.title,
-            caseIds: new Set<string>(),
-          };
+        const current = byProtocol.get(summary.protocolId) ?? {
+          protocolId: summary.protocolId,
+          title: summary.title,
+          caseIds: new Set<string>(),
+        };
         current.caseIds.add(entry.caseRecord.id);
         byProtocol.set(summary.protocolId, current);
       }
@@ -489,7 +520,9 @@ export function AnimalSanitaryCasesPanel({
         });
         const timelineEvents = linkedEvents
           .slice()
-          .sort((left, right) => right.occurred_at.localeCompare(left.occurred_at));
+          .sort((left, right) =>
+            right.occurred_at.localeCompare(left.occurred_at),
+          );
         const isOpen = isOpenSanitaryCase(caseRecord);
 
         return (
@@ -595,7 +628,10 @@ export function AnimalSanitaryCasesPanel({
                         {clinicalProtocolSupport.title}
                       </p>
                     </div>
-                    <Badge variant="outline" className="border-sky-300 text-sky-900">
+                    <Badge
+                      variant="outline"
+                      className="border-sky-300 text-sky-900"
+                    >
                       {clinicalProtocolSupport.sourceLabel}
                     </Badge>
                   </div>
@@ -796,31 +832,27 @@ const AnimalDetalhe = () => {
     animal?.id ?? null,
     fazendaId ?? null,
   );
-  const animalLote = useLiveQuery(
-    async () => {
-      if (!animal?.lote_id || !fazendaId) return undefined;
-      const lote = await db.state_lotes.get(animal.lote_id);
-      return lote?.fazenda_id === fazendaId ? lote : undefined;
-    },
-    [animal?.lote_id, fazendaId],
-  );
+  const animalLote = useLiveQuery(async () => {
+    if (!animal?.lote_id || !fazendaId) return undefined;
+    const lote = await db.state_lotes.get(animal.lote_id);
+    return lote?.fazenda_id === fazendaId ? lote : undefined;
+  }, [animal?.lote_id, fazendaId]);
 
-  const sociedadeAtiva = useLiveQuery(
-    async () => {
-      if (!animal?.id || !fazendaId) return null;
-      const links = await db.state_sociedade_animais
-        .where("[fazenda_id+animal_id]")
-        .equals([fazendaId, animal.id])
-        .filter((link) => link.status === "ativo" && !link.deleted_at)
-        .toArray();
-      if (links.length === 0) return null;
-      const society = await db.state_sociedades_pecuarias.get(links[0].sociedade_id);
-      return society && society.fazenda_id === fazendaId
-        ? { ...society, ...links[0] }
-        : null;
-    },
-    [animal?.id, fazendaId]
-  );
+  const sociedadeAtiva = useLiveQuery(async () => {
+    if (!animal?.id || !fazendaId) return null;
+    const links = await db.state_sociedade_animais
+      .where("[fazenda_id+animal_id]")
+      .equals([fazendaId, animal.id])
+      .filter((link) => link.status === "ativo" && !link.deleted_at)
+      .toArray();
+    if (links.length === 0) return null;
+    const society = await db.state_sociedades_pecuarias.get(
+      links[0].sociedade_id,
+    );
+    return society && society.fazenda_id === fazendaId
+      ? { ...society, ...links[0] }
+      : null;
+  }, [animal?.id, fazendaId]);
 
   const mae = useLiveQuery(async () => {
     if (!animal?.mae_id || !fazendaId) return null;
@@ -874,15 +906,23 @@ const AnimalDetalhe = () => {
     );
   }, [animal?.id, fazendaId]);
 
-  const animalComerciais = useLiveQuery(async () => {
-    if (!animal?.id || !fazendaId) return [];
-    return loadAnimalCommercialHistory(fazendaId, animal.id);
-  }, [animal?.id, fazendaId], []);
+  const animalComerciais = useLiveQuery(
+    async () => {
+      if (!animal?.id || !fazendaId) return [];
+      return loadAnimalCommercialHistory(fazendaId, animal.id);
+    },
+    [animal?.id, fazendaId],
+    [],
+  );
 
-  const aquisicoes = useLiveQuery(async () => {
-    if (!animal?.id || !fazendaId) return [];
-    return loadAnimalAcquisitionHistory(fazendaId, animal.id);
-  }, [animal?.id, fazendaId], []);
+  const aquisicoes = useLiveQuery(
+    async () => {
+      if (!animal?.id || !fazendaId) return [];
+      return loadAnimalAcquisitionHistory(fazendaId, animal.id);
+    },
+    [animal?.id, fazendaId],
+    [],
+  );
 
   const agenda = useLiveQuery(async () => {
     if (!animal?.id || !fazendaId) return [];
@@ -942,9 +982,13 @@ const AnimalDetalhe = () => {
   );
 
   const weightPresentation = useAnimalWeightPresentation(animal, fazendaId);
-  const ultimoPeso = weightPresentation?.latestObservedWeight?.status === "available"
-    ? { peso_kg: weightPresentation.latestObservedWeight.value.weight, data: weightPresentation.latestObservedWeight.value.measuredAt }
-    : null;
+  const ultimoPeso =
+    weightPresentation?.latestObservedWeight?.status === "available"
+      ? {
+          peso_kg: weightPresentation.latestObservedWeight.value.weight,
+          data: weightPresentation.latestObservedWeight.value.measuredAt,
+        }
+      : null;
   const historicoPeso = buildAnimalWeightHistory(weightPresentation);
 
   const ultimoEcc = useLiveQuery(async () => {
@@ -1028,15 +1072,27 @@ const AnimalDetalhe = () => {
   }, [animal?.id, fazendaId]);
 
   const [historyFilter, setHistoryFilter] = useState("Todos");
-  const filteredEvents = eventos?.filter((event) => matchesHistoryFilter(event.dominio, historyFilter));
+  const filteredEvents = eventos?.filter((event) =>
+    matchesHistoryFilter(event.dominio, historyFilter),
+  );
   const agendaReferenceDate = new Date();
   const agendaSections = AGENDA_SECTIONS.map((section) => ({
     ...section,
-    entries: agenda?.filter((entry) => getAgendaScheduleBucket(entry.item, agendaReferenceDate) === section.bucket)
-      .sort((left, right) => left.item.data_prevista.localeCompare(right.item.data_prevista)) ?? [],
+    entries:
+      agenda
+        ?.filter(
+          (entry) =>
+            getAgendaScheduleBucket(entry.item, agendaReferenceDate) ===
+            section.bucket,
+        )
+        .sort((left, right) =>
+          left.item.data_prevista.localeCompare(right.item.data_prevista),
+        ) ?? [],
   }));
   const overdueCount = agendaSections[0].entries.length;
-  const prioritySection = agendaSections.find((section) => section.bucket !== "closed" && section.entries.length > 0);
+  const prioritySection = agendaSections.find(
+    (section) => section.bucket !== "closed" && section.entries.length > 0,
+  );
   const proximaAgenda = prioritySection?.entries[0] ?? null;
 
   const contraparte = useLiveQuery(async () => {
@@ -1250,22 +1306,69 @@ const AnimalDetalhe = () => {
   const effectiveTransitionMode =
     lifecycleSnapshot?.transitionMode ?? transitionMode;
   const isBreedingMale = animal ? isAnimalBreedingEligible(animal) : false;
+  const reproductiveEvents = useMemo(
+    () =>
+      eventos?.filter(
+        (event) => event.dominio === "reproducao" && !event.deleted_at,
+      ),
+    [eventos],
+  );
   const reproResumo = useMemo(() => {
-    if (!animal || !isReproductionEligible) return null;
+    if (
+      !animal ||
+      !isReproductionEligible ||
+      reproductiveEvents === undefined
+    ) {
+      return null;
+    }
 
     const dashboard = buildReproductionDashboard({
       animals: [animal],
       lotes: animalLote ? [animalLote] : [],
-      events: (eventos ?? [])
-        .filter((evt) => evt.dominio === "reproducao" && !evt.deleted_at)
-        .map((evt) => ({
-          ...evt,
-          details: evt.details,
-        })),
+      events: reproductiveEvents,
     });
 
     return dashboard.animals[0] ?? null;
-  }, [animal, isReproductionEligible, animalLote, eventos]);
+  }, [animal, isReproductionEligible, animalLote, reproductiveEvents]);
+  const reproductiveProjection = useMemo(() => {
+    if (!isReproductionEligible || reproductiveEvents === undefined)
+      return null;
+    return rebuildReproductiveProjection(reproductiveEvents);
+  }, [isReproductionEligible, reproductiveEvents]);
+  const currentReproductiveEpisode = useMemo(() => {
+    if (!reproductiveProjection?.currentEpisodeId || !reproductiveEvents) {
+      return null;
+    }
+
+    return (
+      reproductiveEvents.find(
+        (event) => event.id === reproductiveProjection.currentEpisodeId,
+      ) ?? null
+    );
+  }, [reproductiveEvents, reproductiveProjection?.currentEpisodeId]);
+  const suggestedReproActionLabel = reproResumo
+    ? reproResumo.reproStatus.status === "VAZIA"
+      ? "Avaliar próximo manejo reprodutivo"
+      : reproResumo.reproStatus.status === "PARIDA_ABERTA"
+        ? "Avaliar nova cobertura / IA"
+        : reproResumo.nextActionLabel
+    : null;
+  const nextReproductiveAgenda = useMemo(() => {
+    if (!agenda) return null;
+
+    return (
+      agenda.find(
+        (entry) =>
+          entry.item.dominio === "reproducao" &&
+          entry.item.status === "agendado" &&
+          !entry.item.deleted_at,
+      ) ?? null
+    );
+  }, [agenda]);
+  const kinshipLoading =
+    crias === undefined ||
+    Boolean(animal?.mae_id && mae === undefined) ||
+    Boolean(animal?.pai_id && pai === undefined);
   const pendingNeonatalCount = useMemo(
     () =>
       (crias ?? []).filter((calf) => hasPendingNeonatalSetup(calf.payload))
@@ -1651,7 +1754,12 @@ const AnimalDetalhe = () => {
     } finally {
       setIsClosingSanitaryAlert(false);
     }
-  }, [activeSanitaryAlert, activeSanitaryCase, animal, sanitaryAlertResolution]);
+  }, [
+    activeSanitaryAlert,
+    activeSanitaryCase,
+    animal,
+    sanitaryAlertResolution,
+  ]);
 
   const handleOpenCloseClinicalCaseDialog = useCallback(
     (caseRecord: SanitarioCaso) => {
@@ -1668,8 +1776,9 @@ const AnimalDetalhe = () => {
     if (!animal || !clinicalCaseClosure.caseId) return;
 
     const caseToClose =
-      sanitaryCases?.find((caseRecord) => caseRecord.id === clinicalCaseClosure.caseId) ??
-      null;
+      sanitaryCases?.find(
+        (caseRecord) => caseRecord.id === clinicalCaseClosure.caseId,
+      ) ?? null;
     const reason = clinicalCaseClosure.reason;
     const notes = clinicalCaseClosure.notes.trim();
     const validationMessage = validateClinicalCaseClosureInput({
@@ -1744,7 +1853,8 @@ const AnimalDetalhe = () => {
   const selectedClinicalCaseClosureReason = getClinicalCaseClosureReason(
     clinicalCaseClosure.reason,
   );
-  const clinicalCaseClosureNotesLength = clinicalCaseClosure.notes.trim().length;
+  const clinicalCaseClosureNotesLength =
+    clinicalCaseClosure.notes.trim().length;
   const canConfirmClinicalCaseClosure =
     Boolean(clinicalCaseClosure.caseId) &&
     (!selectedClinicalCaseClosureReason.requiresNotes ||
@@ -1763,83 +1873,89 @@ const AnimalDetalhe = () => {
         status={animal.status}
         lotLabel={animalLote ? `Lote: ${animalLote.nome}` : "Sem lote definido"}
       >
-            {hasMovementBlockedSanitaryAlert && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-warning/40 text-warning-foreground hover:bg-warning-muted"
-                onClick={() => setShowCloseSanitaryAlertDialog(true)}
-                disabled={animal.status !== "ativo"}
-              >
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Encerrar suspeita
-              </Button>
-            )}
-            {animal.status === "ativo" && !hasMovementBlockedSanitaryAlert ? (
-              <Button size="default" asChild>
-                <Link to={registrarAnimalPath}>
-                  <ClipboardCheck className="mr-2 h-4 w-4" />
-                  Registrar manejo
-                </Link>
-              </Button>
-            ) : (
-              <Button size="default" disabled>
-                <ClipboardCheck className="mr-2 h-4 w-4" />
-                Registrar manejo
-              </Button>
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="default" className="min-w-12 px-3 sm:px-5">
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only sm:not-sr-only">Mais acoes</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => {
-                    const params = new URLSearchParams();
-                    params.set("quick", "venda");
-                    params.set("animalId", animal.id);
-                    if (animal.lote_id) {
-                      params.set("loteId", animal.lote_id);
-                    }
-                    navigate(`/registrar?${params.toString()}`);
-                  }}
-                  disabled={
-                    animal.status !== "ativo" || hasMovementBlockedSanitaryAlert
-                  }
-                >
-                  <Handshake className="mr-2 h-4 w-4" />
-                  Registrar venda manual
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setShowObitoDialog(true)}
-                  disabled={animal.status !== "ativo"}
-                >
-                  <Skull className="mr-2 h-4 w-4" />
-                  Registrar obito
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setShowMoverLote(true)}
-                  disabled={hasMovementBlockedSanitaryAlert}
-                >
-                  <ArrowLeftRight className="mr-2 h-4 w-4" />
-                  Mover lote
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to={`/animais/${id}/editar`}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Editar cadastro
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        {hasMovementBlockedSanitaryAlert && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-warning/40 text-warning-foreground hover:bg-warning-muted"
+            onClick={() => setShowCloseSanitaryAlertDialog(true)}
+            disabled={animal.status !== "ativo"}
+          >
+            <AlertTriangle className="mr-2 h-4 w-4" />
+            Encerrar suspeita
+          </Button>
+        )}
+        {animal.status === "ativo" && !hasMovementBlockedSanitaryAlert ? (
+          <Button size="default" asChild>
+            <Link to={registrarAnimalPath}>
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Registrar manejo
+            </Link>
+          </Button>
+        ) : (
+          <Button size="default" disabled>
+            <ClipboardCheck className="mr-2 h-4 w-4" />
+            Registrar manejo
+          </Button>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="default"
+              className="min-w-12 px-3 sm:px-5"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only sm:not-sr-only">Mais acoes</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => {
+                const params = new URLSearchParams();
+                params.set("quick", "venda");
+                params.set("animalId", animal.id);
+                if (animal.lote_id) {
+                  params.set("loteId", animal.lote_id);
+                }
+                navigate(`/registrar?${params.toString()}`);
+              }}
+              disabled={
+                animal.status !== "ativo" || hasMovementBlockedSanitaryAlert
+              }
+            >
+              <Handshake className="mr-2 h-4 w-4" />
+              Registrar venda manual
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setShowObitoDialog(true)}
+              disabled={animal.status !== "ativo"}
+            >
+              <Skull className="mr-2 h-4 w-4" />
+              Registrar obito
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => setShowMoverLote(true)}
+              disabled={hasMovementBlockedSanitaryAlert}
+            >
+              <ArrowLeftRight className="mr-2 h-4 w-4" />
+              Mover lote
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to={`/animais/${id}/editar`}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar cadastro
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </AnimalDetailHeader>
 
-      {(animal.payload as Record<string, unknown> | undefined)?.compliance_state === "catch_up_required" ||
-      (animal.payload as Record<string, unknown> | undefined)?.history_confidence === "unknown" ? (
+      {(animal.payload as Record<string, unknown> | undefined)
+        ?.compliance_state === "catch_up_required" ||
+      (animal.payload as Record<string, unknown> | undefined)
+        ?.history_confidence === "unknown" ? (
         <Card className="border-semantic-warning-border bg-semantic-warning-muted shadow-none">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -1849,7 +1965,8 @@ const AnimalDetalhe = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {(animal.payload as Record<string, unknown> | undefined)?.history_confidence === "unknown"
+              {(animal.payload as Record<string, unknown> | undefined)
+                ?.history_confidence === "unknown"
                 ? "Este animal entrou sem historico sanitario confirmado. Documente o atestado de compra ou execute o protocolo de entrada para estabilizar a agenda."
                 : "A conformidade sanitaria deste animal esta pendente de atualizacao. Execute as acoes recomendadas para regularizar."}
             </p>
@@ -2040,10 +2157,14 @@ const AnimalDetalhe = () => {
 
         <Card className="border-border/70 shadow-none">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase text-muted-foreground">Localização atual</CardTitle>
+            <CardTitle className="text-xs uppercase text-muted-foreground">
+              Localização atual
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="break-words text-xl font-semibold">{animalLote?.nome ?? "Sem lote definido"}</p>
+            <p className="break-words text-xl font-semibold">
+              {animalLote?.nome ?? "Sem lote definido"}
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">Lote atual</p>
           </CardContent>
         </Card>
@@ -2056,17 +2177,23 @@ const AnimalDetalhe = () => {
           </CardHeader>
           <CardContent>
             <div className="break-words text-xl font-semibold tracking-tight">
-              {agenda === undefined ? "Carregando Agenda…"
-                : overdueCount > 0 ? `${overdueCount} ${overdueCount === 1 ? "tarefa atrasada" : "tarefas atrasadas"}`
-                : prioritySection?.bucket === "today" ? "Hoje"
-                : proximaAgenda ? `Próxima: ${formatCivilDate(proximaAgenda.item.data_prevista)}`
-                : "Sem tarefa pendente na Agenda"}
+              {agenda === undefined
+                ? "Carregando Agenda…"
+                : overdueCount > 0
+                  ? `${overdueCount} ${overdueCount === 1 ? "tarefa atrasada" : "tarefas atrasadas"}`
+                  : prioritySection?.bucket === "today"
+                    ? "Hoje"
+                    : proximaAgenda
+                      ? `Próxima: ${formatCivilDate(proximaAgenda.item.data_prevista)}`
+                      : "Sem tarefa pendente na Agenda"}
             </div>
             {proximaAgenda ? (
               <div className="mt-3 space-y-2">
                 <p className="text-sm font-medium text-foreground">
                   {formatAgendaTipoLabel(proximaAgenda.item.tipo)}
-                  {overdueCount > 0 ? ` · ${formatCivilDate(proximaAgenda.item.data_prevista)}` : ""}
+                  {overdueCount > 0
+                    ? ` · ${formatCivilDate(proximaAgenda.item.data_prevista)}`
+                    : ""}
                 </p>
                 {proximaAgenda.scheduleLabel ? (
                   <p className="text-xs text-muted-foreground">
@@ -2096,18 +2223,38 @@ const AnimalDetalhe = () => {
 
       <Tabs defaultValue="overview" className="min-w-0 w-full">
         <div className="overflow-x-auto pb-1">
-          <TabsList aria-label="Seções do animal" className="h-auto w-max min-w-full justify-start gap-1 bg-muted/40 p-1">
-            <TabsTrigger value="overview" className="min-h-12 gap-2 rounded-md">Visão geral</TabsTrigger>
-            <TabsTrigger value="timeline" className="min-h-12 gap-2 rounded-md"><History className="h-4 w-4" /> Histórico</TabsTrigger>
-            <TabsTrigger value="sanidade" className="min-h-12 gap-2 rounded-md"><Syringe className="h-4 w-4" /> Sanidade</TabsTrigger>
-            <TabsTrigger value="agenda" className="min-h-12 gap-2 rounded-md"><Calendar className="h-4 w-4" /> Agenda</TabsTrigger>
-            <TabsTrigger value="comercial" className="min-h-12 gap-2 rounded-md"><DollarSign className="h-4 w-4" /> Comercial</TabsTrigger>
+          <TabsList
+            aria-label="Seções do animal"
+            className="h-auto w-max min-w-full justify-start gap-1 bg-muted/40 p-1"
+          >
+            <TabsTrigger value="overview" className="min-h-12 gap-2 rounded-md">
+              Visão geral
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="min-h-12 gap-2 rounded-md">
+              <History className="h-4 w-4" /> Histórico
+            </TabsTrigger>
+            <TabsTrigger value="sanidade" className="min-h-12 gap-2 rounded-md">
+              <Syringe className="h-4 w-4" /> Sanidade
+            </TabsTrigger>
+            <TabsTrigger value="agenda" className="min-h-12 gap-2 rounded-md">
+              <Calendar className="h-4 w-4" /> Agenda
+            </TabsTrigger>
+            <TabsTrigger
+              value="comercial"
+              className="min-h-12 gap-2 rounded-md"
+            >
+              <DollarSign className="h-4 w-4" /> Comercial
+            </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="overview" className="mt-6 space-y-6">
           <Card className="border-border/70 shadow-none">
-            <CardHeader className="pb-3"><CardTitle className="text-base">Identificação complementar</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">
+                Identificação complementar
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               <dl className="grid gap-4 text-sm sm:grid-cols-3">
                 <div>
@@ -2116,567 +2263,745 @@ const AnimalDetalhe = () => {
                     {formatCivilDate(animal.data_nascimento)}
                   </dd>
                 </div>
-                <div><dt className="text-muted-foreground">Origem</dt><dd className="mt-1 font-medium capitalize">{animal.origem ?? "Não registrada"}</dd></div>
-                <div><dt className="text-muted-foreground">RFID</dt><dd className="mt-1 break-words font-medium">{animal.rfid ?? "Não registrado"}</dd></div>
+                <div>
+                  <dt className="text-muted-foreground">Origem</dt>
+                  <dd className="mt-1 font-medium capitalize">
+                    {animal.origem ?? "Não registrada"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">RFID</dt>
+                  <dd className="mt-1 break-words font-medium">
+                    {animal.rfid ?? "Não registrado"}
+                  </dd>
+                </div>
               </dl>
             </CardContent>
           </Card>
-      {taxonomySnapshot && (
-        <Card className="shadow-none">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Situação atual</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Estado produtivo/reprodutivo</p>
-              <p className="mt-1 font-medium">{taxonomySnapshot.display.estado_alias}</p>
-            </div>
-            <AnimalTechnicalDetails label="Ver detalhes técnicos da taxonomia">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                <p className="text-xs uppercase text-muted-foreground">
-                  Categoria zootécnica
-                </p>
-                <p className="mt-1 font-semibold">
-                  {taxonomySnapshot.display.categoria}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Aliases:{" "}
-                  {getCategoriaZootecnicaAliases(
-                    taxonomySnapshot.categoria_zootecnica,
-                  ).join(", ")}
-                </p>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                <p className="text-xs uppercase text-muted-foreground">
-                  Fase veterinária
-                </p>
-                <p className="mt-1 font-semibold">
-                  {taxonomySnapshot.display.fase_veterinaria}
-                </p>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                <p className="text-xs uppercase text-muted-foreground">
-                  Estado produtivo/reprodutivo
-                </p>
-                <p className="mt-1 font-semibold">
-                  {taxonomySnapshot.display.estado_alias}
-                </p>
-                {taxonomySnapshot.display.estado_alias !==
-                  taxonomySnapshot.display.estado_canonico && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Canonico: {taxonomySnapshot.display.estado_canonico}
+          {taxonomySnapshot && (
+            <Card className="shadow-none">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Situação atual</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Estado produtivo/reprodutivo
                   </p>
-                )}
-              </div>
-            </div>
-
-
-            </AnimalTechnicalDetails>
-
-            <div className="flex flex-wrap gap-2">
-              {taxonomySnapshot.facts.data_desmama && (
-                <Badge variant="outline">
-                  Desmama: {formatDate(taxonomySnapshot.facts.data_desmama)}
-                </Badge>
-              )}
-              {taxonomySnapshot.facts.prenhez_confirmada && (
-                <Badge
-                  variant="outline"
-                  className="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
-                >
-                  Prenhez confirmada
-                </Badge>
-              )}
-              {taxonomySnapshot.facts.data_ultimo_parto && (
-                <Badge variant="outline">
-                  Último parto:{" "}
-                  {formatDate(taxonomySnapshot.facts.data_ultimo_parto)}
-                </Badge>
-              )}
-              {taxonomySnapshot.facts.secagem_realizada && (
-                <Badge variant="outline">Secagem realizada</Badge>
-              )}
-              {taxonomySnapshot.facts.em_lactacao && (
-                <Badge variant="outline">Em lactação</Badge>
-              )}
-              {taxonomySnapshot.facts.castrado && (
-                <Badge variant="outline">Castrado</Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {lifecycleSnapshot && (
-        <Card className="border-border/70 shadow-none">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="text-base">Estagio de vida</CardTitle>
-              <div className="flex flex-wrap gap-2">
-                <Badge
-                  variant="outline"
-                  className="border-border bg-background/80 text-foreground"
-                >
-                  Atual:{" "}
-                  {getAnimalLifeStageLabel(lifecycleSnapshot.currentStage)}
-                </Badge>
-                {lifecycleSnapshot.currentStageSource === "inferred" && (
-                  <Badge variant="outline">Estagio ainda nao registrado</Badge>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <AnimalTechnicalDetails label="Ver detalhes técnicos do estágio">
-              <p className="text-sm text-muted-foreground">{getTransitionModeLabel(lifecycleSnapshot.transitionMode)}</p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                <p className="text-xs uppercase text-muted-foreground">
-                  Estagio atual
-                </p>
-                <p className="mt-1 font-semibold">
-                  {getAnimalLifeStageLabel(lifecycleSnapshot.currentStage)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                <p className="text-xs uppercase text-muted-foreground">
-                  Alvo calculado
-                </p>
-                <p className="mt-1 font-semibold">
-                  {getAnimalLifeStageLabel(lifecycleSnapshot.targetStage)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                <p className="text-xs uppercase text-muted-foreground">
-                  Regra usada
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {lifecycleSnapshot.targetStageReason}
-                </p>
-              </div>
-            </div>
-
-
-            </AnimalTechnicalDetails>
-
-            {lifecycleSnapshot.shouldSuggestTransition ? (
-              <div className="rounded-xl border border-warning/25 bg-warning-muted/50 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="space-y-1">
-                    <p className="font-medium text-foreground">
-                      {lifecycleSnapshot.suggestionKind === "initialize"
-                        ? "Registrar estagio inicial"
-                        : "Transicao sugerida"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {lifecycleSnapshot.suggestionKind === "initialize"
-                        ? `Salvar ${getAnimalLifeStageLabel(
-                            lifecycleSnapshot.targetStage,
-                          ).toLowerCase()} como estagio atual deste animal.`
-                        : `Mover de ${getAnimalLifeStageLabel(
-                            lifecycleSnapshot.currentStage,
-                          ).toLowerCase()} para ${getAnimalLifeStageLabel(
-                            lifecycleSnapshot.targetStage,
-                          ).toLowerCase()}.`}
-                    </p>
+                  <p className="mt-1 font-medium">
+                    {taxonomySnapshot.display.estado_alias}
+                  </p>
+                </div>
+                <AnimalTechnicalDetails label="Ver detalhes técnicos da taxonomia">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">
+                        Categoria zootécnica
+                      </p>
+                      <p className="mt-1 font-semibold">
+                        {taxonomySnapshot.display.categoria}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Aliases:{" "}
+                        {getCategoriaZootecnicaAliases(
+                          taxonomySnapshot.categoria_zootecnica,
+                        ).join(", ")}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">
+                        Fase veterinária
+                      </p>
+                      <p className="mt-1 font-semibold">
+                        {taxonomySnapshot.display.fase_veterinaria}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">
+                        Estado produtivo/reprodutivo
+                      </p>
+                      <p className="mt-1 font-semibold">
+                        {taxonomySnapshot.display.estado_alias}
+                      </p>
+                      {taxonomySnapshot.display.estado_alias !==
+                        taxonomySnapshot.display.estado_canonico && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Canonico: {taxonomySnapshot.display.estado_canonico}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  {!lifecycleSnapshot.canAutoApply && (
-                    <Button
-                      size="sm"
-                      onClick={() => void applyLifecycleTransition("manual")}
-                      disabled={isApplyingLifecycle}
+                </AnimalTechnicalDetails>
+
+                <div className="flex flex-wrap gap-2">
+                  {taxonomySnapshot.facts.data_desmama && (
+                    <Badge variant="outline">
+                      Desmama: {formatDate(taxonomySnapshot.facts.data_desmama)}
+                    </Badge>
+                  )}
+                  {taxonomySnapshot.facts.prenhez_confirmada && (
+                    <Badge
+                      variant="outline"
+                      className="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
                     >
-                      {isApplyingLifecycle
-                        ? "Aplicando..."
-                        : "Confirmar transicao"}
-                    </Button>
+                      Prenhez confirmada
+                    </Badge>
+                  )}
+                  {taxonomySnapshot.facts.data_ultimo_parto && (
+                    <Badge variant="outline">
+                      Último parto:{" "}
+                      {formatDate(taxonomySnapshot.facts.data_ultimo_parto)}
+                    </Badge>
+                  )}
+                  {taxonomySnapshot.facts.secagem_realizada && (
+                    <Badge variant="outline">Secagem realizada</Badge>
+                  )}
+                  {taxonomySnapshot.facts.em_lactacao && (
+                    <Badge variant="outline">Em lactação</Badge>
+                  )}
+                  {taxonomySnapshot.facts.castrado && (
+                    <Badge variant="outline">Castrado</Badge>
                   )}
                 </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                O estagio registrado ja esta alinhado com as regras atuais da
-                fazenda.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              </CardContent>
+            </Card>
+          )}
 
-      {aquisicoes.length > 0 && (
-        <Card className="border-border/70 shadow-none">
-          <CardHeader className="pb-2"><CardTitle className="text-base">Aquisição</CardTitle></CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            {aquisicoes.map((fact) => (
-              <dl key={fact.eventId} className="space-y-2 rounded-xl border p-3 text-sm">
-                <div><dt className="text-muted-foreground">Origem</dt><dd>{fact.origin === "compra" ? "Compra" : "Sociedade"}</dd></div>
-                <div><dt className="text-muted-foreground">Data de aquisição/entrada</dt><dd>{fact.occurredAt.split("T")[0]}</dd></div>
-                <div><dt className="text-muted-foreground">Peso de aquisição</dt><dd className="font-semibold">{fact.weight !== null ? `${fact.weight} ${fact.weightUnit}` : "Não informado"}</dd></div>
-                {fact.weightBasis === "carcass_weight" && <p className="text-xs text-muted-foreground">Peso de carcaça declarado na aquisição.</p>}
-                <div><dt className="text-muted-foreground">{fact.origin === "compra" ? "Valor de aquisição" : "Condição econômica"}</dt><dd>{fact.origin === "compra" ? fact.value !== null ? `R$ ${fact.value.toFixed(2)}` : "Não informado" : "Participação societária; valor individual não registrado neste fato."}</dd></div>
-              </dl>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      <AnimalWeightSection
-        presentation={weightPresentation}
-        history={historicoPeso}
-        weightUnit={farmMeasurementConfig.weight_unit}
-        onRegister={() => {
-          const params = new URLSearchParams();
-          params.set("dominio", "pesagem");
-          params.set("animalId", animal.id);
-          if (animal.lote_id) params.set("loteId", animal.lote_id);
-          navigate(`/registrar?${params.toString()}`);
-        }}
-      />
-
-      <AnimalBodyConditionSection
-        latest={ultimoEcc}
-        history={historicoEcc}
-        onRegister={() => navigate(`/registrar?dominio=ecc&animalId=${encodeURIComponent(animal.id)}`)}
-      />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {animal.sexo === "F" && (
-          <Card className="border-border/70 bg-card shadow-none">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <HeartPulse className="h-4 w-4 text-muted-foreground" />
-                Ciclo reprodutivo
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isReproductionEligible && reproResumo ? (
-                <>
+          {lifecycleSnapshot && (
+            <Card className="border-border/70 shadow-none">
+              <CardHeader className="pb-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <CardTitle className="text-base">Estagio de vida</CardTitle>
                   <div className="flex flex-wrap gap-2">
                     <Badge
                       variant="outline"
-                      className="border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+                      className="border-border bg-background/80 text-foreground"
                     >
-                      Status:{" "}
-                      {getReproStatusLabel(reproResumo.reproStatus.status)}
+                      Atual:{" "}
+                      {getAnimalLifeStageLabel(lifecycleSnapshot.currentStage)}
                     </Badge>
+                    {lifecycleSnapshot.currentStageSource === "inferred" && (
+                      <Badge variant="outline">
+                        Estagio ainda nao registrado
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <AnimalTechnicalDetails label="Ver detalhes técnicos do estágio">
+                  <p className="text-sm text-muted-foreground">
+                    {getTransitionModeLabel(lifecycleSnapshot.transitionMode)}
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">
+                        Estagio atual
+                      </p>
+                      <p className="mt-1 font-semibold">
+                        {getAnimalLifeStageLabel(
+                          lifecycleSnapshot.currentStage,
+                        )}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">
+                        Alvo calculado
+                      </p>
+                      <p className="mt-1 font-semibold">
+                        {getAnimalLifeStageLabel(lifecycleSnapshot.targetStage)}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">
+                        Regra usada
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {lifecycleSnapshot.targetStageReason}
+                      </p>
+                    </div>
+                  </div>
+                </AnimalTechnicalDetails>
+
+                {lifecycleSnapshot.shouldSuggestTransition ? (
+                  <div className="rounded-xl border border-warning/25 bg-warning-muted/50 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="space-y-1">
+                        <p className="font-medium text-foreground">
+                          {lifecycleSnapshot.suggestionKind === "initialize"
+                            ? "Registrar estagio inicial"
+                            : "Transicao sugerida"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {lifecycleSnapshot.suggestionKind === "initialize"
+                            ? `Salvar ${getAnimalLifeStageLabel(
+                                lifecycleSnapshot.targetStage,
+                              ).toLowerCase()} como estagio atual deste animal.`
+                            : `Mover de ${getAnimalLifeStageLabel(
+                                lifecycleSnapshot.currentStage,
+                              ).toLowerCase()} para ${getAnimalLifeStageLabel(
+                                lifecycleSnapshot.targetStage,
+                              ).toLowerCase()}.`}
+                        </p>
+                      </div>
+                      {!lifecycleSnapshot.canAutoApply && (
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            void applyLifecycleTransition("manual")
+                          }
+                          disabled={isApplyingLifecycle}
+                        >
+                          {isApplyingLifecycle
+                            ? "Aplicando..."
+                            : "Confirmar transicao"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    O estagio registrado ja esta alinhado com as regras atuais
+                    da fazenda.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {aquisicoes.length > 0 && (
+            <Card className="border-border/70 shadow-none">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Aquisição</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3 sm:grid-cols-2">
+                {aquisicoes.map((fact) => (
+                  <dl
+                    key={fact.eventId}
+                    className="space-y-2 rounded-xl border p-3 text-sm"
+                  >
+                    <div>
+                      <dt className="text-muted-foreground">Origem</dt>
+                      <dd>
+                        {fact.origin === "compra" ? "Compra" : "Sociedade"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">
+                        Data de aquisição/entrada
+                      </dt>
+                      <dd>{fact.occurredAt.split("T")[0]}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">
+                        Peso de aquisição
+                      </dt>
+                      <dd className="font-semibold">
+                        {fact.weight !== null
+                          ? `${fact.weight} ${fact.weightUnit}`
+                          : "Não informado"}
+                      </dd>
+                    </div>
+                    {fact.weightBasis === "carcass_weight" && (
+                      <p className="text-xs text-muted-foreground">
+                        Peso de carcaça declarado na aquisição.
+                      </p>
+                    )}
+                    <div>
+                      <dt className="text-muted-foreground">
+                        {fact.origin === "compra"
+                          ? "Valor de aquisição"
+                          : "Condição econômica"}
+                      </dt>
+                      <dd>
+                        {fact.origin === "compra"
+                          ? fact.value !== null
+                            ? `R$ ${fact.value.toFixed(2)}`
+                            : "Não informado"
+                          : "Participação societária; valor individual não registrado neste fato."}
+                      </dd>
+                    </div>
+                  </dl>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          <AnimalWeightSection
+            presentation={weightPresentation}
+            history={historicoPeso}
+            weightUnit={farmMeasurementConfig.weight_unit}
+            onRegister={() => {
+              const params = new URLSearchParams();
+              params.set("dominio", "pesagem");
+              params.set("animalId", animal.id);
+              if (animal.lote_id) params.set("loteId", animal.lote_id);
+              navigate(`/registrar?${params.toString()}`);
+            }}
+          />
+
+          <AnimalBodyConditionSection
+            latest={ultimoEcc}
+            history={historicoEcc}
+            onRegister={() =>
+              navigate(
+                `/registrar?dominio=ecc&animalId=${encodeURIComponent(animal.id)}`,
+              )
+            }
+          />
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {animal.sexo === "F" && (
+              <Card className="border-border/70 bg-card shadow-none">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <HeartPulse className="h-4 w-4 text-muted-foreground" />
+                    Ciclo reprodutivo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {eventos === undefined ? (
+                    <p role="status" className="text-sm text-muted-foreground">
+                      Carregando histórico reprodutivo…
+                    </p>
+                  ) : isReproductionEligible &&
+                    reproResumo &&
+                    reproductiveProjection ? (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge
+                          variant="outline"
+                          className="border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+                        >
+                          Situação derivada:{" "}
+                          {getReproStatusLabel(reproResumo.reproStatus.status)}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={
+                            reproResumo.urgency === "atencao"
+                              ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
+                          }
+                        >
+                          {reproResumo.urgency === "atencao"
+                            ? "Prioridade do fluxo: atenção"
+                            : "Sem prioridade imediata"}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="border-border bg-background/80 text-foreground"
+                        >
+                          Categoria cadastral:{" "}
+                          {categoriaLabel ?? "Não classificada"}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="border-border bg-background/80 text-foreground"
+                        >
+                          {reproResumo.loteNome
+                            ? `Lote ${reproResumo.loteNome}`
+                            : "Sem lote"}
+                        </Badge>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        A situação acima é derivada pelo contrato reprodutivo
+                        atual a partir de eventos factuais. Não comprova aptidão
+                        técnica para cobertura ou IA.
+                      </p>
+
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                          <p className="text-xs uppercase text-muted-foreground">
+                            Evento que define a situação
+                          </p>
+                          <p className="mt-1 font-semibold text-foreground">
+                            {reproResumo.reproStatus.lastEventType
+                              ? reproResumo.lastEventLabel
+                              : "Sem histórico factual"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {reproResumo.lastEventDateLabel
+                              ? formatCivilDate(reproResumo.lastEventDateLabel)
+                              : "Sem evento factual definidor"}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                          <p className="text-xs uppercase text-muted-foreground">
+                            Próxima ação sugerida
+                          </p>
+                          <p className="mt-1 font-semibold text-foreground">
+                            {suggestedReproActionLabel ?? "Sem sugestão"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {reproResumo.nextActionDate
+                              ? formatCivilDate(reproResumo.nextActionDate)
+                              : "Sem data projetada"}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Projeção do fluxo; não cria tarefa na Agenda.
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                          <p className="text-xs uppercase text-muted-foreground">
+                            Episódio reprodutivo
+                          </p>
+                          <p className="mt-1 font-semibold text-foreground">
+                            {currentReproductiveEpisode
+                              ? currentReproductiveEpisode.details?.tipo ===
+                                "IA"
+                                ? "IA vinculada"
+                                : "Cobertura vinculada"
+                              : "Sem episódio ativo"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {currentReproductiveEpisode
+                              ? formatDate(
+                                  currentReproductiveEpisode.occurred_at,
+                                )
+                              : "Nenhum episódio factual vinculado à situação atual"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                        <p className="text-xs uppercase text-muted-foreground">
+                          Agenda registrada
+                        </p>
+                        {agenda === undefined ? (
+                          <p
+                            role="status"
+                            className="mt-1 text-sm text-muted-foreground"
+                          >
+                            Carregando Agenda…
+                          </p>
+                        ) : nextReproductiveAgenda ? (
+                          <>
+                            <p className="mt-1 font-semibold text-foreground">
+                              {formatAgendaTipoLabel(
+                                nextReproductiveAgenda.item.tipo,
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Previsto:{" "}
+                              {formatCivilDate(
+                                nextReproductiveAgenda.item.data_prevista,
+                              )}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="mt-1 font-semibold text-foreground">
+                              Nenhuma tarefa reprodutiva registrada
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              A Agenda persistida é independente da projeção
+                              acima.
+                            </p>
+                          </>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        Histórico factual: {reproductiveEvents?.length ?? 0}{" "}
+                        evento(s) reprodutivo(s) registrado(s).
+                        {(reproductiveEvents?.length ?? 0) === 0
+                          ? " A ausência de eventos não comprova aptidão reprodutiva."
+                          : ""}
+                      </p>
+
+                      <div className="flex flex-wrap gap-2">
+                        {reproResumo.reproStatus.status !== "SERVIDA" &&
+                          reproResumo.reproStatus.status !== "PRENHA" && (
+                            <Link
+                              to={`/animais/${animal.id}/reproducao?tipo=cobertura`}
+                            >
+                              <Button size="sm">Cobertura / IA</Button>
+                            </Link>
+                          )}
+                        {(reproResumo.reproStatus.status === "SERVIDA" ||
+                          reproResumo.reproStatus.status === "PRENHA") && (
+                          <Link
+                            to={`/animais/${animal.id}/reproducao?tipo=diagnostico`}
+                          >
+                            <Button variant="outline" size="sm">
+                              Diagnóstico
+                            </Button>
+                          </Link>
+                        )}
+                        {reproResumo.reproStatus.status === "PRENHA" && (
+                          <Link
+                            to={`/animais/${animal.id}/reproducao?tipo=parto`}
+                          >
+                            <Button variant="outline" size="sm">
+                              Parto
+                            </Button>
+                          </Link>
+                        )}
+                        {pendingNeonatalCount > 0 && (
+                          <Link to={`/animais/${animal.id}/pos-parto`}>
+                            <Button variant="outline" size="sm">
+                              Pos-parto ({pendingNeonatalCount})
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    </>
+                  ) : isReproductionEligible ? (
+                    <p className="text-sm text-muted-foreground">
+                      Histórico reprodutivo indisponível neste momento.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      <Badge
+                        variant="outline"
+                        className="border-border bg-background/80 text-foreground"
+                      >
+                        Categoria cadastral:{" "}
+                        {categoriaLabel ?? "Não classificada"}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground">
+                        A categoria cadastral controla apenas a apresentação
+                        deste painel e não representa avaliação de aptidão
+                        reprodutiva.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {animal.sexo === "M" && (
+              <Card className="border-border/70 bg-card shadow-none">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <HeartPulse className="h-4 w-4 text-muted-foreground" />
+                    Perfil de manejo do macho
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
                     <Badge
                       variant="outline"
-                      className={
-                        reproResumo.urgency === "atencao"
-                          ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
-                          : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
-                      }
+                      className="border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200"
                     >
-                      {reproResumo.urgency === "atencao"
-                        ? "Acao prioritaria"
-                        : "Fluxo sob controle"}
+                      {getAnimalProductiveDestinationLabel(maleDestination) ??
+                        "Destino: não definido"}
                     </Badge>
                     <Badge
                       variant="outline"
                       className="border-border bg-background/80 text-foreground"
                     >
-                      {reproResumo.loteNome
-                        ? `Lote ${reproResumo.loteNome}`
-                        : "Sem lote"}
+                      {getMaleReproductiveStatusLabel(maleReproductiveStatus) ??
+                        "Status: não definido"}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className="border-border bg-background/80 text-foreground"
+                    >
+                      {getTransitionModeLabel(effectiveTransitionMode) ??
+                        "Transição: não definida"}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className="border-border bg-background/80 text-foreground"
+                    >
+                      {isBreedingMale
+                        ? "Classificação cadastral: perfil reprodutor ativo"
+                        : "Classificação cadastral: sem perfil reprodutor ativo"}
                     </Badge>
                   </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Destinação e status são classificações cadastrais. Não
+                    comprovam fertilidade, capacidade de monta ou avaliação
+                    veterinária.
+                  </p>
 
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
                       <p className="text-xs uppercase text-muted-foreground">
-                        Ultimo marco
+                        Destinação cadastrada
                       </p>
                       <p className="mt-1 font-semibold text-foreground">
-                        {reproResumo.lastEventLabel}
+                        {maleDestination ?? "Não definida"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {reproResumo.lastEventDateLabel
-                          ? formatDate(reproResumo.lastEventDateLabel)
-                          : "Sem registro"}
+                        Valor cadastral ou compatibilidade legada do perfil do
+                        animal.
                       </p>
                     </div>
 
                     <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
                       <p className="text-xs uppercase text-muted-foreground">
-                        Proximo passo
+                        Situação registrada
                       </p>
                       <p className="mt-1 font-semibold text-foreground">
-                        {reproResumo.nextActionLabel}
+                        {maleReproductiveStatus ?? "Não definida"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {reproResumo.nextActionDate
-                          ? formatDate(reproResumo.nextActionDate)
-                          : "Sem data prevista"}
+                        Estado do perfil reprodutivo cadastral; não é laudo de
+                        fertilidade.
                       </p>
                     </div>
 
                     <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
                       <p className="text-xs uppercase text-muted-foreground">
-                        Faixa do ciclo
+                        Modo efetivo de transição
                       </p>
-                      <p className="mt-1 font-semibold capitalize text-foreground">
-                        {reproResumo.lane}
+                      <p className="mt-1 font-semibold text-foreground">
+                        {effectiveTransitionMode ?? "Não definido"}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {reproResumo.actionLabel}
+                        {transitionMode
+                          ? "Modo registrado no animal."
+                          : "Modo efetivo herdado da configuração da fazenda."}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {reproResumo.reproStatus.status !== "SERVIDA" &&
-                      reproResumo.reproStatus.status !== "PRENHA" && (
-                        <Link
-                          to={`/animais/${animal.id}/reproducao?tipo=cobertura`}
-                        >
-                          <Button size="sm">Cobertura / IA</Button>
-                        </Link>
-                      )}
-                    {(reproResumo.reproStatus.status === "SERVIDA" ||
-                      reproResumo.reproStatus.status === "PRENHA") && (
-                      <Link
-                        to={`/animais/${animal.id}/reproducao?tipo=diagnostico`}
-                      >
-                        <Button variant="outline" size="sm">
-                          Diagnóstico
-                        </Button>
-                      </Link>
-                    )}
-                    {reproResumo.reproStatus.status === "PRENHA" && (
-                      <Link to={`/animais/${animal.id}/reproducao?tipo=parto`}>
-                        <Button variant="outline" size="sm">
-                          Parto
-                        </Button>
-                      </Link>
-                    )}
-                    {pendingNeonatalCount > 0 && (
-                      <Link to={`/animais/${animal.id}/pos-parto`}>
-                        <Button variant="outline" size="sm">
-                          Pos-parto ({pendingNeonatalCount})
-                        </Button>
-                      </Link>
+                    <Link to={`/animais/${animal.id}/editar`}>
+                      <Button size="sm">Ajustar perfil</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card className="border-border/70 shadow-none">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Dna className="h-4 w-4 text-muted-foreground" />
+                  Genealogia
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <AnimalKinshipBadges
+                  mother={mae}
+                  father={pai}
+                  motherId={animal.mae_id}
+                  fatherId={animal.pai_id}
+                  calves={crias ?? []}
+                  loading={kinshipLoading}
+                  expandAdditionalCalves
+                />
+                {!kinshipLoading && (
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <p>
+                      Mãe:{" "}
+                      {mae
+                        ? mae.identificacao
+                        : animal.mae_id
+                          ? "vínculo cadastrado indisponível na fazenda ativa"
+                          : "não cadastrada"}
+                    </p>
+                    <p>
+                      Pai:{" "}
+                      {pai
+                        ? pai.identificacao
+                        : animal.pai_id
+                          ? "vínculo cadastrado indisponível na fazenda ativa"
+                          : "não cadastrado"}
+                    </p>
+                    <p>
+                      Crias pela relação materna cadastrada:{" "}
+                      {crias?.length ?? 0}.
+                    </p>
+                    <p className="text-xs">
+                      Esta lista usa somente vínculos em que o animal consta
+                      como mãe; não infere descendência paterna.
+                    </p>
+                    {calfJourneyPendingCount > 0 && (
+                      <p>
+                        {calfJourneyPendingCount} marco(s) da jornada da cria em
+                        aberto.
+                      </p>
                     )}
                   </div>
-                </>
-              ) : isReproductionEligible ? (
-                <p className="text-sm text-muted-foreground">
-                  Sem historico reprodutivo consolidado para esta matriz.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  <Badge
+                )}
+                {isNeonatalCalf && calfInitialRoute && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={calfInitialRoute}>
+                        {hasPendingNeonatalSetup(animal.payload)
+                          ? "Fechar ficha inicial da cria"
+                          : "Acompanhar crescimento inicial"}
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {sociedadeAtiva && contraparte && (
+            <Card className="border-border/70 bg-card shadow-none">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">
+                    Detalhes da sociedade
+                  </CardTitle>
+                  <Badge variant="default">Ativa</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Contraparte</p>
+                    <p className="font-semibold">{contraparte.nome}</p>
+                  </div>
+
+                  {sociedadeAtiva.percentual_fazenda != null && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Participacao da fazenda
+                      </p>
+                      <p className="font-semibold">
+                        {sociedadeAtiva.percentual_fazenda}%
+                      </p>
+                    </div>
+                  )}
+                  {sociedadeAtiva.percentual_parceiro != null && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Participação do parceiro
+                      </p>
+                      <p className="font-semibold">
+                        {sociedadeAtiva.percentual_parceiro}%
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Data de inicio
+                    </p>
+                    <p className="font-medium">
+                      {formatDate(sociedadeAtiva.data_entrada)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/70 pt-2">
+                  <Button
                     variant="outline"
-                    className="border-border bg-background/80 text-foreground"
+                    size="sm"
+                    disabled={role !== "owner" && role !== "manager"}
+                    className="border-destructive/30 text-destructive hover:bg-destructive/10"
+                    onClick={() => setShowCloseSociedadeDialog(true)}
                   >
-                    Categoria atual: {categoriaLabel ?? "Nao classificada"}
-                  </Badge>
+                    Encerrar vínculo societário
+                  </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {animal.sexo === "M" && (
-          <Card className="border-border/70 bg-card shadow-none">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <HeartPulse className="h-4 w-4 text-muted-foreground" />
-                Perfil de manejo do macho
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <Badge
-                  variant="outline"
-                  className="border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200"
-                >
-                  {getAnimalProductiveDestinationLabel(maleDestination) ??
-                    "Destino: nao definido"}
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className={
-                    maleReproductiveStatus === "apto"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
-                      : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
-                  }
-                >
-                  {getMaleReproductiveStatusLabel(maleReproductiveStatus) ??
-                    "Status: nao definido"}
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="border-border bg-background/80 text-foreground"
-                >
-                  {getTransitionModeLabel(effectiveTransitionMode) ??
-                    "Transicao manual"}
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className={
-                    isBreedingMale
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
-                      : "border-border bg-background/80 text-foreground"
-                  }
-                >
-                  {isBreedingMale
-                    ? "Elegivel para touro de lote"
-                    : "Ainda fora da liberacao para cobertura"}
-                </Badge>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    Destino
-                  </p>
-                  <p className="mt-1 font-semibold text-foreground">
-                    {maleDestination ?? "Nao definido"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Decide se o animal segue para reproducao, engorda ou saida.
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    Status reprodutivo
-                  </p>
-                  <p className="mt-1 font-semibold text-foreground">
-                    {maleReproductiveStatus ?? "Nao definido"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Separa candidato, apto, suspenso ou inativo.
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    Modo de transicao
-                  </p>
-                  <p className="mt-1 font-semibold text-foreground">
-                    {transitionMode ?? "manual"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Define se a troca de marco fica manual, automatica ou mista.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Link to={`/animais/${animal.id}/editar`}>
-                  <Button size="sm">Ajustar perfil</Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card className="border-border/70 shadow-none">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <Dna className="h-4 w-4 text-muted-foreground" />
-              Vinculos familiares
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <AnimalKinshipBadges
-              mother={mae}
-              father={pai}
-              calves={crias ?? []}
-            />
-            <div className="space-y-1 text-sm text-muted-foreground">
-              {mae && <p>Matriz de origem: {mae.identificacao}</p>}
-              {pai && <p>Pai vinculado: {pai.identificacao}</p>}
-              {calfJourneyPendingCount > 0 && (
-                <p>
-                  {calfJourneyPendingCount} marco(s) da jornada da cria em
-                  aberto.
-                </p>
-              )}
-              {(crias?.length ?? 0) > 0 && (
-                <p>
-                  {animal.identificacao} tem {crias?.length ?? 0} cria(s)
-                  vinculada(s).
-                </p>
-              )}
-              {!mae && !pai && (crias?.length ?? 0) === 0 && (
-                <p>Sem vinculos maternos registrados para este animal.</p>
-              )}
-            </div>
-            {isNeonatalCalf && calfInitialRoute && (
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link to={calfInitialRoute}>
-                    {hasPendingNeonatalSetup(animal.payload)
-                      ? "Fechar ficha inicial da cria"
-                      : "Acompanhar crescimento inicial"}
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {sociedadeAtiva && contraparte && (
-        <Card className="border-border/70 bg-card shadow-none">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Detalhes da sociedade</CardTitle>
-              <Badge variant="default">Ativa</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Contraparte</p>
-                <p className="font-semibold">{contraparte.nome}</p>
-              </div>
-
-              {sociedadeAtiva.percentual_fazenda != null && (
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    Participacao da fazenda
-                  </p>
-                  <p className="font-semibold">
-                    {sociedadeAtiva.percentual_fazenda}%
-                  </p>
-                </div>
-              )}
-              {sociedadeAtiva.percentual_parceiro != null && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Participação do parceiro</p>
-                  <p className="font-semibold">{sociedadeAtiva.percentual_parceiro}%</p>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Data de inicio</p>
-                <p className="font-medium">
-                  {formatDate(sociedadeAtiva.data_entrada)}
-                </p>
-              </div>
-            </div>
-
-            <div className="border-t border-border/70 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={role !== "owner" && role !== "manager"}
-                className="border-destructive/30 text-destructive hover:bg-destructive/10"
-                onClick={() => setShowCloseSociedadeDialog(true)}
-              >
-                Encerrar vínculo societário
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex justify-end">
             <AnimalSimulacaoCta animalId={animal.id} />
@@ -2684,26 +3009,44 @@ const AnimalDetalhe = () => {
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-6">
-          <div role="group" aria-label="Filtrar histórico por domínio" className="mb-4 flex flex-wrap gap-2">
+          <div
+            role="group"
+            aria-label="Filtrar histórico por domínio"
+            className="mb-4 flex flex-wrap gap-2"
+          >
             {HISTORY_FILTERS.map((filter) => (
               <Button
                 key={filter.label}
                 size="sm"
-                variant={historyFilter === filter.label ? "secondary" : "outline"}
+                variant={
+                  historyFilter === filter.label ? "secondary" : "outline"
+                }
                 className="aria-pressed:border-primary aria-pressed:bg-primary/10"
                 aria-pressed={historyFilter === filter.label}
                 onClick={() => setHistoryFilter(filter.label)}
               >
-                {filter.label} ({eventos === undefined ? "…" : eventos.filter((event) => matchesHistoryFilter(event.dominio, filter.label)).length})
+                {filter.label} (
+                {eventos === undefined
+                  ? "…"
+                  : eventos.filter((event) =>
+                      matchesHistoryFilter(event.dominio, filter.label),
+                    ).length}
+                )
               </Button>
             ))}
           </div>
           <div className="space-y-3">
             {eventos === undefined ? (
-              <p role="status" className="py-4 text-muted-foreground">Carregando histórico…</p>
+              <p role="status" className="py-4 text-muted-foreground">
+                Carregando histórico…
+              </p>
             ) : filteredEvents?.length === 0 ? (
               <p className="py-4 text-muted-foreground">
-                {HISTORY_FILTERS.find((filter) => filter.label === historyFilter)?.empty}
+                {
+                  HISTORY_FILTERS.find(
+                    (filter) => filter.label === historyFilter,
+                  )?.empty
+                }
               </p>
             ) : (
               filteredEvents?.map((evt) => (
@@ -2725,7 +3068,9 @@ const AnimalDetalhe = () => {
                       {formatDate(evt.occurred_at)}
                     </span>
                   </div>
-                  <p className="mb-2 text-xs capitalize text-muted-foreground">Domínio: {evt.dominio.replaceAll("_", " ")}</p>
+                  <p className="mb-2 text-xs capitalize text-muted-foreground">
+                    Domínio: {evt.dominio.replaceAll("_", " ")}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {evt.dominio === "alerta_sanitario"
                       ? describeSanitaryAlertEvent(evt.payload)
@@ -2768,13 +3113,33 @@ const AnimalDetalhe = () => {
                   {evt.dominio === "comercial" && evt.detailsComercial && (
                     <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground space-y-1">
                       <div className="grid grid-cols-2 gap-2">
-                        <p>Quantidade: {evt.detailsComercial.quantidade_animais} cab.</p>
-                        <p>Peso Vivo Total: {evt.detailsComercial.peso_vivo_total ? `${evt.detailsComercial.peso_vivo_total} kg` : "—"}</p>
-                        <p>Valor Bruto: {evt.detailsComercial.valor_bruto ? `R$ ${evt.detailsComercial.valor_bruto.toFixed(2)}` : "—"}</p>
-                        <p>Valor Líquido: {evt.detailsComercial.valor_liquido_derivado ? `R$ ${evt.detailsComercial.valor_liquido_derivado.toFixed(2)}` : "—"}</p>
+                        <p>
+                          Quantidade: {evt.detailsComercial.quantidade_animais}{" "}
+                          cab.
+                        </p>
+                        <p>
+                          Peso Vivo Total:{" "}
+                          {evt.detailsComercial.peso_vivo_total
+                            ? `${evt.detailsComercial.peso_vivo_total} kg`
+                            : "—"}
+                        </p>
+                        <p>
+                          Valor Bruto:{" "}
+                          {evt.detailsComercial.valor_bruto
+                            ? `R$ ${evt.detailsComercial.valor_bruto.toFixed(2)}`
+                            : "—"}
+                        </p>
+                        <p>
+                          Valor Líquido:{" "}
+                          {evt.detailsComercial.valor_liquido_derivado
+                            ? `R$ ${evt.detailsComercial.valor_liquido_derivado.toFixed(2)}`
+                            : "—"}
+                        </p>
                       </div>
                       {evt.detailsComercial.observacoes && (
-                        <p className="border-t border-border/20 pt-1 italic">Obs: "{evt.detailsComercial.observacoes}"</p>
+                        <p className="border-t border-border/20 pt-1 italic">
+                          Obs: "{evt.detailsComercial.observacoes}"
+                        </p>
                       )}
                     </div>
                   )}
@@ -2828,32 +3193,29 @@ const AnimalDetalhe = () => {
           </div>
         </TabsContent>
 
-
-
         <TabsContent value="sanidade" className="mt-6 space-y-6">
           <section aria-label="Casos sanitários" className="space-y-4">
             <h2 className="text-lg font-semibold">Casos sanitários</h2>
 
-          {!hasMovementBlockedSanitaryAlert && animal.status === "ativo" && (
-            <div className="mb-4">
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-warning/40 text-warning-foreground hover:bg-warning-muted"
-                onClick={() => setShowSanitaryAlertDialog(true)}
-              >
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Abrir suspeita sanitaria
-              </Button>
-            </div>
-          )}
-          <AnimalSanitaryCasesPanel
-            animalId={animal.id}
-            cases={sanitaryCases}
-            eventsByCase={sanitaryEventsByCase}
-            onCloseClinicalCase={handleOpenCloseClinicalCaseDialog}
-          />
-
+            {!hasMovementBlockedSanitaryAlert && animal.status === "ativo" && (
+              <div className="mb-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-warning/40 text-warning-foreground hover:bg-warning-muted"
+                  onClick={() => setShowSanitaryAlertDialog(true)}
+                >
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  Abrir suspeita sanitaria
+                </Button>
+              </div>
+            )}
+            <AnimalSanitaryCasesPanel
+              animalId={animal.id}
+              cases={sanitaryCases}
+              eventsByCase={sanitaryEventsByCase}
+              onCloseClinicalCase={handleOpenCloseClinicalCaseDialog}
+            />
           </section>
           <SanitaryAnimalSummaryPanelV2
             animal={sanitaryPrecheckAnimalV2}
@@ -2877,72 +3239,99 @@ const AnimalDetalhe = () => {
         <TabsContent value="agenda" className="mt-6">
           <div className="space-y-6">
             {agenda === undefined ? (
-              <p role="status" className="py-4 text-muted-foreground">Carregando Agenda…</p>
-            ) : agendaSections.map((section) => (
-              <section key={section.bucket} aria-label={section.label} className="space-y-3">
-                <h3 className="flex items-center gap-2 text-base font-semibold">
-                  {section.label} <Badge variant="secondary">{section.entries.length}</Badge>
-                </h3>
-                {section.bucket === "closed" && section.entries.length > 0 ? (
-                  <p className="text-xs text-muted-foreground">Tarefas encerradas. A execução é registrada no Histórico por Eventos.</p>
-                ) : null}
-                {section.entries.map((entry) => (
-                  <Card
-                    key={entry.item.id}
-                    className={
-                      entry.item.status === "agendado"
-                        ? "border-warning/25 bg-warning-muted/40 shadow-none"
-                        : "shadow-none"
-                    }
-                  >
-                    <CardContent className="flex flex-wrap items-start justify-between gap-3 p-4">
-                      <div className="flex min-w-0 flex-1 items-start gap-3">
-                        <Calendar className="h-5 w-5 shrink-0 text-muted-foreground" />
-                        <div className="min-w-0 break-words">
-                          <p className="text-sm font-medium">
-                            {formatAgendaTipoLabel(entry.item.tipo)}
-                          </p>
-                          {entry.scheduleModeLabel || entry.scheduleAnchorLabel ? (
-                            <div className="mt-1 flex flex-wrap gap-2">
-                              {entry.scheduleModeLabel ? (
-                                <Badge variant="outline" className="text-[10px]">
-                                  {entry.scheduleModeLabel}
-                                </Badge>
-                              ) : null}
-                              {entry.scheduleAnchorLabel ? (
-                                <Badge variant="secondary" className="text-[10px]">
-                                  {entry.scheduleAnchorLabel}
-                                </Badge>
-                              ) : null}
-                            </div>
-                          ) : null}
-                          <p className="text-xs text-muted-foreground">
-                            Previsto: {formatCivilDate(entry.item.data_prevista)}
-                            {entry.scheduleLabel ? ` | ${entry.scheduleLabel}` : ""}
-                          </p>
+              <p role="status" className="py-4 text-muted-foreground">
+                Carregando Agenda…
+              </p>
+            ) : (
+              agendaSections.map((section) => (
+                <section
+                  key={section.bucket}
+                  aria-label={section.label}
+                  className="space-y-3"
+                >
+                  <h3 className="flex items-center gap-2 text-base font-semibold">
+                    {section.label}{" "}
+                    <Badge variant="secondary">{section.entries.length}</Badge>
+                  </h3>
+                  {section.bucket === "closed" && section.entries.length > 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Tarefas encerradas. A execução é registrada no Histórico
+                      por Eventos.
+                    </p>
+                  ) : null}
+                  {section.entries.map((entry) => (
+                    <Card
+                      key={entry.item.id}
+                      className={
+                        entry.item.status === "agendado"
+                          ? "border-warning/25 bg-warning-muted/40 shadow-none"
+                          : "shadow-none"
+                      }
+                    >
+                      <CardContent className="flex flex-wrap items-start justify-between gap-3 p-4">
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <Calendar className="h-5 w-5 shrink-0 text-muted-foreground" />
+                          <div className="min-w-0 break-words">
+                            <p className="text-sm font-medium">
+                              {formatAgendaTipoLabel(entry.item.tipo)}
+                            </p>
+                            {entry.scheduleModeLabel ||
+                            entry.scheduleAnchorLabel ? (
+                              <div className="mt-1 flex flex-wrap gap-2">
+                                {entry.scheduleModeLabel ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px]"
+                                  >
+                                    {entry.scheduleModeLabel}
+                                  </Badge>
+                                ) : null}
+                                {entry.scheduleAnchorLabel ? (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px]"
+                                  >
+                                    {entry.scheduleAnchorLabel}
+                                  </Badge>
+                                ) : null}
+                              </div>
+                            ) : null}
+                            <p className="text-xs text-muted-foreground">
+                              Previsto:{" "}
+                              {formatCivilDate(entry.item.data_prevista)}
+                              {entry.scheduleLabel
+                                ? ` | ${entry.scheduleLabel}`
+                                : ""}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <Badge
-                        variant={
-                          entry.item.status === "agendado" ? "default" : "secondary"
-                        }
-                        className="shrink-0 text-xs"
-                      >
-                        {entry.item.status}
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                ))}
-                {section.entries.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    {section.bucket === "overdue" ? "Nenhuma tarefa atrasada."
-                      : section.bucket === "today" ? "Nenhuma tarefa para hoje."
-                      : section.bucket === "future" ? "Nenhuma tarefa futura."
-                      : "Nenhuma tarefa encerrada."}
-                  </p>
-                ) : null}
-              </section>
-            ))}
+                        <Badge
+                          variant={
+                            entry.item.status === "agendado"
+                              ? "default"
+                              : "secondary"
+                          }
+                          className="shrink-0 text-xs"
+                        >
+                          {entry.item.status}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {section.entries.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {section.bucket === "overdue"
+                        ? "Nenhuma tarefa atrasada."
+                        : section.bucket === "today"
+                          ? "Nenhuma tarefa para hoje."
+                          : section.bucket === "future"
+                            ? "Nenhuma tarefa futura."
+                            : "Nenhuma tarefa encerrada."}
+                    </p>
+                  ) : null}
+                </section>
+              ))
+            )}
             {agenda?.length === 0 && (
               <p className="py-8 text-center text-muted-foreground">
                 Nenhuma tarefa na Agenda.
@@ -2956,50 +3345,106 @@ const AnimalDetalhe = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               {animalComerciais.map((com) => {
                 const isCompra = com.operation_type === "compra";
-                const individual = projectAnimalCommercialValues(com, animal.id);
+                const individual = projectAnimalCommercialValues(
+                  com,
+                  animal.id,
+                );
                 return (
-                  <div key={com.evento_id} className="rounded-xl border p-4 bg-muted/10 space-y-3">
+                  <div
+                    key={com.evento_id}
+                    className="rounded-xl border p-4 bg-muted/10 space-y-3"
+                  >
                     <div className="flex items-center justify-between border-b pb-2 border-border/40">
-                      <span className={cn(
-                        "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                        isCompra
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
-                          : "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200",
-                      )}>
+                      <span
+                        className={cn(
+                          "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                          isCompra
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
+                            : "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200",
+                        )}
+                      >
                         {com.operation_type}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {com.occurred_at ? new Date(com.occurred_at).toLocaleDateString("pt-BR") : "—"}
+                        {com.occurred_at
+                          ? new Date(com.occurred_at).toLocaleDateString(
+                              "pt-BR",
+                            )
+                          : "—"}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       {[
-                        [isCompra ? "Peso de aquisição deste animal:" : "Peso comercial de venda deste animal:", individual.weight !== null ? `${individual.weight} ${individual.weightUnit}` : "—"],
-                        [isCompra ? "Valor de compra deste animal:" : "Valor de venda deste animal:", individual.value !== null ? `R$ ${individual.value.toFixed(2)}` : "—"],
+                        [
+                          isCompra
+                            ? "Peso de aquisição deste animal:"
+                            : "Peso comercial de venda deste animal:",
+                          individual.weight !== null
+                            ? `${individual.weight} ${individual.weightUnit}`
+                            : "—",
+                        ],
+                        [
+                          isCompra
+                            ? "Valor de compra deste animal:"
+                            : "Valor de venda deste animal:",
+                          individual.value !== null
+                            ? `R$ ${individual.value.toFixed(2)}`
+                            : "—",
+                        ],
                         ["Quantidade:", `${com.quantidade_animais} cab.`],
-                        ["Peso Vivo Total:", com.peso_vivo_total ? `${com.peso_vivo_total} kg` : "—"],
-                        ["Peso Médio:", com.peso_medio_derivado ? `${com.peso_medio_derivado.toFixed(1)} kg` : "—"],
-                        ["Valor Bruto:", com.valor_bruto ? `R$ ${com.valor_bruto.toFixed(2)}` : "—"],
-                        ["Valor Líquido Estimado:", com.valor_liquido_derivado ? `R$ ${com.valor_liquido_derivado.toFixed(2)}` : "—"],
+                        [
+                          "Peso Vivo Total:",
+                          com.peso_vivo_total
+                            ? `${com.peso_vivo_total} kg`
+                            : "—",
+                        ],
+                        [
+                          "Peso Médio:",
+                          com.peso_medio_derivado
+                            ? `${com.peso_medio_derivado.toFixed(1)} kg`
+                            : "—",
+                        ],
+                        [
+                          "Valor Bruto:",
+                          com.valor_bruto
+                            ? `R$ ${com.valor_bruto.toFixed(2)}`
+                            : "—",
+                        ],
+                        [
+                          "Valor Líquido Estimado:",
+                          com.valor_liquido_derivado
+                            ? `R$ ${com.valor_liquido_derivado.toFixed(2)}`
+                            : "—",
+                        ],
                       ].map(([label, value]) => (
                         <div key={label}>
-                          <span className="text-muted-foreground font-medium">{label}</span>
+                          <span className="text-muted-foreground font-medium">
+                            {label}
+                          </span>
                           <p className="font-semibold mt-0.5">{value}</p>
                         </div>
                       ))}
                       <div className="col-span-2 border-t pt-2 border-border/20">
-                        <span className="text-muted-foreground font-medium">Contraparte:</span>
-                        <p className="font-semibold mt-0.5">{com.contraparte_nome || "—"}</p>
+                        <span className="text-muted-foreground font-medium">
+                          Contraparte:
+                        </span>
+                        <p className="font-semibold mt-0.5">
+                          {com.contraparte_nome || "—"}
+                        </p>
                       </div>
                       {com.finance_transaction_id && (
                         <div className="col-span-2">
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">• Vínculo financeiro ativo</span>
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                            • Vínculo financeiro ativo
+                          </span>
                         </div>
                       )}
                     </div>
                     {com.limitations && com.limitations.length > 0 && (
                       <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-100 rounded-lg p-2 text-[10px] text-amber-800 space-y-0.5">
-                        <span className="font-semibold">Notas de conformidade:</span>
+                        <span className="font-semibold">
+                          Notas de conformidade:
+                        </span>
                         {com.limitations.map((lim, idx) => (
                           <p key={idx}>- {lim}</p>
                         ))}
@@ -3011,7 +3456,9 @@ const AnimalDetalhe = () => {
                       </p>
                     )}
                     <div className="text-[9px] text-muted-foreground/60 text-right pt-1 uppercase">
-                      operação registrada conforme dados informados. não representa recomendação comercial ou substitui validação operacional/financeira.
+                      operação registrada conforme dados informados. não
+                      representa recomendação comercial ou substitui validação
+                      operacional/financeira.
                     </div>
                   </div>
                 );
@@ -3308,7 +3755,8 @@ const AnimalDetalhe = () => {
               {entryHistoryForm.source === "external_documented" &&
               !entryHistoryForm.evidenceReference.trim() ? (
                 <p className="text-xs text-amber-700">
-                  Sem referência vinculada, o histórico não comprova regra crítica.
+                  Sem referência vinculada, o histórico não comprova regra
+                  crítica.
                 </p>
               ) : null}
             </div>
@@ -3347,7 +3795,9 @@ const AnimalDetalhe = () => {
                   !entryHistoryForm.evidenceReference.trim())
               }
             >
-              {isSavingEntryHistory ? "Registrando..." : "Registrar histórico anterior"}
+              {isSavingEntryHistory
+                ? "Registrando..."
+                : "Registrar histórico anterior"}
             </Button>
           </DialogFooter>
         </DialogContent>
