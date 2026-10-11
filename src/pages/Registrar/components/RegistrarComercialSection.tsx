@@ -1070,7 +1070,7 @@ export function RegistrarComercialSection(
             <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-3">
                 <Label>Escopo da Operação</Label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {(
                     [
                       { value: "animal", label: "Animal individual" },
