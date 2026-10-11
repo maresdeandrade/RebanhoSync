@@ -1,14 +1,14 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-10-06
+Atualizado em: 2026-10-11
 Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
 Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
 Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 PR do hardening transversal: `#96`
-Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.4 / F24.4F CLOSED / INTEGRATED; F24.5 IN_PROGRESS; F24.5A READY_FOR_REVIEW)**.
-Próxima fase de desenvolvimento: **Fase 24 — F24.5B — Structured Diagnostics (NEXT / READY_TO_START)**.
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A — Performance / Scale Baseline)**.
+Próxima fase de desenvolvimento: **Fase 24 — F24.6A1-E2 — revisão da comparação A/B concluída**.
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.
@@ -35,7 +35,15 @@ O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é 
 
 ## Estado atual
 
-**Transição vigente — 06/10/2026:** F24.4/F24.4F CLOSED / INTEGRATED pelo PR #181,
+**F24.6A1-E2 — estado vigente:** [Seed e comparação A/B](../review/F24_6A1E2_SEED_DIAGNOSIS_AND_AB_COMPLETION.md) = `READY_FOR_REVIEW`. Série independente do patch final: 5/5 originais e 5/5 otimizados, 100 gestos/duas fazendas, todos íntegros. Medianas: 4.550.194→287.621 bytes, 5200→300 linhas, 16.825,40→16.097,00ms; requests/pulls preservados e intervalos de latência sobrepostos. Instrumentação somente no harness, fontes funcionais e 93 arquivos anteriores preservados. Causa do seed antigo LIMIT_NOT_PROVEN; perda de diagnóstico do wrapper corrigida e prova artificial de captura aprovada, sem atribuir quota real. Probes pequenos e sete checks funcionais PASS; ambiente próprio removido, compartilhado inalterado. Reconnect 1k NÃO CERTIFICADO; sem otimização adicional ou integração autorizada. Checagem final: origin/main avançou para 35df487c2b21b3e98fc27fdd255cf82b80748140 (PRs #193/#194, somente layout Registrar); HEAD e benchmark preservam baseline fixa 3b3bc96d, sem impacto nos módulos exercitados.
+
+**F24.6A1-E1 — snapshot anterior:** [Implementação restrita pós-ACK](../review/F24_6A1E1_POST_ACK_REFRESH_IMPLEMENTATION.md) = `PARTIAL / BLOCKED_WITH_REASON`. Dois módulos funcionais alterados; 148 testes focados e sete checks com dois clientes reais PASS, inclusive reabertura após fechamento durante o pull. Patch final: 1/5 runs originais e 2/5 otimizados de 100 gestos completos; original 2 falhou durante seed com BROWSER_OPERATION_FAILURE, antes do workload, sem causa capturada. Não substituído por retry. 5200→300 linhas e ~4.55MB→0.288MB nas amostras completas, requests/pulls preservados; sem ganho geral de latência declarado. Cinco amostras por variante ainda não comprovadas; 1k/10k não executados. Três ambientes locais próprios removidos, compartilhado/artifacts antigos preservados. Pendente diagnóstico sanitizado do seed e comparação final completa. Histórico de abertura/caracterização abaixo não substitui essa decisão.
+
+F24.6A0-B: `F24_6A0_BACKEND = READY_FOR_P0_BENCHMARKS`. [Backend local isolado certificado](../review/F24_6A0B_ISOLATED_LOCAL_BACKEND_CERTIFICATION.md) com 60 migrations, schema/RLS/Auth/PostgREST/Edge verificados, probes pequenos de pull/reconnect aprovados e cleanup confirmado. Banco compartilhado com 54 migrations preservado. [F24.6A1](../review/F24_6A1_P0_LOCAL_BENCHMARK_CHARACTERIZATION.md): PARTIAL / BLOCKED_WITH_REASON. IndexedDB/fila 60/60; reconnect 100 gestos 5/5, 1k 4/5 com ACK_NOT_CONFIRMED no quinto run; 10k não executado pelo gate. Cleanup e preservação do compartilhado verificados. Não há capacidade geral declarada nem otimização autorizada. [F24.6A1-D](../review/F24_6A1D_ACK_AND_READ_AMPLIFICATION_DIAGNOSIS.md): diagnóstico PARTIAL; reprodução limitada parou em 240s após 836 ACKs, sem falha de ACK reproduzida; pulls inline consumiram 54.72% do prefixo e 99.8% das linhas em snapshots comparáveis eram equivalentes. Causa original LIMIT_NOT_PROVEN; sem otimização ou 10k. [F24.6A1-E0](../review/F24_6A1E0_POST_ACK_REFRESH_OPTIMIZATION_DESIGN.md): READY_FOR_IMPLEMENTATION somente para desenho C+D de UPDATE observacoes único, merge dirigido de animais e transação conjunta com agenda integral; nenhuma implementação nesta etapa.
+
+**Transição vigente — 09/10/2026:** F24.5 CLOSED / INTEGRATED pelo PR #190, merge `4b1c46696c137ae3ec6a24626123804709bcb37c`. A [certificação F24.5E](../review/F24_5E_INTEGRATED_OBSERVABILITY_CERTIFICATION.md) preserva retenção remota comprovada, G09 PROVEN e limites de evidência. F24.6 ACTIVE; F24.6A — Performance / Scale Baseline. O [contrato F24.6A0](../review/F24_6A0_BENCHMARK_REBASELINE_AND_HARNESS_CONTRACT.md) fixa o benchmark em `main@3b3bc96db331c2917167cf8370024332f505d9f7`, após inspeção da PR #191. Capacidade de escala ainda não declarada; nenhuma otimização de produto ou operação remota autorizada nesta abertura.
+
+**HISTORICAL_CORRECT / SUPERSEDED — transição em 06/10/2026:** F24.4/F24.4F CLOSED / INTEGRATED pelo PR #181,
 `main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`. A
 [certificação F24.4F](../review/F24_4F_INTEGRATED_CERTIFICATION.md) inclui reconcile
 de animais pós-ACK com outra fazenda ativa; garantias limitadas à matriz certificada.
