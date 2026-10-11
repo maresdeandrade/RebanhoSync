@@ -2,15 +2,19 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom";
+import "fake-indexeddb/auto";
 import { useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { db } from "@/lib/offline/db";
 import { describe, expect, it, vi } from "vitest";
 
 import {
   RegistrarComercialSection,
   type ComercialFormData,
 } from "@/pages/Registrar/components/RegistrarComercialSection";
+
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ role: "owner" }) }));
 
 const comercialData: ComercialFormData = {
   operationType: "compra",
@@ -75,22 +79,203 @@ const commonProps = {
 
 function StatefulCommercialSection({
   initialData = comercialData,
+  existing = false,
+  showNewCounterparty = false,
 }: {
   initialData?: ComercialFormData;
+  existing?: boolean;
+  showNewCounterparty?: boolean;
 }) {
   const [data, setData] = useState(initialData);
   return (
-    <RegistrarComercialSection
-      {...commonProps}
-      comercialData={data}
-      updateComercialData={(field, value) =>
-        setData((current) => ({ ...current, [field]: value }))
-      }
-    />
+    <>
+      <output data-testid="commercial-state">{JSON.stringify(data)}</output>
+      <RegistrarComercialSection
+        {...commonProps}
+        selectedAnimalIds={existing ? ["animal-1"] : []}
+        targetMode={existing ? "existing" : "none"}
+        canManageContraparte={showNewCounterparty}
+        showNovaContraparte={showNewCounterparty}
+        comercialData={data}
+        updateComercialData={(field, value) =>
+          setData((current) => ({ ...current, [field]: value }))
+        }
+      />
+    </>
   );
 }
 
 describe("RegistrarComercialSection", () => {
+  const readState = (): ComercialFormData =>
+    JSON.parse(screen.getByTestId("commercial-state").textContent!);
+
+  it.each(["compra", "venda"] as const)(
+    "restaura todos os dados de %s após editar hipótese e trocar unidade",
+    (operationType) => {
+      render(
+        <StatefulCommercialSection
+          existing
+          initialData={{
+            ...comercialData,
+            operationType,
+            pricingMode: "per_arroba",
+            pricePerArroba: "300",
+            commercialWeightTotal: "20",
+            valorBruto: "6000",
+            frete: "100",
+            pesosPorAnimal: { "animal-1": "20" },
+            valoresPorAnimal: { "animal-1": "6000" },
+            newAnimals: [
+              {
+                ...comercialData.newAnimals[0]!,
+                commercialWeight: 20,
+                valorIndividual: 6000,
+              },
+            ],
+          }}
+        />,
+      );
+      const original = readState();
+      fireEvent.click(screen.getByRole("button", { name: "Simulação" }));
+      expect(readState().simulationBase).toEqual(original);
+      fireEvent.click(screen.getByRole("button", { name: "Simulação" }));
+      expect(readState().simulationBase).toEqual(original);
+      fireEvent.click(screen.getByRole("button", { name: "Valor por cabeça" }));
+      fireEvent.change(screen.getByLabelText(/Valor Bruto \(R\$\)/i), {
+        target: { value: "9999" },
+      });
+      fireEvent.change(
+        screen.getByText("Frete (R$)").parentElement!.querySelector("input")!,
+        { target: { value: "800" } },
+      );
+      expect(readState().simulationBase).toEqual(original);
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: operationType === "compra" ? "Compra" : "Venda",
+        }),
+      );
+      expect(readState()).toEqual({ ...original, simulationOnly: false });
+      expect(screen.getByLabelText(/Valor Bruto \(R\$\)/i)).toHaveValue(6000);
+    },
+  );
+
+  it.each(["venda", "sociedade"] as const)(
+    "Compra → Simulação → %s equivale à troca factual direta",
+    (operationType) => {
+      const target = operationType === "venda" ? "Venda" : "Sociedade";
+      const direct = render(<StatefulCommercialSection existing />);
+      fireEvent.click(screen.getByRole("button", { name: target }));
+      const expected = readState();
+      direct.unmount();
+      render(<StatefulCommercialSection existing />);
+      fireEvent.click(screen.getByRole("button", { name: "Simulação" }));
+      fireEvent.change(screen.getByLabelText("Identificação animal 1"), {
+        target: { value: "HIPOTESE" },
+      });
+      fireEvent.change(screen.getByLabelText(/Valor Bruto \(R\$\)/i), {
+        target: { value: "9999" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: target }));
+      expect(readState()).toEqual({ ...expected, simulationOnly: false });
+    },
+  );
+
+  it("Venda → Simulação → Compra aplica o reset canônico ao rascunho restaurado", () => {
+    const initialData = {
+      ...comercialData,
+      operationType: "venda" as const,
+      saleSnapshotIds: ["animal-1"],
+      valorBruto: "2400",
+    };
+    const direct = render(
+      <StatefulCommercialSection existing initialData={initialData} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Compra" }));
+    const expected = readState();
+    direct.unmount();
+    render(<StatefulCommercialSection existing initialData={initialData} />);
+    fireEvent.click(screen.getByRole("button", { name: "Simulação" }));
+    fireEvent.change(screen.getByLabelText(/Valor Bruto \(R\$\)/i), {
+      target: { value: "9999" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Compra" }));
+    expect(readState()).toEqual({ ...expected, simulationOnly: false });
+    expect(readState().saleSnapshotIds).toEqual([]);
+  });
+
+  it("Sociedade → Simulação → Sociedade preserva o formulário real sem escritas locais", async () => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => {};
+    Element.prototype.releasePointerCapture = () => {};
+    Element.prototype.scrollIntoView = () => {};
+    const user = userEvent.setup();
+    const tables = [
+      db.state_animais,
+      db.state_sociedades_pecuarias,
+      db.state_sociedade_animais,
+      db.event_eventos,
+      db.event_eventos_pesagem,
+      db.state_agenda_itens,
+      db.queue_ops,
+    ];
+    const before = await Promise.all(tables.map((table) => table.toArray()));
+    render(<StatefulCommercialSection existing />);
+    fireEvent.click(screen.getByRole("button", { name: "Sociedade" }));
+    await user.click(screen.getAllByRole("combobox")[0]);
+    await user.click(
+      await screen.findByRole("option", { name: /Criar nova sociedade/ }),
+    );
+    fireEvent.change(screen.getByPlaceholderText("Ex: Sociedade Nelore G1"), {
+      target: { value: "Rascunho factual" },
+    });
+    const original = readState();
+    fireEvent.click(screen.getByRole("button", { name: "Simulação" }));
+    expect(
+      screen.queryByRole("button", { name: "Confirmar Registro de Entrada" }),
+    ).toBeNull();
+    fireEvent.change(screen.getByLabelText(/Valor Bruto \(R\$\)/i), {
+      target: { value: "9999" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sociedade" }));
+    expect(readState()).toEqual({ ...original, simulationOnly: false });
+    expect(screen.getByPlaceholderText("Ex: Sociedade Nelore G1")).toHaveValue(
+      "Rascunho factual",
+    );
+    expect(await Promise.all(tables.map((table) => table.toArray()))).toEqual(
+      before,
+    );
+  });
+
+  it("não disponibiliza cadastro de contraparte durante a hipótese", async () => {
+    const user = userEvent.setup();
+    render(<StatefulCommercialSection showNewCounterparty />);
+    fireEvent.click(screen.getByRole("button", { name: "Simulação" }));
+    await user.click(
+      screen.getByRole("tab", { name: "Envolvidos & Vínculos" }),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Salvar contraparte" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Nova contraparte" }),
+    ).toBeNull();
+    expect(commonProps.onCreateContraparte).not.toHaveBeenCalled();
+  });
+  it("seleciona simulação, calcula o cenário e restaura a compra vazia ao sair", () => {
+    render(<StatefulCommercialSection />);
+    fireEvent.click(screen.getByRole("button", { name: "Simulação" }));
+    expect(screen.getByText(/^Cenário hipotético:/)).toBeInTheDocument();
+    expect(
+      screen.getByText("• Cenário hipotético, sem operação registrada."),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Valor Bruto \(R\$\)/i), {
+      target: { value: "3200" },
+    });
+    expect(screen.getByText("R$ 3200.00")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Compra" }));
+    expect(screen.queryByText(/^Cenário hipotético:/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Valor Bruto \(R\$\)/i)).toHaveValue(null);
+  });
   it("apresenta compra, venda e sociedade somente na seção de ação", () => {
     render(
       <RegistrarComercialSection
@@ -101,6 +286,22 @@ describe("RegistrarComercialSection", () => {
     );
 
     expect(screen.getByRole("button", { name: "Compra" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Simulação" }),
+    ).toBeInTheDocument();
+    const operations = screen
+      .getAllByRole("button")
+      .filter((button) =>
+        ["Compra", "Venda", "Sociedade", "Simulação"].includes(
+          button.textContent!,
+        ),
+      );
+    expect(operations.map((button) => button.textContent)).toEqual([
+      "Compra",
+      "Venda",
+      "Sociedade",
+      "Simulação",
+    ]);
     expect(screen.getByRole("button", { name: "Venda" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Sociedade" }),

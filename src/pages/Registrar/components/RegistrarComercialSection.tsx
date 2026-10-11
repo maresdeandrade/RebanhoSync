@@ -70,6 +70,7 @@ import {
 
 export type ComercialFormData = {
   simulationOnly?: boolean;
+  simulationBase?: ComercialFormData;
   operationType: "compra" | "venda" | "sociedade";
   scope: "animal" | "lote";
   occurredAt: string;
@@ -300,7 +301,12 @@ export function RegistrarComercialSection(
   const resizePurchaseGrid = (
     quantity: number,
     scope = comercialData.scope,
+    base = comercialData,
   ) => {
+    const newAnimals = base.newAnimals;
+    const commonSpecies = base.commonSpecies ?? "none";
+    const commonBreed = base.commonBreed ?? "none";
+    const commonEntryDate = base.commonEntryDate ?? "";
     const safe = resolvePurchaseQuantity(scope, quantity);
     const next = Array.from(
       { length: safe },
@@ -324,15 +330,15 @@ export function RegistrarComercialSection(
             ? ""
             : String(item.commercialWeight),
         ),
-      ) || comercialData.commercialWeightTotal;
+      ) || base.commercialWeightTotal;
     const distributedWeights = distributeDisplayedWeight(
       currentDisplayTotal,
       next.map((item) => item.localId),
     );
     const distributedValues =
-      comercialData.pricingMode !== "per_arroba"
+      base.pricingMode !== "per_arroba"
         ? distributeCommercialInput(
-            comercialData.valorBruto,
+            base.valorBruto,
             next.map((item) => item.localId),
           )
         : {};
@@ -344,18 +350,21 @@ export function RegistrarComercialSection(
           distributedWeights[item.localId] ?? "",
         ),
         valorIndividual:
-          comercialData.pricingMode !== "per_arroba"
+          base.pricingMode !== "per_arroba"
             ? parseOptionalCommercialNumber(
                 distributedValues[item.localId] ?? "",
               )
-            : calculatePricing(distributedWeights[item.localId] ?? "", null)
-                .individualGrossValue,
+            : calculatePricing(
+                distributedWeights[item.localId] ?? "",
+                null,
+                base,
+              ).individualGrossValue,
       })),
     );
     updateComercialData("quantidadeAnimais", String(safe));
-    if (comercialData.pricingMode === "per_arroba") {
+    if (base.pricingMode === "per_arroba") {
       const calculations = next.map((item) =>
-        calculatePricing(distributedWeights[item.localId] ?? "", null),
+        calculatePricing(distributedWeights[item.localId] ?? "", null, base),
       );
       updateComercialData(
         "valorBruto",
@@ -857,28 +866,86 @@ export function RegistrarComercialSection(
   // Render
   // ---------------------------------------------------------------------------
 
+  const isOperationSelected = (
+    operation: ComercialFormData["operationType"] | "simulacao",
+  ): boolean => operation === "simulacao"
+    ? !!comercialData.simulationOnly
+    : !comercialData.simulationOnly && comercialData.operationType === operation;
+
   return (
     <div className="space-y-4 rounded-xl border border-border/70 bg-muted/20 p-4">
       {/* Tipo de Operação (Sempre Visível) */}
       <div className="space-y-3">
         <Label>Tipo de Operação</Label>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(
             [
               { value: "compra", label: "Compra" },
               { value: "venda", label: "Venda" },
               { value: "sociedade", label: "Sociedade" },
+              { value: "simulacao", label: "Simulação" },
             ] as const
           ).map((opt) => (
             <Button
               key={opt.value}
               type="button"
-              variant={
-                comercialData.operationType === opt.value
-                  ? "default"
-                  : "outline"
-              }
+              aria-pressed={isOperationSelected(opt.value)}
+              variant={isOperationSelected(opt.value) ? "default" : "outline"}
               onClick={() => {
+                if (opt.value === "simulacao") {
+                  if (!comercialData.simulationOnly)
+                    updateComercialData("simulationBase", comercialData);
+                  updateComercialData("simulationOnly", true);
+                  updateComercialData("operationType", "compra");
+                  return;
+                }
+                if (
+                  comercialData.simulationOnly &&
+                  comercialData.simulationBase
+                ) {
+                  const previous = comercialData.simulationBase;
+                  // Restoration is not a unit change: keep the factual weights.
+                  previousWeightUnit.current = resolveCommercialWeightUnit(
+                    previous.pricingMode,
+                    previous.arrobaBasis,
+                  );
+                  for (const field of new Set([
+                    ...Object.keys(comercialData),
+                    ...Object.keys(previous),
+                  ]) as Set<keyof ComercialFormData>) {
+                    updateComercialData(field, previous[field]);
+                  }
+                  updateComercialData("simulationOnly", false);
+                  updateComercialData("operationType", opt.value);
+                  updateComercialData("simulationBase", undefined);
+                  if (
+                    opt.value !== previous.operationType &&
+                    opt.value === "compra"
+                  ) {
+                    resizePurchaseGrid(
+                      Number(previous.quantidadeAnimais),
+                      previous.scope,
+                      previous,
+                    );
+                    updateComercialData("saleSnapshotIds", []);
+                  } else if (
+                    opt.value !== previous.operationType &&
+                    opt.value === "venda"
+                  ) {
+                    const nextScope =
+                      selectedAnimalIds.length === 1 ? "animal" : "lote";
+                    updateComercialData("scope", nextScope);
+                    updateComercialData(
+                      "quantidadeAnimais",
+                      String(
+                        nextScope === "animal"
+                          ? selectedAnimalIds.length
+                          : previous.saleSnapshotIds.length,
+                      ),
+                    );
+                  }
+                  return;
+                }
                 updateComercialData("operationType", opt.value);
                 if (opt.value === "compra") {
                   resizePurchaseGrid(
@@ -918,13 +985,18 @@ export function RegistrarComercialSection(
         </p>
       </div>
 
-      {comercialData.operationType === "sociedade" ? (
-        <RegistrarSociedadeSection
-          selectedAnimalIds={selectedAnimalIds}
-          contrapartes={contrapartes}
-          fazendaId={fazendaId}
-        />
-      ) : (
+      {(comercialData.operationType === "sociedade" ||
+        (comercialData.simulationOnly &&
+          comercialData.simulationBase?.operationType === "sociedade")) && (
+        <div hidden={!!comercialData.simulationOnly}>
+          <RegistrarSociedadeSection
+            selectedAnimalIds={selectedAnimalIds}
+            contrapartes={contrapartes}
+            fazendaId={fazendaId}
+          />
+        </div>
+      )}
+      {comercialData.operationType !== "sociedade" && (
         <Tabs defaultValue="operacao" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50 p-1">
             <TabsTrigger value="operacao" className="rounded-md">
@@ -946,9 +1018,9 @@ export function RegistrarComercialSection(
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
                 <p className="font-semibold">Simulação comercial</p>
                 <p>
-                  Ajuste cotação, peso, rendimento, despesas e bonificações. O
-                  fato comercial e o estado dos animais só mudam após a
-                  confirmação da operação.
+                  {comercialData.simulationOnly
+                    ? "Cenário hipotético: os cálculos não registram compra, venda ou alteração dos animais. Para registrar, selecione uma operação. Os dados anteriores serão restaurados."
+                    : "Ajuste cotação, peso, rendimento, despesas e bonificações. O fato comercial e o estado dos animais só mudam após a confirmação da operação."}
                 </p>
               </div>
               <Label>Modalidade de preço *</Label>
@@ -1121,7 +1193,9 @@ export function RegistrarComercialSection(
                   {isAnimalScope && hasAnimals
                     ? `${selectedAnimalIds.length} animal(is) pré-selecionado(s). Pesos e valores individuais abaixo.`
                     : purchase
-                      ? "A compra cria os animais dentro desta operação."
+                      ? comercialData.simulationOnly
+                        ? "Os animais deste cenário não serão cadastrados."
+                        : "A compra cria os animais dentro desta operação."
                       : !hasAnimals
                         ? "Sem animais selecionados. Para venda por lote, congele o snapshot abaixo."
                         : null}
@@ -1998,7 +2072,11 @@ export function RegistrarComercialSection(
                   <p className="font-semibold text-primary">
                     Informações Auxiliares Assistivas
                   </p>
-                  <p>• Operação registrada conforme dados informados.</p>
+                  <p>
+                    {comercialData.simulationOnly
+                      ? "• Cenário hipotético, sem operação registrada."
+                      : "• Operação registrada conforme dados informados."}
+                  </p>
                   <p>• Valor final derivado conforme o tipo da operação.</p>
                   <p>
                     • Não representa recomendação comercial ou substitui
@@ -2060,22 +2138,29 @@ export function RegistrarComercialSection(
             value="detalhes"
             className="space-y-5 focus-visible:outline-none"
           >
-            <FinanceiroContraparteSection
-              isFinanceiroSociedade={false}
-              financeiroContraparteId={comercialData.contraparteId}
-              contrapartes={contrapartes}
-              onFinanceiroContraparteChange={(val) =>
-                updateComercialData("contraparteId", val)
-              }
-              showNovaContraparte={showNovaContraparte}
-              onToggleNovaContraparte={onToggleNovaContraparte}
-              canManageContraparte={canManageContraparte}
-              onNavigateContrapartes={onNavigateContrapartes}
-              novaContraparte={novaContraparte}
-              onNovaContraparteFieldChange={onNovaContraparteFieldChange}
-              onCreateContraparte={onCreateContraparte}
-              isSavingContraparte={isSavingContraparte}
-            />
+            {comercialData.simulationOnly ? (
+              <p className="text-sm text-muted-foreground">
+                Envolvidos e vínculos factuais ficam preservados no formulário
+                anterior. A simulação não cadastra parceiros nem vínculos.
+              </p>
+            ) : (
+              <FinanceiroContraparteSection
+                isFinanceiroSociedade={false}
+                financeiroContraparteId={comercialData.contraparteId}
+                contrapartes={contrapartes}
+                onFinanceiroContraparteChange={(val) =>
+                  updateComercialData("contraparteId", val)
+                }
+                showNovaContraparte={showNovaContraparte}
+                onToggleNovaContraparte={onToggleNovaContraparte}
+                canManageContraparte={canManageContraparte}
+                onNavigateContrapartes={onNavigateContrapartes}
+                novaContraparte={novaContraparte}
+                onNovaContraparteFieldChange={onNovaContraparteFieldChange}
+                onCreateContraparte={onCreateContraparte}
+                isSavingContraparte={isSavingContraparte}
+              />
+            )}
 
             {/* Vínculo Financeiro Opcional */}
             <div className="space-y-3 border-t pt-5">
