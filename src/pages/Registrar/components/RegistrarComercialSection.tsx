@@ -866,6 +866,12 @@ export function RegistrarComercialSection(
   // Render
   // ---------------------------------------------------------------------------
 
+  const isOperationSelected = (
+    operation: ComercialFormData["operationType"] | "simulacao",
+  ): boolean => operation === "simulacao"
+    ? !!comercialData.simulationOnly
+    : !comercialData.simulationOnly && comercialData.operationType === operation;
+
   return (
     <div className="space-y-4 rounded-xl border border-border/70 bg-muted/20 p-4">
       {/* Tipo de Operação (Sempre Visível) */}
@@ -883,22 +889,8 @@ export function RegistrarComercialSection(
             <Button
               key={opt.value}
               type="button"
-              aria-pressed={
-                opt.value === "simulacao"
-                  ? !!comercialData.simulationOnly
-                  : !comercialData.simulationOnly &&
-                    comercialData.operationType === opt.value
-              }
-              variant={
-                (
-                  opt.value === "simulacao"
-                    ? comercialData.simulationOnly
-                    : !comercialData.simulationOnly &&
-                      comercialData.operationType === opt.value
-                )
-                  ? "default"
-                  : "outline"
-              }
+              aria-pressed={isOperationSelected(opt.value)}
+              variant={isOperationSelected(opt.value) ? "default" : "outline"}
               onClick={() => {
                 if (opt.value === "simulacao") {
                   if (!comercialData.simulationOnly)
