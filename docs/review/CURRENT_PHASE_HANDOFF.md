@@ -1,8 +1,8 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-10-11
+Atualizado em: 2026-10-12
 Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A — Performance / Scale Baseline; produção não autorizada**
-Próxima fase: **Fase 24 — F24.6A1-E2 — revisão da comparação A/B concluída**
+Próxima fase: **Fase 24 — F24.6A1-H1 — publicação documental independente; depois rebaseline do harness e reconnect 1k**
 Baseline operacional pós-F24.4F / base F24.5A–B: `main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`; PR #181 `MERGED`.
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
@@ -23,9 +23,74 @@ Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
-## F24.6A0 — handoff de abertura
+## F24.6A1-H — retomada após integração
 
-**F24.6A1-E2 — estado vigente:** [Seed e comparação A/B](./F24_6A1E2_SEED_DIAGNOSIS_AND_AB_COMPLETION.md) = `READY_FOR_REVIEW`. Série independente do patch final: 5/5 originais e 5/5 otimizados, 100 gestos/duas fazendas, todos íntegros. Medianas: 4.550.194→287.621 bytes, 5200→300 linhas, 16.825,40→16.097,00ms; requests/pulls preservados e intervalos de latência sobrepostos. Instrumentação somente no harness, fontes funcionais e 93 arquivos anteriores preservados. Causa do seed antigo LIMIT_NOT_PROVEN; perda de diagnóstico do wrapper corrigida e prova artificial de captura aprovada, sem atribuir quota real. Probes pequenos e sete checks funcionais PASS; ambiente próprio removido, compartilhado inalterado. Reconnect 1k NÃO CERTIFICADO; sem otimização adicional ou integração autorizada. Checagem final: origin/main avançou para 35df487c2b21b3e98fc27fdd255cf82b80748140 (PRs #193/#194, somente layout Registrar); HEAD e benchmark preservam baseline fixa 3b3bc96d, sem impacto nos módulos exercitados.
+Na execução H, o pacote exclusivamente documental foi preparado na worktree
+`f24-6a1-h-rebaseline/GestaoAgro`, com HEAD detached
+`cd1855dba81f06c4b49ce29621af5cc20573cae9`. A branch anterior
+`codex/f24-6a0-benchmark` permanece em `694f4921`; a main local ainda está em
+`f4c90e89a94b4a1b27032411c678569579b13dd1` e não foi movida. Nenhum reset/rebase,
+commit ou operação remota de escrita em H. PR #196 e o avanço #197 foram inspecionados.
+
+H1 consolida somente os cinco documentos canônicos na branch
+`codex/f24-6a1-h-doc-closeout`, criada sobre esse baseline, para commit local e
+publicação documental independente posterior. Sem alteração funcional ou de harness;
+F24.6 ACTIVE e reconnect 1k NOT_CERTIFIED. E1/E2 e artifacts históricos preservados.
+
+### Próxima execução proposta — reconnect 1k, série independente
+
+- Preflight novo: fetch, SHA da main, diff/hashes de fontes e harness, versões de
+  Node/pnpm/Chromium/CLI/backend, portas/volumes e inventário Docker. Congelar o
+  SHA escolhido durante toda a série; avanço posterior não altera a amostra em curso.
+- Precondição de harness: `performance-contract.mjs` ainda fixa `BASELINE_SHA=3b3bc96d`
+  e `performance-baseline.mjs` rejeita delta de produto com `BENCHMARK_REBASELINE_REQUIRED`.
+  A próxima etapa precisa autorizar uma adaptação somente do harness para selecionar
+  explicitamente uma baseline integrada, com novo manifest/identificador e hashes.
+  Preservar a baseline histórica e seus manifests; não desativar os guards nem
+  sobrescrever resultados E1/E2. O provisionador `--p0-reconnect` também inclui 10k:
+  parametrizar a série limitada em vez de invocá-lo indiscriminadamente.
+- Reutilizar provisionador isolado certificado; certificar novamente 60 migrations,
+  schema/RLS/Auth/PostgREST/Edge e probes pequenos. Um projeto/portas/volumes próprios,
+  estáveis durante a série; fixtures novas e contextos novos por run; backend
+  compartilhado inalterado. Smoke de 10 gestos antes da medição, sem agrupá-lo nas amostras.
+- Workload otimizado integrado: 1000 gestos UPDATE observacoes, uma operação por gesto,
+  1000 animais, duas fazendas (500/500), agenda vazia, warm. Cinco runs sequenciais:
+  o primeiro é o gate de progressão, seguido dos quatro restantes somente se íntegro.
+  Mesma instrumentação sanitizada em todos; sem variante original, A/B ou 10k automático.
+- Orçamento proposto, conservando limites diagnósticos existentes: 240s por workload,
+  300s por child, 4000 requests, 600MiB recebidos e heap aproximado de 512MiB por run.
+  Janela operacional máxima proposta de 45min incluindo provisionamento/seed/cleanup;
+  não é SLO de produto. Registrar separadamente CPU/heap/custos da instrumentação e
+  seed. Exigir capacidade livre e ausência de outro benchmark/build/teste pesado no host;
+  se o harness não aplicar qualquer limite declarado, resolver antes de iniciar.
+- Cada run: 1000 ACKs instalados e estados terminais esperados; EXPECTED=ACTUAL nas duas
+  fazendas, backlog=0, obrigações=0, convergência, isolamento e cleanup de fixtures/IDB
+  verificados. Registrar receipts, etapas, requests/pulls, bytes/linhas, instalação,
+  erros/retries/timeouts e tempo monotônico; ACK observado não é latência física.
+- Interromper a série no primeiro erro de seed, execução, ACK, integridade, isolamento,
+  convergência, cleanup, guard excedido ou disputa de recursos. Preservar a primeira
+  amostra/artefato e seu diagnóstico; nenhum retry de run para completar cinco sucessos.
+  Cleanup apenas de recursos próprios, com inventário final. Publicar resultados
+  individuais, mediana/min/max/MAD se houver cinco amostras válidas; sem p95/p99.
+
+### F24.6A2 e trabalho independente
+
+Não foi encontrada definição canônica específica de F24.6A2 no plano/roadmap atuais.
+Pode avançar como proposta de inventário estático de startup, histórico/UI, bundle e
+callers/queries/índices já existentes, dentro das áreas previstas para F24.6, sem
+certificar escala nem criar otimização. Isso não depende do reconnect 1k e não disputa
+Docker, browser ou carga de benchmark. Escopo/critério de aceite de A2 precisa ser
+formalizado antes da execução. Builds, perfis CPU/memória, EXPLAIN ANALYZE, carga de
+banco e testes pesados devem ocupar outra janela; usar worktree própria e não editar
+o harness/fontes congelados para a série de reconnect.
+
+## F24.6A — estado integrado e evidências anteriores
+
+**F24.6A1-H — estado vigente (12/10/2026):** PR [#196](https://github.com/maresdeandrade/RebanhoSync/pull/196) `MERGED` em `6cf239fddf6a33249dbba8ce99de180e1772280e`, head integrado `694f4921d96b4acc7c07eb347d68c2d69e98c6ed`. Patch C+D, remediações Fallow G1/G2 e compatibilidade Vitest G5/G6 integrados. CI incremental [38162109877](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162109877) e gate completo [38162234927](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162234927) aprovados; gate completo com build, cleanup, 431 arquivos/3644 testes aprovados e 3 arquivos/59 testes skipped. Os quatro testes de performance executaram seus dez casos. F24.6 permanece ACTIVE; `RECONNECT_1K = NOT_CERTIFIED`, ganho geral de latência/memória NOT_PROVEN.
+
+Baseline operacional observado: `origin/main@cd1855dba81f06c4b49ce29621af5cc20573cae9`. O avanço após #196 é o PR #197 (`605cec2`), restrito a UI de reprodução/parentesco e tsconfig; não altera C+D, testes pós-ACK ou harness. Baseline histórica E1/E2 continua `3b3bc96db331c2917167cf8370024332f505d9f7`; séries, parâmetros, hashes e relatórios históricos preservados. Próxima execução: preparar o harness para adoção explícita do baseline integrado e retomar reconnect 1k conforme o plano no handoff; nenhum benchmark executado em H.
+
+**F24.6A1-E2 — snapshot histórico anterior à integração (SUPERSEDED):** [Seed e comparação A/B](./F24_6A1E2_SEED_DIAGNOSIS_AND_AB_COMPLETION.md) = `READY_FOR_REVIEW`. Série independente do patch final: 5/5 originais e 5/5 otimizados, 100 gestos/duas fazendas, todos íntegros. Medianas: 4.550.194→287.621 bytes, 5200→300 linhas, 16.825,40→16.097,00ms; requests/pulls preservados e intervalos de latência sobrepostos. Instrumentação somente no harness, fontes funcionais e 93 arquivos anteriores preservados. Causa do seed antigo LIMIT_NOT_PROVEN; perda de diagnóstico do wrapper corrigida e prova artificial de captura aprovada, sem atribuir quota real. Probes pequenos e sete checks funcionais PASS; ambiente próprio removido, compartilhado inalterado. Reconnect 1k NÃO CERTIFICADO; sem otimização adicional ou integração autorizada. Checagem final: origin/main avançou para 35df487c2b21b3e98fc27fdd255cf82b80748140 (PRs #193/#194, somente layout Registrar); HEAD e benchmark preservam baseline fixa 3b3bc96d, sem impacto nos módulos exercitados.
 
 **F24.6A1-E1 — snapshot anterior:** [Implementação restrita pós-ACK](./F24_6A1E1_POST_ACK_REFRESH_IMPLEMENTATION.md) = `PARTIAL / BLOCKED_WITH_REASON`. Dois módulos funcionais alterados; 148 testes focados e sete checks com dois clientes reais PASS, inclusive reabertura após fechamento durante o pull. Patch final: 1/5 runs originais e 2/5 otimizados de 100 gestos completos; original 2 falhou durante seed com BROWSER_OPERATION_FAILURE, antes do workload, sem causa capturada. Não substituído por retry. 5200→300 linhas e ~4.55MB→0.288MB nas amostras completas, requests/pulls preservados; sem ganho geral de latência declarado. Cinco amostras por variante ainda não comprovadas; 1k/10k não executados. Três ambientes locais próprios removidos, compartilhado/artifacts antigos preservados. Pendente diagnóstico sanitizado do seed e comparação final completa. Histórico de abertura/caracterização abaixo não substitui essa decisão.
 
