@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import {
-  loadAnimalCommercialHistory,
-  loadAnimalAcquisitionHistory,
-  projectAnimalCommercialValues,
-} from "@/lib/comercial/animalCommercialHistory";
+import { loadAnimalAcquisitionHistory } from "@/lib/comercial/animalCommercialHistory";
+import { isCommercialSimulation } from "@/lib/finance/classification";
 import {
   getAgendaScheduleBucket,
   type AgendaScheduleBucket,
@@ -32,6 +29,11 @@ import {
   Syringe,
   Trash2,
 } from "lucide-react";
+import { AnimalCommercialSection } from "@/components/animals/AnimalCommercialSection";
+import {
+  formatCommercialDate,
+  formatCommercialMoney,
+} from "@/components/animals/animalCommercialFormat";
 import { AnimalDetailHeader } from "@/components/animals/AnimalDetailHeader";
 import { AnimalTechnicalDetails } from "@/components/animals/AnimalTechnicalDetails";
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
@@ -906,23 +908,36 @@ const AnimalDetalhe = () => {
     );
   }, [animal?.id, fazendaId]);
 
-  const animalComerciais = useLiveQuery(
-    async () => {
-      if (!animal?.id || !fazendaId) return [];
-      return loadAnimalCommercialHistory(fazendaId, animal.id);
-    },
-    [animal?.id, fazendaId],
-    [],
-  );
-
-  const aquisicoes = useLiveQuery(
-    async () => {
-      if (!animal?.id || !fazendaId) return [];
-      return loadAnimalAcquisitionHistory(fazendaId, animal.id);
-    },
-    [animal?.id, fazendaId],
-    [],
-  );
+  const acquisitionResult = useLiveQuery(async () => {
+    if (!animal?.id || !fazendaId) return undefined;
+    try {
+      const acquisitionFacts = await loadAnimalAcquisitionHistory(
+        fazendaId,
+        animal.id,
+      );
+      const facts = await Promise.all(
+        acquisitionFacts.map(async (fact) => {
+          const event = await db.event_eventos.get(fact.eventId);
+          return {
+            ...fact,
+            occurredOn:
+              event?.fazenda_id === fazendaId && !event.deleted_at
+                ? event.occurred_on
+                : undefined,
+          };
+        }),
+      );
+      return { farmId: fazendaId, animalId: animal.id, facts, error: false };
+    } catch {
+      return { farmId: fazendaId, animalId: animal.id, facts: [], error: true };
+    }
+  }, [animal?.id, fazendaId]);
+  const currentAcquisition =
+    acquisitionResult?.farmId === fazendaId &&
+    acquisitionResult?.animalId === animal?.id
+      ? acquisitionResult
+      : undefined;
+  const aquisicoes = currentAcquisition?.facts;
 
   const agenda = useLiveQuery(async () => {
     if (!animal?.id || !fazendaId) return [];
@@ -2469,7 +2484,11 @@ const AnimalDetalhe = () => {
             </Card>
           )}
 
-          {aquisicoes.length > 0 && (
+          {!currentAcquisition ? (
+            <p role="status">Carregando aquisição…</p>
+          ) : currentAcquisition.error ? (
+            <p role="alert">Não foi possível carregar a aquisição local.</p>
+          ) : aquisicoes.length > 0 ? (
             <Card className="border-border/70 shadow-none">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Aquisição</CardTitle>
@@ -2490,14 +2509,18 @@ const AnimalDetalhe = () => {
                       <dt className="text-muted-foreground">
                         Data de aquisição/entrada
                       </dt>
-                      <dd>{fact.occurredAt.split("T")[0]}</dd>
+                      <dd>
+                        {formatCommercialDate(
+                          fact.occurredOn ?? fact.occurredAt,
+                        )}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-muted-foreground">
                         Peso de aquisição
                       </dt>
                       <dd className="font-semibold">
-                        {fact.weight !== null
+                        {fact.weight != null
                           ? `${fact.weight} ${fact.weightUnit}`
                           : "Não informado"}
                       </dd>
@@ -2515,16 +2538,24 @@ const AnimalDetalhe = () => {
                       </dt>
                       <dd>
                         {fact.origin === "compra"
-                          ? fact.value !== null
-                            ? `R$ ${fact.value.toFixed(2)}`
+                          ? fact.value != null
+                            ? formatCommercialMoney(fact.value)
                             : "Não informado"
                           : "Participação societária; valor individual não registrado neste fato."}
                       </dd>
                     </div>
+                    <p className="break-all text-xs text-muted-foreground">
+                      Fonte: evento {fact.eventId}. Valores registrados no fato
+                      de aquisição.
+                    </p>
                   </dl>
                 ))}
               </CardContent>
             </Card>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Sem histórico factual de aquisição nesta fazenda.
+            </p>
           )}
 
           <AnimalWeightSection
@@ -3060,12 +3091,20 @@ const AnimalDetalhe = () => {
                         ? `Reproducao: ${evt.details.tipo}`
                         : evt.dominio === "alerta_sanitario"
                           ? "Alerta sanitario"
-                          : evt.dominio === "comercial" && evt.detailsComercial
-                            ? `Operação Comercial: ${evt.detailsComercial.operation_type === "compra" ? "Compra" : "Venda"}`
-                            : evt.dominio}
+                          : evt.dominio === "comercial" &&
+                              isCommercialSimulation(evt, evt.detailsComercial)
+                            ? "Simulação comercial — não executada"
+                            : evt.dominio === "comercial" &&
+                                evt.detailsComercial
+                              ? `Operação Comercial: ${evt.detailsComercial.operation_type === "compra" ? "Compra" : "Venda"}`
+                              : evt.dominio}
                     </h4>
                     <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                      {formatDate(evt.occurred_at)}
+                      {evt.dominio === "comercial"
+                        ? formatCommercialDate(
+                            evt.occurred_on ?? evt.occurred_at,
+                          )
+                        : formatDate(evt.occurred_at)}
                     </span>
                   </div>
                   <p className="mb-2 text-xs capitalize text-muted-foreground">
@@ -3074,9 +3113,12 @@ const AnimalDetalhe = () => {
                   <p className="text-xs text-muted-foreground">
                     {evt.dominio === "alerta_sanitario"
                       ? describeSanitaryAlertEvent(evt.payload)
-                      : evt.dominio === "comercial" && evt.detailsComercial
-                        ? `Operação comercial registrada: ${evt.detailsComercial.operation_type === "compra" ? "Compra" : "Venda"}. Contraparte: ${evt.detailsComercial.contraparte_nome || "Não informada"}.`
-                        : evt.observacoes || "Manejo realizado no campo."}
+                      : evt.dominio === "comercial" &&
+                          isCommercialSimulation(evt, evt.detailsComercial)
+                        ? "Simulação comercial; não comprova compra, venda, pagamento ou recebimento."
+                        : evt.dominio === "comercial" && evt.detailsComercial
+                          ? `Operação comercial registrada: ${evt.detailsComercial.operation_type === "compra" ? "Compra" : "Venda"}. Contraparte: ${evt.detailsComercial.contraparte_nome || "Não informada"}.`
+                          : evt.observacoes || "Manejo realizado no campo."}
                   </p>
                   {evt.dominio === "alerta_sanitario" && (
                     <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
@@ -3110,39 +3152,45 @@ const AnimalDetalhe = () => {
                       })()}
                     </div>
                   )}
-                  {evt.dominio === "comercial" && evt.detailsComercial && (
-                    <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground space-y-1">
-                      <div className="grid grid-cols-2 gap-2">
-                        <p>
-                          Quantidade: {evt.detailsComercial.quantidade_animais}{" "}
-                          cab.
-                        </p>
-                        <p>
-                          Peso Vivo Total:{" "}
-                          {evt.detailsComercial.peso_vivo_total
-                            ? `${evt.detailsComercial.peso_vivo_total} kg`
-                            : "—"}
-                        </p>
-                        <p>
-                          Valor Bruto:{" "}
-                          {evt.detailsComercial.valor_bruto
-                            ? `R$ ${evt.detailsComercial.valor_bruto.toFixed(2)}`
-                            : "—"}
-                        </p>
-                        <p>
-                          Valor Líquido:{" "}
-                          {evt.detailsComercial.valor_liquido_derivado
-                            ? `R$ ${evt.detailsComercial.valor_liquido_derivado.toFixed(2)}`
-                            : "—"}
-                        </p>
+                  {evt.dominio === "comercial" &&
+                    evt.detailsComercial &&
+                    !isCommercialSimulation(evt, evt.detailsComercial) && (
+                      <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground space-y-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <p>
+                            Quantidade:{" "}
+                            {evt.detailsComercial.quantidade_animais} cab.
+                          </p>
+                          <p>
+                            Peso vivo total da operação:{" "}
+                            {evt.detailsComercial.peso_vivo_total != null
+                              ? `${evt.detailsComercial.peso_vivo_total} kg`
+                              : "—"}
+                          </p>
+                          <p>
+                            Valor bruto da operação:{" "}
+                            {evt.detailsComercial.valor_bruto != null
+                              ? formatCommercialMoney(
+                                  evt.detailsComercial.valor_bruto,
+                                )
+                              : "—"}
+                          </p>
+                          <p>
+                            Valor líquido calculado registrado da operação:{" "}
+                            {evt.detailsComercial.valor_liquido_derivado != null
+                              ? formatCommercialMoney(
+                                  evt.detailsComercial.valor_liquido_derivado,
+                                )
+                              : "—"}
+                          </p>
+                        </div>
+                        {evt.detailsComercial.observacoes && (
+                          <p className="border-t border-border/20 pt-1 italic">
+                            Obs: "{evt.detailsComercial.observacoes}"
+                          </p>
+                        )}
                       </div>
-                      {evt.detailsComercial.observacoes && (
-                        <p className="border-t border-border/20 pt-1 italic">
-                          Obs: "{evt.detailsComercial.observacoes}"
-                        </p>
-                      )}
-                    </div>
-                  )}
+                    )}
                   {evt.dominio === "reproducao" && evt.details && (
                     <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
                       {evt.details.macho_id && (
@@ -3341,134 +3389,7 @@ const AnimalDetalhe = () => {
         </TabsContent>
 
         <TabsContent value="comercial" className="mt-6">
-          {animalComerciais.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {animalComerciais.map((com) => {
-                const isCompra = com.operation_type === "compra";
-                const individual = projectAnimalCommercialValues(
-                  com,
-                  animal.id,
-                );
-                return (
-                  <div
-                    key={com.evento_id}
-                    className="rounded-xl border p-4 bg-muted/10 space-y-3"
-                  >
-                    <div className="flex items-center justify-between border-b pb-2 border-border/40">
-                      <span
-                        className={cn(
-                          "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border",
-                          isCompra
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
-                            : "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200",
-                        )}
-                      >
-                        {com.operation_type}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {com.occurred_at
-                          ? new Date(com.occurred_at).toLocaleDateString(
-                              "pt-BR",
-                            )
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      {[
-                        [
-                          isCompra
-                            ? "Peso de aquisição deste animal:"
-                            : "Peso comercial de venda deste animal:",
-                          individual.weight !== null
-                            ? `${individual.weight} ${individual.weightUnit}`
-                            : "—",
-                        ],
-                        [
-                          isCompra
-                            ? "Valor de compra deste animal:"
-                            : "Valor de venda deste animal:",
-                          individual.value !== null
-                            ? `R$ ${individual.value.toFixed(2)}`
-                            : "—",
-                        ],
-                        ["Quantidade:", `${com.quantidade_animais} cab.`],
-                        [
-                          "Peso Vivo Total:",
-                          com.peso_vivo_total
-                            ? `${com.peso_vivo_total} kg`
-                            : "—",
-                        ],
-                        [
-                          "Peso Médio:",
-                          com.peso_medio_derivado
-                            ? `${com.peso_medio_derivado.toFixed(1)} kg`
-                            : "—",
-                        ],
-                        [
-                          "Valor Bruto:",
-                          com.valor_bruto
-                            ? `R$ ${com.valor_bruto.toFixed(2)}`
-                            : "—",
-                        ],
-                        [
-                          "Valor Líquido Estimado:",
-                          com.valor_liquido_derivado
-                            ? `R$ ${com.valor_liquido_derivado.toFixed(2)}`
-                            : "—",
-                        ],
-                      ].map(([label, value]) => (
-                        <div key={label}>
-                          <span className="text-muted-foreground font-medium">
-                            {label}
-                          </span>
-                          <p className="font-semibold mt-0.5">{value}</p>
-                        </div>
-                      ))}
-                      <div className="col-span-2 border-t pt-2 border-border/20">
-                        <span className="text-muted-foreground font-medium">
-                          Contraparte:
-                        </span>
-                        <p className="font-semibold mt-0.5">
-                          {com.contraparte_nome || "—"}
-                        </p>
-                      </div>
-                      {com.finance_transaction_id && (
-                        <div className="col-span-2">
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-                            • Vínculo financeiro ativo
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    {com.limitations && com.limitations.length > 0 && (
-                      <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-100 rounded-lg p-2 text-[10px] text-amber-800 space-y-0.5">
-                        <span className="font-semibold">
-                          Notas de conformidade:
-                        </span>
-                        {com.limitations.map((lim, idx) => (
-                          <p key={idx}>- {lim}</p>
-                        ))}
-                      </div>
-                    )}
-                    {com.observacoes && (
-                      <p className="text-[10px] text-muted-foreground border-t pt-2 italic">
-                        {com.observacoes}
-                      </p>
-                    )}
-                    <div className="text-[9px] text-muted-foreground/60 text-right pt-1 uppercase">
-                      operação registrada conforme dados informados. não
-                      representa recomendação comercial ou substitui validação
-                      operacional/financeira.
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="py-8 text-center text-muted-foreground">
-              Sem operações comerciais registradas para este animal.
-            </p>
-          )}
+          <AnimalCommercialSection farmId={fazendaId} animalId={animal.id} />
         </TabsContent>
       </Tabs>
 

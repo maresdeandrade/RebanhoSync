@@ -14,6 +14,7 @@ import { formatWeightPerDay } from "@/lib/format/weight";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import { DEFAULT_FARM_MEASUREMENT_CONFIG } from "@/lib/farms/measurementConfig";
 import type {
+  EventoComercial,
   AgendaItem,
   Animal,
   Evento,
@@ -263,9 +264,24 @@ describe("AnimalDetalhe", () => {
       if (typeof fn !== "function") return null;
       const str = fn.toString();
       if (str.includes("loadAnimalAcquisitionHistory"))
-        return mockResponses.aquisicoes ?? [];
+        return "aquisicoes" in mockResponses &&
+          mockResponses.aquisicoes === undefined
+          ? undefined
+          : {
+              farmId: "farm-1",
+              animalId: "animal-1",
+              facts: mockResponses.aquisicoes ?? [],
+              error: mockResponses.aquisicoes === null,
+            };
       if (str.includes("loadAnimalCommercialHistory"))
-        return mockResponses.comerciais ?? [];
+        return {
+          farmId: "farm-1",
+          animalId: "animal-1",
+          rows: ((mockResponses.comerciais ?? []) as EventoComercial[]).map(
+            (detail) => ({ detail: { fazenda_id: "farm-1", ...detail } }),
+          ),
+          error: false,
+        };
 
       if (str.includes("readAnimalInActiveFarm")) {
         return mockResponses.animal ?? null;
@@ -370,6 +386,87 @@ describe("AnimalDetalhe", () => {
       </MemoryRouter>,
     );
 
+  it("distingue aquisição carregando, vazia e com erro", () => {
+    const responses: MockLiveQueryResponses = {
+      animal: makeAnimal({ id: "animal-1", identificacao: "C3", sexo: "F" }),
+      aquisicoes: undefined,
+    };
+    setupMockLiveQuery(responses);
+    const view = renderDetail();
+    expect(screen.getByText("Carregando aquisição…")).toBeVisible();
+    responses.aquisicoes = [];
+    view.rerender(
+      <MemoryRouter initialEntries={["/animais/animal-1"]}>
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText("Sem histórico factual de aquisição nesta fazenda."),
+    ).toBeVisible();
+    responses.aquisicoes = null;
+    view.rerender(
+      <MemoryRouter initialEntries={["/animais/animal-1"]}>
+        <Routes>
+          <Route path="/animais/:id" element={<AnimalDetalhe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText("Não foi possível carregar a aquisição local."),
+    ).toBeVisible();
+  });
+
+  it("histórico geral não apresenta simulação como venda executada", async () => {
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "C3", sexo: "M" }),
+      eventos: [
+        {
+          ...makeEvento({
+            dominio: "comercial",
+            payload: { kind: "commercial_simulation" },
+          }),
+          detailsComercial: { operation_type: "venda", valor_bruto: 9000 },
+        },
+      ],
+    });
+    renderDetail();
+    await userEvent
+      .setup()
+      .click(screen.getByRole("tab", { name: "Histórico" }));
+    expect(
+      screen.getByText("Simulação comercial — não executada"),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/Operação comercial registrada: Venda/),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("R$ 9.000,00")).not.toBeInTheDocument();
+  });
+
+  it("prioriza a data civil do evento de aquisição", () => {
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "C3", sexo: "F" }),
+      aquisicoes: [
+        {
+          eventId: "civil-acquisition",
+          origin: "compra",
+          occurredAt: "2026-01-01T00:00:00Z",
+          occurredOn: "2026-01-01",
+          value: null,
+          weight: null,
+          weightUnit: "kg",
+        },
+      ],
+    });
+    renderDetail();
+    expect(
+      within(
+        screen.getByText("Data de aquisição/entrada").parentElement!,
+      ).getByText("01/01/2026"),
+    ).toBeVisible();
+  });
+
   it("exibe peso comercial e valor individuais da compra por lote", () => {
     setupMockLiveQuery({
       animal: makeAnimal({
@@ -420,8 +517,8 @@ describe("AnimalDetalhe", () => {
       screen.getByText("Peso de aquisição deste animal:"),
     ).toBeInTheDocument();
     expect(screen.getByText("250 kg")).toBeInTheDocument();
-    expect(screen.getByText("R$ 3000.00")).toBeInTheDocument();
-    expect(screen.queryByText("R$ 4000.00")).not.toBeInTheDocument();
+    expect(screen.getByText("R$ 3.000,00")).toBeInTheDocument();
+    expect(screen.queryByText("R$ 4.000,00")).not.toBeInTheDocument();
   });
 
   it.each(["compra", "sociedade"])(
@@ -480,14 +577,14 @@ describe("AnimalDetalhe", () => {
         within(screen.getByLabelText("Peso e GMD")).getByText("410,0 kg"),
       ).toBeVisible();
       if (origin === "compra")
-        expect(screen.getByText("R$ 0.00")).toBeInTheDocument();
+        expect(screen.getByText("R$ 0,00")).toBeInTheDocument();
       else {
         expect(
           screen.getByText(
             /Participação societária; valor individual não registrado/,
           ),
         ).toBeInTheDocument();
-        expect(screen.queryByText("R$ 0.00")).not.toBeInTheDocument();
+        expect(screen.queryByText("R$ 0,00")).not.toBeInTheDocument();
       }
       fireEvent.mouseDown(screen.getByRole("tab", { name: /Comercial/i }));
       fireEvent.click(screen.getByRole("tab", { name: /Comercial/i }));
