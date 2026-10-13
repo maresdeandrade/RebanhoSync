@@ -5,10 +5,14 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import { createServer } from "vite";
-import { BASELINE_SHA, parseOptions, summarize } from "./performance-contract.mjs";
+import { parseOptions, summarize } from "./performance-contract.mjs";
 import { readLocalConnection, seedLocalFixture } from "./performance-local-fixture.mjs";
 import { diagnosticTransform, DIAGNOSTIC_LIMITS, receiptSummary, snapshotDigest, transportCode, identity } from './performance-diagnostics.mjs';
 import { safeSeedError } from './performance-seed-diagnostics.mjs';
+import { selectBaseline, assertFrozenProduct, CERTIFICATION_LIMITS, assertOperationalBudget, withDeadline, cleanupOwnedIndexedDB } from './performance-integrated-contract.mjs';
+const options = parseOptions(process.argv.slice(2));
+const integrated = options.baseline === 'integrated';
+const BASELINE_SHA = selectBaseline(options, process.env);
 const seedSeries = process.env.REBANHOSYNC_SEED_AB_SERIES ?? null;
 const diagnosticMode = process.env.REBANHOSYNC_ACK_DIAGNOSIS === '1';
 
@@ -37,7 +41,7 @@ const modified = git(["diff", "HEAD", "--name-only", "--", ...productPaths]).spl
 if (modified.some(file => !postAckVariant || !patchFiles.includes(file))) throw new Error("PRODUCT_PATCH_NOT_ALLOWED");
 const untracked = git(["ls-files", "--others", "--exclude-standard", "--", ...productPaths]).split(/\r?\n/).filter(Boolean);
 if (untracked.some(file => !postAckVariant || !patchTests.includes(file))) throw new Error("UNTRACKED_PRODUCT_PATCH_NOT_ALLOWED");
-const options = parseOptions(process.argv.slice(2));
+if (integrated) assertFrozenProduct(git, BASELINE_SHA, sha);
 const flow = ["pull", "reconnect"].includes(options.workload);
 const connection = flow ? readLocalConnection() : { api: "http://127.0.0.1:1", anon: "synthetic-harness" };
 const artifactDir = resolve(root, "test-results/f24-6");
@@ -45,13 +49,16 @@ mkdirSync(artifactDir, { recursive: true });
 const output = resolve(artifactDir, `${options.workload}-${options.mode}-${Date.now()}.json`);
 const report = {
   independent_series: seedSeries,
+  implementation: integrated ? 'INTEGRATED' : 'HISTORICAL',
+  limits: integrated ? CERTIFICATION_LIMITS : null,
+  frozen_product_objects: integrated ? Object.fromEntries(['src', 'supabase', 'package.json', 'pnpm-lock.yaml', 'vite.config.ts'].map(path => [path, git(['rev-parse', BASELINE_SHA + ':' + path])])) : null,
   effective_product_sha256: Object.fromEntries(patchFiles.map(file => [file, createHash('sha256').update(postAckVariant === 'original' ? git(['show', BASELINE_SHA + ':' + file]) : readFileSync(resolve(root, file))).digest('hex')])),
   git_sha: sha, benchmark_baseline_sha: BASELINE_SHA,
   post_ack_variant: postAckVariant ?? null, patch_manifest: patchManifest ?? null,
   environment: flow ? (options.workload === "pull" ? "LOCAL_AUTH_POSTGREST_POSTGRES" : "LOCAL_AUTH_EDGE_POSTGRES") : "NATIVE_INDEXEDDB_STORAGE_ONLY",
   browser: null, node: process.version,
   pnpm: execFileSync(process.platform === "win32" ? "pnpm.cmd" : "pnpm", ["--version"], { encoding: "utf8", shell: process.platform === "win32", windowsHide: true }).trim(),
-  harness_sha256: createHash("sha256").update(["performance-baseline.mjs", "performance-browser.ts", "performance-contract.mjs", "performance-local-fixture.mjs", "performance-seed-diagnostics.mjs", "performance-diagnostics.mjs"].map(name => readFileSync(resolve(root, "scripts/codex", name))).join("\n")).digest("hex"),
+  harness_sha256: createHash("sha256").update(["performance-baseline.mjs", "performance-browser.ts", "performance-contract.mjs", "performance-local-fixture.mjs", "performance-seed-diagnostics.mjs", "performance-diagnostics.mjs", "performance-integrated-contract.mjs"].map(name => readFileSync(resolve(root, "scripts/codex", name))).join("\n")).digest("hex"),
   dependency_versions: Object.fromEntries(["dexie", "vite", "@playwright/test"].map(name => [name, JSON.parse(readFileSync(resolve(root, "node_modules", name, "package.json"), "utf8")).version])),
   server: "vite-transform-only; no app bootstrap", dataset: options, farm_count: options.farms,
   telemetry_state: "worker scheduler stopped; flow diagnostics unchanged; no periodic flush",
@@ -64,6 +71,14 @@ let context;
 let page;
 let browserSeeded = false;
 let cleanupFailed = false;
+let firstLimitFailure;
+const cleanupBrowser = async () => {
+  if (!page.isClosed()) return call('cleanup');
+  // A hard deadline closed the execution page. Delete the owned ephemeral DB
+  // from a fresh page in the same private context, then verify absence.
+  page = await cleanupOwnedIndexedDB(context, new URL('/__f24_benchmark', server.resolvedUrls.local[0]).href);
+  return { indexeddb_deleted: true };
+};
 const call = async (method, argument) => {
   const result = await page.evaluate(async ({ method, argument }) => {
     if (method === 'seed') globalThis.__f24Seed = { stage: 'harness_module_import', start: performance.now(), events: [] };
@@ -124,6 +139,7 @@ try {
     writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`);
   }
   for (let run = 1; run <= options.runs; run++) {
+    if (integrated) assertFrozenProduct(git, BASELINE_SHA, sha);
     report.active_run = { run_number: run, phase: 'seed', seed_diagnosis: { stage: 'remote_fixture_creation', started_monotonic_ms: performance.now(), events: [] } };
     writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`);
     const seedStart = performance.now();
@@ -174,6 +190,12 @@ try {
     await cdp.send("Performance.enable");
     const before = await cdp.send("Performance.getMetrics");
     const wire = { requests: 0, payload_bytes_sent: 0, payload_bytes_received: 0, rows_received_total: 0, errors: 0, timeouts: 0, repeated_operation_submissions: 0 };
+    let heapPeak = 0;
+    const enforceBudget = () => {
+      if (!integrated || firstLimitFailure) return;
+      try { assertOperationalBudget({ requests: wire.requests, received_bytes: wire.payload_bytes_received, heap_bytes: heapPeak }); }
+      catch (error) { firstLimitFailure = error; void page.close().catch(() => {}); }
+    };
     const network = []; const requestTimes = new WeakMap(); const requestIdentities = new WeakMap(); const previousSnapshots = new Map(); let observerCost = 0;
     const endpoint = request => new URL(request.url()).pathname;
     const submitted = new Set();
@@ -181,7 +203,7 @@ try {
     const onRequest = request => {
       if (!request.url().startsWith(`${connection.api}/`)) return;
       if (diagnosticMode) requestTimes.set(request, performance.now());
-      wire.requests++; wire.payload_bytes_sent += request.postDataBuffer()?.length ?? 0;
+      wire.requests++; enforceBudget(); wire.payload_bytes_sent += request.postDataBuffer()?.length ?? 0;
       if (request.url().includes('/functions/v1/sync-batch')) {
         if (diagnosticMode) { try { const value = JSON.parse(request.postData() ?? '{}'); requestIdentities.set(request, { client_tx_id: identity(value.client_tx_id), client_op_ids: (value.ops ?? []).map(op => identity(op.client_op_id ?? op.record?.client_op_id)) }); } catch { /* No raw data exported. */ } }
         try { for (const op of JSON.parse(request.postData() ?? '{}').ops ?? []) {
@@ -197,7 +219,7 @@ try {
         const observed = performance.now(); const request = response.request();
         const record = { stage: 'http_response', endpoint: endpoint(request), ...requestIdentities.get(request), http_status: response.status(), request_to_headers_ms: observed - (requestTimes.get(request) ?? observed) };
         if (diagnosticMode) network.push(record);
-        const body = await response.body(); wire.payload_bytes_received += body.length;
+        const body = await response.body(); wire.payload_bytes_received += body.length; enforceBudget();
         if (diagnosticMode) {
           const observerStart = performance.now();
           record.response_bytes = body.length; record.request_to_body_ms = performance.now() - (requestTimes.get(request) ?? observed);
@@ -232,9 +254,27 @@ try {
     if (process.env.REBANHOSYNC_CONTROLLED_TRANSPORT_FAILURE === '1') await page.route('**/functions/v1/sync-batch', route => route.abort('connectionreset'));
     if (diagnosticMode) { await call('enableDiagnostics'); report.active_run.diagnostic = { network, limits: DIAGNOSTIC_LIMITS }; }
     let result;
-    try { result = await call("execute"); }
+    let heapTimer;
+    let sampling = false;
+    const sampleHeap = async () => {
+      if (sampling || page.isClosed()) return;
+      sampling = true;
+      try {
+        const metrics = await cdp.send('Performance.getMetrics');
+        heapPeak = Math.max(heapPeak, metrics.metrics.find(m => m.name === 'JSHeapUsedSize')?.value ?? 0);
+        report.active_run.heap_peak_observed_bytes = heapPeak;
+        enforceBudget();
+      } finally { sampling = false; }
+    };
+    if (integrated) { await sampleHeap(); heapTimer = setInterval(() => { void sampleHeap().catch(() => {}); }, 250); }
+    try {
+      result = integrated ? await withDeadline(() => call('execute'), CERTIFICATION_LIMITS.duration_ms, () => page.close().catch(() => {})) : await call('execute');
+      if (firstLimitFailure) throw firstLimitFailure;
+      if (integrated) { await sampleHeap(); assertOperationalBudget({ duration_ms: result.duration_ms, requests: wire.requests, received_bytes: wire.payload_bytes_received, heap_bytes: heapPeak }); }
+    }
     finally {
-      if (diagnosticMode) { await Promise.all(responseTasks); Object.assign(report.active_run.diagnostic, { browser: await call('diagnostics'), observer_cost_ms: observerCost }); writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`); }
+      clearInterval(heapTimer);
+      if (diagnosticMode) { await Promise.all(responseTasks); Object.assign(report.active_run.diagnostic, { browser: page.isClosed() ? null : await call('diagnostics'), observer_cost_ms: observerCost }); writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`); }
     }
     page.off("request", onRequest); page.off("response", onResponse); page.off("requestfailed", onFailure);
     await Promise.all(responseTasks);
@@ -245,8 +285,17 @@ try {
       if (result.rows_received !== result.rows_expected) throw new Error("PULL_RECEIVED_COUNT_MISMATCH");
     }
     if (wire.errors) throw new Error("WORKLOAD_NETWORK_ERROR");
+    if (integrated) {
+      assertOperationalBudget({ duration_ms: result.duration_ms, requests: wire.requests, received_bytes: wire.payload_bytes_received, heap_bytes: heapPeak });
+      result.remote_verification = await fixtureOwner.verify(result.local_rows);
+      delete result.local_rows;
+      result.heap_peak_observed_bytes = heapPeak;
+      result.pulls = network.filter(entry => entry.stage === 'http_response' && entry.endpoint.startsWith('/rest/v1/')).length;
+      if (submitted.size !== options.gestures || wire.repeated_operation_submissions) throw new Error('OPERATION_SUBMISSIONS_NOT_UNIQUE');
+      assertFrozenProduct(git, BASELINE_SHA, sha);
+    }
     const cleanupStart = performance.now();
-    const cleanup = await call("cleanup"); browserSeeded = false;
+    const cleanup = await cleanupBrowser(); browserSeeded = false;
     await context.close(); context = null;
     if (fixtureOwner) { Object.assign(cleanup, await fixtureOwner.cleanup()); fixtureOwner = null; }
     const cleanupDuration = performance.now() - cleanupStart;
@@ -271,10 +320,10 @@ try {
     if (page && !page.isClosed()) { try { report.active_run.seed_diagnosis.browser = await page.evaluate(() => globalThis.__f24Seed ?? null); } catch { /* Outer error and lifecycle events retained. */ } }
   }
   if (error.proofReport) report.post_ack_proof = error.proofReport;
-  report.failure_code = /^[A-Z_]+$/.test(error?.message ?? "") ? error.message : error?.name ?? "HARNESS_FAILURE";
+  report.failure_code = firstLimitFailure?.message ?? (/^[A-Z_]+$/.test(error?.message ?? "") ? error.message : error?.name ?? "HARNESS_FAILURE");
   report.status = "FAILED"; process.exitCode = 1;
 } finally {
-  if (browserSeeded && page) { try { report.failure_cleanup = await call("cleanup"); } catch { cleanupFailed = true; } }
+  if (browserSeeded && page) { try { report.failure_cleanup = await cleanupBrowser(); } catch { cleanupFailed = true; } }
   if (context) await context.close().catch(() => { cleanupFailed = true; });
   if (fixtureOwner) { try { report.failure_cleanup = { ...report.failure_cleanup, ...await fixtureOwner.cleanup() }; } catch { cleanupFailed = true; } }
   if (browser) await browser.close().catch(() => { cleanupFailed = true; });

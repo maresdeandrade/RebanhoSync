@@ -226,6 +226,10 @@ jobs:
         if: steps.scope.outputs.needs_app == 'true'
         run: pnpm exec fallow audit --gate new-only
 
+      - name: Install Chromium for owned IndexedDB cleanup test
+        if: steps.scope.outputs.needs_app == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Test
         if: steps.scope.outputs.needs_app == 'true'
         timeout-minutes: 20

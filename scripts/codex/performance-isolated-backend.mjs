@@ -4,10 +4,19 @@ import { mkdirSync, readFileSync, writeFileSync, readdirSync, cpSync } from 'nod
 import { resolve, join } from 'node:path';
 import net from 'node:net';
 import pg from 'pg';
+import os from 'node:os';
+import { certificationSpecifications, selectBaseline, assertFrozenProduct, assertCertifiedRun, summarizeCertification, CERTIFICATION_LIMITS, edgeHandlerReady } from './performance-integrated-contract.mjs';
 import { readLocalConnection } from './performance-local-fixture.mjs';
 
 // Own project only. CLI credentials and child output stay in memory.
 const root = resolve(import.meta.dirname, '../..');
+const integrated = process.argv.includes('--integrated-reconnect-1k');
+const specifications = integrated ? certificationSpecifications(process.argv.slice(2)) : [];
+const git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8', windowsHide: true }).trim();
+if (integrated) {
+  const baseline = selectBaseline({ baseline: 'integrated', workload: 'reconnect', gestures: 1000, animals: 1000, farms: 2, runs: 1, mode: 'warm', purpose: 'benchmark' }, { ...process.env, REBANHOSYNC_ACK_DIAGNOSIS: '1' });
+  assertFrozenProduct(git, baseline, git(['rev-parse', 'HEAD']));
+}
 const p0Reconnect = process.argv.includes('--p0-reconnect');
 const ackDiagnosis = process.argv.includes('--ack-diagnosis');
 const seedAB = process.argv.includes('--seed-ab-comparison');
@@ -20,7 +29,7 @@ const project = `f24-6a0b-${randomUUID().slice(0, 8)}`;
 const directory = join(root, 'test-results/f24-6', project);
 mkdirSync(directory, { recursive: true });
 const report = { independent_series: seedAB ? `F24_6A1_E2-${project}` : null, project, directory, started_at: new Date().toISOString(), ports: [55320, 55321, 55322, 55323, 55324, 55325, 55327, 55329, 55383], steps: {} };
-report.harness_sources = Object.fromEntries(['performance-isolated-backend.mjs', 'performance-baseline.mjs', 'performance-browser.ts', 'performance-contract.mjs', 'performance-local-fixture.mjs', 'performance-diagnostics.mjs', 'performance-seed-diagnostics.mjs', 'performance-post-ack-proof.mjs', 'performance-post-ack-proof.ts'].map(name => [name, createHash('sha256').update(readFileSync(join(root, 'scripts/codex', name))).digest('hex')]));
+report.harness_sources = Object.fromEntries(['performance-isolated-backend.mjs', 'performance-baseline.mjs', 'performance-browser.ts', 'performance-contract.mjs', 'performance-local-fixture.mjs', 'performance-diagnostics.mjs', 'performance-seed-diagnostics.mjs', 'performance-post-ack-proof.mjs', 'performance-post-ack-proof.ts', 'performance-integrated-contract.mjs'].map(name => [name, createHash('sha256').update(readFileSync(join(root, 'scripts/codex', name))).digest('hex')]));
 const save = () => writeFileSync(join(directory, 'certification.json'), JSON.stringify(report, null, 2));
 const cli = args => execFileSync(supabaseCli, args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
 const docker = args => execFileSync('docker', args, { encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -44,11 +53,12 @@ async function schemaFingerprint(connection) {
 function child(command, args, env = process.env) {
   return new Promise(resolveChild => {
     const task = spawn(command, args, { cwd: root, env, windowsHide: true, timeout: 300_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    activeChild = task;
     let stdout = '', stderr = '';
     task.stdout.on('data', chunk => { stdout += chunk; }); task.stderr.on('data', chunk => { stderr += chunk; });
     task.on('error', () => resolveChild({ code: -1, stdout, stderr: 'CHILD_START_FAILED' }));
     let exitTimer;
-    task.on('close', (code, signal) => { clearTimeout(exitTimer); resolveChild({ code, signal, stdout, stderr }); });
+    task.on('close', (code, signal) => { if (activeChild === task) activeChild = null; clearTimeout(exitTimer); resolveChild({ code, signal, stdout, stderr }); });
     task.on('exit', (code, signal) => {
       if (signal && process.platform === 'win32' && command === process.execPath && args[0] === 'scripts/codex/performance-baseline.mjs') {
         // The existing 300s executor guard can terminate Node before its finally.
@@ -62,10 +72,15 @@ function child(command, args, env = process.env) {
     });
   });
 }
-let shared, edge;
+let shared, edge, activeChild;
+let interrupted = false;
+const onInterrupt = () => { interrupted = true; activeChild?.kill(); };
+process.on('SIGINT', onInterrupt); process.on('SIGTERM', onInterrupt);
 try {
   report.git = { branch: execFileSync('git', ['branch', '--show-current'], { encoding: 'utf8' }).trim(), head: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() };
   report.before = snapshot();
+  report.resources = { host_free_bytes: os.freemem(), host_total_bytes: os.totalmem(), docker_memory_bytes: Number(docker(['info', '--format', '{{.MemTotal}}'])) };
+  if (integrated && (report.resources.host_free_bytes < 1024 * 1048576 || report.resources.docker_memory_bytes < 2 * 1024 * 1048576)) throw new Error('INSUFFICIENT_FREE_RESOURCES');
   shared = readLocalConnection();
   report.shared_before = await schemaFingerprint(shared);
   for (const port of report.ports) await new Promise((ok, fail) => { const server = net.createServer(); server.once('error', () => fail(new Error(`PORT_UNAVAILABLE_${port}`))); server.listen(port, '0.0.0.0', () => server.close(ok)); });
@@ -120,8 +135,9 @@ try {
   edge = spawn(supabaseCli, ['functions', 'serve', '--workdir', directory, '--env-file', join(directory, 'empty.env')], { cwd: root, windowsHide: true, stdio: 'ignore' });
   edge.on('error', () => {});
   let ready = false;
-  for (let i = 0; i < 80; i++) { try { const response = await fetch(`${connection.api}/functions/v1/sync-batch`, { signal: AbortSignal.timeout(2000) }); if (response.status === 401) { ready = true; break; } } catch {} await new Promise(r => setTimeout(r, 500)); }
+  for (let i = 0; i < 80; i++) { try { const response = await fetch(`${connection.api}/functions/v1/sync-batch`, { ...(integrated ? { method: 'POST', headers: { Authorization: `Bearer ${connection.anon}`, 'Content-Type': 'application/json' }, body: '{}' } : {}), signal: AbortSignal.timeout(2000) }); if (integrated ? edgeHandlerReady(response.status, await response.json()) : response.status === 401) { ready = true; break; } } catch {} await new Promise(r => setTimeout(r, 500)); }
   if (!ready) throw new Error('EDGE_AUTH_GATE_UNAVAILABLE');
+  report.steps.edge_handler = integrated ? 'ANON_HANDLER_401_VERIFIED' : 'GATEWAY_401_OBSERVED'; save();
   const env = { ...process.env, ...(seedAB ? { REBANHOSYNC_SEED_AB_SERIES: report.independent_series } : {}), ...(postAckRun ? { REBANHOSYNC_POST_ACK_VARIANT: 'optimized' } : {}), REBANHOSYNC_DISPOSABLE_LOCAL_DB: '1', REBANHOSYNC_SKIP_FUNCTIONS_SERVE: '1', DB_URL: connection.database, API_URL: connection.api, FUNCTIONS_URL: `${connection.api}/functions/v1`, ANON_KEY: connection.anon, SERVICE_ROLE_KEY: connection.service };
   const validation = await child(process.execPath, ['scripts/codex/validate-supabase-baseline-functional.mjs'], env);
   report.steps.functional_exit = validation.code;
@@ -131,7 +147,7 @@ try {
     report.functional_failure = validation.stderr.split(/\r?\n/).filter(x => /^Error:/.test(x)).map(x => x.replace(/https?:\/\/\S+|postgres(?:ql)?:\/\/\S+|eyJ[\w.-]+/g, '[REDACTED]'));
     throw new Error('FUNCTIONAL_CERTIFICATION_FAILED');
   }
-  for (const workload of p0Reconnect || ackDiagnosis ? [] : ['pull', 'reconnect']) {
+  for (const workload of integrated || p0Reconnect || ackDiagnosis ? [] : ['pull', 'reconnect']) {
     console.log(JSON.stringify({ phase: workload }));
     const probe = await child(process.execPath, ['scripts/codex/performance-baseline.mjs', '--workload', workload, '--animals', '10', '--gestures', '2', '--farms', '2', '--runs', '1', '--mode', workload === 'pull' ? 'cold' : 'warm', '--purpose', 'benchmark'], env);
     report.steps[`${workload}_exit`] = probe.code;
@@ -144,6 +160,38 @@ try {
     } catch { report[`${workload}_probe`] = { error: 'PROBE_OUTPUT_UNAVAILABLE' }; }
     if (report[`${workload}_probe`].error) throw new Error('PROBE_EVIDENCE_UNAVAILABLE');
     save(); if (probe.code !== 0) throw new Error(`${workload.toUpperCase()}_PROOF_FAILED`);
+  }
+  if (integrated) {
+    report.integrated_series = [];
+    report.certification_budget = CERTIFICATION_LIMITS;
+    report.implementation = 'INTEGRATED';
+    for (const specification of specifications) {
+      if (interrupted) throw new Error('CERTIFICATION_INTERRUPTED');
+      for (const [name, hash] of Object.entries(report.harness_sources)) if (createHash('sha256').update(readFileSync(join(root, 'scripts/codex', name))).digest('hex') !== hash) throw new Error('HARNESS_CHANGED_DURING_SERIES');
+      console.log(JSON.stringify({ phase: 'integrated_reconnect', ...specification, project }));
+      const probe = await child(process.execPath, ['scripts/codex/performance-baseline.mjs', '--baseline', 'integrated', '--workload', 'reconnect', '--animals', String(specification.gestures), '--gestures', String(specification.gestures), '--farms', '2', '--runs', '1', '--mode', 'warm', '--purpose', 'benchmark'], { ...env, REBANHOSYNC_ACK_DIAGNOSIS: '1' });
+      const entry = { ...specification, exit: probe.code, signal: probe.signal };
+      try {
+        const receipt = JSON.parse(probe.stdout.split(/\r?\n/).findLast(line => line.startsWith('{"status":')));
+        if (!resolve(receipt.output).startsWith(join(root, 'test-results/f24-6') + '/')) {
+          if (!resolve(receipt.output).startsWith(join(root, 'test-results/f24-6') + '\\')) throw new Error('UNSAFE_PROBE_ARTIFACT');
+        }
+        entry.artifact = receipt.output; entry.evidence = JSON.parse(readFileSync(receipt.output, 'utf8'));
+      } catch {
+        entry.failure = 'PROBE_ARTIFACT_UNAVAILABLE';
+        entry.initialization_error = probe.stderr.match(/Error: ([A-Z][A-Z0-9_]+)/)?.[1] ?? null;
+        const partial = probe.stdout.split(/\r?\n/).findLast(line => line.startsWith('HARNESS_ARTIFACT '))?.slice('HARNESS_ARTIFACT '.length);
+        if (partial && resolve(partial).startsWith(join(root, 'test-results/f24-6'))) {
+          entry.artifact = partial; try { entry.evidence = JSON.parse(readFileSync(partial, 'utf8')); } catch {}
+        }
+      }
+      report.integrated_series.push(entry); save();
+      if (interrupted) throw new Error('CERTIFICATION_INTERRUPTED');
+      if (probe.code !== 0 || entry.failure) throw new Error('INTEGRATED_RUN_FAILED');
+      assertCertifiedRun(entry.evidence, specification.gestures);
+      console.log(JSON.stringify({ phase: 'integrated_run_complete', kind: specification.kind, run: specification.run, duration_ms: entry.evidence.results[0].duration_ms }));
+    }
+    report.summary = summarizeCertification(report.integrated_series.filter(entry => entry.kind === 'certification').map(entry => entry.evidence));
   }
   if (postAckRun) {
     report.post_ack_series = [];
@@ -206,7 +254,7 @@ try {
       console.log(JSON.stringify({ phase: 'reconnect_level_complete', gestures, kind, runs: runsRequested }));
     }
   }
-  report.result = 'READY_FOR_P0_BENCHMARKS';
+  report.result = integrated ? 'CERTIFIED' : 'READY_FOR_P0_BENCHMARKS';
 } catch (error) {
   report.result = 'BLOCKED_WITH_REASON'; report.failure = /^[A-Z0-9_]+$/.test(error.message) ? error.message : error.code ?? 'UNEXPECTED_ENVIRONMENT_FAILURE';
 } finally {
@@ -223,6 +271,7 @@ try {
     report.shared_schema_history_unchanged = JSON.stringify(report.shared_before) === JSON.stringify(report.shared_after);
     if (!report.cleanup_verified || !report.preexisting_resources_unchanged || !report.shared_schema_history_unchanged) { report.result = 'BLOCKED_WITH_REASON'; report.cleanup_failure = 'CLEANUP_OR_SHARED_STATE_NOT_VERIFIED'; }
   } catch { report.result = 'BLOCKED_WITH_REASON'; report.cleanup_failure = 'CLEANUP_VERIFICATION_FAILED'; }
+  process.off('SIGINT', onInterrupt); process.off('SIGTERM', onInterrupt);
   report.finished_at = new Date().toISOString(); save(); console.log(JSON.stringify({ result: report.result, failure: report.failure, report: join(directory, 'certification.json'), cleanup: report.cleanup_verified, shared_unchanged: report.shared_schema_history_unchanged }));
 }
-process.exitCode = report.result === 'READY_FOR_P0_BENCHMARKS' ? 0 : 1;
+process.exitCode = ['READY_FOR_P0_BENCHMARKS', 'CERTIFIED'].includes(report.result) ? 0 : 1;

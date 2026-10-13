@@ -1,6 +1,6 @@
 import { db, OfflineDB } from "../../src/lib/offline/db";
 
-type Options = { workload: string; animals: number; events: number; gestures: number; farms: number; mode: string };
+type Options = { workload: string; animals: number; events: number; gestures: number; farms: number; mode: string; baseline?: string };
 type Fixture = { farms: string[]; animals?: { id: string; fazenda_id: string }[]; email?: string; password?: string };
 let store: OfflineDB;
 let fixture: Fixture;
@@ -42,6 +42,7 @@ export async function seed(input: Options, remote: Fixture | null) {
       for (const farm of fixture.farms) await pullDataForFarm(farm, ["animais"], { mode: "merge" });
       ({ createGesture } = await import("../../src/lib/offline/ops"));
     }
+    if (input.baseline === 'integrated') check(await store.state_agenda_itens.count() === 0, 'AGENDA_NOT_EMPTY');
     seedStage('count_verification');
     return { animals: await store.state_animais.count(), gestures: await store.queue_gestures.count(), operations: await store.queue_ops.count() };
   }
@@ -77,6 +78,11 @@ export async function enqueueReconnect() {
   for (const animal of fixture.animals!) {
     await createGesture!(animal.fazenda_id, [{ table: "animais", action: "UPDATE", record: { id: animal.id, observacoes: "F24.6 benchmark updated" } }]);
   }
+  if (options.baseline === 'integrated') {
+    const ops = await store.queue_ops.toArray();
+    const expected = new Map(fixture.animals!.map(a => [a.id,a.fazenda_id]));
+    check(new Set(ops.map(op => op.record.id)).size === options.gestures && ops.every(op => op.table === 'animais' && op.action === 'UPDATE' && expected.get(op.record.id) === op.record.fazenda_id && op.record.observacoes === 'F24.6 benchmark updated'), 'QUEUE_IDENTITY_OR_SCOPE');
+  }
   check(await store.queue_gestures.count() === options.gestures && await store.queue_ops.count() === options.gestures, "OFFLINE_QUEUE_COUNT");
   return { gestures: await store.queue_gestures.count(), operations: await store.queue_ops.count() };
 }
@@ -102,6 +108,8 @@ export async function execute() {
   let operations = 0;
   let gestures = 0;
   let queueBytes = 0;
+  let ackConfirmed = 0;
+  let localRows: Record<string, unknown>[] = [];
   const flow = options.workload === "pull" || options.workload === "reconnect";
   const backlogBefore = await store.queue_gestures.where("status").equals("PENDING").count();
   const controlBefore = await store.state_animais.where("fazenda_id").equals(fixture.farms[1]).toArray();
@@ -155,6 +163,8 @@ export async function execute() {
         if (diagnostic) diagnostic.events.push({ stage: 'gesture_terminal', at_ms: performance.now() - diagnostic.start, ...diagnostic.current, duration_ms: performance.now() - gestureStart, status: completed?.status, sync_result: completed?.sync_result, retry_count: completed?.retry_count, next_attempt_scheduled: Boolean(completed?.next_attempt_at), diagnostics: completed?.diagnostics, operation_statuses: completed?.operation_results?.map(r => ({ status: r.status, reason_code: r.reason_code })), pending: await store.queue_gestures.where('status').equals('PENDING').count(), operations_remaining: await store.queue_ops.count(), obligations_remaining: await store.sync_reconcile_obligations.count() });
         if (diagnostic) diagnostic.overhead_ms += performance.now() - diagnosticTerminalStart;
         check(completed?.status === "DONE", "ACK_NOT_CONFIRMED");
+        if (options.baseline === 'integrated') check(completed?.operation_results?.length === 1 && completed.operation_results[0].status === 'APPLIED', 'ACK_RESULT_NOT_APPLIED');
+        ackConfirmed++;
       }
       // Upper bound: processGesture may include inline refresh; not server ACK latency.
       ackDuration = performance.now() - start;
@@ -173,6 +183,13 @@ export async function execute() {
     if (options.workload === "reconnect") {
       check(await store.queue_ops.count() === 0 && await store.sync_reconcile_obligations.count() === 0, "CONVERGENCE_BACKLOG");
       for (const animal of fixture.animals!) check((await store.state_animais.get(animal.id))?.observacoes === "F24.6 benchmark updated", "CONVERGENCE_VALUE");
+      if (options.baseline === 'integrated') {
+        const animals = await store.state_animais.toArray();
+        check(animals.length === options.animals && await store.state_agenda_itens.count() === 0, 'LOCAL_DATASET_INTEGRITY');
+        const expected = new Map(fixture.animals!.map(a => [a.id,a.fazenda_id]));
+        check(animals.every(a => expected.get(a.id) === a.fazenda_id), 'CROSS_FARM_CONVERGENCE');
+        localRows = animals.map(a => ({ id: a.id, fazenda_id: a.fazenda_id, observacoes: a.observacoes, revision: a.revision, client_op_id: a.client_op_id, client_tx_id: a.client_tx_id }));
+      }
       convergenceDuration = performance.now() - start;
     }
   }
@@ -181,7 +198,8 @@ export async function execute() {
   const controlAfter = await store.state_animais.where("fazenda_id").equals(fixture.farms[1]).toArray();
   if (options.workload !== "reconnect") check(JSON.stringify(controlBefore) === JSON.stringify(controlAfter), "CONTROL_FARM_CHANGED");
   return {
-    duration_ms: duration, sample_count: 1, operations, gestures, queue_serialized_bytes: queueBytes,
+    duration_ms: duration, sample_count: 1, operations, gestures,
+    ...(options.baseline === 'integrated' ? { ack_confirmed: ackConfirmed, local_rows: localRows, local_convergence_verified: true } : {}), queue_serialized_bytes: queueBytes,
     rows_expected: rowsExpected, rows_received: rowsReceived, rows_installed: rowsInstalled,
     backlog_before: backlogBefore, backlog_after: await store.queue_gestures.where("status").equals("PENDING").count(),
     max_backlog_age_ms: maxAge, ack_duration_upper_bound_ms: ackDuration, convergence_duration_ms: convergenceDuration,
