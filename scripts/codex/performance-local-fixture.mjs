@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { readdirSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import pg from "pg";
+import { verifyRemoteFixture } from "./performance-integrated-contract.mjs";
 import { assertLocalUrl, assertMigrationBaseline } from "./performance-contract.mjs";
 
 // CLI secrets are captured in memory. No linked/remote command or env file.
@@ -80,7 +81,13 @@ export async function seedLocalFixture(connection, options) {
     if (inserted.rowCount !== count || actual !== count) throw new Error('REMOTE_FIXTURE_COUNT_MISMATCH');
     environment.fixture_animals_expected = count;
     environment.fixture_animals_actual = actual;
-    return { fixture, cleanup, environment };
+    const initial = (await sql.query('select id,revision from public.animais where fazenda_id=any($1::uuid[])', [fixture.farms])).rows;
+    const verify = async localRows => {
+      const remote = (await sql.query('select id,fazenda_id,observacoes,revision,client_op_id,client_tx_id from public.animais where fazenda_id=any($1::uuid[]) order by id', [fixture.farms])).rows;
+      const agenda = (await sql.query('select count(*)::int as n from public.agenda_itens where fazenda_id=any($1::uuid[])', [fixture.farms])).rows[0].n;
+      return verifyRemoteFixture({ initial, animals: fixture.animals, remote, localRows, agenda, farms: fixture.farms });
+    };
+    return { fixture, cleanup, environment, verify };
   } catch (error) {
     try { await cleanup(); } catch { throw new Error("LOCAL_SEED_AND_CLEANUP_FAILED"); }
     throw error;

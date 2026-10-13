@@ -1,7 +1,7 @@
 export const BASELINE_SHA = "3b3bc96db331c2917167cf8370024332f505d9f7";
 
 export function parseOptions(args) {
-  const options = { workload: "indexeddb", animals: 100, events: 1000, gestures: 100, farms: 2, runs: 3, mode: "cold", purpose: "proof" };
+  const options = { workload: "indexeddb", animals: 100, events: 1000, gestures: 100, farms: 2, runs: 3, mode: "cold", purpose: "proof", baseline: "historical" };
   for (let i = 0; i < args.length; i += 2) {
     const key = args[i]?.replace(/^--/, "");
     if (!args[i]?.startsWith("--") || !(key in options) || args[i + 1] === undefined) throw new Error("INVALID_OPTIONS");
@@ -14,6 +14,7 @@ export function parseOptions(args) {
   }
   if (options.farms < 2 || options.animals < options.farms || options.gestures < options.farms) throw new Error("ISOLATION_REQUIRES_TWO_POPULATED_FARMS");
   if (options.animals > 50000 || options.events > 500000 || options.gestures > 10000 || options.runs > 1000 || options.farms > 20) throw new Error("OUTSIDE_P0_ENVELOPE");
+  if (!["historical", "integrated"].includes(options.baseline)) throw new Error("INVALID_BASELINE");
   return options;
 }
 

@@ -1,8 +1,8 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-10-12
+Atualizado em: 2026-10-13
 Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A — Performance / Scale Baseline; produção não autorizada**
-Próxima fase: **Fase 24 — F24.6A1-H1 — publicação documental independente; depois rebaseline do harness e reconnect 1k**
+Próxima fase: **Fase 24 — integração administrativa da F24.6A1 certificada; nenhuma nova subfase**
 Baseline operacional pós-F24.4F / base F24.5A–B: `main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`; PR #181 `MERGED`.
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
@@ -37,7 +37,7 @@ H1 consolida somente os cinco documentos canônicos na branch
 publicação documental independente posterior. Sem alteração funcional ou de harness;
 F24.6 ACTIVE e reconnect 1k NOT_CERTIFIED. E1/E2 e artifacts históricos preservados.
 
-### Próxima execução proposta — reconnect 1k, série independente
+### Plano histórico já executado — reconnect 1k, série independente
 
 - Preflight novo: fetch, SHA da main, diff/hashes de fontes e harness, versões de
   Node/pnpm/Chromium/CLI/backend, portas/volumes e inventário Docker. Congelar o
@@ -86,7 +86,11 @@ o harness/fontes congelados para a série de reconnect.
 
 ## F24.6A — estado integrado e evidências anteriores
 
-**F24.6A1-H — estado vigente (12/10/2026):** PR [#196](https://github.com/maresdeandrade/RebanhoSync/pull/196) `MERGED` em `6cf239fddf6a33249dbba8ce99de180e1772280e`, head integrado `694f4921d96b4acc7c07eb347d68c2d69e98c6ed`. Patch C+D, remediações Fallow G1/G2 e compatibilidade Vitest G5/G6 integrados. CI incremental [38162109877](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162109877) e gate completo [38162234927](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162234927) aprovados; gate completo com build, cleanup, 431 arquivos/3644 testes aprovados e 3 arquivos/59 testes skipped. Os quatro testes de performance executaram seus dez casos. F24.6 permanece ACTIVE; `RECONNECT_1K = NOT_CERTIFIED`, ganho geral de latência/memória NOT_PROVEN.
+**F24.6A1 — certificação concluída / fechamento administrativo (13/10/2026):** `RECONNECT_1K = CERTIFIED` em `main@869f006679827f3baddb0afed3c3cbf22e976fa5`: smoke aprovado, 5/5 runs sequenciais de 1.000 gestos, 1.000 animais, duas fazendas 500/500, warm, agenda vazia; mediana 146,46s. ACKs, fila/obrigações zeradas, isolamento, convergência, revisão única e cleanup comprovados no [relatório único](./F24_6A1_RECONNECT_1K_CERTIFICATION.md), com evidências versionadas e hashes auditáveis. Baseline E1/E2 e falhas anteriores preservadas; sem repetição do benchmark nesta publicação.
+
+Fechamento preparado neste pacote: **`F24.6A1 = CLOSED / INTEGRATED` somente após o merge deste PR na main**, restrito ao envelope certificado; antes do merge, certificação concluída e integração pendente. Não há nova subfase, novo relatório ou documentação pós-merge exigidos. F24.6 continua ACTIVE; nenhuma execução posterior foi autorizada. Preservados os riscos de certificação local/heap amostrado/n=5 e causa interna do primeiro 502 não capturada.
+
+**F24.6A1-H — snapshot histórico substituído (12/10/2026):** PR [#196](https://github.com/maresdeandrade/RebanhoSync/pull/196) `MERGED` em `6cf239fddf6a33249dbba8ce99de180e1772280e`, head integrado `694f4921d96b4acc7c07eb347d68c2d69e98c6ed`. Patch C+D, remediações Fallow G1/G2 e compatibilidade Vitest G5/G6 integrados. CI incremental [38162109877](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162109877) e gate completo [38162234927](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162234927) aprovados; gate completo com build, cleanup, 431 arquivos/3644 testes aprovados e 3 arquivos/59 testes skipped. Os quatro testes de performance executaram seus dez casos. F24.6 permanece ACTIVE; `RECONNECT_1K = NOT_CERTIFIED`, ganho geral de latência/memória NOT_PROVEN.
 
 Baseline operacional observado: `origin/main@cd1855dba81f06c4b49ce29621af5cc20573cae9`. O avanço após #196 é o PR #197 (`605cec2`), restrito a UI de reprodução/parentesco e tsconfig; não altera C+D, testes pós-ACK ou harness. Baseline histórica E1/E2 continua `3b3bc96db331c2917167cf8370024332f505d9f7`; séries, parâmetros, hashes e relatórios históricos preservados. Próxima execução: preparar o harness para adoção explícita do baseline integrado e retomar reconnect 1k conforme o plano no handoff; nenhum benchmark executado em H.
 

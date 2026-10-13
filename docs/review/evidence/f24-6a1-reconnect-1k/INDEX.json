@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "baseline": "869f006679827f3baddb0afed3c3cbf22e976fa5",
+  "historical_baseline": "3b3bc96db331c2917167cf8370024332f505d9f7",
+  "certification_date": "2026-10-12",
+  "publication_date": "2026-10-13",
+  "decision": "CERTIFIED",
+  "benchmark_repeated": false,
+  "archive": "ARTIFACTS.zip",
+  "archive_bytes": 3688701,
+  "archive_sha256": "51700a4ee2bedb1c362bcb224d8f7f039e40c0f1b9f13201c51252b0c85f4d68",
+  "source_bytes_preserved": true,
+  "secret_scan": "PASS",
+  "entries": [
+    {
+      "path": "final/certification.json",
+      "bytes": 27873870,
+      "sha256": "69b02847368205d69d8659f236762b45f78a49a63b827cae64a1130ef171fa85"
+    },
+    {
+      "path": "historical/f24-6a1-d-instrumentation-manifest.json",
+      "bytes": 890,
+      "sha256": "29430d33044221dab6ef5617e25ef9aa4d87f967a7f1dd41ec22e6fb1f0bdcfa"
+    },
+    {
+      "path": "historical/f24-6a1-d-preserved-manifest.json",
+      "bytes": 306,
+      "sha256": "ba131feeaad707cf083001a31e5f03d37aa9b2142a1c8303f253e8bd592e3f0c"
+    },
+    {
+      "path": "historical/f24-6a1-e1-delivery-manifest.json",
+      "bytes": 2187,
+      "sha256": "d256a0734281245b0f420c14d6710d368388738126f5ff37f34cd6ac83d8a8a5"
+    },
+    {
+      "path": "historical/f24-6a1-e1-patch-manifest-v1.json",
+      "bytes": 584,
+      "sha256": "bc75d761e9e89bd8dddf91d35661a3c7b388b47190f4899f8db0cf18b065af0a"
+    },
+    {
+      "path": "historical/f24-6a1-e1-patch-manifest.json",
+      "bytes": 634,
+      "sha256": "707e3baaba036c641b8aabaa2ac70c489a55ac05af21417d032ad31388f7aff7"
+    },
+    {
+      "path": "historical/f24-6a1-e2-delivery-manifest.json",
+      "bytes": 2614,
+      "sha256": "df2f71dd49dc43b100d2e6d2963a0abb222a9cfad2fc0a6427266e0fce8b16e2"
+    },
+    {
+      "path": "historical/f24-6a1-e2-preserved-manifest.json",
+      "bytes": 14752,
+      "sha256": "fae0a0e8a0628e1efa2102535288c60caadbfee189af290cfb22f7dcc842af5f"
+    },
+    {
+      "path": "original/F24_6A1_RECONNECT_1K_CERTIFICATION.md",
+      "bytes": 16345,
+      "sha256": "44be6b045112b252f4dbc022f12d852c872d4092950ff3400e136a355a9b3a28"
+    },
+    {
+      "path": "original/reconnect-1k-final-manifest.json",
+      "bytes": 3164,
+      "sha256": "6a17eb1d91b82b84665eb2221c0d2771ddf4a982472a686c57cb3f6b7c9e36c3"
+    },
+    {
+      "path": "original/reconnect-1k-harness.patch",
+      "bytes": 70369,
+      "sha256": "a2191efeb50d9c8cdac458150c3aaf7e4561baf7fe5433ade809e348f6e1f3e3"
+    },
+    {
+      "path": "preparation/edge-initialization-diagnosis.json",
+      "bytes": 396,
+      "sha256": "b5fcf6c433ca438ffdff7e82ec2c0b3394cb6f336be9114fb6d113e053430637"
+    },
+    {
+      "path": "preparation/edge-readiness-proof.json",
+      "bytes": 353,
+      "sha256": "a411393091efbc1d24fa4b718257fda052c368ac958280a7fbdd1ef30668ae93"
+    },
+    {
+      "path": "preparation/first-certification.json",
+      "bytes": 24338,
+      "sha256": "80a5be1cae0e93693b35b2317ba59ad9e6e7c48bca982ac63c5e0c7235e7203e"
+    },
+    {
+      "path": "preparation/second-certification.json",
+      "bytes": 93002,
+      "sha256": "1527261d30ada406de008e601e8d4cb616e1a713c8ce4e934c72e1c59979b000"
+    },
+    {
+      "path": "runs/reconnect-warm-1791834206783.json",
+      "bytes": 58220,
+      "sha256": "94227e66dc62b5d800f0bb33cd6aeb64d43166c2b3f376d3563853098f849a75"
+    },
+    {
+      "path": "runs/reconnect-warm-1791834368711.json",
+      "bytes": 62273,
+      "sha256": "6a3e649825f3c330b818b51159da9f2e85f84058ea76a3417852ac0c1bc0b243"
+    },
+    {
+      "path": "runs/reconnect-warm-1791834383376.json",
+      "bytes": 4808739,
+      "sha256": "53ffbe63c7dc59ea020a57546039816792a2226cba2457d9003b18321b102f9a"
+    },
+    {
+      "path": "runs/reconnect-warm-1791834552935.json",
+      "bytes": 4808165,
+      "sha256": "bae75021abe84bffd2ff4d82c5191a0a7d885ecdeeb96aa4c7e99529c0c367d8"
+    },
+    {
+      "path": "runs/reconnect-warm-1791834717428.json",
+      "bytes": 4807910,
+      "sha256": "444733af9eebf5a230fcb0743bdc578e34dccda3a4a3b1185f8de71bebc721e9"
+    },
+    {
+      "path": "runs/reconnect-warm-1791834882925.json",
+      "bytes": 4807930,
+      "sha256": "d9f81c5920046cb0033ac3454ded224eb36d3930bd3b1be6e792499a17c93187"
+    },
+    {
+      "path": "runs/reconnect-warm-1791835051435.json",
+      "bytes": 4807922,
+      "sha256": "1a386b8be3d4acd5c0aa9e049c9506d053c6f4be1eff310aed362344f227a46a"
+    }
+  ]
+}
