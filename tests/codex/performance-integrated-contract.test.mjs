@@ -7,7 +7,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { BASELINE_SHA, parseOptions } from '../../scripts/codex/performance-contract.mjs';
-import { INTEGRATED_BASELINE_SHA, selectBaseline, assertFrozenProduct, certificationSpecifications, assertOperationalBudget, withDeadline, assertCertifiedRun, summarizeCertification, edgeHandlerReady, cleanupOwnedIndexedDB, verifyRemoteFixture } from '../../scripts/codex/performance-integrated-contract.mjs';
+import { INTEGRATED_BASELINE_SHA, PRODUCT_PATHS, selectBaseline, assertFrozenProduct, certificationSpecifications, assertOperationalBudget, withDeadline, assertCertifiedRun, summarizeCertification, edgeHandlerReady, cleanupOwnedIndexedDB, verifyRemoteFixture } from '../../scripts/codex/performance-integrated-contract.mjs';
 
 const options = { baseline: 'integrated', workload: 'reconnect', mode: 'warm', purpose: 'benchmark', gestures: 1000, animals: 1000, farms: 2, runs: 1 };
 const env = { REBANHOSYNC_ACK_DIAGNOSIS: '1' };
@@ -39,9 +39,13 @@ test('real git guards reject staged, unstaged, committed and ignored product cha
   const commit = () => git(['-c', 'user.name=Harness test', '-c', 'user.email=harness@example.test', 'commit', '-m', 'fixture']);
   try {
     git(['init']); mkdirSync(join(directory, 'src'));
+    mkdirSync(join(directory, 'supabase/.temp'), { recursive: true });
+    writeFileSync(join(directory, 'supabase/.temp/cli-latest'), 'tooling notice');
     writeFileSync(join(directory, 'src/product.ts'), 'baseline');
     writeFileSync(join(directory, '.gitignore'), 'src/ignored.ts\n');
     git(['add', '.']); commit(); const baseline = git(['rev-parse', 'HEAD']);
+    writeFileSync(join(directory, 'supabase/.temp/cli-latest'), 'updated tooling notice');
+    assert.equal(git(['diff', '--name-only', '--', ...PRODUCT_PATHS]), '');
     assertFrozenProduct(git, baseline, baseline);
     writeFileSync(join(directory, 'src/product.ts'), 'changed');
     assert.throws(() => assertFrozenProduct(git, baseline, baseline), /PRODUCT_PATCH_NOT_ALLOWED/);
