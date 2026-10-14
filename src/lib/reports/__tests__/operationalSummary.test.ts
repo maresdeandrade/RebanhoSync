@@ -1266,7 +1266,15 @@ describe("buildOperationalSummaryCsv", () => {
     expect(csv).toContain("conformidade_impacto");
     expect(csv).not.toContain("undefined");
 
+    expect(
+      buildOperationalSummaryCsv(report, 'Fazenda; "Teste"'),
+    ).toContain('meta;fazenda;"Fazenda; ""Teste"""');
+
     const html = buildOperationalSummaryPrintHtml(report, "Fazenda Teste");
+    expect(
+      buildOperationalSummaryPrintHtml(report, '<Fazenda & "Teste">'),
+    ).toContain("&lt;Fazenda &amp; &quot;Teste&quot;&gt;");
+
     expect(html).toContain("Fontes e limitacoes");
     expect(html).toContain("Resultado economico observado");
     expect(html).toContain("profit=NOT_DEMONSTRATED");
