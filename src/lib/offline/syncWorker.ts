@@ -51,6 +51,7 @@ import {
 } from "@/lib/telemetry/pilotMetrics";
 import { getActiveFarmId } from "@/lib/storage";
 import { getCurrentLocalReadOwnership } from "./localReadBoundary";
+import { evaluateLocalOwnership } from "./ownership";
 import { pullReproductionDiagnosisState } from "@/lib/reproduction/remoteSync";
 import {
   buildCommercialPurchaseEnvelope,
@@ -1108,9 +1109,86 @@ async function processSanitarioCanonicalResults(
   return true;
 }
 
+async function requeueErroredGestureIfUnchanged(
+  gesture: Gesture,
+  changes: Partial<Gesture>,
+  ownerUserId: string,
+): Promise<boolean> {
+  let sessionChanged = false;
+  const recoveryCancelled = new Error("Recovery auth context changed");
+  const authSubscription = supabase.auth.onAuthStateChange?.(
+    (_event, session) => {
+      if (session?.user.id !== ownerUserId) {
+        sessionChanged = true;
+      }
+    },
+  )?.data.subscription;
+
+  try {
+    // Session checks can await refresh; keep them outside the IndexedDB transaction.
+    const ownership = await getCurrentLocalReadOwnership();
+    if (
+      sessionChanged ||
+      ownership.status !== "OWNED" ||
+      ownership.currentUserId !== ownerUserId
+    ) {
+      return false;
+    }
+
+    return await db.transaction(
+      "rw",
+      [db.queue_gestures, db.queue_ops, db.local_ownership],
+      async () => {
+        if (sessionChanged) return false;
+        // Pin this recovery to its original user, even if ownership changes while
+        // the transaction waits for another tab's queue/reset transaction.
+        const persistedOwnership = await evaluateLocalOwnership(ownerUserId);
+        if (sessionChanged || persistedOwnership.status !== "OWNED")
+          return false;
+        const current = await db.queue_gestures.get(gesture.client_tx_id);
+        // Recovery can race with another worker while awaiting session or storage.
+        // Never overwrite a newer claim, retry schedule or terminal result.
+        if (
+          sessionChanged ||
+          current?.status !== "ERROR" ||
+          current.last_error !== gesture.last_error ||
+          current.retry_count !== gesture.retry_count ||
+          current.next_attempt_at !== gesture.next_attempt_at ||
+          current.completed_at !== gesture.completed_at ||
+          current.sync_result !== gesture.sync_result ||
+          current.fazenda_id !== gesture.fazenda_id ||
+          current.client_id !== gesture.client_id ||
+          current.created_at !== gesture.created_at
+        ) {
+          return false;
+        }
+
+        // Check persisted work in the same transaction as the state transition:
+        // a concurrent ACK must not leave a requeued gesture without operations.
+        const queuedOps = await db.queue_ops
+          .where("client_tx_id")
+          .equals(gesture.client_tx_id)
+          .count();
+        if (queuedOps === 0 || sessionChanged) return false;
+
+        await db.queue_gestures.update(gesture.client_tx_id, changes);
+        // Throwing from the transaction rolls back a write pending at sign-out.
+        if (sessionChanged) throw recoveryCancelled;
+        return true;
+      },
+    );
+  } catch (error) {
+    // Auth revocation cancels only this recovery. Storage failures still propagate.
+    if (error === recoveryCancelled) return false;
+    throw error;
+  } finally {
+    authSubscription?.unsubscribe();
+  }
+}
+
 export async function recoverErroredGesturesOnce() {
   const ownership = await getCurrentLocalReadOwnership();
-  if (ownership.status !== "OWNED") return;
+  if (ownership.status !== "OWNED" || !ownership.currentUserId) return;
 
   const errored = await db.queue_gestures
     .where("status")
@@ -1136,41 +1214,35 @@ export async function recoverErroredGesturesOnce() {
 
   let requeued = 0;
   for (const gesture of transient) {
-    // Zero-operation ERROR gestures have nothing to replay; fail closed for
-    // manual reconciliation instead of requeueing into fabricated DONE.
-    const queuedOps = await db.queue_ops
-      .where("client_tx_id")
-      .equals(gesture.client_tx_id)
-      .count();
-    if (queuedOps === 0) continue;
-
-    await db.queue_gestures.update(gesture.client_tx_id, {
-      status: "PENDING",
-      sync_result: undefined,
-      completed_at: undefined,
-      retry_count: 0,
-      next_attempt_at: undefined,
-      last_error:
-        "Recovered transient sync error; retrying after worker startup",
-    });
-    requeued += 1;
+    const recovered = await requeueErroredGestureIfUnchanged(
+      gesture,
+      {
+        status: "PENDING",
+        sync_result: undefined,
+        completed_at: undefined,
+        retry_count: 0,
+        next_attempt_at: undefined,
+        last_error:
+          "Recovered transient sync error; retrying after worker startup",
+      },
+      ownership.currentUserId,
+    );
+    if (recovered) requeued += 1;
   }
 
   for (const gesture of authRecoverable) {
-    const queuedOps = await db.queue_ops
-      .where("client_tx_id")
-      .equals(gesture.client_tx_id)
-      .count();
-    if (queuedOps === 0) continue;
-
-    await db.queue_gestures.update(gesture.client_tx_id, {
-      status: "PENDING",
-      sync_result: undefined,
-      completed_at: undefined,
-      retry_count: 0,
-      last_error: "Recovered auth session; retrying after worker startup",
-    });
-    requeued += 1;
+    const recovered = await requeueErroredGestureIfUnchanged(
+      gesture,
+      {
+        status: "PENDING",
+        sync_result: undefined,
+        completed_at: undefined,
+        retry_count: 0,
+        last_error: "Recovered auth session; retrying after worker startup",
+      },
+      ownership.currentUserId,
+    );
+    if (recovered) requeued += 1;
   }
 
   if (requeued > 0) {
