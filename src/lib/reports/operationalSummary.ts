@@ -83,7 +83,10 @@ import {
   resolveFinancialEventLink,
 } from "@/lib/finance/classification";
 import { selectEconomicCoverage } from "@/lib/finance/economicCoverage";
-import { calculateObservedEconomicResult, type ObservedEconomicResult } from "@/lib/finance/observedEconomicResult";
+import {
+  calculateObservedEconomicResult,
+  type ObservedEconomicResult,
+} from "@/lib/finance/observedEconomicResult";
 
 export {
   OPERATIONAL_REPORT_SOURCE_NOTES,
@@ -1019,7 +1022,9 @@ function closeMetricSemantics(
 
       if (
         kind === "historical" &&
-        (metric.status === "complete" || metric.status === "partial" || metric.status === "unavailable") &&
+        (metric.status === "complete" ||
+          metric.status === "partial" ||
+          metric.status === "unavailable") &&
         coverage.state !== "verified"
       ) {
         const hasLocalEvidence = metric.value != null && metric.value !== 0;
@@ -1364,7 +1369,8 @@ export function buildOperationalSummary(
         })
       : undefined);
   const usingComposedSanitaryAgenda = composedSanitaryAgendaItems !== undefined;
-  const supplyAgendaItems = composedSanitaryAgendaItems ?? legacySupplyAgendaItems;
+  const supplyAgendaItems =
+    composedSanitaryAgendaItems ?? legacySupplyAgendaItems;
   const futureDemandSource = usingComposedSanitaryAgenda
     ? "state_agenda_itens + ops_sanitario_agenda_v2"
     : "state_agenda_itens";
@@ -1772,23 +1778,41 @@ export function buildOperationalSummary(
     return dateKey >= range.from && dateKey <= range.to;
   };
 
-  const observedEconomicResult = calculateObservedEconomicResult(selectEconomicCoverage({
-    fazendaId: input.fazendaId,
-    period: { from: range.from, to: range.to, timezone: metricTimezone.timezone ?? "UTC" },
-    sourceCoverage: {
-      financeTransactions: input.financeTransactions ? "VERIFIED" : "UNKNOWN",
-      financeCategories: input.financeCategories ? "VERIFIED" : "UNKNOWN",
-      commercialOperations: input.eventosComercial ? "VERIFIED" : "UNKNOWN",
-    },
-    transactions: input.financeTransactions ?? [], categories: input.financeCategories ?? [],
-    events: input.eventos, commercialDetails: input.eventosComercial ?? [],
-  }));
+  const observedEconomicResult = calculateObservedEconomicResult(
+    selectEconomicCoverage({
+      fazendaId: input.fazendaId,
+      period: {
+        from: range.from,
+        to: range.to,
+        timezone: metricTimezone.timezone ?? "UTC",
+      },
+      sourceCoverage: {
+        financeTransactions: input.financeTransactions ? "VERIFIED" : "UNKNOWN",
+        financeCategories: input.financeCategories ? "VERIFIED" : "UNKNOWN",
+        commercialOperations: input.eventosComercial ? "VERIFIED" : "UNKNOWN",
+      },
+      transactions: input.financeTransactions ?? [],
+      categories: input.financeCategories ?? [],
+      events: input.eventos,
+      commercialDetails: input.eventosComercial ?? [],
+    }),
+  );
 
   const financeiro = {
-    entradas: observedEconomicResult.status === "CALCULATED" ? observedEconomicResult.observedRevenue : null,
-    saidas: observedEconomicResult.status === "CALCULATED" ? observedEconomicResult.observedCost : null,
-    saldo: observedEconomicResult.status === "CALCULATED" ? observedEconomicResult.observedResult : null,
-    transacoes: observedEconomicResult.coverage.coverage.realizedTransactionsInPeriod,
+    entradas:
+      observedEconomicResult.status === "CALCULATED"
+        ? observedEconomicResult.observedRevenue
+        : null,
+    saidas:
+      observedEconomicResult.status === "CALCULATED"
+        ? observedEconomicResult.observedCost
+        : null,
+    saldo:
+      observedEconomicResult.status === "CALCULATED"
+        ? observedEconomicResult.observedResult
+        : null,
+    transacoes:
+      observedEconomicResult.coverage.coverage.realizedTransactionsInPeriod,
     compras: 0,
     vendas: 0,
     entradasCompetencia: 0,
@@ -2168,7 +2192,8 @@ export function buildOperationalSummary(
     financeEventCount + activeFinanceTransactions.length;
 
   const explicitFinanceCoverage = input.historicalCoverage?.financeiro_entradas;
-  const isFinanceExplicitlyVerified = explicitFinanceCoverage?.state === "verified";
+  const isFinanceExplicitlyVerified =
+    explicitFinanceCoverage?.state === "verified";
 
   const financeMetricStatus: MetricStatus =
     financeEvidenceCount === 0 && !isFinanceExplicitlyVerified
@@ -2195,9 +2220,12 @@ export function buildOperationalSummary(
       ? []
       : ["Existem Eventos financeiros sem detalhe carregado."]),
   ];
-  const observedFinanceMetricStatus: MetricStatus = observedEconomicResult.status === "NOT_CALCULATED"
-    ? "unavailable"
-    : observedEconomicResult.coverage.status === "PARTIAL" ? "partial" : "complete";
+  const observedFinanceMetricStatus: MetricStatus =
+    observedEconomicResult.status === "NOT_CALCULATED"
+      ? "unavailable"
+      : observedEconomicResult.coverage.status === "PARTIAL"
+        ? "partial"
+        : "complete";
   const observedFinanceSources = [
     { name: "state_finance_transactions", role: "primary" as const },
     { name: "state_finance_categories", role: "auxiliary" as const },
@@ -2206,7 +2234,9 @@ export function buildOperationalSummary(
   const observedFinanceLimitations = [
     ...observedEconomicResult.limitations,
     "Resultado observado restrito ao recorte conhecido; completeAccounting=false e profit=NOT_DEMONSTRATED.",
-    ...(observedEconomicResult.status === "NOT_CALCULATED" ? [`Indisponivel: ${observedEconomicResult.reason}.`] : []),
+    ...(observedEconomicResult.status === "NOT_CALCULATED"
+      ? [`Indisponivel: ${observedEconomicResult.reason}.`]
+      : []),
   ];
   const weightEventCount = eventos.filter(
     (event) => !event.deleted_at && event.dominio === "pesagem",
@@ -2356,7 +2386,10 @@ export function buildOperationalSummary(
       period: historicalPeriod,
     }),
     financeiro_transacoes: makeMetric({
-      value: observedFinanceMetricStatus === "unavailable" ? null : financeiro.transacoes,
+      value:
+        observedFinanceMetricStatus === "unavailable"
+          ? null
+          : financeiro.transacoes,
       status: observedFinanceMetricStatus,
       sources: observedFinanceSources,
       limitations: observedFinanceLimitations,

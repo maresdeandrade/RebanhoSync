@@ -128,16 +128,44 @@ export function buildOperationalSummaryCsv(
   pushRow("resumo", "eventos_no_periodo", report.summary.eventosPeriodo);
   pushRow("resumo", "pendencias_sync", report.summary.pendenciasSync);
   pushRow("resumo", "erros_sync", report.summary.errosSync);
-  pushRow("financeiro_observado", "receita_observada", report.financeiro.entradas?.toFixed(2) ?? "indisponivel");
-  pushRow("financeiro_observado", "custo_observado", report.financeiro.saidas?.toFixed(2) ?? "indisponivel");
-  pushRow("financeiro_observado", "resultado_observado", report.financeiro.saldo?.toFixed(2) ?? "indisponivel");
-  pushRow("financeiro_observado", "status", report.financeiro.observedEconomicResult.status);
-  pushRow("financeiro_observado", "coverage", report.financeiro.observedEconomicResult.coverage.status);
+  pushRow(
+    "financeiro_observado",
+    "receita_observada",
+    report.financeiro.entradas?.toFixed(2) ?? "indisponivel",
+  );
+  pushRow(
+    "financeiro_observado",
+    "custo_observado",
+    report.financeiro.saidas?.toFixed(2) ?? "indisponivel",
+  );
+  pushRow(
+    "financeiro_observado",
+    "resultado_observado",
+    report.financeiro.saldo?.toFixed(2) ?? "indisponivel",
+  );
+  pushRow(
+    "financeiro_observado",
+    "status",
+    report.financeiro.observedEconomicResult.status,
+  );
+  pushRow(
+    "financeiro_observado",
+    "coverage",
+    report.financeiro.observedEconomicResult.coverage.status,
+  );
   pushRow("financeiro_observado", "interpretation", "OBSERVED_SCOPE_ONLY");
   pushRow("financeiro_observado", "completeAccounting", "false");
   pushRow("financeiro_observado", "profit", "NOT_DEMONSTRATED");
-  report.financeiro.observedEconomicResult.limitations.forEach((item) => pushRow("financeiro_observado", "limitation", item));
-  report.financeiro.observedEconomicResult.coverage.conflicts.forEach((item) => pushRow("financeiro_observado", "conflict", `${item.code}: ${item.description}`));
+  report.financeiro.observedEconomicResult.limitations.forEach((item) =>
+    pushRow("financeiro_observado", "limitation", item),
+  );
+  report.financeiro.observedEconomicResult.coverage.conflicts.forEach((item) =>
+    pushRow(
+      "financeiro_observado",
+      "conflict",
+      `${item.code}: ${item.description}`,
+    ),
+  );
   pushRow("financeiro", "transacoes", report.financeiro.transacoes);
   pushRow("comercial", "operacoes", report.comercial.operations);
   pushRow("comercial", "cabecas", report.comercial.cabecasNegociadas);
@@ -604,10 +632,12 @@ export function buildOperationalSummaryPrintHtml(
     ["Agenda aberta", String(report.summary.agendaAberta)],
     [
       "Saldo no periodo",
-      report.financeiro.saldo == null ? "Indisponivel" : report.financeiro.saldo.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }),
+      report.financeiro.saldo == null
+        ? "Indisponivel"
+        : report.financeiro.saldo.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          }),
     ],
     ["Sync pendente", String(report.summary.pendenciasSync)],
   ]
@@ -980,28 +1010,34 @@ export function buildOperationalSummaryPrintHtml(
             <div class="finance-card">
               <span class="metric-label">Receita observada</span>
               <strong>${escapeHtml(
-                report.financeiro.entradas == null ? "Indisponivel" : report.financeiro.entradas.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }),
+                report.financeiro.entradas == null
+                  ? "Indisponivel"
+                  : report.financeiro.entradas.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    }),
               )}</strong>
             </div>
             <div class="finance-card">
               <span class="metric-label">Custo observado</span>
               <strong>${escapeHtml(
-                report.financeiro.saidas == null ? "Indisponivel" : report.financeiro.saidas.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }),
+                report.financeiro.saidas == null
+                  ? "Indisponivel"
+                  : report.financeiro.saidas.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    }),
               )}</strong>
             </div>
             <div class="finance-card">
               <span class="metric-label">Resultado observado</span>
               <strong>${escapeHtml(
-                report.financeiro.saldo == null ? "Indisponivel" : report.financeiro.saldo.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }),
+                report.financeiro.saldo == null
+                  ? "Indisponivel"
+                  : report.financeiro.saldo.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    }),
               )}</strong>
             </div>
           </div>
