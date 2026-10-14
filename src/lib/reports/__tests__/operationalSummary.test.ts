@@ -444,7 +444,14 @@ describe("buildOperationalSummary", () => {
       pendenciasSync: 1,
       errosSync: 1,
     });
-    expect(report.financeiro).toMatchObject({ entradas: null, saidas: null, saldo: null, transacoes: 0, compras: 0, vendas: 0 });
+    expect(report.financeiro).toMatchObject({
+      entradas: null,
+      saidas: null,
+      saldo: null,
+      transacoes: 0,
+      compras: 0,
+      vendas: 0,
+    });
     expect(report.pesagem).toMatchObject({
       totalPesagens: 1,
       pesoMedioKg: 420,
@@ -1242,7 +1249,9 @@ describe("buildOperationalSummaryCsv", () => {
 
     expect(csv).toContain("meta;fazenda;Fazenda Teste");
     expect(csv).toContain("resumo;animais_ativos;0");
-    expect(csv).toContain("financeiro_observado;resultado_observado;indisponivel");
+    expect(csv).toContain(
+      "financeiro_observado;resultado_observado;indisponivel",
+    );
     expect(csv).toContain("financeiro_observado;profit;NOT_DEMONSTRATED");
     expect(csv).toContain(
       "meta_fonte;fonte;Historico: event_eventos + detail tables no periodo selecionado.",
@@ -1266,7 +1275,15 @@ describe("buildOperationalSummaryCsv", () => {
     expect(csv).toContain("conformidade_impacto");
     expect(csv).not.toContain("undefined");
 
+    expect(buildOperationalSummaryCsv(report, 'Fazenda; "Teste"')).toContain(
+      'meta;fazenda;"Fazenda; ""Teste"""',
+    );
+
     const html = buildOperationalSummaryPrintHtml(report, "Fazenda Teste");
+    expect(
+      buildOperationalSummaryPrintHtml(report, '<Fazenda & "Teste">'),
+    ).toContain("&lt;Fazenda &amp; &quot;Teste&quot;&gt;");
+
     expect(html).toContain("Fontes e limitacoes");
     expect(html).toContain("Resultado economico observado");
     expect(html).toContain("profit=NOT_DEMONSTRATED");
@@ -1981,7 +1998,10 @@ describe("Phase 16 finance event and ledger semantics", () => {
     eventosComercial?: EventoComercial[];
     financeTransactions?: FinanceTransaction[];
     financeCategories?: FinanceCategory[];
-    historicalCoverage?: Record<string, { state: "complete" | "partial" | "verified" }>;
+    historicalCoverage?: Record<
+      string,
+      { state: "complete" | "partial" | "verified" }
+    >;
     gestures?: Gesture[];
     rejections?: Rejection[];
   }) {
@@ -2096,89 +2116,151 @@ describe("Phase 16 finance event and ledger semantics", () => {
       eventos: [event],
       eventosFinanceiro: [detail],
       financeTransactions: [transaction],
-      financeCategories: [{ id: "revenue-category", fazenda_id: "farm-1", tipo: "receita", ativo: true, deleted_at: null } as FinanceCategory],
+      financeCategories: [
+        {
+          id: "revenue-category",
+          fazenda_id: "farm-1",
+          tipo: "receita",
+          ativo: true,
+          deleted_at: null,
+        } as FinanceCategory,
+      ],
     });
 
     expect(report.financeiro.entradas).toBeNull();
     expect(report.financeiro.saldo).toBeNull();
-    expect(report.financeiro.observedEconomicResult).toMatchObject({ status: "NOT_CALCULATED", reason: "COST_UNAVAILABLE", completeAccounting: false, profit: "NOT_DEMONSTRATED" });
+    expect(report.financeiro.observedEconomicResult).toMatchObject({
+      status: "NOT_CALCULATED",
+      reason: "COST_UNAVAILABLE",
+      completeAccounting: false,
+      profit: "NOT_DEMONSTRATED",
+    });
     expect(report.financeiro.transacoes).toBe(1);
   });
 
-  it.each([[150, 100, 50], [100, 100, 0], [80, 100, -20]])(
-    "presents canonical observed result (%s - %s = %s)", (revenue, cost, expected) => {
-      const tx = (id: string, direction: "entrada" | "saida", category_id: string, valor_total: number) => ({
-        id, client_op_id: id, fazenda_id: "farm-1", occurred_at: "2026-03-15T12:00:00.000Z",
-        paid_at: "2026-03-15T12:00:00.000Z", direction, status: "realizado",
-        category_id, valor_total, origem: "manual", deleted_at: null,
-      }) as FinanceTransaction;
+  it.each([
+    [150, 100, 50],
+    [100, 100, 0],
+    [80, 100, -20],
+  ])(
+    "presents canonical observed result (%s - %s = %s)",
+    (revenue, cost, expected) => {
+      const tx = (
+        id: string,
+        direction: "entrada" | "saida",
+        category_id: string,
+        valor_total: number,
+      ) =>
+        ({
+          id,
+          client_op_id: id,
+          fazenda_id: "farm-1",
+          occurred_at: "2026-03-15T12:00:00.000Z",
+          paid_at: "2026-03-15T12:00:00.000Z",
+          direction,
+          status: "realizado",
+          category_id,
+          valor_total,
+          origem: "manual",
+          deleted_at: null,
+        }) as FinanceTransaction;
       const report = buildMinimalReport({
-        eventos: [], eventosFinanceiro: [], eventosComercial: [],
+        eventos: [],
+        eventosFinanceiro: [],
+        eventosComercial: [],
         financeCategories: [
-          { id: "revenue", fazenda_id: "farm-1", tipo: "receita", ativo: true, deleted_at: null } as FinanceCategory,
-          { id: "cost", fazenda_id: "farm-1", tipo: "custo_variavel", ativo: true, deleted_at: null } as FinanceCategory,
+          {
+            id: "revenue",
+            fazenda_id: "farm-1",
+            tipo: "receita",
+            ativo: true,
+            deleted_at: null,
+          } as FinanceCategory,
+          {
+            id: "cost",
+            fazenda_id: "farm-1",
+            tipo: "custo_variavel",
+            ativo: true,
+            deleted_at: null,
+          } as FinanceCategory,
         ],
-        financeTransactions: [tx("tx-r", "entrada", "revenue", revenue), tx("tx-c", "saida", "cost", cost)],
+        financeTransactions: [
+          tx("tx-r", "entrada", "revenue", revenue),
+          tx("tx-c", "saida", "cost", cost),
+        ],
       });
       expect(report.financeiro).toMatchObject({
-        entradas: revenue, saidas: cost, saldo: expected,
-        observedEconomicResult: { status: "CALCULATED", interpretation: "OBSERVED_SCOPE_ONLY", completeAccounting: false, profit: "NOT_DEMONSTRATED" },
+        entradas: revenue,
+        saidas: cost,
+        saldo: expected,
+        observedEconomicResult: {
+          status: "CALCULATED",
+          interpretation: "OBSERVED_SCOPE_ONLY",
+          completeAccounting: false,
+          profit: "NOT_DEMONSTRATED",
+        },
       });
     },
   );
 
   describe("Fase 16 - KPI Coverage", () => {
     it("does not treat loaded ledger as complete historical coverage automatically", () => {
-    const transaction = {
-      id: "tx-linked",
-      fazenda_id: "farm-1",
-      occurred_at: "2026-03-15T12:00:00.000Z",
-      competence_date: "2026-03-01",
-      due_date: "2026-03-20",
-      paid_at: "2026-03-15T12:00:00.000Z",
-      direction: "entrada",
-      status: "realizado",
-      valor_total: 3500,
-      source_event_id: null,
-      deleted_at: null,
-    } as unknown as FinanceTransaction;
+      const transaction = {
+        id: "tx-linked",
+        fazenda_id: "farm-1",
+        occurred_at: "2026-03-15T12:00:00.000Z",
+        competence_date: "2026-03-01",
+        due_date: "2026-03-20",
+        paid_at: "2026-03-15T12:00:00.000Z",
+        direction: "entrada",
+        status: "realizado",
+        valor_total: 3500,
+        source_event_id: null,
+        deleted_at: null,
+      } as unknown as FinanceTransaction;
 
-    const report = buildMinimalReport({
-      eventos: [],
-      eventosFinanceiro: [],
-      financeTransactions: [transaction],
-      historicalCoverage: {}, // Explicitly empty/missing
+      const report = buildMinimalReport({
+        eventos: [],
+        eventosFinanceiro: [],
+        financeTransactions: [transaction],
+        historicalCoverage: {}, // Explicitly empty/missing
+      });
+
+      expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
+      expect(report.metrics.financeiro_entradas.value).toBeNull();
     });
 
-    expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
-    expect(report.metrics.financeiro_entradas.value).toBeNull();
-  });
+    it("treats zero local without explicit coverage as unavailable", () => {
+      const report = buildMinimalReport({
+        eventos: [],
+        eventosFinanceiro: [],
+        financeTransactions: [],
+        historicalCoverage: {}, // Explicitly empty/missing
+      });
 
-  it("treats zero local without explicit coverage as unavailable", () => {
-    const report = buildMinimalReport({
-      eventos: [],
-      eventosFinanceiro: [],
-      financeTransactions: [],
-      historicalCoverage: {}, // Explicitly empty/missing
+      expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
+      expect(report.metrics.financeiro_entradas.value).toBeNull();
+      expect(report.financeiro.observedEconomicResult).toMatchObject({
+        status: "NOT_CALCULATED",
+        reason: "INSUFFICIENT_COVERAGE",
+      });
     });
 
-    expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
-    expect(report.metrics.financeiro_entradas.value).toBeNull();
-    expect(report.financeiro.observedEconomicResult).toMatchObject({ status: "NOT_CALCULATED", reason: "INSUFFICIENT_COVERAGE" });
-  });
+    it("does not turn an empty verified snapshot into observed zero", () => {
+      const report = buildMinimalReport({
+        eventos: [],
+        eventosFinanceiro: [],
+        financeTransactions: [],
+        historicalCoverage: {
+          financeiro_entradas: { state: "verified", evidence: [] },
+        } as unknown as Record<
+          OperationalMetricKey,
+          OperationalSummaryHistoricalCoverage
+        >,
+      });
 
-  it("does not turn an empty verified snapshot into observed zero", () => {
-    const report = buildMinimalReport({
-      eventos: [],
-      eventosFinanceiro: [],
-      financeTransactions: [],
-      historicalCoverage: {
-        financeiro_entradas: { state: "verified", evidence: [] },
-      } as unknown as Record<OperationalMetricKey, OperationalSummaryHistoricalCoverage>,
+      expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
+      expect(report.metrics.financeiro_entradas.value).toBeNull();
     });
-
-    expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
-    expect(report.metrics.financeiro_entradas.value).toBeNull();
-  });
   });
 });
