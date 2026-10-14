@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, CalendarClock, ClipboardCheck, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarClock,
+  ClipboardCheck,
+  ShieldCheck,
+} from "lucide-react";
 
 import {
   Accordion,
@@ -55,8 +60,12 @@ const STATUS_PRIORITY: Record<string, number> = {
   insufficient_data: 2,
 };
 
-function hasLocalCatalog(catalog: SanitaryProtocolCatalogReadModelV2 | null | undefined) {
-  return Boolean(catalog && catalog.protocols.length > 0 && catalog.items.length > 0);
+function hasLocalCatalog(
+  catalog: SanitaryProtocolCatalogReadModelV2 | null | undefined,
+) {
+  return Boolean(
+    catalog && catalog.protocols.length > 0 && catalog.items.length > 0,
+  );
 }
 
 function formatDate(value: string | null | undefined) {
@@ -80,7 +89,8 @@ function buildMainPendencies(results: SanitaryProtocolPrecheckResultV2[]) {
       (result) =>
         result.documentaryPending ||
         result.status === "overdue" ||
-        (result.status === "insufficient_data" && result.status !== "not_applicable"),
+        (result.status === "insufficient_data" &&
+          result.status !== "not_applicable"),
     )
     .map((result) => ({
       result,
@@ -93,7 +103,10 @@ function buildMainPendencies(results: SanitaryProtocolPrecheckResultV2[]) {
     .sort((left, right) => {
       const priorityDiff = right.priority - left.priority;
       if (priorityDiff !== 0) return priorityDiff;
-      return left.result.protocolName.localeCompare(right.result.protocolName, "pt-BR");
+      return left.result.protocolName.localeCompare(
+        right.result.protocolName,
+        "pt-BR",
+      );
     })
     .slice(0, 3)
     .map(({ result }) => result);
@@ -137,16 +150,25 @@ function HistoryList({
   );
 }
 
-function ExecutedHistoryList({ events }: { events: SanitaryExecutedHistoryEventV2[] }) {
+function ExecutedHistoryList({
+  events,
+}: {
+  events: SanitaryExecutedHistoryEventV2[];
+}) {
   return (
     <div className="space-y-3">
       {events.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Nenhum evento sanitário executado para este animal.
+          Nenhum evento sanitário vinculado ao catálogo de protocolos disponível
+          nesta leitura. Consulte a aba Histórico para outros registros
+          sanitários.
         </p>
       ) : (
         events.slice(0, 5).map((event) => (
-          <div key={event.eventId} className="rounded-lg border border-border/70 bg-muted/10 p-3">
+          <div
+            key={event.eventId}
+            className="rounded-lg border border-border/70 bg-muted/10 p-3"
+          >
             <p className="font-medium">
               {event.itemKey
                 ? formatSanitaryProtocolItemLabelV2(event.itemKey)
@@ -155,11 +177,23 @@ function ExecutedHistoryList({ events }: { events: SanitaryExecutedHistoryEventV
             <p className="text-sm text-muted-foreground">
               {formatDate(event.executedAt)}
               {event.productName ? ` · ${event.productName}` : ""}
-              {event.doseQuantity && event.doseUnit ? ` · ${event.doseQuantity} ${event.doseUnit}` : ""}
+              {event.doseQuantity && event.doseUnit
+                ? ` · ${event.doseQuantity} ${event.doseUnit}`
+                : ""}
               {event.route ? ` · ${event.route}` : ""}
             </p>
             <p className="text-sm text-muted-foreground">
-              {event.responsibleName ?? "Responsável não informado"} · origem: {event.originLabel ?? "evento sanitário"} · estoque: {event.stockStatus === "with_movement" ? "com baixa" : "sem baixa"} · carência: {event.withdrawalStatus === "generated" ? "gerada" : event.withdrawalStatus === "without_rule" ? "sem regra" : "não aplicável"}
+              {event.responsibleName ?? "Responsável não informado"} · origem:{" "}
+              {event.originLabel ?? "evento sanitário"} · estoque:{" "}
+              {event.stockStatus === "with_movement"
+                ? "com baixa"
+                : "sem baixa"}{" "}
+              · carência:{" "}
+              {event.withdrawalStatus === "generated"
+                ? "gerada"
+                : event.withdrawalStatus === "without_rule"
+                  ? "sem regra"
+                  : "não aplicável"}
             </p>
           </div>
         ))
@@ -201,23 +235,29 @@ export function SanitaryAnimalSummaryPanelV2({
       Array.isArray(complianceSource.executedHistory) &&
       Array.isArray(complianceSource.agendas) &&
       Array.isArray(complianceSource.agendaAnimals)
-        ? buildSanitaryComplianceV2({ source: complianceSource, evaluatedAt: today }).rows.filter(
-            (row) => row.animalId === animalId,
-          )
+        ? buildSanitaryComplianceV2({
+            source: complianceSource,
+            evaluatedAt: today,
+          }).rows.filter((row) => row.animalId === animalId)
         : [],
     [animalId, complianceSource, today],
   );
   const summary = {
-    compliant: complianceRows.filter((row) => row.status === "compliant").length,
+    compliant: complianceRows.filter((row) => row.status === "compliant")
+      .length,
     overdue: complianceRows.filter((row) => row.status === "overdue").length,
-    documentary: complianceRows.filter((row) => row.status === "document_pending").length,
-    insufficient: complianceRows.filter((row) => row.status === "insufficient_data").length,
+    documentary: complianceRows.filter(
+      (row) => row.status === "document_pending",
+    ).length,
+    insufficient: complianceRows.filter(
+      (row) => row.status === "insufficient_data",
+    ).length,
     planned: complianceRows.filter((row) => row.status === "planned").length,
   };
   const mainPendencies = buildMainPendencies(results);
-  const executedEvents = (executedHistory ?? [])
-    .find((entry) => entry.animalId === animalId)
-    ?.events ?? [];
+  const executedEvents =
+    (executedHistory ?? []).find((entry) => entry.animalId === animalId)
+      ?.events ?? [];
   const centralHref = `/protocolos-sanitarios?tab=conformidade&animalId=${encodeURIComponent(animalId)}${
     lotId ? `&loteId=${encodeURIComponent(lotId)}` : ""
   }`;
@@ -232,7 +272,9 @@ export function SanitaryAnimalSummaryPanelV2({
               Histórico sanitário executado
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Eventos factuais confirmados. Agenda futura não aparece nesta lista.
+              Eventos factuais vinculados ao catálogo de protocolos disponível
+              nesta leitura. Outros registros sanitários aparecem na aba
+              Histórico. Agenda futura não aparece nesta lista.
             </p>
           </div>
         </CardHeader>
@@ -250,7 +292,8 @@ export function SanitaryAnimalSummaryPanelV2({
                 Conformidade sanitária
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Visão contextual do animal. Planejamento completo fica na Central Sanitária.
+                Visão contextual do animal. Planejamento completo fica na
+                Central Sanitária.
               </p>
             </div>
             <Button size="sm" variant="outline" asChild>
@@ -266,7 +309,10 @@ export function SanitaryAnimalSummaryPanelV2({
             ["Dados insuficientes", summary.insufficient],
             ["Atrasado", summary.overdue],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-lg border border-border/70 bg-muted/10 p-3">
+            <div
+              key={label}
+              className="rounded-lg border border-border/70 bg-muted/10 p-3"
+            >
               <p className="text-xs uppercase text-muted-foreground">{label}</p>
               <p className="mt-1 text-2xl font-semibold">{value}</p>
             </div>
@@ -283,14 +329,18 @@ export function SanitaryAnimalSummaryPanelV2({
         </CardHeader>
         <CardContent className="space-y-3">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Carregando sanidade local...</p>
+            <p className="text-sm text-muted-foreground">
+              Carregando sanidade local...
+            </p>
           ) : null}
           {!isLoading && !hasLocalCatalog(catalog) ? (
             <p className="text-sm text-muted-foreground">
               Catálogo sanitário local ainda não sincronizado.
             </p>
           ) : null}
-          {!isLoading && hasLocalCatalog(catalog) && mainPendencies.length === 0 ? (
+          {!isLoading &&
+          hasLocalCatalog(catalog) &&
+          mainPendencies.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nenhuma pendência crítica resumida para este animal.
             </p>
@@ -309,7 +359,9 @@ export function SanitaryAnimalSummaryPanelV2({
                     {primaryReason(result)}
                   </p>
                 </div>
-                <Badge variant={result.documentaryPending ? "default" : "secondary"}>
+                <Badge
+                  variant={result.documentaryPending ? "default" : "secondary"}
+                >
                   {result.documentaryPending
                     ? "Pendência documental"
                     : formatSanitaryPrecheckStatusV2(result.status)}
@@ -332,7 +384,11 @@ export function SanitaryAnimalSummaryPanelV2({
                 Histórico anterior não é execução local e não movimenta estoque.
               </p>
             </div>
-            <Button size="sm" variant="outline" onClick={onRegisterEntryHistory}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onRegisterEntryHistory}
+            >
               Registrar histórico anterior
             </Button>
           </div>
@@ -399,7 +455,9 @@ export function SanitaryAnimalSummaryPanelV2({
         className="rounded-lg border border-border/70 px-4"
       >
         <AccordionItem value="technical" className="border-0">
-          <AccordionTrigger>Ver detalhes técnicos da pré-checagem</AccordionTrigger>
+          <AccordionTrigger>
+            Ver detalhes técnicos da pré-checagem
+          </AccordionTrigger>
           <AccordionContent>
             {technicalOpen ? (
               <SanitaryPrecheckPanelV2

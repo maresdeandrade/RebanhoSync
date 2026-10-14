@@ -20,16 +20,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Scale,
-  TrendingUp,
-  AlertCircle,
-  Info,
-  Layers,
-} from "lucide-react";
+import { Scale, TrendingUp, AlertCircle, Info, Layers } from "lucide-react";
 
 export interface ProductiveCommercialSimulatorProps {
-  animal: Pick<Animal, "id" | "brinco" | "nome" | "fazenda_id" | "deleted_at">;
+  animal: Pick<
+    Animal,
+    "id" | "identificacao" | "nome" | "fazenda_id" | "deleted_at"
+  >;
   fazendaId: string;
 }
 
@@ -61,7 +58,7 @@ function ObservedDataBlock({
   observedAt,
   factualGmdKgDay,
 }: {
-  animal: Pick<Animal, "id" | "brinco" | "nome">;
+  animal: Pick<Animal, "id" | "identificacao" | "nome">;
   observedWeightKg: number | null;
   observedAt: string | null;
   factualGmdKgDay: number | null;
@@ -78,7 +75,9 @@ function ObservedDataBlock({
               Dados Fatuais Registrados
             </CardTitle>
           </div>
-          <span className="text-xs text-muted-foreground">Fonte: Histórico de Pesagens</span>
+          <span className="text-xs text-muted-foreground">
+            Fonte: Histórico de Pesagens
+          </span>
         </div>
       </CardHeader>
       <CardContent>
@@ -90,7 +89,9 @@ function ObservedDataBlock({
             <div className="flex items-center gap-2 mt-1">
               <Scale className="h-4 w-4 text-primary" />
               <span className="text-xl font-bold">
-                {observedWeightKg != null ? `${formatNumber(observedWeightKg, 1)} kg` : "Sem pesagem"}
+                {observedWeightKg != null
+                  ? `${formatNumber(observedWeightKg, 1)} kg`
+                  : "Sem pesagem"}
               </span>
             </div>
             <span className="text-xs text-muted-foreground mt-1 block">
@@ -105,11 +106,15 @@ function ObservedDataBlock({
             <div className="flex items-center gap-2 mt-1">
               <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <span className="text-xl font-bold">
-                {factualGmdKgDay != null ? `${formatNumber(factualGmdKgDay, 3)} kg/dia` : "Aguardando série"}
+                {factualGmdKgDay != null
+                  ? `${formatNumber(factualGmdKgDay, 3)} kg/dia`
+                  : "Aguardando série"}
               </span>
             </div>
             <span className="text-xs text-muted-foreground mt-1 block">
-              {factualGmdKgDay != null ? "Calculado entre últimas pesagens" : "Série histórica insuficiente"}
+              {factualGmdKgDay != null
+                ? "Calculado entre últimas pesagens"
+                : "Série histórica insuficiente"}
             </span>
           </div>
 
@@ -119,7 +124,7 @@ function ObservedDataBlock({
             </span>
             <div className="mt-1">
               <span className="text-base font-bold block">
-                {animal.brinco || animal.nome || "Sem identificação"}
+                {animal.identificacao || animal.nome || "Sem identificação"}
               </span>
               <span className="text-xs text-muted-foreground block">
                 ID: {animal.id.slice(0, 8)}...
@@ -131,7 +136,8 @@ function ObservedDataBlock({
         <div className="mt-3 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300">
           <Info className="h-3.5 w-3.5 shrink-0" />
           <span>
-            O peso observado provém de medição física anterior e não é inferido como peso atual em tempo real.
+            O peso observado provém de medição física anterior e não é inferido
+            como peso atual em tempo real.
           </span>
         </div>
       </CardContent>
@@ -166,20 +172,28 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="border-primary text-primary font-bold tracking-wider">
+            <Badge
+              variant="outline"
+              className="border-primary text-primary font-bold tracking-wider"
+            >
               PREMISSA
             </Badge>
             <CardTitle className="text-base font-semibold">
               Premissas do Cenário
             </CardTitle>
           </div>
-          <span className="text-xs text-muted-foreground">Parâmetros editáveis</span>
+          <span className="text-xs text-muted-foreground">
+            Parâmetros editáveis
+          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
-            <Label htmlFor="targetWeightInput" className="text-xs font-semibold">
+            <Label
+              htmlFor="targetWeightInput"
+              className="text-xs font-semibold"
+            >
               Peso-alvo vivo (kg) *
             </Label>
             <Input
@@ -217,7 +231,10 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="pricePerArrobaInput" className="text-xs font-semibold">
+            <Label
+              htmlFor="pricePerArrobaInput"
+              className="text-xs font-semibold"
+            >
               Preço por arroba (R$) *
             </Label>
             <Input
@@ -238,19 +255,28 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="arrobaBasisSelect" className="text-xs font-semibold">
+            <Label
+              htmlFor="arrobaBasisSelect"
+              className="text-xs font-semibold"
+            >
               Base de cálculo da arroba *
             </Label>
             <Select
               value={props.arrobaBasis}
-              onValueChange={(val: CommercialArrobaBasis) => props.setArrobaBasis(val)}
+              onValueChange={(val: CommercialArrobaBasis) =>
+                props.setArrobaBasis(val)
+              }
             >
               <SelectTrigger id="arrobaBasisSelect" className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="live_weight_yield">Rendimento sobre peso vivo (%)</SelectItem>
-                <SelectItem value="carcass_weight">Pesos de carcaça diretos (15 kg/@)</SelectItem>
+                <SelectItem value="live_weight_yield">
+                  Rendimento sobre peso vivo (%)
+                </SelectItem>
+                <SelectItem value="carcass_weight">
+                  Pesos de carcaça diretos (15 kg/@)
+                </SelectItem>
               </SelectContent>
             </Select>
             <span className="text-[11px] text-muted-foreground">
@@ -260,7 +286,10 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
 
           {props.arrobaBasis === "live_weight_yield" ? (
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="carcassYieldInput" className="text-xs font-semibold">
+              <Label
+                htmlFor="carcassYieldInput"
+                className="text-xs font-semibold"
+              >
                 Rendimento de carcaça (%) *
               </Label>
               <Input
@@ -275,13 +304,17 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
                 className="h-9"
               />
               <span className="text-[11px] text-muted-foreground">
-                Obrigatório para a base sobre peso vivo. Não possui default automático.
+                Obrigatório para a base sobre peso vivo. Não possui default
+                automático.
               </span>
             </div>
           ) : (
             <>
               <div className="space-y-1.5">
-                <Label htmlFor="sellNowCarcassWeightInput" className="text-xs font-semibold">
+                <Label
+                  htmlFor="sellNowCarcassWeightInput"
+                  className="text-xs font-semibold"
+                >
                   Carcaça na venda agora (kg) *
                 </Label>
                 <Input
@@ -291,7 +324,9 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
                   min="1"
                   placeholder="Ex: 210"
                   value={props.sellNowCarcassWeightInput}
-                  onChange={(e) => props.setSellNowCarcassWeightInput(e.target.value)}
+                  onChange={(e) =>
+                    props.setSellNowCarcassWeightInput(e.target.value)
+                  }
                   className="h-9"
                 />
                 <span className="text-[11px] text-muted-foreground">
@@ -300,7 +335,10 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="targetCarcassWeightInput" className="text-xs font-semibold">
+                <Label
+                  htmlFor="targetCarcassWeightInput"
+                  className="text-xs font-semibold"
+                >
                   Carcaça no alvo pretendido (kg) *
                 </Label>
                 <Input
@@ -310,7 +348,9 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
                   min="1"
                   placeholder="Ex: 260"
                   value={props.targetCarcassWeightInput}
-                  onChange={(e) => props.setTargetCarcassWeightInput(e.target.value)}
+                  onChange={(e) =>
+                    props.setTargetCarcassWeightInput(e.target.value)
+                  }
                   className="h-9"
                 />
                 <span className="text-[11px] text-muted-foreground">
@@ -342,7 +382,10 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="additionalCostInput" className="text-xs font-semibold">
+            <Label
+              htmlFor="additionalCostInput"
+              className="text-xs font-semibold"
+            >
               Custos adicionais pontuais (R$)
             </Label>
             <Input
@@ -364,7 +407,9 @@ function AssumptionsBlock(props: AssumptionsBlockProps) {
             <div className="rounded-md border p-2.5 bg-muted/10 text-xs text-muted-foreground flex items-center gap-2 w-full">
               <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span>
-                <strong>Aviso sobre custos:</strong> Se algum custo for omitido, a cobertura será parcial. Custos não preenchidos <em>nunca são assumidos como zero</em>.
+                <strong>Aviso sobre custos:</strong> Se algum custo for omitido,
+                a cobertura será parcial. Custos não preenchidos{" "}
+                <em>nunca são assumidos como zero</em>.
               </span>
             </div>
           </div>
@@ -395,7 +440,9 @@ function ProductiveScenarioBlock({
               Cenário Produtivo
             </CardTitle>
           </div>
-          <span className="text-xs text-muted-foreground">Projeção Biológica do Cenário</span>
+          <span className="text-xs text-muted-foreground">
+            Projeção Biológica do Cenário
+          </span>
         </div>
       </CardHeader>
       <CardContent>
@@ -422,7 +469,8 @@ function ProductiveScenarioBlock({
               {Math.ceil(productive.estimatedDays)} dias
             </div>
             <span className="text-xs text-muted-foreground block mt-1">
-              Com base no GMD assumido de {formatNumber(assumedGmdKgDay, 2)} kg/dia
+              Com base no GMD assumido de {formatNumber(assumedGmdKgDay, 2)}{" "}
+              kg/dia
             </span>
           </div>
 
@@ -473,8 +521,13 @@ function CommercialScenarioBlock({
             </CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Cobertura de custos:</span>
-            <Badge variant={coverageVariant} className="text-[10px] uppercase font-bold">
+            <span className="text-xs text-muted-foreground">
+              Cobertura de custos:
+            </span>
+            <Badge
+              variant={coverageVariant}
+              className="text-[10px] uppercase font-bold"
+            >
               {coverageLabel}
             </Badge>
           </div>
@@ -490,7 +543,10 @@ function CommercialScenarioBlock({
               {formatNumber(commercial.targetArrobas, 2)} @
             </div>
             <span className="text-xs text-muted-foreground block mt-1">
-              Base: {arrobaBasis === "carcass_weight" ? "Carcaça direta (15kg)" : "Rend. vivo"}
+              Base:{" "}
+              {arrobaBasis === "carcass_weight"
+                ? "Carcaça direta (15kg)"
+                : "Rend. vivo"}
             </span>
           </div>
 
@@ -517,8 +573,8 @@ function CommercialScenarioBlock({
               {commercial.incrementalCost === null
                 ? "Não informados"
                 : commercial.costCoverage === "COMPLETE"
-                ? "Custos informados somados"
-                : "Cobertura parcial"}
+                  ? "Custos informados somados"
+                  : "Cobertura parcial"}
             </span>
           </div>
 
@@ -536,15 +592,16 @@ function CommercialScenarioBlock({
         </div>
 
         <div className="rounded-lg border border-border/80 bg-muted/20 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
+          <div className="min-w-0 flex-1">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
               Preço de equilíbrio do cenário (Break-even)
             </span>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Preço por arroba que igualaria os dois cenários considerando apenas as premissas e custos completos informados.
+              Preço por arroba que igualaria os dois cenários considerando
+              apenas as premissas e custos completos informados.
             </p>
           </div>
-          <div className="text-right shrink-0">
+          <div className="min-w-0 text-right sm:flex-1">
             <span className="text-xl font-black text-primary block">
               {commercial.breakEvenPricePerArroba != null
                 ? `${formatCurrency(commercial.breakEvenPricePerArroba)} / @`
@@ -554,7 +611,10 @@ function CommercialScenarioBlock({
         </div>
 
         <div className="rounded-md border p-2.5 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-200">
-          <strong>Aviso:</strong> Cálculo parcial com base apenas nos custos informados. Custos fixos da fazenda, mão de obra geral, aquisição de animais e carência não foram deduzidos. Nunca trate este valor como resultado financeiro fechado ou garantia.
+          <strong>Aviso:</strong> Cálculo parcial com base apenas nos custos
+          informados. Custos fixos da fazenda, mão de obra geral, aquisição de
+          animais e carência não foram deduzidos. Nunca trate este valor como
+          resultado financeiro fechado ou garantia.
         </div>
       </CardContent>
     </Card>
@@ -571,14 +631,19 @@ function ComparisonBlock({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="border-purple-500 text-purple-600 dark:text-purple-400 font-bold tracking-wider">
+            <Badge
+              variant="outline"
+              className="border-purple-500 text-purple-600 dark:text-purple-400 font-bold tracking-wider"
+            >
               SIMULADO
             </Badge>
             <CardTitle className="text-base font-semibold">
               Comparação: Vender Agora × Manter até Alvo
             </CardTitle>
           </div>
-          <span className="text-xs text-muted-foreground">Diferença numérica pura sem recomendação</span>
+          <span className="text-xs text-muted-foreground">
+            Diferença numérica pura sem recomendação
+          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -588,19 +653,29 @@ function ComparisonBlock({
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Cenário A • Venda Agora
               </span>
-              <Badge variant="outline" className="text-[10px]">PESO OBSERVADO + PREMISSAS</Badge>
+              <Badge variant="outline" className="text-[10px]">
+                PESO OBSERVADO + PREMISSAS
+              </Badge>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-muted-foreground">Peso vivo observado:</span>
-                <p className="font-semibold text-sm mt-0.5">{formatNumber(comparison.sellNow.weightKg, 1)} kg</p>
+                <span className="text-muted-foreground">
+                  Peso vivo observado:
+                </span>
+                <p className="font-semibold text-sm mt-0.5">
+                  {formatNumber(comparison.sellNow.weightKg, 1)} kg
+                </p>
               </div>
               <div>
                 <span className="text-muted-foreground">Arrobas:</span>
-                <p className="font-semibold text-sm mt-0.5">{formatNumber(comparison.sellNow.arrobas, 2)} @</p>
+                <p className="font-semibold text-sm mt-0.5">
+                  {formatNumber(comparison.sellNow.arrobas, 2)} @
+                </p>
               </div>
               <div className="col-span-2 pt-2 border-t">
-                <span className="text-muted-foreground">Receita bruta agora:</span>
+                <span className="text-muted-foreground">
+                  Receita bruta agora:
+                </span>
                 <p className="font-bold text-base mt-0.5 text-foreground">
                   {formatCurrency(comparison.sellNow.grossRevenue)}
                 </p>
@@ -613,33 +688,50 @@ function ComparisonBlock({
               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Cenário B • Manter até Alvo
               </span>
-              <Badge variant="outline" className="text-[10px]">Projeção no Cenário</Badge>
+              <Badge variant="outline" className="text-[10px]">
+                Projeção no Cenário
+              </Badge>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-muted-foreground">Peso vivo pretendido:</span>
-                <p className="font-semibold text-sm mt-0.5">{formatNumber(comparison.keepUntilTarget.targetWeightKg, 1)} kg</p>
+                <span className="text-muted-foreground">
+                  Peso vivo pretendido:
+                </span>
+                <p className="font-semibold text-sm mt-0.5">
+                  {formatNumber(comparison.keepUntilTarget.targetWeightKg, 1)}{" "}
+                  kg
+                </p>
               </div>
               <div>
                 <span className="text-muted-foreground">Arrobas:</span>
-                <p className="font-semibold text-sm mt-0.5">{formatNumber(comparison.keepUntilTarget.targetArrobas, 2)} @</p>
+                <p className="font-semibold text-sm mt-0.5">
+                  {formatNumber(comparison.keepUntilTarget.targetArrobas, 2)} @
+                </p>
               </div>
               <div className="col-span-2 pt-2 border-t">
-                <span className="text-muted-foreground">Receita bruta no alvo:</span>
+                <span className="text-muted-foreground">
+                  Receita bruta no alvo:
+                </span>
                 <p className="font-bold text-base mt-0.5 text-foreground">
                   {formatCurrency(comparison.keepUntilTarget.grossRevenue)}
                 </p>
               </div>
               <div>
-                <span className="text-muted-foreground">Custos incrementais:</span>
+                <span className="text-muted-foreground">
+                  Custos incrementais:
+                </span>
                 <p className="font-semibold mt-0.5 text-amber-600 dark:text-amber-400">
                   {formatCurrency(comparison.keepUntilTarget.incrementalCost)}
                 </p>
               </div>
               <div>
-                <span className="text-muted-foreground">Resultado parcial:</span>
+                <span className="text-muted-foreground">
+                  Resultado parcial:
+                </span>
                 <p className="font-semibold mt-0.5">
-                  {formatCurrency(comparison.keepUntilTarget.partialIncrementalResult)}
+                  {formatCurrency(
+                    comparison.keepUntilTarget.partialIncrementalResult,
+                  )}
                 </p>
               </div>
             </div>
@@ -652,12 +744,15 @@ function ComparisonBlock({
               Diferença Numérica entre Cenários
             </span>
             <p className="text-muted-foreground mt-0.5">
-              Delta estritamente aritmético entre manter até o peso-alvo e vender com o peso observado e as premissas informadas.
+              Delta estritamente aritmético entre manter até o peso-alvo e
+              vender com o peso observado e as premissas informadas.
             </p>
           </div>
           <div className="flex items-center gap-4 shrink-0">
             <div className="text-right">
-              <span className="text-muted-foreground block text-[11px]">Diferença de Receita Bruta:</span>
+              <span className="text-muted-foreground block text-[11px]">
+                Diferença de Receita Bruta:
+              </span>
               <span className="font-bold text-sm text-foreground">
                 {comparison.difference.grossRevenueDelta >= 0 ? "+" : ""}
                 {formatCurrency(comparison.difference.grossRevenueDelta)}
@@ -665,10 +760,16 @@ function ComparisonBlock({
             </div>
             {comparison.difference.partialIncrementalResultDelta != null && (
               <div className="text-right border-l pl-4">
-                <span className="text-muted-foreground block text-[11px]">Diferença parcial após custos informados:</span>
+                <span className="text-muted-foreground block text-[11px]">
+                  Diferença parcial após custos informados:
+                </span>
                 <span className="font-bold text-sm text-foreground">
-                  {comparison.difference.partialIncrementalResultDelta >= 0 ? "+" : ""}
-                  {formatCurrency(comparison.difference.partialIncrementalResultDelta)}
+                  {comparison.difference.partialIncrementalResultDelta >= 0
+                    ? "+"
+                    : ""}
+                  {formatCurrency(
+                    comparison.difference.partialIncrementalResultDelta,
+                  )}
                 </span>
               </div>
             )}
@@ -676,7 +777,9 @@ function ComparisonBlock({
         </div>
 
         <div className="text-[11px] text-muted-foreground text-center italic">
-          Este comparativo apresenta apenas a diferença matemática entre as premissas informadas. Ele não decide, não recomenda e não orienta a conduta comercial do produtor.
+          Este comparativo apresenta apenas a diferença matemática entre as
+          premissas informadas. Ele não decide, não recomenda e não orienta a
+          conduta comercial do produtor.
         </div>
       </CardContent>
     </Card>
@@ -709,7 +812,11 @@ function SimulationActiveContent({
   simulation: ProductiveCommercialSimulationResult;
   observedWeightKg: number | null;
 }) {
-  if (simulation.status === "BLOCKED" || !simulation.productive || !simulation.commercial) {
+  if (
+    simulation.status === "BLOCKED" ||
+    !simulation.productive ||
+    !simulation.commercial
+  ) {
     return null;
   }
   return (
@@ -757,8 +864,9 @@ export function ProductiveCommercialSimulator({
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          Simulador de cenários baseado em fatos observados e premissas explícitas.
-          Os cálculos são estritamente prospectivos e não geram eventos, tarefas na agenda nem recomendações operacionais.
+          Simulador de cenários baseado em fatos observados e premissas
+          explícitas. Os cálculos são estritamente prospectivos e não geram
+          eventos, tarefas na agenda nem recomendações operacionais.
         </p>
       </div>
 

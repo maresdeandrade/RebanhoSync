@@ -6,12 +6,14 @@ import { useAnimalWeightPresentation } from "@/hooks/useAnimalWeightPresentation
 
 vi.mock("@/hooks/useAnimalWeightPresentation");
 
-const mockedUseAnimalWeightPresentation = vi.mocked(useAnimalWeightPresentation);
+const mockedUseAnimalWeightPresentation = vi.mocked(
+  useAnimalWeightPresentation,
+);
 
 describe("useProductiveCommercialSimulation", () => {
   const mockAnimal = {
     id: "animal-123",
-    brinco: "BR-99",
+    identificacao: "BR-99",
     nome: "Estrela",
     fazenda_id: "fazenda-456",
     deleted_at: null,
@@ -170,7 +172,9 @@ describe("useProductiveCommercialSimulation", () => {
       observations: [],
     };
 
-    mockedUseAnimalWeightPresentation.mockImplementation(() => currentPresentation);
+    mockedUseAnimalWeightPresentation.mockImplementation(
+      () => currentPresentation,
+    );
 
     const { result, rerender } = renderHook(() =>
       useProductiveCommercialSimulation({
@@ -243,7 +247,9 @@ describe("useProductiveCommercialSimulation", () => {
       observations: [],
     };
 
-    mockedUseAnimalWeightPresentation.mockImplementation(() => currentPresentation);
+    mockedUseAnimalWeightPresentation.mockImplementation(
+      () => currentPresentation,
+    );
 
     const { result, rerender } = renderHook(() =>
       useProductiveCommercialSimulation({
