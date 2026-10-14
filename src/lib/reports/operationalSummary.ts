@@ -2850,4 +2850,3 @@ export function buildOperationalSummary(
     recentEvents,
   };
 }
-
