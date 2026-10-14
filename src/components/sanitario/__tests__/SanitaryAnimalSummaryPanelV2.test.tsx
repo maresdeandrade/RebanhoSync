@@ -159,6 +159,32 @@ function renderPanel() {
 }
 
 describe("SanitaryAnimalSummaryPanelV2", () => {
+  it("não declara ausência de execução quando a projeção não tem catálogo ou eventos vinculados", () => {
+    render(
+      <MemoryRouter>
+        <SanitaryAnimalSummaryPanelV2
+          animal={adultFemale}
+          animalId="animal-1"
+          catalog={null}
+          executedHistory={[]}
+          externalDocumentedHistory={[]}
+          declaredHistory={[]}
+          futureAgenda={[]}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText(/Nenhum evento sanitário vinculado ao catálogo/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Nenhum evento sanitário executado para este animal."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Catálogo sanitário local ainda não sincronizado/),
+    ).toBeInTheDocument();
+  });
+
   it("renderiza resumo compacto sem preview manual aberto por padrão", () => {
     renderPanel();
 
@@ -166,29 +192,45 @@ describe("SanitaryAnimalSummaryPanelV2", () => {
     expect(screen.getByText("Conforme")).toBeInTheDocument();
     expect(screen.getByText("Planejado")).toBeInTheDocument();
     expect(screen.getByText("Pendências principais")).toBeInTheDocument();
-    expect(screen.getByText("Histórico sanitário executado")).toBeInTheDocument();
+    expect(
+      screen.getByText("Histórico sanitário executado"),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Vacina Clostridial/)).toBeInTheDocument();
     expect(screen.getByText(/origem: agenda sanitária/)).toBeInTheDocument();
     expect(screen.getByText("Histórico de entrada")).toBeInTheDocument();
     expect(screen.getAllByText("Agenda futura").length).toBeGreaterThan(0);
-    expect(screen.getByText("Fêmea adulta exige comprovação documental de B19.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Abrir conformidade na Central/i })).toHaveAttribute(
+    expect(
+      screen.getByText("Fêmea adulta exige comprovação documental de B19."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Abrir conformidade na Central/i }),
+    ).toHaveAttribute(
       "href",
       "/protocolos-sanitarios?tab=conformidade&animalId=animal-1&loteId=lot-1",
     );
-    expect(screen.queryByText("Preview manual sanitário")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Preview manual sanitário"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("Candidatas")).not.toBeInTheDocument();
     expect(screen.queryByText("Bloqueadas")).not.toBeInTheDocument();
     expect(screen.queryByText("Não aplicáveis")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Planejar agenda/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Ver detalhes técnicos da pré-checagem/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Planejar agenda/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: /Ver detalhes técnicos da pré-checagem/i,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("mantem histórico anterior acessível por ação principal", async () => {
     const user = userEvent.setup();
     const { onRegisterEntryHistory } = renderPanel();
 
-    await user.click(screen.getByRole("button", { name: /Registrar histórico anterior/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Registrar histórico anterior/i }),
+    );
 
     expect(onRegisterEntryHistory).toHaveBeenCalledTimes(1);
   });
@@ -197,8 +239,14 @@ describe("SanitaryAnimalSummaryPanelV2", () => {
     const user = userEvent.setup();
     renderPanel();
 
-    expect(screen.queryByText("Pré-checagem sanitária")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Ver detalhes técnicos da pré-checagem/i }));
+    expect(
+      screen.queryByText("Pré-checagem sanitária"),
+    ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", {
+        name: /Ver detalhes técnicos da pré-checagem/i,
+      }),
+    );
 
     expect(screen.getByText("Pré-checagem sanitária")).toBeInTheDocument();
     expect(screen.getByText("Preview manual sanitário")).toBeInTheDocument();
@@ -210,7 +258,9 @@ describe("SanitaryAnimalSummaryPanelV2", () => {
       "utf8",
     );
 
-    expect(source).not.toMatch(/createGesture|queue_ops|event_eventos|insumo_movimentacoes/i);
+    expect(source).not.toMatch(
+      /createGesture|queue_ops|event_eventos|insumo_movimentacoes/i,
+    );
     expect(source).not.toMatch(/createManualSanitaryAgendaV2/);
   });
 });

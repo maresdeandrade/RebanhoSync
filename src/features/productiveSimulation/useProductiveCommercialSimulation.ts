@@ -9,7 +9,10 @@ import {
 import type { CommercialArrobaBasis } from "@/lib/comercial/commercialPricing";
 
 export interface UseProductiveCommercialSimulationProps {
-  animal: Pick<Animal, "id" | "brinco" | "nome" | "fazenda_id" | "deleted_at">;
+  animal: Pick<
+    Animal,
+    "id" | "identificacao" | "nome" | "fazenda_id" | "deleted_at"
+  >;
   fazendaId: string;
 }
 
@@ -25,8 +28,14 @@ function parseOptionalInputNumber(val: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function resolveInitialAssumedGmd(factualGmdKgDay: number | null | undefined): string {
-  if (factualGmdKgDay != null && Number.isFinite(factualGmdKgDay) && factualGmdKgDay > 0) {
+function resolveInitialAssumedGmd(
+  factualGmdKgDay: number | null | undefined,
+): string {
+  if (
+    factualGmdKgDay != null &&
+    Number.isFinite(factualGmdKgDay) &&
+    factualGmdKgDay > 0
+  ) {
     return factualGmdKgDay.toFixed(2);
   }
   return "";
@@ -44,35 +53,49 @@ interface RawSimulationInputs {
   additionalCostInput: string;
 }
 
-function buildAssumptions(inputs: RawSimulationInputs): ProductiveCommercialSimulationAssumptionsInput {
+function buildAssumptions(
+  inputs: RawSimulationInputs,
+): ProductiveCommercialSimulationAssumptionsInput {
   return {
     targetWeightKg: parseInputNumber(inputs.targetWeightInput),
     assumedGmdKgDay: parseInputNumber(inputs.assumedGmdInput),
     pricePerArroba: parseInputNumber(inputs.pricePerArrobaInput),
     arrobaBasis: inputs.arrobaBasis,
     carcassYieldPercent: parseOptionalInputNumber(inputs.carcassYieldInput),
-    sellNowCarcassWeightKg: parseOptionalInputNumber(inputs.sellNowCarcassWeightInput),
-    targetCarcassWeightKg: parseOptionalInputNumber(inputs.targetCarcassWeightInput),
+    sellNowCarcassWeightKg: parseOptionalInputNumber(
+      inputs.sellNowCarcassWeightInput,
+    ),
+    targetCarcassWeightKg: parseOptionalInputNumber(
+      inputs.targetCarcassWeightInput,
+    ),
     dailyIncrementalCost: parseOptionalInputNumber(inputs.dailyCostInput),
-    additionalIncrementalCosts: parseOptionalInputNumber(inputs.additionalCostInput),
+    additionalIncrementalCosts: parseOptionalInputNumber(
+      inputs.additionalCostInput,
+    ),
   };
 }
 
-function resolveLatestWeightValue(presentation: ReturnType<typeof useAnimalWeightPresentation>) {
+function resolveLatestWeightValue(
+  presentation: ReturnType<typeof useAnimalWeightPresentation>,
+) {
   if (presentation?.latestObservedWeight?.status === "available") {
     return presentation.latestObservedWeight.value;
   }
   return null;
 }
 
-function resolveGmdValue(presentation: ReturnType<typeof useAnimalWeightPresentation>) {
+function resolveGmdValue(
+  presentation: ReturnType<typeof useAnimalWeightPresentation>,
+) {
   if (presentation?.gmd?.status === "CALCULATED") {
     return presentation.gmd.gmdKgPerDay;
   }
   return null;
 }
 
-function resolvePresentationEvidence(presentation: ReturnType<typeof useAnimalWeightPresentation>) {
+function resolvePresentationEvidence(
+  presentation: ReturnType<typeof useAnimalWeightPresentation>,
+) {
   const latest = resolveLatestWeightValue(presentation);
   const isConflict = presentation?.latestObservedWeight?.status === "conflict";
   const gmdVal = resolveGmdValue(presentation);
@@ -99,10 +122,13 @@ export function useProductiveCommercialSimulation({
     resolveInitialAssumedGmd(factualGmdKgDay),
   );
   const [pricePerArrobaInput, setPricePerArrobaInput] = useState<string>("");
-  const [arrobaBasis, setArrobaBasis] = useState<CommercialArrobaBasis>("live_weight_yield");
+  const [arrobaBasis, setArrobaBasis] =
+    useState<CommercialArrobaBasis>("live_weight_yield");
   const [carcassYieldInput, setCarcassYieldInput] = useState<string>("");
-  const [sellNowCarcassWeightInput, setSellNowCarcassWeightInput] = useState<string>("");
-  const [targetCarcassWeightInput, setTargetCarcassWeightInput] = useState<string>("");
+  const [sellNowCarcassWeightInput, setSellNowCarcassWeightInput] =
+    useState<string>("");
+  const [targetCarcassWeightInput, setTargetCarcassWeightInput] =
+    useState<string>("");
   const [dailyCostInput, setDailyCostInput] = useState<string>("");
   const [additionalCostInput, setAdditionalCostInput] = useState<string>("");
 

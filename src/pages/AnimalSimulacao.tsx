@@ -10,22 +10,23 @@ import { ChevronLeft } from "lucide-react";
 
 export default function AnimalSimulacao() {
   const { id } = useParams<{ id: string }>();
-  const { currentFazenda } = useAuth();
-  const fazendaId = currentFazenda?.id;
+  const { activeFarmId: fazendaId } = useAuth();
 
-  const animal = useLiveQuery(
-    async () => {
-      if (!id || !fazendaId) return null;
-      const record = await db.state_animais.get(id);
-      return record && record.fazenda_id === fazendaId && !record.deleted_at ? record : null;
-    },
-    [id, fazendaId],
-  );
+  const animal = useLiveQuery(async () => {
+    if (!id || !fazendaId) return null;
+    const record = await db.state_animais.get(id);
+    return record && record.fazenda_id === fazendaId && !record.deleted_at
+      ? record
+      : null;
+  }, [id, fazendaId]);
 
   if (!fazendaId || animal === undefined) {
     return (
       <PageContainer>
-        <div className="py-12 text-center text-muted-foreground" data-testid="simulacao-loading">
+        <div
+          className="py-12 text-center text-muted-foreground"
+          data-testid="simulacao-loading"
+        >
           Carregando dados do animal...
         </div>
       </PageContainer>
@@ -35,7 +36,10 @@ export default function AnimalSimulacao() {
   if (animal === null) {
     return (
       <PageContainer>
-        <div className="py-12 text-center space-y-4" data-testid="simulacao-not-found">
+        <div
+          className="py-12 text-center space-y-4"
+          data-testid="simulacao-not-found"
+        >
           <p className="text-muted-foreground">
             Animal indisponível ou não encontrado nesta fazenda.
           </p>
@@ -62,15 +66,12 @@ export default function AnimalSimulacao() {
       </div>
 
       <PageHeader
-        title={`Simulação de Cenários — ${animal.brinco || animal.nome || "Animal"}`}
+        title={`Simulação de Cenários — ${animal.identificacao || animal.nome || "Animal"}`}
         description="Simulador de cenários prospectivos baseado em dados observados e premissas explícitas."
       />
 
       <div className="mt-6">
-        <ProductiveCommercialSimulator
-          animal={animal}
-          fazendaId={fazendaId}
-        />
+        <ProductiveCommercialSimulator animal={animal} fazendaId={fazendaId} />
       </div>
     </PageContainer>
   );
