@@ -92,6 +92,11 @@ import { evaluateSanitaryInventoryConsumptionReadiness } from "@/lib/sanitario/c
 import { refreshVeterinaryProductsCatalog } from "@/lib/sanitario/catalog/products";
 import { showError, showSuccess } from "@/utils/toast";
 import { cn } from "@/lib/utils";
+import {
+  formatDate,
+  formatEventDate,
+  formatNumber,
+} from "./Insumos/helpers/formatting";
 
 type EntryForm = {
   tipo: InsumoTipoEnum;
@@ -284,21 +289,6 @@ function parsePositiveNumber(value: string): number | null {
 function parseOptionalPositiveNumber(value: string): number | null {
   const trimmed = value.trim();
   return trimmed ? parsePositiveNumber(trimmed) : null;
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    maximumFractionDigits: 3,
-  }).format(value);
-}
-
-function formatDate(value: string | null) {
-  if (!value) return "Sem validade";
-  return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR");
-}
-
-function formatEventDate(value: string) {
-  return new Date(value).toLocaleDateString("pt-BR");
 }
 
 function normalizeCategory(value: string | null | undefined) {
