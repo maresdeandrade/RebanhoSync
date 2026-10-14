@@ -54,6 +54,8 @@ function toCsvCell(value: string | number | null): string {
   return text;
 }
 
+// Complexidade herdada: corpo transferido literalmente nesta extracao, sem alterar regras.
+// fallow-ignore-next-line complexity
 export function buildOperationalSummaryCsv(
   report: OperationalSummaryReport,
   farmName: string,
@@ -591,6 +593,8 @@ export function buildOperationalSummaryCsv(
   return lines.join("\r\n");
 }
 
+// Complexidade herdada: corpo transferido literalmente nesta extracao, sem alterar regras.
+// fallow-ignore-next-line complexity
 export function buildOperationalSummaryPrintHtml(
   report: OperationalSummaryReport,
   farmName: string,
