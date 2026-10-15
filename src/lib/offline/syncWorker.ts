@@ -972,7 +972,15 @@ async function processSanitarioCanonicalResults(
     }
 
     terminalRejection = true;
-    deleteIds.add(op.client_op_id);
+    if (command === "apply_factual_core") {
+      // Keep the immutable envelope for an explicit, identity-preserving retry.
+      operationUpdates.set(op.client_op_id, {
+        sync_state: "REJECTED", next_attempt_at: undefined,
+        blocked_reason: result.reason_code ?? `SANITARIO_SYNC_V2_${result.status}`,
+      });
+    } else {
+      deleteIds.add(op.client_op_id);
+    }
     rejections.push({
       client_tx_id: gesture.client_tx_id,
       client_op_id: op.client_op_id,
@@ -1000,6 +1008,35 @@ async function processSanitarioCanonicalResults(
         result?.status === "APPLIED_ALTERED"
       ) {
         deleteIds.add(op.client_op_id);
+      } else if (result?.status === "REJECTED" || result?.status === "CONFLICT") {
+        // A terminal companion result cannot become an endless retry after
+        // its factual parent is rejected. Keep the local fact and audit both.
+        terminalRejection = true;
+        const rejectedFactualParent = matchedForReconcile.some(({op: parent, result: parentResult}) =>
+          readSanitarioCommand(parent, parentResult) === "apply_factual_core" &&
+          ["REJECTED", "CONFLICT"].includes(parentResult.status));
+        if (rejectedFactualParent) {
+          operationUpdates.set(op.client_op_id, {
+            sync_state: "REJECTED", next_attempt_at: undefined,
+            blocked_reason: result.reason_code ?? `SYNC_MIXED_${result.status}`,
+          });
+        } else {
+          deleteIds.add(op.client_op_id);
+        }
+        audits.push({ ...result, matched: true, recorded_at: recordedAt });
+        rejections.push({
+          client_tx_id: gesture.client_tx_id,
+          client_op_id: op.client_op_id,
+          fazenda_id: gesture.fazenda_id,
+          table: op.table,
+          action: op.action,
+          reason_code: result.reason_code ?? `SYNC_MIXED_${result.status}`,
+          reason_message: result.reason_message ?? "Companion operation rejected",
+          domain_op_id: result.domain_op_id ?? op.domain_op_id,
+          result_status: result.status,
+          payload: buildMinimalRejectionPayload(result),
+          created_at: recordedAt,
+        });
       } else {
         operationUpdates.set(
           op.client_op_id,
@@ -1072,7 +1109,7 @@ async function processSanitarioCanonicalResults(
         audits,
       );
 
-      if (remaining.length === 0) {
+      if (remaining.length === 0 || remaining.every(op => op.sync_state === "REJECTED")) {
         await db.queue_gestures.update(gesture.client_tx_id, {
           status: terminalRejection ? "REJECTED" : "DONE",
           sync_result: terminalRejection ? "REJECTED" : "APPLIED",

@@ -30,11 +30,11 @@ function factualOperation(
 }
 
 describe("sync-batch: dependência factual do estoque sanitário", () => {
-  it("bloqueia sem escrita quando o fato foi rejeitado no mesmo batch", async () => {
+  it.each(["REJECTED", "CONFLICT"])("terminaliza consumo sem escrita quando o fato teve %s no mesmo batch", async (status) => {
     const writeMovement = vi.fn();
     const decision = await resolveSanitarioInventoryFactualDependency({
       operations: [factualOperation()],
-      processedResults: [{ op_id: FACTUAL_OP_ID, status: "REJECTED" }],
+      processedResults: [{ op_id: FACTUAL_OP_ID, status }],
       fazendaId: FAZENDA_ID,
       sourceEventId: EVENT_ID,
       loadAppliedLedger: vi.fn().mockResolvedValue({ data: null, error: null }),
@@ -42,10 +42,19 @@ describe("sync-batch: dependência factual do estoque sanitário", () => {
 
     if (decision.status === "READY") writeMovement();
     expect(decision).toEqual({
-      status: "BLOCKED_DEPENDENCY",
-      reason_code: SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED,
+      status: "REJECTED",
+      reason_code: "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED",
     });
     expect(writeMovement).not.toHaveBeenCalled();
+  });
+
+  it("preserva replay de fato já aceito no ledger mesmo com rejeição da tentativa atual", async () => {
+    const decision = await resolveSanitarioInventoryFactualDependency({
+      operations: [factualOperation()], processedResults: [{op_id:FACTUAL_OP_ID,status:"REJECTED"}],
+      fazendaId:FAZENDA_ID,sourceEventId:EVENT_ID,
+      loadAppliedLedger:vi.fn().mockResolvedValue({data:{id:"receipt"},error:null}),
+    });
+    expect(decision).toEqual({status:"READY",source:"LEDGER"});
   });
 
   it("processa quando o fato foi aplicado no mesmo batch sem consultar o ledger", async () => {

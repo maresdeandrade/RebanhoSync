@@ -297,6 +297,8 @@ async function clearScope() {
     db.state_insumo_movimentacoes.clear(),
     db.catalog_sanitario_produto_carencia_rules_v2.clear(),
     db.catalog_sanitario_produtos_v2.clear(),
+    db.catalog_sanitario_protocolos_v2.clear(),
+    db.catalog_sanitario_protocolo_itens_versions_v2.clear(),
     db.catalog_sanitario_fontes_tecnicas_v2.clear(),
     db.catalog_sanitario_fonte_cobertura_campos_v2.clear(),
     db.catalog_sanitario_produto_fontes_v2.clear(),
@@ -311,8 +313,28 @@ async function clearScope() {
 }
 
 async function seedAgenda(record = agenda()) {
+  await seedWithdrawalContext();
   await db.ops_sanitario_agenda_v2.put(record);
   await db.ops_sanitario_agenda_animais_v2.put(agendaAnimal({ agenda_id: record.id }));
+  await db.catalog_sanitario_protocolos_v2.put({
+    id: record.protocolo_id!, family_code: "raiva_herbivoros", name: "Raiva",
+    scope: "global", fazenda_id: null, species_scope: ["bovino"],
+    jurisdiction_scope: {}, legal_status: "condicional", version: 1,
+    status: "active", approval_status: "approved", source_refs_snapshot: [],
+    metadata: {}, created_at: "2026-01-01", updated_at: "2026-01-01", deleted_at: null,
+  });
+  await db.catalog_sanitario_protocolo_itens_versions_v2.put({
+    id: record.protocol_item_version_id!, protocol_id: record.protocolo_id!,
+    logical_item_key: "item-1", version: 2, item_status: "recomendado",
+    action_type: "vacinacao", product_requirement_kind: String(record.metadata.productRequirementKind ?? record.protocol_item_snapshot.productRequirementKind ?? "product_class"),
+    product_id: null, product_class: record.produto_classe,
+    product_class_group_id: (record.metadata.productClassGroupId as string) ?? null,
+    eligibility_rule: {}, operational_window_rule: {}, dose_rule: null,
+    route_rule: null, booster_rule: null, species_authorization: [],
+    source_refs_by_field: {}, limitations: [], snapshot_template: {},
+    allows_agenda_auto: false, requires_mv_responsavel: false, status: "active",
+    created_at: "2026-01-01", updated_at: "2026-01-01", deleted_at: null,
+  });
 }
 
 async function seedWithdrawalContext() {
@@ -425,6 +447,251 @@ describe("executeSanitaryAgendaV2", () => {
       planned_status: "executado",
       execution_evento_id: result.eventId,
     });
+  });
+
+  it("rejeita nova execução quando o protocolo vigente está em draft", async () => {
+    await seedAgenda();
+    await db.catalog_sanitario_protocolos_v2.put({
+      id: "protocol-1", family_code: "raiva_herbivoros", name: "Raiva",
+      scope: "global", fazenda_id: null, species_scope: ["bovino"],
+      jurisdiction_scope: {}, legal_status: "condicional", version: 1,
+      status: "draft", approval_status: "draft", source_refs_snapshot: [],
+      metadata: {}, created_at: "2026-01-01", updated_at: "2026-01-01", deleted_at: null,
+    });
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("protocol_not_approved");
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+  });
+
+  it.each([
+    ["retired", { status: "retired" }],
+    ["rejected", { approval_status: "rejected" }],
+    ["blocked", { legal_status: "bloqueado" }],
+    ["deleted", { deleted_at: "2026-07-01" }],
+    ["other farm", { scope: "fazenda", fazenda_id: "farm-2" }],
+  ])("rejeita protocolo %s sem criar fato ou fila", async (_label, changes) => {
+    await seedAgenda();
+    await db.catalog_sanitario_protocolos_v2.update("protocol-1", changes);
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("protocol_");
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+  });
+
+  it.each(["draft", "retired"])("rejeita versão física do item %s", async (status) => {
+    await seedAgenda();
+    await db.catalog_sanitario_protocolo_itens_versions_v2.update("item-version-1", { status });
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("protocol_item_not_executable");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
+  it("falha fechado sem catálogo e não usa o snapshot planejado como autorização", async () => {
+    await seedAgenda();
+    await db.catalog_sanitario_protocolos_v2.clear();
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("protocol_not_available");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
+  it.each([null, "SC"])("bloqueia B19 sem contexto ou em UF excluída: %s", async (uf) => {
+    await seedAgenda();
+    await seedWithdrawalContext();
+    await db.catalog_sanitario_protocolos_v2.update("protocol-1", {
+      family_code: "brucelose_b19", metadata: { requires_uf_context: true, excluded_ufs: ["SC"] },
+    });
+    await db.state_fazenda_sanidade_config.update("farm-1", { uf });
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow(
+      uf ? "protocol_region_not_authorized" : "missing_jurisdiction_context",
+    );
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
+  it("preserva replay factual após aposentadoria do protocolo", async () => {
+    await seedAgenda();
+    const original = await executeSanitaryAgendaV2(baseInput, db);
+    await db.catalog_sanitario_protocolos_v2.update("protocol-1", { status: "retired" });
+    const replay = await executeSanitaryAgendaV2(baseInput, db);
+    expect(replay.eventId).toBe(original.eventId);
+    expect(await db.event_eventos.count()).toBe(1);
+  });
+
+  it("não retorna vínculo de execução de uma agenda de outra fazenda", async () => {
+    await seedAgenda(agenda({ fazenda_id: "farm-2", execution_evento_id: "foreign-event" }));
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("agenda_not_found");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
+  it.each(["precisa_validar", "bloqueado", "arquivado"])("aprovar protocolo não aprova produto %s", async (status_curatorial) => {
+    await seedAgenda();
+    await db.catalog_sanitario_produtos_v2.update("product-1", { status_curatorial: status_curatorial as "precisa_validar" | "bloqueado" | "arquivado" });
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("technical_product_not_approved");
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+  });
+
+  it("não confunde productId informado com produto real aprovado", async () => {
+    await seedAgenda();
+    await db.catalog_sanitario_produtos_v2.clear();
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("technical_product_not_approved");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
+  it("snapshot de agenda não pode dispensar produto exigido pela versão canônica", async () => {
+    await seedAgenda();
+    await db.ops_sanitario_agenda_v2.update("agenda-1", { metadata: { itemKey: "item-1", productRequirementKind: "none" } });
+    await expect(executeSanitaryAgendaV2({ ...baseInput, product: undefined, application: undefined }, db))
+      .rejects.toThrow("protocol_item_requirement_mismatch");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
+  it.each(["missing", "different"])("rejeita vínculo de produto específico %s no snapshot", async (binding) => {
+    await seedAgenda(agenda({
+      produto_classe: null,
+      produto_veterinario_id: binding === "different" ? "product-1" : null,
+      metadata: { itemKey: "item-1", productRequirementKind: "specific_product" },
+      protocol_item_snapshot: { itemKey: "item-1", productRequirementKind: "specific_product" },
+    }));
+    await db.catalog_sanitario_protocolo_itens_versions_v2.update("item-version-1", {
+      product_id: binding === "different" ? "product-2" : "product-1",
+    });
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("protocol_item_requirement_mismatch");
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+  });
+
+  it.each(["missing", "different"])("rejeita vínculo de grupo %s no snapshot", async (binding) => {
+    await seedAgenda(agenda({
+      produto_classe: null,
+      metadata: { itemKey: "item-1", productRequirementKind: "product_class_group", ...(binding === "different" ? { productClassGroupId: "group-1" } : {}) },
+      protocol_item_snapshot: { itemKey: "item-1", productRequirementKind: "product_class_group" },
+    }));
+    await db.catalog_sanitario_protocolo_itens_versions_v2.update("item-version-1", {
+      product_class_group_id: "group-2",
+    });
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("protocol_item_requirement_mismatch");
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+  });
+
+  it("permite vínculo específico coerente com o catálogo atual aprovado", async () => {
+    await seedAgenda(agenda({
+      produto_classe: null, produto_veterinario_id: "product-1",
+      metadata: { itemKey: "item-1", productRequirementKind: "specific_product" },
+      protocol_item_snapshot: { itemKey: "item-1", productRequirementKind: "specific_product" },
+    }));
+    await db.catalog_sanitario_protocolo_itens_versions_v2.update("item-version-1", { product_id: "product-1" });
+    await expect(executeSanitaryAgendaV2(baseInput, db)).resolves.toMatchObject({ createsEvent: true });
+    expect(await db.event_eventos.count()).toBe(1);
+  });
+
+  it.each(["draft", "retired"])("registra fato realizado com protocolo %s sem conceder autorização", async (status) => {
+    await seedAgenda();
+    await db.catalog_sanitario_protocolos_v2.update("protocol-1", { status, approval_status: "draft" });
+    const result = await executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db);
+    const detail = await db.event_eventos_sanitario.get(result.eventId);
+    expect(detail?.payload).toMatchObject({ registration_mode: "executed_fact", prospective_authorization: false });
+    expect(detail?.payload?.catalog_review_warnings).toContain("protocol_not_approved");
+    expect(await db.event_eventos.count()).toBe(1);
+    expect(await db.catalog_sanitario_protocolos_v2.get("protocol-1")).toMatchObject({ status, approval_status: "draft" });
+    const replay = await executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db);
+    expect(replay.eventId).toBe(result.eventId);
+    expect(await db.event_eventos.count()).toBe(1);
+  });
+
+  it.each(["precisa_validar", "bloqueado", "arquivado"])("preserva produto aplicado com curadoria %s sem inventar carência", async (status_curatorial) => {
+    await seedAgenda();
+    await db.catalog_sanitario_produtos_v2.update("product-1", { status_curatorial: status_curatorial as "precisa_validar" | "bloqueado" | "arquivado" });
+    const result = await executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db);
+    const detail = await db.event_eventos_sanitario.get(result.eventId);
+    expect(detail?.produto_sanitario_v2_id).toBe("product-1");
+    expect(detail?.produto_nome_snapshot).toBe("Vacina Raiva");
+    expect(detail?.payload?.catalog_review_warnings).toContain(`product_curation_${status_curatorial}`);
+    expect(detail?.payload?.prospective_authorization).toBe(false);
+    expect(result.createsActiveWithdrawal).toBe(false);
+    expect(detail?.carencia_carne_dias).toBeNull();
+  });
+
+  it("registro factual mantém UF excluída como alerta, sem apagar aplicação realizada", async () => {
+    await seedAgenda();
+    await db.catalog_sanitario_protocolos_v2.update("protocol-1", { metadata: { requires_uf_context: true, excluded_ufs: ["SC"] } });
+    await db.state_fazenda_sanidade_config.update("farm-1", { uf: "SC" });
+    const result = await executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db);
+    expect((await db.event_eventos_sanitario.get(result.eventId))?.payload?.catalog_review_warnings).toContain("protocol_region_not_authorized");
+  });
+
+  it("item somente alerta não pode ser convertido em vacinação pela conclusão de agenda", async () => {
+    await seedAgenda();
+    await db.catalog_sanitario_protocolo_itens_versions_v2.update("item-version-1", { action_type: "alerta", item_status: "somente_alerta" });
+    await expect(executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db)).rejects.toThrow("protocol_item_not_executable");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
+  it("registro factual não dispensa isolamento por fazenda", async () => {
+    await seedAgenda();
+    await db.catalog_sanitario_protocolos_v2.update("protocol-1", { scope: "fazenda", fazenda_id: "farm-2" });
+    await expect(executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db)).rejects.toThrow("protocol_not_available");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
+  it("registro factual rejeita data futura e falta de confirmação", async () => {
+    await seedAgenda();
+    await expect(executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact", executedAt: "2099-01-01" }, db)).rejects.toThrow("execution_not_yet_occurred");
+    await expect(executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact", confirmation: { userConfirmedExecution: false } as never }, db)).rejects.toThrow("missing_confirmation");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
+  it("revalida autorização na transação se o catálogo mudar durante o preflight", async () => {
+    await seedAgenda();
+    const originalTransaction = db.transaction.bind(db);
+    const spy = vi.spyOn(db, "transaction").mockImplementation((async (...args: Parameters<typeof db.transaction>) => {
+      spy.mockRestore();
+      await db.catalog_sanitario_protocolos_v2.update("protocol-1", { status: "retired" });
+      return originalTransaction(...args);
+    }) as typeof db.transaction);
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("protocol_not_approved");
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.ops_sanitario_agenda_v2.get("agenda-1")).toMatchObject({ status: "programada" });
+  });
+
+  it("audita a curadoria relida na transação do registro factual", async () => {
+    await seedAgenda();
+    const originalTransaction = db.transaction.bind(db);
+    const spy = vi.spyOn(db, "transaction").mockImplementation((async (...args: Parameters<typeof db.transaction>) => {
+      spy.mockRestore();
+      await db.catalog_sanitario_protocolos_v2.update("protocol-1", { status: "retired" });
+      await db.catalog_sanitario_produtos_v2.update("product-1", { status_curatorial: "precisa_validar" });
+      return originalTransaction(...args);
+    }) as typeof db.transaction);
+    const result = await executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db);
+    const event = await db.event_eventos.get(result.eventId);
+    const detail = await db.event_eventos_sanitario.get(result.eventId);
+    expect(detail?.payload?.catalog_review_warnings).toEqual(expect.arrayContaining([
+      "protocol_not_approved", "product_curation_precisa_validar",
+    ]));
+    expect(event?.payload).toEqual(detail?.payload);
+    expect(detail?.payload?.warnings).toContain("Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.");
+  });
+
+  it("preserva somente-alerta do snapshot quando o item não está em cache", async () => {
+    await seedAgenda(agenda({
+      acao_sanitaria: "alerta",
+      protocol_item_snapshot: { itemKey: "item-1", actionType: "alerta", productRequirementKind: "product_class" },
+    }));
+    await db.catalog_sanitario_protocolo_itens_versions_v2.clear();
+    await expect(executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db))
+      .rejects.toThrow("protocol_item_not_executable");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
+  it("retorna o único fato persistido ao concluir a mesma agenda concorrentemente", async () => {
+    await seedAgenda();
+    const results = await Promise.all([
+      executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db),
+      executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact", clientOpId: "exec-concurrent" }, db),
+    ]);
+    const persisted = await db.event_eventos.toArray();
+    expect(persisted).toHaveLength(1);
+    expect(results.map((result) => result.eventId)).toEqual([persisted[0].id, persisted[0].id]);
+    expect((await db.ops_sanitario_agenda_v2.get("agenda-1"))?.execution_evento_id).toBe(persisted[0].id);
   });
 
   it("persiste o snapshot técnico do produto executado na mesma execução factual", async () => {
@@ -646,6 +913,12 @@ describe("executeSanitaryAgendaV2", () => {
       }),
     );
 
+    const product = await db.catalog_sanitario_produtos_v2.get("product-1");
+    await db.catalog_sanitario_produtos_v2.put({
+      ...product!, id: "product-antiparasitario-1", nome_comercial: "Vermífugo cadastrado",
+      classe: "antiparasitario", metadata: {},
+    });
+
     const result = await executeSanitaryAgendaV2(
       {
         ...baseInput,
@@ -830,7 +1103,7 @@ describe("executeSanitaryAgendaV2", () => {
     });
   });
 
-  it("persiste execução, movimento e fila sanitária de forma atômica sob gate habilitado", async () => {
+  it.each([undefined, "executed_fact"] as const)("persiste execução, movimento e fila sanitária de forma atômica: %s", async (registrationMode) => {
     const ids = {
       farm: "10000000-0000-4000-8000-000000000001",
       agenda: "20000000-0000-4000-8000-000000000001",
@@ -896,8 +1169,18 @@ describe("executeSanitaryAgendaV2", () => {
       }),
     );
 
+    if (registrationMode === "executed_fact") {
+      const originalTransaction = db.transaction.bind(db);
+      const spy = vi.spyOn(db, "transaction").mockImplementation((async (...args: Parameters<typeof db.transaction>) => {
+        spy.mockRestore();
+        await db.catalog_sanitario_protocolos_v2.update(ids.protocol, { status: "draft", approval_status: "draft" });
+        await db.catalog_sanitario_produtos_v2.update("product-1", { status_curatorial: "precisa_validar" });
+        return originalTransaction(...args);
+      }) as typeof db.transaction);
+    }
     const result = await executeSanitaryAgendaV2({
       ...baseInput,
+      registrationMode,
       fazendaId: ids.farm,
       agendaId: ids.agenda,
       clientOpId: ids.operation,
@@ -944,5 +1227,15 @@ describe("executeSanitaryAgendaV2", () => {
       },
     });
     expect(queued[0].client_tx_id).toBe(queued[1].client_tx_id);
+    if (registrationMode === "executed_fact") {
+      expect((await db.event_eventos_sanitario.get(result.eventId))?.payload).toMatchObject({
+        registration_mode: "executed_fact", prospective_authorization: false,
+        catalog_review_warnings: expect.arrayContaining(["protocol_not_approved", "product_curation_precisa_validar"]),
+      });
+      expect(queued[0].record).toMatchObject({ payload: { detail: { payload: {
+        registration_mode: "executed_fact", prospective_authorization: false,
+        catalog_review_warnings: expect.arrayContaining(["protocol_not_approved", "product_curation_precisa_validar"]),
+      } } } });
+    }
   });
 });

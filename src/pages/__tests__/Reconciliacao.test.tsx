@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Reconciliacao from "@/pages/Reconciliacao";
 import { getRejectionStats, listRejections } from "@/lib/offline/rejections";
 import { retryRejectedOperation } from "@/lib/offline/ops";
+import { db } from "@/lib/offline/db";
 
 vi.mock("@/hooks/useAuth");
 vi.mock("dexie-react-hooks", () => ({
@@ -186,5 +187,22 @@ describe("Reconciliacao page", () => {
       ),
     );
     expect(mockedListRejections).toHaveBeenCalled();
+  });
+  it("informa preservação factual sanitária e oferece o retry público", async () => {
+    vi.mocked(db.queue_ops.where).mockReturnValueOnce({ anyOf: () => ({ toArray: async () => [{
+      client_op_id:"op-fact",client_tx_id:"tx-fact",table:"sanitario_v2",action:"INSERT",sync_state:"REJECTED",
+      record:{domain:"sanitario_v2",command:"apply_factual_core"},
+    }] }) } as never);
+    mockedListRejections.mockResolvedValue({items:[{
+      id:2,fazenda_id:"farm-1",client_tx_id:"tx-fact",client_op_id:"op-fact",table:"sanitario_v2",action:"INSERT",
+      reason_code:"SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH",reason_message:"Revisar identidade do catálogo",created_at:"2026-10-15T00:00:00Z",
+    }],nextCursor:undefined});
+    render(<MemoryRouter><Reconciliacao /></MemoryRouter>);
+    await screen.findByText("Revisar identidade do catálogo");
+    fireEvent.click(screen.getByRole("button",{name:"Ver detalhes"}));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/Fato sanitário preservado neste aparelho/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button",{name:"Re-enfileirar"}));
+    await waitFor(() => expect(mockedRetryRejectedOperation).toHaveBeenCalledWith(expect.objectContaining({client_op_id:"op-fact"})));
   });
 });

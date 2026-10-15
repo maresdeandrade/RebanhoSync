@@ -17,8 +17,8 @@
   "creates_active_withdrawal": false,
   "allows_operational_release": false,
   "counts": {
-    "sources": 14,
-    "coverage": 66,
+    "sources": 16,
+    "coverage": 71,
     "protocols": 10,
     "protocol_items": 20,
     "product_classes": 8,
@@ -52,7 +52,7 @@
           "issuer": "Ministério da Agricultura e Pecuária — MAPA",
           "version": null,
           "published_at": "2017-01-05",
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/pncebt/controle-e-erradicacao-da-brucelose-e-tuberculose-pncebt",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -79,7 +79,7 @@
           "issuer": "Zoetis Indústria de Produtos Veterinários Ltda.",
           "version": "GQ-047/version 1/2022-07-01",
           "published_at": null,
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Abor-Vac.pdf",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -106,7 +106,7 @@
           "issuer": "Ministério da Agricultura e Pecuária — MAPA",
           "version": null,
           "published_at": "2022-11-03",
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/raiva-dos-herbivoros-e-eeb/vacina-antirrabica",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -132,7 +132,7 @@
           "issuer": "Ministério da Agricultura, Pecuária e Abastecimento — MAPA",
           "version": "alterada pela IN 41/2020",
           "published_at": "2002-03-01",
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/qualidade-dos-servicos-veterinarios/arquivos/pncrh/in_05_2002_alt__n_41_2020_norma_tecnica_controle_rh.pdf",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -159,7 +159,7 @@
           "issuer": "Zoetis",
           "version": null,
           "published_at": null,
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Fortress-7.pdf",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -185,7 +185,7 @@
           "issuer": "Zoetis Inc.; representante no Brasil Zoetis Indústria de Produtos Veterinários Ltda.",
           "version": "v2",
           "published_at": null,
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -213,7 +213,7 @@
           "issuer": "MSD Saúde Animal Brasil",
           "version": null,
           "published_at": null,
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -221,12 +221,21 @@
           "strength": "apoio",
           "evidence_status": "PRECISA_VALIDAR",
           "limitations": [
-            "Resumo oficial sem bula integral, número de registro ou versão localizados.",
-            "Coverage crítico exige validação complementar do documento integral ou registro oficial."
+            "Fonte oficial do fabricante; versão integral vigente e confirmação regulatória atual pendentes. Registro histórico MAPA localizado, sem prova de vigência em 2026.",
+            "Não autoriza carência zero, bubalinos ou segurança reprodutiva não expressa."
           ],
           "metadata": {
             "document_type": "manufacturer_bula_summary_page",
-            "modified_at_source": "2024-10-16"
+            "modified_at_source": "2024-10-16",
+            "historical_registration": {
+              "number": "9.299/2007",
+              "issuer": "MAPA",
+              "document_date": "2014-04-15",
+              "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+              "section": "POLIGUARD (p. 137)",
+              "accessed_at": "2026-10-14",
+              "current_validity": "unknown"
+            }
           }
         },
         {
@@ -239,7 +248,7 @@
           "issuer": "Virbac Brasil",
           "version": null,
           "published_at": null,
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://br.virbac.com/products/biologicos/bovigen-repro-total-se",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -247,11 +256,20 @@
           "strength": "apoio",
           "evidence_status": "PRECISA_VALIDAR",
           "limitations": [
-            "Página oficial de produto, não identificada como bula.",
-            "Bula integral, registro e revisão permanecem pendentes."
+            "Fonte oficial do fabricante; versão integral vigente e confirmação regulatória atual pendentes. Registro histórico MAPA localizado, sem prova de vigência em 2026.",
+            "Não autoriza carência zero, bubalinos ou segurança reprodutiva não expressa."
           ],
           "metadata": {
-            "document_type": "manufacturer_product_page"
+            "document_type": "manufacturer_product_page",
+            "historical_registration": {
+              "number": "9.776/2013",
+              "issuer": "MAPA",
+              "document_date": "2014-04-15",
+              "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+              "section": "BOVIGEN REPRO TOTAL SE (p. 26)",
+              "accessed_at": "2026-10-14",
+              "current_validity": "unknown"
+            }
           }
         },
         {
@@ -264,7 +282,7 @@
           "issuer": "Embrapa Cerrados",
           "version": "Recomendação Técnica 26, 1ª edição",
           "published_at": null,
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www.infoteca.cnptia.embrapa.br/bitstream/doc/562842/1/rectec26.pdf",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -290,7 +308,7 @@
           "issuer": "Ministério da Agricultura e Pecuária — MAPA",
           "version": null,
           "published_at": "2020-02-04",
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/febre-aftosa/campanha-febre-aftosa",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -317,7 +335,7 @@
           "issuer": "Ministério da Agricultura e Pecuária — MAPA",
           "version": "consolidada com alterações até a IN 11/2020",
           "published_at": "2017-03-03",
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/transito-animal/cgtqa-legis/in-mapa-no-10-3-03-2017-pncebt.pdf",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": null,
@@ -330,7 +348,11 @@
           "metadata": {
             "document_type": "official_norm_pdf",
             "norm_number": "IN SDA/MAPA 10/2017",
-            "consolidated_through": "IN 11/2020"
+            "consolidated_through": "IN 11/2020",
+            "reviewed_sections": [
+              "arts. 9–16",
+              "art. 10: exclusão UF risco A"
+            ]
           }
         },
         {
@@ -343,7 +365,7 @@
           "issuer": "Secretaria de Estado da Agricultura, Abastecimento e Desenvolvimento Rural do Distrito Federal — SEAGRI-DF",
           "version": "vigente; revoga a Portaria nº 59/2024",
           "published_at": "2025-12-01",
-          "accessed_at": "2026-09-24",
+          "accessed_at": "2026-10-14",
           "url": "https://www.sinj.df.gov.br/sinj/Norma/aad0c985c1f8436096680bbb41dcf7a7/Portaria_452_27_11_2025.html",
           "jurisdiction_country": "BR",
           "jurisdiction_uf": "DF",
@@ -417,6 +439,73 @@
             "validity": "indeterminada",
             "review_frequency": "anual"
           }
+        },
+        {
+          "id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+          "source_key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+          "kind": "norma_oficial",
+          "scope": "global",
+          "fazenda_id": null,
+          "title": "Portaria SDA/MAPA 1.633/2026 — campanha nacional contra brucelose",
+          "issuer": "MAPA/SDA",
+          "version": null,
+          "published_at": "2026-06-16",
+          "accessed_at": "2026-10-14",
+          "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/pncebt/principais-normas-pncebt/portaria-1-633-de-12-de-junho-de-2026.pdf",
+          "jurisdiction_country": "BR",
+          "jurisdiction_uf": null,
+          "jurisdiction_zone": null,
+          "strength": "forte",
+          "evidence_status": "SIM_NORMA",
+          "limitations": [
+            "Não autoriza produto comercial nem carência."
+          ],
+          "metadata": {
+            "document_type": "official_norm_pdf",
+            "document_identifier": "Portaria SDA/MAPA 1.633, de 12/06/2026; DOU 16/06/2026, seção 1, p. 23",
+            "sections": [
+              "art. 1 §§1-2",
+              "arts. 2-3"
+            ],
+            "campaign_excludes_risk_class_A": true,
+            "proof_deadlines": [
+              "10/07 do ano da vacinação",
+              "10/01 do ano seguinte"
+            ],
+            "preexisting_state_proof_deadlines_preserved": true
+          }
+        },
+        {
+          "id": "59345fb2-bc0b-460f-b60c-084aa7bf2049",
+          "source_key": "SRC_CIDASC_SC_B19_PROHIBITION",
+          "kind": "norma_oficial",
+          "scope": "global",
+          "fazenda_id": null,
+          "title": "CIDASC — proibição estadual de B19 e uso de RB51",
+          "issuer": "CIDASC",
+          "version": null,
+          "published_at": null,
+          "accessed_at": "2026-10-14",
+          "url": "https://www.cidasc.sc.gov.br/defesasanitariaanimal/defesa-sanitaria-animal-2/",
+          "jurisdiction_country": "BR",
+          "jurisdiction_uf": "SC",
+          "jurisdiction_zone": null,
+          "strength": "forte",
+          "evidence_status": "SIM_NORMA",
+          "limitations": [
+            "Não autoriza produto comercial nem carência."
+          ],
+          "metadata": {
+            "document_type": "state_official_program_page",
+            "section": "Coordenação Estadual de Erradicação de Brucelose e Tuberculose / Vacinação com RB51",
+            "cited_acts": [
+              "Portaria SAR 17/2012",
+              "Portaria SAR 19/2017",
+              "IS 007/2018"
+            ],
+            "publication_date_unknown": true,
+            "routine_b19_prohibited": true
+          }
         }
       ]
     },
@@ -426,7 +515,7 @@
         "source_key": "SRC_MAPA_IN_10_2017_PNCEBT",
         "field_key": "legal_requirement",
         "coverage_status": "covers",
-        "notes": "VAL-B19-001: vacinação oficial obrigatória de fêmeas bovinas e bubalinas de 3 a 8 meses."
+        "notes": "VAL-B19-001: arts. 9 e 10; fêmeas bovinas/bubalinas 3–8 meses, excetuadas UF classificadas A. Portaria 1.633/2026 mantém a exceção."
       },
       {
         "id": "7af1b82e-d717-4a5c-a009-07eb109c4c21",
@@ -882,6 +971,41 @@
         "field_key": "emergency_authority",
         "coverage_status": "covers",
         "notes": "VAL-FMD-003: DSA/SDA-MAPA e serviço veterinário estadual definem a estratégia; a coordenação operacional federal cabe ao COEZOO no foco confirmado."
+      },
+      {
+        "id": "6680c8da-8f0a-45c3-b47d-81c14af72bda",
+        "source_key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+        "field_key": "legal_requirement",
+        "coverage_status": "covers",
+        "notes": "Campanha nacional exclui UF risco A; prazos nacionais de comprovação preservam campanhas estaduais anteriores."
+      },
+      {
+        "id": "37bd9cf1-2394-4bc8-a763-91584a9396e4",
+        "source_key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+        "field_key": "official_record",
+        "coverage_status": "covers",
+        "notes": "Campanha nacional exclui UF risco A; prazos nacionais de comprovação preservam campanhas estaduais anteriores."
+      },
+      {
+        "id": "6074dba2-6055-41ec-a4bf-2a2ea49ff817",
+        "source_key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+        "field_key": "regional_restrictions",
+        "coverage_status": "covers",
+        "notes": "Campanha nacional exclui UF risco A; prazos nacionais de comprovação preservam campanhas estaduais anteriores."
+      },
+      {
+        "id": "531324a5-2b26-493e-9c33-8c652bcc58c2",
+        "source_key": "SRC_CIDASC_SC_B19_PROHIBITION",
+        "field_key": "legal_requirement",
+        "coverage_status": "covers",
+        "notes": "B19 proibida em Santa Catarina; não substitui validação do produto ou de demais UFs."
+      },
+      {
+        "id": "4e30c65d-1334-45be-b548-0bcfb899dcd6",
+        "source_key": "SRC_CIDASC_SC_B19_PROHIBITION",
+        "field_key": "regional_restrictions",
+        "coverage_status": "covers",
+        "notes": "B19 proibida em Santa Catarina; não substitui validação do produto ou de demais UFs."
       }
     ],
     "sanitario_protocolos_v2": {
@@ -943,7 +1067,9 @@
             {
               "field": "restrictions",
               "source_ref": "SRC_PNCEBT_BRUCELOSE"
-            }
+            },
+            "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+            "SRC_CIDASC_SC_B19_PROHIBITION"
           ],
           "metadata": {
             "curationStatus": "needs_review",
@@ -961,14 +1087,30 @@
               "requires_official_record_flow",
               "requires_marking_when_applicable",
               "requires_executed_product_snapshot",
-              "requires_product_catalog_validation"
+              "requires_product_catalog_validation",
+              "requires_current_sve_risk_classification"
             ],
             "restrictions": [
               "execution_requires_registered_veterinarian",
               "execution_requires_official_record",
               "execution_requires_marking_when_applicable",
               "execution_requires_real_product_snapshot"
-            ]
+            ],
+            "requires_uf_context": true,
+            "excluded_ufs": [
+              "SC"
+            ],
+            "legal_requirement_exceptions": [
+              "UF classificadas risco A para brucelose: sem obrigatoriedade nacional; proibições estaduais prevalecem"
+            ],
+            "official_record_policy": {
+              "national_proof_deadlines": [
+                "10/07",
+                "10/01 do ano seguinte"
+              ],
+              "preexisting_state_deadlines_preserved": true,
+              "source_ref": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE"
+            }
           },
           "id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
           "protocol_key": "brucelose_b19"
@@ -1268,6 +1410,11 @@
               "label_snapshot_required": true,
               "dose_route_withdrawal_from_product_only": true,
               "regional_recommendation_may_not_supply_product_fields": true
+            },
+            "evidence_review_2026_10_14": {
+              "reference_region": "DF/Cerrado; gado de corte e regime extensivo conforme a fonte",
+              "rotation": "Nenhuma rotação química automática autorizada; seleção depende de eficácia e avaliação MV.",
+              "product_fields": "Dose, peso, via, gestação, lactação e carência dependem do produto real; desconhecido permanece desconhecido."
             }
           },
           "id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
@@ -1306,7 +1453,13 @@
               "source_gap_executed_product_label",
               "source_gap_mv_decision",
               "source_gap_bubalino"
-            ]
+            ],
+            "evidence_review_2026_10_14": {
+              "reference_region": "DF/Cerrado; gado de corte e regime extensivo conforme a fonte",
+              "rotation": "Nenhuma rotação química automática autorizada; seleção depende de eficácia e avaliação MV.",
+              "product_fields": "Dose, peso, via, gestação, lactação e carência dependem do produto real; desconhecido permanece desconhecido.",
+              "pre_weaning": "Não é rotina universal: baixa eficácia em bezerros zebu extensivos antes do desmame; intensivo/leiteiro exige avaliação específica."
+            }
           },
           "id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
           "protocol_key": "vermifugacao_pre_desmama"
@@ -1339,7 +1492,12 @@
               "source_gap_executed_product_label",
               "requires_slaughter_withdrawal_review",
               "source_gap_bubalino"
-            ]
+            ],
+            "evidence_review_2026_10_14": {
+              "reference_region": "DF/Cerrado; gado de corte e regime extensivo conforme a fonte",
+              "rotation": "Nenhuma rotação química automática autorizada; seleção depende de eficácia e avaliação MV.",
+              "product_fields": "Dose, peso, via, gestação, lactação e carência dependem do produto real; desconhecido permanece desconhecido."
+            }
           },
           "id": "56d66340-e21e-4d60-8933-d99a3514b41d",
           "protocol_key": "vermifugacao_pre_confinamento_pasto_vedado"
@@ -1375,7 +1533,13 @@
               "source_gap_label_or_mv",
               "source_gap_bubalino"
             ],
-            "nonOperationalNotice": "avaliar protocolo de leptospirose conforme manejo reprodutivo e orientação técnica"
+            "nonOperationalNotice": "avaliar protocolo de leptospirose conforme manejo reprodutivo e orientação técnica",
+            "evidence_review_2026_10_14": {
+              "reference_region": "DF/Cerrado; gado de corte e regime extensivo conforme a fonte",
+              "rotation": "Nenhuma rotação química automática autorizada; seleção depende de eficácia e avaliação MV.",
+              "product_fields": "Dose, peso, via, gestação, lactação e carência dependem do produto real; desconhecido permanece desconhecido.",
+              "window": "Julho/agosto é referência sazonal do Brasil Central; não comprova dias antes da data prevista do parto."
+            }
           },
           "id": "c51c944b-431f-4533-8505-65bea3bec156",
           "protocol_key": "matrizes_pre_parto"
@@ -1434,7 +1598,7 @@
         {
           "protocol_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
           "logical_item_key": "b19_femeas_3_8_meses",
-          "version": 1,
+          "version": 2,
           "item_status": "obrigatorio",
           "action_type": "vacinacao",
           "product_requirement_kind": "product_class",
@@ -1449,7 +1613,12 @@
             "sex": "femea",
             "age_min_months": 3,
             "age_max_months": 8,
-            "legal_scope": "nacional"
+            "legal_scope": "nacional",
+            "requires_uf_context": true,
+            "excluded_ufs": [
+              "SC"
+            ],
+            "obligation_excludes_risk_class_A": true
           },
           "operational_window_rule": {
             "type": "age",
@@ -1514,6 +1683,16 @@
               {
                 "source_ref": "SRC_PNCEBT_BRUCELOSE"
               }
+            ],
+            "regional_restrictions": [
+              {
+                "source_ref": "SRC_CIDASC_SC_B19_PROHIBITION"
+              }
+            ],
+            "official_record": [
+              {
+                "source_ref": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE"
+              }
             ]
           },
           "limitations": [
@@ -1545,13 +1724,18 @@
               "curationStatus": "needs_review",
               "automationStatus": "manual_only",
               "agenda_allowed": false,
-              "approved_for_catalog": false
+              "approved_for_catalog": false,
+              "supersedes": {
+                "id": "ce2995b6-098e-4c67-aee2-8e3325c9ce53",
+                "version": 1,
+                "reason": "2026-10-14: correção comprovada por fonte primária; versão factual anterior preservada"
+              }
             }
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": true,
           "status": "draft",
-          "id": "ce2995b6-098e-4c67-aee2-8e3325c9ce53",
+          "id": "22508d25-1b95-44b2-b2a3-50d57cb8ba7d",
           "protocol_key": "brucelose_b19"
         },
         {
@@ -1644,7 +1828,7 @@
         {
           "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
           "logical_item_key": "clostridial_primovac_dose2",
-          "version": 1,
+          "version": 2,
           "item_status": "recomendado",
           "action_type": "vacinacao",
           "product_requirement_kind": "product_class",
@@ -1659,7 +1843,7 @@
           "operational_window_rule": {
             "type": "relative",
             "anchor": "previous_dose",
-            "min_offset_days": 21,
+            "min_offset_days": 28,
             "max_offset_days": 42
           },
           "booster_rule": {
@@ -1701,7 +1885,8 @@
             "source_gap_bubalino",
             "product_specific_label_required",
             "do_not_generalize_class",
-            "withdrawal_by_executed_product"
+            "withdrawal_by_executed_product",
+            "interval_reference_product_only"
           ],
           "snapshot_template": {
             "executionProductPolicy": "required_at_execution",
@@ -1711,7 +1896,8 @@
             ],
             "sourcePolicy": {
               "withdrawal": "by_executed_product_snapshot",
-              "dose": "by_executed_product_label"
+              "dose": "by_executed_product_label",
+              "operational_window": "reference_product_only; não generalizar para alternativas com esquema diferente"
             },
             "restrictions": [
               "product_specific_label_required",
@@ -1721,13 +1907,18 @@
               "curationStatus": "needs_review",
               "automationStatus": "preview_allowed",
               "agenda_allowed": false,
-              "approved_for_catalog": false
+              "approved_for_catalog": false,
+              "supersedes": {
+                "id": "13340ea6-bc82-434a-a2a1-45548a9f4528",
+                "version": 1,
+                "reason": "2026-10-14: correção comprovada por fonte primária; versão factual anterior preservada"
+              }
             }
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
-          "id": "13340ea6-bc82-434a-a2a1-45548a9f4528",
+          "id": "c0aaa4e1-458c-4121-a34b-a9a7a996eec1",
           "protocol_key": "clostridioses"
         },
         {
@@ -2474,7 +2665,7 @@
         {
           "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
           "logical_item_key": "ibr_bvd_primovac_dose2",
-          "version": 1,
+          "version": 2,
           "item_status": "recomendado",
           "action_type": "vacinacao",
           "product_requirement_kind": "product_class",
@@ -2490,7 +2681,7 @@
             "type": "relative",
             "anchor": "previous_dose",
             "min_offset_days": 21,
-            "max_offset_days": 42
+            "max_offset_days": 30
           },
           "booster_rule": {
             "recurrenceRule": {
@@ -2533,7 +2724,8 @@
           },
           "limitations": [
             "source_gap_product_withdrawal_snapshot",
-            "source_gap_bubalino"
+            "source_gap_bubalino",
+            "interval_reference_product_only"
           ],
           "snapshot_template": {
             "executionProductPolicy": "required_at_execution",
@@ -2542,19 +2734,25 @@
               "source_gap_bubalino"
             ],
             "sourcePolicy": {
-              "withdrawal": "by_executed_product_snapshot"
+              "withdrawal": "by_executed_product_snapshot",
+              "operational_window": "reference_product_only; não generalizar para alternativas com esquema diferente"
             },
             "metadata": {
               "curationStatus": "needs_review",
               "automationStatus": "preview_allowed",
               "agenda_allowed": false,
-              "approved_for_catalog": false
+              "approved_for_catalog": false,
+              "supersedes": {
+                "id": "943f74f0-7a82-4dfc-b3f5-8cd35d5bca01",
+                "version": 1,
+                "reason": "2026-10-14: correção comprovada por fonte primária; versão factual anterior preservada"
+              }
             }
           },
           "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
-          "id": "943f74f0-7a82-4dfc-b3f5-8cd35d5bca01",
+          "id": "26b7e5bb-8f0d-4ef7-a757-a76e621df0e4",
           "protocol_key": "ibr_bvd"
         },
         {
@@ -3578,18 +3776,66 @@
     "sanitario_product_class_group_members_v2": {
       "target_table": "sanitario_product_class_group_members_v2",
       "rows": [
-        { "id": "0f4c76bf-39e2-4d3a-9887-9ccdce68ad90", "group_key": "pcg_antiparasitarios_recria_estrategicos", "class_key": "lactonas_macrociclicas" },
-        { "id": "ba926a94-ecb2-428e-9882-ac9e76c67cd4", "group_key": "pcg_antiparasitarios_recria_estrategicos", "class_key": "benzimidazois" },
-        { "id": "f0157397-8571-49cf-ab4d-6e75e001954e", "group_key": "pcg_antiparasitarios_recria_estrategicos", "class_key": "imidazotiazoleis" },
-        { "id": "1664b2c7-cd15-40e2-a4f7-06542f98ee2c", "group_key": "pcg_antiparasitarios_bezerros_pre_desmama", "class_key": "lactonas_macrociclicas" },
-        { "id": "f72c8bce-3377-421a-8723-f2198f3233fc", "group_key": "pcg_antiparasitarios_bezerros_pre_desmama", "class_key": "benzimidazois" },
-        { "id": "8f7b44a0-3026-44ef-a8bd-616a74a91ca1", "group_key": "pcg_antiparasitarios_bezerros_pre_desmama", "class_key": "imidazotiazoleis" },
-        { "id": "50a0c8c7-f8ec-4160-8ba7-ad4825f19556", "group_key": "pcg_antiparasitarios_pre_confinamento", "class_key": "lactonas_macrociclicas" },
-        { "id": "c4551f5c-1532-4015-a7cc-618f3bacb208", "group_key": "pcg_antiparasitarios_pre_confinamento", "class_key": "benzimidazois" },
-        { "id": "42d157f5-2a13-4c05-aa77-6b2df5ee14af", "group_key": "pcg_antiparasitarios_pre_confinamento", "class_key": "imidazotiazoleis" },
-        { "id": "3e67a223-9f48-44ae-ac51-509c6cb0ab82", "group_key": "pcg_antiparasitarios_matrizes_pre_parto", "class_key": "lactonas_macrociclicas" },
-        { "id": "9a0e0336-88c4-473a-bd10-3800ca0c2cbf", "group_key": "pcg_antiparasitarios_matrizes_pre_parto", "class_key": "benzimidazois" },
-        { "id": "6362a7e5-4f03-4636-af31-daff68f80bde", "group_key": "pcg_antiparasitarios_matrizes_pre_parto", "class_key": "imidazotiazoleis" }
+        {
+          "id": "0f4c76bf-39e2-4d3a-9887-9ccdce68ad90",
+          "group_key": "pcg_antiparasitarios_recria_estrategicos",
+          "class_key": "lactonas_macrociclicas"
+        },
+        {
+          "id": "ba926a94-ecb2-428e-9882-ac9e76c67cd4",
+          "group_key": "pcg_antiparasitarios_recria_estrategicos",
+          "class_key": "benzimidazois"
+        },
+        {
+          "id": "f0157397-8571-49cf-ab4d-6e75e001954e",
+          "group_key": "pcg_antiparasitarios_recria_estrategicos",
+          "class_key": "imidazotiazoleis"
+        },
+        {
+          "id": "1664b2c7-cd15-40e2-a4f7-06542f98ee2c",
+          "group_key": "pcg_antiparasitarios_bezerros_pre_desmama",
+          "class_key": "lactonas_macrociclicas"
+        },
+        {
+          "id": "f72c8bce-3377-421a-8723-f2198f3233fc",
+          "group_key": "pcg_antiparasitarios_bezerros_pre_desmama",
+          "class_key": "benzimidazois"
+        },
+        {
+          "id": "8f7b44a0-3026-44ef-a8bd-616a74a91ca1",
+          "group_key": "pcg_antiparasitarios_bezerros_pre_desmama",
+          "class_key": "imidazotiazoleis"
+        },
+        {
+          "id": "50a0c8c7-f8ec-4160-8ba7-ad4825f19556",
+          "group_key": "pcg_antiparasitarios_pre_confinamento",
+          "class_key": "lactonas_macrociclicas"
+        },
+        {
+          "id": "c4551f5c-1532-4015-a7cc-618f3bacb208",
+          "group_key": "pcg_antiparasitarios_pre_confinamento",
+          "class_key": "benzimidazois"
+        },
+        {
+          "id": "42d157f5-2a13-4c05-aa77-6b2df5ee14af",
+          "group_key": "pcg_antiparasitarios_pre_confinamento",
+          "class_key": "imidazotiazoleis"
+        },
+        {
+          "id": "3e67a223-9f48-44ae-ac51-509c6cb0ab82",
+          "group_key": "pcg_antiparasitarios_matrizes_pre_parto",
+          "class_key": "lactonas_macrociclicas"
+        },
+        {
+          "id": "9a0e0336-88c4-473a-bd10-3800ca0c2cbf",
+          "group_key": "pcg_antiparasitarios_matrizes_pre_parto",
+          "class_key": "benzimidazois"
+        },
+        {
+          "id": "6362a7e5-4f03-4636-af31-daff68f80bde",
+          "group_key": "pcg_antiparasitarios_matrizes_pre_parto",
+          "class_key": "imidazotiazoleis"
+        }
       ]
     }
   },

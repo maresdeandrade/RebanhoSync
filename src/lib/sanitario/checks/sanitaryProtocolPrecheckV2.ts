@@ -16,6 +16,7 @@ export type SanitaryPrecheckAnimalResumoV2 = {
   categoria?: string | null;
   aptidao?: string | null;
   fazendaId: string;
+  uf?: string | null;
   riskArea?: boolean | null;
   regionalRiskArea?: boolean | null;
   pregnancyOrPeripartumContext?: boolean | null;
@@ -587,6 +588,17 @@ function evaluateB19(input: {
   executedHistory: SanitaryExecutedHistoryV2[];
 }): SanitaryProtocolPrecheckResultV2 {
   const { protocol, item, animal, today, executedHistory } = input;
+  let jurisdictionBlock: SanitaryProtocolPrecheckResultV2 | null = null;
+  if (protocol.metadata.requires_uf_context === true) {
+    const uf = animal.uf?.trim().toUpperCase();
+    const excluded = readStringArray(protocol.metadata.excluded_ufs);
+    if (!uf) jurisdictionBlock = baseResult({ protocol, item, status: "insufficient_data",
+      blockers: ["UF ausente para verificar exceções e proibições regionais de B19."],
+    });
+    else if (excluded.includes(uf)) jurisdictionBlock = baseResult({ protocol, item, status: "not_applicable",
+      blockers: ["B19 não autorizada na UF conforme fonte oficial regional do catálogo."],
+    });
+  }
   const speciesStatus = evaluateSpecies(animal, item);
   if (speciesStatus) {
     return baseResult({
@@ -638,6 +650,7 @@ function evaluateB19(input: {
     });
   }
 
+  if (ageMonths <= 8 && jurisdictionBlock) return jurisdictionBlock;
   if (ageMonths < 3) {
     return baseResult({
       protocol,
@@ -645,7 +658,7 @@ function evaluateB19(input: {
       status: "not_yet_eligible",
       reasons: ["Animal ainda abaixo da janela B19 de 3 a 8 meses."],
       warnings: [
-        "Exige MV habilitado, registro oficial e produto real na execução.",
+        "Exige MV cadastrado no SVE, registro oficial e produto real na execução.",
       ],
     });
   }
@@ -669,9 +682,11 @@ function evaluateB19(input: {
         ],
         warnings: [
           "Histórico anterior não registra execução da fazenda nem movimenta estoque.",
+          ...(jurisdictionBlock?.blockers ?? []),
         ],
       });
     }
+    if (jurisdictionBlock) return jurisdictionBlock;
     const declaredHistory = compatibleHistory.find(isDeclaredHistorySource);
     if (declaredHistory) {
       return baseResult({
@@ -711,7 +726,7 @@ function evaluateB19(input: {
     status: "in_action_window",
     reasons: ["Fêmea bovina/bubalina dentro da janela B19 de 3 a 8 meses."],
     warnings: [
-      "Exige MV habilitado, registro oficial e produto real na execução.",
+      "Exige MV cadastrado no SVE, registro oficial e produto real na execução.",
     ],
   });
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import {
@@ -542,9 +542,13 @@ describe("sanitario v2 canonical contract", () => {
     expect(rawProtocols.every((row) => uuid.test(row.id) && row.protocol_key === row.family_code && row.version === 1)).toBe(true);
     expect(rawItems).toHaveLength(20);
     expect(new Set(rawItems.map((row) => row.id)).size).toBe(20);
-    expect(rawItems.every((row) => uuid.test(row.id) && uuid.test(row.protocol_id) && row.version === 1 && parents.get(row.protocol_key) === row.protocol_id)).toBe(true);
-    // Permanent mapping: changing any UUID, parent, key or item version requires explicit review.
-    expect(createHash("sha256").update(JSON.stringify(mapping)).digest("hex"))
+    expect(rawItems.every((row) => uuid.test(row.id) && uuid.test(row.protocol_id) && [1, 2].includes(row.version) && parents.get(row.protocol_key) === row.protocol_id)).toBe(true);
+    // Preserve the permanent C0.5 identities through explicit supersession; no old UUID is reused.
+    const originalMapping = { ...mapping, items: rawItems.map((row) => {
+      const prior = row.snapshot_template?.metadata?.supersedes;
+      return [row.protocol_key, row.logical_item_key, prior?.version ?? row.version, prior?.id ?? row.id, row.protocol_id];
+    }).sort() };
+    expect(createHash("sha256").update(JSON.stringify(originalMapping)).digest("hex"))
       .toBe("187b4c0c6d4957aadd4b896edd3908b2d9096e364b503c4c4f0a517f5d5aa6b1");
     expect(payload.payload.sanitario_protocolo_itens_versions_v2.defaults).not.toHaveProperty("protocol_id");
 
@@ -563,22 +567,23 @@ describe("sanitario v2 canonical contract", () => {
     expect(JSON.stringify(payload)).toBe(before);
   });
 
-  it("preserves all C0.4 content outside the materialized identity fields", () => {
+  it("preserves release gates and creates physical versions for evidence corrections", () => {
     const payload = JSON.parse(readFileSync(CANONICAL_PAYLOAD, "utf8"));
-    delete payload.identity_model;
-    for (const row of payload.payload.sanitario_protocolos_v2.rows) {
-      delete row.id;
-      delete row.protocol_key;
+    const rows = payload.payload.sanitario_protocolo_itens_versions_v2.rows;
+    const corrected = new Map(rows.filter((r) => r.snapshot_template?.metadata?.supersedes).map((r) => [r.logical_item_key, r]));
+    expect(corrected.size).toBe(3);
+    expect(corrected.get("clostridial_primovac_dose2").operational_window_rule).toMatchObject({ min_offset_days: 28, max_offset_days: 42 });
+    expect(corrected.get("ibr_bvd_primovac_dose2").operational_window_rule).toMatchObject({ min_offset_days: 21, max_offset_days: 30 });
+    expect(corrected.get("b19_femeas_3_8_meses").eligibility_rule).toMatchObject({ requires_uf_context: true, excluded_ufs: ["SC"] });
+    for (const row of corrected.values()) {
+      expect(row.version).toBe(2);
+      expect(row.id).not.toBe(row.snapshot_template.metadata.supersedes.id);
+      expect(row.snapshot_template.metadata.supersedes.version).toBe(1);
     }
-    for (const row of payload.payload.sanitario_protocolo_itens_versions_v2.rows) {
-      delete row.id;
-      delete row.protocol_key;
-      delete row.protocol_id;
-    }
-    delete payload.payload.sanitario_protocolo_itens_versions_v2.defaults.protocol_id;
-    // Digest captured from e5dde1c before C0.5: sanitary content, classes, groups, members and gates.
-    expect(createHash("sha256").update(JSON.stringify(payload)).digest("hex"))
-      .toBe("6bdd48bb615518802f395be82fc2d20a77288f196e695ff621da9abba3f93fe6");
+    expect(payload.execute_import).toBe(false);
+    expect(payload.import_gate.import_real_authorized).toBe(false);
+    expect(rows.every((row) => !row.allows_agenda_auto && row.status === "draft")).toBe(true);
+    expect(payload.payload.sanitario_protocolos_v2.rows.every((row) => row.approval_status === "draft" && !row.metadata.approved_for_catalog)).toBe(true);
   });
 
   it.each([
@@ -590,7 +595,7 @@ describe("sanitario v2 canonical contract", () => {
     ["missing explicit parent UUID", (p) => { delete p.payload.sanitario_protocolo_itens_versions_v2.rows[0].protocol_id; }, "UUID explicito do protocolo pai obrigatorio"],
     ["orphan item", (p) => { p.payload.sanitario_protocolo_itens_versions_v2.rows[0].protocol_id = ids.protocol; }, "protocol_id inexistente"],
     ["wrong parent UUID", (p) => { p.payload.sanitario_protocolo_itens_versions_v2.rows[0].protocol_id = p.payload.sanitario_protocolos_v2.rows[1].id; }, "UUID nao corresponde"],
-    ["duplicate logical identity", (p) => { const rows = p.payload.sanitario_protocolo_itens_versions_v2.rows; rows[2].logical_item_key = rows[1].logical_item_key; }, "identidade de item duplicada"],
+    ["duplicate logical identity", (p) => { const rows = p.payload.sanitario_protocolo_itens_versions_v2.rows; rows[2].logical_item_key = rows[1].logical_item_key; rows[2].version = rows[1].version; }, "identidade de item duplicada"],
     ["obsolete protocol lookup", (p) => { p.payload.sanitario_protocolo_itens_versions_v2.rows[0].protocol_id = "{{lookup sanitario_protocolos_v2.id by family_code=brucelose_b19}}"; }, "UUID explicito do protocolo pai obrigatorio"],
     ["identity generation model", (p) => { p.identity_model = "RUNTIME_UUID"; }, "modelo esperado VERSIONED_EXPLICIT_UUID"],
   ])("rejects C0.5 %s without generating identities", (_name, mutate, message) => {

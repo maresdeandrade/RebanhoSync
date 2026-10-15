@@ -37,6 +37,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { db } from "../db";
+import { retryRejectedOperation } from "../ops";
 import { establishLocalOwnership } from "../ownership";
 import { pullSanitarioV2CutoverState } from "../pull";
 import {
@@ -323,6 +324,38 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
     expect(pullSanitarioV2CutoverState).toHaveBeenCalledWith(FAZENDA_ID);
     expect(await db.event_eventos.count()).toBe(0);
     expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+  });
+
+  it.each(["REJECTED", "CONFLICT"] as const)("preserva o fato e terminaliza companion %s sem retry órfão", async (status) => {
+    const {gesture,ops} = await seedGesture(["apply_factual_core"], `terminal-${status}`);
+    const eventId = `retained-${status}`;
+    await db.event_eventos.put({ id:eventId,fazenda_id:FAZENDA_ID,dominio:"sanitario",payload:{ dose:2 } } as never);
+    await db.event_eventos_sanitario.put({ evento_id:eventId,fazenda_id:FAZENDA_ID,tipo:"vacinacao",dose_quantidade:2 } as never);
+    const companion:Operation = {client_op_id:`companion-${status}`,client_tx_id:gesture.client_tx_id,op_order:1,
+      table:"state_insumo_movimentacoes",action:"INSERT",record:{id:"movement",source_evento_id:eventId,tipo:"consumo_sanitario"},created_at:gesture.created_at};
+    await db.queue_ops.add(companion);
+    respondWith([
+      {op_id:ops[0].client_op_id,status:"REJECTED",reason_code:"SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH"},
+      {op_id:companion.client_op_id,status,reason_code:"SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED"},
+    ]);
+    await processGesture(gesture);
+    expect(await loadGesture(gesture.client_tx_id)).toMatchObject({status:"REJECTED",sync_result:"REJECTED"});
+    expect(await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).count()).toBe(2);
+    expect(await db.queue_rejections.where("client_tx_id").equals(gesture.client_tx_id).count()).toBe(2);
+    expect(await db.event_eventos.get(eventId)).toMatchObject({payload:{dose:2}});
+    expect(await db.event_eventos_sanitario.get(eventId)).toMatchObject({dose_quantidade:2});
+    const rejection = await db.queue_rejections.filter(row => row.client_op_id === ops[0].client_op_id).first();
+    await retryRejectedOperation(rejection!);
+    expect(await loadGesture(gesture.client_tx_id)).toMatchObject({status:"PENDING"});
+    const retained = await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).sortBy("op_order");
+    expect(retained.map(op => op.sync_state)).toEqual(["PENDING", "PENDING"]);
+    expect(retained.map(op => op.record)).toEqual([ops[0].record, companion.record]);
+    await expect(retryRejectedOperation(rejection!)).rejects.toThrow("REJECTED_OPERATION_ALREADY_QUEUED");
+    respondWith(retained.map(op => ({op_id:op.client_op_id,status:"APPLIED"})));
+    await processGesture(await loadGesture(gesture.client_tx_id));
+    expect(await loadGesture(gesture.client_tx_id)).toMatchObject({status:"DONE",sync_result:"APPLIED"});
+    expect(await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).count()).toBe(0);
+    expect(await db.event_eventos.get(eventId)).toMatchObject({payload:{dose:2}});
   });
 
   it("reenvia somente movimento retryable após fato confirmado", async () => {

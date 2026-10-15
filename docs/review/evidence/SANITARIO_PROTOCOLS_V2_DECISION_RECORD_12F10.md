@@ -5,6 +5,8 @@ Decisao: `12F10_CONSOLIDAR_ARTEFATOS_CANONICOS_ANTES_DE_12G0`
 
 ## Decisoes finais
 
+Revisao 2026-10-14: a fonte JSON corrente preserva 10 protocolos e 20 itens; contém 16 fontes, 71 coberturas, 8 classes, 4 grupos e 12 members, com 4 rejeicoes de associacoes. Tres itens candidatos possuem versao fisica 2 com ponteiro explicito para a versao anterior. As contagens 19/16 abaixo registram a decisao original de 12F10 e nao representam o payload atual. `execute_import=false`, ausencia de aprovacao curatorial e bloqueio de agenda automatica continuam vigentes. Resultado e limites atuais em `SANITARIO_V2_RESEARCH_REMEDIATION_20261014.md`.
+
 - A fonte final de payload candidato passa a ser `SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json`.
 - Os JSONs 12F9 permanecem como evidencia de origem, nao como fonte preferencial para 12G0.
 - O pacote canonico preserva 10 protocolos, 19 itens, 4 ProductClassGroups e 16 rejeicoes de members.

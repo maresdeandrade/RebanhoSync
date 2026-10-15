@@ -749,6 +749,7 @@ Deno.serve(async (req: Request) => {
                         unknown
                       >[],
                     },
+                    operation.payload.event as unknown as Record<string, unknown>,
                   ),
                   error: null,
                 };
@@ -1012,6 +1013,17 @@ Deno.serve(async (req: Request) => {
               retryable: true,
               reason_code: dependencyDecision.reason_code,
               reason_message: dependencyDecision.reason_message,
+            });
+            continue;
+          }
+          if (dependencyDecision.status === "REJECTED") {
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: "REJECTED",
+              reason_code: dependencyDecision.reason_code,
+              reason_message: "Inventory movement cannot retry a terminally rejected factual operation",
             });
             continue;
           }

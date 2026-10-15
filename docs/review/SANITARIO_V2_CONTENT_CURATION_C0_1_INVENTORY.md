@@ -1,5 +1,7 @@
 # Sanitário v2 — Content Curation C0.1
 
+> Inventário histórico de descoberta. Em 2026-10-14, o payload corrente contém 16 fontes, 71 coberturas, 8 classes, 4 grupos, 12 members, 10 protocolos e 20 itens. Os diferimentos C0.3/C0.4 abaixo não descrevem mais o estado atual. Consulte `SANITARIO_V2_TECHNICAL_VALIDATION_QUEUE.md` e o payload 12F10 para o estado revisado; nenhum produto/uso operacional foi aprovado.
+
 Atualizado em: 2026-09-23
 Baseline: `main@dcece696deb1f7aa81cf5a0941aec9257239c317` (inclui PR #165 e PR #166)
 Branch: `feat/sanitario-v2-content-curation-c0`

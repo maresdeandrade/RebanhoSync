@@ -150,6 +150,21 @@ const catalog = () => ({
 });
 
 describe("sanitary product evidence", () => {
+  it("separa curadoria atual do fato retrospectivo sem dispensar fontes e identidade", () => {
+    const current = catalog();
+    current.product.status_curatorial = "precisa_validar";
+    current.product.updated_at = "2026-10-15T00:00:00Z";
+    const event = { natureza: "primary_execution", payload: { registration_mode: "executed_fact", prospective_authorization: false } };
+    expect(validateSanitaryProductEvidenceCatalog(snapshot(), ids.farm, current, event)).toBeNull();
+    expect(validateSanitaryProductEvidenceCatalog(snapshot(), ids.farm, current))
+      .toBe("SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH");
+    current.doseRules[0].status_curatorial = "precisa_validar";
+    expect(validateSanitaryProductEvidenceCatalog(snapshot(), ids.farm, current, event))
+      .toBe("SANITARIO_PRODUCT_FIELD_RULE_MISMATCH");
+    current.product.nome_comercial = "Outro produto";
+    expect(validateSanitaryProductEvidenceCatalog(snapshot(), ids.farm, current, event))
+      .toBe("SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH");
+  });
   it("aceita snapshot factual coerente e cobertura comprovada pelo catálogo", () => {
     const value = snapshot();
     expect(validateSanitaryProductEvidenceShape(shapeInput(value))).toBeNull();

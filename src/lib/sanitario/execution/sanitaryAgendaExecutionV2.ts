@@ -24,12 +24,15 @@ import type {
 import type { ExecutedProductTechnicalSnapshotV2 } from "@/lib/sanitario/rules/sanitarySnapshotsV2";
 import { buildExecutedProductTechnicalSnapshotV2 } from "./executedProductTechnicalSnapshotV2";
 import { projectOperationalWithdrawalLegacyFieldsV2 } from "./operationalWithdrawalSnapshotV2";
+import { sanitaryProtocolExecutionRejectionsV2 } from "./sanitaryProtocolExecutionAuthorizationV2";
 
 export type ExecuteSanitaryAgendaInputV2 = {
   fazendaId: string;
   agendaId: string;
   clientOpId: string;
   executedAt: string;
+  // Explicit declaration of an already performed application; never permission to apply.
+  registrationMode?: "executed_fact";
   responsibleName?: string;
   notes?: string;
   product?: {
@@ -101,6 +104,8 @@ export type SanitaryAgendaExecutionDbV2 = Pick<
   | "state_insumo_movimentacoes"
   | "catalog_sanitario_produto_carencia_rules_v2"
   | "catalog_sanitario_produtos_v2"
+  | "catalog_sanitario_protocolos_v2"
+  | "catalog_sanitario_protocolo_itens_versions_v2"
   | "catalog_sanitario_fontes_tecnicas_v2"
   | "catalog_sanitario_fonte_cobertura_campos_v2"
   | "catalog_sanitario_produto_fontes_v2"
@@ -135,6 +140,7 @@ const PRODUCT_REQUIRED_KINDS = new Set([
   "product_class",
   "product_class_group",
 ]);
+const CATALOG_REVIEW_NOTICE = "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.";
 
 function readRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -273,6 +279,13 @@ function validateExecutionInput(input: ExecuteSanitaryAgendaInputV2) {
   if (!input.confirmation?.userConfirmedExecution) rejected.push("missing_confirmation");
   if (!input.executedAt) rejected.push("missing_executed_at");
   if (input.executedAt && !executedAt) rejected.push("invalid_executed_at");
+  if (input.registrationMode === "executed_fact" && executedAt) {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const future = /^\d{4}-\d{2}-\d{2}$/.test(input.executedAt)
+      ? input.executedAt > today : new Date(executedAt).getTime() > now.getTime();
+    if (future) rejected.push("execution_not_yet_occurred");
+  }
   return { ok: rejected.length === 0, rejected, executedAt };
 }
 
@@ -339,7 +352,8 @@ async function findExistingExecution(
   db: SanitaryAgendaExecutionDbV2,
   input: ExecuteSanitaryAgendaInputV2,
 ) {
-  const eventId = eventIdFor(input);
+  // Preserve the legacy lookup; sync executions are found by factual origin below.
+  const eventId = eventIdFor(input, false);
   const byId = await db.event_eventos.get(eventId);
   if (byId && byId.fazenda_id === input.fazendaId && !byId.deleted_at) return byId;
   return db.event_eventos
@@ -396,6 +410,7 @@ function buildRecords(input: {
   factualIdentity?: SanitarioV2OperationIdentity;
   movementIdentity?: SanitarioV2OperationIdentity;
   clientId?: string;
+  catalogReviewWarnings?: string[];
 }) {
   const {
     request,
@@ -444,6 +459,10 @@ function buildRecords(input: {
       source_evento_id: eventId,
     },
     warnings: [
+      ...(request.registrationMode === "executed_fact"
+        ? ["Registro retrospectivo: a curadoria pode mudar e não autoriza usos futuros."] : []),
+      ...(input.catalogReviewWarnings?.length
+        ? [CATALOG_REVIEW_NOTICE] : []),
       ...(request.product && !request.product.inventoryLotId
         ? ["Produto informado sem baixa de estoque."]
         : []),
@@ -453,6 +472,9 @@ function buildRecords(input: {
           ]
         : []),
     ],
+    registration_mode: request.registrationMode ?? "catalog_checked_record",
+    prospective_authorization: false,
+    catalog_review_warnings: input.catalogReviewWarnings ?? [],
   };
 
   const event: Evento = {
@@ -550,7 +572,7 @@ function buildRecords(input: {
     }),
   );
 
-  return { event, detail, movement, eventAnimals, now };
+  return { event, detail, movement, eventAnimals, now, payload };
 }
 
 export async function executeSanitaryAgendaV2(
@@ -579,7 +601,7 @@ export async function executeSanitaryAgendaV2(
   }
 
   const agenda = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
-  if (!agenda) {
+  if (!agenda || agenda.deleted_at || agenda.fazenda_id !== input.fazendaId) {
     throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
   }
   if (agenda.execution_evento_id) {
@@ -605,6 +627,40 @@ export async function executeSanitaryAgendaV2(
   if (!agendaValidation.ok) {
     throw new Error(`SANITARY_AGENDA_EXECUTION_REJECTED:${agendaValidation.rejected.join(",")}`);
   }
+
+  const assertProtocolAuthorization = async (current: SanitarioAgendaLocalV2) => {
+    const [protocol, item, farmConfig] = await Promise.all([
+      current.protocolo_id ? localDb.catalog_sanitario_protocolos_v2.get(current.protocolo_id) : undefined,
+      current.protocol_item_version_id
+        ? localDb.catalog_sanitario_protocolo_itens_versions_v2.get(current.protocol_item_version_id)
+        : undefined,
+      localDb.state_fazenda_sanidade_config.get(current.fazenda_id),
+    ]);
+    const uf = farmConfig?.deleted_at ? null : farmConfig?.uf;
+    const rejected = sanitaryProtocolExecutionRejectionsV2(current, protocol, item, uf, input.registrationMode);
+    if (rejected.length) {
+      throw new Error(`SANITARY_AGENDA_EXECUTION_REJECTED:${rejected.join(",")}`);
+    }
+    return input.registrationMode === "executed_fact"
+      ? sanitaryProtocolExecutionRejectionsV2(current, protocol, item, uf) : [];
+  };
+  const catalogReviewWarnings = await assertProtocolAuthorization(agenda);
+  const assertProductApproval = async (current: SanitarioAgendaLocalV2) => {
+    if (!input.product?.productId) return [];
+    const product = await localDb.catalog_sanitario_produtos_v2.get(input.product.productId);
+    if (!product || product.deleted_at || (input.registrationMode !== "executed_fact" && product.status_curatorial !== "ativo")) {
+      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:technical_product_not_approved");
+    }
+    if (product.nome_comercial.trim() !== input.product.productName.trim()) {
+      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:product_identity_mismatch");
+    }
+    const requiredClass = expectedProductClass(current);
+    if (productRequirementKind(current) === "product_class" && requiredClass && product.classe !== requiredClass) {
+      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:product_class_mismatch");
+    }
+    return product.status_curatorial !== "ativo" ? [`product_curation_${product.status_curatorial}`] : [];
+  };
+  catalogReviewWarnings.push(...await assertProductApproval(agenda));
 
   const sync = resolveConfiguredSync(input);
   const factualIdentity = sync
@@ -743,6 +799,7 @@ export async function executeSanitaryAgendaV2(
     factualIdentity,
     movementIdentity,
     clientId: sync?.clientId,
+    catalogReviewWarnings,
   });
 
   const factualOperation = factualIdentity
@@ -774,7 +831,7 @@ export async function executeSanitaryAgendaV2(
     });
   }
 
-  await localDb.transaction(
+  const committed = await localDb.transaction(
     "rw",
     [
       localDb.ops_sanitario_agenda_v2,
@@ -786,16 +843,30 @@ export async function executeSanitaryAgendaV2(
       localDb.state_insumo_movimentacoes,
       localDb.queue_gestures,
       localDb.queue_ops,
+      localDb.catalog_sanitario_protocolos_v2,
+      localDb.catalog_sanitario_protocolo_itens_versions_v2,
+      localDb.state_fazenda_sanidade_config,
+      localDb.catalog_sanitario_produtos_v2,
     ],
     async () => {
       const current = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
       if (!current || current.deleted_at || current.fazenda_id !== input.fazendaId) {
         throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
       }
-      if (current.execution_evento_id) return;
+      if (current.execution_evento_id) return { eventId: current.execution_evento_id, created: false };
       if (current.status !== "programada") {
         throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_executable");
       }
+      const currentWarnings = [
+        ...await assertProtocolAuthorization(current),
+        ...await assertProductApproval(current),
+      ];
+      // Event, detail and queued operation share this payload until persistence.
+      records.payload.catalog_review_warnings = currentWarnings;
+      records.payload.warnings = [
+        ...(currentWarnings.length ? [CATALOG_REVIEW_NOTICE] : []),
+        ...records.payload.warnings.filter((warning) => warning !== CATALOG_REVIEW_NOTICE),
+      ];
 
       await localDb.event_eventos.add(records.event);
       await localDb.event_eventos_sanitario.add(records.detail);
@@ -844,17 +915,21 @@ export async function executeSanitaryAgendaV2(
           updated_at: records.now,
         })),
       );
+      return { eventId: records.event.id, created: true };
     },
   );
 
   return {
-    eventId: records.event.id,
+    eventId: committed.eventId,
     agendaId: agenda.id,
     clientOpId: input.clientOpId,
     agendaStatus: "executed",
     createsEvent: true,
-    createsStockMovement: Boolean(records.movement),
-    createsActiveWithdrawal: withdrawal.createsActiveWithdrawal,
+    createsStockMovement: committed.created && Boolean(records.movement),
+    createsActiveWithdrawal: committed.created
+      ? withdrawal.createsActiveWithdrawal
+      : withdrawalResolution((await localDb.event_eventos_sanitario.get(committed.eventId))
+        ?.produto_snapshot as ExecutedProductTechnicalSnapshotV2 | null).createsActiveWithdrawal,
   };
 }
 

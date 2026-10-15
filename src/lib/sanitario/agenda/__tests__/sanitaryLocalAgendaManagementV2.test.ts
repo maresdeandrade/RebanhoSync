@@ -69,6 +69,8 @@ async function clearScope() {
     db.ops_sanitario_agenda_animais_v2.clear(),
     db.state_animais.clear(),
     db.state_lotes.clear(),
+    db.catalog_sanitario_protocolos_v2.clear(),
+    db.catalog_sanitario_protocolo_itens_versions_v2.clear(),
     db.queue_ops.clear(),
     db.event_eventos.clear(),
     db.event_eventos_sanitario.clear(),
@@ -120,6 +122,8 @@ describe("sanitaryLocalAgendaManagementV2", () => {
       protocolLabel: "Brucelose B19",
       itemLabel: "Dose anual",
       target: { label: "Novilhas", href: "/lotes/lot-1" },
+      canManage: true,
+      canExecute: true,
     });
   });
 

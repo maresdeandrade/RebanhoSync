@@ -1,5 +1,6 @@
 import type { OfflineDB } from "@/lib/offline/db";
 import { requireTenantSensitiveAccess } from "@/lib/offline/localReadBoundary";
+import { sanitaryProtocolExecutionRejectionsV2 } from "@/lib/sanitario/execution/sanitaryProtocolExecutionAuthorizationV2";
 import type {
   Animal,
   Lote,
@@ -52,6 +53,9 @@ type LocalAgendaDbV2 = Pick<
   | "ops_sanitario_agenda_animais_v2"
   | "state_animais"
   | "state_lotes"
+  | "catalog_sanitario_protocolos_v2"
+  | "catalog_sanitario_protocolo_itens_versions_v2"
+  | "state_fazenda_sanidade_config"
   | "transaction"
 >;
 
@@ -178,6 +182,13 @@ export async function listLocalSanitaryAgendasV2(
     db.state_lotes.where("fazenda_id").equals(fazendaId).toArray(),
   ]);
   const activeAgendas = agendas.filter((agenda) => !agenda.deleted_at);
+  const [protocols, protocolItems, farmConfig] = await Promise.all([
+    db.catalog_sanitario_protocolos_v2.bulkGet([...new Set(activeAgendas.flatMap((agenda) => agenda.protocolo_id ? [agenda.protocolo_id] : []))]),
+    db.catalog_sanitario_protocolo_itens_versions_v2.bulkGet([...new Set(activeAgendas.flatMap((agenda) => agenda.protocol_item_version_id ? [agenda.protocol_item_version_id] : []))]),
+    db.state_fazenda_sanidade_config.get(fazendaId),
+  ]);
+  const protocolsById = new Map(protocols.filter((entry) => !!entry).map((entry) => [entry.id, entry]));
+  const protocolItemsById = new Map(protocolItems.filter((entry) => !!entry).map((entry) => [entry.id, entry]));
   const animalsById = new Map(animals.filter((animal) => !animal.deleted_at).map((animal) => [animal.id, animal]));
   const lotsById = new Map(lots.filter((lot) => !lot.deleted_at).map((lot) => [lot.id, lot]));
   const agendaAnimalsById = new Map<string, SanitarioAgendaAnimalLocalV2[]>();
@@ -271,7 +282,14 @@ export async function listLocalSanitaryAgendasV2(
         animalCount: Math.max(entries.length, 1),
         target: targetForAgenda(agenda, entries, animalsById, lotsById),
         canManage: agenda.status === "programada" && !hasExecution,
-        canExecute: agenda.status === "programada" && !hasExecution,
+        canExecute: agenda.status === "programada" && !hasExecution &&
+          sanitaryProtocolExecutionRejectionsV2(
+            agenda,
+            protocolsById.get(agenda.protocolo_id ?? ""),
+            protocolItemsById.get(agenda.protocol_item_version_id ?? ""),
+            farmConfig?.deleted_at ? null : farmConfig?.uf,
+            "executed_fact",
+          ).length === 0,
       };
     })
     .sort((left, right) => left.plannedFor.localeCompare(right.plannedFor));
