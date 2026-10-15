@@ -23,6 +23,10 @@ export type CreateManualSanitaryAgendaInputV2 = {
   source: {
     kind: "sanitary_precheck_preview_v2";
     protocolId: string;
+    protocolItemVersionId?: string;
+    actionType?: string;
+    plannedProductId?: string | null;
+    planningDedupKey?: string;
     familyCode: string;
     itemKey: string;
     itemLabel: string;
@@ -134,13 +138,14 @@ function uniqueSorted(values: string[] | undefined): string[] {
     .sort();
 }
 
-function agendaIdFromClientOpId(clientOpId: string): string {
-  return `manual-sanitary-agenda-v2:${clientOpId}`;
+function agendaIdFromClientOpId(clientOpId: string, fazendaId: string): string {
+  return `manual-sanitary-agenda-v2:${fazendaId}:${clientOpId}`;
 }
 
 function buildDedupKey(input: CreateManualSanitaryAgendaInputV2): string {
   return [
     "manual-sanitary-agenda-v2",
+    `farm:${input.target.fazendaId}`,
     `target:${input.target.scope}:${input.target.id}`,
     `protocol:${input.source.protocolId}`,
     `item:${input.source.itemKey}`,
@@ -210,7 +215,7 @@ export function buildManualSanitaryAgendaRecordsV2(
   }
 
   const now = input.now ?? new Date().toISOString();
-  const agendaId = agendaIdFromClientOpId(input.clientOpId);
+  const agendaId = agendaIdFromClientOpId(input.clientOpId, input.target.fazendaId);
   const animalIds = targetAnimalRows(input);
   const targetAnimalScope =
     input.target.scope === "lote" && animalIds.length === 0
@@ -242,7 +247,7 @@ export function buildManualSanitaryAgendaRecordsV2(
     id: agendaId,
     fazenda_id: input.target.fazendaId,
     status: "programada",
-    dedup_key: buildDedupKey(input),
+    dedup_key: input.source.planningDedupKey ?? buildDedupKey(input),
     client_id: input.createdBy ?? "manual-local",
     client_op_id: input.clientOpId,
     client_tx_id: null,
@@ -251,9 +256,11 @@ export function buildManualSanitaryAgendaRecordsV2(
     source_demand_key: `sanitary_precheck_preview_v2:${input.source.protocolId}:${input.source.itemKey}`,
     preview_group_id: `${input.target.scope}:${input.target.id}:${input.source.protocolId}:${input.source.itemKey}`,
     protocolo_id: input.source.protocolId,
-    protocol_item_version_id: null,
+    protocol_item_version_id: input.source.protocolItemVersionId ?? null,
     protocol_item_snapshot: {
       sourceKind: input.source.kind,
+      actionType: input.source.actionType ?? null,
+      productId: input.source.plannedProductId ?? null,
       familyCode: input.source.familyCode,
       itemKey: input.source.itemKey,
       itemLabel: input.source.itemLabel,
@@ -271,7 +278,7 @@ export function buildManualSanitaryAgendaRecordsV2(
     janela_fim: null,
     data_programada: plannedFor,
     lote_id: input.target.scope === "lote" ? input.target.id : null,
-    produto_veterinario_id: null,
+    produto_veterinario_id: input.source.plannedProductId ?? null,
     produto_snapshot: {
       planningOnly: true,
       realProductDefinedOnlyAtExecution: true,
@@ -286,7 +293,7 @@ export function buildManualSanitaryAgendaRecordsV2(
       input.source.productRequirementKind === "product_class"
         ? (input.source.productClass ?? null)
         : null,
-    acao_sanitaria: "agenda_manual_sanitaria",
+    acao_sanitaria: input.source.actionType ?? "agenda_manual_sanitaria",
     execution_evento_id: null,
     metadata,
     created_at: now,
@@ -328,39 +335,26 @@ export async function createManualSanitaryAgendaV2(
   }
 
   const db = localDb ?? (await getDefaultLocalDb());
-  const existing = await db.ops_sanitario_agenda_v2
-    .where("client_op_id")
-    .equals(input.clientOpId)
-    .first();
-
-  if (existing) {
-    return {
-      agendaId: existing.id,
-      clientOpId: existing.client_op_id,
-      status: "scheduled",
-      created: false,
-      ...OPERATIONAL_FALSE_FLAGS,
-    };
-  }
-
   const records = buildManualSanitaryAgendaRecordsV2(input);
-
-  await db.transaction(
+  return db.transaction(
     "rw",
     [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2],
     async () => {
+      const existing = await db.ops_sanitario_agenda_v2
+        .where("client_op_id").equals(input.clientOpId).first();
+      if (existing) {
+        if (existing.fazenda_id !== input.target.fazendaId) {
+          throw new Error("MANUAL_SANITARY_AGENDA_FARM_MISMATCH");
+        }
+        return { agendaId: existing.id, clientOpId: existing.client_op_id,
+          status: "scheduled", created: false, ...OPERATIONAL_FALSE_FLAGS };
+      }
       await db.ops_sanitario_agenda_v2.put(records.agenda);
       if (records.animals.length > 0) {
         await db.ops_sanitario_agenda_animais_v2.bulkPut(records.animals);
       }
+      return { agendaId: records.agenda.id, clientOpId: input.clientOpId,
+        status: "scheduled", created: true, ...OPERATIONAL_FALSE_FLAGS };
     },
   );
-
-  return {
-    agendaId: records.agenda.id,
-    clientOpId: input.clientOpId,
-    status: "scheduled",
-    created: true,
-    ...OPERATIONAL_FALSE_FLAGS,
-  };
 }

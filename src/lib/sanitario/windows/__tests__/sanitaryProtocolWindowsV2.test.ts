@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/lib/offline/db";
 import type { Animal, Lote, SanitarioAgendaLocalV2 } from "@/lib/offline/types";
@@ -13,6 +13,8 @@ import {
   createGroupedManualSanitaryAgendasV2,
   type SanitaryProtocolWindowSourceV2,
 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
+
+vi.mock("@/lib/offline/localReadBoundary", () => ({ requireTenantSensitiveRead: vi.fn().mockResolvedValue(undefined) }));
 
 const protocol = (
   id: string,
@@ -35,8 +37,8 @@ const protocol = (
   jurisdictionScope: {},
   legalStatus: "manual_only",
   version: 1,
-  status: "draft",
-  approvalStatus: "draft",
+  status: "active",
+  approvalStatus: "approved",
   sourceRefsSnapshot: [],
   metadata: {},
   ...overrides,
@@ -52,7 +54,7 @@ const item = (
   protocolId,
   logicalItemKey,
   version: 1,
-  itemStatus: "draft",
+  itemStatus: "recomendado",
   actionType: "vacinacao",
   productRequirementKind: "product_class",
   productId: null,
@@ -69,7 +71,7 @@ const item = (
   snapshotTemplate: {},
   allowsAgendaAuto: false,
   requiresMvResponsavel: false,
-  status: "draft",
+  status: "active",
   ...overrides,
 });
 
@@ -264,11 +266,25 @@ async function clearOperationalTables() {
   await Promise.all([
     db.ops_sanitario_agenda_v2.clear(),
     db.ops_sanitario_agenda_animais_v2.clear(),
+    db.state_animais.clear(), db.state_lotes.clear(),
+    db.catalog_sanitario_protocolos_v2.clear(), db.catalog_sanitario_protocolo_itens_versions_v2.clear(),
+    db.catalog_sanitario_product_class_groups_v2.clear(), db.state_fazenda_sanidade_config.clear(),
+    db.event_eventos_animais.clear(),
     db.queue_ops.clear(),
     db.event_eventos.clear(),
     db.event_eventos_sanitario.clear(),
     db.state_insumo_movimentacoes.clear(),
   ]);
+}
+
+async function seedPlanningSource() {
+  await db.state_animais.bulkPut(source().animals);
+  await db.state_lotes.bulkPut(source().lots);
+  const snake = (value: Record<string, unknown>) => Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`), entry]),
+  );
+  await db.catalog_sanitario_protocolos_v2.bulkPut(catalog.protocols.map((row) => snake(row)) as never[]);
+  await db.catalog_sanitario_protocolo_itens_versions_v2.bulkPut(catalog.items.map((row) => snake(row)) as never[]);
 }
 
 describe("sanitaryProtocolWindowsV2", () => {
@@ -625,7 +641,9 @@ describe("sanitaryProtocolWindowsV2", () => {
       reproductiveContext: "prepartum" as const,
       management: "pre_feedlot" as const,
     };
+    await seedPlanningSource();
     const created = await createGroupedManualSanitaryAgendasV2({
+      confirmed: true,
       rows: selected,
       fazendaId: "farm-1",
       plannedFor: "2026-07-10",
@@ -651,4 +669,71 @@ describe("sanitaryProtocolWindowsV2", () => {
     expect(stored?.metadata.operationalContext).toBeUndefined();
     expect(stored?.produto_snapshot.operationalContext).toBeUndefined();
   });
+  it("mantém pré-checagem informativa mas bloqueia planejamento sem aprovação", () => {
+    const unapproved = { ...catalog, protocols: catalog.protocols.map((p) => ({ ...p, approvalStatus: "draft" })) };
+    const result = buildSanitaryProtocolWindowV2({ source: source({ catalog: unapproved }), protocolId: "protocol-b19", itemId: "item-b19", evaluatedAt: "2026-07-04" })!;
+    expect(result.rows[0].status).toBe("in_action_window");
+    expect(result.rows[0].canSelect).toBe(false);
+    expect(result.rows[0].blockers.join(" ")).toMatch(/aprovação prospectiva/);
+  });
+
+  it("serializa cliques concorrentes e retry offline sem duplicar agenda ou fatos", async () => {
+    await seedPlanningSource();
+    const rows = windowFor({ protocolId: "protocol-b19", itemId: "item-b19" }).rows.filter((row) => row.canSelect);
+    const input = { rows, fazendaId: "farm-1", plannedFor: "2026-07-10", confirmed: true };
+    const [first, second] = await Promise.all([createGroupedManualSanitaryAgendasV2(input), createGroupedManualSanitaryAgendasV2(input)]);
+    expect(first[0].agendaId).toBe(second[0].agendaId);
+    expect([...first, ...second].filter((row) => row.created)).toHaveLength(1);
+    await createGroupedManualSanitaryAgendasV2({ ...input, plannedFor: "2026-07-11" });
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(1);
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+  });
+
+  it("rejeita falta de confirmação, farm-switch e data fora da janela sem escrita parcial", async () => {
+    await seedPlanningSource();
+    const rows = windowFor({ protocolId: "protocol-b19", itemId: "item-b19" }).rows.filter((row) => row.canSelect);
+    const input = { rows, fazendaId: "farm-1", plannedFor: "2026-07-10", confirmed: true };
+    await expect(createGroupedManualSanitaryAgendasV2({ ...input, confirmed: false })).rejects.toThrow(/confirme/);
+    await expect(createGroupedManualSanitaryAgendasV2({ ...input, fazendaId: "farm-2" })).rejects.toThrow(/fora da fazenda/);
+    await expect(createGroupedManualSanitaryAgendasV2({ ...input, plannedFor: "2026-12-10" })).rejects.toThrow(/elegibilidade/);
+    await expect(createGroupedManualSanitaryAgendasV2({ ...input, rows: [...rows, { ...rows[0], animalId: "foreign" }] })).rejects.toThrow();
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(0);
+  });
+
+  it("revalida catálogo e pertencimento após preview", async () => {
+    await seedPlanningSource();
+    const rows = windowFor({ protocolId: "protocol-b19", itemId: "item-b19" }).rows.filter((row) => row.canSelect);
+    await db.catalog_sanitario_protocolos_v2.update("protocol-b19", { approval_status: "draft" });
+    await expect(createGroupedManualSanitaryAgendasV2({ rows, fazendaId: "farm-1", plannedFor: "2026-07-10", confirmed: true })).rejects.toThrow(/aprovação/);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(0);
+  });
+
+  it("não duplica animais em seleções concorrentes parcialmente sobrepostas", async () => {
+    await seedPlanningSource();
+    const secondAnimal = animal("female-2", "F", "2026-03-01");
+    await db.state_animais.put(secondAnimal);
+    const rows = windowFor({ protocolId: "protocol-b19", itemId: "item-b19", source: source({ animals: [...source().animals, secondAnimal] }) }).rows.filter((row) => row.canSelect);
+    await Promise.all([
+      createGroupedManualSanitaryAgendasV2({ rows: rows.slice(0, 1), fazendaId: "farm-1", plannedFor: "2026-07-10", confirmed: true }),
+      createGroupedManualSanitaryAgendasV2({ rows, fazendaId: "farm-1", plannedFor: "2026-07-10", confirmed: true }),
+    ]);
+    const links = await db.ops_sanitario_agenda_animais_v2.toArray();
+    expect(links).toHaveLength(2);
+    expect(new Set(links.map((link) => link.animal_id)).size).toBe(2);
+  });
+
+  it("rollback preserva atomicidade e permite retry após falha de persistência", async () => {
+    await seedPlanningSource();
+    const rows = windowFor({ protocolId: "protocol-b19", itemId: "item-b19" }).rows.filter((row) => row.canSelect);
+    const input = { rows, fazendaId: "farm-1", plannedFor: "2026-07-10", confirmed: true };
+    const write = vi.spyOn(db.ops_sanitario_agenda_animais_v2, "bulkPut").mockRejectedValueOnce(new Error("falha simulada"));
+    await expect(createGroupedManualSanitaryAgendasV2(input)).rejects.toThrow("falha simulada");
+    write.mockRestore();
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(0);
+    expect(await db.ops_sanitario_agenda_animais_v2.count()).toBe(0);
+    await createGroupedManualSanitaryAgendasV2(input);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(1);
+  });
+
 });

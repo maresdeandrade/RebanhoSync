@@ -1,0 +1,111 @@
+import { expect, test, type Page } from "@playwright/test";
+
+const farm = "00000000-0000-4000-8000-000000000010";
+const otherFarm = "00000000-0000-4000-8000-000000000020";
+const protocol = "00000000-0000-4000-8000-000000000030";
+const item = "00000000-0000-4000-8000-000000000040";
+
+async function prepare(page: Page) {
+  const unexpected: string[] = [];
+  page.on("pageerror", (error) => console.error(error.message));
+  await page.clock.install({ time: new Date("2026-07-04T12:00:00Z") });
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.hostname !== "127.0.0.1") {
+      unexpected.push(url.origin + url.pathname);
+      return route.abort();
+    }
+    if (url.port === "4187") {
+      if (request.isNavigationRequest()) {
+        const response = await route.fetch({ url: "http://127.0.0.1:4187/e2e/fixtures/sanitary-planning.html" });
+        return route.fulfill({ response });
+      }
+      return route.continue();
+    }
+    if (url.port !== "59997") { unexpected.push(url.origin + url.pathname); return route.abort(); }
+    let data: unknown = [];
+    const single = request.headers().accept?.includes("vnd.pgrst.object") || url.searchParams.get("select") === "role";
+    if (url.pathname.endsWith("/user_fazendas")) data = single ? { role: "owner" } : [
+      { role: "owner", fazendas: { id: farm, nome: "Fazenda de teste", estado: "MG" } },
+      { role: "owner", fazendas: { id: otherFarm, nome: "Outra fazenda", estado: "MG" } },
+    ];
+    else if (url.pathname.endsWith("/user_settings")) data = { active_fazenda_id: null };
+    else if (url.pathname.endsWith("/fazendas")) data = { metadata: {} };
+    else if (url.pathname.includes("/rpc/")) data = false;
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method()) && !url.pathname.endsWith("/user_settings") && !url.pathname.includes("/rpc/")) {
+      unexpected.push(`${request.method()} ${url.pathname}`);
+    }
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(data) });
+  });
+  return unexpected;
+}
+
+async function selectProtocol(page: Page) {
+  await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(protocol);
+  await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(item);
+}
+
+async function counts(page: Page) {
+  return page.evaluate(async () => {
+    const { db } = await import("/src/lib/offline/db.ts");
+    return { agendas: await db.ops_sanitario_agenda_v2.count(), events: await db.event_eventos.count(),
+      movements: await db.state_insumo_movimentacoes.count(), queue: await db.queue_ops.count(), products: await db.catalog_sanitario_produtos_v2.count() };
+  });
+}
+
+test("fazenda → protocolo → seleção → revisão → Agenda; offline, reload, reagendamento, cancelamento e farm-switch", async ({ page, context }) => {
+  const unexpected = await prepare(page);
+  await page.goto("/select-fazenda");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await expect(page.getByText("Central Sanitária", { exact: true })).toBeVisible();
+  await selectProtocol(page);
+  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeEnabled();
+  await expect(page.getByLabel("Selecionar Bezerro teste 201", { exact: true })).toBeDisabled();
+  await expect(page.getByText("Outra fazenda 301", { exact: true })).toHaveCount(0);
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Selecionar todos os elegíveis visíveis" }).click();
+  await page.getByRole("button", { name: "Planejar agenda para selecionados" }).click();
+  await expect(page.getByRole("dialog", { name: "Revisar planejamento sanitário" })).toBeVisible();
+  expect((await counts(page)).agendas).toBe(0);
+  await page.getByRole("button", { name: "Voltar à seleção" }).click();
+  expect((await counts(page)).agendas).toBe(0);
+  await page.getByRole("button", { name: "Planejar agenda para selecionados" }).click();
+  await page.getByRole("button", { name: "Confirmar e gerar Agenda" }).dblclick();
+  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("data-state", "active");
+  await expect.poll(() => counts(page)).toEqual({ agendas: 1, events: 0, movements: 0, queue: 0, products: 1 });
+  await expect(page.getByText("Brucelose B19 — teste", { exact: false }).first()).toBeVisible();
+  await page.screenshot({ path: "scratch/sanitary-planning-agenda.png", fullPage: true });
+  await context.setOffline(false);
+  await page.reload();
+  await page.getByRole("tab", { name: "Agenda sanitária", exact: true }).click();
+  await page.getByRole("button", { name: "Ver agendas", exact: true }).first().click();
+  await expect(page.getByRole("button", { name: "Reagendar", exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Reagendar", exact: true }).first().click();
+  await page.getByLabel("Nova data planejada").fill("2026-07-11");
+  await page.getByRole("button", { name: "Salvar nova data" }).click();
+  await expect(page.getByText("11/07/2026", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Trocar fazenda" }).click();
+  await page.getByRole("button").filter({ hasText: "Outra fazenda" }).click();
+  await page.getByRole("tab", { name: "Agenda sanitária", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Reagendar", exact: true })).toHaveCount(0);
+  await page.getByRole("link", { name: "Trocar fazenda" }).click();
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await page.getByRole("tab", { name: "Agenda sanitária", exact: true }).click();
+  await page.getByRole("button", { name: "Ver agendas", exact: true }).first().click();
+  await page.getByRole("button", { name: "Cancelar agenda", exact: true }).first().click();
+  await expect(page.getByText("Cancelada", { exact: true })).toBeVisible();
+  expect(await counts(page)).toEqual({ agendas: 1, events: 0, movements: 0, queue: 0, products: 1 });
+  expect(unexpected).toEqual([]);
+});
+
+test("catálogo vazio informa indisponibilidade sem fabricar protocolos ou produtos", async ({ page }) => {
+  const unexpected = await prepare(page);
+  await page.goto("/select-fazenda?empty=1");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await expect(page.getByText(/Nenhum protocolo disponível no catálogo local/)).toBeVisible();
+  await page.getByRole("button", { name: "Atualizar catálogo", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Atualizar catálogo", exact: true })).toBeEnabled();
+  expect(await counts(page)).toEqual({ agendas: 0, events: 0, movements: 0, queue: 0, products: 0 });
+  expect(unexpected).toEqual([]);
+});

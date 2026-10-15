@@ -15,6 +15,7 @@ import {
   formatSanitaryProtocolItemLabelV2,
   readLocalSanitaryProtocolCatalogV2,
   type SanitaryProtocolCatalogReadModelV2,
+  type SanitaryProtocolCatalogLocalDb,
   type SanitaryProtocolItemV2ReadModel,
   type SanitaryProtocolV2ReadModel,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
@@ -28,9 +29,13 @@ import { getLotSanitaryExecutedHistoryV2 } from "@/lib/sanitario/history/sanitar
 import {
   createManualSanitaryAgendaV2,
   type ManualSanitaryAgendaResultV2,
+  type ManualSanitaryAgendaLocalDbV2,
 } from "@/lib/sanitario/agenda/sanitaryManualAgendaV2";
 
+import { buildSanitaryWindowPlanningPreviewV2, sanitaryPlanningBlockersV2 } from "@/lib/sanitario/preview/sanitaryWindowPlanningPreviewV2";
+
 export type SanitaryProtocolWindowSourceV2 = {
+  fazendaId?: string;
   farmUf?: string | null;
   catalog: SanitaryProtocolCatalogReadModelV2;
   animals: Animal[];
@@ -386,14 +391,15 @@ export function buildSanitaryProtocolWindowV2(input: {
           ? [historyByAnimal.get(animal.id)!]
           : [],
         today: input.evaluatedAt,
-      }).results.find((entry) => entry.itemKey === item.logicalItemKey);
+      }).results.find((entry) => entry.protocolId === protocol.id && entry.itemKey === item.logicalItemKey);
       if (!result) return null;
 
       const plannedFor = activeAgendas.get(
         `${animal.id}|${protocol.id}|${item.logicalItemKey}`,
       );
+      const planningBlockers = sanitaryPlanningBlockersV2(protocol, item);
       const itemBlocked =
-        result.blockers.length > 0 ||
+        result.blockers.length > 0 || planningBlockers.length > 0 ||
         protocol.status === "retired" ||
         protocol.legalStatus === "bloqueado" ||
         item.itemStatus === "bloqueado" ||
@@ -422,7 +428,7 @@ export function buildSanitaryProtocolWindowV2(input: {
         status: result.status,
         reason: result.reasons[0] ?? "Sem motivo adicional informado.",
         warnings: result.warnings,
-        blockers: result.blockers,
+        blockers: [...result.blockers, ...planningBlockers],
         documentaryPending: result.documentaryPending,
         documentaryPendingReasons: result.documentaryPendingReasons,
         alreadyPlanned: Boolean(plannedFor),
@@ -515,8 +521,12 @@ export async function loadSanitaryProtocolWindowSourceV2(
   fazendaId: string,
 ): Promise<SanitaryProtocolWindowSourceV2> {
   await requireTenantSensitiveRead();
-  const [catalog, animals, lots, agendas, agendaAnimals, farmConfig] = await Promise.all([
-    readLocalSanitaryProtocolCatalogV2(),
+  return readSanitaryProtocolWindowSourceV2(fazendaId);
+}
+
+async function readSanitaryProtocolWindowSourceV2(fazendaId: string): Promise<SanitaryProtocolWindowSourceV2> {
+  const [allCatalog, animals, lots, agendas, agendaAnimals, farmConfig] = await Promise.all([
+    readLocalSanitaryProtocolCatalogV2(db as unknown as SanitaryProtocolCatalogLocalDb),
     db.state_animais.where("fazenda_id").equals(fazendaId).toArray(),
     db.state_lotes.where("fazenda_id").equals(fazendaId).toArray(),
     db.ops_sanitario_agenda_v2.where("fazenda_id").equals(fazendaId).toArray(),
@@ -526,6 +536,12 @@ export async function loadSanitaryProtocolWindowSourceV2(
       .toArray(),
     db.state_fazenda_sanidade_config.get(fazendaId),
   ]);
+  const protocols = allCatalog.protocols.filter((protocol) =>
+    protocol.scope === "fazenda" ? protocol.fazendaId === fazendaId : protocol.fazendaId === null,
+  );
+  const protocolIds = new Set(protocols.map((protocol) => protocol.id));
+  const catalog = { ...allCatalog, protocols, items: allCatalog.items.filter((item) => protocolIds.has(item.protocolId)),
+    productClassGroups: allCatalog.productClassGroups.filter((group) => group.fazendaId === null || group.fazendaId === fazendaId) };
   const events = await db.event_eventos.where("fazenda_id").equals(fazendaId).toArray();
   const details =
     events.length > 0
@@ -548,7 +564,7 @@ export async function loadSanitaryProtocolWindowSourceV2(
     catalog,
     fazendaId,
   });
-  return { catalog, animals, lots, agendas, agendaAnimals, executedHistory, executedEvents,
+  return { fazendaId, catalog, animals, lots, agendas, agendaAnimals, executedHistory, executedEvents,
     farmUf: farmConfig?.deleted_at ? null : farmConfig?.uf };
 }
 
@@ -561,58 +577,84 @@ export async function createGroupedManualSanitaryAgendasV2(input: {
   rows: SanitaryProtocolWindowRowV2[];
   fazendaId: string;
   plannedFor: string;
+  confirmed?: boolean;
   operationalContext?: SanitaryOperationalContextV2;
   createdBy?: string;
 }): Promise<ManualSanitaryAgendaResultV2[]> {
-  const eligibleRows = input.rows.filter((row) => row.canSelect);
-  const groups = new Map<string, SanitaryProtocolWindowRowV2[]>();
-  for (const row of eligibleRows) {
-    const key = row.lotId ? `lot:${row.lotId}` : `animal:${row.animalId}`;
-    groups.set(key, [...(groups.get(key) ?? []), row]);
-  }
-
-  const results: ManualSanitaryAgendaResultV2[] = [];
-  for (const rows of groups.values()) {
-    const first = rows[0];
-    const target = first.lotId
-      ? {
-          scope: "lote" as const,
-          id: first.lotId,
-          fazendaId: input.fazendaId,
-          animalIds: rows.map((row) => row.animalId),
-        }
-      : {
-          scope: "animal" as const,
-          id: first.animalId,
-          fazendaId: input.fazendaId,
-        };
-    results.push(
-      await createManualSanitaryAgendaV2({
-        target,
-        source: {
-          kind: "sanitary_precheck_preview_v2",
-          protocolId: first.protocolId,
-          familyCode: first.precheck.familyCode,
-          itemKey: first.itemKey,
-          itemLabel: first.itemLabel,
-          protocolName: first.protocolLabel,
-          precheckStatus: first.status,
-          reasons: Array.from(new Set(rows.flatMap((row) => row.precheck.reasons))),
-          blockers: [],
-          warnings: Array.from(new Set(rows.flatMap((row) => row.warnings))),
-          productRequirementKind: first.precheck.productRequirementKind,
-          productClass: first.precheck.productClass,
-          productClassGroupId: first.precheck.productClassGroupId,
-          productClassGroupName: first.precheck.productClassGroupName,
-          operationalContext:
-            input.operationalContext ?? EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2,
-        },
-        plannedFor: input.plannedFor,
-        createdBy: input.createdBy,
-        clientOpId: clientOperationId(),
-        confirmed: true,
-      }),
-    );
-  }
-  return results;
+  if (!input.confirmed) throw new Error("Revise e confirme o planejamento antes de salvar.");
+  if (!input.fazendaId || !input.rows.length) throw new Error("Selecione fazenda e animais.");
+  await requireTenantSensitiveRead();
+  // Re-read and validate under the same IndexedDB write lock as persistence.
+  // This serializes overlapping submissions, including different browser tabs.
+  return db.transaction("rw", [
+    db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2,
+    db.state_animais, db.state_lotes, db.state_fazenda_sanidade_config,
+    db.catalog_sanitario_protocolos_v2, db.catalog_sanitario_protocolo_itens_versions_v2,
+    db.catalog_sanitario_product_class_groups_v2, db.event_eventos,
+    db.event_eventos_sanitario, db.event_eventos_animais,
+  ], async () => {
+    const source = await readSanitaryProtocolWindowSourceV2(input.fazendaId);
+    const selected: SanitaryProtocolWindowRowV2[] = [];
+    const reused = new Map<string, ManualSanitaryAgendaResultV2>();
+    for (const row of input.rows) {
+      const fresh = buildSanitaryProtocolWindowV2({ source, protocolId: row.protocolId,
+        itemId: row.itemId, evaluatedAt: input.plannedFor,
+        operationalContext: input.operationalContext,
+      })?.rows.find((entry) => entry.animalId === row.animalId);
+      if (!fresh || fresh.lotId !== row.lotId) {
+        throw new Error("Seleção desatualizada ou fora da fazenda. Atualize as sugestões.");
+      }
+      if (fresh.alreadyPlanned) {
+        const agenda = source.agendas.find((entry) => entry.status === "programada" && !entry.deleted_at &&
+          entry.protocolo_id === row.protocolId && agendaItemKey(entry) === row.itemKey &&
+          source.agendaAnimals.some((animal) => animal.agenda_id === entry.id && animal.animal_id === row.animalId));
+        if (agenda) reused.set(agenda.id, { agendaId: agenda.id, clientOpId: agenda.client_op_id,
+          status: "scheduled", created: false, createsEvent: false, createsStockMovement: false, createsActiveWithdrawal: false });
+        continue;
+      }
+      if (!fresh.canSelect || fresh.status === "eligible_soon") {
+        throw new Error("Data ou elegibilidade não permite o planejamento. Revise contexto, aprovação e janela do animal.");
+      }
+      selected.push(fresh);
+    }
+    const materialization = buildSanitaryWindowPlanningPreviewV2({ rows: selected, plannedFor: input.plannedFor });
+    if (materialization.rejected.length) throw new Error("Data planejada inválida. Revise as sugestões.");
+    const results = [...reused.values()];
+    for (const command of materialization.commands) {
+      const rows = selected.filter((row) => row.protocolId === command.protocolRuleId &&
+        row.itemId === command.protocolItemId && command.animalIds.includes(row.animalId));
+      const first = rows[0];
+      const item = source.catalog.items.find((entry) => entry.id === first.itemId)!;
+      const target = first.lotId
+        ? { scope: "lote" as const, id: first.lotId, fazendaId: input.fazendaId, animalIds: command.animalIds }
+        : command.animalIds.length === 1
+          ? { scope: "animal" as const, id: first.animalId, fazendaId: input.fazendaId }
+          : null;
+      // Animals without a lot are separate targets; never invent a lot identity.
+      const targets = target ? [target] : rows.map((row) => ({ scope: "animal" as const, id: row.animalId, fazendaId: input.fazendaId }));
+      for (const agendaTarget of targets) {
+        results.push(await createManualSanitaryAgendaV2({
+          target: agendaTarget,
+          source: {
+            kind: "sanitary_precheck_preview_v2", protocolId: first.protocolId,
+            protocolItemVersionId: first.itemId, actionType: item.actionType,
+            plannedProductId: item.productId,
+            planningDedupKey: `${input.fazendaId}|${command.dedupKey}|target:${agendaTarget.id}`,
+            familyCode: first.precheck.familyCode, itemKey: first.itemKey,
+            itemLabel: first.itemLabel, protocolName: first.protocolLabel,
+            precheckStatus: first.status,
+            reasons: [...new Set(rows.flatMap((row) => row.precheck.reasons))],
+            blockers: [], warnings: [...new Set(rows.flatMap((row) => row.warnings))],
+            productRequirementKind: item.productRequirementKind,
+            productClass: item.productClass, productClassGroupId: item.productClassGroupId,
+            productClassGroupName: first.precheck.productClassGroupName,
+            operationalContext: input.operationalContext ?? EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2,
+          },
+          plannedFor: command.scheduledDate, createdBy: input.createdBy,
+          clientOpId: clientOperationId(), confirmed: input.confirmed,
+        }, db as unknown as ManualSanitaryAgendaLocalDbV2));
+      }
+    }
+    return results;
+  });
 }

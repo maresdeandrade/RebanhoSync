@@ -42,12 +42,12 @@ const animal = (id: string, sex: "M" | "F", birth: string): Animal => ({
 const source: SanitaryProtocolWindowSourceV2 = {
   catalog: {
     protocols: [
-      { id: "protocol-b19", familyCode: "brucelose_b19", name: "Brucelose B19", scope: "global", fazendaId: null, speciesScope: {}, jurisdictionScope: {}, legalStatus: "manual_only", version: 1, status: "draft", approvalStatus: "draft", sourceRefsSnapshot: [], metadata: {} },
-      { id: "protocol-raiva", familyCode: "raiva_herbivoros", name: "Raiva dos herbívoros", scope: "global", fazendaId: null, speciesScope: {}, jurisdictionScope: {}, legalStatus: "manual_only", version: 1, status: "draft", approvalStatus: "draft", sourceRefsSnapshot: [], metadata: {} },
+      { id: "protocol-b19", familyCode: "brucelose_b19", name: "Brucelose B19", scope: "global", fazendaId: null, speciesScope: {}, jurisdictionScope: {}, legalStatus: "manual_only", version: 1, status: "active", approvalStatus: "approved", sourceRefsSnapshot: [], metadata: {} },
+      { id: "protocol-raiva", familyCode: "raiva_herbivoros", name: "Raiva dos herbívoros", scope: "global", fazendaId: null, speciesScope: {}, jurisdictionScope: {}, legalStatus: "manual_only", version: 1, status: "active", approvalStatus: "approved", sourceRefsSnapshot: [], metadata: {} },
     ],
     items: [
-      { id: "item-b19", protocolId: "protocol-b19", logicalItemKey: "b19_femeas_3_8_meses", version: 1, itemStatus: "draft", actionType: "vacinacao", productRequirementKind: "product_class", productId: null, productClass: "vacina_brucelose_b19", productClassGroupId: null, eligibilityRule: { species: ["bovino", "bubalino"], sex: "femea" }, operationalWindowRule: {}, doseRule: {}, routeRule: {}, boosterRule: {}, speciesAuthorization: {}, sourceRefsByField: {}, limitations: [], snapshotTemplate: {}, allowsAgendaAuto: false, requiresMvResponsavel: false, status: "draft" },
-      { id: "item-raiva", protocolId: "protocol-raiva", logicalItemKey: "raiva_primovac_dose1", version: 1, itemStatus: "draft", actionType: "vacinacao", productRequirementKind: "product_class", productId: null, productClass: "vacina_raiva_herbivoros", productClassGroupId: null, eligibilityRule: { species: ["bovino", "bubalino"], requires_risk_area_overlay: true }, operationalWindowRule: {}, doseRule: {}, routeRule: {}, boosterRule: {}, speciesAuthorization: {}, sourceRefsByField: {}, limitations: [], snapshotTemplate: {}, allowsAgendaAuto: false, requiresMvResponsavel: false, status: "draft" },
+      { id: "item-b19", protocolId: "protocol-b19", logicalItemKey: "b19_femeas_3_8_meses", version: 1, itemStatus: "recomendado", actionType: "vacinacao", productRequirementKind: "product_class", productId: null, productClass: "vacina_brucelose_b19", productClassGroupId: null, eligibilityRule: { species: ["bovino", "bubalino"], sex: "femea" }, operationalWindowRule: {}, doseRule: {}, routeRule: {}, boosterRule: {}, speciesAuthorization: {}, sourceRefsByField: {}, limitations: [], snapshotTemplate: {}, allowsAgendaAuto: false, requiresMvResponsavel: false, status: "active" },
+      { id: "item-raiva", protocolId: "protocol-raiva", logicalItemKey: "raiva_primovac_dose1", version: 1, itemStatus: "recomendado", actionType: "vacinacao", productRequirementKind: "product_class", productId: null, productClass: "vacina_raiva_herbivoros", productClassGroupId: null, eligibilityRule: { species: ["bovino", "bubalino"], requires_risk_area_overlay: true }, operationalWindowRule: {}, doseRule: {}, routeRule: {}, boosterRule: {}, speciesAuthorization: {}, sourceRefsByField: {}, limitations: [], snapshotTemplate: {}, allowsAgendaAuto: false, requiresMvResponsavel: false, status: "active" },
     ],
     productClassGroups: [],
   },
@@ -80,6 +80,9 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     fireEvent.click(screen.getByLabelText("Selecionar Fêmea 101"));
     fireEvent.click(screen.getByRole("button", { name: "Planejar agenda para selecionados" }));
 
+    expect(onPlan).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar e gerar Agenda" }));
     await waitFor(() => expect(onPlan).toHaveBeenCalled());
     expect(onPlan.mock.calls[0][0]).toHaveLength(1);
     expect(onPlan.mock.calls[0][2]).toEqual({
@@ -126,4 +129,20 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     fireEvent.click(screen.getByRole("button", { name: "Limpar filtro" }));
     expect(screen.getByText("Macho 202")).toBeInTheDocument();
   });
+  it("mantém a revisão após erro e permite retry explícito sem perder seleção", async () => {
+    const onPlan = vi.fn().mockRejectedValueOnce(new Error("Seleção desatualizada")).mockResolvedValueOnce(undefined);
+    render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={onPlan} /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Selecionar protocolo"), { target: { value: "protocol-b19" } });
+    fireEvent.change(screen.getByLabelText("Selecionar item do protocolo"), { target: { value: "item-b19" } });
+    fireEvent.change(screen.getByLabelText("Data de avaliação"), { target: { value: "2026-07-04" } });
+    fireEvent.click(screen.getByLabelText("Selecionar Fêmea 101"));
+    fireEvent.click(screen.getByRole("button", { name: "Planejar agenda para selecionados" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar e gerar Agenda" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Seleção desatualizada"));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar e gerar Agenda" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(onPlan).toHaveBeenCalledTimes(2);
+  });
+
 });

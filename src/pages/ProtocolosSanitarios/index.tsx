@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BookOpenCheck, CalendarClock, History, ShieldCheck } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { db } from "@/lib/offline/db";
+import { useSanitaryPlanningRefreshV2 } from "./helpers/useSanitaryPlanningRefreshV2";
 import { useAuth } from "@/hooks/useAuth";
 import {
   cancelLocalSanitaryAgendaV2,
@@ -53,6 +55,11 @@ const ProtocolosSanitarios = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { activeFarmId, user } = useAuth();
+  const currentFarm = useRef(activeFarmId);
+  currentFarm.current = activeFarmId;
+  const [planningRevision, setPlanningRevision] = useState(0);
+  const refreshPlanning = useCallback(() => setPlanningRevision((value) => value + 1), []);
+  const { refresh, refreshing, refreshError } = useSanitaryPlanningRefreshV2(activeFarmId, refreshPlanning);
   const initialTab = readCentralSanitaryTab(searchParams.get("tab"));
   const initialAnimalId = searchParams.get("animalId");
   const initialLotId = searchParams.get("loteId");
@@ -71,12 +78,12 @@ const ProtocolosSanitarios = () => {
     recordType: "todos" as HistoryRecordFilter,
   });
   const localAgenda = useLiveQuery(
-    () => (activeFarmId ? listLocalSanitaryAgendasV2(activeFarmId) : []),
-    [activeFarmId],
+    () => (activeFarmId ? listLocalSanitaryAgendasV2(activeFarmId, db) : []),
+    [activeFarmId, planningRevision],
   );
   const windowSource = useLiveQuery(
     () => (activeFarmId ? loadSanitaryProtocolWindowSourceV2(activeFarmId) : undefined),
-    [activeFarmId],
+    [activeFarmId, planningRevision],
   );
   const documentaryPendencies = listSanitaryDocumentaryPendenciesV2({
     source: windowSource,
@@ -142,6 +149,7 @@ const ProtocolosSanitarios = () => {
   const reschedule = async (agendaId: string, plannedFor: string) => {
     try {
       await rescheduleLocalSanitaryAgendaV2({ agendaId, fazendaId: activeFarmId, plannedFor });
+      refreshPlanning();
       toast.success("Agenda sanitária reagendada.");
     } catch {
       toast.error("Não foi possível reagendar esta agenda.");
@@ -151,6 +159,7 @@ const ProtocolosSanitarios = () => {
   const cancel = async (agendaId: string) => {
     try {
       await cancelLocalSanitaryAgendaV2({ agendaId, fazendaId: activeFarmId });
+      refreshPlanning();
       toast.success("Agenda sanitária cancelada.");
     } catch {
       toast.error("Não foi possível cancelar esta agenda.");
@@ -168,14 +177,20 @@ const ProtocolosSanitarios = () => {
         fazendaId: activeFarmId,
         plannedFor,
         operationalContext,
+        confirmed: true,
+        createdBy: user?.id,
       });
+      if (currentFarm.current !== activeFarmId) return;
+      refreshPlanning();
+      setActiveTab("agenda");
+      const createdCount = results.filter((result) => result.created).length;
       toast.success(
-        results.length === 1
+        createdCount === 0 ? "Seleção já planejada. Agendas existentes preservadas." : results.length === 1
           ? "Agenda sanitária criada."
           : `${results.length} agendas sanitárias agrupadas foram criadas.`,
       );
-    } catch {
-      toast.error("Não foi possível planejar as agendas selecionadas.");
+    } catch (error) {
+      throw error instanceof Error ? error : new Error("Não foi possível planejar as agendas selecionadas.");
     }
   };
 
@@ -215,6 +230,11 @@ const ProtocolosSanitarios = () => {
         meta={<><StatusBadge tone="info">Local e offline</StatusBadge><StatusBadge tone="neutral">Execução explícita</StatusBadge></>}
       />
 
+      <div className="space-y-2 text-sm">
+        <Button type="button" variant="outline" disabled={refreshing} onClick={refresh}>{refreshing ? "Atualizando catálogo..." : "Atualizar catálogo"}</Button>
+        <p className="text-muted-foreground">Planejamentos são salvos neste dispositivo e podem ser consultados offline. A sincronização sanitária depende da liberação do ambiente.</p>
+        {refreshError ? <p role="status" className="text-muted-foreground">{refreshError}</p> : null}
+      </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="h-auto flex-wrap justify-start">
           <TabsTrigger value="janelas"><CalendarClock className="mr-2 h-4 w-4" />Janelas sanitárias</TabsTrigger>
@@ -226,7 +246,8 @@ const ProtocolosSanitarios = () => {
 
         <TabsContent value="janelas">
           <SanitaryProtocolWindowPanelV2
-            source={windowSource}
+            key={activeFarmId}
+            source={windowSource?.fazendaId && windowSource.fazendaId !== activeFarmId ? undefined : windowSource}
             initialAnimalId={initialAnimalId}
             initialLotId={initialLotId}
             initialLotContextId={initialLotContextId}
@@ -237,7 +258,8 @@ const ProtocolosSanitarios = () => {
 
         <TabsContent value="agenda">
           <SanitaryLocalAgendaPanelV2
-            items={localAgenda}
+            key={activeFarmId}
+            items={localAgenda?.filter((item) => item.fazendaId === activeFarmId)}
             defaultResponsibleName={user?.email ?? user?.id ?? null}
             onReschedule={reschedule}
             onCancel={cancel}
