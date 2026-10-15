@@ -636,17 +636,67 @@ export async function drainReconciliationObligations(
 }
 
 async function accelerateNetworkRetriesOnReconnect() {
-  const pending = await db.queue_gestures
-    .where("status")
-    .equals("PENDING")
-    .toArray();
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED" || !ownership.currentUserId) return;
+  const ownerUserId = ownership.currentUserId;
+  let sessionChanged = false;
+  const cancelled = new Error("Reconnect auth context changed");
+  const authSubscription = supabase.auth.onAuthStateChange?.(
+    (_event, session) => {
+      if (session?.user.id !== ownerUserId) sessionChanged = true;
+    },
+  )?.data.subscription;
 
-  for (const gesture of pending) {
-    if (gesture.next_attempt_at && isNetworkSyncError(gesture.last_error)) {
-      await db.queue_gestures.update(gesture.client_tx_id, {
-        next_attempt_at: undefined,
-      });
+  try {
+    const pending = await db.queue_gestures
+      .where("status")
+      .equals("PENDING")
+      .toArray();
+
+    for (const gesture of pending) {
+      if (!gesture.next_attempt_at || !isNetworkSyncError(gesture.last_error))
+        continue;
+      // Session/refresh waits stay outside the IndexedDB transaction.
+      const currentOwnership = await getCurrentLocalReadOwnership();
+      if (
+        sessionChanged ||
+        currentOwnership.status !== "OWNED" ||
+        currentOwnership.currentUserId !== ownerUserId
+      )
+        return;
+
+      await db.transaction(
+        "rw",
+        [db.queue_gestures, db.local_ownership],
+        async () => {
+          const persistedOwnership = await evaluateLocalOwnership(ownerUserId);
+          if (sessionChanged || persistedOwnership.status !== "OWNED") return;
+          const current = await db.queue_gestures.get(gesture.client_tx_id);
+          // A stale reconnect must not erase a newer attempt's backoff or touch
+          // a gesture already claimed/settled by another worker.
+          if (
+            sessionChanged ||
+            current?.status !== "PENDING" ||
+            current.next_attempt_at !== gesture.next_attempt_at ||
+            current.last_error !== gesture.last_error ||
+            current.retry_count !== gesture.retry_count ||
+            current.fazenda_id !== gesture.fazenda_id ||
+            current.client_id !== gesture.client_id ||
+            current.created_at !== gesture.created_at
+          )
+            return;
+
+          await db.queue_gestures.update(gesture.client_tx_id, {
+            next_attempt_at: undefined,
+          });
+          if (sessionChanged) throw cancelled;
+        },
+      );
     }
+  } catch (error) {
+    if (error !== cancelled) throw error;
+  } finally {
+    authSubscription?.unsubscribe();
   }
 }
 
