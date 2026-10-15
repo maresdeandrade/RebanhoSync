@@ -1044,7 +1044,7 @@ export default function Insumos() {
       resolvedOrigemCusto,
     } = costResolution;
 
-    const ops = [
+    const ops: Parameters<typeof createGesture>[1] = [
       {
         table: "insumos",
         action: "UPDATE" as const,
