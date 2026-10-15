@@ -635,18 +635,92 @@ export async function drainReconciliationObligations(
   }
 }
 
-async function accelerateNetworkRetriesOnReconnect() {
-  const pending = await db.queue_gestures
-    .where("status")
-    .equals("PENDING")
-    .toArray();
+function isUnchangedReconnectRetry(
+  current: Gesture | undefined,
+  expected: Gesture,
+): boolean {
+  return (
+    current?.status === "PENDING" &&
+    current.next_attempt_at === expected.next_attempt_at &&
+    current.last_error === expected.last_error &&
+    current.retry_count === expected.retry_count &&
+    current.fazenda_id === expected.fazenda_id &&
+    current.client_id === expected.client_id &&
+    current.created_at === expected.created_at
+  );
+}
 
-  for (const gesture of pending) {
-    if (gesture.next_attempt_at && isNetworkSyncError(gesture.last_error)) {
+async function accelerateNetworkRetryIfUnchanged(
+  gesture: Gesture,
+  ownerUserId: string,
+  isSessionChanged: () => boolean,
+  cancelled: Error,
+): Promise<boolean> {
+  // Session/refresh waits stay outside the IndexedDB transaction.
+  const currentOwnership = await getCurrentLocalReadOwnership();
+  if (
+    isSessionChanged() ||
+    currentOwnership.status !== "OWNED" ||
+    currentOwnership.currentUserId !== ownerUserId
+  )
+    return false;
+
+  await db.transaction(
+    "rw",
+    [db.queue_gestures, db.local_ownership],
+    async () => {
+      const persistedOwnership = await evaluateLocalOwnership(ownerUserId);
+      if (isSessionChanged() || persistedOwnership.status !== "OWNED") return;
+      const current = await db.queue_gestures.get(gesture.client_tx_id);
+      // A stale reconnect must not erase a newer attempt's backoff or touch
+      // a gesture already claimed/settled by another worker.
+      if (isSessionChanged() || !isUnchangedReconnectRetry(current, gesture))
+        return;
+
       await db.queue_gestures.update(gesture.client_tx_id, {
         next_attempt_at: undefined,
       });
+      if (isSessionChanged()) throw cancelled;
+    },
+  );
+  return true;
+}
+
+async function accelerateNetworkRetriesOnReconnect() {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED" || !ownership.currentUserId) return;
+  const ownerUserId = ownership.currentUserId;
+  let sessionChanged = false;
+  const cancelled = new Error("Reconnect auth context changed");
+  const authSubscription = supabase.auth.onAuthStateChange?.(
+    (_event, session) => {
+      if (session?.user.id !== ownerUserId) sessionChanged = true;
+    },
+  )?.data.subscription;
+
+  try {
+    const pending = await db.queue_gestures
+      .where("status")
+      .equals("PENDING")
+      .toArray();
+
+    for (const gesture of pending) {
+      if (!gesture.next_attempt_at || !isNetworkSyncError(gesture.last_error))
+        continue;
+      if (
+        !(await accelerateNetworkRetryIfUnchanged(
+          gesture,
+          ownerUserId,
+          () => sessionChanged,
+          cancelled,
+        ))
+      )
+        return;
     }
+  } catch (error) {
+    if (error !== cancelled) throw error;
+  } finally {
+    authSubscription?.unsubscribe();
   }
 }
 
