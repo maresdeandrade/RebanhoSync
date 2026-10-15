@@ -1,4 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
+import type { Transaction } from "dexie";
 import { db } from "./db";
 import { recordGestureDiagnostic, recordAcknowledgementIfCommitted, recordDrainAttempt,
   recordDrainFailure, recordDrainCompletion, sanitizeDiagnosticError, backlogByFarm } from "./syncDiagnostics";
@@ -1363,71 +1364,121 @@ export async function recoverErroredGesturesOnce() {
   }
 }
 
-export async function recoverStaleSyncingGesturesOnce() {
-  const ownership = await getCurrentLocalReadOwnership();
-  if (ownership.status !== "OWNED") return 0;
+async function recoverInterruptedGesture(
+  gesture: Gesture,
+  ownerUserId: string,
+) {
+  const persistedOwnership = await evaluateLocalOwnership(ownerUserId);
+  if (persistedOwnership.status !== "OWNED") return false;
 
-  const syncing = await db.queue_gestures
-    .where("status")
-    .equals("SYNCING")
-    .toArray();
-  if (syncing.length === 0) return 0;
+  const current = await db.queue_gestures.get(gesture.client_tx_id);
+  if (
+    current?.status !== "SYNCING" ||
+    current.fazenda_id !== gesture.fazenda_id ||
+    current.client_id !== gesture.client_id ||
+    current.created_at !== gesture.created_at
+  )
+    return false;
 
-  const activeLockTxIds = new Set<string>();
-  for (const gesture of syncing) {
-    if (await isGestureLockActive(gesture.client_tx_id)) {
-      activeLockTxIds.add(gesture.client_tx_id);
-    }
-  }
-
-  let recovered = 0;
-  await db.transaction("rw", [db.queue_gestures, db.queue_ops], async () => {
-    for (const gesture of syncing) {
-      if (activeLockTxIds.has(gesture.client_tx_id)) {
-        continue;
-      }
-
-      const current = await db.queue_gestures.get(gesture.client_tx_id);
-      if (current?.status !== "SYNCING") continue;
-
-      const operations = await db.queue_ops
-        .where("client_tx_id")
-        .equals(gesture.client_tx_id)
-        .toArray();
-      const hasNonTerminalOperation = operations.some(
-        (operation) =>
-          operation.sync_state !== "REJECTED" &&
-          operation.sync_state !== "BLOCKED_DEPENDENCY",
-      );
-
-      if (operations.length === 0) {
-        // Legacy/corrupt gesture without operations: no persisted proof of a
-        // remote apply exists, so fail closed instead of fabricating DONE.
-        await db.queue_gestures.update(gesture.client_tx_id, {
+  const operationCount = await db.queue_ops
+    .where("client_tx_id")
+    .equals(gesture.client_tx_id)
+    .count();
+  // Zero operations cannot prove a remote apply; terminal-only operations
+  // remain queued for processGesture's existing terminal classification.
+  const changes: Partial<Gesture> =
+    operationCount === 0
+      ? {
           status: "ERROR",
           sync_result: "ERROR",
           completed_at: new Date().toISOString(),
           last_error:
             "Gesture sem operações enfileiradas; reconciliação manual necessária",
-        });
-        recovered += 1;
-        continue;
-      }
-      // Non-terminal operations retry with persisted identity; terminal-only
-      // operations are requeued for the existing zero-ready classification,
-      // which settles them terminally without factual replay.
+        }
+      : {
+          status: "PENDING",
+          sync_result: undefined,
+          completed_at: undefined,
+          last_error:
+            "Recovered interrupted sync; retrying with persisted identity",
+        };
+  await db.queue_gestures.update(gesture.client_tx_id, changes);
+  return true;
+}
 
-      await db.queue_gestures.update(gesture.client_tx_id, {
-        status: "PENDING",
-        sync_result: undefined,
-        completed_at: undefined,
-        last_error:
-          "Recovered interrupted sync; retrying with persisted identity",
-      });
-      recovered += 1;
+export async function recoverStaleSyncingGesturesOnce() {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED" || !ownership.currentUserId) return 0;
+  const ownerUserId = ownership.currentUserId;
+  let sessionChanged = false;
+  let activeTransaction: Transaction | undefined;
+  let authAbortedTransaction = false;
+  let recovered = 0;
+  const subscription = supabase.auth.onAuthStateChange?.((_event, session) => {
+    if (session?.user.id === ownerUserId) return;
+    sessionChanged = true;
+    if (activeTransaction?.active) {
+      authAbortedTransaction = true;
+      activeTransaction.abort();
     }
-  });
+  })?.data.subscription;
 
+  try {
+    const syncing = await db.queue_gestures
+      .where("status")
+      .equals("SYNCING")
+      .toArray();
+    for (const gesture of syncing) {
+      if (sessionChanged) break;
+      // Keep the processor's lock until Dexie commits or rolls back. Session
+      // checks can refresh asynchronously and must stay outside the transaction.
+      const didRecover = await withGestureLock(
+        gesture.client_tx_id,
+        async (acquired) => {
+          if (!acquired || sessionChanged) return false;
+          const currentOwnership = await getCurrentLocalReadOwnership();
+          if (
+            sessionChanged ||
+            currentOwnership.status !== "OWNED" ||
+            currentOwnership.currentUserId !== ownerUserId
+          )
+            return false;
+          let transactionCompleted: Promise<void> | undefined;
+          try {
+            return await db.transaction(
+              "rw",
+              [db.queue_gestures, db.queue_ops, db.local_ownership],
+              (transaction) => {
+                if (sessionChanged) return false;
+                activeTransaction = transaction;
+                transactionCompleted = new Promise<void>((resolve) => {
+                  transaction.on("complete", resolve);
+                  transaction.on("abort", resolve);
+                });
+                return recoverInterruptedGesture(gesture, ownerUserId);
+              },
+            );
+          } finally {
+            // Dexie's rejection may precede the native abort event. Keep the
+            // gesture lock until IndexedDB has actually completed the rollback.
+            await transactionCompleted;
+            activeTransaction = undefined;
+          }
+        },
+      );
+      if (didRecover) recovered += 1;
+    }
+  } catch (error) {
+    // Only an abort initiated by this recovery's auth observer is cancellation.
+    if (
+      !authAbortedTransaction ||
+      !(error instanceof Error) ||
+      (error.name !== "AbortError" && error.name !== "PrematureCommitError")
+    )
+      throw error;
+  } finally {
+    subscription?.unsubscribe();
+  }
   if (recovered > 0) {
     console.warn(
       `[sync-worker] Re-queued ${recovered} interrupted SYNCING gesture(s)`,
