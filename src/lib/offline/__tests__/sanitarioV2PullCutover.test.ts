@@ -58,6 +58,24 @@ describe("sanitario v2 ordered pull", () => {
     ]);
   });
 
+  it.each(["cutover", "standard"])("%s preserva referências legadas e materializa IDs do catálogo V2", async (mode) => {
+    const legacyId = crypto.randomUUID();
+    const canonicalId = crypto.randomUUID();
+    const protocol = crypto.randomUUID();
+    const item = crypto.randomUUID();
+    const rows = [
+      { id: legacyId, fazenda_id: FARM_ID, protocolo_id: "legacy-protocol", protocol_item_version_id: "legacy-item", catalog_protocolo_v2_id: null, catalog_protocol_item_version_v2_id: null },
+      { id: canonicalId, fazenda_id: FARM_ID, protocolo_id: null, protocol_item_version_id: null, catalog_protocolo_v2_id: protocol, catalog_protocol_item_version_v2_id: item },
+    ];
+    vi.mocked(supabase.from).mockImplementation((table: string) => ({
+      select: () => ({ eq: async () => ({ data: table === "sanitario_agenda_v2" ? rows : [], error: null }) }),
+    }) as never);
+    if (mode === "cutover") await pullSanitarioV2CutoverState(FARM_ID);
+    else await pullDataForFarm(FARM_ID, ["sanitario_agenda_v2"], { mode: "merge" });
+    expect(await db.ops_sanitario_agenda_v2.get(legacyId)).toMatchObject({ protocolo_id: "legacy-protocol", protocol_item_version_id: "legacy-item" });
+    expect(await db.ops_sanitario_agenda_v2.get(canonicalId)).toMatchObject({ protocolo_id: protocol, protocol_item_version_id: item });
+  });
+
   it("faz merge append-only idempotente e rejeita colisao divergente", async () => {
     vi.mocked(supabase.from).mockImplementation(
       () =>

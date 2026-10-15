@@ -57,7 +57,7 @@ const p2Tables = {
   product_class_default_rule_rows: "sanitario_product_class_default_rules_v2",
 };
 const expectedCounts = {
-  source_rows: 14, coverage_rows: 66, product_class_rows: 8,
+  source_rows: 16, coverage_rows: 71, product_class_rows: 8,
   product_class_group_rows: 4, product_class_group_member_rows: 12,
   protocol_rows: 10, protocol_item_rows: 20,
 };
@@ -243,7 +243,7 @@ describe("sanitario v2 publisher P2 full contract", () => {
     expect(Object.values({ ...tables, ...p2Tables })).toHaveLength(14);
     expect(Object.keys({ ...tables, ...p2Tables }).every((collection) => data[collection].length > 0)).toBe(true);
     const plan = await buildPlan(new MemoryClient(), data);
-    expect(plan.filter((op) => op.action === "create")).toHaveLength(141);
+    expect(plan.filter((op) => op.action === "create")).toHaveLength(148);
     expect(() => assertPublishablePlan(plan)).not.toThrow();
   });
 
@@ -254,11 +254,11 @@ describe("sanitario v2 publisher P2 full contract", () => {
     const allTables = { ...tables, ...p2Tables };
     expect(new Set(plan.filter((op) => op.collection).map((op) => op.collection)))
       .toEqual(new Set(Object.keys(allTables)));
-    expect(plan.filter((op) => op.action === "create")).toHaveLength(141);
+    expect(plan.filter((op) => op.action === "create")).toHaveLength(148);
     expect(() => assertPublishablePlan(plan)).not.toThrow();
-    expect(await applyTransactionForTest(client, data)).toEqual({ create: 141, update: 0, skip: 0, reject: 4 });
+    expect(await applyTransactionForTest(client, data)).toEqual({ create: 148, update: 0, skip: 0, reject: 4 });
     const replay = await buildPlan(client, data);
-    expect(replay.filter((op) => op.action === "skip")).toHaveLength(141);
+    expect(replay.filter((op) => op.action === "skip")).toHaveLength(148);
     expect(() => assertConvergedPlan(replay)).not.toThrow();
     const inserts = client.queries.filter((q) => q.text.startsWith("insert into"));
     for (const [collection, table] of Object.entries(allTables)) {
@@ -621,11 +621,11 @@ describe("sanitario v2 publisher P1", () => {
     expect(client.queries).toEqual([]);
   });
 
-  it("plans exactly all 134 canonical rows and four separate deliberate rejections", async () => {
+  it("plans exactly all 141 canonical rows and four separate deliberate rejections", async () => {
     const data = fixture();
     const plan = await buildPlan(new MemoryClient(), data);
     const canonical = plan.filter((op) => op.collection);
-    expect(canonical).toHaveLength(134);
+    expect(canonical).toHaveLength(141);
     for (const [collection, count] of Object.entries(expectedCounts)) {
       const ops = canonical.filter((op) => op.collection === collection);
       expect(ops).toHaveLength(count);
@@ -897,12 +897,12 @@ describe("sanitario v2 publisher P1", () => {
     }
   });
 
-  it("rebuilds under the transaction lock, writes 134 explicit UUIDs in FK order and replays as skips", async () => {
+  it("rebuilds under the transaction lock, writes 141 explicit UUIDs in FK order and replays as skips", async () => {
     const data = fixture();
     const client = new MemoryClient();
-    expect(await applyTransactionForTest(client, data)).toEqual({ create: 134, update: 0, skip: 0, reject: 4 });
+    expect(await applyTransactionForTest(client, data)).toEqual({ create: 141, update: 0, skip: 0, reject: 4 });
     const inserts = client.queries.filter((q) => q.text.startsWith("insert"));
-    expect(inserts).toHaveLength(134);
+    expect(inserts).toHaveLength(141);
     expect(inserts.every((q) => /\(id,/.test(q.text))).toBe(true);
     expect(new Set(inserts.map((q) => q.values[0]))).toEqual(new Set(Object.keys(tables).flatMap((k) => data[k].map((r) => r.id))));
     const writtenTables = inserts.map((q) => /public\.(\w+)/.exec(q.text)[1]);
@@ -914,8 +914,8 @@ describe("sanitario v2 publisher P1", () => {
     expect(client.queries[3].text).toContain("pg_advisory_xact_lock");
     expect(client.queries.filter((q) => q.text.startsWith("select *")).every((q) => q.text.endsWith("for update"))).toBe(true);
     expect(client.queries.at(-1).text).toBe("commit");
-    expect(await applyTransactionForTest(client, data)).toEqual({ create: 0, update: 0, skip: 134, reject: 4 });
-    expect(client.queries.filter((q) => q.text.startsWith("insert"))).toHaveLength(134);
+    expect(await applyTransactionForTest(client, data)).toEqual({ create: 0, update: 0, skip: 141, reject: 4 });
+    expect(client.queries.filter((q) => q.text.startsWith("insert"))).toHaveLength(141);
     expect(client.committed).toBe(true);
   });
 
@@ -930,7 +930,7 @@ describe("sanitario v2 publisher P1", () => {
       physical[field] = field === "is_allowed" ? false : field === "eligibility_rule"
         ? { ...physical[field], stale_marker: true } : "stale content";
       const counts = await applyTransactionForTest(client, data);
-      expect(counts).toEqual({ create: 0, update: 1, skip: 133, reject: 4 });
+      expect(counts).toEqual({ create: 0, update: 1, skip: 140, reject: 4 });
       expect(client.queries.some((q) => q.text.startsWith(`update public.${tables[collection]}`))).toBe(true);
       expect((await buildPlan(client, data)).filter((op) => op.collection).every((op) => op.action === "skip")).toBe(true);
     },
@@ -966,7 +966,7 @@ describe("sanitario v2 publisher P1", () => {
     expect(client.rows).toEqual({});
     expect(client.queries.at(-1).text).toBe("rollback");
     client.failInsert = null;
-    expect(await applyTransactionForTest(client, data)).toEqual({ create: 134, update: 0, skip: 0, reject: 4 });
+    expect(await applyTransactionForTest(client, data)).toEqual({ create: 141, update: 0, skip: 0, reject: 4 });
   });
 
   it("blocks commit when the post-write verification finds an unexpected member conflict", async () => {
@@ -975,7 +975,7 @@ describe("sanitario v2 publisher P1", () => {
     let inserts = 0;
     client.beforeQuery = (text, _, db) => {
       if (text.startsWith("insert")) inserts += 1;
-      if (text.startsWith("select *") && inserts === 134) {
+      if (text.startsWith("select *") && inserts === 141) {
         db.rows[tables.product_class_group_member_rows][0].id = otherId;
         inserts += 1;
       }
@@ -1002,9 +1002,41 @@ describe("sanitario v2 publisher P1", () => {
     client.rows[tables.protocol_item_rows].push({
       id: otherId, protocol_id: protocol.id, logical_item_key: "raiva_area_risco_anual", version: 1, status: "draft",
     });
-    expect(await applyTransactionForTest(client, data)).toEqual({ create: 0, update: 1, skip: 134, reject: 4 });
+    expect(await applyTransactionForTest(client, data)).toEqual({ create: 0, update: 1, skip: 141, reject: 4 });
     expect(client.rows[tables.protocol_item_rows].find((r) => r.id === otherId)).toMatchObject({ status: "retired", allows_agenda_auto: false });
-    expect(await applyTransactionForTest(client, data)).toEqual({ create: 0, update: 0, skip: 134, reject: 4 });
+    expect(await applyTransactionForTest(client, data)).toEqual({ create: 0, update: 0, skip: 141, reject: 4 });
+  });
+
+  it.each(["draft", "active"])("supersession only plans retirement of the exact previous draft physical version: %s", async (status) => {
+    const data = fixture();
+    const item = data.protocol_item_rows.find((row) => row.logical_item_key === "clostridial_primovac_dose2");
+    const previous = item.snapshot_template.metadata.supersedes;
+    const client = await seeded(data);
+    client.rows[tables.protocol_item_rows].push({
+      id: previous.id, protocol_id: item.protocol_id, logical_item_key: item.logical_item_key,
+      version: previous.version, status, deleted_at: null,
+    });
+    const plan = await buildPlan(client, data);
+    const operation = plan.find((op) => op.existing?.id === previous.id);
+    expect(operation.action).toBe(status === "draft" ? "update" : "reject");
+    if (status === "draft") {
+      await applyTransactionForTest(client, data);
+      expect(client.rows[tables.protocol_item_rows].find((row) => row.id === previous.id).status).toBe("retired");
+      expect(client.rows[tables.protocol_item_rows].find((row) => row.id === item.id).deleted_at).toBeUndefined();
+      expect((await buildPlan(client, data)).some((op) => op.classification === "DEPRECATED_ITEM")).toBe(false);
+    }
+  });
+
+  it("rejects supersession if the prior UUID belongs to a different logical item", async () => {
+    const data = fixture();
+    const item = data.protocol_item_rows.find((row) => row.logical_item_key === "clostridial_primovac_dose2");
+    const previous = item.snapshot_template.metadata.supersedes;
+    const client = await seeded(data);
+    client.rows[tables.protocol_item_rows].push({
+      id: previous.id, protocol_id: item.protocol_id, logical_item_key: "different_item",
+      version: previous.version, status: "draft", deleted_at: null,
+    });
+    await expect(buildPlan(client, data)).rejects.toThrow("superseded_item_identity_conflict");
   });
 
   it("does not tombstone deprecated non-draft items", async () => {

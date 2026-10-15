@@ -1,7 +1,7 @@
 ```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-07-30
+Atualizado em: 2026-10-15
 
 ## Objetivo
 
@@ -144,7 +144,7 @@ A partir da 12F3, os payloads candidatos dos Protocolos Sanitarios v2 foram vali
 
 - `agenda_allowed = false` enquanto houver sourceGap critico;
 - `approved_for_catalog = false` ate aprovacao curatorial propria;
-- B19 como regra nacional para femeas bovinas e bubalinas de 3 a 8 meses;
+- B19 como regra nacional para femeas bovinas e bubalinas de 3 a 8 meses, com excecao de obrigatoriedade nas UFs de risco A (IN 10/2017 art. 10; Portaria SDA/MAPA 1.633/2026) e proibicao de B19 em Santa Catarina conforme CIDASC;
 - febre aftosa como archived/blocked, sem rotina operacional;
 - ProductClassGroup antiparasitario dependente de ProductClass real e produto executado;
 - SourceRefs separados de sourceGaps e sourcePolicy.
@@ -183,6 +183,27 @@ Um protocolo pode nascer de:
 3. protocolo customizado da fazenda.
 
 Essas camadas não devem competir como se fossem a mesma coisa.
+
+### Revisao tecnica de evidencias e versionamento
+
+Revisao de evidencias de 2026-10-14:
+
+- `b19_femeas_3_8_meses`, `clostridial_primovac_dose2` e `ibr_bvd_primovac_dose2` possuem novos IDs fisicos e versao 2 no candidato 12F10. Os IDs anteriores permanecem em `snapshot_template.metadata.supersedes`.
+- O importador apenas planeja aposentadoria da versao anterior explicitamente identificada quando ela ainda esta `draft`; uma versao ativa ou identidade divergente bloqueia o plano. Nao houve importacao.
+- Referencia Fortress 7: segunda dose em 28–42 dias. Referencias Poliguard/Bovigen Repro Total SE: 21–30 dias. Intervalos nao sao universais da classe.
+- Prazo nacional de comprovacao de brucelose: 10/07 e 10/01 do ano seguinte; prazos estaduais anteriores podem ser preservados nos termos da Portaria 1.633/2026.
+
+### Registro factual e uso prospectivo por Agenda v2
+
+A conclusao manual declara `registrationMode=executed_fact` e exige confirmacao de aplicacao ja realizada, data nao futura, produto real, dose/unidade/via e integridade dos vinculos por fazenda. Nao concede autorizacao prospectiva: o evento preserva `prospective_authorization=false` e os sinais curatoriais/regionais em `catalog_review_warnings`. Produto com curadoria pendente pode ser selecionado com aviso; status curatorial do app nao e situacao de registro no MAPA. Consulta externa indisponivel nao comprova irregularidade.
+
+Sem declaracao factual, a politica prospectiva continua exigindo protocolo `active`/`approved`, item `active` e contexto UF valido quando exigido. Identidade do catalogo, tenant e vinculos fisicos de item/produto/classe/grupo continuam verificados nos dois modos; a transacao preserva fato, estoque e fila de forma atomica. O modo factual preserva o snapshot historico mesmo que o protocolo esteja draft/retired ou os dados tecnicos do produto estejam pendentes; isso nao valida dose, gestacao, lactacao ou especie automaticamente.
+
+`canExecute` na lista de agendas manuais representa acesso ao registro de fato ja realizado, nao permissao veterinaria para aplicar o produto. Registro de aplicacao nao prova conformidade regulatoria. Carencia desconhecida impede sua derivacao ou declaracao de livre de carencia, sem impedir registrar o fato. Estoque negativo, identidade incoerente, fazenda divergente e falta de confirmacao permanecem rejeitados.
+
+Os avisos curatoriais sao relidos dentro da transacao e preservados no Evento, detalhe e fila. A resolucao UUID de classe para `class_key` ignora classes/members de outras fazendas; cache parcial nao comprova incompatibilidade. Item somente-alerta continua nao executavel mesmo quando apenas o snapshot esta disponivel. Conclusoes locais concorrentes da mesma agenda retornam o unico fato persistido.
+
+A pre-checagem prospectiva B19 continua verificando UF; historico documentado permanece `completed` mesmo com UF atual ausente/excluida, sem autorizar nova vacinacao. Automacao e publicacao nao foram ativadas. A barreira local nao substitui RLS; ausencia de teste remoto nesta entrega nao e evidencia de irregularidade do produto nem defeito comprovado de producao.
 
 ### Contrato de versionamento
 
@@ -464,16 +485,24 @@ Regras:
 
 O Sync Sanitário v2 está implementado sob gates desligados, mas não concluído:
 
-- agenda e `agenda_animais`: implementados, com E2E remoto parcial;
-- evento e detalhe: implementados, com E2E remoto pendente;
-- retry/replay/idempotência: implementados, com validação remota parcial;
+- agenda e `agenda_animais`: implementados; criação e execução primária certificadas no Supabase local descartável em C1–C8;
+- evento e detalhe: `apply_factual_core` de execução primária com estoque certificado no caminho builder → fila → worker → Edge/RPC → PostgreSQL → ACK/pull;
+- retry/replay/idempotência: replay, perda de ACK, timeout, crash de renderer e retomada offline certificados nesse recorte;
 - sucesso parcial: validado localmente, com E2E remoto pendente;
 - conflito stale de `replace_agenda_animals`: recertificado remotamente em 05/10/2026; multi-dispositivo completo não recertificado;
 - histórico externo/documental: implementado e validado localmente, com E2E remoto não executado;
-- movimento de estoque sanitário: pendente;
+- movimento de estoque sanitário: consumo vinculado ao fato certificado nesse recorte, incluindo unicidade concorrente e rejeição terminal quando o fato dependente é rejeitado;
 - recálculo explícito da Conformidade após pull: pendente.
 
 O gate remoto está desligado, a feature flag local é `false` e o rollout não está autorizado. Produção não foi alterada.
+
+A certificação de 15/10/2026 usou exclusivamente fixtures sintéticas e gates temporários no Supabase local descartável; todos foram desligados ao final. Não certifica dispositivo móvel físico, novo uso prospectivo, importação de protocolo ou liberação operacional. Evidência: [revisão da integração](../review/evidence/SANITARIO_V2_PR_REVIEW_20261014.md).
+
+A Agenda preserva as colunas/FKs legadas para operações antigas. Referências canônicas são armazenadas em `catalog_protocolo_v2_id` e `catalog_protocol_item_version_v2_id`, com validação server-side de fazenda e vínculo do item; o pull as materializa no formato local existente. Nenhuma referência histórica é migrada ou reescrita implicitamente.
+
+Quando a aplicação factual é rejeitada e não existe recibo factual aplicado, o consumo dependente recebe rejeição terminal auditável. O worker preserva Evento/detalhe e os envelopes rejeitados em estado terminal, sem retry automático ou sucesso remoto falso. A API pública de reconciliação rearma explicitamente o core e o consumo da mesma gesture, preservando identidades e payloads, sem reaplicar o fato/estoque local. A referência primária da execução continua no Evento e nos alvos da Agenda; `Agenda.execution_evento_id` permanece um campo legado.
+
+Na Edge, execução primária com `registration_mode=executed_fact` e `prospective_authorization=false` não depende do status curatorial atual nem do timestamp geral do produto. Identidade/nome/classe, tombstone e toda evidência técnica específica continuam validados; carência desconhecida não vira zero. O aviso retrospectivo permanece no payload auditável. Envelopes legados sem a declaração explícita mantêm validação estrita. C5 certificou curadoria pendente e retry após reparo de identidade no catálogo; não certificou reconstrução de envelopes apagados por versões antigas nem reconciliação universal de fontes alteradas.
 
 `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026 após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`. Historicamente, `40001` não retornava pelo transporte antes do timeout. Ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados; outras RPCs não foram recertificadas.
 

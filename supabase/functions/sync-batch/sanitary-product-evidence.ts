@@ -147,17 +147,23 @@ export function validateSanitaryProductEvidenceCatalog(
   snapshotValue: unknown,
   fazendaId: string,
   catalog: SanitaryProductEvidenceCatalog,
+  event?: Row,
 ): string | null {
   const snapshot = record(snapshotValue);
   if (!snapshot) return "SANITARIO_PRODUCT_SNAPSHOT_REQUIRED";
   const productSnapshot = record(snapshot.executedProductSnapshot);
+  const payload = record(event?.payload);
+  const retrospective = event?.natureza === "primary_execution" &&
+    payload?.registration_mode === "executed_fact" &&
+    payload?.prospective_authorization === false;
   if (productSnapshot) {
     const product = catalog.product;
     if (
-      !active(product) || product.status_curatorial !== "ativo" ||
+      !active(product) ||
+      (!retrospective && product.status_curatorial !== "ativo") ||
       product.id !== snapshot.executedProductId ||
       productSnapshot.productId !== product.id ||
-      productSnapshot.catalogUpdatedAt !== product.updated_at ||
+      (!retrospective && productSnapshot.catalogUpdatedAt !== product.updated_at) ||
       productSnapshot.nomeComercial !== product.nome_comercial ||
       productSnapshot.classe !== product.classe
     ) return "SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH";

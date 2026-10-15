@@ -520,6 +520,15 @@ function buildEffectiveResults(
   return effectiveResults;
 }
 
+function normalizeCatalogAgendaRows(remote: string, rows: RemoteRow[]) {
+  if (remote !== "sanitario_agenda_v2") return rows;
+  return rows.map((row) => ({
+    ...row,
+    protocolo_id: row.catalog_protocolo_v2_id ?? row.protocolo_id,
+    protocol_item_version_id: row.catalog_protocol_item_version_v2_id ?? row.protocol_item_version_id,
+  }));
+}
+
 async function writeFarmPullStore(
   update: StoreUpdate,
   rows: RemoteRow[],
@@ -547,7 +556,7 @@ async function writeFarmPullStore(
   }
   if (rows.length > 0) {
     if (remote === "eventos_animais") await appendEventoAnimais(store, rows);
-    else await store.bulkPut(rows);
+    else await store.bulkPut(normalizeCatalogAgendaRows(remote, rows));
   }
   if (pendingRows.length > 0) await store.bulkPut(pendingRows);
   console.log(
@@ -639,7 +648,7 @@ async function writeMergeResults(
         if (remote === "eventos_animais") {
           await appendEventoAnimais(store, rows as RemoteRow[]);
         } else {
-          await store.bulkPut(rows);
+          await store.bulkPut(normalizeCatalogAgendaRows(remote, rows));
         }
       }
 

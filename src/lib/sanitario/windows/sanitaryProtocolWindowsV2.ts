@@ -31,6 +31,7 @@ import {
 } from "@/lib/sanitario/agenda/sanitaryManualAgendaV2";
 
 export type SanitaryProtocolWindowSourceV2 = {
+  farmUf?: string | null;
   catalog: SanitaryProtocolCatalogReadModelV2;
   animals: Animal[];
   lots: Lote[];
@@ -370,6 +371,7 @@ export function buildSanitaryProtocolWindowV2(input: {
           nascimento: animal.data_nascimento,
           categoria: classification.categoriaZootecnica,
           fazendaId: animal.fazenda_id,
+          uf: input.source.farmUf,
           riskArea: operationalContext.rabiesRiskArea ?? undefined,
           sanitaryCadence: operationalContext.sanitaryCadence,
           pregnancyOrPeripartumContext:
@@ -513,7 +515,7 @@ export async function loadSanitaryProtocolWindowSourceV2(
   fazendaId: string,
 ): Promise<SanitaryProtocolWindowSourceV2> {
   await requireTenantSensitiveRead();
-  const [catalog, animals, lots, agendas, agendaAnimals] = await Promise.all([
+  const [catalog, animals, lots, agendas, agendaAnimals, farmConfig] = await Promise.all([
     readLocalSanitaryProtocolCatalogV2(),
     db.state_animais.where("fazenda_id").equals(fazendaId).toArray(),
     db.state_lotes.where("fazenda_id").equals(fazendaId).toArray(),
@@ -522,6 +524,7 @@ export async function loadSanitaryProtocolWindowSourceV2(
       .where("fazenda_id")
       .equals(fazendaId)
       .toArray(),
+    db.state_fazenda_sanidade_config.get(fazendaId),
   ]);
   const events = await db.event_eventos.where("fazenda_id").equals(fazendaId).toArray();
   const details =
@@ -545,7 +548,8 @@ export async function loadSanitaryProtocolWindowSourceV2(
     catalog,
     fazendaId,
   });
-  return { catalog, animals, lots, agendas, agendaAnimals, executedHistory, executedEvents };
+  return { catalog, animals, lots, agendas, agendaAnimals, executedHistory, executedEvents,
+    farmUf: farmConfig?.deleted_at ? null : farmConfig?.uf };
 }
 
 function clientOperationId() {

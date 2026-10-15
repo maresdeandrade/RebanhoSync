@@ -1,3 +1,51 @@
+# Matriz de Produtos Sanitários V2 — revisão de fontes 2026-10-14
+
+Atualizado em: 2026-10-14
+Status: `EVIDENCE_REVIEWED / FIELD_LEVEL_LIMITS / MANUAL_FACTUAL_RECORD`
+Baseline: `main@bd7193fd52e5b6d5851f33e89139205003dfa8b9`
+
+Esta revisão substitui as afirmações produto-específicas e generalizações da matriz anterior no escopo dos 10 protocolos do payload 12F10. São 16 alternativas/referências pesquisadas, incluindo uma incompatível com o público bovino.
+
+**A consulta nesta pesquisa não reconfirmou todos os registros e não comprova irregularidade dos produtos.** O usuário informa que os produtos utilizados são autorizados. Não foi feita ativação ou importação. Registro histórico é identificado separadamente. Dose, carência e segurança reprodutiva não são atributos universais de classe.
+
+Dados completos: [matriz CSV](SANITARIO_V2_PRODUCTS_RESEARCH_20261014.csv). Referências, datas e seções: [fontes CSV](SANITARIO_V2_RESEARCH_SOURCES_20261014.csv). A tabela abaixo é uma síntese; `desconhecida` nunca significa zero ou autorização.
+
+A falta de informação é tratada por campo: aviso documental para consulta/registro manual; carência desconhecida sem inferir zero; restrição de sugestão/automação somente no contexto sem suporte ou com contraindicação comprovada. Status curatorial pendente não significa produto sem registro. A aplicação já realizada pode ser registrada com rastreabilidade, sem autorizar novos usos.
+
+| Protocolo/uso | Produto | Dose/via descrita | Esquema | Carne | Leite | Limite principal |
+|---|---|---|---|---|---|---|
+| brucelose_b19 | Abor-Vac B19 | 2 mL / SC | dose única; sem revacinação | desconhecida | desconhecida | SC proibido; bubalino e vigência pendentes |
+| brucelose_b19 | Anavac B19 | 2 mL / SC | aplicação na janela; sem extrapolar bovino | desconhecida | desconhecida | PDF retornou 403 no download; registro e carências pendentes |
+| clostridioses | Fortress 7 | 5 mL / SC | 2 doses 28–42 dias; anual | 21 dias | desconhecida | idade mínima, leite e segurança reprodutiva pendentes; não extrapolar bubalino |
+| clostridioses | Covexin 9 | 3 mL no esquema geral; confirmar crias / SC | semestral; anual em baixa incidência; gestantes 60/30 dias antes do parto quando primovacinadas | 21 dias | desconhecida | bula integral e tabela de crias; não substituir Fortress automaticamente |
+| raiva_herbivoros | Raivacel Multi | 2 mL / SC ou IM | reforço 30 dias; anual | desconhecida | desconhecida | bula integral, registro, carências; bubalino não individualizado |
+| raiva_herbivoros | Rabmune herbívoros | 2 mL / SC ou IM | reforço 30 dias; anual | desconhecida | desconhecida | confirmar bubalino no registro; ausência de prazo não é zero |
+| raiva_herbivoros | Rabatvac | 2 mL / SC ou IM | esquema completo do produto pendente | desconhecida | desconhecida | não aplicar idade de 3 meses de outro produto automaticamente |
+| raiva_herbivoros | Rai-Vac I (cães/gatos) | não aplicável / não aplicável | não aplicável | não aplicável | não aplicável | não confundir nomes comerciais/espécies |
+| leptospirose | Leptoferm 5/2 mL | 2 mL / IM | bovinos: inicial única; anual; suínos possuem esquema diferente | 21 dias | desconhecida | não copiar reforço inicial suíno; bubalino/leite/gestação não comprovados |
+| leptospirose | Bovigen Lepto 8 | 3 mL / SC | 2 doses 21–30 dias; anual; semestral em alta incidência/critério MV | desconhecida | desconhecida | não transplantar dose, esquema ou segurança para Leptoferm |
+| ibr_bvd | Poliguard | 5 mL / SC | 2 doses 21–30 dias; anual | desconhecida | desconhecida | bula integral atual, carne/leite e bubalino pendentes |
+| ibr_bvd | Bovigen Repro Total SE | 5 mL / SC | 2 doses 21–30 dias; anual; condições reprodutivas individuais | desconhecida | desconhecida | composição não equivalente a Poliguard; carências e vigência pendentes |
+| antiparasitários (4 protocolos) | Eprecis 2% | 1 mL/100 kg (0,2 mg/kg) / SC | dose única por indicação; requer peso | 12 dias | sem período de carência expresso | não presume gestação, bubalino ou janela pré-parto; dose por peso ainda exige suporte runtime |
+| antiparasitários (4 protocolos) | Eprifort 1% | não localizada na página / pour-on | esquema não localizado | 0 dias na página | 0 dias na página | bula integral, dose, registro e restrições; não chamar Epriforte nem atribuir à Ourofino |
+| antiparasitários (4 protocolos) | Epmox | 1 mL/50 kg / SC | dose única por indicação | 47 dias | não permitido em produtoras de leite humano | não materializar associação como classe nova nem inferir carência de eprinomectina isolada |
+| antiparasitários (4 protocolos) | Dectomax 1% | bovinos 1 mL/50 kg / SC ou IM (bovinos) | segundo indicação e decisão técnica | bovinos 35 dias | não permitido | regras de suíno/ovino não transferíveis; dose depende de peso |
+
+## Decisões de modelagem
+
+- O catálogo possui 8 classes. `vacina_ibr_bvd` é uma classe funcional restrita; não presume equivalência de formulações.
+- Existem 4 grupos e 12 members materializados no payload. Membership não valida execução.
+- As 4 associações rejeitadas continuam com `NOT_A_CLASS_CONFIRMED`. Uma combinação comercial é descrita por seus princípios ativos, sem nova classe farmacológica inferida.
+- A eprinomectina está presente em formulações com carências diferentes. Carência zero de um produto não se propaga para outros.
+- Leptoferm não recebe esquema de Bovigen Lepto 8; Poliguard não recebe restrições de outras vacinas; Rabatvac não recebe idade de outro antirrábico.
+- Informações de registro presentes em bulas ou na lista MAPA de 2014 não comprovam manutenção do registro em 2026.
+
+---
+
+## Matriz anterior preservada como histórico
+
+As seções abaixo registram as decisões de 12D4. No escopo dos 10 protocolos, use a revisão acima e o payload 12F10 atual. Defaults e afirmações genéricas abaixo não constituem validação de dose, espécie, carência, gestação ou registro vigente. Produtos e classes fora do escopo desta pesquisa não foram recertificados.
+
 # Matriz de ProductClass, Defaults e Produtos Sanitários v2
 
 Atualizado em: 2026-06-09 (12D4+bulas)

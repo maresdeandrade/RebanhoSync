@@ -105,7 +105,10 @@ function readNullableId(
   return typeof value === "string" ? value : undefined;
 }
 
-function describeRollback(action: string) {
+function describeRollback(action: string, operation?: Operation | null) {
+  if (operation?.record.domain === "sanitario_v2" && operation.record.command === "apply_factual_core") {
+    return "Fato sanitário preservado neste aparelho. O reenvio explícito mantém a identidade do fato e da baixa de estoque, sem autorizar novos usos.";
+  }
   if (action === "INSERT") {
     return "Rollback local aplicado: o registro otimista foi removido deste aparelho.";
   }
@@ -403,7 +406,7 @@ export default function Reconciliacao() {
     ? describeOperation(selectedRejection, selectedOperation, lotesById)
     : null;
   const selectedRollbackDescription = selectedRejection
-    ? describeRollback(selectedRejection.action)
+    ? describeRollback(selectedRejection.action, selectedOperation)
     : null;
   const selectedNextStep = selectedRejection
     ? describeNextStep(selectedRejection)

@@ -122,6 +122,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     await db.open();
     await Promise.all([
       db.catalog_sanitario_produtos_v2.clear(),
+      db.catalog_sanitario_product_classes_v2.clear(),
       db.catalog_sanitario_product_class_group_members_v2.clear(),
       db.state_insumos.clear(),
       db.state_insumo_lotes.clear(),
@@ -131,6 +132,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
   afterEach(async () => {
     await Promise.all([
       db.catalog_sanitario_produtos_v2.clear(),
+      db.catalog_sanitario_product_classes_v2.clear(),
       db.catalog_sanitario_product_class_group_members_v2.clear(),
       db.state_insumos.clear(),
       db.state_insumo_lotes.clear(),
@@ -206,6 +208,58 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     ]);
   });
 
+  it("oferece produto com revisão pendente para registrar fato, preservando aviso", async () => {
+    await db.catalog_sanitario_produtos_v2.put({
+      id: "product-pending", nome_comercial: "Vacina já utilizada", classe: "vacina_raiva",
+      tipo_produto: "vacina", status_curatorial: "precisa_validar", metadata: {},
+      deleted_at: null,
+    } as never);
+    const result = await loadSanitaryAgendaExecutionOptionsV2([
+      { ...items[0], productRequirementKind: "product_class", productClass: "vacina_raiva" },
+    ]);
+    expect(result.productOptions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "product-pending", name: "Vacina já utilizada", warning: expect.stringContaining("aplicação já realizada") }),
+    ]));
+  });
+
+  it.each([true, false])("resolve UUID de member para class_key sem ocultar produto no cache parcial: %s", async (classCached) => {
+    const classId = "40000000-0000-4000-8000-000000000001";
+    await db.catalog_sanitario_produtos_v2.put({
+      id: "product-class-key", nome_comercial: "Produto aplicado", classe: "lactonas_macrociclicas",
+      tipo_produto: "antiparasitario", status_curatorial: "ativo", metadata: {}, deleted_at: null,
+    } as never);
+    await db.catalog_sanitario_product_class_group_members_v2.put({
+      id: "member-1", group_id: "group-1", class_id: classId, is_allowed: true,
+      scope: "global", fazenda_id: null, deleted_at: null,
+    } as never);
+    if (classCached) await db.catalog_sanitario_product_classes_v2.put({
+      id: classId, class_key: "lactonas_macrociclicas", scope: "global", fazenda_id: null, deleted_at: null,
+    } as never);
+    const result = await loadSanitaryAgendaExecutionOptionsV2([
+      { ...items[0], productRequirementKind: "product_class_group", productClassGroupId: "group-1" },
+    ]);
+    expect(result.productOptions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "product-class-key" }),
+    ]));
+  });
+
+  it("ignora members de outra fazenda ao resolver classes do grupo", async () => {
+    await db.catalog_sanitario_produtos_v2.bulkPut([
+      { id: "product-allowed", nome_comercial: "Antiparasitário", classe: "lactonas_macrociclicas", status_curatorial: "ativo", metadata: {}, deleted_at: null },
+      { id: "product-foreign-member", nome_comercial: "Vacina", classe: "vacina_raiva", status_curatorial: "ativo", metadata: {}, deleted_at: null },
+    ] as never);
+    await db.catalog_sanitario_product_classes_v2.bulkPut([
+      { id: "class-allowed", class_key: "lactonas_macrociclicas", scope: "global", fazenda_id: null, deleted_at: null },
+      { id: "class-foreign-member", class_key: "vacina_raiva", scope: "global", fazenda_id: null, deleted_at: null },
+    ] as never);
+    await db.catalog_sanitario_product_class_group_members_v2.bulkPut([
+      { id: "member-allowed", group_id: "group-1", class_id: "class-allowed", is_allowed: true, scope: "tenant", fazenda_id: "farm-1", deleted_at: null },
+      { id: "member-foreign", group_id: "group-1", class_id: "class-foreign-member", is_allowed: true, scope: "tenant", fazenda_id: "farm-2", deleted_at: null },
+    ] as never);
+    const result = await loadSanitaryAgendaExecutionOptionsV2([items[0]]);
+    expect(result.productOptions.map((entry) => entry.id)).toEqual(["product-allowed"]);
+  });
+
   it("lista registros sem expor identificadores técnicos e abre a origem", () => {
     renderPanel();
     expect(screen.getByText("Brucelose B19")).toBeInTheDocument();
@@ -258,7 +312,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Esta ação registra um evento sanitário executado.")).toBeInTheDocument();
-    expect(screen.getByText("Produto real, dose e via serão registrados como execução sanitária.")).toBeInTheDocument();
+    expect(screen.getByText("Registre somente uma aplicação já realizada, com produto real, dose e via.")).toBeInTheDocument();
     expect(screen.getByText(/Grupo técnico não define dose nem carência/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Confirmar execução" })).toBeDisabled();
 
@@ -287,6 +341,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
               unit: "dose",
             }),
             application: expect.objectContaining({ dose: 1, doseUnit: "dose", route: "subcutanea" }),
+            registrationMode: "executed_fact",
             confirmation: expect.objectContaining({ userConfirmedExecution: true }),
           }),
         ],

@@ -343,6 +343,40 @@ function eventHistory(
 }
 
 describe("precheckSanitaryProtocolsV2", () => {
+  it.each([null, "SC", "MG"])("considera UF no escopo B19 sem criar fato: %s", (uf) => {
+    const catalog: SanitaryProtocolCatalogReadModelV2 = {
+      protocols: [protocol("brucelose_b19", { metadata: { requires_uf_context: true, excluded_ufs: ["SC"] } })].map(adaptSanitaryProtocolV2Row),
+      items: [item(protocolId("brucelose_b19"), "b19_femeas_3_8_meses", {
+        eligibility_rule: { species: ["bovino"], sex: "femea", age_min_months: 3, age_max_months: 8 },
+      })].map(adaptSanitaryProtocolItemV2Row),
+      productClassGroups: [],
+    };
+    const result = resultByItem(catalog, { ...baseAnimal, uf }, "b19_femeas_3_8_meses");
+    expect(result.status).toBe(!uf ? "insufficient_data" : uf === "SC" ? "not_applicable" : "in_action_window");
+    expect(result.createsEvent).toBe(false);
+  });
+  it.each([null, "SC", "MG"])("mantém comprovação histórica B19 independente da UF atual: %s", (uf) => {
+    const catalog = buildCatalog();
+    const b19 = catalog.protocols.find((entry) => entry.familyCode === "brucelose_b19")!;
+    b19.metadata = { ...b19.metadata, requires_uf_context: true, excluded_ufs: ["SC"] };
+    const result = resultByItem(
+      catalog,
+      { ...baseAnimal, uf, nascimento: "2024-01-01" },
+      "b19_femeas_3_8_meses",
+      "2026-05-01",
+      eventHistory("brucelose_b19", "b19_femeas_3_8_meses", "2024-06-01", {
+        source: "external_documented", evidenceClass: "documented",
+        evidenceReference: "certificado-b19-2024", evidenceCoveredFields: ["protocol_item_completion"],
+      }),
+    );
+    expect(result.status).toBe("completed");
+    expect(result.documentaryPending).toBe(false);
+    expect(result.createsAgenda).toBe(false);
+    expect(result.createsEvent).toBe(false);
+    if (!uf) expect(result.warnings).toContain("UF ausente para verificar exceções e proibições regionais de B19.");
+    if (uf === "SC") expect(result.warnings).toContain("B19 não autorizada na UF conforme fonte oficial regional do catálogo.");
+  });
+
   it("B19 femea bovina 3-8 meses entra em janela sem criar operacao", () => {
     const result = resultByItem(
       buildCatalog(),
@@ -352,7 +386,7 @@ describe("precheckSanitaryProtocolsV2", () => {
 
     expect(result.status).toBe("in_action_window");
     expect(result.warnings).toContain(
-      "Exige MV habilitado, registro oficial e produto real na execução.",
+      "Exige MV cadastrado no SVE, registro oficial e produto real na execução.",
     );
     expect(result.createsAgenda).toBe(false);
     expect(result.createsEvent).toBe(false);

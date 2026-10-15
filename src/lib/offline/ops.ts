@@ -610,10 +610,14 @@ export async function retryRejectedOperation(rejection: Rejection) {
   if (!operation) {
     throw new Error("REJECTED_OPERATION_NOT_AVAILABLE");
   }
+  const isFactualCore = (op: Operation) =>
+    op.record.domain === "sanitario_v2" && op.record.command === "apply_factual_core";
+  const siblings = await db.queue_ops.where("client_tx_id").equals(operation.client_tx_id).toArray();
+  const factualRetry = siblings.some(isFactualCore);
 
   return db.transaction(
     "rw",
-    [db.queue_gestures, db.queue_ops, ...getAffectedStores([operation])],
+    [db.queue_gestures, db.queue_ops, ...(factualRetry ? [] : getAffectedStores([operation]))],
     async () => {
       const [currentOperation, gesture] = await Promise.all([
         db.queue_ops.get(operation.client_op_id),
@@ -639,13 +643,26 @@ export async function retryRejectedOperation(rejection: Rejection) {
         throw new Error("REJECTED_OPERATION_ALREADY_QUEUED");
       }
 
-      await reapplyOpLocal(currentOperation);
-      await db.queue_ops.update(currentOperation.client_op_id, {
+      // A rejected sanitary fact and its stock companion were never rolled back.
+      // Re-arm their original envelopes together; never reapply the local fact/stock.
+      const currentSiblings = factualRetry
+        ? await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).toArray()
+        : [currentOperation];
+      if (factualRetry && !currentSiblings.some(isFactualCore)) {
+        throw new Error("REJECTED_OPERATION_NOT_AVAILABLE");
+      }
+      const retryOps = currentSiblings.filter(op => op.sync_state === "REJECTED" &&
+        (!factualRetry || isFactualCore(op) ||
+          (op.table === "state_insumo_movimentacoes" && op.record.tipo === "consumo_sanitario")));
+      if (!factualRetry) await reapplyOpLocal(currentOperation);
+      for (const retryOp of factualRetry ? retryOps : [currentOperation]) {
+        await db.queue_ops.update(retryOp.client_op_id, {
         sync_state: "PENDING",
-        retry_count: (currentOperation.retry_count ?? 0) + 1,
+        retry_count: (retryOp.retry_count ?? 0) + 1,
         next_attempt_at: undefined,
         blocked_reason: undefined,
-      });
+        });
+      }
       await db.queue_gestures.update(gesture.client_tx_id, {
         status: "PENDING",
         sync_result: undefined,

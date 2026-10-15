@@ -1,0 +1,375 @@
+{
+  "run_id": "87ec2b8e-7769-453e-b738-7bd66c7f2d23",
+  "baseline": "dbcbee9c14d168b70b598bf46b922bee69017369",
+  "project": "sanitario-v2-review-ea70bd7c",
+  "target": "native Supabase, loopback ports 56321/56322, dedicated disposable project",
+  "cases": [
+    {
+      "name": "Edge authentication rejects missing and invalid JWT",
+      "result": "PASS",
+      "evidence": {
+        "missing_jwt": 401,
+        "invalid_jwt": 401
+      }
+    },
+    {
+      "name": "Outsider and cross-farm envelope are denied before execution",
+      "result": "PASS",
+      "evidence": {
+        "outsider": 403,
+        "cross_farm": 403
+      }
+    },
+    {
+      "name": "Disabled gate rejects repeated canonical factual requests without writes",
+      "result": "PASS",
+      "evidence": {
+        "repetitions": 3,
+        "reason": "SANITARIO_SYNC_DISABLED",
+        "new_events": 0,
+        "new_receipts": 0
+      }
+    },
+    {
+      "name": "SQL ACL blocks direct RPC; service executor also enforces disabled gate",
+      "result": "PASS",
+      "evidence": {
+        "anon": "42501",
+        "authenticated": "42501",
+        "service_role": "SANITARIO_SYNC_DISABLED"
+      }
+    },
+    {
+      "name": "Authenticated direct fact preserves retrospective data atomically",
+      "result": "PASS",
+      "evidence": {
+        "route": "synthetic direct fixture; not canonical v2 acceptance",
+        "event_and_detail_committed": true
+      }
+    },
+    {
+      "name": "Duplicate direct fact identity is rejected without duplicating history",
+      "result": "PASS",
+      "evidence": {
+        "direct_fixture_duplicate": 409,
+        "sqlstate": "23505",
+        "persisted_facts": 1,
+        "limitation": "Not canonical v2 replay certification"
+      }
+    },
+    {
+      "name": "Real PostgREST RLS isolates facts and denies cross-tenant writes",
+      "result": "PASS",
+      "evidence": {
+        "owner_rows": 1,
+        "member_rows": 1,
+        "outsider_rows": 0,
+        "foreign_insert": 403
+      }
+    },
+    {
+      "name": "Revocation denies a still-valid JWT without deleting factual history",
+      "result": "PASS",
+      "evidence": {
+        "revoked_member_rows": 0,
+        "revoked_member_sync": 403,
+        "owner_history_rows": 1
+      }
+    },
+    {
+      "name": "New login and independent database connection recover the same factual data",
+      "result": "PASS",
+      "evidence": {
+        "independent_login": true,
+        "independent_connection": true,
+        "dose_route_responsible_preserved": true,
+        "unknown_withdrawal_is_null": true
+      }
+    }
+  ],
+  "canonical_factual_acceptance": "BLOCKED_BY_NO_FLAG_ACTIVATION",
+  "limitations": [
+    "No successful canonical factual write/replay was attempted with gates enabled.",
+    "Recovery reads a separately prepared synthetic direct fact, not an accepted v2 command.",
+    "No physical mobile device or production/cloud target was exercised."
+  ],
+  "engine": "PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
+  "migrations": [
+    {
+      "file": "00000000000000_rebuild_base_schema_sanitario.sql",
+      "sha256": "d7364c017258a4d72b3e4d3688c1d7c7bef7fd199cf04882d812473c62af984d"
+    },
+    {
+      "file": "20260508003000_pasto_ocupacoes.sql",
+      "sha256": "aafb2effd99da90e35e92bf05b909e55d6e1f31047ffff0d1f807a91222a44a9"
+    },
+    {
+      "file": "20260508004000_pastos_forrageira_manejo.sql",
+      "sha256": "c399a0ead468ecfea089cfd8970522f40a6077d6eccd0e18805b0989e7110f7e"
+    },
+    {
+      "file": "20260508005000_eventos_pasto_avaliacao.sql",
+      "sha256": "95e81847ced161b26040ee5df09896d6caeb2f7b9e0ff51f397925867c3576b6"
+    },
+    {
+      "file": "20260511000000_sanitario_complete_agenda_idempotency.sql",
+      "sha256": "bc6ae02f2b4a22bf462590d457f15f5b62af668a97fddd36bff9387d3737387e"
+    },
+    {
+      "file": "20260514000000_fix_create_fazenda_primary_membership.sql",
+      "sha256": "04b8f6e64927cabed10e2709f7005b8a4600f92c3b887443079c7fcf28580cdc"
+    },
+    {
+      "file": "20260524000000_dry_cow_therapy_agenda_recompute.sql",
+      "sha256": "b4e09b50c1b7e343184032390d21c57ecc5d0b4a995700e6f49b79295fe875ab"
+    },
+    {
+      "file": "20260525000000_insumos_inventory.sql",
+      "sha256": "a949becd7476834f1a5efb1c64c73e32fc56795c6494b2345328cef6592595d8"
+    },
+    {
+      "file": "20260526000000_anti_zombie_agenda.sql",
+      "sha256": "7fcfc485a8aec67ab66f7918804b94ec1c8a485d35a8f1e965752edec8d2b7c3"
+    },
+    {
+      "file": "20260526000100_recompute_on_animal_mutation.sql",
+      "sha256": "75f384bb8c5f04d7cf48271c7d4353fba719dbf959dd815e58e4f5efafeb4b9c"
+    },
+    {
+      "file": "20260526000200_reconcile_support_rpcs.sql",
+      "sha256": "62e0ab2bbf4f61bcce7df52c3a12161d84b73d647e9bea870103d8967314ee17"
+    },
+    {
+      "file": "20260526000300_vw_animais_peso_atual.sql",
+      "sha256": "a6bd7917f1853ca997caa52dbaf822e422d5a46364b210ebf4e3952794d54d9d"
+    },
+    {
+      "file": "20260526000400_vw_animais_carencia_ativa.sql",
+      "sha256": "f3eded9c60811e1ba57bb30c9f35cb0cf26a81843c07e79bd2b585dee48a63db"
+    },
+    {
+      "file": "20260526000500_idx_sanitary_completion_key.sql",
+      "sha256": "fb16fd442d0438197fc8be459a1c570f8a0a8c67d175ff0d4d5b06b8c62b152c"
+    },
+    {
+      "file": "20260526000600_idx_eventos_unique_source_task.sql",
+      "sha256": "dd49674271212d9dc6bbc216402794d7de55209bcd2d9fdbfde2ee3ee1f8c6c4"
+    },
+    {
+      "file": "20260528000001_add_eventos_ecc.sql",
+      "sha256": "9c072cbedf62985f7e85a329b698e5223638817c0c946843ff1a743ad76ed91f"
+    },
+    {
+      "file": "20260529000000_insumos_campos_custo_carencia.sql",
+      "sha256": "7dd9bc1f5eca3476e64206f551c46c9fe0373c807157f55b8b5fb2917d98a980"
+    },
+    {
+      "file": "20260529000100_update_vw_animais_carencia_ativa.sql",
+      "sha256": "7390997cea0f908e60c24a211bb56b0d89c9447744a9cbf49ada47e903cdc72e"
+    },
+    {
+      "file": "20260529000200_financeiro_gerencial.sql",
+      "sha256": "dc0c54f83b8ed954da7c5f8312371932603b33b6d601900bb2370f9a4196366d"
+    },
+    {
+      "file": "20260529000300_comercial_operations.sql",
+      "sha256": "f2209f2be80c74d4a000b446e6b329283bf3a4d0836900c03d807390e7c1a7c2"
+    },
+    {
+      "file": "20260529000400_sociedade_pecuaria.sql",
+      "sha256": "bcd192162eb075db2d46c9546c112f7970ef2ef0cedba785566f512adb12b509"
+    },
+    {
+      "file": "20260530000000_sociedade_pecuaria_sync_metadata.sql",
+      "sha256": "841b66ae3336da53a2e5d317ab049d9ad6636d308912dd7484005f843a371efa"
+    },
+    {
+      "file": "20260530000100_sociedade_pecuaria_status_retirado.sql",
+      "sha256": "9fc04be06409d4b80d9f406d1ab443e1e76658c3a39b6f126de5f1654f32bd1b"
+    },
+    {
+      "file": "20260531000000_protocolos_sanitarios_itens_immutable_versions.sql",
+      "sha256": "bd944a6dd48fb90721268eac6fff4bd939753758a66fdb4901c922ea318c92cf"
+    },
+    {
+      "file": "20260531001000_protocolos_sanitarios_drop_legacy_protocol_item_id.sql",
+      "sha256": "00868f92568be3f5b476a8f95709812a486862697e160ff47c3ec8300ac03ecb"
+    },
+    {
+      "file": "20260531002000_eventos_sanitario_operational_traceability.sql",
+      "sha256": "26df354eafb79a0da9e34abd4327897bc6d5724d208165bff5cb822887fa1a34"
+    },
+    {
+      "file": "20260601000000_financeiro_estorno_categorias.sql",
+      "sha256": "b6d2fc3af427668c6f0f6abd4c8fae380fb5a50072d659e3f39dfbb07dda19c4"
+    },
+    {
+      "file": "20260604090000_insumo_movimentacoes_consumo_nutricao_idempotency.sql",
+      "sha256": "6a9bca040ecfe388b2b4566dd404dd8f39c025829f7d288d6b31e2e28351d126"
+    },
+    {
+      "file": "20260606090000_sanitario_agenda_v2_clean_foundation.sql",
+      "sha256": "acbf65b29d94a90011f379b83067bad68875add6d48e515f96d771b1a5ac5f1c"
+    },
+    {
+      "file": "20260608090000_sanitario_protocol_product_source_v2.sql",
+      "sha256": "bc56133aa5d2e9bbfbac93e9cb84299f1600f46e26b36582f872773ef2e173a1"
+    },
+    {
+      "file": "20260610203500_sanitario_product_class_v2.sql",
+      "sha256": "d5244d274d490c1a0c775995bca948f59b97752c88d485cc0fcfb39fc0a6feee"
+    },
+    {
+      "file": "20260615120000_sanitario_protocol_item_product_class_group_v2.sql",
+      "sha256": "60aeefa2bd0b0217cac1137000473c75e23d96eac687696b96de3ee24d95be0a"
+    },
+    {
+      "file": "20260722102038_sanitario_sync_v2_expand_foundation.sql",
+      "sha256": "d79727c06284d7a56dbbadba151187ef492c3777bd5a6a6cc7cdf4d9993181f7"
+    },
+    {
+      "file": "20260808120000_individual_animal_purchase_sync.sql",
+      "sha256": "05b34004f90839d8eacce7f1cfd245045571246ac98aeb39b5ff4e80df0ab3e8"
+    },
+    {
+      "file": "20260813134853_commercial_operation_v2.sql",
+      "sha256": "bbf0ede014dc37a5d0e51207fe7be0955d65bab49a535daf1d3c5ca056e8917b"
+    },
+    {
+      "file": "20260813152618_harden_individual_animal_purchase_grants.sql",
+      "sha256": "e14ea82fd3ed0abc56796cdcc57ae57d1a22acc742d22582e73339be38e558a1"
+    },
+    {
+      "file": "20260821000000_fix_pgcrypto_digest_search_path.sql",
+      "sha256": "0d5d32a4c2eefe807bcf4b3923521cf2326fe88848e4a142d28e21457b2c53e6"
+    },
+    {
+      "file": "20260824100000_app_superadmin_foundation.sql",
+      "sha256": "efd0238418938aa163e43902f7e63b31cf7f859ed88ca35b04cb5bebf161a24b"
+    },
+    {
+      "file": "20260824110000_app_superadmin_read_rpcs.sql",
+      "sha256": "b16d168f750c3bf5533ca5e6a5cefd6bf11baea06128ebdda523cc9a0b6bf0bc"
+    },
+    {
+      "file": "20260824120000_harden_admin_invites_rpc.sql",
+      "sha256": "3e2b95c2f8409639da1b0fb7144550671d3dff0bb709f28156ad420d2173e7d4"
+    },
+    {
+      "file": "20260825080000_app_superadmin_can_create_farm_mutation.sql",
+      "sha256": "7982f81f4d77147ff1ff0f66a774c215c7611049790da2e0a74ada5a28756c8e"
+    },
+    {
+      "file": "20260826230107_reconcile_authenticated_table_privileges.sql",
+      "sha256": "8ffe9ffc625151b75e4f3712de9db517fc4422c2a610856135470d1ffe78c0ff"
+    },
+    {
+      "file": "20260827100000_harden_internal_and_trigger_function_privileges.sql",
+      "sha256": "e1dbaec815faf78481893218e7859053d9e9b81cc3c92942ea037f7a9189e040"
+    },
+    {
+      "file": "20260827110000_harden_domain_and_farm_admin_rpc_privileges.sql",
+      "sha256": "f16a448a6c84ac6a40039e08c4cd4a0ba708a4c6587fd36ded68a9744748856b"
+    },
+    {
+      "file": "20260827120000_harden_get_user_emails_rpc.sql",
+      "sha256": "87a9e216e9e4c52079895079e32f47da518fd019e68fa27a037bd1f31d2269c7"
+    },
+    {
+      "file": "20260829193636_c2_search_path_hardening.sql",
+      "sha256": "803e64df2c5ba99c00923f1959fd4b4ca9a88f62d482428f1099e310b75f3ee8"
+    },
+    {
+      "file": "20260908050000_c3_auth_rls_initplan_hardening.sql",
+      "sha256": "6b5001613ad43e98015621aca6c562ca32ca9b93e9842c7c5d9713d2f0572895"
+    },
+    {
+      "file": "20260908060000_c4_1a_exact_permissive_cleanup.sql",
+      "sha256": "f1f35c5554f8e19fd8af6c89c63fde83580b78f6106dc0de288023587478ce86"
+    },
+    {
+      "file": "20260908070000_c4_1b_subsumed_operational_cleanup.sql",
+      "sha256": "b8c04ffc452c06e0517ba6d9a4b91d4fccdce7bbd6c9c0cd5c21daea80664bf8"
+    },
+    {
+      "file": "20260913232253_f24_acl_forward_only_reconciliation.sql",
+      "sha256": "43d4f6b3ef1c4d72ac2ac65549709e6f41fadb7d7494006b1776566ad3d1ab33"
+    },
+    {
+      "file": "20260914014309_f24_1a1_sanitario_reconcile_backend_wrapper.sql",
+      "sha256": "d1238d854d6e53a2130b33f3c373335f70d0c6afa17d761ea98b065e6e39fe12"
+    },
+    {
+      "file": "20260923132000_sanitario_source_key_identity.sql",
+      "sha256": "57b47a920fdd8edf4753b72e582fac26a95895885bfb499b988dd3866a8009d8"
+    },
+    {
+      "file": "20260927120000_f24_4c_animais_state_revision.sql",
+      "sha256": "ce66713c4c3e5f4abb72b9dfeeb52c7a3d0c36b0e3e17cb96c0030c6e74a9caa"
+    },
+    {
+      "file": "20261001200402_f24_4e21a_animal_lot_movement_foundation.sql",
+      "sha256": "7ce21e1c68dee6ab1a4d39f57184f20ab6bb0b9640e4df534f6dd9389f022ab7"
+    },
+    {
+      "file": "20261002005751_f24_4e211a_server_completion_gate.sql",
+      "sha256": "d5b9e6fc2bbe06b69947077f1799ad7d50875ab171b6371fbddd6a9792efc174"
+    },
+    {
+      "file": "20261003120000_f24_4e2_close_generic_animal_lot_fact_boundary.sql",
+      "sha256": "724f7e8d67d674e75cde203452b728a4b9b51c0f65d9da9249d4288db856b635"
+    },
+    {
+      "file": "20261004210000_sanitario_sync_v2_revision_conflict_pt409.sql",
+      "sha256": "6bf645860785678b9543df8a877c7ec2cd49f299acfd9a56e21b5893c4dfccfe"
+    },
+    {
+      "file": "20261005175412_f24_4e_lot_pasture_subject_boundary.sql",
+      "sha256": "253562a0b6c1cfc77924f8dda86444b4a169a09ad94f727345b88655792478a7"
+    },
+    {
+      "file": "20261008202000_f24_5e3_remote_telemetry_retention.sql",
+      "sha256": "0fc59fae328862b98e66f25126a40e8dde06df6581de31eec88679fd90e5e2db"
+    },
+    {
+      "file": "20261008202024_f24_5e3_remote_telemetry_retention_cron.sql",
+      "sha256": "fd8ca0ceca2d6c1fd70abe2a8a9b0d7e383f9eb0bb4b78364953f4eb66a5aacc"
+    }
+  ],
+  "sources": [
+    {
+      "file": "supabase/functions/sync-batch/index.ts",
+      "sha256": "21d0c8d92db63dd7976da0b5ff98a47df1f8b72b209a978ecad84d68aa1e1de5"
+    },
+    {
+      "file": "supabase/functions/sync-batch/sanitario-v2.ts",
+      "sha256": "e8690e30d7163245a7e35c4910b570e6035aad54186ee4be33c209bb7a9898ae"
+    },
+    {
+      "file": "supabase/functions/sync-batch/sanitary-product-evidence.ts",
+      "sha256": "dea4d3d6353fc9191a9552df91a10d2dd1d2010c52bdd9f5e8925382e039da13"
+    },
+    {
+      "file": "src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts",
+      "sha256": "adf11505c958e0895a90c0a75f6f78aa72fa07b7b23f58fabb030a5b1988e773"
+    },
+    {
+      "file": "tests/codex/sanitario-v2-remote-factual.integration.mjs",
+      "sha256": "9af28db5de1ef6d6e9d72d75044c31b2909458ec4d70998e5396badc4e612a24"
+    }
+  ],
+  "gates_unchanged": true,
+  "fixtures": {
+    "farms": [
+      "c07ee820-bcda-4268-8639-4beda523ca15",
+      "256b4bb2-aa6d-470a-8656-70cf4d5ff1ee"
+    ],
+    "users": [
+      "6539eeb1-f26d-4d7a-97b6-a2d574478a85",
+      "c3b04457-b8d0-4000-866c-073973bd9b35",
+      "48330991-a319-431e-849b-422c4b25e00d"
+    ],
+    "direct_fact_id": "04579db2-1297-41f9-af78-567144039af3"
+  },
+  "status": "NEGATIVE_BOUNDARIES_AND_DIRECT_RECOVERY_VERIFIED_CANONICAL_ACCEPTANCE_BLOCKED"
+}

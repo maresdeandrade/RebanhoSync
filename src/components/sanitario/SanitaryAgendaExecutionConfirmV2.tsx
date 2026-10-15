@@ -20,7 +20,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { db } from "@/lib/offline/db";
-import type { Insumo, InsumoLote, SanitarioProdutoLocalV2 } from "@/lib/offline/types";
+import type {
+  Insumo, InsumoLote, SanitarioProdutoLocalV2,
+  SanitarioProductClassLocalV2, SanitarioProductClassGroupMemberLocalV2,
+} from "@/lib/offline/types";
 import {
   formatSanitaryProductClassLabelV2,
   type SanitaryLocalAgendaListItemV2,
@@ -166,26 +169,53 @@ function compatibleSupplyByFallback(supply: Insumo, item: SanitaryLocalAgendaLis
   return item.productRequirementKind === "product_class_group" && text.includes("sanitario");
 }
 
+function classScopeAvailable(entry: { scope: string; fazenda_id: string | null }, fazendaId: string | null) {
+  return (entry.scope === "global" && entry.fazenda_id === null) ||
+    (entry.scope === "tenant" && entry.fazenda_id === fazendaId);
+}
+
+function resolveClassKeysByGroup(
+  productClasses: SanitarioProductClassLocalV2[],
+  groupMembers: SanitarioProductClassGroupMemberLocalV2[],
+  fazendaId: string | null,
+) {
+  const classesByGroup = new Map<string, Set<string>>();
+  const classKeysById = new Map(productClasses
+    .filter((entry) => !entry.deleted_at && classScopeAvailable(entry, fazendaId))
+    .map((entry) => [entry.id, entry.class_key]));
+  const unresolvedGroups = new Set<string>();
+  for (const member of groupMembers) {
+    if (member.deleted_at || !member.is_allowed) continue;
+    if (!classScopeAvailable(member, fazendaId)) continue;
+    const classKey = classKeysById.get(member.class_id);
+    if (!classKey) {
+      unresolvedGroups.add(member.group_id);
+      continue;
+    }
+    const current = classesByGroup.get(member.group_id) ?? new Set<string>();
+    current.add(classKey);
+    classesByGroup.set(member.group_id, current);
+  }
+  // Partial pull is not proof of incompatibility in an already performed fact.
+  for (const groupId of unresolvedGroups) classesByGroup.delete(groupId);
+  return classesByGroup;
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 export async function loadSanitaryAgendaExecutionOptionsV2(
   items: SanitaryLocalAgendaListItemV2[],
 ) {
   const fazendaId = items[0]?.fazendaId ?? null;
-  const [products, groupMembers, supplies, lots] = await Promise.all([
+  const [products, groupMembers, supplies, lots, productClasses] = await Promise.all([
     db.catalog_sanitario_produtos_v2.toArray(),
     db.catalog_sanitario_product_class_group_members_v2.toArray(),
     fazendaId ? db.state_insumos.where("fazenda_id").equals(fazendaId).toArray() : [],
     fazendaId ? db.state_insumo_lotes.where("fazenda_id").equals(fazendaId).toArray() : [],
+    db.catalog_sanitario_product_classes_v2.toArray(),
   ]);
-  const classesByGroup = new Map<string, Set<string>>();
-  for (const member of groupMembers) {
-    if (member.deleted_at || !member.is_allowed) continue;
-    const current = classesByGroup.get(member.group_id) ?? new Set<string>();
-    current.add(member.class_id);
-    classesByGroup.set(member.group_id, current);
-  }
+  const classesByGroup = resolveClassKeysByGroup(productClasses, groupMembers, fazendaId);
   const catalogProductOptions = products
-    .filter((product) => !product.deleted_at && product.status_curatorial === "ativo")
+    .filter((product) => !product.deleted_at)
     .filter((product) => items.every((item) => compatibleProduct(product, item, classesByGroup)))
     .map((product) => ({
       id: product.id,
@@ -194,7 +224,8 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
       productClass: product.classe ?? null,
       source: "catalog_product" as const,
       weakTechnicalLink: false,
-      warning: null,
+      warning: product.status_curatorial === "ativo" ? null
+        : "Produto com conferência técnica pendente ou restrição no catálogo. Registre somente uma aplicação já realizada; este registro não autoriza nova aplicação nem comprova carência.",
     }));
   const existingOptionIds = new Set(catalogProductOptions.map((product) => product.id));
   const supplyOptions = supplies
@@ -426,6 +457,7 @@ export function SanitaryAgendaExecutionConfirmV2({
         agendaId: entry.id,
         clientOpId: `${batchClientOpId}:${index + 1}:${entry.id}`,
         executedAt,
+        registrationMode: "executed_fact" as const,
         responsibleName: responsibleName.trim() || undefined,
         notes: notes.trim() || undefined,
         product: selectedProduct
@@ -496,7 +528,8 @@ export function SanitaryAgendaExecutionConfirmV2({
             </section>
 
             <div className="grid gap-3 rounded-lg border border-border p-3 text-sm text-muted-foreground">
-              <p>Produto real, dose e via serão registrados como execução sanitária.</p>
+              <p>Registre somente uma aplicação já realizada, com produto real, dose e via.</p>
+              <p>Registrar o fato não autoriza nova aplicação nem comprova regularidade ou carência.</p>
               <p>Agenda deixará de ser apenas intenção futura.</p>
               <p>Estoque e carência só serão gerados quando houver dados e regra explícita.</p>
               {productClassGroupWarning ? (

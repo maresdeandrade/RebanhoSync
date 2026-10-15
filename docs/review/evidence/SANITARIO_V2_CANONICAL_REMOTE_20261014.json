@@ -1,0 +1,3186 @@
+{
+  "baseline": "dbcbee9c14d168b70b598bf46b922bee69017369",
+  "observed_main": "1fc5b24b631cb63e53355259717f7f64c76f2da7",
+  "environment": "isolated native Supabase + real Chromium IndexedDB; no operational data",
+  "cases": [
+    {
+      "code": "C1",
+      "result": "PASS",
+      "evidence": {
+        "remote": {
+          "events": 1,
+          "details": 1,
+          "animals": 1,
+          "movements": 1,
+          "balance": "98.000",
+          "revision": "1",
+          "legacy_event_id": null,
+          "event_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+          "executed_targets": 1
+        },
+        "local": {
+          "event": true,
+          "detail": true,
+          "agenda": {
+            "id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+            "fazenda_id": "5140cc90-c707-4505-8817-37cefe1cf037",
+            "status": "fechada",
+            "dedup_key": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+            "client_id": "canonical-cert",
+            "client_op_id": "e7511fcc-b906-4d4a-a190-54f2f582465a",
+            "client_tx_id": "d0456212-f16d-4a5d-afc9-d9e31932fda7",
+            "client_recorded_at": "2026-10-15T09:09:30.722+00:00",
+            "server_received_at": "2026-10-15T09:09:30.811753+00:00",
+            "source_demand_key": null,
+            "preview_group_id": null,
+            "protocolo_id": "33c1d67b-7595-455d-87cd-caa014cd27a4",
+            "protocol_item_version_id": "fe69ea5b-f53a-4554-a95d-4fb73ba79930",
+            "protocol_item_snapshot": {
+              "itemKey": "synthetic_dose",
+              "version": 1,
+              "actionType": "vacinacao",
+              "productClass": "vacina_teste",
+              "productRequirementKind": "product_class"
+            },
+            "janela_inicio": "2026-10-15",
+            "janela_fim": null,
+            "data_programada": "2026-10-15",
+            "lote_id": null,
+            "produto_veterinario_id": null,
+            "produto_snapshot": {},
+            "produto_classe": "vacina_teste",
+            "acao_sanitaria": "vacinacao",
+            "execution_evento_id": null,
+            "metadata": {
+              "itemKey": "synthetic_dose",
+              "targetAnimalIds": [
+                "46dbca71-7d3a-4572-9455-7c44943dbb51"
+              ],
+              "productRequirementKind": "product_class"
+            },
+            "created_at": "2026-10-15T09:09:30.811753+00:00",
+            "updated_at": "2026-10-15T09:09:31.137531+00:00",
+            "deleted_at": null,
+            "revision": 1,
+            "contract_version": 2,
+            "domain_op_id": "45b5c8c0-a469-4e5b-a832-f2e758048a7e",
+            "catalog_protocolo_v2_id": "33c1d67b-7595-455d-87cd-caa014cd27a4",
+            "catalog_protocol_item_version_v2_id": "fe69ea5b-f53a-4554-a95d-4fb73ba79930"
+          },
+          "gesture": {
+            "client_tx_id": "b1184b2d-f83f-4fe0-9b27-d3fd486d1a96",
+            "fazenda_id": "5140cc90-c707-4505-8817-37cefe1cf037",
+            "client_id": "canonical-cert",
+            "status": "DONE",
+            "created_at": "2026-10-15T09:09:31.032Z",
+            "diagnostics": {
+              "last_attempt_started_at": "2026-10-15T09:09:31.061Z",
+              "result_received_at": "2026-10-15T09:09:31.171Z",
+              "ack_installed_at": "2026-10-15T09:09:31.177Z",
+              "client_op_ids": [
+                "38b90178-4932-45e8-9e07-70021b3945bc",
+                "a040655d-4f86-4ceb-9c87-630edbccb088"
+              ],
+              "reconciliation": [
+                {
+                  "key": "5140cc90-c707-4505-8817-37cefe1cf037:sanitario-v2",
+                  "scope": "sanitario-v2",
+                  "generation_id": "6d8bcdab-824c-42dc-8da9-f4616b781ebe",
+                  "required_at": "2026-10-15T09:09:31.177Z"
+                }
+              ]
+            },
+            "sync_result": "APPLIED",
+            "completed_at": "2026-10-15T09:09:31.173Z",
+            "operation_results": [
+              {
+                "op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+                "client_op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+                "domain_op_id": "f57d2bee-8377-47d3-b88b-0471ed7d882e",
+                "status": "APPLIED",
+                "canonical_entity_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+                "current_revision": 1,
+                "canonical_status": "fechada",
+                "retryable": false,
+                "canonical_result": {
+                  "replayed": false,
+                  "revision": 1,
+                  "agenda_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+                  "evento_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+                  "animal_ids": [
+                    "46dbca71-7d3a-4572-9455-7c44943dbb51"
+                  ],
+                  "agenda_status": "fechada"
+                },
+                "matched": true,
+                "recorded_at": "2026-10-15T09:09:31.173Z",
+                "command": "apply_factual_core"
+              }
+            ]
+          },
+          "ops": 0,
+          "balance": 98
+        },
+        "transport": [
+          {
+            "status": 200,
+            "results": [
+              {
+                "op_id": "e7511fcc-b906-4d4a-a190-54f2f582465a",
+                "client_op_id": "e7511fcc-b906-4d4a-a190-54f2f582465a",
+                "domain_op_id": "45b5c8c0-a469-4e5b-a832-f2e758048a7e",
+                "status": "APPLIED",
+                "canonical_entity_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+                "current_revision": 0,
+                "canonical_status": "programada",
+                "retryable": false,
+                "canonical_result": {
+                  "status": "programada",
+                  "replayed": false,
+                  "revision": 0,
+                  "agenda_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+                  "animal_ids": [
+                    "46dbca71-7d3a-4572-9455-7c44943dbb51"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "status": 200,
+            "results": [
+              {
+                "op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+                "client_op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+                "domain_op_id": "f57d2bee-8377-47d3-b88b-0471ed7d882e",
+                "status": "APPLIED",
+                "canonical_entity_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+                "current_revision": 1,
+                "canonical_status": "fechada",
+                "retryable": false,
+                "canonical_result": {
+                  "replayed": false,
+                  "revision": 1,
+                  "agenda_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+                  "evento_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+                  "animal_ids": [
+                    "46dbca71-7d3a-4572-9455-7c44943dbb51"
+                  ],
+                  "agenda_status": "fechada"
+                }
+              },
+              {
+                "op_id": "a040655d-4f86-4ceb-9c87-630edbccb088",
+                "status": "APPLIED"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "code": "C2",
+      "result": "PASS",
+      "evidence": {
+        "remote": {
+          "events": 1,
+          "details": 1,
+          "animals": 1,
+          "movements": 1,
+          "balance": "98.000",
+          "revision": "1",
+          "legacy_event_id": null,
+          "event_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+          "executed_targets": 1
+        },
+        "local": {
+          "event": true,
+          "detail": true,
+          "agenda": {
+            "id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+            "fazenda_id": "5140cc90-c707-4505-8817-37cefe1cf037",
+            "status": "fechada",
+            "dedup_key": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+            "client_id": "canonical-cert",
+            "client_op_id": "e7511fcc-b906-4d4a-a190-54f2f582465a",
+            "client_tx_id": "d0456212-f16d-4a5d-afc9-d9e31932fda7",
+            "client_recorded_at": "2026-10-15T09:09:30.722+00:00",
+            "server_received_at": "2026-10-15T09:09:30.811753+00:00",
+            "source_demand_key": null,
+            "preview_group_id": null,
+            "protocolo_id": "33c1d67b-7595-455d-87cd-caa014cd27a4",
+            "protocol_item_version_id": "fe69ea5b-f53a-4554-a95d-4fb73ba79930",
+            "protocol_item_snapshot": {
+              "itemKey": "synthetic_dose",
+              "version": 1,
+              "actionType": "vacinacao",
+              "productClass": "vacina_teste",
+              "productRequirementKind": "product_class"
+            },
+            "janela_inicio": "2026-10-15",
+            "janela_fim": null,
+            "data_programada": "2026-10-15",
+            "lote_id": null,
+            "produto_veterinario_id": null,
+            "produto_snapshot": {},
+            "produto_classe": "vacina_teste",
+            "acao_sanitaria": "vacinacao",
+            "execution_evento_id": null,
+            "metadata": {
+              "itemKey": "synthetic_dose",
+              "targetAnimalIds": [
+                "46dbca71-7d3a-4572-9455-7c44943dbb51"
+              ],
+              "productRequirementKind": "product_class"
+            },
+            "created_at": "2026-10-15T09:09:30.811753+00:00",
+            "updated_at": "2026-10-15T09:09:31.137531+00:00",
+            "deleted_at": null,
+            "revision": 1,
+            "contract_version": 2,
+            "domain_op_id": "45b5c8c0-a469-4e5b-a832-f2e758048a7e",
+            "catalog_protocolo_v2_id": "33c1d67b-7595-455d-87cd-caa014cd27a4",
+            "catalog_protocol_item_version_v2_id": "fe69ea5b-f53a-4554-a95d-4fb73ba79930"
+          },
+          "gesture": {
+            "client_tx_id": "b1184b2d-f83f-4fe0-9b27-d3fd486d1a96",
+            "fazenda_id": "5140cc90-c707-4505-8817-37cefe1cf037",
+            "client_id": "canonical-cert",
+            "status": "DONE",
+            "created_at": "2026-10-15T09:09:31.032Z",
+            "diagnostics": {
+              "last_attempt_started_at": "2026-10-15T09:09:31.322Z",
+              "result_received_at": "2026-10-15T09:09:31.407Z",
+              "ack_installed_at": "2026-10-15T09:09:31.415Z",
+              "client_op_ids": [
+                "38b90178-4932-45e8-9e07-70021b3945bc",
+                "a040655d-4f86-4ceb-9c87-630edbccb088"
+              ],
+              "reconciliation": [
+                {
+                  "key": "5140cc90-c707-4505-8817-37cefe1cf037:sanitario-v2",
+                  "scope": "sanitario-v2",
+                  "generation_id": "aded491b-98ac-4c03-bcc8-e0611b4b06a8",
+                  "required_at": "2026-10-15T09:09:31.415Z"
+                }
+              ]
+            },
+            "sync_result": "APPLIED",
+            "completed_at": "2026-10-15T09:09:31.410Z",
+            "operation_results": [
+              {
+                "op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+                "client_op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+                "domain_op_id": "f57d2bee-8377-47d3-b88b-0471ed7d882e",
+                "status": "APPLIED",
+                "canonical_entity_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+                "current_revision": 1,
+                "canonical_status": "fechada",
+                "retryable": false,
+                "canonical_result": {
+                  "replayed": false,
+                  "revision": 1,
+                  "agenda_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+                  "evento_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+                  "animal_ids": [
+                    "46dbca71-7d3a-4572-9455-7c44943dbb51"
+                  ],
+                  "agenda_status": "fechada"
+                },
+                "matched": true,
+                "recorded_at": "2026-10-15T09:09:31.410Z",
+                "command": "apply_factual_core"
+              }
+            ]
+          },
+          "ops": 0,
+          "balance": 98
+        },
+        "injection": "pre-ACK durable checkpoint restored; identical operation identities"
+      }
+    },
+    {
+      "code": "C3",
+      "result": "PASS",
+      "evidence": {
+        "remote_response_without_local_ack": [
+          {
+            "op_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+            "client_op_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+            "domain_op_id": "a7a91478-d6b4-445f-852e-23497eab9b5e",
+            "status": "APPLIED",
+            "canonical_entity_id": "370ee5cb-4c52-4211-994a-447b32d7ca0f",
+            "current_revision": 1,
+            "canonical_status": "fechada",
+            "retryable": false,
+            "canonical_result": {
+              "replayed": false,
+              "revision": 1,
+              "agenda_id": "370ee5cb-4c52-4211-994a-447b32d7ca0f",
+              "evento_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+              "animal_ids": [
+                "0704bba1-9fa8-46cd-a48b-a44a1174f357"
+              ],
+              "agenda_status": "fechada"
+            }
+          },
+          {
+            "op_id": "8e4ed5da-f464-4ba4-a970-46b8f7438fc5",
+            "status": "APPLIED"
+          }
+        ],
+        "interrupted": {
+          "client_tx_id": "d90e1f95-697c-4e69-adce-6591b3ae5920",
+          "fazenda_id": "ba70d5bc-3f4b-4e86-a778-476af2a355b3",
+          "client_id": "canonical-cert",
+          "status": "PENDING",
+          "created_at": "2026-10-15T09:09:32.000Z",
+          "diagnostics": {
+            "last_attempt_started_at": "2026-10-15T09:09:32.021Z",
+            "client_op_ids": [
+              "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+              "8e4ed5da-f464-4ba4-a970-46b8f7438fc5"
+            ],
+            "last_failure": {
+              "code": "NETWORK_FAILURE",
+              "cause_code": "NETWORK_FAILURE",
+              "observed_at": "2026-10-15T09:09:32.150Z",
+              "retry_count": 1
+            }
+          },
+          "retry_count": 1,
+          "next_attempt_at": "2026-10-15T09:09:36.795Z",
+          "last_error": "Failed to fetch"
+        },
+        "before_retry": {
+          "events": 1,
+          "details": 1,
+          "animals": 1,
+          "movements": 1,
+          "balance": "98.000",
+          "revision": "1",
+          "legacy_event_id": null,
+          "event_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+          "executed_targets": 1
+        },
+        "final": {
+          "remote": {
+            "events": 1,
+            "details": 1,
+            "animals": 1,
+            "movements": 1,
+            "balance": "98.000",
+            "revision": "1",
+            "legacy_event_id": null,
+            "event_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+            "executed_targets": 1
+          },
+          "local": {
+            "event": true,
+            "detail": true,
+            "agenda": {
+              "id": "370ee5cb-4c52-4211-994a-447b32d7ca0f",
+              "fazenda_id": "ba70d5bc-3f4b-4e86-a778-476af2a355b3",
+              "status": "fechada",
+              "dedup_key": "370ee5cb-4c52-4211-994a-447b32d7ca0f",
+              "client_id": "canonical-cert",
+              "client_op_id": "93c2803e-ec06-4452-824c-fcabcdef723b",
+              "client_tx_id": "69de9448-ff2c-49ff-ac3a-66f61c75670e",
+              "client_recorded_at": "2026-10-15T09:09:31.703+00:00",
+              "server_received_at": "2026-10-15T09:09:31.777353+00:00",
+              "source_demand_key": null,
+              "preview_group_id": null,
+              "protocolo_id": "68447301-a815-4ff6-a409-90a49ce118b3",
+              "protocol_item_version_id": "b43fec46-5d15-47da-aa53-d15011c6baaf",
+              "protocol_item_snapshot": {
+                "itemKey": "synthetic_dose",
+                "version": 1,
+                "actionType": "vacinacao",
+                "productClass": "vacina_teste",
+                "productRequirementKind": "product_class"
+              },
+              "janela_inicio": "2026-10-15",
+              "janela_fim": null,
+              "data_programada": "2026-10-15",
+              "lote_id": null,
+              "produto_veterinario_id": null,
+              "produto_snapshot": {},
+              "produto_classe": "vacina_teste",
+              "acao_sanitaria": "vacinacao",
+              "execution_evento_id": null,
+              "metadata": {
+                "itemKey": "synthetic_dose",
+                "targetAnimalIds": [
+                  "0704bba1-9fa8-46cd-a48b-a44a1174f357"
+                ],
+                "productRequirementKind": "product_class"
+              },
+              "created_at": "2026-10-15T09:09:31.777353+00:00",
+              "updated_at": "2026-10-15T09:09:32.108282+00:00",
+              "deleted_at": null,
+              "revision": 1,
+              "contract_version": 2,
+              "domain_op_id": "e1cd20d2-bc4d-4c9e-a055-4354aa1a4cd1",
+              "catalog_protocolo_v2_id": "68447301-a815-4ff6-a409-90a49ce118b3",
+              "catalog_protocol_item_version_v2_id": "b43fec46-5d15-47da-aa53-d15011c6baaf"
+            },
+            "gesture": {
+              "client_tx_id": "d90e1f95-697c-4e69-adce-6591b3ae5920",
+              "fazenda_id": "ba70d5bc-3f4b-4e86-a778-476af2a355b3",
+              "client_id": "canonical-cert",
+              "status": "DONE",
+              "created_at": "2026-10-15T09:09:32.000Z",
+              "diagnostics": {
+                "last_attempt_started_at": "2026-10-15T09:09:36.902Z",
+                "result_received_at": "2026-10-15T09:09:37.035Z",
+                "ack_installed_at": "2026-10-15T09:09:37.045Z",
+                "client_op_ids": [
+                  "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+                  "8e4ed5da-f464-4ba4-a970-46b8f7438fc5"
+                ],
+                "last_failure": {
+                  "code": "NETWORK_FAILURE",
+                  "cause_code": "NETWORK_FAILURE",
+                  "observed_at": "2026-10-15T09:09:32.150Z",
+                  "retry_count": 1
+                },
+                "reconciliation": [
+                  {
+                    "key": "ba70d5bc-3f4b-4e86-a778-476af2a355b3:sanitario-v2",
+                    "scope": "sanitario-v2",
+                    "generation_id": "169912fa-2d27-475e-90b0-a29612c7a8e8",
+                    "required_at": "2026-10-15T09:09:37.045Z"
+                  }
+                ]
+              },
+              "retry_count": 1,
+              "sync_result": "APPLIED",
+              "completed_at": "2026-10-15T09:09:37.038Z",
+              "operation_results": [
+                {
+                  "op_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+                  "client_op_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+                  "domain_op_id": "a7a91478-d6b4-445f-852e-23497eab9b5e",
+                  "status": "APPLIED",
+                  "canonical_entity_id": "370ee5cb-4c52-4211-994a-447b32d7ca0f",
+                  "current_revision": 1,
+                  "canonical_status": "fechada",
+                  "retryable": false,
+                  "canonical_result": {
+                    "replayed": false,
+                    "revision": 1,
+                    "agenda_id": "370ee5cb-4c52-4211-994a-447b32d7ca0f",
+                    "evento_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+                    "animal_ids": [
+                      "0704bba1-9fa8-46cd-a48b-a44a1174f357"
+                    ],
+                    "agenda_status": "fechada"
+                  },
+                  "matched": true,
+                  "recorded_at": "2026-10-15T09:09:37.038Z",
+                  "command": "apply_factual_core"
+                }
+              ]
+            },
+            "ops": 0,
+            "balance": 98
+          }
+        }
+      }
+    },
+    {
+      "code": "C4",
+      "result": "PASS",
+      "evidence": {
+        "timeout": {
+          "client_tx_id": "9cff39de-cea5-4e78-88e6-e04a1b179a4e",
+          "fazenda_id": "f9aad1c2-160b-4886-b1f5-0e512273761f",
+          "client_id": "canonical-cert",
+          "status": "PENDING",
+          "created_at": "2026-10-15T09:09:37.606Z",
+          "diagnostics": {
+            "last_attempt_started_at": "2026-10-15T09:09:37.634Z",
+            "client_op_ids": [
+              "6d7575ae-ba28-4824-82a5-73f2ff821528",
+              "cb326140-da9a-42d5-8c2e-7d2157146db5"
+            ],
+            "last_failure": {
+              "code": "REQUEST_ABORTED",
+              "cause_code": "REQUEST_ABORTED",
+              "observed_at": "2026-10-15T09:09:42.662Z",
+              "retry_count": 1
+            }
+          },
+          "retry_count": 1,
+          "next_attempt_at": "2026-10-15T09:09:46.842Z",
+          "last_error": "signal is aborted without reason"
+        },
+        "before_renderer_crash": {
+          "client_tx_id": "9cff39de-cea5-4e78-88e6-e04a1b179a4e",
+          "fazenda_id": "f9aad1c2-160b-4886-b1f5-0e512273761f",
+          "client_id": "canonical-cert",
+          "status": "SYNCING",
+          "created_at": "2026-10-15T09:09:37.606Z",
+          "diagnostics": {
+            "last_attempt_started_at": "2026-10-15T09:09:46.950Z",
+            "client_op_ids": [
+              "6d7575ae-ba28-4824-82a5-73f2ff821528",
+              "cb326140-da9a-42d5-8c2e-7d2157146db5"
+            ],
+            "last_failure": {
+              "code": "REQUEST_ABORTED",
+              "cause_code": "REQUEST_ABORTED",
+              "observed_at": "2026-10-15T09:09:42.662Z",
+              "retry_count": 1
+            }
+          },
+          "retry_count": 1,
+          "last_error": "signal is aborted without reason"
+        },
+        "recovered": 1,
+        "final": {
+          "remote": {
+            "events": 1,
+            "details": 1,
+            "animals": 1,
+            "movements": 1,
+            "balance": "98.000",
+            "revision": "1",
+            "legacy_event_id": null,
+            "event_id": "cb326140-da9a-42d5-8c2e-7d2157146db5",
+            "executed_targets": 1
+          },
+          "local": {
+            "event": true,
+            "detail": true,
+            "agenda": {
+              "id": "f39b9c84-6b6d-4805-89c9-c5c41d7d4acb",
+              "fazenda_id": "f9aad1c2-160b-4886-b1f5-0e512273761f",
+              "status": "fechada",
+              "dedup_key": "f39b9c84-6b6d-4805-89c9-c5c41d7d4acb",
+              "client_id": "canonical-cert",
+              "client_op_id": "e0bb4492-1ff8-4464-827a-cf347cee0190",
+              "client_tx_id": "ffdcc7a5-2dee-45f2-a630-c2cd713cba62",
+              "client_recorded_at": "2026-10-15T09:09:37.313+00:00",
+              "server_received_at": "2026-10-15T09:09:37.394033+00:00",
+              "source_demand_key": null,
+              "preview_group_id": null,
+              "protocolo_id": "8a1f4557-0019-4a0f-b4a4-c21e1a7041f7",
+              "protocol_item_version_id": "59938fe3-96cc-417e-ae4b-273a2be2552e",
+              "protocol_item_snapshot": {
+                "itemKey": "synthetic_dose",
+                "version": 1,
+                "actionType": "vacinacao",
+                "productClass": "vacina_teste",
+                "productRequirementKind": "product_class"
+              },
+              "janela_inicio": "2026-10-15",
+              "janela_fim": null,
+              "data_programada": "2026-10-15",
+              "lote_id": null,
+              "produto_veterinario_id": null,
+              "produto_snapshot": {},
+              "produto_classe": "vacina_teste",
+              "acao_sanitaria": "vacinacao",
+              "execution_evento_id": null,
+              "metadata": {
+                "itemKey": "synthetic_dose",
+                "targetAnimalIds": [
+                  "ddd4a9ff-f973-4ec8-8ce0-247eaaf4f4e6"
+                ],
+                "productRequirementKind": "product_class"
+              },
+              "created_at": "2026-10-15T09:09:37.394033+00:00",
+              "updated_at": "2026-10-15T09:09:47.88205+00:00",
+              "deleted_at": null,
+              "revision": 1,
+              "contract_version": 2,
+              "domain_op_id": "a3d4ca38-ec70-4450-8422-881cfbe1e174",
+              "catalog_protocolo_v2_id": "8a1f4557-0019-4a0f-b4a4-c21e1a7041f7",
+              "catalog_protocol_item_version_v2_id": "59938fe3-96cc-417e-ae4b-273a2be2552e"
+            },
+            "gesture": {
+              "client_tx_id": "9cff39de-cea5-4e78-88e6-e04a1b179a4e",
+              "fazenda_id": "f9aad1c2-160b-4886-b1f5-0e512273761f",
+              "client_id": "canonical-cert",
+              "status": "DONE",
+              "created_at": "2026-10-15T09:09:37.606Z",
+              "diagnostics": {
+                "last_attempt_started_at": "2026-10-15T09:09:47.780Z",
+                "result_received_at": "2026-10-15T09:09:47.921Z",
+                "ack_installed_at": "2026-10-15T09:09:47.931Z",
+                "client_op_ids": [
+                  "6d7575ae-ba28-4824-82a5-73f2ff821528",
+                  "cb326140-da9a-42d5-8c2e-7d2157146db5"
+                ],
+                "last_failure": {
+                  "code": "REQUEST_ABORTED",
+                  "cause_code": "REQUEST_ABORTED",
+                  "observed_at": "2026-10-15T09:09:42.662Z",
+                  "retry_count": 1
+                },
+                "reconciliation": [
+                  {
+                    "key": "f9aad1c2-160b-4886-b1f5-0e512273761f:sanitario-v2",
+                    "scope": "sanitario-v2",
+                    "generation_id": "ce5b29a3-c4ed-415f-9af1-9ec8bf1af51e",
+                    "required_at": "2026-10-15T09:09:47.931Z"
+                  }
+                ]
+              },
+              "retry_count": 1,
+              "sync_result": "APPLIED",
+              "completed_at": "2026-10-15T09:09:47.923Z",
+              "operation_results": [
+                {
+                  "op_id": "cb326140-da9a-42d5-8c2e-7d2157146db5",
+                  "client_op_id": "cb326140-da9a-42d5-8c2e-7d2157146db5",
+                  "domain_op_id": "c6c078fb-9db6-4614-b824-8c9ac5645eb5",
+                  "status": "APPLIED",
+                  "canonical_entity_id": "f39b9c84-6b6d-4805-89c9-c5c41d7d4acb",
+                  "current_revision": 1,
+                  "canonical_status": "fechada",
+                  "retryable": false,
+                  "canonical_result": {
+                    "replayed": false,
+                    "revision": 1,
+                    "agenda_id": "f39b9c84-6b6d-4805-89c9-c5c41d7d4acb",
+                    "evento_id": "cb326140-da9a-42d5-8c2e-7d2157146db5",
+                    "animal_ids": [
+                      "ddd4a9ff-f973-4ec8-8ce0-247eaaf4f4e6"
+                    ],
+                    "agenda_status": "fechada"
+                  },
+                  "matched": true,
+                  "recorded_at": "2026-10-15T09:09:47.923Z",
+                  "command": "apply_factual_core"
+                }
+              ]
+            },
+            "ops": 0,
+            "balance": 98
+          }
+        }
+      }
+    },
+    {
+      "code": "C5",
+      "result": "PASS",
+      "evidence": {
+        "curatorial_change_only": {
+          "events": 1,
+          "details": 1,
+          "animals": 1,
+          "movements": 1,
+          "balance": "98.000",
+          "revision": "1",
+          "legacy_event_id": null,
+          "event_id": "ea0407e5-68a3-47ce-932b-e52201950b24",
+          "executed_targets": 1
+        },
+        "rejected_ack": {
+          "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+          "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+          "client_id": "canonical-cert",
+          "status": "REJECTED",
+          "created_at": "2026-10-15T09:09:50.215Z",
+          "diagnostics": {
+            "last_attempt_started_at": "2026-10-15T09:09:50.239Z",
+            "result_received_at": "2026-10-15T09:09:50.325Z",
+            "ack_installed_at": "2026-10-15T09:09:50.334Z",
+            "client_op_ids": [
+              "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+              "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+            ],
+            "reconciliation": []
+          },
+          "sync_result": "REJECTED",
+          "completed_at": "2026-10-15T09:09:50.328Z",
+          "last_error": "sanitario_v2 completed with rejection or conflict",
+          "operation_results": [
+            {
+              "op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+              "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+              "domain_op_id": "eccb8062-6c1d-4444-87df-646eecab24ba",
+              "status": "REJECTED",
+              "reason_code": "SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH",
+              "retryable": false,
+              "matched": true,
+              "recorded_at": "2026-10-15T09:09:50.328Z",
+              "command": "apply_factual_core"
+            },
+            {
+              "op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+              "client_op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+              "domain_op_id": "5d43df16-f9d9-4fba-a47f-686c440fe563",
+              "status": "REJECTED",
+              "reason_code": "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED",
+              "reason_message": "Inventory movement cannot retry a terminally rejected factual operation",
+              "matched": true,
+              "recorded_at": "2026-10-15T09:09:50.328Z"
+            }
+          ]
+        },
+        "before_recovery": {
+          "remote": {
+            "events": 0,
+            "details": 0,
+            "animals": 0,
+            "movements": 0,
+            "balance": "100.000",
+            "revision": "0",
+            "legacy_event_id": null,
+            "event_id": null,
+            "executed_targets": 0
+          },
+          "local": {
+            "event": true,
+            "detail": true,
+            "agenda": {
+              "id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+              "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+              "status": "executada",
+              "dedup_key": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+              "client_id": "canonical-cert",
+              "client_op_id": "d5796f11-2eb0-43b8-b4be-3776b58ea801",
+              "client_tx_id": "b8e1cf3c-5ad4-450f-92da-b3bc9a959bbe",
+              "client_recorded_at": "2026-10-15T09:09:49.733+00:00",
+              "server_received_at": "2026-10-15T09:09:49.803621+00:00",
+              "source_demand_key": null,
+              "preview_group_id": null,
+              "protocolo_id": "54a934f3-7392-4edf-8a79-a097ff752818",
+              "protocol_item_version_id": "3f66210b-55ea-4649-b79d-dbcc7b4ae0bc",
+              "protocol_item_snapshot": {
+                "itemKey": "synthetic_dose",
+                "version": 1,
+                "actionType": "vacinacao",
+                "productClass": "vacina_teste",
+                "productRequirementKind": "product_class"
+              },
+              "janela_inicio": "2026-10-15",
+              "janela_fim": null,
+              "data_programada": "2026-10-15",
+              "lote_id": null,
+              "produto_veterinario_id": null,
+              "produto_snapshot": {},
+              "produto_classe": "vacina_teste",
+              "acao_sanitaria": "vacinacao",
+              "execution_evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+              "metadata": {
+                "itemKey": "synthetic_dose",
+                "targetAnimalIds": [
+                  "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                ],
+                "productRequirementKind": "product_class",
+                "execution": {
+                  "status": "executed",
+                  "eventId": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                  "executedAt": "2026-10-15T12:00:00.000Z",
+                  "clientOpId": "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+                }
+              },
+              "created_at": "2026-10-15T09:09:49.803621+00:00",
+              "updated_at": "2026-10-15T09:09:50.209Z",
+              "deleted_at": null,
+              "revision": 0,
+              "contract_version": 2,
+              "domain_op_id": "aa4caef6-133f-4e50-9963-9481fb725058",
+              "catalog_protocolo_v2_id": "54a934f3-7392-4edf-8a79-a097ff752818",
+              "catalog_protocol_item_version_v2_id": "3f66210b-55ea-4649-b79d-dbcc7b4ae0bc"
+            },
+            "gesture": {
+              "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+              "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+              "client_id": "canonical-cert",
+              "status": "REJECTED",
+              "created_at": "2026-10-15T09:09:50.215Z",
+              "diagnostics": {
+                "last_attempt_started_at": "2026-10-15T09:09:50.239Z",
+                "result_received_at": "2026-10-15T09:09:50.325Z",
+                "ack_installed_at": "2026-10-15T09:09:50.334Z",
+                "client_op_ids": [
+                  "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+                  "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+                ],
+                "reconciliation": []
+              },
+              "sync_result": "REJECTED",
+              "completed_at": "2026-10-15T09:09:50.328Z",
+              "last_error": "sanitario_v2 completed with rejection or conflict",
+              "operation_results": [
+                {
+                  "op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                  "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                  "domain_op_id": "eccb8062-6c1d-4444-87df-646eecab24ba",
+                  "status": "REJECTED",
+                  "reason_code": "SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH",
+                  "retryable": false,
+                  "matched": true,
+                  "recorded_at": "2026-10-15T09:09:50.328Z",
+                  "command": "apply_factual_core"
+                },
+                {
+                  "op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+                  "client_op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+                  "domain_op_id": "5d43df16-f9d9-4fba-a47f-686c440fe563",
+                  "status": "REJECTED",
+                  "reason_code": "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED",
+                  "reason_message": "Inventory movement cannot retry a terminally rejected factual operation",
+                  "matched": true,
+                  "recorded_at": "2026-10-15T09:09:50.328Z"
+                }
+              ]
+            },
+            "ops": 2,
+            "balance": 98
+          }
+        },
+        "recovery": {
+          "remote": {
+            "events": 1,
+            "details": 1,
+            "animals": 1,
+            "movements": 1,
+            "balance": "98.000",
+            "revision": "1",
+            "legacy_event_id": null,
+            "event_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+            "executed_targets": 1
+          },
+          "local": {
+            "event": true,
+            "detail": true,
+            "agenda": {
+              "id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+              "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+              "status": "fechada",
+              "dedup_key": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+              "client_id": "canonical-cert",
+              "client_op_id": "d5796f11-2eb0-43b8-b4be-3776b58ea801",
+              "client_tx_id": "b8e1cf3c-5ad4-450f-92da-b3bc9a959bbe",
+              "client_recorded_at": "2026-10-15T09:09:49.733+00:00",
+              "server_received_at": "2026-10-15T09:09:49.803621+00:00",
+              "source_demand_key": null,
+              "preview_group_id": null,
+              "protocolo_id": "54a934f3-7392-4edf-8a79-a097ff752818",
+              "protocol_item_version_id": "3f66210b-55ea-4649-b79d-dbcc7b4ae0bc",
+              "protocol_item_snapshot": {
+                "itemKey": "synthetic_dose",
+                "version": 1,
+                "actionType": "vacinacao",
+                "productClass": "vacina_teste",
+                "productRequirementKind": "product_class"
+              },
+              "janela_inicio": "2026-10-15",
+              "janela_fim": null,
+              "data_programada": "2026-10-15",
+              "lote_id": null,
+              "produto_veterinario_id": null,
+              "produto_snapshot": {},
+              "produto_classe": "vacina_teste",
+              "acao_sanitaria": "vacinacao",
+              "execution_evento_id": null,
+              "metadata": {
+                "itemKey": "synthetic_dose",
+                "targetAnimalIds": [
+                  "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                ],
+                "productRequirementKind": "product_class"
+              },
+              "created_at": "2026-10-15T09:09:49.803621+00:00",
+              "updated_at": "2026-10-15T09:09:50.494341+00:00",
+              "deleted_at": null,
+              "revision": 1,
+              "contract_version": 2,
+              "domain_op_id": "aa4caef6-133f-4e50-9963-9481fb725058",
+              "catalog_protocolo_v2_id": "54a934f3-7392-4edf-8a79-a097ff752818",
+              "catalog_protocol_item_version_v2_id": "3f66210b-55ea-4649-b79d-dbcc7b4ae0bc"
+            },
+            "gesture": {
+              "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+              "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+              "client_id": "canonical-cert",
+              "status": "DONE",
+              "created_at": "2026-10-15T09:09:50.215Z",
+              "diagnostics": {
+                "last_attempt_started_at": "2026-10-15T09:09:50.422Z",
+                "result_received_at": "2026-10-15T09:09:50.515Z",
+                "ack_installed_at": "2026-10-15T09:09:50.523Z",
+                "client_op_ids": [
+                  "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+                  "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+                ],
+                "reconciliation": [
+                  {
+                    "key": "7902c934-a440-4adf-b043-437bcbda12da:sanitario-v2",
+                    "scope": "sanitario-v2",
+                    "generation_id": "500ae3a8-b2a5-4404-87d0-4669f3b23deb",
+                    "required_at": "2026-10-15T09:09:50.523Z"
+                  }
+                ]
+              },
+              "operation_results": [
+                {
+                  "op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                  "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                  "domain_op_id": "eccb8062-6c1d-4444-87df-646eecab24ba",
+                  "status": "APPLIED",
+                  "canonical_entity_id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+                  "current_revision": 1,
+                  "canonical_status": "fechada",
+                  "retryable": false,
+                  "canonical_result": {
+                    "replayed": false,
+                    "revision": 1,
+                    "agenda_id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+                    "evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                    "animal_ids": [
+                      "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                    ],
+                    "agenda_status": "fechada"
+                  },
+                  "matched": true,
+                  "recorded_at": "2026-10-15T09:09:50.517Z",
+                  "command": "apply_factual_core"
+                },
+                {
+                  "op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+                  "client_op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+                  "domain_op_id": "5d43df16-f9d9-4fba-a47f-686c440fe563",
+                  "status": "REJECTED",
+                  "reason_code": "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED",
+                  "reason_message": "Inventory movement cannot retry a terminally rejected factual operation",
+                  "matched": true,
+                  "recorded_at": "2026-10-15T09:09:50.328Z"
+                }
+              ],
+              "retry_count": 1,
+              "sync_result": "APPLIED",
+              "completed_at": "2026-10-15T09:09:50.517Z"
+            },
+            "ops": 0,
+            "balance": 98
+          }
+        },
+        "original_operation_identity_and_payload_preserved": true,
+        "policy": "explicit retrospective fact accepted with pending curatorship; identity mismatch rejected; public explicit retry converges after identity repair without approval of prospective use"
+      }
+    },
+    {
+      "code": "C6",
+      "result": "PASS",
+      "evidence": {
+        "outsider": 403,
+        "rls": {
+          "rows": 0
+        },
+        "spoof": [
+          {
+            "op_id": "46248673-0fb1-468a-a455-9d3c713388c2",
+            "client_op_id": "46248673-0fb1-468a-a455-9d3c713388c2",
+            "domain_op_id": "a7fa469d-74fb-4e48-bb86-0c32a28cb52d",
+            "status": "REJECTED",
+            "reason_code": "SANITARIO_PRODUCT_FIELD_APPLICABILITY_MISMATCH",
+            "retryable": false
+          },
+          {
+            "op_id": "5c27340b-34a0-4619-8ce2-04811720abb1",
+            "client_op_id": "5c27340b-34a0-4619-8ce2-04811720abb1",
+            "domain_op_id": "b7bda27f-531f-429a-9fad-3051851bc4d1",
+            "status": "REJECTED",
+            "reason_code": "SANITARIO_INVENTORY_MOVEMENT_INVALID",
+            "reason_message": "Sanitary inventory movement failed conservative validation"
+          }
+        ],
+        "cross_farm_catalog": [
+          {
+            "op_id": "d6ba7c13-9efb-4188-9dea-ab01679f5b79",
+            "client_op_id": "d6ba7c13-9efb-4188-9dea-ab01679f5b79",
+            "domain_op_id": "fb66eda3-f7ab-4f98-9f5f-e7b0133c32c3",
+            "status": "REJECTED",
+            "reason_code": "SANITARIO_CATALOG_PROTOCOL_CROSS_FARM_OR_MISSING",
+            "retryable": false,
+            "matched": true,
+            "recorded_at": "2026-10-15T09:09:53.617Z",
+            "command": "create_agenda"
+          }
+        ],
+        "farm_switch": "pending original-farm fact applied; selected/pulled other farm has zero events",
+        "membership_revoked": {
+          "client_tx_id": "1e737b73-cfe0-4112-aded-2418f675670f",
+          "fazenda_id": "c0d968a0-d87a-4ed6-bad2-5707e593a53e",
+          "client_id": "canonical-cert",
+          "status": "ERROR",
+          "created_at": "2026-10-15T09:09:53.336Z",
+          "diagnostics": {
+            "last_attempt_started_at": "2026-10-15T09:09:54.197Z",
+            "client_op_ids": [
+              "3762a4f4-d32b-40bf-bf57-020cc2870f34",
+              "b960d6d7-ad0c-424a-8201-baf7829271be"
+            ],
+            "last_failure": {
+              "code": "HTTP_403",
+              "cause_code": "HTTP_403",
+              "observed_at": "2026-10-15T09:09:54.261Z",
+              "retry_count": 0
+            }
+          },
+          "sync_result": "ERROR",
+          "completed_at": "2026-10-15T09:09:54.259Z",
+          "last_error": "HTTP 403 - {\"error\":\"Forbidden - no access to this farm\"}"
+        },
+        "local_fact_after_revocation": true,
+        "expired_auth_reason": "invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired",
+        "expired_edge_status": 401,
+        "worker_expiry_injection": "first request carries the signed expired synthetic-user JWT; real GoTrue refresh and second transport succeed",
+        "refresh_statuses": [
+          401,
+          200
+        ],
+        "after_refresh": {
+          "events": 1,
+          "details": 1,
+          "animals": 1,
+          "movements": 1,
+          "balance": "98.000",
+          "revision": "1",
+          "legacy_event_id": null,
+          "event_id": "dd64f6b7-b0b7-412e-93dc-46b0ef90e687",
+          "executed_targets": 1
+        }
+      }
+    },
+    {
+      "code": "C7",
+      "result": "PASS",
+      "evidence": {
+        "results": [
+          {
+            "client_tx_id": "7cc8a35e-f1f5-4fcc-9b1d-b4e29050a257",
+            "fazenda_id": "56bacfcd-750a-4699-b4a8-55ddfad21a81",
+            "client_id": "canonical-cert",
+            "status": "DONE",
+            "created_at": "2026-10-15T09:09:56.436Z",
+            "diagnostics": {
+              "last_attempt_started_at": "2026-10-15T09:09:56.493Z",
+              "result_received_at": "2026-10-15T09:09:56.602Z",
+              "ack_installed_at": "2026-10-15T09:09:56.608Z",
+              "client_op_ids": [
+                "318280f5-e45b-4459-b045-02044b6141cc",
+                "4ddc7cf5-d580-4eb2-ab27-af7e455d907a"
+              ],
+              "reconciliation": [
+                {
+                  "key": "56bacfcd-750a-4699-b4a8-55ddfad21a81:sanitario-v2",
+                  "scope": "sanitario-v2",
+                  "generation_id": "2bab3641-5d34-4c10-b9dd-b5429490215f",
+                  "required_at": "2026-10-15T09:09:56.608Z"
+                }
+              ]
+            },
+            "sync_result": "APPLIED",
+            "completed_at": "2026-10-15T09:09:56.604Z",
+            "operation_results": [
+              {
+                "op_id": "318280f5-e45b-4459-b045-02044b6141cc",
+                "client_op_id": "318280f5-e45b-4459-b045-02044b6141cc",
+                "domain_op_id": "0b7c443c-7a82-4489-b57e-aea82f53b0ed",
+                "status": "APPLIED",
+                "canonical_entity_id": "0c0ef61c-b0f1-478d-ba3d-841ec9a290df",
+                "current_revision": 1,
+                "canonical_status": "fechada",
+                "retryable": false,
+                "canonical_result": {
+                  "replayed": false,
+                  "revision": 1,
+                  "agenda_id": "0c0ef61c-b0f1-478d-ba3d-841ec9a290df",
+                  "evento_id": "318280f5-e45b-4459-b045-02044b6141cc",
+                  "animal_ids": [
+                    "0fd5529a-ab3c-404d-9e53-fd90275fdf0d"
+                  ],
+                  "agenda_status": "fechada"
+                },
+                "matched": true,
+                "recorded_at": "2026-10-15T09:09:56.604Z",
+                "command": "apply_factual_core"
+              }
+            ]
+          },
+          {
+            "client_tx_id": "cc88e64f-3dc3-4aa4-a1da-9ee476ffa1ca",
+            "fazenda_id": "56bacfcd-750a-4699-b4a8-55ddfad21a81",
+            "client_id": "canonical-cert",
+            "status": "REJECTED",
+            "created_at": "2026-10-15T09:09:56.471Z",
+            "diagnostics": {
+              "last_attempt_started_at": "2026-10-15T09:09:56.495Z",
+              "result_received_at": "2026-10-15T09:09:56.596Z",
+              "ack_installed_at": "2026-10-15T09:09:56.605Z",
+              "client_op_ids": [
+                "39ea2897-0033-4994-b128-34c63a79ce07",
+                "4f8f7484-809b-4a23-ae1b-7b398c3e5be7"
+              ],
+              "reconciliation": [
+                {
+                  "key": "56bacfcd-750a-4699-b4a8-55ddfad21a81:sanitario-v2",
+                  "scope": "sanitario-v2",
+                  "generation_id": "c68072f6-3756-45a9-afd3-b0fe9f8188ff",
+                  "required_at": "2026-10-15T09:09:56.605Z"
+                }
+              ]
+            },
+            "sync_result": "REJECTED",
+            "completed_at": "2026-10-15T09:09:56.598Z",
+            "last_error": "sanitario_v2 completed with rejection or conflict",
+            "operation_results": [
+              {
+                "op_id": "39ea2897-0033-4994-b128-34c63a79ce07",
+                "client_op_id": "39ea2897-0033-4994-b128-34c63a79ce07",
+                "domain_op_id": "ae293c77-1e0e-41e5-ba2b-e9ab3d51eb07",
+                "status": "CONFLICT",
+                "reason_code": "SANITARIO_AGENDA_REVISION_CONFLICT",
+                "retryable": false,
+                "current_revision": 1,
+                "matched": true,
+                "recorded_at": "2026-10-15T09:09:56.598Z",
+                "command": "apply_factual_core"
+              },
+              {
+                "op_id": "4f8f7484-809b-4a23-ae1b-7b398c3e5be7",
+                "client_op_id": "4f8f7484-809b-4a23-ae1b-7b398c3e5be7",
+                "domain_op_id": "96e9b23d-66f9-463f-9e91-8b3b3a04a735",
+                "status": "REJECTED",
+                "reason_code": "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED",
+                "reason_message": "Inventory movement cannot retry a terminally rejected factual operation",
+                "matched": true,
+                "recorded_at": "2026-10-15T09:09:56.598Z"
+              }
+            ]
+          }
+        ],
+        "state": {
+          "events": 1,
+          "details": 1,
+          "animals": 1,
+          "movements": 1,
+          "balance": "98.000",
+          "revision": "1",
+          "legacy_event_id": null,
+          "event_id": "318280f5-e45b-4459-b045-02044b6141cc",
+          "executed_targets": 1
+        },
+        "independent_browser_contexts": true
+      }
+    },
+    {
+      "code": "C8",
+      "result": "PASS",
+      "evidence": {
+        "offline": {
+          "client_tx_id": "e7c720f5-77bd-4cd7-923c-c146142902ec",
+          "fazenda_id": "ba54c4b4-407e-4427-9a38-5a33c77cf727",
+          "client_id": "canonical-cert",
+          "status": "PENDING",
+          "created_at": "2026-10-15T09:09:57.160Z"
+        },
+        "after_client_restart": {
+          "client_tx_id": "e7c720f5-77bd-4cd7-923c-c146142902ec",
+          "fazenda_id": "ba54c4b4-407e-4427-9a38-5a33c77cf727",
+          "client_id": "canonical-cert",
+          "status": "PENDING",
+          "created_at": "2026-10-15T09:09:57.160Z"
+        },
+        "final": {
+          "remote": {
+            "events": 1,
+            "details": 1,
+            "animals": 1,
+            "movements": 1,
+            "balance": "98.000",
+            "revision": "1",
+            "legacy_event_id": null,
+            "event_id": "48ace8cc-c304-4d46-8eba-63cd0f5914fd",
+            "executed_targets": 1
+          },
+          "local": {
+            "event": true,
+            "detail": true,
+            "agenda": {
+              "id": "199fd745-3e85-40f8-85d7-4845b235179f",
+              "fazenda_id": "ba54c4b4-407e-4427-9a38-5a33c77cf727",
+              "status": "fechada",
+              "dedup_key": "199fd745-3e85-40f8-85d7-4845b235179f",
+              "client_id": "canonical-cert",
+              "client_op_id": "a0b3864e-09f2-423c-bfb1-4500a5eab361",
+              "client_tx_id": "415d26b3-d435-479a-a278-b97aa0ca378d",
+              "client_recorded_at": "2026-10-15T09:09:56.879+00:00",
+              "server_received_at": "2026-10-15T09:09:56.954655+00:00",
+              "source_demand_key": null,
+              "preview_group_id": null,
+              "protocolo_id": "cad6d5e7-86e4-4603-af0c-954fd3e1b865",
+              "protocol_item_version_id": "05167d3b-a516-4d16-bf0f-e9c63557a56c",
+              "protocol_item_snapshot": {
+                "itemKey": "synthetic_dose",
+                "version": 1,
+                "actionType": "vacinacao",
+                "productClass": "vacina_teste",
+                "productRequirementKind": "product_class"
+              },
+              "janela_inicio": "2026-10-15",
+              "janela_fim": null,
+              "data_programada": "2026-10-15",
+              "lote_id": null,
+              "produto_veterinario_id": null,
+              "produto_snapshot": {},
+              "produto_classe": "vacina_teste",
+              "acao_sanitaria": "vacinacao",
+              "execution_evento_id": null,
+              "metadata": {
+                "itemKey": "synthetic_dose",
+                "targetAnimalIds": [
+                  "4b038389-8ad5-4a62-b206-6e038a08e1d5"
+                ],
+                "productRequirementKind": "product_class"
+              },
+              "created_at": "2026-10-15T09:09:56.954655+00:00",
+              "updated_at": "2026-10-15T09:09:57.77003+00:00",
+              "deleted_at": null,
+              "revision": 1,
+              "contract_version": 2,
+              "domain_op_id": "c62175e1-0329-4fdf-9952-38ae967a33bc",
+              "catalog_protocolo_v2_id": "cad6d5e7-86e4-4603-af0c-954fd3e1b865",
+              "catalog_protocol_item_version_v2_id": "05167d3b-a516-4d16-bf0f-e9c63557a56c"
+            },
+            "gesture": {
+              "client_tx_id": "e7c720f5-77bd-4cd7-923c-c146142902ec",
+              "fazenda_id": "ba54c4b4-407e-4427-9a38-5a33c77cf727",
+              "client_id": "canonical-cert",
+              "status": "DONE",
+              "created_at": "2026-10-15T09:09:57.160Z",
+              "diagnostics": {
+                "last_attempt_started_at": "2026-10-15T09:09:57.685Z",
+                "result_received_at": "2026-10-15T09:09:57.793Z",
+                "ack_installed_at": "2026-10-15T09:09:57.800Z",
+                "client_op_ids": [
+                  "051625f9-9bb0-4cc7-b9f2-0a36145b72a5",
+                  "48ace8cc-c304-4d46-8eba-63cd0f5914fd"
+                ],
+                "reconciliation": [
+                  {
+                    "key": "ba54c4b4-407e-4427-9a38-5a33c77cf727:sanitario-v2",
+                    "scope": "sanitario-v2",
+                    "generation_id": "5825e3c9-a315-43f2-b136-bdf0e21fa6ad",
+                    "required_at": "2026-10-15T09:09:57.800Z"
+                  }
+                ]
+              },
+              "sync_result": "APPLIED",
+              "completed_at": "2026-10-15T09:09:57.795Z",
+              "operation_results": [
+                {
+                  "op_id": "48ace8cc-c304-4d46-8eba-63cd0f5914fd",
+                  "client_op_id": "48ace8cc-c304-4d46-8eba-63cd0f5914fd",
+                  "domain_op_id": "fc84dacf-5002-4d80-8210-84789faa9d48",
+                  "status": "APPLIED",
+                  "canonical_entity_id": "199fd745-3e85-40f8-85d7-4845b235179f",
+                  "current_revision": 1,
+                  "canonical_status": "fechada",
+                  "retryable": false,
+                  "canonical_result": {
+                    "replayed": false,
+                    "revision": 1,
+                    "agenda_id": "199fd745-3e85-40f8-85d7-4845b235179f",
+                    "evento_id": "48ace8cc-c304-4d46-8eba-63cd0f5914fd",
+                    "animal_ids": [
+                      "4b038389-8ad5-4a62-b206-6e038a08e1d5"
+                    ],
+                    "agenda_status": "fechada"
+                  },
+                  "matched": true,
+                  "recorded_at": "2026-10-15T09:09:57.795Z",
+                  "command": "apply_factual_core"
+                }
+              ]
+            },
+            "ops": 0,
+            "balance": 98
+          }
+        },
+        "lifecycle": "real offline registration, page close/new renderer, reconnect/login; same IndexedDB browser context"
+      }
+    }
+  ],
+  "c5_attempt": {
+    "ack": {
+      "gesture": {
+        "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+        "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+        "client_id": "canonical-cert",
+        "status": "REJECTED",
+        "created_at": "2026-10-15T09:09:50.215Z",
+        "diagnostics": {
+          "last_attempt_started_at": "2026-10-15T09:09:50.239Z",
+          "result_received_at": "2026-10-15T09:09:50.325Z",
+          "ack_installed_at": "2026-10-15T09:09:50.334Z",
+          "client_op_ids": [
+            "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+            "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+          ],
+          "reconciliation": []
+        },
+        "sync_result": "REJECTED",
+        "completed_at": "2026-10-15T09:09:50.328Z",
+        "last_error": "sanitario_v2 completed with rejection or conflict",
+        "operation_results": [
+          {
+            "op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+            "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+            "domain_op_id": "eccb8062-6c1d-4444-87df-646eecab24ba",
+            "status": "REJECTED",
+            "reason_code": "SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH",
+            "retryable": false,
+            "matched": true,
+            "recorded_at": "2026-10-15T09:09:50.328Z",
+            "command": "apply_factual_core"
+          },
+          {
+            "op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+            "client_op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+            "domain_op_id": "5d43df16-f9d9-4fba-a47f-686c440fe563",
+            "status": "REJECTED",
+            "reason_code": "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED",
+            "reason_message": "Inventory movement cannot retry a terminally rejected factual operation",
+            "matched": true,
+            "recorded_at": "2026-10-15T09:09:50.328Z"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "client_op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+          "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+          "op_order": 1,
+          "table": "state_insumo_movimentacoes",
+          "action": "INSERT",
+          "record": {
+            "id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+            "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+            "insumo_id": "d868d643-e8d4-4c4a-a922-c5e4dd434735",
+            "insumo_lote_id": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+            "tipo": "consumo_sanitario",
+            "quantidade_base": 2,
+            "unidade_base": "ml",
+            "occurred_at": "2026-10-15T12:00:00.000Z",
+            "source_evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+            "source_evento_dominio": "sanitario",
+            "animal_id": "0eabf91c-ad25-4a9e-9810-81e99901d84f",
+            "rebanho_lote_id": null,
+            "pasto_id": null,
+            "observacoes": null,
+            "custo_unitario_snapshot": null,
+            "custo_total_snapshot": null,
+            "payload": {
+              "origem_movimentacao": "baixa_automatica_evento",
+              "source_evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+              "source": "sanitary_agenda_execution_v2"
+            },
+            "domain_op_id": "5d43df16-f9d9-4fba-a47f-686c440fe563",
+            "client_id": "canonical-cert",
+            "client_op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+            "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+            "client_recorded_at": "2026-10-15T09:09:50.209Z",
+            "server_received_at": "2026-10-15T09:09:50.209Z",
+            "created_at": "2026-10-15T09:09:50.209Z",
+            "updated_at": "2026-10-15T09:09:50.209Z",
+            "deleted_at": null
+          },
+          "domain_op_id": "5d43df16-f9d9-4fba-a47f-686c440fe563",
+          "sync_state": "REJECTED",
+          "created_at": "2026-10-15T09:09:50.209Z",
+          "blocked_reason": "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED"
+        },
+        {
+          "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+          "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+          "op_order": 0,
+          "table": "sanitario_v2",
+          "action": "INSERT",
+          "record": {
+            "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+            "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+            "domain_op_id": "eccb8062-6c1d-4444-87df-646eecab24ba",
+            "domain": "sanitario_v2",
+            "contract_version": 2,
+            "command": "apply_factual_core",
+            "expected_revision": 0,
+            "payload": {
+              "event": {
+                "id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                "source_sanitario_agenda_v2_id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+                "natureza": "primary_execution",
+                "occurred_at": "2026-10-15T12:00:00.000Z",
+                "animal_id": "0eabf91c-ad25-4a9e-9810-81e99901d84f",
+                "lote_id": null,
+                "corrige_evento_id": null,
+                "observacoes": null,
+                "payload": {
+                  "schema": "sanitary_agenda_execution_v2",
+                  "agenda_id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+                  "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                  "creates_event": true,
+                  "creates_stock_movement": true,
+                  "creates_active_withdrawal": false,
+                  "animal_ids": [
+                    "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                  ],
+                  "target_animal_ids": [
+                    "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                  ],
+                  "produto_veterinario_id": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "product": {
+                    "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                    "productName": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                    "productClass": "vacina_teste",
+                    "productClassGroupId": null,
+                    "dose": 2,
+                    "doseUnit": "ml",
+                    "route": "subcutanea",
+                    "inventoryLotId": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+                    "quantityConsumed": 2,
+                    "unit": "ml"
+                  },
+                  "withdrawal": {
+                    "reason": "operational_withdrawal_snapshot",
+                    "rule_snapshot": {
+                      "schemaVersion": "sanitario-operational-withdrawal-snapshot-v2",
+                      "eventId": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                      "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                      "productCatalogUpdatedAt": "2026-10-15T09:09:49.629393+00:00",
+                      "factualReferenceAt": "2026-10-15T12:00:00.000Z",
+                      "timezone": "America/Sao_Paulo",
+                      "results": [
+                        {
+                          "purpose": "meat",
+                          "state": "unknown",
+                          "reason": "species_missing",
+                          "period": null,
+                          "startsAt": "2026-10-15T12:00:00.000Z",
+                          "endsAt": null,
+                          "endsOn": null,
+                          "endInclusivity": "inclusive",
+                          "ruleId": null,
+                          "equivalentRuleIds": [],
+                          "applicability": null,
+                          "sourceRef": null,
+                          "sourceCoverageId": null,
+                          "productSource": null,
+                          "qualifiers": {
+                            "speciesCode": null,
+                            "aptitude": null,
+                            "route": "subcutanea",
+                            "doseBasis": "dose",
+                            "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                          }
+                        },
+                        {
+                          "purpose": "milk",
+                          "state": "unknown",
+                          "reason": "species_missing",
+                          "period": null,
+                          "startsAt": "2026-10-15T12:00:00.000Z",
+                          "endsAt": null,
+                          "endsOn": null,
+                          "endInclusivity": "inclusive",
+                          "ruleId": null,
+                          "equivalentRuleIds": [],
+                          "applicability": null,
+                          "sourceRef": null,
+                          "sourceCoverageId": null,
+                          "productSource": null,
+                          "qualifiers": {
+                            "speciesCode": null,
+                            "aptitude": null,
+                            "route": "subcutanea",
+                            "doseBasis": "dose",
+                            "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                          }
+                        }
+                      ],
+                      "limitations": [
+                        "species_missing"
+                      ]
+                    },
+                    "source_evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+                  },
+                  "warnings": [
+                    "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.",
+                    "Registro retrospectivo: a curadoria pode mudar e não autoriza usos futuros."
+                  ],
+                  "registration_mode": "executed_fact",
+                  "prospective_authorization": false,
+                  "catalog_review_warnings": [
+                    "protocol_not_approved",
+                    "protocol_item_not_executable"
+                  ]
+                },
+                "client_recorded_at": "2026-10-15T09:09:50.209Z"
+              },
+              "detail": {
+                "tipo": "vacinacao",
+                "produto_sanitario_v2_id": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                "insumo_id": "d868d643-e8d4-4c4a-a922-c5e4dd434735",
+                "estoque_lote_id": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+                "produto_nome_snapshot": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                "produto_snapshot": {
+                  "schemaVersion": "sanitario-executed-product-technical-snapshot-v2",
+                  "eventId": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                  "executedProductId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "executedProductName": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "executedProductSnapshot": {
+                    "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                    "nomeComercial": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                    "fabricante": null,
+                    "registroOrgao": null,
+                    "registroNumero": null,
+                    "catalogUpdatedAt": "2026-10-15T09:09:49.629393+00:00",
+                    "classe": "vacina_teste",
+                    "principioAtivo": null,
+                    "tipoProduto": "vacina",
+                    "apresentacao": null,
+                    "speciesCode": null,
+                    "authorizationStatus": null,
+                    "sourceRefs": []
+                  },
+                  "executedDose": {
+                    "quantity": 2,
+                    "unit": "ml",
+                    "basis": "dose"
+                  },
+                  "executedRoute": "subcutanea",
+                  "fieldEvidence": [
+                    {
+                      "fieldKey": "dose",
+                      "coverageStatus": "does_not_cover",
+                      "factualValue": {
+                        "quantity": 2,
+                        "unit": "ml"
+                      },
+                      "technicalValue": null,
+                      "sourceRef": null,
+                      "sourceCoverageId": null,
+                      "productSource": null,
+                      "qualifiers": {
+                        "speciesCode": null,
+                        "aptitude": null,
+                        "route": null,
+                        "doseBasis": null,
+                        "animalIds": [
+                          "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                        ]
+                      },
+                      "reason": "factual_value_divergent"
+                    },
+                    {
+                      "fieldKey": "route",
+                      "coverageStatus": "does_not_cover",
+                      "factualValue": {
+                        "route": "subcutanea"
+                      },
+                      "technicalValue": null,
+                      "sourceRef": null,
+                      "sourceCoverageId": null,
+                      "productSource": null,
+                      "qualifiers": {
+                        "speciesCode": null,
+                        "aptitude": null,
+                        "route": null,
+                        "doseBasis": null,
+                        "animalIds": [
+                          "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                        ]
+                      },
+                      "reason": "factual_value_divergent"
+                    },
+                    {
+                      "fieldKey": "species_authorization",
+                      "coverageStatus": "does_not_cover",
+                      "factualValue": {
+                        "speciesCodes": [
+                          null
+                        ]
+                      },
+                      "technicalValue": null,
+                      "sourceRef": null,
+                      "sourceCoverageId": null,
+                      "productSource": null,
+                      "qualifiers": {
+                        "speciesCode": null,
+                        "aptitude": null,
+                        "animalIds": [
+                          "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                        ]
+                      },
+                      "reason": "species_authorization_not_applicable"
+                    }
+                  ],
+                  "sourceRefs": [],
+                  "limitations": [],
+                  "withdrawalSnapshot": {
+                    "schemaVersion": "sanitario-operational-withdrawal-snapshot-v2",
+                    "eventId": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                    "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                    "productCatalogUpdatedAt": "2026-10-15T09:09:49.629393+00:00",
+                    "factualReferenceAt": "2026-10-15T12:00:00.000Z",
+                    "timezone": "America/Sao_Paulo",
+                    "results": [
+                      {
+                        "purpose": "meat",
+                        "state": "unknown",
+                        "reason": "species_missing",
+                        "period": null,
+                        "startsAt": "2026-10-15T12:00:00.000Z",
+                        "endsAt": null,
+                        "endsOn": null,
+                        "endInclusivity": "inclusive",
+                        "ruleId": null,
+                        "equivalentRuleIds": [],
+                        "applicability": null,
+                        "sourceRef": null,
+                        "sourceCoverageId": null,
+                        "productSource": null,
+                        "qualifiers": {
+                          "speciesCode": null,
+                          "aptitude": null,
+                          "route": "subcutanea",
+                          "doseBasis": "dose",
+                          "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                        }
+                      },
+                      {
+                        "purpose": "milk",
+                        "state": "unknown",
+                        "reason": "species_missing",
+                        "period": null,
+                        "startsAt": "2026-10-15T12:00:00.000Z",
+                        "endsAt": null,
+                        "endsOn": null,
+                        "endInclusivity": "inclusive",
+                        "ruleId": null,
+                        "equivalentRuleIds": [],
+                        "applicability": null,
+                        "sourceRef": null,
+                        "sourceCoverageId": null,
+                        "productSource": null,
+                        "qualifiers": {
+                          "speciesCode": null,
+                          "aptitude": null,
+                          "route": "subcutanea",
+                          "doseBasis": "dose",
+                          "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                        }
+                      }
+                    ],
+                    "limitations": [
+                      "species_missing"
+                    ]
+                  }
+                },
+                "estoque_lote_codigo_snapshot": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+                "lote_fabricante": null,
+                "validade_produto": null,
+                "dose_quantidade": 2,
+                "dose_unidade": "ml",
+                "via_aplicacao": "subcutanea",
+                "responsavel_nome": "Synthetic responsible",
+                "responsavel_tipo": "informado",
+                "carencia_carne_dias": null,
+                "carencia_leite_dias": null,
+                "carencia_carne_ate": null,
+                "carencia_leite_ate": null,
+                "custo_unitario_snapshot": null,
+                "custo_total_snapshot": null,
+                "payload": {
+                  "schema": "sanitary_agenda_execution_v2",
+                  "agenda_id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+                  "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                  "creates_event": true,
+                  "creates_stock_movement": true,
+                  "creates_active_withdrawal": false,
+                  "animal_ids": [
+                    "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                  ],
+                  "target_animal_ids": [
+                    "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                  ],
+                  "produto_veterinario_id": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "product": {
+                    "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                    "productName": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                    "productClass": "vacina_teste",
+                    "productClassGroupId": null,
+                    "dose": 2,
+                    "doseUnit": "ml",
+                    "route": "subcutanea",
+                    "inventoryLotId": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+                    "quantityConsumed": 2,
+                    "unit": "ml"
+                  },
+                  "withdrawal": {
+                    "reason": "operational_withdrawal_snapshot",
+                    "rule_snapshot": {
+                      "schemaVersion": "sanitario-operational-withdrawal-snapshot-v2",
+                      "eventId": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                      "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                      "productCatalogUpdatedAt": "2026-10-15T09:09:49.629393+00:00",
+                      "factualReferenceAt": "2026-10-15T12:00:00.000Z",
+                      "timezone": "America/Sao_Paulo",
+                      "results": [
+                        {
+                          "purpose": "meat",
+                          "state": "unknown",
+                          "reason": "species_missing",
+                          "period": null,
+                          "startsAt": "2026-10-15T12:00:00.000Z",
+                          "endsAt": null,
+                          "endsOn": null,
+                          "endInclusivity": "inclusive",
+                          "ruleId": null,
+                          "equivalentRuleIds": [],
+                          "applicability": null,
+                          "sourceRef": null,
+                          "sourceCoverageId": null,
+                          "productSource": null,
+                          "qualifiers": {
+                            "speciesCode": null,
+                            "aptitude": null,
+                            "route": "subcutanea",
+                            "doseBasis": "dose",
+                            "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                          }
+                        },
+                        {
+                          "purpose": "milk",
+                          "state": "unknown",
+                          "reason": "species_missing",
+                          "period": null,
+                          "startsAt": "2026-10-15T12:00:00.000Z",
+                          "endsAt": null,
+                          "endsOn": null,
+                          "endInclusivity": "inclusive",
+                          "ruleId": null,
+                          "equivalentRuleIds": [],
+                          "applicability": null,
+                          "sourceRef": null,
+                          "sourceCoverageId": null,
+                          "productSource": null,
+                          "qualifiers": {
+                            "speciesCode": null,
+                            "aptitude": null,
+                            "route": "subcutanea",
+                            "doseBasis": "dose",
+                            "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                          }
+                        }
+                      ],
+                      "limitations": [
+                        "species_missing"
+                      ]
+                    },
+                    "source_evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+                  },
+                  "warnings": [
+                    "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.",
+                    "Registro retrospectivo: a curadoria pode mudar e não autoriza usos futuros."
+                  ],
+                  "registration_mode": "executed_fact",
+                  "prospective_authorization": false,
+                  "catalog_review_warnings": [
+                    "protocol_not_approved",
+                    "protocol_item_not_executable"
+                  ]
+                }
+              },
+              "event_animals": [
+                {
+                  "id": "d08b0b9f-48ec-409c-b63c-412fa61ab5e8",
+                  "animal_id": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                }
+              ]
+            }
+          },
+          "domain_op_id": "eccb8062-6c1d-4444-87df-646eecab24ba",
+          "sync_state": "REJECTED",
+          "created_at": "2026-10-15T09:09:50.215Z",
+          "blocked_reason": "SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH"
+        }
+      ],
+      "sent": [
+        {
+          "client_op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+          "table": "insumo_movimentacoes",
+          "action": "INSERT",
+          "record": {
+            "id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+            "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+            "insumo_id": "d868d643-e8d4-4c4a-a922-c5e4dd434735",
+            "insumo_lote_id": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+            "tipo": "consumo_sanitario",
+            "quantidade_base": 2,
+            "unidade_base": "ml",
+            "occurred_at": "2026-10-15T12:00:00.000Z",
+            "source_evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+            "source_evento_dominio": "sanitario",
+            "animal_id": "0eabf91c-ad25-4a9e-9810-81e99901d84f",
+            "rebanho_lote_id": null,
+            "pasto_id": null,
+            "observacoes": null,
+            "custo_unitario_snapshot": null,
+            "custo_total_snapshot": null,
+            "payload": {
+              "origem_movimentacao": "baixa_automatica_evento",
+              "source_evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+              "source": "sanitary_agenda_execution_v2"
+            },
+            "domain_op_id": "5d43df16-f9d9-4fba-a47f-686c440fe563",
+            "client_id": "canonical-cert",
+            "client_op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+            "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+            "client_recorded_at": "2026-10-15T09:09:50.209Z",
+            "server_received_at": "2026-10-15T09:09:50.209Z",
+            "created_at": "2026-10-15T09:09:50.209Z",
+            "updated_at": "2026-10-15T09:09:50.209Z",
+            "deleted_at": null
+          }
+        },
+        {
+          "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+          "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+          "domain_op_id": "eccb8062-6c1d-4444-87df-646eecab24ba",
+          "domain": "sanitario_v2",
+          "contract_version": 2,
+          "command": "apply_factual_core",
+          "expected_revision": 0,
+          "payload": {
+            "event": {
+              "id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+              "source_sanitario_agenda_v2_id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+              "natureza": "primary_execution",
+              "occurred_at": "2026-10-15T12:00:00.000Z",
+              "animal_id": "0eabf91c-ad25-4a9e-9810-81e99901d84f",
+              "lote_id": null,
+              "corrige_evento_id": null,
+              "observacoes": null,
+              "payload": {
+                "schema": "sanitary_agenda_execution_v2",
+                "agenda_id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+                "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                "creates_event": true,
+                "creates_stock_movement": true,
+                "creates_active_withdrawal": false,
+                "animal_ids": [
+                  "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                ],
+                "target_animal_ids": [
+                  "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                ],
+                "produto_veterinario_id": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                "product": {
+                  "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "productName": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "productClass": "vacina_teste",
+                  "productClassGroupId": null,
+                  "dose": 2,
+                  "doseUnit": "ml",
+                  "route": "subcutanea",
+                  "inventoryLotId": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+                  "quantityConsumed": 2,
+                  "unit": "ml"
+                },
+                "withdrawal": {
+                  "reason": "operational_withdrawal_snapshot",
+                  "rule_snapshot": {
+                    "schemaVersion": "sanitario-operational-withdrawal-snapshot-v2",
+                    "eventId": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                    "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                    "productCatalogUpdatedAt": "2026-10-15T09:09:49.629393+00:00",
+                    "factualReferenceAt": "2026-10-15T12:00:00.000Z",
+                    "timezone": "America/Sao_Paulo",
+                    "results": [
+                      {
+                        "purpose": "meat",
+                        "state": "unknown",
+                        "reason": "species_missing",
+                        "period": null,
+                        "startsAt": "2026-10-15T12:00:00.000Z",
+                        "endsAt": null,
+                        "endsOn": null,
+                        "endInclusivity": "inclusive",
+                        "ruleId": null,
+                        "equivalentRuleIds": [],
+                        "applicability": null,
+                        "sourceRef": null,
+                        "sourceCoverageId": null,
+                        "productSource": null,
+                        "qualifiers": {
+                          "speciesCode": null,
+                          "aptitude": null,
+                          "route": "subcutanea",
+                          "doseBasis": "dose",
+                          "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                        }
+                      },
+                      {
+                        "purpose": "milk",
+                        "state": "unknown",
+                        "reason": "species_missing",
+                        "period": null,
+                        "startsAt": "2026-10-15T12:00:00.000Z",
+                        "endsAt": null,
+                        "endsOn": null,
+                        "endInclusivity": "inclusive",
+                        "ruleId": null,
+                        "equivalentRuleIds": [],
+                        "applicability": null,
+                        "sourceRef": null,
+                        "sourceCoverageId": null,
+                        "productSource": null,
+                        "qualifiers": {
+                          "speciesCode": null,
+                          "aptitude": null,
+                          "route": "subcutanea",
+                          "doseBasis": "dose",
+                          "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                        }
+                      }
+                    ],
+                    "limitations": [
+                      "species_missing"
+                    ]
+                  },
+                  "source_evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+                },
+                "warnings": [
+                  "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.",
+                  "Registro retrospectivo: a curadoria pode mudar e não autoriza usos futuros."
+                ],
+                "registration_mode": "executed_fact",
+                "prospective_authorization": false,
+                "catalog_review_warnings": [
+                  "protocol_not_approved",
+                  "protocol_item_not_executable"
+                ]
+              },
+              "client_recorded_at": "2026-10-15T09:09:50.209Z"
+            },
+            "detail": {
+              "tipo": "vacinacao",
+              "produto_sanitario_v2_id": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+              "insumo_id": "d868d643-e8d4-4c4a-a922-c5e4dd434735",
+              "estoque_lote_id": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+              "produto_nome_snapshot": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+              "produto_snapshot": {
+                "schemaVersion": "sanitario-executed-product-technical-snapshot-v2",
+                "eventId": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                "executedProductId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                "executedProductName": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                "executedProductSnapshot": {
+                  "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "nomeComercial": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "fabricante": null,
+                  "registroOrgao": null,
+                  "registroNumero": null,
+                  "catalogUpdatedAt": "2026-10-15T09:09:49.629393+00:00",
+                  "classe": "vacina_teste",
+                  "principioAtivo": null,
+                  "tipoProduto": "vacina",
+                  "apresentacao": null,
+                  "speciesCode": null,
+                  "authorizationStatus": null,
+                  "sourceRefs": []
+                },
+                "executedDose": {
+                  "quantity": 2,
+                  "unit": "ml",
+                  "basis": "dose"
+                },
+                "executedRoute": "subcutanea",
+                "fieldEvidence": [
+                  {
+                    "fieldKey": "dose",
+                    "coverageStatus": "does_not_cover",
+                    "factualValue": {
+                      "quantity": 2,
+                      "unit": "ml"
+                    },
+                    "technicalValue": null,
+                    "sourceRef": null,
+                    "sourceCoverageId": null,
+                    "productSource": null,
+                    "qualifiers": {
+                      "speciesCode": null,
+                      "aptitude": null,
+                      "route": null,
+                      "doseBasis": null,
+                      "animalIds": [
+                        "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                      ]
+                    },
+                    "reason": "factual_value_divergent"
+                  },
+                  {
+                    "fieldKey": "route",
+                    "coverageStatus": "does_not_cover",
+                    "factualValue": {
+                      "route": "subcutanea"
+                    },
+                    "technicalValue": null,
+                    "sourceRef": null,
+                    "sourceCoverageId": null,
+                    "productSource": null,
+                    "qualifiers": {
+                      "speciesCode": null,
+                      "aptitude": null,
+                      "route": null,
+                      "doseBasis": null,
+                      "animalIds": [
+                        "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                      ]
+                    },
+                    "reason": "factual_value_divergent"
+                  },
+                  {
+                    "fieldKey": "species_authorization",
+                    "coverageStatus": "does_not_cover",
+                    "factualValue": {
+                      "speciesCodes": [
+                        null
+                      ]
+                    },
+                    "technicalValue": null,
+                    "sourceRef": null,
+                    "sourceCoverageId": null,
+                    "productSource": null,
+                    "qualifiers": {
+                      "speciesCode": null,
+                      "aptitude": null,
+                      "animalIds": [
+                        "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                      ]
+                    },
+                    "reason": "species_authorization_not_applicable"
+                  }
+                ],
+                "sourceRefs": [],
+                "limitations": [],
+                "withdrawalSnapshot": {
+                  "schemaVersion": "sanitario-operational-withdrawal-snapshot-v2",
+                  "eventId": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                  "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "productCatalogUpdatedAt": "2026-10-15T09:09:49.629393+00:00",
+                  "factualReferenceAt": "2026-10-15T12:00:00.000Z",
+                  "timezone": "America/Sao_Paulo",
+                  "results": [
+                    {
+                      "purpose": "meat",
+                      "state": "unknown",
+                      "reason": "species_missing",
+                      "period": null,
+                      "startsAt": "2026-10-15T12:00:00.000Z",
+                      "endsAt": null,
+                      "endsOn": null,
+                      "endInclusivity": "inclusive",
+                      "ruleId": null,
+                      "equivalentRuleIds": [],
+                      "applicability": null,
+                      "sourceRef": null,
+                      "sourceCoverageId": null,
+                      "productSource": null,
+                      "qualifiers": {
+                        "speciesCode": null,
+                        "aptitude": null,
+                        "route": "subcutanea",
+                        "doseBasis": "dose",
+                        "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                      }
+                    },
+                    {
+                      "purpose": "milk",
+                      "state": "unknown",
+                      "reason": "species_missing",
+                      "period": null,
+                      "startsAt": "2026-10-15T12:00:00.000Z",
+                      "endsAt": null,
+                      "endsOn": null,
+                      "endInclusivity": "inclusive",
+                      "ruleId": null,
+                      "equivalentRuleIds": [],
+                      "applicability": null,
+                      "sourceRef": null,
+                      "sourceCoverageId": null,
+                      "productSource": null,
+                      "qualifiers": {
+                        "speciesCode": null,
+                        "aptitude": null,
+                        "route": "subcutanea",
+                        "doseBasis": "dose",
+                        "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                      }
+                    }
+                  ],
+                  "limitations": [
+                    "species_missing"
+                  ]
+                }
+              },
+              "estoque_lote_codigo_snapshot": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+              "lote_fabricante": null,
+              "validade_produto": null,
+              "dose_quantidade": 2,
+              "dose_unidade": "ml",
+              "via_aplicacao": "subcutanea",
+              "responsavel_nome": "Synthetic responsible",
+              "responsavel_tipo": "informado",
+              "carencia_carne_dias": null,
+              "carencia_leite_dias": null,
+              "carencia_carne_ate": null,
+              "carencia_leite_ate": null,
+              "custo_unitario_snapshot": null,
+              "custo_total_snapshot": null,
+              "payload": {
+                "schema": "sanitary_agenda_execution_v2",
+                "agenda_id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+                "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                "creates_event": true,
+                "creates_stock_movement": true,
+                "creates_active_withdrawal": false,
+                "animal_ids": [
+                  "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                ],
+                "target_animal_ids": [
+                  "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                ],
+                "produto_veterinario_id": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                "product": {
+                  "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "productName": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                  "productClass": "vacina_teste",
+                  "productClassGroupId": null,
+                  "dose": 2,
+                  "doseUnit": "ml",
+                  "route": "subcutanea",
+                  "inventoryLotId": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+                  "quantityConsumed": 2,
+                  "unit": "ml"
+                },
+                "withdrawal": {
+                  "reason": "operational_withdrawal_snapshot",
+                  "rule_snapshot": {
+                    "schemaVersion": "sanitario-operational-withdrawal-snapshot-v2",
+                    "eventId": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+                    "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+                    "productCatalogUpdatedAt": "2026-10-15T09:09:49.629393+00:00",
+                    "factualReferenceAt": "2026-10-15T12:00:00.000Z",
+                    "timezone": "America/Sao_Paulo",
+                    "results": [
+                      {
+                        "purpose": "meat",
+                        "state": "unknown",
+                        "reason": "species_missing",
+                        "period": null,
+                        "startsAt": "2026-10-15T12:00:00.000Z",
+                        "endsAt": null,
+                        "endsOn": null,
+                        "endInclusivity": "inclusive",
+                        "ruleId": null,
+                        "equivalentRuleIds": [],
+                        "applicability": null,
+                        "sourceRef": null,
+                        "sourceCoverageId": null,
+                        "productSource": null,
+                        "qualifiers": {
+                          "speciesCode": null,
+                          "aptitude": null,
+                          "route": "subcutanea",
+                          "doseBasis": "dose",
+                          "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                        }
+                      },
+                      {
+                        "purpose": "milk",
+                        "state": "unknown",
+                        "reason": "species_missing",
+                        "period": null,
+                        "startsAt": "2026-10-15T12:00:00.000Z",
+                        "endsAt": null,
+                        "endsOn": null,
+                        "endInclusivity": "inclusive",
+                        "ruleId": null,
+                        "equivalentRuleIds": [],
+                        "applicability": null,
+                        "sourceRef": null,
+                        "sourceCoverageId": null,
+                        "productSource": null,
+                        "qualifiers": {
+                          "speciesCode": null,
+                          "aptitude": null,
+                          "route": "subcutanea",
+                          "doseBasis": "dose",
+                          "animalId": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+                        }
+                      }
+                    ],
+                    "limitations": [
+                      "species_missing"
+                    ]
+                  },
+                  "source_evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+                },
+                "warnings": [
+                  "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.",
+                  "Registro retrospectivo: a curadoria pode mudar e não autoriza usos futuros."
+                ],
+                "registration_mode": "executed_fact",
+                "prospective_authorization": false,
+                "catalog_review_warnings": [
+                  "protocol_not_approved",
+                  "protocol_item_not_executable"
+                ]
+              }
+            },
+            "event_animals": [
+              {
+                "id": "d08b0b9f-48ec-409c-b63c-412fa61ab5e8",
+                "animal_id": "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "state": {
+      "remote": {
+        "events": 0,
+        "details": 0,
+        "animals": 0,
+        "movements": 0,
+        "balance": "100.000",
+        "revision": "0",
+        "legacy_event_id": null,
+        "event_id": null,
+        "executed_targets": 0
+      },
+      "local": {
+        "event": true,
+        "detail": true,
+        "agenda": {
+          "id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+          "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+          "status": "executada",
+          "dedup_key": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+          "client_id": "canonical-cert",
+          "client_op_id": "d5796f11-2eb0-43b8-b4be-3776b58ea801",
+          "client_tx_id": "b8e1cf3c-5ad4-450f-92da-b3bc9a959bbe",
+          "client_recorded_at": "2026-10-15T09:09:49.733+00:00",
+          "server_received_at": "2026-10-15T09:09:49.803621+00:00",
+          "source_demand_key": null,
+          "preview_group_id": null,
+          "protocolo_id": "54a934f3-7392-4edf-8a79-a097ff752818",
+          "protocol_item_version_id": "3f66210b-55ea-4649-b79d-dbcc7b4ae0bc",
+          "protocol_item_snapshot": {
+            "itemKey": "synthetic_dose",
+            "version": 1,
+            "actionType": "vacinacao",
+            "productClass": "vacina_teste",
+            "productRequirementKind": "product_class"
+          },
+          "janela_inicio": "2026-10-15",
+          "janela_fim": null,
+          "data_programada": "2026-10-15",
+          "lote_id": null,
+          "produto_veterinario_id": null,
+          "produto_snapshot": {},
+          "produto_classe": "vacina_teste",
+          "acao_sanitaria": "vacinacao",
+          "execution_evento_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+          "metadata": {
+            "itemKey": "synthetic_dose",
+            "targetAnimalIds": [
+              "0eabf91c-ad25-4a9e-9810-81e99901d84f"
+            ],
+            "productRequirementKind": "product_class",
+            "execution": {
+              "status": "executed",
+              "eventId": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+              "executedAt": "2026-10-15T12:00:00.000Z",
+              "clientOpId": "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+            }
+          },
+          "created_at": "2026-10-15T09:09:49.803621+00:00",
+          "updated_at": "2026-10-15T09:09:50.209Z",
+          "deleted_at": null,
+          "revision": 0,
+          "contract_version": 2,
+          "domain_op_id": "aa4caef6-133f-4e50-9963-9481fb725058",
+          "catalog_protocolo_v2_id": "54a934f3-7392-4edf-8a79-a097ff752818",
+          "catalog_protocol_item_version_v2_id": "3f66210b-55ea-4649-b79d-dbcc7b4ae0bc"
+        },
+        "gesture": {
+          "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+          "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+          "client_id": "canonical-cert",
+          "status": "REJECTED",
+          "created_at": "2026-10-15T09:09:50.215Z",
+          "diagnostics": {
+            "last_attempt_started_at": "2026-10-15T09:09:50.239Z",
+            "result_received_at": "2026-10-15T09:09:50.325Z",
+            "ack_installed_at": "2026-10-15T09:09:50.334Z",
+            "client_op_ids": [
+              "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+              "ec913b38-dddc-4b33-aec7-8367e9a81acc"
+            ],
+            "reconciliation": []
+          },
+          "sync_result": "REJECTED",
+          "completed_at": "2026-10-15T09:09:50.328Z",
+          "last_error": "sanitario_v2 completed with rejection or conflict",
+          "operation_results": [
+            {
+              "op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+              "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+              "domain_op_id": "eccb8062-6c1d-4444-87df-646eecab24ba",
+              "status": "REJECTED",
+              "reason_code": "SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH",
+              "retryable": false,
+              "matched": true,
+              "recorded_at": "2026-10-15T09:09:50.328Z",
+              "command": "apply_factual_core"
+            },
+            {
+              "op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+              "client_op_id": "1897d177-6c56-4477-a4d4-6c0bc6fcae4d",
+              "domain_op_id": "5d43df16-f9d9-4fba-a47f-686c440fe563",
+              "status": "REJECTED",
+              "reason_code": "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED",
+              "reason_message": "Inventory movement cannot retry a terminally rejected factual operation",
+              "matched": true,
+              "recorded_at": "2026-10-15T09:09:50.328Z"
+            }
+          ]
+        },
+        "ops": 2,
+        "balance": 98
+      }
+    }
+  },
+  "transport": [
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "e7511fcc-b906-4d4a-a190-54f2f582465a",
+          "client_op_id": "e7511fcc-b906-4d4a-a190-54f2f582465a",
+          "domain_op_id": "45b5c8c0-a469-4e5b-a832-f2e758048a7e",
+          "status": "APPLIED",
+          "canonical_entity_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+          "current_revision": 0,
+          "canonical_status": "programada",
+          "retryable": false,
+          "canonical_result": {
+            "status": "programada",
+            "replayed": false,
+            "revision": 0,
+            "agenda_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+            "animal_ids": [
+              "46dbca71-7d3a-4572-9455-7c44943dbb51"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+          "client_op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+          "domain_op_id": "f57d2bee-8377-47d3-b88b-0471ed7d882e",
+          "status": "APPLIED",
+          "canonical_entity_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+          "current_revision": 1,
+          "canonical_status": "fechada",
+          "retryable": false,
+          "canonical_result": {
+            "replayed": false,
+            "revision": 1,
+            "agenda_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+            "evento_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+            "animal_ids": [
+              "46dbca71-7d3a-4572-9455-7c44943dbb51"
+            ],
+            "agenda_status": "fechada"
+          }
+        },
+        {
+          "op_id": "a040655d-4f86-4ceb-9c87-630edbccb088",
+          "status": "APPLIED"
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+          "client_op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+          "domain_op_id": "f57d2bee-8377-47d3-b88b-0471ed7d882e",
+          "status": "APPLIED",
+          "canonical_entity_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+          "current_revision": 1,
+          "canonical_status": "fechada",
+          "retryable": false,
+          "canonical_result": {
+            "replayed": false,
+            "revision": 1,
+            "agenda_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+            "evento_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+            "animal_ids": [
+              "46dbca71-7d3a-4572-9455-7c44943dbb51"
+            ],
+            "agenda_status": "fechada"
+          }
+        },
+        {
+          "op_id": "a040655d-4f86-4ceb-9c87-630edbccb088",
+          "status": "APPLIED"
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "93c2803e-ec06-4452-824c-fcabcdef723b",
+          "client_op_id": "93c2803e-ec06-4452-824c-fcabcdef723b",
+          "domain_op_id": "e1cd20d2-bc4d-4c9e-a055-4354aa1a4cd1",
+          "status": "APPLIED",
+          "canonical_entity_id": "370ee5cb-4c52-4211-994a-447b32d7ca0f",
+          "current_revision": 0,
+          "canonical_status": "programada",
+          "retryable": false,
+          "canonical_result": {
+            "status": "programada",
+            "replayed": false,
+            "revision": 0,
+            "agenda_id": "370ee5cb-4c52-4211-994a-447b32d7ca0f",
+            "animal_ids": [
+              "0704bba1-9fa8-46cd-a48b-a44a1174f357"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "failed": "http://127.0.0.1:56321/functions/v1/sync-batch",
+      "reason": "net::ERR_CONNECTION_RESET"
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+          "client_op_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+          "domain_op_id": "a7a91478-d6b4-445f-852e-23497eab9b5e",
+          "status": "APPLIED",
+          "canonical_entity_id": "370ee5cb-4c52-4211-994a-447b32d7ca0f",
+          "current_revision": 1,
+          "canonical_status": "fechada",
+          "retryable": false,
+          "canonical_result": {
+            "replayed": false,
+            "revision": 1,
+            "agenda_id": "370ee5cb-4c52-4211-994a-447b32d7ca0f",
+            "evento_id": "1c122860-614d-4ddf-8fa4-52dc3850d1e1",
+            "animal_ids": [
+              "0704bba1-9fa8-46cd-a48b-a44a1174f357"
+            ],
+            "agenda_status": "fechada"
+          }
+        },
+        {
+          "op_id": "8e4ed5da-f464-4ba4-a970-46b8f7438fc5",
+          "status": "APPLIED"
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "e0bb4492-1ff8-4464-827a-cf347cee0190",
+          "client_op_id": "e0bb4492-1ff8-4464-827a-cf347cee0190",
+          "domain_op_id": "a3d4ca38-ec70-4450-8422-881cfbe1e174",
+          "status": "APPLIED",
+          "canonical_entity_id": "f39b9c84-6b6d-4805-89c9-c5c41d7d4acb",
+          "current_revision": 0,
+          "canonical_status": "programada",
+          "retryable": false,
+          "canonical_result": {
+            "status": "programada",
+            "replayed": false,
+            "revision": 0,
+            "agenda_id": "f39b9c84-6b6d-4805-89c9-c5c41d7d4acb",
+            "animal_ids": [
+              "ddd4a9ff-f973-4ec8-8ce0-247eaaf4f4e6"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "failed": "http://127.0.0.1:56321/functions/v1/sync-batch",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "c756403d-a5c1-46a1-ba77-6cba9f7ca091",
+          "client_op_id": "c756403d-a5c1-46a1-ba77-6cba9f7ca091",
+          "domain_op_id": "0a0b3e83-6590-47c1-b0d8-fa4688f1d63b",
+          "status": "APPLIED",
+          "canonical_entity_id": "a1c66cb6-8798-4ac1-8cf3-dca8e1489725",
+          "current_revision": 0,
+          "canonical_status": "programada",
+          "retryable": false,
+          "canonical_result": {
+            "status": "programada",
+            "replayed": false,
+            "revision": 0,
+            "agenda_id": "a1c66cb6-8798-4ac1-8cf3-dca8e1489725",
+            "animal_ids": [
+              "377f272f-f7cb-4dfa-8cf6-11f7f648abec"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "status": 403
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "46248673-0fb1-468a-a455-9d3c713388c2",
+          "client_op_id": "46248673-0fb1-468a-a455-9d3c713388c2",
+          "domain_op_id": "a7fa469d-74fb-4e48-bb86-0c32a28cb52d",
+          "status": "REJECTED",
+          "reason_code": "SANITARIO_PRODUCT_FIELD_APPLICABILITY_MISMATCH",
+          "retryable": false
+        },
+        {
+          "op_id": "5c27340b-34a0-4619-8ce2-04811720abb1",
+          "client_op_id": "5c27340b-34a0-4619-8ce2-04811720abb1",
+          "domain_op_id": "b7bda27f-531f-429a-9fad-3051851bc4d1",
+          "status": "REJECTED",
+          "reason_code": "SANITARIO_INVENTORY_MOVEMENT_INVALID",
+          "reason_message": "Sanitary inventory movement failed conservative validation"
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "d6ba7c13-9efb-4188-9dea-ab01679f5b79",
+          "client_op_id": "d6ba7c13-9efb-4188-9dea-ab01679f5b79",
+          "domain_op_id": "fb66eda3-f7ab-4f98-9f5f-e7b0133c32c3",
+          "status": "REJECTED",
+          "reason_code": "SANITARIO_CATALOG_PROTOCOL_CROSS_FARM_OR_MISSING",
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "status": 403
+    },
+    {
+      "status": 401
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "05f7cc97-a22f-45cf-9251-ea09d7045a5c",
+          "client_op_id": "05f7cc97-a22f-45cf-9251-ea09d7045a5c",
+          "domain_op_id": "cfb3fc3d-8549-4d85-a972-0e401c0d2830",
+          "status": "APPLIED",
+          "canonical_entity_id": "e24facb3-f3a3-4fe9-8c7e-f5595f04a760",
+          "current_revision": 0,
+          "canonical_status": "programada",
+          "retryable": false,
+          "canonical_result": {
+            "status": "programada",
+            "replayed": false,
+            "revision": 0,
+            "agenda_id": "e24facb3-f3a3-4fe9-8c7e-f5595f04a760",
+            "animal_ids": [
+              "eee8f5e9-ac9e-4d18-b61f-53a8d22a3f5d"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "status": 401
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "dd64f6b7-b0b7-412e-93dc-46b0ef90e687",
+          "client_op_id": "dd64f6b7-b0b7-412e-93dc-46b0ef90e687",
+          "domain_op_id": "49d896c5-c5d6-436c-8615-c65d2868390e",
+          "status": "APPLIED",
+          "canonical_entity_id": "e24facb3-f3a3-4fe9-8c7e-f5595f04a760",
+          "current_revision": 1,
+          "canonical_status": "fechada",
+          "retryable": false,
+          "canonical_result": {
+            "replayed": false,
+            "revision": 1,
+            "agenda_id": "e24facb3-f3a3-4fe9-8c7e-f5595f04a760",
+            "evento_id": "dd64f6b7-b0b7-412e-93dc-46b0ef90e687",
+            "animal_ids": [
+              "eee8f5e9-ac9e-4d18-b61f-53a8d22a3f5d"
+            ],
+            "agenda_status": "fechada"
+          }
+        },
+        {
+          "op_id": "5aceedaa-b57e-4ab0-9b64-3e0c468fb6e6",
+          "status": "APPLIED"
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "op_id": "39ea2897-0033-4994-b128-34c63a79ce07",
+          "client_op_id": "39ea2897-0033-4994-b128-34c63a79ce07",
+          "domain_op_id": "ae293c77-1e0e-41e5-ba2b-e9ab3d51eb07",
+          "status": "CONFLICT",
+          "reason_code": "SANITARIO_AGENDA_REVISION_CONFLICT",
+          "retryable": false,
+          "current_revision": 1
+        },
+        {
+          "op_id": "4f8f7484-809b-4a23-ae1b-7b398c3e5be7",
+          "client_op_id": "4f8f7484-809b-4a23-ae1b-7b398c3e5be7",
+          "domain_op_id": "96e9b23d-66f9-463f-9e91-8b3b3a04a735",
+          "status": "REJECTED",
+          "reason_code": "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED",
+          "reason_message": "Inventory movement cannot retry a terminally rejected factual operation"
+        }
+      ]
+    }
+  ],
+  "final_gates": [
+    {
+      "fazenda_id": "5140cc90-c707-4505-8817-37cefe1cf037",
+      "enabled": false
+    },
+    {
+      "fazenda_id": "ba70d5bc-3f4b-4e86-a778-476af2a355b3",
+      "enabled": false
+    },
+    {
+      "fazenda_id": "f9aad1c2-160b-4886-b1f5-0e512273761f",
+      "enabled": false
+    },
+    {
+      "fazenda_id": "bef0fab3-8361-4730-8834-0d5b229a92b5",
+      "enabled": false
+    },
+    {
+      "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+      "enabled": false
+    },
+    {
+      "fazenda_id": "330907b1-c297-401e-bce8-ab9f9e481505",
+      "enabled": false
+    },
+    {
+      "fazenda_id": "c0d968a0-d87a-4ed6-bad2-5707e593a53e",
+      "enabled": false
+    },
+    {
+      "fazenda_id": "f63daca1-e380-4ae9-b28f-d31382028fc8",
+      "enabled": false
+    },
+    {
+      "fazenda_id": "e271a514-3405-4f89-8abc-27d1eb991d38",
+      "enabled": false
+    },
+    {
+      "fazenda_id": "56bacfcd-750a-4699-b4a8-55ddfad21a81",
+      "enabled": false
+    },
+    {
+      "fazenda_id": "ba54c4b4-407e-4427-9a38-5a33c77cf727",
+      "enabled": false
+    }
+  ],
+  "enabled_gate_count_after_cleanup": 0,
+  "local_gates_after_cleanup": [
+    false,
+    false,
+    false
+  ],
+  "source_hash": "3b0fdf0486df770f04df2cff580b4d8a2badd1a06a9b764b4b3a60c1cc00a92e",
+  "sources": [
+    {
+      "file": "src/lib/offline/pull.ts",
+      "sha256": "5ba8f08f0ab589871da52da7bdd4b71644e5b23775f6577936effbf214939a30"
+    },
+    {
+      "file": "src/lib/offline/syncWorker.ts",
+      "sha256": "2ba131b795633d9e30054aa83fdbaafc6423fe8de38a2cde3b1d79d73dfba16d"
+    },
+    {
+      "file": "supabase/functions/sync-batch/index.ts",
+      "sha256": "c92da95e72dd281a03ddd9e272d91fe62ff815aa33b3efc62283450e4cd3cc5d"
+    },
+    {
+      "file": "supabase/functions/sync-batch/inventory-dependency.ts",
+      "sha256": "30b46647b0406187236a53f7e3daed30300d3781ced2abbe6fe7dc4c4090d08f"
+    },
+    {
+      "file": "supabase/migrations/20261015070038_sanitario_agenda_catalog_v2_references.sql",
+      "sha256": "625fe8940f09476833205d44978031dcfd10223fb0683ee08afd7cd4ed0cd916"
+    },
+    {
+      "file": "src/lib/offline/ops.ts",
+      "sha256": "c732dd245d0a2d42152daa6a51537be93152c7fb8ca944413689f3aeb6f81dec"
+    },
+    {
+      "file": "src/pages/Reconciliacao.tsx",
+      "sha256": "f1e965095b39df43533dd7a99c9e2f85deb1fafd8ac760635403ef04fe64fc96"
+    },
+    {
+      "file": "src/pages/__tests__/Reconciliacao.test.tsx",
+      "sha256": "772424b1a4f81c2c1afad73a36142bb33b6cbdbf001de0fdd306f07d36501c27"
+    },
+    {
+      "file": "supabase/functions/sync-batch/sanitary-product-evidence.ts",
+      "sha256": "00e11ddd46045e6510d01f8ba0fb14082f0f5f049ae1044ae31c5bc287c319ea"
+    },
+    {
+      "file": "supabase/functions/sync-batch/sanitary-product-evidence.test.ts",
+      "sha256": "29f18df0d18b19cbdd66299c185d19f78c0837f8d5bcd51a99f80f01aaece523"
+    },
+    {
+      "file": "src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts",
+      "sha256": "cb0ea3e9a78d90a7d3b334c2ee1d9e23913049000903364e666e9f8f75abe6d6"
+    },
+    {
+      "file": "src/lib/offline/__tests__/sanitarioV2Worker.test.ts",
+      "sha256": "7c6c937b28c9179476404864cb9b1329ab3aeaaf8411acf7cf1aed5cb6ba7a7c"
+    }
+  ],
+  "initial_failures": [
+    {
+      "case": "C1",
+      "source_hash": "188a70622844f4c278fbfb98db89a8592bba94c45fb30992a9f4702e358dbdc7",
+      "evidence": {
+        "gesture": {
+          "client_tx_id": "b2f6031f-c828-4c2a-aff4-d7e85c9a9722",
+          "fazenda_id": "51427225-6cc9-40b1-a4d2-d9d58bea06cc",
+          "client_id": "canonical-cert",
+          "status": "REJECTED",
+          "created_at": "2026-10-15T02:44:23.484Z",
+          "diagnostics": {
+            "last_attempt_started_at": "2026-10-15T02:44:23.493Z",
+            "result_received_at": "2026-10-15T02:44:23.583Z",
+            "ack_installed_at": "2026-10-15T02:44:23.589Z",
+            "client_op_ids": [
+              "20b1273f-0196-4029-81f2-d5714c813215"
+            ],
+            "reconciliation": []
+          },
+          "sync_result": "REJECTED",
+          "completed_at": "2026-10-15T02:44:23.585Z",
+          "last_error": "sanitario_v2 completed with rejection or conflict",
+          "operation_results": [
+            {
+              "op_id": "20b1273f-0196-4029-81f2-d5714c813215",
+              "client_op_id": "20b1273f-0196-4029-81f2-d5714c813215",
+              "domain_op_id": "5853f6a2-1b26-4e50-9072-9cccda74abc6",
+              "status": "REJECTED",
+              "reason_code": "SANITARIO_RPC_REJECTED",
+              "retryable": false,
+              "matched": true,
+              "recorded_at": "2026-10-15T02:44:23.585Z",
+              "command": "create_agenda"
+            }
+          ]
+        },
+        "ops": [],
+        "sent": [
+          {
+            "client_op_id": "20b1273f-0196-4029-81f2-d5714c813215",
+            "client_tx_id": "b2f6031f-c828-4c2a-aff4-d7e85c9a9722",
+            "domain_op_id": "5853f6a2-1b26-4e50-9072-9cccda74abc6",
+            "domain": "sanitario_v2",
+            "contract_version": 2,
+            "command": "create_agenda",
+            "payload": {
+              "agenda": {
+                "id": "02009eb9-6c78-494e-b145-e418c27f7cef",
+                "dedup_key": "02009eb9-6c78-494e-b145-e418c27f7cef",
+                "protocolo_id": "c5fbf357-b966-4fc4-a0a1-b249083e72e4",
+                "protocol_item_version_id": "ced6d658-cfad-433e-8dd8-b282c27d8265",
+                "protocol_item_snapshot": {
+                  "itemKey": "synthetic_dose",
+                  "version": 1,
+                  "actionType": "vacinacao",
+                  "productRequirementKind": "product_class",
+                  "productClass": "vacina_teste"
+                },
+                "janela_inicio": "2026-10-15",
+                "janela_fim": null,
+                "data_programada": "2026-10-15",
+                "lote_id": null,
+                "produto_snapshot": {},
+                "produto_classe": "vacina_teste",
+                "acao_sanitaria": "vacinacao",
+                "metadata": {
+                  "itemKey": "synthetic_dose",
+                  "productRequirementKind": "product_class",
+                  "targetAnimalIds": [
+                    "294db04a-fb54-4955-a9e5-ab72cef534fe"
+                  ]
+                },
+                "client_recorded_at": "2026-10-15T02:44:23.484Z"
+              },
+              "animal_ids": [
+                "294db04a-fb54-4955-a9e5-ab72cef534fe"
+              ]
+            }
+          }
+        ],
+        "rpc_diagnostic": {
+          "code": "23503",
+          "constraint": "fk_sanitario_agenda_v2_protocolo_fazenda",
+          "detail": "Key (protocolo_id, fazenda_id)=(c5fbf357-b966-4fc4-a0a1-b249083e72e4, 51427225-6cc9-40b1-a4d2-d9d58bea06cc) is not present in table \"protocolos_sanitarios\".",
+          "message": "insert or update on table \"sanitario_agenda_v2\" violates foreign key constraint \"fk_sanitario_agenda_v2_protocolo_fazenda\""
+        },
+        "remote_after_rejection": {
+          "agendas": 0,
+          "receipts": 0,
+          "events": 0
+        }
+      },
+      "fix": "Additive catalog reference migration + pull normalization"
+    },
+    {
+      "case": "C5",
+      "source_hash": "1b028c283e859d6c103e04c416de3dc791fb53f67aa9ff1afb56d42b3217bc27",
+      "evidence": {
+        "gesture": {
+          "client_tx_id": "10bba4f6-b3f8-430d-9f58-a0f5d5dcdef7",
+          "fazenda_id": "185f4f53-baa8-4d3e-be04-55cfacd3836a",
+          "client_id": "canonical-cert",
+          "status": "PENDING",
+          "created_at": "2026-10-15T07:11:43.654Z",
+          "diagnostics": {
+            "last_attempt_started_at": "2026-10-15T07:11:43.684Z",
+            "result_received_at": "2026-10-15T07:11:43.771Z",
+            "ack_installed_at": "2026-10-15T07:11:43.777Z",
+            "client_op_ids": [
+              "a66bc629-18da-4767-9faa-838fc28df168",
+              "ee25ddb4-ad61-45c6-9009-396da1a38484"
+            ],
+            "reconciliation": []
+          },
+          "retry_count": 1,
+          "last_error": "sanitario_v2 retry scheduled with backoff",
+          "operation_results": [
+            {
+              "op_id": "a66bc629-18da-4767-9faa-838fc28df168",
+              "client_op_id": "a66bc629-18da-4767-9faa-838fc28df168",
+              "domain_op_id": "075eba97-c1a7-402d-ae5f-dc176412ceb3",
+              "status": "REJECTED",
+              "reason_code": "SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH",
+              "retryable": false,
+              "matched": true,
+              "recorded_at": "2026-10-15T07:11:43.773Z",
+              "command": "apply_factual_core"
+            }
+          ]
+        },
+        "operations": [
+          {
+            "client_op_id": "ee25ddb4-ad61-45c6-9009-396da1a38484",
+            "table": "state_insumo_movimentacoes",
+            "sync_state": "RETRYABLE",
+            "blocked_reason": "SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED"
+          }
+        ],
+        "remote": {
+          "events": 0,
+          "details": 0,
+          "animals": 0,
+          "movements": 0,
+          "balance": "100.000",
+          "revision": "0",
+          "legacy_event_id": null,
+          "event_id": null,
+          "executed_targets": 0
+        },
+        "local_fact_preserved": true
+      },
+      "fix": "Terminal dependent inventory result in Edge and canonical worker; retain local fact/audit"
+    }
+  ],
+  "previous_certification": {
+    "source_hash": "2100fb6f0c4987bbc26a0ff805e6247925314dbd028753f73ac647dde22f6912",
+    "cases": [
+      {
+        "code": "C1",
+        "result": "PASS"
+      },
+      {
+        "code": "C2",
+        "result": "PASS"
+      },
+      {
+        "code": "C3",
+        "result": "PASS"
+      },
+      {
+        "code": "C4",
+        "result": "PASS"
+      },
+      {
+        "code": "C5",
+        "result": "PASS"
+      },
+      {
+        "code": "C6",
+        "result": "PASS"
+      },
+      {
+        "code": "C7",
+        "result": "PASS"
+      },
+      {
+        "code": "C8",
+        "result": "PASS"
+      }
+    ],
+    "c5_boundary": "Previous PASS covered rejection and local preservation only; did not certify remote convergence."
+  },
+  "c5_reproduced_defects": [
+    {
+      "command": "pnpm exec vitest run src/lib/offline/__tests__/sanitarioV2Worker.test.ts -t \"terminaliza companion\"",
+      "result_before": "2 failed: retained queue count expected 2, observed 0",
+      "fix": "Retain rejected factual envelopes; public retry re-arms core and stock atomically without local reapply."
+    },
+    {
+      "command": "pnpm exec vitest run supabase/functions/sync-batch/sanitary-product-evidence.test.ts -t \"separa curadoria\"",
+      "result_before": "1 failed: retrospective fact rejected solely by current curation/version",
+      "fix": "Explicit retrospective marker + prospective_authorization=false separates curatorial state from factual evidence; identity, sources and withdrawal checks retained."
+    }
+  ],
+  "catalog_reference_regressions": {
+    "cases": [
+      {
+        "name": "old queued legacy payload and replay keep original FKs",
+        "result": "PASS"
+      },
+      {
+        "name": "fazenda V2 references have explicit storage and integrity",
+        "result": "PASS"
+      },
+      {
+        "name": "global V2 references have explicit storage and integrity",
+        "result": "PASS"
+      },
+      {
+        "name": "pack V2 references have explicit storage and integrity",
+        "result": "PASS"
+      },
+      {
+        "name": "cross farm and mismatched item are rejected atomically",
+        "result": "PASS"
+      },
+      {
+        "name": "referenced tenant, parent and deletes cannot bypass integrity",
+        "result": "PASS"
+      },
+      {
+        "name": "concurrent reference creation serializes a tenant move",
+        "result": "PASS"
+      }
+    ],
+    "environment": "isolated native Supabase; synthetic catalog only",
+    "enabled_gate_count_after_cleanup": 0,
+    "source_hash": "c9200e5a74a6c4d0ae25d4dd1ba1a1f3673708b639fc56ca5de13b6e32d19bdb"
+  },
+  "persisted_factual_fields": {
+    "C1": {
+      "id": "38b90178-4932-45e8-9e07-70021b3945bc",
+      "fazenda_id": "5140cc90-c707-4505-8817-37cefe1cf037",
+      "source_sanitario_agenda_v2_id": "6fd789cf-a37f-452a-9303-9aab7e4c82cc",
+      "occurred_at": "2026-10-15T12:00:00.000Z",
+      "client_op_id": "38b90178-4932-45e8-9e07-70021b3945bc",
+      "client_tx_id": "b1184b2d-f83f-4fe0-9b27-d3fd486d1a96",
+      "product": {
+        "dose": 2,
+        "unit": "ml",
+        "route": "subcutanea",
+        "doseUnit": "ml",
+        "productId": "172500eb-1496-4f12-8f95-ca66339f6569",
+        "productName": "Synthetic 172500eb-1496-4f12-8f95-ca66339f6569",
+        "productClass": "vacina_teste",
+        "inventoryLotId": "529e2701-8174-4e73-98a7-838743d01935",
+        "quantityConsumed": 2,
+        "productClassGroupId": null
+      },
+      "registration_mode": "executed_fact",
+      "prospective_authorization": false,
+      "warnings": [
+        "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.",
+        "Registro retrospectivo: a curadoria pode mudar e não autoriza usos futuros."
+      ],
+      "produto_sanitario_v2_id": "172500eb-1496-4f12-8f95-ca66339f6569",
+      "produto_nome_snapshot": "Synthetic 172500eb-1496-4f12-8f95-ca66339f6569",
+      "dose_quantidade": "2.0000",
+      "dose_unidade": "ml",
+      "via_aplicacao": "subcutanea",
+      "responsavel_nome": "Synthetic responsible",
+      "carencia_carne_dias": null,
+      "carencia_leite_dias": null,
+      "estoque_lote_id": "529e2701-8174-4e73-98a7-838743d01935",
+      "actor_user_id": "649b6e3f-7bb0-4572-b54d-9ebd76966fa0",
+      "created_by": "649b6e3f-7bb0-4572-b54d-9ebd76966fa0"
+    },
+    "C5": {
+      "id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+      "fazenda_id": "7902c934-a440-4adf-b043-437bcbda12da",
+      "source_sanitario_agenda_v2_id": "97bb04a5-3fe4-4581-8786-0c84d04b6992",
+      "occurred_at": "2026-10-15T12:00:00.000Z",
+      "client_op_id": "ec913b38-dddc-4b33-aec7-8367e9a81acc",
+      "client_tx_id": "95db582c-9e33-4884-8a1c-924733792205",
+      "product": {
+        "dose": 2,
+        "unit": "ml",
+        "route": "subcutanea",
+        "doseUnit": "ml",
+        "productId": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+        "productName": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+        "productClass": "vacina_teste",
+        "inventoryLotId": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+        "quantityConsumed": 2,
+        "productClassGroupId": null
+      },
+      "registration_mode": "executed_fact",
+      "prospective_authorization": false,
+      "warnings": [
+        "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.",
+        "Registro retrospectivo: a curadoria pode mudar e não autoriza usos futuros."
+      ],
+      "produto_sanitario_v2_id": "0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+      "produto_nome_snapshot": "Synthetic 0bbd9dd3-402c-4999-bc6b-e82865742d2e",
+      "dose_quantidade": "2.0000",
+      "dose_unidade": "ml",
+      "via_aplicacao": "subcutanea",
+      "responsavel_nome": "Synthetic responsible",
+      "carencia_carne_dias": null,
+      "carencia_leite_dias": null,
+      "estoque_lote_id": "8c20a984-e25e-45df-96a7-7b7aecc366a4",
+      "actor_user_id": "649b6e3f-7bb0-4572-b54d-9ebd76966fa0",
+      "created_by": "649b6e3f-7bb0-4572-b54d-9ebd76966fa0"
+    },
+    "C8": {
+      "id": "48ace8cc-c304-4d46-8eba-63cd0f5914fd",
+      "fazenda_id": "ba54c4b4-407e-4427-9a38-5a33c77cf727",
+      "source_sanitario_agenda_v2_id": "199fd745-3e85-40f8-85d7-4845b235179f",
+      "occurred_at": "2026-10-15T12:00:00.000Z",
+      "client_op_id": "48ace8cc-c304-4d46-8eba-63cd0f5914fd",
+      "client_tx_id": "e7c720f5-77bd-4cd7-923c-c146142902ec",
+      "product": {
+        "dose": 2,
+        "unit": "ml",
+        "route": "subcutanea",
+        "doseUnit": "ml",
+        "productId": "5fdb64f1-8ce3-41ed-bd99-cec459ef634b",
+        "productName": "Synthetic 5fdb64f1-8ce3-41ed-bd99-cec459ef634b",
+        "productClass": "vacina_teste",
+        "inventoryLotId": "9eb63812-737d-4970-93b7-1379e6e89783",
+        "quantityConsumed": 2,
+        "productClassGroupId": null
+      },
+      "registration_mode": "executed_fact",
+      "prospective_authorization": false,
+      "warnings": [
+        "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.",
+        "Registro retrospectivo: a curadoria pode mudar e não autoriza usos futuros."
+      ],
+      "produto_sanitario_v2_id": "5fdb64f1-8ce3-41ed-bd99-cec459ef634b",
+      "produto_nome_snapshot": "Synthetic 5fdb64f1-8ce3-41ed-bd99-cec459ef634b",
+      "dose_quantidade": "2.0000",
+      "dose_unidade": "ml",
+      "via_aplicacao": "subcutanea",
+      "responsavel_nome": "Synthetic responsible",
+      "carencia_carne_dias": null,
+      "carencia_leite_dias": null,
+      "estoque_lote_id": "9eb63812-737d-4970-93b7-1379e6e89783",
+      "actor_user_id": "649b6e3f-7bb0-4572-b54d-9ebd76966fa0",
+      "created_by": "649b6e3f-7bb0-4572-b54d-9ebd76966fa0"
+    }
+  },
+  "typecheck": {
+    "baseline": 242,
+    "current": 241,
+    "added": [],
+    "removed": [
+      "src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts|TS2554|Expected 2 arguments, but got 1."
+    ]
+  },
+  "cleanup": {
+    "project_id": "sanitario-v2-review-ea70bd7c",
+    "stopped": true,
+    "backup": true,
+    "owned_running_containers": 0,
+    "shared_instances_preserved": [
+      "GestaoAgro",
+      "animal-v2-1762db34"
+    ],
+    "readonly_persisted_field_probe_performed_with_gates_off": true
+  },
+  "local_validation": {
+    "focused_vitest_tests": 156,
+    "main_projection_worker_tests": 44,
+    "baseline_functional": "exit 0; run e22197cf",
+    "lint": "exit 0",
+    "build": "exit 0; large chunk warning",
+    "typecheck": "exit 2; 241 baseline-only diagnostics"
+  },
+  "limitations": [
+    "Minimal HTML shell imports real app TS; no UI automation.",
+    "C4 kills the Chromium renderer; C8 restarts the page/client in the same IndexedDB browser context. Physical mobile/OS/browser-process cold restart not certified.",
+    "C2 restores a pre-ACK durable queue checkpoint; C3 forwards the real HTTP request then drops its ACK. C6 injects a signed expired synthetic-user JWT on the first worker request, followed by actual GoTrue refresh.",
+    "Native local Supabase only; no staging/production write, protocol import or rollout.",
+    "Existing native catalog-reference tests were not rerun: migration and harness unchanged; their previous 7-case evidence is retained separately.",
+    "Retrospective exception requires explicit executed_fact and prospective_authorization=false. Legacy envelopes without these fields retain strict validation.",
+    "Already deleted envelopes from previous worker versions cannot be recovered by retryRejectedOperation. Reconstitution/recovery of those old stranded facts is not implemented or certified.",
+    "Deleted products, changed technical sources/withdrawal claims, corrections, supersessions and withdrawals are not globally certified by C5 recovery. No source-version or withdrawal guard was relaxed."
+  ],
+  "verification_gate": "READY",
+  "verification_scope": "Code integration ready for PR review only",
+  "factual_reconciliation": "C1-C8 tested paths only; all relevant operational scenarios not certified",
+  "rollout": "NOT_AUTHORIZED"
+}

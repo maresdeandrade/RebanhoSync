@@ -20,6 +20,7 @@ interface AppliedLedgerLookup {
 
 export type SanitarioInventoryDependencyDecision =
   | { status: "READY"; source: "CURRENT_BATCH" | "LEDGER" }
+  | { status: "REJECTED"; reason_code: "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED" }
   | {
     status: "BLOCKED_DEPENDENCY";
     reason_code: typeof SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED;
@@ -77,6 +78,15 @@ export async function resolveSanitarioInventoryFactualDependency(input: {
     };
   }
   if (ledger.data) return { status: "READY", source: "LEDGER" };
+  const terminalParent = factualOperations.some((dependency) =>
+    input.processedResults.some((entry) =>
+      (entry.op_id === dependency.client_op_id || entry.client_op_id === dependency.client_op_id) &&
+      (entry.status === "REJECTED" || entry.status === "CONFLICT")
+    )
+  );
+  if (terminalParent) {
+    return { status: "REJECTED", reason_code: "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED" };
+  }
   return {
     status: "BLOCKED_DEPENDENCY",
     reason_code: SANITARIO_INVENTORY_FACTUAL_OPERATION_REQUIRED,

@@ -809,6 +809,28 @@ async function selectDeprecatedActiveItems(client, data, lockRows = false) {
       for (const row of existing.rows) result.push({ ...deprecated, ...row });
     }
   }
+  // Explicitly superseded physical versions are retired only when still draft.
+  // Never reuse their UUIDs, rewrite snapshots, or retire an approved active item.
+  for (const item of data.protocol_item_rows) {
+    const supersedes = item.snapshot_template?.metadata?.supersedes;
+    if (!supersedes) continue;
+    assert(UUID_LIKE.test(supersedes.id ?? "") && supersedes.id !== item.id,
+      "invalid_superseded_item_identity");
+    assert(Number.isInteger(supersedes.version) && supersedes.version < item.version,
+      "invalid_superseded_item_version");
+    const existing = await client.query(
+      `select * from public.sanitario_protocolo_itens_versions_v2
+       where id is not distinct from $1${lockRows ? " for update" : ""}`, [supersedes.id],
+    );
+    for (const row of existing.rows) {
+      assert(row.protocol_id === item.protocol_id && row.logical_item_key === item.logical_item_key &&
+        Number(row.version) === supersedes.version, "superseded_item_identity_conflict");
+      if (!row.deleted_at) result.push({
+        ...row, familyCode: item.protocol_key,
+        replacementKeys: [`${item.logical_item_key}:v${item.version}`],
+      });
+    }
+  }
   return result;
 }
 
@@ -1060,7 +1082,7 @@ async function main() {
       const plan = await buildPlan(client, data);
       printPlan("dry-run", plan);
       console.log(
-        `aviso: publisher_complete=false; cobertura estrutural 14/14; certificacao PostgreSQL aguarda P3`,
+        `aviso: publisher_complete=${PIPELINE_STATUS.PUBLISHER_COMPLETE}; cobertura estrutural 14/14; dry-run nao certifica autorizacao operacional, RLS ou concorrencia`,
       );
       return;
     }
