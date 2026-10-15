@@ -97,6 +97,7 @@ import {
   formatEventDate,
   formatNumber,
 } from "./Insumos/helpers/formatting";
+import { resolveLotEditCosts } from "./Insumos/helpers/resolveLotEditCosts";
 
 type EntryForm = {
   tipo: InsumoTipoEnum;
@@ -1024,75 +1025,26 @@ export default function Insumos() {
       return;
     }
 
-    const quantidadeBase = lot.quantidade_inicial_base;
-    const hasCustoTotal = editForm.custoTotal.trim() !== "";
-    const hasCustoUnitario = editForm.custoUnitario.trim() !== "";
-
-    let resolvedCustoUnitario: number | null = null;
-    let resolvedCustoTotal: number | null = null;
-    let resolvedCustoStatus: "informado" | "ausente" = "ausente";
-
-    if (hasCustoTotal || hasCustoUnitario) {
-      const parsedCustoTotal = hasCustoTotal
-        ? parseFloat(editForm.custoTotal.replace(",", "."))
-        : null;
-      const parsedCustoUnitario = hasCustoUnitario
-        ? parseFloat(editForm.custoUnitario.replace(",", "."))
-        : null;
-
-      if (
-        hasCustoTotal &&
-        (parsedCustoTotal === null ||
-          isNaN(parsedCustoTotal) ||
-          parsedCustoTotal < 0)
-      ) {
-        showError("Custo total informado é inválido.");
-        return;
-      }
-      if (
-        hasCustoUnitario &&
-        (parsedCustoUnitario === null ||
-          isNaN(parsedCustoUnitario) ||
-          parsedCustoUnitario < 0)
-      ) {
-        showError("Custo unitário informado é inválido.");
-        return;
-      }
-
-      if (parsedCustoTotal !== null && parsedCustoUnitario !== null) {
-        const calculatedTotal = parsedCustoUnitario * quantidadeBase;
-        if (Math.abs(parsedCustoTotal - calculatedTotal) > 0.01) {
-          showError(
-            `Coerência de custos inválida: custo total informado (${parsedCustoTotal.toFixed(2)}) diverge do calculado (${calculatedTotal.toFixed(2)}) com base no custo unitário.`,
-          );
-          return;
-        }
-        resolvedCustoTotal = parsedCustoTotal;
-        resolvedCustoUnitario = parsedCustoUnitario;
-        resolvedCustoStatus = "informado";
-      } else if (parsedCustoTotal !== null) {
-        resolvedCustoTotal = parsedCustoTotal;
-        resolvedCustoUnitario = parseFloat(
-          (parsedCustoTotal / quantidadeBase).toFixed(4),
-        );
-        resolvedCustoStatus = "informado";
-      } else if (parsedCustoUnitario !== null) {
-        resolvedCustoUnitario = parsedCustoUnitario;
-        resolvedCustoTotal = parseFloat(
-          (parsedCustoUnitario * quantidadeBase).toFixed(2),
-        );
-        resolvedCustoStatus = "informado";
-      }
+    const costResolution = resolveLotEditCosts({
+      quantidadeBase: lot.quantidade_inicial_base,
+      custoTotal: editForm.custoTotal,
+      custoUnitario: editForm.custoUnitario,
+      origemCusto: editForm.origemCusto,
+    });
+    if ("error" in costResolution) {
+      showError(costResolution.error);
+      return;
     }
+    const {
+      hasCustoTotal,
+      hasCustoUnitario,
+      resolvedCustoTotal,
+      resolvedCustoUnitario,
+      resolvedCustoStatus,
+      resolvedOrigemCusto,
+    } = costResolution;
 
-    const resolvedOrigemCusto =
-      resolvedCustoStatus === "informado"
-        ? editForm.origemCusto === "ausente"
-          ? "manual"
-          : editForm.origemCusto
-        : "ausente";
-
-    const ops = [
+    const ops: Parameters<typeof createGesture>[1] = [
       {
         table: "insumos",
         action: "UPDATE" as const,
