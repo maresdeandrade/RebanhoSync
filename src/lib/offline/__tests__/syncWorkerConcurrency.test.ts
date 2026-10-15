@@ -1,6 +1,11 @@
 /** @vitest-environment jsdom */
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Transaction } from "dexie";
+
+const authObservers = vi.hoisted(() => new Set<
+  (event: string, session: { user: { id: string } } | null) => void
+>());
 
 vi.mock("@/lib/supabase", () => ({
   supabase: {
@@ -16,6 +21,10 @@ vi.mock("@/lib/supabase", () => ({
         error: null,
       })),
       refreshSession: vi.fn(),
+      onAuthStateChange: vi.fn((callback) => {
+        authObservers.add(callback);
+        return { data: { subscription: { unsubscribe: () => authObservers.delete(callback) } } };
+      }),
     },
   },
 }));
@@ -34,6 +43,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { supabase } from "@/lib/supabase";
 import { db } from "../db";
 import { createGesture } from "../ops";
 import { establishLocalOwnership } from "../ownership";
@@ -44,6 +54,8 @@ import {
   recoverStaleSyncingGesturesOnce,
 } from "../syncWorker";
 import type { Gesture, Operation } from "../types";
+
+const getSessionImplementation = vi.mocked(supabase.auth.getSession).getMockImplementation()!;
 
 const ownershipSession = (userId: string) =>
   ({ user: { id: userId } }) as Parameters<
@@ -102,6 +114,8 @@ async function loadGesture() {
 describe("F24.2C2.1 — Atomic Claim & Stale Worker Protection (T1–T10)", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    authObservers.clear();
+    vi.mocked(supabase.auth.getSession).mockImplementation(getSessionImplementation);
     vi.stubGlobal("fetch", vi.fn());
     vi.stubGlobal("localStorage", {
       getItem: () => null,
@@ -286,6 +300,272 @@ describe("F24.2C2.1 — Atomic Claim & Stale Worker Protection (T1–T10)", () =
   });
 
   // --------------------------------------------------------------------------
+  it("preserves the ACK when another recovery and processor run after the lock probe", async () => {
+    await seedGesture();
+    await db.queue_gestures.update(txId, { status: "SYNCING" });
+
+    let releaseFetch!: (response: Response) => void;
+    let reportFetchStarted!: () => void;
+    const fetchStarted = new Promise<void>((resolve) => {
+      reportFetchStarted = resolve;
+    });
+    const fetchHold = new Promise<Response>((resolve) => {
+      releaseFetch = resolve;
+    });
+    vi.mocked(fetch).mockImplementation(() => {
+      reportFetchStarted();
+      return fetchHold;
+    });
+
+    const transaction = db.transaction.bind(db);
+    let interleaved = false;
+    let processing: Promise<unknown> | undefined;
+    vi.spyOn(db, "transaction").mockImplementation((...args) => {
+      if (interleaved) return transaction(...args);
+      interleaved = true;
+      // Pause recovery A before its transaction begins, after its lock probe.
+      // Recovery B may requeue the orphan and a processor may claim it.
+      return (async () => {
+        await recoverStaleSyncingGesturesOnce();
+        processing = processGesture(await loadGesture());
+        await Promise.race([fetchStarted, processing]);
+        return transaction(...args);
+      })() as ReturnType<typeof db.transaction>;
+    });
+
+    try {
+      await recoverStaleSyncingGesturesOnce();
+      // If recovery holds the lock throughout, B cannot claim; finish A's
+      // legitimate recovery through the same processor instead.
+      if (!vi.mocked(fetch).mock.calls.length) {
+        processing = processGesture(await loadGesture());
+        await fetchStarted;
+      }
+      releaseFetch(appliedResponse());
+      await processing;
+
+      expect(await db.queue_gestures.get(txId)).toMatchObject({
+        status: "DONE",
+        sync_result: "APPLIED",
+      });
+      expect(await db.queue_ops.get(opId)).toBeUndefined();
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(await isGestureLockActive(txId)).toBe(false);
+    } finally {
+      releaseFetch(appliedResponse());
+      await processing;
+    }
+  });
+
+  it("releases the recovery lock and preserves work when its transaction fails", async () => {
+    await seedGesture();
+    await db.queue_gestures.update(txId, { status: "SYNCING" });
+    const originalGesture = await loadGesture();
+    const originalOperation = await db.queue_ops.get(opId);
+    const writeFailure = vi
+      .spyOn(db.queue_gestures, "update")
+      .mockRejectedValueOnce(new Error("recovery storage failure"));
+
+    await expect(recoverStaleSyncingGesturesOnce()).rejects.toThrow(
+      "recovery storage failure",
+    );
+    expect(await isGestureLockActive(txId)).toBe(false);
+    expect(await loadGesture()).toEqual(originalGesture);
+    expect(await db.queue_ops.get(opId)).toEqual(originalOperation);
+
+    writeFailure.mockRestore();
+    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(1);
+    expect(await loadGesture()).toMatchObject({ status: "PENDING" });
+    expect(await db.queue_ops.get(opId)).toEqual(originalOperation);
+  });
+
+  it("keeps committed recovery when the next gesture fails and counts only the retry", async () => {
+    const secondTxId = `${txId}-second`;
+    const secondOpId = `${opId}-second`;
+    await seedGesture();
+    await db.queue_gestures.update(txId, { status: "SYNCING" });
+    await db.queue_gestures.add(
+      makeGesture({
+        client_tx_id: secondTxId,
+        status: "SYNCING",
+        fazenda_id: "farm-second",
+      }),
+    );
+    await db.queue_ops.add(
+      makeOperation({
+        client_tx_id: secondTxId,
+        client_op_id: secondOpId,
+        record: { id: "lote-second", fazenda_id: "farm-second" },
+      }),
+    );
+    const originalOperation = await db.queue_ops.get(opId);
+    const secondOperation = await db.queue_ops.get(secondOpId);
+    const update = db.queue_gestures.update.bind(db.queue_gestures);
+    const failure = vi
+      .spyOn(db.queue_gestures, "update")
+      .mockImplementation((...args) => {
+        if (args[0] === secondTxId)
+          return Promise.reject(
+            new Error("second recovery failed"),
+          ) as ReturnType<typeof update>;
+        return update(...args);
+      });
+
+    await expect(recoverStaleSyncingGesturesOnce()).rejects.toThrow(
+      "second recovery failed",
+    );
+    expect(await loadGesture()).toMatchObject({ status: "PENDING" });
+    expect(await db.queue_gestures.get(secondTxId)).toMatchObject({
+      status: "SYNCING",
+      fazenda_id: "farm-second",
+    });
+    expect(await isGestureLockActive(txId)).toBe(false);
+    expect(await isGestureLockActive(secondTxId)).toBe(false);
+    failure.mockRestore();
+
+    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(1);
+    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(0);
+    expect(await db.queue_gestures.get(secondTxId)).toMatchObject({
+      status: "PENDING",
+      fazenda_id: "farm-second",
+    });
+    expect(await db.queue_ops.get(opId)).toEqual(originalOperation);
+    expect(await db.queue_ops.get(secondOpId)).toEqual(secondOperation);
+  });
+
+  it("does not recover after persisted ownership changes before the transaction", async () => {
+    await seedGesture();
+    await db.queue_gestures.update(txId, { status: "SYNCING" });
+    const originalGesture = await loadGesture();
+    const originalOperation = await db.queue_ops.get(opId);
+    const transaction = db.transaction.bind(db);
+    let switched = false;
+    vi.spyOn(db, "transaction").mockImplementation((...args) => {
+      if (switched) return transaction(...args);
+      switched = true;
+      return (async () => {
+        const owner = (await db.local_ownership.toArray())[0];
+        await db.local_ownership.put({ ...owner, owner_user_id: "other-owner" });
+        return transaction(...args);
+      })() as ReturnType<typeof db.transaction>;
+    });
+
+    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(0);
+    expect(await loadGesture()).toEqual(originalGesture);
+    expect(await db.queue_ops.get(opId)).toEqual(originalOperation);
+    expect(await isGestureLockActive(txId)).toBe(false);
+  });
+
+  it.each(["SIGNED_OUT", "SIGNED_IN", "TOKEN_REFRESHED"])(
+    "preserves recovery context when %s occurs during the write",
+    async (event) => {
+      await seedGesture();
+      await db.queue_gestures.update(txId, { status: "SYNCING" });
+      const originalGesture = await loadGesture();
+      const originalOperation = await db.queue_ops.get(opId);
+      const update = db.queue_gestures.update.bind(db.queue_gestures);
+      const sameUser = event === "TOKEN_REFRESHED";
+      vi.spyOn(db.queue_gestures, "update").mockImplementation(
+        (...args) => update(...args).then((result) => {
+          const session =
+            event === "SIGNED_OUT"
+              ? null
+              : {
+                  user: { id: sameUser ? "user-c2-1-concurrency" : "other-user" },
+                };
+          authObservers.forEach((callback) => callback(event, session));
+          return result;
+        }),
+      );
+
+      await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(
+        sameUser ? 1 : 0,
+      );
+      if (sameUser)
+        expect(await loadGesture()).toMatchObject({ status: "PENDING" });
+      else expect(await loadGesture()).toEqual(originalGesture);
+      expect(await db.queue_ops.get(opId)).toEqual(originalOperation);
+      expect(await isGestureLockActive(txId)).toBe(false);
+      expect(authObservers.size).toBe(0);
+    },
+  );
+
+  it("rechecks the session after asynchronous lock acquisition", async () => {
+    await seedGesture();
+    await db.queue_gestures.update(txId, { status: "SYNCING" });
+    const originalGesture = await loadGesture();
+    vi.stubGlobal("navigator", {
+      locks: {
+        request: vi.fn(async (name, _options, callback) => {
+          vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+            data: { session: null },
+            error: null,
+          });
+          return callback({ name });
+        }),
+      },
+    });
+
+    await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(0);
+    expect(await loadGesture()).toEqual(originalGesture);
+    expect(authObservers.size).toBe(0);
+  });
+
+  it.each(["commit", "rollback"])(
+    "holds the Web Lock until Dexie %s completes",
+    async (outcome) => {
+      await seedGesture();
+      await db.queue_gestures.update(txId, { status: "SYNCING" });
+      let held = false;
+      let heldAtCompletion: boolean | undefined;
+      let reportCompletion!: () => void;
+      const completion = new Promise<void>((resolve) => {
+        reportCompletion = resolve;
+      });
+      vi.stubGlobal("navigator", {
+        locks: {
+          request: vi.fn(async (name, _options, callback) => {
+            if (held) return callback(null);
+            held = true;
+            try {
+              return await callback({ name });
+            } finally {
+              held = false;
+            }
+          }),
+        },
+      });
+      const transaction = db.transaction.bind(db);
+      vi.spyOn(db, "transaction").mockImplementation((...args) => {
+        const scope = args[args.length - 1] as (tx: Transaction) => Promise<unknown>;
+        args[args.length - 1] = (tx: Transaction) => {
+          const onCompletion = () => {
+            heldAtCompletion = held;
+            reportCompletion();
+          };
+          tx.on("complete", onCompletion);
+          tx.on("abort", onCompletion);
+          return scope(tx);
+        };
+        return transaction(...args);
+      });
+      if (outcome === "rollback") {
+        vi.spyOn(db.queue_gestures, "update").mockRejectedValueOnce(
+          new Error("storage failure under Web Lock"),
+        );
+        await expect(recoverStaleSyncingGesturesOnce()).rejects.toThrow(
+          "storage failure under Web Lock",
+        );
+      } else {
+        await expect(recoverStaleSyncingGesturesOnce()).resolves.toBe(1);
+      }
+      await completion;
+      expect(heldAtCompletion).toBe(true);
+      expect(held).toBe(false);
+      expect(authObservers.size).toBe(0);
+    },
+  );
+
   // T6b — Fallback caveat (navigator.locks indisponível): caracterização
   // --------------------------------------------------------------------------
   it("T6b — fallback without navigator.locks: recovery cannot distinguish a remote context's active claim from a true orphan", async () => {
