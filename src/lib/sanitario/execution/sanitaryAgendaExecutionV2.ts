@@ -143,9 +143,8 @@ const PRODUCT_REQUIRED_KINDS = new Set([
 const CATALOG_REVIEW_NOTICE = "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.";
 
 function readRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
 }
 
 function readString(...values: unknown[]): string | null {
@@ -270,6 +269,9 @@ function targetAnimalIds(entries: SanitarioAgendaAnimalLocalV2[], agenda: Sanita
   ).filter(Boolean).sort();
 }
 
+// Short ordered validation ledger; splitting it would scatter rejection ordering.
+// Covered by sanitaryAgendaExecutionV2.test.ts (invalid input and future dates).
+// fallow-ignore-next-line complexity
 function validateExecutionInput(input: ExecuteSanitaryAgendaInputV2) {
   const rejected: string[] = [];
   const executedAt = normalizeDateTime(input.executedAt);
@@ -575,6 +577,35 @@ function buildRecords(input: {
   return { event, detail, movement, eventAnimals, now, payload };
 }
 
+function mergeCatalogReviewNotices(currentWarnings: string[], previousWarnings: string[]) {
+  return [
+    ...(currentWarnings.length ? [CATALOG_REVIEW_NOTICE] : []),
+    ...previousWarnings.filter((warning) => warning !== CATALOG_REVIEW_NOTICE),
+  ];
+}
+
+// Called only inside executeSanitaryAgendaV2's existing Dexie transaction/stores.
+async function applyExecutionInventory(
+  localDb: SanitaryAgendaExecutionDbV2,
+  records: ReturnType<typeof buildRecords>,
+  fazendaId: string,
+) {
+  const movement = records.movement;
+  if (!movement) return;
+  const lot = await localDb.state_insumo_lotes.get(movement.insumo_lote_id);
+  if (!lot || lot.fazenda_id !== fazendaId || lot.deleted_at) {
+    throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:inventory_lot_not_found");
+  }
+  if (lot.saldo_atual_base < movement.quantidade_base) {
+    throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:insufficient_stock_balance");
+  }
+  await localDb.state_insumo_movimentacoes.put(movement);
+  await localDb.state_insumo_lotes.update(lot.id, {
+    saldo_atual_base: lot.saldo_atual_base - movement.quantidade_base,
+    updated_at: records.now,
+  });
+}
+
 export async function executeSanitaryAgendaV2(
   input: ExecuteSanitaryAgendaInputV2,
   localDb: SanitaryAgendaExecutionDbV2 = defaultDb,
@@ -645,6 +676,9 @@ export async function executeSanitaryAgendaV2(
       ? sanitaryProtocolExecutionRejectionsV2(current, protocol, item, uf) : [];
   };
   const catalogReviewWarnings = await assertProtocolAuthorization(agenda);
+  // Keep the short availability/identity/class checks together and ordered.
+  // Covered by sanitaryAgendaExecutionV2.test.ts, including factual/pending curation.
+  // fallow-ignore-next-line complexity
   const assertProductApproval = async (current: SanitarioAgendaLocalV2) => {
     if (!input.product?.productId) return [];
     const product = await localDb.catalog_sanitario_produtos_v2.get(input.product.productId);
@@ -863,28 +897,12 @@ export async function executeSanitaryAgendaV2(
       ];
       // Event, detail and queued operation share this payload until persistence.
       records.payload.catalog_review_warnings = currentWarnings;
-      records.payload.warnings = [
-        ...(currentWarnings.length ? [CATALOG_REVIEW_NOTICE] : []),
-        ...records.payload.warnings.filter((warning) => warning !== CATALOG_REVIEW_NOTICE),
-      ];
+      records.payload.warnings = mergeCatalogReviewNotices(currentWarnings, records.payload.warnings);
 
       await localDb.event_eventos.add(records.event);
       await localDb.event_eventos_sanitario.add(records.detail);
       await localDb.event_eventos_animais.bulkAdd(records.eventAnimals);
-      if (records.movement) {
-        const lot = await localDb.state_insumo_lotes.get(records.movement.insumo_lote_id);
-        if (!lot || lot.fazenda_id !== input.fazendaId || lot.deleted_at) {
-          throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:inventory_lot_not_found");
-        }
-        if (lot.saldo_atual_base < records.movement.quantidade_base) {
-          throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:insufficient_stock_balance");
-        }
-        await localDb.state_insumo_movimentacoes.put(records.movement);
-        await localDb.state_insumo_lotes.update(lot.id, {
-          saldo_atual_base: lot.saldo_atual_base - records.movement.quantidade_base,
-          updated_at: records.now,
-        });
-      }
+      await applyExecutionInventory(localDb, records, input.fazendaId);
       if (sync && factualOperation) {
         await writeSanitarioV2Queue({
           fazendaId: input.fazendaId,

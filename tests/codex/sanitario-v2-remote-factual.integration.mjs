@@ -41,8 +41,8 @@ const report = {
 };
 async function test(name, fn) {
   try {
-    const evidence = await fn();
-    report.cases.push({ name, result: "PASS", evidence });
+    const outcome = { name, result: "PASS", evidence: await fn() };
+    report.cases.push(outcome);
     console.log(`PASS ${name}`);
   } catch (error) {
     // Do not serialize SDK/pg error objects, request headers, sessions or URLs.

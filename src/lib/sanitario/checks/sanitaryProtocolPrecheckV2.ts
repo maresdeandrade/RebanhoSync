@@ -580,25 +580,96 @@ function evaluateSpecies(
   return requiredSpecies.includes(species) ? null : "not_applicable";
 }
 
-function evaluateB19(input: {
+function evaluateB19Jurisdiction(
+  protocol: SanitaryProtocolV2ReadModel,
+  item: SanitaryProtocolItemV2ReadModel,
+  animal: SanitaryPrecheckAnimalResumoV2,
+): SanitaryProtocolPrecheckResultV2 | null {
+  if (protocol.metadata.requires_uf_context !== true) return null;
+  const uf = animal.uf?.trim().toUpperCase();
+  const excluded = readStringArray(protocol.metadata.excluded_ufs);
+  if (!uf) return baseResult({ protocol, item, status: "insufficient_data",
+    blockers: ["UF ausente para verificar exceções e proibições regionais de B19."],
+  });
+  if (excluded.includes(uf)) return baseResult({ protocol, item, status: "not_applicable",
+    blockers: ["B19 não autorizada na UF conforme fonte oficial regional do catálogo."],
+  });
+  return null;
+}
+
+type B19PrecheckInput = {
   protocol: SanitaryProtocolV2ReadModel;
   item: SanitaryProtocolItemV2ReadModel;
   animal: SanitaryPrecheckAnimalResumoV2;
   today: string;
   executedHistory: SanitaryExecutedHistoryV2[];
-}): SanitaryProtocolPrecheckResultV2 {
+};
+
+function evaluateAdultB19History(
+  input: B19PrecheckInput,
+  jurisdictionBlock: SanitaryProtocolPrecheckResultV2 | null,
+): SanitaryProtocolPrecheckResultV2 {
   const { protocol, item, animal, today, executedHistory } = input;
-  let jurisdictionBlock: SanitaryProtocolPrecheckResultV2 | null = null;
-  if (protocol.metadata.requires_uf_context === true) {
-    const uf = animal.uf?.trim().toUpperCase();
-    const excluded = readStringArray(protocol.metadata.excluded_ufs);
-    if (!uf) jurisdictionBlock = baseResult({ protocol, item, status: "insufficient_data",
-      blockers: ["UF ausente para verificar exceções e proibições regionais de B19."],
-    });
-    else if (excluded.includes(uf)) jurisdictionBlock = baseResult({ protocol, item, status: "not_applicable",
-      blockers: ["B19 não autorizada na UF conforme fonte oficial regional do catálogo."],
+  const compatibleHistory = findCompatibleHistoryEvents({
+    history: executedHistory,
+    animalId: animal.id,
+    protocolId: protocol.id,
+    familyCode: protocol.familyCode,
+    itemKey: item.logicalItemKey,
+    today,
+  });
+  const documentedHistory = compatibleHistory.find(isDocumentedHistorySource);
+  if (documentedHistory) {
+    return baseResult({
+      protocol,
+      item,
+      status: "completed",
+      reasons: [
+        "B19 comprovada por histórico sanitário documentado anterior.",
+      ],
+      warnings: [
+        "Histórico anterior não registra execução da fazenda nem movimenta estoque.",
+        ...(jurisdictionBlock?.blockers ?? []),
+      ],
     });
   }
+  if (jurisdictionBlock) return jurisdictionBlock;
+  const declaredHistory = compatibleHistory.find(isDeclaredHistorySource);
+  if (declaredHistory) {
+    return baseResult({
+      protocol,
+      item,
+      status: "insufficient_data",
+      reasons: [
+        "B19 informada apenas por declaração sem documento suficiente.",
+      ],
+      warnings: [
+        "Declaração sem documento pode não liberar pendências críticas.",
+      ],
+      documentaryPending: true,
+      documentaryPendingReasons: [
+        "Fêmea adulta exige comprovação documental de B19.",
+      ],
+    });
+  }
+  return baseResult({
+    protocol,
+    item,
+    status: "insufficient_data",
+    reasons: ["Fêmea adulta sem comprovação documental de B19."],
+    warnings: [
+      "Não planejar vacinação B19 fora da janela sem comprovação técnica.",
+    ],
+    documentaryPending: true,
+    documentaryPendingReasons: [
+      "Fêmea adulta exige comprovação documental de B19.",
+    ],
+  });
+}
+
+function evaluateB19(input: B19PrecheckInput): SanitaryProtocolPrecheckResultV2 {
+  const { protocol, item, animal, today } = input;
+  const jurisdictionBlock = evaluateB19Jurisdiction(protocol, item, animal);
   const speciesStatus = evaluateSpecies(animal, item);
   if (speciesStatus) {
     return baseResult({
@@ -662,63 +733,7 @@ function evaluateB19(input: {
       ],
     });
   }
-  if (ageMonths > 8) {
-    const compatibleHistory = findCompatibleHistoryEvents({
-      history: executedHistory,
-      animalId: animal.id,
-      protocolId: protocol.id,
-      familyCode: protocol.familyCode,
-      itemKey: item.logicalItemKey,
-      today,
-    });
-    const documentedHistory = compatibleHistory.find(isDocumentedHistorySource);
-    if (documentedHistory) {
-      return baseResult({
-        protocol,
-        item,
-        status: "completed",
-        reasons: [
-          "B19 comprovada por histórico sanitário documentado anterior.",
-        ],
-        warnings: [
-          "Histórico anterior não registra execução da fazenda nem movimenta estoque.",
-          ...(jurisdictionBlock?.blockers ?? []),
-        ],
-      });
-    }
-    if (jurisdictionBlock) return jurisdictionBlock;
-    const declaredHistory = compatibleHistory.find(isDeclaredHistorySource);
-    if (declaredHistory) {
-      return baseResult({
-        protocol,
-        item,
-        status: "insufficient_data",
-        reasons: [
-          "B19 informada apenas por declaração sem documento suficiente.",
-        ],
-        warnings: [
-          "Declaração sem documento pode não liberar pendências críticas.",
-        ],
-        documentaryPending: true,
-        documentaryPendingReasons: [
-          "Fêmea adulta exige comprovação documental de B19.",
-        ],
-      });
-    }
-    return baseResult({
-      protocol,
-      item,
-      status: "insufficient_data",
-      reasons: ["Fêmea adulta sem comprovação documental de B19."],
-      warnings: [
-        "Não planejar vacinação B19 fora da janela sem comprovação técnica.",
-      ],
-      documentaryPending: true,
-      documentaryPendingReasons: [
-        "Fêmea adulta exige comprovação documental de B19.",
-      ],
-    });
-  }
+  if (ageMonths > 8) return evaluateAdultB19History(input, jurisdictionBlock);
 
   return baseResult({
     protocol,

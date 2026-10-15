@@ -32,6 +32,7 @@
     "scripts/codex/performance-post-ack-report.mjs",
     "scripts/codex/performance-browser.ts",
     "scripts/codex/performance-post-ack-proof.ts",
+    "tests/codex/sanitario-v2-canonical.browser.mjs",
     "tests/codex/**/*.test.mjs",
     "tests/codex/**/*.integration.mjs"
   ],
