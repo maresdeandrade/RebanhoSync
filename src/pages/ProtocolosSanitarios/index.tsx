@@ -40,6 +40,9 @@ import {
   loadSanitaryProtocolWindowSourceV2,
   type SanitaryOperationalContextV2,
   type SanitaryProtocolWindowRowV2,
+  type SanitaryProtocolWindowSourceV2,
+  type SanitaryCentralExecutedEventV2,
+  type SanitaryDocumentaryPendencyV2,
 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 
 type CentralSanitaryTab = "janelas" | "agenda" | "historico" | "catalogo" | "conformidade";
@@ -49,6 +52,66 @@ function readCentralSanitaryTab(value: string | null): CentralSanitaryTab {
   return value === "agenda" || value === "historico" || value === "catalogo" || value === "conformidade"
     ? value
     : "janelas";
+}
+
+function planningResultMessage(results: Array<{ created: boolean }>) {
+  if (!results.some((result) => result.created)) return "Seleção já planejada. Agendas existentes preservadas.";
+  return results.length === 1 ? "Agenda sanitária criada." : `${results.length} agendas sanitárias agrupadas foram criadas.`;
+}
+
+function currentFarmSource(source: SanitaryProtocolWindowSourceV2 | undefined, farmId: string) {
+  return source?.fazendaId && source.fazendaId !== farmId ? undefined : source;
+}
+
+function responsibleName(user: { email?: string; id: string } | null) {
+  return user?.email ?? user?.id ?? null;
+}
+
+function sourceExecutedEvents(source: SanitaryProtocolWindowSourceV2 | undefined) {
+  return source?.executedEvents ?? [];
+}
+
+function CentralExecutedEvents({ events: executedEvents, onOpen }: { events: SanitaryCentralExecutedEventV2[]; onOpen: () => void }) {
+  return (
+    <>{executedEvents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum evento sanitário executado encontrado nos filtros locais.</p>
+                ) : (
+                  executedEvents.map((event) => (
+                    <div key={event.eventId} className="rounded-lg border border-border/70 bg-background p-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="font-medium">{event.protocolLabel} · {event.itemLabel}</p>
+                          <p className="text-sm text-muted-foreground">{new Date(event.executedAt).toLocaleDateString("pt-BR")} · {event.animalLabel} · {event.lotLabel}</p>
+                          <p className="text-sm text-muted-foreground">{event.productLabel} · {event.doseLabel} · {event.routeLabel}</p>
+                          <p className="text-sm text-muted-foreground">{event.responsibleLabel} · {event.originLabel} · estoque {event.stockLabel} · carência {event.withdrawalLabel}</p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => onOpen()}>Abrir eventos</Button>
+                      </div>
+                    </div>
+                  ))
+                )}</>
+  );
+}
+
+function CentralDocumentaryPendencies({ rows: filteredPendencies }: { rows: SanitaryDocumentaryPendencyV2[] }) {
+  return <>{filteredPendencies.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma pendência documental sanitária encontrada nos filtros locais.</p>
+                ) : (
+                  filteredPendencies.map((pendency) => (
+                    <div key={`${pendency.animalId}:${pendency.protocolLabel}:${pendency.itemLabel}`} className="rounded-lg border border-border/70 bg-background p-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="font-medium">{pendency.protocolLabel} · {pendency.itemLabel}</p>
+                          <p className="text-sm text-muted-foreground">{pendency.lotLabel}</p>
+                          <p className="mt-1 text-sm text-amber-700">{pendency.reasons[0]}</p>
+                        </div>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to={pendency.animalHref}>Abrir animal</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}</>;
 }
 
 const ProtocolosSanitarios = () => {
@@ -89,7 +152,7 @@ const ProtocolosSanitarios = () => {
     source: windowSource,
     evaluatedAt: new Date().toISOString().slice(0, 10),
   });
-  const executedEvents = (windowSource?.executedEvents ?? []).filter((event) => {
+  const executedEvents = sourceExecutedEvents(windowSource).filter((event) => {
     if (historyFilters.recordType !== "todos" && historyFilters.recordType !== "executed_event") return false;
     if (historyFilters.startDate && event.executedAt.slice(0, 10) < historyFilters.startDate) return false;
     if (historyFilters.endDate && event.executedAt.slice(0, 10) > historyFilters.endDate) return false;
@@ -170,28 +233,21 @@ const ProtocolosSanitarios = () => {
     rows: SanitaryProtocolWindowRowV2[],
     plannedFor: string,
     operationalContext: SanitaryOperationalContextV2,
+    generationMode: "manual" | "automatic" = "manual",
   ) => {
-    try {
-      const results = await createGroupedManualSanitaryAgendasV2({
-        rows,
-        fazendaId: activeFarmId,
-        plannedFor,
-        operationalContext,
-        confirmed: true,
-        createdBy: user?.id,
-      });
-      if (currentFarm.current !== activeFarmId) return;
-      refreshPlanning();
-      setActiveTab("agenda");
-      const createdCount = results.filter((result) => result.created).length;
-      toast.success(
-        createdCount === 0 ? "Seleção já planejada. Agendas existentes preservadas." : results.length === 1
-          ? "Agenda sanitária criada."
-          : `${results.length} agendas sanitárias agrupadas foram criadas.`,
-      );
-    } catch (error) {
-      throw error instanceof Error ? error : new Error("Não foi possível planejar as agendas selecionadas.");
-    }
+    const results = await createGroupedManualSanitaryAgendasV2({
+      rows,
+      fazendaId: activeFarmId,
+      plannedFor,
+      operationalContext,
+      generationMode,
+      confirmed: true,
+      createdBy: user?.id,
+    });
+    if (currentFarm.current !== activeFarmId) return;
+    refreshPlanning();
+    setActiveTab("agenda");
+    toast.success(planningResultMessage(results));
   };
 
   const executeAgenda = async (payloads: Array<Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">>) => {
@@ -247,7 +303,7 @@ const ProtocolosSanitarios = () => {
         <TabsContent value="janelas">
           <SanitaryProtocolWindowPanelV2
             key={activeFarmId}
-            source={windowSource?.fazendaId && windowSource.fazendaId !== activeFarmId ? undefined : windowSource}
+            source={currentFarmSource(windowSource, activeFarmId)}
             initialAnimalId={initialAnimalId}
             initialLotId={initialLotId}
             initialLotContextId={initialLotContextId}
@@ -260,7 +316,7 @@ const ProtocolosSanitarios = () => {
           <SanitaryLocalAgendaPanelV2
             key={activeFarmId}
             items={localAgenda?.filter((item) => item.fazendaId === activeFarmId)}
-            defaultResponsibleName={user?.email ?? user?.id ?? null}
+            defaultResponsibleName={responsibleName(user)}
             onReschedule={reschedule}
             onCancel={cancel}
             onExecute={executeAgenda}
@@ -314,23 +370,7 @@ const ProtocolosSanitarios = () => {
             <Card>
               <CardHeader><CardTitle>Eventos executados</CardTitle><CardDescription>Fatos sanitários criados por execução confirmada. Agendas abertas, fechadas ou canceladas não são prova de execução.</CardDescription></CardHeader>
               <CardContent className="space-y-3">
-                {executedEvents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum evento sanitário executado encontrado nos filtros locais.</p>
-                ) : (
-                  executedEvents.map((event) => (
-                    <div key={event.eventId} className="rounded-lg border border-border/70 bg-background p-3">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <p className="font-medium">{event.protocolLabel} · {event.itemLabel}</p>
-                          <p className="text-sm text-muted-foreground">{new Date(event.executedAt).toLocaleDateString("pt-BR")} · {event.animalLabel} · {event.lotLabel}</p>
-                          <p className="text-sm text-muted-foreground">{event.productLabel} · {event.doseLabel} · {event.routeLabel}</p>
-                          <p className="text-sm text-muted-foreground">{event.responsibleLabel} · {event.originLabel} · estoque {event.stockLabel} · carência {event.withdrawalLabel}</p>
-                        </div>
-                        <Button size="sm" variant="outline" onClick={() => navigate("/eventos")}>Abrir eventos</Button>
-                      </div>
-                    </div>
-                  ))
-                )}
+                <CentralExecutedEvents events={executedEvents} onOpen={() => navigate("/eventos")} />
               </CardContent>
             </Card>
             <Card>
@@ -347,24 +387,7 @@ const ProtocolosSanitarios = () => {
                 <CardDescription>Comprovações necessárias antes de tratar histórico externo como evidência suficiente. Não cria agenda automática.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {filteredPendencies.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma pendência documental sanitária encontrada nos filtros locais.</p>
-                ) : (
-                  filteredPendencies.map((pendency) => (
-                    <div key={`${pendency.animalId}:${pendency.protocolLabel}:${pendency.itemLabel}`} className="rounded-lg border border-border/70 bg-background p-3">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <p className="font-medium">{pendency.protocolLabel} · {pendency.itemLabel}</p>
-                          <p className="text-sm text-muted-foreground">{pendency.lotLabel}</p>
-                          <p className="mt-1 text-sm text-amber-700">{pendency.reasons[0]}</p>
-                        </div>
-                        <Button size="sm" variant="outline" asChild>
-                          <Link to={pendency.animalHref}>Abrir animal</Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
+                <CentralDocumentaryPendencies rows={filteredPendencies} />
               </CardContent>
             </Card>
           </div>

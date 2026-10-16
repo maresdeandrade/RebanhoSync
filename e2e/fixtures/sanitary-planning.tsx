@@ -49,8 +49,13 @@ if (!await db.state_animais.count()) {
     await db.catalog_sanitario_protocolo_itens_versions_v2.put({ id: item, protocol_id: protocol, logical_item_key: "b19_femeas_3_8_meses",
       version: 1, item_status: "obrigatorio", action_type: "vacinacao", product_requirement_kind: "product_class", product_id: null,
       product_class: "vacina_brucelose_b19", product_class_group_id: null, eligibility_rule: { species: ["bovino"], sex: "femea", age_min_months: 3, age_max_months: 8 },
-      operational_window_rule: {}, dose_rule: {}, route_rule: {}, booster_rule: {}, species_authorization: {}, source_refs_by_field: {},
-      limitations: [], snapshot_template: {}, allows_agenda_auto: false, requires_mv_responsavel: true, status: "active", ...stamp });
+      operational_window_rule: {}, dose_rule: {}, route_rule: {}, booster_rule: {}, species_authorization: {},
+      limitations: [], snapshot_template: {}, allows_agenda_auto: new URLSearchParams(location.search).has("approved"),
+      source_refs_by_field: new URLSearchParams(location.search).has("approved") ? Object.fromEntries(
+        ["eligibility_rule", "operational_window", "product_requirement"].map((field) => [field, [{
+          kind: "norma_oficial", title: "Fixture explicitamente aprovada — teste local", strength: "forte", evidenceStatus: "SIM_NORMA", fieldKeys: [field],
+        }]]),
+      ) : {}, requires_mv_responsavel: true, status: "active", ...stamp });
     await db.catalog_sanitario_produtos_v2.put({ id: "product-existing", nome_comercial: "Produto existente de teste", classe: "vacina_brucelose_b19", status_curatorial: "ativo", ...stamp } as never);
   }
 }

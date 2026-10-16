@@ -59,6 +59,14 @@ function validItem(overrides: Partial<SanitaryProtocolItemVersionV2> = {}): Sani
 }
 
 describe("sanitaryProtocolV2", () => {
+  it("restrição no_agenda_auto bloqueia automação e sua remoção exige nova versão", () => {
+    const previous = validItem({ logicalItemKey: "raiva_primovac_reforco_30d", limitations: ["no_agenda_auto"] });
+    expect(validateSanitaryProtocolItemVersionV2(previous).issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "no_agenda_auto_restriction" }),
+    ]));
+    expect(requiresNewProtocolItemVersionV2(previous, { ...previous, limitations: [] })).toBe(true);
+    expect(requiresNewProtocolItemVersionV2(previous, { ...previous, allowsAgendaAuto: false })).toBe(true);
+  });
   it("protocolo obrigatorio por norma exige fonte forte de legal_status", () => {
     const protocol: SanitaryProtocolV2 = {
       familyCode: "febre-aftosa",

@@ -326,6 +326,7 @@ function findRequiredExecutedHistory(input: {
   protocolId: string;
   familyCode: string;
   today: string;
+  productId?: string | null;
 }): SanitaryExecutedHistoryEventV2 | null {
   if (
     input.requirement.kind === "previous_dose" &&
@@ -341,6 +342,7 @@ function findRequiredExecutedHistory(input: {
 
   const compatibleEvents = animalHistory.events
     .filter((event) => {
+      if (input.productId && event.productId !== input.productId) return false;
       if (!isDocumentedHistorySource(event)) return false;
       if (event.dateApproximate) return false;
       if (!event.familyCode || !event.itemKey) return false;
@@ -499,6 +501,7 @@ function evaluateHistoryRequirement(input: {
     protocolId: input.protocol.id,
     familyCode: input.protocol.familyCode,
     today: input.today,
+    productId: input.item.productId,
   });
 
   if (!historyEvent) {
@@ -585,9 +588,8 @@ function evaluateB19Jurisdiction(
   item: SanitaryProtocolItemV2ReadModel,
   animal: SanitaryPrecheckAnimalResumoV2,
 ): SanitaryProtocolPrecheckResultV2 | null {
-  if (protocol.metadata.requires_uf_context !== true) return null;
   const uf = animal.uf?.trim().toUpperCase();
-  const excluded = readStringArray(protocol.metadata.excluded_ufs);
+  const excluded = ["SC", ...readStringArray(protocol.metadata.excluded_ufs).map((value) => value.toUpperCase())];
   if (!uf) return baseResult({ protocol, item, status: "insufficient_data",
     blockers: ["UF ausente para verificar exceções e proibições regionais de B19."],
   });
@@ -667,10 +669,30 @@ function evaluateAdultB19History(
   });
 }
 
+function evaluateB19Species(animal: SanitaryPrecheckAnimalResumoV2, item: SanitaryProtocolItemV2ReadModel) {
+  if (!animal.especie) return "insufficient_data" as const;
+  if (!["bovino", "bubalino"].includes(normalizeToken(animal.especie)!)) return "not_applicable" as const;
+  return evaluateSpecies(animal, item);
+}
+
+function evaluateB19Completion(input: B19PrecheckInput) {
+  const { protocol, item, animal, today } = input;
+  const prior = findCompatibleHistoryEvents({ history: input.executedHistory, animalId: animal.id,
+    protocolId: protocol.id, familyCode: protocol.familyCode, itemKey: item.logicalItemKey, today });
+  if (prior.some(isDocumentedHistorySource)) {
+    return baseResult({ protocol, item, status: "completed", reasons: ["B19 já comprovada por Evento/histórico documentado."] });
+  }
+  if (prior.length) {
+    return baseResult({ protocol, item, status: "insufficient_data", documentaryPending: true,
+      documentaryPendingReasons: ["Conferir comprovação de B19 antes de planejar nova vacinação."] });
+  }
+  return null;
+}
+
 function evaluateB19(input: B19PrecheckInput): SanitaryProtocolPrecheckResultV2 {
   const { protocol, item, animal, today } = input;
   const jurisdictionBlock = evaluateB19Jurisdiction(protocol, item, animal);
-  const speciesStatus = evaluateSpecies(animal, item);
+  const speciesStatus = evaluateB19Species(animal, item);
   if (speciesStatus) {
     return baseResult({
       protocol,
@@ -734,6 +756,9 @@ function evaluateB19(input: B19PrecheckInput): SanitaryProtocolPrecheckResultV2 
     });
   }
   if (ageMonths > 8) return evaluateAdultB19History(input, jurisdictionBlock);
+
+  const completion = evaluateB19Completion(input);
+  if (completion) return completion;
 
   return baseResult({
     protocol,
@@ -981,6 +1006,10 @@ function evaluateAntiparasitic(input: {
   });
 }
 
+function genericSpeciesReasons(status: SanitaryEligibilityStatus) {
+  return status === "insufficient_data" ? ["Espécie ausente para avaliar item do catálogo."] : ["Espécie fora da regra do item."];
+}
+
 function evaluateGenericItem(input: {
   protocol: SanitaryProtocolV2ReadModel;
   item: SanitaryProtocolItemV2ReadModel;
@@ -991,16 +1020,14 @@ function evaluateGenericItem(input: {
 }): SanitaryProtocolPrecheckResultV2 {
   const { protocol, item, animal, today, historyRequirement, executedHistory } =
     input;
-  const speciesStatus = evaluateSpecies(animal, item);
+  const contextFailure = evaluateGenericEligibilityContext(item, animal, today);
+  const speciesStatus = contextFailure?.status ?? evaluateSpecies(animal, item);
   if (speciesStatus) {
     return baseResult({
       protocol,
       item,
       status: speciesStatus,
-      reasons:
-        speciesStatus === "insufficient_data"
-          ? ["Espécie ausente para avaliar item do catálogo."]
-          : ["Espécie fora da regra do item."],
+      reasons: contextFailure?.reasons ?? genericSpeciesReasons(speciesStatus),
     });
   }
 
@@ -1060,6 +1087,32 @@ function evaluateGenericItem(input: {
       "Pré-checagem não cria agenda nem autoriza execução.",
     ],
   });
+}
+
+function evaluateAgeContext(
+  item: SanitaryProtocolItemV2ReadModel, animal: SanitaryPrecheckAnimalResumoV2, today: string,
+): { status: SanitaryEligibilityStatus; reasons: string[] } | null {
+  const min = readNumber(item.eligibilityRule.age_min_months);
+  const max = readNumber(item.eligibilityRule.age_max_months);
+  if ([min, max].every((value) => value === null)) return null;
+  const age = monthsBetween(animal.nascimento ?? "", today);
+  if (age === null) return { status: "insufficient_data", reasons: ["Nascimento válido obrigatório para avaliar idade do esquema."] };
+  if (age < (min ?? 0)) return { status: "not_yet_eligible", reasons: ["Idade abaixo do mínimo do esquema."] };
+  if (age > (max ?? Infinity)) return { status: "not_applicable", reasons: ["Idade acima do máximo do esquema."] };
+  return null;
+}
+
+function evaluateGenericEligibilityContext(
+  item: SanitaryProtocolItemV2ReadModel, animal: SanitaryPrecheckAnimalResumoV2, today: string,
+): { status: SanitaryEligibilityStatus; reasons: string[] } | null {
+  const ageFailure = evaluateAgeContext(item, animal, today);
+  if (ageFailure) return ageFailure;
+  const category = readString(item.eligibilityRule.category);
+  if (category && !animal.categoria) return { status: "insufficient_data", reasons: ["Categoria necessária para este esquema."] };
+  if (category && normalizeToken(animal.categoria) !== normalizeToken(category)) {
+    return { status: "not_applicable", reasons: ["Categoria fora da regra do esquema."] };
+  }
+  return null;
 }
 
 function evaluateItemForAnimal(input: {

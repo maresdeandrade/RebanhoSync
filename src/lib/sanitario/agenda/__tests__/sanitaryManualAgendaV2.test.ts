@@ -89,6 +89,13 @@ function createMemoryDb(): ManualSanitaryAgendaLocalDbV2 & {
 }
 
 describe("sanitaryManualAgendaV2", () => {
+  it("caller legado cria avaliação genérica explícita, sem promover esquema ou produto", () => {
+    const records = buildManualSanitaryAgendaRecordsV2(baseInput());
+    expect(records.agenda.protocol_item_snapshot.planningKind).toBe("avaliacao_manejo_generica");
+    expect(records.agenda.acao_sanitaria).toBe("manejo_sanitario");
+    expect(records.agenda.metadata.itemLabel).toBe("Avaliar Brucelose B19");
+    expect(records.agenda.produto_veterinario_id).toBeNull();
+  });
   beforeEach(async () => {
     await db.open();
     await Promise.all([

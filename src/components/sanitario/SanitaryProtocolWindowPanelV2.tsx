@@ -17,6 +17,7 @@ import {
 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sanitaryEligibility";
 import { formatSanitaryProtocolItemLabelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
+import type { SanitaryGenerationModeV2 } from "@/lib/sanitario/agenda/sanitaryPlanningPolicyV2";
 
 const initialFilters: SanitaryProtocolWindowFiltersV2 = {
   lotId: "todos",
@@ -72,6 +73,7 @@ type Props = {
     rows: SanitaryProtocolWindowRowV2[],
     plannedFor: string,
     operationalContext: SanitaryOperationalContextV2,
+    generationMode?: SanitaryGenerationModeV2,
   ) => Promise<void>;
 };
 
@@ -130,6 +132,7 @@ export function SanitaryProtocolWindowPanelV2({
   onPlan,
 }: Props) {
   const [protocolId, setProtocolId] = useState("");
+  const [generationMode, setGenerationMode] = useState<SanitaryGenerationModeV2>("manual");
   const [itemId, setItemId] = useState("");
   const [evaluatedAt, setEvaluatedAt] = useState(todayKey);
   const [plannedFor, setPlannedFor] = useState(todayKey);
@@ -172,7 +175,7 @@ export function SanitaryProtocolWindowPanelV2({
 
   useEffect(
     () => setSelectedIds(new Set()),
-    [itemId, evaluatedAt, filters, operationalContext],
+    [itemId, evaluatedAt, filters, operationalContext, generationMode],
   );
 
   const result = useMemo(
@@ -185,9 +188,10 @@ export function SanitaryProtocolWindowPanelV2({
             evaluatedAt,
             filters,
             operationalContext,
+            generationMode,
           })
         : null,
-    [evaluatedAt, filters, itemId, operationalContext, protocolId, source],
+    [evaluatedAt, filters, itemId, operationalContext, protocolId, source, generationMode],
   );
   const categoryResult = useMemo(
     () =>
@@ -199,9 +203,10 @@ export function SanitaryProtocolWindowPanelV2({
             evaluatedAt,
             filters: { ...filters, category: "todas" },
             operationalContext,
+            generationMode,
           })
         : null,
-    [evaluatedAt, filters, itemId, operationalContext, protocolId, source],
+    [evaluatedAt, filters, itemId, operationalContext, protocolId, source, generationMode],
   );
   const selectedRows = result?.rows.filter((row) => selectedIds.has(row.animalId) && row.canSelect) ?? [];
   const visibleRows = useMemo(
@@ -234,7 +239,11 @@ export function SanitaryProtocolWindowPanelV2({
     setPlanningError(null);
     setPlanning(true);
     try {
-      await onPlan(review.rows, review.plannedFor, review.context);
+      if (review.rows[0]?.generationMode === "automatic") {
+        await onPlan(review.rows, review.plannedFor, review.context, "automatic");
+      } else {
+        await onPlan(review.rows, review.plannedFor, review.context);
+      }
       setReview(null);
       setSelectedIds(new Set());
     } catch (error) {
@@ -283,6 +292,13 @@ export function SanitaryProtocolWindowPanelV2({
       </div>
 
       {protocols.length === 0 ? <div role="status" className="rounded-lg border border-dashed border-border p-4 text-sm">Nenhum protocolo disponível no catálogo local. Use Atualizar catálogo quando houver conexão. Se continuar vazio, a implantação deve disponibilizar o catálogo no ambiente; produtos cadastrados isoladamente não criam protocolos.</div> : null}
+
+      <label className="block space-y-1 text-sm"><span className="font-medium">Geração de Agenda</span>
+        <select aria-label="Geração de Agenda" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={generationMode} onChange={(event) => setGenerationMode(event.target.value as SanitaryGenerationModeV2)}>
+          <option value="manual">Planejamento manual confirmado</option>
+          <option value="automatic">Geração condicional por regra autorizada</option>
+        </select>
+      </label>
 
       {filters.animalId !== "todos" ? (
         <div className="flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
@@ -406,6 +422,7 @@ export function SanitaryProtocolWindowPanelV2({
           {review ? <div className="max-h-80 space-y-3 overflow-auto text-sm">
             <p><strong>Data planejada:</strong> {review.plannedFor.split("-").reverse().join("/")}</p>
             <p>{reviewPreview?.summary.totalAnimals} animal(is) selecionado(s).</p>
+            <p>{review.rows[0]?.planningKind === "avaliacao_manejo_generica" ? "Avaliação/manejo genérico: sem produto, dose, via ou esquema de aplicação." : "Esquema definido: produto e histórico revalidados ao salvar."}</p>
             <ul className="space-y-2">{review.rows.map((row) => <li key={`${row.itemId}:${row.animalId}`}><strong>{row.identification}</strong> · {row.lotLabel}<br />{row.protocolLabel} · {row.itemLabel}<br /><span className="text-muted-foreground">{row.reason}</span></li>)}</ul>
             {[...new Set(review.rows.flatMap((row) => row.warnings))].map((warning) => <p key={warning} className="text-muted-foreground">{warning}</p>)}
             <p>Produto já cadastrado será reutilizado na execução. Produto real, dose e via serão confirmados no registro factual.</p>

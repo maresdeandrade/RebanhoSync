@@ -1,5 +1,8 @@
 # Sanitario Protocols v2 - Decision Record 12F10
 
+> **Adendo de decisão 15/10/2026, sem substituir a decisão original:** a revisão das 18 pendências define **propostas por item** para consulta, sugestão e Agenda condicional. O artefato 12F10 ainda é a fonte canônica candidata e mantém `import_real_authorized=false`, `agenda_allowed=false`, `approved_for_catalog=false` e `allows_agenda_auto=false` nos 20 itens. A decisão **não autoriza** importar, promover `draft`, mudar produto/esquema ou executar. Ref.: [política de liberação progressiva](../SANITARIO_V2_POLITICA_AGENDA_CONDICIONAL_20261015.md) · [matriz de 20 itens](SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv). **Ajustes A–E incorporados:** restrição `no_agenda_auto` mantém **todos os três itens de raiva** sem automação até revisão **aprovada e versionada**; vacinas multivalentes (ex.: Fertiguard/Poliguard) exigem composição, janela e histórico compatíveis para **uma única aplicação/Evento** com cobertura multiprotocolo rastreável; B19 concilia períodos federais e somente os prazos estaduais de comprovação preserváveis pelo art. 3º; Agenda genérica não adquire esquema/dose por inferência; relatórios locais e os quatro achados Fallow permanecem **relatados, sem IDs brutos conferidos**. Revisar a [matriz por 20 itens](SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv) junto com a política.
+
+
 Data: 2026-06-15
 Decisao: `12F10_CONSOLIDAR_ARTEFATOS_CANONICOS_ANTES_DE_12G0`
 

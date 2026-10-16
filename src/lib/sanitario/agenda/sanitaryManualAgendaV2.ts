@@ -3,6 +3,10 @@ import type {
   SanitarioAgendaLocalV2,
 } from "@/lib/offline/types";
 import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sanitaryEligibility";
+import type {
+  SanitaryPlanningKindV2,
+  SanitaryGenerationModeV2,
+} from "./sanitaryPlanningPolicyV2";
 
 type ManualAgendaTargetV2 = {
   scope: "animal" | "lote";
@@ -26,6 +30,9 @@ export type CreateManualSanitaryAgendaInputV2 = {
     protocolItemVersionId?: string;
     actionType?: string;
     plannedProductId?: string | null;
+    planningKind?: SanitaryPlanningKindV2;
+    generationMode?: SanitaryGenerationModeV2;
+    planningEvidence?: Record<string, unknown>;
     planningDedupKey?: string;
     familyCode: string;
     itemKey: string;
@@ -134,8 +141,9 @@ function normalizeOptionalText(value: string | undefined): string | null {
 }
 
 function uniqueSorted(values: string[] | undefined): string[] {
-  return Array.from(new Set((values ?? []).map((value) => value.trim()).filter(Boolean)))
-    .sort();
+  return Array.from(
+    new Set((values ?? []).map((value) => value.trim()).filter(Boolean)),
+  ).sort();
 }
 
 function agendaIdFromClientOpId(clientOpId: string, fazendaId: string): string {
@@ -159,9 +167,44 @@ function targetAnimalRows(input: CreateManualSanitaryAgendaInputV2) {
   return uniqueSorted(input.target.animalIds);
 }
 
-function hasExecutionPayload(input: CreateManualSanitaryAgendaInputV2): boolean {
+function hasGenericProduct(input: CreateManualSanitaryAgendaInputV2) {
+  return (
+    manualPlanningKind(input) === "avaliacao_manejo_generica" &&
+    !!input.source.plannedProductId
+  );
+}
+
+function manualPlanningKind(input: CreateManualSanitaryAgendaInputV2) {
+  return input.source.planningKind ?? "avaliacao_manejo_generica";
+}
+
+function manualPlanningLabel(input: CreateManualSanitaryAgendaInputV2) {
+  return manualPlanningKind(input) === "avaliacao_manejo_generica"
+    ? `Avaliar ${input.source.protocolName}` : input.source.itemLabel;
+}
+
+function manualPlanningAction(input: CreateManualSanitaryAgendaInputV2) {
+  return manualPlanningKind(input) === "avaliacao_manejo_generica"
+    ? "manejo_sanitario" : input.source.actionType ?? "agenda_manual_sanitaria";
+}
+
+function manualProductRequirementSnapshot(
+  source: CreateManualSanitaryAgendaInputV2["source"],
+) {
+  return {
+    productRequirementKind: source.productRequirementKind ?? null,
+    productClass: source.productClass ?? null,
+    productClassGroupId: source.productClassGroupId ?? null,
+    productClassGroupName: source.productClassGroupName ?? null,
+  };
+}
+
+function hasExecutionPayload(
+  input: CreateManualSanitaryAgendaInputV2,
+): boolean {
   const source = input.source as Record<string, unknown>;
   return (
+    hasGenericProduct(input) ||
     source.productId != null ||
     source.executedProductId != null ||
     source.dose != null ||
@@ -203,6 +246,53 @@ export function validateManualSanitaryAgendaV2(
   };
 }
 
+function manualAgendaMetadata(
+  input: CreateManualSanitaryAgendaInputV2,
+  animalIds: string[],
+  targetAnimalScope: string,
+) {
+  return {
+    source: "sanitary_precheck_preview_v2",
+    target: input.target,
+    targetAnimalIds: animalIds,
+    targetAnimalScope,
+    previewStatus: input.source.precheckStatus,
+    protocolName: input.source.protocolName,
+    itemLabel: manualPlanningLabel(input),
+    reasons: input.source.reasons ?? [],
+    blockers: input.source.blockers ?? [],
+    warnings: input.source.warnings ?? [],
+    notes: normalizeOptionalText(input.notes),
+    createdBy: normalizeOptionalText(input.createdBy),
+
+    ...manualProductRequirementSnapshot(input.source),
+    createsEvent: false,
+    createsStockMovement: false,
+    createsActiveWithdrawal: false,
+  };
+}
+
+function manualProtocolSnapshot(input: CreateManualSanitaryAgendaInputV2) {
+  return {
+    planningKind: manualPlanningKind(input),
+    generationMode: input.source.generationMode ?? "manual",
+    planningEvidence: input.source.planningEvidence ?? null,
+    sourceKind: input.source.kind,
+    actionType: manualPlanningAction(input),
+    productId: input.source.plannedProductId ?? null,
+    familyCode: input.source.familyCode,
+    itemKey: input.source.itemKey,
+    itemLabel: manualPlanningLabel(input),
+    protocolName: input.source.protocolName,
+    precheckStatus: input.source.precheckStatus,
+    reasons: input.source.reasons ?? [],
+    warnings: input.source.warnings ?? [],
+
+    ...manualProductRequirementSnapshot(input.source),
+    operationalContext: input.source.operationalContext ?? null,
+  };
+}
+
 export function buildManualSanitaryAgendaRecordsV2(
   input: CreateManualSanitaryAgendaInputV2,
 ): {
@@ -215,33 +305,16 @@ export function buildManualSanitaryAgendaRecordsV2(
   }
 
   const now = input.now ?? new Date().toISOString();
-  const agendaId = agendaIdFromClientOpId(input.clientOpId, input.target.fazendaId);
+  const agendaId = agendaIdFromClientOpId(
+    input.clientOpId,
+    input.target.fazendaId,
+  );
   const animalIds = targetAnimalRows(input);
   const targetAnimalScope =
     input.target.scope === "lote" && animalIds.length === 0
       ? "lote_sem_animais_explicitos"
       : "animais_explicitos";
-  const metadata = {
-    source: "sanitary_precheck_preview_v2",
-    target: input.target,
-    targetAnimalIds: animalIds,
-    targetAnimalScope,
-    previewStatus: input.source.precheckStatus,
-    protocolName: input.source.protocolName,
-    itemLabel: input.source.itemLabel,
-    reasons: input.source.reasons ?? [],
-    blockers: input.source.blockers ?? [],
-    warnings: input.source.warnings ?? [],
-    notes: normalizeOptionalText(input.notes),
-    createdBy: normalizeOptionalText(input.createdBy),
-    productRequirementKind: input.source.productRequirementKind ?? null,
-    productClass: input.source.productClass ?? null,
-    productClassGroupId: input.source.productClassGroupId ?? null,
-    productClassGroupName: input.source.productClassGroupName ?? null,
-    createsEvent: false,
-    createsStockMovement: false,
-    createsActiveWithdrawal: false,
-  };
+  const metadata = manualAgendaMetadata(input, animalIds, targetAnimalScope);
 
   const agenda: SanitarioAgendaLocalV2 = {
     id: agendaId,
@@ -257,23 +330,7 @@ export function buildManualSanitaryAgendaRecordsV2(
     preview_group_id: `${input.target.scope}:${input.target.id}:${input.source.protocolId}:${input.source.itemKey}`,
     protocolo_id: input.source.protocolId,
     protocol_item_version_id: input.source.protocolItemVersionId ?? null,
-    protocol_item_snapshot: {
-      sourceKind: input.source.kind,
-      actionType: input.source.actionType ?? null,
-      productId: input.source.plannedProductId ?? null,
-      familyCode: input.source.familyCode,
-      itemKey: input.source.itemKey,
-      itemLabel: input.source.itemLabel,
-      protocolName: input.source.protocolName,
-      precheckStatus: input.source.precheckStatus,
-      reasons: input.source.reasons ?? [],
-      warnings: input.source.warnings ?? [],
-      productRequirementKind: input.source.productRequirementKind ?? null,
-      productClass: input.source.productClass ?? null,
-      productClassGroupId: input.source.productClassGroupId ?? null,
-      productClassGroupName: input.source.productClassGroupName ?? null,
-      operationalContext: input.source.operationalContext ?? null,
-    },
+    protocol_item_snapshot: manualProtocolSnapshot(input),
     janela_inicio: plannedFor,
     janela_fim: null,
     data_programada: plannedFor,
@@ -284,16 +341,14 @@ export function buildManualSanitaryAgendaRecordsV2(
       realProductDefinedOnlyAtExecution: true,
       doseDefinedOnlyAtExecution: true,
       withdrawalDefinedOnlyAtExecution: true,
-      productRequirementKind: input.source.productRequirementKind ?? null,
-      productClass: input.source.productClass ?? null,
-      productClassGroupId: input.source.productClassGroupId ?? null,
-      productClassGroupName: input.source.productClassGroupName ?? null,
+
+      ...manualProductRequirementSnapshot(input.source),
     },
     produto_classe:
       input.source.productRequirementKind === "product_class"
         ? (input.source.productClass ?? null)
         : null,
-    acao_sanitaria: input.source.actionType ?? "agenda_manual_sanitaria",
+    acao_sanitaria: manualPlanningAction(input),
     execution_evento_id: null,
     metadata,
     created_at: now,
@@ -331,7 +386,9 @@ export async function createManualSanitaryAgendaV2(
 ): Promise<ManualSanitaryAgendaResultV2> {
   const validation = validateManualSanitaryAgendaV2(input);
   if (!validation.ok) {
-    throw new Error(`MANUAL_SANITARY_AGENDA_REJECTED:${validation.rejected.join(",")}`);
+    throw new Error(
+      `MANUAL_SANITARY_AGENDA_REJECTED:${validation.rejected.join(",")}`,
+    );
   }
 
   const db = localDb ?? (await getDefaultLocalDb());
@@ -341,20 +398,32 @@ export async function createManualSanitaryAgendaV2(
     [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2],
     async () => {
       const existing = await db.ops_sanitario_agenda_v2
-        .where("client_op_id").equals(input.clientOpId).first();
+        .where("client_op_id")
+        .equals(input.clientOpId)
+        .first();
       if (existing) {
         if (existing.fazenda_id !== input.target.fazendaId) {
           throw new Error("MANUAL_SANITARY_AGENDA_FARM_MISMATCH");
         }
-        return { agendaId: existing.id, clientOpId: existing.client_op_id,
-          status: "scheduled", created: false, ...OPERATIONAL_FALSE_FLAGS };
+        return {
+          agendaId: existing.id,
+          clientOpId: existing.client_op_id,
+          status: "scheduled",
+          created: false,
+          ...OPERATIONAL_FALSE_FLAGS,
+        };
       }
       await db.ops_sanitario_agenda_v2.put(records.agenda);
       if (records.animals.length > 0) {
         await db.ops_sanitario_agenda_animais_v2.bulkPut(records.animals);
       }
-      return { agendaId: records.agenda.id, clientOpId: input.clientOpId,
-        status: "scheduled", created: true, ...OPERATIONAL_FALSE_FLAGS };
+      return {
+        agendaId: records.agenda.id,
+        clientOpId: input.clientOpId,
+        status: "scheduled",
+        created: true,
+        ...OPERATIONAL_FALSE_FLAGS,
+      };
     },
   );
 }

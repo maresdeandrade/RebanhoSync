@@ -40,6 +40,7 @@ const animal = (id: string, sex: "M" | "F", birth: string): Animal => ({
 });
 
 const source: SanitaryProtocolWindowSourceV2 = {
+  farmUf: "MG",
   catalog: {
     protocols: [
       { id: "protocol-b19", familyCode: "brucelose_b19", name: "Brucelose B19", scope: "global", fazendaId: null, speciesScope: {}, jurisdictionScope: {}, legalStatus: "manual_only", version: 1, status: "active", approvalStatus: "approved", sourceRefsSnapshot: [], metadata: {} },
@@ -63,6 +64,16 @@ const source: SanitaryProtocolWindowSourceV2 = {
 };
 
 describe("SanitaryProtocolWindowPanelV2", () => {
+  it("seleção de geração condicional exige autorização individual sem promover catálogo", () => {
+    render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={vi.fn()} /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Selecionar protocolo"), { target: { value: "protocol-b19" } });
+    fireEvent.change(screen.getByLabelText("Selecionar item do protocolo"), { target: { value: "item-b19" } });
+    fireEvent.change(screen.getByLabelText("Data de avaliação"), { target: { value: "2026-07-04" } });
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeEnabled();
+    fireEvent.change(screen.getByLabelText("Geração de Agenda"), { target: { value: "automatic" } });
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeDisabled();
+    expect(source.catalog.items[0].allowsAgendaAuto).toBe(false);
+  });
   it("seleciona protocolo/item, calcula animais e planeja seleção múltipla", async () => {
     const onPlan = vi.fn().mockResolvedValue(undefined);
     render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={onPlan} /></MemoryRouter>);

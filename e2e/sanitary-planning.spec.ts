@@ -1,9 +1,31 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 
 const farm = "00000000-0000-4000-8000-000000000010";
 const otherFarm = "00000000-0000-4000-8000-000000000020";
 const protocol = "00000000-0000-4000-8000-000000000030";
 const item = "00000000-0000-4000-8000-000000000040";
+
+function syntheticSingleRequest(route: Route) {
+  return route.request().headers().accept?.includes("vnd.pgrst.object") || new URL(route.request().url()).searchParams.get("select") === "role";
+}
+
+async function fulfillSyntheticApi(route: Route, unexpected: string[]) {
+  const request = route.request();
+  const url = new URL(request.url());
+    let data: unknown = [];
+    const single = syntheticSingleRequest(route);
+    if (url.pathname.endsWith("/user_fazendas")) data = single ? { role: "owner" } : [
+      { role: "owner", fazendas: { id: farm, nome: "Fazenda de teste", estado: "MG" } },
+      { role: "owner", fazendas: { id: otherFarm, nome: "Outra fazenda", estado: "MG" } },
+    ];
+    else if (url.pathname.endsWith("/user_settings")) data = { active_fazenda_id: null };
+    else if (url.pathname.endsWith("/fazendas")) data = { metadata: {} };
+    else if (url.pathname.includes("/rpc/")) data = false;
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method()) && !url.pathname.endsWith("/user_settings") && !url.pathname.includes("/rpc/")) {
+      unexpected.push(`${request.method()} ${url.pathname}`);
+    }
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(data) });
+}
 
 async function prepare(page: Page) {
   const unexpected: string[] = [];
@@ -24,19 +46,7 @@ async function prepare(page: Page) {
       return route.continue();
     }
     if (url.port !== "59997") { unexpected.push(url.origin + url.pathname); return route.abort(); }
-    let data: unknown = [];
-    const single = request.headers().accept?.includes("vnd.pgrst.object") || url.searchParams.get("select") === "role";
-    if (url.pathname.endsWith("/user_fazendas")) data = single ? { role: "owner" } : [
-      { role: "owner", fazendas: { id: farm, nome: "Fazenda de teste", estado: "MG" } },
-      { role: "owner", fazendas: { id: otherFarm, nome: "Outra fazenda", estado: "MG" } },
-    ];
-    else if (url.pathname.endsWith("/user_settings")) data = { active_fazenda_id: null };
-    else if (url.pathname.endsWith("/fazendas")) data = { metadata: {} };
-    else if (url.pathname.includes("/rpc/")) data = false;
-    if (!["GET", "HEAD", "OPTIONS"].includes(request.method()) && !url.pathname.endsWith("/user_settings") && !url.pathname.includes("/rpc/")) {
-      unexpected.push(`${request.method()} ${url.pathname}`);
-    }
-    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(data) });
+    return fulfillSyntheticApi(route, unexpected);
   });
   return unexpected;
 }
@@ -45,6 +55,26 @@ async function selectProtocol(page: Page) {
   await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(protocol);
   await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(item);
 }
+
+test("B19 aprovada em fixture gera Agenda genérica condicional, offline e sem fatos", async ({ page, context }) => {
+  const unexpected = await prepare(page);
+  await page.goto("/select-fazenda?approved");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await selectProtocol(page);
+  await page.getByLabel("Geração de Agenda", { exact: true }).selectOption("automatic");
+  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeEnabled();
+  await context.setOffline(true);
+  await page.getByLabel("Selecionar Bezerra teste 101", { exact: true }).check();
+  await page.getByRole("button", { name: "Planejar agenda para selecionados" }).click();
+  await expect(page.getByText(/Avaliação\/manejo genérico/)).toBeVisible();
+  await page.getByRole("button", { name: "Confirmar e gerar Agenda" }).click();
+  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
+  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0, queue: 0 });
+  await context.setOffline(false);
+  await page.reload();
+  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0 });
+  expect(unexpected).toEqual([]);
+});
 
 async function counts(page: Page) {
   return page.evaluate(async () => {

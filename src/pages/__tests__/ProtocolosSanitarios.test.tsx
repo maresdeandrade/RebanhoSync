@@ -31,7 +31,7 @@ function mockLiveQueries(windowSource = emptyWindowSource, localAgenda: unknown[
   let call = 0;
   vi.mocked(useLiveQuery).mockImplementation(() => {
     call += 1;
-    return call % 2 === 1 ? localAgenda : windowSource;
+    return call % 2 === 1 ? localAgenda : { farmUf: "MG", ...windowSource };
   });
 }
 

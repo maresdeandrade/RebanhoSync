@@ -1,5 +1,8 @@
 # Matriz de SanitaryProtocol v2
 
+> **Adendo de política proposto — 15/10/2026:** o estado `manual_only`/`preview_allowed` documenta a restrição atual, **não um impedimento permanente de toda a família**. A avaliação agora é por **item, variante de esquema, fonte e contexto da fazenda**. Nove famílias permanecem candidatas condicionais; `febre_aftosa` continua `retired`/informativa, sem agenda automática. **Nenhum protocolo foi aprovado ou importado**. Ref.: [decisão completa](../SANITARIO_V2_POLITICA_AGENDA_CONDICIONAL_20261015.md) · [20 itens](SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv). **Ajustes A–E incorporados:** restrição `no_agenda_auto` mantém **todos os três itens de raiva** sem automação até revisão **aprovada e versionada**; vacinas multivalentes (ex.: Fertiguard/Poliguard) exigem composição, janela e histórico compatíveis para **uma única aplicação/Evento** com cobertura multiprotocolo rastreável; B19 concilia períodos federais e somente os prazos estaduais de comprovação preserváveis pelo art. 3º; Agenda genérica não adquire esquema/dose por inferência; relatórios locais e os quatro achados Fallow permanecem **relatados, sem IDs brutos conferidos**. Revisar a [matriz por 20 itens](SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv) junto com a política.
+
+
 Atualizado em: 2026-06-09
 Fase: 12D4 — Rebaseline conceitual (ProductClass, status curatorial, política de execução)
 Versão anterior: 12D3 (Extração curatorial)

@@ -1,3 +1,5 @@
+> **Adendo normativo proposto — 15/10/2026 (não implementado):** para planejamento Sanitário V2, separar **consulta**, **sugestão**, **Agenda manual condicional**, **Agenda automática condicional** e **execução factual**. Produto comercial ainda não identificado **não bloqueia Agenda genérica de manejo**, mas não autoriza selecionar dose, via, carência, esquema de reforço ou produto. A automação requer regra/versionamento aprovados, contexto da fazenda, elegibilidade individual, Evento anterior quando necessário e deduplicação persistente; não cria Evento, estoque ou carência. **Esta revisão não altera os estados do catálogo ou flags**, nem autoriza importação. Ver [política e decisões por 20 itens](../review/SANITARIO_V2_POLITICA_AGENDA_CONDICIONAL_20261015.md) e [matriz de decisões](../review/evidence/SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv). **Ajustes A–E incorporados:** restrição `no_agenda_auto` mantém **todos os três itens de raiva** sem automação até revisão **aprovada e versionada**; vacinas multivalentes (ex.: Fertiguard/Poliguard) exigem composição, janela e histórico compatíveis para **uma única aplicação/Evento** com cobertura multiprotocolo rastreável; B19 concilia períodos federais e somente os prazos estaduais de comprovação preserváveis pelo art. 3º; Agenda genérica não adquire esquema/dose por inferência; relatórios locais e os quatro achados Fallow permanecem **relatados, sem IDs brutos conferidos**. Revisar a [matriz por 20 itens](../review/evidence/SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv) junto com a política.
+
 ```markdown
 # Sanitário — RebanhoSync
 
@@ -51,6 +53,16 @@ Fora do escopo deste documento:
 - resultado econômico global.
 
 ---
+
+## Planejamento condicional local — revisão A–E de 16/10/2026
+
+- `protocol_item_snapshot.planningKind` distingue `avaliacao_manejo_generica` e `aplicacao_esquema_definido` no writer local; tarefas anteriores não são migradas nem reinterpretadas.
+- Novas intenções dos callers manuais legados são avaliações genéricas. Esquemas definidos exigem produto/formulação, autorização explícita por espécie/sexo/idade, fontes por campo e histórico do mesmo produto quando aplicável.
+- A geração condicional revalida catálogo/contexto/dados factuais sob transação Dexie; `allows_agenda_auto` e `no_agenda_auto` não são alterados pela UI ou pelo histórico.
+- B19 exige UF, mantém proibição em SC e distingue elegibilidade/fato/comprovação. Não há novo cálculo de prazo de comprovação estadual neste patch.
+- Conformidade histórica usa pré-checagem factual, não a ausência de aprovação prospectiva do catálogo.
+- Cobertura multiprotocolo permanece informativa; o modelo factual singular impede materializar duas aplicações equivalentes como se fossem independentes. Nenhuma relação persistente nova é inferida.
+- Evidência, testes e restrições: [entrega local A–E](../review/evidence/SANITARIO_V2_A_E_IMPLEMENTACAO_LOCAL_20261016.md).
 
 ## Contrato central
 
