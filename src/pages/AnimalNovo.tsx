@@ -401,57 +401,60 @@ const AnimalNovo = () => {
       ops.push(op);
     }
 
-    // 3. Compra usa o mesmo caso de uso composto consumido pelo Menu Registrar.
-    if (origem === "compra") {
-      const valorCompra = parseNumeric(compraValorTotal);
-      const occurredAt = dataEntrada ? `${dataEntrada}T12:00:00.000Z` : now;
-      const contraparteId =
-        compraContraparteId !== "null" ? compraContraparteId : undefined;
-      const observacoes =
-        compraObservacoes || "Compra vinculada ao cadastro do animal";
-      const pesoKg = compraPesoKg.trim() ? parseNumeric(compraPesoKg) : null;
-      const built = buildCommercialOperationGesture({
-        fazendaId: fazenda_id,
-        operationType: "compra",
-        scope: "animal",
-        occurredAt,
-        declaredQuantity: 1,
-        loteId: loteId === "null" ? null : loteId,
-        selectedAnimalIds: [],
-        animals: [],
-        newAnimals: [
-          {
-            localId: animal_id,
-            id: animal_id,
-            identificacao,
-            sexo,
-            especie: especie === "null" ? null : especie,
-            raca: raca === "null" ? null : (raca as never),
-            dataNascimento: dataNascimento || null,
-            dataEntrada: dataEntrada || null,
-            loteId: loteId === "null" ? null : loteId,
-            nome: nome || null,
-            rfid: rfid || null,
-            paiId: paiId === "null" || paiId === "externo" ? null : paiId,
-            maeId: maeId === "null" || maeId === "externo" ? null : maeId,
-            payload,
-            papelMacho: papel_macho,
-            habilitadoMonta: habilitado_monta,
-            preparedPayload: true,
-            commercialWeight: Number.isFinite(pesoKg) ? pesoKg : null,
-            valorIndividual: valorCompra,
-          },
-        ],
-        pesoVivoTotal: Number.isFinite(pesoKg) ? pesoKg : null,
-        valorBruto: valorCompra,
-        contraparteId,
-        observacoes,
-        lifecycleConfig: farmLifecycleConfig,
-      });
-      ops.splice(0, ops.length, ...built.ops);
-    }
-
     try {
+      // 3. Compra usa o mesmo caso de uso composto consumido pelo Menu Registrar.
+      if (origem === "compra") {
+        const valorCompra = parseNumeric(compraValorTotal);
+        const occurredAt =
+          !dataEntrada || dataEntrada === now.slice(0, 10)
+            ? now
+            : `${dataEntrada}T12:00:00.000Z`;
+        const contraparteId =
+          compraContraparteId !== "null" ? compraContraparteId : undefined;
+        const observacoes =
+          compraObservacoes || "Compra vinculada ao cadastro do animal";
+        const pesoKg = compraPesoKg.trim() ? parseNumeric(compraPesoKg) : null;
+        const built = buildCommercialOperationGesture({
+          fazendaId: fazenda_id,
+          operationType: "compra",
+          scope: "animal",
+          occurredAt,
+          declaredQuantity: 1,
+          loteId: loteId === "null" ? null : loteId,
+          selectedAnimalIds: [],
+          animals: [],
+          newAnimals: [
+            {
+              localId: animal_id,
+              id: animal_id,
+              identificacao,
+              sexo,
+              especie: especie === "null" ? null : especie,
+              raca: raca === "null" ? null : (raca as never),
+              dataNascimento: dataNascimento || null,
+              dataEntrada: dataEntrada || null,
+              loteId: loteId === "null" ? null : loteId,
+              nome: nome || null,
+              rfid: rfid || null,
+              paiId: paiId === "null" || paiId === "externo" ? null : paiId,
+              maeId: maeId === "null" || maeId === "externo" ? null : maeId,
+              payload,
+              papelMacho: papel_macho,
+              habilitadoMonta: habilitado_monta,
+              preparedPayload: true,
+              commercialWeight: Number.isFinite(pesoKg) ? pesoKg : null,
+              valorIndividual: valorCompra,
+            },
+          ],
+          pesoVivoTotal: Number.isFinite(pesoKg) ? pesoKg : null,
+          valorBruto: valorCompra,
+          contraparteId,
+          observacoes,
+          lifecycleConfig: farmLifecycleConfig,
+        });
+        ops.splice(0, ops.length, ...built.ops);
+      }
+
       await createGesture(fazenda_id, ops);
       showSuccess(
         origem === "sociedade"

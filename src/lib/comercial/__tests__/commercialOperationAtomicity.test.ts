@@ -33,8 +33,64 @@ async function clearCommercialStores() {
 describe("commercial operation local atomicity", () => {
   beforeEach(clearCommercialStores);
   afterEach(async () => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     await clearCommercialStores();
+  });
+
+  it("persiste compra com entrada de hoje antes do meio-dia UTC", async () => {
+    // Apenas Date é simulado; as transações IndexedDB continuam assíncronas reais.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-16T08:00:00.000Z"));
+
+    const built = buildCommercialOperationGesture({
+      fazendaId: farm,
+      operationType: "compra",
+      scope: "animal",
+      occurredAt: new Date().toISOString(),
+      declaredQuantity: 1,
+      loteId: null,
+      selectedAnimalIds: [],
+      animals: [],
+      newAnimals: [
+        {
+          localId: "row-1",
+          id: animalId,
+          identificacao: "TODAY-001",
+          sexo: "F",
+          especie: "bovino",
+          dataNascimento: "2025-01-01",
+          dataEntrada: "2026-10-16",
+        },
+      ],
+      lifecycleConfig: DEFAULT_FARM_LIFECYCLE_CONFIG,
+      operationId,
+      valorBruto: 1000,
+    });
+    await createGesture(farm, built.ops);
+
+    expect(await db.state_animais.get(animalId)).toMatchObject({
+      fazenda_id: farm,
+      origem: "compra",
+      data_entrada: "2026-10-16",
+    });
+    expect(await db.event_eventos.get(operationId)).toMatchObject({
+      fazenda_id: farm,
+      dominio: "comercial",
+      animal_id: animalId,
+    });
+    expect(await db.event_eventos_comercial.get(operationId)).toMatchObject({
+      fazenda_id: farm,
+      operation_type: "compra",
+      animal_ids: [animalId],
+    });
+    expect(await db.queue_ops.toArray()).toEqual([
+      expect.objectContaining({
+        table: "commercial_operation_v2",
+        sync_state: "PENDING",
+      }),
+    ]);
+    expect(await db.queue_gestures.count()).toBe(1);
   });
 
   it("rolls back animals, event, detail and queue when any local write fails", async () => {
