@@ -37,13 +37,16 @@ export function validateAnimalRegistrationDraft(
 ): string | null {
   if (!draft.identificacao.trim()) return "Identificação é obrigatória.";
   if (draft.sexo !== "M" && draft.sexo !== "F") return "Sexo inválido.";
+  // Compare dias no mesmo calendário UTC, sem tratar hoje como horário futuro.
+  const referenceDay = new Date(referenceDate);
+  referenceDay.setUTCHours(12, 0, 0, 0);
   for (const [label, value] of [
     ["Data de nascimento", draft.dataNascimento],
     ["Data de entrada", draft.dataEntrada],
   ] as const) {
     if (!value) continue;
     const parsed = new Date(`${value}T12:00:00.000Z`);
-    if (Number.isNaN(parsed.getTime()) || parsed > referenceDate) {
+    if (Number.isNaN(parsed.getTime()) || parsed > referenceDay) {
       return `${label} não pode ser inválida ou futura.`;
     }
   }
