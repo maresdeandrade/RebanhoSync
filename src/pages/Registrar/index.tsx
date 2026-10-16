@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import type {
   ReproTipoEnum,
@@ -27,7 +27,7 @@ import { useLotes } from "@/hooks/useLotes";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/offline/db";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
-import { parseWeightInput } from "@/lib/format/weight";
+import { getWeightUnitLabel, parseWeightInput } from "@/lib/format/weight";
 import { cn } from "@/lib/utils";
 import { buildBiosecurityOccurrenceEventInput } from "@/lib/sanitario/compliance/biosecurityOccurrence";
 import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
@@ -62,6 +62,7 @@ import { RegistrarFinanceiroSection } from "@/pages/Registrar/components/Registr
 import { ReproducaoResumoConfirmacao } from "@/pages/Registrar/components/ReproducaoResumoConfirmacao";
 import { TransitChecklistResumoConfirmacao } from "@/pages/Registrar/components/TransitChecklistResumoConfirmacao";
 import { ConfirmacaoResumoBase } from "@/pages/Registrar/components/ConfirmacaoResumoBase";
+import { PesagemResumoConfirmacao } from "@/pages/Registrar/components/PesagemResumoConfirmacao";
 import { RegistrarManejoActionsGrid } from "@/pages/Registrar/components/RegistrarManejoActionsGrid";
 import { RegistrarSelectTargetStep } from "@/pages/Registrar/components/RegistrarSelectTargetStep";
 import { RegistrarSanitarioSection } from "@/pages/Registrar/components/RegistrarSanitarioSection";
@@ -1006,6 +1007,10 @@ const Registrar = () => {
     precoLabel: financeiroResumoPrecoLabel,
     pesoLabel: financeiroResumoPesoLabel,
   } = financialSummary;
+  const updateFinanceiroNatureza = useCallback(
+    (natureza: "compra" | "venda") => updateFinanceiroData("natureza", natureza),
+    [updateFinanceiroData],
+  );
   const {
     quickAction,
     quickActionConfig,
@@ -1016,8 +1021,7 @@ const Registrar = () => {
   } = useRegistrarQuickActionPolicy({
     applySanitaryQuickAction,
     setTipoManejo,
-    updateFinanceiroNatureza: (natureza) =>
-      updateFinanceiroData("natureza", natureza),
+    updateFinanceiroNatureza,
   });
   const hasExistingTarget =
     targetMode === "existing" &&
@@ -1303,7 +1307,14 @@ const Registrar = () => {
     canAdvanceToConfirm,
   });
 
+  const appliedContextQuery = useRef<string | null>(null);
+  const contextQuery = searchParams.toString();
+
   useEffect(() => {
+    // A URL preenche a entrada; alterações do formulário não reaplicam contexto.
+    if (appliedContextQuery.current === contextQuery) return;
+    appliedContextQuery.current = contextQuery;
+
     const parsedQuery = parseRegistrarQueryState({
       searchParams,
       isQuickActionKey,
@@ -1401,6 +1412,7 @@ const Registrar = () => {
       goToChooseAction();
     }
   }, [
+    contextQuery,
     searchParams,
     applyQuickAction,
     applyFinanceiroNaturezaQueryPrefill,
@@ -2086,6 +2098,21 @@ const Registrar = () => {
                 showNutricaoAlimento={showConfirmacaoNutricaoAlimento}
                 nutricaoAlimentoLabel={nutricaoData.alimentoNome}
               />
+              {tipoManejo === "pesagem" && (
+                <PesagemResumoConfirmacao
+                  selectedAnimalIds={selectedAnimais}
+                  animals={[
+                    ...(animaisNoLote ?? []),
+                    ...(registrarContextRecords?.animal
+                      ? [registrarContextRecords.animal]
+                      : []),
+                  ]}
+                  weights={pesagemData}
+                  unitLabel={getWeightUnitLabel(
+                    farmMeasurementConfig.weight_unit,
+                  )}
+                />
+              )}
               {transitChecklist.enabled ? (
                 <TransitChecklistResumoConfirmacao
                   purposeLabel={transitChecklistPurposeLabel}

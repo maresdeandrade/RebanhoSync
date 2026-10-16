@@ -3,11 +3,11 @@
  */
 import "@testing-library/jest-dom";
 import "fake-indexeddb/auto";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import Registrar from "@/pages/Registrar";
 import { runRegistrarFinalizeGestureEffect } from "@/pages/Registrar/effects/finalizeGesture";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLotes } from "@/hooks/useLotes";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -19,6 +19,10 @@ vi.mock("@/hooks/useLotes");
 vi.mock("dexie-react-hooks");
 vi.mock("@/lib/offline/pull", () => ({
   pullDataForFarm: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/pages/Registrar/effects/bootstrap", () => ({
+  refreshRegistrarSanitaryProtocolsEffect: vi.fn().mockResolvedValue(undefined),
+  refreshRegistrarVeterinaryProductsEffect: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/pages/Registrar/effects/finalizeGesture", () => ({
   runRegistrarFinalizeGestureEffect: vi.fn().mockResolvedValue(undefined),
@@ -49,9 +53,18 @@ describe("Registrar Page - Anti-Teleport", () => {
   const mockedUseAuth = vi.mocked(useAuth);
   const mockedUseLotes = vi.mocked(useLotes);
   const mockedUseLiveQuery = vi.mocked(useLiveQuery);
+  let extraAnimals: Array<{
+    id: string;
+    identificacao: string;
+    sexo: string;
+    lote_id: string;
+    fazenda_id: string;
+    deleted_at: null;
+  }>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    extraAnimals = [];
     
     // Default mocks
     mockedUseAuth.mockReturnValue({
@@ -151,11 +164,158 @@ describe("Registrar Page - Anti-Teleport", () => {
         querySource.includes("state_animais") ||
         querySource.includes("loadRegistrarAnimaisNoLoteEffect")
       ) {
-        return [universalRecord] as ReturnType<typeof useLiveQuery>;
+        return [universalRecord, ...extraAnimals] as ReturnType<typeof useLiveQuery>;
       }
 
       return [] as ReturnType<typeof useLiveQuery>;
     }) as typeof useLiveQuery);
+  });
+
+  it("mantém a confirmação contextual e os pesos ao voltar e avançar", async () => {
+    render(
+      <MemoryRouter
+        initialEntries={["/registrar?dominio=pesagem&animalId=animal-1"]}
+      >
+        <Registrar />
+      </MemoryRouter>,
+    );
+
+    const input = await screen.findByPlaceholderText("Peso (kg)");
+    const review = screen.getByRole("button", { name: "Revisar informações" });
+    expect(review).toBeDisabled();
+    fireEvent.change(input, { target: { value: "-1" } });
+    expect(review).toBeDisabled();
+    fireEvent.change(input, { target: { value: "430.5" } });
+    fireEvent.click(review);
+
+    expect(await screen.findByText("Etapa 3/3: Registrar")).toBeInTheDocument();
+    expect(
+      screen.getByRole("list", { name: "Pesos por animal" }),
+    ).toHaveTextContent("Boi 1");
+    expect(
+      screen.getByRole("list", { name: "Pesos por animal" }),
+    ).toHaveTextContent("430.5 kg");
+    fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(screen.getByPlaceholderText("Peso (kg)")).toHaveValue(430.5);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Revisar informações" }),
+    );
+    expect(screen.getByText("Etapa 3/3: Registrar")).toBeInTheDocument();
+    expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("não restaura ação ou seleção da URL em renders de interação", async () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          "/registrar?dominio=pesagem&animalId=animal-1&loteId=lote-A",
+        ]}
+      >
+        <Registrar />
+      </MemoryRouter>,
+    );
+
+    await screen.findByPlaceholderText("Peso (kg)");
+    fireEvent.click(screen.getByRole("button", { name: "Mover", exact: true }));
+    expect(screen.getByText("Lote Destino")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(screen.getByText("Etapa 1/3: Definir contexto")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
+  });
+
+  it.each(["kg", "arroba"] as const)(
+    "revisa múltiplos animais na unidade %s sem executar fatos",
+    async (unit) => {
+      extraAnimals = [
+        {
+          id: "animal-2",
+          identificacao: "Boi 2",
+          sexo: "M",
+          lote_id: "lote-A",
+          fazenda_id: mockFarmId,
+          deleted_at: null,
+        },
+      ];
+      mockedUseAuth.mockReturnValue({
+        ...mockedUseAuth(),
+        farmMeasurementConfig: { weight_unit: unit },
+      });
+      render(
+        <MemoryRouter>
+          <Registrar />
+        </MemoryRouter>,
+      );
+      fireEvent.click(screen.getByText("Selecione o lote"));
+      fireEvent.click(await screen.findByRole("option", { name: "Lote A" }));
+      for (const checkbox of screen.getAllByRole("checkbox"))
+        fireEvent.click(checkbox);
+      fireEvent.click(screen.getByRole("button", { name: "Escolher manejo" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Pesagem", exact: true }),
+      );
+      const inputs = screen.getAllByPlaceholderText(`Peso (${unit})`);
+      const values = unit === "kg" ? ["430.5", "510"] : ["28.7", "34"];
+      fireEvent.change(inputs[0], { target: { value: values[0] } });
+      expect(
+        screen.getByRole("button", { name: "Revisar informações" }),
+      ).toBeDisabled();
+      fireEvent.change(inputs[1], { target: { value: values[1] } });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Revisar informações" }),
+      );
+      const rows = within(
+        screen.getByRole("list", { name: "Pesos por animal" }),
+      ).getAllByRole("listitem");
+      expect(rows).toHaveLength(2);
+      expect(rows[0]).toHaveTextContent(`Boi 1${values[0]} ${unit}`);
+      expect(rows[1]).toHaveTextContent(`Boi 2${values[1]} ${unit}`);
+      fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+      expect(
+        screen
+          .getAllByPlaceholderText(`Peso (${unit})`)
+          .map((input) => (input as HTMLInputElement).value),
+      ).toEqual(values);
+      expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
+    },
+  );
+
+  it("aplica uma nova entrada contextual sem remontar a página", async () => {
+    function ChangeContext() {
+      const [, setSearchParams] = useSearchParams();
+      return (
+        <button
+          onClick={() =>
+            setSearchParams(
+              "dominio=movimentacao&animalId=animal-1&loteId=lote-A",
+            )
+          }
+        >
+          Alterar contexto
+        </button>
+      );
+    }
+    render(
+      <MemoryRouter
+        initialEntries={["/registrar?dominio=pesagem&animalId=animal-1"]}
+      >
+        <ChangeContext />
+        <Registrar />
+      </MemoryRouter>,
+    );
+    fireEvent.change(await screen.findByPlaceholderText("Peso (kg)"), {
+      target: { value: "430" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Revisar informações" }),
+    );
+    expect(await screen.findByText("Etapa 3/3: Registrar")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Alterar contexto" }));
+    expect(await screen.findByText("Lote Destino")).toBeInTheDocument();
+    expect(screen.getByText("Etapa 2/3: Escolher ação")).toBeInTheDocument();
+    expect(runRegistrarFinalizeGestureEffect).not.toHaveBeenCalled();
   });
 
   it("resets destination (toLoteId) when source (selectedLoteId) is changed to match destination", async () => {
