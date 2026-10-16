@@ -179,3 +179,40 @@ test("catálogo vazio informa indisponibilidade sem fabricar protocolos ou produ
   expect(await counts(page)).toEqual({ agendas: 0, events: 0, movements: 0, queue: 0, products: 0 });
   expect(unexpected).toEqual([]);
 });
+
+test("plano integral contempla 20 itens e automatiza vários protocolos com histórico e recuperação offline", async ({ page, context }) => {
+  const unexpected = await prepare(page);
+  await page.goto("/select-fazenda?integral");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  const checkboxes = page.getByRole("checkbox", { name: /^Automatizar / });
+  await expect(checkboxes).toHaveCount(20);
+  await expect(page.getByText("Plano automático desativado", { exact: true })).toBeVisible();
+  await page.getByText("Cobertura, sugestões e restrições de todos os itens", { exact: true }).click();
+  await expect(page.getByText("Sugestão condicional — automação restrita", { exact: true })).toHaveCount(3);
+  await expect(page.getByText("Bloqueio técnico específico", { exact: true })).toHaveCount(3);
+  await context.setOffline(true);
+  await page.getByLabel("Confirmar ativação do plano", { exact: true }).check();
+  await page.getByRole("button", { name: "Ativar plano automático", exact: true }).click();
+  await expect(page.getByText("Plano automático ativo", { exact: true })).toBeVisible();
+  const snapshot = () => page.evaluate(async () => {
+    const { db } = await import("/src/lib/offline/db.ts");
+    const agendas = await db.ops_sanitario_agenda_v2.toArray();
+    return { count: agendas.length, items: new Set(agendas.map((agenda) => agenda.protocol_item_snapshot.itemKey)).size,
+      identities: new Set(agendas.map((agenda) => agenda.metadata.automationKey)).size,
+      events: await db.event_eventos.count(), movements: await db.state_insumo_movimentacoes.count() };
+  });
+  await expect.poll(snapshot).toMatchObject({ items: 12, events: 4, movements: 0 });
+  const before = await snapshot();
+  expect(before.identities).toBe(before.count);
+  await page.getByRole("button", { name: "Reavaliar plano", exact: true }).click();
+  expect(await snapshot()).toEqual(before);
+  await context.setOffline(false);
+  await page.reload();
+  await expect(page.getByText("Plano automático ativo", { exact: true })).toBeVisible();
+  await expect.poll(snapshot).toEqual(before);
+  await page.getByRole("link", { name: "Trocar fazenda", exact: true }).click();
+  await page.getByRole("button").filter({ hasText: "Outra fazenda" }).click();
+  await expect(page.getByText("Plano automático desativado", { exact: true })).toBeVisible();
+  expect(await snapshot()).toEqual(before);
+  expect(unexpected).toEqual([]);
+});

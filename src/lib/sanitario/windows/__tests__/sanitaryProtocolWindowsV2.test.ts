@@ -648,6 +648,7 @@ describe("sanitaryProtocolWindowsV2", () => {
           sanitaryCadence: null,
           reproductiveContext: "prepartum",
           management: null,
+          scheduledContext: { date: "2026-07-04", animalIds: ["female"], reference: "Avaliação pré-parto programada" },
         },
       }).rows[0],
     ).toMatchObject({ status: "in_action_window", canSelect: true });

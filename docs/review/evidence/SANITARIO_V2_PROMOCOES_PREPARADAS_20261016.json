@@ -1,0 +1,209 @@
+{
+  "artifact": "Preparação específica de promoção; não é payload de importação",
+  "baseline": "695d5cbb91af27b90a57c0131203ce2db8fe4ee1",
+  "execute_import": false,
+  "changes_operational_flags": false,
+  "approvals_granted": 0,
+  "proposals": [
+    {
+      "canonical_item_id": "22508d25-1b95-44b2-b2a3-50d57cb8ba7d",
+      "logical_item_key": "b19_femeas_3_8_meses",
+      "current_version": 2,
+      "proposed_next_version": 3,
+      "scope": "generic_evaluation_only",
+      "evidence_already_registered": [
+        {
+          "id": "d247d101-eeae-46f4-8b9b-3da1c954af9b",
+          "source_key": "SRC_MAPA_IN_10_2017_PNCEBT",
+          "field_key": "legal_requirement",
+          "coverage_status": "covers",
+          "notes": "VAL-B19-001: arts. 9 e 10; fêmeas bovinas/bubalinas 3–8 meses, excetuadas UF classificadas A. Portaria 1.633/2026 mantém a exceção."
+        },
+        {
+          "id": "7af1b82e-d717-4a5c-a009-07eb109c4c21",
+          "source_key": "SRC_MAPA_IN_10_2017_PNCEBT",
+          "field_key": "responsible_veterinarian",
+          "coverage_status": "covers",
+          "notes": "VAL-B19-002: execução sob responsabilidade de médico-veterinário cadastrado no SVO."
+        },
+        {
+          "id": "948b0fb3-d28b-4d20-8ef2-45633439910c",
+          "source_key": "SRC_MAPA_IN_10_2017_PNCEBT",
+          "field_key": "official_vaccination_record",
+          "coverage_status": "covers",
+          "notes": "VAL-B19-003: comprovação ao menos semestral por atestado ou sistema oficial."
+        },
+        {
+          "id": "f484182b-f272-4b16-a19a-aad8bb209c9a",
+          "source_key": "SRC_MAPA_IN_10_2017_PNCEBT",
+          "field_key": "mandatory_marking",
+          "coverage_status": "covers",
+          "notes": "VAL-B19-004: marcação facial esquerda e exceções de identificação individual previstas na norma."
+        },
+        {
+          "id": "4f910d70-d9d8-4b8b-959a-257a5447859d",
+          "source_key": "SRC_MAPA_IN_10_2017_PNCEBT",
+          "field_key": "species_authorization",
+          "coverage_status": "covers",
+          "notes": "VAL-B19-005: norma abrange bovinos e bubalinos."
+        },
+        {
+          "id": "631b58f2-49ac-410e-904c-e8d80d403d4c",
+          "source_key": "SRC_MAPA_IN_10_2017_PNCEBT",
+          "field_key": "sex_age",
+          "coverage_status": "covers",
+          "notes": "VAL-B19-007: fêmeas bovinas e bubalinas de 3 a 8 meses."
+        },
+        {
+          "id": "6680c8da-8f0a-45c3-b47d-81c14af72bda",
+          "source_key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+          "field_key": "legal_requirement",
+          "coverage_status": "covers",
+          "notes": "Campanha nacional exclui UF risco A; prazos nacionais de comprovação preservam campanhas estaduais anteriores."
+        },
+        {
+          "id": "37bd9cf1-2394-4bc8-a763-91584a9396e4",
+          "source_key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+          "field_key": "official_record",
+          "coverage_status": "covers",
+          "notes": "Campanha nacional exclui UF risco A; prazos nacionais de comprovação preservam campanhas estaduais anteriores."
+        },
+        {
+          "id": "6074dba2-6055-41ec-a4bf-2a2ea49ff817",
+          "source_key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+          "field_key": "regional_restrictions",
+          "coverage_status": "covers",
+          "notes": "Campanha nacional exclui UF risco A; prazos nacionais de comprovação preservam campanhas estaduais anteriores."
+        },
+        {
+          "id": "531324a5-2b26-493e-9c33-8c652bcc58c2",
+          "source_key": "SRC_CIDASC_SC_B19_PROHIBITION",
+          "field_key": "legal_requirement",
+          "coverage_status": "covers",
+          "notes": "B19 proibida em Santa Catarina; não substitui validação do produto ou de demais UFs."
+        },
+        {
+          "id": "4e30c65d-1334-45be-b548-0bcfb899dcd6",
+          "source_key": "SRC_CIDASC_SC_B19_PROHIBITION",
+          "field_key": "regional_restrictions",
+          "coverage_status": "covers",
+          "notes": "B19 proibida em Santa Catarina; não substitui validação do produto ou de demais UFs."
+        }
+      ],
+      "required_before_effective_decision": "Aprovar nova versão de avaliação genérica; mapear elegibilidade/janela/requisito de produto para SRC_MAPA_IN_10_2017_PNCEBT e restrições Portaria 1.633/2026/CIDASC. Não declarar vacinação obrigatória em UF risco A.",
+      "decision": "PREPARED_FOR_INDIVIDUAL_TECHNICAL_REVIEW_NOT_APPROVED",
+      "applied": false,
+      "canonical_protocol_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+      "current_protocol_version": 1,
+      "proposed_protocol_version": 2
+    },
+    {
+      "canonical_item_id": "b846a0ae-481e-47b3-a9ce-a3f43afb0484",
+      "logical_item_key": "clostridial_primovac_dose1",
+      "current_version": 1,
+      "proposed_next_version": 2,
+      "scope": "selected_commercial_formulation_only",
+      "evidence_already_registered": [
+        {
+          "id": "305eacc6-5cd4-4c70-aa3e-f4298ac04499",
+          "source_key": "SRC_BULA_FORTRESS7",
+          "field_key": "dose_route",
+          "coverage_status": "covers",
+          "notes": "VAL-CLO-004: 5 mL por via subcutânea."
+        },
+        {
+          "id": "804997a5-4642-4345-b7df-5caa39e3187b",
+          "source_key": "SRC_BULA_FORTRESS7",
+          "field_key": "primary_interval",
+          "coverage_status": "covers",
+          "notes": "VAL-CLO-005: duas doses com intervalo de 4 a 6 semanas."
+        },
+        {
+          "id": "e3909094-9636-45b8-9d0b-10a07ec003c4",
+          "source_key": "SRC_BULA_FORTRESS7",
+          "field_key": "booster",
+          "coverage_status": "covers",
+          "notes": "VAL-CLO-006: reforço anual em dose única."
+        }
+      ],
+      "required_before_effective_decision": "Vincular produto comercial e espécie/idade elegíveis; registrar cobertura operacional de elegibilidade, janela, dose, via e requisito de produto. Aprovar item/versionamento específico para a formulação.",
+      "decision": "PREPARED_FOR_INDIVIDUAL_TECHNICAL_REVIEW_NOT_APPROVED",
+      "applied": false,
+      "canonical_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "current_protocol_version": 1,
+      "proposed_protocol_version": 2
+    },
+    {
+      "canonical_item_id": "c0aaa4e1-458c-4121-a34b-a9a7a996eec1",
+      "logical_item_key": "clostridial_primovac_dose2",
+      "current_version": 2,
+      "proposed_next_version": 3,
+      "scope": "selected_commercial_formulation_only",
+      "evidence_already_registered": [
+        {
+          "id": "305eacc6-5cd4-4c70-aa3e-f4298ac04499",
+          "source_key": "SRC_BULA_FORTRESS7",
+          "field_key": "dose_route",
+          "coverage_status": "covers",
+          "notes": "VAL-CLO-004: 5 mL por via subcutânea."
+        },
+        {
+          "id": "804997a5-4642-4345-b7df-5caa39e3187b",
+          "source_key": "SRC_BULA_FORTRESS7",
+          "field_key": "primary_interval",
+          "coverage_status": "covers",
+          "notes": "VAL-CLO-005: duas doses com intervalo de 4 a 6 semanas."
+        },
+        {
+          "id": "e3909094-9636-45b8-9d0b-10a07ec003c4",
+          "source_key": "SRC_BULA_FORTRESS7",
+          "field_key": "booster",
+          "coverage_status": "covers",
+          "notes": "VAL-CLO-006: reforço anual em dose única."
+        }
+      ],
+      "required_before_effective_decision": "Vincular produto comercial e espécie/idade elegíveis; registrar cobertura operacional de elegibilidade, janela, dose, via e requisito de produto. Aprovar item/versionamento específico para a formulação.",
+      "decision": "PREPARED_FOR_INDIVIDUAL_TECHNICAL_REVIEW_NOT_APPROVED",
+      "applied": false,
+      "canonical_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "current_protocol_version": 1,
+      "proposed_protocol_version": 2
+    },
+    {
+      "canonical_item_id": "136af00d-eeeb-44b9-87c4-c153cc1fc28b",
+      "logical_item_key": "clostridial_reforco_anual",
+      "current_version": 1,
+      "proposed_next_version": 2,
+      "scope": "selected_commercial_formulation_only",
+      "evidence_already_registered": [
+        {
+          "id": "305eacc6-5cd4-4c70-aa3e-f4298ac04499",
+          "source_key": "SRC_BULA_FORTRESS7",
+          "field_key": "dose_route",
+          "coverage_status": "covers",
+          "notes": "VAL-CLO-004: 5 mL por via subcutânea."
+        },
+        {
+          "id": "804997a5-4642-4345-b7df-5caa39e3187b",
+          "source_key": "SRC_BULA_FORTRESS7",
+          "field_key": "primary_interval",
+          "coverage_status": "covers",
+          "notes": "VAL-CLO-005: duas doses com intervalo de 4 a 6 semanas."
+        },
+        {
+          "id": "e3909094-9636-45b8-9d0b-10a07ec003c4",
+          "source_key": "SRC_BULA_FORTRESS7",
+          "field_key": "booster",
+          "coverage_status": "covers",
+          "notes": "VAL-CLO-006: reforço anual em dose única."
+        }
+      ],
+      "required_before_effective_decision": "Vincular produto comercial e espécie/idade elegíveis; registrar cobertura operacional de elegibilidade, janela, dose, via e requisito de produto. Aprovar item/versionamento específico para a formulação.",
+      "decision": "PREPARED_FOR_INDIVIDUAL_TECHNICAL_REVIEW_NOT_APPROVED",
+      "applied": false,
+      "canonical_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "current_protocol_version": 1,
+      "proposed_protocol_version": 2
+    }
+  ]
+}

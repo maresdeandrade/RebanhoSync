@@ -11,6 +11,8 @@ import { establishLocalOwnership } from "../../src/lib/offline/ownership";
 import ProtocolosSanitarios from "../../src/pages/ProtocolosSanitarios";
 import SelectFazenda from "../../src/pages/SelectFazenda";
 import "../../src/globals.css";
+import { seedNormalizedFixture, seedNormalizedHistory, normalizedDraft, automaticItemKeys } from "../../src/lib/sanitario/agenda/__tests__/fixtures/sanitaryNormalizedFixtureV2";
+import { saveSanitaryAutomationPlanV2 } from "../../src/lib/sanitario/agenda/sanitaryAutomationPlanV2";
 
 const endpoint = new URL(import.meta.env.VITE_SUPABASE_URL);
 if (endpoint.hostname !== "127.0.0.1" || endpoint.port !== "59997") {
@@ -30,7 +32,8 @@ const protocol = "00000000-0000-4000-8000-000000000030";
 const item = "00000000-0000-4000-8000-000000000040";
 const now = "2026-07-04T12:00:00.000Z";
 const stamp = { created_at: now, updated_at: now, deleted_at: null };
-if (!await db.state_animais.count()) {
+const integral = new URLSearchParams(location.search).has("integral");
+if (!await db.state_animais.count() && !integral) {
   await db.state_lotes.put({ id: "lot-test", fazenda_id: farm, nome: "Bezerras de teste", ...stamp } as never);
   await db.state_fazenda_sanidade_config.put({ fazenda_id: farm, uf: "MG", ...stamp } as never);
   for (const [id, identification, farmId, sex] of [
@@ -58,6 +61,12 @@ if (!await db.state_animais.count()) {
       ) : {}, requires_mv_responsavel: true, status: "active", ...stamp });
     await db.catalog_sanitario_produtos_v2.put({ id: "product-existing", nome_comercial: "Produto existente de teste", classe: "vacina_brucelose_b19", status_curatorial: "ativo", ...stamp } as never);
   }
+}
+if (integral && !await db.state_animais.count()) {
+  await seedNormalizedFixture(farm);
+  for (const key of automaticItemKeys) await seedNormalizedHistory(key, farm);
+  await saveSanitaryAutomationPlanV2({ fazendaId: farm, actorId: user.id, expectedRevision: 0,
+    draft: await normalizedDraft(farm), enabled: false, confirmed: false });
 }
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode><AuthProvider><BrowserRouter>

@@ -11,15 +11,24 @@ import {
   type SanitaryProtocolV2ReadModel,
 } from "../catalog/sanitaryProtocolCatalogV2";
 import { sanitaryPlanningBlockersV2 } from "../preview/sanitaryWindowPlanningPreviewV2";
+import type { SanitaryOperationalContextV2 } from "../windows/sanitaryProtocolWindowsV2";
+import { sanitaryScheduledDateValidV2 } from "./sanitaryContextualPlanningV2";
 
 export const SANITARY_AUTOMATION_PLAN_KEY = "sanitary_agenda_automation_v2";
 const contextSchema = z.object({
+  riskContext: z.boolean().nullable().optional(),
+  preWeaningBasis: z.object({ kind: z.enum(["intensive_dairy", "veterinarian"]), reference: z.string().trim().min(1) }).optional(),
   rabiesRiskArea: z.boolean().nullable(),
   sanitaryCadence: z.enum(["annual", "semiannual"]).nullable(),
   reproductiveContext: z.enum(["prepartum", "peripartum"]).nullable(),
   management: z
     .enum(["pre_weaning", "rearing", "pre_feedlot", "deferred_pasture"])
     .nullable(),
+  regionalCalendar: z.object({ uf: z.string().regex(/^[A-Z]{2}$/), months: z.array(z.number().int().min(1).max(12)).min(1) }).optional(),
+  scheduledContext: z.object({
+    date: z.string().refine(sanitaryScheduledDateValidV2),
+    animalIds: z.array(z.string().min(1)).min(1), reference: z.string().trim().min(1),
+  }).optional(),
 });
 const selectionSchema = z.object({
   protocolId: z.string().min(1),
@@ -29,11 +38,12 @@ const selectionSchema = z.object({
   productId: z.string().nullable(),
 });
 const planSchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
   revision: z.number().int().positive(),
   enabled: z.boolean(),
   rules: z.array(selectionSchema),
   context: contextSchema,
+  ruleContexts: z.record(contextSchema).optional(),
   confirmedBy: z.string().min(1),
   confirmedAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -43,15 +53,22 @@ export type SanitaryAutomationRuleV2 = Required<
 >;
 export type SanitaryAutomationPlanV2 = Omit<
   Required<z.infer<typeof planSchema>>,
-  "context" | "rules"
+  "context" | "rules" | "ruleContexts"
 > & {
-  context: Required<z.infer<typeof contextSchema>>;
+  context: SanitaryOperationalContextV2;
   rules: SanitaryAutomationRuleV2[];
+  ruleContexts?: Record<string, SanitaryOperationalContextV2>;
 };
 export type SanitaryAutomationDraftV2 = Pick<
   SanitaryAutomationPlanV2,
-  "rules" | "context"
+  "rules" | "context" | "ruleContexts"
 >;
+
+function automationPlanSchemaVersion(draft: SanitaryAutomationDraftV2): 1 | 2 {
+  if (Object.keys(draft.ruleContexts ?? {}).length) return 2;
+  const advanced = ["riskContext", "preWeaningBasis", "regionalCalendar", "scheduledContext"];
+  return advanced.some((key) => draft.context[key] !== undefined) ? 2 : 1;
+}
 
 export function readSanitaryAutomationPlanV2(
   config: FazendaSanidadeConfig | undefined,
@@ -153,7 +170,7 @@ export async function saveSanitaryAutomationPlanV2(input: {
       const now = new Date().toISOString();
       const plan = planSchema.parse({
         ...input.draft,
-        schemaVersion: 1,
+        schemaVersion: automationPlanSchemaVersion(input.draft),
         enabled: input.enabled,
         revision: input.expectedRevision + 1,
         confirmedBy: input.enabled ? input.actorId : previous?.confirmedBy ?? input.actorId,

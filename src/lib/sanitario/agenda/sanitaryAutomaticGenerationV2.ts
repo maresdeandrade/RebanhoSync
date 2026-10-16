@@ -32,7 +32,8 @@ function rowExclusion(
   date: string,
   draft: SanitaryAutomationDraftV2,
 ) {
-  const identity = sanitaryAutomaticIdentityV2(source, row, date);
+  const context = draft.ruleContexts?.[row.itemId] ?? draft.context;
+  const identity = sanitaryAutomaticIdentityV2(source, row, date, context);
   if (identity.completed) return "Etapa já comprovada por histórico factual.";
   if (suppressedSanitaryAutomaticIntentV2(source, row, identity.key))
     return "Intenção já gerada ou cancelamento explícito preservado.";
@@ -44,7 +45,7 @@ function rowExclusion(
     source,
     row,
     date,
-    draft.context,
+    context,
   );
 }
 
@@ -70,7 +71,7 @@ function previewRule(
     protocolId: rule.protocolId,
     itemId: rule.itemId,
     evaluatedAt: date,
-    operationalContext: draft.context,
+    operationalContext: draft.ruleContexts?.[rule.itemId] ?? draft.context,
     generationMode: "automatic",
   });
   return (window?.rows ?? []).map((row) => {

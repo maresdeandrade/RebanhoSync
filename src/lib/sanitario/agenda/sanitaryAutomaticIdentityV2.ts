@@ -1,13 +1,16 @@
 import { readSanitaryPlanningHistoryV2 } from "../checks/sanitaryProtocolPrecheckV2";
+import { sanitaryRequiresScheduledContextV2 } from "./sanitaryContextualPlanningV2";
 import type {
   SanitaryProtocolWindowSourceV2,
   SanitaryProtocolWindowRowV2,
+  SanitaryOperationalContextV2,
 } from "../windows/sanitaryProtocolWindowsV2";
 
 export function sanitaryAutomaticIdentityV2(
   source: SanitaryProtocolWindowSourceV2,
   row: SanitaryProtocolWindowRowV2,
   date: string,
+  context?: SanitaryOperationalContextV2,
 ) {
   const item = source.catalog.items.find((entry) => entry.id === row.itemId)!;
   const protocol = source.catalog.protocols.find(
@@ -26,6 +29,8 @@ export function sanitaryAutomaticIdentityV2(
   if (Array.isArray(months) && months.length) windowKey = date.slice(0, 7);
   if (history.anchor)
     windowKey = `event:${history.anchor.eventId}:${history.anchor.executedAt}`;
+  if (sanitaryRequiresScheduledContextV2(item) && context?.scheduledContext)
+    windowKey = `context:${context.scheduledContext.date}`;
   const key = [
     "sanitary-auto-v2",
     source.fazendaId,
@@ -36,7 +41,19 @@ export function sanitaryAutomaticIdentityV2(
     item.version,
     windowKey,
   ].join("|");
-  return { key, windowKey, completed: history.completedInitial };
+  return { key, windowKey, completed: completedWindow(history, windowKey, date, context) };
+}
+
+function completedWindow(
+  history: ReturnType<typeof readSanitaryPlanningHistoryV2>, windowKey: string,
+  date: string, context?: SanitaryOperationalContextV2,
+) {
+  if (!history.completion) return false;
+  if (windowKey.startsWith("context:")) return history.completion.executedAt.slice(0, 10) >= context.scheduledContext.date;
+  if (windowKey === date.slice(0, 7)) return history.completion.executedAt.slice(0, 7) === windowKey;
+  if (history.requirement?.kind === "previous_dose")
+    return Boolean(history.anchor && history.completion.executedAt >= history.anchor.executedAt);
+  return history.completedInitial;
 }
 
 export function suppressedSanitaryAutomaticIntentV2(
@@ -45,7 +62,7 @@ export function suppressedSanitaryAutomaticIntentV2(
   key: string,
 ) {
   return source.agendas.some((agenda) => {
-    if (agenda.metadata.automationKey === key) return true;
+    if (typeof agenda.metadata.automationKey === "string") return agenda.metadata.automationKey === key;
     if (agenda.status !== "cancelada" || agenda.protocolo_id !== row.protocolId)
       return false;
     if (agenda.protocol_item_snapshot.itemKey !== row.itemKey) return false;

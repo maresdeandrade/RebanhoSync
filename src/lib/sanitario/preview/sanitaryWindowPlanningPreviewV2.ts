@@ -12,6 +12,9 @@ export function sanitaryPlanningBlockersV2(
   mode: SanitaryGenerationModeV2 = "manual",
 ): string[] {
   const blockers: string[] = [];
+  if (item.operationalWindowRule.type === "blocked") {
+    blockers.push("Etapa não sustentada pelo esquema da referência atual. Exige outra variante com produto, fonte e versão próprios.");
+  }
   if (protocol.familyCode === "febre_aftosa" || ["bloqueado", "experimental_alerta"].includes(protocol.legalStatus) || protocol.metadata.automationStatus === "blocked" || protocol.metadata.archived === true) {
     blockers.push("Protocolo disponível somente para informação/histórico, sem planejamento operacional.");
   }

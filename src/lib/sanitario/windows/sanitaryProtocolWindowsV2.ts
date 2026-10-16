@@ -49,6 +49,7 @@ import {
 import { identifySanitaryMultiProtocolGroupsV2 } from "../preview/sanitaryMultiProtocolPlanningV2";
 import { readSanitaryAutomationPlanV2, resolveSanitaryAutomationRuleV2 } from "../agenda/sanitaryAutomationPlanV2";
 import { sanitaryAutomaticIdentityV2, suppressedSanitaryAutomaticIntentV2 } from "../agenda/sanitaryAutomaticIdentityV2";
+import { sanitaryContextualPlanningBlockersV2, type SanitaryRuleContextDetailsV2 } from "../agenda/sanitaryContextualPlanningV2";
 
 export type SanitaryProtocolWindowSourceV2 = {
   fazendaId?: string;
@@ -83,7 +84,8 @@ export type SanitaryCentralExecutedEventV2 = {
   recordType: "executed_event";
 };
 
-export type SanitaryOperationalContextV2 = {
+export type SanitaryOperationalContextV2 = SanitaryRuleContextDetailsV2 & {
+  riskContext?: boolean | null;
   rabiesRiskArea: boolean | null;
   sanitaryCadence: "annual" | "semiannual" | null;
   reproductiveContext: "prepartum" | "peripartum" | null;
@@ -448,9 +450,11 @@ export function buildSanitaryProtocolWindowV2(input: {
           sexo: animal.sexo,
           nascimento: animal.data_nascimento,
           categoria: classification.categoriaZootecnica,
+          lifeStage: classification.estagioVida,
           fazendaId: animal.fazenda_id,
           uf: input.source.farmUf,
           riskArea: operationalContext.rabiesRiskArea ?? undefined,
+          riskContext: operationalContext.riskContext,
           sanitaryCadence: operationalContext.sanitaryCadence,
           pregnancyOrPeripartumContext:
             operationalContext.reproductiveContext === "prepartum" ||
@@ -481,6 +485,8 @@ export function buildSanitaryProtocolWindowV2(input: {
       );
       const planningKind = sanitaryPlanningKindV2(item);
       planningBlockers.push(...itemVersionPlanningBlockers(input.source, item, animal, input.evaluatedAt));
+      planningBlockers.push(...sanitaryContextualPlanningBlockersV2({ item, context: operationalContext,
+        farmUf: input.source.farmUf, animalId: animal.id, evaluatedAt: input.evaluatedAt }));
       const itemBlocked =
         result.blockers.length > 0 ||
         planningBlockers.length > 0 ||
@@ -780,16 +786,22 @@ function authorizeAutomaticPlanInput(input: GroupedSanitaryPlanningInputV2, sour
   if (input.planRevision === undefined) return input;
   const plan = readSanitaryAutomationPlanV2(source.farmConfig);
   if (!plan?.enabled || plan.revision !== input.planRevision) throw new Error("Plano desativado ou alterado. Reavalie.");
-  for (const row of input.rows) {
-    const rule = plan.rules.find((entry) => entry.itemId === row.itemId && entry.protocolId === row.protocolId);
-    if (!rule || !resolveSanitaryAutomationRuleV2(source.catalog, rule)) throw new Error("Regra fora do plano ou versão alterada.");
-  }
-  return { ...input, confirmed: true, generationMode: "automatic" as const, operationalContext: plan.context, createdBy: plan.confirmedBy };
+  assertAutomaticSelection(input, source, plan.rules);
+  const context = plan.ruleContexts?.[input.rows[0].itemId] ?? plan.context;
+  return { ...input, confirmed: true, generationMode: "automatic" as const, operationalContext: context, createdBy: plan.confirmedBy };
+}
+
+function assertAutomaticSelection(input: GroupedSanitaryPlanningInputV2, source: SanitaryProtocolWindowSourceV2, rules: ReturnType<typeof readSanitaryAutomationPlanV2>["rules"]) {
+  const itemIds = new Set(input.rows.map((row) => `${row.protocolId}|${row.itemId}`));
+  if (itemIds.size !== 1) throw new Error("Reavalie cada regra automática com seu contexto específico.");
+  const first = input.rows[0];
+  const rule = rules.find((entry) => entry.itemId === first.itemId && entry.protocolId === first.protocolId);
+  if (!rule || !resolveSanitaryAutomationRuleV2(source.catalog, rule)) throw new Error("Regra fora do plano ou versão alterada.");
 }
 
 function suppressedAutomaticRow(input: GroupedSanitaryPlanningInputV2, source: SanitaryProtocolWindowSourceV2, row: SanitaryProtocolWindowRowV2) {
   if (input.planRevision === undefined) return false;
-  const identity = sanitaryAutomaticIdentityV2(source, row, input.plannedFor);
+  const identity = sanitaryAutomaticIdentityV2(source, row, input.plannedFor, input.operationalContext);
   return identity.completed || suppressedSanitaryAutomaticIntentV2(source, row, identity.key);
 }
 
@@ -893,7 +905,7 @@ function planningTargets(input: GroupedSanitaryPlanningInputV2, rows: SanitaryPr
 
 function automaticAgendaIdentity(input: GroupedSanitaryPlanningInputV2, source: SanitaryProtocolWindowSourceV2, row: SanitaryProtocolWindowRowV2) {
   if (input.planRevision === undefined) return { metadata: {}, clientOpId: clientOperationId() };
-  const identity = sanitaryAutomaticIdentityV2(source, row, input.plannedFor);
+  const identity = sanitaryAutomaticIdentityV2(source, row, input.plannedFor, input.operationalContext);
   return { metadata: { automationKey: identity.key, automationWindowKey: identity.windowKey, automationPlanRevision: input.planRevision, planningDedupKey: identity.key }, clientOpId: identity.key };
 }
 

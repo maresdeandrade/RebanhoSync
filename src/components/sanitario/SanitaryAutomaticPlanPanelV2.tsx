@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { PlanContextFields } from "./SanitaryPlanContextFieldsV2";
+import { SanitaryRuleContextEditorV2 } from "./SanitaryRuleContextEditorV2";
+import { SanitaryAutomationCoveragePanelV2 } from "./SanitaryAutomationCoveragePanelV2";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -111,11 +114,13 @@ export function SanitaryAutomaticPlanPanelV2({
       />
       <PlanRuleChoices
         options={options}
+        source={source}
         draft={draft}
         saving={saving}
         setDraft={setDraft}
       />
       <PlanPreview preview={preview} />
+      <SanitaryAutomationCoveragePanelV2 source={source} draft={draft} date={sanitaryAutomationTodayV2()} />
       <label className="flex items-center gap-2 text-sm">
         <Checkbox
           aria-label="Confirmar ativação do plano"
@@ -208,11 +213,13 @@ function GeneratedPlanAgendas({ source }: { source: Props["source"] }) {
 }
 
 function PlanRuleChoices({
+  source,
   options,
   draft,
   saving,
   setDraft,
 }: {
+  source: Props["source"];
   options: ReturnType<typeof planRuleOptions>;
   draft: SanitaryAutomationDraftV2;
   saving: boolean;
@@ -221,7 +228,7 @@ function PlanRuleChoices({
   return (
     <fieldset className="space-y-2">
       <legend className="font-medium">Regras do plano</legend>
-      {options.map(({ rule, label, blockers }) => {
+      {options.map(({ rule, item, label, blockers }) => {
         const checked = draft.rules.some(
           (entry) => entry.itemId === rule.itemId,
         );
@@ -251,6 +258,8 @@ function PlanRuleChoices({
               />
               {label}
             </label>
+            <SanitaryRuleContextEditorV2 item={item} source={source} context={draft.ruleContexts?.[rule.itemId] ?? draft.context}
+              onChange={(context) => setDraft((previous) => ({ ...previous, ruleContexts: { ...previous.ruleContexts, [rule.itemId]: context } }))} />
             {blockers.length ? (
               <p className="text-muted-foreground">{blockers.join(" ")}</p>
             ) : null}
@@ -271,89 +280,11 @@ function planRuleOptions(source: Props["source"]) {
       ? [
           {
             rule: selectSanitaryAutomationRuleV2(protocol, item),
+            item,
             label: `${protocol.name} — ${formatSanitaryProtocolItemLabelV2(item.logicalItemKey)}`,
             blockers: sanitaryPlanningBlockersV2(protocol, item, "automatic"),
           },
         ]
       : [];
   });
-}
-
-const contextFields = [
-  {
-    key: "rabiesRiskArea",
-    label: "Área de risco do plano",
-    options: [
-      ["true", "Sim"],
-      ["false", "Não"],
-    ],
-  },
-  {
-    key: "sanitaryCadence",
-    label: "Cadência do plano",
-    options: [
-      ["annual", "Anual"],
-      ["semiannual", "Semestral"],
-    ],
-  },
-  {
-    key: "reproductiveContext",
-    label: "Contexto reprodutivo do plano",
-    options: [
-      ["prepartum", "Pré-parto"],
-      ["peripartum", "Periparto"],
-    ],
-  },
-  {
-    key: "management",
-    label: "Manejo do plano",
-    options: [
-      ["pre_weaning", "Pré-desmama"],
-      ["rearing", "Recria"],
-      ["pre_feedlot", "Pré-confinamento"],
-      ["deferred_pasture", "Pasto vedado"],
-    ],
-  },
-] as const;
-
-function PlanContextFields({
-  context,
-  onChange,
-}: {
-  context: SanitaryAutomationDraftV2["context"];
-  onChange: (value: SanitaryAutomationDraftV2["context"]) => void;
-}) {
-  return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {contextFields.map((field) => (
-        <label key={field.key} className="space-y-1 text-sm">
-          <span>{field.label}</span>
-          <select
-            aria-label={field.label}
-            className="h-11 w-full rounded-xl border border-border bg-background px-3"
-            value={String(context[field.key] ?? "")}
-            onChange={(event) => {
-              const value = event.target.value;
-              onChange({
-                ...context,
-                [field.key]: contextFieldValue(field.key, value),
-              });
-            }}
-          >
-            <option value="">Não informado</option>
-            {field.options.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ))}
-    </div>
-  );
-}
-
-function contextFieldValue(key: string, value: string) {
-  if (!value) return null;
-  return key === "rabiesRiskArea" ? value === "true" : value;
 }
