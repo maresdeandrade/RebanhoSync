@@ -1,3 +1,4 @@
+import Dexie from "dexie";
 import type { SanitaryAgendaMaterializationCommand } from "../agenda/sanitaryAgendaMaterialization";
 import { resolveAnimalClassificationSnapshot } from "@/lib/animals/classificationSnapshot";
 import { db } from "@/lib/offline/db";
@@ -13,6 +14,7 @@ import type {
   SexoEnum,
   SanitarioProdutoLocalV2,
   SanitarioProdutoEspecieAutorizacaoLocalV2,
+  FazendaSanidadeConfig,
 } from "@/lib/offline/types";
 import {
   formatSanitaryProtocolItemLabelV2,
@@ -45,10 +47,13 @@ import {
   type SanitaryPlanningKindV2,
 } from "../agenda/sanitaryPlanningPolicyV2";
 import { identifySanitaryMultiProtocolGroupsV2 } from "../preview/sanitaryMultiProtocolPlanningV2";
+import { readSanitaryAutomationPlanV2, resolveSanitaryAutomationRuleV2 } from "../agenda/sanitaryAutomationPlanV2";
+import { sanitaryAutomaticIdentityV2, suppressedSanitaryAutomaticIntentV2 } from "../agenda/sanitaryAutomaticIdentityV2";
 
 export type SanitaryProtocolWindowSourceV2 = {
   fazendaId?: string;
   farmUf?: string | null;
+  farmConfig?: FazendaSanidadeConfig;
   products?: SanitarioProdutoLocalV2[];
   productSpeciesAuthorizations?: SanitarioProdutoEspecieAutorizacaoLocalV2[];
   catalog: SanitaryProtocolCatalogReadModelV2;
@@ -614,7 +619,8 @@ export function listSanitaryDocumentaryPendenciesV2(input: {
 export async function loadSanitaryProtocolWindowSourceV2(
   fazendaId: string,
 ): Promise<SanitaryProtocolWindowSourceV2> {
-  await requireTenantSensitiveRead();
+  // Preserve liveQuery's observation context across the external auth promise.
+  await Dexie.Promise.resolve(requireTenantSensitiveRead());
   return readSanitaryProtocolWindowSourceV2(fazendaId);
 }
 
@@ -695,6 +701,7 @@ async function readSanitaryProtocolWindowSourceV2(
     agendaAnimals,
     executedHistory,
     executedEvents,
+    farmConfig,
     products,
     productSpeciesAuthorizations,
     farmUf: farmConfig?.deleted_at ? null : farmConfig?.uf,
@@ -752,6 +759,12 @@ function rejectDuplicatePhysicalApplication(
   }
 }
 
+export function sanitaryPlanningApplicationExclusionV2(source: SanitaryProtocolWindowSourceV2, row: SanitaryProtocolWindowRowV2, plannedFor: string, context: SanitaryOperationalContextV2): string | null {
+  const item = source.catalog.items.find((entry) => entry.id === row.itemId)!;
+  try { rejectDuplicatePhysicalApplication(source, item, [row], plannedFor, context); return null; }
+  catch (error) { return error instanceof Error ? error.message : "Revisar cobertura do produto."; }
+}
+
 type GroupedSanitaryPlanningInputV2 = {
   rows: SanitaryProtocolWindowRowV2[];
   fazendaId: string;
@@ -760,7 +773,25 @@ type GroupedSanitaryPlanningInputV2 = {
   operationalContext?: SanitaryOperationalContextV2;
   createdBy?: string;
   generationMode?: SanitaryGenerationModeV2;
+  planRevision?: number;
 };
+
+function authorizeAutomaticPlanInput(input: GroupedSanitaryPlanningInputV2, source: SanitaryProtocolWindowSourceV2) {
+  if (input.planRevision === undefined) return input;
+  const plan = readSanitaryAutomationPlanV2(source.farmConfig);
+  if (!plan?.enabled || plan.revision !== input.planRevision) throw new Error("Plano desativado ou alterado. Reavalie.");
+  for (const row of input.rows) {
+    const rule = plan.rules.find((entry) => entry.itemId === row.itemId && entry.protocolId === row.protocolId);
+    if (!rule || !resolveSanitaryAutomationRuleV2(source.catalog, rule)) throw new Error("Regra fora do plano ou versão alterada.");
+  }
+  return { ...input, confirmed: true, generationMode: "automatic" as const, operationalContext: plan.context, createdBy: plan.confirmedBy };
+}
+
+function suppressedAutomaticRow(input: GroupedSanitaryPlanningInputV2, source: SanitaryProtocolWindowSourceV2, row: SanitaryProtocolWindowRowV2) {
+  if (input.planRevision === undefined) return false;
+  const identity = sanitaryAutomaticIdentityV2(source, row, input.plannedFor);
+  return identity.completed || suppressedSanitaryAutomaticIntentV2(source, row, identity.key);
+}
 
 function existingAgendaForRow(
   source: SanitaryProtocolWindowSourceV2,
@@ -808,6 +839,7 @@ function revalidatePlanningSelection(
       generationMode: input.generationMode,
     })?.rows.find((entry) => entry.animalId === row.animalId);
     assertFreshPlanningRow(row, fresh);
+    if (suppressedAutomaticRow(input, source, fresh)) continue;
     if (fresh.alreadyPlanned) {
       const agenda = existingAgendaForRow(source, row);
       if (agenda)
@@ -832,6 +864,39 @@ function revalidatePlanningSelection(
   return { selected, reused };
 }
 
+function planningTargets(input: GroupedSanitaryPlanningInputV2, rows: SanitaryProtocolWindowRowV2[], command: SanitaryAgendaMaterializationCommand) {
+  const first = rows[0];
+  if (input.planRevision !== undefined) return rows.map((row) => ({ scope: "animal" as const, id: row.animalId, fazendaId: input.fazendaId }));
+  const target = first.lotId
+    ? {
+        scope: "lote" as const,
+        id: first.lotId,
+        fazendaId: input.fazendaId,
+        animalIds: command.animalIds,
+      }
+    : command.animalIds.length === 1
+      ? {
+          scope: "animal" as const,
+          id: first.animalId,
+          fazendaId: input.fazendaId,
+        }
+      : null;
+  // Animals without a lot are separate targets; never invent a lot identity.
+  return target
+    ? [target]
+    : rows.map((row) => ({
+        scope: "animal" as const,
+        id: row.animalId,
+        fazendaId: input.fazendaId,
+      }));
+ }
+
+function automaticAgendaIdentity(input: GroupedSanitaryPlanningInputV2, source: SanitaryProtocolWindowSourceV2, row: SanitaryProtocolWindowRowV2) {
+  if (input.planRevision === undefined) return { metadata: {}, clientOpId: clientOperationId() };
+  const identity = sanitaryAutomaticIdentityV2(source, row, input.plannedFor);
+  return { metadata: { automationKey: identity.key, automationWindowKey: identity.windowKey, automationPlanRevision: input.planRevision, planningDedupKey: identity.key }, clientOpId: identity.key };
+}
+
 async function persistPlanningCommand(
   input: GroupedSanitaryPlanningInputV2,
   source: SanitaryProtocolWindowSourceV2,
@@ -854,29 +919,9 @@ async function persistPlanningCommand(
     input.plannedFor,
     input.operationalContext,
   );
-  const target = first.lotId
-    ? {
-        scope: "lote" as const,
-        id: first.lotId,
-        fazendaId: input.fazendaId,
-        animalIds: command.animalIds,
-      }
-    : command.animalIds.length === 1
-      ? {
-          scope: "animal" as const,
-          id: first.animalId,
-          fazendaId: input.fazendaId,
-        }
-      : null;
-  // Animals without a lot are separate targets; never invent a lot identity.
-  const targets = target
-    ? [target]
-    : rows.map((row) => ({
-        scope: "animal" as const,
-        id: row.animalId,
-        fazendaId: input.fazendaId,
-      }));
+  const targets = planningTargets(input, rows, command);
   for (const agendaTarget of targets) {
+    const identity = automaticAgendaIdentity(input, source, rows.find((row) => row.animalId === agendaTarget.id) ?? first);
     results.push(
       await createManualSanitaryAgendaV2(
         {
@@ -895,6 +940,7 @@ async function persistPlanningCommand(
               operationalWindowRule: item.operationalWindowRule,
             },
             planningDedupKey: `${input.fazendaId}|${command.dedupKey}|target:${agendaTarget.id}`,
+            ...identity.metadata,
             familyCode: first.precheck.familyCode,
             itemKey: first.itemKey,
             itemLabel:
@@ -915,7 +961,7 @@ async function persistPlanningCommand(
           },
           plannedFor: command.scheduledDate,
           createdBy: input.createdBy,
-          clientOpId: clientOperationId(),
+          clientOpId: identity.clientOpId,
           confirmed: input.confirmed,
         },
         db as unknown as ManualSanitaryAgendaLocalDbV2,
@@ -928,7 +974,7 @@ async function persistPlanningCommand(
 export async function createGroupedManualSanitaryAgendasV2(
   input: GroupedSanitaryPlanningInputV2,
 ): Promise<ManualSanitaryAgendaResultV2[]> {
-  if (!input.confirmed)
+  if (!input.confirmed && input.planRevision === undefined)
     throw new Error("Revise e confirme o planejamento antes de salvar.");
   if (!input.fazendaId || !input.rows.length)
     throw new Error("Selecione fazenda e animais.");
@@ -954,7 +1000,8 @@ export async function createGroupedManualSanitaryAgendasV2(
     ],
     async () => {
       const source = await readSanitaryProtocolWindowSourceV2(input.fazendaId);
-      const { selected, reused } = revalidatePlanningSelection(input, source);
+      const authorizedInput = authorizeAutomaticPlanInput(input, source);
+      const { selected, reused } = revalidatePlanningSelection(authorizedInput, source);
       const materialization = buildSanitaryWindowPlanningPreviewV2({
         rows: selected,
         plannedFor: input.plannedFor,
@@ -964,7 +1011,7 @@ export async function createGroupedManualSanitaryAgendasV2(
       const results = [...reused.values()];
       for (const command of materialization.commands) {
         results.push(
-          ...(await persistPlanningCommand(input, source, selected, command)),
+          ...(await persistPlanningCommand(authorizedInput, source, selected, command)),
         );
       }
       return results;

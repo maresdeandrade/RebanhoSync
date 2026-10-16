@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
 import { SanitaryCompliancePanelV2 } from "@/components/sanitario/SanitaryCompliancePanelV2";
 import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
+import { SanitaryAutomaticPlanPanelV2 } from "@/components/sanitario/SanitaryAutomaticPlanPanelV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,8 @@ function currentFarmSource(source: SanitaryProtocolWindowSourceV2 | undefined, f
 function responsibleName(user: { email?: string; id: string } | null) {
   return user?.email ?? user?.id ?? null;
 }
+
+function automationActor(user: { id: string } | null) { return user?.id ?? ""; }
 
 function sourceExecutedEvents(source: SanitaryProtocolWindowSourceV2 | undefined) {
   return source?.executedEvents ?? [];
@@ -291,6 +294,7 @@ const ProtocolosSanitarios = () => {
         <p className="text-muted-foreground">Planejamentos são salvos neste dispositivo e podem ser consultados offline. A sincronização sanitária depende da liberação do ambiente.</p>
         {refreshError ? <p role="status" className="text-muted-foreground">{refreshError}</p> : null}
       </div>
+      <SanitaryAutomaticPlanPanelV2 key={activeFarmId} fazendaId={activeFarmId} actorId={automationActor(user)} source={currentFarmSource(windowSource, activeFarmId)} />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="h-auto flex-wrap justify-start">
           <TabsTrigger value="janelas"><CalendarClock className="mr-2 h-4 w-4" />Janelas sanitárias</TabsTrigger>

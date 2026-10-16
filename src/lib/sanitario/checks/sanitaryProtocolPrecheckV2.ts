@@ -293,6 +293,20 @@ function isDeclaredHistorySource(
   );
 }
 
+export function readSanitaryPlanningHistoryV2(input: {
+  catalog: SanitaryProtocolCatalogReadModelV2; protocol: SanitaryProtocolV2ReadModel;
+  item: SanitaryProtocolItemV2ReadModel; animalId: string;
+  history: SanitaryExecutedHistoryV2[]; today: string;
+}) {
+  const requirement = resolveHistoryRequirement(input.item, input.catalog.items);
+  const common = { history: input.history, animalId: input.animalId,
+    protocolId: input.protocol.id, familyCode: input.protocol.familyCode, today: input.today };
+  const anchor = requirement ? findRequiredExecutedHistory({ ...common, requirement, productId: input.item.productId }) : null;
+  const completedInitial = !requirement && findCompatibleHistoryEvents({ ...common, itemKey: input.item.logicalItemKey })
+    .some((event) => isDocumentedHistorySource(event) && (!input.item.productId || event.productId === input.item.productId));
+  return { anchor, completedInitial };
+}
+
 function findCompatibleHistoryEvents(input: {
   history: SanitaryExecutedHistoryV2[];
   animalId: string;

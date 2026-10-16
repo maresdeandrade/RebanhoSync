@@ -33,6 +33,9 @@ export type CreateManualSanitaryAgendaInputV2 = {
     planningKind?: SanitaryPlanningKindV2;
     generationMode?: SanitaryGenerationModeV2;
     planningEvidence?: Record<string, unknown>;
+    automationKey?: string;
+    automationWindowKey?: string;
+    automationPlanRevision?: number;
     planningDedupKey?: string;
     familyCode: string;
     itemKey: string;
@@ -264,6 +267,9 @@ function manualAgendaMetadata(
     warnings: input.source.warnings ?? [],
     notes: normalizeOptionalText(input.notes),
     createdBy: normalizeOptionalText(input.createdBy),
+    automationKey: input.source.automationKey ?? null,
+    automationWindowKey: input.source.automationWindowKey ?? null,
+    automationPlanRevision: input.source.automationPlanRevision ?? null,
 
     ...manualProductRequirementSnapshot(input.source),
     createsEvent: false,

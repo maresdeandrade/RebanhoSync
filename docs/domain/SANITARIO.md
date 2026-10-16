@@ -982,6 +982,12 @@ Regras atuais:
 
 A rota `/protocolos-sanitarios` é a Central Sanitária operacional. Ela concentra planejamento, janelas, elegibilidade, preview completo, agenda manual local, catálogo sanitário, histórico sanitário e pendências documentais.
 
+O plano automático da fazenda usa `state_fazenda_sanidade_config.payload.sanitary_agenda_automation_v2`, com referências exatas a protocolo/item/versão/produto, contexto, revisão e confirmação da ativação. A gravação reutiliza o gesture canônico de configuração; não cria outro catálogo. A confirmação vale para o plano ativado, dispensando confirmação de cada tarefa.
+
+A abertura da Central, alterações dos dados locais e reconnect reavaliam as regras selecionadas. O writer revalida plano, versão, autorização técnica, janela e elegibilidade sob a mesma transação das intenções. A identidade por fazenda/animal/regra/versão/janela é persistente; retries preservam Agendas geradas, reagendamentos e cancelamentos. Reforços usam o histórico factual compatível do precheck. Planejamento não cria Evento, estoque ou carência.
+
+A automação continua local: o writer de Agenda não enfileira push remoto e nenhuma flag sanitária é habilitada. A configuração segue a fila existente, mas convergência de planos concorrentes entre dispositivos e sincronização das Agendas automáticas ainda exigem homologação do contrato remoto. `allows_agenda_auto=false`, `no_agenda_auto` e falta de aprovação técnica continuam bloqueantes; fixtures aprovadas não autorizam itens do catálogo operacional.
+
 Superfícies:
 
 - `Janelas sanitárias`: seleção por protocolo/item, contexto operacional explícito, pré-checagem local e filtro inicial por animal ou lote;

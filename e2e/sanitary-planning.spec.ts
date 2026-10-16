@@ -84,6 +84,46 @@ async function counts(page: Page) {
   });
 }
 
+test("plano confirmado gera sozinho, recupera offline e respeita cancelamento e farm-switch", async ({ page, context }) => {
+  const unexpected = await prepare(page);
+  await page.goto("/select-fazenda?approved");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await page.getByRole("checkbox", { name: /^Automatizar Brucelose B19/ }).check();
+  await expect(page.getByText(/2 Agenda\(s\) serão criadas/)).toBeVisible();
+  await context.setOffline(true);
+  await page.getByLabel("Confirmar ativação do plano", { exact: true }).check();
+  await page.getByRole("button", { name: "Ativar plano automático", exact: true }).click();
+  await expect(page.getByText("Plano automático ativo", { exact: true })).toBeVisible();
+  await expect(page.getByText("Agendas geradas automaticamente (2)", { exact: true })).toBeVisible();
+  expect(await counts(page)).toMatchObject({ agendas: 2, events: 0, movements: 0, queue: 1 });
+  await page.getByRole("button", { name: "Reavaliar plano", exact: true }).click();
+  expect(await counts(page)).toMatchObject({ agendas: 2, events: 0 });
+  await context.setOffline(false);
+  await page.reload();
+  await expect(page.getByText("Plano automático ativo", { exact: true })).toBeVisible();
+  expect(await counts(page)).toMatchObject({ agendas: 2, events: 0 });
+  await page.evaluate(async () => {
+    const { db } = await import("/src/lib/offline/db.ts");
+    const { cancelLocalSanitaryAgendaV2 } = await import("/src/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2.ts");
+    const agenda = await db.ops_sanitario_agenda_v2.toCollection().first();
+    await cancelLocalSanitaryAgendaV2({ agendaId: agenda!.id, fazendaId: agenda!.fazenda_id });
+  });
+  await page.getByRole("button", { name: "Reavaliar plano", exact: true }).click();
+  expect(await counts(page)).toMatchObject({ agendas: 2, events: 0, movements: 0 });
+  // A local data refresh must trigger generation without another confirmation.
+  await page.evaluate(async () => {
+    const { db } = await import("/src/lib/offline/db.ts");
+    const animal = await db.state_animais.get("female-test");
+    await db.state_animais.put({ ...animal!, id: "new-female-test", identificacao: "Nova bezerra" });
+  });
+  await expect(page.getByText("Agendas geradas automaticamente (3)", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Trocar fazenda", exact: true }).click();
+  await page.getByRole("button").filter({ hasText: "Outra fazenda" }).click();
+  await expect(page.getByText("Plano automático desativado", { exact: true })).toBeVisible();
+  expect(await counts(page)).toMatchObject({ agendas: 3, events: 0 });
+  expect(unexpected).toEqual([]);
+});
+
 test("fazenda → protocolo → seleção → revisão → Agenda; offline, reload, reagendamento, cancelamento e farm-switch", async ({ page, context }) => {
   const unexpected = await prepare(page);
   await page.goto("/select-fazenda");
