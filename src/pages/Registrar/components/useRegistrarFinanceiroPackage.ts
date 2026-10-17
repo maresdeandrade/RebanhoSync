@@ -177,19 +177,20 @@ export function useRegistrarFinanceiroPackage(input: {
       !isFinanceiroSociedadeNatureza(financeiroData.natureza) &&
       financeiroData.modoPeso === "individual"
     ) {
-      setCompraNovosAnimais((prev) =>
-        input.selectedAnimalIds.map((animalId, index) => {
-          const current = prev[index];
+      setCompraNovosAnimais((prev) => {
+        const draftsByAnimalId = new Map(prev.map((draft) => [draft.localId, draft]));
+        return input.selectedAnimalIds.map((animalId) => {
+          const current = draftsByAnimalId.get(animalId);
           return {
-            localId: current?.localId ?? animalId,
+            localId: animalId,
             identificacao: current?.identificacao ?? "",
             sexo: current?.sexo ?? "F",
             dataNascimento: "",
             pesoKg: current?.pesoKg ?? "",
             raca: null,
           };
-        }),
-      );
+        });
+      });
       return;
     }
 
