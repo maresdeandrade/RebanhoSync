@@ -1,0 +1,393 @@
+{
+  "artifact": "sanitario_v2_detached_unsigned_approval_form",
+  "schema_version": 1,
+  "candidate_sha256": "567d3d4064c0ab5f680cb7f267906840b76882c2a180295b0485f702e2101692",
+  "decisions_sha256": "c6188840bf1ac1d24958d684499a911abf6781db1613733640a90e23d7c04bc3",
+  "operational_authorization": false,
+  "decisions": [
+    {
+      "id": "B19",
+      "scope": "Somente Agenda genérica de avaliação, sem produto/dose/via/carência e sem declarar obrigação em UF risco A.",
+      "submission_status": "READY_FOR_GLOBAL_REVIEW",
+      "versions": [
+        {
+          "protocol_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+          "item_id": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+          "protocol_version": 2,
+          "logical_item_key": "b19_femeas_3_8_meses",
+          "version": 3,
+          "expected_previous_id": "22508d25-1b95-44b2-b2a3-50d57cb8ba7d",
+          "expected_previous_version": 2
+        }
+      ],
+      "required_before_signing": [],
+      "conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "signature": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      }
+    },
+    {
+      "id": "CLO",
+      "scope": "Três etapas de uma formulação comercial selecionada; não generalizar FORTRESS7 para toda a classe.",
+      "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
+      "versions": [
+        {
+          "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+          "item_id": "fe0ddfbc-6b4b-5161-843f-b4cfbd4bff53",
+          "protocol_version": 2,
+          "logical_item_key": "clostridial_primovac_dose1",
+          "version": 2,
+          "expected_previous_id": "b846a0ae-481e-47b3-a9ce-a3f43afb0484",
+          "expected_previous_version": 1
+        },
+        {
+          "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+          "item_id": "675e30b0-0654-5407-824e-a73eeead11b4",
+          "protocol_version": 2,
+          "logical_item_key": "clostridial_primovac_dose2",
+          "version": 3,
+          "expected_previous_id": "c0aaa4e1-458c-4121-a34b-a9a7a996eec1",
+          "expected_previous_version": 2
+        },
+        {
+          "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+          "item_id": "a694a3c6-63b3-5e4b-b035-ceb7b3d0e626",
+          "protocol_version": 2,
+          "logical_item_key": "clostridial_reforco_anual",
+          "version": 2,
+          "expected_previous_id": "136af00d-eeeb-44b9-87c4-c153cc1fc28b",
+          "expected_previous_version": 1
+        }
+      ],
+      "required_before_signing": [
+        "COMMERCIAL_FORTRESS7_ZOETIS.registration.current_validity",
+        "COMMERCIAL_FORTRESS7_ZOETIS.eligibility.minimum_age_or_responsible_category_criterion",
+        "COMMERCIAL_FORTRESS7_ZOETIS.authorization.pregnancy",
+        "COMMERCIAL_FORTRESS7_ZOETIS.authorization.lactation"
+      ],
+      "conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "signature": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      }
+    },
+    {
+      "id": "LEP",
+      "scope": "LEPTOFERM5 bovina: dose inicial única e recorrência anual, sem alternativa semestral implícita.",
+      "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
+      "versions": [
+        {
+          "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+          "item_id": "85f9ce5a-6173-5183-aca9-c4106ce938cd",
+          "protocol_version": 2,
+          "logical_item_key": "lepto_primovac_dose1",
+          "version": 2,
+          "expected_previous_id": "017e2c3e-fac6-45f0-ad63-e1795fb40730",
+          "expected_previous_version": 1
+        },
+        {
+          "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+          "item_id": "76e411fe-8690-5229-a3e7-cf0b0d4a2f11",
+          "protocol_version": 2,
+          "logical_item_key": "lepto_reforco_anual_semestral",
+          "version": 2,
+          "expected_previous_id": "9791a745-6d5d-4a72-9a14-d7e0b9a99626",
+          "expected_previous_version": 1
+        }
+      ],
+      "required_before_signing": [
+        "COMMERCIAL_LEPTOFERM5_ZOETIS.registration.current_validity",
+        "COMMERCIAL_LEPTOFERM5_ZOETIS.eligibility.minimum_age_or_responsible_category_criterion",
+        "COMMERCIAL_LEPTOFERM5_ZOETIS.authorization.pregnancy",
+        "COMMERCIAL_LEPTOFERM5_ZOETIS.authorization.lactation"
+      ],
+      "conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "signature": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      }
+    },
+    {
+      "id": "IBR",
+      "scope": "Esquema da formulação documentada; segunda dose apenas quando tecnicamente indicada.",
+      "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
+      "versions": [
+        {
+          "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+          "item_id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+          "protocol_version": 2,
+          "logical_item_key": "ibr_bvd_primovac_dose1",
+          "version": 2,
+          "expected_previous_id": "2a35a390-7e3a-4fa1-944c-9118ddeaaebe",
+          "expected_previous_version": 1
+        },
+        {
+          "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+          "item_id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+          "protocol_version": 2,
+          "logical_item_key": "ibr_bvd_primovac_dose2",
+          "version": 3,
+          "expected_previous_id": "26b7e5bb-8f0d-4ef7-a757-a76e621df0e4",
+          "expected_previous_version": 2
+        }
+      ],
+      "required_before_signing": [
+        "COMMERCIAL_POLIGUARD_MSD.registration.current_validity",
+        "COMMERCIAL_POLIGUARD_MSD.source.full_current_label",
+        "COMMERCIAL_POLIGUARD_MSD.authorization.lactation",
+        "COMMERCIAL_POLIGUARD_MSD.registration.current_holder"
+      ],
+      "conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "signature": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      }
+    },
+    {
+      "id": "PAR",
+      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
+      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "versions": [
+        {
+          "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+          "item_id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+          "protocol_version": 2,
+          "logical_item_key": "recria_maio",
+          "version": 2,
+          "expected_previous_id": "38c59c96-d854-4583-8283-02e4bd3065a2",
+          "expected_previous_version": 1
+        },
+        {
+          "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+          "item_id": "c1866199-bf9d-506e-af05-dd84f3165c90",
+          "protocol_version": 2,
+          "logical_item_key": "recria_julho",
+          "version": 2,
+          "expected_previous_id": "5501697e-d3de-499a-9bdb-405b277675c9",
+          "expected_previous_version": 1
+        },
+        {
+          "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+          "item_id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+          "protocol_version": 2,
+          "logical_item_key": "recria_setembro",
+          "version": 2,
+          "expected_previous_id": "f8d9ae48-213d-44b0-919e-14cc12e828c5",
+          "expected_previous_version": 1
+        }
+      ],
+      "required_before_signing": [
+        "farm_context_template.fazenda_id",
+        "farm_context_template.uf",
+        "farm_context_template.region",
+        "farm_context_template.production_system",
+        "farm_context_template.eligible_categories",
+        "farm_context_template.responsible_reference",
+        "farm_context_template.regionalCalendar.uf",
+        "farm_context_template.regionalCalendar.months",
+        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
+      ],
+      "conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "signature": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      }
+    },
+    {
+      "id": "DES",
+      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
+      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "versions": [
+        {
+          "protocol_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+          "item_id": "e711773e-88ee-5107-aa73-68e7337468be",
+          "protocol_version": 2,
+          "logical_item_key": "pre_desmama_situacional",
+          "version": 2,
+          "expected_previous_id": "296b0b88-3105-471b-89b3-e4796bd74d47",
+          "expected_previous_version": 1
+        }
+      ],
+      "required_before_signing": [
+        "farm_context_template.fazenda_id",
+        "farm_context_template.uf",
+        "farm_context_template.region",
+        "farm_context_template.production_system",
+        "farm_context_template.eligible_categories",
+        "farm_context_template.responsible_reference",
+        "farm_context_template.preWeaningBasis.kind",
+        "farm_context_template.preWeaningBasis.reference",
+        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
+      ],
+      "conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "signature": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      }
+    },
+    {
+      "id": "CONF",
+      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
+      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "versions": [
+        {
+          "protocol_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+          "item_id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+          "protocol_version": 2,
+          "logical_item_key": "pre_confinamento_dose_unica",
+          "version": 2,
+          "expected_previous_id": "abf01867-fe1c-4638-8d4c-80929bbe0e00",
+          "expected_previous_version": 1
+        }
+      ],
+      "required_before_signing": [
+        "farm_context_template.fazenda_id",
+        "farm_context_template.uf",
+        "farm_context_template.region",
+        "farm_context_template.production_system",
+        "farm_context_template.eligible_categories",
+        "farm_context_template.responsible_reference",
+        "farm_context_template.scheduledContext.date",
+        "farm_context_template.scheduledContext.animalIds",
+        "farm_context_template.scheduledContext.reference",
+        "farm_context_template.destination_or_management",
+        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
+      ],
+      "conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "signature": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      }
+    },
+    {
+      "id": "PARTO",
+      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
+      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "versions": [
+        {
+          "protocol_id": "c51c944b-431f-4533-8505-65bea3bec156",
+          "item_id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+          "protocol_version": 2,
+          "logical_item_key": "matrizes_pre_parto_antiparasitario",
+          "version": 2,
+          "expected_previous_id": "53006754-98ea-4ad0-8cf1-a20b8898f84b",
+          "expected_previous_version": 1
+        }
+      ],
+      "required_before_signing": [
+        "farm_context_template.fazenda_id",
+        "farm_context_template.uf",
+        "farm_context_template.region",
+        "farm_context_template.production_system",
+        "farm_context_template.eligible_categories",
+        "farm_context_template.responsible_reference",
+        "farm_context_template.scheduledContext.date",
+        "farm_context_template.scheduledContext.animalIds",
+        "farm_context_template.scheduledContext.reference",
+        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
+      ],
+      "conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "signature": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      }
+    }
+  ]
+}

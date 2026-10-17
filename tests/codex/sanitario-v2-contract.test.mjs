@@ -656,7 +656,7 @@ describe("sanitario v2 canonical contract", () => {
     const script = readFileSync(IMPORT_SCRIPT, "utf8");
     const mainBody = script.slice(script.indexOf("async function main()"));
     expect(mainBody.indexOf("assertApplyGate(payload)")).toBeGreaterThan(-1);
-    expect(mainBody.indexOf("assertApplyGate(payload)")).toBeLessThan(mainBody.indexOf("await connectDb(mode)"));
+    expect(mainBody.indexOf("assertApplyGate(payload)")).toBeLessThan(mainBody.indexOf("await connectDb(mode,"));
   });
 
   it("validates the materialized artifact with the publisher gate closed and without database access", () => {

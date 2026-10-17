@@ -1,9 +1,9 @@
 {
   "artifact": "Fechamento e preparação de decisões dos 20 itens; NÃO É PAYLOAD IMPORTÁVEL",
-  "schema_version": 1,
+  "schema_version": 2,
   "source_canonical_sha256": "51df1c3884f463992113d0d3ac89e3c9534ce68726e9829972838cae2132cf73",
   "source_implementation": "b7c8c9c9c47f2667667a27a3793145e3aadf24a1",
-  "integration_main": "51fed3705ecfd0dd2a42e78723d833348adc237a",
+  "integration_main": "bf43c631685013dca7f8c03066e8f5b251683e57",
   "execute_import": false,
   "changes_operational_flags": false,
   "approvals_granted": 0,
@@ -84,7 +84,25 @@
           "product_specificity",
           "farm_context_guards"
         ]
-      }
+      },
+      "signature_request": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      },
+      "submission_status": "READY_FOR_GLOBAL_REVIEW",
+      "operational_conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ]
     },
     {
       "id": "CLO",
@@ -108,9 +126,10 @@
         "e3909094-9636-45b8-9d0b-10a07ec003c4"
       ],
       "unresolved_inputs": [
-        "product_id e identidade/registro comercial",
-        "critério de idade elegível por fonte/decisão responsável, pois a bula registrada não informa idade mínima",
-        "vínculos dos campos operacionais de elegibilidade, janela, produto, dose, via e espécie"
+        "COMMERCIAL_FORTRESS7_ZOETIS.registration.current_validity",
+        "COMMERCIAL_FORTRESS7_ZOETIS.eligibility.minimum_age_or_responsible_category_criterion",
+        "COMMERCIAL_FORTRESS7_ZOETIS.authorization.pregnancy",
+        "COMMERCIAL_FORTRESS7_ZOETIS.authorization.lactation"
       ],
       "requested_decision": [
         "Com o produto identificado e o critério etário explícito, aprovar em uma decisão as três etapas: inicial, segunda dose 28–42 dias da primeira dose factual do mesmo produto e reforço anual.",
@@ -148,6 +167,36 @@
           "product_specificity",
           "farm_context_guards"
         ]
+      },
+      "signature_request": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      },
+      "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
+      "operational_conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "selected_product_proposal": "COMMERCIAL_FORTRESS7_ZOETIS",
+      "field_evidence": {
+        "identity": "SRC_BULA_FORTRESS7",
+        "presentation": "EV_ZOETIS_CATALOGO_FORTRESS7",
+        "species": "SRC_BULA_FORTRESS7",
+        "scheme": "SRC_BULA_FORTRESS7",
+        "dose": "SRC_BULA_FORTRESS7",
+        "route": "SRC_BULA_FORTRESS7",
+        "registration_number": "EV_MAPA_REGISTROS_2014",
+        "registration_current_validity": null,
+        "full_current_label": "SRC_BULA_FORTRESS7"
       }
     },
     {
@@ -171,9 +220,10 @@
         "c8327155-9855-4d5c-9638-39797a7bfd79"
       ],
       "unresolved_inputs": [
-        "product_id e identidade/registro da formulação",
-        "restrições de gestação/lactação aplicáveis ao animal; não declaradas na referência registrada",
-        "vínculos operacionais de espécie, elegibilidade, produto e janela"
+        "COMMERCIAL_LEPTOFERM5_ZOETIS.registration.current_validity",
+        "COMMERCIAL_LEPTOFERM5_ZOETIS.eligibility.minimum_age_or_responsible_category_criterion",
+        "COMMERCIAL_LEPTOFERM5_ZOETIS.authorization.pregnancy",
+        "COMMERCIAL_LEPTOFERM5_ZOETIS.authorization.lactation"
       ],
       "requested_decision": [
         "Aprovar conjuntamente dose inicial única bovina e reforço anual do mesmo produto, preservando o contexto de risco exigido e a dose/via registradas de 2 mL IM.",
@@ -211,6 +261,36 @@
           "product_specificity",
           "farm_context_guards"
         ]
+      },
+      "signature_request": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      },
+      "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
+      "operational_conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "selected_product_proposal": "COMMERCIAL_LEPTOFERM5_ZOETIS",
+      "field_evidence": {
+        "identity": "SRC_BULA_LEPTOFERM5",
+        "presentation": "SRC_BULA_LEPTOFERM5",
+        "species": "SRC_BULA_LEPTOFERM5",
+        "scheme": "SRC_BULA_LEPTOFERM5",
+        "dose": "SRC_BULA_LEPTOFERM5",
+        "route": "SRC_BULA_LEPTOFERM5",
+        "registration_number": "SRC_BULA_LEPTOFERM5",
+        "registration_current_validity": null,
+        "full_current_label": "SRC_BULA_LEPTOFERM5"
       }
     },
     {
@@ -243,9 +323,10 @@
         "e05b6c72-56ba-4884-82c6-e8203bd8abbe"
       ],
       "unresolved_inputs": [
-        "identidade e registro comercial ausentes na página consultada",
-        "decisão sobre fonte completa/bula e seu evidence_status: cadastro atual é apoio/PRECISA_VALIDAR",
-        "vínculos por campo da formulação; nenhuma transferência automática de intervalo entre produtos"
+        "COMMERCIAL_POLIGUARD_MSD.registration.current_validity",
+        "COMMERCIAL_POLIGUARD_MSD.source.full_current_label",
+        "COMMERCIAL_POLIGUARD_MSD.authorization.lactation",
+        "COMMERCIAL_POLIGUARD_MSD.registration.current_holder"
       ],
       "requested_decision": [
         "Formalizar uma decisão por formulação para as duas etapas após completar identidade e fonte: inicial e segunda dose 21–30 dias da primeira dose factual do mesmo produto.",
@@ -283,6 +364,36 @@
           "product_specificity",
           "farm_context_guards"
         ]
+      },
+      "signature_request": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      },
+      "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
+      "operational_conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "selected_product_proposal": "COMMERCIAL_POLIGUARD_MSD",
+      "field_evidence": {
+        "identity": "SRC_BULA_POLIGUARD",
+        "presentation": "SRC_BULA_POLIGUARD",
+        "species": "SRC_BULA_POLIGUARD",
+        "scheme": "SRC_BULA_POLIGUARD",
+        "dose": "SRC_BULA_POLIGUARD",
+        "route": "SRC_BULA_POLIGUARD",
+        "registration_number": "EV_MAPA_REGISTROS_2014",
+        "registration_current_validity": null,
+        "full_current_label": null
       }
     },
     {
@@ -294,7 +405,7 @@
       ],
       "category": "FARM_CONTEXT_SOURCE_REQUIRED",
       "technically_ready_for_single_decision": false,
-      "scope": "Avaliação/manejo regional DF/Cerrado ou outra variante tecnicamente aprovada; sem escolha de princípio ativo.",
+      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
       "evidence_source_keys": [
         "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
       ],
@@ -313,12 +424,19 @@
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
       "unresolved_inputs": [
-        "fonte/decisão responsável da fazenda cobrindo elegibilidade, janela e requisito de produto para avaliação",
-        "região/UF, sistema e meses adotados explicitamente no plano; estágio de vida recria"
+        "farm_context_template.fazenda_id",
+        "farm_context_template.uf",
+        "farm_context_template.region",
+        "farm_context_template.production_system",
+        "farm_context_template.eligible_categories",
+        "farm_context_template.responsible_reference",
+        "farm_context_template.regionalCalendar.uf",
+        "farm_context_template.regionalCalendar.months",
+        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
       ],
       "requested_decision": [
-        "Aprovar conjuntamente os três meses para o contexto delimitado, sem transformar guideline de apoio em fonte forte global.",
-        "A configuração é resolvida no plano persistente e não exige confirmação de cada tarefa; execução segue dependente do produto real."
+        "Aprovar somente avaliacao/manejo no contexto preenchido e referenciado; a fonte Embrapa permanece apoio regional, sem promocao automatica de forca.",
+        "A configuracao persistente autoriza avaliar o manejo adotado, nunca aplicar medicamento ou gerar dose/carencia."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -352,6 +470,72 @@
           "product_specificity",
           "farm_context_guards"
         ]
+      },
+      "signature_request": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      },
+      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "operational_conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "farm_context_template": {
+        "fazenda_id": null,
+        "uf": null,
+        "region": null,
+        "production_system": null,
+        "eligible_categories": null,
+        "responsible_reference": null,
+        "regionalCalendar.uf": null,
+        "regionalCalendar.months": null,
+        "management=rearing": null,
+        "life_stage=recria": null
+      },
+      "farm_source_request": {
+        "id": null,
+        "source_key": null,
+        "kind": "mv_responsavel",
+        "scope": "fazenda",
+        "fazenda_id": null,
+        "issuer": null,
+        "decision_reference": null,
+        "signed_at": null,
+        "status": "NOT_ISSUED",
+        "fields": [
+          "eligibility_rule",
+          "operational_window",
+          "product_requirement"
+        ],
+        "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+        "promotes_guideline_to_strong_source": false,
+        "current_status_mapping": "Nao emitir SIM_NORMA/SIM_BULA para decisao MV por inferencia; o contrato atual nao possui status explicito de decisao MV assinada."
+      },
+      "field_evidence": {
+        "eligibility_rule": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        },
+        "operational_window": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        },
+        "product_requirement": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        }
       }
     },
     {
@@ -361,7 +545,7 @@
       ],
       "category": "FARM_CONTEXT_SOURCE_REQUIRED",
       "technically_ready_for_single_decision": false,
-      "scope": "Avaliação situacional pré-desmama; não tratamento obrigatório universal.",
+      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
       "evidence_source_keys": [
         "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
       ],
@@ -380,11 +564,19 @@
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
       "unresolved_inputs": [
-        "sistema intensivo/leiteiro ou orientação MV referenciada",
-        "fonte/decisão responsável por campo e escopo da avaliação"
+        "farm_context_template.fazenda_id",
+        "farm_context_template.uf",
+        "farm_context_template.region",
+        "farm_context_template.production_system",
+        "farm_context_template.eligible_categories",
+        "farm_context_template.responsible_reference",
+        "farm_context_template.preWeaningBasis.kind",
+        "farm_context_template.preWeaningBasis.reference",
+        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
       ],
       "requested_decision": [
-        "Aprovar avaliação/manejo do grupo bezerro/bezerra no sistema indicado, excluindo uso universal em extensivo. Nenhum produto comercial é exigido para a avaliação genérica."
+        "Aprovar somente avaliacao/manejo no contexto preenchido e referenciado; a fonte Embrapa permanece apoio regional, sem promocao automatica de forca.",
+        "A configuracao persistente autoriza avaliar o manejo adotado, nunca aplicar medicamento ou gerar dose/carencia."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -418,6 +610,71 @@
           "product_specificity",
           "farm_context_guards"
         ]
+      },
+      "signature_request": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      },
+      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "operational_conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "farm_context_template": {
+        "fazenda_id": null,
+        "uf": null,
+        "region": null,
+        "production_system": null,
+        "eligible_categories": null,
+        "responsible_reference": null,
+        "preWeaningBasis.kind": null,
+        "preWeaningBasis.reference": null,
+        "management=pre_weaning": null
+      },
+      "farm_source_request": {
+        "id": null,
+        "source_key": null,
+        "kind": "mv_responsavel",
+        "scope": "fazenda",
+        "fazenda_id": null,
+        "issuer": null,
+        "decision_reference": null,
+        "signed_at": null,
+        "status": "NOT_ISSUED",
+        "fields": [
+          "eligibility_rule",
+          "operational_window",
+          "product_requirement"
+        ],
+        "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+        "promotes_guideline_to_strong_source": false,
+        "current_status_mapping": "Nao emitir SIM_NORMA/SIM_BULA para decisao MV por inferencia; o contrato atual nao possui status explicito de decisao MV assinada."
+      },
+      "field_evidence": {
+        "eligibility_rule": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        },
+        "operational_window": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        },
+        "product_requirement": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        }
       }
     },
     {
@@ -427,7 +684,7 @@
       ],
       "category": "FARM_CONTEXT_SOURCE_REQUIRED",
       "technically_ready_for_single_decision": false,
-      "scope": "Tarefa de avaliação/manejo vinculada à entrada programada, sem criar movimentação factual.",
+      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
       "evidence_source_keys": [
         "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
       ],
@@ -446,11 +703,21 @@
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
       "unresolved_inputs": [
-        "fonte/decisão responsável por campo para o manejo",
-        "data, referência, alvos e destino/manejo explícitos no plano"
+        "farm_context_template.fazenda_id",
+        "farm_context_template.uf",
+        "farm_context_template.region",
+        "farm_context_template.production_system",
+        "farm_context_template.eligible_categories",
+        "farm_context_template.responsible_reference",
+        "farm_context_template.scheduledContext.date",
+        "farm_context_template.scheduledContext.animalIds",
+        "farm_context_template.scheduledContext.reference",
+        "farm_context_template.destination_or_management",
+        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
       ],
       "requested_decision": [
-        "Aprovar avaliação na entrada programada em confinamento/pasto reservado; data, alvos e referência continuam configuração da fazenda. Produto/dose/carência não são inferidos."
+        "Aprovar somente avaliacao/manejo no contexto preenchido e referenciado; a fonte Embrapa permanece apoio regional, sem promocao automatica de forca.",
+        "A configuracao persistente autoriza avaliar o manejo adotado, nunca aplicar medicamento ou gerar dose/carencia."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -484,6 +751,73 @@
           "product_specificity",
           "farm_context_guards"
         ]
+      },
+      "signature_request": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      },
+      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "operational_conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "farm_context_template": {
+        "fazenda_id": null,
+        "uf": null,
+        "region": null,
+        "production_system": null,
+        "eligible_categories": null,
+        "responsible_reference": null,
+        "scheduledContext.date": null,
+        "scheduledContext.animalIds": null,
+        "scheduledContext.reference": null,
+        "management=pre_feedlot": null,
+        "destination_or_management": null
+      },
+      "farm_source_request": {
+        "id": null,
+        "source_key": null,
+        "kind": "mv_responsavel",
+        "scope": "fazenda",
+        "fazenda_id": null,
+        "issuer": null,
+        "decision_reference": null,
+        "signed_at": null,
+        "status": "NOT_ISSUED",
+        "fields": [
+          "eligibility_rule",
+          "operational_window",
+          "product_requirement"
+        ],
+        "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+        "promotes_guideline_to_strong_source": false,
+        "current_status_mapping": "Nao emitir SIM_NORMA/SIM_BULA para decisao MV por inferencia; o contrato atual nao possui status explicito de decisao MV assinada."
+      },
+      "field_evidence": {
+        "eligibility_rule": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        },
+        "operational_window": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        },
+        "product_requirement": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        }
       }
     },
     {
@@ -493,7 +827,7 @@
       ],
       "category": "FARM_CONTEXT_SOURCE_REQUIRED",
       "technically_ready_for_single_decision": false,
-      "scope": "Avaliação pré-parto em fêmeas com intervenção/contexto definido; não calendário farmacológico universal.",
+      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
       "evidence_source_keys": [
         "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
       ],
@@ -512,11 +846,20 @@
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
       "unresolved_inputs": [
-        "fonte/decisão responsável por campo; a referência sazonal não comprova janela individual",
-        "contexto reprodutivo, data da tarefa de avaliação, referência e alvos no plano"
+        "farm_context_template.fazenda_id",
+        "farm_context_template.uf",
+        "farm_context_template.region",
+        "farm_context_template.production_system",
+        "farm_context_template.eligible_categories",
+        "farm_context_template.responsible_reference",
+        "farm_context_template.scheduledContext.date",
+        "farm_context_template.scheduledContext.animalIds",
+        "farm_context_template.scheduledContext.reference",
+        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
       ],
       "requested_decision": [
-        "Aprovar avaliação contextual; a data é intenção de manejo e não prova gestação/parto. Intervenção farmacológica requer produto/bula ou decisão MV próprios."
+        "Aprovar somente avaliacao/manejo no contexto preenchido e referenciado; a fonte Embrapa permanece apoio regional, sem promocao automatica de forca.",
+        "A configuracao persistente autoriza avaliar o manejo adotado, nunca aplicar medicamento ou gerar dose/carencia."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -550,6 +893,74 @@
           "product_specificity",
           "farm_context_guards"
         ]
+      },
+      "signature_request": {
+        "responsible_name": null,
+        "actor_id": null,
+        "professional_registration": null,
+        "professional_registration_uf": null,
+        "signed_at": null,
+        "decision_reference": null,
+        "content_digest": null,
+        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
+      },
+      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "operational_conditions": [
+        "assinatura identificada e datada vinculada ao hash do candidato",
+        "versoes esperadas conferidas sob lock",
+        "fontes por campo materializadas",
+        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
+        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+      ],
+      "farm_context_template": {
+        "fazenda_id": null,
+        "uf": null,
+        "region": null,
+        "production_system": null,
+        "eligible_categories": null,
+        "responsible_reference": null,
+        "scheduledContext.date": null,
+        "scheduledContext.animalIds": null,
+        "scheduledContext.reference": null,
+        "reproductiveContext=prepartum": null,
+        "sex=femea": null,
+        "intervention_scope=assessment_only": null
+      },
+      "farm_source_request": {
+        "id": null,
+        "source_key": null,
+        "kind": "mv_responsavel",
+        "scope": "fazenda",
+        "fazenda_id": null,
+        "issuer": null,
+        "decision_reference": null,
+        "signed_at": null,
+        "status": "NOT_ISSUED",
+        "fields": [
+          "eligibility_rule",
+          "operational_window",
+          "product_requirement"
+        ],
+        "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+        "promotes_guideline_to_strong_source": false,
+        "current_status_mapping": "Nao emitir SIM_NORMA/SIM_BULA para decisao MV por inferencia; o contrato atual nao possui status explicito de decisao MV assinada."
+      },
+      "field_evidence": {
+        "eligibility_rule": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        },
+        "operational_window": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        },
+        "product_requirement": {
+          "basis": "decisao responsavel da fazenda ainda nao emitida",
+          "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "product_required": false
+        }
       }
     },
     {
@@ -1223,6 +1634,149 @@
             {
               "source_ref": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE"
             }
+          ],
+          "eligibility_rule": [
+            {
+              "source_ref": "SRC_MAPA_IN_10_2017_PNCEBT",
+              "id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa SDA/MAPA nº 10, de 3 de março de 2017 — Regulamento Técnico do PNCEBT",
+              "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "coverage_ids": [
+                  "d247d101-eeae-46f4-8b9b-3da1c954af9b",
+                  "4f910d70-d9d8-4b8b-959a-257a5447859d",
+                  "631b58f2-49ac-410e-904c-e8d80d403d4c"
+                ]
+              }
+            },
+            {
+              "source_ref": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+              "id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Portaria SDA/MAPA 1.633/2026 — campanha nacional contra brucelose",
+              "issuer": "MAPA/SDA",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "coverage_ids": [
+                  "6680c8da-8f0a-45c3-b47d-81c14af72bda",
+                  "6074dba2-6055-41ec-a4bf-2a2ea49ff817"
+                ]
+              }
+            },
+            {
+              "source_ref": "SRC_CIDASC_SC_B19_PROHIBITION",
+              "id": "59345fb2-bc0b-460f-b60c-084aa7bf2049",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "CIDASC — proibição estadual de B19 e uso de RB51",
+              "issuer": "CIDASC",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "coverage_ids": [
+                  "531324a5-2b26-493e-9c33-8c652bcc58c2",
+                  "4e30c65d-1334-45be-b548-0bcfb899dcd6"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "source_ref": "SRC_MAPA_IN_10_2017_PNCEBT",
+              "id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa SDA/MAPA nº 10, de 3 de março de 2017 — Regulamento Técnico do PNCEBT",
+              "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "coverage_ids": [
+                  "631b58f2-49ac-410e-904c-e8d80d403d4c"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "source_ref": "SRC_MAPA_IN_10_2017_PNCEBT",
+              "id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa SDA/MAPA nº 10, de 3 de março de 2017 — Regulamento Técnico do PNCEBT",
+              "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "coverage_ids": [
+                  "d247d101-eeae-46f4-8b9b-3da1c954af9b"
+                ]
+              }
+            },
+            {
+              "source_ref": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+              "id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Portaria SDA/MAPA 1.633/2026 — campanha nacional contra brucelose",
+              "issuer": "MAPA/SDA",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "coverage_ids": [
+                  "6680c8da-8f0a-45c3-b47d-81c14af72bda"
+                ]
+              }
+            },
+            {
+              "source_ref": "SRC_CIDASC_SC_B19_PROHIBITION",
+              "id": "59345fb2-bc0b-460f-b60c-084aa7bf2049",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "CIDASC — proibição estadual de B19 e uso de RB51",
+              "issuer": "CIDASC",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "coverage_ids": [
+                  "531324a5-2b26-493e-9c33-8c652bcc58c2"
+                ]
+              }
+            }
           ]
         },
         "limitations": [
@@ -1259,7 +1813,8 @@
               "id": "22508d25-1b95-44b2-b2a3-50d57cb8ba7d",
               "version": 2,
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
-            }
+            },
+            "planning_scope": "assessment_only"
           }
         },
         "allows_agenda_auto": false,
@@ -1963,11 +2518,11 @@
         "logical_item_key": "recria_maio",
         "version": 2,
         "item_status": "estrategico",
-        "action_type": "vermifugacao",
-        "product_requirement_kind": "product_class_group",
+        "action_type": "manejo_sanitario",
+        "product_requirement_kind": "none",
         "product_id": null,
         "product_class": null,
-        "product_class_group_id": "{{lookup sanitario_product_class_groups_v2.id by group_key=pcg_antiparasitarios_recria_estrategicos}}",
+        "product_class_group_id": null,
         "eligibility_rule": {
           "species": [
             "bovino"
@@ -2037,14 +2592,18 @@
               "id": "38c59c96-d854-4583-8283-02e4bd3065a2",
               "version": 1,
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
-            }
+            },
+            "planning_scope": "assessment_only",
+            "farm_decision_required": true
           }
         },
         "allows_agenda_auto": false,
         "requires_mv_responsavel": false,
         "status": "draft",
         "id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
-        "protocol_key": "controle_parasitario_recria_5_7_9"
+        "protocol_key": "controle_parasitario_recria_5_7_9",
+        "dose_rule": {},
+        "route_rule": {}
       }
     },
     {
@@ -2057,11 +2616,11 @@
         "logical_item_key": "recria_julho",
         "version": 2,
         "item_status": "estrategico",
-        "action_type": "vermifugacao",
-        "product_requirement_kind": "product_class_group",
+        "action_type": "manejo_sanitario",
+        "product_requirement_kind": "none",
         "product_id": null,
         "product_class": null,
-        "product_class_group_id": "{{lookup sanitario_product_class_groups_v2.id by group_key=pcg_antiparasitarios_recria_estrategicos}}",
+        "product_class_group_id": null,
         "eligibility_rule": {
           "species": [
             "bovino"
@@ -2131,14 +2690,18 @@
               "id": "5501697e-d3de-499a-9bdb-405b277675c9",
               "version": 1,
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
-            }
+            },
+            "planning_scope": "assessment_only",
+            "farm_decision_required": true
           }
         },
         "allows_agenda_auto": false,
         "requires_mv_responsavel": false,
         "status": "draft",
         "id": "c1866199-bf9d-506e-af05-dd84f3165c90",
-        "protocol_key": "controle_parasitario_recria_5_7_9"
+        "protocol_key": "controle_parasitario_recria_5_7_9",
+        "dose_rule": {},
+        "route_rule": {}
       }
     },
     {
@@ -2151,11 +2714,11 @@
         "logical_item_key": "recria_setembro",
         "version": 2,
         "item_status": "estrategico",
-        "action_type": "vermifugacao",
-        "product_requirement_kind": "product_class_group",
+        "action_type": "manejo_sanitario",
+        "product_requirement_kind": "none",
         "product_id": null,
         "product_class": null,
-        "product_class_group_id": "{{lookup sanitario_product_class_groups_v2.id by group_key=pcg_antiparasitarios_recria_estrategicos}}",
+        "product_class_group_id": null,
         "eligibility_rule": {
           "species": [
             "bovino"
@@ -2225,14 +2788,18 @@
               "id": "f8d9ae48-213d-44b0-919e-14cc12e828c5",
               "version": 1,
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
-            }
+            },
+            "planning_scope": "assessment_only",
+            "farm_decision_required": true
           }
         },
         "allows_agenda_auto": false,
         "requires_mv_responsavel": false,
         "status": "draft",
         "id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
-        "protocol_key": "controle_parasitario_recria_5_7_9"
+        "protocol_key": "controle_parasitario_recria_5_7_9",
+        "dose_rule": {},
+        "route_rule": {}
       }
     },
     {
@@ -2245,11 +2812,11 @@
         "logical_item_key": "pre_desmama_situacional",
         "version": 2,
         "item_status": "condicional",
-        "action_type": "vermifugacao",
-        "product_requirement_kind": "product_class_group",
+        "action_type": "manejo_sanitario",
+        "product_requirement_kind": "none",
         "product_id": null,
         "product_class": null,
-        "product_class_group_id": "{{lookup sanitario_product_class_groups_v2.id by group_key=pcg_antiparasitarios_bezerros_pre_desmama}}",
+        "product_class_group_id": null,
         "eligibility_rule": {
           "species": [
             "bovino"
@@ -2312,14 +2879,18 @@
               "id": "296b0b88-3105-471b-89b3-e4796bd74d47",
               "version": 1,
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
-            }
+            },
+            "planning_scope": "assessment_only",
+            "farm_decision_required": true
           }
         },
         "allows_agenda_auto": false,
         "requires_mv_responsavel": true,
         "status": "draft",
         "id": "e711773e-88ee-5107-aa73-68e7337468be",
-        "protocol_key": "vermifugacao_pre_desmama"
+        "protocol_key": "vermifugacao_pre_desmama",
+        "dose_rule": {},
+        "route_rule": {}
       }
     },
     {
@@ -2332,11 +2903,11 @@
         "logical_item_key": "pre_confinamento_dose_unica",
         "version": 2,
         "item_status": "estrategico",
-        "action_type": "vermifugacao",
-        "product_requirement_kind": "product_class_group",
+        "action_type": "manejo_sanitario",
+        "product_requirement_kind": "none",
         "product_id": null,
         "product_class": null,
-        "product_class_group_id": "{{lookup sanitario_product_class_groups_v2.id by group_key=pcg_antiparasitarios_pre_confinamento}}",
+        "product_class_group_id": null,
         "eligibility_rule": {
           "species": [
             "bovino"
@@ -2399,14 +2970,18 @@
               "id": "abf01867-fe1c-4638-8d4c-80929bbe0e00",
               "version": 1,
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
-            }
+            },
+            "planning_scope": "assessment_only",
+            "farm_decision_required": true
           }
         },
         "allows_agenda_auto": false,
         "requires_mv_responsavel": false,
         "status": "draft",
         "id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
-        "protocol_key": "vermifugacao_pre_confinamento_pasto_vedado"
+        "protocol_key": "vermifugacao_pre_confinamento_pasto_vedado",
+        "dose_rule": {},
+        "route_rule": {}
       }
     },
     {
@@ -2419,11 +2994,11 @@
         "logical_item_key": "matrizes_pre_parto_antiparasitario",
         "version": 2,
         "item_status": "condicional",
-        "action_type": "vermifugacao",
-        "product_requirement_kind": "product_class_group",
+        "action_type": "manejo_sanitario",
+        "product_requirement_kind": "none",
         "product_id": null,
         "product_class": null,
-        "product_class_group_id": "{{lookup sanitario_product_class_groups_v2.id by group_key=pcg_antiparasitarios_matrizes_pre_parto}}",
+        "product_class_group_id": null,
         "eligibility_rule": {
           "species": [
             "bovino"
@@ -2489,14 +3064,18 @@
               "id": "53006754-98ea-4ad0-8cf1-a20b8898f84b",
               "version": 1,
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
-            }
+            },
+            "planning_scope": "assessment_only",
+            "farm_decision_required": true
           }
         },
         "allows_agenda_auto": false,
         "requires_mv_responsavel": true,
         "status": "draft",
         "id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
-        "protocol_key": "matrizes_pre_parto"
+        "protocol_key": "matrizes_pre_parto",
+        "dose_rule": {},
+        "route_rule": {}
       }
     }
   ],
@@ -3090,5 +3669,245 @@
     "Materializar os vínculos e coverage por campo aprovados sem promover fonte de apoio por inferência; estados/flags só ficam ativos após essa decisão.",
     "Revalidar versão esperada, schema/RLS e writer de importação em tarefa autorizada. Não sobrescrever versões históricas nem reinterpretar Eventos.",
     "Este documento não autoriza importação, flags, migration, deploy ou sincronização remota."
+  ],
+  "publication_readiness": {
+    "globally_submission_ready_items": 1,
+    "farm_evaluation_forms_prepared": 6,
+    "commercial_items_with_specific_evidence_gaps": 7,
+    "signable_with_identified_responsible_now": 0,
+    "operational_authorizations": 0
+  },
+  "environment_verification": {
+    "checked_at": "2026-10-17",
+    "method": "Supabase list_projects + list_branches, read-only",
+    "active_rebanhosync_project_ref": "zqloazqzhwauamcejmuz",
+    "separate_staging_project_found": false,
+    "separate_staging_branch_found": false,
+    "production_routing_live_rechecked": false,
+    "known_shared_project_prohibited_for_this_publication": true,
+    "isolated_staging_project_ref": null
+  },
+  "supplemental_evidence": [
+    {
+      "key": "EV_MAPA_REGISTROS_2014",
+      "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf/@@download/file/Lista_produtos_vigentes_abril2014.pdf",
+      "reviewed_sections": [
+        "p. 78: Fortress 7, 5.893/1997",
+        "p. 137: Poliguard, 9.299/2007",
+        "p. 26: Bovigen Repro Total SE, 9.776/2013"
+      ],
+      "accessed_at": "2026-10-17",
+      "current_registration_validity_proven": false
+    },
+    {
+      "key": "EV_ZOETIS_CATALOGO_FORTRESS7",
+      "url": "https://www.zoetis.com.br/global-assets/private/revista-zoetis-net-paginas-mistas-versao-30-01.pdf",
+      "reviewed_sections": [
+        "p. impressa 186 / PDF 176: apresentacao Fortress 7"
+      ],
+      "accessed_at": "2026-10-17",
+      "limitation": "Catalogo historico; nao comprova vigencia do registro nem disponibilidade comercial atual."
+    }
+  ],
+  "commercial_dossiers": [
+    {
+      "product_key": "COMMERCIAL_FORTRESS7_ZOETIS",
+      "product_id_proposal": "239a438c-abe0-568e-b24b-793001a08f98",
+      "nome_comercial": "Fortress 7",
+      "fabricante": "Zoetis",
+      "registration": {
+        "number": "5.893/1997",
+        "source": "EV_MAPA_REGISTROS_2014",
+        "historical_holder": "Laboratorios Pfizer Ltda.",
+        "current_validity": "unknown"
+      },
+      "presentation": {
+        "volumes_ml": [
+          50,
+          250
+        ],
+        "doses": [
+          10,
+          50
+        ],
+        "source": "EV_ZOETIS_CATALOGO_FORTRESS7"
+      },
+      "species_for_this_proposal": [
+        "bovino"
+      ],
+      "scheme": {
+        "initial_doses": 2,
+        "interval_days": [
+          28,
+          42
+        ],
+        "booster_months": 12,
+        "dose_ml": 5,
+        "route": "subcutanea"
+      },
+      "source_url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Fortress-7.pdf",
+      "source_key": "SRC_BULA_FORTRESS7",
+      "accessed_at": "2026-10-17",
+      "pending_fields": [
+        "registration.current_validity",
+        "eligibility.minimum_age_or_responsible_category_criterion",
+        "authorization.pregnancy",
+        "authorization.lactation"
+      ],
+      "status_curatorial": "precisa_validar",
+      "automatic_product_selection_authorized": false,
+      "replaces_legacy_generic_product": false,
+      "context": "Bovinos sadios; a bula nao fixa idade minima. Ausencia de restricao nao e permissao reprodutiva.",
+      "nonblocking_for_planning": [
+        "withdrawal.milk_days: unknown; nao calcular carencia a partir do planejamento"
+      ],
+      "selected_for_proposal": true
+    },
+    {
+      "product_key": "COMMERCIAL_LEPTOFERM5_ZOETIS",
+      "product_id_proposal": "820e0950-e617-5fcd-a3b7-351f855b2ba4",
+      "nome_comercial": "Leptoferm 5/2 mL",
+      "fabricante": "Zoetis Inc.; importador Zoetis Industria de Produtos Veterinarios Ltda.",
+      "registration": {
+        "number": "5.037",
+        "date": "1995-03-15",
+        "source": "SRC_BULA_LEPTOFERM5",
+        "current_validity": "unknown"
+      },
+      "presentation": {
+        "doses": [
+          10,
+          50
+        ],
+        "source": "SRC_BULA_LEPTOFERM5"
+      },
+      "species_for_this_proposal": [
+        "bovino"
+      ],
+      "scheme": {
+        "initial_doses_bovino": 1,
+        "booster_months": 12,
+        "dose_ml": 2,
+        "route": "intramuscular"
+      },
+      "source_url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
+      "source_key": "SRC_BULA_LEPTOFERM5",
+      "accessed_at": "2026-10-17",
+      "pending_fields": [
+        "registration.current_validity",
+        "eligibility.minimum_age_or_responsible_category_criterion",
+        "authorization.pregnancy",
+        "authorization.lactation"
+      ],
+      "status_curatorial": "precisa_validar",
+      "automatic_product_selection_authorized": false,
+      "replaces_legacy_generic_product": false,
+      "context": "Bovinos sadios. A bula tambem descreve suinos, fora desta proposta. Nao transportar segunda dose suina.",
+      "nonblocking_for_planning": [
+        "withdrawal.milk_days: unknown; nao calcular carencia a partir do planejamento"
+      ],
+      "selected_for_proposal": true
+    },
+    {
+      "product_key": "COMMERCIAL_POLIGUARD_MSD",
+      "product_id_proposal": "4cab4bd3-491d-595b-ab88-3432bcca03c8",
+      "nome_comercial": "Poliguard",
+      "fabricante": "MSD Saude Animal (pagina comercial atual); Vallee S/A (fabricante na lista MAPA 2014)",
+      "registration": {
+        "number": "9.299/2007",
+        "source": "EV_MAPA_REGISTROS_2014",
+        "current_validity": "unknown",
+        "historical_holder": "Vallee S/A",
+        "current_holder": null
+      },
+      "presentation": {
+        "volumes_ml": [
+          100,
+          250
+        ],
+        "source": "SRC_BULA_POLIGUARD"
+      },
+      "species_for_this_proposal": [
+        "bovino"
+      ],
+      "scheme": {
+        "initial_doses": 2,
+        "interval_days": [
+          21,
+          30
+        ],
+        "booster_months": 12,
+        "dose_ml": 5,
+        "route": "subcutanea"
+      },
+      "source_url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+      "source_key": "SRC_BULA_POLIGUARD",
+      "accessed_at": "2026-10-17",
+      "pending_fields": [
+        "registration.current_validity",
+        "source.full_current_label",
+        "authorization.lactation",
+        "registration.current_holder"
+      ],
+      "status_curatorial": "precisa_validar",
+      "automatic_product_selection_authorized": false,
+      "replaces_legacy_generic_product": false,
+      "context": "Bovinos sadios, preventivo e sob supervisao MV. Filhos de maes vacinadas: primeira dose apos 4 meses. Gestacao expressamente permitida no resumo oficial.",
+      "pregnancy_evidence": true,
+      "nonblocking_for_planning": [
+        "withdrawal.meat_days: unknown",
+        "withdrawal.milk_days: unknown"
+      ],
+      "selected_for_proposal": true
+    },
+    {
+      "product_key": "ALTERNATIVE_BOVIGEN_REPRO_TOTAL_SE_VIRBAC",
+      "product_id_proposal": "09a4ab5f-1e0f-56b9-a741-9aeef39fc879",
+      "nome_comercial": "Bovigen Repro Total SE",
+      "fabricante": "Virbac Brasil",
+      "registration": {
+        "number": "9.776/2013",
+        "source": "EV_MAPA_REGISTROS_2014",
+        "current_validity": "unknown"
+      },
+      "presentation": {
+        "volumes_ml": [
+          100,
+          250
+        ],
+        "source": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE"
+      },
+      "species_for_this_proposal": [
+        "bovino"
+      ],
+      "scheme": {
+        "initial_doses": 2,
+        "interval_days": [
+          21,
+          30
+        ],
+        "booster_months": 12,
+        "dose_ml": 5,
+        "route": "subcutanea"
+      },
+      "source_url": "https://br.virbac.com/products/biologicos/bovigen-repro-total-se",
+      "source_key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE",
+      "accessed_at": "2026-10-17",
+      "pending_fields": [
+        "registration.current_validity",
+        "source.full_current_label",
+        "authorization.lactation"
+      ],
+      "status_curatorial": "precisa_validar",
+      "automatic_product_selection_authorized": false,
+      "replaces_legacy_generic_product": false,
+      "context": "Alternativa apenas documentada, nao selecionada. Reprodutoras: segunda dose 15 dias antes da cobertura; cria de mae nao vacinada: inicio aos 15 dias, com excecoes proprias. Gestacao permitida no texto. Nao transferir composicao/esquema para Poliguard.",
+      "selected_for_proposal": false
+    }
+  ],
+  "publication_contract_gaps": [
+    "Importador canonico existente publica apenas rascunhos e rejeita aprovacao/flags operacionais. Nao existe publicador autorizado de decisao assinada que promova status, fontes e permissao em transacao com CAS.",
+    "Fonte MV existe como kind, mas fonte forte exige evidence_status SIM_BULA/SIM_NORMA. Falta representacao explicita de decisao MV assinada; nao rotular orientacao privada como norma/bula para passar no guard.",
+    "Falta convergencia multidispositivo do plano e das Agendas locais; nao habilitar por flags."
   ]
 }

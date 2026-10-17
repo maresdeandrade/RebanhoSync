@@ -75,6 +75,7 @@ function usage() {
     "Uso:",
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --validate",
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run",
+    "  --validate/--dry-run aceitam --review-candidate <arquivo>; dry-run de candidato exige banco local descartavel.",
     `  ALLOW_SANITARIO_IMPORT=1 SANITARIO_IMPORT_CONFIRM=${EXPECTED.artifactVersion} node scripts/codex/import-sanitario-protocols-v2.mjs --apply`,
     "  Em banco remoto, tambem exige ALLOW_SANITARIO_REMOTE_IMPORT=1.",
   ].join("\n");
@@ -445,9 +446,11 @@ function assertApplyAuthorized(dbUrl) {
   return target;
 }
 
-async function connectDb(mode) {
+async function connectDb(mode, reviewOnly = false) {
   const env = readSupabaseStatusEnv();
   const target = describeDatabase(env.DB_URL);
+  // pg connection-string query options can override the URL hostname.
+  if (reviewOnly) assert(target.local && !new URL(env.DB_URL).search, "REVIEW_CANDIDATE_REQUIRES_LOCAL_DATABASE");
   if (mode === "apply") assertApplyAuthorized(env.DB_URL);
   const client = new Client({ connectionString: env.DB_URL });
   await client.connect();
@@ -1041,8 +1044,15 @@ async function applyTransaction(client, data) {
   }
 }
 async function main() {
-  const mode = parseMode(process.argv.slice(2));
-  const payload = readJsonPayload();
+  const args = process.argv.slice(2);
+  const reviewIndex = args.indexOf("--review-candidate");
+  const reviewPath = reviewIndex >= 0 ? args[reviewIndex + 1] : null;
+  if (reviewIndex >= 0) assert(reviewPath && !reviewPath.startsWith("--"), usage());
+  const mode = parseMode(reviewIndex >= 0 ? args.filter((_, index) => index !== reviewIndex && index !== reviewIndex + 1) : args);
+  assert(!reviewPath || mode !== "apply", "REVIEW_CANDIDATE_CANNOT_APPLY");
+  const payload = reviewPath ? JSON.parse(readFileSync(reviewPath, "utf8")) : readJsonPayload();
+  if (reviewPath) assert(payload.review_only === true && payload.import_gate?.import_real_authorized === false,
+    "REVIEW_ONLY_ARTIFACT_REQUIRED");
   if (mode === "apply") assertApplyGate(payload);
   const data = validateCanonicalPayload(payload);
 
@@ -1051,7 +1061,7 @@ async function main() {
     console.log(
       JSON.stringify(
         {
-          payload: PAYLOAD_REL,
+          payload: reviewPath ? "review candidate (not authorized for import)" : PAYLOAD_REL,
           artifact_version: payload.artifact_version,
           canonical_validation_complete: PIPELINE_STATUS.CANONICAL_VALIDATION_COMPLETE,
           publisher_complete: PIPELINE_STATUS.PUBLISHER_COMPLETE,
@@ -1072,7 +1082,7 @@ async function main() {
     return;
   }
 
-  const connection = await connectDb(mode);
+  const connection = await connectDb(mode, Boolean(reviewPath));
   const { client } = connection;
   try {
     console.log(

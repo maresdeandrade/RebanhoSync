@@ -586,7 +586,9 @@ describe("sanitario v2 publisher P1", () => {
     { gate: "ALLOW_SANITARIO_REMOTE_IMPORT", env: {
       ALLOW_SANITARIO_IMPORT: "1", SANITARIO_IMPORT_CONFIRM: contract.CANONICAL_ARTIFACT_VERSION,
     }, dbUrl: "postgres://remote.invalid/test" },
-  ])("requires operational gate $gate before creating a database client", async ({ gate, env, dbUrl }) => {
+    { gate: "REVIEW_CANDIDATE_REQUIRES_LOCAL_DATABASE", env: {}, dbUrl: "postgres://remote.invalid/test", mode: "dry-run", reviewOnly: true },
+    { gate: "REVIEW_CANDIDATE_REQUIRES_LOCAL_DATABASE", env: {}, dbUrl: "postgres://localhost/test?host=remote.invalid", mode: "dry-run", reviewOnly: true },
+  ])("requires operational gate $gate before creating a database client", async ({ gate, env, dbUrl, mode = "apply", reviewOnly = false }) => {
     let clientCreations = 0;
     const connectForTest = runInNewContext(
       `${privateSource}\nreadSupabaseStatusEnv = () => ({ DB_URL: testDbUrl }); connectDb;`,
@@ -598,7 +600,7 @@ describe("sanitario v2 publisher P1", () => {
           }
         } },
     );
-    await expect(connectForTest("apply")).rejects.toThrow(gate);
+    await expect(connectForTest(mode, reviewOnly)).rejects.toThrow(gate);
     expect(clientCreations).toBe(0);
   });
 
