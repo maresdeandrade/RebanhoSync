@@ -66,7 +66,7 @@ describe("AppShell", () => {
     expect(main).toHaveClass(
       "min-w-0",
       "flex-1",
-      "pb-[calc(6rem+env(safe-area-inset-bottom))]",
+      "pb-[var(--mobile-bottom-nav-clearance)]",
     );
     expect(main.querySelectorAll(".app-content")).toHaveLength(1);
     expect(screen.getByText("Conteudo da pagina")).toBeInTheDocument();

@@ -35,10 +35,10 @@ export function MobileBottomNav({ onOpenMenu }: MobileBottomNavProps) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-crisp backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 h-[var(--mobile-bottom-nav-height)] border-t border-border bg-surface/95 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-crisp backdrop-blur md:hidden"
       aria-label="Navegacao mobile"
     >
-      <div className="mx-auto grid h-20 max-w-md grid-cols-5 items-center gap-1">
+      <div className="mx-auto grid h-[var(--mobile-bottom-nav-content-height)] max-w-md grid-cols-5 items-center gap-1">
         {bottomNavigationItems.map((item) => {
           const isActive = activeKey === item.key;
           const Icon = item.icon;

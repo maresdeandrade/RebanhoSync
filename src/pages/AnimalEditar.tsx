@@ -1,3 +1,4 @@
+import { MobileFormActions } from "@/components/layout/MobileFormActions";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -1025,7 +1026,7 @@ const AnimalEditar = () => {
       </Tabs>
 
       {/* Rodapé fixo para mobile (DS §7.3) */}
-      <div className="sticky bottom-0 inset-x-0 -mx-4 -mb-16 mt-5 border-t-2 border-border bg-card p-4 flex items-center justify-between gap-4 md:hidden z-30 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+      <MobileFormActions>
         <Button
           variant="outline"
           className="h-14 flex-1 text-base rounded-xl"
@@ -1046,7 +1047,7 @@ const AnimalEditar = () => {
           )}
           {isSaving ? "Salvando..." : "Salvar alterações"}
         </Button>
-      </div>
+      </MobileFormActions>
 
     </div>
   );
