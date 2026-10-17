@@ -12,7 +12,7 @@ const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 export function buildApprovalCandidate(canonical, packet, canonicalBytes, packetBytes) {
   assert.equal(sha256(canonicalBytes), packet.source_canonical_sha256, "CANONICAL_HASH_MISMATCH");
-  assert.equal(packet.schema_version, 2, "DECISION_SCHEMA_REQUIRED");
+  assert.equal(packet.schema_version, 3, "DECISION_SCHEMA_REQUIRED");
   assert.equal(packet.approvals_granted, 0, "PREPARATION_CANNOT_GRANT_APPROVAL");
   assert.equal(packet.execute_import, false, "PREPARATION_CANNOT_IMPORT");
   const data = structuredClone(normalizeCanonicalData(canonical));
@@ -25,7 +25,7 @@ export function buildApprovalCandidate(canonical, packet, canonicalBytes, packet
     assert.equal(group.approval.actor_id, null);
     assert.equal(group.approval.approved_at, null);
     assert.equal(group.approval.decision_reference, null);
-    if (group.signature_request) assert.equal(group.signature_request.signed_at, null);
+    if (group.catalog_review_request) assert.equal(group.catalog_review_request.approved_at, null);
   }
   const itemProposals = normalizeCanonicalData({ payload: {
     sanitario_protocolo_itens_versions_v2: { rows: packet.prepared_item_records.map((entry) => entry.record) },
@@ -89,11 +89,12 @@ export function buildApprovalCandidate(canonical, packet, canonicalBytes, packet
 
 export function buildApprovalForm(candidate, packet) {
   return {
-    artifact: "sanitario_v2_detached_unsigned_approval_form", schema_version: 1,
+    artifact: "sanitario_v2_pending_catalog_review_form", schema_version: 2,
     candidate_sha256: sha256(JSON.stringify(candidate, null, 2) + "\n"),
     decisions_sha256: candidate.review_provenance.decisions_sha256,
     operational_authorization: false,
-    decisions: packet.decision_sets.filter((group) => group.signature_request).map((group) => ({
+    responsibility_model: structuredClone(packet.responsibility_model),
+    decisions: packet.decision_sets.filter((group) => group.catalog_review_request).map((group) => ({
       id: group.id, scope: group.scope, submission_status: group.submission_status,
       versions: packet.prepared_item_records.filter((entry) => entry.decision_set === group.id).map((entry) => ({
         protocol_id: entry.record.protocol_id, item_id: entry.record.id,
@@ -101,9 +102,11 @@ export function buildApprovalForm(candidate, packet) {
         logical_item_key: entry.record.logical_item_key, version: entry.record.version,
         expected_previous_id: entry.expected_previous_id, expected_previous_version: entry.expected_previous_version,
       })),
-      required_before_signing: group.unresolved_inputs,
+      required_before_catalog_decision: group.unresolved_inputs,
       conditions: group.operational_conditions,
-      signature: structuredClone(group.signature_request),
+      catalog_review: structuredClone(group.catalog_review_request),
+      farm_activation: structuredClone(group.farm_activation_requirements),
+      execution_compliance: structuredClone(group.execution_compliance),
     })),
   };
 }

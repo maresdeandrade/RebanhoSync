@@ -1,6 +1,6 @@
 {
   "artifact": "Fechamento e preparação de decisões dos 20 itens; NÃO É PAYLOAD IMPORTÁVEL",
-  "schema_version": 2,
+  "schema_version": 3,
   "source_canonical_sha256": "51df1c3884f463992113d0d3ac89e3c9534ce68726e9829972838cae2132cf73",
   "source_implementation": "b7c8c9c9c47f2667667a27a3793145e3aadf24a1",
   "integration_main": "bf43c631685013dca7f8c03066e8f5b251683e57",
@@ -12,11 +12,11 @@
     "technically_ready_for_decision": 1,
     "product_scheme_required": 5,
     "commercial_source_required": 2,
-    "farm_context_source_required": 6,
     "explicit_auto_restriction": 6,
     "automatic_demonstrated_in_approved_fixtures": 14,
     "suggestion_only": 3,
-    "specific_blocks": 3
+    "specific_blocks": 3,
+    "global_field_source_review_required": 6
   },
   "decision_sets": [
     {
@@ -50,7 +50,7 @@
       "requested_decision": [
         "Aprovar numa única decisão a avaliação genérica B19 v3 para fêmeas bovinas/bubalinas de 3–8 meses com UF conhecida, exclusão de SC e histórico documental/factual respeitado.",
         "Formalizar os vínculos propostos de elegibilidade, janela etária e requisito de produto para avaliação da classe B19; isso não autoriza aplicação nem resolve autorização comercial bubalina.",
-        "Autorizar estados prospectivos e permissão automática apenas após assinatura e materialização dos vínculos."
+        "Autorizar estados prospectivos e permissão automática apenas após decisao curatorial rastreavel e materializacao dos vinculos."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -61,7 +61,7 @@
       "requested_state_transition": {
         "execution_status": "PROPOSAL_ONLY_NOT_APPLIED",
         "requires": [
-          "signed_decision_with_actor_date_reference",
+          "catalog_review_record_with_actor_date_reference",
           "resolved_unresolved_inputs",
           "approved_field_bindings_materialized",
           "version_preconditions_satisfied"
@@ -85,24 +85,43 @@
           "farm_context_guards"
         ]
       },
-      "signature_request": {
-        "responsible_name": null,
-        "actor_id": null,
-        "professional_registration": null,
-        "professional_registration_uf": null,
-        "signed_at": null,
-        "decision_reference": null,
-        "content_digest": null,
-        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
-      },
       "submission_status": "READY_FOR_GLOBAL_REVIEW",
       "operational_conditions": [
-        "assinatura identificada e datada vinculada ao hash do candidato",
+        "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
-        "fontes por campo materializadas",
-        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
-        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
-      ]
+        "fontes por campo materializadas e aprovadas no catalogo",
+        "catalogo e permissao promovidos juntos por publicador autorizado",
+        "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+        "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
+      ],
+      "catalog_review_request": {
+        "reviewer_role": "authorized_catalog_reviewer",
+        "reviewer_name": null,
+        "actor_id": null,
+        "approved_at": null,
+        "decision_reference": null,
+        "reviewed_content_digest": null,
+        "decision_status": "PENDING",
+        "requires_farm_veterinarian": false,
+        "requires_crmv_by_default": false,
+        "requires_specific_farm": false,
+        "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+      },
+      "farm_activation_requirements": {
+        "actor": "authorized_farm_user",
+        "confirmation_required": true,
+        "context_definition": {},
+        "professional_identification_required_by_default": false
+      },
+      "execution_compliance": {
+        "evaluated_at": "execution_and_official_proof",
+        "real_product_required_when_applicable": true,
+        "professional_required_only_when_applicable": true,
+        "professional_sve_registration_required_for_b19": true,
+        "missing_planned_professional_blocks_agenda": false,
+        "planning_authorizes_medication_dose_or_withdrawal": false,
+        "planned_professional": null
+      }
     },
     {
       "id": "CLO",
@@ -144,7 +163,7 @@
       "requested_state_transition": {
         "execution_status": "PROPOSAL_ONLY_NOT_APPLIED",
         "requires": [
-          "signed_decision_with_actor_date_reference",
+          "catalog_review_record_with_actor_date_reference",
           "resolved_unresolved_inputs",
           "approved_field_bindings_materialized",
           "version_preconditions_satisfied"
@@ -168,23 +187,14 @@
           "farm_context_guards"
         ]
       },
-      "signature_request": {
-        "responsible_name": null,
-        "actor_id": null,
-        "professional_registration": null,
-        "professional_registration_uf": null,
-        "signed_at": null,
-        "decision_reference": null,
-        "content_digest": null,
-        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
-      },
       "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
       "operational_conditions": [
-        "assinatura identificada e datada vinculada ao hash do candidato",
+        "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
-        "fontes por campo materializadas",
-        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
-        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+        "fontes por campo materializadas e aprovadas no catalogo",
+        "catalogo e permissao promovidos juntos por publicador autorizado",
+        "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+        "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
       ],
       "selected_product_proposal": "COMMERCIAL_FORTRESS7_ZOETIS",
       "field_evidence": {
@@ -197,6 +207,34 @@
         "registration_number": "EV_MAPA_REGISTROS_2014",
         "registration_current_validity": null,
         "full_current_label": "SRC_BULA_FORTRESS7"
+      },
+      "catalog_review_request": {
+        "reviewer_role": "authorized_catalog_reviewer",
+        "reviewer_name": null,
+        "actor_id": null,
+        "approved_at": null,
+        "decision_reference": null,
+        "reviewed_content_digest": null,
+        "decision_status": "PENDING",
+        "requires_farm_veterinarian": false,
+        "requires_crmv_by_default": false,
+        "requires_specific_farm": false,
+        "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+      },
+      "farm_activation_requirements": {
+        "actor": "authorized_farm_user",
+        "confirmation_required": true,
+        "context_definition": {},
+        "professional_identification_required_by_default": false
+      },
+      "execution_compliance": {
+        "evaluated_at": "execution_and_official_proof",
+        "real_product_required_when_applicable": true,
+        "professional_required_only_when_applicable": true,
+        "professional_sve_registration_required_for_b19": false,
+        "missing_planned_professional_blocks_agenda": false,
+        "planning_authorizes_medication_dose_or_withdrawal": false,
+        "planned_professional": null
       }
     },
     {
@@ -238,7 +276,7 @@
       "requested_state_transition": {
         "execution_status": "PROPOSAL_ONLY_NOT_APPLIED",
         "requires": [
-          "signed_decision_with_actor_date_reference",
+          "catalog_review_record_with_actor_date_reference",
           "resolved_unresolved_inputs",
           "approved_field_bindings_materialized",
           "version_preconditions_satisfied"
@@ -262,23 +300,14 @@
           "farm_context_guards"
         ]
       },
-      "signature_request": {
-        "responsible_name": null,
-        "actor_id": null,
-        "professional_registration": null,
-        "professional_registration_uf": null,
-        "signed_at": null,
-        "decision_reference": null,
-        "content_digest": null,
-        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
-      },
       "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
       "operational_conditions": [
-        "assinatura identificada e datada vinculada ao hash do candidato",
+        "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
-        "fontes por campo materializadas",
-        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
-        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+        "fontes por campo materializadas e aprovadas no catalogo",
+        "catalogo e permissao promovidos juntos por publicador autorizado",
+        "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+        "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
       ],
       "selected_product_proposal": "COMMERCIAL_LEPTOFERM5_ZOETIS",
       "field_evidence": {
@@ -291,6 +320,34 @@
         "registration_number": "SRC_BULA_LEPTOFERM5",
         "registration_current_validity": null,
         "full_current_label": "SRC_BULA_LEPTOFERM5"
+      },
+      "catalog_review_request": {
+        "reviewer_role": "authorized_catalog_reviewer",
+        "reviewer_name": null,
+        "actor_id": null,
+        "approved_at": null,
+        "decision_reference": null,
+        "reviewed_content_digest": null,
+        "decision_status": "PENDING",
+        "requires_farm_veterinarian": false,
+        "requires_crmv_by_default": false,
+        "requires_specific_farm": false,
+        "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+      },
+      "farm_activation_requirements": {
+        "actor": "authorized_farm_user",
+        "confirmation_required": true,
+        "context_definition": {},
+        "professional_identification_required_by_default": false
+      },
+      "execution_compliance": {
+        "evaluated_at": "execution_and_official_proof",
+        "real_product_required_when_applicable": true,
+        "professional_required_only_when_applicable": true,
+        "professional_sve_registration_required_for_b19": false,
+        "missing_planned_professional_blocks_agenda": false,
+        "planning_authorizes_medication_dose_or_withdrawal": false,
+        "planned_professional": null
       }
     },
     {
@@ -341,7 +398,7 @@
       "requested_state_transition": {
         "execution_status": "PROPOSAL_ONLY_NOT_APPLIED",
         "requires": [
-          "signed_decision_with_actor_date_reference",
+          "catalog_review_record_with_actor_date_reference",
           "resolved_unresolved_inputs",
           "approved_field_bindings_materialized",
           "version_preconditions_satisfied"
@@ -365,23 +422,14 @@
           "farm_context_guards"
         ]
       },
-      "signature_request": {
-        "responsible_name": null,
-        "actor_id": null,
-        "professional_registration": null,
-        "professional_registration_uf": null,
-        "signed_at": null,
-        "decision_reference": null,
-        "content_digest": null,
-        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
-      },
       "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
       "operational_conditions": [
-        "assinatura identificada e datada vinculada ao hash do candidato",
+        "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
-        "fontes por campo materializadas",
-        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
-        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+        "fontes por campo materializadas e aprovadas no catalogo",
+        "catalogo e permissao promovidos juntos por publicador autorizado",
+        "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+        "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
       ],
       "selected_product_proposal": "COMMERCIAL_POLIGUARD_MSD",
       "field_evidence": {
@@ -394,6 +442,34 @@
         "registration_number": "EV_MAPA_REGISTROS_2014",
         "registration_current_validity": null,
         "full_current_label": null
+      },
+      "catalog_review_request": {
+        "reviewer_role": "authorized_catalog_reviewer",
+        "reviewer_name": null,
+        "actor_id": null,
+        "approved_at": null,
+        "decision_reference": null,
+        "reviewed_content_digest": null,
+        "decision_status": "PENDING",
+        "requires_farm_veterinarian": false,
+        "requires_crmv_by_default": false,
+        "requires_specific_farm": false,
+        "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+      },
+      "farm_activation_requirements": {
+        "actor": "authorized_farm_user",
+        "confirmation_required": true,
+        "context_definition": {},
+        "professional_identification_required_by_default": false
+      },
+      "execution_compliance": {
+        "evaluated_at": "execution_and_official_proof",
+        "real_product_required_when_applicable": true,
+        "professional_required_only_when_applicable": true,
+        "professional_sve_registration_required_for_b19": false,
+        "missing_planned_professional_blocks_agenda": false,
+        "planning_authorizes_medication_dose_or_withdrawal": false,
+        "planned_professional": null
       }
     },
     {
@@ -403,7 +479,7 @@
         "recria_julho",
         "recria_setembro"
       ],
-      "category": "FARM_CONTEXT_SOURCE_REQUIRED",
+      "category": "GLOBAL_FIELD_REVIEW_REQUIRED",
       "technically_ready_for_single_decision": false,
       "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
       "evidence_source_keys": [
@@ -424,19 +500,14 @@
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
       "unresolved_inputs": [
-        "farm_context_template.fazenda_id",
-        "farm_context_template.uf",
-        "farm_context_template.region",
-        "farm_context_template.production_system",
-        "farm_context_template.eligible_categories",
-        "farm_context_template.responsible_reference",
-        "farm_context_template.regionalCalendar.uf",
-        "farm_context_template.regionalCalendar.months",
-        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
+        "catalog_review.field_source_binding.eligibility_rule",
+        "catalog_review.field_source_binding.operational_window",
+        "catalog_review.field_source_binding.product_requirement"
       ],
       "requested_decision": [
-        "Aprovar somente avaliacao/manejo no contexto preenchido e referenciado; a fonte Embrapa permanece apoio regional, sem promocao automatica de forca.",
-        "A configuracao persistente autoriza avaliar o manejo adotado, nunca aplicar medicamento ou gerar dose/carencia."
+        "Revisor autorizado deve decidir globalmente os vinculos tecnicos por campo da avaliacao/manejo; nenhuma fazenda ou veterinario executor precisa ser indicado para essa revisao.",
+        "Definir requisitos de contexto no catalogo e exigir seus valores somente no plano da fazenda/geracao individual; apoio regional nao vira fonte forte por inferencia.",
+        "Execucao permanece sujeita a produto, profissional e comprovacao aplicaveis, sem autorizar medicamento, dose ou carencia pelo manejo."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -447,7 +518,7 @@
       "requested_state_transition": {
         "execution_status": "PROPOSAL_ONLY_NOT_APPLIED",
         "requires": [
-          "signed_decision_with_actor_date_reference",
+          "catalog_review_record_with_actor_date_reference",
           "resolved_unresolved_inputs",
           "approved_field_bindings_materialized",
           "version_preconditions_satisfied"
@@ -471,71 +542,76 @@
           "farm_context_guards"
         ]
       },
-      "signature_request": {
-        "responsible_name": null,
-        "actor_id": null,
-        "professional_registration": null,
-        "professional_registration_uf": null,
-        "signed_at": null,
-        "decision_reference": null,
-        "content_digest": null,
-        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
-      },
-      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "submission_status": "READY_FOR_GLOBAL_RULE_REVIEW",
       "operational_conditions": [
-        "assinatura identificada e datada vinculada ao hash do candidato",
+        "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
-        "fontes por campo materializadas",
-        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
-        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+        "fontes por campo materializadas e aprovadas no catalogo",
+        "catalogo e permissao promovidos juntos por publicador autorizado",
+        "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+        "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
       ],
-      "farm_context_template": {
-        "fazenda_id": null,
-        "uf": null,
-        "region": null,
-        "production_system": null,
-        "eligible_categories": null,
-        "responsible_reference": null,
-        "regionalCalendar.uf": null,
-        "regionalCalendar.months": null,
-        "management=rearing": null,
-        "life_stage=recria": null
-      },
-      "farm_source_request": {
-        "id": null,
-        "source_key": null,
-        "kind": "mv_responsavel",
-        "scope": "fazenda",
-        "fazenda_id": null,
-        "issuer": null,
-        "decision_reference": null,
-        "signed_at": null,
-        "status": "NOT_ISSUED",
-        "fields": [
-          "eligibility_rule",
-          "operational_window",
-          "product_requirement"
-        ],
-        "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-        "promotes_guideline_to_strong_source": false,
-        "current_status_mapping": "Nao emitir SIM_NORMA/SIM_BULA para decisao MV por inferencia; o contrato atual nao possui status explicito de decisao MV assinada."
-      },
       "field_evidence": {
         "eligibility_rule": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         },
         "operational_window": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         },
         "product_requirement": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         }
+      },
+      "catalog_review_request": {
+        "reviewer_role": "authorized_catalog_reviewer",
+        "reviewer_name": null,
+        "actor_id": null,
+        "approved_at": null,
+        "decision_reference": null,
+        "reviewed_content_digest": null,
+        "decision_status": "PENDING",
+        "requires_farm_veterinarian": false,
+        "requires_crmv_by_default": false,
+        "requires_specific_farm": false,
+        "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+      },
+      "farm_activation_requirements": {
+        "actor": "authorized_farm_user",
+        "confirmation_required": true,
+        "context_definition": {
+          "fazenda_id": null,
+          "uf": null,
+          "region": null,
+          "production_system": null,
+          "eligible_categories": null,
+          "responsible_reference": null,
+          "regionalCalendar.uf": null,
+          "regionalCalendar.months": null,
+          "management=rearing": null,
+          "life_stage=recria": null
+        },
+        "professional_identification_required_by_default": false
+      },
+      "execution_compliance": {
+        "evaluated_at": "execution_and_official_proof",
+        "real_product_required_when_applicable": true,
+        "professional_required_only_when_applicable": true,
+        "professional_sve_registration_required_for_b19": false,
+        "missing_planned_professional_blocks_agenda": false,
+        "planning_authorizes_medication_dose_or_withdrawal": false,
+        "planned_professional": null
       }
     },
     {
@@ -543,7 +619,7 @@
       "item_keys": [
         "pre_desmama_situacional"
       ],
-      "category": "FARM_CONTEXT_SOURCE_REQUIRED",
+      "category": "GLOBAL_FIELD_REVIEW_REQUIRED",
       "technically_ready_for_single_decision": false,
       "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
       "evidence_source_keys": [
@@ -564,19 +640,14 @@
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
       "unresolved_inputs": [
-        "farm_context_template.fazenda_id",
-        "farm_context_template.uf",
-        "farm_context_template.region",
-        "farm_context_template.production_system",
-        "farm_context_template.eligible_categories",
-        "farm_context_template.responsible_reference",
-        "farm_context_template.preWeaningBasis.kind",
-        "farm_context_template.preWeaningBasis.reference",
-        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
+        "catalog_review.field_source_binding.eligibility_rule",
+        "catalog_review.field_source_binding.operational_window",
+        "catalog_review.field_source_binding.product_requirement"
       ],
       "requested_decision": [
-        "Aprovar somente avaliacao/manejo no contexto preenchido e referenciado; a fonte Embrapa permanece apoio regional, sem promocao automatica de forca.",
-        "A configuracao persistente autoriza avaliar o manejo adotado, nunca aplicar medicamento ou gerar dose/carencia."
+        "Revisor autorizado deve decidir globalmente os vinculos tecnicos por campo da avaliacao/manejo; nenhuma fazenda ou veterinario executor precisa ser indicado para essa revisao.",
+        "Definir requisitos de contexto no catalogo e exigir seus valores somente no plano da fazenda/geracao individual; apoio regional nao vira fonte forte por inferencia.",
+        "Execucao permanece sujeita a produto, profissional e comprovacao aplicaveis, sem autorizar medicamento, dose ou carencia pelo manejo."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -587,7 +658,7 @@
       "requested_state_transition": {
         "execution_status": "PROPOSAL_ONLY_NOT_APPLIED",
         "requires": [
-          "signed_decision_with_actor_date_reference",
+          "catalog_review_record_with_actor_date_reference",
           "resolved_unresolved_inputs",
           "approved_field_bindings_materialized",
           "version_preconditions_satisfied"
@@ -611,70 +682,75 @@
           "farm_context_guards"
         ]
       },
-      "signature_request": {
-        "responsible_name": null,
-        "actor_id": null,
-        "professional_registration": null,
-        "professional_registration_uf": null,
-        "signed_at": null,
-        "decision_reference": null,
-        "content_digest": null,
-        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
-      },
-      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "submission_status": "READY_FOR_GLOBAL_RULE_REVIEW",
       "operational_conditions": [
-        "assinatura identificada e datada vinculada ao hash do candidato",
+        "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
-        "fontes por campo materializadas",
-        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
-        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+        "fontes por campo materializadas e aprovadas no catalogo",
+        "catalogo e permissao promovidos juntos por publicador autorizado",
+        "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+        "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
       ],
-      "farm_context_template": {
-        "fazenda_id": null,
-        "uf": null,
-        "region": null,
-        "production_system": null,
-        "eligible_categories": null,
-        "responsible_reference": null,
-        "preWeaningBasis.kind": null,
-        "preWeaningBasis.reference": null,
-        "management=pre_weaning": null
-      },
-      "farm_source_request": {
-        "id": null,
-        "source_key": null,
-        "kind": "mv_responsavel",
-        "scope": "fazenda",
-        "fazenda_id": null,
-        "issuer": null,
-        "decision_reference": null,
-        "signed_at": null,
-        "status": "NOT_ISSUED",
-        "fields": [
-          "eligibility_rule",
-          "operational_window",
-          "product_requirement"
-        ],
-        "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-        "promotes_guideline_to_strong_source": false,
-        "current_status_mapping": "Nao emitir SIM_NORMA/SIM_BULA para decisao MV por inferencia; o contrato atual nao possui status explicito de decisao MV assinada."
-      },
       "field_evidence": {
         "eligibility_rule": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         },
         "operational_window": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         },
         "product_requirement": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         }
+      },
+      "catalog_review_request": {
+        "reviewer_role": "authorized_catalog_reviewer",
+        "reviewer_name": null,
+        "actor_id": null,
+        "approved_at": null,
+        "decision_reference": null,
+        "reviewed_content_digest": null,
+        "decision_status": "PENDING",
+        "requires_farm_veterinarian": false,
+        "requires_crmv_by_default": false,
+        "requires_specific_farm": false,
+        "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+      },
+      "farm_activation_requirements": {
+        "actor": "authorized_farm_user",
+        "confirmation_required": true,
+        "context_definition": {
+          "fazenda_id": null,
+          "uf": null,
+          "region": null,
+          "production_system": null,
+          "eligible_categories": null,
+          "responsible_reference": null,
+          "preWeaningBasis.kind": null,
+          "preWeaningBasis.reference": null,
+          "management=pre_weaning": null
+        },
+        "professional_identification_required_by_default": false
+      },
+      "execution_compliance": {
+        "evaluated_at": "execution_and_official_proof",
+        "real_product_required_when_applicable": true,
+        "professional_required_only_when_applicable": true,
+        "professional_sve_registration_required_for_b19": false,
+        "missing_planned_professional_blocks_agenda": false,
+        "planning_authorizes_medication_dose_or_withdrawal": false,
+        "planned_professional": null
       }
     },
     {
@@ -682,7 +758,7 @@
       "item_keys": [
         "pre_confinamento_dose_unica"
       ],
-      "category": "FARM_CONTEXT_SOURCE_REQUIRED",
+      "category": "GLOBAL_FIELD_REVIEW_REQUIRED",
       "technically_ready_for_single_decision": false,
       "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
       "evidence_source_keys": [
@@ -703,21 +779,14 @@
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
       "unresolved_inputs": [
-        "farm_context_template.fazenda_id",
-        "farm_context_template.uf",
-        "farm_context_template.region",
-        "farm_context_template.production_system",
-        "farm_context_template.eligible_categories",
-        "farm_context_template.responsible_reference",
-        "farm_context_template.scheduledContext.date",
-        "farm_context_template.scheduledContext.animalIds",
-        "farm_context_template.scheduledContext.reference",
-        "farm_context_template.destination_or_management",
-        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
+        "catalog_review.field_source_binding.eligibility_rule",
+        "catalog_review.field_source_binding.operational_window",
+        "catalog_review.field_source_binding.product_requirement"
       ],
       "requested_decision": [
-        "Aprovar somente avaliacao/manejo no contexto preenchido e referenciado; a fonte Embrapa permanece apoio regional, sem promocao automatica de forca.",
-        "A configuracao persistente autoriza avaliar o manejo adotado, nunca aplicar medicamento ou gerar dose/carencia."
+        "Revisor autorizado deve decidir globalmente os vinculos tecnicos por campo da avaliacao/manejo; nenhuma fazenda ou veterinario executor precisa ser indicado para essa revisao.",
+        "Definir requisitos de contexto no catalogo e exigir seus valores somente no plano da fazenda/geracao individual; apoio regional nao vira fonte forte por inferencia.",
+        "Execucao permanece sujeita a produto, profissional e comprovacao aplicaveis, sem autorizar medicamento, dose ou carencia pelo manejo."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -728,7 +797,7 @@
       "requested_state_transition": {
         "execution_status": "PROPOSAL_ONLY_NOT_APPLIED",
         "requires": [
-          "signed_decision_with_actor_date_reference",
+          "catalog_review_record_with_actor_date_reference",
           "resolved_unresolved_inputs",
           "approved_field_bindings_materialized",
           "version_preconditions_satisfied"
@@ -752,72 +821,77 @@
           "farm_context_guards"
         ]
       },
-      "signature_request": {
-        "responsible_name": null,
-        "actor_id": null,
-        "professional_registration": null,
-        "professional_registration_uf": null,
-        "signed_at": null,
-        "decision_reference": null,
-        "content_digest": null,
-        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
-      },
-      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "submission_status": "READY_FOR_GLOBAL_RULE_REVIEW",
       "operational_conditions": [
-        "assinatura identificada e datada vinculada ao hash do candidato",
+        "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
-        "fontes por campo materializadas",
-        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
-        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+        "fontes por campo materializadas e aprovadas no catalogo",
+        "catalogo e permissao promovidos juntos por publicador autorizado",
+        "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+        "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
       ],
-      "farm_context_template": {
-        "fazenda_id": null,
-        "uf": null,
-        "region": null,
-        "production_system": null,
-        "eligible_categories": null,
-        "responsible_reference": null,
-        "scheduledContext.date": null,
-        "scheduledContext.animalIds": null,
-        "scheduledContext.reference": null,
-        "management=pre_feedlot": null,
-        "destination_or_management": null
-      },
-      "farm_source_request": {
-        "id": null,
-        "source_key": null,
-        "kind": "mv_responsavel",
-        "scope": "fazenda",
-        "fazenda_id": null,
-        "issuer": null,
-        "decision_reference": null,
-        "signed_at": null,
-        "status": "NOT_ISSUED",
-        "fields": [
-          "eligibility_rule",
-          "operational_window",
-          "product_requirement"
-        ],
-        "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-        "promotes_guideline_to_strong_source": false,
-        "current_status_mapping": "Nao emitir SIM_NORMA/SIM_BULA para decisao MV por inferencia; o contrato atual nao possui status explicito de decisao MV assinada."
-      },
       "field_evidence": {
         "eligibility_rule": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         },
         "operational_window": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         },
         "product_requirement": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         }
+      },
+      "catalog_review_request": {
+        "reviewer_role": "authorized_catalog_reviewer",
+        "reviewer_name": null,
+        "actor_id": null,
+        "approved_at": null,
+        "decision_reference": null,
+        "reviewed_content_digest": null,
+        "decision_status": "PENDING",
+        "requires_farm_veterinarian": false,
+        "requires_crmv_by_default": false,
+        "requires_specific_farm": false,
+        "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+      },
+      "farm_activation_requirements": {
+        "actor": "authorized_farm_user",
+        "confirmation_required": true,
+        "context_definition": {
+          "fazenda_id": null,
+          "uf": null,
+          "region": null,
+          "production_system": null,
+          "eligible_categories": null,
+          "responsible_reference": null,
+          "scheduledContext.date": null,
+          "scheduledContext.animalIds": null,
+          "scheduledContext.reference": null,
+          "management=pre_feedlot": null,
+          "destination_or_management": null
+        },
+        "professional_identification_required_by_default": false
+      },
+      "execution_compliance": {
+        "evaluated_at": "execution_and_official_proof",
+        "real_product_required_when_applicable": true,
+        "professional_required_only_when_applicable": true,
+        "professional_sve_registration_required_for_b19": false,
+        "missing_planned_professional_blocks_agenda": false,
+        "planning_authorizes_medication_dose_or_withdrawal": false,
+        "planned_professional": null
       }
     },
     {
@@ -825,7 +899,7 @@
       "item_keys": [
         "matrizes_pre_parto_antiparasitario"
       ],
-      "category": "FARM_CONTEXT_SOURCE_REQUIRED",
+      "category": "GLOBAL_FIELD_REVIEW_REQUIRED",
       "technically_ready_for_single_decision": false,
       "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
       "evidence_source_keys": [
@@ -846,20 +920,14 @@
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
       "unresolved_inputs": [
-        "farm_context_template.fazenda_id",
-        "farm_context_template.uf",
-        "farm_context_template.region",
-        "farm_context_template.production_system",
-        "farm_context_template.eligible_categories",
-        "farm_context_template.responsible_reference",
-        "farm_context_template.scheduledContext.date",
-        "farm_context_template.scheduledContext.animalIds",
-        "farm_context_template.scheduledContext.reference",
-        "assinatura da decisao responsavel delimitada a fazenda e aos tres campos criticos"
+        "catalog_review.field_source_binding.eligibility_rule",
+        "catalog_review.field_source_binding.operational_window",
+        "catalog_review.field_source_binding.product_requirement"
       ],
       "requested_decision": [
-        "Aprovar somente avaliacao/manejo no contexto preenchido e referenciado; a fonte Embrapa permanece apoio regional, sem promocao automatica de forca.",
-        "A configuracao persistente autoriza avaliar o manejo adotado, nunca aplicar medicamento ou gerar dose/carencia."
+        "Revisor autorizado deve decidir globalmente os vinculos tecnicos por campo da avaliacao/manejo; nenhuma fazenda ou veterinario executor precisa ser indicado para essa revisao.",
+        "Definir requisitos de contexto no catalogo e exigir seus valores somente no plano da fazenda/geracao individual; apoio regional nao vira fonte forte por inferencia.",
+        "Execucao permanece sujeita a produto, profissional e comprovacao aplicaveis, sem autorizar medicamento, dose ou carencia pelo manejo."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -870,7 +938,7 @@
       "requested_state_transition": {
         "execution_status": "PROPOSAL_ONLY_NOT_APPLIED",
         "requires": [
-          "signed_decision_with_actor_date_reference",
+          "catalog_review_record_with_actor_date_reference",
           "resolved_unresolved_inputs",
           "approved_field_bindings_materialized",
           "version_preconditions_satisfied"
@@ -894,73 +962,78 @@
           "farm_context_guards"
         ]
       },
-      "signature_request": {
-        "responsible_name": null,
-        "actor_id": null,
-        "professional_registration": null,
-        "professional_registration_uf": null,
-        "signed_at": null,
-        "decision_reference": null,
-        "content_digest": null,
-        "statement": "Aprovar somente o escopo e a versao deste conjunto, apos resolver seus campos obrigatorios; planejamento nao autoriza execucao, medicamento, dose ou carencia."
-      },
-      "submission_status": "FARM_INSTANTIATION_REQUIRED",
+      "submission_status": "READY_FOR_GLOBAL_RULE_REVIEW",
       "operational_conditions": [
-        "assinatura identificada e datada vinculada ao hash do candidato",
+        "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
-        "fontes por campo materializadas",
-        "catalogo e permissao promovidos juntos por publicador de aprovacao autorizado",
-        "plano da fazenda ativado explicitamente; nenhuma execucao automatica"
+        "fontes por campo materializadas e aprovadas no catalogo",
+        "catalogo e permissao promovidos juntos por publicador autorizado",
+        "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+        "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
       ],
-      "farm_context_template": {
-        "fazenda_id": null,
-        "uf": null,
-        "region": null,
-        "production_system": null,
-        "eligible_categories": null,
-        "responsible_reference": null,
-        "scheduledContext.date": null,
-        "scheduledContext.animalIds": null,
-        "scheduledContext.reference": null,
-        "reproductiveContext=prepartum": null,
-        "sex=femea": null,
-        "intervention_scope=assessment_only": null
-      },
-      "farm_source_request": {
-        "id": null,
-        "source_key": null,
-        "kind": "mv_responsavel",
-        "scope": "fazenda",
-        "fazenda_id": null,
-        "issuer": null,
-        "decision_reference": null,
-        "signed_at": null,
-        "status": "NOT_ISSUED",
-        "fields": [
-          "eligibility_rule",
-          "operational_window",
-          "product_requirement"
-        ],
-        "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-        "promotes_guideline_to_strong_source": false,
-        "current_status_mapping": "Nao emitir SIM_NORMA/SIM_BULA para decisao MV por inferencia; o contrato atual nao possui status explicito de decisao MV assinada."
-      },
       "field_evidence": {
         "eligibility_rule": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         },
         "operational_window": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         },
         "product_requirement": {
-          "basis": "decisao responsavel da fazenda ainda nao emitida",
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
-          "product_required": false
+          "coverage_review_stage": "catalog_review",
+          "review_status": "PENDING",
+          "product_required": false,
+          "requires_specific_farm_or_farm_mv_for_review": false
         }
+      },
+      "catalog_review_request": {
+        "reviewer_role": "authorized_catalog_reviewer",
+        "reviewer_name": null,
+        "actor_id": null,
+        "approved_at": null,
+        "decision_reference": null,
+        "reviewed_content_digest": null,
+        "decision_status": "PENDING",
+        "requires_farm_veterinarian": false,
+        "requires_crmv_by_default": false,
+        "requires_specific_farm": false,
+        "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+      },
+      "farm_activation_requirements": {
+        "actor": "authorized_farm_user",
+        "confirmation_required": true,
+        "context_definition": {
+          "fazenda_id": null,
+          "uf": null,
+          "region": null,
+          "production_system": null,
+          "eligible_categories": null,
+          "responsible_reference": null,
+          "scheduledContext.date": null,
+          "scheduledContext.animalIds": null,
+          "scheduledContext.reference": null,
+          "reproductiveContext=prepartum": null,
+          "sex=femea": null,
+          "intervention_scope=assessment_only": null
+        },
+        "professional_identification_required_by_default": false
+      },
+      "execution_compliance": {
+        "evaluated_at": "execution_and_official_proof",
+        "real_product_required_when_applicable": true,
+        "professional_required_only_when_applicable": true,
+        "professional_sve_registration_required_for_b19": false,
+        "missing_planned_professional_blocks_agenda": false,
+        "planning_authorizes_medication_dose_or_withdrawal": false,
+        "planned_professional": null
       }
     },
     {
@@ -1649,7 +1722,7 @@
                 "eligibility_rule"
               ],
               "metadata": {
-                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION",
                 "coverage_ids": [
                   "d247d101-eeae-46f4-8b9b-3da1c954af9b",
                   "4f910d70-d9d8-4b8b-959a-257a5447859d",
@@ -1670,7 +1743,7 @@
                 "eligibility_rule"
               ],
               "metadata": {
-                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION",
                 "coverage_ids": [
                   "6680c8da-8f0a-45c3-b47d-81c14af72bda",
                   "6074dba2-6055-41ec-a4bf-2a2ea49ff817"
@@ -1690,7 +1763,7 @@
                 "eligibility_rule"
               ],
               "metadata": {
-                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION",
                 "coverage_ids": [
                   "531324a5-2b26-493e-9c33-8c652bcc58c2",
                   "4e30c65d-1334-45be-b548-0bcfb899dcd6"
@@ -1712,7 +1785,7 @@
                 "operational_window"
               ],
               "metadata": {
-                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION",
                 "coverage_ids": [
                   "631b58f2-49ac-410e-904c-e8d80d403d4c"
                 ]
@@ -1733,7 +1806,7 @@
                 "product_requirement"
               ],
               "metadata": {
-                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION",
                 "coverage_ids": [
                   "d247d101-eeae-46f4-8b9b-3da1c954af9b"
                 ]
@@ -1752,7 +1825,7 @@
                 "product_requirement"
               ],
               "metadata": {
-                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION",
                 "coverage_ids": [
                   "6680c8da-8f0a-45c3-b47d-81c14af72bda"
                 ]
@@ -1771,7 +1844,7 @@
                 "product_requirement"
               ],
               "metadata": {
-                "bindingStatus": "PROPOSED_PENDING_SIGNATURE",
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION",
                 "coverage_ids": [
                   "531324a5-2b26-493e-9c33-8c652bcc58c2"
                 ]
@@ -2594,7 +2667,8 @@
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
             },
             "planning_scope": "assessment_only",
-            "farm_decision_required": true
+            "farm_context_required_at_generation": true,
+            "catalog_field_review_required": true
           }
         },
         "allows_agenda_auto": false,
@@ -2692,7 +2766,8 @@
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
             },
             "planning_scope": "assessment_only",
-            "farm_decision_required": true
+            "farm_context_required_at_generation": true,
+            "catalog_field_review_required": true
           }
         },
         "allows_agenda_auto": false,
@@ -2790,7 +2865,8 @@
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
             },
             "planning_scope": "assessment_only",
-            "farm_decision_required": true
+            "farm_context_required_at_generation": true,
+            "catalog_field_review_required": true
           }
         },
         "allows_agenda_auto": false,
@@ -2881,7 +2957,8 @@
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
             },
             "planning_scope": "assessment_only",
-            "farm_decision_required": true
+            "farm_context_required_at_generation": true,
+            "catalog_field_review_required": true
           }
         },
         "allows_agenda_auto": false,
@@ -2972,7 +3049,8 @@
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
             },
             "planning_scope": "assessment_only",
-            "farm_decision_required": true
+            "farm_context_required_at_generation": true,
+            "catalog_field_review_required": true
           }
         },
         "allows_agenda_auto": false,
@@ -3066,7 +3144,8 @@
               "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada."
             },
             "planning_scope": "assessment_only",
-            "farm_decision_required": true
+            "farm_context_required_at_generation": true,
+            "catalog_field_review_required": true
           }
         },
         "allows_agenda_auto": false,
@@ -3092,7 +3171,7 @@
         "531324a5-2b26-493e-9c33-8c652bcc58c2",
         "4e30c65d-1334-45be-b548-0bcfb899dcd6"
       ],
-      "status": "PROPOSED_MAPPING_REQUIRES_SIGNED_DECISION",
+      "status": "PROPOSED_MAPPING_REQUIRES_CATALOG_DECISION",
       "interpretation": "Escopo de avaliação genérica da classe B19, não de produto comercial ou aplicação."
     },
     {
@@ -3101,7 +3180,7 @@
       "registered_coverage_ids": [
         "631b58f2-49ac-410e-904c-e8d80d403d4c"
       ],
-      "status": "PROPOSED_MAPPING_REQUIRES_SIGNED_DECISION",
+      "status": "PROPOSED_MAPPING_REQUIRES_CATALOG_DECISION",
       "interpretation": "Escopo de avaliação genérica da classe B19, não de produto comercial ou aplicação."
     },
     {
@@ -3112,7 +3191,7 @@
         "6680c8da-8f0a-45c3-b47d-81c14af72bda",
         "531324a5-2b26-493e-9c33-8c652bcc58c2"
       ],
-      "status": "PROPOSED_MAPPING_REQUIRES_SIGNED_DECISION",
+      "status": "PROPOSED_MAPPING_REQUIRES_CATALOG_DECISION",
       "interpretation": "Escopo de avaliação genérica da classe B19, não de produto comercial ou aplicação."
     }
   ],
@@ -3665,8 +3744,8 @@
     }
   ],
   "application_preconditions": [
-    "Decisão humana assinada por conjunto, com ator, data e referência; preencher dados técnicos pendentes do conjunto antes de aprovar.",
-    "Materializar os vínculos e coverage por campo aprovados sem promover fonte de apoio por inferência; estados/flags só ficam ativos após essa decisão.",
+    "Decisao curatorial rastreavel por conjunto com ator autorizado, data e referencia ao conteudo revisado; nao exige MV da fazenda por padrao.",
+    "Materializar vinculos e coverage aprovados por campo sem promover apoio por inferencia; ativacao do plano e conformidade de execucao sao etapas distintas.",
     "Revalidar versão esperada, schema/RLS e writer de importação em tarefa autorizada. Não sobrescrever versões históricas nem reinterpretar Eventos.",
     "Este documento não autoriza importação, flags, migration, deploy ou sincronização remota."
   ],
@@ -3674,8 +3753,11 @@
     "globally_submission_ready_items": 1,
     "farm_evaluation_forms_prepared": 6,
     "commercial_items_with_specific_evidence_gaps": 7,
-    "signable_with_identified_responsible_now": 0,
-    "operational_authorizations": 0
+    "operational_authorizations": 0,
+    "global_rule_submissions_prepared": 7,
+    "global_rules_requiring_field_source_review": 6,
+    "farm_details_required_for_catalog_review": false,
+    "catalog_decisions_recorded": 0
   },
   "environment_verification": {
     "checked_at": "2026-10-17",
@@ -3906,8 +3988,37 @@
     }
   ],
   "publication_contract_gaps": [
-    "Importador canonico existente publica apenas rascunhos e rejeita aprovacao/flags operacionais. Nao existe publicador autorizado de decisao assinada que promova status, fontes e permissao em transacao com CAS.",
-    "Fonte MV existe como kind, mas fonte forte exige evidence_status SIM_BULA/SIM_NORMA. Falta representacao explicita de decisao MV assinada; nao rotular orientacao privada como norma/bula para passar no guard.",
+    "Importador existente publica apenas rascunhos e rejeita flags operacionais. Falta publicador autorizado da decisao curatorial por ator/data/referencia e status/fontes/permissao em transacao com CAS.",
+    "Os seis itens de avaliacao precisam de revisao global dos vinculos de fonte por campo. Isso nao exige identificar fazenda ou MV executor; fonte de apoio nao e promovida automaticamente. Uma decisao clinica MV especifica, se necessaria, pertence a sua etapa propria.",
     "Falta convergencia multidispositivo do plano e das Agendas locais; nao habilitar por flags."
-  ]
+  ],
+  "responsibility_model": {
+    "catalog_review": {
+      "actor_role": "authorized_catalog_reviewer",
+      "requires_farm_veterinarian": false,
+      "requires_professional_registration_by_default": false,
+      "requires_specific_farm": false,
+      "required_decision_fields": [
+        "actor_id",
+        "approved_at",
+        "decision_reference",
+        "reviewed_content_digest"
+      ],
+      "basis": "Fontes tecnicas/normativas e versao; exigencia profissional somente se houver fundamento especifico para validar a regra."
+    },
+    "farm_activation": {
+      "actor_role": "authorized_farm_user",
+      "requires_farm_veterinarian_by_default": false,
+      "context_evaluated_at": "plan_activation_and_individual_generation",
+      "requirements": "Confirmacao do usuario e contexto persistente aplicavel; ato tecnico especifico conserva sua exigencia propria."
+    },
+    "execution_compliance": {
+      "actor_role": "professional_or_responsible_required_by_applicable_rule",
+      "requires_real_product_when_applicable": true,
+      "requires_factual_record": true,
+      "official_proof_when_applicable": true,
+      "b19_veterinarian_registration": "Cadastro adequado no SVE exigido na execucao; CRMV-UF isolado nao comprova esse cadastro.",
+      "missing_planned_professional_blocks_assessment_agenda": false
+    }
+  }
 }

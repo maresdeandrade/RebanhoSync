@@ -31,6 +31,25 @@ describe("cobertura integral do payload normalizado — 20 itens", () => {
   });
   afterEach(async () => { vi.restoreAllMocks(); await clear(); vi.unstubAllGlobals(); });
 
+  it.each(automaticItemKeys)("regra aprovada permite Agenda sem veterinário executor identificado: %s", async (key) => {
+    // Explicit catalog approval in a disposable fixture, never an operational approval.
+    await seedNormalizedFixture();
+    const original = normalizedItems.find((item) => item.logical_item_key === key)!;
+    const date = dateFor(original);
+    await seedNormalizedHistory(key, "farm", date);
+    const draft = await normalizedDraft("farm", [key], date);
+    if (key === "pre_desmama_situacional") {
+      draft.ruleContexts[original.id].preWeaningBasis = { kind: "intensive_dairy", reference: "Sistema intensivo/leiteiro declarado na fixture" };
+    }
+    await saveSanitaryAutomationPlanV2({ fazendaId: "farm", actorId: "fixture-producer", expectedRevision: 0, draft, enabled: true, confirmed: true });
+    const facts = await db.event_eventos.count();
+    expect((await generate(date)).created).toBeGreaterThan(0);
+    expect((await generate(date)).created).toBe(0);
+    expect(await db.event_eventos.count()).toBe(facts);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+    if (key === "b19_femeas_3_8_meses") expect(original.requires_mv_responsavel).toBe(true);
+  });
+
   it.each(normalizedItems.map((item) => [item.logical_item_key, item] as const))("classifica e testa elegibilidade e exclusão: %s", async (key, original) => {
     await seedNormalizedFixture();
     const date = dateFor(original);

@@ -14,14 +14,14 @@ const packet = JSON.parse(packetBytes);
 const build = (proposal = packet) => buildApprovalCandidate(canonical, proposal, bytes, packetBytes);
 
 describe("candidato versionado sem aprovacao/publicacao", () => {
-  it("vincula formulario separado ao hash exato do candidato e as 14 versoes sem assinar", () => {
+  it("vincula revisao curatorial ao hash exato e as 14 versoes sem registrar aprovacao", () => {
     const candidate = build();
     const form = buildApprovalForm(candidate, packet);
     expect(JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_APROVACAO_PENDENTE_20261017.json"))).toEqual(form);
     expect(form.candidate_sha256).toBe(createHash("sha256").update(JSON.stringify(candidate, null, 2) + "\n").digest("hex"));
     expect(form.decisions).toHaveLength(8);
     expect(form.decisions.flatMap((decision) => decision.versions)).toHaveLength(14);
-    expect(form.decisions.every((decision) => decision.signature.actor_id === null && decision.signature.signed_at === null)).toBe(true);
+    expect(form.decisions.every((decision) => decision.catalog_review.actor_id === null && decision.catalog_review.approved_at === null)).toBe(true);
     expect(form.operational_authorization).toBe(false);
   });
   it("produz deterministicamente 20 itens, 14 novas versoes e preserva os seis restritos", () => {
@@ -54,12 +54,12 @@ describe("candidato versionado sem aprovacao/publicacao", () => {
     expect(row.product_id ?? null).toBeNull();
     expect(row.snapshot_template.metadata.planning_scope).toBe("assessment_only");
     for (const field of ["eligibility_rule", "operational_window", "product_requirement"])
-      expect(row.source_refs_by_field[field].every((source) => source.metadata.bindingStatus === "PROPOSED_PENDING_SIGNATURE")).toBe(true);
+      expect(row.source_refs_by_field[field].every((source) => source.metadata.bindingStatus === "PROPOSED_PENDING_CATALOG_DECISION")).toBe(true);
   });
 
-  it("os seis manejos dispensam produto e continuam bloqueados sem fonte/decisao da fazenda", () => {
+  it("os seis manejos dispensam produto e continuam sem liberacao antes da revisao curatorial", () => {
     const data = build().payload;
-    const groups = packet.decision_sets.filter((group) => group.farm_context_template);
+    const groups = packet.decision_sets.filter((group) => group.category === "GLOBAL_FIELD_REVIEW_REQUIRED");
     const keys = groups.flatMap((group) => group.item_keys);
     expect(keys).toHaveLength(6);
     for (const row of data.protocol_item_rows.filter((item) => keys.includes(item.logical_item_key))) {
@@ -68,7 +68,20 @@ describe("candidato versionado sem aprovacao/publicacao", () => {
       const protocol = data.protocol_rows.find((item) => item.id === row.protocol_id);
       expect(sanitaryPlanningBlockersV2(adaptSanitaryProtocolV2Row(protocol), adaptSanitaryProtocolItemV2Row(row), "automatic").length).toBeGreaterThan(0);
     }
-    expect(groups.every((group) => group.farm_source_request.status === "NOT_ISSUED")).toBe(true);
+    expect(groups.every((group) => group.submission_status === "READY_FOR_GLOBAL_RULE_REVIEW")).toBe(true);
+    expect(groups.every((group) => group.catalog_review_request.requires_specific_farm === false)).toBe(true);
+    expect(groups.every((group) => Object.keys(group.farm_activation_requirements.context_definition).length > 0)).toBe(true);
+  });
+
+  it("separa revisor global, ativacao pelo usuario e profissional exigido na execucao", () => {
+    const form = buildApprovalForm(build(), packet);
+    for (const decision of form.decisions) {
+      expect(decision.catalog_review).toMatchObject({ reviewer_role: "authorized_catalog_reviewer", requires_farm_veterinarian: false, requires_crmv_by_default: false, requires_specific_farm: false });
+      expect(decision.catalog_review).not.toHaveProperty("professional_registration");
+      expect(decision.farm_activation).toMatchObject({ actor: "authorized_farm_user", confirmation_required: true, professional_identification_required_by_default: false });
+      expect(decision.execution_compliance).toMatchObject({ missing_planned_professional_blocks_agenda: false, planning_authorizes_medication_dose_or_withdrawal: false });
+    }
+    expect(form.decisions.find((decision) => decision.id === "B19").execution_compliance.professional_sve_registration_required_for_b19).toBe(true);
   });
 
   it("adiciona tres produtos comerciais em rascunho sem reinterpretar genericos ou vincular os sete itens", () => {

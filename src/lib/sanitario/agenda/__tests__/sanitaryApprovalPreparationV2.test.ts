@@ -24,7 +24,7 @@ describe("preparação curatorial sem autorização operacional", () => {
     expect(count("READY_FOR_APPROVAL")).toBe(1);
     expect(count("PRODUCT_SCHEME_REQUIRED")).toBe(5);
     expect(count("COMMERCIAL_SOURCE_REQUIRED")).toBe(2);
-    expect(count("FARM_CONTEXT_SOURCE_REQUIRED")).toBe(6);
+    expect(count("GLOBAL_FIELD_REVIEW_REQUIRED")).toBe(6);
     expect(count("EXPLICIT_AUTO_RESTRICTION")).toBe(6);
     expect(groups.filter((group) => group.technically_ready_for_single_decision).map((group) => group.id)).toEqual(["B19"]);
   });
@@ -43,7 +43,7 @@ describe("preparação curatorial sem autorização operacional", () => {
       expect(group.requested_state_transition).toMatchObject({ execution_status: "PROPOSAL_ONLY_NOT_APPLIED",
         protocol_after_approval: { status: "active", approval_status: "approved", metadata: { agenda_allowed: true, approved_for_catalog: true } },
         item_after_approval: { status: "active", allows_agenda_auto: true } });
-      expect(group.requested_state_transition!.requires).toContain("signed_decision_with_actor_date_reference");
+      expect(group.requested_state_transition!.requires).toContain("catalog_review_record_with_actor_date_reference");
       expect(group.requested_state_transition!.requires).toContain("approved_field_bindings_materialized");
     }
   });
@@ -92,7 +92,7 @@ describe("preparação curatorial sem autorização operacional", () => {
       expect(group.evidence_coverage_ids.every((id) => coverage.has(id))).toBe(true);
     }
     for (const binding of packet.proposed_source_bindings) {
-      expect(binding.status).toBe("PROPOSED_MAPPING_REQUIRES_SIGNED_DECISION");
+      expect(binding.status).toBe("PROPOSED_MAPPING_REQUIRES_CATALOG_DECISION");
       expect(binding.registered_coverage_ids.length).toBeGreaterThan(0);
       expect(binding.registered_coverage_ids.every((id) => coverage.get(id)?.coverage_status === "covers")).toBe(true);
     }
