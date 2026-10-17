@@ -57,7 +57,7 @@ export const AppShell = () => {
       <div className="flex min-h-0 flex-1">
         <SideNav />
 
-        <main className="min-w-0 flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 md:pb-6 lg:py-8">
+        <main className="min-w-0 flex-1 pb-[var(--mobile-bottom-nav-clearance)] pt-5 md:pb-6 lg:py-8">
           <div className="app-content">
             <Outlet />
           </div>
