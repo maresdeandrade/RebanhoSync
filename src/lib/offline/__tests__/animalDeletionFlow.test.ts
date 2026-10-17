@@ -1,10 +1,12 @@
 /** @vitest-environment jsdom */
 import "fake-indexeddb/auto";
+import Dexie from "dexie";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const remote = vi.hoisted(() => ({
   rows: new Map<string, Array<Record<string, unknown>>>(),
   farmFilters: vi.fn(),
+  fail: false,
 }));
 
 vi.mock("@/lib/supabase", () => ({
@@ -24,14 +26,15 @@ vi.mock("@/lib/supabase", () => ({
     },
     from: vi.fn((table: string) => ({
       select: vi.fn(() => ({
-        eq: vi.fn(async (column: string, value: string) => {
+        eq: vi.fn((column: string, value: string) => {
           remote.farmFilters(table, column, value);
-          return {
+          const result = Promise.resolve({
             data: (remote.rows.get(table) ?? []).filter(
               (row) => row.fazenda_id === value,
             ),
-            error: null,
-          };
+            error: remote.fail ? { message: "offline during pull" } : null,
+          });
+          return Object.assign(result, { in: vi.fn(() => result) });
         }),
       })),
     })),
@@ -44,7 +47,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 
 import { db } from "../db";
 import { seedLocalOwner } from "./ownershipTestFixture";
-import { createGesture } from "../ops";
+import { createGesture, retryRejectedOperation } from "../ops";
 import { pullDataForFarm } from "../pull";
 import { processGesture } from "../syncWorker";
 import type { Animal, Gesture, Operation } from "../types";
@@ -129,10 +132,43 @@ async function operationalAnimals(targetFarmId = farmId) {
     .toArray();
 }
 
+async function createEditThenDelete(removeProjection = true) {
+  const animal = makeAnimal();
+  await db.state_animais.put(animal);
+  const editTx = await createGesture(farmId, [
+    {
+      table: "animais",
+      action: "UPDATE",
+      record: { id: animalId, observacoes: "edicao offline" },
+    },
+  ]);
+  const [editOp] = await db.queue_ops
+    .where("client_tx_id")
+    .equals(editTx)
+    .toArray();
+  const deleteTx = await createGesture(farmId, [
+    { table: "animais", action: "DELETE", record: { id: animalId } },
+  ]);
+  const deleteOp = await getDeleteOperation(deleteTx);
+  if (removeProjection) await db.state_animais.delete(animalId);
+  remote.rows.set("animais", [{ ...animal }]);
+  vi.mocked(fetch).mockResolvedValueOnce(
+    syncResponse([
+      {
+        op_id: editOp.client_op_id,
+        status: "REJECTED",
+        reason_code: "UPDATE_DENIED",
+      },
+    ]),
+  );
+  return { animal, editTx, editOp, deleteTx, deleteOp };
+}
+
 describe("animal deletion offline flow", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     remote.rows.clear();
+    remote.fail = false;
     localStorage.clear();
     await Promise.all([
       db.state_animais.clear(),
@@ -203,6 +239,352 @@ describe("animal deletion offline flow", () => {
       id: animalId,
       observacoes: "preservar no rollback",
     });
+  });
+
+  it.each([
+    { removeProjection: true, syncState: undefined },
+    { removeProjection: false, syncState: "PENDING" as const },
+    { removeProjection: true, syncState: "RETRYABLE" as const },
+  ])(
+    "preserva DELETE $syncState apos rejeicao de edicao (remove=$removeProjection)",
+    async ({ removeProjection, syncState }) => {
+      const { animal, editTx, deleteTx, deleteOp } =
+        await createEditThenDelete(removeProjection);
+      await db.queue_ops.update(deleteOp.client_op_id, {
+        sync_state: syncState,
+      });
+      const otherAnimal = makeAnimal({
+        id: "unrelated-animal",
+        fazenda_id: otherFarmId,
+      });
+      await db.state_animais.put(otherAnimal);
+      const otherTx = await createGesture(otherFarmId, [
+        { table: "animais", action: "DELETE", record: { id: otherAnimal.id } },
+      ]);
+      const otherOp = await getDeleteOperation(otherTx);
+      const otherState = await db.state_animais.get(otherAnimal.id);
+
+      await processGesture(await getGesture(editTx));
+
+      expect(await getGesture(editTx)).toMatchObject({ status: "REJECTED" });
+      expect(await getGesture(deleteTx)).toMatchObject({ status: "PENDING" });
+      expect(await operationalAnimals()).toEqual([]);
+      expect(await db.queue_ops.get(deleteOp.client_op_id)).toEqual({
+        ...deleteOp,
+        sync_state: syncState,
+        before_snapshot: deleteOp.before_snapshot,
+      });
+      expect(await db.queue_ops.get(otherOp.client_op_id)).toEqual(otherOp);
+      expect(await db.state_animais.get(otherAnimal.id)).toEqual(otherState);
+
+      db.close();
+      await db.open();
+      await pullDataForFarm(farmId, ["animais"]);
+      expect(await operationalAnimals()).toEqual([]);
+      expect(await db.queue_ops.get(deleteOp.client_op_id)).toBeDefined();
+
+      const deletedAt = "2026-08-23T14:00:00.000Z";
+      remote.rows.set("animais", [{ ...animal, deleted_at: deletedAt }]);
+      vi.mocked(fetch).mockResolvedValueOnce(
+        syncResponse([{ op_id: deleteOp.client_op_id, status: "APPLIED" }]),
+      );
+      await processGesture(await getGesture(deleteTx));
+      await pullDataForFarm(farmId, ["animais"]);
+      expect(await operationalAnimals()).toEqual([]);
+      expect(await db.queue_ops.get(deleteOp.client_op_id)).toBeUndefined();
+      expect(await getGesture(deleteTx)).toMatchObject({ status: "DONE" });
+      expect(await db.queue_ops.get(otherOp.client_op_id)).toEqual(otherOp);
+      expect(await db.event_eventos.count()).toBe(0);
+    },
+  );
+
+  it("restaura snapshot sem a edicao rejeitada se DELETE tambem falha e pull fica offline", async () => {
+    const { animal, editTx, deleteTx, deleteOp } = await createEditThenDelete();
+    remote.fail = true;
+
+    await processGesture(await getGesture(editTx));
+    expect(await operationalAnimals()).toEqual([]);
+    db.close();
+    await db.open();
+    vi.mocked(fetch).mockResolvedValueOnce(
+      syncResponse([
+        {
+          op_id: deleteOp.client_op_id,
+          status: "REJECTED",
+          reason_code: "DELETE_DENIED",
+        },
+      ]),
+    );
+
+    await processGesture(await getGesture(deleteTx));
+
+    expect(await db.state_animais.get(animalId)).toEqual(animal);
+    expect(await getGesture(deleteTx)).toMatchObject({ status: "REJECTED" });
+    expect(await db.queue_ops.get(deleteOp.client_op_id)).toMatchObject({
+      expected_revision: deleteOp.expected_revision,
+      sync_state: "REJECTED",
+      before_snapshot: deleteOp.before_snapshot,
+    });
+    expect(await db.queue_rejections.count()).toBe(2);
+  });
+
+  it("aborta tombstone junto do ACK sem alterar snapshot, permitindo replay apos reopen", async () => {
+    const { editTx, editOp, deleteOp } = await createEditThenDelete();
+    const updateOperation = db.queue_ops.update.bind(db.queue_ops);
+    const updateSpy = vi
+      .spyOn(db.queue_ops, "update")
+      .mockImplementation((...args) => {
+        if (
+          args[0] === editOp.client_op_id &&
+          typeof args[1] !== "function" &&
+          args[1].sync_state === "REJECTED"
+        ) {
+          return Dexie.Promise.reject(
+            new Error("injected ACK persistence failure"),
+          );
+        }
+        return updateOperation(...args);
+      });
+    try {
+      await processGesture(await getGesture(editTx));
+    } finally {
+      updateSpy.mockRestore();
+    }
+
+    expect(await db.state_animais.get(animalId)).toBeUndefined();
+    expect(await db.queue_ops.get(deleteOp.client_op_id)).toEqual(deleteOp);
+    expect(await db.queue_rejections.count()).toBe(0);
+
+    db.close();
+    await db.open();
+    vi.mocked(fetch).mockResolvedValueOnce(
+      syncResponse([
+        {
+          op_id: editOp.client_op_id,
+          status: "REJECTED",
+          reason_code: "UPDATE_DENIED",
+        },
+      ]),
+    );
+    await processGesture(await getGesture(editTx));
+    expect(await operationalAnimals()).toEqual([]);
+    expect(await getGesture(editTx)).toMatchObject({ status: "REJECTED" });
+    expect(await db.queue_rejections.count()).toBe(1);
+    expect(await db.queue_ops.get(deleteOp.client_op_id)).toMatchObject({
+      before_snapshot: deleteOp.before_snapshot,
+    });
+  });
+
+  it("nao restaura edicao rejeitada atraves do snapshot de outra edicao pendente", async () => {
+    const animal = makeAnimal();
+    await db.state_animais.put(animal);
+    const editTxs: string[] = [];
+    for (const observacoes of ["primeira edicao", "segunda edicao"]) {
+      editTxs.push(
+        await createGesture(farmId, [
+          {
+            table: "animais",
+            action: "UPDATE",
+            record: { id: animalId, observacoes },
+          },
+        ]),
+      );
+    }
+    const deleteTx = await createGesture(farmId, [
+      { table: "animais", action: "DELETE", record: { id: animalId } },
+    ]);
+    await db.state_animais.delete(animalId);
+    remote.fail = true;
+    for (const tx of [...editTxs, deleteTx]) {
+      const [op] = await db.queue_ops.where("client_tx_id").equals(tx).toArray();
+      vi.mocked(fetch).mockResolvedValueOnce(
+        syncResponse([
+          {
+            op_id: op.client_op_id,
+            status: "REJECTED",
+            reason_code: "WRITE_DENIED",
+          },
+        ]),
+      );
+      await processGesture(await getGesture(tx));
+      if (tx !== deleteTx) expect(await operationalAnimals()).toEqual([]);
+    }
+    expect(await db.state_animais.get(animalId)).toEqual(animal);
+  });
+
+  it.each(["APPLIED", "REJECTED"] as const)("preserva resultado %s do retry manual de UPDATE apos rejeicao de DELETE offline", async (retryResult) => {
+    const { editTx, editOp, deleteTx, deleteOp } = await createEditThenDelete();
+    remote.fail = true;
+    await processGesture(await getGesture(editTx));
+    const rejection = await db.queue_rejections
+      .filter((row) => row.client_op_id === editOp.client_op_id).first();
+    if (!rejection) throw new Error("Missing edit rejection");
+
+    expect(await retryRejectedOperation(rejection)).toEqual({
+      clientTxId: editTx, clientOpId: editOp.client_op_id,
+    });
+    vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+      { op_id: editOp.client_op_id, status: retryResult, reason_code: "UPDATE_DENIED" },
+    ]));
+    await processGesture(await getGesture(editTx));
+    const acceptedGesture = await getGesture(editTx);
+    expect(acceptedGesture.status).toBe(retryResult === "APPLIED" ? "DONE" : "REJECTED");
+    if (retryResult === "APPLIED") expect(await db.queue_ops.get(editOp.client_op_id)).toBeUndefined();
+    expect(await operationalAnimals()).toEqual([]);
+    db.close();
+    await db.open();
+
+    vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+      { op_id: deleteOp.client_op_id, status: "REJECTED", reason_code: "STATE_REVISION_CONFLICT" },
+    ]));
+    await processGesture(await getGesture(deleteTx));
+
+    expect(await db.state_animais.get(animalId)).toMatchObject({
+      observacoes: retryResult === "APPLIED" ? "edicao offline" : makeAnimal().observacoes,
+      client_op_id: retryResult === "APPLIED" ? editOp.client_op_id : makeAnimal().client_op_id,
+    });
+    expect(await getGesture(editTx)).toEqual(acceptedGesture);
+    const requests = vi.mocked(fetch).mock.calls.map(([, init]) => JSON.parse(String(init?.body)));
+    expect(requests[0].ops[0]).toEqual(requests[1].ops[0]);
+    expect(await db.queue_ops.get(deleteOp.client_op_id)).toMatchObject({
+      record: deleteOp.record, expected_revision: deleteOp.expected_revision,
+      before_snapshot: deleteOp.before_snapshot,
+    });
+  });
+
+  it("mantem UPDATE aplicado anterior ao UPDATE rejeitado sem alterar snapshots ou receipt aplicado", async () => {
+    const animal = makeAnimal();
+    await db.state_animais.put(animal);
+    const acceptedTx = await createGesture(farmId, [{
+      table: "animais", action: "UPDATE", record: { id: animalId, nome: "nome aceito" },
+    }]);
+    const [acceptedOp] = await db.queue_ops.where("client_tx_id").equals(acceptedTx).toArray();
+    const rejectedTx = await createGesture(farmId, [{
+      table: "animais", action: "UPDATE", record: { id: animalId, observacoes: "edicao rejeitada" },
+    }]);
+    const [rejectedOp] = await db.queue_ops.where("client_tx_id").equals(rejectedTx).toArray();
+    const deleteTx = await createGesture(farmId, [{
+      table: "animais", action: "DELETE", record: { id: animalId },
+    }]);
+    const deleteOp = await getDeleteOperation(deleteTx);
+    await db.state_animais.delete(animalId);
+    remote.fail = true;
+    vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+      { op_id: acceptedOp.client_op_id, status: "APPLIED" },
+    ]));
+    await processGesture(await getGesture(acceptedTx));
+    const acceptedGesture = await getGesture(acceptedTx);
+    vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+      { op_id: rejectedOp.client_op_id, status: "REJECTED", reason_code: "WRITE_DENIED" },
+    ]));
+    await processGesture(await getGesture(rejectedTx));
+    expect(await operationalAnimals()).toEqual([]);
+    vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+      { op_id: deleteOp.client_op_id, status: "REJECTED", reason_code: "DELETE_DENIED" },
+    ]));
+    await processGesture(await getGesture(deleteTx));
+    expect(await db.state_animais.get(animalId)).toMatchObject({
+      nome: "nome aceito", observacoes: animal.observacoes,
+    });
+    expect(await getGesture(acceptedTx)).toEqual(acceptedGesture);
+    expect(await db.queue_ops.get(acceptedOp.client_op_id)).toBeUndefined();
+    expect((await db.queue_ops.get(rejectedOp.client_op_id))?.before_snapshot).toEqual(rejectedOp.before_snapshot);
+    expect((await db.queue_ops.get(deleteOp.client_op_id))?.before_snapshot).toEqual(deleteOp.before_snapshot);
+  });
+
+  it("retry manual de DELETE preserva envelope apos timeout e reload sem restaurar UPDATE rejeitado", async () => {
+    const { animal, editTx, deleteTx, deleteOp } = await createEditThenDelete();
+    remote.fail = true;
+    await processGesture(await getGesture(editTx));
+    vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+      { op_id: deleteOp.client_op_id, status: "REJECTED", reason_code: "DELETE_DENIED" },
+    ]));
+    await processGesture(await getGesture(deleteTx));
+    expect(await db.state_animais.get(animalId)).toEqual(animal);
+    const rejection = await db.queue_rejections.filter((row) => row.client_op_id === deleteOp.client_op_id).first();
+    if (!rejection) throw new Error("Missing delete rejection");
+    await retryRejectedOperation(rejection);
+    expect(await operationalAnimals()).toEqual([]);
+    vi.mocked(fetch).mockRejectedValueOnce(new Error("lost ACK after delete retry"));
+    await processGesture(await getGesture(deleteTx));
+    db.close();
+    await db.open();
+    vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+      { op_id: deleteOp.client_op_id, status: "APPLIED" },
+    ]));
+    await processGesture(await getGesture(deleteTx));
+    expect(await operationalAnimals()).toEqual([]);
+    expect(await getGesture(deleteTx)).toMatchObject({ status: "DONE" });
+    const requests = vi.mocked(fetch).mock.calls.slice(1).map(([, init]) => JSON.parse(String(init?.body)));
+    expect(requests).toHaveLength(3);
+    expect(requests[0].ops[0]).toEqual(requests[1].ops[0]);
+    expect(requests[1].ops[0]).toEqual(requests[2].ops[0]);
+    expect(await db.queue_ops.get(deleteOp.client_op_id)).toBeUndefined();
+  });
+
+  it("reconstroi edicao descendente pendente sem herdar campos de UPDATE rejeitado", async () => {
+    const animal = makeAnimal();
+    await db.state_animais.put(animal);
+    const rejectedTx = await createGesture(farmId, [{
+      table: "animais", action: "UPDATE", record: { id: animalId, observacoes: "rejeitada" },
+    }]);
+    const pendingTx = await createGesture(farmId, [{
+      table: "animais", action: "UPDATE", record: { id: animalId, nome: "nome pendente" },
+    }]);
+    const deleteTx = await createGesture(farmId, [{
+      table: "animais", action: "DELETE", record: { id: animalId },
+    }]);
+    await db.state_animais.delete(animalId);
+    remote.fail = true;
+    for (const tx of [rejectedTx, deleteTx]) {
+      const [op] = await db.queue_ops.where("client_tx_id").equals(tx).toArray();
+      vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+        { op_id: op.client_op_id, status: "REJECTED", reason_code: "WRITE_DENIED" },
+      ]));
+      await processGesture(await getGesture(tx));
+    }
+    expect(await db.state_animais.get(animalId)).toMatchObject({
+      nome: "nome pendente", observacoes: animal.observacoes,
+    });
+    const [pendingOp] = await db.queue_ops.where("client_tx_id").equals(pendingTx).toArray();
+    vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+      { op_id: pendingOp.client_op_id, status: "REJECTED", reason_code: "WRITE_DENIED" },
+    ]));
+    await processGesture(await getGesture(pendingTx));
+    expect(await db.state_animais.get(animalId)).toEqual(animal);
+  });
+
+  it("resultado parcial no mesmo animal preserva UPDATE aplicado apos rollback da edicao rejeitada", async () => {
+    const animal = makeAnimal();
+    await db.state_animais.put(animal);
+    const tx = await createGesture(farmId, [
+      { table: "animais", action: "UPDATE", record: { id: animalId, nome: "aceito" } },
+      { table: "animais", action: "UPDATE", record: { id: animalId, observacoes: "rejeitada" } },
+    ]);
+    const [applied, rejected] = await db.queue_ops.where("client_tx_id").equals(tx).sortBy("op_order");
+    const deleteTx = await createGesture(farmId, [{
+      table: "animais", action: "DELETE", record: { id: animalId },
+    }]);
+    const deletion = await getDeleteOperation(deleteTx);
+    await db.state_animais.delete(animalId);
+    remote.fail = true;
+    vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+      { op_id: applied.client_op_id, status: "APPLIED" },
+      { op_id: rejected.client_op_id, status: "REJECTED", reason_code: "WRITE_DENIED" },
+    ]));
+    await processGesture(await getGesture(tx));
+    const receipt = await getGesture(tx);
+    expect(await operationalAnimals()).toEqual([]);
+    vi.mocked(fetch).mockResolvedValueOnce(syncResponse([
+      { op_id: deletion.client_op_id, status: "REJECTED", reason_code: "DELETE_DENIED" },
+    ]));
+    await processGesture(await getGesture(deleteTx));
+    expect(await db.state_animais.get(animalId)).toMatchObject({
+      nome: "aceito", observacoes: animal.observacoes,
+    });
+    expect(await getGesture(tx)).toEqual(receipt);
+    expect(await db.queue_ops.get(applied.client_op_id)).toBeUndefined();
+    expect((await db.queue_ops.get(deletion.client_op_id))?.before_snapshot).toEqual(deletion.before_snapshot);
   });
 
   it("restaura o snapshot rejeitado sem reverter uma operacao aplicada", async () => {
