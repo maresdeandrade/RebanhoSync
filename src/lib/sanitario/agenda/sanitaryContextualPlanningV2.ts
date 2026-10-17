@@ -25,6 +25,10 @@ export function sanitaryContextualPlanningBlockersV2(input: {
   evaluatedAt: string;
 }): string[] {
   const { item, context } = input;
+  const metadata = item.snapshotTemplate.metadata as Record<string, unknown> | undefined;
+  const ufs = metadata?.assessment_region_ufs;
+  if (Array.isArray(ufs) && !ufs.includes(input.farmUf?.toUpperCase()))
+    return ["UF fora do escopo regional aprovado para esta avaliação. Selecione uma variante com fonte aplicável."];
   if (item.eligibilityRule.requires_mv_or_management_context && !validPreWeaningBasis(context))
     return ["Pré-desmama exige indicação de sistema intensivo/leiteiro ou orientação veterinária referenciada; não é rotina universal."];
   return [...calendarBlockers(item, context, input.farmUf, input.evaluatedAt),

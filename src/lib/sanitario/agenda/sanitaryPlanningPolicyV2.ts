@@ -93,7 +93,7 @@ export function sanitaryAutomaticPlanningBlockersV2(
   }
   if (
     !["eligibility_rule", "operational_window", "product_requirement"].every(
-      (field) => sanitaryPlanningHasFieldSourceV2(item, field),
+      (field) => sanitaryPlanningHasFieldSourceV2(item, field) || hasReviewedAssessmentField(item, field),
     )
   ) {
     blockers.push(
@@ -101,6 +101,43 @@ export function sanitaryAutomaticPlanningBlockersV2(
     );
   }
   return blockers;
+}
+
+// A server-audited field decision supports a bounded assessment, never a drug scheme.
+function hasReviewedAssessmentField(item: SanitaryProtocolItemV2ReadModel, field: string): boolean {
+  const metadata = item.snapshotTemplate.metadata as Record<string, unknown> | undefined;
+  if (item.productRequirementKind !== "none" || item.actionType !== "manejo_sanitario" ||
+    metadata?.planning_scope !== "assessment_only" ||
+    Object.keys(item.doseRule).length || Object.keys(item.routeRule).length) return false;
+  const refs = item.sourceRefsByField[field];
+  if (!Array.isArray(refs)) return false;
+  return refs.some((ref: SanitarySourceRefV2) => {
+    const review = ref.metadata?.catalogFieldReview as Record<string, unknown> | undefined;
+    return ref.scope === "global" && ["bibliografia", "guideline_apoio"].includes(ref.kind) &&
+      !["NAO_AUTORIZADO", "EXTRAPOLADO"].includes(ref.evidenceStatus) && ref.fieldKeys?.includes(field) &&
+      matchingAssessmentReview(review, item, field) && validReviewTrace(review, metadata);
+  });
+}
+
+function matchingAssessmentReview(review: Record<string, unknown> | undefined, item: SanitaryProtocolItemV2ReadModel, field: string) {
+  return review?.scope === "assessment_only" && review.field === field && review.protocolId === item.protocolId &&
+    review.itemId === item.id && review.itemVersion === item.version;
+}
+
+function validReviewTrace(review: Record<string, unknown> | undefined, metadata: Record<string, unknown> | undefined) {
+  if (!review || !metadata) return false;
+  return validReviewerIdentity(review) && validDecisionBinding(review, metadata);
+}
+
+function validReviewerIdentity(review: Record<string, unknown>) {
+  return typeof review.actorId === "string" && /^[0-9a-f-]{36}$/i.test(review.actorId) &&
+    typeof review.approvedAt === "string" && Number.isFinite(Date.parse(review.approvedAt));
+}
+
+function validDecisionBinding(review: Record<string, unknown>, metadata: Record<string, unknown>) {
+  const reference = typeof review.decisionReference === "string" && review.decisionReference.startsWith("sanitary-v2:") && review.decisionReference === metadata.catalog_decision_reference;
+  const digest = typeof metadata.reviewed_content_digest === "string" && /^[a-f0-9]{64}$/.test(metadata.reviewed_content_digest);
+  return reference && digest;
 }
 
 export function sanitaryDefinedSchemeBlockersV2(

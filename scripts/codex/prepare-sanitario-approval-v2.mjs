@@ -12,7 +12,7 @@ const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 export function buildApprovalCandidate(canonical, packet, canonicalBytes, packetBytes) {
   assert.equal(sha256(canonicalBytes), packet.source_canonical_sha256, "CANONICAL_HASH_MISMATCH");
-  assert.equal(packet.schema_version, 3, "DECISION_SCHEMA_REQUIRED");
+  assert.equal(packet.schema_version, 4, "DECISION_SCHEMA_REQUIRED");
   assert.equal(packet.approvals_granted, 0, "PREPARATION_CANNOT_GRANT_APPROVAL");
   assert.equal(packet.execute_import, false, "PREPARATION_CANNOT_IMPORT");
   const data = structuredClone(normalizeCanonicalData(canonical));
@@ -33,8 +33,8 @@ export function buildApprovalCandidate(canonical, packet, canonicalBytes, packet
   for (const entry of packet.prepared_protocol_records) {
     const index = data.protocol_rows.findIndex((row) => row.id === entry.expected_id);
     assert(index >= 0 && data.protocol_rows[index].version === entry.expected_version, "PROTOCOL_VERSION_CONFLICT");
+    assert.equal(entry.record.version, entry.expected_version, "PROTOCOL_NATURAL_IDENTITY_IMMUTABLE");
     assert.equal(entry.record.id, entry.expected_id, "STABLE_PROTOCOL_ID_REQUIRED");
-    assert.equal(entry.record.version, entry.expected_version + 1);
     assert.equal(entry.record.status, "draft");
     assert.equal(entry.record.approval_status, "draft");
     assert.equal(entry.record.metadata.agenda_allowed, false);
@@ -89,10 +89,19 @@ export function buildApprovalCandidate(canonical, packet, canonicalBytes, packet
 
 export function buildApprovalForm(candidate, packet) {
   return {
-    artifact: "sanitario_v2_pending_catalog_review_form", schema_version: 2,
+    artifact: "sanitario_v2_pending_catalog_review_form", schema_version: 3,
     candidate_sha256: sha256(JSON.stringify(candidate, null, 2) + "\n"),
     decisions_sha256: candidate.review_provenance.decisions_sha256,
     operational_authorization: false,
+    electronic_review_contract: {
+      preview_rpc: "sanitario_catalog_review_preview_v2", decision_rpc: "sanitario_catalog_decide_v2",
+      permission_authority: "public.app_superadmins / public.is_app_admin()",
+      actor_id_source: "auth.uid()", approved_at_source: "transaction_timestamp()",
+      decision_reference_format: "sanitary-v2:<request_id>",
+      reviewed_content_digest_source: "RPC SHA-256 of exact PostgreSQL JSONB content, including registered sources and coverage",
+      explicit_reviewer_action_required: true, offline_publication_allowed: false,
+      pending_decision: { actor_id: null, approved_at: null, decision_reference: null, reviewed_content_digest: null, result: null, justification: null },
+    },
     responsibility_model: structuredClone(packet.responsibility_model),
     decisions: packet.decision_sets.filter((group) => group.catalog_review_request).map((group) => ({
       id: group.id, scope: group.scope, submission_status: group.submission_status,

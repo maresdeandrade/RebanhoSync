@@ -59,7 +59,7 @@ describe("candidato versionado sem aprovacao/publicacao", () => {
 
   it("os seis manejos dispensam produto e continuam sem liberacao antes da revisao curatorial", () => {
     const data = build().payload;
-    const groups = packet.decision_sets.filter((group) => group.category === "GLOBAL_FIELD_REVIEW_REQUIRED");
+    const groups = packet.decision_sets.filter((group) => ["PAR", "DES", "CONF", "PARTO"].includes(group.id));
     const keys = groups.flatMap((group) => group.item_keys);
     expect(keys).toHaveLength(6);
     for (const row of data.protocol_item_rows.filter((item) => keys.includes(item.logical_item_key))) {
@@ -68,13 +68,15 @@ describe("candidato versionado sem aprovacao/publicacao", () => {
       const protocol = data.protocol_rows.find((item) => item.id === row.protocol_id);
       expect(sanitaryPlanningBlockersV2(adaptSanitaryProtocolV2Row(protocol), adaptSanitaryProtocolItemV2Row(row), "automatic").length).toBeGreaterThan(0);
     }
-    expect(groups.every((group) => group.submission_status === "READY_FOR_GLOBAL_RULE_REVIEW")).toBe(true);
+    expect(groups.every((group) => group.submission_status === "READY_FOR_GLOBAL_REVIEW")).toBe(true);
     expect(groups.every((group) => group.catalog_review_request.requires_specific_farm === false)).toBe(true);
     expect(groups.every((group) => Object.keys(group.farm_activation_requirements.context_definition).length > 0)).toBe(true);
   });
 
   it("separa revisor global, ativacao pelo usuario e profissional exigido na execucao", () => {
     const form = buildApprovalForm(build(), packet);
+    expect(form.electronic_review_contract).toMatchObject({ actor_id_source: "auth.uid()", approved_at_source: "transaction_timestamp()", explicit_reviewer_action_required: true, offline_publication_allowed: false });
+    expect(Object.values(form.electronic_review_contract.pending_decision).every(value => value === null)).toBe(true);
     for (const decision of form.decisions) {
       expect(decision.catalog_review).toMatchObject({ reviewer_role: "authorized_catalog_reviewer", requires_farm_veterinarian: false, requires_crmv_by_default: false, requires_specific_farm: false });
       expect(decision.catalog_review).not.toHaveProperty("professional_registration");
@@ -96,10 +98,11 @@ describe("candidato versionado sem aprovacao/publicacao", () => {
     expect(data.product_authorization_rows).toEqual(original.product_authorization_rows);
   });
 
-  it.each(["signature", "version", "restriction", "hash", "operational_metadata"])("rejeita proposta adulterada: %s", (kind) => {
+  it.each(["signature", "version", "protocol_version", "restriction", "hash", "operational_metadata"])("rejeita proposta adulterada: %s", (kind) => {
     const altered = structuredClone(packet);
     if (kind === "signature") altered.decision_sets[0].approval.actor_id = "invented";
     if (kind === "version") altered.prepared_item_records[0].expected_previous_version += 1;
+    if (kind === "protocol_version") altered.prepared_protocol_records[0].record.version += 1;
     if (kind === "restriction") altered.retained_restricted_records[0].allows_agenda_auto = true;
     if (kind === "hash") altered.source_canonical_sha256 = "wrong";
     if (kind === "operational_metadata") altered.prepared_protocol_records[0].record.metadata.agenda_allowed = true;

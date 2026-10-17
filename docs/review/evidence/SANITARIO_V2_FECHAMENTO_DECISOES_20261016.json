@@ -1,22 +1,22 @@
 {
   "artifact": "Fechamento e preparação de decisões dos 20 itens; NÃO É PAYLOAD IMPORTÁVEL",
-  "schema_version": 3,
+  "schema_version": 4,
   "source_canonical_sha256": "51df1c3884f463992113d0d3ac89e3c9534ce68726e9829972838cae2132cf73",
   "source_implementation": "b7c8c9c9c47f2667667a27a3793145e3aadf24a1",
-  "integration_main": "bf43c631685013dca7f8c03066e8f5b251683e57",
+  "integration_main": "b748a5941d513ef3a293e5e8a98f31eb051dfeb6",
   "execute_import": false,
   "changes_operational_flags": false,
   "approvals_granted": 0,
   "counts": {
     "normalized_items": 20,
-    "technically_ready_for_decision": 1,
+    "technically_ready_for_decision": 7,
     "product_scheme_required": 5,
     "commercial_source_required": 2,
     "explicit_auto_restriction": 6,
     "automatic_demonstrated_in_approved_fixtures": 14,
     "suggestion_only": 3,
     "specific_blocks": 3,
-    "global_field_source_review_required": 6
+    "global_field_source_review_required": 0
   },
   "decision_sets": [
     {
@@ -479,9 +479,9 @@
         "recria_julho",
         "recria_setembro"
       ],
-      "category": "GLOBAL_FIELD_REVIEW_REQUIRED",
-      "technically_ready_for_single_decision": false,
-      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
+      "category": "READY_FOR_APPROVAL",
+      "technically_ready_for_single_decision": true,
+      "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
       "evidence_source_keys": [
         "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
       ],
@@ -499,15 +499,10 @@
         "39106f32-24ac-4f95-a0ac-1cdf29ab8669",
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
-      "unresolved_inputs": [
-        "catalog_review.field_source_binding.eligibility_rule",
-        "catalog_review.field_source_binding.operational_window",
-        "catalog_review.field_source_binding.product_requirement"
-      ],
+      "unresolved_inputs": [],
       "requested_decision": [
-        "Revisor autorizado deve decidir globalmente os vinculos tecnicos por campo da avaliacao/manejo; nenhuma fazenda ou veterinario executor precisa ser indicado para essa revisao.",
-        "Definir requisitos de contexto no catalogo e exigir seus valores somente no plano da fazenda/geracao individual; apoio regional nao vira fonte forte por inferencia.",
-        "Execucao permanece sujeita a produto, profissional e comprovacao aplicaveis, sem autorizar medicamento, dose ou carencia pelo manejo."
+        "Revisar e decidir globalmente os tres vinculos registrados por campo, somente para avaliacao contextual na UF DF. O RPC conserva a fonte como apoio regional e registra a decisao curatorial sem rotula-la como norma/bula.",
+        "Ampliacao para outras UFs/contextos exige variante tecnicamente sustentada; contexto individual continua obrigatorio no plano. Nenhuma permissao de execucao farmacologica e concedida."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -542,7 +537,7 @@
           "farm_context_guards"
         ]
       },
-      "submission_status": "READY_FOR_GLOBAL_RULE_REVIEW",
+      "submission_status": "READY_FOR_GLOBAL_REVIEW",
       "operational_conditions": [
         "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
@@ -555,23 +550,32 @@
         "eligibility_rule": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         },
         "operational_window": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         },
         "product_requirement": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         }
       },
       "catalog_review_request": {
@@ -619,9 +623,9 @@
       "item_keys": [
         "pre_desmama_situacional"
       ],
-      "category": "GLOBAL_FIELD_REVIEW_REQUIRED",
-      "technically_ready_for_single_decision": false,
-      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
+      "category": "READY_FOR_APPROVAL",
+      "technically_ready_for_single_decision": true,
+      "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
       "evidence_source_keys": [
         "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
       ],
@@ -639,15 +643,10 @@
         "39106f32-24ac-4f95-a0ac-1cdf29ab8669",
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
-      "unresolved_inputs": [
-        "catalog_review.field_source_binding.eligibility_rule",
-        "catalog_review.field_source_binding.operational_window",
-        "catalog_review.field_source_binding.product_requirement"
-      ],
+      "unresolved_inputs": [],
       "requested_decision": [
-        "Revisor autorizado deve decidir globalmente os vinculos tecnicos por campo da avaliacao/manejo; nenhuma fazenda ou veterinario executor precisa ser indicado para essa revisao.",
-        "Definir requisitos de contexto no catalogo e exigir seus valores somente no plano da fazenda/geracao individual; apoio regional nao vira fonte forte por inferencia.",
-        "Execucao permanece sujeita a produto, profissional e comprovacao aplicaveis, sem autorizar medicamento, dose ou carencia pelo manejo."
+        "Revisar e decidir globalmente os tres vinculos registrados por campo, somente para avaliacao contextual na UF DF. O RPC conserva a fonte como apoio regional e registra a decisao curatorial sem rotula-la como norma/bula.",
+        "Ampliacao para outras UFs/contextos exige variante tecnicamente sustentada; contexto individual continua obrigatorio no plano. Nenhuma permissao de execucao farmacologica e concedida."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -682,7 +681,7 @@
           "farm_context_guards"
         ]
       },
-      "submission_status": "READY_FOR_GLOBAL_RULE_REVIEW",
+      "submission_status": "READY_FOR_GLOBAL_REVIEW",
       "operational_conditions": [
         "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
@@ -695,23 +694,32 @@
         "eligibility_rule": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         },
         "operational_window": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         },
         "product_requirement": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         }
       },
       "catalog_review_request": {
@@ -758,9 +766,9 @@
       "item_keys": [
         "pre_confinamento_dose_unica"
       ],
-      "category": "GLOBAL_FIELD_REVIEW_REQUIRED",
-      "technically_ready_for_single_decision": false,
-      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
+      "category": "READY_FOR_APPROVAL",
+      "technically_ready_for_single_decision": true,
+      "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
       "evidence_source_keys": [
         "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
       ],
@@ -778,15 +786,10 @@
         "39106f32-24ac-4f95-a0ac-1cdf29ab8669",
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
-      "unresolved_inputs": [
-        "catalog_review.field_source_binding.eligibility_rule",
-        "catalog_review.field_source_binding.operational_window",
-        "catalog_review.field_source_binding.product_requirement"
-      ],
+      "unresolved_inputs": [],
       "requested_decision": [
-        "Revisor autorizado deve decidir globalmente os vinculos tecnicos por campo da avaliacao/manejo; nenhuma fazenda ou veterinario executor precisa ser indicado para essa revisao.",
-        "Definir requisitos de contexto no catalogo e exigir seus valores somente no plano da fazenda/geracao individual; apoio regional nao vira fonte forte por inferencia.",
-        "Execucao permanece sujeita a produto, profissional e comprovacao aplicaveis, sem autorizar medicamento, dose ou carencia pelo manejo."
+        "Revisar e decidir globalmente os tres vinculos registrados por campo, somente para avaliacao contextual na UF DF. O RPC conserva a fonte como apoio regional e registra a decisao curatorial sem rotula-la como norma/bula.",
+        "Ampliacao para outras UFs/contextos exige variante tecnicamente sustentada; contexto individual continua obrigatorio no plano. Nenhuma permissao de execucao farmacologica e concedida."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -821,7 +824,7 @@
           "farm_context_guards"
         ]
       },
-      "submission_status": "READY_FOR_GLOBAL_RULE_REVIEW",
+      "submission_status": "READY_FOR_GLOBAL_REVIEW",
       "operational_conditions": [
         "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
@@ -834,23 +837,32 @@
         "eligibility_rule": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         },
         "operational_window": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         },
         "product_requirement": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         }
       },
       "catalog_review_request": {
@@ -899,9 +911,9 @@
       "item_keys": [
         "matrizes_pre_parto_antiparasitario"
       ],
-      "category": "GLOBAL_FIELD_REVIEW_REQUIRED",
-      "technically_ready_for_single_decision": false,
-      "scope": "Agenda generica de avaliacao/manejo, sem medicamento, dose, via ou carencia; contexto individual e da fazenda obrigatorio.",
+      "category": "READY_FOR_APPROVAL",
+      "technically_ready_for_single_decision": true,
+      "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
       "evidence_source_keys": [
         "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
       ],
@@ -919,15 +931,10 @@
         "39106f32-24ac-4f95-a0ac-1cdf29ab8669",
         "18282c10-1203-479a-9244-4bb9d0c8e31d"
       ],
-      "unresolved_inputs": [
-        "catalog_review.field_source_binding.eligibility_rule",
-        "catalog_review.field_source_binding.operational_window",
-        "catalog_review.field_source_binding.product_requirement"
-      ],
+      "unresolved_inputs": [],
       "requested_decision": [
-        "Revisor autorizado deve decidir globalmente os vinculos tecnicos por campo da avaliacao/manejo; nenhuma fazenda ou veterinario executor precisa ser indicado para essa revisao.",
-        "Definir requisitos de contexto no catalogo e exigir seus valores somente no plano da fazenda/geracao individual; apoio regional nao vira fonte forte por inferencia.",
-        "Execucao permanece sujeita a produto, profissional e comprovacao aplicaveis, sem autorizar medicamento, dose ou carencia pelo manejo."
+        "Revisar e decidir globalmente os tres vinculos registrados por campo, somente para avaliacao contextual na UF DF. O RPC conserva a fonte como apoio regional e registra a decisao curatorial sem rotula-la como norma/bula.",
+        "Ampliacao para outras UFs/contextos exige variante tecnicamente sustentada; contexto individual continua obrigatorio no plano. Nenhuma permissao de execucao farmacologica e concedida."
       ],
       "approval": {
         "status": "NOT_GRANTED",
@@ -962,7 +969,7 @@
           "farm_context_guards"
         ]
       },
-      "submission_status": "READY_FOR_GLOBAL_RULE_REVIEW",
+      "submission_status": "READY_FOR_GLOBAL_REVIEW",
       "operational_conditions": [
         "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
         "versoes esperadas conferidas sob lock",
@@ -975,23 +982,32 @@
         "eligibility_rule": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         },
         "operational_window": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         },
         "product_requirement": {
           "supporting_source": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
           "coverage_review_stage": "catalog_review",
-          "review_status": "PENDING",
+          "review_status": "BINDING_PREPARED_PENDING_CATALOG_DECISION",
           "product_required": false,
-          "requires_specific_farm_or_farm_mv_for_review": false
+          "requires_specific_farm_or_farm_mv_for_review": false,
+          "planning_ufs": [
+            "DF"
+          ]
         }
       },
       "catalog_review_request": {
@@ -1161,7 +1177,7 @@
           "legal_scope": "nacional"
         },
         "legal_status": "obrigatorio_norma",
-        "version": 2,
+        "version": 1,
         "status": "draft",
         "approval_status": "draft",
         "source_refs_snapshot": [
@@ -1259,7 +1275,7 @@
         ],
         "jurisdiction_scope": {},
         "legal_status": "recomendado_tecnico",
-        "version": 2,
+        "version": 1,
         "status": "draft",
         "approval_status": "draft",
         "source_refs_snapshot": [
@@ -1312,7 +1328,7 @@
         ],
         "jurisdiction_scope": {},
         "legal_status": "recomendado_tecnico",
-        "version": 2,
+        "version": 1,
         "status": "draft",
         "approval_status": "draft",
         "source_refs_snapshot": [
@@ -1362,7 +1378,7 @@
         ],
         "jurisdiction_scope": {},
         "legal_status": "recomendado_tecnico",
-        "version": 2,
+        "version": 1,
         "status": "draft",
         "approval_status": "draft",
         "source_refs_snapshot": [
@@ -1417,7 +1433,7 @@
           "requires_regional_context": true
         },
         "legal_status": "recomendado_tecnico",
-        "version": 2,
+        "version": 1,
         "status": "draft",
         "approval_status": "draft",
         "source_refs_snapshot": [
@@ -1477,7 +1493,7 @@
         ],
         "jurisdiction_scope": {},
         "legal_status": "condicional",
-        "version": 2,
+        "version": 1,
         "status": "draft",
         "approval_status": "draft",
         "source_refs_snapshot": [
@@ -1526,7 +1542,7 @@
         ],
         "jurisdiction_scope": {},
         "legal_status": "recomendado_tecnico",
-        "version": 2,
+        "version": 1,
         "status": "draft",
         "approval_status": "draft",
         "source_refs_snapshot": [
@@ -1569,7 +1585,7 @@
         ],
         "jurisdiction_scope": {},
         "legal_status": "condicional",
-        "version": 2,
+        "version": 1,
         "status": "draft",
         "approval_status": "draft",
         "source_refs_snapshot": [
@@ -2630,6 +2646,66 @@
             {
               "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
             }
+          ],
+          "eligibility_rule": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "08663e7c-daa7-46c5-aeaa-573d5476f790"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "08663e7c-daa7-46c5-aeaa-573d5476f790"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "08663e7c-daa7-46c5-aeaa-573d5476f790"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
           ]
         },
         "limitations": [
@@ -2668,7 +2744,10 @@
             },
             "planning_scope": "assessment_only",
             "farm_context_required_at_generation": true,
-            "catalog_field_review_required": true
+            "catalog_field_review_required": true,
+            "assessment_region_ufs": [
+              "DF"
+            ]
           }
         },
         "allows_agenda_auto": false,
@@ -2729,6 +2808,66 @@
             {
               "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
             }
+          ],
+          "eligibility_rule": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "08663e7c-daa7-46c5-aeaa-573d5476f790"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "08663e7c-daa7-46c5-aeaa-573d5476f790"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "08663e7c-daa7-46c5-aeaa-573d5476f790"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
           ]
         },
         "limitations": [
@@ -2767,7 +2906,10 @@
             },
             "planning_scope": "assessment_only",
             "farm_context_required_at_generation": true,
-            "catalog_field_review_required": true
+            "catalog_field_review_required": true,
+            "assessment_region_ufs": [
+              "DF"
+            ]
           }
         },
         "allows_agenda_auto": false,
@@ -2828,6 +2970,66 @@
             {
               "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
             }
+          ],
+          "eligibility_rule": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "08663e7c-daa7-46c5-aeaa-573d5476f790"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "08663e7c-daa7-46c5-aeaa-573d5476f790"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "08663e7c-daa7-46c5-aeaa-573d5476f790"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
           ]
         },
         "limitations": [
@@ -2866,7 +3068,10 @@
             },
             "planning_scope": "assessment_only",
             "farm_context_required_at_generation": true,
-            "catalog_field_review_required": true
+            "catalog_field_review_required": true,
+            "assessment_region_ufs": [
+              "DF"
+            ]
           }
         },
         "allows_agenda_auto": false,
@@ -2921,6 +3126,66 @@
             {
               "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
             }
+          ],
+          "eligibility_rule": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "69a803ce-30c2-4a3c-a85e-24158e97d45e"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "69a803ce-30c2-4a3c-a85e-24158e97d45e"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "69a803ce-30c2-4a3c-a85e-24158e97d45e"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
           ]
         },
         "limitations": [
@@ -2958,7 +3223,10 @@
             },
             "planning_scope": "assessment_only",
             "farm_context_required_at_generation": true,
-            "catalog_field_review_required": true
+            "catalog_field_review_required": true,
+            "assessment_region_ufs": [
+              "DF"
+            ]
           }
         },
         "allows_agenda_auto": false,
@@ -3012,6 +3280,66 @@
             {
               "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
             }
+          ],
+          "eligibility_rule": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
           ]
         },
         "limitations": [
@@ -3050,7 +3378,10 @@
             },
             "planning_scope": "assessment_only",
             "farm_context_required_at_generation": true,
-            "catalog_field_review_required": true
+            "catalog_field_review_required": true,
+            "assessment_region_ufs": [
+              "DF"
+            ]
           }
         },
         "allows_agenda_auto": false,
@@ -3105,6 +3436,66 @@
             {
               "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
             }
+          ],
+          "eligibility_rule": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "741baae1-969a-400c-9ede-a50a38837d13"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "741baae1-969a-400c-9ede-a50a38837d13"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+              "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+              "kind": "guideline_apoio",
+              "scope": "global",
+              "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+              "strength": "apoio",
+              "evidenceStatus": "PRECISA_VALIDAR",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "741baae1-969a-400c-9ede-a50a38837d13"
+                ],
+                "bindingStatus": "PROPOSED_PENDING_CATALOG_DECISION"
+              }
+            }
           ]
         },
         "limitations": [
@@ -3145,7 +3536,10 @@
             },
             "planning_scope": "assessment_only",
             "farm_context_required_at_generation": true,
-            "catalog_field_review_required": true
+            "catalog_field_review_required": true,
+            "assessment_region_ufs": [
+              "DF"
+            ]
           }
         },
         "allows_agenda_auto": false,
@@ -3750,12 +4144,12 @@
     "Este documento não autoriza importação, flags, migration, deploy ou sincronização remota."
   ],
   "publication_readiness": {
-    "globally_submission_ready_items": 1,
+    "globally_submission_ready_items": 7,
     "farm_evaluation_forms_prepared": 6,
     "commercial_items_with_specific_evidence_gaps": 7,
     "operational_authorizations": 0,
     "global_rule_submissions_prepared": 7,
-    "global_rules_requiring_field_source_review": 6,
+    "global_rules_requiring_field_source_review": 0,
     "farm_details_required_for_catalog_review": false,
     "catalog_decisions_recorded": 0
   },
@@ -3988,9 +4382,9 @@
     }
   ],
   "publication_contract_gaps": [
-    "Importador existente publica apenas rascunhos e rejeita flags operacionais. Falta publicador autorizado da decisao curatorial por ator/data/referencia e status/fontes/permissao em transacao com CAS.",
-    "Os seis itens de avaliacao precisam de revisao global dos vinculos de fonte por campo. Isso nao exige identificar fazenda ou MV executor; fonte de apoio nao e promovida automaticamente. Uma decisao clinica MV especifica, se necessaria, pertence a sua etapa propria.",
-    "Falta convergencia multidispositivo do plano e das Agendas locais; nao habilitar por flags."
+    "As RPCs de revisao/publicacao devem ser homologadas em staging isolado antes de qualquer carga/ativacao real. Nenhum gate remoto ou sincronizacao de Agendas e habilitado nesta tarefa.",
+    "Os sete itens comerciais permanecem bloqueados pelos campos especificos dos dossies, incluindo vigencia regulatoria nao comprovada.",
+    "Convergencia multidispositivo de plano/Agendas locais continua fora da certificacao desta decisao global."
   ],
   "responsibility_model": {
     "catalog_review": {
@@ -4020,5 +4414,116 @@
       "b19_veterinarian_registration": "Cadastro adequado no SVE exigido na execucao; CRMV-UF isolado nao comprova esse cadastro.",
       "missing_planned_professional_blocks_assessment_agenda": false
     }
-  }
+  },
+  "assessment_source_bindings": [
+    {
+      "item_id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+      "item_key": "recria_maio",
+      "fields": [
+        "eligibility_rule",
+        "operational_window",
+        "product_requirement"
+      ],
+      "registered_source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+      "registered_coverage_id": "08663e7c-daa7-46c5-aeaa-573d5476f790",
+      "coverage_status": "partially_covers",
+      "scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "does_not_authorize_product_dose_or_withdrawal": true,
+      "status": "PROPOSED_PENDING_CATALOG_DECISION"
+    },
+    {
+      "item_id": "c1866199-bf9d-506e-af05-dd84f3165c90",
+      "item_key": "recria_julho",
+      "fields": [
+        "eligibility_rule",
+        "operational_window",
+        "product_requirement"
+      ],
+      "registered_source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+      "registered_coverage_id": "08663e7c-daa7-46c5-aeaa-573d5476f790",
+      "coverage_status": "partially_covers",
+      "scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "does_not_authorize_product_dose_or_withdrawal": true,
+      "status": "PROPOSED_PENDING_CATALOG_DECISION"
+    },
+    {
+      "item_id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+      "item_key": "recria_setembro",
+      "fields": [
+        "eligibility_rule",
+        "operational_window",
+        "product_requirement"
+      ],
+      "registered_source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+      "registered_coverage_id": "08663e7c-daa7-46c5-aeaa-573d5476f790",
+      "coverage_status": "partially_covers",
+      "scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "does_not_authorize_product_dose_or_withdrawal": true,
+      "status": "PROPOSED_PENDING_CATALOG_DECISION"
+    },
+    {
+      "item_id": "e711773e-88ee-5107-aa73-68e7337468be",
+      "item_key": "pre_desmama_situacional",
+      "fields": [
+        "eligibility_rule",
+        "operational_window",
+        "product_requirement"
+      ],
+      "registered_source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+      "registered_coverage_id": "69a803ce-30c2-4a3c-a85e-24158e97d45e",
+      "coverage_status": "covers",
+      "scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "does_not_authorize_product_dose_or_withdrawal": true,
+      "status": "PROPOSED_PENDING_CATALOG_DECISION"
+    },
+    {
+      "item_id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+      "item_key": "pre_confinamento_dose_unica",
+      "fields": [
+        "eligibility_rule",
+        "operational_window",
+        "product_requirement"
+      ],
+      "registered_source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+      "registered_coverage_id": "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0",
+      "coverage_status": "covers",
+      "scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "does_not_authorize_product_dose_or_withdrawal": true,
+      "status": "PROPOSED_PENDING_CATALOG_DECISION"
+    },
+    {
+      "item_id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+      "item_key": "matrizes_pre_parto_antiparasitario",
+      "fields": [
+        "eligibility_rule",
+        "operational_window",
+        "product_requirement"
+      ],
+      "registered_source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+      "registered_coverage_id": "741baae1-969a-400c-9ede-a50a38837d13",
+      "coverage_status": "partially_covers",
+      "scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "does_not_authorize_product_dose_or_withdrawal": true,
+      "status": "PROPOSED_PENDING_CATALOG_DECISION"
+    }
+  ],
+  "protocol_identity_contract": "Preserva UUID e versão natural do protocolo registrado. A nova versão física pertence ao item; conteúdo e fontes são vinculados ao hash da revisão."
 }

@@ -33,6 +33,9 @@
     "scripts/codex/performance-browser.ts",
     "scripts/codex/performance-post-ack-proof.ts",
     "tests/codex/sanitario-v2-canonical.browser.mjs",
+    "tests/codex/sanitario-v2-approval-dryrun.mjs",
+    "tests/codex/sanitario-v2-review.postgres.mjs",
+    "tests/codex/sanitario-v2-review.supabase.mjs",
     "tests/codex/**/*.test.mjs",
     "tests/codex/**/*.integration.mjs"
   ],

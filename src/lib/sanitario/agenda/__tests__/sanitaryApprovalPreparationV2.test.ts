@@ -21,12 +21,12 @@ describe("preparação curatorial sem autorização operacional", () => {
 
   it("separa prontidão, contexto, produto e proibição sem somar fixture como aprovação", () => {
     const count = (category: string) => groups.filter((group) => group.category === category).flatMap((group) => group.item_keys).length;
-    expect(count("READY_FOR_APPROVAL")).toBe(1);
+    expect(count("READY_FOR_APPROVAL")).toBe(7);
     expect(count("PRODUCT_SCHEME_REQUIRED")).toBe(5);
     expect(count("COMMERCIAL_SOURCE_REQUIRED")).toBe(2);
-    expect(count("GLOBAL_FIELD_REVIEW_REQUIRED")).toBe(6);
+    expect(count("GLOBAL_FIELD_REVIEW_REQUIRED")).toBe(0);
     expect(count("EXPLICIT_AUTO_RESTRICTION")).toBe(6);
-    expect(groups.filter((group) => group.technically_ready_for_single_decision).map((group) => group.id)).toEqual(["B19"]);
+    expect(groups.filter((group) => group.technically_ready_for_single_decision).map((group) => group.id)).toEqual(["B19", "PAR", "DES", "CONF", "PARTO"]);
   });
 
   it("não assina decisão, ativa flag ou permite importação pelo pacote", () => {
@@ -50,6 +50,7 @@ describe("preparação curatorial sem autorização operacional", () => {
 
   it("prepara versões físicas novas com precondição de versão e preserva protocolo estável para histórico", () => {
     expect(packet.prepared_protocol_records).toHaveLength(8);
+    expect(packet.prepared_protocol_records.every(entry => entry.record.id === entry.expected_id && entry.record.version === entry.expected_version)).toBe(true);
     expect(packet.prepared_item_records).toHaveLength(14);
     const ids = new Set(items.map((item) => item.id));
     for (const entry of packet.prepared_item_records) {

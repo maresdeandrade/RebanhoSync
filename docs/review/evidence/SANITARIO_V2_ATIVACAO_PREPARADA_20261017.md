@@ -1,5 +1,7 @@
 # Sanitário V2 — proposta de ativação preparada
 
+> Registro da preparação anterior, com hashes do schema 3. O estado atual, o pacote schema 4, o formulário schema 3 e o mecanismo eletrônico estão em [Aprovação eletrônica V2](SANITARIO_V2_APROVACAO_ELETRONICA_20261017.md). As pendências de implementação do publicador descritas abaixo foram substituídas por essa entrega. A identidade natural do protocolo foi preservada; novas versões físicas pertencem aos itens.
+
 Atualizado em: 2026-10-17
 Baseline remota verificada: `bf43c631685013dca7f8c03066e8f5b251683e57`.
 Escopo: preparar revisao curatorial, ativacao por usuario da fazenda e conformidade de execucao em etapas distintas; nenhuma aprovacao ou publicacao operacional.

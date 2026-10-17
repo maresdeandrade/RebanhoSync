@@ -6,7 +6,7 @@
     "No hosted RLS or concurrency certification",
     "No writes performed by the planner or CLI"
   ],
-  "candidate_sha256": "9bb5ad1789c7061994f212cd500e8d5e64cd301332dec354aa2b9a800bb67c56",
+  "candidate_sha256": "2b3adab34d0eb58dcc5d8fa976d1cd852d41f204e00063b776e2271d60753fe6",
   "plan_counts": {
     "create": 144,
     "reject": 4

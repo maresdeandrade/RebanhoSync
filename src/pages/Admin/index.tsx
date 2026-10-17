@@ -12,6 +12,7 @@ import { AdminMetricsTab } from "./components/AdminMetricsTab";
 import { AdminUsersTab } from "./components/AdminUsersTab";
 import { AdminFarmsTab } from "./components/AdminFarmsTab";
 import { AdminInvitesTab } from "./components/AdminInvitesTab";
+import { AdminSanitaryReviewTab } from "./components/AdminSanitaryReviewTab";
 import {
   ArrowLeft,
   BarChart3,
@@ -25,7 +26,7 @@ import {
 
 export const AdminBackoffice: React.FC = () => {
   const navigate = useNavigate();
-  const { refreshSettings } = useAuth();
+  const { refreshSettings, user } = useAuth();
   const { toast } = useToast();
 
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
@@ -144,7 +145,7 @@ export const AdminBackoffice: React.FC = () => {
 
       {/* Abas Administrativas */}
       <Tabs defaultValue="metrics" className="space-y-6">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full sm:w-auto">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full sm:w-auto">
           <TabsTrigger value="metrics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             <span>Métricas</span>
@@ -161,6 +162,7 @@ export const AdminBackoffice: React.FC = () => {
             <Mail className="h-4 w-4" />
             <span>Convites</span>
           </TabsTrigger>
+          <TabsTrigger value="sanitary">Curadoria sanitária</TabsTrigger>
         </TabsList>
 
         <TabsContent value="metrics" className="space-y-4">
@@ -183,6 +185,7 @@ export const AdminBackoffice: React.FC = () => {
         <TabsContent value="invites" className="space-y-4">
           <AdminInvitesTab onForbidden={handleForbiddenError} />
         </TabsContent>
+        <TabsContent value="sanitary"><AdminSanitaryReviewTab key={user?.id ?? "anonymous"} userId={user?.id ?? null} /></TabsContent>
       </Tabs>
     </div>
   );

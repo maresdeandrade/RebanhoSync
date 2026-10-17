@@ -1049,6 +1049,14 @@ Devem ficar fechados sob demanda:
 
 Essas abas não devem exibir lista linear repetida de todos os itens nem botões por item no modo compacto.
 
+### Revisão curatorial eletrônica V2
+
+A revisão global ocorre no Backoffice, com ação explícita de administrador autorizado em `app_superadmins`. Não exige fazenda ou identificação do futuro executor. A RPC valida a permissão no banco, o hash do conteúdo e as versões; decisão e promoção dos registros canônicos são atômicas e auditadas em `app_admin_audit_events`.
+
+Somente os itens selecionados e tecnicamente completos recebem permissão automática. A avaliação genérica B19 conserva as condições normativas de elegibilidade e execução. As seis avaliações PAR/DES/CONF/PARTO com fonte Embrapa regional conservam o limite de UF `DF`, contexto individual e ausência de produto/dose/via/carência. A fonte permanece apoio: a decisão registrada por campo não a transforma em norma/bula. Uma fazenda não amplia o alcance regional da versão aprovada.
+
+As sete versões dependentes de evidência comercial permanecem sem aprovação; os três itens de raiva conservam `no_agenda_auto`, os dois de aftosa e LEP2 canônica continuam bloqueados. Publicação de regra não gera Agenda por si só: o plano persistente da fazenda exige ativação explícita e o motor existente avalia cada animal. Ver [evidência e homologação](../review/evidence/SANITARIO_V2_APROVACAO_ELETRONICA_20261017.md).
+
 ### Antipadrões proibidos
 
 * Usar agenda como histórico.
