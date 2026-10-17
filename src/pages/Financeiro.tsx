@@ -15,6 +15,7 @@ import {
 import { db } from "@/lib/offline/db";
 import { useAuth } from "@/hooks/useAuth";
 import { createGesture } from "@/lib/offline/ops";
+import { validateFinanceDateInput } from "@/lib/finance/dateInput";
 import {
   validateFinanceTransaction,
   calculateGerencialTemporalSummary,
@@ -99,6 +100,41 @@ interface FinancialRow {
   observacoes: string;
 }
 
+function TransactionDateField({
+  value,
+  error,
+  onChange,
+}: {
+  value: string;
+  error: string | null;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor="form-tx-occurred-at" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+        Data Registro *
+      </label>
+      <Input
+        id="form-tx-occurred-at"
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={!!error}
+        aria-describedby={error ? "form-tx-occurred-at-error" : undefined}
+      />
+      {error && (
+        <p
+          id="form-tx-occurred-at-error"
+          role="alert"
+          className="mt-1 text-sm text-destructive"
+        >
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 const Financeiro = () => {
   const navigate = useNavigate();
   const { activeFarmId } = useAuth();
@@ -123,6 +159,7 @@ const Financeiro = () => {
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [txErrors, setTxErrors] = useState<string[]>([]);
+  const [txOccurredAtError, setTxOccurredAtError] = useState<string | null>(null);
   const [catErrors, setCatErrors] = useState<string[]>([]);
   const [isSavingTx, setIsSavingTx] = useState(false);
   const [isSavingCat, setIsSavingCat] = useState(false);
@@ -514,6 +551,11 @@ const Financeiro = () => {
     if (!activeFarmId || savingTxRef.current) return;
     setTxErrors([]);
 
+    const dateError = validateFinanceDateInput(formTxOccurredAt);
+    setTxOccurredAtError(dateError);
+    if (dateError) return;
+    const occurredAt = new Date(formTxOccurredAt).toISOString();
+
     const valorNum = parseOptionalFinanceNumber(formTxValorTotal);
     const qtyNum = parseOptionalFinanceNumber(formTxQuantidade);
     const unitPriceNum = parseOptionalFinanceNumber(formTxValorUnitario);
@@ -524,13 +566,10 @@ const Financeiro = () => {
       category_id: formTxCategoryId,
       valor_total: valorNum,
       status: formTxStatus,
-      occurred_at: new Date(formTxOccurredAt).toISOString(),
+      occurred_at: occurredAt,
       competence_date: formTxCompetenceDate || null,
       due_date: formTxDueDate || null,
-      paid_at:
-        formTxStatus === "realizado"
-          ? new Date(formTxOccurredAt).toISOString()
-          : null,
+      paid_at: formTxStatus === "realizado" ? occurredAt : null,
       contraparte_id:
         formTxContraparteId === "none_val" ? null : formTxContraparteId || null,
       centro_custo_tipo: formTxCentroCustoTipo,
@@ -1248,17 +1287,16 @@ const Financeiro = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="form-tx-occurred-at" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                  Data Registro *
-                </label>
-                <Input
-                  id="form-tx-occurred-at"
-                  type="date"
-                  value={formTxOccurredAt}
-                  onChange={(e) => setFormTxOccurredAt(e.target.value)}
-                />
-              </div>
+              <TransactionDateField
+                value={formTxOccurredAt}
+                error={txOccurredAtError}
+                onChange={(value) => {
+                  setFormTxOccurredAt(value);
+                  if (txOccurredAtError) {
+                    setTxOccurredAtError(validateFinanceDateInput(value));
+                  }
+                }}
+              />
 
               <div>
                 <label htmlFor="form-tx-competence-date" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">

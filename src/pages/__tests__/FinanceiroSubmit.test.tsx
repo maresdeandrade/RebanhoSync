@@ -126,11 +126,130 @@ describe("Financeiro submit lock", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedCreateGesture.mockReset();
     vi.mocked(useAuth).mockReturnValue({
       activeFarmId: "farm-1",
     } as ReturnType<typeof useAuth>);
     vi.mocked(useLiveQuery).mockReturnValue(financeData);
   });
+
+  it.each([
+    ["data vazia", ""],
+    ["data inexistente no calendário", "2026-02-30"],
+    ["formato incompatível", "17/10/2026"],
+    ["texto inválido", "not-a-date"],
+  ])(
+    "rejeita %s junto ao campo, sem escrita e sem perder dados",
+    async (_label, value) => {
+      renderFinanceiro();
+      fireEvent.click(screen.getByRole("button", { name: /Novo lançamento/i }));
+      fillRequiredTransactionFields();
+      fireEvent.change(screen.getByLabelText(/^Observações$/i), {
+        target: { value: "Pagamento de auditoria" },
+      });
+      const date = screen.getByLabelText(/Data Registro/i);
+      // Também cobre o fallback de navegadores sem suporte ao input date nativo.
+      if (value) date.setAttribute("type", "text");
+      fireEvent.change(date, { target: { value } });
+      fireEvent.click(
+        screen.getByRole("button", { name: /Salvar Lançamento/i }),
+      );
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        value
+          ? "Informe uma data de registro válida."
+          : "Informe a data do registro.",
+      );
+      expect(date).toHaveAttribute("aria-invalid", "true");
+      expect(date).toHaveAttribute(
+        "aria-describedby",
+        "form-tx-occurred-at-error",
+      );
+      expect(screen.getByLabelText(/Valor Total/i)).toHaveValue(150);
+      expect(screen.getByLabelText(/^Observações$/i)).toHaveValue(
+        "Pagamento de auditoria",
+      );
+      expect(mockedCreateGesture).not.toHaveBeenCalled();
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    },
+  );
+
+  it("atualiza o erro ao corrigir o campo e salva apenas depois da correção", async () => {
+    mockedCreateGesture.mockResolvedValue("tx-valid-date");
+    renderFinanceiro();
+    fireEvent.click(screen.getByRole("button", { name: /Novo lançamento/i }));
+    fillRequiredTransactionFields();
+    const date = screen.getByLabelText(/Data Registro/i);
+    fireEvent.change(date, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: /Salvar Lançamento/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Informe a data do registro.",
+    );
+
+    date.setAttribute("type", "text");
+    fireEvent.change(date, { target: { value: "2026-13-01" } });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Informe uma data de registro válida.",
+    );
+    expect(mockedCreateGesture).not.toHaveBeenCalled();
+    fireEvent.change(date, { target: { value: "2026-10-17" } });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(date).toHaveAttribute("aria-invalid", "false");
+    expect(date).not.toHaveAttribute("aria-describedby");
+    fireEvent.click(screen.getByRole("button", { name: /Salvar Lançamento/i }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(mockedCreateGesture).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["realizado", "previsto", "cancelado"] as const)(
+    "preserva ISO UTC e campos financeiros para data válida com status %s",
+    async (status) => {
+      mockedCreateGesture.mockResolvedValue("tx-valid-date");
+      renderFinanceiro();
+      fireEvent.click(screen.getByRole("button", { name: /Novo lançamento/i }));
+      fillRequiredTransactionFields();
+      const dialog = screen.getByRole("dialog");
+      fireEvent.change(within(dialog).getAllByRole("combobox")[1], {
+        target: { value: status },
+      });
+      fireEvent.change(screen.getByLabelText(/Data Registro/i), {
+        target: { value: "2024-02-29" },
+      });
+      fireEvent.change(screen.getByLabelText(/Data Competência/i), {
+        target: { value: "2024-02-01" },
+      });
+      fireEvent.change(screen.getByLabelText(/Data Vencimento/i), {
+        target: { value: "2024-03-10" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: /Salvar Lançamento/i }),
+      );
+
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
+      expect(mockedCreateGesture).toHaveBeenCalledTimes(1);
+      expect(mockedCreateGesture).toHaveBeenCalledWith("farm-1", [
+        expect.objectContaining({
+          table: "finance_transactions",
+          action: "INSERT",
+          record: expect.objectContaining({
+            category_id: "category-1",
+            direction: "saida",
+            valor_total: 150,
+            origem: "manual",
+            status,
+            occurred_at: "2024-02-29T00:00:00.000Z",
+            paid_at: status === "realizado" ? "2024-02-29T00:00:00.000Z" : null,
+            competence_date: "2024-02-01",
+            due_date: "2024-03-10",
+          }),
+        }),
+      ]);
+    },
+  );
 
   it("apresenta resultado observado indisponivel sem converter ausencia em R$ 0", () => {
     renderFinanceiro();
