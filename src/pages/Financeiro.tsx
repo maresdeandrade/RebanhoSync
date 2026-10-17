@@ -100,6 +100,41 @@ interface FinancialRow {
   observacoes: string;
 }
 
+function TransactionDateField({
+  value,
+  error,
+  onChange,
+}: {
+  value: string;
+  error: string | null;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor="form-tx-occurred-at" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
+        Data Registro *
+      </label>
+      <Input
+        id="form-tx-occurred-at"
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={!!error}
+        aria-describedby={error ? "form-tx-occurred-at-error" : undefined}
+      />
+      {error && (
+        <p
+          id="form-tx-occurred-at-error"
+          role="alert"
+          className="mt-1 text-sm text-destructive"
+        >
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 const Financeiro = () => {
   const navigate = useNavigate();
   const { activeFarmId } = useAuth();
@@ -1252,36 +1287,16 @@ const Financeiro = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="form-tx-occurred-at" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
-                  Data Registro *
-                </label>
-                <Input
-                  id="form-tx-occurred-at"
-                  type="date"
-                  value={formTxOccurredAt}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFormTxOccurredAt(value);
-                    if (txOccurredAtError) {
-                      setTxOccurredAtError(validateFinanceDateInput(value));
-                    }
-                  }}
-                  aria-invalid={!!txOccurredAtError}
-                  aria-describedby={
-                    txOccurredAtError ? "form-tx-occurred-at-error" : undefined
+              <TransactionDateField
+                value={formTxOccurredAt}
+                error={txOccurredAtError}
+                onChange={(value) => {
+                  setFormTxOccurredAt(value);
+                  if (txOccurredAtError) {
+                    setTxOccurredAtError(validateFinanceDateInput(value));
                   }
-                />
-                {txOccurredAtError && (
-                  <p
-                    id="form-tx-occurred-at-error"
-                    role="alert"
-                    className="mt-1 text-sm text-destructive"
-                  >
-                    {txOccurredAtError}
-                  </p>
-                )}
-              </div>
+                }}
+              />
 
               <div>
                 <label htmlFor="form-tx-competence-date" className="block text-xs font-semibold text-muted-foreground uppercase mb-1">
