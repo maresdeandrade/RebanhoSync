@@ -26,6 +26,7 @@ import {
 } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
 import { getAffectedStores, reapplyOpLocal, rollbackOpLocal } from "./ops";
+import { preservePendingAnimalDeletesAfterRollback } from "./animalDeleteRollback";
 import { sortOpsForSync } from "./syncOrder";
 import {
   mergeOperationAudit,
@@ -1761,6 +1762,7 @@ async function reconcileGenericOperationResults(
     for (const op of sortOpsForSync(appliedOps)) {
       await reapplyOpLocal(op);
     }
+    await preservePendingAnimalDeletesAfterRollback(gesture.fazenda_id, rejectedOps);
 
     if (appliedOps.length > 0) {
       await db.queue_ops.bulkDelete(
