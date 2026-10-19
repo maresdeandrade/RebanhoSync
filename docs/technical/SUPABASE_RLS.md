@@ -39,6 +39,9 @@ Definir o contrato técnico para Supabase, RLS, isolamento multi-tenant, RPCs, p
 - Gate sanitário remoto: desligado e fail-closed.
 - Feature flag local: `false`; não é fronteira de autorização.
 - Rollout para usuários: não autorizado.
+- R01 aplicada ao backend existente de testes em 19/10/2026: 63 migrations, curadoria/plano/reagendamento
+  instalados, catálogo vazio e gates OFF. R02–R05 não executadas. Recuperação lógica, compatibilidade e
+  efeito auxiliar de login da CLI: [evidência R01](../review/evidence/SANITARIO_V2_R01_APLICADA_20261019.md).
 
 A fundação de RLS e isolamento multi-tenant/fazenda do Sync Sanitário v2 está tecnicamente concluída. Isso não conclui o sync nem autoriza rollout.
 

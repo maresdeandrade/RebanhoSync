@@ -1,0 +1,314 @@
+{
+  "artifact": "sanitario_r01_applied_verified",
+  "schema_version": 1,
+  "source_commit": "7adca3b65b06bf5f3fe3ddebb8cb6b287d8fffc2",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "observed_after_apply": "2026-10-19T19:12:32.920551+00:00",
+  "result": "R01_APPLIED_VERIFIED_WITH_AUXILIARY_CLI_EFFECT",
+  "migrations": [
+    {
+      "file": "20261015070038_sanitario_agenda_catalog_v2_references.sql",
+      "sha256": "625fe8940f09476833205d44978031dcfd10223fb0683ee08afd7cd4ed0cd916"
+    },
+    {
+      "file": "20261017080447_sanitario_catalog_review_v2.sql",
+      "sha256": "6b73f0dce568eb37c6941f5fa7354dde7604aeba070a5a815a211fc96efabd1e"
+    },
+    {
+      "file": "20261017195545_sanitario_planning_convergence_v2.sql",
+      "sha256": "8b6b0577e6f07280ee58ead78221fcec6c5b9973aad8222e225c350a9ff36593"
+    }
+  ],
+  "backup": {
+    "directory": "C:\\Users\\mares\\AppData\\Local\\RebanhoSync-private-backups\\r01-a386755c369f4ff1b66a08d9cc8097fb",
+    "protection": "CurrentUser DPAPI plus ACL limited to current Windows user and SYSTEM",
+    "files": [
+      {
+        "file": "database.dump.dpapi",
+        "plain_bytes": 1246639,
+        "plain_sha256": "575e4faa8f340afecdffc1dc26d11a03f7922fbf8c8beceba044046c10b8ae99",
+        "encrypted_sha256": "6e84de88b0334f8f9296977cba397da07aa0ab366e3cbdf7260c3f60c53ea119",
+        "roundtrip": true
+      },
+      {
+        "file": "roles.sql.dpapi",
+        "plain_bytes": 6062,
+        "plain_sha256": "9a5129df74b00b3431af1f0962d631932bb506a608b9bfec1fb25d4271e68ccb",
+        "encrypted_sha256": "74d7de159d79216bb853e7192e1299b6fa3bda1f4c163846c3aff758dffece13",
+        "roundtrip": true
+      }
+    ],
+    "plaintext_copies_removed": true,
+    "logical_format": "pg_dump custom; pg_dumpall roles without passwords",
+    "schema_restore": "passed with documented local bootstrap/grantor adaptation",
+    "restored_tables": 107,
+    "restored_auth": {
+      "users": 3,
+      "sessions": 7,
+      "refresh_tokens_at_snapshot": 32
+    },
+    "live_fingerprint_comparison": {
+      "matches": 104,
+      "total": 107,
+      "changed_after_snapshot": [
+        "auth.refresh_tokens",
+        "auth.sessions",
+        "auth.users"
+      ]
+    },
+    "limitations": [
+      "DPAPI requires the original Windows user profile",
+      "Database role passwords, API/JWT keys, Auth service/SMTP/provider configuration, Edge secrets and storage object bytes are not in this logical backup",
+      "Publication/subscription definitions excluded; recreate from platform configuration",
+      "Local bootstrap postgres retained SUPERUSER and membership grantor adapted to local restore operator; original roles.sql preserved encrypted"
+    ]
+  },
+  "compatibility": {
+    "cases": [
+      {
+        "name": "profile_without_plan_change",
+        "result": "PASS",
+        "accepted": true,
+        "sqlstate": null,
+        "normalized_status": "APPLIED",
+        "persisted_changes": 0
+      },
+      {
+        "name": "payload_without_sanitary_field",
+        "result": "PASS",
+        "accepted": true,
+        "sqlstate": null,
+        "normalized_status": "APPLIED",
+        "persisted_changes": 0
+      },
+      {
+        "name": "payload_with_unchanged_legacy_plan",
+        "result": "PASS",
+        "accepted": true,
+        "sqlstate": null,
+        "normalized_status": "APPLIED",
+        "persisted_changes": 0
+      },
+      {
+        "name": "payload_with_stale_plan",
+        "result": "PASS",
+        "accepted": false,
+        "sqlstate": "42501",
+        "normalized_status": "REJECTED",
+        "persisted_changes": 0
+      },
+      {
+        "name": "direct_plan_update",
+        "result": "PASS",
+        "accepted": false,
+        "sqlstate": "42501",
+        "normalized_status": "REJECTED",
+        "persisted_changes": 0
+      },
+      {
+        "name": "legacy_plan_insert_into_empty_config",
+        "result": "PASS",
+        "accepted": false,
+        "sqlstate": "42501",
+        "normalized_status": "REJECTED",
+        "persisted_changes": 0
+      },
+      {
+        "name": "payload_omitting_existing_plan",
+        "result": "PASS",
+        "accepted": false,
+        "sqlstate": "42501",
+        "normalized_status": "REJECTED",
+        "persisted_changes": 0
+      },
+      {
+        "name": "retry_rejected_same_identity_first",
+        "result": "PASS",
+        "accepted": false,
+        "sqlstate": "42501",
+        "normalized_status": "REJECTED",
+        "persisted_changes": 0
+      },
+      {
+        "name": "retry_rejected_same_identity_second",
+        "result": "PASS",
+        "accepted": false,
+        "sqlstate": "42501",
+        "normalized_status": "REJECTED",
+        "persisted_changes": 0
+      }
+    ],
+    "scope": "Actual v27 normalizeDbError plus generic SQL UPDATE/RLS; no hosted HTTP or browser worker execution",
+    "recovery": "Explicit rejection, unchanged rows and same input IDs; repeated v27 retry remains rejected until transport upgrade or explicit user correction",
+    "browser_queues": "inaccessible clients remain residual risk; no IndexedDB modified"
+  },
+  "atomic": {
+    "local_rehearsal": {
+      "before": "60",
+      "after_dry_run": "60",
+      "after_apply": "63"
+    },
+    "remote_dry_run": {
+      "exit": 0,
+      "sql_sha256": "fc5a2e8a7dc6cf66cf932e0a4c4fea792fa74da192e0b18a622a66f91ba080f0",
+      "rollback_verified": true,
+      "versions_after": 60
+    },
+    "remote_apply": {
+      "exit": 0,
+      "sql_sha256": "82abc8b143c310b69ad8c5b11531502e28d31c83d002f4c30f68b5fe93b091f9",
+      "versions_after": 63,
+      "one_transaction": true,
+      "first_migration_outer_begin_commit_replaced_by_batch_boundary": true,
+      "original_file_bytes_in_history": true
+    }
+  },
+  "post_apply": {
+    "schema_matches_local": [
+      {
+        "section": "migrations",
+        "match": true
+      },
+      {
+        "section": "rpcs",
+        "match": true
+      },
+      {
+        "section": "columns",
+        "match": true
+      },
+      {
+        "section": "tables",
+        "match": true
+      },
+      {
+        "section": "constraints",
+        "match": true
+      },
+      {
+        "section": "policies",
+        "match": true
+      }
+    ],
+    "counts": {
+      "agenda_v2": 0,
+      "auth_sessions": 7,
+      "automatic_items": 0,
+      "automation_plans": 0,
+      "classes": 0,
+      "configs": 5,
+      "coverage": 0,
+      "default_rules": 0,
+      "dose_rules": 0,
+      "global_reviewers": 0,
+      "groups": 0,
+      "items": 0,
+      "ledger": 0,
+      "members": 0,
+      "product_authorizations": 0,
+      "product_sources": 0,
+      "products": 0,
+      "protocols": 0,
+      "sources": 0,
+      "users": 3,
+      "users_signed_in_30d": 3,
+      "withdrawal_rules": 0,
+      "withdrawal_sources": 0
+    },
+    "gates": [],
+    "rls_tables": 19,
+    "all_rls_enabled": true,
+    "triggers": [
+      {
+        "name": "guard_sanitary_automation_plan_writer_v2",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER guard_sanitary_automation_plan_writer_v2 BEFORE INSERT OR UPDATE ON public.fazenda_sanidade_config FOR EACH ROW EXECUTE FUNCTION guard_sanitary_automation_plan_writer_v2()"
+      },
+      {
+        "name": "sanitario_agenda_v2_protect_item_parent",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER sanitario_agenda_v2_protect_item_parent BEFORE UPDATE OF protocol_id ON public.sanitario_protocolo_itens_versions_v2 FOR EACH ROW EXECUTE FUNCTION sanitario_agenda_v2_protect_catalog_reference()"
+      },
+      {
+        "name": "sanitario_agenda_v2_protect_protocol_scope",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER sanitario_agenda_v2_protect_protocol_scope BEFORE UPDATE OF scope, fazenda_id ON public.sanitario_protocolos_v2 FOR EACH ROW EXECUTE FUNCTION sanitario_agenda_v2_protect_catalog_reference()"
+      },
+      {
+        "name": "sanitario_agenda_v2_resolve_catalog_reference",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER sanitario_agenda_v2_resolve_catalog_reference BEFORE INSERT OR UPDATE OF protocolo_id, protocol_item_version_id, catalog_protocolo_v2_id, catalog_protocol_item_version_v2_id, fazenda_id ON public.sanitario_agenda_v2 FOR EACH ROW EXECUTE FUNCTION sanitario_agenda_v2_resolve_catalog_reference()"
+      }
+    ],
+    "versions": [
+      {
+        "name": "sanitario_agenda_catalog_v2_references",
+        "version": "20261015070038"
+      },
+      {
+        "name": "sanitario_catalog_review_v2",
+        "version": "20261017080447"
+      },
+      {
+        "name": "sanitario_planning_convergence_v2",
+        "version": "20261017195545"
+      }
+    ],
+    "privileges": {
+      "service_plan": true,
+      "anon_curatorial": false,
+      "authenticated_plan": false,
+      "authenticated_curatorial": true
+    },
+    "temporary_login": {
+      "name": "cli_login_postgres",
+      "expired": false,
+      "valid_until": "2026-10-19T19:17:31.549893+00:00"
+    },
+    "ledger_constraint": "CHECK ((operation_kind = ANY (ARRAY['agenda_create'::text, 'agenda_targets_replace'::text, 'factual_core'::text, 'administrative_closure'::text, 'automation_plan'::text, 'agenda_schedule'::text])))",
+    "functions": {
+      "sync-batch": 27,
+      "sanitario-reconcile": 4,
+      "telemetry-ingest": 2,
+      "test-auth": 5
+    }
+  },
+  "scope_exception": {
+    "description": "Supabase CLI dump and db query reported initialising login role; cli_login_postgres was created or refreshed as an auxiliary effect outside the three migrations",
+    "temporary_role_last_observed": {
+      "name": "cli_login_postgres",
+      "expired": false,
+      "valid_until": "2026-10-19T19:17:31.549893+00:00"
+    },
+    "manual_role_deletion_or_revocation": false,
+    "credential_log_removed": true,
+    "new_database_credentials_in_repository": false,
+    "final_login_observation": {
+      "observed_at": "2026-10-19 19:18:27.424793+00",
+      "rolname": "cli_login_postgres",
+      "rolvaliduntil": "2026-10-19 19:17:31.549893+00",
+      "expired": true
+    }
+  },
+  "local_cleanup": {
+    "owned_containers_removed": [
+      "sanitario-r01-0c308348",
+      "sanitario-r01-0c308348b",
+      "sanitario-r01-0c308348c"
+    ],
+    "encrypted_backups_retained": true
+  },
+  "unauthorized_steps_executed": {
+    "R02": false,
+    "R03": false,
+    "R04": false,
+    "R05": false
+  },
+  "validation": {
+    "legacy_cases": 9,
+    "focused_eslint": "passed",
+    "new_global_regression": false,
+    "docs_gates": "passed",
+    "artifact_gate": "READY WITH CAVEAT: R01 verified; CLI auxiliary role effect disclosed"
+  }
+}

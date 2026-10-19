@@ -2,8 +2,9 @@
 
 Atualizado em: 2026-10-19
 
-> R01 autorizada condicionalmente e interrompida antes de aplicar: backup recuperável não comprovado.
-> Ver [relatório da execução R01](SANITARIO_V2_R01_EXECUCAO_20261019.md).
+> R01 concluída após backup/restauração lógica e ensaio de compatibilidade: 63 migrations, gates OFF.
+> Ver [execução da retomada R01 e desvio auxiliar da CLI](SANITARIO_V2_R01_APLICADA_20261019.md).
+> R02–R05 continuam não autorizadas. Os dados abaixo preservam o snapshot anterior à R01.
 
 ## Decisão e limite desta entrega
 

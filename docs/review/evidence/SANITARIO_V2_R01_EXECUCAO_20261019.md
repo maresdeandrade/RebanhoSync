@@ -2,6 +2,9 @@
 
 Atualizado em: 2026-10-19
 
+> Registro histórico da tentativa impedida. Recuperação e compatibilidade foram posteriormente
+> ensaiadas e R01 aplicada: ver [resultado da retomada](SANITARIO_V2_R01_APLICADA_20261019.md).
+
 ## Decisão
 
 **R01_APPLICATION_BLOCKED — nenhuma migration aplicada, nenhuma escrita remota executada.**
