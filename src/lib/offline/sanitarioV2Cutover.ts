@@ -12,7 +12,7 @@ import type {
 } from "./types";
 
 export const SANITARIO_V2_CONTRACT_VERSION = 2;
-// Legacy export name retained for queued-client compatibility. This is production, and is denied.
+// Legacy export retained; controlled preview also requires an explicit, default-OFF rollout decision.
 export const SANITARIO_V2_STAGING_PROJECT_REF = "zqloazqzhwauamcejmuz";
 const FEATURE_FLAG_KEY = "rebanhosync:sanitario-v2-push";
 const UUID_PATTERN =
@@ -88,18 +88,31 @@ function storageAvailable() {
 
 export function isSanitarioV2PushEnabled(projectRef: string) {
   return (
-    isIsolatedSanitarioBackend(projectRef) &&
+    isSanitarioBackendAllowed(projectRef) &&
     storageAvailable() &&
     localStorage.getItem(FEATURE_FLAG_KEY) === projectRef
   );
 }
-function isIsolatedSanitarioBackend(projectRef: string) {
+function isControlledSanitarioBackend(projectRef: string, url: URL) {
+  const controlled = backendTargets.existing_backend_homologation;
+  return controlled.client_rollout_enabled === true && !!controlled.reuse_decision_reference &&
+    projectRef === controlled.project_ref &&
+    backendTargets.production_project_refs.includes(projectRef) &&
+    url.href === `https://${projectRef}.supabase.co/`;
+}
+function isExclusiveSanitarioBackend(projectRef: string, url: URL) {
   if (projectRef === SANITARIO_V2_STAGING_PROJECT_REF) return false;
+  if (url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname)) return projectRef === "local";
+  return url.protocol === "https:" && import.meta.env.VITE_BACKEND_ENV === "homologation" &&
+    projectRef === url.hostname.split(".")[0] && (backendTargets.homologation_project_refs as string[]).includes(projectRef);
+}
+function isSanitarioBackendAllowed(projectRef: string) {
   try {
     const url = new URL(import.meta.env.VITE_SUPABASE_URL ?? "");
-    if (url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname)) return projectRef === "local";
-    return url.protocol === "https:" && import.meta.env.VITE_BACKEND_ENV === "homologation" &&
-      projectRef === url.hostname.split(".")[0] && (backendTargets.homologation_project_refs as string[]).includes(projectRef);
+    if (import.meta.env.VITE_BACKEND_ENV === "controlled-homologation") {
+      return isControlledSanitarioBackend(projectRef, url);
+    }
+    return isExclusiveSanitarioBackend(projectRef, url);
   } catch { return false; }
 }
 export function setSanitarioV2PushEnabled(
@@ -113,7 +126,7 @@ export function setSanitarioV2PushEnabled(
     localStorage.removeItem(FEATURE_FLAG_KEY);
     return;
   }
-  if (!isIsolatedSanitarioBackend(projectRef)) {
+  if (!isSanitarioBackendAllowed(projectRef)) {
     throw new Error("SANITARIO_V2_STAGING_ONLY");
   }
   localStorage.setItem(FEATURE_FLAG_KEY, projectRef);

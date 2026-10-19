@@ -1,0 +1,2915 @@
+{
+  "artifact": "sanitario_v2_existing_backend_preflight",
+  "schema_version": 1,
+  "observed_at": "2026-10-19T09:22:25.636288+00:00",
+  "source_commit": "24720aafcbda2025917a72cf5e71dc81f3fc1d62",
+  "integrated_main": "613c89dfcce04ec4b312173a404fb006b82caee7",
+  "sanitario_base": "d5a62cce85e4cab7638f59f782ca20e7661eb369",
+  "target": {
+    "project_ref": "zqloazqzhwauamcejmuz",
+    "name": "RebanhoSync",
+    "organization_id": "zrcfplrzfpmihemqaemj",
+    "region": "sa-east-1",
+    "status": "ACTIVE_HEALTHY",
+    "postgres": "17.11.0.002",
+    "published_origin": "https://rebanho-sync.vercel.app",
+    "published_bundle": "/assets/index-CwiPqPHK.js",
+    "published_key_digest_matches_registry": true,
+    "frontend_env_in_worktree": false,
+    "database_credentials_in_worktree": false
+  },
+  "remote_write_operations": 0,
+  "remote_authorizations": [
+    {
+      "id": "R01",
+      "authorized": false
+    },
+    {
+      "id": "R02",
+      "authorized": false
+    },
+    {
+      "id": "R03",
+      "authorized": false
+    },
+    {
+      "id": "R04",
+      "authorized": false
+    },
+    {
+      "id": "R05",
+      "authorized": false
+    }
+  ],
+  "migration_comparison": {
+    "method": "SHA256 after removing block/line comments, whitespace and semicolons; textual heuristic, not byte identity or a full schema diff",
+    "local_count": 63,
+    "remote_count": 60,
+    "common_normalized_matches": 60,
+    "remote_only": [],
+    "pending": [
+      {
+        "file": "20261015070038_sanitario_agenda_catalog_v2_references.sql",
+        "sha256": "625fe8940f09476833205d44978031dcfd10223fb0683ee08afd7cd4ed0cd916"
+      },
+      {
+        "file": "20261017080447_sanitario_catalog_review_v2.sql",
+        "sha256": "6b73f0dce568eb37c6941f5fa7354dde7604aeba070a5a815a211fc96efabd1e"
+      },
+      {
+        "file": "20261017195545_sanitario_planning_convergence_v2.sql",
+        "sha256": "8b6b0577e6f07280ee58ead78221fcec6c5b9973aad8222e225c350a9ff36593"
+      }
+    ],
+    "files": [
+      {
+        "file": "00000000000000_rebuild_base_schema_sanitario.sql",
+        "sha256": "d7364c017258a4d72b3e4d3688c1d7c7bef7fd199cf04882d812473c62af984d",
+        "normalized_sha256": "1b1f6d0538e0f3d5e65d4fd5feac0f73fce71906a04c0b9f3e1c558fd04ca2da",
+        "remote": {
+          "version": "00000000000000",
+          "name": "rebuild_base_schema_sanitario",
+          "normalized_sha256": "1b1f6d0538e0f3d5e65d4fd5feac0f73fce71906a04c0b9f3e1c558fd04ca2da"
+        },
+        "match": true
+      },
+      {
+        "file": "20260508003000_pasto_ocupacoes.sql",
+        "sha256": "aafb2effd99da90e35e92bf05b909e55d6e1f31047ffff0d1f807a91222a44a9",
+        "normalized_sha256": "173b03d03d536b9938800a0dd082ffb5487b0ab8479e26f7029fe355c2cae836",
+        "remote": {
+          "version": "20260508003000",
+          "name": "pasto_ocupacoes",
+          "normalized_sha256": "173b03d03d536b9938800a0dd082ffb5487b0ab8479e26f7029fe355c2cae836"
+        },
+        "match": true
+      },
+      {
+        "file": "20260508004000_pastos_forrageira_manejo.sql",
+        "sha256": "c399a0ead468ecfea089cfd8970522f40a6077d6eccd0e18805b0989e7110f7e",
+        "normalized_sha256": "8ba0bc2bae94f68a3f254378b0311cde46153b1fb5fef0e0ae1f198801c61fe2",
+        "remote": {
+          "version": "20260508004000",
+          "name": "pastos_forrageira_manejo",
+          "normalized_sha256": "8ba0bc2bae94f68a3f254378b0311cde46153b1fb5fef0e0ae1f198801c61fe2"
+        },
+        "match": true
+      },
+      {
+        "file": "20260508005000_eventos_pasto_avaliacao.sql",
+        "sha256": "95e81847ced161b26040ee5df09896d6caeb2f7b9e0ff51f397925867c3576b6",
+        "normalized_sha256": "37cfacd2cc42d281ccd80809bc039f9d72b17a2426953ff66bbb5c76ddeae116",
+        "remote": {
+          "version": "20260508005000",
+          "name": "eventos_pasto_avaliacao",
+          "normalized_sha256": "37cfacd2cc42d281ccd80809bc039f9d72b17a2426953ff66bbb5c76ddeae116"
+        },
+        "match": true
+      },
+      {
+        "file": "20260511000000_sanitario_complete_agenda_idempotency.sql",
+        "sha256": "bc6ae02f2b4a22bf462590d457f15f5b62af668a97fddd36bff9387d3737387e",
+        "normalized_sha256": "ad3f9f3888cdaa4497020a5a521e2c2ca60be8c31c0af42b99b480331ec332ee",
+        "remote": {
+          "version": "20260511000000",
+          "name": "sanitario_complete_agenda_idempotency",
+          "normalized_sha256": "ad3f9f3888cdaa4497020a5a521e2c2ca60be8c31c0af42b99b480331ec332ee"
+        },
+        "match": true
+      },
+      {
+        "file": "20260514000000_fix_create_fazenda_primary_membership.sql",
+        "sha256": "04b8f6e64927cabed10e2709f7005b8a4600f92c3b887443079c7fcf28580cdc",
+        "normalized_sha256": "0066d941408e24286eb25e87e03d7075df5b734fcabe388900223f21be57aa93",
+        "remote": {
+          "version": "20260514000000",
+          "name": "fix_create_fazenda_primary_membership",
+          "normalized_sha256": "0066d941408e24286eb25e87e03d7075df5b734fcabe388900223f21be57aa93"
+        },
+        "match": true
+      },
+      {
+        "file": "20260524000000_dry_cow_therapy_agenda_recompute.sql",
+        "sha256": "b4e09b50c1b7e343184032390d21c57ecc5d0b4a995700e6f49b79295fe875ab",
+        "normalized_sha256": "b0f0a29e7023ef815e7b8f4c1fef09a3bc449861569df21288096af5c078d731",
+        "remote": {
+          "version": "20260524000000",
+          "name": "dry_cow_therapy_agenda_recompute",
+          "normalized_sha256": "b0f0a29e7023ef815e7b8f4c1fef09a3bc449861569df21288096af5c078d731"
+        },
+        "match": true
+      },
+      {
+        "file": "20260525000000_insumos_inventory.sql",
+        "sha256": "a949becd7476834f1a5efb1c64c73e32fc56795c6494b2345328cef6592595d8",
+        "normalized_sha256": "c635df4b6f694c00a95ed9bba93e763411587c133d89806f65dc6dd107201b24",
+        "remote": {
+          "version": "20260525000000",
+          "name": "insumos_inventory",
+          "normalized_sha256": "c635df4b6f694c00a95ed9bba93e763411587c133d89806f65dc6dd107201b24"
+        },
+        "match": true
+      },
+      {
+        "file": "20260526000000_anti_zombie_agenda.sql",
+        "sha256": "7fcfc485a8aec67ab66f7918804b94ec1c8a485d35a8f1e965752edec8d2b7c3",
+        "normalized_sha256": "b47ea0b795529107d3f6c041793ef24977cabc39c9c7c27656ac4d630185b033",
+        "remote": {
+          "version": "20260526000000",
+          "name": "anti_zombie_agenda",
+          "normalized_sha256": "b47ea0b795529107d3f6c041793ef24977cabc39c9c7c27656ac4d630185b033"
+        },
+        "match": true
+      },
+      {
+        "file": "20260526000100_recompute_on_animal_mutation.sql",
+        "sha256": "75f384bb8c5f04d7cf48271c7d4353fba719dbf959dd815e58e4f5efafeb4b9c",
+        "normalized_sha256": "5c19c43cc28a6058ce365b7ab994d9f3f7388417038846e097372ac163c41be3",
+        "remote": {
+          "version": "20260526000100",
+          "name": "recompute_on_animal_mutation",
+          "normalized_sha256": "5c19c43cc28a6058ce365b7ab994d9f3f7388417038846e097372ac163c41be3"
+        },
+        "match": true
+      },
+      {
+        "file": "20260526000200_reconcile_support_rpcs.sql",
+        "sha256": "62e0ab2bbf4f61bcce7df52c3a12161d84b73d647e9bea870103d8967314ee17",
+        "normalized_sha256": "3ec66238734a9b12581f9b50ad00cefe76c9664f717d756e9c32329a6a98b906",
+        "remote": {
+          "version": "20260526000200",
+          "name": "reconcile_support_rpcs",
+          "normalized_sha256": "3ec66238734a9b12581f9b50ad00cefe76c9664f717d756e9c32329a6a98b906"
+        },
+        "match": true
+      },
+      {
+        "file": "20260526000300_vw_animais_peso_atual.sql",
+        "sha256": "a6bd7917f1853ca997caa52dbaf822e422d5a46364b210ebf4e3952794d54d9d",
+        "normalized_sha256": "718ae2ebb3402e65aec6c5e914fbfcb9d054873591505e8c2846702ec7cf2fa6",
+        "remote": {
+          "version": "20260526000300",
+          "name": "vw_animais_peso_atual",
+          "normalized_sha256": "718ae2ebb3402e65aec6c5e914fbfcb9d054873591505e8c2846702ec7cf2fa6"
+        },
+        "match": true
+      },
+      {
+        "file": "20260526000400_vw_animais_carencia_ativa.sql",
+        "sha256": "f3eded9c60811e1ba57bb30c9f35cb0cf26a81843c07e79bd2b585dee48a63db",
+        "normalized_sha256": "9d94786bc5bd7bd05870b9b50eeeaa65f36d844a8931e583f7f7564a43407eb8",
+        "remote": {
+          "version": "20260526000400",
+          "name": "vw_animais_carencia_ativa",
+          "normalized_sha256": "9d94786bc5bd7bd05870b9b50eeeaa65f36d844a8931e583f7f7564a43407eb8"
+        },
+        "match": true
+      },
+      {
+        "file": "20260526000500_idx_sanitary_completion_key.sql",
+        "sha256": "fb16fd442d0438197fc8be459a1c570f8a0a8c67d175ff0d4d5b06b8c62b152c",
+        "normalized_sha256": "c5348534ab46ad4c6e1383c833c4638c5a5aaf6b3af73e19a4baf4392ccb28d6",
+        "remote": {
+          "version": "20260526000500",
+          "name": "idx_sanitary_completion_key",
+          "normalized_sha256": "c5348534ab46ad4c6e1383c833c4638c5a5aaf6b3af73e19a4baf4392ccb28d6"
+        },
+        "match": true
+      },
+      {
+        "file": "20260526000600_idx_eventos_unique_source_task.sql",
+        "sha256": "dd49674271212d9dc6bbc216402794d7de55209bcd2d9fdbfde2ee3ee1f8c6c4",
+        "normalized_sha256": "b2d7f7c22fc237b35cb8271d53f9f11a8fef4916d84c51e389fc7a710d7fcf87",
+        "remote": {
+          "version": "20260526000600",
+          "name": "idx_eventos_unique_source_task",
+          "normalized_sha256": "b2d7f7c22fc237b35cb8271d53f9f11a8fef4916d84c51e389fc7a710d7fcf87"
+        },
+        "match": true
+      },
+      {
+        "file": "20260528000001_add_eventos_ecc.sql",
+        "sha256": "9c072cbedf62985f7e85a329b698e5223638817c0c946843ff1a743ad76ed91f",
+        "normalized_sha256": "1c55fe73178d85a3de1f1b67b1eb3d86ceb0a4736b85367a2a68cad84a5044ea",
+        "remote": {
+          "version": "20260528000001",
+          "name": "add_eventos_ecc",
+          "normalized_sha256": "1c55fe73178d85a3de1f1b67b1eb3d86ceb0a4736b85367a2a68cad84a5044ea"
+        },
+        "match": true
+      },
+      {
+        "file": "20260529000000_insumos_campos_custo_carencia.sql",
+        "sha256": "7dd9bc1f5eca3476e64206f551c46c9fe0373c807157f55b8b5fb2917d98a980",
+        "normalized_sha256": "24a7db38f0e998aea827a1380aca0d59dfb68c64ea7de643bd3c711b0245618a",
+        "remote": {
+          "version": "20260529000000",
+          "name": "insumos_campos_custo_carencia",
+          "normalized_sha256": "24a7db38f0e998aea827a1380aca0d59dfb68c64ea7de643bd3c711b0245618a"
+        },
+        "match": true
+      },
+      {
+        "file": "20260529000100_update_vw_animais_carencia_ativa.sql",
+        "sha256": "7390997cea0f908e60c24a211bb56b0d89c9447744a9cbf49ada47e903cdc72e",
+        "normalized_sha256": "66907bac6fa670b78e5d6e0c3ab32509c15daa6bb49983753afcc24d6de9d960",
+        "remote": {
+          "version": "20260529000100",
+          "name": "update_vw_animais_carencia_ativa",
+          "normalized_sha256": "66907bac6fa670b78e5d6e0c3ab32509c15daa6bb49983753afcc24d6de9d960"
+        },
+        "match": true
+      },
+      {
+        "file": "20260529000200_financeiro_gerencial.sql",
+        "sha256": "dc0c54f83b8ed954da7c5f8312371932603b33b6d601900bb2370f9a4196366d",
+        "normalized_sha256": "de5f46683c3488a6738b353ddbe990a5c6ccf78673e949c2df703fd118e1db18",
+        "remote": {
+          "version": "20260529000200",
+          "name": "financeiro_gerencial",
+          "normalized_sha256": "de5f46683c3488a6738b353ddbe990a5c6ccf78673e949c2df703fd118e1db18"
+        },
+        "match": true
+      },
+      {
+        "file": "20260529000300_comercial_operations.sql",
+        "sha256": "f2209f2be80c74d4a000b446e6b329283bf3a4d0836900c03d807390e7c1a7c2",
+        "normalized_sha256": "dfbb9f9910bac2ed5f931c1161241daaafc080c68e138a7780a69e299eb1df0d",
+        "remote": {
+          "version": "20260529000300",
+          "name": "comercial_operations",
+          "normalized_sha256": "dfbb9f9910bac2ed5f931c1161241daaafc080c68e138a7780a69e299eb1df0d"
+        },
+        "match": true
+      },
+      {
+        "file": "20260529000400_sociedade_pecuaria.sql",
+        "sha256": "bcd192162eb075db2d46c9546c112f7970ef2ef0cedba785566f512adb12b509",
+        "normalized_sha256": "81f14d52709d1019167aa961995a75b88ea0c90a78844b8968c2aa2437fe7680",
+        "remote": {
+          "version": "20260529000400",
+          "name": "sociedade_pecuaria",
+          "normalized_sha256": "81f14d52709d1019167aa961995a75b88ea0c90a78844b8968c2aa2437fe7680"
+        },
+        "match": true
+      },
+      {
+        "file": "20260530000000_sociedade_pecuaria_sync_metadata.sql",
+        "sha256": "841b66ae3336da53a2e5d317ab049d9ad6636d308912dd7484005f843a371efa",
+        "normalized_sha256": "e5f4d7d8997998af8b9221db55c52269696128209699c4bdebefd8d3b9ae8aaa",
+        "remote": {
+          "version": "20260530000000",
+          "name": "sociedade_pecuaria_sync_metadata",
+          "normalized_sha256": "e5f4d7d8997998af8b9221db55c52269696128209699c4bdebefd8d3b9ae8aaa"
+        },
+        "match": true
+      },
+      {
+        "file": "20260530000100_sociedade_pecuaria_status_retirado.sql",
+        "sha256": "9fc04be06409d4b80d9f406d1ab443e1e76658c3a39b6f126de5f1654f32bd1b",
+        "normalized_sha256": "174711e6e92e642beccb2c5832e2efc7d211a993d6764ab3ad0073ff72986b76",
+        "remote": {
+          "version": "20260530000100",
+          "name": "sociedade_pecuaria_status_retirado",
+          "normalized_sha256": "174711e6e92e642beccb2c5832e2efc7d211a993d6764ab3ad0073ff72986b76"
+        },
+        "match": true
+      },
+      {
+        "file": "20260531000000_protocolos_sanitarios_itens_immutable_versions.sql",
+        "sha256": "bd944a6dd48fb90721268eac6fff4bd939753758a66fdb4901c922ea318c92cf",
+        "normalized_sha256": "dc3d3f59a381878f8a8a834179c6a82c3280238f2875573c3d3a53097cf7282c",
+        "remote": {
+          "version": "20260531000000",
+          "name": "protocolos_sanitarios_itens_immutable_versions",
+          "normalized_sha256": "dc3d3f59a381878f8a8a834179c6a82c3280238f2875573c3d3a53097cf7282c"
+        },
+        "match": true
+      },
+      {
+        "file": "20260531001000_protocolos_sanitarios_drop_legacy_protocol_item_id.sql",
+        "sha256": "00868f92568be3f5b476a8f95709812a486862697e160ff47c3ec8300ac03ecb",
+        "normalized_sha256": "4298831e4cef8d2d4158762443405d981866a8195025e517fb24766ddff69e9e",
+        "remote": {
+          "version": "20260531001000",
+          "name": "protocolos_sanitarios_drop_legacy_protocol_item_id",
+          "normalized_sha256": "4298831e4cef8d2d4158762443405d981866a8195025e517fb24766ddff69e9e"
+        },
+        "match": true
+      },
+      {
+        "file": "20260531002000_eventos_sanitario_operational_traceability.sql",
+        "sha256": "26df354eafb79a0da9e34abd4327897bc6d5724d208165bff5cb822887fa1a34",
+        "normalized_sha256": "6bb81615e848bdd3c00bd2ecd6fd9857c7f27b07972f507e3d8d2185b851476a",
+        "remote": {
+          "version": "20260531002000",
+          "name": "eventos_sanitario_operational_traceability",
+          "normalized_sha256": "6bb81615e848bdd3c00bd2ecd6fd9857c7f27b07972f507e3d8d2185b851476a"
+        },
+        "match": true
+      },
+      {
+        "file": "20260601000000_financeiro_estorno_categorias.sql",
+        "sha256": "b6d2fc3af427668c6f0f6abd4c8fae380fb5a50072d659e3f39dfbb07dda19c4",
+        "normalized_sha256": "20dad56894f40743acdce82a7100b35af6465920c126cbfef3989a2811216a03",
+        "remote": {
+          "version": "20260601000000",
+          "name": "financeiro_estorno_categorias",
+          "normalized_sha256": "20dad56894f40743acdce82a7100b35af6465920c126cbfef3989a2811216a03"
+        },
+        "match": true
+      },
+      {
+        "file": "20260604090000_insumo_movimentacoes_consumo_nutricao_idempotency.sql",
+        "sha256": "6a9bca040ecfe388b2b4566dd404dd8f39c025829f7d288d6b31e2e28351d126",
+        "normalized_sha256": "227a4464b81e37177f64b3200bccfb9c351b8a6a3260b92064f6459b7228aa67",
+        "remote": {
+          "version": "20260604090000",
+          "name": "insumo_movimentacoes_consumo_nutricao_idempotency",
+          "normalized_sha256": "227a4464b81e37177f64b3200bccfb9c351b8a6a3260b92064f6459b7228aa67"
+        },
+        "match": true
+      },
+      {
+        "file": "20260606090000_sanitario_agenda_v2_clean_foundation.sql",
+        "sha256": "acbf65b29d94a90011f379b83067bad68875add6d48e515f96d771b1a5ac5f1c",
+        "normalized_sha256": "663e5175614b951342faabdc2b6aaca8a809407727ddbea710d68ba04dc31927",
+        "remote": {
+          "version": "20260606090000",
+          "name": "sanitario_agenda_v2_clean_foundation",
+          "normalized_sha256": "663e5175614b951342faabdc2b6aaca8a809407727ddbea710d68ba04dc31927"
+        },
+        "match": true
+      },
+      {
+        "file": "20260608090000_sanitario_protocol_product_source_v2.sql",
+        "sha256": "bc56133aa5d2e9bbfbac93e9cb84299f1600f46e26b36582f872773ef2e173a1",
+        "normalized_sha256": "922200b9e348916efb741951e70c32796b2f0dfd318aba66c8001f91da5beb15",
+        "remote": {
+          "version": "20260608090000",
+          "name": "sanitario_protocol_product_source_v2",
+          "normalized_sha256": "922200b9e348916efb741951e70c32796b2f0dfd318aba66c8001f91da5beb15"
+        },
+        "match": true
+      },
+      {
+        "file": "20260610203500_sanitario_product_class_v2.sql",
+        "sha256": "d5244d274d490c1a0c775995bca948f59b97752c88d485cc0fcfb39fc0a6feee",
+        "normalized_sha256": "5ebbe75c46982e868f88cf891c4633a8a23eb6c10d7504a11f30e4b479002cac",
+        "remote": {
+          "version": "20260610203500",
+          "name": "sanitario_product_class_v2",
+          "normalized_sha256": "5ebbe75c46982e868f88cf891c4633a8a23eb6c10d7504a11f30e4b479002cac"
+        },
+        "match": true
+      },
+      {
+        "file": "20260615120000_sanitario_protocol_item_product_class_group_v2.sql",
+        "sha256": "60aeefa2bd0b0217cac1137000473c75e23d96eac687696b96de3ee24d95be0a",
+        "normalized_sha256": "7c929893bf9d4256b6fab576d712c5552443760439e475476ea29ce24c33cd95",
+        "remote": {
+          "version": "20260615120000",
+          "name": "sanitario_protocol_item_product_class_group_v2",
+          "normalized_sha256": "7c929893bf9d4256b6fab576d712c5552443760439e475476ea29ce24c33cd95"
+        },
+        "match": true
+      },
+      {
+        "file": "20260722102038_sanitario_sync_v2_expand_foundation.sql",
+        "sha256": "d79727c06284d7a56dbbadba151187ef492c3777bd5a6a6cc7cdf4d9993181f7",
+        "normalized_sha256": "0679df0154f453356251ace9806012acf97629fc40dbc6614d694a6c15c7b6cb",
+        "remote": {
+          "version": "20260722102038",
+          "name": "sanitario_sync_v2_expand_foundation",
+          "normalized_sha256": "0679df0154f453356251ace9806012acf97629fc40dbc6614d694a6c15c7b6cb"
+        },
+        "match": true
+      },
+      {
+        "file": "20260808120000_individual_animal_purchase_sync.sql",
+        "sha256": "05b34004f90839d8eacce7f1cfd245045571246ac98aeb39b5ff4e80df0ab3e8",
+        "normalized_sha256": "c45f5a1524719d3f4d691199cce9453fec358e4da1883617a367cc8666e60042",
+        "remote": {
+          "version": "20260808120000",
+          "name": "individual_animal_purchase_sync",
+          "normalized_sha256": "c45f5a1524719d3f4d691199cce9453fec358e4da1883617a367cc8666e60042"
+        },
+        "match": true
+      },
+      {
+        "file": "20260813134853_commercial_operation_v2.sql",
+        "sha256": "bbf0ede014dc37a5d0e51207fe7be0955d65bab49a535daf1d3c5ca056e8917b",
+        "normalized_sha256": "54414d558ea6187e34a32215c317e75dc4a214a17f8ae55cd4bbe56cee42d5d4",
+        "remote": {
+          "version": "20260813134853",
+          "name": "commercial_operation_v2",
+          "normalized_sha256": "54414d558ea6187e34a32215c317e75dc4a214a17f8ae55cd4bbe56cee42d5d4"
+        },
+        "match": true
+      },
+      {
+        "file": "20260813152618_harden_individual_animal_purchase_grants.sql",
+        "sha256": "e14ea82fd3ed0abc56796cdcc57ae57d1a22acc742d22582e73339be38e558a1",
+        "normalized_sha256": "d2b728b3fc5d286bd0f706b39904e478918ff316217f24efaee50e50f5fed0cf",
+        "remote": {
+          "version": "20260813152618",
+          "name": "harden_individual_animal_purchase_grants",
+          "normalized_sha256": "d2b728b3fc5d286bd0f706b39904e478918ff316217f24efaee50e50f5fed0cf"
+        },
+        "match": true
+      },
+      {
+        "file": "20260821000000_fix_pgcrypto_digest_search_path.sql",
+        "sha256": "0d5d32a4c2eefe807bcf4b3923521cf2326fe88848e4a142d28e21457b2c53e6",
+        "normalized_sha256": "b3b92fdacf8a27df8309191a6e7ce9ad9e5f4a14ae1559996cb893d647f4fd8c",
+        "remote": {
+          "version": "20260821000000",
+          "name": "fix_pgcrypto_digest_search_path",
+          "normalized_sha256": "b3b92fdacf8a27df8309191a6e7ce9ad9e5f4a14ae1559996cb893d647f4fd8c"
+        },
+        "match": true
+      },
+      {
+        "file": "20260824100000_app_superadmin_foundation.sql",
+        "sha256": "efd0238418938aa163e43902f7e63b31cf7f859ed88ca35b04cb5bebf161a24b",
+        "normalized_sha256": "69f7b8f3fb6168e139e9bfb8182cc289655839340536709914fa53d9f0b94ff0",
+        "remote": {
+          "version": "20260824100000",
+          "name": "app_superadmin_foundation",
+          "normalized_sha256": "69f7b8f3fb6168e139e9bfb8182cc289655839340536709914fa53d9f0b94ff0"
+        },
+        "match": true
+      },
+      {
+        "file": "20260824110000_app_superadmin_read_rpcs.sql",
+        "sha256": "b16d168f750c3bf5533ca5e6a5cefd6bf11baea06128ebdda523cc9a0b6bf0bc",
+        "normalized_sha256": "734de4a6deb9daee330b59548048985913a0ffaf222f858948b4238c9d99f92d",
+        "remote": {
+          "version": "20260824110000",
+          "name": "app_superadmin_read_rpcs",
+          "normalized_sha256": "734de4a6deb9daee330b59548048985913a0ffaf222f858948b4238c9d99f92d"
+        },
+        "match": true
+      },
+      {
+        "file": "20260824120000_harden_admin_invites_rpc.sql",
+        "sha256": "3e2b95c2f8409639da1b0fb7144550671d3dff0bb709f28156ad420d2173e7d4",
+        "normalized_sha256": "45dea69e94e3ff6d5ebfcefaffac5be3cb45b8e7902d6ae96626591a611f456b",
+        "remote": {
+          "version": "20260824120000",
+          "name": "harden_admin_invites_rpc",
+          "normalized_sha256": "45dea69e94e3ff6d5ebfcefaffac5be3cb45b8e7902d6ae96626591a611f456b"
+        },
+        "match": true
+      },
+      {
+        "file": "20260825080000_app_superadmin_can_create_farm_mutation.sql",
+        "sha256": "7982f81f4d77147ff1ff0f66a774c215c7611049790da2e0a74ada5a28756c8e",
+        "normalized_sha256": "ed10063b2cc51570949184473172e2bf5f5fc78b88d0737e0c7c178430acd11b",
+        "remote": {
+          "version": "20260825080000",
+          "name": "app_superadmin_can_create_farm_mutation",
+          "normalized_sha256": "ed10063b2cc51570949184473172e2bf5f5fc78b88d0737e0c7c178430acd11b"
+        },
+        "match": true
+      },
+      {
+        "file": "20260826230107_reconcile_authenticated_table_privileges.sql",
+        "sha256": "8ffe9ffc625151b75e4f3712de9db517fc4422c2a610856135470d1ffe78c0ff",
+        "normalized_sha256": "6174d3f66c0039a17ca3649dd61ef1eb7557f2acc0d5a47602939771aaf78732",
+        "remote": {
+          "version": "20260826230107",
+          "name": "reconcile_authenticated_table_privileges",
+          "normalized_sha256": "6174d3f66c0039a17ca3649dd61ef1eb7557f2acc0d5a47602939771aaf78732"
+        },
+        "match": true
+      },
+      {
+        "file": "20260827100000_harden_internal_and_trigger_function_privileges.sql",
+        "sha256": "e1dbaec815faf78481893218e7859053d9e9b81cc3c92942ea037f7a9189e040",
+        "normalized_sha256": "1e7d025bf3ea6d089fade820e987e977093eb5e0a2d2b5938cf34edfa76472bb",
+        "remote": {
+          "version": "20260827100000",
+          "name": "harden_internal_and_trigger_function_privileges",
+          "normalized_sha256": "1e7d025bf3ea6d089fade820e987e977093eb5e0a2d2b5938cf34edfa76472bb"
+        },
+        "match": true
+      },
+      {
+        "file": "20260827110000_harden_domain_and_farm_admin_rpc_privileges.sql",
+        "sha256": "f16a448a6c84ac6a40039e08c4cd4a0ba708a4c6587fd36ded68a9744748856b",
+        "normalized_sha256": "23e3fac2c03ae2b33ae7cda677727c46ae7458b27b8583a110fcfcc03b59e0c8",
+        "remote": {
+          "version": "20260827110000",
+          "name": "harden_domain_and_farm_admin_rpc_privileges",
+          "normalized_sha256": "23e3fac2c03ae2b33ae7cda677727c46ae7458b27b8583a110fcfcc03b59e0c8"
+        },
+        "match": true
+      },
+      {
+        "file": "20260827120000_harden_get_user_emails_rpc.sql",
+        "sha256": "87a9e216e9e4c52079895079e32f47da518fd019e68fa27a037bd1f31d2269c7",
+        "normalized_sha256": "2822496967cacb86e23573e4820f5500d559f70b7e4af77069f7606369b20ada",
+        "remote": {
+          "version": "20260827120000",
+          "name": "harden_get_user_emails_rpc",
+          "normalized_sha256": "2822496967cacb86e23573e4820f5500d559f70b7e4af77069f7606369b20ada"
+        },
+        "match": true
+      },
+      {
+        "file": "20260829193636_c2_search_path_hardening.sql",
+        "sha256": "803e64df2c5ba99c00923f1959fd4b4ca9a88f62d482428f1099e310b75f3ee8",
+        "normalized_sha256": "fc5754f9fe714ad7a07f61dfb83c76ab91d1271dd92f457b4c94b337c948fb84",
+        "remote": {
+          "version": "20260829193636",
+          "name": "c2_search_path_hardening",
+          "normalized_sha256": "fc5754f9fe714ad7a07f61dfb83c76ab91d1271dd92f457b4c94b337c948fb84"
+        },
+        "match": true
+      },
+      {
+        "file": "20260908050000_c3_auth_rls_initplan_hardening.sql",
+        "sha256": "6b5001613ad43e98015621aca6c562ca32ca9b93e9842c7c5d9713d2f0572895",
+        "normalized_sha256": "9fa3430cd0fc5477b47e77ac6f5eb75289b54d39cca171a000d95f0a04a805df",
+        "remote": {
+          "version": "20260908050000",
+          "name": "c3_auth_rls_initplan_hardening",
+          "normalized_sha256": "9fa3430cd0fc5477b47e77ac6f5eb75289b54d39cca171a000d95f0a04a805df"
+        },
+        "match": true
+      },
+      {
+        "file": "20260908060000_c4_1a_exact_permissive_cleanup.sql",
+        "sha256": "f1f35c5554f8e19fd8af6c89c63fde83580b78f6106dc0de288023587478ce86",
+        "normalized_sha256": "5c987821b0dce4a77c713408242448aa63f830fd042640bf91f6a76d0b13ce12",
+        "remote": {
+          "version": "20260908060000",
+          "name": "c4_1a_exact_permissive_cleanup",
+          "normalized_sha256": "5c987821b0dce4a77c713408242448aa63f830fd042640bf91f6a76d0b13ce12"
+        },
+        "match": true
+      },
+      {
+        "file": "20260908070000_c4_1b_subsumed_operational_cleanup.sql",
+        "sha256": "b8c04ffc452c06e0517ba6d9a4b91d4fccdce7bbd6c9c0cd5c21daea80664bf8",
+        "normalized_sha256": "b0c87868daa0e10d6e452de744ca87f5b54a607e7bac9779297cc7e54d4cca0c",
+        "remote": {
+          "version": "20260908070000",
+          "name": "c4_1b_subsumed_operational_cleanup",
+          "normalized_sha256": "b0c87868daa0e10d6e452de744ca87f5b54a607e7bac9779297cc7e54d4cca0c"
+        },
+        "match": true
+      },
+      {
+        "file": "20260913232253_f24_acl_forward_only_reconciliation.sql",
+        "sha256": "43d4f6b3ef1c4d72ac2ac65549709e6f41fadb7d7494006b1776566ad3d1ab33",
+        "normalized_sha256": "a590366460ffdefb7c5287b29a8db8c3d8fe385fb33da1ae3247a1c90e4f86ef",
+        "remote": {
+          "version": "20260913232253",
+          "name": "f24_acl_forward_only_reconciliation",
+          "normalized_sha256": "a590366460ffdefb7c5287b29a8db8c3d8fe385fb33da1ae3247a1c90e4f86ef"
+        },
+        "match": true
+      },
+      {
+        "file": "20260914014309_f24_1a1_sanitario_reconcile_backend_wrapper.sql",
+        "sha256": "d1238d854d6e53a2130b33f3c373335f70d0c6afa17d761ea98b065e6e39fe12",
+        "normalized_sha256": "0579cbe51e2cb54bdaf1d3024719a89c40c488ba00dd181f74557f4c1df4136b",
+        "remote": {
+          "version": "20260914014309",
+          "name": "f24_1a1_sanitario_reconcile_backend_wrapper",
+          "normalized_sha256": "0579cbe51e2cb54bdaf1d3024719a89c40c488ba00dd181f74557f4c1df4136b"
+        },
+        "match": true
+      },
+      {
+        "file": "20260923132000_sanitario_source_key_identity.sql",
+        "sha256": "57b47a920fdd8edf4753b72e582fac26a95895885bfb499b988dd3866a8009d8",
+        "normalized_sha256": "3fd5e930d0618d26ee9e300d9cc5393637d1a405f6306d466deb62575eb6c6f7",
+        "remote": {
+          "version": "20260923132000",
+          "name": "sanitario_source_key_identity",
+          "normalized_sha256": "3fd5e930d0618d26ee9e300d9cc5393637d1a405f6306d466deb62575eb6c6f7"
+        },
+        "match": true
+      },
+      {
+        "file": "20260927120000_f24_4c_animais_state_revision.sql",
+        "sha256": "ce66713c4c3e5f4abb72b9dfeeb52c7a3d0c36b0e3e17cb96c0030c6e74a9caa",
+        "normalized_sha256": "5331d1cedbd2aaef06fa39c7625da8e9feb3a79fc709870f1bbcbefe30919130",
+        "remote": {
+          "version": "20260927120000",
+          "name": "f24_4c_animais_state_revision",
+          "normalized_sha256": "5331d1cedbd2aaef06fa39c7625da8e9feb3a79fc709870f1bbcbefe30919130"
+        },
+        "match": true
+      },
+      {
+        "file": "20261001200402_f24_4e21a_animal_lot_movement_foundation.sql",
+        "sha256": "7ce21e1c68dee6ab1a4d39f57184f20ab6bb0b9640e4df534f6dd9389f022ab7",
+        "normalized_sha256": "a0a73c174450da7c5910901bb0facf9ed292fbae89fa950c1275360e8a1e390b",
+        "remote": {
+          "version": "20261001200402",
+          "name": "f24_4e21a_animal_lot_movement_foundation",
+          "normalized_sha256": "a0a73c174450da7c5910901bb0facf9ed292fbae89fa950c1275360e8a1e390b"
+        },
+        "match": true
+      },
+      {
+        "file": "20261002005751_f24_4e211a_server_completion_gate.sql",
+        "sha256": "d5b9e6fc2bbe06b69947077f1799ad7d50875ab171b6371fbddd6a9792efc174",
+        "normalized_sha256": "fa48b02931ee775dad867ad39835b9cb79381a4fa9216b2588c5666ffae5dfe8",
+        "remote": {
+          "version": "20261002005751",
+          "name": "f24_4e211a_server_completion_gate",
+          "normalized_sha256": "fa48b02931ee775dad867ad39835b9cb79381a4fa9216b2588c5666ffae5dfe8"
+        },
+        "match": true
+      },
+      {
+        "file": "20261003120000_f24_4e2_close_generic_animal_lot_fact_boundary.sql",
+        "sha256": "724f7e8d67d674e75cde203452b728a4b9b51c0f65d9da9249d4288db856b635",
+        "normalized_sha256": "d33962b15cdac6566a00c090275860353e06f79862b1a9eb5d706d0be6cb60ee",
+        "remote": {
+          "version": "20261003120000",
+          "name": "f24_4e2_close_generic_animal_lot_fact_boundary",
+          "normalized_sha256": "d33962b15cdac6566a00c090275860353e06f79862b1a9eb5d706d0be6cb60ee"
+        },
+        "match": true
+      },
+      {
+        "file": "20261004210000_sanitario_sync_v2_revision_conflict_pt409.sql",
+        "sha256": "6bf645860785678b9543df8a877c7ec2cd49f299acfd9a56e21b5893c4dfccfe",
+        "normalized_sha256": "0b7dff177eda8b2cd2c42d6972d9fca8d95e255504ad8db7347189bfb96b518e",
+        "remote": {
+          "version": "20261004210000",
+          "name": "sanitario_sync_v2_revision_conflict_pt409",
+          "normalized_sha256": "0b7dff177eda8b2cd2c42d6972d9fca8d95e255504ad8db7347189bfb96b518e"
+        },
+        "match": true
+      },
+      {
+        "file": "20261005175412_f24_4e_lot_pasture_subject_boundary.sql",
+        "sha256": "253562a0b6c1cfc77924f8dda86444b4a169a09ad94f727345b88655792478a7",
+        "normalized_sha256": "a1999c68d47b0b2dec4d7c31ca60df0ee692e36bd3041f09e61ea6419e0f9284",
+        "remote": {
+          "version": "20261005175412",
+          "name": "f24_4e_lot_pasture_subject_boundary",
+          "normalized_sha256": "a1999c68d47b0b2dec4d7c31ca60df0ee692e36bd3041f09e61ea6419e0f9284"
+        },
+        "match": true
+      },
+      {
+        "file": "20261008202000_f24_5e3_remote_telemetry_retention.sql",
+        "sha256": "0fc59fae328862b98e66f25126a40e8dde06df6581de31eec88679fd90e5e2db",
+        "normalized_sha256": "51ba4ec28370c004cd0857040a373f854d1d619637c62a78f9161118499a7f55",
+        "remote": {
+          "version": "20261008202000",
+          "name": "f24_5e3_remote_telemetry_retention",
+          "normalized_sha256": "51ba4ec28370c004cd0857040a373f854d1d619637c62a78f9161118499a7f55"
+        },
+        "match": true
+      },
+      {
+        "file": "20261008202024_f24_5e3_remote_telemetry_retention_cron.sql",
+        "sha256": "fd8ca0ceca2d6c1fd70abe2a8a9b0d7e383f9eb0bb4b78364953f4eb66a5aacc",
+        "normalized_sha256": "71c9e3b7c2f106763b62202b884987e9c30c064cc497593dca74340f82ffbc51",
+        "remote": {
+          "version": "20261008202024",
+          "name": "f24_5e3_remote_telemetry_retention_cron",
+          "normalized_sha256": "71c9e3b7c2f106763b62202b884987e9c30c064cc497593dca74340f82ffbc51"
+        },
+        "match": true
+      },
+      {
+        "file": "20261015070038_sanitario_agenda_catalog_v2_references.sql",
+        "sha256": "625fe8940f09476833205d44978031dcfd10223fb0683ee08afd7cd4ed0cd916",
+        "normalized_sha256": "b1e3a660b0cd1debeb5e6a9cec1c34bd9ea324696fff0560123ea04d2cd76de0",
+        "remote": null,
+        "match": null
+      },
+      {
+        "file": "20261017080447_sanitario_catalog_review_v2.sql",
+        "sha256": "6b73f0dce568eb37c6941f5fa7354dde7604aeba070a5a815a211fc96efabd1e",
+        "normalized_sha256": "cd63842d1b04f8baeda3792808f492aaf7daeb70f19509ba1984c58d927d36e0",
+        "remote": null,
+        "match": null
+      },
+      {
+        "file": "20261017195545_sanitario_planning_convergence_v2.sql",
+        "sha256": "8b6b0577e6f07280ee58ead78221fcec6c5b9973aad8222e225c350a9ff36593",
+        "normalized_sha256": "f0f209ced86d660961130810417470f76908c9a3d2feddffee2f4962a1f00cba",
+        "remote": null,
+        "match": null
+      }
+    ]
+  },
+  "schema_drift": {
+    "classification": "EXPECTED_PENDING_MIGRATIONS_IN_INSPECTED_SANITARY_SURFACE",
+    "global_schema_equivalence_proven": false,
+    "missing_catalog_columns": true,
+    "missing_curatorial_and_planning_rpcs": true,
+    "rls_enabled_on_all_19_inspected_v2_tables": true
+  },
+  "functions": [
+    {
+      "name": "sync-batch",
+      "version": 27,
+      "files": [
+        {
+          "path": "supabase/functions/sync-batch/index.ts",
+          "remote_sha256": "479f6b50a2662b110378c858f9c5fe09b51b348077c5ad22bedc5586e59b58c4",
+          "local_sha256": "c92da95e72dd281a03ddd9e272d91fe62ff815aa33b3efc62283450e4cd3cc5d",
+          "lf_equal": false
+        },
+        {
+          "path": "supabase/functions/sync-batch/rules.ts",
+          "remote_sha256": "4a43504634b90f50d0951616df606afc2693f6a3c139290def54fdeb864a389c",
+          "local_sha256": "7fc6d6c319f6f0488be2260eee5f789ca43b8a8be8faf0453448a157b18febc5",
+          "lf_equal": false
+        },
+        {
+          "path": "supabase/functions/sync-batch/flags.ts",
+          "remote_sha256": "277950e3ab9835e97c755ef798bcc3a8f20b2ffcc03b5b8ec63f7175aa60ab85",
+          "local_sha256": "277950e3ab9835e97c755ef798bcc3a8f20b2ffcc03b5b8ec63f7175aa60ab85",
+          "lf_equal": true
+        },
+        {
+          "path": "supabase/functions/sync-batch/taxonomy.ts",
+          "remote_sha256": "4d738557440cfe4491fc84a84781da9aa47e34e7311e49ccd1e33de9855ff3ba",
+          "local_sha256": "4d738557440cfe4491fc84a84781da9aa47e34e7311e49ccd1e33de9855ff3ba",
+          "lf_equal": true
+        },
+        {
+          "path": "src/lib/animals/taxonomyFactsContract.ts",
+          "remote_sha256": "81c3f1710a3aa18a6c53635dcd3a0b59c4c54d573537c8c72c4eb6ffe083aa68",
+          "local_sha256": "81c3f1710a3aa18a6c53635dcd3a0b59c4c54d573537c8c72c4eb6ffe083aa68",
+          "lf_equal": true
+        },
+        {
+          "path": "supabase/functions/sync-batch/sanitario-v2.ts",
+          "remote_sha256": "e8690e30d7163245a7e35c4910b570e6035aad54186ee4be33c209bb7a9898ae",
+          "local_sha256": "ba57856ed4850b016b6ddf47e755515c8d0ddc0fd2648fd9562f92644a2ebeae",
+          "lf_equal": false
+        },
+        {
+          "path": "supabase/functions/sync-batch/sanitary-product-evidence.ts",
+          "remote_sha256": "dea4d3d6353fc9191a9552df91a10d2dd1d2010c52bdd9f5e8925382e039da13",
+          "local_sha256": "00e11ddd46045e6510d01f8ba0fb14082f0f5f049ae1044ae31c5bc287c319ea",
+          "lf_equal": false
+        },
+        {
+          "path": "supabase/functions/_shared/mutationRecord.ts",
+          "remote_sha256": "ecc2feec7d2e391e9c0e22e310f0b2a1c1be50b1d0f2a7ada7c54488f57cc091",
+          "local_sha256": "ecc2feec7d2e391e9c0e22e310f0b2a1c1be50b1d0f2a7ada7c54488f57cc091",
+          "lf_equal": true
+        },
+        {
+          "path": "supabase/functions/sync-batch/inventory-dependency.ts",
+          "remote_sha256": "408a3f14832081819154917c12ff12f4c44549b359da2c6125eaf07c4fccb621",
+          "local_sha256": "30b46647b0406187236a53f7e3daed30300d3781ced2abbe6fe7dc4c4090d08f",
+          "lf_equal": false
+        },
+        {
+          "path": "supabase/functions/sync-batch/reproduction-diagnosis.ts",
+          "remote_sha256": "52615e90189aeb0eac9007a88ec381ca7da0ca619af6af017259586273f59c9b",
+          "local_sha256": "52615e90189aeb0eac9007a88ec381ca7da0ca619af6af017259586273f59c9b",
+          "lf_equal": true
+        },
+        {
+          "path": "supabase/functions/sync-batch/commercial-purchase.ts",
+          "remote_sha256": "6cdbb86d8e451e3da7a97adbfb69d066cc467e078481f60e55c0d0cd205958bc",
+          "local_sha256": "6cdbb86d8e451e3da7a97adbfb69d066cc467e078481f60e55c0d0cd205958bc",
+          "lf_equal": true
+        },
+        {
+          "path": "supabase/functions/sync-batch/commercial-operation-v2.ts",
+          "remote_sha256": "e01b89b1098677f8c67585d45b1a6deeef0a1acb10b8679fa6c42c3b9b0e118a",
+          "local_sha256": "e01b89b1098677f8c67585d45b1a6deeef0a1acb10b8679fa6c42c3b9b0e118a",
+          "lf_equal": true
+        },
+        {
+          "path": "supabase/functions/sync-batch/movement-v1.ts",
+          "remote_sha256": "1971943005b13a009dcb4dde3cf04132c3f39ed17ed2ced3026ed5428d7f7895",
+          "local_sha256": "1971943005b13a009dcb4dde3cf04132c3f39ed17ed2ced3026ed5428d7f7895",
+          "lf_equal": true
+        }
+      ]
+    },
+    {
+      "name": "sanitario-reconcile",
+      "version": 4,
+      "files": [
+        {
+          "path": "supabase/functions/sanitario-reconcile/index.ts",
+          "remote_sha256": "1626a08d7a3a59e91e79a10dcd4039cdcc29e78ed102987b2c663372a13e89c1",
+          "local_sha256": "4fb1ba5a77a1f8a2277f53ac3b161f30a762c9f59c6a4769fba5aa79cc3b6549",
+          "lf_equal": false
+        }
+      ]
+    },
+    {
+      "name": "telemetry-ingest",
+      "version": 2,
+      "files": [
+        {
+          "path": "supabase/functions/telemetry-ingest/index.ts",
+          "remote_sha256": "142a757024dd3029dce95d5aebae787166b54b5e3d12fc03c0f44545f68a8a11",
+          "local_sha256": "142a757024dd3029dce95d5aebae787166b54b5e3d12fc03c0f44545f68a8a11",
+          "lf_equal": true
+        },
+        {
+          "path": "supabase/functions/deno.json",
+          "remote_sha256": "57bd44c5200cb25713b3dd5313e4eff73d72f15351c0a7a80db92fecc9ee3b73",
+          "local_sha256": "088e4d9020ad4a1b1c9b9691e7f8f432d22765c3b3069dbfb5032c649595659c",
+          "lf_equal": false
+        }
+      ]
+    }
+  ],
+  "planned_functions": [
+    {
+      "name": "sync-batch",
+      "current_version": 27,
+      "next_expected_version_if_no_intervening_deploy": 28,
+      "verify_jwt": true,
+      "files": [
+        {
+          "path": "src/lib/animals/taxonomyFactsContract.ts",
+          "sha256": "81c3f1710a3aa18a6c53635dcd3a0b59c4c54d573537c8c72c4eb6ffe083aa68"
+        },
+        {
+          "path": "supabase/functions/_shared/mutationRecord.ts",
+          "sha256": "ecc2feec7d2e391e9c0e22e310f0b2a1c1be50b1d0f2a7ada7c54488f57cc091"
+        },
+        {
+          "path": "supabase/functions/deno.json",
+          "sha256": "088e4d9020ad4a1b1c9b9691e7f8f432d22765c3b3069dbfb5032c649595659c"
+        },
+        {
+          "path": "supabase/functions/sync-batch/commercial-operation-v2.ts",
+          "sha256": "e01b89b1098677f8c67585d45b1a6deeef0a1acb10b8679fa6c42c3b9b0e118a"
+        },
+        {
+          "path": "supabase/functions/sync-batch/commercial-purchase.ts",
+          "sha256": "6cdbb86d8e451e3da7a97adbfb69d066cc467e078481f60e55c0d0cd205958bc"
+        },
+        {
+          "path": "supabase/functions/sync-batch/flags.ts",
+          "sha256": "277950e3ab9835e97c755ef798bcc3a8f20b2ffcc03b5b8ec63f7175aa60ab85"
+        },
+        {
+          "path": "supabase/functions/sync-batch/index.ts",
+          "sha256": "c92da95e72dd281a03ddd9e272d91fe62ff815aa33b3efc62283450e4cd3cc5d"
+        },
+        {
+          "path": "supabase/functions/sync-batch/inventory-dependency.ts",
+          "sha256": "30b46647b0406187236a53f7e3daed30300d3781ced2abbe6fe7dc4c4090d08f"
+        },
+        {
+          "path": "supabase/functions/sync-batch/movement-v1.ts",
+          "sha256": "1971943005b13a009dcb4dde3cf04132c3f39ed17ed2ced3026ed5428d7f7895"
+        },
+        {
+          "path": "supabase/functions/sync-batch/reproduction-diagnosis.ts",
+          "sha256": "52615e90189aeb0eac9007a88ec381ca7da0ca619af6af017259586273f59c9b"
+        },
+        {
+          "path": "supabase/functions/sync-batch/rules.ts",
+          "sha256": "7fc6d6c319f6f0488be2260eee5f789ca43b8a8be8faf0453448a157b18febc5"
+        },
+        {
+          "path": "supabase/functions/sync-batch/sanitario-v2.ts",
+          "sha256": "ba57856ed4850b016b6ddf47e755515c8d0ddc0fd2648fd9562f92644a2ebeae"
+        },
+        {
+          "path": "supabase/functions/sync-batch/sanitary-product-evidence.ts",
+          "sha256": "00e11ddd46045e6510d01f8ba0fb14082f0f5f049ae1044ae31c5bc287c319ea"
+        },
+        {
+          "path": "supabase/functions/sync-batch/taxonomy.ts",
+          "sha256": "4d738557440cfe4491fc84a84781da9aa47e34e7311e49ccd1e33de9855ff3ba"
+        }
+      ]
+    },
+    {
+      "name": "sanitario-reconcile",
+      "current_version": 4,
+      "action": "preserve; local difference is a refactor unrelated to this rollout"
+    },
+    {
+      "name": "telemetry-ingest",
+      "current_version": 2,
+      "action": "preserve; handler identical; deno config differs only by fmt.exclude"
+    }
+  ],
+  "public_auth_settings": {
+    "status": 200,
+    "disable_signup": false,
+    "external": {
+      "anonymous_users": false,
+      "apple": false,
+      "azure": false,
+      "bitbucket": false,
+      "discord": false,
+      "facebook": false,
+      "snapchat": false,
+      "figma": false,
+      "fly": false,
+      "github": false,
+      "gitlab": false,
+      "google": false,
+      "keycloak": false,
+      "kakao": false,
+      "linkedin": false,
+      "linkedin_oidc": false,
+      "notion": false,
+      "spotify": false,
+      "slack": false,
+      "slack_oidc": false,
+      "workos": false,
+      "twitch": false,
+      "twitter": false,
+      "email": true,
+      "phone": false,
+      "zoom": false
+    }
+  },
+  "inventory": {
+    "rpcs": [
+      {
+        "proacl": [
+          "postgres=X/postgres"
+        ],
+        "proname": "fill_eventos_sanitario_protocol_item_snapshot",
+        "arguments": "",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": false,
+        "definition_md5": "99d3e11a324c150e841b4f6ac05852ee"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres"
+        ],
+        "proname": "fill_sanitario_agenda_protocol_item_snapshot",
+        "arguments": "",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": false,
+        "definition_md5": "42189b4783b3c3fe48a4bd568285e34f"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "guard_sanitario_sync_v2_internal_writes",
+        "arguments": "",
+        "proconfig": [
+          "search_path=pg_catalog, public"
+        ],
+        "prosecdef": false,
+        "definition_md5": "03a7b1734e971646436791ab486d4a46"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "rebanhosync_movement_executor=X/postgres"
+        ],
+        "proname": "has_membership",
+        "arguments": "_fazenda_id uuid",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "791e1bb66ce892646ab22fcf6d661176"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres"
+        ],
+        "proname": "internal_sanitario_recompute_agenda_core",
+        "arguments": "_fazenda_id uuid, _animal_id uuid, _as_of date",
+        "proconfig": [
+          "search_path=\"\""
+        ],
+        "prosecdef": false,
+        "definition_md5": "3b464ec00b8bcdaf099d50022f96780b"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "internal_sanitario_recompute_agenda_for_fazenda",
+        "arguments": "_fazenda_id uuid, _as_of date",
+        "proconfig": [
+          "search_path=\"\""
+        ],
+        "prosecdef": true,
+        "definition_md5": "f05fe0f999b8dc3e349d3e307c47591b"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "internal_sanitario_sync_v2_apply_factual_core",
+        "arguments": "actor_user_id uuid, fazenda_id uuid, contract_version integer, client_op_id uuid, domain_op_id uuid, expected_revision bigint, event_payload sanitario_sync_v2_event_input, detail_payload sanitario_sync_v2_detail_input, event_animals sanitario_sync_v2_event_animal_input[]",
+        "proconfig": [
+          "search_path=pg_catalog, public"
+        ],
+        "prosecdef": false,
+        "definition_md5": "7e694ee6efd785d8eacc84da779c7a95"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "internal_sanitario_sync_v2_authorize",
+        "arguments": "actor_user_id uuid, fazenda_id uuid, contract_version integer, client_id text, operation_kind text, allowed_roles farm_role_enum[]",
+        "proconfig": [
+          "search_path=pg_catalog, public"
+        ],
+        "prosecdef": false,
+        "definition_md5": "6485a0121050a96470cb75301069a611"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "internal_sanitario_sync_v2_close_agenda",
+        "arguments": "actor_user_id uuid, fazenda_id uuid, contract_version integer, client_op_id uuid, domain_op_id uuid, expected_revision bigint, payload sanitario_sync_v2_closure_input",
+        "proconfig": [
+          "search_path=pg_catalog, public"
+        ],
+        "prosecdef": false,
+        "definition_md5": "a227daba9987744eba677cf20aae8df9"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "internal_sanitario_sync_v2_create_agenda",
+        "arguments": "actor_user_id uuid, fazenda_id uuid, contract_version integer, client_op_id uuid, domain_op_id uuid, payload sanitario_sync_v2_agenda_input, animal_ids uuid[]",
+        "proconfig": [
+          "search_path=pg_catalog, public"
+        ],
+        "prosecdef": false,
+        "definition_md5": "50f772c7cd7355c3ce224584dfeb3b9f"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "internal_sanitario_sync_v2_existing_result",
+        "arguments": "fazenda_id uuid, operation_kind text, entity_id uuid, client_op_id uuid, domain_op_id uuid, request_fingerprint text",
+        "proconfig": [
+          "search_path=pg_catalog, public"
+        ],
+        "prosecdef": false,
+        "definition_md5": "a75e69a63ef6aa196f44e6caa12ff5ed"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "internal_sanitario_sync_v2_replace_agenda_animals",
+        "arguments": "actor_user_id uuid, fazenda_id uuid, contract_version integer, client_op_id uuid, domain_op_id uuid, expected_revision bigint, agenda_id uuid, client_id text, animal_ids uuid[]",
+        "proconfig": [
+          "search_path=pg_catalog, public"
+        ],
+        "prosecdef": false,
+        "definition_md5": "0b5a94bb6f4403ab1618f359c9292d3d"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "is_app_admin",
+        "arguments": "",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "9f35ed6a67bb6f12b6560c4d01047656"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres"
+        ],
+        "proname": "prevent_legacy_sanitario_agenda_itens_v2",
+        "arguments": "",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": false,
+        "definition_md5": "41a09e714860bc07a4b305fa2cd7c990"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres"
+        ],
+        "proname": "render_sanitario_canonical_dedup_key",
+        "arguments": "_scope_type text, _scope_id uuid, _family_code text, _item_code text, _regimen_version integer, _period_mode text, _period_key text, _jurisdiction text",
+        "proconfig": [
+          "search_path=\"\""
+        ],
+        "prosecdef": false,
+        "definition_md5": "77226cfb8bcda0f6255351215b6759fd"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "rebanhosync_movement_executor=X/postgres"
+        ],
+        "proname": "role_in_fazenda",
+        "arguments": "_fazenda_id uuid, _roles farm_role_enum[]",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "14dad1f52e1ac74dc97296e3be134709"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres"
+        ],
+        "proname": "sanitario_complete_agenda_with_event",
+        "arguments": "_agenda_item_id uuid, _occurred_at timestamp with time zone, _tipo sanitario_tipo_enum, _produto text, _observacoes text, _sanitario_payload jsonb, _client_id text, _client_op_id uuid, _client_tx_id uuid, _client_recorded_at timestamp with time zone",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "f43d0ec42c678e8d6dc20f5971f52e67"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres"
+        ],
+        "proname": "sanitario_dedup_period_mode",
+        "arguments": "_calendar_mode text",
+        "proconfig": [
+          "search_path=\"\""
+        ],
+        "prosecdef": false,
+        "definition_md5": "ceaa7de49e825c1e9a30b52e61876ed7"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres"
+        ],
+        "proname": "sanitario_recompute_agenda_core",
+        "arguments": "_fazenda_id uuid, _animal_id uuid, _as_of date",
+        "proconfig": [
+          "search_path=\"\""
+        ],
+        "prosecdef": true,
+        "definition_md5": "8beedea7734c100018e292585b4224f2"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres"
+        ],
+        "proname": "sanitario_recompute_agenda_core_without_dry_cow",
+        "arguments": "_fazenda_id uuid, _animal_id uuid, _as_of date",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "4399a8fe9161413361ed6ec21718af2f"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres"
+        ],
+        "proname": "sanitario_recompute_agenda_for_animal",
+        "arguments": "_animal_id uuid, _fazenda_id uuid, _as_of date",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "2d2529d1a7121b7be0d10cc82c9ecab9"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres"
+        ],
+        "proname": "sanitario_recompute_agenda_for_fazenda",
+        "arguments": "_fazenda_id uuid, _as_of date",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "6391559c07218316ef61aa295b4012f9"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres"
+        ],
+        "proname": "sanitario_recompute_dry_cow_therapy_agenda",
+        "arguments": "_fazenda_id uuid, _animal_id uuid, _as_of date",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "08c8610d9f6222db958fced9923be16b"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "sanitario_reconcile_eligible_fazendas",
+        "arguments": "_cooldown_cutoff timestamp with time zone",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "2983645dd84e50f7b04f9ca5f7104527"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "proname": "sanitario_reconcile_touch",
+        "arguments": "_fazenda_id uuid",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "4f1b5b829fb4bed38088d7057c689d83"
+      },
+      {
+        "proacl": [
+          "postgres=X/postgres"
+        ],
+        "proname": "trg_sanitario_recompute_on_animal_mutation",
+        "arguments": "",
+        "proconfig": [
+          "search_path=public"
+        ],
+        "prosecdef": true,
+        "definition_md5": "55f772bdc760ff1cfddd0f4f90cc0aef"
+      }
+    ],
+    "farms": [
+      {
+        "id": "3be9fa3f-7991-4231-8982-144ca368a9ef",
+        "name": "Canta Galo",
+        "deleted": false
+      },
+      {
+        "id": "71d3bd9f-fec1-4439-a96b-6536ebb20cb4",
+        "name": "Telemetry Certification A 2bb64200-772a-486a-964a-5bea77172145",
+        "deleted": false
+      },
+      {
+        "id": "11a63edd-ebc7-4be2-9c65-84f5228f25f2",
+        "name": "Telemetry Certification B 2bb64200-772a-486a-964a-5bea77172145",
+        "deleted": false
+      },
+      {
+        "id": "ea64f0bd-3b6b-4186-9e9d-76b08b287de8",
+        "name": "Homologação Animal Detail V2 ",
+        "deleted": false
+      },
+      {
+        "id": "d57f8262-86ae-4b63-a46d-726710f4ad45",
+        "name": "Homologação Animal Detail V2 — Isolamento",
+        "deleted": false
+      }
+    ],
+    "gates": [],
+    "counts": {
+      "items": 0,
+      "users": 3,
+      "groups": 0,
+      "ledger": 0,
+      "classes": 0,
+      "configs": 5,
+      "members": 0,
+      "sources": 0,
+      "coverage": 0,
+      "products": 0,
+      "agenda_v2": 0,
+      "protocols": 0,
+      "dose_rules": 0,
+      "auth_sessions": 7,
+      "default_rules": 0,
+      "automatic_items": 0,
+      "product_sources": 0,
+      "automation_plans": 0,
+      "global_reviewers": 0,
+      "withdrawal_rules": 0,
+      "withdrawal_sources": 0,
+      "users_signed_in_30d": 3,
+      "product_authorizations": 0
+    },
+    "tables": [
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=arwd/postgres"
+        ],
+        "relname": "sanitario_agenda_animais_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=ar/postgres"
+        ],
+        "relname": "sanitario_agenda_closures_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=arw/postgres"
+        ],
+        "relname": "sanitario_agenda_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=r/postgres"
+        ],
+        "relname": "sanitario_fonte_cobertura_campos_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=r/postgres"
+        ],
+        "relname": "sanitario_fontes_tecnicas_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres"
+        ],
+        "relname": "sanitario_product_class_default_rules_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres"
+        ],
+        "relname": "sanitario_product_class_group_members_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres"
+        ],
+        "relname": "sanitario_product_class_groups_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres"
+        ],
+        "relname": "sanitario_product_classes_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=r/postgres"
+        ],
+        "relname": "sanitario_produto_carencia_fontes_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=r/postgres"
+        ],
+        "relname": "sanitario_produto_carencia_rules_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=r/postgres"
+        ],
+        "relname": "sanitario_produto_dose_rules_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=r/postgres"
+        ],
+        "relname": "sanitario_produto_especie_autorizacao_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=r/postgres"
+        ],
+        "relname": "sanitario_produto_fontes_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres",
+          "service_role=r/postgres"
+        ],
+        "relname": "sanitario_produtos_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres"
+        ],
+        "relname": "sanitario_protocolo_itens_versions_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "authenticated=r/postgres"
+        ],
+        "relname": "sanitario_protocolos_v2",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "service_role=arwd/postgres"
+        ],
+        "relname": "sanitario_sync_v2_gates",
+        "relrowsecurity": true
+      },
+      {
+        "relacl": [
+          "postgres=arwdDxtm/postgres",
+          "service_role=ar/postgres"
+        ],
+        "relname": "sanitario_sync_v2_operations",
+        "relrowsecurity": true
+      }
+    ],
+    "columns": [
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "fazenda_id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "USER-DEFINED",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "status",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "text",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "dedup_key",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "text",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "client_id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "client_op_id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "client_tx_id",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "client_recorded_at",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "server_received_at",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "text",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "source_demand_key",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "text",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "preview_group_id",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "protocolo_id",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "protocol_item_version_id",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "jsonb",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "protocol_item_snapshot",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "date",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "janela_inicio",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "date",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "janela_fim",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "date",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "data_programada",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "lote_id",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "produto_veterinario_id",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "jsonb",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "produto_snapshot",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "text",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "produto_classe",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "text",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "acao_sanitaria",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "execution_evento_id",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "jsonb",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "metadata",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "created_at",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "updated_at",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "deleted_at",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "bigint",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "revision",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "integer",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "contract_version",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_agenda_v2",
+        "column_name": "domain_op_id",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "fazenda_id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "boolean",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "enabled",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "integer",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "minimum_contract_version",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "integer",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "maximum_contract_version",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "ARRAY",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "allowed_user_ids",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "ARRAY",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "allowed_client_ids",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "smallint",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "rollout_percentage",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "valid_from",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "valid_until",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "updated_by",
+        "is_nullable": "YES"
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "created_at",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "sanitario_sync_v2_gates",
+        "column_name": "updated_at",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "fazenda_id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "text",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "operation_kind",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "entity_id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "client_op_id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "domain_op_id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "actor_user_id",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "integer",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "contract_version",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "text",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "request_fingerprint",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "jsonb",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "canonical_result",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "name",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "executor_role",
+        "is_nullable": "NO"
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "sanitario_sync_v2_operations",
+        "column_name": "created_at",
+        "is_nullable": "NO"
+      }
+    ],
+    "policies": [
+      {
+        "cmd": "SELECT",
+        "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "app_superadmins",
+        "policyname": "app_superadmins_select_self",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "public"
+        ],
+        "tablename": "fazendas",
+        "policyname": "fazendas_insert_auth",
+        "with_check": "(created_by = ( SELECT auth.uid() AS uid))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "has_membership(id)",
+        "roles": [
+          "public"
+        ],
+        "tablename": "fazendas",
+        "policyname": "fazendas_select_member",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "role_in_fazenda(id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum])",
+        "roles": [
+          "public"
+        ],
+        "tablename": "fazendas",
+        "policyname": "fazendas_update_owner_manager",
+        "with_check": "role_in_fazenda(id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum])"
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "public"
+        ],
+        "tablename": "sanitario_agenda_animais_v2",
+        "policyname": "sanitario_agenda_animais_v2_insert_member",
+        "with_check": "has_membership(fazenda_id)"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "has_membership(fazenda_id)",
+        "roles": [
+          "public"
+        ],
+        "tablename": "sanitario_agenda_animais_v2",
+        "policyname": "sanitario_agenda_animais_v2_select_member",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "has_membership(fazenda_id)",
+        "roles": [
+          "public"
+        ],
+        "tablename": "sanitario_agenda_animais_v2",
+        "policyname": "sanitario_agenda_animais_v2_update_member",
+        "with_check": "has_membership(fazenda_id)"
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "public"
+        ],
+        "tablename": "sanitario_agenda_closures_v2",
+        "policyname": "sanitario_agenda_closures_v2_insert_member",
+        "with_check": "has_membership(fazenda_id)"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "has_membership(fazenda_id)",
+        "roles": [
+          "public"
+        ],
+        "tablename": "sanitario_agenda_closures_v2",
+        "policyname": "sanitario_agenda_closures_v2_select_member",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "has_membership(fazenda_id)",
+        "roles": [
+          "public"
+        ],
+        "tablename": "sanitario_agenda_closures_v2",
+        "policyname": "sanitario_agenda_closures_v2_update_member",
+        "with_check": "has_membership(fazenda_id)"
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "public"
+        ],
+        "tablename": "sanitario_agenda_v2",
+        "policyname": "sanitario_agenda_v2_insert_member",
+        "with_check": "has_membership(fazenda_id)"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "has_membership(fazenda_id)",
+        "roles": [
+          "public"
+        ],
+        "tablename": "sanitario_agenda_v2",
+        "policyname": "sanitario_agenda_v2_select_member",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "has_membership(fazenda_id)",
+        "roles": [
+          "public"
+        ],
+        "tablename": "sanitario_agenda_v2",
+        "policyname": "sanitario_agenda_v2_update_member",
+        "with_check": "has_membership(fazenda_id)"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((deleted_at IS NULL) AND (EXISTS ( SELECT 1\n   FROM sanitario_fontes_tecnicas_v2 f\n  WHERE ((f.id = sanitario_fonte_cobertura_campos_v2.source_id) AND (f.deleted_at IS NULL) AND ((f.scope = 'global'::sanitario_source_scope_v2_enum) OR has_membership(f.fazenda_id))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_fonte_cobertura_campos_v2",
+        "policyname": "sanitario_fonte_cobertura_campos_v2_select_auth",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((deleted_at IS NULL) AND ((scope = 'global'::sanitario_source_scope_v2_enum) OR has_membership(fazenda_id)))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_fontes_tecnicas_v2",
+        "policyname": "sanitario_fontes_tecnicas_v2_select_auth",
+        "with_check": null
+      },
+      {
+        "cmd": "ALL",
+        "qual": "((scope = 'fazenda'::sanitario_source_scope_v2_enum) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_fontes_tecnicas_v2",
+        "policyname": "sanitario_fontes_tecnicas_v2_write_fazenda_manager",
+        "with_check": "((scope = 'fazenda'::sanitario_source_scope_v2_enum) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))"
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_class_default_rules_v2",
+        "policyname": "sanitario_product_class_default_rules_v2_insert",
+        "with_check": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((deleted_at IS NULL) AND (((scope = 'global'::text) AND (fazenda_id IS NULL)) OR ((scope = 'tenant'::text) AND (fazenda_id IS NOT NULL) AND has_membership(fazenda_id))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_class_default_rules_v2",
+        "policyname": "sanitario_product_class_default_rules_v2_select",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_class_default_rules_v2",
+        "policyname": "sanitario_product_class_default_rules_v2_update",
+        "with_check": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))"
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_class_group_members_v2",
+        "policyname": "sanitario_product_class_group_members_v2_insert",
+        "with_check": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((deleted_at IS NULL) AND (((scope = 'global'::text) AND (fazenda_id IS NULL)) OR ((scope = 'tenant'::text) AND (fazenda_id IS NOT NULL) AND has_membership(fazenda_id))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_class_group_members_v2",
+        "policyname": "sanitario_product_class_group_members_v2_select",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_class_group_members_v2",
+        "policyname": "sanitario_product_class_group_members_v2_update",
+        "with_check": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))"
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_class_groups_v2",
+        "policyname": "sanitario_product_class_groups_v2_insert",
+        "with_check": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((deleted_at IS NULL) AND (((scope = 'global'::text) AND (fazenda_id IS NULL)) OR ((scope = 'tenant'::text) AND (fazenda_id IS NOT NULL) AND has_membership(fazenda_id))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_class_groups_v2",
+        "policyname": "sanitario_product_class_groups_v2_select",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_class_groups_v2",
+        "policyname": "sanitario_product_class_groups_v2_update",
+        "with_check": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))"
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_classes_v2",
+        "policyname": "sanitario_product_classes_v2_insert",
+        "with_check": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((deleted_at IS NULL) AND (((scope = 'global'::text) AND (fazenda_id IS NULL)) OR ((scope = 'tenant'::text) AND (fazenda_id IS NOT NULL) AND has_membership(fazenda_id))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_classes_v2",
+        "policyname": "sanitario_product_classes_v2_select",
+        "with_check": null
+      },
+      {
+        "cmd": "UPDATE",
+        "qual": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_product_classes_v2",
+        "policyname": "sanitario_product_classes_v2_update",
+        "with_check": "((scope = 'tenant'::text) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((EXISTS ( SELECT 1\n   FROM sanitario_produto_carencia_rules_v2 w\n  WHERE ((w.id = sanitario_produto_carencia_fontes_v2.withdrawal_rule_id) AND (w.deleted_at IS NULL)))) AND (EXISTS ( SELECT 1\n   FROM sanitario_fontes_tecnicas_v2 f\n  WHERE ((f.id = sanitario_produto_carencia_fontes_v2.source_id) AND (f.deleted_at IS NULL) AND ((f.scope = 'global'::sanitario_source_scope_v2_enum) OR has_membership(f.fazenda_id))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_produto_carencia_fontes_v2",
+        "policyname": "sanitario_produto_carencia_fontes_v2_select_auth",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(deleted_at IS NULL)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_produto_carencia_rules_v2",
+        "policyname": "sanitario_produto_carencia_rules_v2_select_auth",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(deleted_at IS NULL)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_produto_dose_rules_v2",
+        "policyname": "sanitario_produto_dose_rules_v2_select_auth",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(deleted_at IS NULL)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_produto_especie_autorizacao_v2",
+        "policyname": "sanitario_produto_especie_autorizacao_v2_select_auth",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((EXISTS ( SELECT 1\n   FROM sanitario_produtos_v2 p\n  WHERE ((p.id = sanitario_produto_fontes_v2.product_id) AND (p.deleted_at IS NULL)))) AND (EXISTS ( SELECT 1\n   FROM sanitario_fontes_tecnicas_v2 f\n  WHERE ((f.id = sanitario_produto_fontes_v2.source_id) AND (f.deleted_at IS NULL) AND ((f.scope = 'global'::sanitario_source_scope_v2_enum) OR has_membership(f.fazenda_id))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_produto_fontes_v2",
+        "policyname": "sanitario_produto_fontes_v2_select_auth",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(deleted_at IS NULL)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_produtos_v2",
+        "policyname": "sanitario_produtos_v2_select_auth",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((deleted_at IS NULL) AND (EXISTS ( SELECT 1\n   FROM sanitario_protocolos_v2 p\n  WHERE ((p.id = sanitario_protocolo_itens_versions_v2.protocol_id) AND (p.deleted_at IS NULL) AND ((p.scope = ANY (ARRAY['global'::sanitario_protocol_scope_v2_enum, 'pack'::sanitario_protocol_scope_v2_enum])) OR has_membership(p.fazenda_id))))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_protocolo_itens_versions_v2",
+        "policyname": "sanitario_protocolo_itens_versions_v2_select_auth",
+        "with_check": null
+      },
+      {
+        "cmd": "ALL",
+        "qual": "(EXISTS ( SELECT 1\n   FROM sanitario_protocolos_v2 p\n  WHERE ((p.id = sanitario_protocolo_itens_versions_v2.protocol_id) AND (p.scope = 'fazenda'::sanitario_protocol_scope_v2_enum) AND role_in_fazenda(p.fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_protocolo_itens_versions_v2",
+        "policyname": "sanitario_protocolo_itens_versions_v2_write_fazenda_manager",
+        "with_check": "(EXISTS ( SELECT 1\n   FROM sanitario_protocolos_v2 p\n  WHERE ((p.id = sanitario_protocolo_itens_versions_v2.protocol_id) AND (p.scope = 'fazenda'::sanitario_protocol_scope_v2_enum) AND role_in_fazenda(p.fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((deleted_at IS NULL) AND ((scope = ANY (ARRAY['global'::sanitario_protocol_scope_v2_enum, 'pack'::sanitario_protocol_scope_v2_enum])) OR has_membership(fazenda_id)))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_protocolos_v2",
+        "policyname": "sanitario_protocolos_v2_select_auth",
+        "with_check": null
+      },
+      {
+        "cmd": "ALL",
+        "qual": "((scope = 'fazenda'::sanitario_protocol_scope_v2_enum) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "sanitario_protocolos_v2",
+        "policyname": "sanitario_protocolos_v2_write_fazenda_manager",
+        "with_check": "((scope = 'fazenda'::sanitario_protocol_scope_v2_enum) AND role_in_fazenda(fazenda_id, ARRAY['owner'::farm_role_enum, 'manager'::farm_role_enum]))"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((user_id = ( SELECT auth.uid() AS uid)) OR has_membership(fazenda_id))",
+        "roles": [
+          "public"
+        ],
+        "tablename": "user_fazendas",
+        "policyname": "user_fazendas_select_member",
+        "with_check": null
+      }
+    ],
+    "migrations": [
+      {
+        "name": "rebuild_base_schema_sanitario",
+        "version": "00000000000000",
+        "statement_count": 182,
+        "normalized_sha256": "1b1f6d0538e0f3d5e65d4fd5feac0f73fce71906a04c0b9f3e1c558fd04ca2da"
+      },
+      {
+        "name": "pasto_ocupacoes",
+        "version": "20260508003000",
+        "statement_count": 12,
+        "normalized_sha256": "173b03d03d536b9938800a0dd082ffb5487b0ab8479e26f7029fe355c2cae836"
+      },
+      {
+        "name": "pastos_forrageira_manejo",
+        "version": "20260508004000",
+        "statement_count": 5,
+        "normalized_sha256": "8ba0bc2bae94f68a3f254378b0311cde46153b1fb5fef0e0ae1f198801c61fe2"
+      },
+      {
+        "name": "eventos_pasto_avaliacao",
+        "version": "20260508005000",
+        "statement_count": 26,
+        "normalized_sha256": "37cfacd2cc42d281ccd80809bc039f9d72b17a2426953ff66bbb5c76ddeae116"
+      },
+      {
+        "name": "sanitario_complete_agenda_idempotency",
+        "version": "20260511000000",
+        "statement_count": 1,
+        "normalized_sha256": "ad3f9f3888cdaa4497020a5a521e2c2ca60be8c31c0af42b99b480331ec332ee"
+      },
+      {
+        "name": "fix_create_fazenda_primary_membership",
+        "version": "20260514000000",
+        "statement_count": 2,
+        "normalized_sha256": "0066d941408e24286eb25e87e03d7075df5b734fcabe388900223f21be57aa93"
+      },
+      {
+        "name": "dry_cow_therapy_agenda_recompute",
+        "version": "20260524000000",
+        "statement_count": 4,
+        "normalized_sha256": "b0f0a29e7023ef815e7b8f4c1fef09a3bc449861569df21288096af5c078d731"
+      },
+      {
+        "name": "insumos_inventory",
+        "version": "20260525000000",
+        "statement_count": 45,
+        "normalized_sha256": "c635df4b6f694c00a95ed9bba93e763411587c133d89806f65dc6dd107201b24"
+      },
+      {
+        "name": "anti_zombie_agenda",
+        "version": "20260526000000",
+        "statement_count": 1,
+        "normalized_sha256": "b47ea0b795529107d3f6c041793ef24977cabc39c9c7c27656ac4d630185b033"
+      },
+      {
+        "name": "recompute_on_animal_mutation",
+        "version": "20260526000100",
+        "statement_count": 3,
+        "normalized_sha256": "5c19c43cc28a6058ce365b7ab994d9f3f7388417038846e097372ac163c41be3"
+      },
+      {
+        "name": "reconcile_support_rpcs",
+        "version": "20260526000200",
+        "statement_count": 2,
+        "normalized_sha256": "3ec66238734a9b12581f9b50ad00cefe76c9664f717d756e9c32329a6a98b906"
+      },
+      {
+        "name": "vw_animais_peso_atual",
+        "version": "20260526000300",
+        "statement_count": 1,
+        "normalized_sha256": "718ae2ebb3402e65aec6c5e914fbfcb9d054873591505e8c2846702ec7cf2fa6"
+      },
+      {
+        "name": "vw_animais_carencia_ativa",
+        "version": "20260526000400",
+        "statement_count": 1,
+        "normalized_sha256": "9d94786bc5bd7bd05870b9b50eeeaa65f36d844a8931e583f7f7564a43407eb8"
+      },
+      {
+        "name": "idx_sanitary_completion_key",
+        "version": "20260526000500",
+        "statement_count": 1,
+        "normalized_sha256": "c5348534ab46ad4c6e1383c833c4638c5a5aaf6b3af73e19a4baf4392ccb28d6"
+      },
+      {
+        "name": "idx_eventos_unique_source_task",
+        "version": "20260526000600",
+        "statement_count": 3,
+        "normalized_sha256": "b2d7f7c22fc237b35cb8271d53f9f11a8fef4916d84c51e389fc7a710d7fcf87"
+      },
+      {
+        "name": "add_eventos_ecc",
+        "version": "20260528000001",
+        "statement_count": 6,
+        "normalized_sha256": "1c55fe73178d85a3de1f1b67b1eb3d86ceb0a4736b85367a2a68cad84a5044ea"
+      },
+      {
+        "name": "insumos_campos_custo_carencia",
+        "version": "20260529000000",
+        "statement_count": 3,
+        "normalized_sha256": "24a7db38f0e998aea827a1380aca0d59dfb68c64ea7de643bd3c711b0245618a"
+      },
+      {
+        "name": "update_vw_animais_carencia_ativa",
+        "version": "20260529000100",
+        "statement_count": 1,
+        "normalized_sha256": "66907bac6fa670b78e5d6e0c3ab32509c15daa6bb49983753afcc24d6de9d960"
+      },
+      {
+        "name": "financeiro_gerencial",
+        "version": "20260529000200",
+        "statement_count": 25,
+        "normalized_sha256": "de5f46683c3488a6738b353ddbe990a5c6ccf78673e949c2df703fd118e1db18"
+      },
+      {
+        "name": "comercial_operations",
+        "version": "20260529000300",
+        "statement_count": 15,
+        "normalized_sha256": "dfbb9f9910bac2ed5f931c1161241daaafc080c68e138a7780a69e299eb1df0d"
+      },
+      {
+        "name": "sociedade_pecuaria",
+        "version": "20260529000400",
+        "statement_count": 18,
+        "normalized_sha256": "81f14d52709d1019167aa961995a75b88ea0c90a78844b8968c2aa2437fe7680"
+      },
+      {
+        "name": "sociedade_pecuaria_sync_metadata",
+        "version": "20260530000000",
+        "statement_count": 6,
+        "normalized_sha256": "e5f4d7d8997998af8b9221db55c52269696128209699c4bdebefd8d3b9ae8aaa"
+      },
+      {
+        "name": "sociedade_pecuaria_status_retirado",
+        "version": "20260530000100",
+        "statement_count": 1,
+        "normalized_sha256": "174711e6e92e642beccb2c5832e2efc7d211a993d6764ab3ad0073ff72986b76"
+      },
+      {
+        "name": "protocolos_sanitarios_itens_immutable_versions",
+        "version": "20260531000000",
+        "statement_count": 20,
+        "normalized_sha256": "dc3d3f59a381878f8a8a834179c6a82c3280238f2875573c3d3a53097cf7282c"
+      },
+      {
+        "name": "protocolos_sanitarios_drop_legacy_protocol_item_id",
+        "version": "20260531001000",
+        "statement_count": 4,
+        "normalized_sha256": "4298831e4cef8d2d4158762443405d981866a8195025e517fb24766ddff69e9e"
+      },
+      {
+        "name": "eventos_sanitario_operational_traceability",
+        "version": "20260531002000",
+        "statement_count": 9,
+        "normalized_sha256": "6bb81615e848bdd3c00bd2ecd6fd9857c7f27b07972f507e3d8d2185b851476a"
+      },
+      {
+        "name": "financeiro_estorno_categorias",
+        "version": "20260601000000",
+        "statement_count": 10,
+        "normalized_sha256": "20dad56894f40743acdce82a7100b35af6465920c126cbfef3989a2811216a03"
+      },
+      {
+        "name": "insumo_movimentacoes_consumo_nutricao_idempotency",
+        "version": "20260604090000",
+        "statement_count": 1,
+        "normalized_sha256": "227a4464b81e37177f64b3200bccfb9c351b8a6a3260b92064f6459b7228aa67"
+      },
+      {
+        "name": "sanitario_agenda_v2_clean_foundation",
+        "version": "20260606090000",
+        "statement_count": 49,
+        "normalized_sha256": "663e5175614b951342faabdc2b6aaca8a809407727ddbea710d68ba04dc31927"
+      },
+      {
+        "name": "sanitario_protocol_product_source_v2",
+        "version": "20260608090000",
+        "statement_count": 111,
+        "normalized_sha256": "922200b9e348916efb741951e70c32796b2f0dfd318aba66c8001f91da5beb15"
+      },
+      {
+        "name": "sanitario_product_class_v2",
+        "version": "20260610203500",
+        "statement_count": 55,
+        "normalized_sha256": "5ebbe75c46982e868f88cf891c4633a8a23eb6c10d7504a11f30e4b479002cac"
+      },
+      {
+        "name": "sanitario_protocol_item_product_class_group_v2",
+        "version": "20260615120000",
+        "statement_count": 10,
+        "normalized_sha256": "7c929893bf9d4256b6fab576d712c5552443760439e475476ea29ce24c33cd95"
+      },
+      {
+        "name": "sanitario_sync_v2_expand_foundation",
+        "version": "20260722102038",
+        "statement_count": 100,
+        "normalized_sha256": "0679df0154f453356251ace9806012acf97629fc40dbc6614d694a6c15c7b6cb"
+      },
+      {
+        "name": "individual_animal_purchase_sync",
+        "version": "20260808120000",
+        "statement_count": 6,
+        "normalized_sha256": "c45f5a1524719d3f4d691199cce9453fec358e4da1883617a367cc8666e60042"
+      },
+      {
+        "name": "commercial_operation_v2",
+        "version": "20260813134853",
+        "statement_count": 9,
+        "normalized_sha256": "54414d558ea6187e34a32215c317e75dc4a214a17f8ae55cd4bbe56cee42d5d4"
+      },
+      {
+        "name": "harden_individual_animal_purchase_grants",
+        "version": "20260813152618",
+        "statement_count": 4,
+        "normalized_sha256": "d2b728b3fc5d286bd0f706b39904e478918ff316217f24efaee50e50f5fed0cf"
+      },
+      {
+        "name": "fix_pgcrypto_digest_search_path",
+        "version": "20260821000000",
+        "statement_count": 1,
+        "normalized_sha256": "b3b92fdacf8a27df8309191a6e7ce9ad9e5f4a14ae1559996cb893d647f4fd8c"
+      },
+      {
+        "name": "app_superadmin_foundation",
+        "version": "20260824100000",
+        "statement_count": 17,
+        "normalized_sha256": "69f7b8f3fb6168e139e9bfb8182cc289655839340536709914fa53d9f0b94ff0"
+      },
+      {
+        "name": "app_superadmin_read_rpcs",
+        "version": "20260824110000",
+        "statement_count": 15,
+        "normalized_sha256": "734de4a6deb9daee330b59548048985913a0ffaf222f858948b4238c9d99f92d"
+      },
+      {
+        "name": "harden_admin_invites_rpc",
+        "version": "20260824120000",
+        "statement_count": 4,
+        "normalized_sha256": "45dea69e94e3ff6d5ebfcefaffac5be3cb45b8e7902d6ae96626591a611f456b"
+      },
+      {
+        "name": "app_superadmin_can_create_farm_mutation",
+        "version": "20260825080000",
+        "statement_count": 4,
+        "normalized_sha256": "ed10063b2cc51570949184473172e2bf5f5fc78b88d0737e0c7c178430acd11b"
+      },
+      {
+        "name": "reconcile_authenticated_table_privileges",
+        "version": "20260826230107",
+        "statement_count": 7,
+        "normalized_sha256": "6174d3f66c0039a17ca3649dd61ef1eb7557f2acc0d5a47602939771aaf78732"
+      },
+      {
+        "name": "harden_internal_and_trigger_function_privileges",
+        "version": "20260827100000",
+        "statement_count": 10,
+        "normalized_sha256": "1e7d025bf3ea6d089fade820e987e977093eb5e0a2d2b5938cf34edfa76472bb"
+      },
+      {
+        "name": "harden_domain_and_farm_admin_rpc_privileges",
+        "version": "20260827110000",
+        "statement_count": 34,
+        "normalized_sha256": "23e3fac2c03ae2b33ae7cda677727c46ae7458b27b8583a110fcfcc03b59e0c8"
+      },
+      {
+        "name": "harden_get_user_emails_rpc",
+        "version": "20260827120000",
+        "statement_count": 3,
+        "normalized_sha256": "2822496967cacb86e23573e4820f5500d559f70b7e4af77069f7606369b20ada"
+      },
+      {
+        "name": "c2_search_path_hardening",
+        "version": "20260829193636",
+        "statement_count": 10,
+        "normalized_sha256": "fc5754f9fe714ad7a07f61dfb83c76ab91d1271dd92f457b4c94b337c948fb84"
+      },
+      {
+        "name": "c3_auth_rls_initplan_hardening",
+        "version": "20260908050000",
+        "statement_count": 8,
+        "normalized_sha256": "9fa3430cd0fc5477b47e77ac6f5eb75289b54d39cca171a000d95f0a04a805df"
+      },
+      {
+        "name": "c4_1a_exact_permissive_cleanup",
+        "version": "20260908060000",
+        "statement_count": 12,
+        "normalized_sha256": "5c987821b0dce4a77c713408242448aa63f830fd042640bf91f6a76d0b13ce12"
+      },
+      {
+        "name": "c4_1b_subsumed_operational_cleanup",
+        "version": "20260908070000",
+        "statement_count": 56,
+        "normalized_sha256": "b0c87868daa0e10d6e452de744ca87f5b54a607e7bac9779297cc7e54d4cca0c"
+      },
+      {
+        "name": "f24_acl_forward_only_reconciliation",
+        "version": "20260913232253",
+        "statement_count": 19,
+        "normalized_sha256": "a590366460ffdefb7c5287b29a8db8c3d8fe385fb33da1ae3247a1c90e4f86ef"
+      },
+      {
+        "name": "f24_1a1_sanitario_reconcile_backend_wrapper",
+        "version": "20260914014309",
+        "statement_count": 10,
+        "normalized_sha256": "0579cbe51e2cb54bdaf1d3024719a89c40c488ba00dd181f74557f4c1df4136b"
+      },
+      {
+        "name": "sanitario_source_key_identity",
+        "version": "20260923132000",
+        "statement_count": 8,
+        "normalized_sha256": "3fd5e930d0618d26ee9e300d9cc5393637d1a405f6306d466deb62575eb6c6f7"
+      },
+      {
+        "name": "f24_4c_animais_state_revision",
+        "version": "20260927120000",
+        "statement_count": 9,
+        "normalized_sha256": "5331d1cedbd2aaef06fa39c7625da8e9feb3a79fc709870f1bbcbefe30919130"
+      },
+      {
+        "name": "f24_4e21a_animal_lot_movement_foundation",
+        "version": "20261001200402",
+        "statement_count": 45,
+        "normalized_sha256": "a0a73c174450da7c5910901bb0facf9ed292fbae89fa950c1275360e8a1e390b"
+      },
+      {
+        "name": "f24_4e211a_server_completion_gate",
+        "version": "20261002005751",
+        "statement_count": 47,
+        "normalized_sha256": "fa48b02931ee775dad867ad39835b9cb79381a4fa9216b2588c5666ffae5dfe8"
+      },
+      {
+        "name": "f24_4e2_close_generic_animal_lot_fact_boundary",
+        "version": "20261003120000",
+        "statement_count": 4,
+        "normalized_sha256": "d33962b15cdac6566a00c090275860353e06f79862b1a9eb5d706d0be6cb60ee"
+      },
+      {
+        "name": "sanitario_sync_v2_revision_conflict_pt409",
+        "version": "20261004210000",
+        "statement_count": 3,
+        "normalized_sha256": "0b7dff177eda8b2cd2c42d6972d9fca8d95e255504ad8db7347189bfb96b518e"
+      },
+      {
+        "name": "f24_4e_lot_pasture_subject_boundary",
+        "version": "20261005175412",
+        "statement_count": 1,
+        "normalized_sha256": "a1999c68d47b0b2dec4d7c31ca60df0ee692e36bd3041f09e61ea6419e0f9284"
+      },
+      {
+        "name": "f24_5e3_remote_telemetry_retention",
+        "version": "20261008202000",
+        "statement_count": 1,
+        "normalized_sha256": "51ba4ec28370c004cd0857040a373f854d1d619637c62a78f9161118499a7f55"
+      },
+      {
+        "name": "f24_5e3_remote_telemetry_retention_cron",
+        "version": "20261008202024",
+        "statement_count": 1,
+        "normalized_sha256": "71c9e3b7c2f106763b62202b884987e9c30c064cc497593dca74340f82ffbc51"
+      }
+    ],
+    "constraints": [
+      {
+        "conname": "ck_sanitario_agenda_animais_v2_status_event",
+        "relname": "sanitario_agenda_animais_v2",
+        "definition": "CHECK ((((planned_status = 'planejado'::sanitario_agenda_animal_v2_status_enum) AND (execution_evento_id IS NULL) AND (NULLIF(btrim(COALESCE(not_executed_reason, ''::text)), ''::text) IS NULL)) OR ((planned_status = 'executado'::sanitario_agenda_animal_v2_status_enum) AND (execution_evento_id IS NOT NULL)) OR ((planned_status = 'nao_executado'::sanitario_agenda_animal_v2_status_enum) AND (execution_evento_id IS NULL) AND (NULLIF(btrim(COALESCE(not_executed_reason, ''::text)), ''::text) IS NOT NULL))))"
+      },
+      {
+        "conname": "fk_sanitario_agenda_animais_v2_agenda_fazenda",
+        "relname": "sanitario_agenda_animais_v2",
+        "definition": "FOREIGN KEY (agenda_id, fazenda_id) REFERENCES sanitario_agenda_v2(id, fazenda_id) ON DELETE CASCADE"
+      },
+      {
+        "conname": "fk_sanitario_agenda_animais_v2_animal_fazenda",
+        "relname": "sanitario_agenda_animais_v2",
+        "definition": "FOREIGN KEY (animal_id, fazenda_id) REFERENCES animais(id, fazenda_id) ON DELETE CASCADE"
+      },
+      {
+        "conname": "fk_sanitario_agenda_animais_v2_execution_evento_fazenda",
+        "relname": "sanitario_agenda_animais_v2",
+        "definition": "FOREIGN KEY (execution_evento_id, fazenda_id) REFERENCES eventos(id, fazenda_id) ON DELETE SET NULL"
+      },
+      {
+        "conname": "sanitario_agenda_animais_v2_agenda_id_fazenda_id_animal_id_key",
+        "relname": "sanitario_agenda_animais_v2",
+        "definition": "UNIQUE (agenda_id, fazenda_id, animal_id)"
+      },
+      {
+        "conname": "sanitario_agenda_animais_v2_fazenda_id_fkey",
+        "relname": "sanitario_agenda_animais_v2",
+        "definition": "FOREIGN KEY (fazenda_id) REFERENCES fazendas(id) ON DELETE CASCADE"
+      },
+      {
+        "conname": "sanitario_agenda_animais_v2_pkey",
+        "relname": "sanitario_agenda_animais_v2",
+        "definition": "PRIMARY KEY (agenda_id, animal_id)"
+      },
+      {
+        "conname": "ck_sanitario_agenda_closures_v2_dedup_key",
+        "relname": "sanitario_agenda_closures_v2",
+        "definition": "CHECK ((btrim(dedup_key) <> ''::text))"
+      },
+      {
+        "conname": "ck_sanitario_agenda_closures_v2_event_required",
+        "relname": "sanitario_agenda_closures_v2",
+        "definition": "CHECK ((((closure_type = ANY (ARRAY['executed_with_event'::sanitario_agenda_closure_v2_type_enum, 'partially_executed_with_event'::sanitario_agenda_closure_v2_type_enum])) AND (execution_evento_id IS NOT NULL)) OR ((closure_type = ANY (ARRAY['closed_without_execution'::sanitario_agenda_closure_v2_type_enum, 'cancelled'::sanitario_agenda_closure_v2_type_enum, 'dismissed'::sanitario_agenda_closure_v2_type_enum])) AND (execution_evento_id IS NULL))))"
+      },
+      {
+        "conname": "ck_sanitario_agenda_closures_v2_partial_payload",
+        "relname": "sanitario_agenda_closures_v2",
+        "definition": "CHECK (((closure_type <> 'partially_executed_with_event'::sanitario_agenda_closure_v2_type_enum) OR ((jsonb_typeof((partial_payload -> 'executed_animal_ids'::text)) = 'array'::text) AND (jsonb_array_length((partial_payload -> 'executed_animal_ids'::text)) > 0) AND (jsonb_typeof((partial_payload -> 'not_executed_animals'::text)) = 'array'::text) AND (jsonb_array_length((partial_payload -> 'not_executed_animals'::text)) > 0))))"
+      },
+      {
+        "conname": "ck_sanitario_agenda_closures_v2_reason_required",
+        "relname": "sanitario_agenda_closures_v2",
+        "definition": "CHECK (((closure_type <> ALL (ARRAY['closed_without_execution'::sanitario_agenda_closure_v2_type_enum, 'cancelled'::sanitario_agenda_closure_v2_type_enum, 'dismissed'::sanitario_agenda_closure_v2_type_enum])) OR (NULLIF(btrim(COALESCE(reason, ''::text)), ''::text) IS NOT NULL)))"
+      },
+      {
+        "conname": "fk_sanitario_agenda_closures_v2_agenda_fazenda",
+        "relname": "sanitario_agenda_closures_v2",
+        "definition": "FOREIGN KEY (agenda_id, fazenda_id) REFERENCES sanitario_agenda_v2(id, fazenda_id) ON DELETE CASCADE"
+      },
+      {
+        "conname": "fk_sanitario_agenda_closures_v2_execution_evento_fazenda",
+        "relname": "sanitario_agenda_closures_v2",
+        "definition": "FOREIGN KEY (execution_evento_id, fazenda_id) REFERENCES eventos(id, fazenda_id) ON DELETE SET NULL"
+      },
+      {
+        "conname": "sanitario_agenda_closures_v2_closed_by_fkey",
+        "relname": "sanitario_agenda_closures_v2",
+        "definition": "FOREIGN KEY (closed_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+      },
+      {
+        "conname": "sanitario_agenda_closures_v2_fazenda_id_fkey",
+        "relname": "sanitario_agenda_closures_v2",
+        "definition": "FOREIGN KEY (fazenda_id) REFERENCES fazendas(id) ON DELETE CASCADE"
+      },
+      {
+        "conname": "sanitario_agenda_closures_v2_id_fazenda_id_key",
+        "relname": "sanitario_agenda_closures_v2",
+        "definition": "UNIQUE (id, fazenda_id)"
+      },
+      {
+        "conname": "sanitario_agenda_closures_v2_pkey",
+        "relname": "sanitario_agenda_closures_v2",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "conname": "ck_sanitario_agenda_v2_acao",
+        "relname": "sanitario_agenda_v2",
+        "definition": "CHECK ((btrim(acao_sanitaria) <> ''::text))"
+      },
+      {
+        "conname": "ck_sanitario_agenda_v2_cancelled_without_event",
+        "relname": "sanitario_agenda_v2",
+        "definition": "CHECK (((status <> ALL (ARRAY['cancelada'::sanitario_agenda_v2_status_enum, 'dispensada'::sanitario_agenda_v2_status_enum])) OR (execution_evento_id IS NULL)))"
+      },
+      {
+        "conname": "ck_sanitario_agenda_v2_data_programada",
+        "relname": "sanitario_agenda_v2",
+        "definition": "CHECK (((data_programada >= janela_inicio) AND ((janela_fim IS NULL) OR (data_programada <= janela_fim))))"
+      },
+      {
+        "conname": "ck_sanitario_agenda_v2_dedup_key",
+        "relname": "sanitario_agenda_v2",
+        "definition": "CHECK ((btrim(dedup_key) <> ''::text))"
+      },
+      {
+        "conname": "ck_sanitario_agenda_v2_execution_status",
+        "relname": "sanitario_agenda_v2",
+        "definition": "CHECK (((execution_evento_id IS NULL) OR (status = 'fechada'::sanitario_agenda_v2_status_enum)))"
+      },
+      {
+        "conname": "ck_sanitario_agenda_v2_janela",
+        "relname": "sanitario_agenda_v2",
+        "definition": "CHECK (((janela_fim IS NULL) OR (janela_fim >= janela_inicio)))"
+      },
+      {
+        "conname": "ck_sanitario_agenda_v2_revision_non_negative",
+        "relname": "sanitario_agenda_v2",
+        "definition": "CHECK ((revision >= 0))"
+      },
+      {
+        "conname": "fk_sanitario_agenda_v2_execution_evento_fazenda",
+        "relname": "sanitario_agenda_v2",
+        "definition": "FOREIGN KEY (execution_evento_id, fazenda_id) REFERENCES eventos(id, fazenda_id) ON DELETE SET NULL"
+      },
+      {
+        "conname": "fk_sanitario_agenda_v2_lote_fazenda",
+        "relname": "sanitario_agenda_v2",
+        "definition": "FOREIGN KEY (lote_id, fazenda_id) REFERENCES lotes(id, fazenda_id) ON DELETE SET NULL"
+      },
+      {
+        "conname": "fk_sanitario_agenda_v2_protocol_item_fazenda",
+        "relname": "sanitario_agenda_v2",
+        "definition": "FOREIGN KEY (protocol_item_version_id, fazenda_id) REFERENCES protocolos_sanitarios_itens(id, fazenda_id) ON DELETE SET NULL"
+      },
+      {
+        "conname": "fk_sanitario_agenda_v2_protocolo_fazenda",
+        "relname": "sanitario_agenda_v2",
+        "definition": "FOREIGN KEY (protocolo_id, fazenda_id) REFERENCES protocolos_sanitarios(id, fazenda_id) ON DELETE SET NULL"
+      },
+      {
+        "conname": "sanitario_agenda_v2_fazenda_id_fkey",
+        "relname": "sanitario_agenda_v2",
+        "definition": "FOREIGN KEY (fazenda_id) REFERENCES fazendas(id) ON DELETE CASCADE"
+      },
+      {
+        "conname": "sanitario_agenda_v2_id_fazenda_id_key",
+        "relname": "sanitario_agenda_v2",
+        "definition": "UNIQUE (id, fazenda_id)"
+      },
+      {
+        "conname": "sanitario_agenda_v2_pkey",
+        "relname": "sanitario_agenda_v2",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "conname": "sanitario_agenda_v2_produto_veterinario_id_fkey",
+        "relname": "sanitario_agenda_v2",
+        "definition": "FOREIGN KEY (produto_veterinario_id) REFERENCES produtos_veterinarios(id) ON DELETE SET NULL"
+      },
+      {
+        "conname": "ck_sanitario_sync_v2_operation_kind",
+        "relname": "sanitario_sync_v2_operations",
+        "definition": "CHECK ((operation_kind = ANY (ARRAY['agenda_create'::text, 'agenda_targets_replace'::text, 'factual_core'::text, 'administrative_closure'::text])))"
+      },
+      {
+        "conname": "ck_sanitario_sync_v2_result_object",
+        "relname": "sanitario_sync_v2_operations",
+        "definition": "CHECK ((jsonb_typeof(canonical_result) = 'object'::text))"
+      },
+      {
+        "conname": "sanitario_sync_v2_operations_actor_user_id_fkey",
+        "relname": "sanitario_sync_v2_operations",
+        "definition": "FOREIGN KEY (actor_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+      },
+      {
+        "conname": "sanitario_sync_v2_operations_fazenda_id_client_op_id_key",
+        "relname": "sanitario_sync_v2_operations",
+        "definition": "UNIQUE (fazenda_id, client_op_id)"
+      },
+      {
+        "conname": "sanitario_sync_v2_operations_fazenda_id_fkey",
+        "relname": "sanitario_sync_v2_operations",
+        "definition": "FOREIGN KEY (fazenda_id) REFERENCES fazendas(id) ON DELETE CASCADE"
+      },
+      {
+        "conname": "sanitario_sync_v2_operations_fazenda_id_operation_kind_doma_key",
+        "relname": "sanitario_sync_v2_operations",
+        "definition": "UNIQUE (fazenda_id, operation_kind, domain_op_id)"
+      },
+      {
+        "conname": "sanitario_sync_v2_operations_pkey",
+        "relname": "sanitario_sync_v2_operations",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ],
+    "memberships": [
+      {
+        "role": "owner",
+        "deleted": false,
+        "user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "fazenda_id": "3be9fa3f-7991-4231-8982-144ca368a9ef"
+      },
+      {
+        "role": "owner",
+        "deleted": false,
+        "user_id": "693647f3-9043-437e-bf18-924d39b882aa",
+        "fazenda_id": "71d3bd9f-fec1-4439-a96b-6536ebb20cb4"
+      },
+      {
+        "role": "owner",
+        "deleted": false,
+        "user_id": "ca19dafc-488e-4c15-8613-1b05e7b37a73",
+        "fazenda_id": "11a63edd-ebc7-4be2-9c65-84f5228f25f2"
+      },
+      {
+        "role": "owner",
+        "deleted": false,
+        "user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "fazenda_id": "ea64f0bd-3b6b-4186-9e9d-76b08b287de8"
+      },
+      {
+        "role": "owner",
+        "deleted": false,
+        "user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "fazenda_id": "d57f8262-86ae-4b63-a46d-726710f4ad45"
+      }
+    ],
+    "observed_at": "2026-10-19T09:22:25.636288+00:00"
+  },
+  "validation": {
+    "focused_unique_tests": 170,
+    "focused_test_files": 8,
+    "eslint": "passed",
+    "fallow": {
+      "verdict": "pass",
+      "attribution": {
+        "gate": "new-only",
+        "dead_code_introduced": 0,
+        "dead_code_inherited": 5,
+        "complexity_introduced": 0,
+        "complexity_inherited": 5,
+        "duplication_introduced": 0,
+        "duplication_inherited": 1,
+        "styling_introduced": 0,
+        "styling_inherited": 0,
+        "duplication_demoted": 0
+      }
+    },
+    "build": "Final development build after PR #217 with synthetic loopback settings passed (14.23s); default build lacked environment configuration",
+    "baseline_functional": "safely refused: no explicitly disposable local DB; no validation claim",
+    "previous_482_tests_rerun": false,
+    "remote_migration_dry_run_executed": false,
+    "remote_ab_smoke_executed": false,
+    "docs_gates": "passed: headers, continuity, governance contracts",
+    "patch_gate": "READY WITH CAVEAT for local preparation; not authorized or ready for remote rollout",
+    "navigation_integration_tests": {
+      "AppShell": 4,
+      "AppShellNavigation": 12
+    },
+    "navigation_warnings": [
+      "React Router future flags",
+      "Radix Dialog title and description absent in imported shell; not corrected in this task"
+    ]
+  },
+  "offline_client_inventory": {
+    "verified": false,
+    "reason": "Opera connector requires reauthentication; no browser IndexedDB inspected. Empty remote ledger cannot establish empty local queues."
+  },
+  "release_constraints": {
+    "client_rollout_enabled": false,
+    "server_gates": [],
+    "canonical_payload_promoted": false,
+    "curatorial_approvals_granted": 0,
+    "ready_items": 7,
+    "commercial_pending": 7,
+    "restricted": 6
+  },
+  "initial_integrated_main": "52a6ddbe8d92230d70bfcde0f88ef31beed679a9",
+  "integration_merges": [
+    {
+      "pr": 216,
+      "merge": "e71670bda3e0319cff4e1dcd9e099a894707bcca"
+    },
+    {
+      "pr": 217,
+      "merge": "24720aafcbda2025917a72cf5e71dc81f3fc1d62"
+    }
+  ],
+  "future_test_farm": {
+    "name": "Homologação Sanitário V2",
+    "id": null,
+    "create_only_under": "R05",
+    "reuse_existing_farms": false
+  },
+  "curator_binding": {
+    "user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+    "email": "maresdeandrade@gmail.com",
+    "source": "read-only auth.users query; only non-telemetry synthetic account; owner of three existing farms",
+    "global_admin_records": 0,
+    "grant_authorized": false,
+    "grant_requires": "R04"
+  }
+}

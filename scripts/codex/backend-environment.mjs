@@ -6,6 +6,7 @@ export function validateBackendEnvironment(mode, env, registered = targets) {
   const production = env.VERCEL_ENV === "production" || mode === "production";
   const role =
     env.VITE_BACKEND_ENV ?? (production ? "production" : "development");
+  const controlled = role === "controlled-homologation";
   const api = new URL(env.VITE_SUPABASE_URL);
   const functions = new URL(env.VITE_SUPABASE_FUNCTIONS_URL);
   if (
@@ -17,6 +18,11 @@ export function validateBackendEnvironment(mode, env, registered = targets) {
     );
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(api.hostname);
   const ref = api.hostname.match(/^([a-z0-9]+)\.supabase\.co$/)?.[1];
+  if (controlled && (production || local || api.protocol !== "https:" ||
+    ref !== registered.existing_backend_homologation?.project_ref ||
+    !registered.existing_backend_homologation?.reuse_decision_reference ||
+    !registered.production_project_refs.includes(ref) || api.href !== `https://${ref}.supabase.co/`))
+    throw new Error("CONTROLLED_HOMOLOGATION_TARGET_FORBIDDEN");
   if (
     production &&
     (role !== "production" ||
@@ -38,9 +44,9 @@ export function validateBackendEnvironment(mode, env, registered = targets) {
     );
   if (role === "homologation" && production)
     throw new Error("PRODUCTION_CANNOT_USE_HOMOLOGATION");
-  if (production || (role === "homologation" && !local)) {
+  if (production || controlled || (role === "homologation" && !local)) {
     const hashes =
-      (production
+      (production || controlled
         ? registered.production_publishable_key_sha256
         : registered.homologation_publishable_key_sha256)?.[ref] ?? [];
     const digest = createHash("sha256")

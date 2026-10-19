@@ -2,6 +2,10 @@
 
 Atualizado em: 2026-10-19
 
+> Estratégia de destino e autorizações substituída pela decisão do proprietário de reutilizar o backend atual.
+> Seguir [preflight do backend existente](SANITARIO_V2_BACKEND_PREFLIGHT_20261019.md) e R01–R05.
+> Este registro preserva a preparação anterior; H01–H10 não autorizam operações no backend existente.
+
 Escopo: preparar implantação; **nenhuma operação remota de escrita autorizada ou executada**.
 O único merge autorizado nesta tarefa foi o **merge local** da main `350955f91c2b06859ba7d093926d3f5b27389b86`,
 incluindo PR #214, na branch `codex/sanitario-v2-convergencia`. Resultado `323f7b5a6a8a0fb23a2d0a40250e6d57b5be6bd4`,

@@ -17,6 +17,37 @@ const env = { VITE_BACKEND_ENV: "homologation", VITE_SUPABASE_URL: binding.api_u
   DB_URL: `postgresql://postgres@db.${ref}.supabase.co/postgres?sslmode=require` };
 
 describe("release target binding protects production before remote commands", () => {
+  it("allows only explicit controlled preflight, never a remote write authorization", () => {
+    const registry = { ...registered, existing_backend_homologation: {
+      project_ref: ref, organization_id: binding.organization_id, reuse_decision_reference: "synthetic-reuse-decision",
+      client_rollout_enabled: false,
+    }, production_project_refs: [ref], production_publishable_key_sha256: { [ref]: [digest] } };
+    const target = { ...binding, mode: "controlled-existing-backend", reuse_decision_reference: "synthetic-reuse-decision" };
+    const values = { ...env, VITE_BACKEND_ENV: "controlled-homologation", VERCEL_ENV: "preview" };
+    expect(verifyHomologationTarget(target, values, registry)).toEqual({
+      project_ref: ref, preflight: "PASS", remote_operations: 0,
+      mode: "controlled-existing-backend", remote_write_authorized: false,
+    });
+    expect(verifyHomologationTarget({ ...target, preview_origin: "http://127.0.0.1:5173" },
+      { ...values, VERCEL_ENV: undefined }, registry).remote_write_authorized).toBe(false);
+    for (const changed of [
+      { ...target, mode: undefined }, { ...target, mode: "unknown" },
+      { ...target, project_ref: "zqloazqzhwauamcejmuz" },
+      { ...target, organization_id: "other-org" },
+      { ...target, reuse_decision_reference: null },
+      { ...target, publishable_key_sha256: "f".repeat(64) },
+    ]) expect(() => verifyHomologationTarget(changed, values, registry)).toThrow();
+    for (const changed of [
+      { ...values, VERCEL_ENV: "production" }, { ...values, VERCEL_ENV: undefined },
+      { ...values, VITE_BACKEND_ENV: "production" },
+      { ...values, VITE_SUPABASE_PUBLISHABLE_KEY: "wrong-key" },
+      { ...values, DB_URL: env.DB_URL + "&host=other.example" },
+      { ...values, DB_URL: env.DB_URL.replace("?sslmode=require", "") },
+      { ...values, DB_URL: env.DB_URL.replace("/postgres?", "/another?") },
+      { ...values, DB_URL: "postgresql://postgres@db.zqloazqzhwauamcejmuz.supabase.co/postgres" },
+    ]) expect(() => verifyHomologationTarget(target, changed, registry)).toThrow();
+    expect(() => verifyHomologationTarget(target, values, registered)).toThrow();
+  });
   it("accepts only a complete independently registered project/key and matching database", () => {
     expect(verifyHomologationTarget(binding, env, registered)).toEqual({ project_ref: ref, preflight: "PASS", remote_operations: 0 });
     expect(verifyHomologationTarget(binding, { ...env, DB_URL: `postgresql://postgres.${ref}@aws-0-sa-east-1.pooler.supabase.com/postgres` }, registered).preflight).toBe("PASS");

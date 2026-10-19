@@ -2,6 +2,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "../db";
+import backendTargets from "../../../../config/backend-targets.json";
 import {
   applySanitarioV2Cutover,
   buildApplyFactualCoreOperation,
@@ -188,6 +189,24 @@ describe("sanitario v2 local cutover", () => {
         "sync_sanitario_v2_cutovers",
       ]),
     );
+  });
+
+  it("requires a separate rollout decision for the controlled existing backend", () => {
+    const target = backendTargets.existing_backend_homologation;
+    vi.stubEnv("VITE_BACKEND_ENV", "controlled-homologation");
+    vi.stubEnv("VITE_SUPABASE_URL", `https://${target.project_ref}.supabase.co`);
+    expect(() => setSanitarioV2PushEnabled(true, target.project_ref)).toThrow("SANITARIO_V2_STAGING_ONLY");
+    expect(isSanitarioV2PushEnabled(target.project_ref)).toBe(false);
+    try {
+      target.client_rollout_enabled = true;
+      setSanitarioV2PushEnabled(true, target.project_ref);
+      expect(isSanitarioV2PushEnabled(target.project_ref)).toBe(true);
+      vi.stubEnv("VITE_SUPABASE_URL", "https://another.supabase.co");
+      expect(isSanitarioV2PushEnabled(target.project_ref)).toBe(false);
+      vi.stubEnv("VITE_SUPABASE_URL", `https://${target.project_ref}.supabase.co`);
+      vi.stubEnv("VITE_BACKEND_ENV", "production");
+      expect(isSanitarioV2PushEnabled(target.project_ref)).toBe(false);
+    } finally { target.client_rollout_enabled = false; }
   });
 
   it("mantem a flag false e restringe ativacao ao staging", () => {
