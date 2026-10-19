@@ -1,4 +1,5 @@
 import Dexie from "dexie";
+import { readSanitaryPlanningSyncContextV2 } from "../agenda/sanitaryPlanningSyncV2";
 import type { SanitaryAgendaMaterializationCommand } from "../agenda/sanitaryAgendaMaterialization";
 import { resolveAnimalClassificationSnapshot } from "@/lib/animals/classificationSnapshot";
 import { db } from "@/lib/offline/db";
@@ -975,6 +976,7 @@ async function persistPlanningCommand(
           createdBy: input.createdBy,
           clientOpId: identity.clientOpId,
           confirmed: input.confirmed,
+          syncContext: readSanitaryPlanningSyncContextV2(),
         },
         db as unknown as ManualSanitaryAgendaLocalDbV2,
       ),
@@ -998,6 +1000,9 @@ export async function createGroupedManualSanitaryAgendasV2(
     [
       db.ops_sanitario_agenda_v2,
       db.ops_sanitario_agenda_animais_v2,
+      db.queue_gestures,
+      db.queue_ops,
+      db.sync_sanitario_v2_cutovers,
       db.state_animais,
       db.state_lotes,
       db.state_fazenda_sanidade_config,

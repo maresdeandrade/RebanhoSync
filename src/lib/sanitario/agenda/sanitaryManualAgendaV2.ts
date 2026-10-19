@@ -3,6 +3,9 @@ import type {
   SanitarioAgendaLocalV2,
 } from "@/lib/offline/types";
 import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sanitaryEligibility";
+import { deterministicUuidFromText } from "../customization/customization";
+import { buildCreateAgendaOperation, createSanitarioV2Identity, validateSanitarioV2Enqueue, writeSanitarioV2Queue } from "@/lib/offline/sanitarioV2Cutover";
+import type { SanitaryPlanningSyncContextV2 } from "./sanitaryPlanningSyncV2";
 import type {
   SanitaryPlanningKindV2,
   SanitaryGenerationModeV2,
@@ -23,6 +26,7 @@ export type ManualAgendaProductRequirementKindV2 =
   | string;
 
 export type CreateManualSanitaryAgendaInputV2 = {
+  syncContext?: SanitaryPlanningSyncContextV2;
   target: ManualAgendaTargetV2;
   source: {
     kind: "sanitary_precheck_preview_v2";
@@ -99,6 +103,7 @@ export type ManualSanitaryAgendaValidationV2 = {
 
 export type ManualSanitaryAgendaLocalDbV2 = {
   ops_sanitario_agenda_v2: {
+    get?(id: string): Promise<SanitarioAgendaLocalV2 | undefined>;
     where(index: "client_op_id"): {
       equals(value: string): {
         first(): Promise<SanitarioAgendaLocalV2 | undefined>;
@@ -311,10 +316,11 @@ export function buildManualSanitaryAgendaRecordsV2(
   }
 
   const now = input.now ?? new Date().toISOString();
-  const agendaId = agendaIdFromClientOpId(
+  const localAgendaId = agendaIdFromClientOpId(
     input.clientOpId,
     input.target.fazendaId,
   );
+  const agendaId = input.syncContext ? deterministicUuidFromText(localAgendaId) : localAgendaId;
   const animalIds = targetAnimalRows(input);
   const targetAnimalScope =
     input.target.scope === "lote" && animalIds.length === 0
@@ -399,11 +405,18 @@ export async function createManualSanitaryAgendaV2(
 
   const db = localDb ?? (await getDefaultLocalDb());
   const records = buildManualSanitaryAgendaRecordsV2(input);
+  const realDb = db as unknown as typeof import("@/lib/offline/db").db;
+  const identity = input.syncContext ? createSanitarioV2Identity() : undefined;
+  if (identity) {
+    Object.assign(records.agenda, { client_id: input.syncContext!.clientId, client_tx_id: identity.clientTxId, domain_op_id: identity.domainOpId, revision: 0, contract_version: 2, client_recorded_at: records.agenda.created_at });
+  }
+  const operations = identity ? [buildCreateAgendaOperation(identity, records.agenda, records.animals.map(row => row.animal_id))] : [];
+  if (input.syncContext) await validateSanitarioV2Enqueue({ fazendaId: input.target.fazendaId, ...input.syncContext, operations });
   return db.transaction(
     "rw",
-    [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2],
+    [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2, ...(input.syncContext ? [realDb.queue_gestures, realDb.queue_ops] : [])],
     async () => {
-      const existing = await db.ops_sanitario_agenda_v2
+      const existing = await db.ops_sanitario_agenda_v2.get?.(records.agenda.id) ?? await db.ops_sanitario_agenda_v2
         .where("client_op_id")
         .equals(input.clientOpId)
         .first();
@@ -423,6 +436,7 @@ export async function createManualSanitaryAgendaV2(
       if (records.animals.length > 0) {
         await db.ops_sanitario_agenda_animais_v2.bulkPut(records.animals);
       }
+      if (input.syncContext) await writeSanitarioV2Queue({ fazendaId: input.target.fazendaId, clientId: input.syncContext.clientId, operations });
       return {
         agendaId: records.agenda.id,
         clientOpId: input.clientOpId,

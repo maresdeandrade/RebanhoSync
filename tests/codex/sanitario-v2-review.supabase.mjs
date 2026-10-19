@@ -12,6 +12,7 @@ import { runInNewContext } from "node:vm";
 import * as contract from "../../scripts/codex/sanitario-v2-contract.mjs";
 import { existsSync } from "node:fs";
 import { buildApprovalCandidate, CANONICAL_PATH, DECISION_PATH } from "../../scripts/codex/prepare-sanitario-approval-v2.mjs";
+import { runSanitaryConvergenceFixture } from "./sanitario-v2-convergence.fixture.mjs";
 
 const directory = mkdtempSync(path.join(tmpdir(), "sanitario-review-supabase-"));
 const project = `sanitary-review-${randomUUID().slice(0, 8)}`;
@@ -24,6 +25,7 @@ const child = (args, env) => new Promise(resolve => {
   task.on("close", code => resolve({ code, stdout, stderr }));
 });
 let db, edge;
+const edgeDiagnostics = [];
 try {
   const dockerHost = execFileSync("docker", ["context", "inspect", "--format", "{{.Endpoints.docker.Host}}"], { encoding: "utf8", windowsHide: true }).trim();
   assert.match(dockerHost, /^(npipe:\/\/|unix:\/\/)/, "Only a local Docker context is allowed");
@@ -45,10 +47,23 @@ try {
   }));
   assert.equal(new URL(env.DB_URL).hostname, "127.0.0.1"); assert.equal(new URL(env.API_URL).port, "55421");
   writeFileSync(path.join(directory, "empty.env"), "");
-  edge = spawn("supabase", ["functions", "serve", "--workdir", directory, "--env-file", path.join(directory, "empty.env")], { windowsHide: true, stdio: "ignore" });
+  edge = spawn("supabase", ["functions", "serve", "--workdir", directory, "--env-file", path.join(directory, "empty.env")], { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+  const diagnose = chunk => {
+    for (const line of chunk.toString().split(/\r?\n/).filter(line => /worker boot error|failed to|Module not found|Uncaught|Error:|error sending request|Caused by/i.test(line))) {
+      edgeDiagnostics.push(line.replace(/https?:\/\/\S+|postgres(?:ql)?:\/\/\S+|eyJ[\w.-]+|sb_(?:secret|publishable)_[\w-]+/g, "[REDACTED]"));
+    }
+  };
+  edge.stdout.on("data", diagnose); edge.stderr.on("data", diagnose);
   let ready = false;
   for (let attempt = 0; attempt < 80 && !ready; attempt++) {
-    try { ready = (await fetch(`${env.API_URL}/functions/v1/sync-batch`, { signal: AbortSignal.timeout(1000) })).status === 401; } catch { /* Own container starting. */ }
+    try {
+      const probe = await fetch(`${env.API_URL}/functions/v1/sync-batch`, {
+        method: "POST", headers: { Authorization: `Bearer ${env.ANON_KEY}`, apikey: env.ANON_KEY, "Content-Type": "application/json" },
+        body: "{}", signal: AbortSignal.timeout(5000),
+      });
+      const result = await probe.json();
+      ready = probe.status === 401 && typeof result.error === "string" && result.error.startsWith("Unauthorized -");
+    } catch { /* Wait for the actual handler, not merely the gateway's missing-JWT response. */ }
     if (!ready) await new Promise(resolve => setTimeout(resolve, 500));
   }
   assert(ready, "Isolated Edge auth gate unavailable");
@@ -70,7 +85,7 @@ try {
     const created = await adminClient.auth.admin.createUser({ email, password, email_confirm: true }); assert.ifError(created.error);
     const user = createClient(env.API_URL, env.ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
     assert.ifError((await user.auth.signInWithPassword({ email, password })).error);
-    sessions.push({ client: user, id: created.data.user.id });
+    sessions.push({ client: user, id: created.data.user.id, email, password });
   }
   await db.query("insert into public.app_superadmins(user_id) values($1)", [sessions[0].id]);
   const item = packet.prepared_item_records.find(row => row.decision_set === "B19").record;
@@ -83,8 +98,13 @@ try {
   report.cases.push("HTTP JWT reviewer publishes exact B19 version atomically");
   const replay = await sessions[0].client.rpc("sanitario_catalog_decide_v2", command); assert.ifError(replay.error); assert.deepEqual(replay.data, approved.data);
   report.cases.push("HTTP lost-ACK replay returns same audit receipt");
+  if (process.argv.includes("--convergence")) {
+    await runSanitaryConvergenceFixture({ db, env, adminClient, sessions, packet, report });
+  }
   report.result = "PASS";
-} catch (error) { report.result = "FAIL"; report.failure = /^[A-Z_]+$/.test(error.message) ? error.message : "ISOLATED_CHECK_FAILED"; process.exitCode = 1;
+} catch (error) { report.result = "FAIL"; report.failure = /^[A-Z_]+$/.test(error.message) ? error.message : "ISOLATED_CHECK_FAILED";
+  report.failure_detail = error.message.replace(/https?:\/\/\S+|postgres(?:ql)?:\/\/\S+|eyJ[\w.-]+|sb_(?:secret|publishable)_[\w-]+/g, "[REDACTED]").slice(0, 3000);
+  report.edge_diagnostics = edgeDiagnostics.slice(-12); process.exitCode = 1;
 } finally {
   await db?.end(); edge?.kill();
   try { cli(["stop", "--project-id", project, "--no-backup", "--workdir", directory]); report.own_project_removed = true; }

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "production_project_refs": ["zqloazqzhwauamcejmuz"],
+  "homologation_project_refs": [],
+  "production_publishable_key_sha256": {
+    "zqloazqzhwauamcejmuz": ["514082c27d1a3b0e87c4e0ea15c93e50a60ac4427401314d77f5941c68b4ceb9"]
+  },
+  "homologation_publishable_key_sha256": {}
+}

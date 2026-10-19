@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import "fake-indexeddb/auto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "../db";
 import {
   applySanitarioV2Cutover,
@@ -156,6 +156,7 @@ function closure(): SanitarioAgendaClosureLocalV2 {
 
 describe("sanitario v2 local cutover", () => {
   beforeEach(async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:55421");
     await Promise.all([
       db.sync_sanitario_v2_cutovers.clear(),
       db.event_eventos.clear(),
@@ -167,6 +168,7 @@ describe("sanitario v2 local cutover", () => {
     setSanitarioV2PushEnabled(false, SANITARIO_V2_STAGING_PROJECT_REF);
   });
   afterEach(async () => {
+    vi.unstubAllEnvs();
     setSanitarioV2PushEnabled(false, SANITARIO_V2_STAGING_PROJECT_REF);
     await Promise.all([
       db.sync_sanitario_v2_cutovers.clear(),
@@ -195,8 +197,9 @@ describe("sanitario v2 local cutover", () => {
     expect(() => setSanitarioV2PushEnabled(true, "production-ref")).toThrow(
       "SANITARIO_V2_STAGING_ONLY",
     );
-    setSanitarioV2PushEnabled(true, SANITARIO_V2_STAGING_PROJECT_REF);
-    expect(isSanitarioV2PushEnabled(SANITARIO_V2_STAGING_PROJECT_REF)).toBe(
+    expect(() => setSanitarioV2PushEnabled(true, SANITARIO_V2_STAGING_PROJECT_REF)).toThrow("SANITARIO_V2_STAGING_ONLY");
+    setSanitarioV2PushEnabled(true, "local");
+    expect(isSanitarioV2PushEnabled("local")).toBe(
       true,
     );
     expect(isSanitarioV2PushEnabled("production-ref")).toBe(false);
@@ -361,14 +364,14 @@ describe("sanitario v2 local cutover", () => {
     const input = {
       fazendaId: FARM_ID,
       clientId: "staging-client",
-      projectRef: SANITARIO_V2_STAGING_PROJECT_REF,
+      projectRef: "local",
       operations: [operation],
     };
     await expect(enqueueSanitarioV2Operations(input)).rejects.toThrow(
       "SANITARIO_V2_PUSH_DISABLED",
     );
     await applySanitarioV2Cutover(FARM_ID, async () => undefined);
-    setSanitarioV2PushEnabled(true, SANITARIO_V2_STAGING_PROJECT_REF);
+    setSanitarioV2PushEnabled(true, "local");
     await enqueueSanitarioV2Operations(input);
     await enqueueSanitarioV2Operations(input);
     expect(await db.queue_gestures.count()).toBe(1);
@@ -457,11 +460,11 @@ describe("sanitario v2 local cutover", () => {
       animal_id: LEGACY_ANIMAL_ID,
     });
 
-    setSanitarioV2PushEnabled(true, SANITARIO_V2_STAGING_PROJECT_REF);
+    setSanitarioV2PushEnabled(true, "local");
     const activation = {
       backfillExternalHistory: {
         clientId: "staging-client",
-        projectRef: SANITARIO_V2_STAGING_PROJECT_REF,
+        projectRef: "local",
       },
     };
     await applySanitarioV2Cutover(FARM_ID, async () => undefined, activation);

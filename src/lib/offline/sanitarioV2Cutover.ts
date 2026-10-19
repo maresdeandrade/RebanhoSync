@@ -1,4 +1,5 @@
 import { db } from "./db";
+import backendTargets from "../../../config/backend-targets.json";
 import type {
   Evento,
   EventoAnimalLocalV2,
@@ -11,6 +12,7 @@ import type {
 } from "./types";
 
 export const SANITARIO_V2_CONTRACT_VERSION = 2;
+// Legacy export name retained for queued-client compatibility. This is production, and is denied.
 export const SANITARIO_V2_STAGING_PROJECT_REF = "zqloazqzhwauamcejmuz";
 const FEATURE_FLAG_KEY = "rebanhosync:sanitario-v2-push";
 const UUID_PATTERN =
@@ -36,6 +38,7 @@ export interface SanitarioV2OperationIdentity {
   domainOpId: string;
 }
 export interface SanitarioV2QueuedOperation {
+  fazenda_id?: string;
   client_op_id: string;
   client_tx_id: string;
   domain_op_id: string;
@@ -45,7 +48,9 @@ export interface SanitarioV2QueuedOperation {
     | "create_agenda"
     | "replace_agenda_animals"
     | "apply_factual_core"
-    | "close_agenda";
+    | "close_agenda"
+    | "set_automation_plan"
+    | "reschedule_agenda";
   expected_revision?: number;
   payload: Record<string, unknown>;
 }
@@ -83,10 +88,19 @@ function storageAvailable() {
 
 export function isSanitarioV2PushEnabled(projectRef: string) {
   return (
-    projectRef === SANITARIO_V2_STAGING_PROJECT_REF &&
+    isIsolatedSanitarioBackend(projectRef) &&
     storageAvailable() &&
     localStorage.getItem(FEATURE_FLAG_KEY) === projectRef
   );
+}
+function isIsolatedSanitarioBackend(projectRef: string) {
+  if (projectRef === SANITARIO_V2_STAGING_PROJECT_REF) return false;
+  try {
+    const url = new URL(import.meta.env.VITE_SUPABASE_URL ?? "");
+    if (url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname)) return projectRef === "local";
+    return url.protocol === "https:" && import.meta.env.VITE_BACKEND_ENV === "homologation" &&
+      projectRef === url.hostname.split(".")[0] && (backendTargets.homologation_project_refs as string[]).includes(projectRef);
+  } catch { return false; }
 }
 export function setSanitarioV2PushEnabled(
   enabled: boolean,
@@ -99,7 +113,7 @@ export function setSanitarioV2PushEnabled(
     localStorage.removeItem(FEATURE_FLAG_KEY);
     return;
   }
-  if (projectRef !== SANITARIO_V2_STAGING_PROJECT_REF) {
+  if (!isIsolatedSanitarioBackend(projectRef)) {
     throw new Error("SANITARIO_V2_STAGING_ONLY");
   }
   localStorage.setItem(FEATURE_FLAG_KEY, projectRef);
@@ -138,6 +152,7 @@ export function buildCreateAgendaOperation(
   animalIds.forEach((id) => requireUuid(id, "animal_ids"));
   return {
     ...baseOperation(identity, "create_agenda"),
+    fazenda_id: agenda.fazenda_id,
     payload: {
       agenda: {
         id: agenda.id,
@@ -265,6 +280,7 @@ export function buildCloseAgendaOperation(
   }
   return {
     ...baseOperation(identity, "close_agenda"),
+    fazenda_id: closure.fazenda_id,
     expected_revision: requireRevision(expectedRevision),
     payload: {
       closure: {

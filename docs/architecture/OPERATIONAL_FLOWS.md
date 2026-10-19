@@ -2,6 +2,12 @@
 
 > **Adendo arquitetural proposto — 15/10/2026:** automação Sanitário V2 é **materialização determinística e idempotente de intenção de Agenda**, não execução automática nem processamento contínuo em background. Preservar `fazenda_id`, sessão/owner, versões, concorrência, offline/reconnect e chaves estáveis por alvo+regra+janela; reforços dependem de **Eventos** e não de `state_*`/Agenda. O planejamento pode deixar produto indefinido, mas não pode inferir carência/dose/via. [Política técnica e 20 itens](../review/SANITARIO_V2_POLITICA_AGENDA_CONDICIONAL_20261015.md). Nenhum contrato de writer/sync foi modificado por este adendo. **Ajustes A–E incorporados:** restrição `no_agenda_auto` mantém **todos os três itens de raiva** sem automação até revisão **aprovada e versionada**; vacinas multivalentes (ex.: Fertiguard/Poliguard) exigem composição, janela e histórico compatíveis para **uma única aplicação/Evento** com cobertura multiprotocolo rastreável; B19 concilia períodos federais e somente os prazos estaduais de comprovação preserváveis pelo art. 3º; Agenda genérica não adquire esquema/dose por inferência; relatórios locais e os quatro achados Fallow permanecem **relatados, sem IDs brutos conferidos**. Revisar a [matriz por 20 itens](../review/evidence/SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv) junto com a política.
 
+> **Atualização local — 19/10/2026:** plano sanitário e Agendas novas podem convergir
+> pela fila/worker canônicos, com CAS, dedup e proteção de pending, após publicação da
+> versão e ativação da fazenda. A homologação com dois clientes Chromium é local;
+> não habilita produção nem afirma validação em aparelhos físicos. Contrato:
+> [Offline/sync](../technical/OFFLINE_SYNC.md#plano-e-agendas-sanitárias-v2).
+
 
 Status: **BASELINE OFICIAL CANDIDATO**
 Code baseline original: `main@9db4bb9ffeb0bc4d1bc07305cde48132cd638721`

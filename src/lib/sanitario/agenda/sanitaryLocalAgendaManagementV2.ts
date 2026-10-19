@@ -1,5 +1,15 @@
 import type { OfflineDB } from "@/lib/offline/db";
 import { requireTenantSensitiveAccess } from "@/lib/offline/localReadBoundary";
+import {
+  buildCloseAgendaOperation,
+  createSanitarioV2Identity,
+  validateSanitarioV2Enqueue,
+  writeSanitarioV2Queue,
+} from "@/lib/offline/sanitarioV2Cutover";
+import {
+  buildRescheduleAgendaV2,
+  readSanitaryPlanningSyncContextV2,
+} from "./sanitaryPlanningSyncV2";
 import { sanitaryProtocolExecutionRejectionsV2 } from "@/lib/sanitario/execution/sanitaryProtocolExecutionAuthorizationV2";
 import type {
   Animal,
@@ -7,6 +17,7 @@ import type {
   SanitarioAgendaAnimalLocalV2,
   SanitarioAgendaLocalV2,
   SanitarioAgendaV2Status,
+  SanitarioAgendaClosureLocalV2,
 } from "@/lib/offline/types";
 
 export type SanitaryAgendaTargetV2 = {
@@ -332,60 +343,172 @@ async function assertAgendaCanBeManaged(
     Boolean(agenda.execution_evento_id) ||
     entries.some(
       (entry) =>
-        entry.planned_status === "executado" || Boolean(entry.execution_evento_id),
+        entry.planned_status === "executado" ||
+        Boolean(entry.execution_evento_id),
     );
 
   if (agenda.status !== "programada" || hasExecution) {
     throw new Error("AGENDA_SANITARIA_NAO_GERENCIAVEL");
   }
+  return agenda;
+}
+
+async function planningMutationContext(
+  db: LocalAgendaDbV2,
+  agenda: SanitarioAgendaLocalV2,
+) {
+  const context = readSanitaryPlanningSyncContextV2();
+  const canonical =
+    /^[0-9a-f-]{36}$/i.test(agenda.id) && agenda.contract_version === 2;
+  if (!canonical) return null; // Historic text IDs remain local; never rewrite references.
+  if (!context) throw new Error("SANITARIO_V2_SYNC_NOT_READY");
+  const realDb = db as OfflineDB;
+  const queued = await realDb.queue_ops.toArray();
+  let revision = agenda.revision ?? 0;
+  for (const op of queued) {
+    if (op.sync_state === "REJECTED") continue;
+    revision = Math.max(
+      revision,
+      queuedManagementRevision(op.record, agenda.id),
+    );
+  }
+  return { ...context, revision };
+}
+
+function queuedManagementRevision(
+  envelope: import("@/lib/offline/types").Operation["record"],
+  agendaId: string,
+) {
+  if (envelope.domain !== "sanitario_v2") return 0;
+  if (!["reschedule_agenda", "close_agenda"].includes(envelope.command))
+    return 0;
+  const target =
+    envelope.payload?.agenda_id ?? envelope.payload?.closure?.agenda_id;
+  return target === agendaId ? Number(envelope.expected_revision) + 1 : 0;
+}
+
+function managementStores(db: LocalAgendaDbV2) {
+  const realDb = db as OfflineDB;
+  return [
+    db.ops_sanitario_agenda_v2,
+    db.ops_sanitario_agenda_animais_v2,
+    realDb.queue_gestures,
+    realDb.queue_ops,
+    realDb.ops_sanitario_agenda_closures_v2,
+    realDb.sync_sanitario_v2_cutovers,
+  ];
+}
+
+async function withManagedAgenda(
+  input: { agendaId: string; fazendaId: string },
+  localDb: LocalAgendaDbV2 | undefined,
+  mutate: (
+    db: LocalAgendaDbV2,
+    agenda: SanitarioAgendaLocalV2,
+    context: Awaited<ReturnType<typeof planningMutationContext>>,
+  ) => Promise<void>,
+) {
+  await requireTenantSensitiveAccess();
+  const db = localDb ?? (await getDefaultDb());
+  await db.transaction("rw", managementStores(db), async () => {
+    const agenda = await assertAgendaCanBeManaged(
+      db,
+      input.agendaId,
+      input.fazendaId,
+    );
+    await mutate(db, agenda, await planningMutationContext(db, agenda));
+  });
 }
 
 export async function rescheduleLocalSanitaryAgendaV2(
   input: { agendaId: string; fazendaId: string; plannedFor: string },
   localDb?: LocalAgendaDbV2,
 ) {
-  await requireTenantSensitiveAccess();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.plannedFor)) {
     throw new Error("DATA_PROGRAMADA_INVALIDA");
   }
 
-  const db = localDb ?? (await getDefaultDb());
-  await db.transaction(
-    "rw",
-    [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2],
-    async () => {
-      await assertAgendaCanBeManaged(db, input.agendaId, input.fazendaId);
-      await db.ops_sanitario_agenda_v2.update(input.agendaId, {
-        data_programada: input.plannedFor,
+  await withManagedAgenda(input, localDb, async (db, _agenda, context) => {
+    if (context) {
+      const operations = [
+        buildRescheduleAgendaV2(
+          input.fazendaId,
+          input.agendaId,
+          context.revision,
+          input.plannedFor,
+        ),
+      ];
+      await validateSanitarioV2Enqueue({
+        fazendaId: input.fazendaId,
+        ...context,
+        operations,
       });
-    },
-  );
+      await writeSanitarioV2Queue({
+        fazendaId: input.fazendaId,
+        ...context,
+        operations,
+      });
+    }
+    await db.ops_sanitario_agenda_v2.update(input.agendaId, {
+      data_programada: input.plannedFor,
+    });
+  });
 }
 
 export async function cancelLocalSanitaryAgendaV2(
   input: { agendaId: string; fazendaId: string },
   localDb?: LocalAgendaDbV2,
 ) {
-  await requireTenantSensitiveAccess();
-  const db = localDb ?? (await getDefaultDb());
   const now = new Date().toISOString();
-  await db.transaction(
-    "rw",
-    [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2],
-    async () => {
-      await assertAgendaCanBeManaged(db, input.agendaId, input.fazendaId);
-      const current = await db.ops_sanitario_agenda_v2.get(input.agendaId);
-      await db.ops_sanitario_agenda_v2.update(input.agendaId, {
-        status: "cancelada",
+  await withManagedAgenda(input, localDb, async (db, agenda, context) => {
+    if (context) {
+      const identity = createSanitarioV2Identity();
+      const closure: SanitarioAgendaClosureLocalV2 = {
+        id: crypto.randomUUID(),
+        fazenda_id: input.fazendaId,
+        agenda_id: input.agendaId,
+        closure_type: "cancelled",
+        dedup_key: `cancel:${input.agendaId}:${identity.clientOpId}`,
+        client_id: context.clientId,
+        client_op_id: identity.clientOpId,
+        client_tx_id: identity.clientTxId,
+        client_recorded_at: now,
+        server_received_at: now,
+        closed_at: now,
+        closed_by: null,
+        execution_evento_id: null,
+        reason: "Cancelamento explícito no planejamento sanitário.",
+        partial_payload: {},
+        metadata: { planningOnly: true },
+        created_at: now,
         updated_at: now,
-        metadata: {
-          ...(current?.metadata ?? {}),
-          cancellation: {
-            status: "cancelled",
-            cancelledAt: now,
-          },
-        },
+        deleted_at: null,
+      };
+      const operations = [
+        buildCloseAgendaOperation(identity, closure, context.revision),
+      ];
+      await validateSanitarioV2Enqueue({
+        fazendaId: input.fazendaId,
+        ...context,
+        operations,
       });
-    },
-  );
+      await (db as OfflineDB).ops_sanitario_agenda_closures_v2.put(closure);
+      await writeSanitarioV2Queue({
+        fazendaId: input.fazendaId,
+        ...context,
+        operations,
+      });
+    }
+    await db.ops_sanitario_agenda_v2.update(input.agendaId, {
+      status: "cancelada",
+      updated_at: now,
+      metadata: {
+        ...agenda.metadata,
+        cancellation: {
+          status: "cancelled",
+          cancelledAt: now,
+        },
+      },
+    });
+  });
 }

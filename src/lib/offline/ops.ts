@@ -105,7 +105,7 @@ function getRecordKey(record: Record<string, unknown>): string | null {
   return null;
 }
 
-const getClientId = () => {
+export const getClientId = () => {
   const key = "gestao_agro_client_id";
   const existing = localStorage.getItem(key);
   if (existing) return existing;

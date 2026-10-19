@@ -45,8 +45,8 @@ const planSchema = z.object({
   context: contextSchema,
   ruleContexts: z.record(contextSchema).optional(),
   confirmedBy: z.string().min(1),
-  confirmedAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  confirmedAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
 });
 export type SanitaryAutomationRuleV2 = Required<
   z.infer<typeof selectionSchema>

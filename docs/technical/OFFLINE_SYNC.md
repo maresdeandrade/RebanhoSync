@@ -1,6 +1,6 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-10-10
+Atualizado em: 2026-10-19
 
 ## Responsabilidade documental
 
@@ -31,6 +31,46 @@ Regras:
 - pull respeita `fazenda_id`, cursores e tombstones;
 - `catalog_*` permanece pull-only quando definido pelo contrato;
 - `state_*` não é superfície direta de push.
+
+## Plano e Agendas sanitárias V2
+
+O plano continua em `fazenda_sanidade_config.payload.sanitary_agenda_automation_v2`.
+O writer existente produz gesto/operação com before snapshot; o worker traduz somente
+essa alteração de plano para `set_automation_plan`, preservando os UUIDs da fila.
+Atualizações de perfil contendo outros campos mantêm seu transporte. O banco protege
+o campo do plano contra escrita direta ou sobrescrita por perfil obsoleto.
+
+A RPC interna usa o ledger sanitário existente, membership owner/manager e gate da
+fazenda. O CAS compara revisão e conteúdo-base, excluindo apenas os três campos de
+confirmação/relógio que o servidor autentica. Conflito exige revisão explícita; não
+há rebase automático. O cliente aceita timestamps RFC3339 com offset retornados pelo
+PostgreSQL. A publicação global e a ativação da fazenda continuam decisões distintas.
+
+Agendas novas no ambiente isolado usam UUID estável derivado da intenção já calculada
+pelo motor, o comando `create_agenda` e as stores/fila existentes. A RPC valida a
+versão publicada e a seleção/revisão ativa do plano para geração automática. Criações
+concorrentes da mesma identidade retornam o estado canônico, sem desfazer cancelamento,
+reagendamento ou execução. Outra identidade para o mesmo dedup automático é conflito.
+
+Cancelamento usa `close_agenda`; reagendamento usa `reschedule_agenda`, ambos com
+revisão esperada e recibo idempotente. Uma mutação aguarda seu predecessor local
+pendente, inclusive durante retry. Falta de dependência remota permanece bloqueada
+para recuperação. Nenhum desses comandos cria Evento, detalhe factual, estoque ou carência.
+
+O pull sanitário ordenado inclui o plano antes das Agendas. Merge/reconnect protege
+linhas pendentes e não avança seus cursores prematuramente; filas canônicas antigas
+sem farm no envelope usam o farm do gesto. Somente ACK instalado e reconciliação
+confirmam convergência; uma linha no Dexie não comprova sincronização remota.
+
+A antiga constante de staging referencia produção e está explicitamente negada para
+novos enqueues. Homologação remota exige referência exclusiva registrada em
+`config/backend-targets.json`, endpoints coerentes, chave pública com hash registrado,
+gate de banco e cutover aplicado. Flags de cliente não substituem esses contratos.
+IDs textuais históricos continuam locais, sem renumeração de referências ou migração
+implícita. As operações UUID já enfileiradas preservam suas identidades.
+
+Evidências locais e procedimento remoto condicionado a autorização:
+[homologação sanitária V2](../review/evidence/SANITARIO_V2_HOMOLOGACAO_20261019.md).
 
 ## Concorrência de estado e autoridade de relógio — F24.4C / F24.4D
 
