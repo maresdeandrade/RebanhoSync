@@ -2,6 +2,9 @@
 
 Atualizado em: 2026-10-19
 
+> R01 autorizada condicionalmente e interrompida antes de aplicar: backup recuperável não comprovado.
+> Ver [relatório da execução R01](SANITARIO_V2_R01_EXECUCAO_20261019.md).
+
 ## Decisão e limite desta entrega
 
 **Preparação local validada com ressalvas; implantação ainda não liberada.**
@@ -90,7 +93,7 @@ Auth Site URL/redirects/SMTP, secrets de Functions e disponibilidade de backup/P
 | test-auth | v5, ACTIVE, verify_jwt=false | Fora do escopo; não atualizar nem excluir |
 
 sync-batch local contém os caminhos de plano/reagendamento e convergência ausentes no bundle v27.
-O deploy deverá incluir `planning-v2.ts`, `movement-v1.ts`, imports compartilhados e
+O deploy deverá incluir `sanitario-v2.ts`, `movement-v1.ts`, imports compartilhados e
 `src/lib/animals/taxonomyFactsContract.ts`; conferir o fechamento completo no snapshot.
 A plataforma atribui o número final da versão. Não definir v28 como resultado já observado.
 CORS local permite loopback; não é necessário alterar APP_ORIGIN para o smoke assistido local proposto.
