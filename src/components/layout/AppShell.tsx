@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -18,6 +18,28 @@ export const AppShell = () => {
   const location = useLocation();
   const { activeFarmId, session } = useAuth();
   const [localReadAllowed, setLocalReadAllowed] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  const menuOpenerRef = useRef<HTMLElement | null>(null);
+  const focusContentOnCloseRef = useRef(false);
+
+  const openMobileMenu = () => {
+    menuOpenerRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    focusContentOnCloseRef.current = false;
+    setIsMobileMenuOpen(true);
+  };
+
+  const closeMobileMenuAfterNavigation = () => {
+    focusContentOnCloseRef.current = true;
+    setIsMobileMenuOpen(false);
+  };
+
+  useEffect(() => {
+    focusContentOnCloseRef.current = true;
+    setIsMobileMenuOpen(false);
+  }, [location]);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,23 +74,34 @@ export const AppShell = () => {
   return (
     <div className="flex min-h-dvh flex-col bg-background text-content-primary">
       <SanitaryNotificationManager />
-      <TopBar onMenuClick={() => setIsMobileMenuOpen(true)} />
+      <TopBar onMenuClick={openMobileMenu} />
 
       <div className="flex min-h-0 flex-1">
         <SideNav />
 
-        <main className="min-w-0 flex-1 pb-[var(--mobile-bottom-nav-clearance)] pt-5 md:pb-6 lg:py-8">
+        <main
+          ref={mainRef}
+          tabIndex={-1}
+          className="min-w-0 flex-1 pb-[var(--mobile-bottom-nav-clearance)] pt-5 md:pb-6 lg:py-8"
+        >
           <div className="app-content">
             <Outlet />
           </div>
         </main>
       </div>
 
-      <MobileBottomNav onOpenMenu={() => setIsMobileMenuOpen(true)} />
+      <MobileBottomNav onOpenMenu={openMobileMenu} />
 
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetContent
           side="left"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const target = focusContentOnCloseRef.current
+              ? mainRef.current
+              : (menuOpenerRef.current ?? mainRef.current);
+            target?.focus({ preventScroll: true });
+          }}
           className="w-[min(90vw,22rem)] max-w-none border-r border-sidebar-border/80 bg-sidebar p-0 shadow-crisp"
         >
           <div className="flex h-full flex-col">
@@ -79,7 +112,7 @@ export const AppShell = () => {
               </p>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <SideNav mobile />
+              <SideNav mobile onNavigate={closeMobileMenuAfterNavigation} />
             </div>
           </div>
         </SheetContent>
