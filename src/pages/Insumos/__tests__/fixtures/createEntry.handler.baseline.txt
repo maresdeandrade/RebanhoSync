@@ -1,0 +1,189 @@
+async function handleCreateEntry() {
+    if (savingEntry) return;
+    if (!activeFarmId) {
+      showError("Selecione uma fazenda ativa.");
+      return;
+    }
+    if (!canManage) {
+      showError("Apenas owner/manager pode cadastrar insumos e entradas.");
+      return;
+    }
+    if (!entryForm.nome.trim()) {
+      showError("Nome do insumo e obrigatorio.");
+      return;
+    }
+    if (
+      entryRequiresVeterinaryProduct &&
+      entryForm.produtoVeterinarioId === NONE_VALUE
+    ) {
+      showError(
+        "Categoria sanitaria clinica exige produto veterinario catalogado.",
+      );
+      return;
+    }
+
+    const quantidadePorApresentacao = parsePositiveNumber(
+      entryForm.quantidadePorApresentacao,
+    );
+    const quantidadeEntrada = parsePositiveNumber(entryForm.quantidadeEntrada);
+
+    if (!quantidadePorApresentacao || !quantidadeEntrada) {
+      showError(
+        "Quantidade de entrada e apresentacao devem ser maiores que zero.",
+      );
+      return;
+    }
+
+    const quantidadeBase = convertPresentationQuantityToBase({
+      presentationQuantity: quantidadeEntrada,
+      presentationBaseQuantity: quantidadePorApresentacao,
+    });
+
+    if (entryForm.costMode === "custo_total" && entryForm.custoTotal.trim()) {
+      const parsedCustoTotal = Number(entryForm.custoTotal.replace(",", "."));
+      if (!Number.isFinite(parsedCustoTotal) || parsedCustoTotal < 0) {
+        showError("Custo total informado e invalido.");
+        return;
+      }
+    }
+    if (
+      entryForm.costMode === "custo_unitario" &&
+      entryForm.custoUnitario.trim()
+    ) {
+      const parsedCustoUnitario = Number(
+        entryForm.custoUnitario.replace(",", "."),
+      );
+      if (!Number.isFinite(parsedCustoUnitario) || parsedCustoUnitario < 0) {
+        showError("Custo por entrada informado e invalido.");
+        return;
+      }
+    }
+
+    const resolvedCustoTotal = entryCostSummary.custoTotal;
+    const resolvedCustoUnitario = entryCostSummary.custoUnitarioBase;
+    const resolvedCustoStatus = entryCostSummary.status;
+    const resolvedOrigemCusto =
+      resolvedCustoStatus === "informado"
+        ? entryForm.origemCusto === "ausente"
+          ? "manual"
+          : entryForm.origemCusto
+        : "ausente";
+
+    const now = new Date().toISOString();
+    const insumoId = crypto.randomUUID();
+    const apresentacaoId = crypto.randomUUID();
+    const loteId = crypto.randomUUID();
+    const movimentoId = crypto.randomUUID();
+
+    setSavingEntry(true);
+    try {
+      await createGesture(activeFarmId, [
+        {
+          table: "insumos",
+          action: "INSERT",
+          record: {
+            id: insumoId,
+            nome: entryForm.nome.trim(),
+            tipo: entryForm.tipo,
+            categoria: entryForm.categoria.trim() || null,
+            produto_veterinario_id:
+              entryForm.tipo === "sanitario" &&
+              entryForm.produtoVeterinarioId !== NONE_VALUE
+                ? entryForm.produtoVeterinarioId
+                : null,
+            unidade_base: entryForm.unidadeBase,
+            ativo: true,
+            payload: { origem: "inventario_ui_mvp" },
+          },
+        },
+        {
+          table: "insumo_apresentacoes",
+          action: "INSERT",
+          record: {
+            id: apresentacaoId,
+            insumo_id: insumoId,
+            nome:
+              resolvedEntryPresentationName ||
+              `${entryForm.unidadeCompra} ${formatNumber(quantidadePorApresentacao)} ${entryForm.unidadeBase}`,
+            unidade_compra: entryForm.unidadeCompra,
+            quantidade_base: quantidadePorApresentacao,
+            unidade_base: entryForm.unidadeBase,
+            codigo_barras: null,
+            fabricante: entryForm.fabricante.trim() || null,
+            payload: { origem: "inventario_ui_mvp" },
+          },
+        },
+        {
+          table: "insumo_lotes",
+          action: "INSERT",
+          record: {
+            id: loteId,
+            insumo_id: insumoId,
+            apresentacao_id: apresentacaoId,
+            identificacao_lote: entryForm.identificacaoLote.trim() || null,
+            validade: entryForm.validade || null,
+            fabricante: entryForm.fabricante.trim() || null,
+            local_armazenamento: entryForm.localArmazenamento.trim() || null,
+            quantidade_inicial_base: quantidadeBase,
+            saldo_atual_base: 0,
+            unidade_base: entryForm.unidadeBase,
+            status: "ativo",
+            custo_total: resolvedCustoTotal,
+            custo_unitario: resolvedCustoUnitario,
+            payload: {
+              origem: "inventario_ui_mvp",
+              custo_status: resolvedCustoStatus,
+              origem_custo: resolvedOrigemCusto,
+              finance_transaction_id: null,
+              custo_total_informado:
+                entryForm.costMode === "custo_total"
+                  ? entryForm.custoTotal.trim() || null
+                  : null,
+              custo_unitario_informado:
+                entryForm.costMode === "custo_unitario"
+                  ? entryForm.custoUnitario.trim() || null
+                  : null,
+            },
+          },
+        },
+        {
+          table: "insumo_movimentacoes",
+          action: "INSERT",
+          record: {
+            id: movimentoId,
+            insumo_id: insumoId,
+            insumo_lote_id: loteId,
+            tipo: "entrada",
+            quantidade_base: quantidadeBase,
+            unidade_base: entryForm.unidadeBase,
+            occurred_at: now,
+            source_evento_id: null,
+            source_evento_dominio: null,
+            animal_id: null,
+            rebanho_lote_id: null,
+            pasto_id: null,
+            observacoes: "Entrada inicial",
+            custo_unitario_snapshot: resolvedCustoUnitario,
+            custo_total_snapshot: resolvedCustoTotal,
+            payload: {
+              origem: "inventario_ui_mvp",
+              quantidade_apresentacoes: quantidadeEntrada,
+              unidade_compra: entryForm.unidadeCompra,
+              quantidade_por_apresentacao: quantidadePorApresentacao,
+              custo_status: resolvedCustoStatus,
+              origem_custo: resolvedOrigemCusto,
+            },
+          },
+        },
+      ]);
+
+      setEntryForm(EMPTY_ENTRY_FORM);
+      setEntryEditedFields(new Set());
+      setIsCustomCategory(false);
+      showSuccess("Entrada de insumo criada. Sincronizacao pendente.");
+    } catch {
+      showError("Falha ao criar entrada de insumo.");
+    } finally {
+      setSavingEntry(false);
+    }
+  }
