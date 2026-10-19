@@ -7,6 +7,7 @@ import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { getInviteAuthPath } from "@/lib/auth/inviteRedirect";
 
 interface InvitePreview {
   fazenda_nome: string;
@@ -115,7 +116,14 @@ export const AcceptInvite = () => {
         description: "Faca login para aceitar este convite.",
         variant: "destructive",
       });
-      navigate(`/login?redirect=/invites/${token}`);
+      navigate(
+        getInviteAuthPath(
+          "login",
+          new URLSearchParams({
+            redirect: `/invites/${token}`,
+          }).toString(),
+        ),
+      );
       return;
     }
 
@@ -293,5 +301,3 @@ export const AcceptInvite = () => {
 };
 
 export default AcceptInvite;
-
-

@@ -1,5 +1,9 @@
 import { supabase } from "@/lib/supabase";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useLocation } from "react-router-dom";
+import {
+  getInviteAuthPath,
+  getPostAuthDestination,
+} from "@/lib/auth/inviteRedirect";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +19,7 @@ type LoginForm = {
 
 const Login = () => {
   const { session, activeFarmId } = useAuth();
+  const { search } = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,12 +29,10 @@ const Login = () => {
     formState: { errors },
   } = useForm<LoginForm>();
 
-  // ✅ Melhora UX: redireciona direto para /home se já tiver fazenda ativa
   if (session) {
-    if (activeFarmId) {
-      return <Navigate to="/home" replace />;
-    }
-    return <Navigate to="/select-fazenda" replace />;
+    return (
+      <Navigate to={getPostAuthDestination(search, activeFarmId)} replace />
+    );
   }
 
   const onSubmit = async (data: LoginForm) => {
@@ -132,7 +135,10 @@ const Login = () => {
 
             <div className="text-center text-sm">
               Não tem uma conta?{" "}
-              <Link to="/signup" className="text-primary hover:underline">
+              <Link
+                to={getInviteAuthPath("signup", search)}
+                className="text-primary hover:underline"
+              >
                 Cadastre-se aqui
               </Link>
             </div>
@@ -144,4 +150,3 @@ const Login = () => {
 };
 
 export default Login;
-
