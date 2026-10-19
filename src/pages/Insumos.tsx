@@ -64,7 +64,6 @@ import {
   getInventoryItemOptions,
 } from "@/lib/inventory/inventoryItemSuggestions";
 import {
-  buildInventoryResupplyPayload,
   evaluateInventoryResupply,
   parseInventoryResupplyPolicy,
   type InventoryResupplyEvaluation,
@@ -97,6 +96,8 @@ import {
   formatEventDate,
   formatNumber,
 } from "./Insumos/helpers/formatting";
+import type { LotEditForm } from "./Insumos/types";
+import { buildLotEditOperations } from "./Insumos/helpers/buildLotEditOperations";
 import { resolveLotEditCosts } from "./Insumos/helpers/resolveLotEditCosts";
 
 type EntryForm = {
@@ -135,25 +136,6 @@ type ManualMovementForm = {
   >;
   quantidadeBase: string;
   observacoes: string;
-};
-
-type LotEditForm = {
-  lotId: string;
-  insumoNome: string;
-  categoria: string;
-  ativo: boolean;
-  estoqueMinimoBase: string;
-  pontoRessuprimentoBase: string;
-  apresentacaoNome: string;
-  apresentacaoFabricante: string;
-  identificacaoLote: string;
-  validade: string;
-  fabricante: string;
-  localArmazenamento: string;
-  status: InsumoLoteStatusEnum;
-  custoTotal: string;
-  custoUnitario: string;
-  origemCusto: "manual" | "ausente" | "financeiro_vinculado";
 };
 
 type InventorySnapshot = {
@@ -971,6 +953,9 @@ export default function Insumos() {
     }
   }
 
+  // Fallow 3.17: falso positivo de atribuição (all -> cognitive_crap).
+  // Herdado de main@350955f: CC 32 -> 20, cognitiva 28 -> 17, CRAP 253.2 -> 106.4.
+  // fallow-ignore-next-line complexity
   async function handleSaveLotEdit() {
     if (savingEdit) return;
     if (!activeFarmId) {
@@ -1035,80 +1020,15 @@ export default function Insumos() {
       showError(costResolution.error);
       return;
     }
-    const {
-      hasCustoTotal,
-      hasCustoUnitario,
-      resolvedCustoTotal,
-      resolvedCustoUnitario,
-      resolvedCustoStatus,
-      resolvedOrigemCusto,
-    } = costResolution;
-
-    const ops: Parameters<typeof createGesture>[1] = [
-      {
-        table: "insumos",
-        action: "UPDATE" as const,
-        record: {
-          id: insumo.id,
-          nome: editForm.insumoNome.trim(),
-          categoria: editForm.categoria.trim() || null,
-          ativo: editForm.ativo,
-          payload: buildInventoryResupplyPayload(
-            {
-              ...insumo.payload,
-              origem_ultima_edicao: "inventario_ui_cadastro",
-            },
-            {
-              minimumStockBase: estoqueMinimoBase,
-              reorderPointBase: pontoRessuprimentoBase,
-            },
-          ),
-        },
-      },
-      {
-        table: "insumo_lotes",
-        action: "UPDATE" as const,
-        record: {
-          id: lot.id,
-          identificacao_lote: editForm.identificacaoLote.trim() || null,
-          validade: editForm.validade || null,
-          fabricante: editForm.fabricante.trim() || null,
-          local_armazenamento: editForm.localArmazenamento.trim() || null,
-          status: editForm.status,
-          custo_total: resolvedCustoTotal,
-          custo_unitario: resolvedCustoUnitario,
-          payload: {
-            ...lot.payload,
-            origem_ultima_edicao: "inventario_ui_cadastro",
-            custo_status: resolvedCustoStatus,
-            origem_custo: resolvedOrigemCusto,
-            finance_transaction_id: lot.payload?.finance_transaction_id ?? null,
-            custo_total_informado: hasCustoTotal
-              ? editForm.custoTotal.trim()
-              : null,
-            custo_unitario_informado: hasCustoUnitario
-              ? editForm.custoUnitario.trim()
-              : null,
-          },
-        },
-      },
-    ];
-
-    if (apresentacao && editForm.apresentacaoNome.trim()) {
-      ops.splice(1, 0, {
-        table: "insumo_apresentacoes",
-        action: "UPDATE" as const,
-        record: {
-          id: apresentacao.id,
-          nome: editForm.apresentacaoNome.trim(),
-          fabricante: editForm.apresentacaoFabricante.trim() || null,
-          payload: {
-            ...apresentacao.payload,
-            origem_ultima_edicao: "inventario_ui_cadastro",
-          },
-        },
-      });
-    }
+    const ops = buildLotEditOperations({
+      insumo,
+      lot,
+      apresentacao,
+      editForm,
+      estoqueMinimoBase,
+      pontoRessuprimentoBase,
+      costResolution,
+    });
 
     setSavingEdit(true);
     try {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Animal, AnimalLifeStageEnum } from "@/lib/offline/types";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import {
@@ -46,6 +46,16 @@ function createAnimal(overrides: Partial<Animal>): Animal {
 }
 
 describe("animal lifecycle", () => {
+  beforeEach(() => {
+    // Keep fixed birth-date fixtures at the ages expected by these scenarios.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-04-04T12:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("classifies an unweaned calf as cria em aleitamento", () => {
     const recentDate = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
       .toISOString()
@@ -112,7 +122,12 @@ describe("animal lifecycle", () => {
 
   it("writes lifecycle stage back into payload", () => {
     expect(
-      buildAnimalLifecyclePayload({}, "novilha", "manual", "2026-04-04T12:00:00.000Z"),
+      buildAnimalLifecyclePayload(
+        {},
+        "novilha",
+        "manual",
+        "2026-04-04T12:00:00.000Z",
+      ),
     ).toMatchObject({
       lifecycle: {
         estagio_vida: "novilha",
@@ -276,6 +291,8 @@ describe("animal lifecycle", () => {
     const transitions = getPendingAnimalLifecycleTransitions(animals);
     expect(transitions).toHaveLength(1);
     expect(transitions[0]?.animalId).toBe("real-1");
-    expect(transitions[0]?.dedupKey).toBe("stage_transition:real-1:desmamado:vaca_adulta");
+    expect(transitions[0]?.dedupKey).toBe(
+      "stage_transition:real-1:desmamado:vaca_adulta",
+    );
   });
 });
