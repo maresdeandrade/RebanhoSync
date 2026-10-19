@@ -99,6 +99,7 @@ import {
 import type { LotEditForm } from "./Insumos/types";
 import { buildLotEditOperations } from "./Insumos/helpers/buildLotEditOperations";
 import { resolveLotEditCosts } from "./Insumos/helpers/resolveLotEditCosts";
+import { validateLotEditForm } from "./Insumos/helpers/validateLotEditForm";
 
 type EntryForm = {
   tipo: InsumoTipoEnum;
@@ -267,11 +268,6 @@ const periodOptions: Array<{
 function parsePositiveNumber(value: string): number | null {
   const parsed = Number(value.replace(",", "."));
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
-function parseOptionalPositiveNumber(value: string): number | null {
-  const trimmed = value.trim();
-  return trimmed ? parsePositiveNumber(trimmed) : null;
 }
 
 function normalizeCategory(value: string | null | undefined) {
@@ -978,37 +974,12 @@ export default function Insumos() {
       showError("Cadastro de lote nao encontrado.");
       return;
     }
-    if (!editForm.insumoNome.trim()) {
-      showError("Nome do insumo e obrigatorio.");
+    const formValidation = validateLotEditForm(editForm);
+    if ("error" in formValidation) {
+      showError(formValidation.error);
       return;
     }
-    const estoqueMinimoBase = parseOptionalPositiveNumber(
-      editForm.estoqueMinimoBase,
-    );
-    const pontoRessuprimentoBase = parseOptionalPositiveNumber(
-      editForm.pontoRessuprimentoBase,
-    );
-    if (editForm.estoqueMinimoBase.trim() && estoqueMinimoBase == null) {
-      showError("Estoque minimo deve ser maior que zero.");
-      return;
-    }
-    if (
-      editForm.pontoRessuprimentoBase.trim() &&
-      pontoRessuprimentoBase == null
-    ) {
-      showError("Ponto de ressuprimento deve ser maior que zero.");
-      return;
-    }
-    if (
-      estoqueMinimoBase != null &&
-      pontoRessuprimentoBase != null &&
-      pontoRessuprimentoBase < estoqueMinimoBase
-    ) {
-      showError(
-        "Ponto de ressuprimento deve ser maior ou igual ao estoque minimo.",
-      );
-      return;
-    }
+    const { estoqueMinimoBase, pontoRessuprimentoBase } = formValidation;
 
     const costResolution = resolveLotEditCosts({
       quantidadeBase: lot.quantidade_inicial_base,
