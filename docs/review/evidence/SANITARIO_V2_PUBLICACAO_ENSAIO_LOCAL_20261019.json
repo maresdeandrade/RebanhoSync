@@ -1,0 +1,43 @@
+{
+  "project": "sanitary-release-e5c9035d",
+  "environment": "owned disposable local Supabase; no remote operations",
+  "cases": [
+    {
+      "name": "complete package hashes, dependency closure and absence of production links/secrets/authorizations",
+      "result": "PASS"
+    },
+    {
+      "name": "all 63 packaged migrations applied to a fresh database without seed",
+      "result": "PASS"
+    },
+    {
+      "name": "CLI migration dry-run on owned local target has no pending migrations",
+      "result": "PASS"
+    },
+    {
+      "name": "existing candidate importer dry-run proposes drafts and makes zero persistent writes",
+      "result": "PASS"
+    },
+    {
+      "name": "candidate and unauthorized canonical apply fail closed without import or approval",
+      "result": "PASS"
+    },
+    {
+      "name": "RPC grants, disabled gates, empty catalog and zero planning side effects after rehearsal",
+      "result": "PASS"
+    }
+  ],
+  "migration_count": 63,
+  "import_plan_summary": "{\"create\":144,\"update\":0,\"skip\":0,\"reject\":4}",
+  "final_counts": {
+    "protocols": 0,
+    "items": 0,
+    "operations": 0,
+    "agendas": 0,
+    "events": 0,
+    "stock": 0,
+    "decisions": 0,
+    "enabled_gates": 0
+  },
+  "cleaned_up": true
+}

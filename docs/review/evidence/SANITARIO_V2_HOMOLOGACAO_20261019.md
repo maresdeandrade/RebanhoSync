@@ -2,6 +2,11 @@
 
 Atualizado em: 2026-10-19
 
+Registro da entrega local `5e4240b`. A preparação posterior integrou a main/PR #214 por merge
+local autorizado em `323f7b5`, seguido da main/PR #215 em `d41290c`; consultar o
+[pacote de publicação isolada](SANITARIO_V2_PUBLICACAO_ISOLADA_20261019.md) para o estado de integração
+e a sequência executável atuais. As evidências abaixo permanecem vinculadas à execução original.
+
 Classificação: **READY para homologação local**. Implementação preparada para ambiente isolado. Nenhuma aprovação operacional,
 importação remota, migration remota, push, merge ou deploy foi executado.
 
