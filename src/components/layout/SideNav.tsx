@@ -9,9 +9,10 @@ import { navigationItems, navigationSections } from "./navigationConfig";
 
 interface SideNavProps {
   mobile?: boolean;
+  onNavigate?: () => void;
 }
 
-export const SideNav = ({ mobile = false }: SideNavProps) => {
+export const SideNav = ({ mobile = false, onNavigate }: SideNavProps) => {
   const { role, farmExperienceMode } = useAuth();
   const location = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<string[]>([
@@ -166,6 +167,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
                             <NavLink
                               key={child.path}
                               to={child.path}
+                              onClick={mobile ? onNavigate : undefined}
                               className={({ isActive }) =>
                                 itemClasses({ active: isActive, nested: true })
                               }
@@ -191,6 +193,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
                   <NavLink
                     key={item.path}
                     to={item.path!}
+                    onClick={mobile ? onNavigate : undefined}
                     className={({ isActive }) =>
                       itemClasses({ active: isActive })
                     }
@@ -213,6 +216,7 @@ export const SideNav = ({ mobile = false }: SideNavProps) => {
       <div className="border-t border-sidebar-border/80 p-4">
         <NavLink
           to="/perfil"
+          onClick={mobile ? onNavigate : undefined}
           className={({ isActive }) => itemClasses({ active: isActive })}
         >
           {({ isActive }) => (
