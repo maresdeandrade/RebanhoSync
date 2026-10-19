@@ -1,6 +1,6 @@
 import { MobileFormActions } from "@/components/layout/MobileFormActions";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useBeforeUnload, useBlocker, useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { ChevronLeft, Save, Loader2 } from "lucide-react";
 
@@ -10,6 +10,16 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -34,6 +44,38 @@ const LoteNovo = () => {
   const [pastoId, setPastoId] = useState<string>(NULL_VALUE);
   const [touroId, setTouroId] = useState<string>(NULL_VALUE);
   const [isSaving, setIsSaving] = useState(false);
+  const saveStateRef = useRef<"idle" | "saving" | "saved">("idle");
+  const isDirty =
+    nome !== "" ||
+    status !== "ativo" ||
+    pastoId !== NULL_VALUE ||
+    touroId !== NULL_VALUE;
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      saveStateRef.current !== "saved" &&
+      (isDirty || saveStateRef.current === "saving") &&
+      currentLocation.pathname !== nextLocation.pathname,
+  );
+
+  // A navigation attempted during saving is cancelled, never queued for discard.
+  useEffect(() => {
+    if (isSaving && blocker.state === "blocked") blocker.reset();
+  }, [blocker, isSaving]);
+
+  useBeforeUnload(
+    useCallback(
+      (event) => {
+        if (
+          saveStateRef.current !== "saved" &&
+          (isDirty || saveStateRef.current === "saving")
+        ) {
+          event.preventDefault();
+          event.returnValue = "";
+        }
+      },
+      [isDirty],
+    ),
+  );
 
   const activeFarmId = getActiveFarmId();
 
@@ -70,6 +112,7 @@ const LoteNovo = () => {
   ];
 
   const handleSave = async () => {
+    if (saveStateRef.current !== "idle") return;
     const fazendaId = activeFarmId || "";
 
     if (!fazendaId) {
@@ -82,6 +125,7 @@ const LoteNovo = () => {
       return;
     }
 
+    saveStateRef.current = "saving";
     setIsSaving(true);
     const loteId = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -106,9 +150,11 @@ const LoteNovo = () => {
 
     try {
       await createGesture(fazendaId, [op]);
+      saveStateRef.current = "saved";
       showSuccess("Lote cadastrado localmente!");
       navigate("/lotes");
     } catch {
+      saveStateRef.current = "idle";
       showError("Erro ao cadastrar lote.");
     } finally {
       setIsSaving(false);
@@ -255,6 +301,36 @@ const LoteNovo = () => {
           {isSaving ? "Salvando..." : "Salvar lote"}
         </Button>
       </MobileFormActions>
+      <AlertDialog open={!isSaving && blocker.state === "blocked"}>
+        <AlertDialogContent
+          onEscapeKeyDown={() => {
+            if (blocker.state === "blocked") blocker.reset();
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle>Descartar alterações não salvas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O lote ainda não foi salvo. Se sair agora, o preenchimento será perdido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                if (blocker.state === "blocked") blocker.reset();
+              }}
+            >
+              Continuar editando
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (blocker.state === "blocked") blocker.proceed();
+              }}
+            >
+              Descartar alterações
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
