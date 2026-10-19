@@ -33,15 +33,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  evaluateInventoryLotManualMovement,
-  evaluateInventoryLotConsumption,
   evaluateNutritionalInventoryConsumptionReadiness,
   projectInventoryLotBalance,
 } from "@/lib/inventory/inventoryContracts";
-import {
-  buildInventoryCostSnapshot,
-  resolveInventoryLotUnitCost,
-} from "@/lib/inventory/costing";
+import { resolveInventoryLotUnitCost } from "@/lib/inventory/costing";
 import {
   CUSTOM_CATEGORY_VALUE,
   applyInventoryPreset,
@@ -80,7 +75,6 @@ import type {
   InsumoLote,
   InsumoLoteStatusEnum,
   InsumoMovimentacao,
-  InsumoMovimentacaoTipoEnum,
   InsumoTipoEnum,
   InsumoUnidadeBaseEnum,
   InsumoUnidadeCompraEnum,
@@ -95,30 +89,27 @@ import {
   formatEventDate,
   formatNumber,
 } from "./Insumos/helpers/formatting";
-import type { EntryForm, LotEditForm } from "./Insumos/types";
+import type {
+  EntryForm,
+  LotEditForm,
+  ConsumptionForm,
+  ManualMovementForm,
+  SourceOption,
+} from "./Insumos/types";
 import { buildLotEditOperations } from "./Insumos/helpers/buildLotEditOperations";
 import { resolveLotEditCosts } from "./Insumos/helpers/resolveLotEditCosts";
 import { validateLotEditForm } from "./Insumos/helpers/validateLotEditForm";
 import { validateEntryForm } from "./Insumos/helpers/validateEntryForm";
 import { prepareEntryCosts } from "./Insumos/helpers/prepareEntryCosts";
 import { buildEntryOperations } from "./Insumos/helpers/buildEntryOperations";
-
-type ConsumptionForm = {
-  sourceKey: string;
-  insumoLoteId: string;
-  quantidadeBase: string;
-  observacoes: string;
-};
-
-type ManualMovementForm = {
-  insumoLoteId: string;
-  tipo: Extract<
-    InsumoMovimentacaoTipoEnum,
-    "entrada" | "ajuste_positivo" | "ajuste_negativo"
-  >;
-  quantidadeBase: string;
-  observacoes: string;
-};
+import {
+  validateManualMovement,
+  prepareConsumption,
+} from "./Insumos/helpers/prepareInventoryMovements";
+import {
+  buildManualMovementOperations,
+  buildConsumptionOperations,
+} from "./Insumos/helpers/buildInventoryMovementOperations";
 
 type InventorySnapshot = {
   insumos: Insumo[];
@@ -131,19 +122,6 @@ type InventorySnapshot = {
   pasto: EventoPastoAvaliacao[];
   produtos: ProdutoVeterinarioCatalogEntry[];
   pendingTxIds: Set<string>;
-};
-
-type SourceOption = {
-  key: string;
-  eventoId: string;
-  dominio: "sanitario" | "nutricao" | "pastagem";
-  label: string;
-  catalogProductId: string | null;
-  quantityBase: number | null;
-  unidadeBase: InsumoUnidadeBaseEnum | null;
-  animalId: string | null;
-  rebanhoLoteId: string | null;
-  pastoId: string | null;
 };
 
 type LotMovementSummary = {
@@ -1065,59 +1043,29 @@ export default function Insumos() {
       return;
     }
 
-    const quantidadeBase = parsePositiveNumber(
-      manualMovementForm.quantidadeBase,
-    );
-    if (!quantidadeBase) {
-      showError("Quantidade da movimentacao deve ser maior que zero.");
-      return;
-    }
-
-    const saldoAtualBase =
-      selectedManualMovementLotBalance ??
-      selectedManualMovementLot.saldo_atual_base;
-    const movementCheck = evaluateInventoryLotManualMovement({
-      lot: {
-        ...selectedManualMovementLot,
-        saldo_atual_base: saldoAtualBase,
-      },
-      tipo: manualMovementForm.tipo,
-      quantidadeBase,
-      unidadeBase: selectedManualMovementLot.unidade_base,
+    const validation = validateManualMovement({
+      manualMovementForm,
+      selectedManualMovementLot,
+      selectedManualMovementLotBalance,
     });
-
-    if (!movementCheck.canRegister) {
-      showError(movementCheck.reason);
+    if ("error" in validation) {
+      showError(validation.error);
       return;
     }
+    const { quantidadeBase } = validation;
 
     setSavingManualMovement(true);
     try {
-      await createGesture(activeFarmId, [
-        {
-          table: "insumo_movimentacoes",
-          action: "INSERT",
-          record: {
-            id: crypto.randomUUID(),
-            insumo_id: selectedManualMovementLot.insumo_id,
-            insumo_lote_id: selectedManualMovementLot.id,
-            tipo: manualMovementForm.tipo,
-            quantidade_base: quantidadeBase,
-            unidade_base: selectedManualMovementLot.unidade_base,
-            occurred_at: new Date().toISOString(),
-            source_evento_id: null,
-            source_evento_dominio: null,
-            animal_id: null,
-            rebanho_lote_id: null,
-            pasto_id: null,
-            observacoes: manualMovementForm.observacoes.trim() || null,
-            payload: {
-              origem: "inventario_ui_mvp",
-              fluxo: "movimentacao_manual",
-            },
-          },
-        },
-      ]);
+      await createGesture(
+        activeFarmId,
+        buildManualMovementOperations({
+          id: crypto.randomUUID(),
+          selectedManualMovementLot,
+          manualMovementForm,
+          quantidadeBase,
+          occurredAt: new Date().toISOString(),
+        }),
+      );
 
       setManualMovementForm(EMPTY_MANUAL_MOVEMENT_FORM);
       showSuccess(
@@ -1145,64 +1093,31 @@ export default function Insumos() {
       return;
     }
 
-    const quantidadeBase = parsePositiveNumber(consumptionForm.quantidadeBase);
-    if (!quantidadeBase) {
-      showError("Quantidade de consumo deve ser maior que zero.");
+    const preparation = prepareConsumption({
+      consumptionForm,
+      selectedLot,
+      selectedLotBalance,
+    });
+    if ("error" in preparation) {
+      showError(preparation.error);
       return;
     }
-
-    const saldoAtualBase = selectedLotBalance ?? selectedLot.saldo_atual_base;
-    const lotCheck = evaluateInventoryLotConsumption({
-      lot: { ...selectedLot, saldo_atual_base: saldoAtualBase },
-      quantidadeBase,
-      unidadeBase: selectedLot.unidade_base,
-    });
-
-    if (!lotCheck.canConsume) {
-      showError(lotCheck.reason);
-      return;
-    }
-
-    const costSnapshot = buildInventoryCostSnapshot({
-      lot: selectedLot,
-      quantidadeBase,
-    });
+    const { quantidadeBase, costSnapshot } = preparation;
 
     setSavingConsumption(true);
     try {
-      await createGesture(activeFarmId, [
-        {
-          table: "insumo_movimentacoes",
-          action: "INSERT",
-          record: {
-            id: crypto.randomUUID(),
-            insumo_id: selectedLot.insumo_id,
-            insumo_lote_id: selectedLot.id,
-            tipo:
-              selectedSource.dominio === "sanitario"
-                ? "consumo_sanitario"
-                : "consumo_nutricao",
-            quantidade_base: quantidadeBase,
-            unidade_base: selectedLot.unidade_base,
-            occurred_at: new Date().toISOString(),
-            source_evento_id: selectedSource.eventoId,
-            source_evento_dominio: selectedSource.dominio,
-            animal_id: selectedSource.animalId,
-            rebanho_lote_id: selectedSource.rebanhoLoteId,
-            pasto_id: selectedSource.pastoId,
-            observacoes: consumptionForm.observacoes.trim() || null,
-            custo_unitario_snapshot: costSnapshot.custo_unitario_snapshot,
-            custo_total_snapshot: costSnapshot.custo_total_snapshot,
-            payload: {
-              origem: "inventario_ui_mvp",
-              custo_status: costSnapshot.custo_status,
-              ...(costSnapshot.limitacoes.length > 0
-                ? { limitacoes: costSnapshot.limitacoes }
-                : {}),
-            },
-          },
-        },
-      ]);
+      await createGesture(
+        activeFarmId,
+        buildConsumptionOperations({
+          id: crypto.randomUUID(),
+          selectedLot,
+          selectedSource,
+          consumptionForm,
+          quantidadeBase,
+          costSnapshot,
+          occurredAt: new Date().toISOString(),
+        }),
+      );
 
       setConsumptionForm(EMPTY_CONSUMPTION_FORM);
       showSuccess("Consumo de insumo registrado. Sincronizacao pendente.");

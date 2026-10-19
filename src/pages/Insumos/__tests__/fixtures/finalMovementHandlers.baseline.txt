@@ -1,0 +1,162 @@
+async function handleCreateManualMovement() {
+    if (savingManualMovement) return;
+    if (!activeFarmId) {
+      showError("Selecione uma fazenda ativa.");
+      return;
+    }
+    if (!canManage) {
+      showError("Apenas owner/manager pode registrar entradas e ajustes.");
+      return;
+    }
+    if (!selectedManualMovementLot) {
+      showError("Selecione um lote de estoque.");
+      return;
+    }
+
+    const quantidadeBase = parsePositiveNumber(
+      manualMovementForm.quantidadeBase,
+    );
+    if (!quantidadeBase) {
+      showError("Quantidade da movimentacao deve ser maior que zero.");
+      return;
+    }
+
+    const saldoAtualBase =
+      selectedManualMovementLotBalance ??
+      selectedManualMovementLot.saldo_atual_base;
+    const movementCheck = evaluateInventoryLotManualMovement({
+      lot: {
+        ...selectedManualMovementLot,
+        saldo_atual_base: saldoAtualBase,
+      },
+      tipo: manualMovementForm.tipo,
+      quantidadeBase,
+      unidadeBase: selectedManualMovementLot.unidade_base,
+    });
+
+    if (!movementCheck.canRegister) {
+      showError(movementCheck.reason);
+      return;
+    }
+
+    setSavingManualMovement(true);
+    try {
+      await createGesture(activeFarmId, [
+        {
+          table: "insumo_movimentacoes",
+          action: "INSERT",
+          record: {
+            id: crypto.randomUUID(),
+            insumo_id: selectedManualMovementLot.insumo_id,
+            insumo_lote_id: selectedManualMovementLot.id,
+            tipo: manualMovementForm.tipo,
+            quantidade_base: quantidadeBase,
+            unidade_base: selectedManualMovementLot.unidade_base,
+            occurred_at: new Date().toISOString(),
+            source_evento_id: null,
+            source_evento_dominio: null,
+            animal_id: null,
+            rebanho_lote_id: null,
+            pasto_id: null,
+            observacoes: manualMovementForm.observacoes.trim() || null,
+            payload: {
+              origem: "inventario_ui_mvp",
+              fluxo: "movimentacao_manual",
+            },
+          },
+        },
+      ]);
+
+      setManualMovementForm(EMPTY_MANUAL_MOVEMENT_FORM);
+      showSuccess(
+        "Movimentacao de estoque registrada. Sincronizacao pendente.",
+      );
+    } catch {
+      showError("Falha ao registrar movimentacao de estoque.");
+    } finally {
+      setSavingManualMovement(false);
+    }
+  }
+
+async function handleCreateConsumption() {
+    if (savingConsumption) return;
+    if (!activeFarmId) {
+      showError("Selecione uma fazenda ativa.");
+      return;
+    }
+    if (!selectedSource) {
+      showError("Selecione um evento confirmed.");
+      return;
+    }
+    if (!selectedLot) {
+      showError("Selecione um lote de estoque.");
+      return;
+    }
+
+    const quantidadeBase = parsePositiveNumber(consumptionForm.quantidadeBase);
+    if (!quantidadeBase) {
+      showError("Quantidade de consumo deve ser maior que zero.");
+      return;
+    }
+
+    const saldoAtualBase = selectedLotBalance ?? selectedLot.saldo_atual_base;
+    const lotCheck = evaluateInventoryLotConsumption({
+      lot: { ...selectedLot, saldo_atual_base: saldoAtualBase },
+      quantidadeBase,
+      unidadeBase: selectedLot.unidade_base,
+    });
+
+    if (!lotCheck.canConsume) {
+      showError(lotCheck.reason);
+      return;
+    }
+
+    const costSnapshot = buildInventoryCostSnapshot({
+      lot: selectedLot,
+      quantidadeBase,
+    });
+
+    setSavingConsumption(true);
+    try {
+      await createGesture(activeFarmId, [
+        {
+          table: "insumo_movimentacoes",
+          action: "INSERT",
+          record: {
+            id: crypto.randomUUID(),
+            insumo_id: selectedLot.insumo_id,
+            insumo_lote_id: selectedLot.id,
+            tipo:
+              selectedSource.dominio === "sanitario"
+                ? "consumo_sanitario"
+                : "consumo_nutricao",
+            quantidade_base: quantidadeBase,
+            unidade_base: selectedLot.unidade_base,
+            occurred_at: new Date().toISOString(),
+            source_evento_id: selectedSource.eventoId,
+            source_evento_dominio: selectedSource.dominio,
+            animal_id: selectedSource.animalId,
+            rebanho_lote_id: selectedSource.rebanhoLoteId,
+            pasto_id: selectedSource.pastoId,
+            observacoes: consumptionForm.observacoes.trim() || null,
+            custo_unitario_snapshot: costSnapshot.custo_unitario_snapshot,
+            custo_total_snapshot: costSnapshot.custo_total_snapshot,
+            payload: {
+              origem: "inventario_ui_mvp",
+              custo_status: costSnapshot.custo_status,
+              ...(costSnapshot.limitacoes.length > 0
+                ? { limitacoes: costSnapshot.limitacoes }
+                : {}),
+            },
+          },
+        },
+      ]);
+
+      setConsumptionForm(EMPTY_CONSUMPTION_FORM);
+      showSuccess("Consumo de insumo registrado. Sincronizacao pendente.");
+    } catch {
+      showError("Falha ao registrar consumo de insumo.");
+    } finally {
+      setSavingConsumption(false);
+    }
+  }
