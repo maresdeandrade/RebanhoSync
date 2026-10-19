@@ -1,0 +1,241 @@
+{
+  "artifact": {
+    "manifest_source": "SANITARIO_V2_BACKEND_PREFLIGHT_20261019.json planned_functions[0]",
+    "file_count": 14,
+    "hashes_reconfirmed": true,
+    "relative_dependencies_closed": true,
+    "uploaded_and_downloaded_content_identical": true,
+    "files": [
+      {
+        "path": "src/lib/animals/taxonomyFactsContract.ts",
+        "downloaded_content_exact": true,
+        "sha256": "81c3f1710a3aa18a6c53635dcd3a0b59c4c54d573537c8c72c4eb6ffe083aa68"
+      },
+      {
+        "path": "supabase/functions/_shared/mutationRecord.ts",
+        "downloaded_content_exact": true,
+        "sha256": "ecc2feec7d2e391e9c0e22e310f0b2a1c1be50b1d0f2a7ada7c54488f57cc091"
+      },
+      {
+        "path": "supabase/functions/deno.json",
+        "downloaded_content_exact": true,
+        "sha256": "088e4d9020ad4a1b1c9b9691e7f8f432d22765c3b3069dbfb5032c649595659c"
+      },
+      {
+        "path": "supabase/functions/sync-batch/commercial-operation-v2.ts",
+        "downloaded_content_exact": true,
+        "sha256": "e01b89b1098677f8c67585d45b1a6deeef0a1acb10b8679fa6c42c3b9b0e118a"
+      },
+      {
+        "path": "supabase/functions/sync-batch/commercial-purchase.ts",
+        "downloaded_content_exact": true,
+        "sha256": "6cdbb86d8e451e3da7a97adbfb69d066cc467e078481f60e55c0d0cd205958bc"
+      },
+      {
+        "path": "supabase/functions/sync-batch/flags.ts",
+        "downloaded_content_exact": true,
+        "sha256": "277950e3ab9835e97c755ef798bcc3a8f20b2ffcc03b5b8ec63f7175aa60ab85"
+      },
+      {
+        "path": "supabase/functions/sync-batch/index.ts",
+        "downloaded_content_exact": true,
+        "sha256": "c92da95e72dd281a03ddd9e272d91fe62ff815aa33b3efc62283450e4cd3cc5d"
+      },
+      {
+        "path": "supabase/functions/sync-batch/inventory-dependency.ts",
+        "downloaded_content_exact": true,
+        "sha256": "30b46647b0406187236a53f7e3daed30300d3781ced2abbe6fe7dc4c4090d08f"
+      },
+      {
+        "path": "supabase/functions/sync-batch/movement-v1.ts",
+        "downloaded_content_exact": true,
+        "sha256": "1971943005b13a009dcb4dde3cf04132c3f39ed17ed2ced3026ed5428d7f7895"
+      },
+      {
+        "path": "supabase/functions/sync-batch/reproduction-diagnosis.ts",
+        "downloaded_content_exact": true,
+        "sha256": "52615e90189aeb0eac9007a88ec381ca7da0ca619af6af017259586273f59c9b"
+      },
+      {
+        "path": "supabase/functions/sync-batch/rules.ts",
+        "downloaded_content_exact": true,
+        "sha256": "7fc6d6c319f6f0488be2260eee5f789ca43b8a8be8faf0453448a157b18febc5"
+      },
+      {
+        "path": "supabase/functions/sync-batch/sanitario-v2.ts",
+        "downloaded_content_exact": true,
+        "sha256": "ba57856ed4850b016b6ddf47e755515c8d0ddc0fd2648fd9562f92644a2ebeae"
+      },
+      {
+        "path": "supabase/functions/sync-batch/sanitary-product-evidence.ts",
+        "downloaded_content_exact": true,
+        "sha256": "00e11ddd46045e6510d01f8ba0fb14082f0f5f049ae1044ae31c5bc287c319ea"
+      },
+      {
+        "path": "supabase/functions/sync-batch/taxonomy.ts",
+        "downloaded_content_exact": true,
+        "sha256": "4d738557440cfe4491fc84a84781da9aa47e34e7311e49ccd1e33de9855ff3ba"
+      }
+    ]
+  },
+  "schema_version": 1,
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "branch": "codex/sanitario-v2-convergencia",
+  "source_commit": "d4723b26521995f67b70fe14f14477cdb82bc264",
+  "result": "DEPLOYED_VERIFIED_WITH_AUTHENTICATED_REMOTE_SMOKE_LIMITATION",
+  "deployment": {
+    "id": "ea290713-71c8-4285-baf2-d33a0c114038",
+    "slug": "sync-batch",
+    "name": "sync-batch",
+    "status": "ACTIVE",
+    "version": 28,
+    "created_at": 1770210332805,
+    "updated_at": 1792438405776,
+    "verify_jwt": true,
+    "import_map": true,
+    "entrypoint_path": "file:///tmp/user_fn_zqloazqzhwauamcejmuz_ea290713-71c8-4285-baf2-d33a0c114038_28/source/supabase/functions/sync-batch/index.ts",
+    "import_map_path": "file:///tmp/user_fn_zqloazqzhwauamcejmuz_ea290713-71c8-4285-baf2-d33a0c114038_28/source/supabase/functions/deno.json",
+    "ezbr_sha256": "21aa82b9c7c6b41510a93670bab919c9a65362d04d51196913397c106f1809a0"
+  },
+  "previous_function": {
+    "id": "ea290713-71c8-4285-baf2-d33a0c114038",
+    "slug": "sync-batch",
+    "name": "sync-batch",
+    "status": "ACTIVE",
+    "version": 27,
+    "created_at": 1770210332805,
+    "updated_at": 1791207613194,
+    "verify_jwt": true,
+    "import_map": false,
+    "entrypoint_path": "file:///Users/mares/dyad-apps/GestaoAgro/supabase/functions/sync-batch/index.ts",
+    "ezbr_sha256": "b0cabd32ef54b8c7e034cd9d997386bf4ae3d2dfc7e0a813113624151778feb0"
+  },
+  "other_functions_unchanged": true,
+  "secrets": {
+    "count": 7,
+    "names": [
+      "SUPABASE_ANON_KEY",
+      "SUPABASE_DB_URL",
+      "SUPABASE_JWKS",
+      "SUPABASE_PUBLISHABLE_KEYS",
+      "SUPABASE_SECRET_KEYS",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "SUPABASE_URL"
+    ],
+    "all_sha256_digests_unchanged": true,
+    "metadata_updated_at_changed": true,
+    "values_retrieved": false,
+    "secrets_write_commands": 0,
+    "app_origin_configured": false,
+    "app_origin_fallback": "existing vercel.app and loopback CORS allowlist"
+  },
+  "database_before": {
+    "gates": 0,
+    "items": 0,
+    "agendas": 0,
+    "sources": 0,
+    "products": 0,
+    "protocols": 0,
+    "migrations": 63,
+    "operations": 0
+  },
+  "database_after": {
+    "items": 0,
+    "plans": 0,
+    "groups": 0,
+    "ledger": 0,
+    "agendas": 0,
+    "classes": 0,
+    "members": 0,
+    "sources": 0,
+    "coverage": 0,
+    "products": 0,
+    "gate_rows": 0,
+    "protocols": 0,
+    "dose_rules": 0,
+    "migrations": 63,
+    "observed_at": "2026-10-19T19:34:55.759615+00:00",
+    "default_rules": 0,
+    "enabled_gates": 0,
+    "legacy_agendas": 0,
+    "product_sources": 0,
+    "withdrawal_rules": 0,
+    "cli_login_expired": true,
+    "withdrawal_sources": 0,
+    "product_authorizations": 0
+  },
+  "remote_business_writes": 0,
+  "remote_schema_changes": 0,
+  "rpcs_confirmed": [
+    "internal_sanitario_sync_v2_create_agenda",
+    "internal_sanitario_sync_v2_replace_agenda_animals",
+    "internal_sanitario_sync_v2_apply_factual_core",
+    "internal_sanitario_sync_v2_close_agenda",
+    "internal_sanitario_sync_v2_set_automation_plan",
+    "internal_sanitario_sync_v2_reschedule_agenda"
+  ],
+  "tests": {
+    "vitest_files": 10,
+    "vitest_passed": 127,
+    "suites": [
+      "supabase/functions/sync-batch/rules.test.ts",
+      "supabase/functions/sync-batch/sanitario-v2.test.ts",
+      "supabase/functions/sync-batch/sanitario-v2-expand.test.ts",
+      "supabase/functions/sync-batch/sanitary-product-evidence.test.ts",
+      "supabase/functions/sync-batch/inventory-dependency.test.ts",
+      "supabase/functions/sync-batch/handler-order.test.ts",
+      "src/lib/offline/__tests__/sanitarioV2Worker.test.ts",
+      "src/lib/offline/__tests__/syncWorkerAuth.test.ts",
+      "src/lib/offline/__tests__/sanitarioAgendaV2Sync.test.ts",
+      "src/lib/sanitario/agenda/__tests__/sanitaryPlanningSyncV2.test.ts"
+    ],
+    "initial_environment_failure": "sanitaryPlanningSyncV2.test.ts initially failed import due to absent VITE_SUPABASE_URL; passed with process-scoped local dummy URL/key, no network operations",
+    "deno_check": "passed; Deno 2.9.7 ignored legacy allowJs option",
+    "remote_smokes": [
+      {
+        "name": "cors_options",
+        "status": 200,
+        "body": "",
+        "cors_origin": "http://127.0.0.1:5173",
+        "execution_id": "47350403-698e-4fb1-ad78-4a30acca179a"
+      },
+      {
+        "name": "missing_jwt",
+        "status": 401,
+        "body": "{\"code\":\"UNAUTHORIZED_NO_AUTH_HEADER\",\"message\":\"Missing authorization header\"}",
+        "cors_origin": "*",
+        "execution_id": null
+      },
+      {
+        "name": "invalid_jwt",
+        "status": 401,
+        "body": "{\"code\":\"UNAUTHORIZED_INVALID_JWT_FORMAT\",\"message\":\"Invalid JWT\"}",
+        "cors_origin": "*",
+        "execution_id": null
+      },
+      {
+        "name": "invalid_jwt_retry",
+        "status": 401,
+        "body": "{\"code\":\"UNAUTHORIZED_INVALID_JWT_FORMAT\",\"message\":\"Invalid JWT\"}",
+        "cors_origin": "*",
+        "execution_id": null
+      }
+    ],
+    "not_run": [
+      "Authenticated remote success/domain rejection: no accessible user session, no new user/session created",
+      "Broad functional baseline, full regression and build: unchanged runtime sources; focused contract tests, Deno check, remote artifact/RPC checks and negative HTTP smokes used"
+    ]
+  },
+  "authorization": {
+    "R02": "executed",
+    "R03": "not authorized; local review candidate only",
+    "R04": "not authorized",
+    "R05": "not authorized"
+  },
+  "risks": [
+    "Authenticated remote path not certified in this execution; auth/retry/commands covered by local tests",
+    "Inaccessible browser queues remain uninspected; no IndexedDB or queued operations modified",
+    "R03 candidate remains review-only; publication and operational permissions absent"
+  ],
+  "verification_classification": "READY WITH CAVEAT"
+}

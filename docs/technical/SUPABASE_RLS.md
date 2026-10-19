@@ -35,13 +35,18 @@ Definir o contrato técnico para Supabase, RLS, isolamento multi-tenant, RPCs, p
 - Backend anteriormente chamado staging: `zqloazqzhwauamcejmuz`,
   confirmado como consumidor do frontend de produção; não é homologação isolada.
 - Nenhum projeto exclusivo de homologação foi comprovado entre os projetos acessíveis.
-- Produção: não alterada.
+- Frontend publicado: sem novo deploy nesta execução.
 - Gate sanitário remoto: desligado e fail-closed.
 - Feature flag local: `false`; não é fronteira de autorização.
 - Rollout para usuários: não autorizado.
 - R01 aplicada ao backend existente de testes em 19/10/2026: 63 migrations, curadoria/plano/reagendamento
-  instalados, catálogo vazio e gates OFF. R02–R05 não executadas. Recuperação lógica, compatibilidade e
+  instalados, catálogo vazio e gates OFF. Recuperação lógica, compatibilidade e
   efeito auxiliar de login da CLI: [evidência R01](../review/evidence/SANITARIO_V2_R01_APLICADA_20261019.md).
+- R02 publicada em 19/10/2026: `sync-batch` v27 → v28, `verify_jwt=true`, 14 arquivos
+  conferidos após download e secrets preservados por digest. Gates OFF e catálogo vazio.
+  Smoke remoto autenticado não certificado por ausência de sessão acessível:
+  [evidência R02](../review/evidence/SANITARIO_V2_R02_EXECUCAO_20261019.md).
+  R03 preparada localmente; R03–R05 sem autorização remota.
 
 A fundação de RLS e isolamento multi-tenant/fazenda do Sync Sanitário v2 está tecnicamente concluída. Isso não conclui o sync nem autoriza rollout.
 
