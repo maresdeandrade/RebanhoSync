@@ -19,7 +19,13 @@ import {
 } from "../../scripts/codex/import-sanitario-protocols-v2.mjs";
 
 const payloadUrl = new URL(
-  "../../docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json", import.meta.url,
+  "./fixtures/sanitario-v2-before-r03.json", import.meta.url,
+);
+// Security/141-row scenarios below intentionally exercise the pre-R03 closed input.
+const liveCanonicalPath = path.resolve("docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json");
+const readHistoricalInput = (file, ...options) => readFileSync(
+  typeof file === "string" && path.resolve(file) === liveCanonicalPath ? payloadUrl : file,
+  ...options,
 );
 const publisherSource = readFileSync(new URL(
   "../../scripts/codex/import-sanitario-protocols-v2.mjs", import.meta.url,
@@ -33,7 +39,7 @@ const applyTransactionForTest = runInNewContext(`${privateSource}\napplyTransact
   ...contract, process, path, existsSync, readFileSync, Date,
 });
 const applyImportForTest = runInNewContext(`${privateSource}\napplyImport;`, {
-  ...contract, process, path, existsSync, readFileSync, Date,
+  ...contract, process, path, existsSync, readFileSync: readHistoricalInput, Date,
 });
 const otherId = "00000000-0000-4000-8000-000000000001";
 const farmA = "00000000-0000-4000-8000-000000000002";
@@ -132,7 +138,7 @@ class MemoryClient {
     if (text.startsWith("insert")) {
       if (this.failInsert === table) throw new Error("simulated insert failure");
       const fields = /\(([^)]+)\) values/.exec(text)[1].split(",").map((f) => f.trim());
-      const row = Object.fromEntries(fields.map((field, index) => [field, decodeJson(values[index])]));
+      const row = Object.fromEntries(fields.map((field, index) => [field, decodeJson(values[index], field)]));
       const keys = compositeFields[table] ?? ["id"];
       if (rows.some((r) => keys.every((key) => r[key] === row[key]))) throw new Error("duplicate primary key");
       this.rows[table] = [...rows, row];
@@ -144,13 +150,15 @@ class MemoryClient {
     if (!row || (tombstone && row.status !== "draft")) return { rows: [], rowCount: 0 };
     if (tombstone) Object.assign(row, { deleted_at: "2026-09-30", status: "retired", allows_agenda_auto: false });
     else for (const [, field, position] of text.matchAll(/(\w+) = \$(\d+)/g)) {
-      row[field] = decodeJson(values[Number(position) - 1]);
+      row[field] = decodeJson(values[Number(position) - 1], field);
     }
     return { rows: [{ id: row.id }], rowCount: 1 };
   }
 }
 
-function decodeJson(value) {
+function decodeJson(value, field) {
+  // apresentacao is TEXT in PostgreSQL, even when its content happens to be JSON.
+  if (field === "apresentacao") return value;
   return typeof value === "string" && /^[\[{]/.test(value) ? JSON.parse(value) : value;
 }
 
@@ -613,7 +621,7 @@ describe("sanitario v2 publisher P1", () => {
     // Exercise main's apply branch in a sandbox, without launching CLI --apply.
     const blockedMain = runInNewContext(
       `${privateSource}\n${mainSource}\nparseMode = () => 'apply'; connectDb = onConnectDb; main;`,
-      { ...contract, process, path, existsSync, readFileSync, Date, onConnectDb: () => {
+      { ...contract, process, path, existsSync, readFileSync: readHistoricalInput, Date, onConnectDb: () => {
         connectionAttempts += 1;
         throw new Error("database connection must not be attempted");
       } },
@@ -1050,5 +1058,26 @@ describe("sanitario v2 publisher P1", () => {
     });
     await expect(applyTransactionForTest(client, data)).rejects.toThrow("deprecated_item_not_draft");
     expect(client.queries.at(-1).text).toBe("rollback");
+  });
+});
+
+describe("R03 promoted canonical input", () => {
+  it("plans the 144 authorized rows and exactly four expected non-row rejections", async () => {
+    const promoted = JSON.parse(readFileSync(liveCanonicalPath, "utf8"));
+    publicPublisher.assertApplyGate(promoted);
+    const data = validateCanonicalTechnicalContract(promoted).data;
+    const plan = await buildPlan(new MemoryClient(), data);
+    assertPublishablePlan(plan);
+    expect(plan.filter((op) => op.action === "create")).toHaveLength(144);
+    expect(plan.filter((op) => op.classification === "EXPECTED_REJECTION")).toHaveLength(4);
+    expect(plan.some((op) => op.action === "update")).toBe(false);
+  });
+  it("preserves all 20 drafts through the existing transaction and converges on replay", async () => {
+    const data = validateCanonicalTechnicalContract(JSON.parse(readFileSync(liveCanonicalPath, "utf8"))).data;
+    const client = new MemoryClient();
+    expect(await applyTransactionForTest(client, data)).toEqual({ create: 144, update: 0, skip: 0, reject: 4 });
+    expect(client.rows.sanitario_protocolo_itens_versions_v2).toHaveLength(20);
+    expect(client.rows.sanitario_protocolo_itens_versions_v2.every((row) => row.status === "draft" && !row.allows_agenda_auto)).toBe(true);
+    expect(await applyTransactionForTest(client, data)).toEqual({ create: 0, update: 0, skip: 144, reject: 4 });
   });
 });

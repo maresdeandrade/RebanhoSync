@@ -7,7 +7,9 @@ import { normalizeCanonicalData } from "../../scripts/codex/sanitario-v2-contrac
 import { adaptSanitaryProtocolV2Row, adaptSanitaryProtocolItemV2Row } from "../../src/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import { sanitaryPlanningBlockersV2 } from "../../src/lib/sanitario/preview/sanitaryWindowPlanningPreviewV2";
 
-const bytes = readFileSync(CANONICAL_PATH);
+// Historical proposal input: promotion must not silently change these scenarios.
+const bytes = readFileSync(new URL("./fixtures/sanitario-v2-before-r03.json", import.meta.url));
+const liveCanonicalBytes = readFileSync(CANONICAL_PATH);
 const packetBytes = readFileSync(DECISION_PATH);
 const canonical = JSON.parse(bytes);
 const packet = JSON.parse(packetBytes);
@@ -37,7 +39,7 @@ describe("candidato versionado sem aprovacao/publicacao", () => {
       if (packet.retained_restricted_records.some((item) => item.id === row.id)) expect(row).toEqual(old);
       else expect(row).toMatchObject({ version: old.version + 1, protocol_id: old.protocol_id });
     }
-    expect(JSON.parse(readFileSync(CANONICAL_PATH))).toEqual(canonical);
+    expect(readFileSync(CANONICAL_PATH)).toEqual(liveCanonicalBytes);
   });
 
   it("materializa B19 por campo; as fontes reais sustentam so avaliacao generica", () => {

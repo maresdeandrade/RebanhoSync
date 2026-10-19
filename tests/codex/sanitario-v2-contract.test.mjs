@@ -19,7 +19,8 @@ const IMPORT_SCRIPT = fileURLToPath(
   new URL("../../scripts/codex/import-sanitario-protocols-v2.mjs", import.meta.url),
 );
 const CANONICAL_PAYLOAD = fileURLToPath(
-  new URL("../../docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json", import.meta.url),
+  // Historical format/closed-gate cases stay fixed across the authorized R03 promotion.
+  new URL("./fixtures/sanitario-v2-before-r03.json", import.meta.url),
 );
 
 const ids = {
@@ -659,7 +660,7 @@ describe("sanitario v2 canonical contract", () => {
     expect(mainBody.indexOf("assertApplyGate(payload)")).toBeLessThan(mainBody.indexOf("await connectDb(mode,"));
   });
 
-  it("validates the materialized artifact with the publisher gate closed and without database access", () => {
+  it("validates the live materialized artifact without database access", () => {
     const result = runImportScript(["--validate"], { ...process.env, DB_URL: "" });
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("12G validate OK");

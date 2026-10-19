@@ -46,7 +46,10 @@ Definir o contrato técnico para Supabase, RLS, isolamento multi-tenant, RPCs, p
   conferidos após download e secrets preservados por digest. Gates OFF e catálogo vazio.
   Smoke remoto autenticado não certificado por ausência de sessão acessível:
   [evidência R02](../review/evidence/SANITARIO_V2_R02_EXECUCAO_20261019.md).
-  R03 preparada localmente; R03–R05 sem autorização remota.
+  R03 executada em 19/10/2026: 144 registros de catálogo, incluindo 20 itens draft,
+  sem aprovação ou automação; dry-run posterior com 144 skips e quatro rejeições esperadas.
+  [Evidência R03](../review/evidence/SANITARIO_V2_R03_EXECUCAO_20261019.md).
+  R04 preparada localmente; R04–R05 sem autorização remota.
 
 A fundação de RLS e isolamento multi-tenant/fazenda do Sync Sanitário v2 está tecnicamente concluída. Isso não conclui o sync nem autoriza rollout.
 

@@ -1,5 +1,8 @@
 # R03 — importação dos 20 rascunhos preparada
 
+> Atualização: R03 executada e validada em 19/10/2026. Este documento preserva o plano
+> anterior à autorização; estado atual e evidências em [execução R03](SANITARIO_V2_R03_EXECUCAO_20261019.md).
+
 **Estado: preparação local concluída; importação remota não autorizada e não executada.**
 Destino previsto: projeto existente `zqloazqzhwauamcejmuz`, após R01 e deploy R02 v28.
 
