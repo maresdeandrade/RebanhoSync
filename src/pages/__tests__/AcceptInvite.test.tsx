@@ -68,7 +68,7 @@ describe("AcceptInvite", () => {
 
     render(
       <MemoryRouter
-        initialEntries={["/invites/token-123"]}
+        initialEntries={["/invites/11111111-1111-4111-8111-111111111111"]}
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
       >
         <Routes>
@@ -102,7 +102,7 @@ describe("AcceptInvite", () => {
 
     render(
       <MemoryRouter
-        initialEntries={["/invites/token-123"]}
+        initialEntries={["/invites/11111111-1111-4111-8111-111111111111"]}
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
       >
         <Routes>
@@ -111,7 +111,9 @@ describe("AcceptInvite", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: /Aceitar convite/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Aceitar convite/i }),
+    );
 
     await waitFor(() => {
       expect(toast).toHaveBeenCalledWith(
@@ -120,7 +122,8 @@ describe("AcceptInvite", () => {
         }),
       );
     });
-    expect(mockNavigate).toHaveBeenCalledWith("/login?redirect=/invites/token-123");
+    expect(mockNavigate).toHaveBeenCalledWith(
+      "/login?redirect=%2Finvites%2F11111111-1111-4111-8111-111111111111",
+    );
   });
 });
-

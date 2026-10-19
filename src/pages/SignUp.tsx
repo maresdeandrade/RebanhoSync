@@ -1,5 +1,10 @@
 import { supabase } from "@/lib/supabase";
-import { Navigate, Link, useNavigate } from "react-router-dom";
+import { Navigate, Link, useNavigate, useLocation } from "react-router-dom";
+import {
+  getInviteAuthPath,
+  getInviteRedirect,
+  getPostAuthDestination,
+} from "@/lib/auth/inviteRedirect";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +33,9 @@ const isValidSignupPhone = (value: string) =>
 const SignUp = () => {
   const { session, activeFarmId } = useAuth();
   const navigate = useNavigate();
+  const { search } = useLocation();
+  const inviteRedirect = getInviteRedirect(search);
+  const loginPath = getInviteAuthPath("login", search);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +49,9 @@ const SignUp = () => {
   const password = watch("password");
 
   if (session) {
-    return <Navigate to={activeFarmId ? "/home" : "/select-fazenda"} replace />;
+    return (
+      <Navigate to={getPostAuthDestination(search, activeFarmId)} replace />
+    );
   }
 
   const onSubmit = async (data: SignUpForm) => {
@@ -56,6 +66,12 @@ const SignUp = () => {
           email: data.email,
           password: data.password,
           options: {
+            ...(inviteRedirect
+              ? {
+                  emailRedirectTo: new URL(loginPath, window.location.origin)
+                    .href,
+                }
+              : {}),
             data: {
               display_name: data.displayName,
               phone: normalizeSignupPhone(data.phone),
@@ -70,13 +86,9 @@ const SignUp = () => {
       // ✅ Verificar se veio sessão (depende de Confirm Email config)
       if (authData.session) {
         // Confirm Email = OFF → já autenticado
-        console.log(
-          "[signup] Session criada - redirecionando para seleção de fazenda",
-        );
-
         // ✅ MUDANÇA: não criar fazenda automaticamente
         // Usuário deve ser convidado ou ter permissão explícita via can_create_farm
-        navigate("/select-fazenda");
+        navigate(inviteRedirect ?? "/select-fazenda");
       } else {
         // Confirm Email = ON → precisa confirmar email
         setSuccess(
@@ -221,7 +233,7 @@ const SignUp = () => {
 
             <div className="text-center text-sm">
               Já tem uma conta?{" "}
-              <Link to="/login" className="text-primary hover:underline">
+              <Link to={loginPath} className="text-primary hover:underline">
                 Faça login aqui
               </Link>
             </div>
@@ -233,4 +245,3 @@ const SignUp = () => {
 };
 
 export default SignUp;
-
