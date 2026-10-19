@@ -181,11 +181,11 @@ const scenarios: Array<{ name: string; input?: Overrides }> = [
     },
   },
   {
-    name: "produto de quantidades com overflow herdado",
+    name: "produto de quantidades grande e finito",
     input: {
       entryForm: {
         quantidadePorApresentacao: "1e308",
-        quantidadeEntrada: "1e308",
+        quantidadeEntrada: "1",
       },
     },
   },
@@ -475,5 +475,27 @@ describe("cadastro de entrada: equivalência com main@52a6ddb", () => {
     compare();
     expect(uuid).not.toHaveBeenCalled();
     expect(timestamp).not.toHaveBeenCalled();
+  });
+});
+
+describe("cadastro de entrada: rejeição de quantidade calculada não finita", () => {
+  it.each([
+    { quantidadeEntrada: "1e308", quantidadePorApresentacao: "1e308" },
+    {
+      quantidadeEntrada: String(Number.MAX_VALUE),
+      quantidadePorApresentacao: "2",
+    },
+    {
+      quantidadeEntrada: "2",
+      quantidadePorApresentacao: String(Number.MAX_VALUE),
+    },
+  ])("retorna erro de validação sem construir operações: %j", (entryForm) => {
+    const input = makeInput({ entryForm });
+    expect(validateEntryForm(input)).toStrictEqual({
+      error: "Quantidade base calculada deve ser finita.",
+    });
+    expect(planEntry(input)).toStrictEqual({
+      error: "Quantidade base calculada deve ser finita.",
+    });
   });
 });

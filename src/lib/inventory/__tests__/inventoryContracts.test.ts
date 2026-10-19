@@ -19,6 +19,41 @@ describe("inventoryContracts", () => {
     ).toBe(75);
   });
 
+  it.each([
+    {
+      presentationQuantity: 2.5,
+      presentationBaseQuantity: 1.25,
+      expected: 3.125,
+    },
+    {
+      presentationQuantity: 0.1,
+      presentationBaseQuantity: 0.2,
+      expected: 0.020000000000000004,
+    },
+    {
+      presentationQuantity: Number.MAX_VALUE,
+      presentationBaseQuantity: 1,
+      expected: Number.MAX_VALUE,
+    },
+  ])(
+    "preserva produto finito sem arredondamento: $expected",
+    ({ expected, ...input }) => {
+      expect(convertPresentationQuantityToBase(input)).toBe(expected);
+    },
+  );
+
+  it.each([
+    { presentationQuantity: 1e308, presentationBaseQuantity: 1e308 },
+    { presentationQuantity: Number.MAX_VALUE, presentationBaseQuantity: 2 },
+    { presentationQuantity: 2, presentationBaseQuantity: Number.MAX_VALUE },
+  ])("rejeita overflow com fatores finitos: %j", (input) => {
+    expect(Number.isFinite(input.presentationQuantity)).toBe(true);
+    expect(Number.isFinite(input.presentationBaseQuantity)).toBe(true);
+    expect(() => convertPresentationQuantityToBase(input)).toThrow(
+      "Quantidade base calculada deve ser finita.",
+    );
+  });
+
   it("projeta saldo por movimentacoes auditaveis", () => {
     expect(
       projectInventoryLotBalance({

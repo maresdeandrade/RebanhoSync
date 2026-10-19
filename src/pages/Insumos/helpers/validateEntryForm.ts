@@ -53,10 +53,14 @@ export function validateEntryForm({
     };
   }
 
-  const quantidadeBase = convertPresentationQuantityToBase({
-    presentationQuantity: quantidadeEntrada,
-    presentationBaseQuantity: quantidadePorApresentacao,
-  });
-
-  return { quantidadePorApresentacao, quantidadeEntrada, quantidadeBase };
+  try {
+    const quantidadeBase = convertPresentationQuantityToBase({
+      presentationQuantity: quantidadeEntrada,
+      presentationBaseQuantity: quantidadePorApresentacao,
+    });
+    return { quantidadePorApresentacao, quantidadeEntrada, quantidadeBase };
+  } catch (error) {
+    if (!(error instanceof Error)) throw error;
+    return { error: error.message };
+  }
 }
