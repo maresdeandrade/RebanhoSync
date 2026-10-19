@@ -1,5 +1,6 @@
 import type {
   InsumoLoteStatusEnum,
+  InsumoMovimentacaoTipoEnum,
   InsumoTipoEnum,
   InsumoUnidadeBaseEnum,
   InsumoUnidadeCompraEnum,
@@ -44,4 +45,34 @@ export type EntryForm = {
   custoUnitario: string;
   origemCusto: "manual" | "ausente" | "financeiro_vinculado";
   financeTransactionId: string | null;
+};
+
+export type ConsumptionForm = {
+  sourceKey: string;
+  insumoLoteId: string;
+  quantidadeBase: string;
+  observacoes: string;
+};
+
+export type ManualMovementForm = {
+  insumoLoteId: string;
+  tipo: Extract<
+    InsumoMovimentacaoTipoEnum,
+    "entrada" | "ajuste_positivo" | "ajuste_negativo"
+  >;
+  quantidadeBase: string;
+  observacoes: string;
+};
+
+export type SourceOption = {
+  key: string;
+  eventoId: string;
+  dominio: "sanitario" | "nutricao" | "pastagem";
+  label: string;
+  catalogProductId: string | null;
+  quantityBase: number | null;
+  unidadeBase: InsumoUnidadeBaseEnum | null;
+  animalId: string | null;
+  rebanhoLoteId: string | null;
+  pastoId: string | null;
 };
