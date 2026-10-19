@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, LogOut, MapPin, Plus } from "lucide-react";
+import { AlertCircle, ChevronRight, LogOut, MapPin, Plus } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -24,6 +23,10 @@ interface UserFazenda {
   fazendas: FazendaData[] | FazendaData;
   role: string;
 }
+
+type FarmQueryState =
+  | { status: "loading" | "error" }
+  | { status: "success"; data: UserFazenda[] };
 
 const roleLabelMap: Record<string, string> = {
   owner: "Proprietario",
@@ -71,54 +74,134 @@ function formatLocation(fazenda: FazendaData) {
   return fazenda.municipio || fazenda.estado || "Localizacao nao informada";
 }
 
+function FarmQueryFeedback({
+  status,
+  canCreateFarm,
+  onRetry,
+  onCreate,
+}: {
+  status: FarmQueryState["status"];
+  canCreateFarm: boolean | null;
+  onRetry: () => void;
+  onCreate: () => void;
+}) {
+  if (status === "loading") {
+    return (
+      <div
+        role="status"
+        className="rounded-xl border border-border/70 bg-card p-6 text-sm text-muted-foreground shadow-none"
+      >
+        Carregando fazendas...
+      </div>
+    );
+  }
+  if (status === "error") {
+    return (
+      <EmptyState
+        role="alert"
+        icon={AlertCircle}
+        title="Não foi possível carregar suas fazendas"
+        description="Verifique sua conexão e tente novamente."
+        action={{ label: "Tentar novamente", onClick: onRetry }}
+      />
+    );
+  }
+  return (
+    <EmptyState
+      icon={MapPin}
+      title="Nenhuma fazenda vinculada"
+      description="Aceite um convite ou crie a primeira fazenda para iniciar a rotina."
+      action={
+        canCreateFarm === true
+          ? { label: "Criar nova fazenda", onClick: onCreate }
+          : undefined
+      }
+    />
+  );
+}
+
 const SelectFazenda = () => {
   const { user, signOut, setActiveFarm } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [canCreateFarm, setCanCreateFarm] = useState<boolean | null>(null);
-
-  const fazendas = useLiveQuery(async () => {
-    if (!user) return [];
-
-    const { data } = await supabase
-      .from("user_fazendas")
-      .select(
-        "role, fazendas(id, nome, municipio, estado, area_total_ha, tipo_producao, sistema_manejo)",
-      )
-      .eq("user_id", user.id)
-      .is("deleted_at", null);
-
-    return data || [];
-  }, [user]);
+  const [queryState, setQueryState] = useState<FarmQueryState>({
+    status: "loading",
+  });
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (!user) return;
+    setQueryState({ status: "loading" });
+
+    let active = true;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      controller.abort();
+      if (active) setQueryState({ status: "error" });
+    }, 30_000);
+
+    const loadFarms = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("user_fazendas")
+          .select(
+            "role, fazendas(id, nome, municipio, estado, area_total_ha, tipo_producao, sistema_manejo)",
+          )
+          .eq("user_id", user.id)
+          .is("deleted_at", null)
+          .abortSignal(controller.signal);
+
+        if (!active || controller.signal.aborted) return;
+        if (error || !Array.isArray(data)) {
+          setQueryState({ status: "error" });
+          return;
+        }
+        setQueryState({ status: "success", data });
+      } catch {
+        if (active) setQueryState({ status: "error" });
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    };
+
+    void loadFarms();
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [user, attempt]);
+
+  const retry = () => {
+    if (queryState.status !== "error") return;
+    setQueryState({ status: "loading" });
+    setAttempt((value) => value + 1);
+  };
+
+  useEffect(() => {
+    let active = true;
+    setCanCreateFarm(null);
     const checkPermission = async () => {
       if (!user) return;
 
       try {
         const { data, error } = await supabase.rpc("can_create_farm");
 
-        if (error) {
-          console.error(
-            "[SelectFazenda] ERROR checking can_create_farm:",
-            error,
-          );
-          setCanCreateFarm(false);
-          return;
-        }
-
-        setCanCreateFarm(data === true);
-      } catch (requestError) {
-        console.error(
-          "[SelectFazenda] EXCEPTION checking permission:",
-          requestError,
-        );
-        setCanCreateFarm(false);
+        if (active) setCanCreateFarm(!error && data === true);
+      } catch {
+        if (active) setCanCreateFarm(false);
       }
     };
 
     void checkPermission();
+    return () => {
+      active = false;
+    };
   }, [user]);
+
+  const fazendas =
+    queryState.status === "success" ? queryState.data : undefined;
 
   const memberships = useMemo(() => {
     return (fazendas ?? []).flatMap((membership: UserFazenda) => {
@@ -163,9 +246,11 @@ const SelectFazenda = () => {
               <StatusBadge tone="neutral">
                 {user?.email ?? "Conta sem e-mail"}
               </StatusBadge>
-              <StatusBadge tone={memberships.length > 0 ? "info" : "warning"}>
-                {memberships.length} fazenda(s) disponivel(is)
-              </StatusBadge>
+              {queryState.status === "success" ? (
+                <StatusBadge tone={memberships.length > 0 ? "info" : "warning"}>
+                  {memberships.length} fazenda(s) disponivel(is)
+                </StatusBadge>
+              ) : null}
             </>
           }
           actions={
@@ -193,23 +278,12 @@ const SelectFazenda = () => {
 
         <div>
           <section className="space-y-3">
-            {!fazendas ? (
-              <div className="rounded-xl border border-border/70 bg-card p-6 text-sm text-muted-foreground shadow-none">
-                Carregando fazendas...
-              </div>
-            ) : memberships.length === 0 ? (
-              <EmptyState
-                icon={MapPin}
-                title="Nenhuma fazenda vinculada"
-                description="Aceite um convite ou crie a primeira fazenda para iniciar a rotina."
-                action={
-                  canCreateFarm === true
-                    ? {
-                        label: "Criar nova fazenda",
-                        onClick: () => navigate("/criar-fazenda"),
-                      }
-                    : undefined
-                }
+            {queryState.status !== "success" || memberships.length === 0 ? (
+              <FarmQueryFeedback
+                status={queryState.status}
+                canCreateFarm={canCreateFarm}
+                onRetry={retry}
+                onCreate={() => navigate("/criar-fazenda")}
               />
             ) : (
               memberships.map((fazenda) => {
@@ -291,5 +365,10 @@ const SelectFazenda = () => {
   );
 };
 
-export default SelectFazenda;
+const SelectFazendaPage = () => {
+  const { user } = useAuth();
+  // Reinicia lista e permissão antes de renderizar outra conta.
+  return user ? <SelectFazenda key={user.id} /> : null;
+};
 
+export default SelectFazendaPage;
