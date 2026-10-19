@@ -32,7 +32,10 @@ export function convertPresentationQuantityToBase(input: {
   presentationQuantity: number;
   presentationBaseQuantity: number;
 }): number {
-  if (!Number.isFinite(input.presentationQuantity) || input.presentationQuantity <= 0) {
+  if (
+    !Number.isFinite(input.presentationQuantity) ||
+    input.presentationQuantity <= 0
+  ) {
     throw new Error("Quantidade de apresentacao deve ser maior que zero.");
   }
 
@@ -43,7 +46,12 @@ export function convertPresentationQuantityToBase(input: {
     throw new Error("Quantidade base da apresentacao deve ser maior que zero.");
   }
 
-  return input.presentationQuantity * input.presentationBaseQuantity;
+  const quantidadeBase =
+    input.presentationQuantity * input.presentationBaseQuantity;
+  if (!Number.isFinite(quantidadeBase)) {
+    throw new Error("Quantidade base calculada deve ser finita.");
+  }
+  return quantidadeBase;
 }
 
 export function getInventoryMovementDelta(

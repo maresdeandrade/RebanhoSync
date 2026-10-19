@@ -164,6 +164,12 @@ async function traceHandler(source: string, options: Options = {}) {
 describe("handleCreateEntry: trace equivalente ao handler original", () => {
   it.each([
     { name: "sucesso", options: {} },
+    {
+      name: "sucesso com quantidades decimais",
+      options: {
+        form: { quantidadeEntrada: "2,5", quantidadePorApresentacao: "1,25" },
+      },
+    },
     { name: "gesto rejeitado", options: { gestureFails: true } },
     { name: "salvamento em andamento", options: { savingEntry: true } },
     { name: "sem fazenda", options: { activeFarmId: null } },
@@ -249,4 +255,25 @@ describe("handleCreateEntry: trace equivalente ao handler original", () => {
       ),
     ).toStrictEqual([]);
   });
+});
+
+describe("handleCreateEntry: bloqueio de overflow", () => {
+  it.each([
+    { quantidadeEntrada: "1e308", quantidadePorApresentacao: "1e308" },
+    {
+      quantidadeEntrada: String(Number.MAX_VALUE),
+      quantidadePorApresentacao: "2",
+    },
+    {
+      quantidadeEntrada: "2",
+      quantidadePorApresentacao: String(Number.MAX_VALUE),
+    },
+  ])(
+    "rejeita %j antes de timestamp, UUIDs, operações e gravação",
+    async (form) => {
+      expect(await traceHandler(currentHandler(), { form })).toStrictEqual([
+        ["error", "Quantidade base calculada deve ser finita."],
+      ]);
+    },
+  );
 });
