@@ -1,5 +1,10 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Route,
+  RouterProvider,
+  Routes,
+} from "react-router-dom";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { RequireFarm } from "./components/auth/RequireFarm";
 import { RequireSuperAdmin } from "./components/auth/RequireSuperAdmin";
@@ -57,10 +62,7 @@ const SanitarioCatalogoV2 = lazy(() => import("./pages/SanitarioCatalogoV2"));
 const ReproductionDashboard = lazy(() => import("./pages/ReproductionDashboard"));
 const OnboardingInicial = lazy(() => import("./pages/OnboardingInicial"));
 
-const App = () => (
-  <BrowserRouter
-    future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-  >
+const AppContent = () => (
     <LocalOwnershipBoundary>
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
@@ -161,7 +163,16 @@ const App = () => (
         </Routes>
       </Suspense>
     </LocalOwnershipBoundary>
-  </BrowserRouter>
+);
+
+// Keep the existing route tree while enabling the router's supported blockers.
+const router = createBrowserRouter(
+  [{ path: "*", element: <AppContent /> }],
+  { future: { v7_relativeSplatPath: true } },
+);
+
+const App = () => (
+  <RouterProvider router={router} future={{ v7_startTransition: true }} />
 );
 
 export default App;
