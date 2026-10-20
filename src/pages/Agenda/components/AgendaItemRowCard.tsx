@@ -213,7 +213,7 @@ export function AgendaItemRowCard({
           <div className="flex flex-col gap-2 pt-1 sm:flex-row">
             <Button 
               size="sm" 
-              className="min-h-10 flex-1 font-semibold" 
+              className="min-h-10 flex-1 font-semibold"
               onClick={() => onGoToRegistrar(row.item)}
             >
               {registerCtaLabel}
@@ -222,7 +222,7 @@ export function AgendaItemRowCard({
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="min-h-10 flex-1" 
+                className="min-h-10 flex-1"
                 onClick={() => onUpdateStatus(row.item, "concluido")}
               >
                 {directCompleteLabel}
