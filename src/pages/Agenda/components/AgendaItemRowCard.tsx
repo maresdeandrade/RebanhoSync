@@ -80,7 +80,7 @@ export function AgendaItemRowCard({
       ref={(node) => registerRowRef(row.item.id, node)}
       tabIndex={-1}
       className={cn(
-        "scroll-mt-24 rounded-xl border border-border/70 bg-card p-4 transition-all hover:border-primary/25 shadow-sm",
+        "scroll-mt-24 rounded-lg border border-border/70 bg-background p-3 transition-colors hover:border-primary/40 sm:p-4",
         isContextualMatch ? "border-info/30 bg-info-muted/10" : null,
         isContextualFocusRow ? "ring-2 ring-info/25 ring-offset-2 ring-offset-background" : null,
       )}
@@ -89,7 +89,7 @@ export function AgendaItemRowCard({
         {/* Header: Tipo e Status */}
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1">
-            <h3 className="font-bold text-base capitalize leading-tight">
+            <h3 className="text-base font-semibold capitalize leading-snug tracking-tight text-foreground">
               {row.item.tipo.replaceAll("_", " ")}
             </h3>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -145,10 +145,10 @@ export function AgendaItemRowCard({
         </div>
 
         {/* Info Principal: Animal e Data */}
-        <div className="grid grid-cols-1 gap-2 text-sm">
-          <div className="flex items-center gap-2 text-foreground font-medium">
+        <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-2 font-medium text-foreground">
             <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>{row.animalNome} <span className="text-muted-foreground font-normal">({row.idadeLabel})</span></span>
+            <span className="min-w-0 break-words">{row.animalNome} <span className="font-normal text-muted-foreground">({row.idadeLabel})</span></span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
@@ -156,14 +156,14 @@ export function AgendaItemRowCard({
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-3.5 w-3.5" />
-            <span className={cn(rowMeta.statusTone === "warning" || rowMeta.statusTone === "danger" ? "text-orange-600 font-medium" : "")}>
+            <span className={cn(rowMeta.statusTone === "warning" || rowMeta.statusTone === "danger" ? "font-semibold text-foreground" : "")}>
               {rowMeta.dateLabel}
             </span>
           </div>
         </div>
 
         {/* Detalhes do Manejo */}
-        <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+        <div className="grid gap-2 rounded-lg border border-border/50 bg-muted/20 p-3 sm:grid-cols-2">
           <div className="flex items-start gap-2 text-sm">
             <Beaker className="h-3.5 w-3.5 mt-0.5 text-muted-foreground" />
             <div>
@@ -183,13 +183,13 @@ export function AgendaItemRowCard({
         {/* Progressive Disclosure: Metadados Técnicos */}
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 w-full justify-between px-2 text-xs text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="sm" className="min-h-9 w-full justify-between px-2 text-xs text-muted-foreground hover:text-foreground">
               <span>{isExpanded ? "Ocultar detalhes técnicos" : "Ver detalhes técnicos"}</span>
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="pt-2 space-y-2 border-t border-border/50 mt-2">
-            <div className="grid grid-cols-1 gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-xs text-muted-foreground sm:grid-cols-2">
               {row.scheduleLabel && (
                 <p>Periodicidade: <span className="text-foreground">{row.scheduleLabel}</span></p>
               )}
@@ -213,7 +213,7 @@ export function AgendaItemRowCard({
           <div className="flex flex-col gap-2 pt-1 sm:flex-row">
             <Button 
               size="sm" 
-              className="flex-1 font-semibold" 
+              className="min-h-10 flex-1 font-semibold" 
               onClick={() => onGoToRegistrar(row.item)}
             >
               {registerCtaLabel}
@@ -222,7 +222,7 @@ export function AgendaItemRowCard({
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="flex-1" 
+                className="min-h-10 flex-1" 
                 onClick={() => onUpdateStatus(row.item, "concluido")}
               >
                 {directCompleteLabel}
@@ -232,7 +232,7 @@ export function AgendaItemRowCard({
         )}
         
         {isScheduled && (
-          <p className="text-[10px] text-center text-muted-foreground italic">
+          <p className="text-xs text-muted-foreground sm:text-left">
             {nextStepHint}
           </p>
         )}

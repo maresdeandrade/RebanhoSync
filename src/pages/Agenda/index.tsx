@@ -435,14 +435,24 @@ export default function Agenda() {
           }
         />
 
-        <EmptyState
-          icon={Calendar}
-          title="Carregando agenda"
-          action={{
-            label: "Registrar",
-            onClick: () => navigate("/registrar"),
-          }}
-        />
+        {refreshError ? (
+          <StateBanner
+            tone="error"
+            live="assertive"
+            title="Não foi possível atualizar a agenda"
+            description="A atualização remota falhou. Os dados locais serão exibidos quando estiverem disponíveis."
+          />
+        ) : (
+          <EmptyState
+            icon={Calendar}
+            title="Carregando agenda"
+            description="Lendo as tarefas disponíveis neste dispositivo."
+            action={{
+              label: "Registrar",
+              onClick: () => navigate("/registrar"),
+            }}
+          />
+        )}
       </PageContainer>
     );
   }
@@ -552,6 +562,7 @@ export default function Agenda() {
             criticalTargets={criticalTargets}
             currentCriticalTarget={currentCriticalTarget}
             onNavigateCriticalGroup={navigateCriticalGroup}
+            onClearFilters={resetFilters}
             onToggleGroupExpanded={toggleGroupExpanded}
             onToggleGroupReveal={toggleGroupReveal}
             onAnimalSummaryBadgeClick={handleAnimalSummaryBadgeClick}

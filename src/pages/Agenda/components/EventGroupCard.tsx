@@ -95,11 +95,11 @@ export function EventGroupCard({
     <Card
       key={group.key}
       className={cn(
-        "shadow-none",
+        "overflow-hidden border-border/70 bg-card shadow-none",
         isContextualGroup ? "border-info/25 bg-info-muted/20" : null,
       )}
     >
-      <CardHeader className="space-y-3 px-4 pb-2 pt-4 sm:px-5">
+      <CardHeader className="space-y-3 border-b border-border/60 px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -193,7 +193,7 @@ export function EventGroupCard({
         </div>
       </CardHeader>
       {isExpanded ? (
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 p-3 sm:p-4">
           {displayedRows.map((row) => (
             <AgendaItemRowCard
               key={row.item.id}

@@ -22,8 +22,8 @@ export function AgendaEmptyState({
       title="Agenda vazia"
       description={
         hasComplianceAttention
-          ? "Ha pendencias de conformidade fora da agenda."
-          : "Registre eventos ou ative protocolos para alimentar a rotina."
+          ? "Não há tarefas locais de agenda. Existem pendências de conformidade para revisar separadamente."
+          : "Não há tarefas locais de agenda nesta fazenda. Isso não significa ausência de eventos executados."
       }
       action={{
         label: hasComplianceAttention ? "Abrir protocolos" : "Registrar execução",

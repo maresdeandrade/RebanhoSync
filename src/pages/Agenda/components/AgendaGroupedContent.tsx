@@ -1,4 +1,4 @@
-import { ClipboardCheck } from "lucide-react";
+import { SearchX } from "lucide-react";
 
 import type { AgendaCriticalNavigationTarget } from "@/lib/agenda/criticalNavigation";
 import type {
@@ -15,6 +15,7 @@ import { EventGroupCard } from "@/pages/Agenda/components/EventGroupCard";
 import type { AgendaRowMeta } from "@/pages/Agenda/components/AgendaItemRowCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 type AgendaGroupedContentProps = {
@@ -34,6 +35,7 @@ type AgendaGroupedContentProps = {
   criticalTargets: AgendaCriticalNavigationTarget<AgendaRow>[];
   currentCriticalTarget: AgendaCriticalNavigationTarget<AgendaRow> | null;
   onNavigateCriticalGroup: (direction: "next" | "previous") => void;
+  onClearFilters: () => void;
   onToggleGroupExpanded: (mode: GroupMode, groupKey: string) => void;
   onToggleGroupReveal: (mode: GroupMode, groupKey: string) => void;
   onAnimalSummaryBadgeClick: (groupKey: string, rows: AgendaRow[], badgeKey: string) => void;
@@ -63,6 +65,7 @@ export function AgendaGroupedContent({
   criticalTargets,
   currentCriticalTarget,
   onNavigateCriticalGroup,
+  onClearFilters,
   onToggleGroupExpanded,
   onToggleGroupReveal,
   onAnimalSummaryBadgeClick,
@@ -77,17 +80,17 @@ export function AgendaGroupedContent({
   return (
     <>
       {criticalTargets.length > 0 ? (
-        <Card className="border-destructive/20 bg-destructive/5 shadow-none overflow-hidden">
+        <Card className="overflow-hidden border-warning/30 bg-warning-muted/30 shadow-none">
           <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge tone="danger" className="font-bold">{criticalTargets.length} grupo(s) com tarefas atrasadas</StatusBadge>
+                <StatusBadge tone="warning" className="font-semibold">{criticalTargets.length} grupo(s) com tarefas atrasadas</StatusBadge>
                 {currentCriticalTarget ? (
                   <StatusBadge tone="info" className="font-medium">Foco: {currentCriticalTarget.groupTitle}</StatusBadge>
                 ) : null}
               </div>
               <p className="text-sm text-muted-foreground leading-tight">
-                Há manejos pendentes que precisam de atenção imediata.
+                Priorize os grupos com tarefas vencidas. O atraso indica pendência, não execução.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -103,17 +106,13 @@ export function AgendaGroupedContent({
       ) : null}
 
       {filteredLength === 0 ? (
-        <Card className="border-dashed bg-muted/10">
-          <CardContent className="p-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <ClipboardCheck className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="font-semibold text-lg">Nenhuma tarefa encontrada</p>
-            <p className="text-sm text-muted-foreground max-w-[280px] mx-auto mt-1">
-              Não há manejos agendados para os filtros selecionados no momento.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          className="min-h-[240px]"
+          icon={SearchX}
+          title="Nenhuma tarefa encontrada"
+          description="Não há tarefas correspondentes a este recorte. Limpe os filtros para consultar novamente a agenda local."
+          action={{ label: "Limpar filtros", onClick: onClearFilters }}
+        />
       ) : (
         <div className="space-y-4">
           {groupMode === "animal"
