@@ -38,7 +38,11 @@ type RegistrarSanitarioSectionProps = {
   selectedVeterinaryProduct: { nome: string; categoria: string | null } | null;
   hasVeterinaryProducts: boolean;
   isVeterinaryProductsEmpty: boolean;
-  veterinaryProductSuggestions: Array<{ id: string; nome: string; categoria: string | null }>;
+  veterinaryProductSuggestions: Array<{
+    id: string;
+    nome: string;
+    categoria: string | null;
+  }>;
   selectedVeterinaryProductId: string;
   onSelectVeterinaryProduct: (product: {
     id: string;
@@ -85,7 +89,9 @@ type RegistrarSanitarioSectionProps = {
   isRegisteringBiosecurityOccurrence: boolean;
 };
 
-export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps) {
+export function RegistrarSanitarioSection(
+  props: RegistrarSanitarioSectionProps,
+) {
   const [biosecurityDialogOpen, setBiosecurityDialogOpen] = useState(false);
   const [biosecurityDraft, setBiosecurityDraft] =
     useState<BiosecurityOccurrenceDraft>(() =>
@@ -109,9 +115,8 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
       contextAvailability,
     ],
   );
-  const clinicalLinkRequired = requiresClinicalBiosecurityLink(
-    biosecurityDraft,
-  );
+  const clinicalLinkRequired =
+    requiresClinicalBiosecurityLink(biosecurityDraft);
 
   useEffect(() => {
     if (!biosecurityDialogOpen) return;
@@ -265,9 +270,14 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
             <Button
               key={opt.value}
               type="button"
-              variant={props.sanitarioTipo === opt.value ? "default" : "outline"}
-              onClick={() => props.onSanitarioTipoChange(opt.value as SanitarioTipoEnum)}
-              className="flex-1 rounded-full shadow-none sm:flex-none bg-background aria-selected:bg-primary"
+              variant={
+                props.sanitarioTipo === opt.value ? "default" : "outline"
+              }
+              onClick={() =>
+                props.onSanitarioTipoChange(opt.value as SanitarioTipoEnum)
+              }
+              aria-pressed={props.sanitarioTipo === opt.value}
+              className="flex-1 rounded-full shadow-none sm:flex-none"
             >
               {opt.label}
             </Button>
@@ -280,9 +290,14 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            variant={!props.protocoloId || props.protocoloId === "none" ? "default" : "outline"}
+            variant={
+              !props.protocoloId || props.protocoloId === "none"
+                ? "default"
+                : "outline"
+            }
             onClick={() => props.onProtocoloChange("none")}
-            className="rounded-full shadow-none sm:flex-none bg-background aria-selected:bg-primary"
+            aria-pressed={!props.protocoloId || props.protocoloId === "none"}
+            className="rounded-full shadow-none sm:flex-none"
           >
             Sem protocolo
           </Button>
@@ -290,9 +305,12 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
             <Button
               key={protocol.id}
               type="button"
-              variant={props.protocoloId === protocol.id ? "default" : "outline"}
+              variant={
+                props.protocoloId === protocol.id ? "default" : "outline"
+              }
               onClick={() => props.onProtocoloChange(protocol.id)}
-              className="rounded-full shadow-none sm:flex-none bg-background aria-selected:bg-primary"
+              aria-pressed={props.protocoloId === protocol.id}
+              className="rounded-full shadow-none sm:flex-none"
             >
               {protocol.nome}
             </Button>
@@ -300,12 +318,16 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
         </div>
       </div>
 
-      {props.protocoloId && props.protocoloId !== "none" && props.protocoloItensEvaluated.length > 0 ? (
+      {props.protocoloId &&
+      props.protocoloId !== "none" &&
+      props.protocoloItensEvaluated.length > 0 ? (
         <div className="space-y-3 rounded-lg border bg-background/50 p-3">
           <Label>Item do Protocolo</Label>
           <select
             className="flex h-12 w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
-            onChange={(event) => props.onProtocoloItemChange(event.target.value)}
+            onChange={(event) =>
+              props.onProtocoloItemChange(event.target.value)
+            }
             value={props.protocoloItemId}
           >
             <option value="" disabled>
@@ -315,27 +337,32 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
               <option
                 key={item.id}
                 value={item.id}
-                disabled={!eligibility.compatibleWithAll && item.id !== props.protocoloItemId}
+                disabled={
+                  !eligibility.compatibleWithAll &&
+                  item.id !== props.protocoloItemId
+                }
               >
-                  Dose {item.dose_num} |{" "}
-                  {describeRegistrarSanitaryCalendarSchedule({
-                    intervalDays: item.intervalo_dias,
-                    geraAgenda: item.gera_agenda,
-                    payload: item.payload,
-                  })}
-                  {props.selectedAnimaisDetalhesCount > 0
-                    ? ` | ${eligibility.eligibleCount}/${props.selectedAnimaisDetalhesCount} aptos`
-                    : ""}
+                Dose {item.dose_num} |{" "}
+                {describeRegistrarSanitaryCalendarSchedule({
+                  intervalDays: item.intervalo_dias,
+                  geraAgenda: item.gera_agenda,
+                  payload: item.payload,
+                })}
+                {props.selectedAnimaisDetalhesCount > 0
+                  ? ` | ${eligibility.eligibleCount}/${props.selectedAnimaisDetalhesCount} aptos`
+                  : ""}
               </option>
             ))}
           </select>
 
-          {props.selectedProtocolRestrictionsText || !props.selectedProtocolCompatibleWithAll ? (
+          {props.selectedProtocolRestrictionsText ||
+          !props.selectedProtocolCompatibleWithAll ? (
             <div className="flex flex-wrap gap-2 text-xs">
               {props.selectedProtocolRestrictionsText ? (
                 <Badge variant="outline">Regras aplicadas</Badge>
               ) : null}
-              {props.selectedProtocolCompatibleWithAll === false && props.selectedProtocolPrimaryReason ? (
+              {props.selectedProtocolCompatibleWithAll === false &&
+              props.selectedProtocolPrimaryReason ? (
                 <Badge variant="destructive">
                   {props.selectedProtocolPrimaryReason}
                 </Badge>
@@ -356,7 +383,8 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
         <Input
           className={cn(
             "h-12 rounded-xl bg-background",
-            props.sanitatioProductMissing && "border-destructive focus-visible:ring-destructive/30",
+            props.sanitatioProductMissing &&
+              "border-destructive focus-visible:ring-destructive/30",
           )}
           placeholder="Produto"
           value={props.produto}
@@ -372,14 +400,13 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
           </Badge>
         ) : props.produto.trim() ? (
           <Badge variant="secondary">Texto livre</Badge>
-        ) : props.hasVeterinaryProducts ? (
-          null
-        ) : null}
+        ) : props.hasVeterinaryProducts ? null : null}
 
         {props.veterinaryProductSuggestions.length > 0 ? (
           <div className="flex flex-wrap gap-2 pt-1">
             {props.veterinaryProductSuggestions.map((product) => {
-              const isSelected = product.id === props.selectedVeterinaryProductId;
+              const isSelected =
+                product.id === props.selectedVeterinaryProductId;
               return (
                 <Button
                   key={product.id}
@@ -391,7 +418,10 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
                 >
                   <span>{product.nome}</span>
                   {product.categoria ? (
-                    <Badge variant="secondary" className="ml-2 whitespace-nowrap bg-muted">
+                    <Badge
+                      variant="secondary"
+                      className="ml-2 whitespace-nowrap bg-muted"
+                    >
                       {product.categoria}
                     </Badge>
                   ) : null}
@@ -461,7 +491,9 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
                         : "outline"
                     }
                     className="rounded-full shadow-none"
-                    onClick={() => handleBiosecurityCategoryChange(option.value)}
+                    onClick={() =>
+                      handleBiosecurityCategoryChange(option.value)
+                    }
                   >
                     {option.label}
                   </Button>
@@ -474,9 +506,8 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
               <div className="grid gap-2 sm:grid-cols-2">
                 {BIOSECURITY_KIND_OPTIONS.map((option) => {
                   const selected =
-                    biosecurityDraft.tipos_ocorrencia?.includes(
-                      option.value,
-                    ) ?? false;
+                    biosecurityDraft.tipos_ocorrencia?.includes(option.value) ??
+                    false;
 
                   return (
                     <Button
@@ -517,9 +548,11 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
                       key={option.scope}
                       type="button"
                       variant={
-                        (biosecurityDraft.escopos_tipo ?? [
-                          biosecurityDraft.escopo_tipo,
-                        ]).includes(option.scope)
+                        (
+                          biosecurityDraft.escopos_tipo ?? [
+                            biosecurityDraft.escopo_tipo,
+                          ]
+                        ).includes(option.scope)
                           ? "default"
                           : "outline"
                       }
@@ -539,9 +572,9 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
               )}
             </div>
 
-            {(biosecurityDraft.escopos_tipo ?? [
-              biosecurityDraft.escopo_tipo,
-            ]).includes("animal") &&
+            {(
+              biosecurityDraft.escopos_tipo ?? [biosecurityDraft.escopo_tipo]
+            ).includes("animal") &&
             !(biosecurityDraft.escopos_tipo ?? []).includes("animais") &&
             props.biosecurityContext.animals.length > 0 ? (
               <div className="space-y-2">
@@ -562,16 +595,15 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
               </div>
             ) : null}
 
-            {(biosecurityDraft.escopos_tipo ?? [
-              biosecurityDraft.escopo_tipo,
-            ]).includes("animais") ? (
+            {(
+              biosecurityDraft.escopos_tipo ?? [biosecurityDraft.escopo_tipo]
+            ).includes("animais") ? (
               <div className="space-y-2">
                 <Label>Animais</Label>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {props.biosecurityContext.animals.map((animal) => {
                     const selected =
-                      biosecurityDraft.animal_ids?.includes(animal.id) ??
-                      false;
+                      biosecurityDraft.animal_ids?.includes(animal.id) ?? false;
 
                     return (
                       <label
@@ -581,8 +613,7 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
                         <Checkbox
                           checked={selected}
                           onCheckedChange={(checked) => {
-                            const current =
-                              biosecurityDraft.animal_ids ?? [];
+                            const current = biosecurityDraft.animal_ids ?? [];
                             const nextAnimalIds =
                               checked === true
                                 ? Array.from(new Set([...current, animal.id]))
@@ -655,9 +686,7 @@ export function RegistrarSanitarioSection(props: RegistrarSanitarioSectionProps)
                   updateBiosecurityDraft({
                     gera_pendencia: checked === true,
                     prazo_correcao:
-                      checked === true
-                        ? biosecurityDraft.prazo_correcao
-                        : null,
+                      checked === true ? biosecurityDraft.prazo_correcao : null,
                   })
                 }
               />
@@ -761,12 +790,15 @@ const BIOSECURITY_SEVERITY_OPTIONS: Array<{
   { value: "alta", label: "Alta" },
 ];
 
-function createBiosecurityDraft(context: RegistrarSanitarioSectionProps["biosecurityContext"]): BiosecurityOccurrenceDraft {
-  const initialScope = getAvailableBiosecurityLinkScopes({
-    selectedOccurrenceTypes: ["visitante_sem_orientacao"],
-    category: "biosseguranca",
-    contextAvailability: buildBiosecurityContextAvailability(context),
-  })[0]?.scope ?? "fazenda";
+function createBiosecurityDraft(
+  context: RegistrarSanitarioSectionProps["biosecurityContext"],
+): BiosecurityOccurrenceDraft {
+  const initialScope =
+    getAvailableBiosecurityLinkScopes({
+      selectedOccurrenceTypes: ["visitante_sem_orientacao"],
+      category: "biosseguranca",
+      contextAvailability: buildBiosecurityContextAvailability(context),
+    })[0]?.scope ?? "fazenda";
 
   return {
     tipo_ocorrencia: "visitante_sem_orientacao",
@@ -785,7 +817,9 @@ function createBiosecurityDraft(context: RegistrarSanitarioSectionProps["biosecu
 
 function buildBiosecurityContextAvailability(
   context: RegistrarSanitarioSectionProps["biosecurityContext"],
-): Parameters<typeof getAvailableBiosecurityLinkScopes>[0]["contextAvailability"] {
+): Parameters<
+  typeof getAvailableBiosecurityLinkScopes
+>[0]["contextAvailability"] {
   return {
     hasAnimal: context.animals.length > 0,
     hasMultipleAnimals: context.animals.length > 1,
@@ -820,7 +854,7 @@ function buildBiosecurityScopesPatch(
     escopo_tipo: primaryScope,
     escopos_tipo: uniqueScopes,
     animal_id:
-      includesAnimal || includesAnimais ? animalIds[0] ?? null : null,
+      includesAnimal || includesAnimais ? (animalIds[0] ?? null) : null,
     animal_ids:
       includesAnimal && !includesAnimais
         ? animalIds[0]
@@ -829,11 +863,11 @@ function buildBiosecurityScopesPatch(
         : includesAnimais
           ? animalIds
           : [],
-    lote_id: uniqueScopes.includes("lote") ? context.lote?.id ?? null : null,
-    local_id: uniqueScopes.includes("local") ? context.localId ?? null : null,
+    lote_id: uniqueScopes.includes("lote") ? (context.lote?.id ?? null) : null,
+    local_id: uniqueScopes.includes("local") ? (context.localId ?? null) : null,
     evento_id: null,
     agenda_item_id: uniqueScopes.includes("evento")
-      ? context.agendaItemId ?? null
+      ? (context.agendaItemId ?? null)
       : null,
   };
 }

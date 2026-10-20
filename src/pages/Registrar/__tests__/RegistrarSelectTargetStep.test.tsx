@@ -81,4 +81,27 @@ describe("Registrar target-context step", () => {
       ).disabled,
     ).toBe(false);
   });
+
+  it("diferencia carregamento de lote vazio e expõe a seleção de contexto", () => {
+    const props = {
+      ...baseProps,
+      targetMode: "existing" as const,
+      selectedLoteId: "lote-1",
+      onTargetModeChange: vi.fn(),
+      onNext: vi.fn(),
+    };
+    const { rerender } = render(
+      <RegistrarSelectTargetStep {...props} isLoadingAnimals />,
+    );
+    expect(
+      screen
+        .getByRole("button", { name: "Com animais ou lote existentes" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(screen.getByText("Carregando animais do lote...")).toBeTruthy();
+    expect(screen.queryByText("Lote vazio.")).toBeNull();
+    rerender(<RegistrarSelectTargetStep {...props} isLoadingAnimals={false} />);
+    expect(screen.queryByText("Carregando animais do lote...")).toBeNull();
+    expect(screen.getByText("Lote vazio.")).toBeTruthy();
+  });
 });

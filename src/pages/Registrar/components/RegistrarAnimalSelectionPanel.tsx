@@ -31,7 +31,10 @@ export function RegistrarAnimalSelectionPanel(
       <div className="rounded-xl border border-border/70 bg-muted/25 p-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-lg font-semibold tabular-nums text-foreground">
+            <p
+              role="status"
+              className="text-lg font-semibold tabular-nums text-foreground"
+            >
               {props.selectedAnimaisCount} selecionado(s)
             </p>
           </div>
@@ -48,7 +51,7 @@ export function RegistrarAnimalSelectionPanel(
               }
               onClick={() => props.onSelectVisible(props.visibleAnimalIds)}
             >
-              Selecionar visiveis
+              Selecionar visíveis
             </Button>
             <Button
               type="button"
@@ -58,7 +61,7 @@ export function RegistrarAnimalSelectionPanel(
               disabled={props.selectedAnimaisCount === 0}
               onClick={props.onClearSelection}
             >
-              Limpar selecao
+              Limpar seleção
             </Button>
           </div>
         </div>
@@ -75,12 +78,12 @@ export function RegistrarAnimalSelectionPanel(
         </div>
       </div>
 
-      <div className="max-h-72 divide-y overflow-y-auto rounded-xl border border-border/70 bg-card">
+      <div className="max-h-72 scroll-py-2 divide-y overflow-y-auto rounded-xl border border-border/70 bg-card">
         {props.filteredAnimaisNoLote.map((animal) => (
           <label
             key={animal.id}
             htmlFor={`registrar-animal-${animal.id}`}
-            className="flex min-h-14 cursor-pointer items-center gap-3 p-3 transition-colors hover:bg-muted/60"
+            className="flex min-h-14 cursor-pointer items-center gap-3 p-3 transition-colors hover:bg-muted/60 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring has-[[data-state=checked]]:bg-primary/5"
           >
             <Checkbox
               id={`registrar-animal-${animal.id}`}
@@ -90,11 +93,11 @@ export function RegistrarAnimalSelectionPanel(
                 props.onToggleAnimalSelection(animal.id, checked === true)
               }
             />
-            <span className="min-w-0 flex-1 font-medium">
+            <span className="min-w-0 flex-1 break-words font-medium">
               {animal.identificacao}
             </span>
             <span className="rounded-full border border-border/70 px-2 py-1 text-xs text-muted-foreground">
-              {animal.sexo === "M" ? "Macho" : "Femea"}
+              {animal.sexo === "M" ? "Macho" : "Fêmea"}
             </span>
           </label>
         ))}
@@ -102,4 +105,3 @@ export function RegistrarAnimalSelectionPanel(
     </>
   );
 }
-

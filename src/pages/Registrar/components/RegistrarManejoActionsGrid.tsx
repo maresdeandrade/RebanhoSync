@@ -33,7 +33,7 @@ export function RegistrarManejoActionsGrid(
 ) {
   const getActionClassName = (active: boolean) =>
     cn(
-      "relative h-20 px-3 sm:px-4 flex-col gap-2 rounded-xl border text-center shadow-none transition-colors text-sm",
+      "relative h-auto min-h-24 min-w-0 flex-col gap-3 whitespace-normal rounded-xl border px-3 py-4 text-center text-sm shadow-none transition-colors sm:px-4",
       active
         ? "border-primary/30 bg-primary/10 text-primary ring-1 ring-primary/25 hover:bg-primary/15"
         : "border-border/70 bg-card text-foreground hover:border-primary/25 hover:bg-muted/60",
@@ -42,13 +42,13 @@ export function RegistrarManejoActionsGrid(
   const actions = [
     {
       key: "sanitario",
-      label: "Sanitario",
+      label: "Sanitário",
       icon: Syringe,
       requiresAnimals: true,
     },
     { key: "pesagem", label: "Pesagem", icon: Scale, requiresAnimals: true },
     { key: "movimentacao", label: "Mover", icon: Move, requiresAnimals: true },
-    { key: "nutricao", label: "Nutricao", icon: Sprout, requiresAnimals: true },
+    { key: "nutricao", label: "Nutrição", icon: Sprout, requiresAnimals: true },
     {
       key: "comercial",
       label: "Negócios Patrimoniais",
@@ -57,7 +57,7 @@ export function RegistrarManejoActionsGrid(
     },
     {
       key: "reproducao",
-      label: "Reproducao",
+      label: "Reprodução",
       icon: HeartPulse,
       requiresAnimals: true,
     },
@@ -70,7 +70,11 @@ export function RegistrarManejoActionsGrid(
   ] as const;
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
+    <div
+      role="group"
+      aria-label="Tipo de manejo"
+      className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4"
+    >
       {actions.map((action) => {
         const Icon = action.icon;
         const active = props.tipoManejo === action.key;
@@ -81,6 +85,7 @@ export function RegistrarManejoActionsGrid(
         return (
           <Button
             key={action.key}
+            type="button"
             variant="outline"
             aria-pressed={active}
             className={getActionClassName(active)}
@@ -92,8 +97,10 @@ export function RegistrarManejoActionsGrid(
                 <Check className="h-3 w-3" />
               </span>
             ) : null}
-            <Icon className="h-5 w-5" />
-            <span className="font-semibold leading-tight">{action.label}</span>
+            <Icon aria-hidden="true" className="h-5 w-5" />
+            <span className="max-w-full break-words font-semibold leading-snug">
+              {action.label}
+            </span>
           </Button>
         );
       })}

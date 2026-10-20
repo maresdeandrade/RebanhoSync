@@ -13,7 +13,13 @@ import {
   type ComercialFormData,
 } from "@/pages/Registrar/components/RegistrarComercialSection";
 import { calculateCommercialOperation } from "@/lib/comercial/commercialOperation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -826,7 +832,10 @@ const Registrar = () => {
   ]);
 
   const comercialBlockingIssues = useMemo(() => {
-    if (comercialData.simulationOnly) return ["Simulação não gera registro. Selecione uma operação para registrar um fato."];
+    if (comercialData.simulationOnly)
+      return [
+        "Simulação não gera registro. Selecione uma operação para registrar um fato.",
+      ];
     if (!comercialCalculationSummary) return [];
     const calculationIssues = comercialCalculationSummary.issues
       .filter((i) => i.severity === "blocking")
@@ -1008,7 +1017,8 @@ const Registrar = () => {
     pesoLabel: financeiroResumoPesoLabel,
   } = financialSummary;
   const updateFinanceiroNatureza = useCallback(
-    (natureza: "compra" | "venda") => updateFinanceiroData("natureza", natureza),
+    (natureza: "compra" | "venda") =>
+      updateFinanceiroData("natureza", natureza),
     [updateFinanceiroData],
   );
   const {
@@ -1841,8 +1851,8 @@ const Registrar = () => {
         />
         <EmptyState
           icon={MapPin}
-          title="Fazenda nao selecionada"
-          description="Sem fazenda ativa, o registro nao pode ser iniciado."
+          title="Fazenda não selecionada"
+          description="Sem fazenda ativa, o registro não pode ser iniciado."
           action={{
             label: "Selecionar fazenda",
             onClick: () => navigate("/select-fazenda"),
@@ -1853,21 +1863,22 @@ const Registrar = () => {
   }
 
   return (
-    <PageContainer width="narrow" className="space-y-6 pb-12">
+    <PageContainer
+      width="narrow"
+      className="min-w-0 space-y-5 pb-12 sm:space-y-6"
+    >
       <PageHeader
         variant="plain"
         eyebrow="Fluxo operacional"
         title="Registrar manejo"
-        description="Escolha a operação, defina o alvo e revise antes de registrar."
+        description="Defina os alvos, escolha o manejo e revise os dados antes de salvar."
         meta={
           <>
             <StatusBadge tone="info">
               Etapa {step}/3: {STEP_LABEL[step]}
             </StatusBadge>
             {sourceTaskId ? (
-              <StatusBadge tone="neutral">
-                Origem agenda {sourceTaskId.slice(0, 8)}
-              </StatusBadge>
+              <StatusBadge tone="neutral">Origem: Agenda</StatusBadge>
             ) : null}
             {quickActionConfig ? (
               <StatusBadge tone="neutral">
@@ -1928,15 +1939,23 @@ const Registrar = () => {
           onClearSelection={clearSelectedAnimais}
           onToggleAnimalSelection={onToggleAnimalSelection}
           animaisNoLoteCount={animaisNoLote?.length ?? 0}
+          isLoadingAnimals={animaisNoLote === undefined}
           onNext={advanceFromSelect}
           onBack={handleBackFromStep1}
         />
       )}
 
       {step === RegistrationStep.CHOOSE_ACTION && (
-        <Card className="border-border/70 shadow-sm">
-          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
-            <CardTitle className="text-base">Manejo</CardTitle>
+        <Card className="border-border/70 shadow-sm md:[&_button]:scroll-mb-48 md:[&_input]:scroll-mb-48 md:[&_select]:scroll-mb-48 md:[&_textarea]:scroll-mb-48">
+          <CardHeader className="border-b border-border/60 px-4 py-4 sm:px-5">
+            <p className="app-kicker">Etapa 2 · Manejo</p>
+            <CardTitle className="text-lg">
+              Escolha e preencha o manejo
+            </CardTitle>
+            <CardDescription>
+              Selecione uma operação e informe os dados. Você poderá revisá-los
+              antes de registrar.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5 p-4 sm:p-5">
             <div>
@@ -1950,7 +1969,8 @@ const Registrar = () => {
 
             {selectedAnimais.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Sem animais: use Financeiro para entrada por lote.
+                Sem animais selecionados: escolha Negócios Patrimoniais. Os
+                demais manejos exigem animais; volte para ajustar a seleção.
               </p>
             )}
 
@@ -2083,15 +2103,23 @@ const Registrar = () => {
 
       {step === RegistrationStep.CONFIRM && (
         <Card className="border-border/70 shadow-sm">
-          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
-            <CardTitle className="text-base">Revisar</CardTitle>
+          <CardHeader className="border-b border-border/60 px-4 py-4 sm:px-5">
+            <p className="app-kicker">Etapa 3 · Revisão</p>
+            <CardTitle className="text-lg">
+              Confira antes de registrar
+            </CardTitle>
+            <CardDescription>
+              Revise a operação e os alvos. Use Voltar para corrigir os dados.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5 p-4 sm:p-5">
-            <div className="space-y-2 rounded-xl border border-border/70 bg-muted/30 p-4">
+            <div className="min-w-0 space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4">
               <ConfirmacaoResumoBase
                 manejoLabel={confirmacaoManejoLabel}
                 animaisCount={selectedAnimais.length}
-                showAlvoLote={showConfirmacaoAlvoLote}
+                showAlvoLote={
+                  showConfirmacaoAlvoLote || selectedLoteLabel !== "-"
+                }
                 alvoLoteLabel={selectedLoteLabel}
                 showDestinoMovimentacao={showConfirmacaoDestinoMovimentacao}
                 destinoMovimentacaoLabel={confirmacaoDestinoMovimentacaoLabel}
@@ -2296,6 +2324,10 @@ const Registrar = () => {
               )}
             </div>
 
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Registros salvos neste dispositivo podem ficar com sincronização
+              pendente até a confirmação do servidor.
+            </p>
             <RegistrarStickyActionBar
               step={step}
               isFinalizing={isFinalizing}
