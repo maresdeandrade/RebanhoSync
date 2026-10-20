@@ -1,6 +1,12 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -52,7 +58,12 @@ type HomeSnapshotStub = {
     hasBlockingIssues: boolean;
     attention: {
       openCount: number;
-      badges: Array<{ key: string; label: string; count: number; tone: "neutral" }>;
+      badges: Array<{
+        key: string;
+        label: string;
+        count: number;
+        tone: "neutral";
+      }>;
       topItems: unknown[];
     };
     flows: {
@@ -100,14 +111,21 @@ type HomeSnapshotStub = {
 };
 
 let currentSnapshot: HomeSnapshotStub | null = null;
+let selectedFarmId: string | null = "farm-1";
+let readFailure = false;
+let readFarm = (_id: string): Promise<{ data: unknown; error: unknown }> =>
+  Promise.resolve({ data: null, error: null });
 
 vi.mock("dexie-react-hooks", () => ({
-  useLiveQuery: () => currentSnapshot,
+  useLiveQuery: () => {
+    if (readFailure) throw new Error("LOCAL_READ_FAILED");
+    return currentSnapshot;
+  },
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({
-    activeFarmId: "farm-1",
+    activeFarmId: selectedFarmId,
     role: "manager",
     farmLifecycleConfig: {},
   }),
@@ -121,9 +139,9 @@ vi.mock("@/lib/supabase", () => ({
   supabase: {
     from: () => ({
       select: () => ({
-        eq: () => ({
+        eq: (_field: string, id: string) => ({
           is: () => ({
-            maybeSingle: () => Promise.resolve({ data: null, error: null }),
+            maybeSingle: () => readFarm(id),
           }),
         }),
       }),
@@ -138,7 +156,9 @@ vi.mock("@/components/offline/SyncStatusPanel", () => ({
     summary?: HomeSnapshotStub["syncSummary"];
   }) => (
     <section aria-label="Estado de sync">
-      {summary ? `Rejeicoes ${summary.rejectionCount}` : "Verificando sincronização"}
+      {summary
+        ? `Rejeicoes ${summary.rejectionCount}`
+        : "Verificando sincronização"}
     </section>
   ),
 }));
@@ -224,6 +244,9 @@ function renderHome() {
 describe("Home", () => {
   beforeEach(() => {
     currentSnapshot = createSnapshot();
+    selectedFarmId = "farm-1";
+    readFailure = false;
+    readFarm = () => Promise.resolve({ data: null, error: null });
   });
 
   it("renders overdue and due today agenda items before broad views", () => {
@@ -250,7 +273,7 @@ describe("Home", () => {
 
     renderHome();
 
-    expect(screen.getByText("Pendencias atrasadas")).toBeInTheDocument();
+    expect(screen.getByText("Pendências atrasadas")).toBeInTheDocument();
     expect(screen.getByText("Sanitario: vacinacao")).toBeInTheDocument();
     expect(screen.getAllByText("Agenda de hoje").length).toBeGreaterThan(0);
     expect(screen.getByText("Pesagem: lote 2")).toBeInTheDocument();
@@ -271,7 +294,7 @@ describe("Home", () => {
     renderHome();
 
     expect(
-      screen.getAllByRole("link", { name: /registrar execucao/i })[0],
+      screen.getAllByRole("link", { name: /registrar manejo/i })[0],
     ).toHaveAttribute("href", "/registrar");
     expect(
       screen.getByRole("link", { name: /ver agenda completa/i }),
@@ -281,7 +304,9 @@ describe("Home", () => {
       "/animais",
     );
     expect(
-      screen.getByText(/criam evento executado; nao autorizam venda, abate ou carencia/i),
+      screen.getByText(
+        /Nenhuma operação é executada antes da revisão e confirmação/i,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /registrar venda/i }),
@@ -326,7 +351,9 @@ describe("Home", () => {
     expect(
       screen.getByRole("link", { name: /protocolo operacional 1/i }),
     ).toHaveAttribute("href", "/agenda?operationalClass=operational_protocol");
-    expect(screen.getAllByText("Protocolo operacional").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Protocolo operacional").length).toBeGreaterThan(
+      0,
+    );
   });
 
   it("keeps sync status visible", () => {
@@ -354,7 +381,9 @@ describe("Home", () => {
     currentSnapshot.syncSummary.fazendaId = "previous-farm";
     currentSnapshot.syncSummary.rejectionCount = 3;
     renderHome();
-    expect(screen.getByRole("region", { name: /estado de sync/i })).toHaveTextContent("Verificando sincronização");
+    expect(
+      screen.getByRole("region", { name: /estado de sync/i }),
+    ).toHaveTextContent("Verificando sincronização");
     expect(screen.queryByText("Rejeicoes 3")).not.toBeInTheDocument();
   });
 
@@ -383,10 +412,12 @@ describe("Home", () => {
 
     renderHome();
 
-    expect(screen.getByText("Reposicao de estoque")).toBeInTheDocument();
+    expect(screen.getByText("Reposição de estoque")).toBeInTheDocument();
     expect(screen.getByText("Sal mineral")).toBeInTheDocument();
     expect(
-      screen.getByText(/demanda futura projeta saldo abaixo do estoque minimo/i),
+      screen.getByText(
+        /demanda futura projeta saldo abaixo do estoque minimo/i,
+      ),
     ).toBeInTheDocument();
   });
 
@@ -395,9 +426,187 @@ describe("Home", () => {
 
     renderHome();
 
-    expect(screen.getByText("Carregando a rotina da fazenda")).toBeInTheDocument();
+    expect(
+      screen.getByText("Carregando a rotina da fazenda"),
+    ).toBeInTheDocument();
     expect(
       screen.queryByText("Sem pendencias atrasadas no recorte carregado."),
+    ).not.toBeInTheDocument();
+  });
+  it("usa totais da Agenda e informa o recorte limitado em vez de transformar seis itens no total", () => {
+    currentSnapshot = createSnapshot({
+      agendaAtrasada: 24,
+      agendaHoje: 9,
+      proximosItens: [
+        {
+          id: "a1",
+          data: "2026-05-07",
+          titulo: "Manejo planejado",
+          contexto: "Matrizes",
+          status: "atrasado",
+        },
+      ],
+    });
+    renderHome();
+    const overview = within(
+      screen.getByRole("region", { name: "Panorama operacional" }),
+    );
+    expect(overview.getByText("24")).toBeInTheDocument();
+    expect(overview.getByText("9")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Exibindo 1 de 24 pendências atrasadas/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Há tarefas de hoje fora deste recorte. Consulte a Agenda.",
+      ),
+    ).toBeInTheDocument();
+    const priorities = screen.getByRole("region", {
+      name: "Prioridades do dia",
+    });
+    expect(
+      priorities.compareDocumentPosition(
+        screen.getByRole("region", { name: "Panorama operacional" }),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("separa fatos recentes das intenções da Agenda e deixa leituras auxiliares sob demanda", () => {
+    currentSnapshot = createSnapshot({
+      eventosRecentes: [
+        {
+          id: "e1",
+          titulo: "Pesagem registrada",
+          contexto: "Matriz 001",
+          data: "2026-05-06",
+        },
+      ],
+    });
+    renderHome();
+    expect(
+      within(
+        screen.getByRole("region", { name: "Histórico recente" }),
+      ).getByText("Pesagem registrada"),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("region", { name: "Prioridades do dia" }),
+      ).queryByText("Pesagem registrada"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver eventos" })).toHaveAttribute(
+      "href",
+      "/eventos",
+    );
+    const summary = screen.getByText("Insights e recomendações auxiliares");
+    expect(summary.closest("details")).not.toHaveAttribute("open");
+  });
+
+  it("oculta todo o snapshot anterior e ignora o nome de uma fazenda cuja consulta resolveu após a troca", async () => {
+    let resolvePrevious!: (value: { data: unknown; error: unknown }) => void;
+    readFarm = (id) =>
+      id === "farm-1"
+        ? new Promise((resolve) => {
+            resolvePrevious = resolve;
+          })
+        : Promise.resolve({
+            data: {
+              nome: "Fazenda B",
+              municipio: "B",
+              estado: "MG",
+              tipo_producao: "corte",
+              timezone: "America/Sao_Paulo",
+            },
+            error: null,
+          });
+    currentSnapshot = createSnapshot({
+      animais: 987,
+      eventosRecentes: [
+        {
+          id: "old",
+          titulo: "Evento exclusivo A",
+          contexto: "A",
+          data: "2026-05-01",
+        },
+      ],
+    });
+    const { rerender } = render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("987")).toBeInTheDocument();
+    selectedFarmId = "farm-2";
+    rerender(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText("Carregando a rotina da fazenda"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("987")).not.toBeInTheDocument();
+    expect(screen.queryByText("Evento exclusivo A")).not.toBeInTheDocument();
+    currentSnapshot = createSnapshot();
+    currentSnapshot.syncSummary.fazendaId = "farm-2";
+    rerender(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+    await screen.findByText("Fazenda B");
+    resolvePrevious({ data: { nome: "Fazenda A tardia" }, error: null });
+    await waitFor(() =>
+      expect(screen.getByText("Fazenda B")).toBeInTheDocument(),
+    );
+    expect(screen.queryByText("Fazenda A tardia")).not.toBeInTheDocument();
+  });
+
+  it("informa offline sem confundir consulta local com confirmação de sincronização", () => {
+    renderHome();
+    Object.defineProperty(navigator, "onLine", {
+      value: false,
+      configurable: true,
+    });
+    fireEvent(window, new Event("offline"));
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Você está offline. Consultando os dados deste dispositivo.",
+    );
+    Object.defineProperty(navigator, "onLine", {
+      value: true,
+      configurable: true,
+    });
+    fireEvent(window, new Event("online"));
+    expect(screen.queryByText(/Você está offline/)).not.toBeInTheDocument();
+  });
+
+  it("exibe falha de leitura com retry sem apresentá-la como estado vazio", () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    readFailure = true;
+    renderHome();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar a rotina da fazenda",
+    );
+    expect(
+      screen.queryByText("Nada vence hoje no recorte carregado."),
+    ).not.toBeInTheDocument();
+    readFailure = false;
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(
+      screen.getByRole("heading", { name: "Central Operacional" }),
+    ).toBeInTheDocument();
+    consoleError.mockRestore();
+  });
+
+  it("oferece seleção de fazenda sem expor indicadores quando não há fazenda ativa", () => {
+    selectedFarmId = null;
+    renderHome();
+    expect(
+      screen.getByRole("link", { name: "Selecionar fazenda" }),
+    ).toHaveAttribute("href", "/select-fazenda");
+    expect(
+      screen.queryByRole("region", { name: "Panorama operacional" }),
     ).not.toBeInTheDocument();
   });
 });
