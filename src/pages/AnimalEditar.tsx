@@ -674,6 +674,7 @@ const AnimalEditar = () => {
                     type="button"
                     variant="outline"
                     className="h-12 w-12 rounded-xl p-0 flex items-center justify-center border-2 border-primary/20 hover:border-primary/50"
+                    aria-label="Simular leitura de RFID do animal"
                     onClick={() => {
                       showSuccess("Scanner de campo ativado (Simulação).");
                     }}
