@@ -481,9 +481,12 @@ export default function EditarFazenda() {
           <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
-                <p className="text-sm font-medium">Modo essencial</p>
+                <Label htmlFor="farm-essential-mode" className="text-sm font-medium">
+                  Modo essencial
+                </Label>
               </div>
               <Switch
+                id="farm-essential-mode"
                 checked={essentialModeEnabled}
                 onCheckedChange={setEssentialModeEnabled}
                 disabled={isSaving}
@@ -504,9 +507,12 @@ export default function EditarFazenda() {
             <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Validacao forte</p>
+                  <Label htmlFor="farm-strict-rules" className="text-sm font-medium">
+                    Validacao forte
+                  </Label>
                 </div>
                 <Switch
+                  id="farm-strict-rules"
                   checked={strictRulesEnabled}
                   onCheckedChange={(checked) => {
                     setStrictRulesEnabled(checked);
@@ -522,9 +528,12 @@ export default function EditarFazenda() {
             <div className="rounded-xl border border-border/70 bg-background/80 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Movimentacao consistente</p>
+                  <Label htmlFor="farm-strict-anti-teleport" className="text-sm font-medium">
+                    Movimentacao consistente
+                  </Label>
                 </div>
                 <Switch
+                  id="farm-strict-anti-teleport"
                   checked={strictRulesEnabled && strictAntiTeleportEnabled}
                   onCheckedChange={setStrictAntiTeleportEnabled}
                   disabled={
