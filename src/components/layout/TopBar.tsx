@@ -116,12 +116,12 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-surface/95 text-content-primary backdrop-blur">
-      <div className="app-content flex h-14 items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="app-content flex min-h-14 flex-col justify-center gap-2 py-1 md:flex-row md:items-center md:justify-between md:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="shrink-0 md:hidden"
             onClick={onMenuClick}
             aria-label="Abrir navegacao"
           >
@@ -134,10 +134,11 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
                 <Button
                   variant="outline"
                   size="sm"
+                  title={activeFarmName}
                   className="min-w-0 max-w-[360px] justify-between rounded-full border-border/80 bg-background px-3.5 text-foreground hover:bg-muted/70"
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <span className="truncate">{activeFarmName}</span>
                   </span>
                 </Button>
@@ -167,7 +168,7 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
           ) : null}
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2 md:shrink-0 sm:gap-3">
           <OfflinePill offline={!isOnline} />
 
           {activeFarmId && (
@@ -186,7 +187,7 @@ export const TopBar = ({ onMenuClick }: TopBarProps) => {
           <Link
             to="/perfil"
             aria-label="Abrir perfil"
-            className="flex h-11 w-11 items-center justify-center rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <Avatar className="h-9 w-9 border border-border/80 shadow-soft transition-transform hover:scale-[1.02]">
               <AvatarImage src={userAvatar || undefined} />
