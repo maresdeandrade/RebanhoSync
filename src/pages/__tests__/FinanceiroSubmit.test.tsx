@@ -133,6 +133,13 @@ describe("Financeiro submit lock", () => {
     vi.mocked(useLiveQuery).mockReturnValue(financeData);
   });
 
+  it("UX14 — explica cobertura insuficiente sem expor codigos nem tratar ausencia como zero", () => {
+    renderFinanceiro();
+    expect(screen.getByText(/cobertura insuficiente/i)).toBeVisible();
+    expect(document.body).toHaveTextContent("não comprovam contabilidade completa nem lucro");
+    expect(document.body).not.toHaveTextContent(/INSUFFICIENT_COVERAGE|OBSERVED_SCOPE_ONLY|completeAccounting|NOT_DEMONSTRATED|Coverage/);
+  });
+
   it.each([
     ["data vazia", ""],
     ["data inexistente no calendário", "2026-02-30"],
@@ -255,7 +262,7 @@ describe("Financeiro submit lock", () => {
     renderFinanceiro();
     expect(screen.getByText("Resultado economico observado")).toBeInTheDocument();
     expect(screen.getAllByText("Indisponivel")).toHaveLength(3);
-    expect(screen.getByText(/Ausencia nao e tratada como R\$ 0/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ausência de informação não equivale a R\$ 0/i)).toBeInTheDocument();
   });
 
   it("bloqueia clique duplo e rápido durante a persistência", async () => {

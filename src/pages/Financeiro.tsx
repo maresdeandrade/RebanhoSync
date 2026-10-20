@@ -32,6 +32,7 @@ import {
 import { buildCommercialFinanceRows } from "@/lib/finance/commercialReadModel";
 import { selectEconomicCoverage } from "@/lib/finance/economicCoverage";
 import { calculateObservedEconomicResult } from "@/lib/finance/observedEconomicResult";
+import { describeObservedEconomicResult } from "@/lib/finance/observedEconomicPresentation";
 import type {
   FinanceCategoryTipoEnum,
   FinanceCategoryGrupoEnum,
@@ -771,13 +772,7 @@ const Financeiro = () => {
           </Card>
         </div>
         <div className="rounded-xl border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
-          {observedEconomic?.status === "CALCULATED" ? (
-            <>Coverage: {observedEconomic.coverage.status}. interpretation=OBSERVED_SCOPE_ONLY; completeAccounting=false; profit=NOT_DEMONSTRATED.
-              {observedEconomic.limitations.length > 0 ? ` Limitacoes: ${observedEconomic.limitations.join(" ")}` : null}
-            </>
-          ) : (
-            <>Indisponivel{observedEconomic ? `: ${observedEconomic.reason}` : "."} Ausencia nao e tratada como R$ 0. interpretation=OBSERVED_SCOPE_ONLY; completeAccounting=false; profit=NOT_DEMONSTRATED.</>
-          )}
+          {describeObservedEconomicResult(observedEconomic)}
         </div>
       </section>
 
