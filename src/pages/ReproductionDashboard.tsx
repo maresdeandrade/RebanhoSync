@@ -171,7 +171,7 @@ export default function ReproductionDashboard() {
   const { activeFarmId, farmLifecycleConfig } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] =
-    useState<ReproDashboardFilter>("atencao");
+    useState<ReproDashboardFilter>("todas");
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(null);
   const [agendaLimit, setAgendaLimit] = useState(12);
 
@@ -452,19 +452,40 @@ export default function ReproductionDashboard() {
 
             {filteredAnimals.length === 0 ? (
               <EmptyMessage
-                title="Nenhuma matriz encontrada"
-                description="Nenhuma femea elegivel encontrada com os filtros atuais."
+                title={
+                  dashboardData.animals.length === 0
+                    ? "Nenhuma matriz elegível cadastrada"
+                    : "Nenhuma matriz corresponde aos filtros"
+                }
+                description={
+                  dashboardData.animals.length === 0
+                    ? "Nenhuma fêmea elegível foi encontrada nesta fazenda."
+                    : "Há matrizes disponíveis. Altere os filtros ou visualize todas."
+                }
                 actions={
-                  <>
-                    <Button asChild size="sm" variant="outline">
-                      <Link to="/animais/importar">Importar animais</Link>
+                  dashboardData.animals.length > 0 ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSearchTerm("");
+                        setActiveFilter("todas");
+                      }}
+                    >
+                      Ver todas as matrizes
                     </Button>
-                    <Button asChild size="sm">
-                      <Link to="/registrar?dominio=reproducao&reproTipo=cobertura">
-                        Registrar primeira cobertura
-                      </Link>
-                    </Button>
-                  </>
+                  ) : (
+                    <>
+                      <Button asChild size="sm" variant="outline">
+                        <Link to="/animais/importar">Importar animais</Link>
+                      </Button>
+                      <Button asChild size="sm">
+                        <Link to="/registrar?dominio=reproducao&reproTipo=cobertura">
+                          Registrar primeira cobertura
+                        </Link>
+                      </Button>
+                    </>
+                  )
                 }
               />
             ) : (

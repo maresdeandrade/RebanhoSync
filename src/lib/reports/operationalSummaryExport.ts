@@ -1,4 +1,5 @@
 import type { OperationalSummaryReport } from "./operationalSummary";
+import { describeObservedEconomicResult } from "@/lib/finance/observedEconomicPresentation";
 
 export const OPERATIONAL_REPORT_SOURCE_NOTES = [
   "Historico: event_eventos + detail tables no periodo selecionado.",
@@ -1042,8 +1043,7 @@ export function buildOperationalSummaryPrintHtml(
             </div>
           </div>
           <p class="meta" style="margin-top: 12px;">
-            Status: ${escapeHtml(report.financeiro.observedEconomicResult.status)} | coverage: ${escapeHtml(report.financeiro.observedEconomicResult.coverage.status)} |
-            interpretation=OBSERVED_SCOPE_ONLY | completeAccounting=false | profit=NOT_DEMONSTRATED. Ausencia nao e zero. Pesagens: ${report.pesagem.totalPesagens}.
+            ${escapeHtml(describeObservedEconomicResult(report.financeiro.observedEconomicResult))} Pesagens: ${report.pesagem.totalPesagens}.
           </p>
         </section>
 

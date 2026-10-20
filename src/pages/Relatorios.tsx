@@ -39,6 +39,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader } from "@/components/ui/page-header";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { describeObservedEconomicResult } from "@/lib/finance/observedEconomicPresentation";
 import {
   Select,
   SelectContent,
@@ -576,9 +577,7 @@ const Relatorios = () => {
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              {report.financeiro.observedEconomicResult.status === "NOT_CALCULATED"
-                ? `Nao calculado: ${report.financeiro.observedEconomicResult.reason}. Ausencia nao e R$ 0; nao e DRE, ROI ou margem.`
-                : `Coverage ${report.financeiro.observedEconomicResult.coverage.status}. Escopo observado; nao demonstra lucro e nao e DRE, ROI ou margem.`}
+              {describeObservedEconomicResult(report.financeiro.observedEconomicResult)}
             </p>
           </CardContent>
         </Card>
@@ -747,9 +746,7 @@ const Relatorios = () => {
             </div>
 
             <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-xs text-muted-foreground">
-              interpretation=OBSERVED_SCOPE_ONLY; completeAccounting=false; profit=NOT_DEMONSTRATED. Coverage: {report.financeiro.observedEconomicResult.coverage.status}.
-              {report.financeiro.observedEconomicResult.limitations.length > 0 ? ` Limitacoes: ${report.financeiro.observedEconomicResult.limitations.join(" ")}` : null}
-              {report.financeiro.observedEconomicResult.coverage.conflicts.length > 0 ? " Conflito factual: resultado bloqueado." : null}
+              {describeObservedEconomicResult(report.financeiro.observedEconomicResult)}
             </div>
 
             <div className="rounded-xl border border-border/70 bg-muted/20 p-4">

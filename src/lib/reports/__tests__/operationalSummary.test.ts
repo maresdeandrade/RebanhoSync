@@ -1286,7 +1286,8 @@ describe("buildOperationalSummaryCsv", () => {
 
     expect(html).toContain("Fontes e limitacoes");
     expect(html).toContain("Resultado economico observado");
-    expect(html).toContain("profit=NOT_DEMONSTRATED");
+    expect(html).not.toContain("profit=NOT_DEMONSTRATED");
+    expect(html).toContain("não comprovam contabilidade completa nem lucro");
     expect(html).toContain("Cobertura");
     expect(html).toContain("Timezone");
     expect(html).toContain(

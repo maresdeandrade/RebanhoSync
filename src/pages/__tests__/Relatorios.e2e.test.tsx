@@ -373,8 +373,9 @@ describe("Relatorios flow", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Resumo operacional/i)).toBeInTheDocument();
     expect(screen.getByText(/Financeiro operacional/i)).toBeInTheDocument();
-    expect(screen.getByText(/nao e DRE, ROI ou margem/i)).toBeInTheDocument();
-    expect(screen.getByText(/profit=NOT_DEMONSTRATED/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Não é DRE, ROI ou margem/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/não comprovam contabilidade completa nem lucro/i).length).toBeGreaterThan(0);
+    expect(document.body).not.toHaveTextContent(/INSUFFICIENT_COVERAGE|OBSERVED_SCOPE_ONLY|completeAccounting|NOT_DEMONSTRATED|Coverage/);
     expect(screen.getByText(/Estoque operacional/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Custo operacional parcial/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Fonte: read model de inventario/i)).toBeInTheDocument();
