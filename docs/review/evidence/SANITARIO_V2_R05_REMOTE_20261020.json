@@ -1,0 +1,3145 @@
+{
+  "artifact": "sanitario_v2_r05_remote_evidence",
+  "status": "CLOSED",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "baseline_commit": "b4589608e6d94d938915aab435276cc138268b55",
+  "farm": {
+    "farm": {
+      "id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+      "cep": null,
+      "nome": "Homologação Sanitário V2",
+      "codigo": "HOMO-SANV2-R05",
+      "estado": "DF",
+      "metadata": {},
+      "timezone": "America/Sao_Paulo",
+      "client_id": "server",
+      "municipio": "Brasília",
+      "created_at": "2026-10-20T09:12:26.14932+00:00",
+      "created_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "deleted_at": null,
+      "updated_at": "2026-10-20T09:12:26.14932+00:00",
+      "benfeitorias": {},
+      "client_op_id": "255920ad-3cf6-4cf0-85c6-1179ee1beb56",
+      "client_tx_id": null,
+      "area_total_ha": null,
+      "tipo_producao": "mista",
+      "sistema_manejo": "pastagem",
+      "client_recorded_at": "2026-10-20T09:12:26.14932+00:00",
+      "server_received_at": "2026-10-20T09:12:26.14932+00:00"
+    },
+    "profile": {
+      "uf": "DF",
+      "aptidao": "misto",
+      "payload": {},
+      "sistema": "extensivo",
+      "client_id": "server",
+      "created_at": "2026-10-20T09:12:26.14932+00:00",
+      "deleted_at": null,
+      "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+      "updated_at": "2026-10-20T09:12:26.14932+00:00",
+      "client_op_id": "0ae041d4-96df-42d1-9541-04d81ae9e306",
+      "client_tx_id": null,
+      "modo_calendario": "minimo_legal",
+      "zona_raiva_risco": "baixo",
+      "pressao_carrapato": "medio",
+      "pressao_helmintos": "medio",
+      "client_recorded_at": "2026-10-20T09:12:26.14932+00:00",
+      "server_received_at": "2026-10-20T09:12:26.14932+00:00"
+    },
+    "membership": {
+      "role": "owner",
+      "user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "client_id": "server",
+      "created_at": "2026-10-20T09:12:26.14932+00:00",
+      "deleted_at": null,
+      "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+      "invited_by": null,
+      "is_primary": false,
+      "updated_at": "2026-10-20T09:12:26.14932+00:00",
+      "accepted_at": "2026-10-20T09:12:26.14932+00:00",
+      "client_op_id": "bf72f2df-3c2f-4ba8-a513-3911a475c493",
+      "client_tx_id": null,
+      "client_recorded_at": "2026-10-20T09:12:26.14932+00:00",
+      "server_received_at": "2026-10-20T09:12:26.14932+00:00"
+    }
+  },
+  "activation": {
+    "gate": {
+      "enabled": true,
+      "created_at": "2026-10-20T12:24:09.130498+00:00",
+      "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+      "updated_at": "2026-10-20T12:24:09.130498+00:00",
+      "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "valid_from": "2026-10-20T12:24:09.130498+00:00",
+      "valid_until": "2026-10-20T12:44:09.130498+00:00",
+      "allowed_user_ids": [
+        "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+      ],
+      "allowed_client_ids": [
+        "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+      ],
+      "rollout_percentage": 100,
+      "maximum_contract_version": 2,
+      "minimum_contract_version": 2
+    },
+    "audit": {
+      "id": "6e449ad2-6068-4556-87c2-c67ecd83b567",
+      "action": "R05_SANITARY_GATE_ENABLED",
+      "metadata": {
+        "authorization": "explicit_owner_R05_request_in_current_chat",
+        "actor_semantics": "Human owner authorizing the scoped gate; not a simulated authenticated database session",
+        "client_profiles": "Chrome A and in-app browser B",
+        "database_auth_uid": null,
+        "database_executor": "postgres",
+        "execution_channel": "supabase_management_api",
+        "expires_automatically": true,
+        "browser_getUser_verified": true
+      },
+      "target_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+      "created_at": "2026-10-20T12:24:09.130498+00:00",
+      "state_after": {
+        "enabled": true,
+        "created_at": "2026-10-20T12:24:09.130498+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-20T12:24:09.130498+00:00",
+        "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "valid_from": "2026-10-20T12:24:09.130498+00:00",
+        "valid_until": "2026-10-20T12:44:09.130498+00:00",
+        "allowed_user_ids": [
+          "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+        ],
+        "allowed_client_ids": [
+          "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+          "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+        ],
+        "rollout_percentage": 100,
+        "maximum_contract_version": 2,
+        "minimum_contract_version": 2
+      },
+      "target_type": "sanitario_sync_v2_gates",
+      "state_before": {},
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+    },
+    "server_time": "2026-10-20T12:24:10.834044+00:00",
+    "other_enabled": 0
+  },
+  "offline_remote": {
+    "at": "2026-10-20T12:24:45.831846+00:00",
+    "plan": null,
+    "events": 0,
+    "agendas": 0,
+    "animals": 3
+  },
+  "lost_ack_remote": {
+    "ledger": [
+      {
+        "id": "4d09c598-1f9e-43a5-8433-641c9a146ce2",
+        "entity_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T12:26:19.222098+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "83700b33-714a-4909-a466-5f57e76b7fe6",
+        "domain_op_id": "83700b33-714a-4909-a466-5f57e76b7fe6",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "automation_plan",
+        "canonical_result": {
+          "status": "saved",
+          "command": "set_automation_plan",
+          "replayed": false,
+          "revision": 2,
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "5ac41b6db6be2253b2726b41738b376bd6dc4ffc11115cf7881a1ce93bcd5d8c"
+      }
+    ],
+    "server_time": "2026-10-20T12:26:30.416113+00:00",
+    "agenda_count": 7,
+    "plan_revision": 2
+  },
+  "interrupted_remote": {
+    "ledger": [
+      {
+        "id": "3521f83b-feea-421a-8bf5-81ac856c6acf",
+        "entity_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T12:29:35.207143+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "bd34103a-86e1-461b-bfad-0dbcdfee4b58",
+        "domain_op_id": "bd34103a-86e1-461b-bfad-0dbcdfee4b58",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "automation_plan",
+        "canonical_result": {
+          "status": "saved",
+          "command": "set_automation_plan",
+          "replayed": false,
+          "revision": 4,
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "f809cfe1d3b4c24ce36a67ac380841ff574155ac69a224b3e3eb6ae89ad8c9d3"
+      }
+    ],
+    "enabled_gates": 1,
+    "plan_revision": 4
+  },
+  "other_farms_before": {
+    "lotes": {
+      "count": 1,
+      "digest": "23f550c420965c297a85d3dbbba4d65c"
+    },
+    "pastos": {
+      "count": 1,
+      "digest": "6e1a9b800a015cb83f13a468f90e608c"
+    },
+    "animais": {
+      "count": 3,
+      "digest": "dba693df03303012aacdcf56d6c5d49e"
+    },
+    "eventos": {
+      "count": 3,
+      "digest": "7ff9d1b009c8dfa42964e21fb418dd57"
+    },
+    "insumos": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "fazendas": {
+      "count": 5,
+      "digest": "cb4c88737bddb3098e65c47ec45eee99"
+    },
+    "eventos_ecc": {
+      "count": 1,
+      "digest": "6278464e4d7b012db8de7f5ad1f801f2"
+    },
+    "agenda_itens": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "contrapartes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "farm_invites": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "insumo_lotes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "user_fazendas": {
+      "count": 5,
+      "digest": "d3e16a8605d7ecf398d753a2e1e283d0"
+    },
+    "metrics_events": {
+      "count": 116,
+      "digest": "90897a9b6583b612e701d302c9a313ec"
+    },
+    "eventos_animais": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_pesagem": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "pasto_ocupacoes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_casos": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_nutricao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_comercial": {
+      "count": 2,
+      "digest": "70f5f7c08419be3ffd6c1e64673a619c"
+    },
+    "eventos_sanitario": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sociedade_animais": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_financeiro": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_reproducao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "finance_categories": {
+      "count": 60,
+      "digest": "0b5d2a2796c54b657e81ea575639f72f"
+    },
+    "sanitario_agenda_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_movimentacao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "finance_transactions": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "insumo_apresentacoes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "insumo_movimentacoes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sociedades_pecuarias": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "protocolos_sanitarios": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "categorias_zootecnicas": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_pasto_avaliacao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "fazenda_sanidade_config": {
+      "count": 5,
+      "digest": "1bfedcc2667230f0888075942922b105"
+    },
+    "sanitario_protocolos_v2": {
+      "count": 10,
+      "digest": "16d47f88f4ae576361b1eeca36b10975"
+    },
+    "sanitario_sync_v2_gates": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "protocolos_sanitarios_itens": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_agenda_animais_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "animal_lot_movement_receipts": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_agenda_closures_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_fontes_tecnicas_v2": {
+      "count": 16,
+      "digest": "63f6f8107f38de27463128707f8d7548"
+    },
+    "sanitario_product_classes_v2": {
+      "count": 8,
+      "digest": "ca1f29fd85bb651c6d320ff12b7df46f"
+    },
+    "sanitario_sync_v2_operations": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_product_class_groups_v2": {
+      "count": 4,
+      "digest": "56a0a415816236c6c2b7f4ebd5f25c06"
+    },
+    "animal_lot_movement_effect_decisions": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "animais_sociedade_deprecated_20260529": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "animal_lot_movement_command_rejections": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_product_class_default_rules_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_product_class_group_members_v2": {
+      "count": 12,
+      "digest": "310cf0dc4ad4b130fe6e58e695348e4b"
+    }
+  },
+  "other_farms_mid": {
+    "lotes": {
+      "count": 1,
+      "digest": "23f550c420965c297a85d3dbbba4d65c"
+    },
+    "pastos": {
+      "count": 1,
+      "digest": "6e1a9b800a015cb83f13a468f90e608c"
+    },
+    "animais": {
+      "count": 3,
+      "digest": "dba693df03303012aacdcf56d6c5d49e"
+    },
+    "eventos": {
+      "count": 3,
+      "digest": "7ff9d1b009c8dfa42964e21fb418dd57"
+    },
+    "insumos": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "fazendas": {
+      "count": 5,
+      "digest": "cb4c88737bddb3098e65c47ec45eee99"
+    },
+    "eventos_ecc": {
+      "count": 1,
+      "digest": "6278464e4d7b012db8de7f5ad1f801f2"
+    },
+    "agenda_itens": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "contrapartes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "farm_invites": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "insumo_lotes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "user_fazendas": {
+      "count": 5,
+      "digest": "d3e16a8605d7ecf398d753a2e1e283d0"
+    },
+    "metrics_events": {
+      "count": 116,
+      "digest": "90897a9b6583b612e701d302c9a313ec"
+    },
+    "eventos_animais": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_pesagem": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "pasto_ocupacoes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_casos": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_nutricao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_comercial": {
+      "count": 2,
+      "digest": "70f5f7c08419be3ffd6c1e64673a619c"
+    },
+    "eventos_sanitario": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sociedade_animais": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_financeiro": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_reproducao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "finance_categories": {
+      "count": 60,
+      "digest": "0b5d2a2796c54b657e81ea575639f72f"
+    },
+    "sanitario_agenda_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_movimentacao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "finance_transactions": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "insumo_apresentacoes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "insumo_movimentacoes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sociedades_pecuarias": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "protocolos_sanitarios": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "categorias_zootecnicas": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_pasto_avaliacao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "fazenda_sanidade_config": {
+      "count": 5,
+      "digest": "1bfedcc2667230f0888075942922b105"
+    },
+    "sanitario_protocolos_v2": {
+      "count": 10,
+      "digest": "16d47f88f4ae576361b1eeca36b10975"
+    },
+    "sanitario_sync_v2_gates": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "protocolos_sanitarios_itens": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_agenda_animais_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "animal_lot_movement_receipts": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_agenda_closures_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_fontes_tecnicas_v2": {
+      "count": 16,
+      "digest": "63f6f8107f38de27463128707f8d7548"
+    },
+    "sanitario_product_classes_v2": {
+      "count": 8,
+      "digest": "ca1f29fd85bb651c6d320ff12b7df46f"
+    },
+    "sanitario_sync_v2_operations": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_product_class_groups_v2": {
+      "count": 4,
+      "digest": "56a0a415816236c6c2b7f4ebd5f25c06"
+    },
+    "animal_lot_movement_effect_decisions": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "animais_sociedade_deprecated_20260529": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "animal_lot_movement_command_rejections": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_product_class_default_rules_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_product_class_group_members_v2": {
+      "count": 12,
+      "digest": "310cf0dc4ad4b130fe6e58e695348e4b"
+    }
+  },
+  "natural_expiry": {
+    "client": "B",
+    "original_expires_at_utc": "2026-10-20T15:06:20Z",
+    "pending_client_op_id": "a6f0d754-efdc-4b70-8baa-c73c5cadbca6",
+    "pending_client_tx_id": "2319bc7c-cabc-4e74-941f-0b257c8b0a2e",
+    "gate_off_while_waiting": true,
+    "auto_refresh_stopped_only_in_test_client": true,
+    "previous_attempt": {
+      "client": "B",
+      "original_expires_at_utc": "2026-10-20T13:17:06Z",
+      "pending_client_op_id": "904383cd-8daf-490c-b315-288348dd1595",
+      "pending_client_tx_id": "096809f2-f4fa-4abf-b5cd-652a692b1f87",
+      "gate_off_while_waiting": true,
+      "auto_refresh_stopped_only_in_test_client": true,
+      "result": "NOT_COUNTED: another app context submitted while gate OFF; SANITARIO_SYNC_DISABLED rejection preserved"
+    },
+    "canonical_gesture_lock_held": true,
+    "sdk_auth_lock_held": true
+  },
+  "tests": {
+    "pnpm": "DID_NOT_RUN: ERR_PNPM_UNSAFE_MODULES_DIR; no dependency changes",
+    "first_direct_vitest": "28 passed, 1 failed because rollout temporarily ON; 2 suites did not collect due missing VITE env. Rerun only affected files after restoring OFF with dummy local public config.",
+    "final_direct_vitest": {
+      "command": "node node_modules/vitest/vitest.mjs run src/lib/offline/__tests__/sanitarioV2Cutover.test.ts src/lib/sanitario/agenda/__tests__/sanitaryAutomaticGenerationV2.test.ts src/lib/sanitario/agenda/__tests__/sanitaryPlanningSyncV2.test.ts",
+      "configuration": "client_rollout_enabled=false; dummy public process configuration http://127.0.0.1:1; no credentials",
+      "files_passed": 3,
+      "tests_passed": 31
+    },
+    "earlier_unchanged_passes": {
+      "files": [
+        "sanitarioV2Worker.test.ts",
+        "sanitarioV2PullCutover.test.ts"
+      ],
+      "tests_passed": 21
+    }
+  },
+  "final": {
+    "at": "2026-10-20T15:38:30.868029+00:00",
+    "gates": [
+      {
+        "enabled": false,
+        "created_at": "2026-10-20T12:24:09.130498+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-20T15:38:29.3427+00:00",
+        "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "valid_from": "2026-10-20T15:37:04.089641+00:00",
+        "valid_until": "2026-10-20T15:38:29.3427+00:00",
+        "allowed_user_ids": [
+          "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+        ],
+        "allowed_client_ids": [
+          "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+          "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+        ],
+        "rollout_percentage": 100,
+        "maximum_contract_version": 2,
+        "minimum_contract_version": 2
+      }
+    ],
+    "stock": 0,
+    "events": 0,
+    "ledger": [
+      {
+        "id": "4d602cfc-def6-407c-8f43-f3e161fd1a50",
+        "entity_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T12:24:53.031975+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "d5424394-d84c-46b9-8fbc-dd34cf79889d",
+        "domain_op_id": "d5424394-d84c-46b9-8fbc-dd34cf79889d",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "automation_plan",
+        "canonical_result": {
+          "status": "saved",
+          "command": "set_automation_plan",
+          "replayed": false,
+          "revision": 1,
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "8f6461d290b12fe5a3d7781fe47730785664d40e77efafba5b5c04812372adac"
+      },
+      {
+        "id": "1ec95a34-2299-44b4-bb60-6aae23009aec",
+        "entity_id": "23231621-4d80-5e72-99fd-0813d7acffdc",
+        "created_at": "2026-10-20T12:24:54.330349+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "8185d7ab-ce01-4eed-81b4-a2dba289b09b",
+        "domain_op_id": "9b1278a2-4b12-44fb-9a09-b4e4ccd04eb5",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "agenda_create",
+        "canonical_result": {
+          "status": "programada",
+          "replayed": false,
+          "revision": 0,
+          "agenda_id": "23231621-4d80-5e72-99fd-0813d7acffdc",
+          "animal_ids": [
+            "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9"
+          ]
+        },
+        "contract_version": 2,
+        "request_fingerprint": "b4889e89686573ccb738da35f206bfb6"
+      },
+      {
+        "id": "95710147-bcaa-412e-8bed-3e922ea27c09",
+        "entity_id": "be0c86d1-cf5e-596c-b3bf-e4f7c36f2d4a",
+        "created_at": "2026-10-20T12:24:55.977303+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "9ea9f44e-3ddb-41f8-83a0-8ee0090d81f9",
+        "domain_op_id": "83d54fac-cf03-41dc-bb03-8ec524a26691",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "agenda_create",
+        "canonical_result": {
+          "status": "programada",
+          "replayed": false,
+          "revision": 0,
+          "agenda_id": "be0c86d1-cf5e-596c-b3bf-e4f7c36f2d4a",
+          "animal_ids": [
+            "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+          ]
+        },
+        "contract_version": 2,
+        "request_fingerprint": "1831f0b816dd8e26b049171683411d8f"
+      },
+      {
+        "id": "156d053d-e27b-439d-b9f5-99c88c63ddff",
+        "entity_id": "61d7fd70-c5ee-5813-ad57-5a22f26f442d",
+        "created_at": "2026-10-20T12:24:57.203931+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "2f5f72a4-1a25-4a6c-bad8-f659464f92ce",
+        "domain_op_id": "5a7eec7d-0ea3-4b76-8eda-8ad66050c99f",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "agenda_create",
+        "canonical_result": {
+          "status": "programada",
+          "replayed": false,
+          "revision": 0,
+          "agenda_id": "61d7fd70-c5ee-5813-ad57-5a22f26f442d",
+          "animal_ids": [
+            "bc5a5d02-ba10-4834-9812-6e59cd690cef"
+          ]
+        },
+        "contract_version": 2,
+        "request_fingerprint": "c84baec159298fa3f9defec40e4f3f58"
+      },
+      {
+        "id": "e467e12d-5fe7-4283-8545-0ae89c87172a",
+        "entity_id": "d2b03710-726c-556d-8a78-98a2dd341207",
+        "created_at": "2026-10-20T12:24:58.327728+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "30ca7d7b-a0ec-4a14-b5e2-3105e08598e0",
+        "domain_op_id": "16fee02a-f2e9-487e-b5f2-6bb6a0564f61",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "agenda_create",
+        "canonical_result": {
+          "status": "programada",
+          "replayed": false,
+          "revision": 0,
+          "agenda_id": "d2b03710-726c-556d-8a78-98a2dd341207",
+          "animal_ids": [
+            "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+          ]
+        },
+        "contract_version": 2,
+        "request_fingerprint": "b691a5577135b4291eb18fe320f9cf4a"
+      },
+      {
+        "id": "498ae813-eee4-4db1-bb63-b5570f7bf7f3",
+        "entity_id": "acc118b5-1359-5d38-b6dc-f3d7bbfc5202",
+        "created_at": "2026-10-20T12:24:59.442526+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "e7a9e5d9-c63e-4ea7-8750-0fd6da9adbb6",
+        "domain_op_id": "372ca545-b882-46cb-86d0-bfedc84c719d",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "agenda_create",
+        "canonical_result": {
+          "status": "programada",
+          "replayed": false,
+          "revision": 0,
+          "agenda_id": "acc118b5-1359-5d38-b6dc-f3d7bbfc5202",
+          "animal_ids": [
+            "bc5a5d02-ba10-4834-9812-6e59cd690cef"
+          ]
+        },
+        "contract_version": 2,
+        "request_fingerprint": "4471b01626dfc7201dc371cb6f819515"
+      },
+      {
+        "id": "085be2d0-4733-43d8-ad3e-5d6d24923312",
+        "entity_id": "77c1f16e-8452-5cf5-a245-73b0168b8e17",
+        "created_at": "2026-10-20T12:25:01.427685+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "e8b3f9e6-f139-495e-affc-c6b16294d8eb",
+        "domain_op_id": "e093401e-ce77-46a5-88fb-366d255cd3b9",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "agenda_create",
+        "canonical_result": {
+          "status": "programada",
+          "replayed": false,
+          "revision": 0,
+          "agenda_id": "77c1f16e-8452-5cf5-a245-73b0168b8e17",
+          "animal_ids": [
+            "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9"
+          ]
+        },
+        "contract_version": 2,
+        "request_fingerprint": "041f83a5e2402849c3659c0fc929c176"
+      },
+      {
+        "id": "d659546c-01bd-4dd2-91fc-0ab3bca3a16f",
+        "entity_id": "2b9e8f06-e304-5e47-9bf4-3d3856794f31",
+        "created_at": "2026-10-20T12:25:04.327101+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "c7a77b00-82c4-4dc9-8b86-fa7b2255ea52",
+        "domain_op_id": "d3a7754b-3680-48bc-b70e-8922c536f822",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "agenda_create",
+        "canonical_result": {
+          "status": "programada",
+          "replayed": false,
+          "revision": 0,
+          "agenda_id": "2b9e8f06-e304-5e47-9bf4-3d3856794f31",
+          "animal_ids": [
+            "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9"
+          ]
+        },
+        "contract_version": 2,
+        "request_fingerprint": "43b71f3f959da3339f4b34a8e3af3574"
+      },
+      {
+        "id": "4d09c598-1f9e-43a5-8433-641c9a146ce2",
+        "entity_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T12:26:19.222098+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "83700b33-714a-4909-a466-5f57e76b7fe6",
+        "domain_op_id": "83700b33-714a-4909-a466-5f57e76b7fe6",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "automation_plan",
+        "canonical_result": {
+          "status": "saved",
+          "command": "set_automation_plan",
+          "replayed": false,
+          "revision": 2,
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "5ac41b6db6be2253b2726b41738b376bd6dc4ffc11115cf7881a1ce93bcd5d8c"
+      },
+      {
+        "id": "d927fc99-0f2c-4399-b39e-3b0345ed519d",
+        "entity_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T12:26:50.306948+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "3f549e63-e86b-4bd6-b64d-219feba0a3f0",
+        "domain_op_id": "3f549e63-e86b-4bd6-b64d-219feba0a3f0",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "automation_plan",
+        "canonical_result": {
+          "status": "saved",
+          "command": "set_automation_plan",
+          "replayed": false,
+          "revision": 3,
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "726d4c5fbe71a59a104450ee3d3f582a62d0470e9fa8e7f9bb31c7dc06eb56cf"
+      },
+      {
+        "id": "f590d932-9e9c-4f53-9477-b47e7717f575",
+        "entity_id": "77c1f16e-8452-5cf5-a245-73b0168b8e17",
+        "created_at": "2026-10-20T12:28:09.147787+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "51f7c7c9-6540-4db2-9a94-6be39fd7204c",
+        "domain_op_id": "8f328537-063d-4556-ba0c-f2f4884b82b6",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "agenda_schedule",
+        "canonical_result": {
+          "status": "programada",
+          "command": "reschedule_agenda",
+          "replayed": false,
+          "revision": 1,
+          "agenda_id": "77c1f16e-8452-5cf5-a245-73b0168b8e17"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "afbdc7ef989a67288429d9eb3ff7e08ffa11695d215273be6cce7ee260a68eb3"
+      },
+      {
+        "id": "402d5e3c-5c9e-4d46-a26a-c487a94df2ba",
+        "entity_id": "89f1f9cb-e3ae-4e66-a51e-bbd62726d20c",
+        "created_at": "2026-10-20T12:28:19.844298+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "ee82eccd-3855-4ec1-a351-0efc7f69421d",
+        "domain_op_id": "0b7ae795-63c2-4406-b396-b7bc86ab527e",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "administrative_closure",
+        "canonical_result": {
+          "status": "cancelada",
+          "replayed": false,
+          "revision": 1,
+          "agenda_id": "2b9e8f06-e304-5e47-9bf4-3d3856794f31",
+          "closure_id": "89f1f9cb-e3ae-4e66-a51e-bbd62726d20c"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "5de744ea02b1b61353c55b2fd6f6f615"
+      },
+      {
+        "id": "3521f83b-feea-421a-8bf5-81ac856c6acf",
+        "entity_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T12:29:35.207143+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "bd34103a-86e1-461b-bfad-0dbcdfee4b58",
+        "domain_op_id": "bd34103a-86e1-461b-bfad-0dbcdfee4b58",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "automation_plan",
+        "canonical_result": {
+          "status": "saved",
+          "command": "set_automation_plan",
+          "replayed": false,
+          "revision": 4,
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "f809cfe1d3b4c24ce36a67ac380841ff574155ac69a224b3e3eb6ae89ad8c9d3"
+      },
+      {
+        "id": "a14e32dc-a348-4a46-8854-7b9306237b5b",
+        "entity_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T12:32:08.335479+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "2a224cc0-b4a1-4c84-8bb6-646e7d4d2e69",
+        "domain_op_id": "2a224cc0-b4a1-4c84-8bb6-646e7d4d2e69",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "automation_plan",
+        "canonical_result": {
+          "status": "saved",
+          "command": "set_automation_plan",
+          "replayed": false,
+          "revision": 5,
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "d73e5e985a6163a566be75279538d261320d3c6c73831da856c4f90ac889323d"
+      },
+      {
+        "id": "a7e0004f-9f9e-4734-995a-68beff54a1fe",
+        "entity_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T15:37:15.750404+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "a6f0d754-efdc-4b70-8baa-c73c5cadbca6",
+        "domain_op_id": "a6f0d754-efdc-4b70-8baa-c73c5cadbca6",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "automation_plan",
+        "canonical_result": {
+          "status": "saved",
+          "command": "set_automation_plan",
+          "replayed": false,
+          "revision": 6,
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "862cd7da6b114c83df0733708869bd80dd791cd6a61f55f099eb264e3eadf870"
+      }
+    ],
+    "agendas": [
+      {
+        "id": "23231621-4d80-5e72-99fd-0813d7acffdc",
+        "status": "programada",
+        "lote_id": null,
+        "metadata": {
+          "notes": null,
+          "source": "sanitary_precheck_preview_v2",
+          "target": {
+            "id": "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+            "scope": "animal",
+            "fazendaId": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+          },
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "blockers": [],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "createdBy": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "itemLabel": "Avaliar Vermifugacao pre-desmama",
+          "createsEvent": false,
+          "productClass": null,
+          "protocolName": "Vermifugacao pre-desmama",
+          "automationKey": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|bde78a72-f299-4c0e-9b15-51bb7cbfe5c9|1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1|1|e711773e-88ee-5107-aa73-68e7337468be|2|initial",
+          "previewStatus": "in_action_window",
+          "targetAnimalIds": [
+            "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9"
+          ],
+          "targetAnimalScope": "animais_explicitos",
+          "automationWindowKey": "initial",
+          "productClassGroupId": null,
+          "createsStockMovement": false,
+          "productClassGroupName": null,
+          "automationPlanRevision": 1,
+          "productRequirementKind": "none",
+          "createsActiveWithdrawal": false
+        },
+        "revision": 0,
+        "client_id": "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "dedup_key": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|bde78a72-f299-4c0e-9b15-51bb7cbfe5c9|1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1|1|e711773e-88ee-5107-aa73-68e7337468be|2|initial",
+        "created_at": "2026-10-20T12:24:54.330349+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "janela_fim": null,
+        "updated_at": "2026-10-20T12:24:54.330349+00:00",
+        "client_op_id": "8185d7ab-ce01-4eed-81b4-a2dba289b09b",
+        "client_tx_id": "6a4a005b-0701-45c3-b90b-a3c47d1929ca",
+        "domain_op_id": "9b1278a2-4b12-44fb-9a09-b4e4ccd04eb5",
+        "protocolo_id": null,
+        "janela_inicio": "2026-10-20",
+        "acao_sanitaria": "manejo_sanitario",
+        "produto_classe": null,
+        "data_programada": "2026-10-20",
+        "contract_version": 2,
+        "preview_group_id": "animal:bde78a72-f299-4c0e-9b15-51bb7cbfe5c9:1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1:pre_desmama_situacional",
+        "produto_snapshot": {
+          "planningOnly": true,
+          "productClass": null,
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none",
+          "doseDefinedOnlyAtExecution": true,
+          "withdrawalDefinedOnlyAtExecution": true,
+          "realProductDefinedOnlyAtExecution": true
+        },
+        "source_demand_key": "sanitary_precheck_preview_v2:1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1:pre_desmama_situacional",
+        "client_recorded_at": "2026-10-20T12:24:48.685+00:00",
+        "server_received_at": "2026-10-20T12:24:54.330349+00:00",
+        "execution_evento_id": null,
+        "produto_veterinario_id": null,
+        "protocol_item_snapshot": {
+          "itemKey": "pre_desmama_situacional",
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "itemLabel": "Avaliar Vermifugacao pre-desmama",
+          "productId": null,
+          "actionType": "manejo_sanitario",
+          "familyCode": "vermifugacao_pre_desmama",
+          "sourceKind": "sanitary_precheck_preview_v2",
+          "planningKind": "avaliacao_manejo_generica",
+          "productClass": null,
+          "protocolName": "Vermifugacao pre-desmama",
+          "generationMode": "automatic",
+          "precheckStatus": "in_action_window",
+          "planningEvidence": {
+            "itemVersion": 2,
+            "sourceRefsByField": {
+              "eligibility": [
+                {
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
+                }
+              ],
+              "eligibility_rule": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "69a803ce-30c2-4a3c-a85e-24158e97d45e"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "eligibility_rule",
+                      "scope": "assessment_only",
+                      "itemId": "e711773e-88ee-5107-aa73-68e7337468be",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.24724+00:00",
+                      "protocolId": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "eligibility_rule"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "operational_window": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "69a803ce-30c2-4a3c-a85e-24158e97d45e"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "operational_window",
+                      "scope": "assessment_only",
+                      "itemId": "e711773e-88ee-5107-aa73-68e7337468be",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.24724+00:00",
+                      "protocolId": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "operational_window"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "product_requirement": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "69a803ce-30c2-4a3c-a85e-24158e97d45e"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "product_requirement",
+                      "scope": "assessment_only",
+                      "itemId": "e711773e-88ee-5107-aa73-68e7337468be",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.24724+00:00",
+                      "protocolId": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "product_requirement"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ]
+            },
+            "operationalWindowRule": {
+              "type": "hybrid",
+              "anchor": "manual_context"
+            }
+          },
+          "operationalContext": {
+            "management": "pre_weaning",
+            "rabiesRiskArea": null,
+            "preWeaningBasis": {
+              "kind": "intensive_dairy",
+              "reference": "R05 contexto exclusivamente sintético de avaliação pré-desmama, sem execução"
+            },
+            "sanitaryCadence": null,
+            "reproductiveContext": null
+          },
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none"
+        },
+        "catalog_protocolo_v2_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+        "protocol_item_version_id": null,
+        "catalog_protocol_item_version_v2_id": "e711773e-88ee-5107-aa73-68e7337468be"
+      },
+      {
+        "id": "2b9e8f06-e304-5e47-9bf4-3d3856794f31",
+        "status": "cancelada",
+        "lote_id": null,
+        "metadata": {
+          "notes": null,
+          "source": "sanitary_precheck_preview_v2",
+          "target": {
+            "id": "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+            "scope": "animal",
+            "fazendaId": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+          },
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "blockers": [],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "createdBy": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "itemLabel": "Avaliar Vermifugacao pre-confinamento ou pasto vedado",
+          "createsEvent": false,
+          "productClass": null,
+          "protocolName": "Vermifugacao pre-confinamento ou pasto vedado",
+          "automationKey": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|bde78a72-f299-4c0e-9b15-51bb7cbfe5c9|56d66340-e21e-4d60-8933-d99a3514b41d|1|a6c83dd1-80fd-551a-b877-ee3a9eab1f1e|2|context:2026-10-20",
+          "previewStatus": "in_action_window",
+          "targetAnimalIds": [
+            "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9"
+          ],
+          "targetAnimalScope": "animais_explicitos",
+          "automationWindowKey": "context:2026-10-20",
+          "productClassGroupId": null,
+          "createsStockMovement": false,
+          "productClassGroupName": null,
+          "automationPlanRevision": 1,
+          "productRequirementKind": "none",
+          "createsActiveWithdrawal": false
+        },
+        "revision": 1,
+        "client_id": "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "dedup_key": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|bde78a72-f299-4c0e-9b15-51bb7cbfe5c9|56d66340-e21e-4d60-8933-d99a3514b41d|1|a6c83dd1-80fd-551a-b877-ee3a9eab1f1e|2|context:2026-10-20",
+        "created_at": "2026-10-20T12:25:04.327101+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "janela_fim": null,
+        "updated_at": "2026-10-20T12:28:19.844298+00:00",
+        "client_op_id": "c7a77b00-82c4-4dc9-8b86-fa7b2255ea52",
+        "client_tx_id": "062b03f3-4d39-4ccc-80ee-97add17c473f",
+        "domain_op_id": "d3a7754b-3680-48bc-b70e-8922c536f822",
+        "protocolo_id": null,
+        "janela_inicio": "2026-10-20",
+        "acao_sanitaria": "manejo_sanitario",
+        "produto_classe": null,
+        "data_programada": "2026-10-20",
+        "contract_version": 2,
+        "preview_group_id": "animal:bde78a72-f299-4c0e-9b15-51bb7cbfe5c9:56d66340-e21e-4d60-8933-d99a3514b41d:pre_confinamento_dose_unica",
+        "produto_snapshot": {
+          "planningOnly": true,
+          "productClass": null,
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none",
+          "doseDefinedOnlyAtExecution": true,
+          "withdrawalDefinedOnlyAtExecution": true,
+          "realProductDefinedOnlyAtExecution": true
+        },
+        "source_demand_key": "sanitary_precheck_preview_v2:56d66340-e21e-4d60-8933-d99a3514b41d:pre_confinamento_dose_unica",
+        "client_recorded_at": "2026-10-20T12:24:48.713+00:00",
+        "server_received_at": "2026-10-20T12:25:04.327101+00:00",
+        "execution_evento_id": null,
+        "produto_veterinario_id": null,
+        "protocol_item_snapshot": {
+          "itemKey": "pre_confinamento_dose_unica",
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "itemLabel": "Avaliar Vermifugacao pre-confinamento ou pasto vedado",
+          "productId": null,
+          "actionType": "manejo_sanitario",
+          "familyCode": "vermifugacao_pre_confinamento_pasto_vedado",
+          "sourceKind": "sanitary_precheck_preview_v2",
+          "planningKind": "avaliacao_manejo_generica",
+          "productClass": null,
+          "protocolName": "Vermifugacao pre-confinamento ou pasto vedado",
+          "generationMode": "automatic",
+          "precheckStatus": "in_action_window",
+          "planningEvidence": {
+            "itemVersion": 2,
+            "sourceRefsByField": {
+              "eligibility": [
+                {
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
+                }
+              ],
+              "eligibility_rule": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "eligibility_rule",
+                      "scope": "assessment_only",
+                      "itemId": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.649172+00:00",
+                      "protocolId": "56d66340-e21e-4d60-8933-d99a3514b41d",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "eligibility_rule"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "operational_window": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "operational_window",
+                      "scope": "assessment_only",
+                      "itemId": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.649172+00:00",
+                      "protocolId": "56d66340-e21e-4d60-8933-d99a3514b41d",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "operational_window"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "product_requirement": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "product_requirement",
+                      "scope": "assessment_only",
+                      "itemId": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.649172+00:00",
+                      "protocolId": "56d66340-e21e-4d60-8933-d99a3514b41d",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "product_requirement"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ]
+            },
+            "operationalWindowRule": {
+              "type": "anchor_event",
+              "anchor": "manual_context"
+            }
+          },
+          "operationalContext": {
+            "management": "pre_feedlot",
+            "rabiesRiskArea": null,
+            "sanitaryCadence": null,
+            "scheduledContext": {
+              "date": "2026-10-20",
+              "animalIds": [
+                "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+                "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+                "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+              ],
+              "reference": "R05 destino de confinamento exclusivamente sintético; avaliação, sem execução"
+            },
+            "reproductiveContext": null
+          },
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none"
+        },
+        "catalog_protocolo_v2_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+        "protocol_item_version_id": null,
+        "catalog_protocol_item_version_v2_id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e"
+      },
+      {
+        "id": "61d7fd70-c5ee-5813-ad57-5a22f26f442d",
+        "status": "programada",
+        "lote_id": null,
+        "metadata": {
+          "notes": null,
+          "source": "sanitary_precheck_preview_v2",
+          "target": {
+            "id": "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+            "scope": "animal",
+            "fazendaId": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+          },
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "blockers": [],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "createdBy": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "itemLabel": "Avaliar Vermifugacao pre-desmama",
+          "createsEvent": false,
+          "productClass": null,
+          "protocolName": "Vermifugacao pre-desmama",
+          "automationKey": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|bc5a5d02-ba10-4834-9812-6e59cd690cef|1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1|1|e711773e-88ee-5107-aa73-68e7337468be|2|initial",
+          "previewStatus": "in_action_window",
+          "targetAnimalIds": [
+            "bc5a5d02-ba10-4834-9812-6e59cd690cef"
+          ],
+          "targetAnimalScope": "animais_explicitos",
+          "automationWindowKey": "initial",
+          "productClassGroupId": null,
+          "createsStockMovement": false,
+          "productClassGroupName": null,
+          "automationPlanRevision": 1,
+          "productRequirementKind": "none",
+          "createsActiveWithdrawal": false
+        },
+        "revision": 0,
+        "client_id": "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "dedup_key": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|bc5a5d02-ba10-4834-9812-6e59cd690cef|1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1|1|e711773e-88ee-5107-aa73-68e7337468be|2|initial",
+        "created_at": "2026-10-20T12:24:57.203931+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "janela_fim": null,
+        "updated_at": "2026-10-20T12:24:57.203931+00:00",
+        "client_op_id": "2f5f72a4-1a25-4a6c-bad8-f659464f92ce",
+        "client_tx_id": "a3976428-8c8b-4c70-9739-dfe2225ac9b0",
+        "domain_op_id": "5a7eec7d-0ea3-4b76-8eda-8ad66050c99f",
+        "protocolo_id": null,
+        "janela_inicio": "2026-10-20",
+        "acao_sanitaria": "manejo_sanitario",
+        "produto_classe": null,
+        "data_programada": "2026-10-20",
+        "contract_version": 2,
+        "preview_group_id": "animal:bc5a5d02-ba10-4834-9812-6e59cd690cef:1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1:pre_desmama_situacional",
+        "produto_snapshot": {
+          "planningOnly": true,
+          "productClass": null,
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none",
+          "doseDefinedOnlyAtExecution": true,
+          "withdrawalDefinedOnlyAtExecution": true,
+          "realProductDefinedOnlyAtExecution": true
+        },
+        "source_demand_key": "sanitary_precheck_preview_v2:1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1:pre_desmama_situacional",
+        "client_recorded_at": "2026-10-20T12:24:48.692+00:00",
+        "server_received_at": "2026-10-20T12:24:57.203931+00:00",
+        "execution_evento_id": null,
+        "produto_veterinario_id": null,
+        "protocol_item_snapshot": {
+          "itemKey": "pre_desmama_situacional",
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "itemLabel": "Avaliar Vermifugacao pre-desmama",
+          "productId": null,
+          "actionType": "manejo_sanitario",
+          "familyCode": "vermifugacao_pre_desmama",
+          "sourceKind": "sanitary_precheck_preview_v2",
+          "planningKind": "avaliacao_manejo_generica",
+          "productClass": null,
+          "protocolName": "Vermifugacao pre-desmama",
+          "generationMode": "automatic",
+          "precheckStatus": "in_action_window",
+          "planningEvidence": {
+            "itemVersion": 2,
+            "sourceRefsByField": {
+              "eligibility": [
+                {
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
+                }
+              ],
+              "eligibility_rule": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "69a803ce-30c2-4a3c-a85e-24158e97d45e"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "eligibility_rule",
+                      "scope": "assessment_only",
+                      "itemId": "e711773e-88ee-5107-aa73-68e7337468be",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.24724+00:00",
+                      "protocolId": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "eligibility_rule"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "operational_window": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "69a803ce-30c2-4a3c-a85e-24158e97d45e"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "operational_window",
+                      "scope": "assessment_only",
+                      "itemId": "e711773e-88ee-5107-aa73-68e7337468be",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.24724+00:00",
+                      "protocolId": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "operational_window"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "product_requirement": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "69a803ce-30c2-4a3c-a85e-24158e97d45e"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "product_requirement",
+                      "scope": "assessment_only",
+                      "itemId": "e711773e-88ee-5107-aa73-68e7337468be",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.24724+00:00",
+                      "protocolId": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "product_requirement"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ]
+            },
+            "operationalWindowRule": {
+              "type": "hybrid",
+              "anchor": "manual_context"
+            }
+          },
+          "operationalContext": {
+            "management": "pre_weaning",
+            "rabiesRiskArea": null,
+            "preWeaningBasis": {
+              "kind": "intensive_dairy",
+              "reference": "R05 contexto exclusivamente sintético de avaliação pré-desmama, sem execução"
+            },
+            "sanitaryCadence": null,
+            "reproductiveContext": null
+          },
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none"
+        },
+        "catalog_protocolo_v2_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+        "protocol_item_version_id": null,
+        "catalog_protocol_item_version_v2_id": "e711773e-88ee-5107-aa73-68e7337468be"
+      },
+      {
+        "id": "77c1f16e-8452-5cf5-a245-73b0168b8e17",
+        "status": "programada",
+        "lote_id": null,
+        "metadata": {
+          "notes": null,
+          "source": "sanitary_precheck_preview_v2",
+          "target": {
+            "id": "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+            "scope": "animal",
+            "fazendaId": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+          },
+          "reasons": [
+            "Fêmea bovina/bubalina dentro da janela B19 de 3 a 8 meses."
+          ],
+          "blockers": [],
+          "warnings": [
+            "Exige MV cadastrado no SVE, registro oficial e produto real na execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "createdBy": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "itemLabel": "Avaliar Brucelose B19",
+          "createsEvent": false,
+          "productClass": "vacina_brucelose_b19",
+          "protocolName": "Brucelose B19",
+          "automationKey": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|bde78a72-f299-4c0e-9b15-51bb7cbfe5c9|faeb5058-bf8f-46d1-877b-a32c32a62aad|1|0aa8fb30-fe4f-5a37-a100-ead8f568d5e3|3|initial",
+          "previewStatus": "in_action_window",
+          "targetAnimalIds": [
+            "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9"
+          ],
+          "targetAnimalScope": "animais_explicitos",
+          "automationWindowKey": "initial",
+          "productClassGroupId": null,
+          "createsStockMovement": false,
+          "productClassGroupName": null,
+          "automationPlanRevision": 1,
+          "productRequirementKind": "product_class",
+          "createsActiveWithdrawal": false
+        },
+        "revision": 1,
+        "client_id": "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "dedup_key": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|bde78a72-f299-4c0e-9b15-51bb7cbfe5c9|faeb5058-bf8f-46d1-877b-a32c32a62aad|1|0aa8fb30-fe4f-5a37-a100-ead8f568d5e3|3|initial",
+        "created_at": "2026-10-20T12:25:01.427685+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "janela_fim": null,
+        "updated_at": "2026-10-20T12:28:09.147787+00:00",
+        "client_op_id": "e8b3f9e6-f139-495e-affc-c6b16294d8eb",
+        "client_tx_id": "d3e4e5d2-0238-426a-a41f-789623d6b935",
+        "domain_op_id": "e093401e-ce77-46a5-88fb-366d255cd3b9",
+        "protocolo_id": null,
+        "janela_inicio": "2026-10-20",
+        "acao_sanitaria": "manejo_sanitario",
+        "produto_classe": "vacina_brucelose_b19",
+        "data_programada": "2026-10-23",
+        "contract_version": 2,
+        "preview_group_id": "animal:bde78a72-f299-4c0e-9b15-51bb7cbfe5c9:faeb5058-bf8f-46d1-877b-a32c32a62aad:b19_femeas_3_8_meses",
+        "produto_snapshot": {
+          "planningOnly": true,
+          "productClass": "vacina_brucelose_b19",
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "product_class",
+          "doseDefinedOnlyAtExecution": true,
+          "withdrawalDefinedOnlyAtExecution": true,
+          "realProductDefinedOnlyAtExecution": true
+        },
+        "source_demand_key": "sanitary_precheck_preview_v2:faeb5058-bf8f-46d1-877b-a32c32a62aad:b19_femeas_3_8_meses",
+        "client_recorded_at": "2026-10-20T12:24:48.663+00:00",
+        "server_received_at": "2026-10-20T12:25:01.427685+00:00",
+        "execution_evento_id": null,
+        "produto_veterinario_id": null,
+        "protocol_item_snapshot": {
+          "itemKey": "b19_femeas_3_8_meses",
+          "reasons": [
+            "Fêmea bovina/bubalina dentro da janela B19 de 3 a 8 meses."
+          ],
+          "warnings": [
+            "Exige MV cadastrado no SVE, registro oficial e produto real na execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "itemLabel": "Avaliar Brucelose B19",
+          "productId": null,
+          "actionType": "manejo_sanitario",
+          "familyCode": "brucelose_b19",
+          "sourceKind": "sanitary_precheck_preview_v2",
+          "planningKind": "avaliacao_manejo_generica",
+          "productClass": "vacina_brucelose_b19",
+          "protocolName": "Brucelose B19",
+          "generationMode": "automatic",
+          "precheckStatus": "in_action_window",
+          "planningEvidence": {
+            "itemVersion": 3,
+            "sourceRefsByField": {
+              "age": [
+                {
+                  "source_ref": "SRC_PNCEBT_BRUCELOSE"
+                }
+              ],
+              "sex": [
+                {
+                  "source_ref": "SRC_PNCEBT_BRUCELOSE"
+                }
+              ],
+              "dose": [
+                {
+                  "source_ref": "SRC_BULA_ABORVAC_B19"
+                }
+              ],
+              "route": [
+                {
+                  "source_ref": "SRC_BULA_ABORVAC_B19"
+                }
+              ],
+              "species": [
+                {
+                  "source_ref": "SRC_PNCEBT_BRUCELOSE"
+                }
+              ],
+              "recurrence": [
+                {
+                  "source_ref": "SRC_BULA_ABORVAC_B19"
+                }
+              ],
+              "eligibility": [
+                {
+                  "source_ref": "SRC_PNCEBT_BRUCELOSE"
+                }
+              ],
+              "restrictions": [
+                {
+                  "source_ref": "SRC_PNCEBT_BRUCELOSE"
+                }
+              ],
+              "official_record": [
+                {
+                  "source_ref": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE"
+                }
+              ],
+              "eligibility_rule": [
+                {
+                  "id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+                  "kind": "norma_oficial",
+                  "scope": "global",
+                  "title": "Instrução Normativa SDA/MAPA nº 10, de 3 de março de 2017 — Regulamento Técnico do PNCEBT",
+                  "metadata": {
+                    "coverage_ids": [
+                      "d247d101-eeae-46f4-8b9b-3da1c954af9b",
+                      "4f910d70-d9d8-4b8b-959a-257a5447859d",
+                      "631b58f2-49ac-410e-904c-e8d80d403d4c"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "eligibility_rule",
+                      "scope": "assessment_only",
+                      "itemId": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:53.232818+00:00",
+                      "protocolId": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+                      "itemVersion": 3,
+                      "decisionReference": "sanitary-v2:f3853908-6139-46d6-8861-0ad317a9370f"
+                    }
+                  },
+                  "strength": "forte",
+                  "fieldKeys": [
+                    "eligibility_rule"
+                  ],
+                  "source_ref": "SRC_MAPA_IN_10_2017_PNCEBT",
+                  "evidenceStatus": "SIM_NORMA"
+                },
+                {
+                  "id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+                  "kind": "norma_oficial",
+                  "scope": "global",
+                  "title": "Portaria SDA/MAPA 1.633/2026 — campanha nacional contra brucelose",
+                  "metadata": {
+                    "coverage_ids": [
+                      "6680c8da-8f0a-45c3-b47d-81c14af72bda",
+                      "6074dba2-6055-41ec-a4bf-2a2ea49ff817"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "eligibility_rule",
+                      "scope": "assessment_only",
+                      "itemId": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:53.232818+00:00",
+                      "protocolId": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+                      "itemVersion": 3,
+                      "decisionReference": "sanitary-v2:f3853908-6139-46d6-8861-0ad317a9370f"
+                    }
+                  },
+                  "strength": "forte",
+                  "fieldKeys": [
+                    "eligibility_rule"
+                  ],
+                  "source_ref": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+                  "evidenceStatus": "SIM_NORMA"
+                },
+                {
+                  "id": "59345fb2-bc0b-460f-b60c-084aa7bf2049",
+                  "kind": "norma_oficial",
+                  "scope": "global",
+                  "title": "CIDASC — proibição estadual de B19 e uso de RB51",
+                  "metadata": {
+                    "coverage_ids": [
+                      "531324a5-2b26-493e-9c33-8c652bcc58c2",
+                      "4e30c65d-1334-45be-b548-0bcfb899dcd6"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "eligibility_rule",
+                      "scope": "assessment_only",
+                      "itemId": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:53.232818+00:00",
+                      "protocolId": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+                      "itemVersion": 3,
+                      "decisionReference": "sanitary-v2:f3853908-6139-46d6-8861-0ad317a9370f"
+                    }
+                  },
+                  "strength": "forte",
+                  "fieldKeys": [
+                    "eligibility_rule"
+                  ],
+                  "source_ref": "SRC_CIDASC_SC_B19_PROHIBITION",
+                  "evidenceStatus": "SIM_NORMA"
+                }
+              ],
+              "operational_window": [
+                {
+                  "id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+                  "kind": "norma_oficial",
+                  "scope": "global",
+                  "title": "Instrução Normativa SDA/MAPA nº 10, de 3 de março de 2017 — Regulamento Técnico do PNCEBT",
+                  "metadata": {
+                    "coverage_ids": [
+                      "631b58f2-49ac-410e-904c-e8d80d403d4c"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "operational_window",
+                      "scope": "assessment_only",
+                      "itemId": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:53.232818+00:00",
+                      "protocolId": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+                      "itemVersion": 3,
+                      "decisionReference": "sanitary-v2:f3853908-6139-46d6-8861-0ad317a9370f"
+                    }
+                  },
+                  "strength": "forte",
+                  "fieldKeys": [
+                    "operational_window"
+                  ],
+                  "source_ref": "SRC_MAPA_IN_10_2017_PNCEBT",
+                  "evidenceStatus": "SIM_NORMA"
+                }
+              ],
+              "product_requirement": [
+                {
+                  "id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+                  "kind": "norma_oficial",
+                  "scope": "global",
+                  "title": "Instrução Normativa SDA/MAPA nº 10, de 3 de março de 2017 — Regulamento Técnico do PNCEBT",
+                  "metadata": {
+                    "coverage_ids": [
+                      "d247d101-eeae-46f4-8b9b-3da1c954af9b"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "product_requirement",
+                      "scope": "assessment_only",
+                      "itemId": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:53.232818+00:00",
+                      "protocolId": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+                      "itemVersion": 3,
+                      "decisionReference": "sanitary-v2:f3853908-6139-46d6-8861-0ad317a9370f"
+                    }
+                  },
+                  "strength": "forte",
+                  "fieldKeys": [
+                    "product_requirement"
+                  ],
+                  "source_ref": "SRC_MAPA_IN_10_2017_PNCEBT",
+                  "evidenceStatus": "SIM_NORMA"
+                },
+                {
+                  "id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+                  "kind": "norma_oficial",
+                  "scope": "global",
+                  "title": "Portaria SDA/MAPA 1.633/2026 — campanha nacional contra brucelose",
+                  "metadata": {
+                    "coverage_ids": [
+                      "6680c8da-8f0a-45c3-b47d-81c14af72bda"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "product_requirement",
+                      "scope": "assessment_only",
+                      "itemId": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:53.232818+00:00",
+                      "protocolId": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+                      "itemVersion": 3,
+                      "decisionReference": "sanitary-v2:f3853908-6139-46d6-8861-0ad317a9370f"
+                    }
+                  },
+                  "strength": "forte",
+                  "fieldKeys": [
+                    "product_requirement"
+                  ],
+                  "source_ref": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+                  "evidenceStatus": "SIM_NORMA"
+                },
+                {
+                  "id": "59345fb2-bc0b-460f-b60c-084aa7bf2049",
+                  "kind": "norma_oficial",
+                  "scope": "global",
+                  "title": "CIDASC — proibição estadual de B19 e uso de RB51",
+                  "metadata": {
+                    "coverage_ids": [
+                      "531324a5-2b26-493e-9c33-8c652bcc58c2"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "product_requirement",
+                      "scope": "assessment_only",
+                      "itemId": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:53.232818+00:00",
+                      "protocolId": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+                      "itemVersion": 3,
+                      "decisionReference": "sanitary-v2:f3853908-6139-46d6-8861-0ad317a9370f"
+                    }
+                  },
+                  "strength": "forte",
+                  "fieldKeys": [
+                    "product_requirement"
+                  ],
+                  "source_ref": "SRC_CIDASC_SC_B19_PROHIBITION",
+                  "evidenceStatus": "SIM_NORMA"
+                }
+              ],
+              "regional_restrictions": [
+                {
+                  "source_ref": "SRC_CIDASC_SC_B19_PROHIBITION"
+                }
+              ]
+            },
+            "operationalWindowRule": {
+              "type": "age",
+              "anchor": "birth",
+              "hard_window": true,
+              "max_offset_months": 8,
+              "min_offset_months": 3
+            }
+          },
+          "operationalContext": {
+            "management": null,
+            "rabiesRiskArea": null,
+            "sanitaryCadence": null,
+            "reproductiveContext": null
+          },
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "product_class"
+        },
+        "catalog_protocolo_v2_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+        "protocol_item_version_id": null,
+        "catalog_protocol_item_version_v2_id": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3"
+      },
+      {
+        "id": "acc118b5-1359-5d38-b6dc-f3d7bbfc5202",
+        "status": "programada",
+        "lote_id": null,
+        "metadata": {
+          "notes": null,
+          "source": "sanitary_precheck_preview_v2",
+          "target": {
+            "id": "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+            "scope": "animal",
+            "fazendaId": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+          },
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "blockers": [],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "createdBy": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "itemLabel": "Avaliar Vermifugacao pre-confinamento ou pasto vedado",
+          "createsEvent": false,
+          "productClass": null,
+          "protocolName": "Vermifugacao pre-confinamento ou pasto vedado",
+          "automationKey": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|bc5a5d02-ba10-4834-9812-6e59cd690cef|56d66340-e21e-4d60-8933-d99a3514b41d|1|a6c83dd1-80fd-551a-b877-ee3a9eab1f1e|2|context:2026-10-20",
+          "previewStatus": "in_action_window",
+          "targetAnimalIds": [
+            "bc5a5d02-ba10-4834-9812-6e59cd690cef"
+          ],
+          "targetAnimalScope": "animais_explicitos",
+          "automationWindowKey": "context:2026-10-20",
+          "productClassGroupId": null,
+          "createsStockMovement": false,
+          "productClassGroupName": null,
+          "automationPlanRevision": 1,
+          "productRequirementKind": "none",
+          "createsActiveWithdrawal": false
+        },
+        "revision": 0,
+        "client_id": "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "dedup_key": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|bc5a5d02-ba10-4834-9812-6e59cd690cef|56d66340-e21e-4d60-8933-d99a3514b41d|1|a6c83dd1-80fd-551a-b877-ee3a9eab1f1e|2|context:2026-10-20",
+        "created_at": "2026-10-20T12:24:59.442526+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "janela_fim": null,
+        "updated_at": "2026-10-20T12:24:59.442526+00:00",
+        "client_op_id": "e7a9e5d9-c63e-4ea7-8750-0fd6da9adbb6",
+        "client_tx_id": "ab7b9b16-1046-4a83-b6f0-610931e8c101",
+        "domain_op_id": "372ca545-b882-46cb-86d0-bfedc84c719d",
+        "protocolo_id": null,
+        "janela_inicio": "2026-10-20",
+        "acao_sanitaria": "manejo_sanitario",
+        "produto_classe": null,
+        "data_programada": "2026-10-20",
+        "contract_version": 2,
+        "preview_group_id": "animal:bc5a5d02-ba10-4834-9812-6e59cd690cef:56d66340-e21e-4d60-8933-d99a3514b41d:pre_confinamento_dose_unica",
+        "produto_snapshot": {
+          "planningOnly": true,
+          "productClass": null,
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none",
+          "doseDefinedOnlyAtExecution": true,
+          "withdrawalDefinedOnlyAtExecution": true,
+          "realProductDefinedOnlyAtExecution": true
+        },
+        "source_demand_key": "sanitary_precheck_preview_v2:56d66340-e21e-4d60-8933-d99a3514b41d:pre_confinamento_dose_unica",
+        "client_recorded_at": "2026-10-20T12:24:48.719+00:00",
+        "server_received_at": "2026-10-20T12:24:59.442526+00:00",
+        "execution_evento_id": null,
+        "produto_veterinario_id": null,
+        "protocol_item_snapshot": {
+          "itemKey": "pre_confinamento_dose_unica",
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "itemLabel": "Avaliar Vermifugacao pre-confinamento ou pasto vedado",
+          "productId": null,
+          "actionType": "manejo_sanitario",
+          "familyCode": "vermifugacao_pre_confinamento_pasto_vedado",
+          "sourceKind": "sanitary_precheck_preview_v2",
+          "planningKind": "avaliacao_manejo_generica",
+          "productClass": null,
+          "protocolName": "Vermifugacao pre-confinamento ou pasto vedado",
+          "generationMode": "automatic",
+          "precheckStatus": "in_action_window",
+          "planningEvidence": {
+            "itemVersion": 2,
+            "sourceRefsByField": {
+              "eligibility": [
+                {
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
+                }
+              ],
+              "eligibility_rule": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "eligibility_rule",
+                      "scope": "assessment_only",
+                      "itemId": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.649172+00:00",
+                      "protocolId": "56d66340-e21e-4d60-8933-d99a3514b41d",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "eligibility_rule"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "operational_window": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "operational_window",
+                      "scope": "assessment_only",
+                      "itemId": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.649172+00:00",
+                      "protocolId": "56d66340-e21e-4d60-8933-d99a3514b41d",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "operational_window"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "product_requirement": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "product_requirement",
+                      "scope": "assessment_only",
+                      "itemId": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.649172+00:00",
+                      "protocolId": "56d66340-e21e-4d60-8933-d99a3514b41d",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "product_requirement"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ]
+            },
+            "operationalWindowRule": {
+              "type": "anchor_event",
+              "anchor": "manual_context"
+            }
+          },
+          "operationalContext": {
+            "management": "pre_feedlot",
+            "rabiesRiskArea": null,
+            "sanitaryCadence": null,
+            "scheduledContext": {
+              "date": "2026-10-20",
+              "animalIds": [
+                "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+                "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+                "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+              ],
+              "reference": "R05 destino de confinamento exclusivamente sintético; avaliação, sem execução"
+            },
+            "reproductiveContext": null
+          },
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none"
+        },
+        "catalog_protocolo_v2_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+        "protocol_item_version_id": null,
+        "catalog_protocol_item_version_v2_id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e"
+      },
+      {
+        "id": "be0c86d1-cf5e-596c-b3bf-e4f7c36f2d4a",
+        "status": "programada",
+        "lote_id": null,
+        "metadata": {
+          "notes": null,
+          "source": "sanitary_precheck_preview_v2",
+          "target": {
+            "id": "ffb9ed45-79db-43e9-be13-5fb829b0c170",
+            "scope": "animal",
+            "fazendaId": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+          },
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "blockers": [],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "createdBy": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "itemLabel": "Avaliar Vermifugacao pre-confinamento ou pasto vedado",
+          "createsEvent": false,
+          "productClass": null,
+          "protocolName": "Vermifugacao pre-confinamento ou pasto vedado",
+          "automationKey": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|ffb9ed45-79db-43e9-be13-5fb829b0c170|56d66340-e21e-4d60-8933-d99a3514b41d|1|a6c83dd1-80fd-551a-b877-ee3a9eab1f1e|2|context:2026-10-20",
+          "previewStatus": "in_action_window",
+          "targetAnimalIds": [
+            "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+          ],
+          "targetAnimalScope": "animais_explicitos",
+          "automationWindowKey": "context:2026-10-20",
+          "productClassGroupId": null,
+          "createsStockMovement": false,
+          "productClassGroupName": null,
+          "automationPlanRevision": 1,
+          "productRequirementKind": "none",
+          "createsActiveWithdrawal": false
+        },
+        "revision": 0,
+        "client_id": "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "dedup_key": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|ffb9ed45-79db-43e9-be13-5fb829b0c170|56d66340-e21e-4d60-8933-d99a3514b41d|1|a6c83dd1-80fd-551a-b877-ee3a9eab1f1e|2|context:2026-10-20",
+        "created_at": "2026-10-20T12:24:55.977303+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "janela_fim": null,
+        "updated_at": "2026-10-20T12:24:55.977303+00:00",
+        "client_op_id": "9ea9f44e-3ddb-41f8-83a0-8ee0090d81f9",
+        "client_tx_id": "8c46ce8a-52d3-4cdb-b9ea-a7bcc0306279",
+        "domain_op_id": "83d54fac-cf03-41dc-bb03-8ec524a26691",
+        "protocolo_id": null,
+        "janela_inicio": "2026-10-20",
+        "acao_sanitaria": "manejo_sanitario",
+        "produto_classe": null,
+        "data_programada": "2026-10-20",
+        "contract_version": 2,
+        "preview_group_id": "animal:ffb9ed45-79db-43e9-be13-5fb829b0c170:56d66340-e21e-4d60-8933-d99a3514b41d:pre_confinamento_dose_unica",
+        "produto_snapshot": {
+          "planningOnly": true,
+          "productClass": null,
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none",
+          "doseDefinedOnlyAtExecution": true,
+          "withdrawalDefinedOnlyAtExecution": true,
+          "realProductDefinedOnlyAtExecution": true
+        },
+        "source_demand_key": "sanitary_precheck_preview_v2:56d66340-e21e-4d60-8933-d99a3514b41d:pre_confinamento_dose_unica",
+        "client_recorded_at": "2026-10-20T12:24:48.722+00:00",
+        "server_received_at": "2026-10-20T12:24:55.977303+00:00",
+        "execution_evento_id": null,
+        "produto_veterinario_id": null,
+        "protocol_item_snapshot": {
+          "itemKey": "pre_confinamento_dose_unica",
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "itemLabel": "Avaliar Vermifugacao pre-confinamento ou pasto vedado",
+          "productId": null,
+          "actionType": "manejo_sanitario",
+          "familyCode": "vermifugacao_pre_confinamento_pasto_vedado",
+          "sourceKind": "sanitary_precheck_preview_v2",
+          "planningKind": "avaliacao_manejo_generica",
+          "productClass": null,
+          "protocolName": "Vermifugacao pre-confinamento ou pasto vedado",
+          "generationMode": "automatic",
+          "precheckStatus": "in_action_window",
+          "planningEvidence": {
+            "itemVersion": 2,
+            "sourceRefsByField": {
+              "eligibility": [
+                {
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
+                }
+              ],
+              "eligibility_rule": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "eligibility_rule",
+                      "scope": "assessment_only",
+                      "itemId": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.649172+00:00",
+                      "protocolId": "56d66340-e21e-4d60-8933-d99a3514b41d",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "eligibility_rule"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "operational_window": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "operational_window",
+                      "scope": "assessment_only",
+                      "itemId": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.649172+00:00",
+                      "protocolId": "56d66340-e21e-4d60-8933-d99a3514b41d",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "operational_window"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "product_requirement": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "product_requirement",
+                      "scope": "assessment_only",
+                      "itemId": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:54.649172+00:00",
+                      "protocolId": "56d66340-e21e-4d60-8933-d99a3514b41d",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "product_requirement"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ]
+            },
+            "operationalWindowRule": {
+              "type": "anchor_event",
+              "anchor": "manual_context"
+            }
+          },
+          "operationalContext": {
+            "management": "pre_feedlot",
+            "rabiesRiskArea": null,
+            "sanitaryCadence": null,
+            "scheduledContext": {
+              "date": "2026-10-20",
+              "animalIds": [
+                "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+                "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+                "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+              ],
+              "reference": "R05 destino de confinamento exclusivamente sintético; avaliação, sem execução"
+            },
+            "reproductiveContext": null
+          },
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none"
+        },
+        "catalog_protocolo_v2_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+        "protocol_item_version_id": null,
+        "catalog_protocol_item_version_v2_id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e"
+      },
+      {
+        "id": "d2b03710-726c-556d-8a78-98a2dd341207",
+        "status": "programada",
+        "lote_id": null,
+        "metadata": {
+          "notes": null,
+          "source": "sanitary_precheck_preview_v2",
+          "target": {
+            "id": "ffb9ed45-79db-43e9-be13-5fb829b0c170",
+            "scope": "animal",
+            "fazendaId": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+          },
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "blockers": [],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "createdBy": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "itemLabel": "Avaliar Matrizes pre-parto",
+          "createsEvent": false,
+          "productClass": null,
+          "protocolName": "Matrizes pre-parto",
+          "automationKey": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|ffb9ed45-79db-43e9-be13-5fb829b0c170|c51c944b-431f-4533-8505-65bea3bec156|1|e10a3a77-a91e-5fd4-afab-1276526404ef|2|context:2026-10-20",
+          "previewStatus": "in_action_window",
+          "targetAnimalIds": [
+            "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+          ],
+          "targetAnimalScope": "animais_explicitos",
+          "automationWindowKey": "context:2026-10-20",
+          "productClassGroupId": null,
+          "createsStockMovement": false,
+          "productClassGroupName": null,
+          "automationPlanRevision": 1,
+          "productRequirementKind": "none",
+          "createsActiveWithdrawal": false
+        },
+        "revision": 0,
+        "client_id": "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "dedup_key": "sanitary-auto-v2|2d8a30d9-bd9c-41b4-a71d-93d2d293058f|ffb9ed45-79db-43e9-be13-5fb829b0c170|c51c944b-431f-4533-8505-65bea3bec156|1|e10a3a77-a91e-5fd4-afab-1276526404ef|2|context:2026-10-20",
+        "created_at": "2026-10-20T12:24:58.327728+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "janela_fim": null,
+        "updated_at": "2026-10-20T12:24:58.327728+00:00",
+        "client_op_id": "30ca7d7b-a0ec-4a14-b5e2-3105e08598e0",
+        "client_tx_id": "a633a275-dbeb-48cb-b780-e9f28d874b70",
+        "domain_op_id": "16fee02a-f2e9-487e-b5f2-6bb6a0564f61",
+        "protocolo_id": null,
+        "janela_inicio": "2026-10-20",
+        "acao_sanitaria": "manejo_sanitario",
+        "produto_classe": null,
+        "data_programada": "2026-10-20",
+        "contract_version": 2,
+        "preview_group_id": "animal:ffb9ed45-79db-43e9-be13-5fb829b0c170:c51c944b-431f-4533-8505-65bea3bec156:matrizes_pre_parto_antiparasitario",
+        "produto_snapshot": {
+          "planningOnly": true,
+          "productClass": null,
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none",
+          "doseDefinedOnlyAtExecution": true,
+          "withdrawalDefinedOnlyAtExecution": true,
+          "realProductDefinedOnlyAtExecution": true
+        },
+        "source_demand_key": "sanitary_precheck_preview_v2:c51c944b-431f-4533-8505-65bea3bec156:matrizes_pre_parto_antiparasitario",
+        "client_recorded_at": "2026-10-20T12:24:48.735+00:00",
+        "server_received_at": "2026-10-20T12:24:58.327728+00:00",
+        "execution_evento_id": null,
+        "produto_veterinario_id": null,
+        "protocol_item_snapshot": {
+          "itemKey": "matrizes_pre_parto_antiparasitario",
+          "reasons": [
+            "Item avaliável tecnicamente pelo catálogo read-only."
+          ],
+          "warnings": [
+            "Item sem produto executável.",
+            "Pré-checagem não cria agenda nem autoriza execução.",
+            "Catálogo sanitário v2 não cria agenda nesta pré-checagem."
+          ],
+          "itemLabel": "Avaliar Matrizes pre-parto",
+          "productId": null,
+          "actionType": "manejo_sanitario",
+          "familyCode": "matrizes_pre_parto",
+          "sourceKind": "sanitary_precheck_preview_v2",
+          "planningKind": "avaliacao_manejo_generica",
+          "productClass": null,
+          "protocolName": "Matrizes pre-parto",
+          "generationMode": "automatic",
+          "precheckStatus": "in_action_window",
+          "planningEvidence": {
+            "itemVersion": 2,
+            "sourceRefsByField": {
+              "eligibility": [
+                {
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF"
+                }
+              ],
+              "eligibility_rule": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "741baae1-969a-400c-9ede-a50a38837d13"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "eligibility_rule",
+                      "scope": "assessment_only",
+                      "itemId": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:55.038836+00:00",
+                      "protocolId": "c51c944b-431f-4533-8505-65bea3bec156",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:ee6b3e75-493e-4cb2-9a91-c6aef53847b2"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "eligibility_rule"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "operational_window": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "741baae1-969a-400c-9ede-a50a38837d13"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "operational_window",
+                      "scope": "assessment_only",
+                      "itemId": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:55.038836+00:00",
+                      "protocolId": "c51c944b-431f-4533-8505-65bea3bec156",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:ee6b3e75-493e-4cb2-9a91-c6aef53847b2"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "operational_window"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ],
+              "product_requirement": [
+                {
+                  "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+                  "kind": "guideline_apoio",
+                  "scope": "global",
+                  "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+                  "metadata": {
+                    "coverage_ids": [
+                      "741baae1-969a-400c-9ede-a50a38837d13"
+                    ],
+                    "catalogFieldReview": {
+                      "field": "product_requirement",
+                      "scope": "assessment_only",
+                      "itemId": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+                      "actorId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+                      "approvedAt": "2026-10-20T07:16:55.038836+00:00",
+                      "protocolId": "c51c944b-431f-4533-8505-65bea3bec156",
+                      "itemVersion": 2,
+                      "decisionReference": "sanitary-v2:ee6b3e75-493e-4cb2-9a91-c6aef53847b2"
+                    }
+                  },
+                  "strength": "apoio",
+                  "fieldKeys": [
+                    "product_requirement"
+                  ],
+                  "source_ref": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+                  "evidenceStatus": "PRECISA_VALIDAR"
+                }
+              ]
+            },
+            "operationalWindowRule": {
+              "type": "hybrid",
+              "anchor": "parturition"
+            }
+          },
+          "operationalContext": {
+            "management": null,
+            "rabiesRiskArea": null,
+            "sanitaryCadence": null,
+            "scheduledContext": {
+              "date": "2026-10-20",
+              "animalIds": [
+                "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+              ],
+              "reference": "R05 contexto gestacional exclusivamente sintético; nenhum parto ou diagnóstico factual registrado"
+            },
+            "reproductiveContext": "prepartum"
+          },
+          "productClassGroupId": null,
+          "productClassGroupName": null,
+          "productRequirementKind": "none"
+        },
+        "catalog_protocolo_v2_id": "c51c944b-431f-4533-8505-65bea3bec156",
+        "protocol_item_version_id": null,
+        "catalog_protocol_item_version_v2_id": "e10a3a77-a91e-5fd4-afab-1276526404ef"
+      }
+    ],
+    "closures": [
+      {
+        "id": "89f1f9cb-e3ae-4e66-a51e-bbd62726d20c",
+        "reason": "Cancelamento explícito no planejamento sanitário.",
+        "metadata": {
+          "planningOnly": true
+        },
+        "agenda_id": "2b9e8f06-e304-5e47-9bf4-3d3856794f31",
+        "client_id": "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd",
+        "closed_at": "2026-10-20T12:28:31.761+00:00",
+        "closed_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "dedup_key": "cancel:2b9e8f06-e304-5e47-9bf4-3d3856794f31:ee82eccd-3855-4ec1-a351-0efc7f69421d",
+        "created_at": "2026-10-20T12:28:19.844298+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-20T12:28:19.844298+00:00",
+        "client_op_id": "ee82eccd-3855-4ec1-a351-0efc7f69421d",
+        "client_tx_id": "8411e94d-23cd-4bef-a720-53301aa7a939",
+        "closure_type": "cancelled",
+        "domain_op_id": "0b7ae795-63c2-4406-b396-b7bc86ab527e",
+        "partial_payload": {},
+        "contract_version": 2,
+        "client_recorded_at": "2026-10-20T12:28:31.761+00:00",
+        "server_received_at": "2026-10-20T12:28:19.844298+00:00",
+        "execution_evento_id": null
+      }
+    ],
+    "migrations": 63,
+    "gate_audits": [
+      {
+        "id": "6e449ad2-6068-4556-87c2-c67ecd83b567",
+        "action": "R05_SANITARY_GATE_ENABLED",
+        "metadata": {
+          "authorization": "explicit_owner_R05_request_in_current_chat",
+          "actor_semantics": "Human owner authorizing the scoped gate; not a simulated authenticated database session",
+          "client_profiles": "Chrome A and in-app browser B",
+          "database_auth_uid": null,
+          "database_executor": "postgres",
+          "execution_channel": "supabase_management_api",
+          "expires_automatically": true,
+          "browser_getUser_verified": true
+        },
+        "target_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T12:24:09.130498+00:00",
+        "state_after": {
+          "enabled": true,
+          "created_at": "2026-10-20T12:24:09.130498+00:00",
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+          "updated_at": "2026-10-20T12:24:09.130498+00:00",
+          "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "valid_from": "2026-10-20T12:24:09.130498+00:00",
+          "valid_until": "2026-10-20T12:44:09.130498+00:00",
+          "allowed_user_ids": [
+            "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+          ],
+          "allowed_client_ids": [
+            "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+            "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+          ],
+          "rollout_percentage": 100,
+          "maximum_contract_version": 2,
+          "minimum_contract_version": 2
+        },
+        "target_type": "sanitario_sync_v2_gates",
+        "state_before": {},
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+      },
+      {
+        "id": "9b39a07e-4da3-4a11-89c1-7df3ba75bb0c",
+        "action": "R05_SANITARY_GATE_DISABLED",
+        "metadata": {
+          "reason": "containment while waiting for natural JWT expiry; no gate stays open during wait",
+          "authorization": "explicit_owner_R05_request",
+          "database_auth_uid": null,
+          "execution_channel": "supabase_management_api"
+        },
+        "target_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T12:36:12.144675+00:00",
+        "state_after": {
+          "enabled": false,
+          "created_at": "2026-10-20T12:24:09.130498+00:00",
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+          "updated_at": "2026-10-20T12:36:12.144675+00:00",
+          "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "valid_from": "2026-10-20T12:24:09.130498+00:00",
+          "valid_until": "2026-10-20T12:36:12.144675+00:00",
+          "allowed_user_ids": [
+            "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+          ],
+          "allowed_client_ids": [
+            "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+            "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+          ],
+          "rollout_percentage": 100,
+          "maximum_contract_version": 2,
+          "minimum_contract_version": 2
+        },
+        "target_type": "sanitario_sync_v2_gates",
+        "state_before": {
+          "enabled": true,
+          "created_at": "2026-10-20T12:24:09.130498+00:00",
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+          "updated_at": "2026-10-20T12:24:09.130498+00:00",
+          "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "valid_from": "2026-10-20T12:24:09.130498+00:00",
+          "valid_until": "2026-10-20T12:44:09.130498+00:00",
+          "allowed_user_ids": [
+            "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+          ],
+          "allowed_client_ids": [
+            "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+            "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+          ],
+          "rollout_percentage": 100,
+          "maximum_contract_version": 2,
+          "minimum_contract_version": 2
+        },
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+      },
+      {
+        "id": "f27c5fd1-4f93-4e15-a9c7-251c810673ec",
+        "action": "R05_GATE_REOPENED_FOR_NATURAL_JWT_TEST",
+        "metadata": {
+          "authorization": "explicit_owner_R05_request",
+          "scope_unchanged": true,
+          "database_auth_uid": null,
+          "execution_channel": "supabase_management_api"
+        },
+        "target_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T15:37:04.089641+00:00",
+        "state_after": {
+          "enabled": true,
+          "created_at": "2026-10-20T12:24:09.130498+00:00",
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+          "updated_at": "2026-10-20T15:37:04.089641+00:00",
+          "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "valid_from": "2026-10-20T15:37:04.089641+00:00",
+          "valid_until": "2026-10-20T15:47:04.089641+00:00",
+          "allowed_user_ids": [
+            "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+          ],
+          "allowed_client_ids": [
+            "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+            "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+          ],
+          "rollout_percentage": 100,
+          "maximum_contract_version": 2,
+          "minimum_contract_version": 2
+        },
+        "target_type": "sanitario_sync_v2_gates",
+        "state_before": {
+          "enabled": false,
+          "created_at": "2026-10-20T12:24:09.130498+00:00",
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+          "updated_at": "2026-10-20T12:36:12.144675+00:00",
+          "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "valid_from": "2026-10-20T12:24:09.130498+00:00",
+          "valid_until": "2026-10-20T12:36:12.144675+00:00",
+          "allowed_user_ids": [
+            "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+          ],
+          "allowed_client_ids": [
+            "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+            "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+          ],
+          "rollout_percentage": 100,
+          "maximum_contract_version": 2,
+          "minimum_contract_version": 2
+        },
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+      },
+      {
+        "id": "af599e4f-c1dc-4a79-ac09-251ab4d74560",
+        "action": "R05_SANITARY_GATE_DISABLED",
+        "metadata": {
+          "reason": "final containment after real natural JWT expiry and same-operation resume; no further test enqueues",
+          "authorization": "explicit_owner_R05_request",
+          "database_auth_uid": null,
+          "execution_channel": "supabase_management_api"
+        },
+        "target_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T15:38:29.3427+00:00",
+        "state_after": {
+          "enabled": false,
+          "created_at": "2026-10-20T12:24:09.130498+00:00",
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+          "updated_at": "2026-10-20T15:38:29.3427+00:00",
+          "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "valid_from": "2026-10-20T15:37:04.089641+00:00",
+          "valid_until": "2026-10-20T15:38:29.3427+00:00",
+          "allowed_user_ids": [
+            "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+          ],
+          "allowed_client_ids": [
+            "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+            "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+          ],
+          "rollout_percentage": 100,
+          "maximum_contract_version": 2,
+          "minimum_contract_version": 2
+        },
+        "target_type": "sanitario_sync_v2_gates",
+        "state_before": {
+          "enabled": true,
+          "created_at": "2026-10-20T12:24:09.130498+00:00",
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+          "updated_at": "2026-10-20T15:37:04.089641+00:00",
+          "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "valid_from": "2026-10-20T15:37:04.089641+00:00",
+          "valid_until": "2026-10-20T15:47:04.089641+00:00",
+          "allowed_user_ids": [
+            "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+          ],
+          "allowed_client_ids": [
+            "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+            "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+          ],
+          "rollout_percentage": 100,
+          "maximum_contract_version": 2,
+          "minimum_contract_version": 2
+        },
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+      }
+    ],
+    "automatic_items": 7,
+    "unapproved_items": 13,
+    "catalog_decisions": 5,
+    "withdrawal_active": 0,
+    "sync_batch_version": 28
+  },
+  "other_farms_after": {
+    "lotes": {
+      "count": 1,
+      "digest": "23f550c420965c297a85d3dbbba4d65c"
+    },
+    "pastos": {
+      "count": 1,
+      "digest": "6e1a9b800a015cb83f13a468f90e608c"
+    },
+    "animais": {
+      "count": 3,
+      "digest": "dba693df03303012aacdcf56d6c5d49e"
+    },
+    "eventos": {
+      "count": 3,
+      "digest": "7ff9d1b009c8dfa42964e21fb418dd57"
+    },
+    "insumos": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "fazendas": {
+      "count": 5,
+      "digest": "cb4c88737bddb3098e65c47ec45eee99"
+    },
+    "eventos_ecc": {
+      "count": 1,
+      "digest": "6278464e4d7b012db8de7f5ad1f801f2"
+    },
+    "agenda_itens": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "contrapartes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "farm_invites": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "insumo_lotes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "user_fazendas": {
+      "count": 5,
+      "digest": "d3e16a8605d7ecf398d753a2e1e283d0"
+    },
+    "metrics_events": {
+      "count": 116,
+      "digest": "90897a9b6583b612e701d302c9a313ec"
+    },
+    "eventos_animais": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_pesagem": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "pasto_ocupacoes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_casos": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_nutricao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_comercial": {
+      "count": 2,
+      "digest": "70f5f7c08419be3ffd6c1e64673a619c"
+    },
+    "eventos_sanitario": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sociedade_animais": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_financeiro": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_reproducao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "finance_categories": {
+      "count": 60,
+      "digest": "0b5d2a2796c54b657e81ea575639f72f"
+    },
+    "sanitario_agenda_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_movimentacao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "finance_transactions": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "insumo_apresentacoes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "insumo_movimentacoes": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sociedades_pecuarias": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "protocolos_sanitarios": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "categorias_zootecnicas": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "eventos_pasto_avaliacao": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "fazenda_sanidade_config": {
+      "count": 5,
+      "digest": "1bfedcc2667230f0888075942922b105"
+    },
+    "sanitario_protocolos_v2": {
+      "count": 10,
+      "digest": "16d47f88f4ae576361b1eeca36b10975"
+    },
+    "sanitario_sync_v2_gates": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "protocolos_sanitarios_itens": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_agenda_animais_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "animal_lot_movement_receipts": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_agenda_closures_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_fontes_tecnicas_v2": {
+      "count": 16,
+      "digest": "63f6f8107f38de27463128707f8d7548"
+    },
+    "sanitario_product_classes_v2": {
+      "count": 8,
+      "digest": "ca1f29fd85bb651c6d320ff12b7df46f"
+    },
+    "sanitario_sync_v2_operations": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_product_class_groups_v2": {
+      "count": 4,
+      "digest": "56a0a415816236c6c2b7f4ebd5f25c06"
+    },
+    "animal_lot_movement_effect_decisions": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "animais_sociedade_deprecated_20260529": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "animal_lot_movement_command_rejections": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_product_class_default_rules_v2": {
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "sanitario_product_class_group_members_v2": {
+      "count": 12,
+      "digest": "310cf0dc4ad4b130fe6e58e695348e4b"
+    }
+  },
+  "natural_expiry_remote": {
+    "at": "2026-10-20T15:37:42.97888+00:00",
+    "operation": [
+      {
+        "id": "a7e0004f-9f9e-4734-995a-68beff54a1fe",
+        "entity_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "created_at": "2026-10-20T15:37:15.750404+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "client_op_id": "a6f0d754-efdc-4b70-8baa-c73c5cadbca6",
+        "domain_op_id": "a6f0d754-efdc-4b70-8baa-c73c5cadbca6",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "executor_role": "service_role",
+        "operation_kind": "automation_plan",
+        "canonical_result": {
+          "status": "saved",
+          "command": "set_automation_plan",
+          "replayed": false,
+          "revision": 6,
+          "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f"
+        },
+        "contract_version": 2,
+        "request_fingerprint": "862cd7da6b114c83df0733708869bd80dd791cd6a61f55f099eb264e3eadf870"
+      }
+    ],
+    "plan_revision": 6
+  },
+  "sync_batch": {
+    "id": "ea290713-71c8-4285-baf2-d33a0c114038",
+    "slug": "sync-batch",
+    "name": "sync-batch",
+    "status": "ACTIVE",
+    "version": 28,
+    "created_at": 1770210332805,
+    "updated_at": 1792438405776,
+    "verify_jwt": true,
+    "import_map": true,
+    "entrypoint_path": "file:///tmp/user_fn_zqloazqzhwauamcejmuz_ea290713-71c8-4285-baf2-d33a0c114038_28/source/supabase/functions/sync-batch/index.ts",
+    "import_map_path": "file:///tmp/user_fn_zqloazqzhwauamcejmuz_ea290713-71c8-4285-baf2-d33a0c114038_28/source/supabase/functions/deno.json",
+    "ezbr_sha256": "21aa82b9c7c6b41510a93670bab919c9a65362d04d51196913397c106f1809a0"
+  },
+  "client_artifacts": {
+    "A": {
+      "path": "docs/review/evidence/SANITARIO_V2_R05_CLIENT_A_20261020.json.gz",
+      "raw_bytes": 2539560,
+      "raw_sha256": "68c114085bae5dbe7b96dbb369e0150bf2aa77adf186e6ce9533c9361b30e4a6",
+      "gzip_sha256": "3009a0fe2e76d1de9940848ccd7a010bb26680e394fd7216861abf194a09c967"
+    },
+    "B": {
+      "path": "docs/review/evidence/SANITARIO_V2_R05_CLIENT_B_20261020.json.gz",
+      "raw_bytes": 1604210,
+      "raw_sha256": "3a77761ef2c901a2e3ce082cf1d2a4aaafbe80c844bf82b3933b505b97f65634",
+      "gzip_sha256": "13f9279bfd6ea0ed650f8d39d7caf2f2e1267f037644a11d3ccfad20800fe532"
+    }
+  },
+  "final_recheck": {
+    "at": "2026-10-20T21:35:08.554797+00:00",
+    "gates": [
+      {
+        "enabled": false,
+        "created_at": "2026-10-20T12:24:09.130498+00:00",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-20T15:38:29.3427+00:00",
+        "updated_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "valid_from": "2026-10-20T15:37:04.089641+00:00",
+        "valid_until": "2026-10-20T15:38:29.3427+00:00",
+        "allowed_user_ids": [
+          "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+        ],
+        "allowed_client_ids": [
+          "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+          "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd"
+        ],
+        "rollout_percentage": 100,
+        "maximum_contract_version": 2,
+        "minimum_contract_version": 2
+      }
+    ],
+    "stock": 0,
+    "events": 0,
+    "migrations": 63,
+    "agenda_count": 7,
+    "ledger_count": 15,
+    "agenda_unique": 7,
+    "ledger_unique": 15,
+    "catalog_decisions": 5,
+    "withdrawal_active": 0,
+    "catalog_unchanged_from_r04": true,
+    "plan_revision": 6
+  },
+  "closure": {
+    "global_client_rollout_enabled": false,
+    "A_push_enabled": false,
+    "B_push_enabled": false,
+    "gate_closed_at": "2026-10-20T15:38:29.3427Z",
+    "queues_pending": 0,
+    "reconciliation_obligations": 0,
+    "synthetic_data_preserved": true,
+    "R04B_executed": false
+  }
+}

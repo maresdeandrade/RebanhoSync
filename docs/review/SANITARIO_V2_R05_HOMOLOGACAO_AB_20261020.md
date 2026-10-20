@@ -1,7 +1,15 @@
 # R05 — Homologação A/B na fazenda dedicada
 
 Atualizado em: 2026-10-20
-Status: **PREPARADA — NÃO EXECUTADA; operações remotas ainda exigem autorização específica**.
+Status atual: **CLOSED — executada sob autorização específica do proprietário**.
+
+Resultado e evidências: [execução e fechamento R05](evidence/SANITARIO_V2_R05_EXECUCAO_20261020.md).
+Fazenda `2d8a30d9-bd9c-41b4-a71d-93d2d293058f`; clientes A/B identificados no relatório;
+plano revisão 6, sete Agendas únicas, zero efeitos factuais. Gate e push A/B OFF;
+rollout local restaurado para false. Próximo trabalho independente: R04B, não executado.
+
+O roteiro abaixo preserva a preparação anterior à autorização e seus critérios; os campos
+propostos e a afirmação histórica de não execução não representam o estado atual.
 
 ## Entrada confirmada
 
