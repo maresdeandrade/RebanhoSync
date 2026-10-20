@@ -1,0 +1,458 @@
+[
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "loaded",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "auxiliares",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "offline",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "read-only",
+    "before": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    },
+    "after": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    }
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "farm-switch",
+    "result": "B sem contagens, eventos ou erro de A"
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "empty",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "partial",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "loading",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "error",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "retry",
+    "result": "recovered"
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "loaded",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "auxiliares",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "offline",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "read-only",
+    "before": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    },
+    "after": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    }
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "farm-switch",
+    "result": "B sem contagens, eventos ou erro de A"
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "empty",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "partial",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "loading",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "error",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "retry",
+    "result": "recovered"
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "loaded",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "auxiliares",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "offline",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "read-only",
+    "before": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    },
+    "after": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    }
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "farm-switch",
+    "result": "B sem contagens, eventos ou erro de A"
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "empty",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "partial",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "loading",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "error",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "retry",
+    "result": "recovered"
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "loaded",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "auxiliares",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "offline",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "read-only",
+    "before": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    },
+    "after": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    }
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "farm-switch",
+    "result": "B sem contagens, eventos ou erro de A"
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "empty",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "partial",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "loading",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "error",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "retry",
+    "result": "recovered"
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "loaded",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "auxiliares",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "offline",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "read-only",
+    "before": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    },
+    "after": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    }
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "farm-switch",
+    "result": "B sem contagens, eventos ou erro de A"
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "empty",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "partial",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "loading",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "error",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "retry",
+    "result": "recovered"
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "loaded",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "auxiliares",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "offline",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "read-only",
+    "before": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    },
+    "after": {
+      "events": 3,
+      "gestures": 2,
+      "ops": 0
+    }
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "farm-switch",
+    "result": "B sem contagens, eventos ou erro de A"
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "empty",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "partial",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "loading",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "error",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "retry",
+    "result": "recovered"
+  }
+]

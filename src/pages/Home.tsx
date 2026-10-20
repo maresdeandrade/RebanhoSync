@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Component, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link } from "react-router-dom";
 import {
@@ -7,6 +7,8 @@ import {
   CalendarClock,
   CheckCircle2,
   Clock3,
+  History,
+  WifiOff,
   PackageSearch,
   PlusCircle,
 } from "lucide-react";
@@ -136,20 +138,20 @@ type HomeSnapshot = {
 };
 
 const PRODUCTION_LABEL: Record<string, string> = {
-  corte: "Pecuaria de corte",
-  leite: "Pecuaria de leite",
-  mista: "Producao mista",
+  corte: "Pecuária de corte",
+  leite: "Pecuária de leite",
+  mista: "Produção mista",
 };
 
 const DOMAIN_LABEL: Record<string, string> = {
-  sanitario: "Sanitario",
-  alerta_sanitario: "Alerta sanitario",
+  sanitario: "Sanitário",
+  alerta_sanitario: "Alerta sanitário",
   conformidade: "Conformidade",
   pesagem: "Pesagem",
-  movimentacao: "Movimentacao",
-  nutricao: "Nutricao",
+  movimentacao: "Movimentação",
+  nutricao: "Nutrição",
   financeiro: "Financeiro",
-  reproducao: "Reproducao",
+  reproducao: "Reprodução",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -670,7 +672,7 @@ const Home = () => {
       <PageContainer width="full" className="space-y-5">
         <Card className="border-dashed">
           <CardHeader>
-            <CardTitle>Escolha uma fazenda para comecar</CardTitle>
+            <CardTitle>Escolha uma fazenda para começar</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row">
             <Button asChild>
@@ -685,14 +687,15 @@ const Home = () => {
     );
   }
 
-  if (!snapshot) {
+  if (!snapshot || !selectFarmSyncSummary(snapshot.syncSummary, activeFarmId)) {
     return (
       <PageContainer width="full" className="space-y-5">
         <Card>
           <CardHeader>
-            <CardTitle>Carregando a rotina da fazenda</CardTitle>
+            <CardTitle role="status">Carregando a rotina da fazenda</CardTitle>
           </CardHeader>
         </Card>
+        <SyncStatusPanel />
       </PageContainer>
     );
   }
@@ -708,60 +711,29 @@ const Home = () => {
   );
 
   return (
-    <PageContainer width="full" className="space-y-6">
+    <PageContainer
+      width="full"
+      className="min-w-0 space-y-6 [&_h3]:break-words [&_p]:break-words"
+    >
       <PageHeader
         variant="plain"
+        eyebrow={
+          farm?.nome ?? "Fazenda ativa · nome indisponível nesta consulta"
+        }
+        className="min-w-0 [&>div]:min-w-0"
         title="Central Operacional"
-        description="Priorize pendencias de agenda; registre execucao real no Registrar. Historico, estado atual e sinais aparecem como leitura."
+        description="Acompanhe as pendências da fazenda e registre os manejos executados. A Agenda mostra o que falta fazer; os Eventos mostram o que foi registrado."
         meta={
           <>
-            <StatusBadge tone="neutral">{farmSubtitle}</StatusBadge>
-            {snapshot.syncSummary.pendingCount > 0 ? (
-              <StatusBadge tone="warning">
-                {snapshot.syncSummary.pendingCount} salvo(s) neste aparelho
-              </StatusBadge>
-            ) : null}
-            {snapshot.agendaAtrasada > 0 ? (
-              <StatusBadge tone="warning">
-                {snapshot.agendaAtrasada} atraso
-                {snapshot.agendaAtrasada > 1 ? "s" : ""}
-              </StatusBadge>
-            ) : null}
-            {snapshot.sanitaryAttention.criticalCount > 0 ? (
-              <StatusBadge tone="danger">
-                {snapshot.sanitaryAttention.criticalCount} sanitario(s)
-                critico(s)
-              </StatusBadge>
-            ) : snapshot.sanitaryAttention.warningCount > 0 ? (
-              <StatusBadge tone="warning">
-                {snapshot.sanitaryAttention.warningCount} sanitario(s) no radar
-              </StatusBadge>
-            ) : null}
-            {snapshot.regulatoryCompliance.attention.openCount > 0 ? (
-              <StatusBadge
-                tone={
-                  snapshot.regulatoryCompliance.hasBlockingIssues
-                    ? "danger"
-                    : "warning"
-                }
-              >
-                {snapshot.regulatoryCompliance.attention.openCount} pendencia(s)
-                regulatoria(s)
-              </StatusBadge>
-            ) : null}
-            {snapshot.replenishmentAlerts.length > 0 ? (
-              <StatusBadge
-                tone={
-                  snapshot.replenishmentAlerts.some(
-                    (item) => item.severity === "critical",
-                  )
-                    ? "danger"
-                    : "warning"
-                }
-              >
-                {snapshot.replenishmentAlerts.length} reposicao
-              </StatusBadge>
-            ) : null}
+            <StatusBadge
+              tone="neutral"
+              className="max-w-full whitespace-normal break-words"
+            >
+              {farmSubtitle}
+            </StatusBadge>
+            <StatusBadge tone="neutral">
+              Referência: {formatDay(snapshot.referenceDate)}
+            </StatusBadge>
           </>
         }
         actions={
@@ -769,7 +741,7 @@ const Home = () => {
             <Button asChild>
               <Link to="/registrar">
                 <PlusCircle className="h-4 w-4" />
-                Registrar execucao
+                Registrar manejo
               </Link>
             </Button>
             <Button asChild variant="outline">
@@ -788,83 +760,11 @@ const Home = () => {
         }
       />
 
-      <section aria-label="Panorama operacional" className="space-y-3">
-        <SectionHeader
-          level={2}
-          title="Panorama operacional"
-          description="Indicadores sinteticos de rebanho, rotina e sincronizacao"
+      <HomeConnectionNotice />
+      <section aria-label="Sincronização da fazenda">
+        <SyncStatusPanel
+          summary={selectFarmSyncSummary(snapshot.syncSummary, activeFarmId)}
         />
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            {
-              label: "Atrasadas",
-              value: overdueItems.length,
-              hint: "Pendencias vencidas",
-              tone: overdueItems.length > 0 ? "danger" : "neutral",
-              icon: AlertTriangle,
-            },
-            {
-              label: "Hoje",
-              value: todayItems.length,
-              hint: "Agenda do dia",
-              tone: todayItems.length > 0 ? "warning" : "neutral",
-              icon: CalendarClock,
-            },
-            {
-              label: "Animais ativos",
-              value: snapshot.animais,
-              hint: `${snapshot.lotes} lotes`,
-              tone: "success",
-              icon: Beef,
-            },
-            {
-              label: "Fila local",
-              value: snapshot.syncSummary.pendingCount,
-              hint: "A sincronizar",
-              tone: snapshot.syncSummary.pendingCount > 0 ? "warning" : "neutral",
-              icon: Clock3,
-            },
-            {
-              label: "Estrutura",
-              value: `${snapshot.lotes}L`,
-              hint: `${snapshot.pastos} pastos`,
-              tone: "neutral",
-              icon: CheckCircle2,
-            },
-            {
-              label: "Alertas sanitarios",
-              value: snapshot.sanitaryAttention.criticalCount,
-              hint: "Criticos no horizonte",
-              tone:
-                snapshot.sanitaryAttention.criticalCount > 0
-                  ? "danger"
-                  : "neutral",
-              icon: AlertTriangle,
-            },
-            {
-              label: "Reposicao",
-              value: snapshot.replenishmentAlerts.length,
-              hint: "Estoque no radar",
-              tone: snapshot.replenishmentAlerts.some(
-                (item) => item.severity === "critical",
-              )
-                ? "danger"
-                : snapshot.replenishmentAlerts.length > 0
-                  ? "warning"
-                  : "neutral",
-              icon: PackageSearch,
-            },
-          ].map((item) => (
-            <MetricCard
-              key={item.label}
-              label={item.label}
-              value={item.value}
-              hint={item.hint}
-              icon={<item.icon className="h-4 w-4" />}
-              tone={item.tone === "neutral" ? "default" : item.tone}
-            />
-          ))}
-        </div>
       </section>
 
       <section aria-label="Prioridades do dia" className="space-y-3">
@@ -876,7 +776,7 @@ const Home = () => {
         <div className="grid gap-4 xl:grid-cols-2">
           <Card
             className={
-              overdueItems.length > 0
+              snapshot.agendaAtrasada > 0
                 ? "border-destructive/25 bg-destructive/10 shadow-none"
                 : "shadow-none"
             }
@@ -884,46 +784,32 @@ const Home = () => {
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <CardTitle>Pendencias atrasadas</CardTitle>
+                  <CardTitle>Pendências atrasadas</CardTitle>
                 </div>
                 <StatusBadge
-                  tone={overdueItems.length > 0 ? "danger" : "success"}
+                  tone={snapshot.agendaAtrasada > 0 ? "danger" : "success"}
                 >
-                  {overdueItems.length} atrasada
-                  {overdueItems.length === 1 ? "" : "s"}
+                  {snapshot.agendaAtrasada} atrasada
+                  {snapshot.agendaAtrasada === 1 ? "" : "s"}
                 </StatusBadge>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Exibindo {overdueItems.length} de {snapshot.agendaAtrasada}{" "}
+                pendências atrasadas.{" "}
+                <Link className="underline underline-offset-4" to="/agenda">
+                  Consultar Agenda completa
+                </Link>
+              </p>
               {overdueItems.length === 0 ? (
                 <EmptyState
                   icon={CalendarClock}
                   title="Sem pendencias atrasadas no recorte carregado."
-                  className="min-h-[140px] border-dashed bg-background/60 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
+                  className="min-h-36 border-dashed bg-background/60 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
                 />
               ) : (
-                overdueItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-xl border border-destructive/20 bg-background/70 p-4"
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium">{item.titulo}</p>
-                          <StatusBadge tone="danger">Atrasado</StatusBadge>
-                        </div>
-                        <p className="text-sm leading-6 text-muted-foreground">
-                          {item.contexto}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock3 className="h-4 w-4" />
-                        <span>{formatDay(item.data)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                <HomeAgendaItems items={overdueItems} tone="danger" />
               )}
             </CardContent>
           </Card>
@@ -934,90 +820,41 @@ const Home = () => {
                 <div>
                   <CardTitle>Agenda de hoje</CardTitle>
                 </div>
-                <StatusBadge tone={todayItems.length > 0 ? "info" : "neutral"}>
-                  {todayItems.length} hoje
+                <StatusBadge
+                  tone={snapshot.agendaHoje > 0 ? "info" : "neutral"}
+                >
+                  {snapshot.agendaHoje} hoje
                 </StatusBadge>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Exibindo {todayItems.length} de {snapshot.agendaHoje} tarefas de
+                hoje.
+              </p>
               {todayItems.length === 0 ? (
                 <EmptyState
                   icon={CheckCircle2}
-                  title="Nada vence hoje no recorte carregado."
-                  className="min-h-[140px] border-dashed bg-muted/20 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
+                  title={
+                    snapshot.agendaHoje > 0
+                      ? "Há tarefas de hoje fora deste recorte. Consulte a Agenda."
+                      : "Nada vence hoje no recorte carregado."
+                  }
+                  className="min-h-36 border-dashed bg-muted/20 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
                 />
               ) : (
-                todayItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-xl border border-info/15 bg-info-muted/35 p-4"
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium">{item.titulo}</p>
-                          <StatusBadge tone="info">Hoje</StatusBadge>
-                        </div>
-                        <p className="text-sm leading-6 text-muted-foreground">
-                          {item.contexto}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock3 className="h-4 w-4" />
-                        <span>{formatDay(item.data)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                <HomeAgendaItems items={todayItems} tone="info" />
               )}
             </CardContent>
           </Card>
         </div>
       </section>
 
-      <section aria-label="Atalhos operacionais" className="space-y-3">
-        <SectionHeader
-          level={2}
-          title="Atalhos de registro"
-          description="Criam evento executado; nao autorizam venda, abate ou carencia"
-        />
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-          {[
-            ["Registrar vacinacao", "/registrar?dominio=sanitario"],
-            ["Registrar pesagem", "/registrar?dominio=pesagem"],
-            ["Registrar movimentacao", "/registrar?dominio=movimentacao"],
-            ["Registrar compra", "/registrar?quick=compra"],
-            ["Registrar venda", "/registrar?quick=venda"],
-          ].map(([label, href]) => (
-            <Button
-              key={label}
-              asChild
-              variant="outline"
-              className="h-16 flex-col gap-1.5 rounded-xl text-xs font-medium text-center"
-            >
-              <Link to={href}>
-                <PlusCircle className="h-4 w-4 text-primary" />
-                {label}
-              </Link>
-            </Button>
-          ))}
-        </div>
-      </section>
-
-      <OperationalInsightsPanel
-        viewModel={operationalInsights}
-        homeIndicators={snapshot.homeIndicators}
-      />
-
-      <DecisionRecommendationsPanel
-        recommendations={snapshot.decisionRecommendations}
-      />
-
       {snapshot.replenishmentAlerts.length > 0 ? (
         <Card>
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle>Reposicao de estoque</CardTitle>
+              <CardTitle>Reposição de estoque</CardTitle>
               <StatusBadge
                 tone={
                   snapshot.replenishmentAlerts.some(
@@ -1044,7 +881,7 @@ const Home = () => {
                 )}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-1">
+                  <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{item.insumo}</p>
                       <StatusBadge
@@ -1052,7 +889,7 @@ const Home = () => {
                           item.severity === "critical" ? "danger" : "warning"
                         }
                       >
-                        {item.severity === "critical" ? "Critico" : "Atencao"}
+                        {item.severity === "critical" ? "Crítico" : "Atenção"}
                       </StatusBadge>
                     </div>
                     <p className="text-sm leading-6 text-muted-foreground">
@@ -1081,7 +918,7 @@ const Home = () => {
       {snapshot.sanitaryAttention.totalOpen > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Alertas sanitarios</CardTitle>
+            <CardTitle>Alertas sanitários</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -1119,7 +956,7 @@ const Home = () => {
                   asChild
                   variant="outline"
                   size="sm"
-                  className="h-auto rounded-full px-3 py-1 text-[11px] leading-none"
+                  className="h-auto min-h-11 max-w-full whitespace-normal rounded-full px-3 py-2 text-xs leading-snug"
                 >
                   <Link to={buildAgendaCalendarModePath(mode.key)}>
                     {mode.label} {mode.count}
@@ -1132,7 +969,7 @@ const Home = () => {
                   asChild
                   variant="outline"
                   size="sm"
-                  className="h-auto rounded-full px-3 py-1 text-[11px] leading-none"
+                  className="h-auto min-h-11 max-w-full whitespace-normal rounded-full px-3 py-2 text-xs leading-snug"
                 >
                   <Link to={buildAgendaOperationalClassPath(item.key)}>
                     {item.label} {item.count}
@@ -1152,7 +989,7 @@ const Home = () => {
                   className="rounded-xl border border-border/70 bg-muted/35 p-4"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-1">
+                    <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium">{item.titulo}</p>
                         <StatusBadge tone={item.priorityTone}>
@@ -1199,7 +1036,7 @@ const Home = () => {
               size="sm"
               className="w-full sm:w-auto"
             >
-              <Link to="/agenda">Abrir agenda sanitaria</Link>
+              <Link to="/agenda">Abrir Agenda sanitária</Link>
             </Button>
           </CardContent>
         </Card>
@@ -1208,7 +1045,7 @@ const Home = () => {
       {snapshot.regulatoryCompliance.attention.openCount > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Pendencias regulatorias</CardTitle>
+            <CardTitle>Pendências regulatórias</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -1219,15 +1056,15 @@ const Home = () => {
               ))}
               {snapshot.regulatoryCompliance.flows.nutrition.blockerCount >
               0 ? (
-                <StatusBadge tone="danger">Bloqueia nutricao</StatusBadge>
+                <StatusBadge tone="danger">Bloqueia nutrição</StatusBadge>
               ) : null}
               {snapshot.regulatoryCompliance.flows.sale.blockerCount > 0 ? (
-                <StatusBadge tone="danger">Bloqueia transito/venda</StatusBadge>
+                <StatusBadge tone="danger">Bloqueia trânsito/venda</StatusBadge>
               ) : null}
               {snapshot.regulatoryCompliance.flows.movementInternal
                 .warningCount > 0 &&
               snapshot.regulatoryCompliance.flows.sale.blockerCount === 0 ? (
-                <StatusBadge tone="warning">Exige revisao de lote</StatusBadge>
+                <StatusBadge tone="warning">Exige revisão de lote</StatusBadge>
               ) : null}
             </div>
 
@@ -1252,9 +1089,7 @@ const Home = () => {
 
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="outline" size="sm">
-                <Link to="/protocolos-sanitarios">
-                  Abrir overlay de conformidade
-                </Link>
+                <Link to="/protocolos-sanitarios">Revisar conformidade</Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
                 <Link to="/financeiro">Revisar registros comerciais</Link>
@@ -1264,172 +1099,442 @@ const Home = () => {
         </Card>
       ) : null}
 
-      <section aria-label="Acompanhamento e evolucao" className="space-y-3">
+      <section aria-label="Panorama operacional" className="space-y-3">
         <SectionHeader
           level={2}
-          title="Acompanhamento e evolucao"
-          description="Manejos futuros, transicoes de estagio no rebanho e configuracao inicial"
+          title="Panorama operacional"
+          description="Dados locais na data de referência: estado atual do rebanho, Agenda e fila de sincronização. Protocolos são configurações."
         />
-        <div className="grid gap-4 xl:grid-cols-[1.25fr_0.95fr_0.95fr]">
-          <Card className="shadow-none">
-            <CardHeader>
-              <CardTitle>Proximos manejos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {upcomingItems.length === 0 ? (
-                <EmptyState
-                  icon={CalendarClock}
-                  title="Nenhum manejo futuro no recorte carregado."
-                  className="min-h-[140px] border-dashed bg-muted/20 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
-                />
-              ) : (
-                upcomingItems.map((item) => (
-                  <div
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {[
+            {
+              label: "Atrasadas",
+              value: snapshot.agendaAtrasada,
+              hint: "Pendências vencidas",
+              tone: snapshot.agendaAtrasada > 0 ? "danger" : "neutral",
+              icon: AlertTriangle,
+            },
+            {
+              label: "Hoje",
+              value: snapshot.agendaHoje,
+              hint: "Agenda do dia",
+              tone: snapshot.agendaHoje > 0 ? "warning" : "neutral",
+              icon: CalendarClock,
+            },
+            {
+              label: "Animais ativos",
+              value: snapshot.animais,
+              hint: `${snapshot.lotes} lotes`,
+              tone: "neutral",
+              icon: Beef,
+            },
+            {
+              label: "Fila local",
+              value: snapshot.syncSummary.pendingCount,
+              hint: "A sincronizar",
+              tone:
+                snapshot.syncSummary.pendingCount > 0 ? "warning" : "neutral",
+              icon: Clock3,
+            },
+            {
+              label: "Lotes",
+              value: snapshot.lotes,
+              hint: `${snapshot.pastos} pastos · ${snapshot.protocolos} protocolos ativos`,
+              tone: "neutral",
+              icon: CheckCircle2,
+            },
+            {
+              label: "Alertas sanitários",
+              value: snapshot.sanitaryAttention.criticalCount,
+              hint: "Críticos no horizonte",
+              tone:
+                snapshot.sanitaryAttention.criticalCount > 0
+                  ? "danger"
+                  : "neutral",
+              icon: AlertTriangle,
+            },
+            {
+              label: "Reposição",
+              value: snapshot.replenishmentAlerts.length,
+              hint: "Estoque no radar",
+              tone: snapshot.replenishmentAlerts.some(
+                (item) => item.severity === "critical",
+              )
+                ? "danger"
+                : snapshot.replenishmentAlerts.length > 0
+                  ? "warning"
+                  : "neutral",
+              icon: PackageSearch,
+            },
+          ].map((item) => (
+            <MetricCard
+              className="min-w-0 [&>div]:p-3 [&_p]:break-words"
+              key={item.label}
+              label={item.label}
+              value={item.value}
+              hint={item.hint}
+              icon={<item.icon className="h-4 w-4" />}
+              tone={item.tone === "neutral" ? "default" : item.tone}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section aria-label="Próximas atividades" className="space-y-3">
+        <SectionHeader
+          level={2}
+          title="Próximas atividades"
+          description="Intenções futuras da Agenda; ainda não representam execução."
+          actions={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/agenda">Abrir Agenda</Link>
+            </Button>
+          }
+        />
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle>Próximos manejos</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {upcomingItems.length === 0 ? (
+              <EmptyState
+                icon={CalendarClock}
+                title="Nenhum manejo futuro no recorte carregado."
+                className="min-h-36 border-dashed bg-muted/20 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
+              />
+            ) : (
+              <HomeAgendaItems items={upcomingItems} tone="neutral" />
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section aria-label="Histórico recente" className="space-y-3">
+        <SectionHeader
+          level={2}
+          title="Histórico recente"
+          description="Últimos cinco eventos registrados. Fonte: histórico de eventos deste dispositivo."
+          actions={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/eventos">Ver eventos</Link>
+            </Button>
+          }
+        />
+        <Card>
+          <CardContent className="p-4 sm:p-5">
+            {snapshot.eventosRecentes.length === 0 ? (
+              <EmptyState
+                icon={History}
+                title="Nenhum evento registrado neste dispositivo."
+                description="Os eventos aparecerão aqui após um registro ou carregamento do histórico."
+              />
+            ) : (
+              <ul
+                className="divide-y divide-border/60"
+                aria-label="Últimos eventos registrados"
+              >
+                {snapshot.eventosRecentes.map((item) => (
+                  <li
                     key={item.id}
-                    className="rounded-xl border border-border/70 bg-muted/35 p-4"
+                    className="flex min-w-0 flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
                   >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium">{item.titulo}</p>
-                          <StatusBadge
-                            tone={
-                              item.status === "atrasado"
-                                ? "warning"
-                                : item.status === "hoje"
-                                  ? "info"
-                                  : "neutral"
-                            }
-                          >
-                            {item.status === "atrasado"
-                              ? "Atrasado"
-                              : item.status === "hoje"
-                                ? "Hoje"
-                                : "Proximo"}
-                          </StatusBadge>
-                        </div>
-                        <p className="text-sm leading-6 text-muted-foreground">
-                          {item.contexto}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock3 className="h-4 w-4" />
-                        <span>{formatDay(item.data)}</span>
-                      </div>
+                    <div className="min-w-0 space-y-1">
+                      <p className="break-words font-medium">{item.titulo}</p>
+                      <p className="break-words text-sm text-muted-foreground">
+                        {item.contexto}
+                      </p>
                     </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                    <time
+                      dateTime={item.data}
+                      className="shrink-0 text-sm text-muted-foreground"
+                    >
+                      {formatDay(item.data)}
+                    </time>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </section>
 
+      <section aria-label="Atalhos operacionais" className="space-y-3">
+        <SectionHeader
+          level={2}
+          title="Atalhos de registro"
+          description="Abrem o Registrar com contexto. Nenhuma operação é executada antes da revisão e confirmação."
+        />
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            ["Registrar vacinação", "/registrar?dominio=sanitario"],
+            ["Registrar pesagem", "/registrar?dominio=pesagem"],
+            ["Registrar movimentação", "/registrar?dominio=movimentacao"],
+            ["Registrar compra", "/registrar?quick=compra"],
+            ["Registrar venda", "/registrar?quick=venda"],
+          ].map(([label, href]) => (
+            <Button
+              key={label}
+              asChild
+              variant="outline"
+              className="h-auto min-h-20 min-w-0 flex-col gap-2 whitespace-normal rounded-xl px-3 text-center text-sm font-medium"
+            >
+              <Link to={href}>
+                <PlusCircle className="h-4 w-4 text-primary" />
+                {label}
+              </Link>
+            </Button>
+          ))}
+        </div>
+      </section>
+
+      <details className="group min-w-0 rounded-xl border border-border/70 bg-card p-4 sm:p-5">
+        <summary className="min-h-12 cursor-pointer rounded-lg text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          Insights e recomendações auxiliares
+        </summary>
+        <div className="min-w-0 space-y-6 border-t border-border/60 pt-4 [&_.grid>*]:min-w-0 [&_span]:min-w-0 [&_span]:break-words [&_a]:h-auto [&_a]:min-h-11 [&_a]:whitespace-normal">
+          <p className="text-sm text-muted-foreground">
+            Leituras derivadas para consulta. Recomendações não são fatos
+            executados nem autorizações operacionais.
+          </p>
+          <OperationalInsightsPanel
+            viewModel={operationalInsights}
+            homeIndicators={snapshot.homeIndicators}
+          />
+
+          <DecisionRecommendationsPanel
+            recommendations={snapshot.decisionRecommendations}
+          />
+        </div>
+      </details>
+
+      <details className="min-w-0 rounded-xl border border-border/70 bg-card p-4 sm:p-5">
+        <summary className="min-h-12 cursor-pointer rounded-lg text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          Acompanhamento do rebanho e primeiros passos
+        </summary>
+        <div className="grid gap-4 border-t border-border/60 pt-4 xl:grid-cols-2">
           <Card className="shadow-none">
             <CardHeader>
-              <CardTitle>Transicoes de estagio</CardTitle>
+              <CardTitle>Transições de estágio</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {snapshot.lifecyclePendings.length === 0 ? (
                 <EmptyState
                   icon={Beef}
                   title="Nenhum animal precisa de transicao de estagio neste momento."
-                  className="min-h-[140px] border-dashed bg-muted/20 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
+                  className="min-h-36 border-dashed bg-muted/20 py-6 text-muted-foreground [&>h3]:text-sm [&>h3]:font-normal [&>svg]:h-6 [&>svg]:w-6 [&>svg]:mb-2"
                 />
               ) : (
-              snapshot.lifecyclePendings.map((item) => (
+                snapshot.lifecyclePendings.map((item) => (
+                  <div
+                    key={item.animalId}
+                    className="rounded-xl border border-border/70 bg-muted/35 p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-medium">{item.identificacao}</p>
+                      <StatusBadge
+                        tone={item.canAutoApply ? "info" : "warning"}
+                      >
+                        {item.canAutoApply
+                          ? "Auto/híbrido"
+                          : "Confirmação manual"}
+                      </StatusBadge>
+                    </div>
+                    <p className="mt-2 text-sm text-foreground">
+                      {item.currentStageLabel} para {item.targetStageLabel}
+                    </p>
+                    <p className="mt-1 text-xs font-medium uppercase text-muted-foreground">
+                      {item.queueKindLabel}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {item.reason}
+                    </p>
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="mt-3"
+                    >
+                      <Link to={`/animais/${item.animalId}`}>Abrir ficha</Link>
+                    </Button>
+                  </div>
+                ))
+              )}
+
+              {snapshot.lifecyclePendingCount >
+              snapshot.lifecyclePendings.length ? (
+                <Button asChild variant="ghost" size="sm" className="w-full">
+                  <Link to="/animais/transicoes">
+                    Ver mais{" "}
+                    {snapshot.lifecyclePendingCount -
+                      snapshot.lifecyclePendings.length}
+                  </Link>
+                </Button>
+              ) : null}
+
+              {snapshot.lifecyclePendingCount > 0 ? (
+                <Button asChild variant="outline" size="sm" className="w-full">
+                  <Link to="/animais/transicoes">
+                    Revisar transições em lote
+                  </Link>
+                </Button>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Primeiros passos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {snapshot.checklist.map((item) => (
                 <div
-                  key={item.animalId}
+                  key={item.label}
                   className="rounded-xl border border-border/70 bg-muted/35 p-4"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-medium">{item.identificacao}</p>
-                    <StatusBadge tone={item.canAutoApply ? "info" : "warning"}>
-                      {item.canAutoApply
-                        ? "Auto/hibrido"
-                        : "Confirmacao manual"}
-                    </StatusBadge>
-                  </div>
-                  <p className="mt-2 text-sm text-foreground">
-                    {item.currentStageLabel} para {item.targetStageLabel}
-                  </p>
-                  <p className="mt-1 text-xs font-medium uppercase text-muted-foreground">
-                    {item.queueKindLabel}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {item.reason}
-                  </p>
-                  <Button asChild size="sm" variant="outline" className="mt-3">
-                    <Link to={`/animais/${item.animalId}`}>Abrir ficha</Link>
-                  </Button>
-                </div>
-              ))
-            )}
-
-            {snapshot.lifecyclePendingCount >
-            snapshot.lifecyclePendings.length ? (
-              <Button asChild variant="ghost" size="sm" className="w-full">
-                <Link to="/animais/transicoes">
-                  Ver mais{" "}
-                  {snapshot.lifecyclePendingCount -
-                    snapshot.lifecyclePendings.length}
-                </Link>
-              </Button>
-            ) : null}
-
-            {snapshot.lifecyclePendingCount > 0 ? (
-              <Button asChild variant="outline" size="sm" className="w-full">
-                <Link to="/animais/transicoes">Abrir mutacao em lote</Link>
-              </Button>
-            ) : null}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Primeiros passos</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {snapshot.checklist.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-xl border border-border/70 bg-muted/35 p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      {item.done ? (
-                        <CheckCircle2 className="h-4 w-4 text-success" />
-                      ) : (
-                        <AlertTriangle className="h-4 w-4 text-warning" />
-                      )}
-                      <p className="font-medium">{item.label}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        {item.done ? (
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-warning" />
+                        )}
+                        <p className="font-medium">{item.label}</p>
+                      </div>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {item.helper}
+                      </p>
                     </div>
-                    <p className="text-sm leading-6 text-muted-foreground">
-                      {item.helper}
-                    </p>
+                    <Button
+                      asChild
+                      variant={item.done ? "ghost" : "outline"}
+                      size="sm"
+                    >
+                      <Link to={item.path}>
+                        {item.done ? "Revisar" : "Abrir"}
+                      </Link>
+                    </Button>
                   </div>
-                  <Button
-                    asChild
-                    variant={item.done ? "ghost" : "outline"}
-                    size="sm"
-                  >
-                    <Link to={item.path}>
-                      {item.done ? "Revisar" : "Abrir"}
-                    </Link>
-                  </Button>
                 </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+              ))}
+            </CardContent>
+          </Card>
         </div>
-      </section>
-
-      <SyncStatusPanel
-        summary={selectFarmSyncSummary(snapshot.syncSummary, activeFarmId)}
-      />
+      </details>
     </PageContainer>
   );
 };
 
-export default Home;
+function HomeAgendaItems({
+  items,
+  tone,
+}: {
+  items: HomeSnapshot["proximosItens"];
+  tone: "danger" | "info" | "neutral";
+}) {
+  return (
+    <ul className="space-y-3">
+      {items.map((item) => (
+        <li
+          key={item.id}
+          className={cn(
+            "min-w-0 rounded-xl border p-4",
+            tone === "danger"
+              ? "border-destructive/20 bg-background/70"
+              : tone === "info"
+                ? "border-info/15 bg-info-muted/35"
+                : "border-border/70 bg-muted/35",
+          )}
+        >
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="break-words font-medium">{item.titulo}</p>
+                <StatusBadge tone={tone}>
+                  {item.status === "atrasado"
+                    ? "Atrasado"
+                    : item.status === "hoje"
+                      ? "Hoje"
+                      : "Próximo"}
+                </StatusBadge>
+              </div>
+              <p className="break-words text-sm leading-6 text-muted-foreground">
+                {item.contexto}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
+              <Clock3 aria-hidden="true" className="h-4 w-4" />
+              <time dateTime={item.data}>{formatDay(item.data)}</time>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function HomeConnectionNotice() {
+  const [offline, setOffline] = useState(() => !navigator.onLine);
+  useEffect(() => {
+    const update = () => setOffline(!navigator.onLine);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+  if (!offline) return null;
+  return (
+    <div
+      role="status"
+      className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4 text-sm"
+    >
+      <WifiOff aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+      <p>
+        Você está offline. Consultando os dados deste dispositivo. A
+        sincronização depende de conexão e confirmação do servidor.
+      </p>
+    </div>
+  );
+}
+
+class HomeReadBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    if (this.state.failed)
+      return (
+        <PageContainer width="full">
+          <div role="alert">
+            <EmptyState
+              icon={AlertTriangle}
+              title="Não foi possível carregar a rotina da fazenda"
+              description="Tente consultar novamente. Esta ação não remove registros salvos neste dispositivo."
+              action={{
+                label: "Tentar novamente",
+                onClick: () => this.setState({ failed: false }),
+              }}
+            />
+          </div>
+        </PageContainer>
+      );
+    return this.props.children;
+  }
+}
+
+const HomePage = () => {
+  const { activeFarmId } = useAuth();
+  return (
+    <HomeReadBoundary key={activeFarmId}>
+      <Home />
+    </HomeReadBoundary>
+  );
+};
+
+export default HomePage;
