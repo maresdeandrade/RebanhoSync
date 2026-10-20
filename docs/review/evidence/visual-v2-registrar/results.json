@@ -1,0 +1,272 @@
+[
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "contexto",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "operacoes",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "formulario-extenso",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "erro",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "revisao",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "light",
+    "stage": "offline-save",
+    "events": 12,
+    "weights": 12,
+    "gestures": 1,
+    "ops": 24,
+    "toast": "Retorno após registro local\n\nExecução registrada com sucesso. Sincronização pendente."
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "contexto",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "operacoes",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "formulario-extenso",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "erro",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "revisao",
+    "viewport": 320,
+    "scroll": 320
+  },
+  {
+    "width": 320,
+    "theme": "dark",
+    "stage": "offline-save",
+    "events": 12,
+    "weights": 12,
+    "gestures": 1,
+    "ops": 24,
+    "toast": "Retorno após registro local\n\nExecução registrada com sucesso. Sincronização pendente."
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "contexto",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "operacoes",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "formulario-extenso",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "erro",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "revisao",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "light",
+    "stage": "offline-save",
+    "events": 12,
+    "weights": 12,
+    "gestures": 1,
+    "ops": 24,
+    "toast": "Retorno após registro local\n\nExecução registrada com sucesso. Sincronização pendente."
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "contexto",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "operacoes",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "formulario-extenso",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "erro",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "revisao",
+    "viewport": 390,
+    "scroll": 390
+  },
+  {
+    "width": 390,
+    "theme": "dark",
+    "stage": "offline-save",
+    "events": 12,
+    "weights": 12,
+    "gestures": 1,
+    "ops": 24,
+    "toast": "Retorno após registro local\n\nExecução registrada com sucesso. Sincronização pendente."
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "contexto",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "operacoes",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "formulario-extenso",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "erro",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "revisao",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "stage": "offline-save",
+    "events": 12,
+    "weights": 12,
+    "gestures": 1,
+    "ops": 24,
+    "toast": "Retorno após registro local\n\nExecução registrada com sucesso. Sincronização pendente."
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "contexto",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "operacoes",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "formulario-extenso",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "erro",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "revisao",
+    "viewport": 1280,
+    "scroll": 1280
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "stage": "offline-save",
+    "events": 12,
+    "weights": 12,
+    "gestures": 1,
+    "ops": 24,
+    "toast": "Retorno após registro local\n\nExecução registrada com sucesso. Sincronização pendente."
+  }
+]

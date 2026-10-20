@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StateBanner } from "@/components/ui/state-banner";
 
@@ -31,6 +31,8 @@ export function RegistrarStickyActionBar({
   return (
     <div
       aria-busy={isFinalizing}
+      role="group"
+      aria-label="Ações do registro"
       className="relative -mx-4 -mb-4 mt-4 rounded-b-xl border-t bg-card px-4 py-2 sm:-mx-5 sm:-mb-5 sm:px-5 md:sticky md:bottom-0 md:z-40 md:py-3 md:shadow-soft"
     >
       {isChooseActionStep && actionStepIssues.length > 0 && (
@@ -44,12 +46,18 @@ export function RegistrarStickyActionBar({
       )}
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <Button variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isFinalizing}
+          onClick={onBack}
+        >
           <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
 
         {isChooseActionStep && (
           <Button
+            type="button"
             className="h-auto min-h-12 min-w-0 flex-1 whitespace-normal px-2 text-xs sm:px-4 sm:text-sm md:h-12 md:px-5"
             disabled={!tipoManejo || !canAdvanceToConfirm}
             onClick={onNext}
@@ -60,11 +68,19 @@ export function RegistrarStickyActionBar({
 
         {isConfirmStep && (
           <Button
+            type="button"
             className="h-auto min-h-12 min-w-0 flex-1 whitespace-normal px-2 text-sm font-semibold shadow-sm sm:px-4 sm:text-base md:h-12 md:px-5"
             onClick={onFinalize}
             disabled={isFinalizing}
           >
-            <Check className="mr-2 h-4 w-4" />{" "}
+            {isFinalizing ? (
+              <Loader2
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin motion-reduce:animate-none"
+              />
+            ) : (
+              <Check aria-hidden="true" className="h-4 w-4" />
+            )}{" "}
             {isFinalizing
               ? "Registrando..."
               : sourceTaskId
