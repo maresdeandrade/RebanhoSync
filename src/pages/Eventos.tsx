@@ -1,20 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+import { Component, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Dexie from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   Calendar,
+  ChevronDown,
+  History,
   MoreHorizontal,
   PackageMinus,
   PlusCircle,
   RefreshCw,
   Search,
+  WifiOff,
 } from "lucide-react";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import {
   getGestureSyncStage,
   getSyncStageLabel,
+  getSyncStageTone,
   type SyncStage,
 } from "@/lib/offline/syncPresentation";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,6 +40,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -183,7 +190,9 @@ function formatSanitaryEventDetail(detail: EventoSanitario): string {
     dose ? `dose ${dose}` : null,
     detail.via_aplicacao ? `via ${detail.via_aplicacao}` : null,
     detail.responsavel_nome ? `responsavel ${detail.responsavel_nome}` : null,
-    withdrawal.length > 0 ? `carencia ${withdrawal.join(" / ")}` : "sem carencia",
+    withdrawal.length > 0
+      ? `carencia ${withdrawal.join(" / ")}`
+      : "sem carencia",
     detail.custo_total_snapshot != null
       ? `custo ${toCurrency(detail.custo_total_snapshot)}`
       : "custo ausente",
@@ -205,7 +214,7 @@ function toDateTime(value: string) {
 
 const PAGE_SIZE = 50;
 
-const Eventos = () => {
+const EventosContent = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightedEventId = searchParams.get("eventoId");
@@ -217,6 +226,17 @@ const Eventos = () => {
     parseRegulatoryAnalyticsImpactKey(searchParams.get("overlayImpact")) ??
     "all";
   const { activeFarmId, farmMeasurementConfig } = useAuth();
+  const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
+
+  useEffect(() => {
+    const updateConnection = () => setIsOffline(!navigator.onLine);
+    window.addEventListener("online", updateConnection);
+    window.addEventListener("offline", updateConnection);
+    return () => {
+      window.removeEventListener("online", updateConnection);
+      window.removeEventListener("offline", updateConnection);
+    };
+  }, []);
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -298,12 +318,18 @@ const Eventos = () => {
         db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
         db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
         db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_agenda_itens
+          .where("fazenda_id")
+          .equals(activeFarmId)
+          .toArray(),
         db.state_insumo_movimentacoes
           .where("fazenda_id")
           .equals(activeFarmId)
           .toArray(),
-        db.state_insumo_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
+        db.state_insumo_lotes
+          .where("fazenda_id")
+          .equals(activeFarmId)
+          .toArray(),
       ]);
 
     const animalById = new Map(animais.map((a) => [a.id, a]));
@@ -445,7 +471,9 @@ const Eventos = () => {
       lotes: lotes.filter((l) => !l.deleted_at),
       gestos,
       agenda: agenda.filter((item) => !item.deleted_at),
-      insumoMovimentacoes: insumoMovimentacoes.filter((item) => !item.deleted_at),
+      insumoMovimentacoes: insumoMovimentacoes.filter(
+        (item) => !item.deleted_at,
+      ),
       insumoLotes: insumoLotes.filter((item) => !item.deleted_at),
     };
   }, [
@@ -456,7 +484,7 @@ const Eventos = () => {
     syncFilter,
     dateFrom,
     dateTo,
-    search,
+    debouncedSearch,
     visibleCount,
     regulatorySubareaFilter,
     regulatoryImpactFilter,
@@ -659,7 +687,10 @@ const Eventos = () => {
       return;
     }
     const agendaItemIds = data.agenda
-      .filter((item) => item.status === "agendado" && item.source_evento_id === eventoId)
+      .filter(
+        (item) =>
+          item.status === "agendado" && item.source_evento_id === eventoId,
+      )
       .map((item) => item.id);
     const motivo =
       action === "resolver"
@@ -680,7 +711,9 @@ const Eventos = () => {
         acaoRealizada: motivo,
       });
       await createGesture(activeFarmId, built.ops);
-      showSuccess("Resolucao registrada neste aparelho. Sincronizacao pendente.");
+      showSuccess(
+        "Resolucao registrada neste aparelho. Sincronizacao pendente.",
+      );
     } catch {
       showError("Falha ao registrar resolucao da ocorrencia.");
     }
@@ -826,6 +859,10 @@ const Eventos = () => {
           detail,
           amount,
           syncStage,
+          syncKnown:
+            !evento.client_tx_id ||
+            gestoByTx.has(evento.client_tx_id) ||
+            !!evento.server_received_at,
           canCreateInventoryConsumption,
         };
       })
@@ -837,6 +874,7 @@ const Eventos = () => {
       detail: string;
       amount: number | null;
       syncStage: SyncStage;
+      syncKnown: boolean;
       canCreateInventoryConsumption: boolean;
     }>;
 
@@ -894,8 +932,20 @@ const Eventos = () => {
     dateTo.length > 0 ||
     hasRegulatoryAnalyticalFilters;
 
+  const clearFilters = () => {
+    setSearch("");
+    setDomainFilter("all");
+    setAnimalFilter("all");
+    setLoteFilter("all");
+    setSyncFilter("all");
+    setDateFrom("");
+    setDateTo("");
+    setRegulatorySubareaFilter("all");
+    setRegulatoryImpactFilter("all");
+  };
+
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-5">
       <PageIntro
         variant="plain"
         eyebrow="Historico de eventos executados"
@@ -903,9 +953,11 @@ const Eventos = () => {
         description="Lista fatos ja registrados. Novo registro abre o fluxo manual e nao transforma agenda em historico."
         meta={
           <>
-            <StatusBadge tone="neutral">
-              {data?.totalCount ?? 0} registro(s) filtrado(s)
-            </StatusBadge>
+            {data ? (
+              <StatusBadge tone="neutral">
+                {data.totalCount} registro(s) filtrado(s)
+              </StatusBadge>
+            ) : null}
             {hasActiveFilters ? (
               <StatusBadge tone="info">Filtros ativos</StatusBadge>
             ) : null}
@@ -942,13 +994,58 @@ const Eventos = () => {
         }
       />
 
+      {isOffline ? (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-xl border border-border bg-muted/50 p-4 text-sm"
+        >
+          <WifiOff aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Você está offline. Consultando os registros deste dispositivo.
+            Alterações locais ainda precisam de sincronização.
+          </p>
+        </div>
+      ) : null}
+
+      {data ? (
+        <section aria-label="Resumo dos eventos exibidos" className="space-y-2">
+          <div className="grid grid-cols-3 gap-2">
+            <StatusBadge
+              tone="neutral"
+              className="flex-col items-start justify-between gap-2 rounded-xl p-3 sm:flex-row sm:items-center"
+            >
+              <span>Exibidos</span>
+              <span className="text-lg tabular-nums">{timeline.length}</span>
+            </StatusBadge>
+            <StatusBadge
+              tone={syncSummary.pending > 0 ? "warning" : "neutral"}
+              className="flex-col items-start justify-between gap-2 rounded-xl p-3 sm:flex-row sm:items-center"
+            >
+              <span>Envio pendente / em curso</span>
+              <span className="text-lg tabular-nums">
+                {syncSummary.pending}
+              </span>
+            </StatusBadge>
+            <StatusBadge
+              tone={syncSummary.errors > 0 ? "danger" : "neutral"}
+              className="flex-col items-start justify-between gap-2 rounded-xl p-3 sm:flex-row sm:items-center"
+            >
+              <span>Revisar envio</span>
+              <span className="text-lg tabular-nums">{syncSummary.errors}</span>
+            </StatusBadge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Resumo somente dos {timeline.length} eventos exibidos, conforme os
+            filtros. Fonte: eventos registrados e situação de envio local.
+          </p>
+        </section>
+      ) : null}
+
       {regulatoryReadModel.attention.openCount > 0 ? (
         <Card className="border-warning/25 bg-warning-muted/50 shadow-none">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle className="text-base">Atenção de conformidade</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Conformidade aberta
-            </p>
+            <p className="text-sm text-muted-foreground">Conformidade aberta</p>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2">
@@ -998,251 +1095,328 @@ const Eventos = () => {
         </Card>
       ) : null}
 
-      <Toolbar className="bg-muted/20 shadow-none">
-        <ToolbarGroup className="flex-1 gap-2">
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por dominio, animal, lote ou observacao"
-              className="pl-9"
-            />
+      <section aria-label="Busca e filtros dos eventos" className="space-y-3">
+        <Toolbar>
+          <ToolbarGroup className="w-full flex-1 gap-2">
+            <div className="relative w-full min-w-0 flex-1">
+              <Search
+                aria-hidden="true"
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                aria-label="Buscar eventos"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Buscar por dominio, animal, lote ou observacao"
+                className="min-h-11 bg-background pl-9"
+              />
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11 text-muted-foreground hover:text-foreground"
+              onClick={clearFilters}
+            >
+              <RefreshCw aria-hidden="true" className="h-4 w-4" />
+              {hasRegulatoryAnalyticalFilters
+                ? "Limpar recorte regulatorio"
+                : "Limpar filtros"}
+            </Button>
+          </ToolbarGroup>
+        </Toolbar>
+
+        <div className="grid min-w-0 grid-cols-2 gap-3 xl:grid-cols-4">
+          <div className="min-w-0 space-y-1.5">
+            <Label htmlFor="eventos-domain">Domínio</Label>
+            <Select
+              value={domainFilter}
+              onValueChange={(value) =>
+                setDomainFilter(value as "all" | DominioEnum)
+              }
+            >
+              <SelectTrigger
+                id="eventos-domain"
+                aria-label="Filtrar por dominio"
+                className="min-h-11 w-full min-w-0 bg-muted/50"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os dominios</SelectItem>
+                <SelectItem value="sanitario">Sanitario</SelectItem>
+                <SelectItem value="alerta_sanitario">
+                  Alerta sanitario
+                </SelectItem>
+                <SelectItem value="conformidade">Conformidade</SelectItem>
+                <SelectItem value="pesagem">Pesagem</SelectItem>
+                <SelectItem value="movimentacao">Movimentacao</SelectItem>
+                <SelectItem value="nutricao">Nutricao</SelectItem>
+                <SelectItem value="reproducao">Reproducao</SelectItem>
+                <SelectItem value="financeiro">Financeiro</SelectItem>
+                <SelectItem value="obito">Óbito</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <Select
-            value={domainFilter}
-            onValueChange={(value) =>
-              setDomainFilter(value as "all" | DominioEnum)
-            }
-          >
-            <SelectTrigger
-              aria-label="Filtrar por dominio"
-              className="w-full sm:w-[180px]"
+          <div className="min-w-0 space-y-1.5">
+            <Label htmlFor="eventos-animal">Animal</Label>
+            <Select value={animalFilter} onValueChange={setAnimalFilter}>
+              <SelectTrigger
+                id="eventos-animal"
+                aria-label="Filtrar por animal"
+                className="min-h-11 w-full min-w-0 bg-muted/50"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os animais</SelectItem>
+                {animais.map((animal) => (
+                  <SelectItem key={animal.id} value={animal.id}>
+                    {animal.identificacao}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="min-w-0 space-y-1.5">
+            <Label htmlFor="eventos-lote">Lote</Label>
+            <Select value={loteFilter} onValueChange={setLoteFilter}>
+              <SelectTrigger
+                id="eventos-lote"
+                aria-label="Filtrar por lote"
+                className="min-h-11 w-full min-w-0 bg-muted/50"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os lotes</SelectItem>
+                {lotes.map((lote) => (
+                  <SelectItem key={lote.id} value={lote.id}>
+                    {lote.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="min-w-0 space-y-1.5">
+            <Label htmlFor="eventos-sync">Envio</Label>
+            <Select
+              value={syncFilter}
+              onValueChange={(value) => setSyncFilter(value as SyncFilter)}
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os dominios</SelectItem>
-              <SelectItem value="sanitario">Sanitario</SelectItem>
-              <SelectItem value="alerta_sanitario">Alerta sanitario</SelectItem>
-              <SelectItem value="conformidade">Conformidade</SelectItem>
-              <SelectItem value="pesagem">Pesagem</SelectItem>
-              <SelectItem value="movimentacao">Movimentacao</SelectItem>
-              <SelectItem value="nutricao">Nutricao</SelectItem>
-              <SelectItem value="reproducao">Reproducao</SelectItem>
-              <SelectItem value="financeiro">Financeiro</SelectItem>
-              <SelectItem value="obito">Óbito</SelectItem>
-            </SelectContent>
-          </Select>
+              <SelectTrigger
+                id="eventos-sync"
+                aria-label="Filtrar por envio"
+                className="min-h-11 w-full min-w-0 bg-muted/50"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo envio</SelectItem>
+                <SelectItem value="SYNCED">Enviado</SelectItem>
+                <SelectItem value="PENDING">Aguardando envio</SelectItem>
+                <SelectItem value="SYNCING">Enviando</SelectItem>
+                <SelectItem value="ERROR">Erro no envio</SelectItem>
+                <SelectItem value="REJECTED">Rejeitado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-          <Select value={animalFilter} onValueChange={setAnimalFilter}>
-            <SelectTrigger
-              aria-label="Filtrar por animal"
-              className="w-full sm:w-[180px]"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os animais</SelectItem>
-              {animais.map((animal) => (
-                <SelectItem key={animal.id} value={animal.id}>
-                  {animal.identificacao}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid gap-3 min-[360px]:grid-cols-2 xl:max-w-xl">
+          <div className="min-w-0 space-y-1.5">
+            <Label htmlFor="eventos-date-from">Data inicial</Label>
+            <Input
+              id="eventos-date-from"
+              type="date"
+              aria-label="Data inicial"
+              value={dateFrom}
+              onChange={(event) => setDateFrom(event.target.value)}
+              className="min-h-11 w-full min-w-0 bg-background [color-scheme:light] dark:[color-scheme:dark]"
+            />
+          </div>
+          <div className="min-w-0 space-y-1.5">
+            <Label htmlFor="eventos-date-to">Data final</Label>
+            <Input
+              id="eventos-date-to"
+              type="date"
+              aria-label="Data final"
+              value={dateTo}
+              onChange={(event) => setDateTo(event.target.value)}
+              className="min-h-11 w-full min-w-0 bg-background [color-scheme:light] dark:[color-scheme:dark]"
+            />
+          </div>
+        </div>
+      </section>
 
-          <Select value={loteFilter} onValueChange={setLoteFilter}>
-            <SelectTrigger
-              aria-label="Filtrar por lote"
-              className="w-full sm:w-[180px]"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os lotes</SelectItem>
-              {lotes.map((lote) => (
-                <SelectItem key={lote.id} value={lote.id}>
-                  {lote.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={syncFilter}
-            onValueChange={(value) => setSyncFilter(value as SyncFilter)}
-          >
-            <SelectTrigger
-              aria-label="Filtrar por envio"
-              className="w-full sm:w-[180px]"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todo envio</SelectItem>
-              <SelectItem value="SYNCED">Enviado</SelectItem>
-              <SelectItem value="PENDING">Aguardando envio</SelectItem>
-              <SelectItem value="SYNCING">Enviando</SelectItem>
-              <SelectItem value="ERROR">Erro no envio</SelectItem>
-              <SelectItem value="REJECTED">Rejeitado</SelectItem>
-            </SelectContent>
-          </Select>
-        </ToolbarGroup>
-
-        <ToolbarGroup className="gap-2">
-          <Input
-            type="date"
-            aria-label="Data inicial"
-            value={dateFrom}
-            onChange={(event) => setDateFrom(event.target.value)}
-            className="w-full sm:w-[160px]"
-          />
-          <Input
-            type="date"
-            aria-label="Data final"
-            value={dateTo}
-            onChange={(event) => setDateTo(event.target.value)}
-            className="w-full sm:w-[160px]"
-          />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setSearch("");
-              setDomainFilter("all");
-              setAnimalFilter("all");
-              setLoteFilter("all");
-              setSyncFilter("all");
-              setDateFrom("");
-              setDateTo("");
-              setRegulatorySubareaFilter("all");
-              setRegulatoryImpactFilter("all");
-            }}
-          >
-            <RefreshCw className="h-4 w-4" />
-            {hasRegulatoryAnalyticalFilters
-              ? "Limpar recorte regulatorio"
-              : "Limpar filtros"}
-          </Button>
-        </ToolbarGroup>
-      </Toolbar>
-
-      <Card className="shadow-none">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Excecoes sanitarias</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2">
+      {data ? (
+        <details
+          open={sanitaryExceptionSummary.totalOpen > 0}
+          className="group rounded-xl border border-border/70 bg-card"
+        >
+          <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-center gap-3 rounded-xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <ChevronDown
+              aria-hidden="true"
+              className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
+            />
+            <h2 className="text-sm font-semibold">Exceções sanitárias</h2>
             <StatusBadge
-              tone={sanitaryExceptionSummary.totalOpen > 0 ? "warning" : "success"}
+              tone={
+                sanitaryExceptionSummary.totalOpen > 0 ? "warning" : "neutral"
+              }
             >
               {sanitaryExceptionSummary.totalOpen} abertas
             </StatusBadge>
-            <StatusBadge tone="neutral">
-              {sanitaryExceptionSummary.inconsistentStockCount} estoque
-            </StatusBadge>
-            <StatusBadge tone="neutral">
-              {sanitaryExceptionSummary.missingCostCount} custo ausente
-            </StatusBadge>
-            <StatusBadge tone="neutral">
-              {sanitaryExceptionSummary.overdueCorrectivePendingCount} vencidas
-            </StatusBadge>
-          </div>
+          </summary>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Leitura dos eventos carregados. Não representa a situação completa
+              da fazenda.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge tone="neutral">
+                {sanitaryExceptionSummary.inconsistentStockCount} estoque
+              </StatusBadge>
+              <StatusBadge tone="neutral">
+                {sanitaryExceptionSummary.missingCostCount} custo ausente
+              </StatusBadge>
+              <StatusBadge tone="neutral">
+                {sanitaryExceptionSummary.overdueCorrectivePendingCount}{" "}
+                vencidas
+              </StatusBadge>
+            </div>
 
-          {sanitaryExceptions
-            .filter((item) => item.status === "open")
-            .slice(0, 5)
-            .map((exception) => (
-              <div
-                key={exception.id}
-                className="flex flex-col gap-3 rounded-lg border border-border/70 p-3 md:flex-row md:items-start md:justify-between"
-              >
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge
-                      tone={
-                        exception.severity === "critical"
-                          ? "danger"
-                          : exception.severity === "warning"
-                            ? "warning"
-                            : "neutral"
-                      }
-                    >
-                      {exception.code}
-                    </StatusBadge>
-                    <span className="text-xs text-muted-foreground">
-                      Fonte: {exception.source}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium">{exception.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {exception.recommended_action}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {exception.evento_id ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setComplementTargetId(exception.evento_id ?? null);
-                        setComplementText("");
-                      }}
-                    >
-                      Complementar
-                    </Button>
-                  ) : null}
-                  {(exception.code === "ocorrencia_biosseguranca_aberta" ||
-                    exception.code === "suspeita_notificavel_aberta" ||
-                    exception.code === "ocorrencia_com_pendencia_aberta") &&
-                  exception.source_evento_id ? (
-                    <>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() =>
-                          handleResolveOccurrence(
-                            exception.source_evento_id!,
-                            "resolver",
-                          )
+            {sanitaryExceptions
+              .filter((item) => item.status === "open")
+              .slice(0, 5)
+              .map((exception) => (
+                <div
+                  key={exception.id}
+                  className="flex flex-col gap-3 rounded-lg border border-border/70 p-3 md:flex-row md:items-start md:justify-between"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge
+                        tone={
+                          exception.severity === "critical"
+                            ? "danger"
+                            : exception.severity === "warning"
+                              ? "warning"
+                              : "neutral"
                         }
                       >
-                        Resolver
-                      </Button>
+                        {exception.code}
+                      </StatusBadge>
+                      <span className="text-xs text-muted-foreground">
+                        Fonte: {exception.source}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium">{exception.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {exception.recommended_action}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {exception.evento_id ? (
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={() =>
-                          handleResolveOccurrence(
-                            exception.source_evento_id!,
-                            "cancelar",
-                          )
-                        }
+                        onClick={() => {
+                          setComplementTargetId(exception.evento_id ?? null);
+                          setComplementText("");
+                        }}
                       >
-                        Cancelar
+                        Complementar
                       </Button>
-                    </>
-                  ) : null}
+                    ) : null}
+                    {(exception.code === "ocorrencia_biosseguranca_aberta" ||
+                      exception.code === "suspeita_notificavel_aberta" ||
+                      exception.code === "ocorrencia_com_pendencia_aberta") &&
+                    exception.source_evento_id ? (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() =>
+                            handleResolveOccurrence(
+                              exception.source_evento_id!,
+                              "resolver",
+                            )
+                          }
+                        >
+                          Resolver
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            handleResolveOccurrence(
+                              exception.source_evento_id!,
+                              "cancelar",
+                            )
+                          }
+                        >
+                          Cancelar
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            ))}
-        </CardContent>
-      </Card>
-
-      {timeline.length === 0 ? (
-        <Card className="shadow-none">
-          <CardContent className="p-10 text-center">
-            <Calendar className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <p className="font-medium">Nenhum evento encontrado</p>
+              ))}
           </CardContent>
-        </Card>
+        </details>
+      ) : null}
+
+      {!activeFarmId ? (
+        <EmptyState
+          icon={Calendar}
+          title="Selecione uma fazenda"
+          description="O histórico será exibido para a fazenda ativa."
+        />
+      ) : !data ? (
+        <div
+          role="status"
+          aria-label="Carregando eventos"
+          className="space-y-3"
+        >
+          <p className="text-sm text-muted-foreground">
+            Carregando o histórico deste dispositivo…
+          </p>
+          <Skeleton className="h-32 rounded-xl" />
+          <Skeleton className="h-32 rounded-xl" />
+        </div>
+      ) : timeline.length === 0 ? (
+        <EmptyState
+          icon={History}
+          title={
+            hasActiveFilters
+              ? "Nenhum evento para estes filtros"
+              : "Nenhum evento registrado"
+          }
+          description={
+            hasActiveFilters
+              ? "Ajuste a busca ou limpe os filtros para consultar outros registros."
+              : "Os fatos registrados nesta fazenda aparecerão aqui. Tarefas futuras ficam na Agenda."
+          }
+          action={
+            hasActiveFilters
+              ? { label: "Limpar filtros", onClick: clearFilters }
+              : undefined
+          }
+        />
       ) : (
-        <div className="space-y-3">
+        <section aria-label="Histórico de eventos" className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base font-semibold">Histórico registrado</h2>
+            <p role="status" className="text-xs text-muted-foreground">
+              {timeline.length} de {data.totalCount} registros · Mais recentes
+              primeiro
+            </p>
+          </div>
           {timeline.map((row) => {
             const isHighlighted = highlightedEventId === row.id;
             const isComplementOpen = complementTargetId === row.id;
@@ -1251,33 +1425,65 @@ const Eventos = () => {
               <article
                 key={row.id}
                 className={cn(
-                  "rounded-xl border border-border/70 bg-background/95 p-4 shadow-none transition-colors hover:border-primary/25",
+                  "min-w-0 rounded-xl border border-border/70 bg-card p-4 shadow-none transition-colors hover:border-primary/25 sm:p-5",
                   isHighlighted && "border-primary/30 bg-primary/5",
                 )}
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 flex-1 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium">
+                      <h3 className="font-semibold">
                         {DOMAIN_LABEL[row.evento.dominio]}
-                      </p>
-                      <StatusBadge tone="neutral">{row.animalNome}</StatusBadge>
-                      <StatusBadge tone="neutral">{row.loteNome}</StatusBadge>
+                      </h3>
+                      <StatusBadge
+                        tone={
+                          row.syncKnown
+                            ? getSyncStageTone(row.syncStage)
+                            : "unknown"
+                        }
+                      >
+                        {row.syncKnown
+                          ? getSyncStageLabel(row.syncStage)
+                          : "Envio não confirmado"}
+                      </StatusBadge>
                       {isHighlighted ? (
                         <StatusBadge tone="info">Em foco</StatusBadge>
                       ) : null}
                     </div>
 
-                    <p className="text-sm leading-6 text-muted-foreground">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                      <p className="min-w-0 break-words">
+                        <span className="text-muted-foreground">Animal: </span>
+                        {row.evento.animal_id && row.animalNome === "Sem animal"
+                          ? "Identificação indisponível"
+                          : row.animalNome}
+                      </p>
+                      <p className="min-w-0 break-words">
+                        <span className="text-muted-foreground">
+                          Lote vinculado:{" "}
+                        </span>
+                        {row.evento.lote_id && row.loteNome === "Sem lote"
+                          ? "Identificação indisponível"
+                          : row.loteNome}
+                      </p>
+                    </div>
+
+                    <p className="break-words text-sm leading-6 text-muted-foreground">
                       {row.detail}
                     </p>
+                    {row.evento.observacoes ? (
+                      <p className="whitespace-pre-wrap break-words text-sm">
+                        <span className="text-muted-foreground">
+                          Observação:{" "}
+                        </span>
+                        {row.evento.observacoes}
+                      </p>
+                    ) : null}
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                      <span>{toDateTime(row.evento.occurred_at)}</span>
-                      {row.syncStage !== "synced" &&
-                      row.syncStage !== "synced_altered" ? (
-                        <span>Envio: {getSyncStageLabel(row.syncStage)}</span>
-                      ) : null}
+                      <time dateTime={row.evento.occurred_at}>
+                        {toDateTime(row.evento.occurred_at)}
+                      </time>
                       {row.evento.source_task_id ? (
                         <span>Origem: agenda</span>
                       ) : null}
@@ -1287,7 +1493,7 @@ const Eventos = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-2">
+                  <div className="flex shrink-0 items-start justify-end gap-2">
                     {row.amount != null ? (
                       <div className="rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-sm font-semibold">
                         {toCurrency(row.amount)}
@@ -1300,6 +1506,7 @@ const Eventos = () => {
                           type="button"
                           size="icon"
                           variant="outline"
+                          className="h-11 w-11"
                           aria-label={`Mais acoes para o evento ${row.id}`}
                         >
                           <MoreHorizontal className="h-4 w-4" />
@@ -1352,12 +1559,53 @@ const Eventos = () => {
                   </div>
                 </div>
 
+                <details className="group mt-4 border-t border-border/60 pt-2 text-xs">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="h-4 w-4 transition-transform group-open:rotate-180"
+                    />
+                    Ver detalhes técnicos
+                  </summary>
+                  <dl className="grid gap-2 break-words pb-2 text-muted-foreground sm:grid-cols-2">
+                    <div>
+                      <dt>Identificador do evento</dt>
+                      <dd className="select-text text-foreground">{row.id}</dd>
+                    </div>
+                    <div>
+                      <dt>Registro no dispositivo</dt>
+                      <dd>{toDateTime(row.evento.client_recorded_at)}</dd>
+                    </div>
+                    {row.evento.client_tx_id ? (
+                      <div>
+                        <dt>Transação local</dt>
+                        <dd>{row.evento.client_tx_id}</dd>
+                      </div>
+                    ) : null}
+                    {row.evento.source_task_id ? (
+                      <div>
+                        <dt>Tarefa de origem</dt>
+                        <dd>{row.evento.source_task_id}</dd>
+                      </div>
+                    ) : null}
+                    {row.evento.corrige_evento_id ? (
+                      <div>
+                        <dt>Evento complementado</dt>
+                        <dd>{row.evento.corrige_evento_id}</dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                </details>
+
                 {isComplementOpen ? (
                   <div className="mt-4 rounded-xl border border-border/70 bg-muted/30 p-4">
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-foreground">
+                      <Label
+                        htmlFor={`complemento-${row.id}`}
+                        className="text-sm font-medium text-foreground"
+                      >
                         Complemento do evento
-                      </p>
+                      </Label>
                     </div>
 
                     <Textarea
@@ -1409,10 +1657,46 @@ const Eventos = () => {
               </Button>
             </div>
           ) : null}
-        </div>
+        </section>
       )}
     </div>
   );
 };
+
+class EventosErrorBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <div role="alert">
+          <EmptyState
+            icon={History}
+            title="Não foi possível carregar os eventos"
+            description="Tente consultar novamente. Esta ação não remove registros salvos neste dispositivo."
+            action={{
+              label: "Tentar novamente",
+              onClick: () => this.setState({ failed: false }),
+            }}
+          />
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const Eventos = () => (
+  <EventosErrorBoundary>
+    <EventosContent />
+  </EventosErrorBoundary>
+);
 
 export default Eventos;

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
+import "fake-indexeddb/auto";
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
@@ -9,6 +10,16 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useAuth } from "@/hooks/useAuth";
 import type { RegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import Eventos from "@/pages/Eventos";
+import { createGesture } from "@/lib/offline/ops";
+import { db } from "@/lib/offline/db";
+import type { Evento } from "@/lib/offline/types";
+
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => ({
+  ...(await vi.importActual("react-router-dom")),
+  useNavigate: () => mockNavigate,
+}));
+vi.mock("@/lib/offline/ops", () => ({ createGesture: vi.fn() }));
 
 vi.mock("@/hooks/useAuth");
 vi.mock("dexie-react-hooks", () => ({
@@ -143,11 +154,255 @@ describe("Eventos page", () => {
     let callCount = 0;
     mockedUseLiveQuery.mockImplementation(
       () =>
-        responses[Math.min(callCount++, responses.length - 1)] as ReturnType<
+        responses[callCount++ % responses.length] as ReturnType<
           typeof useLiveQuery
         >,
     );
   };
+
+  const emptyData = () => ({
+    eventos: [],
+    totalCount: 0,
+    sanitarios: [],
+    pesagens: [],
+    nutricao: [],
+    movimentacoes: [],
+    financeiro: [],
+    reproducao: [],
+    animais: [],
+    lotes: [],
+    gestos: [],
+    agenda: [],
+    insumoMovimentacoes: [],
+    insumoLotes: [],
+  });
+
+  const event = (id: string, dominio = "pesagem") => ({
+    id,
+    fazenda_id: "farm-1",
+    dominio,
+    animal_id: "animal-1",
+    lote_id: null,
+    occurred_at: "2026-10-20T08:00:00.000Z",
+    client_recorded_at: "2026-10-20T08:00:00.000Z",
+    client_tx_id: id,
+    payload: {},
+    observacoes: "Registro de campo",
+    deleted_at: null,
+  });
+
+  const renderPage = (url = "/eventos") =>
+    render(
+      <MemoryRouter initialEntries={[url]}>
+        <Eventos />
+      </MemoryRouter>,
+    );
+
+  it("diferencia carregamento de histórico vazio sem exibir zeros prematuros", () => {
+    queueLiveQueryResponses(undefined);
+    renderPage();
+    expect(
+      screen.getByRole("status", { name: "Carregando eventos" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Nenhum evento registrado"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/0 registro\(s\)/)).not.toBeInTheDocument();
+  });
+
+  it("diferencia vazio de filtros e permite limpar o recorte", async () => {
+    const user = userEvent.setup();
+    renderPage("/eventos?dominio=pesagem");
+    expect(
+      screen.getByText("Nenhum evento para estes filtros"),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getAllByRole("button", { name: "Limpar filtros" })[0],
+    );
+    expect(screen.getByText("Nenhum evento registrado")).toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: "Buscar eventos" }),
+    ).toBeInTheDocument();
+  });
+
+  it("atualiza a consulta Dexie após buscar e limpar sem resultados", async () => {
+    const { useLiveQuery: realUseLiveQuery } =
+      await vi.importActual<typeof import("dexie-react-hooks")>(
+        "dexie-react-hooks",
+      );
+    mockedUseLiveQuery.mockImplementation(realUseLiveQuery);
+    await db.event_eventos.put(event("search-ui-regression") as Evento);
+    try {
+      const user = userEvent.setup();
+      renderPage();
+      expect(
+        await screen.findByText("Histórico registrado"),
+      ).toBeInTheDocument();
+      await user.type(
+        screen.getByRole("textbox", { name: "Buscar eventos" }),
+        "inexistente",
+      );
+      expect(
+        await screen.findByText("Nenhum evento para estes filtros"),
+      ).toBeInTheDocument();
+      await user.click(
+        screen.getAllByRole("button", { name: "Limpar filtros" })[0],
+      );
+      expect(
+        await screen.findByText("Histórico registrado"),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Registro de campo")).toBeInTheDocument();
+    } finally {
+      await db.event_eventos.delete("search-ui-regression");
+    }
+  });
+
+  it("mostra offline e acompanha a reconexão sem alterar dados", () => {
+    renderPage();
+    const online = vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    fireEvent(window, new Event("offline"));
+    expect(screen.getByText(/Você está offline/)).toBeInTheDocument();
+    online.mockReturnValue(true);
+    fireEvent(window, new Event("online"));
+    expect(screen.queryByText(/Você está offline/)).not.toBeInTheDocument();
+    online.mockRestore();
+    expect(createGesture).not.toHaveBeenCalled();
+  });
+
+  it("preserva pendentes, rejeições e ACK com ajuste sem afirmar sincronização comum", () => {
+    queueLiveQueryResponses({
+      ...emptyData(),
+      totalCount: 60,
+      eventos: [event("pending"), event("rejected"), event("altered")],
+      gestos: [
+        { client_tx_id: "pending", status: "PENDING" },
+        { client_tx_id: "rejected", status: "REJECTED" },
+        {
+          client_tx_id: "altered",
+          status: "SYNCED",
+          sync_result: "APPLIED_ALTERED",
+        },
+      ],
+    });
+    renderPage();
+    expect(screen.getByText("Salvo localmente")).toBeInTheDocument();
+    expect(screen.getByText("Rejeitado")).toBeInTheDocument();
+    expect(screen.getByText("Confirmado com ajuste")).toBeInTheDocument();
+    expect(screen.queryByText("Sincronizado")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Resumo somente dos 3 eventos/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/3 de 60 registros/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Carregar mais \(restam 57\)/ }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Identificação indisponível")).toHaveLength(3);
+    expect(
+      screen.getAllByText("Ver detalhes técnicos")[0].closest("details"),
+    ).not.toHaveAttribute("open");
+  });
+
+  it("preserva navegação e gravação de complemento como novo gesto", async () => {
+    const user = userEvent.setup();
+    vi.mocked(createGesture).mockResolvedValue("tx-complement");
+    queueLiveQueryResponses({
+      ...emptyData(),
+      totalCount: 1,
+      eventos: [event("weight")],
+      pesagens: [{ evento_id: "weight", peso_kg: 300 }],
+    });
+    renderPage();
+    await user.click(
+      screen.getByRole("button", { name: /mais acoes para o evento weight/i }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: /abrir ficha/i }));
+    expect(mockNavigate).toHaveBeenCalledWith("/animais/animal-1");
+    await user.click(
+      screen.getByRole("button", { name: /mais acoes para o evento weight/i }),
+    );
+    await user.click(
+      screen.getByRole("menuitem", { name: /adicionar complemento/i }),
+    );
+    await user.type(
+      screen.getByRole("textbox", { name: "Complemento do evento" }),
+      "Conferido no curral",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Salvar complemento" }),
+    );
+    expect(createGesture).toHaveBeenCalledWith(
+      "farm-1",
+      expect.arrayContaining([
+        expect.objectContaining({
+          table: "eventos",
+          record: expect.objectContaining({
+            corrige_evento_id: "weight",
+            observacoes: "Conferido no curral",
+            dominio: "pesagem",
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it("mantém bloqueio de complemento para domínio não suportado", async () => {
+    queueLiveQueryResponses({
+      ...emptyData(),
+      totalCount: 1,
+      eventos: [event("repro", "reproducao")],
+    });
+    renderPage();
+    await userEvent.click(
+      screen.getByRole("button", { name: /mais acoes para o evento repro/i }),
+    );
+    expect(
+      screen.getByRole("menuitem", { name: /complemento indisponivel/i }),
+    ).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("não afirma sincronização quando a transação local não tem gesto nem confirmação remota", () => {
+    queueLiveQueryResponses({
+      ...emptyData(),
+      totalCount: 1,
+      eventos: [event("unknown")],
+    });
+    renderPage();
+    expect(screen.getByText("Envio não confirmado")).toBeInTheDocument();
+    expect(screen.queryByText("Sincronizado")).not.toBeInTheDocument();
+  });
+
+  it("orienta selecionar fazenda quando não há contexto ativo", () => {
+    mockedUseAuth.mockReturnValue({
+      activeFarmId: null,
+      farmMeasurementConfig: { weight_unit: "kg" },
+    } as ReturnType<typeof useAuth>);
+    queueLiveQueryResponses(undefined);
+    renderPage();
+    expect(screen.getByText("Selecione uma fazenda")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("status", { name: "Carregando eventos" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("contém erro de leitura e permite tentar novamente", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockedUseLiveQuery.mockImplementation(() => {
+      throw new Error("Falha de leitura local");
+    });
+    renderPage();
+    expect(
+      within(screen.getByRole("alert")).getByText(
+        "Não foi possível carregar os eventos",
+      ),
+    ).toBeInTheDocument();
+    queueLiveQueryResponses(emptyData());
+    await userEvent.click(
+      screen.getByRole("button", { name: "Tentar novamente" }),
+    );
+    expect(screen.getByText("Nenhum evento registrado")).toBeInTheDocument();
+    expect(createGesture).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -183,9 +438,7 @@ describe("Eventos page", () => {
     expect(
       screen.getByText("Historico de eventos executados"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Lista fatos ja registrados/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Lista fatos ja registrados/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /novo registro manual/i }),
     ).toBeInTheDocument();
@@ -357,10 +610,14 @@ describe("Eventos page", () => {
     expect(
       screen.getByRole("menuitem", { name: /baixar do estoque/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Vacina Raiva \| lote VR-2026/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Vacina Raiva \| lote VR-2026/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/dose 2 mL/i)).toBeInTheDocument();
     expect(screen.getByText(/via SC/i)).toBeInTheDocument();
-    expect(screen.getByText(/carencia carne ate 10\/06\/2026/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/carencia carne ate 10\/06\/2026/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/custo R\$\s?18,00/i)).toBeInTheDocument();
     expect(screen.getByText(/protocolo raiva_d1 \/ v1/i)).toBeInTheDocument();
   });
