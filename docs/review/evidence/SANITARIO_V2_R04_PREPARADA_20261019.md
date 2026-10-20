@@ -1,5 +1,10 @@
 # R04 — aprovação curatorial dos sete itens preparada
 
+> Atualização de 20/10/2026: a concessão administrativa foi explicitamente autorizada,
+> aplicada e auditada. As cinco decisões continuam pendentes de sessão real e confirmação
+> individual. Este documento preserva a preparação original; ver
+> [estado da concessão R04](SANITARIO_V2_R04_CONCESSAO_20261020.md).
+
 **Preparação local concluída; R04 não autorizada e não executada.**
 As 144 linhas da R03 estão persistidas e convergentes. Não há necessidade de nova rodada
 genérica de diagnóstico antes de tratar a decisão curatorial delimitada abaixo.

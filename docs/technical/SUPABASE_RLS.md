@@ -49,7 +49,10 @@ Definir o contrato técnico para Supabase, RLS, isolamento multi-tenant, RPCs, p
   R03 executada em 19/10/2026: 144 registros de catálogo, incluindo 20 itens draft,
   sem aprovação ou automação; dry-run posterior com 144 skips e quatro rejeições esperadas.
   [Evidência R03](../review/evidence/SANITARIO_V2_R03_EXECUCAO_20261019.md).
-  R04 preparada localmente; R04–R05 sem autorização remota.
+  R04: concessão administrativa explicitamente autorizada e auditada em 20/10/2026,
+  exclusivamente à conta principal identificada; decisões curatoriais ainda pendentes.
+  [Evidência da concessão R04](../review/evidence/SANITARIO_V2_R04_CONCESSAO_20261020.md).
+  Gates permanecem OFF; R05 sem autorização.
 
 A fundação de RLS e isolamento multi-tenant/fazenda do Sync Sanitário v2 está tecnicamente concluída. Isso não conclui o sync nem autoriza rollout.
 
