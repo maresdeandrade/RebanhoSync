@@ -20,7 +20,12 @@ export default function AnimalSimulacao() {
       : null;
   }, [id, fazendaId]);
 
-  if (!fazendaId || animal === undefined) {
+  // A live query can retain its previous result while the new context loads.
+  if (
+    !fazendaId ||
+    animal === undefined ||
+    (animal !== null && (animal.id !== id || animal.fazenda_id !== fazendaId))
+  ) {
     return (
       <PageContainer>
         <div
@@ -71,7 +76,11 @@ export default function AnimalSimulacao() {
       />
 
       <div className="mt-6">
-        <ProductiveCommercialSimulator animal={animal} fazendaId={fazendaId} />
+        <ProductiveCommercialSimulator
+          key={`${fazendaId}:${animal.id}`}
+          animal={animal}
+          fazendaId={fazendaId}
+        />
       </div>
     </PageContainer>
   );
