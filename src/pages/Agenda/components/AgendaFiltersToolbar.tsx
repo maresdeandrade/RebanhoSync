@@ -68,9 +68,18 @@ export function AgendaFiltersToolbar({
   onClearFilters,
 }: AgendaFiltersToolbarProps) {
   return (
-    <div className="space-y-3">
+    <section aria-label="Filtros da agenda" className="space-y-3 rounded-xl border border-border/80 bg-surface p-3 sm:p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="space-y-1">
+          <h2 className="text-sm font-semibold text-foreground">Localizar tarefas</h2>
+          <p className="text-xs text-muted-foreground">Busque e organize as intenções de manejo da fazenda.</p>
+        </div>
+        <Button type="button" variant="ghost" size="sm" onClick={onClearFilters}>
+          Limpar
+        </Button>
+      </div>
       <Toolbar aria-label="Busca e filtros da agenda">
-        <ToolbarGroup className="w-full flex-1 gap-2 sm:flex-nowrap">
+        <ToolbarGroup className="w-full flex-1 flex-col gap-2 sm:flex-row sm:flex-nowrap">
           <div className="relative w-full flex-1 sm:min-w-[220px]">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -96,13 +105,6 @@ export function AgendaFiltersToolbar({
               <SelectItem value="evento">Agrupar por evento</SelectItem>
             </SelectContent>
           </Select>
-          <Button
-            variant="ghost"
-            onClick={onClearFilters}
-            className="min-h-11 text-muted-foreground hover:text-foreground"
-          >
-            Limpar
-          </Button>
         </ToolbarGroup>
       </Toolbar>
 
@@ -115,7 +117,7 @@ export function AgendaFiltersToolbar({
         >
           <SelectTrigger
             aria-label="Filtrar por status"
-            className="min-h-11 w-full bg-muted/50 text-xs hover:bg-muted"
+            className="min-h-11 w-full bg-background text-sm"
           >
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -130,7 +132,7 @@ export function AgendaFiltersToolbar({
         <Select value={dominioFilter} onValueChange={onDominioFilterChange}>
           <SelectTrigger
             aria-label="Filtrar por domínio"
-            className="min-h-11 w-full bg-muted/50 text-xs hover:bg-muted"
+            className="min-h-11 w-full bg-background text-sm"
           >
             <SelectValue placeholder="Domínio" />
           </SelectTrigger>
@@ -155,7 +157,7 @@ export function AgendaFiltersToolbar({
         >
           <SelectTrigger
             aria-label="Filtrar por calendário"
-            className="min-h-11 w-full bg-muted/50 text-xs hover:bg-muted"
+            className="min-h-11 w-full bg-background text-sm"
           >
             <SelectValue placeholder="Calendário" />
           </SelectTrigger>
@@ -169,24 +171,29 @@ export function AgendaFiltersToolbar({
           </SelectContent>
         </Select>
 
-        <div className="flex min-h-11 items-center gap-1 rounded-lg border border-border/70 bg-muted/50 px-2 py-1">
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(event) => onDateFromChange(event.target.value)}
-            className="h-6 w-[120px] border-none bg-transparent p-0 text-xs focus-visible:ring-0"
-            aria-label="Data inicial"
-          />
-          <span className="text-[10px] text-muted-foreground">até</span>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(event) => onDateToChange(event.target.value)}
-            className="h-6 w-[120px] border-none bg-transparent p-0 text-xs focus-visible:ring-0"
-            aria-label="Data final"
-          />
+        <div className="grid min-w-0 grid-cols-2 gap-2">
+          <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+            De
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(event) => onDateFromChange(event.target.value)}
+              className="min-h-11 w-full min-w-0 bg-background px-2 text-xs"
+              aria-label="Data inicial"
+            />
+          </label>
+          <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+            Até
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(event) => onDateToChange(event.target.value)}
+              className="min-h-11 w-full min-w-0 bg-background px-2 text-xs"
+              aria-label="Data final"
+            />
+          </label>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

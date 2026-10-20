@@ -630,4 +630,21 @@ describe("Agenda page", () => {
       screen.getByRole("button", { name: /abrir conformidade/i }),
     ).toBeInTheDocument();
   });
+
+  it("permite limpar os filtros diretamente após uma busca sem resultados", async () => {
+    const user = userEvent.setup();
+    await renderAgenda();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Buscar na agenda" }),
+      "sem-correspondencia-visual-v2",
+    );
+
+    expect(screen.getByText("Nenhuma tarefa encontrada")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Limpar filtros" }));
+
+    expect(screen.queryByText("Nenhuma tarefa encontrada")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Buscar na agenda" })).toHaveValue("");
+    expect(readAgendaUiState(USER_ID, FARM_ID)?.search).toBe("");
+  });
 });
