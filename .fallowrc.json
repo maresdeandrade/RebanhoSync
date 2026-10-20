@@ -25,6 +25,7 @@
     "scripts/fix-docs-encoding.mjs",
     "scripts/ci/classify-validation-scope.node-test.mjs",
     "tests/codex/**/*.test.mjs",
+    "tests/codex/sanitario-v2-canonical.browser.mjs",
     "tests/codex/**/*.integration.mjs"
   ],
 
