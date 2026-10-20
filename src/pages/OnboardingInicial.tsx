@@ -338,7 +338,7 @@ const OnboardingInicial = () => {
             </div>
           </div>
 
-          <div className="min-w-[280px] rounded-xl border bg-muted/30 px-4 py-3">
+          <div className="w-full min-w-0 rounded-xl border bg-muted/30 px-4 py-3 lg:w-[280px] lg:shrink-0">
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>Progresso</span>
               <span>
@@ -350,7 +350,7 @@ const OnboardingInicial = () => {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <Card>
           <CardHeader>
             <CardTitle>Sequencia recomendada</CardTitle>
@@ -369,12 +369,12 @@ const OnboardingInicial = () => {
                       : "border-border hover:bg-muted/40"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex gap-3">
-                      <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                  <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between">
+                    <div className="flex min-w-0 gap-3">
+                      <div className="shrink-0 rounded-lg bg-primary/10 p-2 text-primary">
                         <step.icon className="h-4 w-4" />
                       </div>
-                      <div className="space-y-1">
+                      <div className="min-w-0 space-y-1 break-words">
                         <div className="text-sm font-medium">
                           {step.shortTitle}
                         </div>
@@ -444,6 +444,7 @@ const OnboardingInicial = () => {
                         key={action.path}
                         asChild
                         variant={action.variant}
+                        className="h-auto min-h-12 max-w-full whitespace-normal"
                       >
                         <Link to={action.path}>
                           {action.path.endsWith("/importar") && (
@@ -458,7 +459,7 @@ const OnboardingInicial = () => {
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     onClick={() =>

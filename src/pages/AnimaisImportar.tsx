@@ -142,7 +142,7 @@ const AnimaisImportar = () => {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="mx-auto min-w-0 max-w-6xl space-y-5 [overflow-wrap:anywhere]">
       <PageIntro
         variant="plain"
         eyebrow="Rebanho"
@@ -245,7 +245,7 @@ const AnimaisImportar = () => {
                       className="rounded-xl border border-border/70 bg-background p-3"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <p className="font-medium text-foreground">
                             {line.identity ?? "Identidade não informada"}
                           </p>
@@ -253,7 +253,7 @@ const AnimaisImportar = () => {
                             Linha {line.lineNumber} · operação pronta
                           </p>
                         </div>
-                        <Badge variant="outline">valid</Badge>
+                        <Badge variant="outline" className="shrink-0">valid</Badge>
                       </div>
                       {line.warnings.length > 0 ? (
                         <p className="mt-2 text-xs text-amber-700">
