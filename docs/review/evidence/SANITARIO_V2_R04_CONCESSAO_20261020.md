@@ -1,5 +1,8 @@
 # R04 — concessão administrativa executada
 
+> Snapshot da concessão preservado. Estado atual: **R04 concluída**, conforme
+> [cinco decisões e validação final](SANITARIO_V2_R04_EXECUCAO_20261020.md).
+
 **Concessão concluída; cinco decisões curatoriais ainda não submetidas.**
 
 Projeto `zqloazqzhwauamcejmuz`, branch `codex/sanitario-v2-convergencia`, baseline
