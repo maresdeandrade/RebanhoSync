@@ -93,6 +93,10 @@ describe("SanitaryProtocolWindowPanelV2", () => {
 
     expect(onPlan).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+    const technicalSummary = screen.getByText(/Cuidados técnicos do planejamento/);
+    expect(technicalSummary.closest("details")).not.toHaveAttribute("open");
+    fireEvent.click(technicalSummary);
+    expect(technicalSummary.closest("details")).toHaveAttribute("open");
     fireEvent.click(screen.getByRole("button", { name: "Confirmar e gerar Agenda" }));
     await waitFor(() => expect(onPlan).toHaveBeenCalled());
     expect(onPlan.mock.calls[0][0]).toHaveLength(1);

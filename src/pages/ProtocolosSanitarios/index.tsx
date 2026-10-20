@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BookOpenCheck, CalendarClock, History, ShieldCheck } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -151,10 +151,11 @@ const ProtocolosSanitarios = () => {
     () => (activeFarmId ? loadSanitaryProtocolWindowSourceV2(activeFarmId) : undefined),
     [activeFarmId, planningRevision],
   );
-  const documentaryPendencies = listSanitaryDocumentaryPendenciesV2({
+  const documentaryDate = new Date().toISOString().slice(0, 10);
+  const documentaryPendencies = useMemo(() => activeTab === "historico" ? listSanitaryDocumentaryPendenciesV2({
     source: windowSource,
-    evaluatedAt: new Date().toISOString().slice(0, 10),
-  });
+    evaluatedAt: documentaryDate,
+  }) : [], [windowSource, documentaryDate, activeTab]);
   const executedEvents = sourceExecutedEvents(windowSource).filter((event) => {
     if (historyFilters.recordType !== "todos" && historyFilters.recordType !== "executed_event") return false;
     if (historyFilters.startDate && event.executedAt.slice(0, 10) < historyFilters.startDate) return false;

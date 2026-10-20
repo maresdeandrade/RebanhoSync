@@ -151,6 +151,7 @@ export function SanitaryProtocolWindowPanelV2({
   const [review, setReview] = useState<{ rows: SanitaryProtocolWindowRowV2[]; plannedFor: string; context: SanitaryOperationalContextV2 } | null>(null);
   const [planningError, setPlanningError] = useState<string | null>(null);
   const reviewPreview = useMemo(() => review ? buildSanitaryWindowPlanningPreviewV2(review) : null, [review]);
+  const reviewWarnings = [...new Set(review?.rows.flatMap((row) => row.warnings) ?? [])];
   const protocols = source?.catalog.protocols ?? [];
   const items = source?.catalog.items.filter((item) => item.protocolId === protocolId) ?? [];
   const filteredAnimal = source?.animals.find((entry) => entry.id === filters.animalId);
@@ -424,7 +425,12 @@ export function SanitaryProtocolWindowPanelV2({
             <p>{reviewPreview?.summary.totalAnimals} animal(is) selecionado(s).</p>
             <p>{review.rows[0]?.planningKind === "avaliacao_manejo_generica" ? "Avaliação/manejo genérico: sem produto, dose, via ou esquema de aplicação." : "Esquema definido: produto e histórico revalidados ao salvar."}</p>
             <ul className="space-y-2">{review.rows.map((row) => <li key={`${row.itemId}:${row.animalId}`}><strong>{row.identification}</strong> · {row.lotLabel}<br />{row.protocolLabel} · {row.itemLabel}<br /><span className="text-muted-foreground">{row.reason}</span></li>)}</ul>
-            {[...new Set(review.rows.flatMap((row) => row.warnings))].map((warning) => <p key={warning} className="text-muted-foreground">{warning}</p>)}
+            {reviewWarnings.length ? <details>
+              <summary className="cursor-pointer">Cuidados técnicos do planejamento ({reviewWarnings.length})</summary>
+              <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
+                {reviewWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+              </ul>
+            </details> : null}
             <p>Produto já cadastrado será reutilizado na execução. Produto real, dose e via serão confirmados no registro factual.</p>
           </div> : null}
           {planningError ? <p role="alert" className="text-sm text-destructive">{planningError}</p> : null}

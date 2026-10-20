@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatSanitaryProtocolItemLabelV2, type SanitaryProtocolItemV2ReadModel } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import type { SanitaryOperationalContextV2, SanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
@@ -9,24 +11,31 @@ type Props = {
   source: SanitaryProtocolWindowSourceV2 | undefined;
   context: SanitaryOperationalContextV2;
   onChange: (context: SanitaryOperationalContextV2) => void;
+  hasOverride: boolean;
+  onReset: () => void;
 };
 
-export function SanitaryRuleContextEditorV2({ item, source, context, onChange }: Props) {
+export function SanitaryRuleContextEditorV2({ item, source, context, onChange, hasOverride, onReset }: Props) {
+  const [open, setOpen] = useState(false);
   const months = item.operationalWindowRule.calendar_months;
   const dated = sanitaryRequiresScheduledContextV2(item);
   const label = formatSanitaryProtocolItemLabelV2(item.logicalItemKey);
-  return <details className="pl-6">
-    <summary>Contexto específico desta regra</summary>
-    <PlanContextFields prefix={`${label}: `} context={context} onChange={onChange} />
-    {item.eligibilityRule.requires_mv_or_management_context ? <PreWeaningBasisFields context={context} onChange={onChange} /> : null}
-    {Array.isArray(months) ? <label className="flex items-center gap-2 py-2">
-      <Checkbox aria-label={`Adotar calendário regional ${label}`}
-        checked={Boolean(context.regionalCalendar)}
-        onCheckedChange={(checked) => onChange({ ...context, regionalCalendar: checked === true
-          ? { uf: source?.farmUf ?? "", months: months.filter((value): value is number => typeof value === "number") } : undefined })} />
-      Adotar nesta fazenda o calendário da versão técnica, mês(es) {months.join(", ")}, UF {source?.farmUf ?? "não informada"}.
-    </label> : null}
-    {dated ? <ScheduledContextFields source={source} context={context} onChange={onChange} /> : null}
+  return <details className="pl-6" onToggle={(event) => setOpen(event.currentTarget.open)}>
+    <summary>{hasOverride ? "Contexto específico desta regra" : "Usando contexto geral · ajustar esta regra"}</summary>
+    {open ? <div className="space-y-2 py-2">
+      <p className="text-muted-foreground">{hasOverride ? "Esta regra possui contexto próprio e não acompanha alterações no contexto geral." : "O contexto geral é herdado até você alterar um campo desta regra."}</p>
+      {hasOverride ? <Button type="button" variant="outline" size="sm" onClick={onReset}>Usar contexto geral</Button> : null}
+      <PlanContextFields prefix={`${label}: `} context={context} onChange={onChange} />
+      {item.eligibilityRule.requires_mv_or_management_context ? <PreWeaningBasisFields context={context} onChange={onChange} /> : null}
+      {Array.isArray(months) ? <label className="flex items-center gap-2 py-2">
+        <Checkbox aria-label={`Adotar calendário regional ${label}`}
+          checked={Boolean(context.regionalCalendar)}
+          onCheckedChange={(checked) => onChange({ ...context, regionalCalendar: checked === true
+            ? { uf: source?.farmUf ?? "", months: months.filter((value): value is number => typeof value === "number") } : undefined })} />
+        Adotar nesta fazenda o calendário da versão técnica, mês(es) {months.join(", ")}, UF {source?.farmUf ?? "não informada"}.
+      </label> : null}
+      {dated ? <ScheduledContextFields source={source} context={context} onChange={onChange} /> : null}
+    </div> : null}
   </details>;
 }
 
@@ -45,7 +54,7 @@ function PreWeaningBasisFields({ context, onChange }: Pick<Props, "context" | "o
   </fieldset>;
 }
 
-function ScheduledContextFields({ source, context, onChange }: Omit<Props, "item">) {
+function ScheduledContextFields({ source, context, onChange }: Pick<Props, "source" | "context" | "onChange">) {
   const scheduled = context.scheduledContext ?? { date: "", reference: "", animalIds: [] };
   const update = (value: Partial<typeof scheduled>) => onChange({ ...context, scheduledContext: { ...scheduled, ...value } });
   return <fieldset className="space-y-2 py-2">

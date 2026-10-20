@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { PlanContextFields } from "./SanitaryPlanContextFieldsV2";
 import { SanitaryRuleContextEditorV2 } from "./SanitaryRuleContextEditorV2";
-import { SanitaryAutomationCoveragePanelV2 } from "./SanitaryAutomationCoveragePanelV2";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   readSanitaryAutomationPlanV2,
+  resolveSanitaryAutomationRuleV2,
   saveSanitaryAutomationPlanV2,
   selectSanitaryAutomationRuleV2,
   type SanitaryAutomationDraftV2,
@@ -46,6 +47,7 @@ export function SanitaryAutomaticPlanPanelV2({
     plan ?? emptyDraft,
   );
   const [confirmed, setConfirmed] = useState(false);
+  const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { reevaluate, message, busy } = useSanitaryAutomaticGenerationV2(
@@ -57,19 +59,27 @@ export function SanitaryAutomaticPlanPanelV2({
       serializedPlan === "null" ? emptyDraft : JSON.parse(serializedPlan),
     );
     setConfirmed(false);
+    setOpen(false);
   }, [serializedPlan, fazendaId]);
   const preview = useMemo(
     () =>
-      source
+      open && source
         ? previewSanitaryAutomaticPlanV2(
             source,
             draft,
             sanitaryAutomationTodayV2(),
           )
         : { entries: [], toCreate: 0 },
-    [source, draft],
+    [source, draft, open],
   );
-  const options = planRuleOptions(source);
+  const options = useMemo(() => open ? planRuleOptions(source, fazendaId) : [], [source, fazendaId, open]);
+  const unavailable = draft.rules.filter((rule) => !options.some((option) =>
+    option.rule.itemId === rule.itemId && source && resolveSanitaryAutomationRuleV2(source.catalog, rule),
+  ));
+  const updateDraft: React.Dispatch<React.SetStateAction<SanitaryAutomationDraftV2>> = (value) => {
+    setConfirmed(false);
+    setDraft(value);
+  };
   async function save(enabled: boolean) {
     setSaving(true);
     setError(null);
@@ -97,8 +107,7 @@ export function SanitaryAutomaticPlanPanelV2({
     >
       <h2 className="text-lg font-semibold">Plano de geração automática</h2>
       <p className="text-sm text-muted-foreground">
-        Confirme uma vez o plano. Regras autorizadas passam a gerar tarefas
-        neste dispositivo ao abrir a Central, atualizar os dados e reconectar.
+        Configure as regras autorizadas para gerar tarefas neste dispositivo.
         Planejar não registra aplicação, estoque ou carência.
       </p>
       <p role="status">
@@ -106,57 +115,75 @@ export function SanitaryAutomaticPlanPanelV2({
           ? "Plano automático ativo"
           : "Plano automático desativado"}
       </p>
-      <PlanContextFields
-        context={draft.context}
-        onChange={(context) =>
-          setDraft((previous) => ({ ...previous, context }))
-        }
-      />
-      <PlanRuleChoices
-        options={options}
-        source={source}
-        draft={draft}
-        saving={saving}
-        setDraft={setDraft}
-      />
-      <PlanPreview preview={preview} />
-      <SanitaryAutomationCoveragePanelV2 source={source} draft={draft} date={sanitaryAutomationTodayV2()} />
-      <label className="flex items-center gap-2 text-sm">
-        <Checkbox
-          aria-label="Confirmar ativação do plano"
-          checked={confirmed}
-          onCheckedChange={(value) => setConfirmed(value === true)}
-        />
-        Revisei o plano e autorizo a geração automática das regras selecionadas.
-      </label>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          disabled={saving || !confirmed || !draft.rules.length}
-          onClick={() => save(true)}
-        >
-          {active
-            ? "Salvar revisão do plano"
-            : "Ativar plano automático"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={saving || !active}
-          onClick={() => save(false)}
-        >
-          Desativar plano automático
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={busy || saving}
-          onClick={() => reevaluate()}
-        >
-          Reavaliar plano
-        </Button>
-      </div>
-      <GeneratedPlanAgendas source={source} />
+      <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
+        <summary className="cursor-pointer font-medium">Configurar plano automático</summary>
+        {open ? <fieldset disabled={saving} className="space-y-4 pt-4">
+            <legend className="sr-only">Configuração do plano automático</legend>
+            <p className="text-sm text-muted-foreground">O contexto geral vale para todas as regras selecionadas. Ajuste uma regra somente quando necessário.</p>
+            <PlanContextFields
+              context={draft.context}
+              onChange={(context) =>
+                updateDraft((previous) => ({ ...previous, context }))
+              }
+            />
+            <PlanRuleChoices
+              options={options}
+              source={source}
+              draft={draft}
+              saving={saving}
+              setDraft={updateDraft}
+            />
+            {unavailable.length ? <div role="alert" className="space-y-2 text-sm">
+              <p>{unavailable.length} regra(s) do plano salvo estão indisponíveis ou com versão alterada. Remova-as antes de ativar uma revisão.</p>
+              <details><summary>Revisar seleções indisponíveis</summary>
+                <ul>{unavailable.map((rule) => <li key={rule.itemId}>
+                  {formatSanitaryProtocolItemLabelV2(source?.catalog.items.find((item) => item.id === rule.itemId)?.logicalItemKey ?? rule.itemId)} · versão {rule.itemVersion}
+                  <Button type="button" variant="outline" size="sm" onClick={() => updateDraft((previous) => ({
+                    ...previous, rules: previous.rules.filter((entry) => entry.itemId !== rule.itemId),
+                  }))}>Remover seleção</Button>
+                </li>)}</ul>
+              </details>
+            </div> : null}
+            <p className="text-sm text-muted-foreground">Regras pendentes, restrições e justificativas técnicas: <Link className="underline" to="/protocolos-sanitarios/catalogo-v2">Consultar catálogo sanitário</Link>.</p>
+            <PlanPreview preview={preview} />
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                aria-label="Confirmar ativação do plano"
+                checked={confirmed}
+                onCheckedChange={(value) => setConfirmed(value === true)}
+              />
+              Revisei o plano e autorizo a geração automática das regras selecionadas.
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                disabled={saving || !confirmed || !draft.rules.length || unavailable.length > 0}
+                onClick={() => save(true)}
+              >
+                {active
+                  ? "Salvar revisão do plano"
+                  : "Ativar plano automático"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving || !active}
+                onClick={() => save(false)}
+              >
+                Desativar plano automático
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy || saving}
+                onClick={() => reevaluate()}
+              >
+                Reavaliar plano
+              </Button>
+            </div>
+            <GeneratedPlanAgendas source={source} />
+        </fieldset> : null}
+      </details>
       <PlanFeedback message={message} error={error} />
     </section>
   );
@@ -228,9 +255,10 @@ function PlanRuleChoices({
   return (
     <fieldset className="space-y-2">
       <legend className="font-medium">Regras do plano</legend>
-      {options.map(({ rule, item, label, blockers }) => {
+      {!options.length ? <p className="text-sm text-muted-foreground">Nenhuma regra elegível para ativação no catálogo disponível.</p> : null}
+      {options.map(({ rule, item, label }) => {
         const checked = draft.rules.some(
-          (entry) => entry.itemId === rule.itemId,
+          (entry) => entry.itemId === rule.itemId && source && resolveSanitaryAutomationRuleV2(source.catalog, entry),
         );
         return (
           <div key={rule.itemId} className="space-y-1 text-sm">
@@ -238,7 +266,7 @@ function PlanRuleChoices({
               <Checkbox
                 aria-label={`Automatizar ${label}`}
                 checked={checked}
-                disabled={saving || (blockers.length > 0 && !checked)}
+                disabled={saving}
                 onCheckedChange={(value) =>
                   setDraft((previous) => ({
                     ...previous,
@@ -258,11 +286,14 @@ function PlanRuleChoices({
               />
               {label}
             </label>
-            <SanitaryRuleContextEditorV2 item={item} source={source} context={draft.ruleContexts?.[rule.itemId] ?? draft.context}
-              onChange={(context) => setDraft((previous) => ({ ...previous, ruleContexts: { ...previous.ruleContexts, [rule.itemId]: context } }))} />
-            {blockers.length ? (
-              <p className="text-muted-foreground">{blockers.join(" ")}</p>
-            ) : null}
+            {checked ? <SanitaryRuleContextEditorV2 item={item} source={source} context={draft.ruleContexts?.[rule.itemId] ?? draft.context}
+              hasOverride={Boolean(draft.ruleContexts?.[rule.itemId])}
+              onReset={() => setDraft((previous) => {
+                const ruleContexts = { ...previous.ruleContexts };
+                delete ruleContexts[rule.itemId];
+                return { ...previous, ruleContexts };
+              })}
+              onChange={(context) => setDraft((previous) => ({ ...previous, ruleContexts: { ...previous.ruleContexts, [rule.itemId]: context } }))} /> : null}
           </div>
         );
       })}
@@ -270,19 +301,19 @@ function PlanRuleChoices({
   );
 }
 
-function planRuleOptions(source: Props["source"]) {
+function planRuleOptions(source: Props["source"], fazendaId: string) {
   if (!source) return [];
   return source.catalog.items.flatMap((item) => {
     const protocol = source.catalog.protocols.find(
       (entry) => entry.id === item.protocolId,
     );
-    return protocol
+    return protocol && (!protocol.fazendaId || protocol.fazendaId === fazendaId)
+      && !sanitaryPlanningBlockersV2(protocol, item, "automatic").length
       ? [
           {
             rule: selectSanitaryAutomationRuleV2(protocol, item),
             item,
             label: `${protocol.name} — ${formatSanitaryProtocolItemLabelV2(item.logicalItemKey)}`,
-            blockers: sanitaryPlanningBlockersV2(protocol, item, "automatic"),
           },
         ]
       : [];
