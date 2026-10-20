@@ -214,7 +214,7 @@ function toDateTime(value: string) {
 
 const PAGE_SIZE = 50;
 
-const EventosContent = () => {
+const Eventos = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightedEventId = searchParams.get("eventoId");
@@ -1693,10 +1693,10 @@ class EventosErrorBoundary extends Component<
   }
 }
 
-const Eventos = () => (
+const EventosPage = () => (
   <EventosErrorBoundary>
-    <EventosContent />
+    <Eventos />
   </EventosErrorBoundary>
 );
 
-export default Eventos;
+export default EventosPage;
