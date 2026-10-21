@@ -1,5 +1,7 @@
 # R04B.3 — publicação realizada; previews autenticados pendentes
 
+> **Atualização pós-consolidação:** [7/7 previews autenticados obtidos e avaliados](SANITARIO_V2_R04B3_PREVIEWS_POSTCONSOLIDATION_20261021.md), sem blockers; estado atual `AWAITING_CURATORIAL_APPROVAL`. A publicação e o bloqueio de transporte descritos abaixo são o registro histórico anterior. Nenhuma decisão curatorial foi emitida na atualização.
+
 **Estado atual: `BLOCKED_AUTHENTICATED_PREVIEWS`.** Em 21/10/2026, a migration e o delta certificados foram aplicados no projeto `zqloazqzhwauamcejmuz`. O estado `AWAITING_CURATORIAL_APPROVAL` ainda não foi atingido: faltam cinco previews individuais e dois agrupados por sessão Auth real.
 
 [Resultado estruturado e snapshot final](evidence/SANITARIO_V2_R04B3_LIVE_FINAL_20261021.json) · [Preflight protegido](evidence/SANITARIO_V2_R04B3_TLS_VERIFIED_PREFLIGHT_20261021.json).

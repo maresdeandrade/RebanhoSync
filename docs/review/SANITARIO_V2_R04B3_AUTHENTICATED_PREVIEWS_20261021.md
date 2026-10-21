@@ -1,5 +1,7 @@
 # R04B.3 — tentativa de finalização dos previews autenticados
 
+> **Atualização pós-consolidação:** [sete previews reais obtidos e avaliados em 21/10/2026](SANITARIO_V2_R04B3_PREVIEWS_POSTCONSOLIDATION_20261021.md); estado atual `AWAITING_CURATORIAL_APPROVAL`. O registro abaixo preserva a tentativa anterior e seu resultado histórico de 0/7.
+
 **Classificação: `BLOCKED_AUTHENTICATED_PREVIEWS`. Critério de aceite: 0/7 previews obtidos.**
 
 [Registro estruturado, autorização, argumentos exatos e limitações](evidence/SANITARIO_V2_R04B3_AUTHENTICATED_PREVIEWS_20261021.json).
