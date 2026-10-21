@@ -4,16 +4,18 @@
 
 ## Estado corrente
 
-- Fase 12 ativa.
-- Sync Sanitário v2 em andamento.
-- Rollout desligado e não autorizado.
-- Próximo incremento: **3.8 — Push/pull de histórico sanitário externo/documental**.
+- **Fase 24 — Release Hardening / Scale Readiness**; F24.5 integrada e F24.6 ativa.
+- F24.6A1 integrada pelo PR #200; certificação restrita ao envelope reconnect 1k. Não implica capacidade geral de escala.
+- F24.6A2 é proposta de inventário estático; escopo e critérios devem ser formalizados antes do início.
+- Sync Sanitário v2 está implementado sob gate remoto desligado; rollout e importação real não estão autorizados, e produção não está provisionada.
+
+Hierarquia factual: código e migrations ativas; depois [estado do projeto](./context/PROJECT_STATUS.md); depois documentos normativos e derivados. Este índice e os READMEs não substituem essas fontes.
 
 Fontes de continuidade:
 
 - [Estado do projeto](./context/PROJECT_STATUS.md)
 - [Roadmap](./product/ROADMAP.md)
-- [Plano ativo da Fase 12](./review/ACTIVE_PHASE_PLAN.md)
+- [Plano ativo](./review/ACTIVE_PHASE_PLAN.md)
 - [Handoff técnico atual](./review/CURRENT_PHASE_HANDOFF.md)
 
 ## Contratos centrais
@@ -39,6 +41,7 @@ Fontes de continuidade:
 - [Visão de produto](./product/PRODUCT_VISION.md)
 - [Escopo MVP](./product/MVP_SCOPE.md)
 - [Mapa de capacidades](./product/CAPABILITY_MAP.md)
+- [Rastreabilidade de requisitos](./product/REQUIREMENTS_TRACEABILITY.md)
 - [Princípios de UX](./ux/UX_PRINCIPLES.md)
 - [Padrões de tela](./ux/SCREEN_PATTERNS.md)
 - [Tokens visuais](./ux/VISUAL_TOKENS.md)

@@ -1,24 +1,21 @@
 # Mapa Oficial de Fluxos e Contratos — RebanhoSync
 
-Status: **BASELINE OFICIAL CANDIDATO**
-Code baseline original: `main@9db4bb9ffeb0bc4d1bc07305cde48132cd638721`
-Functional state: baseline original + consolidated validated patches
-State conflict candidate: `main@cc51099c2f6efebb4ccb3e1bbbad01354e145dac` + `df5299d8d2d54f6f1ffe13e9a1cada30299cb950` e ajustes finais locais
+Status: **INVARIANTES ARQUITETURAIS NORMATIVAS; snapshots de implementação devem ser revalidados no código e migrations ativos**
+Code baseline original: `main@9db4bb9ffeb0bc4d1bc07305cde48132cd638721` (snapshot histórico)
 Document source: `docs/review/evidence/MAPA_FLUXOS_CONTRATOS_REBANHOSYNC_VALIDADO.md`
 
-> Quando existir um commit contendo código e documentação, o status e o hash poderão ser atualizados para esse commit final. Até lá, os patches validados pertencem ao candidate worktree e não recebem hash próprio.
+> Este documento preserva invariantes dos fluxos. Os hashes e patches candidate abaixo são evidência histórica, não baseline da implementação atual. Para comportamento executado, prevalecem código e migrations ativos; a fase e a ativação são registradas em [`PROJECT_STATUS.md`](../context/PROJECT_STATUS.md).
 
-## 1. Status e baseline
+## 1. Escopo e precedência
 
-Este documento é o contrato arquitetural canônico para evolução dos fluxos operacionais. A evidência detalhada, inclusive causas e divergências históricas, permanece no mapa validado indicado no cabeçalho.
+Este documento registra invariantes arquiteturais e fronteiras dos fluxos. A evidência detalhada permanece no mapa de validação indicado no cabeçalho. Para determinar comportamento implementado, prevalecem o código e as migrations ativas; este documento não substitui inspeção do estado corrente do produto.
 
 Distinção obrigatória:
 
-- **Code baseline original:** `main@9db4bb9ffeb0bc4d1bc07305cde48132cd638721`;
-- **Candidate worktree:** baseline original + P1 de convergência factual + P2 bulk + P2 de cobertura da exclusão;
-- **Document revision:** working tree até existir commit de oficialização.
-
-O candidate worktree foi aprovado em gate consolidado. Nenhum hash deve ser inventado para mudanças não commitadas.
+- **Contrato normativo:** invariantes e fronteiras descritos neste mapa;
+- **Implementação:** comportamento efetivamente presente em código e migrations ativos;
+- **Estado do repositório:** fase, integração e ativação registrados em [`PROJECT_STATUS.md`](../context/PROJECT_STATUS.md);
+- **Histórico/candidate worktree:** snapshot anterior, não baseline atual por omissão.
 
 ## 2. Princípios fundamentais
 
@@ -237,7 +234,7 @@ ECC, pesagem e nutrição são fatos distintos e não devem ser presumidos equiv
 | `eventos_reproducao` | ESPECIALIZADO | especializado | especializada | `evento_id` |
 | `eventos_animais` | ESPECIALIZADO no cutover sanitário v2 | especializado | sim | `evento_id` |
 
-`eventos_ecc`, `eventos_pesagem` e `eventos_financeiro` foram corrigidos no candidate worktree. `APPLIED` e `APPLIED_ALTERED` convergem para os stores locais correspondentes, sem sobrescrever detalhe local pendente e sem atravessar fazendas.
+A revisão histórica registrada na fonte de evidência descreveu correções de convergência para `eventos_ecc`, `eventos_pesagem` e `eventos_financeiro` em candidate worktree. Isso não comprova a implementação no head atual. No contrato descrito, `APPLIED` e `APPLIED_ALTERED` devem convergir para os stores locais correspondentes, sem sobrescrever detalhe local pendente e sem atravessar fazendas; valide o comportamento vigente em código e testes.
 
 `eventos_movimentacao` integra `STANDARD_EVENT_DETAIL_REMOTE_TABLES` e, por propagação, o pull padrão, a proteção de pending e o refresh pós-sync. O round-trip remoto e a reconstrução após clean install foram comprovados no B4.
 
@@ -421,16 +418,18 @@ Builders canônicos devem ser reutilizados. Consumidores não podem duplicar par
 
 Testes são proteção executável do contrato, não substitutos da fonte de verdade implementada.
 
-## 27. Divergências conhecidas ativas
+## 27. Divergências conhecidas no snapshot validado
 
-No escopo do mapa oficial candidato:
+As contagens e limitações abaixo registram o escopo da revisão da fonte de evidência, não uma auditoria integral do código atual. Não comprovam ausência de divergências no head integrado presente; verifique código, migrations e testes pertinentes.
+
+No escopo daquele snapshot:
 
 - P0: 0;
 - P1: 0;
 - P2: 0;
 - P3: 0.
 
-Limitações conhecidas, sem classificação automática como defeito:
+Limitações identificadas, sem classificação automática como defeito atual:
 
 - superfícies especializadas não devem ser tratadas como equivalentes ao pull genérico;
 - `queue_rejections` é evidência operacional temporária e segue política de retenção.

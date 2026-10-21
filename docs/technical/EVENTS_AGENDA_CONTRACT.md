@@ -29,16 +29,25 @@ Fechamento de agenda = estado administrativo da intenção
 | Camada | Papel | Fonte primária para |
 | --- | --- | --- |
 | **Agenda** | intenção/tarefa futura | pendências, vencimentos, próximos manejos |
-| **Eventos** | fato executado | histórico, auditoria, KPIs |
+| **Eventos** | fato executado | histórico factual, auditoria, KPIs históricos do domínio |
 | **`state_*`** | estado atual/read model | situação corrente |
 | **Protocolo** | regra/configuração | geração de agenda/proposta operacional |
 | **Tags/sinais/insights** | auxiliar de UX/consulta | filtro, alerta, priorização |
+
+Eventos e detalhes factuais são fontes primárias para fatos executados; isso não torna Evento a fonte única de todo KPI. Cada indicador agrega a fonte canônica apropriada ao domínio, podendo incluir lançamentos financeiros canônicos e snapshots factuais com proveniência quando aplicáveis, sempre com período, proveniência e cobertura explícitos. Para o fluxo financeiro, `eventos` + `eventos_financeiro` são fatos; `finance_transactions` é read model e não os substitui. Agenda não prova fato histórico e `state_*` não substitui histórico factual.
 
 ---
 
 ## Agenda Sanitária v2
 
-A Fase 11.5 consolidou a Agenda Sanitária v2 como contrato core puro/documental. Este contrato ainda não representa schema, migration, RLS, Dexie, sync-batch, RPC ou UI implementados.
+A Fase 11.5 consolidou a Agenda Sanitária v2 como contrato core puro/documental; essa descrição registra corretamente o estado daquele fechamento, não a implementação posterior. Na baseline documental reconciliada `origin/main@27a3bed971639c41c0ca458379a6b9b5f02ef8dc`, há também implementação versionada:
+
+- contratos puros de materialização, execução e fechamento;
+- persistência local em Dexie (`ops_sanitario_agenda_v2`, `ops_sanitario_agenda_animais_v2`, `ops_sanitario_agenda_closures_v2`) e operações de sync;
+- schema, RLS, tabelas de agenda/animais/closures, revisão, ledger e RPCs nas migrations ativas do repositório;
+- handlers do `sync-batch`, worker/reconcile e pull dedicados.
+
+Isso comprova superfícies de implementação no repositório, não que as migrations estejam aplicadas em um ambiente remoto, que o gate remoto esteja habilitado ou que rollout tenha sido autorizado. A migration do gate cria configuração fail-closed (`enabled = false` por default); a flag local de push também é opt-in e restrita ao project ref de staging definido no código.
 
 Pipeline conceitual:
 
@@ -116,18 +125,17 @@ Regras:
 * fechamento não baixa estoque;
 * fechamento não calcula carência.
 
-### Nomenclatura ainda não persistida
+### Estados persistidos e comandos de sync
 
-Não tratar como enum/schema real enquanto não houver migration correspondente:
+As migrations do repositório persistem estes enums:
 
-* agenda aberta/programada;
-* fechamento executado com evento;
-* fechamento parcial com evento;
-* fechamento sem execução;
-* cancelamento;
-* dispensa.
+- `sanitario_agenda_v2.status`: `programada`, `fechada`, `cancelada`, `dispensada`;
+- `sanitario_agenda_animais_v2.planned_status`: `planejado`, `executado`, `nao_executado`;
+- `sanitario_agenda_closures_v2.closure_type`: `executed_with_event`, `partially_executed_with_event`, `closed_without_execution`, `cancelled`, `dismissed`.
 
-Não documentar como persistidos os status conceituais `aberta`, `programada`, `concluido_executado`, `cancelado`, `dispensado` e `fechado_sem_execucao` sem migration/schema específica.
+Esses são valores do schema versionado; sua presença não comprova aplicação remota. Também não são equivalentes entre si: `agenda_closure_intent` permanece contrato puro e fechamento administrativo não cria fato.
+
+No Sync Sanitário v2 versionado, `close_agenda` aceita apenas `cancelled` e `dismissed`; a RPC grava o fechamento e muda o status da Agenda sem Evento ou histórico. `closed_without_execution` existe no enum/tabela, mas não é aceito por esse comando de push nesta baseline. Execução factual segue `apply_factual_core`: cria Evento e detalhe sanitário, liga `source_sanitario_agenda_v2_id` e, para execução primária válida, atualiza Agenda/animais na mesma operação. A relação factual canônica é `eventos.source_sanitario_agenda_v2_id` com FK composta por `fazenda_id`; `sanitario_agenda_v2.execution_evento_id` é legado somente leitura. Isso não transforma fechamento administrativo em execução.
 
 ---
 

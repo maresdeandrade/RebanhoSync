@@ -1,9 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-10-13
-Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A — Performance / Scale Baseline; produção não autorizada**
-Próxima fase: **Fase 24 — integração administrativa da F24.6A1 certificada; nenhuma nova subfase**
-Baseline operacional pós-F24.4F / base F24.5A–B: `main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`; PR #181 `MERGED`.
+Atualizado em: 2026-10-20
+Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED apenas no envelope reconnect 1k; produção não provisionada**
+Próxima fase: **Fase 24 — formalizar escopo e critérios para a proposta de inventário estático F24.6A2; nenhuma medição ou otimização iniciada nesta atualização**
+Baseline integrada consultada: `origin/main@27a3bed971639c41c0ca458379a6b9b5f02ef8dc`
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -12,7 +12,7 @@ Baseline auditada da F24.4B: `main@dcece696deb1f7aa81cf5a0941aec9257239c317`
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27
 F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29
 Baseline auditada de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`
-Decisão: **F24.4 e F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE**
+Decisão: **F24.4, F24.5 e F24.6A1 CLOSED / INTEGRATED no escopo certificado; F24.6 ACTIVE**
 Baseline de abertura da Fase 23: `origin/main@0ede06b277d256cd03abac6c4c26f23e49b5c2f0`
 Head integrado da Fase 23: `f1beae045e95f6133b07dd60534aaa52f544b2ea`
 Merge commit da Fase 23 (PR #134): `28ee328e92b3cbaf4876cca170eb80e561facafe`
@@ -23,7 +23,7 @@ Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
-## F24.6A1-H — retomada após integração
+## F24.6A1-H — registro histórico da preparação (13/10/2026; superado pela integração)
 
 Na execução H, o pacote exclusivamente documental foi preparado na worktree
 `f24-6a1-h-rebaseline/GestaoAgro`, com HEAD detached
@@ -88,7 +88,9 @@ o harness/fontes congelados para a série de reconnect.
 
 **F24.6A1 — certificação concluída / fechamento administrativo (13/10/2026):** `RECONNECT_1K = CERTIFIED` em `main@869f006679827f3baddb0afed3c3cbf22e976fa5`: smoke aprovado, 5/5 runs sequenciais de 1.000 gestos, 1.000 animais, duas fazendas 500/500, warm, agenda vazia; mediana 146,46s. ACKs, fila/obrigações zeradas, isolamento, convergência, revisão única e cleanup comprovados no [relatório único](./F24_6A1_RECONNECT_1K_CERTIFICATION.md), com evidências versionadas e hashes auditáveis. Baseline E1/E2 e falhas anteriores preservadas; sem repetição do benchmark nesta publicação.
 
-Fechamento preparado neste pacote: **`F24.6A1 = CLOSED / INTEGRATED` somente após o merge deste PR na main**, restrito ao envelope certificado; antes do merge, certificação concluída e integração pendente. Não há nova subfase, novo relatório ou documentação pós-merge exigidos. F24.6 continua ACTIVE; nenhuma execução posterior foi autorizada. Preservados os riscos de certificação local/heap amostrado/n=5 e causa interna do primeiro 502 não capturada.
+Fechamento integrado pelo PR #200 (`99a421713abb0401f58bb9f8edfad38b5777758c`): F24.6A1 está CLOSED / INTEGRATED somente no envelope reconnect 1k certificado. O benchmark foi medido na baseline `main@869f006679827f3baddb0afed3c3cbf22e976fa5`; ver o [relatório](./F24_6A1_RECONNECT_1K_CERTIFICATION.md) para riscos residuais e limites. Não declarar capacidade geral de escala.
+
+F24.6 continua ACTIVE. F24.6A2 é uma proposta de inventário estático independente do reconnect 1k; formalizar escopo e critérios de aceite antes de iniciar. Nenhum benchmark adicional ou otimização é autorizado por inferência.
 
 **F24.6A1-H — snapshot histórico substituído (12/10/2026):** PR [#196](https://github.com/maresdeandrade/RebanhoSync/pull/196) `MERGED` em `6cf239fddf6a33249dbba8ce99de180e1772280e`, head integrado `694f4921d96b4acc7c07eb347d68c2d69e98c6ed`. Patch C+D, remediações Fallow G1/G2 e compatibilidade Vitest G5/G6 integrados. CI incremental [38162109877](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162109877) e gate completo [38162234927](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162234927) aprovados; gate completo com build, cleanup, 431 arquivos/3644 testes aprovados e 3 arquivos/59 testes skipped. Os quatro testes de performance executaram seus dez casos. F24.6 permanece ACTIVE; `RECONNECT_1K = NOT_CERTIFIED`, ganho geral de latência/memória NOT_PROVEN.
 

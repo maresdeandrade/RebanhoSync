@@ -1,9 +1,9 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-10-13
-Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE)**
-Próxima frente: **F24.6A — Performance / Scale Baseline; fechamento administrativo da F24.6A1 certificada**
-Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
+Atualizado em: 2026-10-20
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no cenário certificado)**
+Próxima frente: **formalizar escopo e critérios para a proposta de inventário estático F24.6A2; não iniciar benchmarks nem otimizações**
+Fase anterior: **Fase 23 — Simulação Produtiva e Comercial (CLOSED)**
 
 ## Objetivo
 
@@ -38,7 +38,7 @@ Definir a sequência macro de desenvolvimento. O plano detalhado da fase corrent
 17. Fase 21 — Inteligência Operacional v2 — **concluída**.
 18. Fase 22 — Eficiência Produtiva e Econômica — **concluída (F22A, F22B e F22C fechadas)**.
 19. Fase 23 — Simulação Produtiva e Comercial — **concluída / CLOSED**.
-20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.4A–F24.4F CLOSED / INTEGRATED; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A BASELINE**.
+20. Fase 24 — Release Hardening / Scale Readiness — **IN PROGRESS; F24.4A–F24.4F CLOSED / INTEGRATED; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no cenário certificado**.
 
 `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026. Rollout e importação real permanecem não autorizados; isso não reabre a Fase 12 nem encerra F24.
 
@@ -52,9 +52,9 @@ A Fase 14 — Compra/Venda Operacional foi encerrada no baseline autoritativo `m
 
 ## Fase atual de desenvolvimento
 
-**F24.6A1 — certificação concluída / fechamento administrativo (13/10/2026):** `RECONNECT_1K = CERTIFIED` em `main@869f006679827f3baddb0afed3c3cbf22e976fa5`: smoke aprovado, 5/5 runs sequenciais de 1.000 gestos, 1.000 animais, duas fazendas 500/500, warm, agenda vazia; mediana 146,46s. ACKs, fila/obrigações zeradas, isolamento, convergência, revisão única e cleanup comprovados no [relatório único](../review/F24_6A1_RECONNECT_1K_CERTIFICATION.md), com evidências versionadas e hashes auditáveis. Baseline E1/E2 e falhas anteriores preservadas; sem repetição do benchmark nesta publicação.
+**F24.6A1 — integração concluída (PR #200, 13/10/2026):** `RECONNECT_1K = CERTIFIED` na baseline medida `main@869f006679827f3baddb0afed3c3cbf22e976fa5`. O relatório [F24.6A1](../review/F24_6A1_RECONNECT_1K_CERTIFICATION.md) comprova cinco runs completos no envelope reconnect 1k descrito, com riscos residuais e limites preservados. O PR #200 foi integrado; isso não amplia a certificação para capacidade geral de escala.
 
-Fechamento preparado neste pacote: **`F24.6A1 = CLOSED / INTEGRATED` somente após o merge deste PR na main**, restrito ao envelope certificado; antes do merge, certificação concluída e integração pendente. Não há nova subfase, novo relatório ou documentação pós-merge exigidos. F24.6 continua ACTIVE; nenhuma execução posterior foi autorizada. Preservados os riscos de certificação local/heap amostrado/n=5 e causa interna do primeiro 502 não capturada.
+F24.6 permanece ativa. O handoff propõe inventário estático para F24.6A2; escopo e critérios de aceite precisam ser formalizados antes do início. Benchmark adicional, otimização e rollout não são autorizados por inferência.
 
 **F24.6A1-H — snapshot histórico substituído (12/10/2026):** PR [#196](https://github.com/maresdeandrade/RebanhoSync/pull/196) `MERGED` em `6cf239fddf6a33249dbba8ce99de180e1772280e`, head integrado `694f4921d96b4acc7c07eb347d68c2d69e98c6ed`. Patch C+D, remediações Fallow G1/G2 e compatibilidade Vitest G5/G6 integrados. CI incremental [38162109877](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162109877) e gate completo [38162234927](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162234927) aprovados; gate completo com build, cleanup, 431 arquivos/3644 testes aprovados e 3 arquivos/59 testes skipped. Os quatro testes de performance executaram seus dez casos. F24.6 permanece ACTIVE; `RECONNECT_1K = NOT_CERTIFIED`, ganho geral de latência/memória NOT_PROVEN.
 

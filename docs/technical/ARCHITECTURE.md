@@ -1,10 +1,12 @@
 # Arquitetura — RebanhoSync
 
-Atualizado em: 2026-07-30
+Atualizado em: 2026-10-20
 
 ## Visão geral
 
 RebanhoSync é offline-first: operações válidas nascem localmente, são persistidas em Dexie quando aplicável e usam a fila compartilhada para sincronização com Supabase/Postgres. O servidor é autoritativo para autenticação, autorização, RLS, transições, constraints e conflitos.
+
+> Este resumo não substitui a verificação do código e migrations ativos para versões, objetos e comportamento. Integração e ativação operacional constam em [PROJECT_STATUS.md](../context/PROJECT_STATUS.md).
 
 ```txt
 UI
@@ -65,21 +67,21 @@ Otimizam leitura atual. Não substituem evento, evidência documental ou fonte t
 - relação append-only Evento–Animal;
 - gate remoto autoritativo fail-closed;
 - comandos `create_agenda`, `replace_agenda_animals`, `apply_factual_core` e `close_agenda`;
-- `sync-batch` v19;
+- transporte sanitário v2 pela função Edge `sync-batch` (versão deve ser confirmada no código ativo);
 - worker com `APPLIED`, `RETRYABLE`, `REJECTED`, `CONFLICT` e `BLOCKED_DEPENDENCY`;
-- Dexie v28 com `event_eventos_animais`;
+- persistência local Dexie compatível com os stores atuais (versão deve ser confirmada no código ativo);
 - manifesto de cutover `PREPARED`, `APPLYING`, `APPLIED` e `FAILED`;
 - pull/reconcile não destrutivo.
 
 ## Estado de ativação
 
-- staging: `zqloazqzhwauamcejmuz`;
-- produção: não alterada;
+- implementação do Sync Sanitário v2: status técnico descrito nesta arquitetura; verificar cobertura/versão no código e migrations ativos;
 - gate sanitário remoto: desligado;
 - feature flag local: `false`;
-- rollout: não autorizado.
+- recertificação completa, importação real e rollout: não autorizados;
+- produção: não provisionada.
 
-A arquitetura está implementada sob gate, mas o Sync Sanitário v2 e a Fase 12 não estão concluídos. O próximo incremento é o item 3.8, descrito no [plano ativo](../review/ACTIVE_PHASE_PLAN.md).
+Implementação e integração não equivalem a ativação operacional. A fase atual é F24, com F24.6 ativa e F24.6A1 integrada somente no envelope certificado. O [estado do projeto](../context/PROJECT_STATUS.md) e o [plano ativo](../review/ACTIVE_PHASE_PLAN.md) registram limites e próxima proposta.
 
 ## Risco externo
 
