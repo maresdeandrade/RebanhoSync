@@ -71,6 +71,25 @@ export function formatAgendaTypeLabel(value: string) {
     .join(" ");
 }
 
+const MANEJO_LABELS = new Map([
+  ["vacinacao", "Vacinação"],
+  ["vermifugacao", "Vermifugação"],
+  ["medicamento", "Medicamento"],
+  ["pesagem", "Pesagem"],
+  ["reproducao", "Reprodução"],
+  ["movimentacao", "Movimentação"],
+  ["nutricao", "Nutrição"],
+  ["financeiro", "Financeiro"],
+]);
+
+export function formatAgendaManejoLabel(tipo: string) {
+  const persistedType = tipo?.trim() ?? "";
+  return (
+    MANEJO_LABELS.get(persistedType) ??
+    (formatAgendaTypeLabel(persistedType) || "Tipo não informado")
+  );
+}
+
 export function getGroupVisibilityLabel(
   visibleCount: number,
   totalCount: number,

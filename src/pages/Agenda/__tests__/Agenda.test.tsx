@@ -288,6 +288,32 @@ describe("Agenda page", () => {
     } as ReturnType<typeof useLiveQuery>);
   });
 
+  it("names future-task grouping as manejo while preserving its persisted value", async () => {
+    const user = userEvent.setup();
+    await renderAgenda();
+    await user.click(screen.getByRole("combobox", { name: "Agrupar agenda" }));
+    await user.click(
+      screen.getByRole("option", { name: "Agrupar por manejo" }),
+    );
+    await waitFor(() =>
+      expect(readAgendaUiState(USER_ID, FARM_ID)).toMatchObject({
+        groupMode: "evento",
+      }),
+    );
+    expect(screen.getByText("Manejo: Vacinação")).toBeInTheDocument();
+    expect(screen.getByText("Manejo: Vermifugação")).toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Agrupar agenda" }));
+    await user.click(
+      screen.getByRole("option", { name: "Agrupar por animal" }),
+    );
+    await waitFor(() =>
+      expect(readAgendaUiState(USER_ID, FARM_ID)).toMatchObject({
+        groupMode: "animal",
+      }),
+    );
+    expect(screen.queryByText("Manejo: Vacinação")).not.toBeInTheDocument();
+  });
+
   it("rehydrates persisted quick filters and expanded groups", async () => {
     writeAgendaUiState(USER_ID, FARM_ID, {
       search: "",
@@ -388,7 +414,9 @@ describe("Agenda page", () => {
     await renderAgenda(["/agenda?operationalClass=operational_protocol"]);
 
     await waitFor(() => {
-      expect(screen.getByText("Classe: Protocolo operacional")).toBeInTheDocument();
+      expect(
+        screen.getByText("Classe: Protocolo operacional"),
+      ).toBeInTheDocument();
     });
 
     // expect(screen.getAllByText("Protocolo operacional").length).toBeGreaterThan(0);
@@ -468,7 +496,9 @@ describe("Agenda page", () => {
     await renderAgenda(["/agenda?dominio=sanitario"]);
 
     await user.click(screen.getByRole("button", { name: /ver itens/i }));
-    await user.click(screen.getByRole("button", { name: "Abrir na Central Sanitária" }));
+    await user.click(
+      screen.getByRole("button", { name: "Abrir na Central Sanitária" }),
+    );
 
     expect(mockNavigate).toHaveBeenCalledWith(
       "/protocolos-sanitarios?tab=agenda&agendaId=san-agenda-1",
@@ -567,7 +597,9 @@ describe("Agenda page", () => {
     const user = userEvent.setup();
     await renderAgenda();
 
-    expect(screen.getByText("2 grupo(s) com tarefas atrasadas")).toBeInTheDocument();
+    expect(
+      screen.getByText("2 grupo(s) com tarefas atrasadas"),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /próximo/i }));
 
@@ -643,8 +675,12 @@ describe("Agenda page", () => {
     expect(screen.getByText("Nenhuma tarefa encontrada")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Limpar filtros" }));
 
-    expect(screen.queryByText("Nenhuma tarefa encontrada")).not.toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Buscar na agenda" })).toHaveValue("");
+    expect(
+      screen.queryByText("Nenhuma tarefa encontrada"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: "Buscar na agenda" }),
+    ).toHaveValue("");
     expect(readAgendaUiState(USER_ID, FARM_ID)?.search).toBe("");
   });
 });

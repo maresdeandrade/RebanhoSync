@@ -68,13 +68,25 @@ export function AgendaFiltersToolbar({
   onClearFilters,
 }: AgendaFiltersToolbarProps) {
   return (
-    <section aria-label="Filtros da agenda" className="space-y-3 rounded-xl border border-border/80 bg-surface p-3 sm:p-4">
+    <section
+      aria-label="Filtros da agenda"
+      className="space-y-3 rounded-xl border border-border/80 bg-surface p-3 sm:p-4"
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="space-y-1">
-          <h2 className="text-sm font-semibold text-foreground">Localizar tarefas</h2>
-          <p className="text-xs text-muted-foreground">Busque e organize as intenções de manejo da fazenda.</p>
+          <h2 className="text-sm font-semibold text-foreground">
+            Localizar tarefas
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Busque e organize as intenções de manejo da fazenda.
+          </p>
         </div>
-        <Button type="button" variant="ghost" size="sm" onClick={onClearFilters}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onClearFilters}
+        >
           Limpar
         </Button>
       </div>
@@ -102,7 +114,7 @@ export function AgendaFiltersToolbar({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="animal">Agrupar por animal</SelectItem>
-              <SelectItem value="evento">Agrupar por evento</SelectItem>
+              <SelectItem value="evento">Agrupar por manejo</SelectItem>
             </SelectContent>
           </Select>
         </ToolbarGroup>

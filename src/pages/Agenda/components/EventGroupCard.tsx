@@ -2,7 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { buildAgendaBadgeOverflowLayout } from "@/lib/agenda/badgeOverflow";
 import { buildAgendaGroupRecommendation } from "@/lib/agenda/groupRecommendations";
-import { getGroupVisibilityLabel } from "@/pages/Agenda/helpers/formatting";
+import {
+  formatAgendaManejoLabel,
+  getGroupVisibilityLabel,
+} from "@/pages/Agenda/helpers/formatting";
 import { mapAnimalBadgeToQuickFilter } from "@/pages/Agenda/helpers/quickFilters";
 import type {
   AgendaEventGroup,
@@ -77,6 +80,9 @@ export function EventGroupCard({
   const groupStateKey = buildGroupStateKey("evento", group.key);
   const isExpanded = expandedGroupSet.has(groupStateKey);
   const isRevealed = revealedGroups.includes(groupStateKey);
+  const manejoLabels = Array.from(
+    new Set(group.rows.map((row) => formatAgendaManejoLabel(row.item.tipo))),
+  );
   const displayedRows =
     hasQuickFiltersActive && !isRevealed ? group.visibleRows : group.rows;
   const canToggleReveal =
@@ -101,7 +107,10 @@ export function EventGroupCard({
     >
       <CardHeader className="space-y-3 border-b border-border/60 px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-3">
+            <p className="break-words text-sm font-semibold text-foreground">
+              Manejo: {manejoLabels.join(" · ") || "Tipo não informado"}
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-base">{group.title}</CardTitle>
               <StatusBadge tone="neutral">
