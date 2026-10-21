@@ -358,6 +358,16 @@ export function SanitaryAnimalSummaryPanelV2({
                   <p className="mt-1 text-sm text-muted-foreground">
                     {primaryReason(result)}
                   </p>
+                  {result.blockers
+                    .filter((blocker) => blocker !== primaryReason(result))
+                    .map((blocker) => (
+                      <p
+                        key={blocker}
+                        className="mt-1 text-sm text-muted-foreground"
+                      >
+                        {blocker}
+                      </p>
+                    ))}
                 </div>
                 <Badge
                   variant={result.documentaryPending ? "default" : "secondary"}

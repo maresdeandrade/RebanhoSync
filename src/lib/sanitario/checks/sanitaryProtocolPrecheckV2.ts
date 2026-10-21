@@ -660,7 +660,7 @@ function evaluateAdultB19History(
       ],
     });
   }
-  if (jurisdictionBlock) return jurisdictionBlock;
+  if (jurisdictionBlock?.status === "not_applicable") return jurisdictionBlock;
   const declaredHistory = compatibleHistory.find(isDeclaredHistorySource);
   if (declaredHistory) {
     return baseResult({
@@ -670,6 +670,7 @@ function evaluateAdultB19History(
       reasons: [
         "B19 informada apenas por declaração sem documento suficiente.",
       ],
+      blockers: jurisdictionBlock?.blockers ?? [],
       warnings: [
         "Declaração sem documento pode não liberar pendências críticas.",
       ],
@@ -684,6 +685,7 @@ function evaluateAdultB19History(
     item,
     status: "insufficient_data",
     reasons: ["Fêmea adulta sem comprovação documental de B19."],
+    blockers: jurisdictionBlock?.blockers ?? [],
     warnings: [
       "Não planejar vacinação B19 fora da janela sem comprovação técnica.",
     ],

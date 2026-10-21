@@ -257,6 +257,7 @@ describe("AnimalDetalhe", () => {
     activeSanitaryCase?: unknown;
     sanitaryCatalog?: SanitaryProtocolCatalogReadModelV2 | null;
     sanitaryHistory?: SanitaryExecutedHistoryV2[];
+    sanitaryFarmContext?: { fazendaId: string; farmUf: string | null };
   }
 
   const setupMockLiveQuery = (mockResponses: MockLiveQueryResponses) => {
@@ -321,6 +322,23 @@ describe("AnimalDetalhe", () => {
       }
       if (str.includes("getAnimalSanitaryExecutedHistoryV2")) {
         return mockResponses.sanitaryHistory ?? [];
+      }
+      if (str.includes("loadSanitaryProtocolWindowSourceV2")) {
+        if (!mockResponses.sanitaryFarmContext) return null;
+        return {
+          ...mockResponses.sanitaryFarmContext,
+          catalog: mockResponses.sanitaryCatalog ?? {
+            protocols: [],
+            items: [],
+            productClassGroups: [],
+          },
+          animals: [],
+          lots: [],
+          agendas: [],
+          agendaAnimals: [],
+          executedEvents: [],
+          executedHistory: mockResponses.sanitaryHistory ?? [],
+        };
       }
       if (str.includes("readLocalSanitaryProtocolCatalogV2")) {
         return mockResponses.sanitaryCatalog ?? null;
@@ -1487,7 +1505,19 @@ describe("AnimalDetalhe", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("exibe pendência documental B19 no resumo da aba Sanidade", async () => {
+  it.each([
+    { label: "sem UF", farmContext: undefined, missingUf: true },
+    {
+      label: "UF persistida na fazenda",
+      farmContext: { fazendaId: "farm-1", farmUf: "MG" },
+      missingUf: false,
+    },
+    {
+      label: "UF de outra fazenda ignorada",
+      farmContext: { fazendaId: "other-farm", farmUf: "MG" },
+      missingUf: true,
+    },
+  ])("exibe pendência documental B19 no resumo da aba Sanidade: $label", async ({ farmContext, missingUf }) => {
     const user = userEvent.setup();
     const animal = makeAnimal({
       id: "animal-1",
@@ -1499,6 +1529,7 @@ describe("AnimalDetalhe", () => {
 
     setupMockLiveQuery({
       animal,
+      sanitaryFarmContext: farmContext,
       sanitaryCatalog: {
         protocols: [
           {
@@ -1567,6 +1598,11 @@ describe("AnimalDetalhe", () => {
     expect(screen.getAllByText("Pendência documental").length).toBeGreaterThan(
       0,
     );
+    const ufBlocker = screen.queryByText(
+      "UF ausente para verificar exceções e proibições regionais de B19.",
+    );
+    if (missingUf) expect(ufBlocker).toBeInTheDocument();
+    else expect(ufBlocker).not.toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Abrir conformidade na Central/i }),
     ).toHaveAttribute(

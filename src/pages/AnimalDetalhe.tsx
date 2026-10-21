@@ -1304,8 +1304,12 @@ const AnimalDetalhe = () => {
       nascimento: animal.data_nascimento,
       categoria: taxonomySnapshot?.categoria_zootecnica ?? null,
       fazendaId: animal.fazenda_id,
+      uf:
+        sanitaryComplianceSourceV2?.fazendaId === animal.fazenda_id
+          ? sanitaryComplianceSourceV2.farmUf
+          : null,
     };
-  }, [animal, taxonomySnapshot?.categoria_zootecnica]);
+  }, [animal, taxonomySnapshot?.categoria_zootecnica, sanitaryComplianceSourceV2]);
   const isReproductionEligible =
     animal && isFemaleReproductionEligible(animal, categoriaLabel);
   const lifecycleSnapshot = animal
