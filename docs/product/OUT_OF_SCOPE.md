@@ -1,4 +1,3 @@
-```md
 # Out of Scope — RebanhoSync
 
 Atualizado em: 2026-10-20
@@ -232,7 +231,3 @@ Uma capacidade pode sair deste documento quando houver:
 * [ ] RLS/`fazenda_id` foram preservados?
 * [ ] O usuário entenderá a limitação?
 * [ ] A funcionalidade pertence ao MVP?
-
-```
-
-```
