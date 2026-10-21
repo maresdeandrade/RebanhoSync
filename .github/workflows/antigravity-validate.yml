@@ -268,6 +268,12 @@ jobs:
 
       - name: Build
         if: steps.scope.outputs.needs_build == 'true'
+        # This artifact checks compilation only; it cannot target a live backend.
+        env:
+          VITE_BACKEND_ENV: ci-synthetic
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_FUNCTIONS_URL: https://example.supabase.co/functions/v1
+          VITE_SUPABASE_PUBLISHABLE_KEY: example-publishable-key
         run: pnpm run build
 
       # -----------------------------------------------------------------------

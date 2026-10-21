@@ -1,6 +1,37 @@
 import targets from "../../config/backend-targets.json" with { type: "json" };
 import { createHash } from "node:crypto";
 
+const syntheticBuildEnvironment = {
+  VITE_SUPABASE_URL: "https://example.supabase.co",
+  VITE_SUPABASE_FUNCTIONS_URL: "https://example.supabase.co/functions/v1",
+  VITE_SUPABASE_PUBLISHABLE_KEY: "example-publishable-key",
+};
+
+function validateSyntheticBuild(env) {
+  const deployed = env.VERCEL === "1" || env.VERCEL_ENV != null;
+  const mismatch = Object.entries(syntheticBuildEnvironment)
+    .some(([key, value]) => env[key] !== value);
+  if (env.CI !== "true" || deployed || mismatch)
+    throw new Error("CI_SYNTHETIC_BACKEND_FORBIDDEN");
+  return { role: "ci-synthetic", projectRef: "synthetic" };
+}
+
+// Build deployment context is distinct from Vite's optimized production mode.
+// The existing controlled preflight below does not authorize a deployed client.
+export function validateBackendBuildEnvironment(mode, env, registered = targets) {
+  if (env.VITE_BACKEND_ENV === "ci-synthetic") return validateSyntheticBuild(env);
+  if (env.VERCEL_ENV === "preview") {
+    if (env.VITE_BACKEND_ENV !== "homologation")
+      throw new Error("PREVIEW_REQUIRES_ISOLATED_HOMOLOGATION");
+    const target = validateBackendEnvironment("homologation", env, registered);
+    if (target.projectRef === "local" ||
+      new URL(env.VITE_SUPABASE_URL).href !== `https://${target.projectRef}.supabase.co/`)
+      throw new Error("PREVIEW_REQUIRES_REGISTERED_HTTPS_BACKEND");
+    return target;
+  }
+  return validateBackendEnvironment(mode, env, registered);
+}
+
 // Endpoints are public configuration. Never inspect or include API key values.
 export function validateBackendEnvironment(mode, env, registered = targets) {
   const production = env.VERCEL_ENV === "production" || mode === "production";

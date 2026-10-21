@@ -1,12 +1,12 @@
 import { defineConfig, loadEnv } from "vite";
-import { validateBackendEnvironment } from "./scripts/codex/backend-environment.mjs";
+import { validateBackendBuildEnvironment } from "./scripts/codex/backend-environment.mjs";
 import dyadComponentTagger from "@dyad-sh/react-vite-component-tagger";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 export default defineConfig(({ mode, command }) => {
   if (command === "build")
-    validateBackendEnvironment(mode, {
+    validateBackendBuildEnvironment(mode, {
       ...loadEnv(mode, process.cwd(), ""),
       ...process.env,
     });
