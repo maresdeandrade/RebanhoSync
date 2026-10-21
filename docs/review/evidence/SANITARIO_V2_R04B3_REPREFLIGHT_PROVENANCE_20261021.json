@@ -1,0 +1,1125 @@
+{
+  "artifact": "sanitario_r04b3_readonly_provenance",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "authorization_scope": "read_only_repreflight",
+  "provenance": {
+    "farm": {
+      "id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+      "cep": null,
+      "nome": "Homologação Sanitário V2",
+      "codigo": "HOMO-SANV2-R05",
+      "estado": "DF",
+      "metadata": {},
+      "timezone": "America/Sao_Paulo",
+      "client_id": "server",
+      "municipio": "Brasília",
+      "created_at": "2026-10-20T09:12:26.14932+00:00",
+      "created_by": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "deleted_at": null,
+      "updated_at": "2026-10-20T09:12:26.14932+00:00",
+      "benfeitorias": {},
+      "client_op_id": "255920ad-3cf6-4cf0-85c6-1179ee1beb56",
+      "client_tx_id": null,
+      "area_total_ha": null,
+      "tipo_producao": "mista",
+      "sistema_manejo": "pastagem",
+      "client_recorded_at": "2026-10-20T09:12:26.14932+00:00",
+      "server_received_at": "2026-10-20T09:12:26.14932+00:00"
+    },
+    "cases": [
+      {
+        "id": "0215a5f6-0e49-497d-885c-9dcd29fad4c0",
+        "tipo": "clinico",
+        "status": "em_acompanhamento",
+        "payload": {
+          "source": "registrar",
+          "produto": "Vacina Brucelose B19",
+          "sanitario_tipo": "vacinacao",
+          "protocol_item_code": null,
+          "protocol_item_version": null,
+          "protocol_item_version_id": null,
+          "protocol_item_logical_key": null
+        },
+        "animal_id": "ffb9ed45-79db-43e9-be13-5fb829b0c170",
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "closed_at": null,
+        "opened_at": "2026-10-21T06:00:04.507+00:00",
+        "created_at": "2026-10-21T05:59:58.639849+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T05:59:58.639849+00:00",
+        "observacoes": null,
+        "client_op_id": "1834572a-690f-4775-80ff-f26c4ad0bd0f",
+        "client_tx_id": "6dc95ada-c842-4b9c-b382-1f42eb5f761f",
+        "disease_code": null,
+        "disease_name": null,
+        "closure_reason": null,
+        "movement_blocked": false,
+        "notification_type": null,
+        "client_recorded_at": "2026-10-21T06:00:04.519+00:00",
+        "server_received_at": "2026-10-21T05:59:58.639849+00:00",
+        "source_alert_evento_id": null,
+        "requires_immediate_notification": false
+      },
+      {
+        "id": "6d83c7a4-088a-4413-8aa1-f5ab72bd7fd2",
+        "tipo": "clinico",
+        "status": "em_acompanhamento",
+        "payload": {
+          "source": "registrar",
+          "produto": "Vacina Brucelose B19",
+          "sanitario_tipo": "vacinacao",
+          "protocol_item_code": null,
+          "protocol_item_version": null,
+          "protocol_item_version_id": null,
+          "protocol_item_logical_key": null
+        },
+        "animal_id": "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "closed_at": null,
+        "opened_at": "2026-10-21T06:00:04.507+00:00",
+        "created_at": "2026-10-21T05:59:58.289463+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T05:59:58.289463+00:00",
+        "observacoes": null,
+        "client_op_id": "03a84f9e-a578-4ece-bb4f-e1b9e93b9756",
+        "client_tx_id": "6dc95ada-c842-4b9c-b382-1f42eb5f761f",
+        "disease_code": null,
+        "disease_name": null,
+        "closure_reason": null,
+        "movement_blocked": false,
+        "notification_type": null,
+        "client_recorded_at": "2026-10-21T06:00:04.519+00:00",
+        "server_received_at": "2026-10-21T05:59:58.289463+00:00",
+        "source_alert_evento_id": null,
+        "requires_immediate_notification": false
+      },
+      {
+        "id": "dbfaf459-b2f4-4492-a0a9-8642fe9f5fc4",
+        "tipo": "clinico",
+        "status": "em_acompanhamento",
+        "payload": {
+          "source": "registrar",
+          "produto": "Vacina Brucelose B19",
+          "sanitario_tipo": "vacinacao",
+          "protocol_item_code": null,
+          "protocol_item_version": null,
+          "protocol_item_version_id": null,
+          "protocol_item_logical_key": null
+        },
+        "animal_id": "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "closed_at": null,
+        "opened_at": "2026-10-21T06:00:04.507+00:00",
+        "created_at": "2026-10-21T05:59:58.469431+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T05:59:58.469431+00:00",
+        "observacoes": null,
+        "client_op_id": "917f13e0-2d7d-41e6-8397-c5a09b00402c",
+        "client_tx_id": "6dc95ada-c842-4b9c-b382-1f42eb5f761f",
+        "disease_code": null,
+        "disease_name": null,
+        "closure_reason": null,
+        "movement_blocked": false,
+        "notification_type": null,
+        "client_recorded_at": "2026-10-21T06:00:04.519+00:00",
+        "server_received_at": "2026-10-21T05:59:58.469431+00:00",
+        "source_alert_evento_id": null,
+        "requires_immediate_notification": false
+      }
+    ],
+    "audits": null,
+    "events": [
+      {
+        "id": "14500307-5fa2-482e-938b-f96832979f58",
+        "dominio": "sanitario",
+        "lote_id": null,
+        "payload": {
+          "produto_origem": "catalogo",
+          "produto_categoria": "vacina",
+          "produto_nome_catalogo": "Vacina Brucelose B19",
+          "produto_veterinario_id": "fe387f63-682b-4f11-96e8-ab442302c13c"
+        },
+        "animal_id": "ffb9ed45-79db-43e9-be13-5fb829b0c170",
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "created_at": "2026-10-21T05:59:58.66846+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T05:59:58.66846+00:00",
+        "observacoes": null,
+        "occurred_at": "2026-10-21T06:00:04.507+00:00",
+        "occurred_on": "2026-10-21",
+        "client_op_id": "f21d4808-7933-4962-a9ac-a5d9792ab4d0",
+        "client_tx_id": "6dc95ada-c842-4b9c-b382-1f42eb5f761f",
+        "domain_op_id": null,
+        "source_tx_id": null,
+        "source_task_id": null,
+        "corrige_evento_id": null,
+        "sanitario_caso_id": "0215a5f6-0e49-497d-885c-9dcd29fad4c0",
+        "client_recorded_at": "2026-10-21T06:00:04.519+00:00",
+        "server_received_at": "2026-10-21T05:59:58.66846+00:00",
+        "source_client_op_id": null,
+        "sanitario_sync_v2_nature": null,
+        "sanitario_contract_version": null,
+        "source_sanitario_agenda_v2_id": null
+      },
+      {
+        "id": "8993273e-d735-4c97-9171-06b591433927",
+        "dominio": "sanitario",
+        "lote_id": null,
+        "payload": {
+          "produto_origem": "catalogo",
+          "produto_categoria": "vacina",
+          "produto_nome_catalogo": "Vacina Brucelose B19",
+          "produto_veterinario_id": "fe387f63-682b-4f11-96e8-ab442302c13c"
+        },
+        "animal_id": "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "created_at": "2026-10-21T05:59:58.34003+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T05:59:58.34003+00:00",
+        "observacoes": null,
+        "occurred_at": "2026-10-21T06:00:04.507+00:00",
+        "occurred_on": "2026-10-21",
+        "client_op_id": "b90fd477-dbb1-44a6-b84d-fc34f90cbaaa",
+        "client_tx_id": "6dc95ada-c842-4b9c-b382-1f42eb5f761f",
+        "domain_op_id": null,
+        "source_tx_id": null,
+        "source_task_id": null,
+        "corrige_evento_id": null,
+        "sanitario_caso_id": "6d83c7a4-088a-4413-8aa1-f5ab72bd7fd2",
+        "client_recorded_at": "2026-10-21T06:00:04.519+00:00",
+        "server_received_at": "2026-10-21T05:59:58.34003+00:00",
+        "source_client_op_id": null,
+        "sanitario_sync_v2_nature": null,
+        "sanitario_contract_version": null,
+        "source_sanitario_agenda_v2_id": null
+      },
+      {
+        "id": "fc5d058f-058b-4d5a-b650-c5d4c682d585",
+        "dominio": "sanitario",
+        "lote_id": null,
+        "payload": {
+          "produto_origem": "catalogo",
+          "produto_categoria": "vacina",
+          "produto_nome_catalogo": "Vacina Brucelose B19",
+          "produto_veterinario_id": "fe387f63-682b-4f11-96e8-ab442302c13c"
+        },
+        "animal_id": "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "created_at": "2026-10-21T05:59:58.521664+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T05:59:58.521664+00:00",
+        "observacoes": null,
+        "occurred_at": "2026-10-21T06:00:04.507+00:00",
+        "occurred_on": "2026-10-21",
+        "client_op_id": "662df4a5-5105-4947-9878-5429281142b4",
+        "client_tx_id": "6dc95ada-c842-4b9c-b382-1f42eb5f761f",
+        "domain_op_id": null,
+        "source_tx_id": null,
+        "source_task_id": null,
+        "corrige_evento_id": null,
+        "sanitario_caso_id": "dbfaf459-b2f4-4492-a0a9-8642fe9f5fc4",
+        "client_recorded_at": "2026-10-21T06:00:04.519+00:00",
+        "server_received_at": "2026-10-21T05:59:58.521664+00:00",
+        "source_client_op_id": null,
+        "sanitario_sync_v2_nature": null,
+        "sanitario_contract_version": null,
+        "source_sanitario_agenda_v2_id": null
+      }
+    ],
+    "tables": [
+      "public.animal_lot_movement_receipts",
+      "public.app_admin_audit_events"
+    ],
+    "animals": [
+      {
+        "id": "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+        "nome": null,
+        "raca": null,
+        "rfid": null,
+        "sexo": "M",
+        "mae_id": null,
+        "origem": null,
+        "pai_id": null,
+        "status": "ativo",
+        "especie": "bovino",
+        "lote_id": null,
+        "payload": {
+          "homologacao": {
+            "phase": "R05",
+            "purpose": "sanitary assessment planning only; no real execution",
+            "synthetic": true
+          }
+        },
+        "revision": 1,
+        "client_id": "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "created_at": "2026-10-20T12:22:57.112562+00:00",
+        "data_saida": null,
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-20T12:22:57.112562+00:00",
+        "observacoes": null,
+        "papel_macho": null,
+        "client_op_id": "4055fd39-2369-401c-86c0-ba922eca97b4",
+        "client_tx_id": "08da4502-aae2-46b1-972d-0767c9bc8980",
+        "data_entrada": null,
+        "identificacao": "R05-M6M-SINTETICO",
+        "data_nascimento": "2026-04-20",
+        "habilitado_monta": false,
+        "movement_version": 0,
+        "client_recorded_at": "2026-10-20T12:23:08.348+00:00",
+        "server_received_at": "2026-10-20T12:22:57.112562+00:00",
+        "movement_head_event_id": null
+      },
+      {
+        "id": "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+        "nome": null,
+        "raca": null,
+        "rfid": null,
+        "sexo": "F",
+        "mae_id": null,
+        "origem": null,
+        "pai_id": null,
+        "status": "ativo",
+        "especie": "bovino",
+        "lote_id": null,
+        "payload": {
+          "homologacao": {
+            "phase": "R05",
+            "purpose": "sanitary assessment planning only; no real execution",
+            "synthetic": true
+          }
+        },
+        "revision": 1,
+        "client_id": "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "created_at": "2026-10-20T12:22:56.966682+00:00",
+        "data_saida": null,
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-20T12:22:56.966682+00:00",
+        "observacoes": null,
+        "papel_macho": null,
+        "client_op_id": "eb966456-75b8-4b2d-9344-6bf47ab9b5fb",
+        "client_tx_id": "08da4502-aae2-46b1-972d-0767c9bc8980",
+        "data_entrada": null,
+        "identificacao": "R05-F6M-SINTETICA",
+        "data_nascimento": "2026-04-20",
+        "habilitado_monta": false,
+        "movement_version": 0,
+        "client_recorded_at": "2026-10-20T12:23:08.348+00:00",
+        "server_received_at": "2026-10-20T12:22:56.966682+00:00",
+        "movement_head_event_id": null
+      },
+      {
+        "id": "ffb9ed45-79db-43e9-be13-5fb829b0c170",
+        "nome": null,
+        "raca": null,
+        "rfid": null,
+        "sexo": "F",
+        "mae_id": null,
+        "origem": null,
+        "pai_id": null,
+        "status": "ativo",
+        "especie": "bovino",
+        "lote_id": null,
+        "payload": {
+          "homologacao": {
+            "phase": "R05",
+            "purpose": "sanitary assessment planning only; no real execution",
+            "synthetic": true
+          }
+        },
+        "revision": 1,
+        "client_id": "browser:fb597b8f-9dc0-407c-892d-1436c0e831ce",
+        "created_at": "2026-10-20T12:22:57.209666+00:00",
+        "data_saida": null,
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-20T12:22:57.209666+00:00",
+        "observacoes": null,
+        "papel_macho": null,
+        "client_op_id": "79dcc88f-6e65-464d-acce-bbf0834b2715",
+        "client_tx_id": "08da4502-aae2-46b1-972d-0767c9bc8980",
+        "data_entrada": null,
+        "identificacao": "R05-MATRIZ-SINTETICA",
+        "data_nascimento": "2023-01-01",
+        "habilitado_monta": false,
+        "movement_version": 0,
+        "client_recorded_at": "2026-10-20T12:23:08.348+00:00",
+        "server_received_at": "2026-10-20T12:22:57.209666+00:00",
+        "movement_head_event_id": null
+      }
+    ],
+    "details": [
+      {
+        "tipo": "vacinacao",
+        "payload": {
+          "produto_origem": "catalogo",
+          "insumo_snapshot": {
+            "limitacoes": [
+              "Sem insumo estruturado associado no cadastro"
+            ],
+            "dose_unidade": "dose",
+            "dose_aplicada": 1,
+            "via_aplicacao": "subcutanea",
+            "rastreabilidade": "manual",
+            "quantidade_unidade": "dose",
+            "quantidade_consumida": null,
+            "produto_nome_snapshot": "Vacina Brucelose B19",
+            "produto_tipo_snapshot": null
+          },
+          "produto_categoria": "vacina",
+          "protocol_item_code": null,
+          "produto_nome_catalogo": "Vacina Brucelose B19",
+          "protocol_item_version": null,
+          "produto_veterinario_id": "fe387f63-682b-4f11-96e8-ab442302c13c",
+          "protocol_item_snapshot": null,
+          "protocol_item_version_id": null,
+          "protocol_item_logical_key": null
+        },
+        "produto": "Vacina Brucelose B19",
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "evento_id": "14500307-5fa2-482e-938b-f96832979f58",
+        "insumo_id": null,
+        "created_at": "2026-10-21T05:59:58.871908+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T05:59:58.871908+00:00",
+        "client_op_id": "a94dc1fe-1a60-423a-801b-07cd4407a2b8",
+        "client_tx_id": "6dc95ada-c842-4b9c-b382-1f42eb5f761f",
+        "domain_op_id": null,
+        "dose_unidade": "dose",
+        "via_aplicacao": "subcutanea",
+        "dose_quantidade": 1,
+        "estoque_lote_id": null,
+        "lote_fabricante": null,
+        "produto_snapshot": {},
+        "responsavel_nome": "maresdeandrade@gmail.com",
+        "responsavel_tipo": "usuario",
+        "validade_produto": null,
+        "carencia_carne_ate": null,
+        "carencia_leite_ate": null,
+        "client_recorded_at": "2026-10-21T06:00:04.519+00:00",
+        "server_received_at": "2026-10-21T05:59:58.871908+00:00",
+        "carencia_carne_dias": null,
+        "carencia_leite_dias": null,
+        "custo_total_snapshot": null,
+        "produto_nome_snapshot": "Vacina Brucelose B19",
+        "protocol_item_version": null,
+        "produto_veterinario_id": "fe387f63-682b-4f11-96e8-ab442302c13c",
+        "protocol_item_snapshot": null,
+        "custo_unitario_snapshot": null,
+        "produto_sanitario_v2_id": null,
+        "protocol_item_version_id": null,
+        "protocol_item_logical_key": null,
+        "sanitario_contract_version": null,
+        "estoque_lote_codigo_snapshot": null
+      },
+      {
+        "tipo": "vacinacao",
+        "payload": {
+          "produto_origem": "catalogo",
+          "insumo_snapshot": {
+            "limitacoes": [
+              "Sem insumo estruturado associado no cadastro"
+            ],
+            "dose_unidade": "dose",
+            "dose_aplicada": 1,
+            "via_aplicacao": "subcutanea",
+            "rastreabilidade": "manual",
+            "quantidade_unidade": "dose",
+            "quantidade_consumida": null,
+            "produto_nome_snapshot": "Vacina Brucelose B19",
+            "produto_tipo_snapshot": null
+          },
+          "produto_categoria": "vacina",
+          "protocol_item_code": null,
+          "produto_nome_catalogo": "Vacina Brucelose B19",
+          "protocol_item_version": null,
+          "produto_veterinario_id": "fe387f63-682b-4f11-96e8-ab442302c13c",
+          "protocol_item_snapshot": null,
+          "protocol_item_version_id": null,
+          "protocol_item_logical_key": null
+        },
+        "produto": "Vacina Brucelose B19",
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "evento_id": "8993273e-d735-4c97-9171-06b591433927",
+        "insumo_id": null,
+        "created_at": "2026-10-21T05:59:58.417613+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T05:59:58.417613+00:00",
+        "client_op_id": "39ba5cb0-0bea-4f58-a750-5ec03c21ca69",
+        "client_tx_id": "6dc95ada-c842-4b9c-b382-1f42eb5f761f",
+        "domain_op_id": null,
+        "dose_unidade": "dose",
+        "via_aplicacao": "subcutanea",
+        "dose_quantidade": 1,
+        "estoque_lote_id": null,
+        "lote_fabricante": null,
+        "produto_snapshot": {},
+        "responsavel_nome": "maresdeandrade@gmail.com",
+        "responsavel_tipo": "usuario",
+        "validade_produto": null,
+        "carencia_carne_ate": null,
+        "carencia_leite_ate": null,
+        "client_recorded_at": "2026-10-21T06:00:04.519+00:00",
+        "server_received_at": "2026-10-21T05:59:58.417613+00:00",
+        "carencia_carne_dias": null,
+        "carencia_leite_dias": null,
+        "custo_total_snapshot": null,
+        "produto_nome_snapshot": "Vacina Brucelose B19",
+        "protocol_item_version": null,
+        "produto_veterinario_id": "fe387f63-682b-4f11-96e8-ab442302c13c",
+        "protocol_item_snapshot": null,
+        "custo_unitario_snapshot": null,
+        "produto_sanitario_v2_id": null,
+        "protocol_item_version_id": null,
+        "protocol_item_logical_key": null,
+        "sanitario_contract_version": null,
+        "estoque_lote_codigo_snapshot": null
+      },
+      {
+        "tipo": "vacinacao",
+        "payload": {
+          "produto_origem": "catalogo",
+          "insumo_snapshot": {
+            "limitacoes": [
+              "Sem insumo estruturado associado no cadastro"
+            ],
+            "dose_unidade": "dose",
+            "dose_aplicada": 1,
+            "via_aplicacao": "subcutanea",
+            "rastreabilidade": "manual",
+            "quantidade_unidade": "dose",
+            "quantidade_consumida": null,
+            "produto_nome_snapshot": "Vacina Brucelose B19",
+            "produto_tipo_snapshot": null
+          },
+          "produto_categoria": "vacina",
+          "protocol_item_code": null,
+          "produto_nome_catalogo": "Vacina Brucelose B19",
+          "protocol_item_version": null,
+          "produto_veterinario_id": "fe387f63-682b-4f11-96e8-ab442302c13c",
+          "protocol_item_snapshot": null,
+          "protocol_item_version_id": null,
+          "protocol_item_logical_key": null
+        },
+        "produto": "Vacina Brucelose B19",
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "evento_id": "fc5d058f-058b-4d5a-b650-c5d4c682d585",
+        "insumo_id": null,
+        "created_at": "2026-10-21T05:59:58.578823+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T05:59:58.578823+00:00",
+        "client_op_id": "3cf78843-040c-411a-9b47-5ad7f8529802",
+        "client_tx_id": "6dc95ada-c842-4b9c-b382-1f42eb5f761f",
+        "domain_op_id": null,
+        "dose_unidade": "dose",
+        "via_aplicacao": "subcutanea",
+        "dose_quantidade": 1,
+        "estoque_lote_id": null,
+        "lote_fabricante": null,
+        "produto_snapshot": {},
+        "responsavel_nome": "maresdeandrade@gmail.com",
+        "responsavel_tipo": "usuario",
+        "validade_produto": null,
+        "carencia_carne_ate": null,
+        "carencia_leite_ate": null,
+        "client_recorded_at": "2026-10-21T06:00:04.519+00:00",
+        "server_received_at": "2026-10-21T05:59:58.578823+00:00",
+        "carencia_carne_dias": null,
+        "carencia_leite_dias": null,
+        "custo_total_snapshot": null,
+        "produto_nome_snapshot": "Vacina Brucelose B19",
+        "protocol_item_version": null,
+        "produto_veterinario_id": "fe387f63-682b-4f11-96e8-ab442302c13c",
+        "protocol_item_snapshot": null,
+        "custo_unitario_snapshot": null,
+        "produto_sanitario_v2_id": null,
+        "protocol_item_version_id": null,
+        "protocol_item_logical_key": null,
+        "sanitario_contract_version": null,
+        "estoque_lote_codigo_snapshot": null
+      }
+    ],
+    "observed_at": "2026-10-21T10:21:22.913763+00:00",
+    "v2_receipts": null,
+    "sanitary_config": {
+      "uf": "DF",
+      "aptidao": "misto",
+      "payload": {
+        "sanitary_agenda_automation_v2": {
+          "rules": [
+            {
+              "itemId": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+              "productId": null,
+              "protocolId": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+              "itemVersion": 3,
+              "protocolVersion": 1
+            },
+            {
+              "itemId": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+              "productId": null,
+              "protocolId": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+              "itemVersion": 2,
+              "protocolVersion": 1
+            },
+            {
+              "itemId": "c1866199-bf9d-506e-af05-dd84f3165c90",
+              "productId": null,
+              "protocolId": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+              "itemVersion": 2,
+              "protocolVersion": 1
+            },
+            {
+              "itemId": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+              "productId": null,
+              "protocolId": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+              "itemVersion": 2,
+              "protocolVersion": 1
+            },
+            {
+              "itemId": "e711773e-88ee-5107-aa73-68e7337468be",
+              "productId": null,
+              "protocolId": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+              "itemVersion": 2,
+              "protocolVersion": 1
+            },
+            {
+              "itemId": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+              "productId": null,
+              "protocolId": "56d66340-e21e-4d60-8933-d99a3514b41d",
+              "itemVersion": 2,
+              "protocolVersion": 1
+            },
+            {
+              "itemId": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+              "productId": null,
+              "protocolId": "c51c944b-431f-4533-8505-65bea3bec156",
+              "itemVersion": 2,
+              "protocolVersion": 1
+            }
+          ],
+          "context": {
+            "management": null,
+            "riskContext": false,
+            "rabiesRiskArea": null,
+            "sanitaryCadence": null,
+            "reproductiveContext": null
+          },
+          "enabled": true,
+          "revision": 6,
+          "updatedAt": "2026-10-20T15:37:15.750404+00:00",
+          "confirmedAt": "2026-10-20T15:37:15.750404+00:00",
+          "confirmedBy": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "ruleContexts": {
+            "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3": {
+              "management": null,
+              "rabiesRiskArea": null,
+              "sanitaryCadence": null,
+              "reproductiveContext": null
+            },
+            "4efb40be-1a71-5380-a9e8-c9e2d9c72d62": {
+              "management": "rearing",
+              "rabiesRiskArea": null,
+              "sanitaryCadence": null,
+              "regionalCalendar": {
+                "uf": "DF",
+                "months": [
+                  9
+                ]
+              },
+              "reproductiveContext": null
+            },
+            "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e": {
+              "management": "pre_feedlot",
+              "rabiesRiskArea": null,
+              "sanitaryCadence": null,
+              "scheduledContext": {
+                "date": "2026-10-20",
+                "animalIds": [
+                  "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+                  "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+                  "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+                ],
+                "reference": "R05 destino de confinamento exclusivamente sintético; avaliação, sem execução"
+              },
+              "reproductiveContext": null
+            },
+            "b34673c2-5d51-5d25-9ee2-60bfe5825550": {
+              "management": "rearing",
+              "rabiesRiskArea": null,
+              "sanitaryCadence": null,
+              "regionalCalendar": {
+                "uf": "DF",
+                "months": [
+                  5
+                ]
+              },
+              "reproductiveContext": null
+            },
+            "c1866199-bf9d-506e-af05-dd84f3165c90": {
+              "management": "rearing",
+              "rabiesRiskArea": null,
+              "sanitaryCadence": null,
+              "regionalCalendar": {
+                "uf": "DF",
+                "months": [
+                  7
+                ]
+              },
+              "reproductiveContext": null
+            },
+            "e10a3a77-a91e-5fd4-afab-1276526404ef": {
+              "management": null,
+              "rabiesRiskArea": null,
+              "sanitaryCadence": null,
+              "scheduledContext": {
+                "date": "2026-10-20",
+                "animalIds": [
+                  "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+                ],
+                "reference": "R05 contexto gestacional exclusivamente sintético; nenhum parto ou diagnóstico factual registrado"
+              },
+              "reproductiveContext": "prepartum"
+            },
+            "e711773e-88ee-5107-aa73-68e7337468be": {
+              "management": "pre_weaning",
+              "rabiesRiskArea": null,
+              "preWeaningBasis": {
+                "kind": "intensive_dairy",
+                "reference": "R05 contexto exclusivamente sintético de avaliação pré-desmama, sem execução"
+              },
+              "sanitaryCadence": null,
+              "reproductiveContext": null
+            }
+          },
+          "schemaVersion": 2
+        }
+      },
+      "sistema": "extensivo",
+      "client_id": "browser:55766748-d1c7-44a0-9938-46f74d5fbfbd",
+      "created_at": "2026-10-20T09:12:26.14932+00:00",
+      "deleted_at": null,
+      "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+      "updated_at": "2026-10-20T15:37:15.750404+00:00",
+      "client_op_id": "a6f0d754-efdc-4b70-8baa-c73c5cadbca6",
+      "client_tx_id": "2319bc7c-cabc-4e74-941f-0b257c8b0a2e",
+      "modo_calendario": "minimo_legal",
+      "zona_raiva_risco": "baixo",
+      "pressao_carrapato": "medio",
+      "pressao_helmintos": "medio",
+      "client_recorded_at": "2026-10-20T15:37:15.750404+00:00",
+      "server_received_at": "2026-10-20T09:12:26.14932+00:00"
+    }
+  },
+  "related": {
+    "stock": null,
+    "metrics": [
+      {
+        "id": "3a20f14c-1a94-4ac4-9a60-e952e0a29394",
+        "route": "/home",
+        "entity": null,
+        "status": "info",
+        "payload": {
+          "pathname": "/home"
+        },
+        "quantity": null,
+        "created_at": "2026-10-21T05:59:04.525+00:00",
+        "event_name": "page_view",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T05:58:58.41309+00:00"
+      },
+      {
+        "id": "22955e4e-55a8-439b-a598-afdc2e42613a",
+        "route": "/home",
+        "entity": null,
+        "status": "info",
+        "payload": {
+          "pathname": "/home"
+        },
+        "quantity": null,
+        "created_at": "2026-10-21T05:59:19.882+00:00",
+        "event_name": "page_view",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T05:59:23.404374+00:00"
+      },
+      {
+        "id": "0849f498-a62c-47ab-b481-fc59215939a1",
+        "route": "/registrar",
+        "entity": null,
+        "status": "info",
+        "payload": {
+          "pathname": "/registrar"
+        },
+        "quantity": null,
+        "created_at": "2026-10-21T05:59:29.284+00:00",
+        "event_name": "page_view",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T05:59:23.404374+00:00"
+      },
+      {
+        "id": "89b43877-a087-41b4-8d1d-8314f880d369",
+        "route": "/home",
+        "entity": null,
+        "status": "info",
+        "payload": {
+          "pathname": "/home"
+        },
+        "quantity": null,
+        "created_at": "2026-10-21T06:00:04.867+00:00",
+        "event_name": "page_view",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T05:59:59.44724+00:00"
+      },
+      {
+        "id": "d024373e-8346-4aba-938d-927cdaa21d1b",
+        "route": null,
+        "entity": "sync-batch",
+        "status": "success",
+        "payload": {
+          "tables": [
+            "sanitario_casos",
+            "eventos",
+            "eventos_sanitario"
+          ],
+          "op_count": 9
+        },
+        "quantity": 9,
+        "created_at": "2026-10-21T06:00:10.76+00:00",
+        "event_name": "sync_success",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T05:59:59.44724+00:00"
+      },
+      {
+        "id": "996d95f6-88df-4bec-86ac-08f1ae27acab",
+        "route": null,
+        "entity": null,
+        "status": "info",
+        "payload": {},
+        "quantity": 1,
+        "created_at": "2026-10-21T06:00:10.762+00:00",
+        "event_name": "sync_backlog",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T05:59:59.44724+00:00"
+      },
+      {
+        "id": "2ab3151d-66f9-47d1-a7fa-bf3e4f571c9c",
+        "route": "/agenda",
+        "entity": null,
+        "status": "info",
+        "payload": {
+          "pathname": "/agenda"
+        },
+        "quantity": null,
+        "created_at": "2026-10-21T06:00:15.595+00:00",
+        "event_name": "page_view",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T06:00:11.058036+00:00"
+      },
+      {
+        "id": "989fd972-38b0-43ec-858c-a05a3f2060d6",
+        "route": "/protocolos-sanitarios",
+        "entity": null,
+        "status": "info",
+        "payload": {
+          "pathname": "/protocolos-sanitarios"
+        },
+        "quantity": null,
+        "created_at": "2026-10-21T06:01:06.788+00:00",
+        "event_name": "page_view",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T06:00:58.815356+00:00"
+      },
+      {
+        "id": "8789e3be-4886-49d9-83ce-e201840a77f9",
+        "route": "/protocolos-sanitarios/catalogo-v2",
+        "entity": null,
+        "status": "info",
+        "payload": {
+          "pathname": "/protocolos-sanitarios/catalogo-v2"
+        },
+        "quantity": null,
+        "created_at": "2026-10-21T06:01:10.67+00:00",
+        "event_name": "page_view",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T06:01:02.908484+00:00"
+      },
+      {
+        "id": "f29cd294-2f0d-4232-8aec-e0c7f4b192f1",
+        "route": "/reproducao",
+        "entity": null,
+        "status": "info",
+        "payload": {
+          "pathname": "/reproducao"
+        },
+        "quantity": null,
+        "created_at": "2026-10-21T06:01:44.684+00:00",
+        "event_name": "page_view",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T06:01:38.339878+00:00"
+      },
+      {
+        "id": "5ca70b6a-50a1-4369-a9a0-c9c8bb6eeef9",
+        "route": "/relatorios",
+        "entity": null,
+        "status": "info",
+        "payload": {
+          "pathname": "/relatorios"
+        },
+        "quantity": null,
+        "created_at": "2026-10-21T06:01:56.692+00:00",
+        "event_name": "page_view",
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "reason_code": null,
+        "server_received_at": "2026-10-21T06:01:48.312291+00:00"
+      }
+    ],
+    "membership": {
+      "role": "owner",
+      "user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "client_id": "server",
+      "created_at": "2026-10-20T09:12:26.14932+00:00",
+      "deleted_at": null,
+      "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+      "invited_by": null,
+      "is_primary": false,
+      "updated_at": "2026-10-20T09:12:26.14932+00:00",
+      "accepted_at": "2026-10-20T09:12:26.14932+00:00",
+      "client_op_id": "bf72f2df-3c2f-4ba8-a513-3911a475c493",
+      "client_tx_id": null,
+      "client_recorded_at": "2026-10-20T09:12:26.14932+00:00",
+      "server_received_at": "2026-10-20T09:12:26.14932+00:00"
+    },
+    "observed_at": "2026-10-21T10:24:00.384034+00:00",
+    "agenda_links": null,
+    "legacy_product": {
+      "id": "fe387f63-682b-4f11-96e8-ab442302c13c",
+      "nome": "Vacina Brucelose B19",
+      "categoria": "vacina",
+      "created_at": "2026-09-14T11:15:04.780249+00:00",
+      "updated_at": "2026-09-14T11:15:04.780249+00:00"
+    },
+    "animal_relations": null
+  },
+  "transport": [
+    {
+      "execution_id": "bec927cc-979a-4893-b778-effdd778e540",
+      "execution_ms": "171",
+      "function_version": "28",
+      "path": "/functions/v1/sync-batch",
+      "request_id": "01a15d0b-822d-7b31-8989-0b1937f38b0e",
+      "status": "200",
+      "timestamp": "2026-10-21T05:59:57.912000",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "execution_id": "74b9656c-9b80-4e03-a962-5e92b6840a8d",
+      "execution_ms": "951",
+      "function_version": "28",
+      "path": "/functions/v1/sync-batch",
+      "request_id": "01a15d0b-82f4-73d1-a3f2-e09dd426fef6",
+      "status": "200",
+      "timestamp": "2026-10-21T05:59:58.891000",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "execution_id": "0e59baec-8000-40ee-bc7c-1ec47c6264cc",
+      "execution_ms": "105",
+      "function_version": "2",
+      "path": "/functions/v1/telemetry-ingest",
+      "request_id": "01a15d0b-87bf-7312-9c77-65031492662e",
+      "status": "200",
+      "timestamp": "2026-10-21T05:59:59.272000",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "execution_id": "2a25bd72-47be-486f-bbff-93f85cfe66fa",
+      "execution_ms": "166",
+      "function_version": "2",
+      "path": "/functions/v1/telemetry-ingest",
+      "request_id": "01a15d0b-883f-7c4d-b3ee-eb4e0033a02a",
+      "status": "200",
+      "timestamp": "2026-10-21T05:59:59.461000",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "execution_id": "1e64d1ab-9a5d-4366-a2af-6bdf91615bc2",
+      "execution_ms": "123",
+      "function_version": "2",
+      "path": "/functions/v1/telemetry-ingest",
+      "request_id": "01a15d0b-a914-7ad8-9738-21cbea623ca2",
+      "status": "200",
+      "timestamp": "2026-10-21T06:00:07.823000",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+    },
+    {
+      "execution_id": "e3c59c79-296d-430c-8aec-247b9fafc6a6",
+      "execution_ms": "3170",
+      "function_version": "2",
+      "path": "/functions/v1/telemetry-ingest",
+      "request_id": "01a15d0b-a9e4-7a1d-b023-764204cf7ace",
+      "status": "200",
+      "timestamp": "2026-10-21T06:00:11.078000",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+    }
+  ],
+  "rest_write_receipts": [
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/sanitario_casos",
+      "referer": "",
+      "request_id": "01a15d0b-8444-75e7-9353-bf27f51190c1",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T05:59:58.266000",
+      "trace_id": "01a15d0b82f473d1a3f2e09dd426fef6",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    },
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/eventos",
+      "referer": "",
+      "request_id": "01a15d0b-8474-7a11-b5d0-a96db320055b",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T05:59:58.324000",
+      "trace_id": "01a15d0b82f473d1a3f2e09dd426fef6",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    },
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/eventos_sanitario",
+      "referer": "",
+      "request_id": "01a15d0b-84ce-71e4-8654-125a589391b0",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T05:59:58.400000",
+      "trace_id": "01a15d0b82f473d1a3f2e09dd426fef6",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    },
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/sanitario_casos",
+      "referer": "",
+      "request_id": "01a15d0b-84fd-73b9-9b79-5e84514feabb",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T05:59:58.461000",
+      "trace_id": "01a15d0b82f473d1a3f2e09dd426fef6",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    },
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/eventos",
+      "referer": "",
+      "request_id": "01a15d0b-8527-7447-95ea-2187b545473a",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T05:59:58.503000",
+      "trace_id": "01a15d0b82f473d1a3f2e09dd426fef6",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    },
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/eventos_sanitario",
+      "referer": "",
+      "request_id": "01a15d0b-8571-72a7-82b7-010b0ed3d990",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T05:59:58.567000",
+      "trace_id": "01a15d0b82f473d1a3f2e09dd426fef6",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    },
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/sanitario_casos",
+      "referer": "",
+      "request_id": "01a15d0b-859a-73c4-9b35-d4e380094d4f",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T05:59:58.618000",
+      "trace_id": "01a15d0b82f473d1a3f2e09dd426fef6",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    },
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/eventos",
+      "referer": "",
+      "request_id": "01a15d0b-85c4-7da5-9f8c-dd02542a53d8",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T05:59:58.660000",
+      "trace_id": "01a15d0b82f473d1a3f2e09dd426fef6",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    },
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/eventos_sanitario",
+      "referer": "",
+      "request_id": "01a15d0b-8689-73ef-8f05-e89ad9c3d1cb",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T05:59:58.845000",
+      "trace_id": "01a15d0b82f473d1a3f2e09dd426fef6",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    },
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/metrics_events",
+      "referer": "",
+      "request_id": "01a15d0b-88c8-7fde-b7f3-e64e8bf2d0c1",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T05:59:59.432000",
+      "trace_id": "01a15d0b883f7c4db3eeeb4e0033a02a",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    },
+    {
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "method": "POST",
+      "path": "/rest/v1/metrics_events",
+      "referer": "",
+      "request_id": "01a15d0b-b618-70e0-8033-d6e94f399d69",
+      "source": "edge_logs",
+      "status": "201",
+      "timestamp": "2026-10-21T06:00:11.032000",
+      "trace_id": "01a15d0ba9e47a1db023764204cf7ace",
+      "user_agent": "Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.77.0; ref=zqloazqzhwauamcejmuz)"
+    }
+  ],
+  "limitations": {
+    "transport_actor_not_human_authorship": true,
+    "physical_execution_not_confirmed": true,
+    "legacy_ack_body_not_persisted": true,
+    "no_sanitary_v2_receipts": true
+  },
+  "remote_mutations": 0
+}

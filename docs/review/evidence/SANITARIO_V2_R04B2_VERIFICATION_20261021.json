@@ -1,0 +1,285 @@
+{
+  "artifact": "sanitario_r04b2_local_certification",
+  "classification": "READY_FOR_REMOTE_AUTHORIZATION",
+  "repository_gate": "READY WITH CAVEAT",
+  "scope": "Local preparation only; no remote authorization or execution",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "branch": "codex/sanitario-v2-convergencia",
+  "head": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+  "worktree": "C:\\Users\\mares\\.codex\\worktrees\\r04b2-certificacao\\GestaoAgro",
+  "recovery": {
+    "snapshot": "cfb421179201cebb3729da2d2147e715ea21b998",
+    "snapshot_parent": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+    "original_changed_paths": 25,
+    "prior_manifest_hashes_verified_before_r04b2": 24,
+    "restored_working_tree": true,
+    "changed_files_from_recovered_r04b1_set": [
+      "docs/domain/SANITARIO.md",
+      "docs/review/SANITARIO_V2_R04B_CLASSES_20261021.md",
+      "docs/technical/SUPABASE_RLS.md",
+      "supabase/migrations/20261020232807_sanitario_class_scheme_planning_v2.sql",
+      "tests/codex/sanitario-v2-review.postgres.mjs"
+    ]
+  },
+  "delta": {
+    "content_sha256": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+    "candidates": 5,
+    "coverage": 8,
+    "class_reviews": 2,
+    "product_source_links": 2,
+    "remote_authorized": false,
+    "real_approvals": 0
+  },
+  "validations": {
+    "postgres": {
+      "command": "node tests/codex/sanitario-v2-review.postgres.mjs",
+      "passed": 17,
+      "failed": 0,
+      "evidence": "docs/review/evidence/SANITARIO_V2_R04B2_POSTGRES_20261021.json",
+      "database_removed": true
+    },
+    "cli": {
+      "command": "node node_modules/vitest/vitest.mjs run tests/codex/sanitario-v2-incremental.test.mjs",
+      "passed": 6,
+      "failed": 0
+    },
+    "incompatible_product": {
+      "command": "node node_modules/vitest/vitest.mjs run src/lib/sanitario/execution/__tests__/sanitaryAgendaExecutionV2.test.ts -t 'R04B bloqueia aplicação incompatível'",
+      "passed": 1,
+      "skipped": 53,
+      "failed": 0,
+      "process_environment": "local placeholders only"
+    },
+    "legacy_publisher": {
+      "file": "tests/codex/sanitario-v2-publisher.test.mjs",
+      "first_run_passed": 152,
+      "first_run_failed": 1,
+      "reason": "public export introduced inadvertently",
+      "fix": "removed added export",
+      "focused_rerun_passed": 1,
+      "full_final_rerun": false
+    },
+    "lint": {
+      "files": 5,
+      "exit_code": 0
+    },
+    "cli_validate": {
+      "exit_code": 0,
+      "approved": false
+    },
+    "diff_check": {
+      "exit_code": 0
+    },
+    "documentation_links": {
+      "broken": 0
+    },
+    "unchanged_domain_files_verified_by_sha256": 12,
+    "independent_review": "No concrete blocker; publisher and exact migration transaction reviewed",
+    "node_syntax": {
+      "files": 5,
+      "exit_code": 0
+    }
+  },
+  "git": {
+    "tracked_modified": 13,
+    "untracked_before_this_manifest": 23,
+    "staged": null,
+    "files": [
+      {
+        "path": "docs/domain/SANITARIO.md",
+        "sha256": "fafdf3de0819eb100ed00a42ca0d91949d262beb92604a90d8957088f7e1d88c"
+      },
+      {
+        "path": "docs/technical/SUPABASE_RLS.md",
+        "sha256": "2d6ccf877d70bcc512d339de1b1324e67e69cf9024f541be9051c3197b5b9056"
+      },
+      {
+        "path": "scripts/codex/import-sanitario-protocols-v2.mjs",
+        "sha256": "2d7e5729516acad21f762fbf3fecaa37ea00b2af7f8f0fe3777ff465072af0fa"
+      },
+      {
+        "path": "src/lib/sanitario/agenda/sanitaryAutomationReadinessV2.ts",
+        "sha256": "fb4ba03e5aa7bc5727f0671f15e3911d82fd2413532e02a211f5e3b84b7fe488"
+      },
+      {
+        "path": "src/lib/sanitario/agenda/sanitaryPlanningPolicyV2.ts",
+        "sha256": "391a335fe0efc39e410d1a09e489f6712ac1da4b7da33a1cf6a4d4f4d6655691"
+      },
+      {
+        "path": "src/lib/sanitario/checks/sanitaryProtocolPrecheckV2.ts",
+        "sha256": "b982b5411be9b06374acb15cfec706b8b3fedc23d2ecde081b5a4be8676e93cf"
+      },
+      {
+        "path": "src/lib/sanitario/execution/__tests__/sanitaryAgendaExecutionV2.test.ts",
+        "sha256": "527684a4798499fb698d8d147734c9ead9e8649034091e40819965e20bbf2e2f"
+      },
+      {
+        "path": "src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts",
+        "sha256": "0fadc93449aac74aaf32c46c281cf7149a0c66714801c16e077bd8828d7108aa"
+      },
+      {
+        "path": "src/lib/sanitario/execution/sanitaryProtocolExecutionAuthorizationV2.ts",
+        "sha256": "2cceab33d9c310c2347b3822ea89f85dd00e1be74f3cc26085ba7129d702d64d"
+      },
+      {
+        "path": "src/lib/sanitario/history/sanitaryExecutedHistoryV2.ts",
+        "sha256": "4330df1f3ffe323571aa78788ad51dfeeb2d4606a662b312a2302041a852d094"
+      },
+      {
+        "path": "src/lib/sanitario/windows/__tests__/sanitaryProtocolWindowsV2.test.ts",
+        "sha256": "c398868585a261cd40d923458cbcab3c0e828ac095b53610af92a005e4f586fa"
+      },
+      {
+        "path": "src/lib/sanitario/windows/sanitaryProtocolWindowsV2.ts",
+        "sha256": "ccf728a8f253d2b22a81454c255a9791d8ffed49abcc8f4c823bb52d9fea19ad"
+      },
+      {
+        "path": "tests/codex/sanitario-v2-review.postgres.mjs",
+        "sha256": "56c457f53d43179c8bccd54c6ce2e182074c07ea5d0a694773caa404742081b8"
+      },
+      {
+        "path": "docs/review/SANITARIO_V2_R04B2_CERTIFICACAO_20261021.md",
+        "sha256": "c3fa63da4961deb215fb2ec57d34d4cc64af59d86a005b9391891bc81c773c5e"
+      },
+      {
+        "path": "docs/review/SANITARIO_V2_R04B_CLASSES_20261021.md",
+        "sha256": "184e0ed66523ad264a94c91c9831c75dc54551d3ac74adb832f16c3e0848ed0e"
+      },
+      {
+        "path": "docs/review/SANITARIO_V2_R04B_REVISAO_13_ITENS_20261020.md",
+        "sha256": "261212943025fd2bd062c02cc226a4999e815bcc9e7af28be5c91f0147c3f33e"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B2_CANONICAL_DELTA_20261021.json",
+        "sha256": "7dcca6a5d73facf40df1867de7950f9badaa39b1a96bee6eb5b4ac046c7552a5"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B2_MIGRATION_APPLY_20261021.sql",
+        "sha256": "0fcafd896ce85df7118de6bf2e6b48cabf4f082da309ecf8f8fb67acf8d8d485"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B2_MIGRATION_DRY_RUN_20261021.sql",
+        "sha256": "c4cdd1f7f83feca61adfb443ca6a3bc8b16853215a7a42ce919bad589f8465d6"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B2_POSTGRES_20261021.json",
+        "sha256": "7ac45cdca20e4d6b8ddd6eb90edf77d75fa7b16e29caa53d8a17c5765f5429f0"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B2_PREFLIGHT_20261021.sql",
+        "sha256": "669e7be423199a855dfc35ee781d0c0b40fb459dddd70343efb20bbbc378b34e"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B2_PUBLICATION_PLAN_20261021.json",
+        "sha256": "b207e7b2d21e423a5b7a0ec09697cddc99e06e62583e8e99459197e0b7c182ba"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B_BASELINE_20261020.json",
+        "sha256": "52f5a065da7d3b170c9e8ecabe38c2d208cc87a13a2f732840a7b26cbbc2f613"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B_CLASS_POSTGRES_20261021.json",
+        "sha256": "6e65dd473b2732a6a7843619704a841fe94a811051633ac929ee14a939323227"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B_CLASS_PREVIEWS_20261021.json",
+        "sha256": "17c61c9002955bbea7d24992880b66f0d7137bd7c4949e0114d7a2ab493ec795"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B_CLASS_REMOTE_FINAL_20261020.json",
+        "sha256": "75617f6e927a53c07f941ebac53e0409d09eb43b774057bb6418b38e50dee38f"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B_CLASS_VERIFICATION_20261021.json",
+        "sha256": "9a2f44091088d200965a835f31bf023ec2483ba73dd13592406ce7ed755f6c1d"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B_MAPA_UI_20261020.json",
+        "sha256": "ff08801240312d8c56de977142c3646d9cdf41435a02bb311b42fa0f60dcc6ca"
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B_PREVIEWS_20261020.json",
+        "sha256": "0317182cb8bd481e4dd9fbc94553eb0ab557c99429bac33ae7bfab1de2fd058a"
+      },
+      {
+        "path": "scripts/codex/prepare-sanitario-class-delta-v2.mjs",
+        "sha256": "db4019f665b2fbc28040df58cb772b615e4d14914bc7fcf8e7e3833d6da3707b"
+      },
+      {
+        "path": "scripts/codex/prepare-sanitario-class-migration-v2.mjs",
+        "sha256": "d28b489f8d1f4fecda7db48d4e8c0b9c92471e95bf94f9a13ec5bb18cc9b077d"
+      },
+      {
+        "path": "src/lib/sanitario/agenda/__tests__/sanitaryClassSchemeV2.test.ts",
+        "sha256": "538315feb4a85fa81517d20fcae5b9ec4b43ec9d88fad6e0d1639ab2418be133"
+      },
+      {
+        "path": "src/lib/sanitario/agenda/sanitaryClassSchemeV2.ts",
+        "sha256": "230c3589f358ee2caac8589ccddf2023e33016d616318d635638642d391ea456"
+      },
+      {
+        "path": "src/lib/sanitario/execution/sanitaryClassSchemeExecutionV2.ts",
+        "sha256": "7e424ee5e1a66e7d9deaf31e15097a40bae3c8ec3df06e062de7f7cf4ea04c3c"
+      },
+      {
+        "path": "supabase/migrations/20261020232807_sanitario_class_scheme_planning_v2.sql",
+        "sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59"
+      },
+      {
+        "path": "tests/codex/sanitario-v2-incremental.test.mjs",
+        "sha256": "572c976b8530028178a3addc7046040293eb307d33b25b007896884b2d9f2f4a"
+      }
+    ],
+    "untracked_total": 24,
+    "files_exclude_this_manifest": true
+  },
+  "limitations": [
+    "No current remote baseline query; archived snapshot requires preflight before writes",
+    "R05 fixtures preserve IDs/snapshots via legacy contract=null; no remote Auth/Edge/sync contract v2 homologation",
+    "No global typecheck/production build certification; product-specific prospective execution remains pending its evidence"
+  ],
+  "remote_mutations": 0,
+  "remote_queries": 0,
+  "gates_activated": 0,
+  "real_agendas_changed": 0,
+  "remote_approval_digests_generated": 0,
+  "approval_required": {
+    "first": "Explicit preflight + exact migration + exact delta publication + authenticated previews only",
+    "decisions": "Separate authorization for two exact real grouped digests/five versions after previews",
+    "homologation": "Separate incremental R05 authorization; existing seven Agendas immutable"
+  },
+  "not_repeated": [
+    "193 unchanged-domain tests from R04B1",
+    "development/full builds",
+    "R05 execution",
+    "general baseline targeting persistent local Supabase"
+  ],
+  "documentation": {
+    "normative": [
+      "docs/domain/SANITARIO.md",
+      "docs/technical/SUPABASE_RLS.md"
+    ],
+    "derived": [
+      "docs/review/SANITARIO_V2_R04B_CLASSES_20261021.md",
+      "docs/review/SANITARIO_V2_R04B2_CERTIFICACAO_20261021.md"
+    ],
+    "manual_support": "unchanged",
+    "prompt_skill": "unchanged",
+    "archive": "no moves",
+    "adr": "not required"
+  },
+  "newly_affected_paths_r04b2": [
+    "scripts/codex/import-sanitario-protocols-v2.mjs",
+    "docs/review/SANITARIO_V2_R04B2_CERTIFICACAO_20261021.md",
+    "docs/review/evidence/SANITARIO_V2_R04B2_CANONICAL_DELTA_20261021.json",
+    "docs/review/evidence/SANITARIO_V2_R04B2_MIGRATION_APPLY_20261021.sql",
+    "docs/review/evidence/SANITARIO_V2_R04B2_MIGRATION_DRY_RUN_20261021.sql",
+    "docs/review/evidence/SANITARIO_V2_R04B2_POSTGRES_20261021.json",
+    "docs/review/evidence/SANITARIO_V2_R04B2_PREFLIGHT_20261021.sql",
+    "docs/review/evidence/SANITARIO_V2_R04B2_PUBLICATION_PLAN_20261021.json",
+    "docs/review/evidence/SANITARIO_V2_R04B2_VERIFICATION_20261021.json",
+    "scripts/codex/prepare-sanitario-class-delta-v2.mjs",
+    "scripts/codex/prepare-sanitario-class-migration-v2.mjs",
+    "tests/codex/sanitario-v2-incremental.test.mjs"
+  ]
+}

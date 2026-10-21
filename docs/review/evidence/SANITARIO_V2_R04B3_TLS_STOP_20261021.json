@@ -1,0 +1,64 @@
+{
+  "artifact": "sanitario_r04b3_tls_stop",
+  "observed_at": "2026-10-21T13:03:58.531Z",
+  "classification": "BLOCKED_TLS",
+  "authorization_valid_for_exact_scope": true,
+  "new_authorization_required": false,
+  "project_ref_expected": "zqloazqzhwauamcejmuz",
+  "repository": {
+    "branch": "codex/sanitario-v2-convergencia",
+    "head": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+    "existing_changes_preserved": true
+  },
+  "certified_artifacts": {
+    "manifest_files": 36,
+    "manifest_mismatches": [],
+    "input_files": 8,
+    "input_mismatches": [],
+    "migration_sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59",
+    "delta_digest": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+    "declared_digest_matches": true
+  },
+  "connection": {
+    "DB_URL_present_in_process": true,
+    "expected_pooler_host_matches": true,
+    "expected_pooler_project_user_matches": true,
+    "url_database": "postgres",
+    "url_query_keys": [],
+    "PGSSLMODE_present": false,
+    "NODE_EXTRA_CA_CERTS_present": false,
+    "authenticated": true,
+    "current_database": "postgres",
+    "current_user": "postgres",
+    "client_tls_encrypted": false,
+    "server_pg_stat_ssl": false,
+    "tls_certificate_verified": false,
+    "live_project_identity_independently_verified": false,
+    "credential_values_printed_or_persisted": false
+  },
+  "execution": {
+    "read_only_identity_and_tls_query": true,
+    "protected_curatorial_read_set_rechecked": false,
+    "migration_dry_run": false,
+    "migration_apply": false,
+    "delta_publication": false,
+    "replay": false,
+    "individual_previews": 0,
+    "group_previews": 0,
+    "real_auth_session_checked": false,
+    "curatorial_decision_calls": 0,
+    "operational_writes": 0,
+    "gate_writes": 0,
+    "publisher_or_guard_modified": false
+  },
+  "local_validation": {
+    "initial_hash_check_failed": "TypeError: inputs is an object, not an array; no artifact written by failed check",
+    "corrected_hash_check": "Object.values(inputs); results recorded above"
+  },
+  "concrete_blocker": "Authenticated pg.Client session using the canonical connection configuration has no TLS: client stream encrypted=false and server pg_stat_ssl.ssl=false. Remote execution stopped before curatorial reads or any write.",
+  "pending": [
+    "Configure mandatory TLS with certificate validation privately in the executor and verify the canonical connection uses it.",
+    "Confirm live project identity and protected curatorial read-set before exact migration/delta and replay.",
+    "Obtain five individual and two grouped previews through a real authorized Auth session; availability not checked after stop."
+  ]
+}

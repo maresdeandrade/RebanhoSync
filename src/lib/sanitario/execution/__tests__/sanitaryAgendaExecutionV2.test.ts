@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/lib/offline/db";
 import {
-  SANITARIO_V2_STAGING_PROJECT_REF,
   setSanitarioV2PushEnabled,
 } from "@/lib/offline/sanitarioV2Cutover";
 import type {
@@ -13,7 +12,7 @@ import type {
   SanitarioAgendaLocalV2,
   SanitarioProdutoCarenciaRuleLocalV2,
 } from "@/lib/offline/types";
-import type { SanitaryProtocolCatalogReadModelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
+import { adaptSanitaryProtocolItemV2Row, adaptSanitaryProtocolV2Row, type SanitaryProtocolCatalogReadModelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import {
   executeSanitaryAgendaBatchV2,
   executeSanitaryAgendaV2,
@@ -21,6 +20,7 @@ import {
   type ExecuteSanitaryAgendaResultV2,
 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
 import { buildSanitaryExecutedHistoryV2 } from "@/lib/sanitario/history/sanitaryExecutedHistoryV2";
+import type { ExecutedProductTechnicalSnapshotV2 } from "@/lib/sanitario/rules/sanitarySnapshotsV2";
 
 const agenda = (overrides: Partial<SanitarioAgendaLocalV2> = {}): SanitarioAgendaLocalV2 => ({
   id: "agenda-1",
@@ -402,6 +402,37 @@ const baseInput = {
   },
 };
 
+async function seedClassSchemeAgenda() {
+  const record = agenda();
+  const sourceId = "class-source", now = "2026-01-01";
+  const fields = ["dose", "route", "species_authorization", "operational_window"];
+  const refs = Object.fromEntries(fields.map(field => [field, [{ id: sourceId, kind: "bula", scope: "global",
+    title: "Bula sintética — variante compatível, não toda a classe", strength: "forte", evidenceStatus: "SIM_BULA",
+    fieldKeys: [field], metadata: { coverage_ids: ["class-" + field] } }]]));
+  record.protocol_item_snapshot.planningKind = "aplicacao_esquema_definido";
+  record.protocol_item_snapshot.planningEvidence = { planningScope: "class_scheme", itemVersion: 2, executionProductPolicy: "required_at_execution",
+    sourceRefsByField: refs, operationalWindowRule: { anchor: "manual_context" }, boosterRule: { recurrenceRule: { kind: "primovaccination_dose_1" } } };
+  await seedAgenda(record);
+  await db.catalog_sanitario_protocolo_itens_versions_v2.update("item-version-1", {
+    source_refs_by_field: refs, operational_window_rule: { anchor: "manual_context" },
+    booster_rule: { recurrenceRule: { kind: "primovaccination_dose_1" } },
+    snapshot_template: { metadata: { planning_scope: "class_scheme" }, executionProductPolicy: "required_at_execution",
+      sourcePolicy: { operational_window: "compatible_product_required_at_execution" } },
+  });
+  await db.catalog_sanitario_produtos_v2.update("product-1", { metadata: { registration_current_validity: "verified" } });
+  const template = await db.catalog_sanitario_fontes_tecnicas_v2.get("withdrawal-source");
+  await db.catalog_sanitario_fontes_tecnicas_v2.put({ ...template!, id: sourceId });
+  await db.catalog_sanitario_fonte_cobertura_campos_v2.bulkPut(fields.map(field => ({ id: "class-" + field,
+    source_id: sourceId, field_key: field, coverage_status: "covers", notes: null, created_at: now, updated_at: now, deleted_at: null })));
+  await db.catalog_sanitario_produto_fontes_v2.bulkPut(fields.map(field => ({ product_id: "product-1", source_id: sourceId, field_key: field, created_at: now })));
+  await db.catalog_sanitario_produto_dose_rules_v2.put({ id: "class-dose", product_id: "product-1", species_code: "bovino", aptitude: "all",
+    route: "subcutanea", dose_quantity: 2, dose_unit: "ml", dose_basis: "animal", min_weight_kg: null, max_weight_kg: null,
+    limitations: [], status_curatorial: "ativo", created_at: now, updated_at: now, deleted_at: null });
+  await db.catalog_sanitario_produto_especie_autorizacao_v2.put({ id: "class-species", product_id: "product-1", species_code: "bovino", aptitude: "all",
+    authorization_status: "SIM_BULA", sexo: null, idade_min_dias: null, idade_max_dias: null, lactacao_permitida: null, gestacao_permitida: null,
+    requires_mv_responsavel: false, limitations: [], metadata: {}, created_at: now, updated_at: now, deleted_at: null });
+}
+
 describe("executeSanitaryAgendaV2", () => {
   beforeEach(async () => {
     await db.open();
@@ -410,10 +441,72 @@ describe("executeSanitaryAgendaV2", () => {
 
   afterEach(clearScope);
 
+  it("R04B registra produto escolhido na execução, prova o esquema e mantém carência desconhecida e replay único", async () => {
+    await seedClassSchemeAgenda();
+    const result = await executeSanitaryAgendaV2(baseInput, db);
+    const detail = await db.event_eventos_sanitario.get(result.eventId);
+    expect(detail?.produto_veterinario_id).toBe("product-1");
+    expect(detail?.produto_snapshot).toMatchObject({ fieldEvidence: expect.arrayContaining([
+      expect.objectContaining({ fieldKey: "operational_window", sourceCoverageId: "class-operational_window", coverageStatus: "covers" }),
+    ]) });
+    expect(result.createsActiveWithdrawal).toBe(false);
+    const currentCatalog = { protocols: [adaptSanitaryProtocolV2Row((await db.catalog_sanitario_protocolos_v2.get("protocol-1"))!)],
+      items: [adaptSanitaryProtocolItemV2Row((await db.catalog_sanitario_protocolo_itens_versions_v2.get("item-version-1"))!)], productClassGroups: [] };
+    const history = buildSanitaryExecutedHistoryV2({ events: await db.event_eventos.toArray(), sanitaryDetails: [detail!], catalog: currentCatalog, fazendaId: "farm-1" });
+    expect(history[0]?.events[0]).toMatchObject({ productId: "product-1", productClass: "vacina_raiva", classSchemeCoverageId: "class-operational_window" });
+    expect((await executeSanitaryAgendaV2(baseInput, db)).eventId).toBe(result.eventId);
+    expect(await db.event_eventos.count()).toBe(1);
+  });
+
+  it("R04B bloqueia aplicação incompatível, mas registra fato explícito com alerta sem certificar esquema", async () => {
+    await seedClassSchemeAgenda();
+    await db.catalog_sanitario_produto_fontes_v2.delete(["product-1", "class-source", "operational_window"]);
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("class_scheme_product_incompatible");
+    expect(await db.event_eventos.count()).toBe(0);
+    const result = await executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db);
+    const detail = await db.event_eventos_sanitario.get(result.eventId);
+    expect(detail?.payload.catalog_review_warnings).toContain("class_scheme_product_incompatible");
+    expect((detail?.produto_snapshot as ExecutedProductTechnicalSnapshotV2).fieldEvidence.some(field => field.fieldKey === "operational_window")).toBe(false);
+  });
+
+  it("R04B revalida fonte do esquema na transação, sem fato parcial", async () => {
+    await seedClassSchemeAgenda();
+    const originalTransaction = db.transaction.bind(db);
+    const spy = vi.spyOn(db, "transaction").mockImplementation((async (...args: Parameters<typeof db.transaction>) => {
+      spy.mockRestore();
+      await db.catalog_sanitario_fontes_tecnicas_v2.update("class-source", { deleted_at: "2026-07-02" });
+      return originalTransaction(...args);
+    }) as typeof db.transaction);
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("class_scheme_product_incompatible");
+    expect(await db.event_eventos.count()).toBe(0);
+    expect((await db.ops_sanitario_agenda_v2.get("agenda-1"))?.status).toBe("programada");
+  });
+
+  it("R04B exige vigência comercial comprovada na aplicação prospectiva, preservando fato auditável", async () => {
+    await seedClassSchemeAgenda();
+    await db.catalog_sanitario_produtos_v2.update("product-1", { metadata: {} });
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("product_registration_unverified");
+    expect(await db.event_eventos.count()).toBe(0);
+    const result = await executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db);
+    expect((await db.event_eventos_sanitario.get(result.eventId))?.payload.catalog_review_warnings).toContain("product_registration_unverified");
+    expect(result.createsActiveWithdrawal).toBe(false);
+  });
+
+  it("R04B não aceita trocar janela/fontes congeladas mantendo apenas ID e versão", async () => {
+    await seedClassSchemeAgenda();
+    const current = (await db.ops_sanitario_agenda_v2.get("agenda-1"))!;
+    const evidence = current.protocol_item_snapshot.planningEvidence as Record<string, unknown>;
+    evidence.operationalWindowRule = { anchor: "another_scheme" };
+    await db.ops_sanitario_agenda_v2.put(current);
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("class_scheme_snapshot_required");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
   afterEach(() => {
     if (typeof localStorage !== "undefined") {
-      setSanitarioV2PushEnabled(false, SANITARIO_V2_STAGING_PROJECT_REF);
+      setSanitarioV2PushEnabled(false, "local");
     }
+    vi.unstubAllEnvs();
   });
 
   it("executa agenda futura criando evento, detalhe e marcando a agenda como executada", async () => {
@@ -1104,6 +1197,8 @@ describe("executeSanitaryAgendaV2", () => {
   });
 
   it.each([undefined, "executed_fact"] as const)("persiste execução, movimento e fila sanitária de forma atômica: %s", async (registrationMode) => {
+    // Offline queue fixture: use the supported local backend, without enabling remote rollout.
+    vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:54321");
     const ids = {
       farm: "10000000-0000-4000-8000-000000000001",
       agenda: "20000000-0000-4000-8000-000000000001",
@@ -1125,7 +1220,7 @@ describe("executeSanitaryAgendaV2", () => {
         };
       })(),
     );
-    setSanitarioV2PushEnabled(true, SANITARIO_V2_STAGING_PROJECT_REF);
+    setSanitarioV2PushEnabled(true, "local");
     await db.sync_sanitario_v2_cutovers.put({
       key: `${ids.farm}:2`,
       fazenda_id: ids.farm,
@@ -1196,7 +1291,7 @@ describe("executeSanitaryAgendaV2", () => {
       },
       sync: {
         clientId: "staging-client",
-        projectRef: SANITARIO_V2_STAGING_PROJECT_REF,
+        projectRef: "local",
       },
     });
 

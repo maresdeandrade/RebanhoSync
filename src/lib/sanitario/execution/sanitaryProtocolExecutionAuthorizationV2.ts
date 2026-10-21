@@ -4,6 +4,13 @@ import type {
   SanitarioProtocoloLocalV2,
 } from "@/lib/offline/types";
 
+function canonicalJson(value: unknown): string {
+  const ordered = (entry: unknown): unknown => Array.isArray(entry) ? entry.map(ordered) :
+    entry && typeof entry === "object" ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, nested]) => [key, ordered(nested)])) : entry;
+  return JSON.stringify(ordered(value));
+}
+
 function protocolUnavailable(
   agenda: SanitarioAgendaLocalV2,
   protocol: SanitarioProtocoloLocalV2 | undefined,
@@ -123,6 +130,16 @@ export function sanitaryProtocolExecutionRejectionsV2(
   }
   if (item && !item.deleted_at) {
     rejected.push(...requirementRejections(agenda, item));
+    const metadata = item.snapshot_template.metadata as Record<string, unknown> | undefined;
+    const evidence = agenda.protocol_item_snapshot.planningEvidence as Record<string, unknown> | undefined;
+    if (!factual && metadata?.planning_scope === "class_scheme" &&
+      (evidence?.planningScope !== "class_scheme" || evidence.itemVersion !== item.version ||
+        evidence.executionProductPolicy !== item.snapshot_template.executionProductPolicy ||
+        canonicalJson(evidence.sourceRefsByField) !== canonicalJson(item.source_refs_by_field) ||
+        canonicalJson(evidence.operationalWindowRule) !== canonicalJson(item.operational_window_rule) ||
+        canonicalJson(evidence.boosterRule) !== canonicalJson(item.booster_rule ?? {}))) {
+      rejected.push("class_scheme_snapshot_required");
+    }
   }
   return rejected;
 }

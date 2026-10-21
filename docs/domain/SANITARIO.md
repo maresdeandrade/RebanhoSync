@@ -1057,6 +1057,16 @@ Somente os itens selecionados e tecnicamente completos recebem permissão autom�
 
 As sete versões dependentes de evidência comercial permanecem sem aprovação; os três itens de raiva conservam `no_agenda_auto`, os dois de aftosa e LEP2 canônica continuam bloqueados. Publicação de regra não gera Agenda por si só: o plano persistente da fazenda exige ativação explícita e o motor existente avalia cada animal. Ver [evidência e homologação](../review/evidence/SANITARIO_V2_APROVACAO_ELETRONICA_20261017.md).
 
+### Planejamento por classe — contrato local R04B
+
+Novas versões podem optar por `snapshot_template.metadata.planning_scope=class_scheme`, mantendo a ação de vacinação e a chave lógica. Reutilizam `product_requirement_kind=product_class` e `executionProductPolicy=required_at_execution`, sem produto, dose ou via antecipados. Exigem fonte/cobertura por elegibilidade, janela, classe e espécie; uma bula sustenta somente sua variante, não toda a classe. Dose 2 exige Evento compatível; o reforço anual parte da conclusão da série inicial definida em `booster_rule.previous_logical_item_key` ou do próprio reforço factual, sem tolerância inventada.
+
+A Agenda congela versão, janela, fontes e recorrência nos JSON existentes. Na aplicação, o produto real precisa comprovar compatibilidade com a variante e vigência comercial; a transação revalida essa prova. Registro explícito de fato ocorrido preserva não conformidades como alertas, sem convertê-las em autorização. Carência continua dependente do produto/fato, com desconhecidos preservados.
+
+Esse contrato está implementado localmente e a migration curatorial correspondente não foi aplicada ao remoto. Cinco candidatas estão preparadas, nenhuma aprovada; os sete itens e as Agendas R05 permanecem preservados. Raiva conserva consulta/manual e depende de variante regional aprovada para futura automação; aftosa continua fora da vacinação de rotina; LEP2 v1 permanece incompatível com Leptoferm bovino. Ver [matriz e previews R04B](../review/SANITARIO_V2_R04B_CLASSES_20261021.md).
+
+R04B.2 prepara publicação incremental pelo importador canônico existente: cinco versões, oito coberturas, duas revisões de classe e dois vínculos produto/fonte. Pais existentes são apenas referências; produtos não recebem autorização de aplicação. A aprovação canônica também limpa `proposal_only`, mantendo flags coerentes com `allows_agenda_auto`. Publicação, decisões por digest e homologação incremental dependem de autorizações distintas. Ver [certificação e plano executável R04B.2](../review/SANITARIO_V2_R04B2_CERTIFICACAO_20261021.md).
+
 ### Antipadrões proibidos
 
 * Usar agenda como histórico.

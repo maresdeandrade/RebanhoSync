@@ -5,6 +5,7 @@ import {
   type SanitaryProtocolV2ReadModel,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sanitaryEligibility";
+import { isSanitaryClassSchemeV2, sanitaryClassHistoryMatchesV2 } from "../agenda/sanitaryClassSchemeV2";
 
 export type SanitaryProtocolPrecheckScopeV2 = "animal" | "lote";
 
@@ -47,6 +48,7 @@ export type SanitaryExecutedHistoryEventV2 = {
   productClass?: string | null;
   productId?: string | null;
   productName?: string | null;
+  classSchemeCoverageId?: string | null;
   doseQuantity?: number | null;
   doseUnit?: string | null;
   route?: string | null;
@@ -233,6 +235,10 @@ function resolveHistoryRequirement(
   const explicitPreviousItemKey =
     readString(item.eligibilityRule.requires_previous_dose) ??
     readString(item.boosterRule.previous_logical_item_key);
+  // A reviewed class booster follows either completed primary series or its own last booster.
+  if (isSanitaryClassSchemeV2(item) && readRecurrenceKind(item) === "annual") {
+    return { kind: "previous_execution", previousItemKey: null };
+  }
   if (explicitPreviousItemKey) {
     return { kind: "previous_dose", previousItemKey: explicitPreviousItemKey };
   }
@@ -303,9 +309,9 @@ export function readSanitaryPlanningHistoryV2(input: {
   const requirement = resolveHistoryRequirement(input.item, input.catalog.items);
   const common = { history: input.history, animalId: input.animalId,
     protocolId: input.protocol.id, familyCode: input.protocol.familyCode, today: input.today };
-  const anchor = requirement ? findRequiredExecutedHistory({ ...common, requirement, productId: input.item.productId }) : null;
+  const anchor = requirement ? findRequiredExecutedHistory({ ...common, requirement, productId: input.item.productId, item: input.item }) : null;
   const completion = findCompatibleHistoryEvents({ ...common, itemKey: input.item.logicalItemKey })
-    .find((event) => isDocumentedHistorySource(event) && !event.dateApproximate && (!input.item.productId || event.productId === input.item.productId));
+    .find((event) => isDocumentedHistorySource(event) && !event.dateApproximate && (!input.item.productId || event.productId === input.item.productId) && sanitaryClassHistoryMatchesV2(input.item, event));
   return { anchor, completion, requirement, completedInitial: !requirement && Boolean(completion) };
 }
 
@@ -343,6 +349,7 @@ function findRequiredExecutedHistory(input: {
   familyCode: string;
   today: string;
   productId?: string | null;
+  item: SanitaryProtocolItemV2ReadModel;
 }): SanitaryExecutedHistoryEventV2 | null {
   if (
     input.requirement.kind === "previous_dose" &&
@@ -359,6 +366,7 @@ function findRequiredExecutedHistory(input: {
   const compatibleEvents = animalHistory.events
     .filter((event) => {
       if (input.productId && event.productId !== input.productId) return false;
+      if (!sanitaryClassHistoryMatchesV2(input.item, event)) return false;
       if (!isDocumentedHistorySource(event)) return false;
       if (event.dateApproximate) return false;
       if (!event.familyCode || !event.itemKey) return false;
@@ -518,6 +526,7 @@ function evaluateHistoryRequirement(input: {
     familyCode: input.protocol.familyCode,
     today: input.today,
     productId: input.item.productId,
+    item: input.item,
   });
 
   if (!historyEvent) {

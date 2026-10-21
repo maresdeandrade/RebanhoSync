@@ -1,0 +1,228 @@
+{
+  "artifact": "sanitario_r04b3_authenticated_previews_attempt",
+  "classification": "BLOCKED_AUTHENTICATED_PREVIEWS",
+  "observed_at_utc": "2026-10-21T13:47:33.9349595+00:00",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "branch": "codex/sanitario-v2-convergencia",
+  "head": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+  "authorization": {
+    "explicit_user_consent": true,
+    "scope": "Acesso a sessao real, verificacao curatorial e sete previews de leitura; sem extracao de credenciais e sem decisao/publicacao",
+    "browser_access_granted": true,
+    "browser_access_denied_this_attempt": false
+  },
+  "plan": {
+    "path": "docs/review/evidence/SANITARIO_V2_R04B2_PUBLICATION_PLAN_20261021.json",
+    "file_sha256": "b207e7b2d21e423a5b7a0ec09697cddc99e06e62583e8e99459197e0b7c182ba",
+    "content_sha256": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+    "migration_sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59",
+    "migration_local_hash_matches_plan": true,
+    "remote_baseline_reverified_this_attempt": false,
+    "baseline_source": "Baseline informado pelo usuario e evidencia preexistente SANITARIO_V2_R04B3_LIVE_FINAL_20261021.json; sem reaplicacao."
+  },
+  "browser_observation": {
+    "browser": "Chrome",
+    "origin": "https://rebanho-sync.vercel.app",
+    "initial_path": "/home",
+    "initial_context": "Homologacao Sanitario V2",
+    "observed_path": "/admin",
+    "authenticated_profile_access": true,
+    "admin_panel_access": true,
+    "admin_badge": "SuperAdmin",
+    "visible_tabs": [
+      "Metricas",
+      "Usuarios",
+      "Fazendas",
+      "Convites"
+    ],
+    "reload_performed": true,
+    "sanitary_review_tab_present_after_reload": false,
+    "curatorial_rpc_authorization_confirmed": false,
+    "limitation": "Acesso ao painel administrativo observado; permissoes da RPC de preview nao verificadas diretamente."
+  },
+  "blocker": {
+    "code": "CURATORIAL_UI_UNAVAILABLE",
+    "facts": "A interface publicada nao oferece Curadoria sanitaria, inclusive apos recarregar; o componente existe no codigo da worktree.",
+    "transport_limitation": "O controle do navegador disponivel opera sobre a interface e leitura de DOM; nao expoe transporte RPC autenticado arbitrario. Nenhuma sessao ou credencial foi extraida.",
+    "next_requirement": "URL ja disponivel com interface curatorial e sessao autorizada, ou canal autenticado suportado para a RPC sem extracao de credenciais."
+  },
+  "completed_previews": 0,
+  "expected_previews": 7,
+  "expected_requests": [
+    {
+      "kind": "individual",
+      "logical_item_key": "clostridial_primovac_dose1",
+      "expected_item_versions": [
+        {
+          "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+          "version": 3
+        }
+      ],
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "_expected_version": 1,
+        "_item_ids": [
+          "0625eedf-f069-5ee4-ae50-decd329176e6"
+        ]
+      },
+      "executed": false,
+      "server_response": null
+    },
+    {
+      "kind": "individual",
+      "logical_item_key": "clostridial_primovac_dose2",
+      "expected_item_versions": [
+        {
+          "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+          "version": 4
+        }
+      ],
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "_expected_version": 1,
+        "_item_ids": [
+          "cb8fad2f-5836-5939-a64f-ce6a323acd1c"
+        ]
+      },
+      "executed": false,
+      "server_response": null
+    },
+    {
+      "kind": "individual",
+      "logical_item_key": "clostridial_reforco_anual",
+      "expected_item_versions": [
+        {
+          "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+          "version": 3
+        }
+      ],
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "_expected_version": 1,
+        "_item_ids": [
+          "d4a9602e-b011-5b33-a1c9-890b36da1b46"
+        ]
+      },
+      "executed": false,
+      "server_response": null
+    },
+    {
+      "kind": "individual",
+      "logical_item_key": "lepto_primovac_dose1",
+      "expected_item_versions": [
+        {
+          "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+          "version": 3
+        }
+      ],
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "_expected_version": 1,
+        "_item_ids": [
+          "d69c754c-1d61-5680-abfe-92fc1d43209b"
+        ]
+      },
+      "executed": false,
+      "server_response": null
+    },
+    {
+      "kind": "individual",
+      "logical_item_key": "lepto_reforco_anual_semestral",
+      "expected_item_versions": [
+        {
+          "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+          "version": 3
+        }
+      ],
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "_expected_version": 1,
+        "_item_ids": [
+          "f3122e73-549d-594a-aed6-5dd4ab93c0d9"
+        ]
+      },
+      "executed": false,
+      "server_response": null
+    },
+    {
+      "kind": "group",
+      "label": "CLO",
+      "expected_item_versions": [
+        {
+          "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+          "version": 3
+        },
+        {
+          "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+          "version": 4
+        },
+        {
+          "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+          "version": 3
+        }
+      ],
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "_expected_version": 1,
+        "_item_ids": [
+          "0625eedf-f069-5ee4-ae50-decd329176e6",
+          "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+          "d4a9602e-b011-5b33-a1c9-890b36da1b46"
+        ]
+      },
+      "executed": false,
+      "server_response": null
+    },
+    {
+      "kind": "group",
+      "label": "LEP",
+      "expected_item_versions": [
+        {
+          "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+          "version": 3
+        },
+        {
+          "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+          "version": 3
+        }
+      ],
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "_expected_version": 1,
+        "_item_ids": [
+          "d69c754c-1d61-5680-abfe-92fc1d43209b",
+          "f3122e73-549d-594a-aed6-5dd4ab93c0d9"
+        ]
+      },
+      "executed": false,
+      "server_response": null
+    }
+  ],
+  "server_results": [],
+  "server_blockers": null,
+  "server_versions": null,
+  "reviewed_content_digests": [],
+  "remote_actions": {
+    "preview_calls": 0,
+    "decision_calls": 0,
+    "migrations": 0,
+    "imports": 0,
+    "admin_sql_calls": 0,
+    "operational_writes": 0,
+    "gates_enabled": 0,
+    "deploys": 0
+  },
+  "limits": [
+    "Nenhum retorno de preview foi obtido; null nao significa blockers vazios.",
+    "Nao classificado como AWAITING_CURATORIAL_APPROVAL.",
+    "Estado remoto de gates e dados operacionais nao foi reconsultado nesta tentativa.",
+    "Alteracoes locais anteriores preservadas; somente novo registro documental desta tentativa."
+  ]
+}

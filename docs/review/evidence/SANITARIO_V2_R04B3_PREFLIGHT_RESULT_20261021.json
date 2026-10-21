@@ -1,0 +1,204 @@
+{
+  "artifact": "sanitario_r04b3_preflight_result",
+  "status": "BLOCKED_PREFLIGHT",
+  "requested_final_status_not_reached": "AWAITING_CURATORIAL_APPROVAL",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "observed_at": "2026-10-21T08:16:39.590057+00:00",
+  "branch": "codex/sanitario-v2-convergencia",
+  "head": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+  "checks": {
+    "local_manifest": {
+      "checked": 36,
+      "mismatches": []
+    },
+    "migration_sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59",
+    "delta_digest": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+    "input_hashes": {
+      "canonical": {
+        "path": "docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json",
+        "sha256": "d38da283e9114344c6bacea26b527b3da8cfc1ab1a27737458cad9b8bd4270c0"
+      },
+      "previews": {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B_CLASS_PREVIEWS_20261021.json",
+        "sha256": "17c61c9002955bbea7d24992880b66f0d7137bd7c4949e0114d7a2ab493ec795"
+      },
+      "baseline": {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B_CLASS_REMOTE_FINAL_20261020.json",
+        "sha256": "75617f6e927a53c07f941ebac53e0409d09eb43b774057bb6418b38e50dee38f"
+      },
+      "technical": {
+        "path": "docs/review/evidence/SANITARIO_V2_R04B_BASELINE_20261020.json",
+        "sha256": "52f5a065da7d3b170c9e8ecabe38c2d208cc87a13a2f732840a7b26cbbc2f613"
+      },
+      "migration": {
+        "path": "supabase/migrations/20261020232807_sanitario_class_scheme_planning_v2.sql",
+        "sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59"
+      },
+      "publisher": {
+        "path": "scripts/codex/import-sanitario-protocols-v2.mjs",
+        "sha256": "2d7e5729516acad21f762fbf3fecaa37ea00b2af7f8f0fe3777ff465072af0fa"
+      },
+      "preparer": {
+        "path": "scripts/codex/prepare-sanitario-class-delta-v2.mjs",
+        "sha256": "db4019f665b2fbc28040df58cb772b615e4d14914bc7fcf8e7e3833d6da3707b"
+      },
+      "contract": {
+        "path": "scripts/codex/sanitario-v2-contract.mjs",
+        "sha256": "e1f8f332587362899c93670c4070c19c5b83462c52df3eafb2317a4dc634208d"
+      }
+    },
+    "migrations": {
+      "count": 63,
+      "expected": 63,
+      "version_name_rows_equal": true,
+      "fingerprint": "c40e67629196f2e6f4d1e3f3e2908ce1",
+      "new_migration_present": false
+    },
+    "catalog": {
+      "items": {
+        "expected": 20,
+        "actual": 20,
+        "full_rows_equal": true
+      },
+      "protocols": {
+        "expected": 10,
+        "actual": 10,
+        "full_rows_equal": true
+      },
+      "prior_approved": 7,
+      "candidate_versions_present": 0,
+      "prior_decisions": 5
+    },
+    "agendas": {
+      "expected": 7,
+      "r05_count": 7,
+      "total": 7,
+      "full_rows_equal": true
+    },
+    "gates": {
+      "enabled": 0,
+      "full_rows_equal": true
+    },
+    "technical": {
+      "sources_full_rows_equal": true,
+      "coverage_full_rows_equal": true,
+      "technical_products_recorded_fields_equal": true,
+      "product_canonical_fields_equal": true,
+      "class_canonical_fields_equal": true,
+      "comparison_note": "Products/classes archived projections omit generated columns; only provided canonical fields compared. product_key/protocol_key are publisher aliases. No differing provided field observed; complete current rows retained."
+    },
+    "functions": [
+      {
+        "name": "sanitario_catalog_decide_v2",
+        "definition_unchanged": true
+      },
+      {
+        "name": "sanitario_catalog_review_preview_v2",
+        "definition_unchanged": true
+      },
+      {
+        "name": "internal_sanitario_review_content_v2",
+        "definition_unchanged": true
+      },
+      {
+        "name": "internal_sanitario_review_fields_v2",
+        "definition_unchanged": true
+      }
+    ],
+    "acl": [
+      {
+        "signature": "internal_sanitario_review_content_v2(uuid,uuid[])",
+        "acl": [
+          "postgres=X/postgres"
+        ],
+        "owner": "postgres",
+        "security_definer": false,
+        "config": [
+          "search_path=pg_catalog, public"
+        ]
+      },
+      {
+        "signature": "internal_sanitario_review_fields_v2(jsonb,uuid,timestamp with time zone,text)",
+        "acl": [
+          "postgres=X/postgres"
+        ],
+        "owner": "postgres",
+        "security_definer": false,
+        "config": [
+          "search_path=pg_catalog, public"
+        ]
+      },
+      {
+        "signature": "sanitario_catalog_decide_v2(uuid,integer,uuid[],text,text,text,uuid)",
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres"
+        ],
+        "owner": "postgres",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, public"
+        ]
+      },
+      {
+        "signature": "sanitario_catalog_review_preview_v2(uuid,integer,uuid[])",
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres"
+        ],
+        "owner": "postgres",
+        "security_definer": true,
+        "config": [
+          "search_path=pg_catalog, public"
+        ]
+      }
+    ],
+    "events": {
+      "baseline_r05_count": 0,
+      "current_r05_count": 3,
+      "total": 6,
+      "result": "BLOCKING_DRIFT",
+      "detail": "SANITARIO_V2_R04B3_EVENT_DRIFT_20261021.json"
+    }
+  },
+  "stop_reason": "Three sanitary Events after certified baseline in R05 farm; task explicitly forbids continuing on drift. Origin/authorization not inferred. Existing events preserved.",
+  "execution": {
+    "remote_migrations_applied": 0,
+    "delta_creates": 0,
+    "delta_updates": 0,
+    "curatorial_decision_calls": 0,
+    "authenticated_previews": 0,
+    "group_digests": 0,
+    "automation_gate_writes": 0,
+    "agenda_writes": 0,
+    "event_writes": 0,
+    "product_writes": 0,
+    "deploy": 0,
+    "push": 0,
+    "merge": 0,
+    "destructive_rollback": 0,
+    "project_and_database_readonly_calls": 3
+  },
+  "not_executed": [
+    "migration dry-run/application",
+    "incremental publisher dry-run/application/replay",
+    "authenticated individual/group previews"
+  ],
+  "required_to_resume": "Explain/acknowledge three existing Events and explicitly authorize a new read-only baseline validation preserving them; do not alter the certified package or proceed silently.",
+  "no_real_approval": true,
+  "evidence": [
+    "SANITARIO_V2_R04B3_PREFLIGHT_REMOTE_20261021.json",
+    "SANITARIO_V2_R04B3_EVENT_DRIFT_20261021.json"
+  ],
+  "local_validation": {
+    "diff_check_exit_code": 0,
+    "certified_files_modified": 0,
+    "scope": "Only new R04B3 evidence/report files; no changes to certified R04B2 inputs",
+    "documentation_links_broken": 0
+  },
+  "evidence_hashes": {
+    "docs/review/evidence/SANITARIO_V2_R04B3_PREFLIGHT_REMOTE_20261021.json": "0ed3c2885212893a394703cc2c00225015552457787fc1b4186ab1bc44d8d0ee",
+    "docs/review/evidence/SANITARIO_V2_R04B3_EVENT_DRIFT_20261021.json": "86a9fcdb221aa37e83fa348811d8f84f3e11b1c19cbca1ca3f7d659ca11c923f",
+    "docs/review/SANITARIO_V2_R04B3_PUBLICACAO_20261021.md": "9afe9b8efbfbea7df63219ec1e05d6398f2d90fa371b0f8bdfa844a8a7d2a9f4"
+  }
+}

@@ -373,6 +373,35 @@ describe("sanitaryProtocolWindowsV2", () => {
   });
   afterEach(clearOperationalTables);
 
+  it("R04B materializa vacinação por classe sem marca, preserva esquema e retry sem criar fatos", async () => {
+    await seedPlanningSource();
+    const refs = Object.fromEntries(["eligibility_rule", "operational_window", "product_requirement", "species_authorization"].map(field =>
+      [field, [{ id: "class-norm", kind: "norma_oficial", scope: "global", title: "Norma sintética para esta variante",
+        strength: "forte", evidenceStatus: "SIM_NORMA", fieldKeys: [field], metadata: { coverage_ids: ["class-" + field] } }]]));
+    const template = { metadata: { planning_scope: "class_scheme" }, executionProductPolicy: "required_at_execution",
+      sourcePolicy: { operational_window: "compatible_product_required_at_execution" } };
+    const next = { ...catalog.items.find(i => i.id === "item-clost-1")!,
+      eligibilityRule: { species: ["bovino"] }, sourceRefsByField: refs, snapshotTemplate: template, allowsAgendaAuto: true };
+    await db.catalog_sanitario_protocolo_itens_versions_v2.update(next.id, {
+      eligibility_rule: next.eligibilityRule, source_refs_by_field: refs, snapshot_template: template, allows_agenda_auto: true,
+    });
+    const localCatalog = { ...catalog, items: catalog.items.map(i => i.id === next.id ? next : i) };
+    const rows = windowFor({ protocolId: next.protocolId, itemId: next.id, source: source({ catalog: localCatalog }) }).rows;
+    expect(rows.every(row => row.canSelect)).toBe(true);
+    const input = { rows, fazendaId: "farm-1", plannedFor: "2026-07-10", confirmed: true };
+    const result = await createGroupedManualSanitaryAgendasV2(input);
+    expect((await createGroupedManualSanitaryAgendasV2(input))[0].agendaId).toBe(result[0].agendaId);
+    const stored = (await db.ops_sanitario_agenda_v2.toArray())[0];
+    expect(stored.produto_veterinario_id).toBeNull();
+    expect(stored.acao_sanitaria).toBe("vacinacao");
+    expect(stored.protocol_item_snapshot).toMatchObject({ planningKind: "aplicacao_esquema_definido", planningEvidence: {
+      planningScope: "class_scheme", executionProductPolicy: "required_at_execution", boosterRule: next.boosterRule,
+    } });
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(1);
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+  });
+
   it("classifica B19 por sexo e idade sem tornar macho planejável", () => {
     const result = windowFor({
       protocolId: "protocol-b19",

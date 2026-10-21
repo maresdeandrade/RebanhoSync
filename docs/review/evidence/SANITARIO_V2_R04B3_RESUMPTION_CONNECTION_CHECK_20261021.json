@@ -1,0 +1,84 @@
+{
+  "artifact": "sanitario_r04b3_resumption_connection_check",
+  "observed_at": "2026-10-21T11:33:09.092Z",
+  "classification": "BLOCKED_REMOTE_CONNECTION",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "previous_attempt": "SANITARIO_V2_R04B3_AUTHORIZED_EXECUTION_20261021.json",
+  "authorization": {
+    "valid_for_same_exact_scope": true,
+    "new_authorization_required": false
+  },
+  "local_repository": {
+    "worktree": "C:/Users/mares/.codex/worktrees/r04b2-certificacao/GestaoAgro",
+    "branch": "codex/sanitario-v2-convergencia",
+    "head": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+    "existing_changes_preserved": true,
+    "staged_diff_empty": true,
+    "additional_modified_metadata_preserved": "supabase/.temp/cli-latest",
+    "additional_metadata_outside_certified_manifest": true
+  },
+  "certified_artifacts": {
+    "manifest_files_verified": 36,
+    "manifest_mismatches": [],
+    "input_files_verified": 8,
+    "input_mismatches": [],
+    "migration_sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59",
+    "delta_digest_recomputed": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+    "delta_digest_declared_matches": true,
+    "original_execute_import": false,
+    "original_approved": false,
+    "original_import_real_authorized": false
+  },
+  "environment_presence_only": {
+    "process": {
+      "DB_URL": false,
+      "PGPASSWORD": false,
+      "PGSSLMODE": false,
+      "NODE_EXTRA_CA_CERTS": false
+    },
+    "user": { "DB_URL": false },
+    "machine": { "DB_URL": false },
+    "credential_values_printed_or_persisted": false
+  },
+  "execution": {
+    "postgres_connection_attempted": false,
+    "authentication_verified": false,
+    "tls_verified": false,
+    "live_project_identity_verified": false,
+    "protected_remote_read_set_rechecked": false,
+    "remote_read_queries": 0,
+    "remote_migration_dry_run": false,
+    "remote_migration_apply": false,
+    "remote_catalog_publication": false,
+    "remote_publication_replay": false,
+    "authenticated_individual_previews": 0,
+    "authenticated_group_previews": 0,
+    "curatorial_decision_calls": 0,
+    "operational_writes": 0,
+    "gate_writes": 0,
+    "publisher_or_guard_modified": false,
+    "credentials_reset_or_renewed": false,
+    "deploy_push_merge_or_homologation": false
+  },
+  "commands_observed": [
+    { "command": "Environment presence check, first PowerShell foreach piped directly", "exit_code": 1, "sanitized_error": "ParserError: An empty pipe element is not allowed", "effect": "No environment values accessed or remote action executed" },
+    { "command": "PowerShell: collect foreach results for Process DB_URL, PGPASSWORD, PGSSLMODE, NODE_EXTRA_CA_CERTS; serialize presence booleans only", "exit_code": 0 },
+    { "command": "PowerShell: GetEnvironmentVariable(DB_URL, User/Machine); serialize presence booleans only", "exit_code": 0 },
+    { "command": "git status --short --untracked-files=all", "exit_code": 0 },
+    { "command": "git diff --stat", "exit_code": 0 },
+    { "command": "git diff --cached --stat", "exit_code": 0 },
+    { "command": "git branch --show-current", "exit_code": 0 },
+    { "command": "git rev-parse HEAD", "exit_code": 0 },
+    { "command": "git worktree list --porcelain", "exit_code": 0 },
+    { "command": "node --input-type=module -e: SHA256 verification of manifest and inputs; classDeltaDigest recalculation", "exit_code": 0 }
+  ],
+  "last_remote_observation": {
+    "source": "SANITARIO_V2_R04B3_AUTHORIZED_EXECUTION_20261021.json",
+    "observed_at": "2026-10-21T11:14:11.370679+00:00",
+    "reconfirmed_in_this_attempt": false
+  },
+  "concrete_blocker": "DB_URL absent in Process, User and Machine environment scopes; no authenticated PostgreSQL connection configuration available to the canonical publisher in this attempt.",
+  "required_to_resume": "Make DB_URL available privately in the executor environment; then verify session pooler authentication, TLS and project identity before rechecking the protected read-set and performing exact authorized writes. Do not send secrets in chat.",
+  "historical_evidence_preserved": true,
+  "awaiting_curatorial_approval_claimed": false
+}

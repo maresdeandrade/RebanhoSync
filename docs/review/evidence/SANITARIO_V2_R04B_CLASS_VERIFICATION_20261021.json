@@ -1,0 +1,148 @@
+{
+  "artifact": "sanitario_r04b_local_verification",
+  "classification": "READY WITH CAVEAT",
+  "scope": "Patch local e previews, sem autorização/publicação remota",
+  "head": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+  "branch": "codex/sanitario-v2-convergencia",
+  "tests": {
+    "command": "node node_modules/vitest/vitest.mjs run src/lib/sanitario/windows/__tests__/sanitaryProtocolWindowsV2.test.ts src/lib/sanitario/agenda/__tests__/sanitaryAutomaticGenerationV2.test.ts src/lib/sanitario/agenda/__tests__/sanitaryPlanningSyncV2.test.ts src/lib/sanitario/agenda/__tests__/sanitaryAgendaMaterialization.test.ts src/lib/sanitario/agenda/__tests__/sanitaryPlanningPolicyV2.test.ts src/lib/sanitario/agenda/__tests__/sanitaryClassSchemeV2.test.ts src/lib/sanitario/checks/__tests__/sanitaryProtocolPrecheckV2.test.ts src/lib/sanitario/history/__tests__/sanitaryExecutedHistoryV2.test.ts src/lib/sanitario/execution/__tests__/sanitaryAgendaExecutionV2.test.ts",
+    "passed": 193,
+    "failed": 0,
+    "files": 9
+  },
+  "postgres": {
+    "command": "node tests/codex/sanitario-v2-review.postgres.mjs",
+    "passed": 13,
+    "failed": 0,
+    "evidence": "SANITARIO_V2_R04B_CLASS_POSTGRES_20261021.json",
+    "disposable_database_removed": true
+  },
+  "lint": {
+    "files": 13,
+    "exit_code": 0
+  },
+  "build": {
+    "command": "node node_modules/vite/bin/vite.js build --mode development",
+    "exit_code": 0,
+    "seconds": 17.34,
+    "warnings": [
+      "chunks >500 kB"
+    ]
+  },
+  "not_certified": [
+    "global typecheck",
+    "production build with actual environment",
+    "general functional baseline refused non-disposable target",
+    "remote incremental homologation"
+  ],
+  "preservation": {
+    "items": 20,
+    "protocols": 10,
+    "r05_agendas": 7,
+    "full_rows_equal": true,
+    "approved_items": 7,
+    "prior_decisions": 5,
+    "r05_events": 0,
+    "gates_enabled": 0
+  },
+  "remote_mutations": 0,
+  "staged_files": "",
+  "files": [
+    {
+      "path": "docs/domain/SANITARIO.md",
+      "sha256": "68116d19fe3751793914df00b3bdea772c5e3e324bd002352cbe60e5faa52f6e"
+    },
+    {
+      "path": "docs/technical/SUPABASE_RLS.md",
+      "sha256": "9a6b726a00a85cbbeb9b2abe95e29efe7274a255c17112c129c8bb7727917081"
+    },
+    {
+      "path": "src/lib/sanitario/agenda/sanitaryAutomationReadinessV2.ts",
+      "sha256": "fb4ba03e5aa7bc5727f0671f15e3911d82fd2413532e02a211f5e3b84b7fe488"
+    },
+    {
+      "path": "src/lib/sanitario/agenda/sanitaryPlanningPolicyV2.ts",
+      "sha256": "391a335fe0efc39e410d1a09e489f6712ac1da4b7da33a1cf6a4d4f4d6655691"
+    },
+    {
+      "path": "src/lib/sanitario/checks/sanitaryProtocolPrecheckV2.ts",
+      "sha256": "b982b5411be9b06374acb15cfec706b8b3fedc23d2ecde081b5a4be8676e93cf"
+    },
+    {
+      "path": "src/lib/sanitario/execution/__tests__/sanitaryAgendaExecutionV2.test.ts",
+      "sha256": "527684a4798499fb698d8d147734c9ead9e8649034091e40819965e20bbf2e2f"
+    },
+    {
+      "path": "src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts",
+      "sha256": "0fadc93449aac74aaf32c46c281cf7149a0c66714801c16e077bd8828d7108aa"
+    },
+    {
+      "path": "src/lib/sanitario/execution/sanitaryProtocolExecutionAuthorizationV2.ts",
+      "sha256": "2cceab33d9c310c2347b3822ea89f85dd00e1be74f3cc26085ba7129d702d64d"
+    },
+    {
+      "path": "src/lib/sanitario/history/sanitaryExecutedHistoryV2.ts",
+      "sha256": "4330df1f3ffe323571aa78788ad51dfeeb2d4606a662b312a2302041a852d094"
+    },
+    {
+      "path": "src/lib/sanitario/windows/__tests__/sanitaryProtocolWindowsV2.test.ts",
+      "sha256": "c398868585a261cd40d923458cbcab3c0e828ac095b53610af92a005e4f586fa"
+    },
+    {
+      "path": "src/lib/sanitario/windows/sanitaryProtocolWindowsV2.ts",
+      "sha256": "ccf728a8f253d2b22a81454c255a9791d8ffed49abcc8f4c823bb52d9fea19ad"
+    },
+    {
+      "path": "tests/codex/sanitario-v2-review.postgres.mjs",
+      "sha256": "9c190b5ede223726219ad1a94dc078a6c165880a3dcf5aea0c4a948d92f1a780"
+    },
+    {
+      "path": "docs/review/SANITARIO_V2_R04B_CLASSES_20261021.md",
+      "sha256": "eed7541b7e54c3c53174e6ce76f48080331486c1d3706cd228e0bfd689bb2588"
+    },
+    {
+      "path": "docs/review/SANITARIO_V2_R04B_REVISAO_13_ITENS_20261020.md",
+      "sha256": "261212943025fd2bd062c02cc226a4999e815bcc9e7af28be5c91f0147c3f33e"
+    },
+    {
+      "path": "docs/review/evidence/SANITARIO_V2_R04B_BASELINE_20261020.json",
+      "sha256": "52f5a065da7d3b170c9e8ecabe38c2d208cc87a13a2f732840a7b26cbbc2f613"
+    },
+    {
+      "path": "docs/review/evidence/SANITARIO_V2_R04B_CLASS_POSTGRES_20261021.json",
+      "sha256": "6e65dd473b2732a6a7843619704a841fe94a811051633ac929ee14a939323227"
+    },
+    {
+      "path": "docs/review/evidence/SANITARIO_V2_R04B_CLASS_PREVIEWS_20261021.json",
+      "sha256": "17c61c9002955bbea7d24992880b66f0d7137bd7c4949e0114d7a2ab493ec795"
+    },
+    {
+      "path": "docs/review/evidence/SANITARIO_V2_R04B_CLASS_REMOTE_FINAL_20261020.json",
+      "sha256": "75617f6e927a53c07f941ebac53e0409d09eb43b774057bb6418b38e50dee38f"
+    },
+    {
+      "path": "docs/review/evidence/SANITARIO_V2_R04B_MAPA_UI_20261020.json",
+      "sha256": "ff08801240312d8c56de977142c3646d9cdf41435a02bb311b42fa0f60dcc6ca"
+    },
+    {
+      "path": "docs/review/evidence/SANITARIO_V2_R04B_PREVIEWS_20261020.json",
+      "sha256": "0317182cb8bd481e4dd9fbc94553eb0ab557c99429bac33ae7bfab1de2fd058a"
+    },
+    {
+      "path": "src/lib/sanitario/agenda/__tests__/sanitaryClassSchemeV2.test.ts",
+      "sha256": "538315feb4a85fa81517d20fcae5b9ec4b43ec9d88fad6e0d1639ab2418be133"
+    },
+    {
+      "path": "src/lib/sanitario/agenda/sanitaryClassSchemeV2.ts",
+      "sha256": "230c3589f358ee2caac8589ccddf2023e33016d616318d635638642d391ea456"
+    },
+    {
+      "path": "src/lib/sanitario/execution/sanitaryClassSchemeExecutionV2.ts",
+      "sha256": "7e424ee5e1a66e7d9deaf31e15097a40bae3c8ec3df06e062de7f7cf4ea04c3c"
+    },
+    {
+      "path": "supabase/migrations/20261020232807_sanitario_class_scheme_planning_v2.sql",
+      "sha256": "dd7fc97d621c8d762f5d7fcc0938a022ed247cc8651db56b24b423871c2d5baa"
+    }
+  ]
+}

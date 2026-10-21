@@ -6,6 +6,7 @@ import {
   hasStrongSourceCoveringFieldV2,
   type SanitarySourceRefV2,
 } from "../rules/sanitarySourceV2";
+import { isSanitaryClassSchemeV2, sanitaryClassSchemeBlockersV2, SANITARY_CLASS_SCHEME_FIELDS_V2 } from "./sanitaryClassSchemeV2";
 
 export type SanitaryPlanningKindV2 =
   | "avaliacao_manejo_generica"
@@ -15,6 +16,7 @@ export type SanitaryGenerationModeV2 = "manual" | "automatic";
 export function sanitaryPlanningKindV2(
   item: SanitaryProtocolItemV2ReadModel,
 ): SanitaryPlanningKindV2 {
+  if (isSanitaryClassSchemeV2(item)) return "aplicacao_esquema_definido";
   const anchors = ["previous_dose", "last_execution"];
   const recurrence = item.boosterRule.recurrenceRule as
     | { kind?: string }
@@ -143,6 +145,7 @@ function validDecisionBinding(review: Record<string, unknown>, metadata: Record<
 export function sanitaryDefinedSchemeBlockersV2(
   item: SanitaryProtocolItemV2ReadModel,
 ): string[] {
+  if (isSanitaryClassSchemeV2(item)) return sanitaryClassSchemeBlockersV2(item);
   if (sanitaryPlanningKindV2(item) !== "aplicacao_esquema_definido") return [];
   const blockers: string[] = [];
   if ([item.doseRule, item.routeRule].some((rule) => Object.keys(rule).length === 0)) {
@@ -166,4 +169,11 @@ export function sanitaryDefinedSchemeBlockersV2(
     );
   }
   return blockers;
+}
+
+export function sanitaryPlanningRequiredFieldsV2(item: SanitaryProtocolItemV2ReadModel): string[] {
+  if (isSanitaryClassSchemeV2(item)) return [...SANITARY_CLASS_SCHEME_FIELDS_V2];
+  return sanitaryPlanningKindV2(item) === "aplicacao_esquema_definido"
+    ? ["eligibility_rule", "operational_window", "product_requirement", "dose", "route", "species_authorization"]
+    : ["eligibility_rule", "operational_window", "product_requirement"];
 }

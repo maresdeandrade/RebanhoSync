@@ -3,7 +3,9 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { createHash } from "node:crypto";
 import pg from "pg";
+import { classDeltaDigest, prepareClassDelta } from "./prepare-sanitario-class-delta-v2.mjs";
 import {
   CANONICAL_ARTIFACT_VERSION,
   assertStableIdentity,
@@ -76,6 +78,7 @@ function usage() {
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --validate",
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run",
     "  --validate/--dry-run aceitam --review-candidate <arquivo>; dry-run de candidato exige banco local descartavel.",
+    "  --validate/--dry-run/--apply aceitam --incremental <delta>; apply exige autorizacao e SANITARIO_DELTA_CONFIRM=<content_sha256>.",
     `  ALLOW_SANITARIO_IMPORT=1 SANITARIO_IMPORT_CONFIRM=${EXPECTED.artifactVersion} node scripts/codex/import-sanitario-protocols-v2.mjs --apply`,
     "  Em banco remoto, tambem exige ALLOW_SANITARIO_REMOTE_IMPORT=1.",
   ].join("\n");
@@ -446,9 +449,16 @@ function assertApplyAuthorized(dbUrl) {
   return target;
 }
 
-async function connectDb(mode, reviewOnly = false) {
+async function connectDb(mode, reviewOnly = false, incrementalProjectRef = null) {
   const env = readSupabaseStatusEnv();
   const target = describeDatabase(env.DB_URL);
+  if (incrementalProjectRef) {
+    const url = new URL(env.DB_URL);
+    assert(!url.search, "INCREMENTAL_DATABASE_OPTIONS_FORBIDDEN");
+    if (!target.local) assert(url.hostname === `db.${incrementalProjectRef}.supabase.co` ||
+      (url.hostname.endsWith(".pooler.supabase.com") && decodeURIComponent(url.username) === `postgres.${incrementalProjectRef}`),
+    "INCREMENTAL_PROJECT_TARGET_MISMATCH");
+  }
   // pg connection-string query options can override the URL hostname.
   if (reviewOnly) assert(target.local && !new URL(env.DB_URL).search, "REVIEW_CANDIDATE_REQUIRES_LOCAL_DATABASE");
   if (mode === "apply") assertApplyAuthorized(env.DB_URL);
@@ -837,7 +847,7 @@ async function selectDeprecatedActiveItems(client, data, lockRows = false) {
   return result;
 }
 
-export async function buildPlan(client, data, { lockRows = false } = {}) {
+export async function buildPlan(client, data, { lockRows = false, incremental = null } = {}) {
   const supported = new Set(PUBLISHERS.map((p) => p.collection));
   for (const [collection, entries] of Object.entries(data)) {
     assert(collection === "memberRejections" || supported.has(collection) || entries.length === 0,
@@ -881,9 +891,22 @@ export async function buildPlan(client, data, { lockRows = false } = {}) {
         existing = found[0] ?? null;
         reason = identityReason(publisher, row, found) ?? "";
         if (!reason) {
+          if (incremental && ["source_rows", "product_rows", "protocol_rows"].includes(publisher.collection)) {
+            assert(existing, "INCREMENTAL_REFERENCE_MISSING");
+            row = existing;
+            action = "skip";
+          } else {
           const changed = existing && compareRow(publisher, existing, row);
           reason = changed ? (publisher.block?.(existing) ?? "") : "";
+          if (incremental && changed && publisher.collection !== "product_class_rows") {
+            if (publisher.collection === "protocol_item_rows" && await reviewedDeltaReplay(client, publisher, existing, row)) {
+              reason = "";
+              action = "skip";
+            } else reason = "INCREMENTAL_EXISTING_CONTENT_CONFLICT";
+          }
+          if (action !== "skip")
           action = reason ? "reject" : existing ? (changed ? "update" : "skip") : "create";
+          }
         }
       } catch (error) {
         reason = error.message;
@@ -940,6 +963,7 @@ export async function buildPlan(client, data, { lockRows = false } = {}) {
   }
   const expectedCount = [...supported].reduce((count, collection) => count + (data[collection]?.length ?? 0), 0);
   assert(operations.filter((op) => supported.has(op.collection)).length === expectedCount, "CANONICAL_PLAN_COVERAGE_MISMATCH");
+  if (incremental) await assertIncrementalBaseline(client, incremental, operations, lockRows);
   return operations;
 }
 
@@ -1026,16 +1050,25 @@ async function applyImport(client) {
 }
 
 // Private engine: all production calls must pass through the authorized entrypoint.
-async function applyTransaction(client, data) {
+async function applyTransaction(client, data, { incremental = null } = {}) {
   await client.query("begin");
   try {
     await client.query("set local lock_timeout = '5s'");
     await client.query("set local statement_timeout = '60s'");
     await client.query("select pg_advisory_xact_lock(hashtext($1))", [IMPORT_LOCK_KEY]);
-    const plan = await buildPlan(client, data, { lockRows: true });
+    if (incremental) {
+      // Same order as curatorial decisions: protocols/items before technical evidence.
+      await client.query("select id from public.sanitario_protocolos_v2 where id=any($1::uuid[]) order by id for update",
+        [data.protocol_rows.map(p => p.id)]);
+      await client.query("select id from public.sanitario_protocolo_itens_versions_v2 where id=any($1::uuid[]) order by id for update",
+        [[...data.protocol_item_rows.map(i => i.id), ...incremental.baseline.predecessors.map(i => i.id)]]);
+    }
+    const preserved = incremental ? await captureIncrementalProtectedState(client, incremental) : null;
+    const plan = await buildPlan(client, data, { lockRows: true, incremental });
     assertPublishablePlan(plan);
     for (const operation of plan) await writeOperation(client, operation);
-    assertConvergedPlan(await buildPlan(client, data, { lockRows: true }));
+    assertConvergedPlan(await buildPlan(client, data, { lockRows: true, incremental }));
+    if (incremental) assert(!isDifferent(preserved, await captureIncrementalProtectedState(client, incremental)), "INCREMENTAL_PROTECTED_STATE_CHANGED");
     await client.query("commit");
     return summarize(plan);
   } catch (error) {
@@ -1043,8 +1076,146 @@ async function applyTransaction(client, data) {
     throw error;
   }
 }
+
+function validateIncrementalPayload(payload) {
+  assert(payload.artifact === "sanitario_protocols_v2_incremental_delta" && payload.execute_import === false && payload.approved === false,
+    "INCREMENTAL_ARTIFACT_REQUIRED");
+  assert(payload.content_sha256 === classDeltaDigest(payload), "INCREMENTAL_DIGEST_MISMATCH");
+  for (const input of Object.values(payload.inputs ?? {})) {
+    assert(typeof input.path === "string" && createHash("sha256").update(readFileSync(input.path)).digest("hex") === input.sha256,
+      "INCREMENTAL_INPUT_CHANGED");
+  }
+  const inputJson = key => JSON.parse(readFileSync(payload.inputs[key].path, "utf8"));
+  const prepared = prepareClassDelta(inputJson("canonical"), inputJson("previews"), inputJson("baseline"), inputJson("technical"), payload.inputs);
+  assert(prepared.content_sha256 === payload.content_sha256, "INCREMENTAL_PREPARATION_MISMATCH");
+  assert(payload.project_ref === prepared.project_ref, "INCREMENTAL_PROJECT_SCOPE_MISMATCH");
+  const data = validateCanonicalTechnicalContract(payload).data;
+  const expected = { source_rows: 2, product_rows: 2, protocol_rows: 2, product_class_rows: 2,
+    protocol_item_rows: 5, coverage_rows: 8, product_source_rows: 2 };
+  for (const p of PUBLISHERS) assert(data[p.collection].length === (expected[p.collection] ?? 0), `INCREMENTAL_SCOPE:${p.collection}`);
+  assert(!data.memberRejections?.length, "INCREMENTAL_REJECTIONS_FORBIDDEN");
+  const keys = ["clostridial_primovac_dose1", "clostridial_primovac_dose2", "clostridial_reforco_anual",
+    "lepto_primovac_dose1", "lepto_reforco_anual_semestral"];
+  assert(!isDifferent(data.protocol_item_rows.map(i => i.logical_item_key).sort(), keys.sort()), "INCREMENTAL_EXACT_FIVE_REQUIRED");
+  assert(!isDifferent(data.source_rows.map(s => s.source_key).sort(), ["SRC_BULA_FORTRESS7", "SRC_BULA_LEPTOFERM5"]), "INCREMENTAL_SOURCE_SCOPE");
+  assert(!isDifferent(data.product_class_rows.map(c => c.class_key).sort(), ["vacina_clostridial", "vacina_leptospirose"]), "INCREMENTAL_CLASS_SCOPE");
+  for (const i of data.protocol_item_rows) {
+    assert(i.status === "draft" && i.allows_agenda_auto === false && i.action_type === "vacinacao" &&
+      i.product_requirement_kind === "product_class" && !i.product_id && !i.product_key && !i.dose_rule && !i.route_rule &&
+      i.snapshot_template?.metadata?.planning_scope === "class_scheme" && i.snapshot_template.metadata.proposal_only === true,
+    "INCREMENTAL_DRAFT_CLASS_REQUIRED");
+    for (const flag of ["agenda_allowed", "approved_for_catalog"]) assert(i.snapshot_template.metadata[flag] === false, "INCREMENTAL_PREAPPROVAL_FORBIDDEN");
+    const prior = payload.baseline.predecessors.find(p => p.id === i.snapshot_template.metadata.supersedes?.id);
+    assert(prior && prior.protocol_id === i.protocol_id && prior.logical_item_key === i.logical_item_key &&
+      prior.version + 1 === i.version && prior.status === "draft" && !prior.allows_agenda_auto, "INCREMENTAL_PREDECESSOR_REQUIRED");
+  }
+  for (const c of data.product_class_rows) {
+    const before = payload.baseline.product_class_rows.find(r => r.id === c.id);
+    assert(before && before.curation_status === "needs_review" && c.curation_status === "approved_for_catalog" &&
+      c.automation_status === "manual_only" && c.metadata.can_validate_execution === false &&
+      !isDifferent(classInsertRow(before), classInsertRow({ ...c, curation_status: before.curation_status })), "INCREMENTAL_CLASS_REVIEW_SCOPE");
+  }
+  assert(payload.protected.approved_item_ids.length === 7 && payload.protected.r05_agenda_ids.length === 7, "INCREMENTAL_PRESERVATION_SCOPE");
+  return data;
+}
+
+async function reviewedDeltaReplay(client, publisher, existing, row) {
+  if (existing.status !== "active" || !existing.allows_agenda_auto) return false;
+  const meta = existing.snapshot_template?.metadata ?? {};
+  const id = /^sanitary-v2:([a-f0-9-]{36})$/.exec(meta.catalog_decision_reference ?? "")?.[1];
+  if (!id) return false;
+  const audit = (await client.query("select * from public.app_admin_audit_events where id=$1 and action='SANITARY_RULE_DECISION_V2'", [id])).rows[0];
+  const before = audit?.state_before?.items?.find(i => i.id === row.id);
+  const receipt = audit?.state_after;
+  if (!before || compareRow(publisher, before, row) || receipt?.result !== "approved" || receipt.actor_id !== audit.actor_user_id ||
+    receipt.reviewed_content_digest !== meta.reviewed_content_digest) return false;
+  const expected = structuredClone(row);
+  expected.status = "active"; expected.allows_agenda_auto = true;
+  expected.snapshot_template.metadata = { ...row.snapshot_template.metadata, proposal_only: false, agenda_allowed: true,
+    approved_for_catalog: true, curationStatus: "approved_for_catalog", automationStatus: "agenda_allowed",
+    catalog_decision_reference: meta.catalog_decision_reference, reviewed_content_digest: meta.reviewed_content_digest };
+  expected.source_refs_by_field = Object.fromEntries(Object.entries(row.source_refs_by_field).map(([field, refs]) => [field, refs.map(r => ({
+    source_ref: r.source_ref, id: r.id, kind: r.kind, scope: "global", title: r.title, strength: r.strength,
+    evidenceStatus: r.evidenceStatus, fieldKeys: [field], metadata: { coverage_ids: r.metadata.coverage_ids,
+      catalogFieldReview: { actorId: receipt.actor_id, approvedAt: receipt.decided_at, decisionReference: meta.catalog_decision_reference,
+        protocolId: row.protocol_id, itemId: row.id, itemVersion: row.version, field, scope: "class_scheme" } },
+  }))]));
+  return !compareRow(publisher, existing, expected);
+}
+
+async function assertIncrementalBaseline(client, packet, operations, lockRows) {
+  const noWrites = operations.every(o => o.action === "skip");
+  for (const collection of ["source_rows", "product_rows", "protocol_rows", "product_class_rows"]) {
+    const publisher = PUBLISHERS.find(p => p.collection === collection);
+    for (const before of packet.baseline[collection]) {
+      const op = operations.find(o => o.collection === collection && o.canonical_id === before.id);
+      assert(op?.existing && !op.existing.deleted_at, `INCREMENTAL_BASELINE_MISSING:${collection}`);
+      const expected = publisher.project(before, new Map());
+      if (collection === "product_class_rows" && !compareRow(publisher, op.existing, op.row)) continue;
+      if (noWrites && collection === "protocol_rows" && op.existing.status === "active" &&
+        op.existing.approval_status === "approved" && operations.some(o => o.collection === "protocol_item_rows" && o.existing?.protocol_id === before.id && o.existing.status === "active")) {
+        expected.status = "active"; expected.approval_status = "approved";
+        expected.metadata = { ...expected.metadata, agenda_allowed: true, approved_for_catalog: true,
+          curationStatus: "approved_for_catalog", automationStatus: "agenda_allowed" };
+      }
+      assert(!compareRow(publisher, op.existing, expected), `INCREMENTAL_BASELINE_CONFLICT:${collection}:${before.id}`);
+    }
+  }
+  for (const before of packet.baseline.predecessors) {
+    const actual = (await client.query(`select to_jsonb(t) as row from public.sanitario_protocolo_itens_versions_v2 t where id=$1${lockRows ? " for update" : ""}`, [before.id])).rows[0]?.row;
+    assert(actual, "INCREMENTAL_PREDECESSOR_MISSING");
+    const expected = { ...before };
+    if (actual.status === "retired" && actual.deleted_at && !actual.allows_agenda_auto) {
+      expected.status = "retired"; expected.deleted_at = actual.deleted_at;
+    }
+    for (const key of ["created_at", "updated_at"]) { delete actual[key]; delete expected[key]; }
+    assert(!isDifferent(actual, expected), "INCREMENTAL_PREDECESSOR_CONFLICT");
+    const next = packet.payload.protocol_item_rows.find(i => i.logical_item_key === before.logical_item_key);
+    const newer = (await client.query("select id from public.sanitario_protocolo_itens_versions_v2 where protocol_id=$1 and logical_item_key=$2 and version>$3 and deleted_at is null", [before.protocol_id, before.logical_item_key, next.version])).rows;
+    assert(!newer.length, "INCREMENTAL_NEWER_VERSION_CONFLICT");
+  }
+}
+
+async function captureIncrementalProtectedState(client, packet) {
+  const items = (await client.query("select to_jsonb(t) as row from public.sanitario_protocolo_itens_versions_v2 t where id=any($1::uuid[]) order by id", [packet.protected.approved_item_ids])).rows;
+  const agendas = (await client.query("select to_jsonb(t) as row from public.sanitario_agenda_v2 t where id=any($1::uuid[]) and fazenda_id=$2 order by id", [packet.protected.r05_agenda_ids, packet.protected.r05_farm_id])).rows;
+  assert(items.length === 7 && items.every(i => i.row.status === "active" && i.row.allows_agenda_auto) && agendas.length === 7, "INCREMENTAL_PROTECTED_BASELINE_REQUIRED");
+  const gates = (await client.query("select to_jsonb(t) as row from public.sanitario_sync_v2_gates t order by fazenda_id")).rows;
+  assert(gates.every(g => !g.row.enabled), "INCREMENTAL_REQUIRES_GATES_OFF");
+  return { items, agendas, gates };
+}
+
+async function incrementalMain(args) {
+  const index = args.indexOf("--incremental"), file = args[index + 1];
+  assert(file && !file.startsWith("--"), usage());
+  const mode = parseMode(args.filter((_, n) => n !== index && n !== index + 1));
+  const payload = JSON.parse(readFileSync(file, "utf8"));
+  const data = validateIncrementalPayload(payload);
+  if (mode === "validate") {
+    console.log(JSON.stringify({ incremental: true, content_sha256: payload.content_sha256,
+      protocol_items: 5, coverage: 8, classes: 2, product_links: 2, read_only_parent_collections: 3, approved: false }));
+    return;
+  }
+  if (mode === "apply") {
+    assertApplyGate(payload);
+    assert(process.env.SANITARIO_DELTA_CONFIRM === payload.content_sha256 &&
+      typeof payload.import_gate.authorization_reference === "string" && payload.import_gate.authorization_reference.trim().length >= 10,
+    "INCREMENTAL_EXPLICIT_AUTHORIZATION_REQUIRED");
+  }
+  const { client, target } = await connectDb(mode, false, payload.project_ref);
+  try {
+    await captureIncrementalProtectedState(client, payload);
+    const plan = await buildPlan(client, data, { incremental: payload });
+    assertPublishablePlan(plan);
+    console.log(`database host=${target.host} port=${target.port} database=${target.database} local=${target.local}`);
+    console.log(JSON.stringify({ content_sha256: payload.content_sha256, authorization_reference: payload.import_gate.authorization_reference }));
+    printPlan(`incremental-${mode}`, plan);
+    if (mode === "apply") console.log(JSON.stringify(await applyTransaction(client, data, { incremental: payload })));
+  } finally { await client.end(); }
+}
 async function main() {
   const args = process.argv.slice(2);
+  if (args.includes("--incremental")) return incrementalMain(args);
   const reviewIndex = args.indexOf("--review-candidate");
   const reviewPath = reviewIndex >= 0 ? args[reviewIndex + 1] : null;
   if (reviewIndex >= 0) assert(reviewPath && !reviewPath.startsWith("--"), usage());

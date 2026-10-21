@@ -1,7 +1,7 @@
 ```md
 # Supabase RLS — RebanhoSync
 
-Atualizado em: 2026-10-19
+Atualizado em: 2026-10-21
 
 ## Objetivo
 
@@ -50,9 +50,22 @@ Definir o contrato técnico para Supabase, RLS, isolamento multi-tenant, RPCs, p
   sem aprovação ou automação; dry-run posterior com 144 skips e quatro rejeições esperadas.
   [Evidência R03](../review/evidence/SANITARIO_V2_R03_EXECUCAO_20261019.md).
   R04: concessão administrativa explicitamente autorizada e auditada em 20/10/2026,
-  exclusivamente à conta principal identificada; decisões curatoriais ainda pendentes.
+  exclusivamente à conta principal identificada; cinco decisões posteriores autorizaram sete itens.
   [Evidência da concessão R04](../review/evidence/SANITARIO_V2_R04_CONCESSAO_20261020.md).
-  Gates permanecem OFF; R05 sem autorização.
+  R05 concluída no escopo desktop A/B expressamente autorizado: sete Agendas e zero Eventos,
+  gates novamente OFF. [Evidência R05](../review/evidence/SANITARIO_V2_R05_EXECUCAO_20261020.md).
+
+R04B local: `20261020232807_sanitario_class_scheme_planning_v2.sql` estende as três funções
+curatoriais existentes para variantes por classe. O digest inclui a classe global revisada e a
+decisão trava essa linha junto às fontes/coberturas, preservando autenticação, CAS, replay e auditoria.
+Não altera dados nem ACLs, não ativa gates e não aprova itens. Migration não aplicada remotamente;
+as cinco candidatas ainda precisam publicação canônica, preview autenticado e autorização específica.
+Ver [contrato e integridade R04B](../review/SANITARIO_V2_R04B_CLASSES_20261021.md).
+
+R04B.2 local: o caminho público `--incremental` do mesmo importador aplica o delta sob locks,
+CAS e transação, preserva os sete aprovados/Agendas e exige gates OFF. A decisão normaliza
+`proposal_only=false` junto às flags de aprovação. Lote SQL preparado mantém versão/nome/bytes
+da única migration e histórico 63→64; não houve execução remota. Ver [certificação R04B.2](../review/SANITARIO_V2_R04B2_CERTIFICACAO_20261021.md).
 
 A fundação de RLS e isolamento multi-tenant/fazenda do Sync Sanitário v2 está tecnicamente concluída. Isso não conclui o sync nem autoriza rollout.
 

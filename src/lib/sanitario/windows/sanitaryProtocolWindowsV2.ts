@@ -51,6 +51,7 @@ import { identifySanitaryMultiProtocolGroupsV2 } from "../preview/sanitaryMultiP
 import { readSanitaryAutomationPlanV2, resolveSanitaryAutomationRuleV2 } from "../agenda/sanitaryAutomationPlanV2";
 import { sanitaryAutomaticIdentityV2, suppressedSanitaryAutomaticIntentV2 } from "../agenda/sanitaryAutomaticIdentityV2";
 import { sanitaryContextualPlanningBlockersV2, type SanitaryRuleContextDetailsV2 } from "../agenda/sanitaryContextualPlanningV2";
+import { isSanitaryClassSchemeV2 } from "../agenda/sanitaryClassSchemeV2";
 
 export type SanitaryProtocolWindowSourceV2 = {
   fazendaId?: string;
@@ -372,7 +373,7 @@ function itemVersionPlanningBlockers(source: SanitaryProtocolWindowSourceV2, ite
   if (source.catalog.items.some((candidate) => candidate.protocolId === item.protocolId && candidate.logicalItemKey === item.logicalItemKey && candidate.status === "active" && candidate.version > item.version)) {
     blockers.push("Versão substituída por item ativo mais recente. Atualize a seleção.");
   }
-  if (sanitaryPlanningKindV2(item) !== "aplicacao_esquema_definido") return blockers;
+  if (sanitaryPlanningKindV2(item) !== "aplicacao_esquema_definido" || isSanitaryClassSchemeV2(item)) return blockers;
   if (!hasCommercialIdentity(source, item)) blockers.push("Produto comercial/formulação do esquema ainda sem identidade comprovada no catálogo.");
   if (!hasPlanningSpeciesAuthorization(source, item, animal, evaluatedAt)) blockers.push("Esquema exige autorização explícita do produto para a espécie, sexo e idade do animal.");
   return blockers;
@@ -949,8 +950,11 @@ async function persistPlanningCommand(
             generationMode: input.generationMode ?? "manual",
             planningEvidence: {
               itemVersion: item.version,
+              planningScope: (item.snapshotTemplate.metadata as Record<string, unknown> | undefined)?.planning_scope,
+              executionProductPolicy: item.snapshotTemplate.executionProductPolicy,
               sourceRefsByField: item.sourceRefsByField,
               operationalWindowRule: item.operationalWindowRule,
+              boosterRule: item.boosterRule,
             },
             planningDedupKey: `${input.fazendaId}|${command.dedupKey}|target:${agendaTarget.id}`,
             ...identity.metadata,

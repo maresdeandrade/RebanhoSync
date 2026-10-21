@@ -9,6 +9,7 @@ import type {
   SanitaryExecutedHistoryEventV2,
   SanitaryExecutedHistoryV2,
 } from "@/lib/sanitario/checks/sanitaryProtocolPrecheckV2";
+import { isSanitaryClassSchemeV2, sanitaryClassFieldSourcesV2 } from "../agenda/sanitaryClassSchemeV2";
 
 type BuildSanitaryExecutedHistoryV2Input = {
   events: Evento[];
@@ -87,6 +88,19 @@ function resolveWithdrawalStatus(detail: EventoSanitario) {
   return readString(withdrawal.reason) === "missing_explicit_rule"
     ? "without_rule"
     : "not_applicable";
+}
+
+function classSchemeCoverage(detail: EventoSanitario): string | null {
+  const snapshot = readRecord(detail.produto_snapshot);
+  if (snapshot.executedProductId !== detail.produto_veterinario_id || !Array.isArray(snapshot.fieldEvidence)) return null;
+  const evidence = snapshot.fieldEvidence.map(readRecord).find((field) => {
+    const link = readRecord(field.productSource);
+    return field.fieldKey === "operational_window" && field.coverageStatus === "covers" &&
+      field.reason === "class_scheme_product_compatibility_verified" &&
+      link.productId === detail.produto_veterinario_id &&
+      sanitaryClassFieldSourcesV2([field.sourceRef], "operational_window").length === 1;
+  });
+  return readString(evidence?.sourceCoverageId);
 }
 
 function resolveCatalogItem(input: {
@@ -204,8 +218,11 @@ export function buildSanitaryExecutedHistoryV2(
             detail.payload.product_class,
             readRecord(detail.produto_snapshot).product_class,
             event.payload.product_class,
-          ) ?? item.productClass,
+            isSanitaryClassSchemeV2(item)
+              ? readRecord(readRecord(detail.produto_snapshot).executedProductSnapshot).classe : null,
+          ) ?? (isSanitaryClassSchemeV2(item) ? null : item.productClass),
         productId: detail.produto_veterinario_id ?? null,
+        classSchemeCoverageId: classSchemeCoverage(detail),
         productName:
           detail.produto_nome_snapshot ??
           detail.produto ??
