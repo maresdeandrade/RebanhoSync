@@ -1,5 +1,5 @@
 // Disposable test data only. Never imported by runtime or a catalogue publisher.
-import canonical from "../../../../../../docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json";
+import canonical from "../../../../../../tests/codex/fixtures/sanitario-v2-before-r03.json";
 import { db } from "@/lib/offline/db";
 import type { SanitarioProtocoloItemVersionLocalV2, SanitarioProtocoloLocalV2 } from "@/lib/offline/types";
 import { EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2, loadSanitaryProtocolWindowSourceV2, type SanitaryOperationalContextV2 } from "../../../windows/sanitaryProtocolWindowsV2";

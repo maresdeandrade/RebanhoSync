@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/offline/db";
 import { generateSanitaryAutomaticAgendasV2 } from "../sanitaryAutomaticGenerationV2";
 import { saveSanitaryAutomationPlanV2 } from "../sanitaryAutomationPlanV2";
-import { normalizedDraft, normalizedItems, seedNormalizedFixture, normalizedDate } from "./fixtures/sanitaryNormalizedFixtureV2";
+import { blockedItemKeys, normalizedDraft, normalizedItems, seedNormalizedFixture, normalizedDate } from "./fixtures/sanitaryNormalizedFixtureV2";
 
 vi.mock("@/lib/offline/localReadBoundary", () => ({ requireTenantSensitiveRead: vi.fn().mockResolvedValue(undefined),
   requireTenantSensitiveWrite: vi.fn().mockResolvedValue(undefined), requireTenantSensitiveAccess: vi.fn().mockResolvedValue(undefined) }));
@@ -52,7 +52,11 @@ describe.skipIf(!catalog)("catálogo publicado pela RPC real → plano existente
     expect(new Set(agendas.map(agenda => agenda.metadata.automationKey)).size).toBe(agendas.length);
     db.close(); await db.open();
     expect((await generate()).created).toBe(0);
-    expect(catalog.items.filter((item: { allows_agenda_auto: boolean }) => !item.allows_agenda_auto)).toHaveLength(13);
+    // R04B can add reviewed class schemes; the six permanent restrictions remain.
+    const restricted = catalog.items.filter((item: { logical_item_key: string }) =>
+      item.logical_item_key.startsWith("raiva_") || blockedItemKeys.includes(item.logical_item_key));
+    expect(restricted).toHaveLength(6);
+    expect(restricted.every((item: { allows_agenda_auto: boolean }) => !item.allows_agenda_auto)).toBe(true);
     expect(await db.event_eventos.count()).toBe(0);
     expect(await db.state_insumo_movimentacoes.count()).toBe(0);
   });

@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import packet from "../../../../../docs/review/evidence/SANITARIO_V2_FECHAMENTO_DECISOES_20261016.json";
-import canonical from "../../../../../docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json";
+// The decision packet is bound to this immutable proposal before the R03 promotion.
+import canonical from "../../../../../tests/codex/fixtures/sanitario-v2-before-r03.json";
 import { adaptSanitaryProtocolV2Row, adaptSanitaryProtocolItemV2Row } from "../../catalog/sanitaryProtocolCatalogV2";
 import { sanitaryPlanningBlockersV2 } from "../../preview/sanitaryWindowPlanningPreviewV2";
 
@@ -14,7 +15,7 @@ describe("preparação curatorial sem autorização operacional", () => {
     const keys = groups.flatMap((group) => group.item_keys);
     expect(keys.sort()).toEqual(items.map((item) => item.logical_item_key).sort());
     expect(new Set(keys).size).toBe(20);
-    const bytes = readFileSync(new URL("../../../../../docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json", import.meta.url));
+    const bytes = readFileSync(new URL("../../../../../tests/codex/fixtures/sanitario-v2-before-r03.json", import.meta.url));
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(packet.source_canonical_sha256);
     expect(items.every((item) => item.allows_agenda_auto === false)).toBe(true);
   });
