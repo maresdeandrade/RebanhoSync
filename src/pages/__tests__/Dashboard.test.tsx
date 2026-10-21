@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -150,7 +150,10 @@ describe("Dashboard page", () => {
           [],
         ];
         let callCount = 0;
-        return () => responses[callCount++] as ReturnType<typeof useLiveQuery>;
+        return () =>
+          responses[callCount++ % responses.length] as ReturnType<
+            typeof useLiveQuery
+          >;
       })(),
     );
   });
@@ -184,6 +187,117 @@ describe("Dashboard page", () => {
       ["agenda_itens"],
       { mode: "merge" },
     );
+  });
+
+  it("distinguishes a loaded empty chart from an unresolved local read", () => {
+    const view = render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText("Nenhuma pesagem registrada neste recorte."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Nenhum item agendado neste recorte."),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("region", { name: "Panorama da fazenda" }),
+      ).getByText("128"),
+    ).toBeInTheDocument();
+
+    mockedUseLiveQuery.mockReturnValue(undefined);
+    view.rerender(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Carregando os dados locais",
+    );
+    expect(
+      screen.queryByText("Nenhuma pesagem registrada neste recorte."),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Envios em dia")).not.toBeInTheDocument();
+  });
+
+  it("clears the previous farm view while the new farm is loading", () => {
+    const view = render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("128")).toBeInTheDocument();
+    mockedUseAuth.mockReturnValue({ activeFarmId: "farm-2" } as ReturnType<
+      typeof useAuth
+    >);
+    mockedUseLiveQuery.mockReturnValue(undefined);
+    view.rerender(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText("128")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Carregando os dados locais",
+    );
+  });
+
+  it("does not present missing farm context as zero metrics", () => {
+    mockedUseAuth.mockReturnValue({ activeFarmId: null } as ReturnType<
+      typeof useAuth
+    >);
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText("Selecione uma fazenda para analisar os indicadores."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("128")).not.toBeInTheDocument();
+    expect(mockedPullDataForFarm).not.toHaveBeenCalled();
+  });
+
+  it("marks offline reads without triggering another agenda refresh", () => {
+    const connection = vi.spyOn(navigator, "onLine", "get");
+    connection.mockReturnValue(true);
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>,
+    );
+    connection.mockReturnValue(false);
+    fireEvent(window, new Event("offline"));
+    expect(
+      screen.getByText("Offline · leitura neste dispositivo"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("128")).toBeInTheDocument();
+    expect(mockedPullDataForFarm).toHaveBeenCalledTimes(1);
+    connection.mockRestore();
+  });
+
+  it("contains a local read error without presenting zero indicators", () => {
+    const errorLog = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    mockedUseLiveQuery.mockImplementation(() => {
+      throw new Error("local read failed");
+    });
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar os indicadores",
+    );
+    expect(
+      screen.getByRole("link", { name: "Voltar ao início" }),
+    ).toHaveAttribute("href", "/home");
+    expect(screen.queryByText("128")).not.toBeInTheDocument();
+    errorLog.mockRestore();
   });
 
   it("expands regulatory analytics by subarea and impact with filtered CTAs", () => {
@@ -514,4 +628,3 @@ describe("Dashboard page", () => {
     ).not.toBeNull();
   });
 });
-

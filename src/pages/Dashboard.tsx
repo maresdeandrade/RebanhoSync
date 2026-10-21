@@ -1,9 +1,16 @@
-import { useEffect, useMemo } from "react";
+import {
+  Component,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
-  BarChart3,
+  Beef,
+  CalendarClock,
   FileText,
   MousePointerClick,
   RefreshCw,
@@ -31,6 +38,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageIntro } from "@/components/ui/page-intro";
+import { MetricCard } from "@/components/ui/metric-card";
+import { SectionHeader } from "@/components/ui/section-header";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { db } from "@/lib/offline/db";
@@ -104,8 +113,50 @@ function resolveRejectionReasonLabel(reasonCode?: string): string {
   return "Revisao operacional";
 }
 
-const Dashboard = () => {
-  const { activeFarmId } = useAuth();
+class DashboardReadBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <Card role="alert">
+          <CardHeader>
+            <CardTitle>Não foi possível carregar os indicadores</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              A leitura local falhou. Reabra o painel para tentar novamente.
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/home">Voltar ao início</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function subscribeToConnectivity(onChange: () => void) {
+  const events = ["online", "offline"];
+  events.forEach((event) => window.addEventListener(event, onChange));
+  return () =>
+    events.forEach((event) => window.removeEventListener(event, onChange));
+}
+
+const DashboardContent = ({ activeFarmId }: { activeFarmId: string }) => {
+  const online = useSyncExternalStore(
+    subscribeToConnectivity,
+    () => navigator.onLine,
+  );
 
   useEffect(() => {
     if (!activeFarmId) return;
@@ -117,92 +168,95 @@ const Dashboard = () => {
     );
   }, [activeFarmId]);
 
-  const totalAnimais =
-    useLiveQuery(async () => {
-      if (!activeFarmId) return 0;
-      return db.state_animais
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .and((animal) => !animal.deleted_at)
-        .count();
-    }, [activeFarmId]) || 0;
+  const totalAnimaisQuery = useLiveQuery(async () => {
+    if (!activeFarmId) return 0;
+    return db.state_animais
+      .where("fazenda_id")
+      .equals(activeFarmId)
+      .and((animal) => !animal.deleted_at)
+      .count();
+  }, [activeFarmId]);
+  const totalAnimais = totalAnimaisQuery ?? 0;
 
-  const pendenciasAgenda =
-    useLiveQuery(async () => {
-      if (!activeFarmId) return 0;
-      return db.state_agenda_itens
+  const pendenciasAgendaQuery = useLiveQuery(async () => {
+    if (!activeFarmId) return 0;
+    return db.state_agenda_itens
+      .where("[fazenda_id+status]")
+      .equals([activeFarmId, "agendado"])
+      .filter((item) => !item.deleted_at)
+      .count();
+  }, [activeFarmId]);
+  const pendenciasAgenda = pendenciasAgendaQuery ?? 0;
+
+  const sanitaryAttentionQuery = useLiveQuery(async () => {
+    if (!activeFarmId) return EMPTY_SANITARY_ATTENTION_SUMMARY;
+
+    const [agenda, protocols, protocolItems] = await Promise.all([
+      db.state_agenda_itens
         .where("[fazenda_id+status]")
         .equals([activeFarmId, "agendado"])
         .filter((item) => !item.deleted_at)
-        .count();
-    }, [activeFarmId]) || 0;
+        .toArray(),
+      db.state_protocolos_sanitarios
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .filter((item) => !item.deleted_at)
+        .toArray(),
+      db.state_protocolos_sanitarios_itens
+        .where("fazenda_id")
+        .equals(activeFarmId)
+        .filter((item) => !item.deleted_at)
+        .toArray(),
+    ]);
 
+    return summarizeSanitaryAgendaAttention({
+      agenda,
+      protocols,
+      protocolItems,
+      limit: 3,
+    });
+  }, [activeFarmId]);
   const sanitaryAttention =
-    useLiveQuery(async () => {
-      if (!activeFarmId) return EMPTY_SANITARY_ATTENTION_SUMMARY;
-
-      const [agenda, protocols, protocolItems] = await Promise.all([
-        db.state_agenda_itens
-          .where("[fazenda_id+status]")
-          .equals([activeFarmId, "agendado"])
-          .filter((item) => !item.deleted_at)
-          .toArray(),
-        db.state_protocolos_sanitarios
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .filter((item) => !item.deleted_at)
-          .toArray(),
-        db.state_protocolos_sanitarios_itens
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .filter((item) => !item.deleted_at)
-          .toArray(),
-      ]);
-
-      return summarizeSanitaryAgendaAttention({
-        agenda,
-        protocols,
-        protocolItems,
-        limit: 3,
-      });
-    }, [activeFarmId]) || EMPTY_SANITARY_ATTENTION_SUMMARY;
+    sanitaryAttentionQuery ?? EMPTY_SANITARY_ATTENTION_SUMMARY;
+  const regulatoryReadModelQuery = useLiveQuery(async () => {
+    if (!activeFarmId) return EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
+    return buildRegulatoryOperationalReadModel(
+      await loadRegulatorySurfaceSource(activeFarmId),
+    );
+  }, [activeFarmId]);
   const regulatoryReadModel =
-    useLiveQuery(async () => {
-      if (!activeFarmId) return EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
-      return buildRegulatoryOperationalReadModel(
-        await loadRegulatorySurfaceSource(activeFarmId),
-      );
-    }, [activeFarmId]) || EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
+    regulatoryReadModelQuery ?? EMPTY_REGULATORY_OPERATIONAL_READ_MODEL;
   const sanitaryOperationalClasses = sanitaryAttention.operationalClasses ?? [];
 
-  const rejectionSnapshot =
-    useLiveQuery(async () => {
-      if (!activeFarmId) {
-        return EMPTY_REJECTION_SNAPSHOT;
-      }
+  const rejectionSnapshotQuery = useLiveQuery(async () => {
+    if (!activeFarmId) {
+      return EMPTY_REJECTION_SNAPSHOT;
+    }
 
-      const [recentPage, stats] = await Promise.all([
-        listRejections(activeFarmId, {
-          limit: DASHBOARD_REJECTION_SAMPLE_LIMIT,
-        }),
-        getRejectionStats(activeFarmId),
-      ]);
+    const [recentPage, stats] = await Promise.all([
+      listRejections(activeFarmId, {
+        limit: DASHBOARD_REJECTION_SAMPLE_LIMIT,
+      }),
+      getRejectionStats(activeFarmId),
+    ]);
 
-      return {
-        recentItems: recentPage.items,
-        totalCount: stats.count,
-      };
-    }, [activeFarmId]) || EMPTY_REJECTION_SNAPSHOT;
+    return {
+      recentItems: recentPage.items,
+      totalCount: stats.count,
+    };
+  }, [activeFarmId]);
+  const rejectionSnapshot = rejectionSnapshotQuery ?? EMPTY_REJECTION_SNAPSHOT;
 
   const recentRejections = rejectionSnapshot.recentItems;
   const totalRejections = rejectionSnapshot.totalCount;
   const rejectionSampleIsPartial = totalRejections > recentRejections.length;
 
+  const operationalStatsQuery = useLiveQuery(
+    async () => loadFarmOperationalGestureStats(activeFarmId),
+    [activeFarmId],
+  );
   const operationalStats =
-    useLiveQuery(
-      async () => loadFarmOperationalGestureStats(activeFarmId),
-      [activeFarmId],
-    ) || EMPTY_FARM_OPERATIONAL_GESTURE_STATS;
+    operationalStatsQuery ?? EMPTY_FARM_OPERATIONAL_GESTURE_STATS;
 
   const pilotEventsQuery = useLiveQuery(async () => {
     if (!activeFarmId) return [];
@@ -218,54 +272,54 @@ const Dashboard = () => {
     [pilotEventsQuery],
   );
 
-  const pesagemData =
-    useLiveQuery(async () => {
-      if (!activeFarmId) return [];
+  const pesagemDataQuery = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
 
-      const eventos = await db.event_eventos
-        .where("[fazenda_id+occurred_at]")
-        .between([activeFarmId, ""], [activeFarmId, "\uffff"], true, true)
-        .reverse()
-        .filter((evt) => evt.dominio === "pesagem" && !evt.deleted_at)
-        .limit(10)
-        .toArray();
+    const eventos = await db.event_eventos
+      .where("[fazenda_id+occurred_at]")
+      .between([activeFarmId, ""], [activeFarmId, "\uffff"], true, true)
+      .reverse()
+      .filter((evt) => evt.dominio === "pesagem" && !evt.deleted_at)
+      .limit(10)
+      .toArray();
 
-      const orderedEventos = eventos.slice().reverse();
+    const orderedEventos = eventos.slice().reverse();
 
-      const data = await Promise.all(
-        orderedEventos.map(async (evt) => {
-          const detalhes = await db.event_eventos_pesagem.get(evt.id);
-          return {
-            data: new Date(evt.occurred_at).toLocaleDateString("pt-BR", {
-              day: "2-digit",
-              month: "2-digit",
-            }),
-            media: detalhes?.peso_kg || 0,
-          };
-        }),
-      );
+    const data = await Promise.all(
+      orderedEventos.map(async (evt) => {
+        const detalhes = await db.event_eventos_pesagem.get(evt.id);
+        return {
+          data: new Date(evt.occurred_at).toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+          }),
+          media: detalhes?.peso_kg || 0,
+        };
+      }),
+    );
 
-      return data;
-    }, [activeFarmId]) || [];
+    return data;
+  }, [activeFarmId]);
+  const pesagemData = pesagemDataQuery ?? [];
 
-  const agendaData =
-    useLiveQuery(async () => {
-      if (!activeFarmId) return [];
+  const agendaDataQuery = useLiveQuery(async () => {
+    if (!activeFarmId) return [];
 
-      const itens = await db.state_agenda_itens
-        .where("[fazenda_id+status]")
-        .equals([activeFarmId, "agendado"])
-        .filter((item) => !item.deleted_at)
-        .toArray();
+    const itens = await db.state_agenda_itens
+      .where("[fazenda_id+status]")
+      .equals([activeFarmId, "agendado"])
+      .filter((item) => !item.deleted_at)
+      .toArray();
 
-      const grouped = itens.reduce((acc: Record<string, number>, item) => {
-        const tipo = item.tipo || "Outros";
-        acc[tipo] = (acc[tipo] || 0) + 1;
-        return acc;
-      }, {});
+    const grouped = itens.reduce((acc: Record<string, number>, item) => {
+      const tipo = item.tipo || "Outros";
+      acc[tipo] = (acc[tipo] || 0) + 1;
+      return acc;
+    }, {});
 
-      return Object.entries(grouped).map(([nome, qtd]) => ({ nome, qtd }));
-    }, [activeFarmId]) || [];
+    return Object.entries(grouped).map(([nome, qtd]) => ({ nome, qtd }));
+  }, [activeFarmId]);
+  const agendaData = agendaDataQuery ?? [];
 
   const rejectionByDomainData = useMemo(() => {
     const grouped = recentRejections.reduce(
@@ -330,7 +384,7 @@ const Dashboard = () => {
         helper:
           operationalStats.backlog > 0
             ? "Acoes locais ainda aguardam conexao ou confirmacao."
-            : "Tudo enviado para a fazenda ativa.",
+            : "Sem envios pendentes na leitura local.",
         path: "/home",
         actionLabel:
           operationalStats.backlog > 0 ? "Acompanhar envio" : "Abrir inicio",
@@ -400,25 +454,68 @@ const Dashboard = () => {
     return labels[route] ?? route;
   };
 
+  const isLoading = [
+    totalAnimaisQuery,
+    pendenciasAgendaQuery,
+    sanitaryAttentionQuery,
+    regulatoryReadModelQuery,
+    rejectionSnapshotQuery,
+    operationalStatsQuery,
+    pilotEventsQuery,
+    pesagemDataQuery,
+    agendaDataQuery,
+  ].some((value) => value === undefined);
+
+  if (isLoading) {
+    return (
+      <PageContainer className="space-y-6">
+        <PageIntro
+          variant="plain"
+          eyebrow="Análise da fazenda"
+          title="Painel gerencial"
+          description="Indicadores e tendências da fazenda ativa."
+        />
+        <Card role="status" aria-live="polite">
+          <CardContent className="flex items-center gap-3 pt-5">
+            <RefreshCw
+              aria-hidden="true"
+              className="h-4 w-4 shrink-0 motion-safe:animate-spin"
+            />
+            Carregando os dados locais da fazenda…
+          </CardContent>
+        </Card>
+      </PageContainer>
+    );
+  }
+
   return (
-    <PageContainer width="full" className="space-y-5">
+    <PageContainer
+      width="full"
+      className="min-w-0 space-y-6 [&_section]:min-w-0 [&_h3]:break-words"
+    >
       <PageIntro
         variant="plain"
-        eyebrow="Saude operacional"
+        eyebrow="Análise da fazenda"
         title="Painel gerencial"
+        description="Indicadores, tendências e pontos de atenção da fazenda ativa. Cada recorte mantém seu próprio período de referência."
         meta={
           <>
-            <StatusBadge tone="info">{totalAnimais} animais</StatusBadge>
-            <StatusBadge tone={pendenciasAgenda > 0 ? "warning" : "success"}>
-              <span>Agenda aberta</span>
-              <span>{pendenciasAgenda}</span>
+            <StatusBadge tone="neutral">
+              Fazenda ativa · dados locais
             </StatusBadge>
+            {!online ? (
+              <StatusBadge tone="offline">
+                Offline · leitura neste dispositivo
+              </StatusBadge>
+            ) : null}
             {operationalStats.backlog > 0 ? (
               <StatusBadge tone="warning">
                 {operationalStats.backlog} envio(s) pendente(s)
               </StatusBadge>
             ) : (
-              <StatusBadge tone="success">Envios em dia</StatusBadge>
+              <StatusBadge tone="neutral">
+                Sem envios pendentes na leitura local
+              </StatusBadge>
             )}
             {totalRejections > 0 ? (
               <StatusBadge tone="danger">
@@ -444,28 +541,56 @@ const Dashboard = () => {
         }
       />
 
-      <Card className="shadow-none">
-        <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
-          <CardTitle>Prioridades administrativas</CardTitle>
+      <section aria-label="Panorama da fazenda" className="space-y-3">
+        <SectionHeader
+          title="Panorama da fazenda"
+          description="Estado atual disponível neste dispositivo, sem filtro de período."
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <MetricCard
+            className="min-w-0 [&_p]:break-all"
+            label="Animais"
+            value={totalAnimais}
+            hint="Animais não excluídos no estado atual da fazenda."
+            icon={<Beef aria-hidden="true" className="h-5 w-5" />}
+          />
+          <MetricCard
+            className="min-w-0 [&_p]:break-all"
+            label="Agenda aberta"
+            value={pendenciasAgenda}
+            hint="Itens agendados. Intenção futura, sem confirmar execução."
+            icon={<CalendarClock aria-hidden="true" className="h-5 w-5" />}
+          />
+        </div>
+      </section>
+
+      <Card className="min-w-0 shadow-none">
+        <CardHeader>
+          <SectionHeader
+            title="Prioridades administrativas"
+            description="Revisões, envio e sinais operacionais da fazenda ativa."
+          />
         </CardHeader>
-        <CardContent className="grid gap-0 divide-y overflow-hidden rounded-xl border border-border/70 bg-card p-0 lg:grid-cols-4 lg:divide-x lg:divide-y-0">
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-4">
           {adminPriorityActions.map((action) => (
             <div
               key={action.title}
-              className="flex flex-col justify-between p-5 transition-colors hover:bg-muted/10"
+              className="flex min-w-0 flex-col justify-between rounded-xl border border-border/70 bg-muted/20 p-4"
             >
               <div>
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">
                       {action.title}
                     </p>
-                    <strong className="mt-2 block text-3xl tracking-[-0.02em] tabular-nums">
+                    <strong className="mt-2 block break-all text-3xl tracking-[-0.02em] tabular-nums">
                       {action.value}
                     </strong>
                   </div>
                   <StatusBadge tone={action.tone}>
-                    {action.tone === "success" ? "Em dia" : "Atenção"}
+                    {action.tone === "success"
+                      ? "Sem pendência local"
+                      : "Atenção"}
                   </StatusBadge>
                 </div>
                 <p className="mt-3 text-sm text-muted-foreground">
@@ -487,12 +612,12 @@ const Dashboard = () => {
 
       {sanitaryAttention.scheduleModes.length > 0 ||
       sanitaryOperationalClasses.length > 0 ? (
-        <section className="grid gap-4 xl:grid-cols-3">
-          <Card className="shadow-none">
+        <section className="grid gap-4 2xl:grid-cols-3">
+          <Card className="min-w-0 shadow-none">
             <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
               <CardTitle>Agenda sanitaria por calendario</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <CardContent className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-1">
               {sanitaryAttention.scheduleModes.map((mode) => (
                 <div
                   key={mode.key}
@@ -533,11 +658,11 @@ const Dashboard = () => {
           </Card>
 
           {sanitaryOperationalClasses.length > 0 ? (
-            <Card className="shadow-none">
+            <Card className="min-w-0 shadow-none">
               <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                 <CardTitle>Agenda sanitaria por classe</CardTitle>
               </CardHeader>
-              <CardContent className="grid gap-3 md:grid-cols-2">
+              <CardContent className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-1">
                 {sanitaryOperationalClasses.map((item) => (
                   <div
                     key={item.key}
@@ -569,11 +694,11 @@ const Dashboard = () => {
           ) : null}
 
           {sanitaryAttention.scheduleAnchors.length > 0 ? (
-            <Card className="shadow-none">
+            <Card className="min-w-0 shadow-none">
               <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                 <CardTitle>Agenda sanitaria por ancora</CardTitle>
               </CardHeader>
-              <CardContent className="grid gap-3 md:grid-cols-2">
+              <CardContent className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-1">
                 {sanitaryAttention.scheduleAnchors.map((anchor) => (
                   <div
                     key={anchor.key}
@@ -617,8 +742,8 @@ const Dashboard = () => {
       ) : null}
 
       {regulatoryReadModel.attention.openCount > 0 ? (
-        <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-          <Card className="shadow-none">
+        <section className="grid gap-4 xl:grid-cols-2">
+          <Card className="min-w-0 shadow-none">
             <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
               <CardTitle>Pendencias regulatorias por area</CardTitle>
             </CardHeader>
@@ -677,7 +802,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-none">
+          <Card className="min-w-0 shadow-none">
             <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
               <CardTitle>Impacto da conformidade</CardTitle>
             </CardHeader>
@@ -733,17 +858,21 @@ const Dashboard = () => {
         </section>
       ) : null}
 
-      <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <Card className="shadow-none">
+      <section className="grid gap-4 xl:grid-cols-2">
+        <Card className="min-w-0 shadow-none">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle>Envio e revisao</CardTitle>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Falhas de processamento e rejeições locais são recortes distintos.
+              Pendências de envio aparecem acima.
+            </p>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    Registros para revisar
+                    Taxa de falha no processamento
                   </p>
                   <p className="mt-2 text-3xl font-semibold tracking-[-0.02em]">
                     {operationalStats.rejectionRate.toFixed(1)}%
@@ -760,7 +889,13 @@ const Dashboard = () => {
               <Progress
                 value={Math.max(0, 100 - operationalStats.rejectionRate)}
                 className="mt-4"
+                aria-label="Percentual de gestos sem falha no processamento"
               />
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                Base local: {operationalStats.processed} gesto(s) processado(s).
+                Falhas incluem erros e rejeições; não equivalem ao total de
+                registros para revisar.
+              </p>
             </div>
 
             {rejectionByRuleData.length === 0 ? (
@@ -781,14 +916,18 @@ const Dashboard = () => {
                     className="rounded-xl border border-border/70 bg-muted/20 p-4"
                   >
                     <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="truncate font-medium">
+                      <span className="min-w-0 break-words font-medium">
                         {item.reason}
                       </span>
                       <span className="text-muted-foreground">
                         {item.count} ({item.rate.toFixed(1)}%)
                       </span>
                     </div>
-                    <Progress value={item.rate} className="mt-3" />
+                    <Progress
+                      value={item.rate}
+                      className="mt-3"
+                      aria-label={`Participação de ${item.reason} nas rejeições da amostra`}
+                    />
                   </div>
                 ))}
               </div>
@@ -796,113 +935,286 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-none">
+        <Card className="min-w-0 shadow-none">
           <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
             <CardTitle>Rejeicoes por dominio</CardTitle>
+            <p className="text-sm leading-6 text-muted-foreground">
+              {rejectionSampleIsPartial
+                ? `Amostra parcial: últimas ${recentRejections.length} de ${totalRejections} rejeições locais.`
+                : "Rejeições disponíveis no histórico local da fazenda."}
+            </p>
           </CardHeader>
-          <CardContent className="h-[340px]">
+          <CardContent className="space-y-4">
             {rejectionByDomainData.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
                 Sem rejeicoes registradas nesta fazenda.
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rejectionByDomainData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="domain" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar
-                    dataKey="total"
-                    fill="hsl(var(--destructive))"
-                    radius={[8, 8, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <div
+                className="h-64 min-w-0"
+                role="img"
+                aria-label="Quantidade de rejeições por domínio; valores listados abaixo."
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={rejectionByDomainData}
+                    layout="vertical"
+                    margin={{ left: 0, right: 16 }}
+                    accessibilityLayer
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      horizontal={false}
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      type="number"
+                      allowDecimals={false}
+                      tick={{
+                        fill: "hsl(var(--muted-foreground))",
+                        fontSize: 12,
+                      }}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="domain"
+                      width={96}
+                      tick={{
+                        fill: "hsl(var(--muted-foreground))",
+                        fontSize: 12,
+                      }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        borderColor: "hsl(var(--border))",
+                        color: "hsl(var(--foreground))",
+                        borderRadius: 12,
+                      }}
+                      cursor={{ fill: "hsl(var(--muted))" }}
+                    />
+                    <Bar
+                      dataKey="total"
+                      name="Rejeições"
+                      maxBarSize={28}
+                      fill="hsl(var(--destructive))"
+                      radius={[0, 4, 4, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
+            {rejectionByDomainData.length > 0 ? (
+              <dl className="space-y-2 text-sm">
+                {rejectionByDomainData.map((item) => (
+                  <div
+                    key={item.domain}
+                    className="flex flex-wrap justify-between gap-2"
+                  >
+                    <dt className="min-w-0 break-words">{item.domain}</dt>
+                    <dd className="font-semibold tabular-nums">
+                      {item.total} rejeição(ões)
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
           </CardContent>
         </Card>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-2">
-        <Card className="shadow-none">
-          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
-            <CardTitle className="flex items-center gap-2">
-              Evolucao de peso
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={pesagemData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="data"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="media"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={1.5}
-                  dot={{ r: 2, fill: "hsl(var(--primary))" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-none">
-          <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
-            <CardTitle>Agenda por categoria</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={agendaData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="nome"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip />
-                <Bar
-                  dataKey="qtd"
-                  fill="hsl(var(--success))"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      <section aria-label="Gráficos e tendências" className="space-y-3">
+        <SectionHeader
+          title="Gráficos e tendências"
+          description="Eventos registrados e agenda aberta, em recortes independentes."
+        />
+        <div className="grid gap-4 xl:grid-cols-2">
+          <Card className="min-w-0 shadow-none">
+            <CardHeader>
+              <CardTitle>Evolucao de peso</CardTitle>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Até 10 eventos de pesagem mais recentes, em ordem cronológica.
+                Peso em kg por evento; não representa média do rebanho.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {pesagemData.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border/70 p-5 text-sm text-muted-foreground">
+                  Nenhuma pesagem registrada neste recorte.
+                </div>
+              ) : (
+                <>
+                  <div
+                    className="h-64 min-w-0 sm:h-72"
+                    role="img"
+                    aria-label="Pesagens em kg por data; valores listados abaixo."
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={pesagemData}
+                        margin={{ left: 0, right: 16, top: 8, bottom: 8 }}
+                        accessibilityLayer
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="hsl(var(--border))"
+                        />
+                        <XAxis
+                          dataKey="data"
+                          minTickGap={24}
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          width={44}
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            borderColor: "hsl(var(--border))",
+                            color: "hsl(var(--foreground))",
+                            borderRadius: 12,
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="media"
+                          name="Peso (kg)"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          dot={{ r: 3, fill: "hsl(var(--primary))" }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <details className="rounded-xl border border-border/70 p-3 text-sm">
+                    <summary className="cursor-pointer rounded-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      Ver valores das pesagens
+                    </summary>
+                    <dl className="mt-3 space-y-2">
+                      {pesagemData.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex flex-wrap justify-between gap-2"
+                        >
+                          <dt className="min-w-0 break-all">{item.data}</dt>
+                          <dd className="shrink-0 font-semibold tabular-nums">
+                            {item.media} kg
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </details>
+                </>
+              )}
+            </CardContent>
+          </Card>
+          <Card className="min-w-0 shadow-none">
+            <CardHeader>
+              <CardTitle>Agenda por categoria</CardTitle>
+              <p className="text-sm leading-6 text-muted-foreground">
+                Itens agendados agrupados por tipo, sem filtro de período.
+                Agenda representa intenção futura.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {agendaData.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border/70 p-5 text-sm text-muted-foreground">
+                  Nenhum item agendado neste recorte.
+                </div>
+              ) : (
+                <>
+                  <div
+                    className="h-64 min-w-0 sm:h-72"
+                    role="img"
+                    aria-label="Itens agendados por categoria; valores listados abaixo."
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={agendaData}
+                        layout="vertical"
+                        margin={{ left: 0, right: 16, top: 8, bottom: 8 }}
+                        accessibilityLayer
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          horizontal={false}
+                          stroke="hsl(var(--border))"
+                        />
+                        <XAxis
+                          type="number"
+                          allowDecimals={false}
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="nome"
+                          width={96}
+                          tickFormatter={(value: string) =>
+                            value.length > 13 ? value.slice(0, 12) + "…" : value
+                          }
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "hsl(var(--card))",
+                            borderColor: "hsl(var(--border))",
+                            color: "hsl(var(--foreground))",
+                            borderRadius: 12,
+                          }}
+                          cursor={{ fill: "hsl(var(--muted))" }}
+                        />
+                        <Bar
+                          dataKey="qtd"
+                          name="Itens agendados"
+                          maxBarSize={28}
+                          fill="hsl(var(--primary))"
+                          radius={[0, 4, 4, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <details className="rounded-xl border border-border/70 p-3 text-sm">
+                    <summary className="cursor-pointer rounded-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      Ver valores da agenda
+                    </summary>
+                    <dl className="mt-3 space-y-2">
+                      {agendaData.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex flex-wrap justify-between gap-2"
+                        >
+                          <dt className="min-w-0 break-all">{item.nome}</dt>
+                          <dd className="shrink-0 font-semibold tabular-nums">
+                            {item.qtd} item(ns)
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </details>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
-      <Card className="shadow-none">
+      <Card className="min-w-0 shadow-none">
         <CardContent className="p-0">
           <Accordion type="single" collapsible>
             <AccordionItem value="pilot-metrics" className="border-b-0">
@@ -912,14 +1224,14 @@ const Dashboard = () => {
                     Telemetria de piloto
                   </p>
                   <p className="text-sm font-normal text-muted-foreground">
-                    Expanda apenas quando precisar analisar adocao, rotas e
-                    falhas instrumentadas.
+                    Últimos 7 dias · telemetria local. Expanda para analisar
+                    uso, rotas e falhas instrumentadas.
                   </p>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-6">
                 <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-                  <Card className="shadow-none">
+                  <Card className="min-w-0 shadow-none">
                     <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                       <CardTitle>Indicadores do piloto</CardTitle>
                     </CardHeader>
@@ -996,7 +1308,7 @@ const Dashboard = () => {
                       )}
                     </CardContent>
                   </Card>
-                  <Card className="shadow-none">
+                  <Card className="min-w-0 shadow-none">
                     <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
                       <CardTitle>Rotas e alertas</CardTitle>
                     </CardHeader>
@@ -1072,7 +1384,9 @@ const Dashboard = () => {
                               key={item.label}
                               className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 p-4 text-sm"
                             >
-                              <span className="font-mono">{item.label}</span>
+                              <span className="min-w-0 break-all font-mono">
+                                {item.label}
+                              </span>
                               <strong>{item.count}</strong>
                             </div>
                           ))
@@ -1087,6 +1401,24 @@ const Dashboard = () => {
         </CardContent>
       </Card>
     </PageContainer>
+  );
+};
+
+const Dashboard = () => {
+  const { activeFarmId } = useAuth();
+  if (!activeFarmId) {
+    return (
+      <PageIntro
+        variant="plain"
+        title="Painel gerencial"
+        description="Selecione uma fazenda para analisar os indicadores."
+      />
+    );
+  }
+  return (
+    <DashboardReadBoundary key={activeFarmId}>
+      <DashboardContent activeFarmId={activeFarmId} />
+    </DashboardReadBoundary>
   );
 };
 
