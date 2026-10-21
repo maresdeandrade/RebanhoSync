@@ -2,10 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { buildAgendaBadgeOverflowLayout } from "@/lib/agenda/badgeOverflow";
 import { buildAgendaGroupRecommendation } from "@/lib/agenda/groupRecommendations";
-import {
-  formatAgendaManejoLabel,
-  getGroupVisibilityLabel,
-} from "@/pages/Agenda/helpers/formatting";
+import { getGroupVisibilityLabel } from "@/pages/Agenda/helpers/formatting";
+import { buildAgendaGroupPresentation } from "@/pages/Agenda/helpers/groupPresentation";
 import { mapAnimalBadgeToQuickFilter } from "@/pages/Agenda/helpers/quickFilters";
 import type {
   AgendaEventGroup,
@@ -80,9 +78,7 @@ export function EventGroupCard({
   const groupStateKey = buildGroupStateKey("evento", group.key);
   const isExpanded = expandedGroupSet.has(groupStateKey);
   const isRevealed = revealedGroups.includes(groupStateKey);
-  const manejoLabels = Array.from(
-    new Set(group.rows.map((row) => formatAgendaManejoLabel(row.item.tipo))),
-  );
+  const presentation = buildAgendaGroupPresentation(group.rows);
   const displayedRows =
     hasQuickFiltersActive && !isRevealed ? group.visibleRows : group.rows;
   const canToggleReveal =
@@ -108,11 +104,25 @@ export function EventGroupCard({
       <CardHeader className="space-y-3 border-b border-border/60 px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 space-y-3">
-            <p className="break-words text-sm font-semibold text-foreground">
-              Manejo: {manejoLabels.join(" · ") || "Tipo não informado"}
-            </p>
+            <CardTitle className="break-words text-base leading-snug">
+              {presentation.title}
+            </CardTitle>
+            {presentation.subtitle ? (
+              <p className="break-words text-sm font-medium text-foreground">
+                {presentation.subtitle}
+              </p>
+            ) : null}
             <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="text-base">{group.title}</CardTitle>
+              {presentation.statuses.map((status) => (
+                <StatusBadge key={status.label} tone={status.tone}>
+                  {status.label}
+                </StatusBadge>
+              ))}
+              {presentation.dates.map((date) => (
+                <StatusBadge key={date} tone="neutral">
+                  {date}
+                </StatusBadge>
+              ))}
               <StatusBadge tone="neutral">
                 {getGroupVisibilityLabel(
                   group.visibleRows.length,
@@ -125,7 +135,11 @@ export function EventGroupCard({
                 </StatusBadge>
               ) : null}
             </div>
-            <p className="text-sm text-muted-foreground">{group.subtitle}</p>
+            {presentation.targets.length > 0 ? (
+              <p className="break-words text-sm text-muted-foreground">
+                {presentation.targets.join(" · ")}
+              </p>
+            ) : null}
             <div className="flex flex-wrap gap-2">
               {group.summary.animalBadges.map((badge, index) => {
                 const animalFilter = mapAnimalBadgeToQuickFilter(badge.key);
@@ -170,27 +184,47 @@ export function EventGroupCard({
                 </StatusBadge>
               ) : null}
             </div>
+            {presentation.products.length > 0 ? (
+              <p className="break-words text-sm text-muted-foreground">
+                Produto: {presentation.products.join(" · ")}
+              </p>
+            ) : null}
+            {presentation.intervals.length > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {presentation.intervals.join(" · ")}
+              </p>
+            ) : null}
+            <details className="break-words text-xs text-muted-foreground">
+              <summary className="cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                Detalhes do protocolo e da origem
+              </summary>
+              <p className="mt-2">{group.subtitle}</p>
+            </details>
             {recommendation ? (
               <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                 <StatusBadge tone={recommendation.tone}>
                   {recommendation.urgencyLabel}
                 </StatusBadge>
-                <p className="text-muted-foreground">
-                  Proxima acao:{" "}
-                  <span className="font-medium text-foreground">
-                    {recommendation.actionLabel}
-                  </span>{" "}
-                  <span className="text-muted-foreground/80">
-                    em {recommendation.targetLabel}
-                  </span>
-                </p>
+                <details className="break-words text-muted-foreground">
+                  <summary className="cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    Próxima ação
+                  </summary>
+                  <p className="mt-2">
+                    <span className="font-medium text-foreground">
+                      {recommendation.actionLabel}
+                    </span>{" "}
+                    <span className="text-muted-foreground/80">
+                      em {recommendation.targetLabel}
+                    </span>
+                  </p>
+                </details>
               </div>
             ) : null}
           </div>
           <AgendaGroupActions
             mode="evento"
             groupKey={group.key}
-            groupTitle={group.title}
+            groupTitle={presentation.title}
             isExpanded={isExpanded}
             isRevealed={isRevealed}
             canToggleReveal={canToggleReveal}

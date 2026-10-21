@@ -300,8 +300,12 @@ describe("Agenda page", () => {
         groupMode: "evento",
       }),
     );
-    expect(screen.getByText("Manejo: Vacinação")).toBeInTheDocument();
-    expect(screen.getByText("Manejo: Vermifugação")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Vacinação" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Vermifugação" }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("combobox", { name: "Agrupar agenda" }));
     await user.click(
       screen.getByRole("option", { name: "Agrupar por animal" }),
@@ -311,7 +315,9 @@ describe("Agenda page", () => {
         groupMode: "animal",
       }),
     );
-    expect(screen.queryByText("Manejo: Vacinação")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Vacinação" }),
+    ).not.toBeInTheDocument();
   });
 
   it("rehydrates persisted quick filters and expanded groups", async () => {

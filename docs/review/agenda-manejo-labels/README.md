@@ -1,5 +1,7 @@
 # Agenda Visual V2 — identificação dos tipos de manejo
 
+Registro da primeira implementação, no HEAD `9ae8a30`. A apresentação final do PR e as evidências incrementais estão em [Hierarquia de manejos e protocolos](hierarchy/README.md).
+
 Atualizado em: 2026-10-21
 Baseline confirmado: `fbe162a1f0fdb925011dfcef21e2e267863e6a9c`.
 Branch: `codex/agenda-manejo-labels`.

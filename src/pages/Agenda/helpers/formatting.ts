@@ -86,7 +86,9 @@ export function formatAgendaManejoLabel(tipo: string) {
   const persistedType = tipo?.trim() ?? "";
   return (
     MANEJO_LABELS.get(persistedType) ??
-    (formatAgendaTypeLabel(persistedType) || "Tipo não informado")
+    (persistedType.includes(" ")
+      ? persistedType
+      : formatAgendaTypeLabel(persistedType) || "Tipo não informado")
   );
 }
 

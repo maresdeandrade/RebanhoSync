@@ -1,7 +1,4 @@
-import type {
-  AgendaItem,
-  ProtocoloSanitario,
-} from "@/lib/offline/types";
+import type { AgendaItem, ProtocoloSanitario } from "@/lib/offline/types";
 
 export interface AgendaEventGroupMeta {
   key: string;
@@ -31,7 +28,9 @@ function readString(
   key: string,
 ): string | null {
   const value = record?.[key];
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
 }
 
 function readNumber(
@@ -45,13 +44,15 @@ function readNumber(
 function normalizeToken(value: string | null | undefined): string {
   if (!value) return "na";
 
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "na";
+  return (
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "na"
+  );
 }
 
 function formatTypeLabel(value: string): string {
@@ -81,7 +82,7 @@ function formatProtocolDisplayName(input: {
   return name.replace(/\s*\([^)]*\)\s*$/g, "").trim();
 }
 
-function resolveShortPhaseLabel(input: {
+export function resolveShortPhaseLabel(input: {
   tipo: string;
   itemCode: string | null | undefined;
   milestoneKey: string | null | undefined;
@@ -170,7 +171,9 @@ export function buildAgendaEventGroupMeta(
   input: BuildAgendaEventGroupMetaInput,
 ): AgendaEventGroupMeta {
   const protocolId =
-    readString(input.item.source_ref, "protocolo_id") ?? input.protocol?.id ?? null;
+    readString(input.item.source_ref, "protocolo_id") ??
+    input.protocol?.id ??
+    null;
   const milestoneKey = readString(input.item.source_ref, "milestone_key");
   const indicacao =
     readString(input.item.source_ref, "indicacao") ??

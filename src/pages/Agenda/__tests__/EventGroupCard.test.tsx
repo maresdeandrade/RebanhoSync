@@ -79,10 +79,7 @@ function renderCollapsed(rows: AgendaRow[], visibleRows = rows) {
     />,
   );
   expect(renderRowMeta).not.toHaveBeenCalled();
-  expect(
-    screen.getByRole("heading", { name: group.title }),
-  ).toBeInTheDocument();
-  expect(screen.getByText(group.subtitle)).toBeInTheDocument();
+  expect(screen.getByText(group.subtitle)).not.toBeVisible();
   return group;
 }
 
@@ -98,7 +95,10 @@ describe("collapsed agenda management groups", () => {
     "identifies persisted type %s without expanding or replacing protocol details",
     (tipo, label) => {
       const group = renderCollapsed([createRow("a", tipo)]);
-      expect(screen.getByText(`Manejo: ${label}`)).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: label })).toBeVisible();
+      expect(screen.getByText(/Programa preventivo ·/)).toBeVisible();
+      expect(screen.getByText("Produto: Produto planejado")).toBeVisible();
+      expect(screen.getByText("Intervalo: 60 dias")).toBeVisible();
       expect(group.title).toContain("Programa preventivo");
       expect(group.subtitle).toContain("Produto: Produto planejado");
       expect(group.subtitle).toContain("Dose 2");
@@ -115,7 +115,7 @@ describe("collapsed agenda management groups", () => {
     ];
     const group = renderCollapsed(rows, rows.slice(0, 1));
     expect(
-      screen.getByText("Manejo: Vacinação · Vermifugação"),
+      screen.getByRole("heading", { name: "Vacinação · Vermifugação" }),
     ).toBeInTheDocument();
     expect(screen.getByText("1 de 3 item(ns) visíveis")).toBeInTheDocument();
     expect(group.rows.map((row) => row.item.id)).toEqual(["a", "b", "c"]);
@@ -123,21 +123,24 @@ describe("collapsed agenda management groups", () => {
 
   it("shows an explicit missing type instead of inferring it from product or domain", () => {
     renderCollapsed([createRow("a", "")]);
-    expect(screen.getByText("Manejo: Tipo não informado")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Tipo não informado" }),
+    ).toBeVisible();
   });
 
   it("keeps the type visible when a closed task has no next-action recommendation", () => {
     const row = createRow("a", "vacinacao");
     row.item.status = "cancelado";
     renderCollapsed([row]);
-    expect(screen.getByText("Manejo: Vacinação")).toBeInTheDocument();
-    expect(screen.queryByText(/Proxima acao/)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Vacinação" })).toBeVisible();
+    expect(screen.getByText("Cancelado")).toBeVisible();
+    expect(screen.queryByText("Próxima ação")).not.toBeInTheDocument();
   });
 
   it("keeps an unfamiliar persisted subtype instead of substituting a domain classification", () => {
     renderCollapsed([createRow("a", "avaliacao_reprodutiva")]);
     expect(
-      screen.getByText("Manejo: Avaliacao Reprodutiva"),
+      screen.getByRole("heading", { name: "Avaliacao Reprodutiva" }),
     ).toBeInTheDocument();
   });
 });
