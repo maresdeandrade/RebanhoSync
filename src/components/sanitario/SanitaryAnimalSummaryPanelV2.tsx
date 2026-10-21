@@ -203,7 +203,7 @@ function ExecutedHistoryList({
 }
 
 export function SanitaryAnimalSummaryPanelV2({
-  animal,
+  animal: animalSummary,
   animalId,
   lotId,
   catalog,
@@ -218,6 +218,11 @@ export function SanitaryAnimalSummaryPanelV2({
   className,
 }: SanitaryAnimalSummaryPanelV2Props) {
   const [technicalOpen, setTechnicalOpen] = useState(false);
+  const animal = useMemo(() => {
+    if (!animalSummary || !complianceSource?.fazendaId) return animalSummary;
+    if (complianceSource.fazendaId !== animalSummary.fazendaId) return animalSummary;
+    return { ...animalSummary, uf: complianceSource.farmUf };
+  }, [animalSummary, complianceSource]);
   const precheck = useMemo(() => {
     if (!animal || !catalog || !hasLocalCatalog(catalog)) return null;
     return precheckSanitaryProtocolsForAnimalV2({

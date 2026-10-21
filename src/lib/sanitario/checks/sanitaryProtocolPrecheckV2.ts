@@ -637,6 +637,7 @@ function evaluateAdultB19History(
   jurisdictionBlock: SanitaryProtocolPrecheckResultV2 | null,
 ): SanitaryProtocolPrecheckResultV2 {
   const { protocol, item, animal, today, executedHistory } = input;
+  const jurisdictionBlockers = jurisdictionBlock?.blockers ?? [];
   const compatibleHistory = findCompatibleHistoryEvents({
     history: executedHistory,
     animalId: animal.id,
@@ -656,7 +657,7 @@ function evaluateAdultB19History(
       ],
       warnings: [
         "Histórico anterior não registra execução da fazenda nem movimenta estoque.",
-        ...(jurisdictionBlock?.blockers ?? []),
+        ...jurisdictionBlockers,
       ],
     });
   }
@@ -670,7 +671,7 @@ function evaluateAdultB19History(
       reasons: [
         "B19 informada apenas por declaração sem documento suficiente.",
       ],
-      blockers: jurisdictionBlock?.blockers ?? [],
+      blockers: jurisdictionBlockers,
       warnings: [
         "Declaração sem documento pode não liberar pendências críticas.",
       ],
@@ -685,7 +686,7 @@ function evaluateAdultB19History(
     item,
     status: "insufficient_data",
     reasons: ["Fêmea adulta sem comprovação documental de B19."],
-    blockers: jurisdictionBlock?.blockers ?? [],
+    blockers: jurisdictionBlockers,
     warnings: [
       "Não planejar vacinação B19 fora da janela sem comprovação técnica.",
     ],
