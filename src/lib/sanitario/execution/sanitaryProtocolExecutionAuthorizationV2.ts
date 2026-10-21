@@ -102,6 +102,9 @@ export function sanitaryProtocolExecutionRejectionsV2(
 ): string[] {
   const rejected: string[] = [];
   const factual = mode === "executed_fact";
+  if (!factual && agenda.protocol_item_snapshot.planningKind === "avaliacao_manejo_generica") {
+    rejected.push("generic_agenda_requires_explicit_scheme_revalidation");
+  }
   if (protocolUnavailable(agenda, protocol, factual)) {
     rejected.push("protocol_not_available");
   } else if (!factual && protocol && protocolUnapproved(protocol)) {

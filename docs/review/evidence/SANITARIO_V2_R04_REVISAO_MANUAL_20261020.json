@@ -1,0 +1,205 @@
+{
+  "artifact": "sanitario_r04_manual_review_selections",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "backoffice_url": "http://127.0.0.1:5184/admin",
+  "curator_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+  "grant_audit_id": "9fdb61b5-11ca-455c-b262-34fbbc312670",
+  "automatic_approval_authorized": false,
+  "source_packet_sha256": "7978961233575379fa351a9e3d1cbbd093443ed0dd44367890e733dd4e203771",
+  "authenticated_rpc_previews_obtained": false,
+  "decisions": [
+    {
+      "group": "B19",
+      "protocol_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+      "protocol_name": "Brucelose B19",
+      "protocol_version": 1,
+      "scope": "Somente Agenda genérica de avaliação, sem produto/dose/via/carência e sem declarar obrigação em UF risco A.",
+      "items": [
+        {
+          "id": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+          "key": "b19_femeas_3_8_meses",
+          "version": 3
+        }
+      ],
+      "sources": [
+        {
+          "source_key": "SRC_PNCEBT_BRUCELOSE",
+          "title": "Programa Nacional de Controle e Erradicação da Brucelose e da Tuberculose Animal - PNCEBT",
+          "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/pncebt/controle-e-erradicacao-da-brucelose-e-tuberculose-pncebt"
+        },
+        {
+          "source_key": "SRC_BULA_ABORVAC_B19",
+          "title": "Abor-Vac — Vacina contra Brucelose",
+          "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Abor-Vac.pdf"
+        },
+        {
+          "source_key": "SRC_CIDASC_SC_B19_PROHIBITION",
+          "title": "CIDASC — proibição estadual de B19 e uso de RB51",
+          "url": "https://www.cidasc.sc.gov.br/defesasanitariaanimal/defesa-sanitaria-animal-2/"
+        },
+        {
+          "source_key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+          "title": "Portaria SDA/MAPA 1.633/2026 — campanha nacional contra brucelose",
+          "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/pncebt/principais-normas-pncebt/portaria-1-633-de-12-de-junho-de-2026.pdf"
+        },
+        {
+          "source_key": "SRC_MAPA_IN_10_2017_PNCEBT",
+          "title": "Instrução Normativa SDA/MAPA nº 10, de 3 de março de 2017 — Regulamento Técnico do PNCEBT",
+          "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/transito-animal/cgtqa-legis/in-mapa-no-10-3-03-2017-pncebt.pdf"
+        }
+      ],
+      "prepared_request_id": "f3853908-6139-46d6-8861-0ad317a9370f",
+      "actual_rpc_preview": {
+        "reviewed_content_digest": null,
+        "blockers": null,
+        "actor_verified": false
+      },
+      "curator_confirmation": null,
+      "justification": null,
+      "submitted": false
+    },
+    {
+      "group": "PAR",
+      "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+      "protocol_name": "Controle parasitario estrategico recria 5/7/9",
+      "protocol_version": 1,
+      "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
+      "items": [
+        {
+          "id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+          "key": "recria_maio",
+          "version": 2
+        },
+        {
+          "id": "c1866199-bf9d-506e-af05-dd84f3165c90",
+          "key": "recria_julho",
+          "version": 2
+        },
+        {
+          "id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+          "key": "recria_setembro",
+          "version": 2
+        }
+      ],
+      "sources": [
+        {
+          "source_key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+          "url": "https://www.infoteca.cnptia.embrapa.br/bitstream/doc/562842/1/rectec26.pdf"
+        }
+      ],
+      "prepared_request_id": "ea3a973d-bce4-4235-9e6a-a1041f28d78d",
+      "actual_rpc_preview": {
+        "reviewed_content_digest": null,
+        "blockers": null,
+        "actor_verified": false
+      },
+      "curator_confirmation": null,
+      "justification": null,
+      "submitted": false
+    },
+    {
+      "group": "DES",
+      "protocol_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+      "protocol_name": "Vermifugacao pre-desmama",
+      "protocol_version": 1,
+      "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
+      "items": [
+        {
+          "id": "e711773e-88ee-5107-aa73-68e7337468be",
+          "key": "pre_desmama_situacional",
+          "version": 2
+        }
+      ],
+      "sources": [
+        {
+          "source_key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+          "url": "https://www.infoteca.cnptia.embrapa.br/bitstream/doc/562842/1/rectec26.pdf"
+        }
+      ],
+      "prepared_request_id": "6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f",
+      "actual_rpc_preview": {
+        "reviewed_content_digest": null,
+        "blockers": null,
+        "actor_verified": false
+      },
+      "curator_confirmation": null,
+      "justification": null,
+      "submitted": false
+    },
+    {
+      "group": "CONF",
+      "protocol_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+      "protocol_name": "Vermifugacao pre-confinamento ou pasto vedado",
+      "protocol_version": 1,
+      "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
+      "items": [
+        {
+          "id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+          "key": "pre_confinamento_dose_unica",
+          "version": 2
+        }
+      ],
+      "sources": [
+        {
+          "source_key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+          "url": "https://www.infoteca.cnptia.embrapa.br/bitstream/doc/562842/1/rectec26.pdf"
+        }
+      ],
+      "prepared_request_id": "944b6b41-a67f-4634-b241-f7825ce1d47a",
+      "actual_rpc_preview": {
+        "reviewed_content_digest": null,
+        "blockers": null,
+        "actor_verified": false
+      },
+      "curator_confirmation": null,
+      "justification": null,
+      "submitted": false
+    },
+    {
+      "group": "PARTO",
+      "protocol_id": "c51c944b-431f-4533-8505-65bea3bec156",
+      "protocol_name": "Matrizes pre-parto",
+      "protocol_version": 1,
+      "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
+      "items": [
+        {
+          "id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+          "key": "matrizes_pre_parto_antiparasitario",
+          "version": 2
+        }
+      ],
+      "sources": [
+        {
+          "source_key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+          "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+          "url": "https://www.infoteca.cnptia.embrapa.br/bitstream/doc/562842/1/rectec26.pdf"
+        }
+      ],
+      "prepared_request_id": "ee6b3e75-493e-4cb2-9a91-c6aef53847b2",
+      "actual_rpc_preview": {
+        "reviewed_content_digest": null,
+        "blockers": null,
+        "actor_verified": false
+      },
+      "curator_confirmation": null,
+      "justification": null,
+      "submitted": false
+    }
+  ],
+  "manual_steps": [
+    "Log into the existing account at the local Backoffice; open Curadoria sanitária.",
+    "Select exactly one listed protocol version and its listed items; click Revisar conteúdo e fontes.",
+    "Inspect the actual RPC content, sources, versions, blockers and SHA256 digest. This prepared selection is not an RPC preview.",
+    "Stop if any blocker or version/content mismatch exists. Give separate explicit confirmation and justification for each of the five decisions.",
+    "Use the existing publisher to send only the confirmed decision; preserve the publisher-generated request_id on uncertain responses/retries. Record receipt and audit."
+  ],
+  "pending_permissions_or_operations": {
+    "additional_superadmin_grant_required": false,
+    "decisions_require_explicit_confirmation": true,
+    "gates_must_remain_off": true,
+    "r05_authorized": false
+  }
+}

@@ -98,6 +98,7 @@ const catalog: SanitaryProtocolCatalogReadModelV2 = {
 };
 
 const adultFemale: SanitaryPrecheckAnimalResumoV2 = {
+  uf: "MG",
   id: "animal-1",
   especie: "bovino",
   sexo: "F",

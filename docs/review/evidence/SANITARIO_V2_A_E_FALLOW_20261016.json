@@ -1,0 +1,210 @@
+{
+  "baseline_head": "e72bf5004fe2bf8d6a7052dc57ee1167f64ccb7e",
+  "comparison_base": "b7f475e589569a2d80843335dc7d60531c442e08",
+  "command": "pnpm exec fallow audit --base b7f475e589569a2d80843335dc7d60531c442e08 --gate new-only --format json",
+  "fallow_version": "3.17.0",
+  "original_introduced_findings": [
+    {
+      "rule": "complexity/all",
+      "signature": "buildManualSanitaryAgendaRecordsV2",
+      "file": "src/lib/sanitario/agenda/sanitaryManualAgendaV2.ts",
+      "line": 206,
+      "raw_finding": {
+        "path": "src/lib/sanitario/agenda/sanitaryManualAgendaV2.ts",
+        "name": "buildManualSanitaryAgendaRecordsV2",
+        "line": 206,
+        "col": 7,
+        "cyclomatic": 33,
+        "cognitive": 32,
+        "line_count": 116,
+        "param_count": 1,
+        "exceeded": "all",
+        "severity": "high",
+        "crap": 36.7,
+        "coverage_tier": "high",
+        "coverage_source": "estimated",
+        "actions": [
+          {
+            "type": "refactor-function",
+            "auto_fixable": false,
+            "description": "Refactor `buildManualSanitaryAgendaRecordsV2` to reduce complexity (extract helper functions, simplify branching)",
+            "note": "Consider splitting into smaller functions with single responsibilities"
+          },
+          {
+            "type": "suppress-line",
+            "auto_fixable": false,
+            "description": "Suppress with an inline comment above the function declaration",
+            "comment": "// fallow-ignore-next-line complexity",
+            "placement": "above-function-declaration"
+          }
+        ],
+        "introduced": true
+      }
+    },
+    {
+      "rule": "complexity/cognitive_crap",
+      "signature": "ProtocolosSanitarios",
+      "file": "src/pages/ProtocolosSanitarios/index.tsx",
+      "line": 54,
+      "raw_finding": {
+        "path": "src/pages/ProtocolosSanitarios/index.tsx",
+        "name": "ProtocolosSanitarios",
+        "line": 54,
+        "col": 29,
+        "cyclomatic": 16,
+        "cognitive": 21,
+        "line_count": 322,
+        "param_count": 0,
+        "react_hook_count": 11,
+        "react_jsx_max_depth": 9,
+        "react_hook_profile": {
+          "state": 3,
+          "effect": 0,
+          "memo": 0,
+          "callback": 1,
+          "custom": 7
+        },
+        "exceeded": "cognitive_crap",
+        "severity": "high",
+        "crap": 71.3,
+        "coverage_tier": "partial",
+        "coverage_source": "estimated",
+        "actions": [
+          {
+            "type": "increase-coverage",
+            "auto_fixable": false,
+            "description": "Increase test coverage for `ProtocolosSanitarios` (file is reachable from existing tests; add targeted assertions for uncovered branches)",
+            "note": "CRAP = CC^2 * (1 - cov/100)^3 + CC; targeted branch coverage is more efficient than scaffolding new test files when the file already has coverage"
+          },
+          {
+            "type": "refactor-function",
+            "auto_fixable": false,
+            "description": "Refactor `ProtocolosSanitarios` to reduce complexity (extract helper functions, simplify branching)",
+            "note": "Consider splitting into smaller functions with single responsibilities"
+          },
+          {
+            "type": "suppress-line",
+            "auto_fixable": false,
+            "description": "Suppress with an inline comment above the function declaration",
+            "comment": "// fallow-ignore-next-line complexity",
+            "placement": "above-function-declaration"
+          }
+        ],
+        "introduced": true
+      }
+    },
+    {
+      "rule": "complexity/cognitive_crap",
+      "signature": "<arrow>",
+      "file": "src/lib/sanitario/windows/sanitaryProtocolWindowsV2.ts",
+      "line": 595,
+      "raw_finding": {
+        "path": "src/lib/sanitario/windows/sanitaryProtocolWindowsV2.ts",
+        "name": "<arrow>",
+        "line": 595,
+        "col": 5,
+        "cyclomatic": 15,
+        "cognitive": 24,
+        "line_count": 65,
+        "param_count": 0,
+        "exceeded": "cognitive_crap",
+        "severity": "high",
+        "crap": 63.6,
+        "coverage_tier": "partial",
+        "coverage_source": "estimated",
+        "actions": [
+          {
+            "type": "increase-coverage",
+            "auto_fixable": false,
+            "description": "Increase test coverage for `<arrow>` (file is reachable from existing tests; add targeted assertions for uncovered branches)",
+            "note": "CRAP = CC^2 * (1 - cov/100)^3 + CC; targeted branch coverage is more efficient than scaffolding new test files when the file already has coverage"
+          },
+          {
+            "type": "refactor-function",
+            "auto_fixable": false,
+            "description": "Refactor `<arrow>` to reduce complexity (extract helper functions, simplify branching)",
+            "note": "Consider splitting into smaller functions with single responsibilities"
+          },
+          {
+            "type": "suppress-line",
+            "auto_fixable": false,
+            "description": "Suppress with an inline comment above the function declaration",
+            "comment": "// fallow-ignore-next-line complexity",
+            "placement": "above-function-declaration"
+          }
+        ],
+        "introduced": true
+      }
+    },
+    {
+      "rule": "complexity/crap",
+      "signature": "<arrow>",
+      "file": "e2e/sanitary-planning.spec.ts",
+      "line": 12,
+      "raw_finding": {
+        "path": "e2e/sanitary-planning.spec.ts",
+        "name": "<arrow>",
+        "line": 12,
+        "col": 27,
+        "cyclomatic": 14,
+        "cognitive": 14,
+        "line_count": 29,
+        "param_count": 1,
+        "exceeded": "crap",
+        "severity": "high",
+        "crap": 56.3,
+        "coverage_tier": "partial",
+        "coverage_source": "estimated",
+        "actions": [
+          {
+            "type": "increase-coverage",
+            "auto_fixable": false,
+            "description": "Increase test coverage for `<arrow>` (file is reachable from existing tests; add targeted assertions for uncovered branches)",
+            "note": "CRAP = CC^2 * (1 - cov/100)^3 + CC; targeted branch coverage is more efficient than scaffolding new test files when the file already has coverage"
+          },
+          {
+            "type": "suppress-line",
+            "auto_fixable": false,
+            "description": "Suppress with an inline comment above the function declaration",
+            "comment": "// fallow-ignore-next-line complexity",
+            "placement": "above-function-declaration"
+          }
+        ],
+        "introduced": true
+      }
+    }
+  ],
+  "original_attribution": {
+    "gate": "new-only",
+    "dead_code_introduced": 0,
+    "dead_code_inherited": 5,
+    "complexity_introduced": 4,
+    "complexity_inherited": 7,
+    "duplication_introduced": 0,
+    "duplication_inherited": 2,
+    "styling_introduced": 0,
+    "styling_inherited": 0,
+    "duplication_demoted": 0
+  },
+  "final_verdict": "pass",
+  "final_attribution": {
+    "gate": "new-only",
+    "dead_code_introduced": 0,
+    "dead_code_inherited": 5,
+    "complexity_introduced": 0,
+    "complexity_inherited": 19,
+    "duplication_introduced": 0,
+    "duplication_inherited": 6,
+    "styling_introduced": 0,
+    "styling_inherited": 0,
+    "duplication_demoted": 1
+  },
+  "gate_configuration_changed": false,
+  "raw_final_summary": {
+    "dead_code_issues": 5,
+    "dead_code_has_errors": false,
+    "complexity_findings": 19,
+    "max_cyclomatic": 47,
+    "duplication_clone_groups": 6
+  }
+}

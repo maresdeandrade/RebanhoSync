@@ -288,6 +288,7 @@ function buildCatalog(): SanitaryProtocolCatalogReadModelV2 {
 
 const baseAnimal: SanitaryPrecheckAnimalResumoV2 = {
   id: "animal-1",
+  uf: "MG",
   especie: "bovino",
   sexo: "femea",
   nascimento: "2026-01-01",

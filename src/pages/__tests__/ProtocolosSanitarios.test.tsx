@@ -9,6 +9,19 @@ import { useAuth } from "@/hooks/useAuth";
 import ProtocolosSanitarios from "@/pages/ProtocolosSanitarios";
 import { listLocalSanitaryAgendasV2 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
 import { useLiveQuery } from "dexie-react-hooks";
+import { listSanitaryDocumentaryPendenciesV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
+import { pullSanitarioProductClassV2Catalog, pullSanitarioTechnicalCatalogV2, pullSanitarioProtocolCatalogV2 } from "@/lib/offline/pull";
+
+vi.mock("@/lib/offline/pull", () => ({
+  pullSanitarioProductClassV2Catalog: vi.fn().mockResolvedValue(undefined),
+  pullSanitarioTechnicalCatalogV2: vi.fn().mockResolvedValue(undefined),
+  pullSanitarioProtocolCatalogV2: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/sanitario/windows/sanitaryProtocolWindowsV2", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/sanitario/windows/sanitaryProtocolWindowsV2")>();
+  return { ...actual, listSanitaryDocumentaryPendenciesV2: vi.fn(actual.listSanitaryDocumentaryPendenciesV2) };
+});
 
 vi.mock("@/hooks/useAuth");
 vi.mock("dexie-react-hooks", () => ({ useLiveQuery: vi.fn() }));
@@ -29,9 +42,10 @@ const emptyWindowSource = {
 
 function mockLiveQueries(windowSource = emptyWindowSource, localAgenda: unknown[] = []) {
   let call = 0;
+  const source = { farmUf: "MG", ...windowSource };
   vi.mocked(useLiveQuery).mockImplementation(() => {
     call += 1;
-    return call % 2 === 1 ? localAgenda : windowSource;
+    return call % 2 === 1 ? localAgenda : source;
   });
 }
 
@@ -41,10 +55,40 @@ function renderPage(initialEntry = "/protocolos-sanitarios") {
 
 describe("Central Sanitária", () => {
   beforeEach(() => {
+    vi.mocked(listSanitaryDocumentaryPendenciesV2).mockClear();
+    vi.mocked(pullSanitarioProductClassV2Catalog).mockClear();
+    vi.mocked(pullSanitarioTechnicalCatalogV2).mockClear();
+    vi.mocked(pullSanitarioProtocolCatalogV2).mockClear();
     vi.mocked(useLiveQuery).mockReset();
     mockLiveQueries();
     vi.mocked(useAuth).mockReturnValue({ activeFarmId: "farm-1", farmExperienceMode: "completo", role: "manager" } as ReturnType<typeof useAuth>);
     vi.mocked(listLocalSanitaryAgendasV2).mockReturnValue(Promise.resolve([]));
+  });
+
+  it("calcula pendências apenas no Histórico e reutiliza o resultado ao filtrar", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const initial = vi.mocked(listSanitaryDocumentaryPendenciesV2).mock.calls.length;
+    await user.click(screen.getByRole("tab", { name: /Histórico sanitário/ }));
+    const history = vi.mocked(listSanitaryDocumentaryPendenciesV2).mock.calls.length;
+    await user.type(screen.getByLabelText("Texto"), "B19");
+    const filtered = vi.mocked(listSanitaryDocumentaryPendenciesV2).mock.calls.length;
+    console.info("SANITARY_HISTORY_EVALUATIONS", JSON.stringify({ initial, history, filtered }));
+    expect({ initial, history, filtered }).toEqual({ initial: 0, history: 1, filtered: 1 });
+    expect(pullSanitarioProductClassV2Catalog).not.toHaveBeenCalled();
+    expect(pullSanitarioTechnicalCatalogV2).not.toHaveBeenCalled();
+    expect(pullSanitarioProtocolCatalogV2).not.toHaveBeenCalled();
+    expect(screen.getByText("Filtros do histórico sanitário")).toBeInTheDocument();
+  });
+
+  it("preserva a atualização explícita dos três catálogos, sem pull na abertura", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    expect(pullSanitarioProtocolCatalogV2).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Atualizar catálogo" }));
+    expect(pullSanitarioProductClassV2Catalog).toHaveBeenCalledExactlyOnceWith("farm-1");
+    expect(pullSanitarioTechnicalCatalogV2).toHaveBeenCalledExactlyOnceWith("farm-1");
+    expect(pullSanitarioProtocolCatalogV2).toHaveBeenCalledExactlyOnceWith();
   });
 
   it("renderiza as áreas da central com a aba Conformidade ativa", async () => {

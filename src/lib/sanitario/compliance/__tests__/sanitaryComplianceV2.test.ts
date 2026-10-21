@@ -208,6 +208,7 @@ function source(
   } = {},
 ): SanitaryProtocolWindowSourceV2 {
   return {
+    farmUf: "MG",
     catalog: input.catalogOverride ?? catalog,
     animals: input.animals ?? [animal("young", "2026-03-01")],
     lots: [lot],

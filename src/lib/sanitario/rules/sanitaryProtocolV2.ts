@@ -10,6 +10,7 @@ import {
   validateSpeciesAuthorizationV2,
   type SpeciesAuthorizationV2,
 } from "./sanitaryProductV2";
+import { sanitaryHasNoAgendaAutoV2 } from "../agenda/sanitaryPlanningPolicyV2";
 import {
   validateProductRequirementRuleV2,
   type SanitaryProductRequirementRuleV2,
@@ -322,10 +323,20 @@ function collectAuthorizationStatuses(
   return authorizations.map((authorization) => authorization.authorizationStatus);
 }
 
+function autoRestrictionIssues(item: SanitaryProtocolItemVersionV2): SanitaryValidationIssueV2[] {
+  const issues: SanitaryValidationIssueV2[] = [];
+  if (item.allowsAgendaAuto && sanitaryHasNoAgendaAutoV2({ limitations: item.limitations, snapshotTemplate: item.snapshotTemplate ?? {} })) {
+    issues.push({ code: "no_agenda_auto_restriction", severity: "block", field: "allowsAgendaAuto",
+      message: "no_agenda_auto exige revisão técnica versionada antes de permitir automação." });
+  }
+  return issues;
+}
+
 export function validateSanitaryProtocolItemVersionV2(
   item: SanitaryProtocolItemVersionV2,
 ): SanitaryValidationResultV2 {
   const issues: SanitaryValidationIssueV2[] = [];
+  issues.push(...autoRestrictionIssues(item));
 
   if (!item.protocolId || !item.logicalItemKey?.trim()) {
     issues.push({
@@ -406,6 +417,9 @@ export function requiresNewProtocolItemVersionV2(
   next: SanitaryProtocolItemVersionV2,
 ): boolean {
   const semanticPrevious = {
+    allowsAgendaAuto: previous.allowsAgendaAuto,
+    limitations: previous.limitations,
+    snapshotTemplate: previous.snapshotTemplate,
     itemStatus: previous.itemStatus,
     actionType: previous.actionType,
     productRequirementKind: previous.productRequirementKind,
@@ -422,6 +436,9 @@ export function requiresNewProtocolItemVersionV2(
     sourceRefsByField: previous.sourceRefsByField,
   };
   const semanticNext = {
+    allowsAgendaAuto: next.allowsAgendaAuto,
+    limitations: next.limitations,
+    snapshotTemplate: next.snapshotTemplate,
     itemStatus: next.itemStatus,
     actionType: next.actionType,
     productRequirementKind: next.productRequirementKind,

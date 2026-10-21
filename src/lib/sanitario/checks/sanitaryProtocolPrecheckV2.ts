@@ -14,11 +14,13 @@ export type SanitaryPrecheckAnimalResumoV2 = {
   sexo?: "macho" | "femea" | "M" | "F" | string | null;
   nascimento?: string | null;
   categoria?: string | null;
+  lifeStage?: string | null;
   aptidao?: string | null;
   fazendaId: string;
   uf?: string | null;
   riskArea?: boolean | null;
   regionalRiskArea?: boolean | null;
+  riskContext?: boolean | null;
   pregnancyOrPeripartumContext?: boolean | null;
   sanitaryCadence?: "annual" | "semiannual" | null;
   managementContext?:
@@ -293,6 +295,20 @@ function isDeclaredHistorySource(
   );
 }
 
+export function readSanitaryPlanningHistoryV2(input: {
+  catalog: SanitaryProtocolCatalogReadModelV2; protocol: SanitaryProtocolV2ReadModel;
+  item: SanitaryProtocolItemV2ReadModel; animalId: string;
+  history: SanitaryExecutedHistoryV2[]; today: string;
+}) {
+  const requirement = resolveHistoryRequirement(input.item, input.catalog.items);
+  const common = { history: input.history, animalId: input.animalId,
+    protocolId: input.protocol.id, familyCode: input.protocol.familyCode, today: input.today };
+  const anchor = requirement ? findRequiredExecutedHistory({ ...common, requirement, productId: input.item.productId }) : null;
+  const completion = findCompatibleHistoryEvents({ ...common, itemKey: input.item.logicalItemKey })
+    .find((event) => isDocumentedHistorySource(event) && !event.dateApproximate && (!input.item.productId || event.productId === input.item.productId));
+  return { anchor, completion, requirement, completedInitial: !requirement && Boolean(completion) };
+}
+
 function findCompatibleHistoryEvents(input: {
   history: SanitaryExecutedHistoryV2[];
   animalId: string;
@@ -326,6 +342,7 @@ function findRequiredExecutedHistory(input: {
   protocolId: string;
   familyCode: string;
   today: string;
+  productId?: string | null;
 }): SanitaryExecutedHistoryEventV2 | null {
   if (
     input.requirement.kind === "previous_dose" &&
@@ -341,6 +358,7 @@ function findRequiredExecutedHistory(input: {
 
   const compatibleEvents = animalHistory.events
     .filter((event) => {
+      if (input.productId && event.productId !== input.productId) return false;
       if (!isDocumentedHistorySource(event)) return false;
       if (event.dateApproximate) return false;
       if (!event.familyCode || !event.itemKey) return false;
@@ -499,6 +517,7 @@ function evaluateHistoryRequirement(input: {
     protocolId: input.protocol.id,
     familyCode: input.protocol.familyCode,
     today: input.today,
+    productId: input.item.productId,
   });
 
   if (!historyEvent) {
@@ -585,9 +604,8 @@ function evaluateB19Jurisdiction(
   item: SanitaryProtocolItemV2ReadModel,
   animal: SanitaryPrecheckAnimalResumoV2,
 ): SanitaryProtocolPrecheckResultV2 | null {
-  if (protocol.metadata.requires_uf_context !== true) return null;
   const uf = animal.uf?.trim().toUpperCase();
-  const excluded = readStringArray(protocol.metadata.excluded_ufs);
+  const excluded = ["SC", ...readStringArray(protocol.metadata.excluded_ufs), ...readStringArray(item.eligibilityRule.excluded_ufs)].map((value) => value.toUpperCase());
   if (!uf) return baseResult({ protocol, item, status: "insufficient_data",
     blockers: ["UF ausente para verificar exceções e proibições regionais de B19."],
   });
@@ -667,10 +685,30 @@ function evaluateAdultB19History(
   });
 }
 
+function evaluateB19Species(animal: SanitaryPrecheckAnimalResumoV2, item: SanitaryProtocolItemV2ReadModel) {
+  if (!animal.especie) return "insufficient_data" as const;
+  if (!["bovino", "bubalino"].includes(normalizeToken(animal.especie)!)) return "not_applicable" as const;
+  return evaluateSpecies(animal, item);
+}
+
+function evaluateB19Completion(input: B19PrecheckInput) {
+  const { protocol, item, animal, today } = input;
+  const prior = findCompatibleHistoryEvents({ history: input.executedHistory, animalId: animal.id,
+    protocolId: protocol.id, familyCode: protocol.familyCode, itemKey: item.logicalItemKey, today });
+  if (prior.some(isDocumentedHistorySource)) {
+    return baseResult({ protocol, item, status: "completed", reasons: ["B19 já comprovada por Evento/histórico documentado."] });
+  }
+  if (prior.length) {
+    return baseResult({ protocol, item, status: "insufficient_data", documentaryPending: true,
+      documentaryPendingReasons: ["Conferir comprovação de B19 antes de planejar nova vacinação."] });
+  }
+  return null;
+}
+
 function evaluateB19(input: B19PrecheckInput): SanitaryProtocolPrecheckResultV2 {
   const { protocol, item, animal, today } = input;
   const jurisdictionBlock = evaluateB19Jurisdiction(protocol, item, animal);
-  const speciesStatus = evaluateSpecies(animal, item);
+  const speciesStatus = evaluateB19Species(animal, item);
   if (speciesStatus) {
     return baseResult({
       protocol,
@@ -734,6 +772,9 @@ function evaluateB19(input: B19PrecheckInput): SanitaryProtocolPrecheckResultV2 
     });
   }
   if (ageMonths > 8) return evaluateAdultB19History(input, jurisdictionBlock);
+
+  const completion = evaluateB19Completion(input);
+  if (completion) return completion;
 
   return baseResult({
     protocol,
@@ -811,31 +852,20 @@ function evaluateRaiva(input: {
   });
 }
 
-function evaluateAntiparasitic(input: {
+type SanitaryItemEvaluationInputV2 = {
   protocol: SanitaryProtocolV2ReadModel;
   item: SanitaryProtocolItemV2ReadModel;
   animal: SanitaryPrecheckAnimalResumoV2;
   today: string;
   historyRequirement: ResolvedHistoryRequirementV2 | null;
   executedHistory: SanitaryExecutedHistoryV2[];
-}): SanitaryProtocolPrecheckResultV2 {
+};
+
+function evaluateAntiparasitic(input: SanitaryItemEvaluationInputV2): SanitaryProtocolPrecheckResultV2 {
   const { protocol, item, animal, today, historyRequirement, executedHistory } =
     input;
-  const speciesStatus = evaluateSpecies(animal, item);
-  if (speciesStatus) {
-    return baseResult({
-      protocol,
-      item,
-      status: speciesStatus,
-      reasons:
-        speciesStatus === "insufficient_data"
-          ? ["Espécie ausente para avaliar antiparasitário."]
-          : ["Espécie fora da regra antiparasitária do catálogo."],
-      warnings: [
-        "Grupo técnico de produtos não valida execução, dose nem carência.",
-      ],
-    });
-  }
+  const prerequisite = evaluateItemPrerequisites(input);
+  if (prerequisite) return prerequisite;
 
   const requiredManagement = (() => {
     if (protocol.familyCode === "vermifugacao_pre_desmama") {
@@ -874,33 +904,6 @@ function evaluateAntiparasitic(input: {
         "Grupo técnico de produtos não valida execução, dose nem carência.",
       ],
     });
-  }
-
-  const requiredCategory = readString(item.eligibilityRule.category);
-  if (requiredCategory) {
-    const category = normalizeToken(animal.categoria);
-    if (!category) {
-      return baseResult({
-        protocol,
-        item,
-        status: "insufficient_data",
-        reasons: ["Categoria ausente para avaliar antiparasitário."],
-        warnings: [
-          "Grupo técnico de produtos não valida execução, dose nem carência.",
-        ],
-      });
-    }
-    if (category !== requiredCategory) {
-      return baseResult({
-        protocol,
-        item,
-        status: "not_applicable",
-        reasons: ["Categoria do animal fora da regra antiparasitária."],
-        warnings: [
-          "Grupo técnico de produtos não valida execução, dose nem carência.",
-        ],
-      });
-    }
   }
 
   if (
@@ -981,49 +984,26 @@ function evaluateAntiparasitic(input: {
   });
 }
 
-function evaluateGenericItem(input: {
-  protocol: SanitaryProtocolV2ReadModel;
-  item: SanitaryProtocolItemV2ReadModel;
-  animal: SanitaryPrecheckAnimalResumoV2;
-  today: string;
-  historyRequirement: ResolvedHistoryRequirementV2 | null;
-  executedHistory: SanitaryExecutedHistoryV2[];
-}): SanitaryProtocolPrecheckResultV2 {
+function genericSpeciesReasons(status: SanitaryEligibilityStatus) {
+  return status === "insufficient_data" ? ["Espécie ausente para avaliar item do catálogo."] : ["Espécie fora da regra do item."];
+}
+
+function evaluateItemPrerequisites(input: {
+  protocol: SanitaryProtocolV2ReadModel; item: SanitaryProtocolItemV2ReadModel;
+  animal: SanitaryPrecheckAnimalResumoV2; today: string;
+}) {
+  const failure = evaluateGenericEligibilityContext(input.item, input.animal, input.today);
+  const status = failure?.status ?? evaluateSpecies(input.animal, input.item);
+  if (!status) return null;
+  return baseResult({ protocol: input.protocol, item: input.item, status,
+    reasons: failure?.reasons ?? genericSpeciesReasons(status) });
+}
+
+function evaluateGenericItem(input: SanitaryItemEvaluationInputV2): SanitaryProtocolPrecheckResultV2 {
   const { protocol, item, animal, today, historyRequirement, executedHistory } =
     input;
-  const speciesStatus = evaluateSpecies(animal, item);
-  if (speciesStatus) {
-    return baseResult({
-      protocol,
-      item,
-      status: speciesStatus,
-      reasons:
-        speciesStatus === "insufficient_data"
-          ? ["Espécie ausente para avaliar item do catálogo."]
-          : ["Espécie fora da regra do item."],
-    });
-  }
-
-  const sexRule = readString(item.eligibilityRule.sex);
-  if (sexRule) {
-    const sex = normalizeSex(animal.sexo);
-    if (!sex) {
-      return baseResult({
-        protocol,
-        item,
-        status: "insufficient_data",
-        reasons: ["Sexo ausente para avaliar item do catálogo."],
-      });
-    }
-    if (sex !== normalizeSex(sexRule)) {
-      return baseResult({
-        protocol,
-        item,
-        status: "not_applicable",
-        reasons: ["Sexo fora da regra do item."],
-      });
-    }
-  }
+  const prerequisite = evaluateItemPrerequisites(input);
+  if (prerequisite) return prerequisite;
 
   const historyResult = evaluateHistoryRequirement({
     protocol,
@@ -1060,6 +1040,55 @@ function evaluateGenericItem(input: {
       "Pré-checagem não cria agenda nem autoriza execução.",
     ],
   });
+}
+
+function evaluateAgeContext(
+  item: SanitaryProtocolItemV2ReadModel, animal: SanitaryPrecheckAnimalResumoV2, today: string,
+): { status: SanitaryEligibilityStatus; reasons: string[] } | null {
+  const min = readNumber(item.eligibilityRule.age_min_months);
+  const max = readNumber(item.eligibilityRule.age_max_months);
+  if ([min, max].every((value) => value === null)) return null;
+  const age = monthsBetween(animal.nascimento ?? "", today);
+  if (age === null) return { status: "insufficient_data", reasons: ["Nascimento válido obrigatório para avaliar idade do esquema."] };
+  if (age < (min ?? 0)) return { status: "not_yet_eligible", reasons: ["Idade abaixo do mínimo do esquema."] };
+  if (age > (max ?? Infinity)) return { status: "not_applicable", reasons: ["Idade acima do máximo do esquema."] };
+  return null;
+}
+
+function matchesSanitaryCategory(required: string, animal: SanitaryPrecheckAnimalResumoV2) {
+  const category = normalizeToken(animal.categoria);
+  if (required === "recria") return animal.lifeStage === "recria" || category === "recria";
+  if (required === "bezerro") return category === "bezerro" || category === "bezerra";
+  return category === normalizeToken(required);
+}
+
+function evaluateSexContext(item: SanitaryProtocolItemV2ReadModel, animal: SanitaryPrecheckAnimalResumoV2): { status: SanitaryEligibilityStatus; reasons: string[] } | null {
+  const required = normalizeSex(readString(item.eligibilityRule.sex));
+  if (!required) return null;
+  const sex = normalizeSex(animal.sexo);
+  if (!sex) return { status: "insufficient_data", reasons: ["Sexo necessário para esta regra."] };
+  return sex === required ? null : { status: "not_applicable", reasons: ["Sexo fora da regra do item."] };
+}
+
+function evaluateGenericEligibilityContext(
+  item: SanitaryProtocolItemV2ReadModel, animal: SanitaryPrecheckAnimalResumoV2, today: string,
+): { status: SanitaryEligibilityStatus; reasons: string[] } | null {
+  const ageFailure = evaluateAgeContext(item, animal, today);
+  if (ageFailure) return ageFailure;
+  const sexFailure = evaluateSexContext(item, animal);
+  if (sexFailure) return sexFailure;
+  if (item.eligibilityRule.requires_risk_context === true && animal.riskContext !== true)
+    return { status: "insufficient_data", reasons: ["Contexto de risco sanitário deste item não confirmado."] };
+  return evaluateCategoryContext(item, animal);
+}
+
+function evaluateCategoryContext(item: SanitaryProtocolItemV2ReadModel, animal: SanitaryPrecheckAnimalResumoV2): { status: SanitaryEligibilityStatus; reasons: string[] } | null {
+  const category = readString(item.eligibilityRule.category);
+  if (category && !animal.categoria) return { status: "insufficient_data", reasons: [item.productRequirementKind === "product_class_group" ? "Categoria ausente para avaliar antiparasitário." : "Categoria necessária para este esquema."] };
+  if (category && !matchesSanitaryCategory(category, animal)) {
+    return { status: "not_applicable", reasons: ["Categoria fora da regra do esquema."] };
+  }
+  return null;
 }
 
 function evaluateItemForAnimal(input: {

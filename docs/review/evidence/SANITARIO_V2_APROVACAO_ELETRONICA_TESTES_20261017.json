@@ -1,0 +1,167 @@
+{
+  "artifact": "sanitario_v2_electronic_review_local_evidence",
+  "schema_version": 1,
+  "baseline_main": "1125fb6a21bbf95546ef38a2a51ec2c9aacd54c5",
+  "parent_commit": "22efd83b498280d1f9966c9fd6be78fd16dec74b",
+  "date": "2026-10-17",
+  "remote_writes_performed": false,
+  "operational_approvals_granted": 0,
+  "counts": {
+    "normalized_items": 20,
+    "automation_candidates": 14,
+    "submission_ready": 7,
+    "commercial_evidence_pending": 7,
+    "permanent_automation_restrictions": 6,
+    "native_publisher_approved_fixture_items": 7,
+    "unique_focused_tests_observed": 196
+  },
+  "artifact_sha256": {
+    "docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json": "51df1c3884f463992113d0d3ac89e3c9534ce68726e9829972838cae2132cf73",
+    "docs/review/evidence/SANITARIO_V2_FECHAMENTO_DECISOES_20261016.json": "f7dcda6d73f917177b1f5f358d7c2dae9db289b3b2839ebc7590c5698359c185",
+    "docs/review/evidence/SANITARIO_V2_APROVACAO_PENDENTE_20261017.json": "df1beaccc0dd5a494595fb156e35eca55d67cc923f6d5b420721fc902da99cc5",
+    "supabase/migrations/20261017080447_sanitario_catalog_review_v2.sql": "6b73f0dce568eb37c6941f5fa7354dde7604aeba070a5a815a211fc96efabd1e"
+  },
+  "candidate_sha256": "2b3adab34d0eb58dcc5d8fa976d1cd852d41f204e00063b776e2271d60753fe6",
+  "postgres": {
+    "result": "PASS",
+    "environment": "dedicated local PostgreSQL database; real RLS/roles/locks; JWT transport simulated via PostgREST session claims",
+    "cases": [
+      {
+        "name": "upgrade preserves all original physical versions and rejects obsolete review",
+        "result": "PASS"
+      },
+      {
+        "name": "authenticated non-admin, anonymous and direct global writes cannot approve",
+        "result": "PASS"
+      },
+      {
+        "name": "retired or legally blocked protocol cannot be reactivated by review",
+        "result": "PASS"
+      },
+      {
+        "name": "hash and protocol version divergence fail without audit/publication",
+        "result": "PASS"
+      },
+      {
+        "name": "authorized explicit B19 approval, trusted actor/time, exact scope and lost-ACK replay",
+        "result": "PASS"
+      },
+      {
+        "name": "two reviewers race: one decision wins, other version/hash conflicts",
+        "result": "PASS"
+      },
+      {
+        "name": "audit failure rolls back catalog and same request recovers safely",
+        "result": "PASS"
+      },
+      {
+        "name": "rejection is auditable and does not enable flags",
+        "result": "PASS"
+      },
+      {
+        "name": "registered evidence changes invalidate the reviewed digest",
+        "result": "PASS"
+      },
+      {
+        "name": "all six permanent restrictions and seven commercial evidence gaps stay blocked",
+        "result": "PASS"
+      },
+      {
+        "name": "complete remaining eligible assessments without a farm or veterinarian",
+        "result": "PASS"
+      }
+    ],
+    "approved_in_disposable_database": 7,
+    "disposable_database_removed": true
+  },
+  "supabase_http": {
+    "result": "PASS",
+    "cases": [
+      "HTTP authenticated non-admin rejected",
+      "HTTP JWT reviewer publishes exact B19 version atomically",
+      "HTTP lost-ACK replay returns same audit receipt"
+    ],
+    "baseline_checks": [
+      "authenticated privileges: grants + policies",
+      "user_profiles: privilegio de tabela + RLS",
+      "user_settings: privilegio de tabela + RLS",
+      "1/5 RLS + fluxo owner/fazenda",
+      "2/5 estrutura produtiva + FKs compostas",
+      "3/5 RLS por papel",
+      "4/5 evento sanitario direto sem agenda legada",
+      "5/5 sync-batch real",
+      "OK baseline funcional Supabase validada"
+    ],
+    "own_project_removed": true
+  },
+  "vitest": {
+    "result": "PASS",
+    "focused_run": {
+      "files": 13,
+      "tests": 195
+    },
+    "final_ui_run": {
+      "files": 2,
+      "tests": 9
+    },
+    "unique_tests": 196,
+    "published_catalog_integration": {
+      "tests": 15,
+      "skipped": 0,
+      "generated_item_versions": 7,
+      "same_farm_july_rules": 5,
+      "events_created_by_planning": 0,
+      "stock_movements_created_by_planning": 0
+    }
+  },
+  "fallow": {
+    "result": "pass",
+    "base": "origin/main",
+    "attribution": {
+      "gate": "new-only",
+      "dead_code_introduced": 0,
+      "dead_code_inherited": 5,
+      "complexity_introduced": 0,
+      "complexity_inherited": 18,
+      "duplication_introduced": 0,
+      "duplication_inherited": 5,
+      "styling_introduced": 0,
+      "styling_inherited": 0,
+      "duplication_demoted": 0
+    }
+  },
+  "lint": {
+    "full_run_exit": 0,
+    "final_tsx_scope_exit": 0
+  },
+  "build": {
+    "exit": 0,
+    "warning": "chunks above 500 kB"
+  },
+  "limitations": [
+    "Fixture identities and approvals are synthetic and disposable; no operational signature",
+    "Local generation consumes exact RPC-published rows; automatic remote delivery and multi-device Agenda/plan sync not certified",
+    "No remote staging isolation was certified; no remote write, migration, import, deploy, push or merge executed"
+  ],
+  "documentation_gates": {
+    "command": "pnpm run gates:docs",
+    "exit": 0,
+    "headers": "PASS",
+    "continuity": "PASS",
+    "governance_data_contract": "PASS"
+  },
+  "integrated_main": "b748a5941d513ef3a293e5e8a98f31eb051dfeb6",
+  "native_fixture_candidate_sha256": "42b5455d43360afddaa2560f34f16aafc3f771d5d0eab5f3be085197fa28c037",
+  "post_rebase_verification": {
+    "changed_main_files": [
+      "src/pages/Registrar/__tests__/useRegistrarFinanceiroPackage.test.tsx",
+      "src/pages/Registrar/components/useRegistrarFinanceiroPackage.ts"
+    ],
+    "sanitary_runtime_and_migrations_unchanged": true,
+    "database_payload_equivalent": true,
+    "seven_previous_patches_equivalent": true,
+    "artifact_contract_tests": 20,
+    "artifact_contract_exit": 0,
+    "dry_run_exit": 0
+  }
+}

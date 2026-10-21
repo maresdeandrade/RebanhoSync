@@ -1,0 +1,11 @@
+{
+  "mode": "controlled-existing-backend",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "organization_id": "zrcfplrzfpmihemqaemj",
+  "environment_owner": "maresdeandrade",
+  "reuse_decision_reference": "SANITARIO_V2_BACKEND_EXISTENTE_20261019",
+  "api_url": "https://zqloazqzhwauamcejmuz.supabase.co",
+  "functions_url": "https://zqloazqzhwauamcejmuz.supabase.co/functions/v1",
+  "preview_origin": "http://127.0.0.1:5173",
+  "publishable_key_sha256": "514082c27d1a3b0e87c4e0ea15c93e50a60ac4427401314d77f5941c68b4ceb9"
+}

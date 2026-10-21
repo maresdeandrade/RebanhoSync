@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BookOpenCheck, CalendarClock, History, ShieldCheck } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
 import { SanitaryCompliancePanelV2 } from "@/components/sanitario/SanitaryCompliancePanelV2";
 import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
+import { SanitaryAutomaticPlanPanelV2 } from "@/components/sanitario/SanitaryAutomaticPlanPanelV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,8 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { db } from "@/lib/offline/db";
+import { useSanitaryPlanningRefreshV2 } from "./helpers/useSanitaryPlanningRefreshV2";
 import { useAuth } from "@/hooks/useAuth";
 import {
   cancelLocalSanitaryAgendaV2,
@@ -38,6 +41,9 @@ import {
   loadSanitaryProtocolWindowSourceV2,
   type SanitaryOperationalContextV2,
   type SanitaryProtocolWindowRowV2,
+  type SanitaryProtocolWindowSourceV2,
+  type SanitaryCentralExecutedEventV2,
+  type SanitaryDocumentaryPendencyV2,
 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 
 type CentralSanitaryTab = "janelas" | "agenda" | "historico" | "catalogo" | "conformidade";
@@ -49,10 +55,77 @@ function readCentralSanitaryTab(value: string | null): CentralSanitaryTab {
     : "janelas";
 }
 
+function planningResultMessage(results: Array<{ created: boolean }>) {
+  if (!results.some((result) => result.created)) return "Seleção já planejada. Agendas existentes preservadas.";
+  return results.length === 1 ? "Agenda sanitária criada." : `${results.length} agendas sanitárias agrupadas foram criadas.`;
+}
+
+function currentFarmSource(source: SanitaryProtocolWindowSourceV2 | undefined, farmId: string) {
+  return source?.fazendaId && source.fazendaId !== farmId ? undefined : source;
+}
+
+function responsibleName(user: { email?: string; id: string } | null) {
+  return user?.email ?? user?.id ?? null;
+}
+
+function automationActor(user: { id: string } | null) { return user?.id ?? ""; }
+
+function sourceExecutedEvents(source: SanitaryProtocolWindowSourceV2 | undefined) {
+  return source?.executedEvents ?? [];
+}
+
+function CentralExecutedEvents({ events: executedEvents, onOpen }: { events: SanitaryCentralExecutedEventV2[]; onOpen: () => void }) {
+  return (
+    <>{executedEvents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum evento sanitário executado encontrado nos filtros locais.</p>
+                ) : (
+                  executedEvents.map((event) => (
+                    <div key={event.eventId} className="rounded-lg border border-border/70 bg-background p-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="font-medium">{event.protocolLabel} · {event.itemLabel}</p>
+                          <p className="text-sm text-muted-foreground">{new Date(event.executedAt).toLocaleDateString("pt-BR")} · {event.animalLabel} · {event.lotLabel}</p>
+                          <p className="text-sm text-muted-foreground">{event.productLabel} · {event.doseLabel} · {event.routeLabel}</p>
+                          <p className="text-sm text-muted-foreground">{event.responsibleLabel} · {event.originLabel} · estoque {event.stockLabel} · carência {event.withdrawalLabel}</p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => onOpen()}>Abrir eventos</Button>
+                      </div>
+                    </div>
+                  ))
+                )}</>
+  );
+}
+
+function CentralDocumentaryPendencies({ rows: filteredPendencies }: { rows: SanitaryDocumentaryPendencyV2[] }) {
+  return <>{filteredPendencies.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma pendência documental sanitária encontrada nos filtros locais.</p>
+                ) : (
+                  filteredPendencies.map((pendency) => (
+                    <div key={`${pendency.animalId}:${pendency.protocolLabel}:${pendency.itemLabel}`} className="rounded-lg border border-border/70 bg-background p-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="font-medium">{pendency.protocolLabel} · {pendency.itemLabel}</p>
+                          <p className="text-sm text-muted-foreground">{pendency.lotLabel}</p>
+                          <p className="mt-1 text-sm text-amber-700">{pendency.reasons[0]}</p>
+                        </div>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to={pendency.animalHref}>Abrir animal</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}</>;
+}
+
 const ProtocolosSanitarios = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { activeFarmId, user } = useAuth();
+  const currentFarm = useRef(activeFarmId);
+  currentFarm.current = activeFarmId;
+  const [planningRevision, setPlanningRevision] = useState(0);
+  const refreshPlanning = useCallback(() => setPlanningRevision((value) => value + 1), []);
+  const { refresh, refreshing, refreshError } = useSanitaryPlanningRefreshV2(activeFarmId, refreshPlanning);
   const initialTab = readCentralSanitaryTab(searchParams.get("tab"));
   const initialAnimalId = searchParams.get("animalId");
   const initialLotId = searchParams.get("loteId");
@@ -71,18 +144,19 @@ const ProtocolosSanitarios = () => {
     recordType: "todos" as HistoryRecordFilter,
   });
   const localAgenda = useLiveQuery(
-    () => (activeFarmId ? listLocalSanitaryAgendasV2(activeFarmId) : []),
-    [activeFarmId],
+    () => (activeFarmId ? listLocalSanitaryAgendasV2(activeFarmId, db) : []),
+    [activeFarmId, planningRevision],
   );
   const windowSource = useLiveQuery(
     () => (activeFarmId ? loadSanitaryProtocolWindowSourceV2(activeFarmId) : undefined),
-    [activeFarmId],
+    [activeFarmId, planningRevision],
   );
-  const documentaryPendencies = listSanitaryDocumentaryPendenciesV2({
+  const documentaryDate = new Date().toISOString().slice(0, 10);
+  const documentaryPendencies = useMemo(() => activeTab === "historico" ? listSanitaryDocumentaryPendenciesV2({
     source: windowSource,
-    evaluatedAt: new Date().toISOString().slice(0, 10),
-  });
-  const executedEvents = (windowSource?.executedEvents ?? []).filter((event) => {
+    evaluatedAt: documentaryDate,
+  }) : [], [windowSource, documentaryDate, activeTab]);
+  const executedEvents = sourceExecutedEvents(windowSource).filter((event) => {
     if (historyFilters.recordType !== "todos" && historyFilters.recordType !== "executed_event") return false;
     if (historyFilters.startDate && event.executedAt.slice(0, 10) < historyFilters.startDate) return false;
     if (historyFilters.endDate && event.executedAt.slice(0, 10) > historyFilters.endDate) return false;
@@ -142,6 +216,7 @@ const ProtocolosSanitarios = () => {
   const reschedule = async (agendaId: string, plannedFor: string) => {
     try {
       await rescheduleLocalSanitaryAgendaV2({ agendaId, fazendaId: activeFarmId, plannedFor });
+      refreshPlanning();
       toast.success("Agenda sanitária reagendada.");
     } catch {
       toast.error("Não foi possível reagendar esta agenda.");
@@ -151,6 +226,7 @@ const ProtocolosSanitarios = () => {
   const cancel = async (agendaId: string) => {
     try {
       await cancelLocalSanitaryAgendaV2({ agendaId, fazendaId: activeFarmId });
+      refreshPlanning();
       toast.success("Agenda sanitária cancelada.");
     } catch {
       toast.error("Não foi possível cancelar esta agenda.");
@@ -161,22 +237,21 @@ const ProtocolosSanitarios = () => {
     rows: SanitaryProtocolWindowRowV2[],
     plannedFor: string,
     operationalContext: SanitaryOperationalContextV2,
+    generationMode: "manual" | "automatic" = "manual",
   ) => {
-    try {
-      const results = await createGroupedManualSanitaryAgendasV2({
-        rows,
-        fazendaId: activeFarmId,
-        plannedFor,
-        operationalContext,
-      });
-      toast.success(
-        results.length === 1
-          ? "Agenda sanitária criada."
-          : `${results.length} agendas sanitárias agrupadas foram criadas.`,
-      );
-    } catch {
-      toast.error("Não foi possível planejar as agendas selecionadas.");
-    }
+    const results = await createGroupedManualSanitaryAgendasV2({
+      rows,
+      fazendaId: activeFarmId,
+      plannedFor,
+      operationalContext,
+      generationMode,
+      confirmed: true,
+      createdBy: user?.id,
+    });
+    if (currentFarm.current !== activeFarmId) return;
+    refreshPlanning();
+    setActiveTab("agenda");
+    toast.success(planningResultMessage(results));
   };
 
   const executeAgenda = async (payloads: Array<Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">>) => {
@@ -215,6 +290,12 @@ const ProtocolosSanitarios = () => {
         meta={<><StatusBadge tone="info">Local e offline</StatusBadge><StatusBadge tone="neutral">Execução explícita</StatusBadge></>}
       />
 
+      <div className="space-y-2 text-sm">
+        <Button type="button" variant="outline" disabled={refreshing} onClick={refresh}>{refreshing ? "Atualizando catálogo..." : "Atualizar catálogo"}</Button>
+        <p className="text-muted-foreground">Planejamentos são salvos neste dispositivo e podem ser consultados offline. A sincronização sanitária depende da liberação do ambiente.</p>
+        {refreshError ? <p role="status" className="text-muted-foreground">{refreshError}</p> : null}
+      </div>
+      <SanitaryAutomaticPlanPanelV2 key={activeFarmId} fazendaId={activeFarmId} actorId={automationActor(user)} source={currentFarmSource(windowSource, activeFarmId)} />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="h-auto flex-wrap justify-start">
           <TabsTrigger value="janelas"><CalendarClock className="mr-2 h-4 w-4" />Janelas sanitárias</TabsTrigger>
@@ -226,7 +307,8 @@ const ProtocolosSanitarios = () => {
 
         <TabsContent value="janelas">
           <SanitaryProtocolWindowPanelV2
-            source={windowSource}
+            key={activeFarmId}
+            source={currentFarmSource(windowSource, activeFarmId)}
             initialAnimalId={initialAnimalId}
             initialLotId={initialLotId}
             initialLotContextId={initialLotContextId}
@@ -237,8 +319,9 @@ const ProtocolosSanitarios = () => {
 
         <TabsContent value="agenda">
           <SanitaryLocalAgendaPanelV2
-            items={localAgenda}
-            defaultResponsibleName={user?.email ?? user?.id ?? null}
+            key={activeFarmId}
+            items={localAgenda?.filter((item) => item.fazendaId === activeFarmId)}
+            defaultResponsibleName={responsibleName(user)}
             onReschedule={reschedule}
             onCancel={cancel}
             onExecute={executeAgenda}
@@ -292,23 +375,7 @@ const ProtocolosSanitarios = () => {
             <Card>
               <CardHeader><CardTitle>Eventos executados</CardTitle><CardDescription>Fatos sanitários criados por execução confirmada. Agendas abertas, fechadas ou canceladas não são prova de execução.</CardDescription></CardHeader>
               <CardContent className="space-y-3">
-                {executedEvents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum evento sanitário executado encontrado nos filtros locais.</p>
-                ) : (
-                  executedEvents.map((event) => (
-                    <div key={event.eventId} className="rounded-lg border border-border/70 bg-background p-3">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <p className="font-medium">{event.protocolLabel} · {event.itemLabel}</p>
-                          <p className="text-sm text-muted-foreground">{new Date(event.executedAt).toLocaleDateString("pt-BR")} · {event.animalLabel} · {event.lotLabel}</p>
-                          <p className="text-sm text-muted-foreground">{event.productLabel} · {event.doseLabel} · {event.routeLabel}</p>
-                          <p className="text-sm text-muted-foreground">{event.responsibleLabel} · {event.originLabel} · estoque {event.stockLabel} · carência {event.withdrawalLabel}</p>
-                        </div>
-                        <Button size="sm" variant="outline" onClick={() => navigate("/eventos")}>Abrir eventos</Button>
-                      </div>
-                    </div>
-                  ))
-                )}
+                <CentralExecutedEvents events={executedEvents} onOpen={() => navigate("/eventos")} />
               </CardContent>
             </Card>
             <Card>
@@ -325,24 +392,7 @@ const ProtocolosSanitarios = () => {
                 <CardDescription>Comprovações necessárias antes de tratar histórico externo como evidência suficiente. Não cria agenda automática.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {filteredPendencies.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma pendência documental sanitária encontrada nos filtros locais.</p>
-                ) : (
-                  filteredPendencies.map((pendency) => (
-                    <div key={`${pendency.animalId}:${pendency.protocolLabel}:${pendency.itemLabel}`} className="rounded-lg border border-border/70 bg-background p-3">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <p className="font-medium">{pendency.protocolLabel} · {pendency.itemLabel}</p>
-                          <p className="text-sm text-muted-foreground">{pendency.lotLabel}</p>
-                          <p className="mt-1 text-sm text-amber-700">{pendency.reasons[0]}</p>
-                        </div>
-                        <Button size="sm" variant="outline" asChild>
-                          <Link to={pendency.animalHref}>Abrir animal</Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
+                <CentralDocumentaryPendencies rows={filteredPendencies} />
               </CardContent>
             </Card>
           </div>

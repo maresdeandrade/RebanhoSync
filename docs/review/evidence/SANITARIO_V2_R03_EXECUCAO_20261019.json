@@ -1,0 +1,1874 @@
+{
+  "artifact": "sanitario_r03_import_executed",
+  "schema_version": 1,
+  "result": "R03_CONCLUIDA",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "source_commit": "fda6f0e8c6d0d72f81746d5c4da784012e59e438",
+  "branch": "codex/sanitario-v2-convergencia",
+  "hashes": {
+    "historical_canonical": "51df1c3884f463992113d0d3ac89e3c9534ce68726e9829972838cae2132cf73",
+    "authorized_candidate": "2b3adab34d0eb58dcc5d8fa976d1cd852d41f204e00063b776e2271d60753fe6",
+    "promoted_canonical": "d38da283e9114344c6bacea26b527b3da8cfc1ab1a27737458cad9b8bd4270c0"
+  },
+  "payload_data_unchanged": true,
+  "canonical_importer_modified": false,
+  "remote_inventory": {
+    "items": [
+      {
+        "id": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+        "status": "draft",
+        "version": 3,
+        "limitations": [
+          "requires_mv_cadastrado",
+          "requires_official_record_flow",
+          "requires_marking_when_applicable",
+          "requires_executed_product_snapshot",
+          "requires_product_catalog_validation"
+        ],
+        "protocol_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+        "logical_item_key": "b19_femeas_3_8_meses",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "fe0ddfbc-6b4b-5161-843f-b4cfbd4bff53",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_age_product",
+          "source_gap_bubalino",
+          "product_specific_label_required",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "logical_item_key": "clostridial_primovac_dose1",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "675e30b0-0654-5407-824e-a73eeead11b4",
+        "status": "draft",
+        "version": 3,
+        "limitations": [
+          "source_gap_age_product",
+          "source_gap_bubalino",
+          "product_specific_label_required",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "interval_reference_product_only"
+        ],
+        "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "logical_item_key": "clostridial_primovac_dose2",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "a694a3c6-63b3-5e4b-b035-ceb7b3d0e626",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_age_product",
+          "source_gap_bubalino",
+          "product_specific_label_required",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "logical_item_key": "clostridial_reforco_anual",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "fa867ec0-acdf-4b8c-a12e-2620faca4e08",
+        "status": "draft",
+        "version": 1,
+        "limitations": [
+          "blocked_archived",
+          "routine_vaccination_blocked",
+          "no_product_requirement"
+        ],
+        "protocol_id": "9bec9aff-af10-4960-b567-c5d4698f540f",
+        "logical_item_key": "fmd_bloqueio_vacinacao_rotina",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "dd09c61e-6686-4b1c-99b7-ef9c3f15dc6b",
+        "status": "draft",
+        "version": 1,
+        "limitations": [
+          "blocked_archived",
+          "contingency_only",
+          "no_product_requirement"
+        ],
+        "protocol_id": "9bec9aff-af10-4960-b567-c5d4698f540f",
+        "logical_item_key": "fmd_historico_contingencia",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_product_withdrawal_snapshot",
+          "source_gap_bubalino"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "logical_item_key": "ibr_bvd_primovac_dose1",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+        "status": "draft",
+        "version": 3,
+        "limitations": [
+          "source_gap_product_withdrawal_snapshot",
+          "source_gap_bubalino",
+          "interval_reference_product_only"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "logical_item_key": "ibr_bvd_primovac_dose2",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "85f9ce5a-6173-5183-aca9-c4106ce938cd",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_risk_product",
+          "source_gap_bubalino",
+          "source_gap_product_withdrawal_snapshot"
+        ],
+        "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "logical_item_key": "lepto_primovac_dose1",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "77c52cb2-069e-4d84-89d4-1cb26236ab5a",
+        "status": "draft",
+        "version": 1,
+        "limitations": [
+          "source_gap_risk_product",
+          "source_gap_bubalino",
+          "source_gap_product_withdrawal_snapshot",
+          "leptoferm_bovine_label_supports_single_initial_dose"
+        ],
+        "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "logical_item_key": "lepto_primovac_dose2",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "76e411fe-8690-5229-a3e7-cf0b0d4a2f11",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_risk_product",
+          "source_gap_bubalino",
+          "source_gap_product_withdrawal_snapshot",
+          "semiannual_requires_additional_product_specific_source"
+        ],
+        "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "logical_item_key": "lepto_reforco_anual_semestral",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_executed_product_label",
+          "source_gap_label_or_mv",
+          "gestation_lactation_requires_label_or_mv",
+          "milk_requires_label",
+          "requires_real_product",
+          "class_group_does_not_validate_execution",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "c51c944b-431f-4533-8505-65bea3bec156",
+        "logical_item_key": "matrizes_pre_parto_antiparasitario",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_executed_product_label",
+          "requires_slaughter_withdrawal_review",
+          "requires_destination_context",
+          "requires_real_product",
+          "class_group_does_not_validate_execution",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+        "logical_item_key": "pre_confinamento_dose_unica",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "e711773e-88ee-5107-aa73-68e7337468be",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_executed_product_label",
+          "source_gap_mv_decision",
+          "not_universal",
+          "requires_real_product",
+          "class_group_does_not_validate_execution",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+        "logical_item_key": "pre_desmama_situacional",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
+        "status": "draft",
+        "version": 1,
+        "limitations": [
+          "requires_risk_area_overlay",
+          "requires_focus_or_perifocus_context",
+          "requires_regional_overlay",
+          "source_gap_product_withdrawal_snapshot",
+          "requires_executed_product_snapshot",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "logical_item_key": "raiva_primovac_dose1",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "f62a7a12-0604-4539-8245-5564e4e3592e",
+        "status": "draft",
+        "version": 1,
+        "limitations": [
+          "requires_previous_dose",
+          "requires_risk_area_overlay",
+          "requires_focus_or_perifocus_context",
+          "target_30_days_conservative_no_grace_window",
+          "source_gap_product_withdrawal_snapshot",
+          "requires_executed_product_snapshot",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "logical_item_key": "raiva_primovac_reforco_30d",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "e5430f23-2f84-4812-9caa-85bb6596304d",
+        "status": "draft",
+        "version": 1,
+        "limitations": [
+          "requires_risk_area_overlay",
+          "requires_focus_or_perifocus_context",
+          "annual_if_risk_area",
+          "source_gap_product_withdrawal_snapshot",
+          "requires_executed_product_snapshot",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "logical_item_key": "raiva_reforco_anual_area_risco",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "c1866199-bf9d-506e-af05-dd84f3165c90",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_executed_product_label",
+          "requires_weight",
+          "requires_real_product",
+          "chemical_class_rotation_required",
+          "class_group_does_not_validate_execution",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+        "logical_item_key": "recria_julho",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_executed_product_label",
+          "requires_weight",
+          "requires_real_product",
+          "chemical_class_rotation_required",
+          "class_group_does_not_validate_execution",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+        "logical_item_key": "recria_maio",
+        "allows_agenda_auto": false
+      },
+      {
+        "id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+        "status": "draft",
+        "version": 2,
+        "limitations": [
+          "source_gap_executed_product_label",
+          "requires_weight",
+          "requires_real_product",
+          "chemical_class_rotation_required",
+          "class_group_does_not_validate_execution",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+        "logical_item_key": "recria_setembro",
+        "allows_agenda_auto": false
+      }
+    ],
+    "counts": {
+      "items": 20,
+      "groups": 4,
+      "classes": 8,
+      "members": 12,
+      "sources": 16,
+      "coverage": 71,
+      "products": 3,
+      "protocols": 10
+    },
+    "cli_login": {
+      "expired": false,
+      "valid_until": "2026-10-19T22:00:26.814517+00:00"
+    },
+    "item_status": {
+      "draft": 20
+    },
+    "observed_at": "2026-10-19T21:56:19.172222+00:00",
+    "superadmins": 0,
+    "audit_events": 0,
+    "gates_enabled": 0,
+    "product_status": {
+      "precisa_validar": 3
+    },
+    "automatic_items": 0,
+    "protocol_status": {
+      "draft": 9,
+      "retired": 1
+    },
+    "approved_protocols": 0,
+    "broken_group_links": 0,
+    "non_global_protocols": 0,
+    "broken_item_protocol_links": 0,
+    "duplicate_logical_versions": 0,
+    "broken_coverage_source_links": 0
+  },
+  "curator_account_verified_existing": true,
+  "curator_account_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+  "authorizations": {
+    "R03": "executed",
+    "R04": "not authorized; local preparation only",
+    "R05": "not authorized"
+  },
+  "tests": {
+    "passed": 261,
+    "files": 4,
+    "command": "node node_modules/vitest/vitest.mjs run tests/codex/sanitario-r03-promotion.test.mjs tests/codex/sanitario-v2-publisher.test.mjs tests/codex/sanitario-v2-approval.test.mjs",
+    "initial_failures": [
+      "Raw restricted-record comparison initially differed because the candidate uses normalized field names and omits undefined JSON properties; comparison corrected by normalizing/serializing the historical source, without changing candidate data",
+      "New R03 replay test exposed test double decoding JSON-looking TEXT apresentacao; fixed only the double to match the PostgreSQL TEXT column; canonical importer unchanged"
+    ],
+    "full_regression_repeated": false,
+    "additional_command": "node node_modules/vitest/vitest.mjs run tests/codex/sanitario-v2-contract.test.mjs"
+  },
+  "connection": {
+    "transport": "Existing canonical importer over PostgreSQL session pooler; CLI temporary login credential only in memory; no credential in URL, repo, script or log",
+    "tls": "verify-full with official public Supabase Root 2021 CA",
+    "ca_source": "https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt",
+    "ca_sha256": "700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7",
+    "session_role": "postgres via existing cli_login_postgres SET membership; no GRANT",
+    "cli_initializations": 5,
+    "initialization_outcomes": [
+      "TLS trust chain failure; no catalog write",
+      "Schema access denied before explicit session role; no catalog write",
+      "Pooler ignored startup role option; no catalog write",
+      "Canonical remote dry-run completed; process ended before apply; no catalog write",
+      "Canonical remote dry-run, apply and converged dry-run completed"
+    ],
+    "last_temporary_login_valid_until": "2026-10-19T22:00:26.814517+00:00",
+    "initial_temporary_login_valid_until": "2026-10-19T19:17:31.549893+00:00",
+    "role_memberships_unchanged_md5": "dee7ee3d2b8cf838f3694951944b0f01",
+    "rls_grants_unchanged_md5": "8c3ea75fb2cd6eea16b276764786650b",
+    "final_expiry_check": {
+      "observed_at": "2026-10-19 22:00:41.5491+00",
+      "rolvaliduntil": "2026-10-19 22:00:26.814517+00",
+      "expired": true
+    },
+    "credential_material_persisted": false
+  },
+  "risks": [
+    "CLI authentication renewed/rotated the existing temporary login; no permission/membership change, expiry recorded",
+    "Seven commercial items remain pending and six restricted items remain restricted; no catalog/operational approval granted",
+    "R04 needs separate authorization, auditable permission grant to the identified existing account and real authenticated session; none executed"
+  ],
+  "canonical_execution": {
+    "project_ref": "zqloazqzhwauamcejmuz",
+    "canonical_sha256": "d38da283e9114344c6bacea26b527b3da8cfc1ab1a27737458cad9b8bd4270c0",
+    "commands": [
+      {
+        "mode": "--dry-run",
+        "exit_code": 0,
+        "summaries": [
+          {
+            "create": 144,
+            "update": 0,
+            "skip": 0,
+            "reject": 4
+          }
+        ],
+        "rejections": [
+          "reject sanitario_product_class_group_members_v2 spcgmem_recria_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION",
+          "reject sanitario_product_class_group_members_v2 spcgmem_pre_desmama_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION",
+          "reject sanitario_product_class_group_members_v2 spcgmem_pre_confinamento_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION",
+          "reject sanitario_product_class_group_members_v2 spcgmem_matrizes_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION"
+        ],
+        "error": null
+      },
+      {
+        "mode": "--apply",
+        "exit_code": 0,
+        "summaries": [
+          {
+            "create": 144,
+            "update": 0,
+            "skip": 0,
+            "reject": 4
+          },
+          {
+            "create": 144,
+            "update": 0,
+            "skip": 0,
+            "reject": 4
+          }
+        ],
+        "rejections": [
+          "reject sanitario_product_class_group_members_v2 spcgmem_recria_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION",
+          "reject sanitario_product_class_group_members_v2 spcgmem_pre_desmama_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION",
+          "reject sanitario_product_class_group_members_v2 spcgmem_pre_confinamento_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION",
+          "reject sanitario_product_class_group_members_v2 spcgmem_matrizes_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION"
+        ],
+        "error": null
+      },
+      {
+        "mode": "--dry-run",
+        "exit_code": 0,
+        "summaries": [
+          {
+            "create": 0,
+            "update": 0,
+            "skip": 144,
+            "reject": 4
+          }
+        ],
+        "rejections": [
+          "reject sanitario_product_class_group_members_v2 spcgmem_recria_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION",
+          "reject sanitario_product_class_group_members_v2 spcgmem_pre_desmama_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION",
+          "reject sanitario_product_class_group_members_v2 spcgmem_pre_confinamento_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION",
+          "reject sanitario_product_class_group_members_v2 spcgmem_matrizes_associacoes reason=NOT_A_CLASS_CONFIRMED classification=EXPECTED_REJECTION"
+        ],
+        "error": null
+      }
+    ],
+    "cases": [
+      "remote canonical dry-run: 144 create / 4 expected rejection / no persistent change",
+      "canonical apply committed 144 rows; post-commit canonical dry-run 144 skip / 4 expected rejection"
+    ],
+    "connection": {
+      "current_user": "postgres",
+      "server_address": "2600:1f1e:dbb:f602:5c5b:11e1:b5a3:a9c7/128",
+      "valid_until": "2026-10-19T22:00:26.814Z"
+    },
+    "before": {
+      "audit": 0,
+      "plans": 0,
+      "stock": 0,
+      "events": 3,
+      "ledger": 0,
+      "agendas": 0,
+      "event_md5": "054b258d5653376ff946d8cef3c20338",
+      "gate_rows": 0,
+      "agendas_v2": 0,
+      "config_md5": "a60af9ecee16b8c40c08010c1816faeb",
+      "migrations": 63,
+      "observed_at": "2026-10-19T21:55:28.112937+00:00",
+      "superadmins": 0,
+      "enabled_gates": 0,
+      "rls_grants_md5": "8c3ea75fb2cd6eea16b276764786650b",
+      "memberships_md5": "dee7ee3d2b8cf838f3694951944b0f01"
+    },
+    "initial_plan": [
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE",
+        "canonical_id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_BULA_ABORVAC_B19",
+        "canonical_id": "21100dc5-1485-4c60-93b6-007c39eaa0d1",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026",
+        "canonical_id": "2bfe30a5-8c7e-4949-8133-98380a96d53d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_CIDASC_SC_B19_PROHIBITION",
+        "canonical_id": "59345fb2-bc0b-460f-b60c-084aa7bf2049",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+        "canonical_id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_MAPA_PLANO_CONTINGENCIA_FMD_V2",
+        "canonical_id": "6d71faf9-6f58-473b-a2e1-f136cee4f453",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "canonical_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+        "canonical_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_BULA_LEPTOFERM5",
+        "canonical_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_MAPA_PNEFA_DADOS_VACINACAO",
+        "canonical_id": "bd9b1b9a-7842-414a-b6ab-c807d97f888e",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA",
+        "canonical_id": "ce25d79d-2843-45a8-a872-233eecc6f6f7",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_MAPA_IN_10_2017_PNCEBT",
+        "canonical_id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_PNCEBT_BRUCELOSE",
+        "canonical_id": "d3309c2c-bc43-409a-bd80-952d5ee1523f",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_MAPA_RAIVA_VACINA",
+        "canonical_id": "da121227-8e8a-4a18-b290-0a0528bb5762",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_BULA_POLIGUARD",
+        "canonical_id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fontes_tecnicas_v2",
+        "key": "SRC_BULA_FORTRESS7",
+        "canonical_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:regional_applicability_5_7_9",
+        "canonical_id": "08663e7c-daa7-46c5-aeaa-573d5476f790",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_PNEFA_DADOS_VACINACAO:routine_vaccination_block",
+        "canonical_id": "0bb67245-6327-4b18-bc80-d0f2af0be293",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA:recommendation_2026_2027_df",
+        "canonical_id": "12c41d28-30f9-4fe4-83d8-db4d2d0ce713",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:parasite_resistance",
+        "canonical_id": "18282c10-1203-479a-9244-4bb9d0c8e31d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_FORTRESS7:withdrawal",
+        "canonical_id": "1b2fad62-6321-4218-aa1a-279dd4a24202",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:species_authorization_bubalino",
+        "canonical_id": "216da1d7-076f-4dbe-8504-792c7f87123d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_ABORVAC_B19:sex_age",
+        "canonical_id": "27c3082b-4972-4d7b-87eb-71492fd94d20",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_FORTRESS7:dose_route",
+        "canonical_id": "305eacc6-5cd4-4c70-aa3e-f4298ac04499",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_PLANO_CONTINGENCIA_FMD_V2:emergency_authority",
+        "canonical_id": "30fecad0-3a8b-4a7f-aaaa-3e3c8346d11b",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:product_executed_required",
+        "canonical_id": "37499895-7e25-4f24-9aca-6191cf34eee1",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE:official_record",
+        "canonical_id": "37bd9cf1-2394-4bc8-a763-91584a9396e4",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:chemical_class_rotation",
+        "canonical_id": "39106f32-24ac-4f95-a0ac-1cdf29ab8669",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:meat_withdrawal",
+        "canonical_id": "4bd6b884-65ba-44e0-ba99-aaf657ad8b78",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_CIDASC_SC_B19_PROHIBITION:regional_restrictions",
+        "canonical_id": "4e30c65d-1334-45be-b548-0bcfb899dcd6",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS:national_rule",
+        "canonical_id": "4f075c67-8f84-4959-b2a5-64ec4f0f5f7a",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_10_2017_PNCEBT:species_authorization",
+        "canonical_id": "4f910d70-d9d8-4b8b-959a-257a5447859d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026:regional_rule_go",
+        "canonical_id": "50052075-e097-4309-b77f-8567a6ff9d45",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_PNEFA_DADOS_VACINACAO:national_status",
+        "canonical_id": "521b7127-7b0d-4d36-800e-a8a4be76c024",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_CIDASC_SC_B19_PROHIBITION:legal_requirement",
+        "canonical_id": "531324a5-2b26-493e-9c33-8c652bcc58c2",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_LEPTOFERM5:gestation_lactation",
+        "canonical_id": "544b05f8-f1c4-48bf-93d8-d105da2ec022",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE:regional_restrictions",
+        "canonical_id": "6074dba2-6055-41ec-a4bf-2a2ea49ff817",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE:official_registration",
+        "canonical_id": "61263a7f-c9da-4816-9e7a-0339d07ea1d2",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_LEPTOFERM5:primary_interval",
+        "canonical_id": "61e94ee9-88f3-4ed5-8ea4-233856929d48",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_10_2017_PNCEBT:sex_age",
+        "canonical_id": "631b58f2-49ac-410e-904c-e8d80d403d4c",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE:legal_requirement",
+        "canonical_id": "6680c8da-8f0a-45c3-b47d-81c14af72bda",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:pre_weaning_criteria",
+        "canonical_id": "69a803ce-30c2-4a3c-a85e-24158e97d45e",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_POLIGUARD:reproductive_restrictions",
+        "canonical_id": "6bbcba61-5681-4e70-af50-40b9b296bf44",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_ABORVAC_B19:species_authorization_bubalino",
+        "canonical_id": "6c59987e-b526-4347-9c01-c64979b2915f",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:pre_partum_criteria",
+        "canonical_id": "741baae1-969a-400c-9ede-a50a38837d13",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:pre_confinement_criteria",
+        "canonical_id": "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_10_2017_PNCEBT:responsible_veterinarian",
+        "canonical_id": "7af1b82e-d717-4a5c-a009-07eb109c4c21",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS:product_withdrawal",
+        "canonical_id": "7baf1b60-4f9b-4eb6-954f-550e55573955",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_PNEFA_DADOS_VACINACAO:contingency_emergency",
+        "canonical_id": "7cb81b10-1c97-498a-b4fa-3932d71c90ce",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_FORTRESS7:primary_interval",
+        "canonical_id": "804997a5-4642-4345-b7df-5caa39e3187b",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA:regional_rule_df",
+        "canonical_id": "832b7061-9712-44cc-8462-6903f2ba551a",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_LEPTOFERM5:species_authorization_bubalino",
+        "canonical_id": "884afcff-7658-4a11-b740-067edd1ddb52",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_POLIGUARD:withdrawal",
+        "canonical_id": "88f918c5-a3fc-4d5c-81f4-51cedfee1989",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS:risk_area_recurrence",
+        "canonical_id": "8ba75125-a274-4bd0-8683-d7816b3fa41d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_POLIGUARD:species_authorization_bubalino",
+        "canonical_id": "8f0fc4f3-7f37-4d53-869d-0be110b6d96d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_FORTRESS7:minimum_age_conditions",
+        "canonical_id": "8fd29f84-f026-4470-a77b-95868d2353f8",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_10_2017_PNCEBT:official_vaccination_record",
+        "canonical_id": "948b0fb3-d28b-4d20-8ef2-45633439910c",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS:regional_rule",
+        "canonical_id": "950abb21-d4e3-4720-984b-a9ef14afba32",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE:withdrawal",
+        "canonical_id": "9df1b1cb-bfc9-4253-9ae7-a30e31115d40",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS:risk_focus_perifocus",
+        "canonical_id": "a0021f58-fbf1-4c71-ad9d-b50de669fe3e",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_PLANO_CONTINGENCIA_FMD_V2:species_authorization",
+        "canonical_id": "a3ca6cbd-8379-4733-8185-27124fcb85d0",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_ABORVAC_B19:divergence_norma_bula",
+        "canonical_id": "a68324cc-24d6-4fbd-90fd-8f00d2d0347a",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_POLIGUARD:dose_route",
+        "canonical_id": "ab010fbd-12d3-4ec6-bded-dda208eab1f0",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE:composition_indication",
+        "canonical_id": "b3a9d692-90bb-44fe-86e9-2b3579186ec4",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_POLIGUARD:official_registration",
+        "canonical_id": "c2533d93-9c1f-4be1-85b6-216c3846733b",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_FORTRESS7:species_authorization_bubalino",
+        "canonical_id": "c48604d3-b428-4c0b-b598-1e4f7b38137d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_LEPTOFERM5:recurrence_risk",
+        "canonical_id": "c8327155-9855-4d5c-9638-39797a7bfd79",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:milk_withdrawal",
+        "canonical_id": "c8d8b79a-4119-4964-be2a-40b706a1fc62",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS:primary_booster_interval",
+        "canonical_id": "c92d355b-a2ce-4964-ab52-7dc559f6e082",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_10_2017_PNCEBT:legal_requirement",
+        "canonical_id": "d247d101-eeae-46f4-8b9b-3da1c954af9b",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_POLIGUARD:composition_indication",
+        "canonical_id": "d511cf25-22a1-472e-8050-da737d35397f",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:gestation_lactation",
+        "canonical_id": "da872fb4-5bef-4dd3-92eb-bca554378b8d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_POLIGUARD:primary_schedule",
+        "canonical_id": "e02423d6-4cab-46f4-af73-06a54f5e82dc",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE:primary_schedule",
+        "canonical_id": "e05b6c72-56ba-4884-82c6-e8203bd8abbe",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_FORTRESS7:booster",
+        "canonical_id": "e3909094-9636-45b8-9d0b-10a07ec003c4",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE:reproductive_restrictions",
+        "canonical_id": "e4e9592a-7849-4861-9306-3c6c31937d79",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_LEPTOFERM5:withdrawal",
+        "canonical_id": "eb097b4a-93b8-4c8e-9cfa-4d6f945edf70",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_BULA_LEPTOFERM5:dose_route",
+        "canonical_id": "ebe63954-1b2b-456f-a0fc-a5bbe49f20e4",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS:dose_route",
+        "canonical_id": "efd3a2f5-740d-43df-bb9c-28263449b76c",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_10_2017_PNCEBT:mandatory_marking",
+        "canonical_id": "f484182b-f272-4b16-a19a-aad8bb209c9a",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_PNEFA_DADOS_VACINACAO:species_authorization",
+        "canonical_id": "f51148b9-a553-4285-bf8f-7b49403520de",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF:weight_requirement",
+        "canonical_id": "f9eec01a-66cc-4a8f-9439-1c51f32ac6c1",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA:risk_focus_perifocus_df",
+        "canonical_id": "faad1770-b7f7-4a2e-8211-79310c22eb25",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE:dose_route",
+        "canonical_id": "fc235a01-0bda-4763-b8b3-cff5c2f1bee8",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_PLANO_CONTINGENCIA_FMD_V2:contingency_emergency",
+        "canonical_id": "fc7c759f-ad2e-41d4-b6b0-c6191553e6f9",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_MAPA_IN_10_2017_PNCEBT:divergence_norma_bula",
+        "canonical_id": "fda54bdc-1ac5-4558-a822-7e7b6d1035af",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_fonte_cobertura_campos_v2",
+        "key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE:species_authorization_bubalino",
+        "canonical_id": "ffc25d80-baf2-49ed-aa05-d16d93ea0667",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_produtos_v2",
+        "key": "COMMERCIAL_FORTRESS7_ZOETIS",
+        "canonical_id": "239a438c-abe0-568e-b24b-793001a08f98",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_produtos_v2",
+        "key": "COMMERCIAL_POLIGUARD_MSD",
+        "canonical_id": "4cab4bd3-491d-595b-ab88-3432bcca03c8",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_produtos_v2",
+        "key": "COMMERCIAL_LEPTOFERM5_ZOETIS",
+        "canonical_id": "820e0950-e617-5fcd-a3b7-351f855b2ba4",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_classes_v2",
+        "key": "lactonas_macrociclicas",
+        "canonical_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_classes_v2",
+        "key": "vacina_brucelose_b19",
+        "canonical_id": "6e3d48fe-851e-4db7-aa2f-c2c0d89f069d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_classes_v2",
+        "key": "vacina_raiva_herbivoros",
+        "canonical_id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_classes_v2",
+        "key": "benzimidazois",
+        "canonical_id": "cb2b48d3-25a0-4e09-b3da-39a30a1765d2",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_classes_v2",
+        "key": "vacina_clostridial",
+        "canonical_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_classes_v2",
+        "key": "vacina_leptospirose",
+        "canonical_id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_classes_v2",
+        "key": "vacina_ibr_bvd",
+        "canonical_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_classes_v2",
+        "key": "imidazotiazoleis",
+        "canonical_id": "f7212d4a-1742-4f2a-80c9-ffec7f43b214",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_groups_v2",
+        "key": "pcg_antiparasitarios_recria_estrategicos",
+        "canonical_id": "04339cfd-20f9-4b2b-a2c5-dd9845343982",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_groups_v2",
+        "key": "pcg_antiparasitarios_pre_confinamento",
+        "canonical_id": "11616c8f-d694-4151-93f7-5782dd730866",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_groups_v2",
+        "key": "pcg_antiparasitarios_matrizes_pre_parto",
+        "canonical_id": "1ad28475-b129-498c-9bf2-2b4012b12194",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_groups_v2",
+        "key": "pcg_antiparasitarios_bezerros_pre_desmama",
+        "canonical_id": "3c94ab0b-8d73-4df4-b112-cf3e4ca52756",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_recria_estrategicos:lactonas_macrociclicas",
+        "canonical_id": "0f4c76bf-39e2-4d3a-9887-9ccdce68ad90",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_bezerros_pre_desmama:lactonas_macrociclicas",
+        "canonical_id": "1664b2c7-cd15-40e2-a4f7-06542f98ee2c",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_matrizes_pre_parto:lactonas_macrociclicas",
+        "canonical_id": "3e67a223-9f48-44ae-ac51-509c6cb0ab82",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_pre_confinamento:imidazotiazoleis",
+        "canonical_id": "42d157f5-2a13-4c05-aa77-6b2df5ee14af",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_pre_confinamento:lactonas_macrociclicas",
+        "canonical_id": "50a0c8c7-f8ec-4160-8ba7-ad4825f19556",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_matrizes_pre_parto:imidazotiazoleis",
+        "canonical_id": "6362a7e5-4f03-4636-af31-daff68f80bde",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_bezerros_pre_desmama:imidazotiazoleis",
+        "canonical_id": "8f7b44a0-3026-44ef-a8bd-616a74a91ca1",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_matrizes_pre_parto:benzimidazois",
+        "canonical_id": "9a0e0336-88c4-473a-bd10-3800ca0c2cbf",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_recria_estrategicos:benzimidazois",
+        "canonical_id": "ba926a94-ecb2-428e-9882-ac9e76c67cd4",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_pre_confinamento:benzimidazois",
+        "canonical_id": "c4551f5c-1532-4015-a7cc-618f3bacb208",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_recria_estrategicos:imidazotiazoleis",
+        "canonical_id": "f0157397-8571-49cf-ab4d-6e75e001954e",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "pcg_antiparasitarios_bezerros_pre_desmama:benzimidazois",
+        "canonical_id": "f72c8bce-3377-421a-8723-f2198f3233fc",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolos_v2",
+        "key": "ibr_bvd",
+        "canonical_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolos_v2",
+        "key": "vermifugacao_pre_desmama",
+        "canonical_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolos_v2",
+        "key": "vermifugacao_pre_confinamento_pasto_vedado",
+        "canonical_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolos_v2",
+        "key": "controle_parasitario_recria_5_7_9",
+        "canonical_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolos_v2",
+        "key": "leptospirose",
+        "canonical_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolos_v2",
+        "key": "raiva_herbivoros",
+        "canonical_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolos_v2",
+        "key": "febre_aftosa",
+        "canonical_id": "9bec9aff-af10-4960-b567-c5d4698f540f",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolos_v2",
+        "key": "clostridioses",
+        "canonical_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolos_v2",
+        "key": "matrizes_pre_parto",
+        "canonical_id": "c51c944b-431f-4533-8505-65bea3bec156",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolos_v2",
+        "key": "brucelose_b19",
+        "canonical_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "brucelose_b19:b19_femeas_3_8_meses:v3",
+        "canonical_id": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "raiva_herbivoros:raiva_primovac_dose1:v1",
+        "canonical_id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "controle_parasitario_recria_5_7_9:recria_setembro:v2",
+        "canonical_id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "clostridioses:clostridial_primovac_dose2:v3",
+        "canonical_id": "675e30b0-0654-5407-824e-a73eeead11b4",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "ibr_bvd:ibr_bvd_primovac_dose2:v3",
+        "canonical_id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "leptospirose:lepto_reforco_anual_semestral:v2",
+        "canonical_id": "76e411fe-8690-5229-a3e7-cf0b0d4a2f11",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "leptospirose:lepto_primovac_dose2:v1",
+        "canonical_id": "77c52cb2-069e-4d84-89d4-1cb26236ab5a",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "leptospirose:lepto_primovac_dose1:v2",
+        "canonical_id": "85f9ce5a-6173-5183-aca9-c4106ce938cd",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "ibr_bvd:ibr_bvd_primovac_dose1:v2",
+        "canonical_id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "clostridioses:clostridial_reforco_anual:v2",
+        "canonical_id": "a694a3c6-63b3-5e4b-b035-ceb7b3d0e626",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "vermifugacao_pre_confinamento_pasto_vedado:pre_confinamento_dose_unica:v2",
+        "canonical_id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "controle_parasitario_recria_5_7_9:recria_maio:v2",
+        "canonical_id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "controle_parasitario_recria_5_7_9:recria_julho:v2",
+        "canonical_id": "c1866199-bf9d-506e-af05-dd84f3165c90",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "febre_aftosa:fmd_historico_contingencia:v1",
+        "canonical_id": "dd09c61e-6686-4b1c-99b7-ef9c3f15dc6b",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "matrizes_pre_parto:matrizes_pre_parto_antiparasitario:v2",
+        "canonical_id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "raiva_herbivoros:raiva_reforco_anual_area_risco:v1",
+        "canonical_id": "e5430f23-2f84-4812-9caa-85bb6596304d",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "vermifugacao_pre_desmama:pre_desmama_situacional:v2",
+        "canonical_id": "e711773e-88ee-5107-aa73-68e7337468be",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "raiva_herbivoros:raiva_primovac_reforco_30d:v1",
+        "canonical_id": "f62a7a12-0604-4539-8245-5564e4e3592e",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "febre_aftosa:fmd_bloqueio_vacinacao_rotina:v1",
+        "canonical_id": "fa867ec0-acdf-4b8c-a12e-2620faca4e08",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_protocolo_itens_versions_v2",
+        "key": "clostridioses:clostridial_primovac_dose1:v2",
+        "canonical_id": "fe0ddfbc-6b4b-5161-843f-b4cfbd4bff53",
+        "action": "create",
+        "classification": "CANONICAL_ROW",
+        "reason": ""
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "spcgmem_recria_associacoes",
+        "action": "reject",
+        "classification": "EXPECTED_REJECTION",
+        "reason": "NOT_A_CLASS_CONFIRMED"
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "spcgmem_pre_desmama_associacoes",
+        "action": "reject",
+        "classification": "EXPECTED_REJECTION",
+        "reason": "NOT_A_CLASS_CONFIRMED"
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "spcgmem_pre_confinamento_associacoes",
+        "action": "reject",
+        "classification": "EXPECTED_REJECTION",
+        "reason": "NOT_A_CLASS_CONFIRMED"
+      },
+      {
+        "table": "sanitario_product_class_group_members_v2",
+        "key": "spcgmem_matrizes_associacoes",
+        "action": "reject",
+        "classification": "EXPECTED_REJECTION",
+        "reason": "NOT_A_CLASS_CONFIRMED"
+      }
+    ],
+    "proposed_by_table": {
+      "sanitario_fontes_tecnicas_v2": 16,
+      "sanitario_fonte_cobertura_campos_v2": 71,
+      "sanitario_produtos_v2": 3,
+      "sanitario_product_classes_v2": 8,
+      "sanitario_product_class_groups_v2": 4,
+      "sanitario_product_class_group_members_v2": 12,
+      "sanitario_protocolos_v2": 10,
+      "sanitario_protocolo_itens_versions_v2": 20
+    },
+    "after_dry_run": {
+      "audit": 0,
+      "plans": 0,
+      "stock": 0,
+      "events": 3,
+      "ledger": 0,
+      "agendas": 0,
+      "event_md5": "054b258d5653376ff946d8cef3c20338",
+      "gate_rows": 0,
+      "agendas_v2": 0,
+      "config_md5": "a60af9ecee16b8c40c08010c1816faeb",
+      "migrations": 63,
+      "observed_at": "2026-10-19T21:55:31.490026+00:00",
+      "superadmins": 0,
+      "enabled_gates": 0,
+      "rls_grants_md5": "8c3ea75fb2cd6eea16b276764786650b",
+      "memberships_md5": "dee7ee3d2b8cf838f3694951944b0f01"
+    },
+    "apply_started": true,
+    "after": {
+      "audit": 0,
+      "plans": 0,
+      "stock": 0,
+      "events": 3,
+      "ledger": 0,
+      "agendas": 0,
+      "event_md5": "054b258d5653376ff946d8cef3c20338",
+      "gate_rows": 0,
+      "agendas_v2": 0,
+      "config_md5": "a60af9ecee16b8c40c08010c1816faeb",
+      "migrations": 63,
+      "observed_at": "2026-10-19T21:55:38.981531+00:00",
+      "superadmins": 0,
+      "enabled_gates": 0,
+      "rls_grants_md5": "8c3ea75fb2cd6eea16b276764786650b",
+      "memberships_md5": "dee7ee3d2b8cf838f3694951944b0f01"
+    },
+    "converged_summary": {
+      "create": 0,
+      "update": 0,
+      "skip": 144,
+      "reject": 4
+    },
+    "completed": true
+  },
+  "classification": "R03_CONCLUIDA",
+  "functions_unchanged": true,
+  "item_partition": {
+    "ready_seven": [
+      {
+        "id": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+        "logical_item_key": "b19_femeas_3_8_meses",
+        "version": 3
+      },
+      {
+        "id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+        "logical_item_key": "matrizes_pre_parto_antiparasitario",
+        "version": 2
+      },
+      {
+        "id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+        "logical_item_key": "pre_confinamento_dose_unica",
+        "version": 2
+      },
+      {
+        "id": "e711773e-88ee-5107-aa73-68e7337468be",
+        "logical_item_key": "pre_desmama_situacional",
+        "version": 2
+      },
+      {
+        "id": "c1866199-bf9d-506e-af05-dd84f3165c90",
+        "logical_item_key": "recria_julho",
+        "version": 2
+      },
+      {
+        "id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+        "logical_item_key": "recria_maio",
+        "version": 2
+      },
+      {
+        "id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+        "logical_item_key": "recria_setembro",
+        "version": 2
+      }
+    ],
+    "commercial_pending_seven": [
+      {
+        "id": "fe0ddfbc-6b4b-5161-843f-b4cfbd4bff53",
+        "logical_item_key": "clostridial_primovac_dose1",
+        "version": 2
+      },
+      {
+        "id": "675e30b0-0654-5407-824e-a73eeead11b4",
+        "logical_item_key": "clostridial_primovac_dose2",
+        "version": 3
+      },
+      {
+        "id": "a694a3c6-63b3-5e4b-b035-ceb7b3d0e626",
+        "logical_item_key": "clostridial_reforco_anual",
+        "version": 2
+      },
+      {
+        "id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+        "logical_item_key": "ibr_bvd_primovac_dose1",
+        "version": 2
+      },
+      {
+        "id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+        "logical_item_key": "ibr_bvd_primovac_dose2",
+        "version": 3
+      },
+      {
+        "id": "85f9ce5a-6173-5183-aca9-c4106ce938cd",
+        "logical_item_key": "lepto_primovac_dose1",
+        "version": 2
+      },
+      {
+        "id": "76e411fe-8690-5229-a3e7-cf0b0d4a2f11",
+        "logical_item_key": "lepto_reforco_anual_semestral",
+        "version": 2
+      }
+    ],
+    "restricted_six": [
+      {
+        "id": "fa867ec0-acdf-4b8c-a12e-2620faca4e08",
+        "logical_item_key": "fmd_bloqueio_vacinacao_rotina",
+        "version": 1
+      },
+      {
+        "id": "dd09c61e-6686-4b1c-99b7-ef9c3f15dc6b",
+        "logical_item_key": "fmd_historico_contingencia",
+        "version": 1
+      },
+      {
+        "id": "77c52cb2-069e-4d84-89d4-1cb26236ab5a",
+        "logical_item_key": "lepto_primovac_dose2",
+        "version": 1
+      },
+      {
+        "id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
+        "logical_item_key": "raiva_primovac_dose1",
+        "version": 1
+      },
+      {
+        "id": "f62a7a12-0604-4539-8245-5564e4e3592e",
+        "logical_item_key": "raiva_primovac_reforco_30d",
+        "version": 1
+      },
+      {
+        "id": "e5430f23-2f84-4812-9caa-85bb6596304d",
+        "logical_item_key": "raiva_reforco_anual_area_risco",
+        "version": 1
+      }
+    ]
+  },
+  "final_check": {
+    "dose_rules": 0,
+    "observed_at": "2026-10-19T21:59:45.072983+00:00",
+    "superadmins": 0,
+    "gates_enabled": 0,
+    "product_sources": 0,
+    "withdrawal_rules": 0,
+    "cli_login_expired": false,
+    "catalog_tables_rls": true,
+    "withdrawal_sources": 0,
+    "class_default_rules": 0,
+    "catalog_audit_events": 0,
+    "cli_login_valid_until": "2026-10-19T22:00:26.814517+00:00",
+    "product_authorizations": 0
+  },
+  "verification_classification": "READY",
+  "local_change_paths": [
+    "docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json",
+    "docs/review/evidence/SANITARIO_V2_R03_EXECUCAO_20261019.json",
+    "docs/review/evidence/SANITARIO_V2_R03_EXECUCAO_20261019.md",
+    "docs/review/evidence/SANITARIO_V2_R03_PREPARADA_20261019.md",
+    "docs/review/evidence/SANITARIO_V2_R04_PREPARADA_20261019.json",
+    "docs/review/evidence/SANITARIO_V2_R04_PREPARADA_20261019.md",
+    "docs/technical/SUPABASE_RLS.md",
+    "tests/codex/fixtures/sanitario-v2-before-r03.json",
+    "tests/codex/sanitario-r03-promotion.test.mjs",
+    "tests/codex/sanitario-v2-approval.test.mjs",
+    "tests/codex/sanitario-v2-contract.test.mjs",
+    "tests/codex/sanitario-v2-publisher.test.mjs"
+  ],
+  "canonical_importer_sha256": "535bc48886ceab21ae0b0b9cc3e9be3f9e5e0686acedbcd19b72c82f97036a30"
+}

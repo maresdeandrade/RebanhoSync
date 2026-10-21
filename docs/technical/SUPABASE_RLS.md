@@ -1,7 +1,7 @@
 ```md
 # Supabase RLS — RebanhoSync
 
-Atualizado em: 2026-07-30
+Atualizado em: 2026-10-19
 
 ## Objetivo
 
@@ -32,11 +32,27 @@ Definir o contrato técnico para Supabase, RLS, isolamento multi-tenant, RPCs, p
 
 ## Ambiente atual do Sync Sanitário v2
 
-- Supabase staging: `zqloazqzhwauamcejmuz`.
-- Produção: não alterada.
+- Backend anteriormente chamado staging: `zqloazqzhwauamcejmuz`,
+  confirmado como consumidor do frontend de produção; não é homologação isolada.
+- Nenhum projeto exclusivo de homologação foi comprovado entre os projetos acessíveis.
+- Frontend publicado: sem novo deploy nesta execução.
 - Gate sanitário remoto: desligado e fail-closed.
 - Feature flag local: `false`; não é fronteira de autorização.
 - Rollout para usuários: não autorizado.
+- R01 aplicada ao backend existente de testes em 19/10/2026: 63 migrations, curadoria/plano/reagendamento
+  instalados, catálogo vazio e gates OFF. Recuperação lógica, compatibilidade e
+  efeito auxiliar de login da CLI: [evidência R01](../review/evidence/SANITARIO_V2_R01_APLICADA_20261019.md).
+- R02 publicada em 19/10/2026: `sync-batch` v27 → v28, `verify_jwt=true`, 14 arquivos
+  conferidos após download e secrets preservados por digest. Gates OFF e catálogo vazio.
+  Smoke remoto autenticado não certificado por ausência de sessão acessível:
+  [evidência R02](../review/evidence/SANITARIO_V2_R02_EXECUCAO_20261019.md).
+  R03 executada em 19/10/2026: 144 registros de catálogo, incluindo 20 itens draft,
+  sem aprovação ou automação; dry-run posterior com 144 skips e quatro rejeições esperadas.
+  [Evidência R03](../review/evidence/SANITARIO_V2_R03_EXECUCAO_20261019.md).
+  R04: concessão administrativa explicitamente autorizada e auditada em 20/10/2026,
+  exclusivamente à conta principal identificada; decisões curatoriais ainda pendentes.
+  [Evidência da concessão R04](../review/evidence/SANITARIO_V2_R04_CONCESSAO_20261020.md).
+  Gates permanecem OFF; R05 sem autorização.
 
 A fundação de RLS e isolamento multi-tenant/fazenda do Sync Sanitário v2 está tecnicamente concluída. Isso não conclui o sync nem autoriza rollout.
 
@@ -124,6 +140,31 @@ Functions/triggers devem:
 * alterar migration ativa sem tarefa explícita.
 
 ---
+
+### Curadoria global sanitária V2
+
+`20261017080447_sanitario_catalog_review_v2.sql` acrescenta `sanitario_catalog_review_preview_v2` e `sanitario_catalog_decide_v2`. Somente `authenticated` pode chamá-las; ambas exigem `auth.uid()` e `is_app_admin()`. A decisão bloqueia a associação em `app_superadmins` durante a transação. Os helpers internos não são executáveis pelas roles de API. Os grants/RLS de escrita direta no catálogo global permanecem restritos.
+
+O servidor define ator, timestamp e referência auditável; o cliente não fornece identidade ou assinatura. Hash SHA-256 inclui protocolo, itens, fontes, coberturas e produtos registrados. A RPC recusa versões divergentes/obsoletas, fontes insuficientes e restrições permanentes. Locks de protocolo, itens e evidências impedem publicação sobre conteúdo concorrente; o ID da intenção serializa retries. O mesmo pedido/ator retorna o recibo imutável existente, e reutilização divergente é conflito.
+
+A promoção e a inserção em `app_admin_audit_events` pertencem à mesma transação: falha na auditoria reverte estados e permissões. Nenhuma nova tabela é fonte de aprovação. A mudança é aditiva e preserva IDs históricos. Intenção pendente no browser não escreve catálogo offline; retomada exige nova chamada autenticada. Clientes anteriores não reconhecem a decisão regional por campo e mantêm a automação correspondente bloqueada. Gates de sync não são habilitados por esta migration. Evidências: [aprovação e homologação](../review/evidence/SANITARIO_V2_APROVACAO_ELETRONICA_20261017.md).
+
+### Plano e Agenda sanitários V2
+
+`20261017195545_sanitario_planning_convergence_v2.sql` acrescenta as RPCs privadas
+`internal_sanitario_sync_v2_set_automation_plan` e
+`internal_sanitario_sync_v2_reschedule_agenda`. Somente service-role pode executá-las;
+o Edge autentica a sessão, e a autorização interna revalida owner/manager, farm,
+contrato e gate. Não há grant novo para escrita direta pela role authenticated.
+
+O plano usa CAS de revisão/conteúdo e o ledger sanitário existente. Um trigger recusa
+alterar seu campo JSON pelo writer genérico ou por perfil obsoleto. Criação automática
+de Agenda revalida a versão publicada e selecionada no plano, além de deduplicar
+intenções entre dispositivos. Cancelamento continua no fechamento canônico existente.
+RLS e FKs de fazenda permanecem; planejamento não concede aprovação global nem gera
+fatos. A migration não ativa gates nem importa catálogo.
+Validado somente em ambientes locais descartáveis:
+[evidências e procedimento](../review/evidence/SANITARIO_V2_HOMOLOGACAO_20261019.md).
 
 ## Validação Supabase
 

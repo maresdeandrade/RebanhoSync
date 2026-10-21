@@ -1,0 +1,825 @@
+{
+  "artifact": "sanitario_v2_r04_completed",
+  "status": "R04_CONCLUIDA",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "source_commit": "0583d7690abfc595d9cec7e6e4fe6522e554746f",
+  "packet": {
+    "path": "SANITARIO_V2_R04_PREPARADA_20261019.json",
+    "sha256": "7978961233575379fa351a9e3d1cbbd093443ed0dd44367890e733dd4e203771",
+    "unchanged": true
+  },
+  "authorization": "Explicit owner confirmation of all five sets in current chat; B19 uses the exact subsequent owner justification; other sets preserve their approved proposed justifications.",
+  "administrative_grant": {
+    "user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+    "audit_id": "9fdb61b5-11ca-455c-b262-34fbbc312670",
+    "already_existing": true,
+    "new_grants": 0,
+    "authenticated_getUser_and_is_app_admin_verified": true
+  },
+  "execution": {
+    "channel": "same-origin local browser; real Supabase Auth session",
+    "origin": "http://127.0.0.1:5184",
+    "publisher": "src/lib/sanitario/catalog/sanitaryCatalogReviewV2.ts",
+    "runner": "scripts/codex/sanitario-r04-session.html",
+    "preview_rpc": "sanitario_catalog_review_preview_v2",
+    "decision_rpc": "sanitario_catalog_decide_v2",
+    "previews": 5,
+    "decisions": 5,
+    "identical_authenticated_replays": 5,
+    "credentials_exported": false,
+    "jwt_impersonation": false
+  },
+  "decisions": [
+    {
+      "group": "B19",
+      "request_id": "f3853908-6139-46d6-8861-0ad317a9370f",
+      "blockers_before_decision": [],
+      "confirmed_digest": "6bec021054a6645c098c82841237da36249882f21c93d4db7d7b4a135cf8ff79",
+      "authenticated_replay_identical": true,
+      "audit": {
+        "action": "SANITARY_RULE_DECISION_V2",
+        "receipt": {
+          "result": "approved",
+          "actor_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "decided_at": "2026-10-20T07:16:53.232818+00:00",
+          "approved_at": "2026-10-20T07:16:53.232818+00:00",
+          "protocol_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+          "item_versions": [
+            {
+              "id": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+              "version": 3
+            }
+          ],
+          "justification": "Aprovo a avaliação genérica B19 para fêmeas bovinas/bubalinas de 3–8 meses, preservando as regras aplicáveis por UF, a exclusão de SC e a exceção de obrigatoriedade para UF de risco A. A aprovação não define produto, dose, via ou carência e não comprova execução.",
+          "protocol_version": 1,
+          "decision_reference": "sanitary-v2:f3853908-6139-46d6-8861-0ad317a9370f",
+          "reviewed_content_digest": "6bec021054a6645c098c82841237da36249882f21c93d4db7d7b4a135cf8ff79"
+        },
+        "request": {
+          "digest": "6bec021054a6645c098c82841237da36249882f21c93d4db7d7b4a135cf8ff79",
+          "result": "approved",
+          "item_ids": [
+            "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3"
+          ],
+          "protocol_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+          "justification": "Aprovo a avaliação genérica B19 para fêmeas bovinas/bubalinas de 3–8 meses, preservando as regras aplicáveis por UF, a exclusão de SC e a exceção de obrigatoriedade para UF de risco A. A aprovação não define produto, dose, via ou carência e não comprova execução.",
+          "expected_version": 1
+        },
+        "sources": [
+          {
+            "id": "59345fb2-bc0b-460f-b60c-084aa7bf2049",
+            "url": "https://www.cidasc.sc.gov.br/defesasanitariaanimal/defesa-sanitaria-animal-2/",
+            "kind": "norma_oficial",
+            "scope": "global",
+            "title": "CIDASC — proibição estadual de B19 e uso de RB51",
+            "issuer": "CIDASC",
+            "version": null,
+            "metadata": {
+              "section": "Coordenação Estadual de Erradicação de Brucelose e Tuberculose / Vacinação com RB51",
+              "cited_acts": [
+                "Portaria SAR 17/2012",
+                "Portaria SAR 19/2017",
+                "IS 007/2018"
+              ],
+              "document_type": "state_official_program_page",
+              "routine_b19_prohibited": true,
+              "publication_date_unknown": true
+            },
+            "strength": "forte",
+            "created_at": "2026-10-19T21:55:34.830747+00:00",
+            "created_by": null,
+            "deleted_at": null,
+            "fazenda_id": null,
+            "source_key": "SRC_CIDASC_SC_B19_PROHIBITION",
+            "updated_at": "2026-10-19T21:55:34.830747+00:00",
+            "accessed_at": "2026-10-14",
+            "limitations": [
+              "Não autoriza produto comercial nem carência."
+            ],
+            "published_at": null,
+            "evidence_status": "SIM_NORMA",
+            "jurisdiction_uf": "SC",
+            "jurisdiction_zone": null,
+            "jurisdiction_country": "BR"
+          },
+          {
+            "id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+            "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/pncebt/principais-normas-pncebt/portaria-1-633-de-12-de-junho-de-2026.pdf",
+            "kind": "norma_oficial",
+            "scope": "global",
+            "title": "Portaria SDA/MAPA 1.633/2026 — campanha nacional contra brucelose",
+            "issuer": "MAPA/SDA",
+            "version": null,
+            "metadata": {
+              "sections": [
+                "art. 1 §§1-2",
+                "arts. 2-3"
+              ],
+              "document_type": "official_norm_pdf",
+              "proof_deadlines": [
+                "10/07 do ano da vacinação",
+                "10/01 do ano seguinte"
+              ],
+              "document_identifier": "Portaria SDA/MAPA 1.633, de 12/06/2026; DOU 16/06/2026, seção 1, p. 23",
+              "campaign_excludes_risk_class_A": true,
+              "preexisting_state_proof_deadlines_preserved": true
+            },
+            "strength": "forte",
+            "created_at": "2026-10-19T21:55:34.830747+00:00",
+            "created_by": null,
+            "deleted_at": null,
+            "fazenda_id": null,
+            "source_key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+            "updated_at": "2026-10-19T21:55:34.830747+00:00",
+            "accessed_at": "2026-10-14",
+            "limitations": [
+              "Não autoriza produto comercial nem carência."
+            ],
+            "published_at": "2026-06-16",
+            "evidence_status": "SIM_NORMA",
+            "jurisdiction_uf": null,
+            "jurisdiction_zone": null,
+            "jurisdiction_country": "BR"
+          },
+          {
+            "id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+            "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/transito-animal/cgtqa-legis/in-mapa-no-10-3-03-2017-pncebt.pdf",
+            "kind": "norma_oficial",
+            "scope": "global",
+            "title": "Instrução Normativa SDA/MAPA nº 10, de 3 de março de 2017 — Regulamento Técnico do PNCEBT",
+            "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+            "version": "consolidada com alterações até a IN 11/2020",
+            "metadata": {
+              "norm_number": "IN SDA/MAPA 10/2017",
+              "document_type": "official_norm_pdf",
+              "reviewed_sections": [
+                "arts. 9–16",
+                "art. 10: exclusão UF risco A"
+              ],
+              "consolidated_through": "IN 11/2020"
+            },
+            "strength": "forte",
+            "created_at": "2026-10-19T21:55:34.830747+00:00",
+            "created_by": null,
+            "deleted_at": null,
+            "fazenda_id": null,
+            "source_key": "SRC_MAPA_IN_10_2017_PNCEBT",
+            "updated_at": "2026-10-19T21:55:34.830747+00:00",
+            "accessed_at": "2026-10-14",
+            "limitations": [
+              "A norma define o programa e a execução oficial; dose, via e carência continuam produto-específicas."
+            ],
+            "published_at": "2017-03-03",
+            "evidence_status": "SIM_NORMA",
+            "jurisdiction_uf": null,
+            "jurisdiction_zone": null,
+            "jurisdiction_country": "BR"
+          }
+        ],
+        "target_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+        "created_at": "2026-10-20T07:16:53.232818+00:00",
+        "request_id": "f3853908-6139-46d6-8861-0ad317a9370f",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "digest_matches_request": true,
+        "reviewed_content_digest": "6bec021054a6645c098c82841237da36249882f21c93d4db7d7b4a135cf8ff79"
+      }
+    },
+    {
+      "group": "PAR",
+      "request_id": "ea3a973d-bce4-4235-9e6a-a1041f28d78d",
+      "blockers_before_decision": [],
+      "confirmed_digest": "2cbb23339144d507b7809793e0d221c8f43490cb0b5ee9e9186b8fdf28b68843",
+      "authenticated_replay_identical": true,
+      "audit": {
+        "action": "SANITARY_RULE_DECISION_V2",
+        "receipt": {
+          "result": "approved",
+          "actor_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "decided_at": "2026-10-20T07:16:53.812361+00:00",
+          "approved_at": "2026-10-20T07:16:53.812361+00:00",
+          "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+          "item_versions": [
+            {
+              "id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+              "version": 2
+            },
+            {
+              "id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+              "version": 2
+            },
+            {
+              "id": "c1866199-bf9d-506e-af05-dd84f3165c90",
+              "version": 2
+            }
+          ],
+          "justification": "Aprovo exclusivamente avaliação genérica da recria em maio/julho/setembro no DF, condicionada ao contexto da fazenda e à elegibilidade individual. A fonte regional não autoriza extrapolação, rotação química, produto, dose, via ou carência. Gates permanecem OFF.",
+          "protocol_version": 1,
+          "decision_reference": "sanitary-v2:ea3a973d-bce4-4235-9e6a-a1041f28d78d",
+          "reviewed_content_digest": "2cbb23339144d507b7809793e0d221c8f43490cb0b5ee9e9186b8fdf28b68843"
+        },
+        "request": {
+          "digest": "2cbb23339144d507b7809793e0d221c8f43490cb0b5ee9e9186b8fdf28b68843",
+          "result": "approved",
+          "item_ids": [
+            "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+            "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+            "c1866199-bf9d-506e-af05-dd84f3165c90"
+          ],
+          "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+          "justification": "Aprovo exclusivamente avaliação genérica da recria em maio/julho/setembro no DF, condicionada ao contexto da fazenda e à elegibilidade individual. A fonte regional não autoriza extrapolação, rotação química, produto, dose, via ou carência. Gates permanecem OFF.",
+          "expected_version": 1
+        },
+        "sources": [
+          {
+            "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+            "url": "https://www.infoteca.cnptia.embrapa.br/bitstream/doc/562842/1/rectec26.pdf",
+            "kind": "guideline_apoio",
+            "scope": "global",
+            "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+            "issuer": "Embrapa Cerrados",
+            "version": "Recomendação Técnica 26, 1ª edição",
+            "metadata": {
+              "document_type": "technical_recommendation_pdf",
+              "publication_informed": "2001-06"
+            },
+            "strength": "apoio",
+            "created_at": "2026-10-19T21:55:34.830747+00:00",
+            "created_by": null,
+            "deleted_at": null,
+            "fazenda_id": null,
+            "source_key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+            "updated_at": "2026-10-19T21:55:34.830747+00:00",
+            "accessed_at": "2026-10-14",
+            "limitations": [
+              "Recomendação regional para DF/Cerrado; extrapolação para outras regiões exige validação.",
+              "Não substitui bula para produto, dose, via, carência ou autorização por espécie."
+            ],
+            "published_at": null,
+            "evidence_status": "PRECISA_VALIDAR",
+            "jurisdiction_uf": null,
+            "jurisdiction_zone": null,
+            "jurisdiction_country": "BR"
+          }
+        ],
+        "target_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+        "created_at": "2026-10-20T07:16:53.812361+00:00",
+        "request_id": "ea3a973d-bce4-4235-9e6a-a1041f28d78d",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "digest_matches_request": true,
+        "reviewed_content_digest": "2cbb23339144d507b7809793e0d221c8f43490cb0b5ee9e9186b8fdf28b68843"
+      }
+    },
+    {
+      "group": "DES",
+      "request_id": "6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f",
+      "blockers_before_decision": [],
+      "confirmed_digest": "4eff45e967d0847c5d3055cfa0e23f3d85709331655f6905489205b8181e8cfc",
+      "authenticated_replay_identical": true,
+      "audit": {
+        "action": "SANITARY_RULE_DECISION_V2",
+        "receipt": {
+          "result": "approved",
+          "actor_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "decided_at": "2026-10-20T07:16:54.24724+00:00",
+          "approved_at": "2026-10-20T07:16:54.24724+00:00",
+          "protocol_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+          "item_versions": [
+            {
+              "id": "e711773e-88ee-5107-aa73-68e7337468be",
+              "version": 2
+            }
+          ],
+          "justification": "Aprovo exclusivamente avaliação genérica pré-desmama de bovinos no DF, condicionada ao contexto de manejo ou decisão profissional; não constitui tratamento universal nem autoriza produto, dose, via ou carência. Gates permanecem OFF.",
+          "protocol_version": 1,
+          "decision_reference": "sanitary-v2:6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f",
+          "reviewed_content_digest": "4eff45e967d0847c5d3055cfa0e23f3d85709331655f6905489205b8181e8cfc"
+        },
+        "request": {
+          "digest": "4eff45e967d0847c5d3055cfa0e23f3d85709331655f6905489205b8181e8cfc",
+          "result": "approved",
+          "item_ids": [
+            "e711773e-88ee-5107-aa73-68e7337468be"
+          ],
+          "protocol_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+          "justification": "Aprovo exclusivamente avaliação genérica pré-desmama de bovinos no DF, condicionada ao contexto de manejo ou decisão profissional; não constitui tratamento universal nem autoriza produto, dose, via ou carência. Gates permanecem OFF.",
+          "expected_version": 1
+        },
+        "sources": [
+          {
+            "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+            "url": "https://www.infoteca.cnptia.embrapa.br/bitstream/doc/562842/1/rectec26.pdf",
+            "kind": "guideline_apoio",
+            "scope": "global",
+            "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+            "issuer": "Embrapa Cerrados",
+            "version": "Recomendação Técnica 26, 1ª edição",
+            "metadata": {
+              "document_type": "technical_recommendation_pdf",
+              "publication_informed": "2001-06"
+            },
+            "strength": "apoio",
+            "created_at": "2026-10-19T21:55:34.830747+00:00",
+            "created_by": null,
+            "deleted_at": null,
+            "fazenda_id": null,
+            "source_key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+            "updated_at": "2026-10-19T21:55:34.830747+00:00",
+            "accessed_at": "2026-10-14",
+            "limitations": [
+              "Recomendação regional para DF/Cerrado; extrapolação para outras regiões exige validação.",
+              "Não substitui bula para produto, dose, via, carência ou autorização por espécie."
+            ],
+            "published_at": null,
+            "evidence_status": "PRECISA_VALIDAR",
+            "jurisdiction_uf": null,
+            "jurisdiction_zone": null,
+            "jurisdiction_country": "BR"
+          }
+        ],
+        "target_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+        "created_at": "2026-10-20T07:16:54.24724+00:00",
+        "request_id": "6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "digest_matches_request": true,
+        "reviewed_content_digest": "4eff45e967d0847c5d3055cfa0e23f3d85709331655f6905489205b8181e8cfc"
+      }
+    },
+    {
+      "group": "CONF",
+      "request_id": "944b6b41-a67f-4634-b241-f7825ce1d47a",
+      "blockers_before_decision": [],
+      "confirmed_digest": "8d1a9b234d2c7fee699f134fdb997cfb68f259ef656bd4a3be777ec1ac989f9d",
+      "authenticated_replay_identical": true,
+      "audit": {
+        "action": "SANITARY_RULE_DECISION_V2",
+        "receipt": {
+          "result": "approved",
+          "actor_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "decided_at": "2026-10-20T07:16:54.649172+00:00",
+          "approved_at": "2026-10-20T07:16:54.649172+00:00",
+          "protocol_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+          "item_versions": [
+            {
+              "id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+              "version": 2
+            }
+          ],
+          "justification": "Aprovo exclusivamente avaliação genérica pré-confinamento ou pasto vedado para bovinos no DF, exigindo contexto explícito de destino/manejo. O nome do item não autoriza aplicação, produto, dose, via ou carência. Gates permanecem OFF.",
+          "protocol_version": 1,
+          "decision_reference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a",
+          "reviewed_content_digest": "8d1a9b234d2c7fee699f134fdb997cfb68f259ef656bd4a3be777ec1ac989f9d"
+        },
+        "request": {
+          "digest": "8d1a9b234d2c7fee699f134fdb997cfb68f259ef656bd4a3be777ec1ac989f9d",
+          "result": "approved",
+          "item_ids": [
+            "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e"
+          ],
+          "protocol_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+          "justification": "Aprovo exclusivamente avaliação genérica pré-confinamento ou pasto vedado para bovinos no DF, exigindo contexto explícito de destino/manejo. O nome do item não autoriza aplicação, produto, dose, via ou carência. Gates permanecem OFF.",
+          "expected_version": 1
+        },
+        "sources": [
+          {
+            "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+            "url": "https://www.infoteca.cnptia.embrapa.br/bitstream/doc/562842/1/rectec26.pdf",
+            "kind": "guideline_apoio",
+            "scope": "global",
+            "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+            "issuer": "Embrapa Cerrados",
+            "version": "Recomendação Técnica 26, 1ª edição",
+            "metadata": {
+              "document_type": "technical_recommendation_pdf",
+              "publication_informed": "2001-06"
+            },
+            "strength": "apoio",
+            "created_at": "2026-10-19T21:55:34.830747+00:00",
+            "created_by": null,
+            "deleted_at": null,
+            "fazenda_id": null,
+            "source_key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+            "updated_at": "2026-10-19T21:55:34.830747+00:00",
+            "accessed_at": "2026-10-14",
+            "limitations": [
+              "Recomendação regional para DF/Cerrado; extrapolação para outras regiões exige validação.",
+              "Não substitui bula para produto, dose, via, carência ou autorização por espécie."
+            ],
+            "published_at": null,
+            "evidence_status": "PRECISA_VALIDAR",
+            "jurisdiction_uf": null,
+            "jurisdiction_zone": null,
+            "jurisdiction_country": "BR"
+          }
+        ],
+        "target_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+        "created_at": "2026-10-20T07:16:54.649172+00:00",
+        "request_id": "944b6b41-a67f-4634-b241-f7825ce1d47a",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "digest_matches_request": true,
+        "reviewed_content_digest": "8d1a9b234d2c7fee699f134fdb997cfb68f259ef656bd4a3be777ec1ac989f9d"
+      }
+    },
+    {
+      "group": "PARTO",
+      "request_id": "ee6b3e75-493e-4cb2-9a91-c6aef53847b2",
+      "blockers_before_decision": [],
+      "confirmed_digest": "31026dfe2d54546d6c7fba43c6b659f84688b4769420c1d245c13c86e6f80c16",
+      "authenticated_replay_identical": true,
+      "audit": {
+        "action": "SANITARY_RULE_DECISION_V2",
+        "receipt": {
+          "result": "approved",
+          "actor_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+          "decided_at": "2026-10-20T07:16:55.038836+00:00",
+          "approved_at": "2026-10-20T07:16:55.038836+00:00",
+          "protocol_id": "c51c944b-431f-4533-8505-65bea3bec156",
+          "item_versions": [
+            {
+              "id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+              "version": 2
+            }
+          ],
+          "justification": "Aprovo exclusivamente avaliação genérica de matrizes bovinas no DF, condicionada a contexto gestacional/periparto explícito. A fonte não autoriza janela individual, produto, dose, via, segurança em gestação/lactação ou carência. Gates permanecem OFF.",
+          "protocol_version": 1,
+          "decision_reference": "sanitary-v2:ee6b3e75-493e-4cb2-9a91-c6aef53847b2",
+          "reviewed_content_digest": "31026dfe2d54546d6c7fba43c6b659f84688b4769420c1d245c13c86e6f80c16"
+        },
+        "request": {
+          "digest": "31026dfe2d54546d6c7fba43c6b659f84688b4769420c1d245c13c86e6f80c16",
+          "result": "approved",
+          "item_ids": [
+            "e10a3a77-a91e-5fd4-afab-1276526404ef"
+          ],
+          "protocol_id": "c51c944b-431f-4533-8505-65bea3bec156",
+          "justification": "Aprovo exclusivamente avaliação genérica de matrizes bovinas no DF, condicionada a contexto gestacional/periparto explícito. A fonte não autoriza janela individual, produto, dose, via, segurança em gestação/lactação ou carência. Gates permanecem OFF.",
+          "expected_version": 1
+        },
+        "sources": [
+          {
+            "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+            "url": "https://www.infoteca.cnptia.embrapa.br/bitstream/doc/562842/1/rectec26.pdf",
+            "kind": "guideline_apoio",
+            "scope": "global",
+            "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+            "issuer": "Embrapa Cerrados",
+            "version": "Recomendação Técnica 26, 1ª edição",
+            "metadata": {
+              "document_type": "technical_recommendation_pdf",
+              "publication_informed": "2001-06"
+            },
+            "strength": "apoio",
+            "created_at": "2026-10-19T21:55:34.830747+00:00",
+            "created_by": null,
+            "deleted_at": null,
+            "fazenda_id": null,
+            "source_key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+            "updated_at": "2026-10-19T21:55:34.830747+00:00",
+            "accessed_at": "2026-10-14",
+            "limitations": [
+              "Recomendação regional para DF/Cerrado; extrapolação para outras regiões exige validação.",
+              "Não substitui bula para produto, dose, via, carência ou autorização por espécie."
+            ],
+            "published_at": null,
+            "evidence_status": "PRECISA_VALIDAR",
+            "jurisdiction_uf": null,
+            "jurisdiction_zone": null,
+            "jurisdiction_country": "BR"
+          }
+        ],
+        "target_id": "c51c944b-431f-4533-8505-65bea3bec156",
+        "created_at": "2026-10-20T07:16:55.038836+00:00",
+        "request_id": "ee6b3e75-493e-4cb2-9a91-c6aef53847b2",
+        "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "digest_matches_request": true,
+        "reviewed_content_digest": "31026dfe2d54546d6c7fba43c6b659f84688b4769420c1d245c13c86e6f80c16"
+      }
+    }
+  ],
+  "approved_items": [
+    {
+      "id": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+      "key": "b19_femeas_3_8_meses",
+      "version": 3,
+      "status": "active",
+      "allows_agenda_auto": true,
+      "planning_scope": "assessment_only",
+      "region_ufs": null,
+      "product_id": null,
+      "dose_rule": null,
+      "route_rule": null,
+      "decision_reference": "sanitary-v2:f3853908-6139-46d6-8861-0ad317a9370f"
+    },
+    {
+      "id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+      "key": "recria_setembro",
+      "version": 2,
+      "status": "active",
+      "allows_agenda_auto": true,
+      "planning_scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "product_id": null,
+      "dose_rule": {},
+      "route_rule": {},
+      "decision_reference": "sanitary-v2:ea3a973d-bce4-4235-9e6a-a1041f28d78d"
+    },
+    {
+      "id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+      "key": "pre_confinamento_dose_unica",
+      "version": 2,
+      "status": "active",
+      "allows_agenda_auto": true,
+      "planning_scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "product_id": null,
+      "dose_rule": {},
+      "route_rule": {},
+      "decision_reference": "sanitary-v2:944b6b41-a67f-4634-b241-f7825ce1d47a"
+    },
+    {
+      "id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+      "key": "recria_maio",
+      "version": 2,
+      "status": "active",
+      "allows_agenda_auto": true,
+      "planning_scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "product_id": null,
+      "dose_rule": {},
+      "route_rule": {},
+      "decision_reference": "sanitary-v2:ea3a973d-bce4-4235-9e6a-a1041f28d78d"
+    },
+    {
+      "id": "c1866199-bf9d-506e-af05-dd84f3165c90",
+      "key": "recria_julho",
+      "version": 2,
+      "status": "active",
+      "allows_agenda_auto": true,
+      "planning_scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "product_id": null,
+      "dose_rule": {},
+      "route_rule": {},
+      "decision_reference": "sanitary-v2:ea3a973d-bce4-4235-9e6a-a1041f28d78d"
+    },
+    {
+      "id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+      "key": "matrizes_pre_parto_antiparasitario",
+      "version": 2,
+      "status": "active",
+      "allows_agenda_auto": true,
+      "planning_scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "product_id": null,
+      "dose_rule": {},
+      "route_rule": {},
+      "decision_reference": "sanitary-v2:ee6b3e75-493e-4cb2-9a91-c6aef53847b2"
+    },
+    {
+      "id": "e711773e-88ee-5107-aa73-68e7337468be",
+      "key": "pre_desmama_situacional",
+      "version": 2,
+      "status": "active",
+      "allows_agenda_auto": true,
+      "planning_scope": "assessment_only",
+      "region_ufs": [
+        "DF"
+      ],
+      "product_id": null,
+      "dose_rule": {},
+      "route_rule": {},
+      "decision_reference": "sanitary-v2:6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f"
+    }
+  ],
+  "preserved_items": [
+    {
+      "id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
+      "key": "raiva_primovac_dose1",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "manual_only",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "675e30b0-0654-5407-824e-a73eeead11b4",
+      "key": "clostridial_primovac_dose2",
+      "version": 3,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "decision_required",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+      "key": "ibr_bvd_primovac_dose2",
+      "version": 3,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "decision_required",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "76e411fe-8690-5229-a3e7-cf0b0d4a2f11",
+      "key": "lepto_reforco_anual_semestral",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "decision_required",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "77c52cb2-069e-4d84-89d4-1cb26236ab5a",
+      "key": "lepto_primovac_dose2",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "blocked",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "85f9ce5a-6173-5183-aca9-c4106ce938cd",
+      "key": "lepto_primovac_dose1",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "decision_required",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+      "key": "ibr_bvd_primovac_dose1",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "decision_required",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "a694a3c6-63b3-5e4b-b035-ceb7b3d0e626",
+      "key": "clostridial_reforco_anual",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "decision_required",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "dd09c61e-6686-4b1c-99b7-ef9c3f15dc6b",
+      "key": "fmd_historico_contingencia",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "blocked",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "e5430f23-2f84-4812-9caa-85bb6596304d",
+      "key": "raiva_reforco_anual_area_risco",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "manual_only",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "f62a7a12-0604-4539-8245-5564e4e3592e",
+      "key": "raiva_primovac_reforco_30d",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "manual_only",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "fa867ec0-acdf-4b8c-a12e-2620faca4e08",
+      "key": "fmd_bloqueio_vacinacao_rotina",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "blocked",
+      "full_row_identical_to_before": true
+    },
+    {
+      "id": "fe0ddfbc-6b4b-5161-843f-b4cfbd4bff53",
+      "key": "clostridial_primovac_dose1",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "automation_status": "decision_required",
+      "full_row_identical_to_before": true
+    }
+  ],
+  "before": {
+    "gates": [],
+    "stock": {
+      "count": 0,
+      "digest": "d751713988987e9331980363e24189ce"
+    },
+    "agenda": {
+      "count": 0,
+      "digest": "d751713988987e9331980363e24189ce"
+    },
+    "events": {
+      "count": 3,
+      "digest": "054b258d5653376ff946d8cef3c20338"
+    },
+    "migrations": 63,
+    "observed_at": "2026-10-20T07:15:39.525118+00:00",
+    "superadmins": [
+      "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+    ],
+    "event_details": {
+      "count": 0,
+      "digest": "d751713988987e9331980363e24189ce"
+    },
+    "sanitary_agenda": {
+      "count": 0,
+      "digest": "d751713988987e9331980363e24189ce"
+    },
+    "migration_digest": "053dc753e9754cd3514aa296e0904c1d"
+  },
+  "after": {
+    "gates": [],
+    "stock": {
+      "count": 0,
+      "digest": "d751713988987e9331980363e24189ce"
+    },
+    "agenda": {
+      "count": 0,
+      "digest": "d751713988987e9331980363e24189ce"
+    },
+    "events": {
+      "count": 3,
+      "digest": "054b258d5653376ff946d8cef3c20338"
+    },
+    "migrations": 63,
+    "observed_at": "2026-10-20T07:17:39.469106+00:00",
+    "superadmins": [
+      "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+    ],
+    "event_details": {
+      "count": 0,
+      "digest": "d751713988987e9331980363e24189ce"
+    },
+    "sanitary_agenda": {
+      "count": 0,
+      "digest": "d751713988987e9331980363e24189ce"
+    },
+    "migration_digest": "053dc753e9754cd3514aa296e0904c1d"
+  },
+  "checks": {
+    "five_decisions": true,
+    "unique_requests": true,
+    "seven_approved": true,
+    "seven_exact_receipt_versions": true,
+    "thirteen_preserved": true,
+    "actor": true,
+    "gates_off_unchanged": true,
+    "migrations_preserved": true,
+    "domain_unchanged": true,
+    "technical_fields_preserved": true,
+    "superadmins": 1,
+    "grant_audits": 1,
+    "withdrawal_active": 0,
+    "approved_protocols": 5,
+    "duplicate_versions": 0,
+    "approved_protocol_ids": [
+      "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+      "56d66340-e21e-4d60-8933-d99a3514b41d",
+      "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+      "c51c944b-431f-4533-8505-65bea3bec156",
+      "faeb5058-bf8f-46d1-877b-a32c32a62aad"
+    ],
+    "audit_receipts_consistent": true,
+    "all_audit_content_digests_match": true
+  },
+  "sync_batch": {
+    "version": 28,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "ezbr_sha256": "21aa82b9c7c6b41510a93670bab919c9a65362d04d51196913397c106f1809a0"
+  },
+  "restrictions": {
+    "client_rollout_enabled": false,
+    "gates_enabled": 0,
+    "no_farm_created": true,
+    "no_r05_execution": true,
+    "no_migration_deploy_import_push_merge": true,
+    "no_product_dose_route_withdrawal_or_execution_assigned": true
+  },
+  "validation": {
+    "observed_live_authenticated_rpc_execution": true,
+    "independent_read_only_sql_checks": true,
+    "prior_R01_R03_suites_repeated": false
+  }
+}

@@ -1,0 +1,1499 @@
+{
+  "artifact": "sanitario_v2_isolated_homologation_release",
+  "schema_version": 1,
+  "source_commit": "d41290c30461d3195a15eee1eff95ef412384667",
+  "integrated_main": "86c802a111c7ef3ecdd23ae2618190a0d36c5be4",
+  "target": {
+    "state": "NOT_PROVISIONED",
+    "project_ref": null,
+    "organization_id": null,
+    "region_proposal": "sa-east-1",
+    "preview_origin": null,
+    "api_url": null,
+    "functions_url": null,
+    "publishable_key_sha256": null,
+    "must_be_exclusive_project": true,
+    "forbidden_project_refs": [
+      "zqloazqzhwauamcejmuz"
+    ],
+    "forbidden_public_key_sha256": [
+      "514082c27d1a3b0e87c4e0ea15c93e50a60ac4427401314d77f5941c68b4ceb9"
+    ],
+    "reuse_production_auth_users_secrets_data_or_functions": false
+  },
+  "migrations": [
+    {
+      "path": "supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql",
+      "sha256": "d7364c017258a4d72b3e4d3688c1d7c7bef7fd199cf04882d812473c62af984d"
+    },
+    {
+      "path": "supabase/migrations/20260508003000_pasto_ocupacoes.sql",
+      "sha256": "aafb2effd99da90e35e92bf05b909e55d6e1f31047ffff0d1f807a91222a44a9"
+    },
+    {
+      "path": "supabase/migrations/20260508004000_pastos_forrageira_manejo.sql",
+      "sha256": "c399a0ead468ecfea089cfd8970522f40a6077d6eccd0e18805b0989e7110f7e"
+    },
+    {
+      "path": "supabase/migrations/20260508005000_eventos_pasto_avaliacao.sql",
+      "sha256": "95e81847ced161b26040ee5df09896d6caeb2f7b9e0ff51f397925867c3576b6"
+    },
+    {
+      "path": "supabase/migrations/20260511000000_sanitario_complete_agenda_idempotency.sql",
+      "sha256": "bc6ae02f2b4a22bf462590d457f15f5b62af668a97fddd36bff9387d3737387e"
+    },
+    {
+      "path": "supabase/migrations/20260514000000_fix_create_fazenda_primary_membership.sql",
+      "sha256": "04b8f6e64927cabed10e2709f7005b8a4600f92c3b887443079c7fcf28580cdc"
+    },
+    {
+      "path": "supabase/migrations/20260524000000_dry_cow_therapy_agenda_recompute.sql",
+      "sha256": "b4e09b50c1b7e343184032390d21c57ecc5d0b4a995700e6f49b79295fe875ab"
+    },
+    {
+      "path": "supabase/migrations/20260525000000_insumos_inventory.sql",
+      "sha256": "a949becd7476834f1a5efb1c64c73e32fc56795c6494b2345328cef6592595d8"
+    },
+    {
+      "path": "supabase/migrations/20260526000000_anti_zombie_agenda.sql",
+      "sha256": "7fcfc485a8aec67ab66f7918804b94ec1c8a485d35a8f1e965752edec8d2b7c3"
+    },
+    {
+      "path": "supabase/migrations/20260526000100_recompute_on_animal_mutation.sql",
+      "sha256": "75f384bb8c5f04d7cf48271c7d4353fba719dbf959dd815e58e4f5efafeb4b9c"
+    },
+    {
+      "path": "supabase/migrations/20260526000200_reconcile_support_rpcs.sql",
+      "sha256": "62e0ab2bbf4f61bcce7df52c3a12161d84b73d647e9bea870103d8967314ee17"
+    },
+    {
+      "path": "supabase/migrations/20260526000300_vw_animais_peso_atual.sql",
+      "sha256": "a6bd7917f1853ca997caa52dbaf822e422d5a46364b210ebf4e3952794d54d9d"
+    },
+    {
+      "path": "supabase/migrations/20260526000400_vw_animais_carencia_ativa.sql",
+      "sha256": "f3eded9c60811e1ba57bb30c9f35cb0cf26a81843c07e79bd2b585dee48a63db"
+    },
+    {
+      "path": "supabase/migrations/20260526000500_idx_sanitary_completion_key.sql",
+      "sha256": "fb16fd442d0438197fc8be459a1c570f8a0a8c67d175ff0d4d5b06b8c62b152c"
+    },
+    {
+      "path": "supabase/migrations/20260526000600_idx_eventos_unique_source_task.sql",
+      "sha256": "dd49674271212d9dc6bbc216402794d7de55209bcd2d9fdbfde2ee3ee1f8c6c4"
+    },
+    {
+      "path": "supabase/migrations/20260528000001_add_eventos_ecc.sql",
+      "sha256": "9c072cbedf62985f7e85a329b698e5223638817c0c946843ff1a743ad76ed91f"
+    },
+    {
+      "path": "supabase/migrations/20260529000000_insumos_campos_custo_carencia.sql",
+      "sha256": "7dd9bc1f5eca3476e64206f551c46c9fe0373c807157f55b8b5fb2917d98a980"
+    },
+    {
+      "path": "supabase/migrations/20260529000100_update_vw_animais_carencia_ativa.sql",
+      "sha256": "7390997cea0f908e60c24a211bb56b0d89c9447744a9cbf49ada47e903cdc72e"
+    },
+    {
+      "path": "supabase/migrations/20260529000200_financeiro_gerencial.sql",
+      "sha256": "dc0c54f83b8ed954da7c5f8312371932603b33b6d601900bb2370f9a4196366d"
+    },
+    {
+      "path": "supabase/migrations/20260529000300_comercial_operations.sql",
+      "sha256": "f2209f2be80c74d4a000b446e6b329283bf3a4d0836900c03d807390e7c1a7c2"
+    },
+    {
+      "path": "supabase/migrations/20260529000400_sociedade_pecuaria.sql",
+      "sha256": "bcd192162eb075db2d46c9546c112f7970ef2ef0cedba785566f512adb12b509"
+    },
+    {
+      "path": "supabase/migrations/20260530000000_sociedade_pecuaria_sync_metadata.sql",
+      "sha256": "841b66ae3336da53a2e5d317ab049d9ad6636d308912dd7484005f843a371efa"
+    },
+    {
+      "path": "supabase/migrations/20260530000100_sociedade_pecuaria_status_retirado.sql",
+      "sha256": "9fc04be06409d4b80d9f406d1ab443e1e76658c3a39b6f126de5f1654f32bd1b"
+    },
+    {
+      "path": "supabase/migrations/20260531000000_protocolos_sanitarios_itens_immutable_versions.sql",
+      "sha256": "bd944a6dd48fb90721268eac6fff4bd939753758a66fdb4901c922ea318c92cf"
+    },
+    {
+      "path": "supabase/migrations/20260531001000_protocolos_sanitarios_drop_legacy_protocol_item_id.sql",
+      "sha256": "00868f92568be3f5b476a8f95709812a486862697e160ff47c3ec8300ac03ecb"
+    },
+    {
+      "path": "supabase/migrations/20260531002000_eventos_sanitario_operational_traceability.sql",
+      "sha256": "26df354eafb79a0da9e34abd4327897bc6d5724d208165bff5cb822887fa1a34"
+    },
+    {
+      "path": "supabase/migrations/20260601000000_financeiro_estorno_categorias.sql",
+      "sha256": "b6d2fc3af427668c6f0f6abd4c8fae380fb5a50072d659e3f39dfbb07dda19c4"
+    },
+    {
+      "path": "supabase/migrations/20260604090000_insumo_movimentacoes_consumo_nutricao_idempotency.sql",
+      "sha256": "6a9bca040ecfe388b2b4566dd404dd8f39c025829f7d288d6b31e2e28351d126"
+    },
+    {
+      "path": "supabase/migrations/20260606090000_sanitario_agenda_v2_clean_foundation.sql",
+      "sha256": "acbf65b29d94a90011f379b83067bad68875add6d48e515f96d771b1a5ac5f1c"
+    },
+    {
+      "path": "supabase/migrations/20260608090000_sanitario_protocol_product_source_v2.sql",
+      "sha256": "bc56133aa5d2e9bbfbac93e9cb84299f1600f46e26b36582f872773ef2e173a1"
+    },
+    {
+      "path": "supabase/migrations/20260610203500_sanitario_product_class_v2.sql",
+      "sha256": "d5244d274d490c1a0c775995bca948f59b97752c88d485cc0fcfb39fc0a6feee"
+    },
+    {
+      "path": "supabase/migrations/20260615120000_sanitario_protocol_item_product_class_group_v2.sql",
+      "sha256": "60aeefa2bd0b0217cac1137000473c75e23d96eac687696b96de3ee24d95be0a"
+    },
+    {
+      "path": "supabase/migrations/20260722102038_sanitario_sync_v2_expand_foundation.sql",
+      "sha256": "d79727c06284d7a56dbbadba151187ef492c3777bd5a6a6cc7cdf4d9993181f7"
+    },
+    {
+      "path": "supabase/migrations/20260808120000_individual_animal_purchase_sync.sql",
+      "sha256": "05b34004f90839d8eacce7f1cfd245045571246ac98aeb39b5ff4e80df0ab3e8"
+    },
+    {
+      "path": "supabase/migrations/20260813134853_commercial_operation_v2.sql",
+      "sha256": "bbf0ede014dc37a5d0e51207fe7be0955d65bab49a535daf1d3c5ca056e8917b"
+    },
+    {
+      "path": "supabase/migrations/20260813152618_harden_individual_animal_purchase_grants.sql",
+      "sha256": "e14ea82fd3ed0abc56796cdcc57ae57d1a22acc742d22582e73339be38e558a1"
+    },
+    {
+      "path": "supabase/migrations/20260821000000_fix_pgcrypto_digest_search_path.sql",
+      "sha256": "0d5d32a4c2eefe807bcf4b3923521cf2326fe88848e4a142d28e21457b2c53e6"
+    },
+    {
+      "path": "supabase/migrations/20260824100000_app_superadmin_foundation.sql",
+      "sha256": "efd0238418938aa163e43902f7e63b31cf7f859ed88ca35b04cb5bebf161a24b"
+    },
+    {
+      "path": "supabase/migrations/20260824110000_app_superadmin_read_rpcs.sql",
+      "sha256": "b16d168f750c3bf5533ca5e6a5cefd6bf11baea06128ebdda523cc9a0b6bf0bc"
+    },
+    {
+      "path": "supabase/migrations/20260824120000_harden_admin_invites_rpc.sql",
+      "sha256": "3e2b95c2f8409639da1b0fb7144550671d3dff0bb709f28156ad420d2173e7d4"
+    },
+    {
+      "path": "supabase/migrations/20260825080000_app_superadmin_can_create_farm_mutation.sql",
+      "sha256": "7982f81f4d77147ff1ff0f66a774c215c7611049790da2e0a74ada5a28756c8e"
+    },
+    {
+      "path": "supabase/migrations/20260826230107_reconcile_authenticated_table_privileges.sql",
+      "sha256": "8ffe9ffc625151b75e4f3712de9db517fc4422c2a610856135470d1ffe78c0ff"
+    },
+    {
+      "path": "supabase/migrations/20260827100000_harden_internal_and_trigger_function_privileges.sql",
+      "sha256": "e1dbaec815faf78481893218e7859053d9e9b81cc3c92942ea037f7a9189e040"
+    },
+    {
+      "path": "supabase/migrations/20260827110000_harden_domain_and_farm_admin_rpc_privileges.sql",
+      "sha256": "f16a448a6c84ac6a40039e08c4cd4a0ba708a4c6587fd36ded68a9744748856b"
+    },
+    {
+      "path": "supabase/migrations/20260827120000_harden_get_user_emails_rpc.sql",
+      "sha256": "87a9e216e9e4c52079895079e32f47da518fd019e68fa27a037bd1f31d2269c7"
+    },
+    {
+      "path": "supabase/migrations/20260829193636_c2_search_path_hardening.sql",
+      "sha256": "803e64df2c5ba99c00923f1959fd4b4ca9a88f62d482428f1099e310b75f3ee8"
+    },
+    {
+      "path": "supabase/migrations/20260908050000_c3_auth_rls_initplan_hardening.sql",
+      "sha256": "6b5001613ad43e98015621aca6c562ca32ca9b93e9842c7c5d9713d2f0572895"
+    },
+    {
+      "path": "supabase/migrations/20260908060000_c4_1a_exact_permissive_cleanup.sql",
+      "sha256": "f1f35c5554f8e19fd8af6c89c63fde83580b78f6106dc0de288023587478ce86"
+    },
+    {
+      "path": "supabase/migrations/20260908070000_c4_1b_subsumed_operational_cleanup.sql",
+      "sha256": "b8c04ffc452c06e0517ba6d9a4b91d4fccdce7bbd6c9c0cd5c21daea80664bf8"
+    },
+    {
+      "path": "supabase/migrations/20260913232253_f24_acl_forward_only_reconciliation.sql",
+      "sha256": "43d4f6b3ef1c4d72ac2ac65549709e6f41fadb7d7494006b1776566ad3d1ab33"
+    },
+    {
+      "path": "supabase/migrations/20260914014309_f24_1a1_sanitario_reconcile_backend_wrapper.sql",
+      "sha256": "d1238d854d6e53a2130b33f3c373335f70d0c6afa17d761ea98b065e6e39fe12"
+    },
+    {
+      "path": "supabase/migrations/20260923132000_sanitario_source_key_identity.sql",
+      "sha256": "57b47a920fdd8edf4753b72e582fac26a95895885bfb499b988dd3866a8009d8"
+    },
+    {
+      "path": "supabase/migrations/20260927120000_f24_4c_animais_state_revision.sql",
+      "sha256": "ce66713c4c3e5f4abb72b9dfeeb52c7a3d0c36b0e3e17cb96c0030c6e74a9caa"
+    },
+    {
+      "path": "supabase/migrations/20261001200402_f24_4e21a_animal_lot_movement_foundation.sql",
+      "sha256": "7ce21e1c68dee6ab1a4d39f57184f20ab6bb0b9640e4df534f6dd9389f022ab7"
+    },
+    {
+      "path": "supabase/migrations/20261002005751_f24_4e211a_server_completion_gate.sql",
+      "sha256": "d5b9e6fc2bbe06b69947077f1799ad7d50875ab171b6371fbddd6a9792efc174"
+    },
+    {
+      "path": "supabase/migrations/20261003120000_f24_4e2_close_generic_animal_lot_fact_boundary.sql",
+      "sha256": "724f7e8d67d674e75cde203452b728a4b9b51c0f65d9da9249d4288db856b635"
+    },
+    {
+      "path": "supabase/migrations/20261004210000_sanitario_sync_v2_revision_conflict_pt409.sql",
+      "sha256": "6bf645860785678b9543df8a877c7ec2cd49f299acfd9a56e21b5893c4dfccfe"
+    },
+    {
+      "path": "supabase/migrations/20261005175412_f24_4e_lot_pasture_subject_boundary.sql",
+      "sha256": "253562a0b6c1cfc77924f8dda86444b4a169a09ad94f727345b88655792478a7"
+    },
+    {
+      "path": "supabase/migrations/20261008202000_f24_5e3_remote_telemetry_retention.sql",
+      "sha256": "0fc59fae328862b98e66f25126a40e8dde06df6581de31eec88679fd90e5e2db"
+    },
+    {
+      "path": "supabase/migrations/20261008202024_f24_5e3_remote_telemetry_retention_cron.sql",
+      "sha256": "fd8ca0ceca2d6c1fd70abe2a8a9b0d7e383f9eb0bb4b78364953f4eb66a5aacc"
+    },
+    {
+      "path": "supabase/migrations/20261015070038_sanitario_agenda_catalog_v2_references.sql",
+      "sha256": "625fe8940f09476833205d44978031dcfd10223fb0683ee08afd7cd4ed0cd916"
+    },
+    {
+      "path": "supabase/migrations/20261017080447_sanitario_catalog_review_v2.sql",
+      "sha256": "6b73f0dce568eb37c6941f5fa7354dde7604aeba070a5a815a211fc96efabd1e"
+    },
+    {
+      "path": "supabase/migrations/20261017195545_sanitario_planning_convergence_v2.sql",
+      "sha256": "8b6b0577e6f07280ee58ead78221fcec6c5b9973aad8222e225c350a9ff36593"
+    }
+  ],
+  "functions": [
+    {
+      "name": "sync-batch",
+      "verify_jwt": true,
+      "entrypoint": "supabase/functions/sync-batch/index.ts",
+      "runtime_secrets": [
+        "SUPABASE_URL",
+        "SUPABASE_ANON_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "APP_ORIGIN"
+      ]
+    },
+    {
+      "name": "sanitario-reconcile",
+      "verify_jwt": true,
+      "entrypoint": "supabase/functions/sanitario-reconcile/index.ts",
+      "runtime_secrets": [
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_ROLE_KEY"
+      ]
+    },
+    {
+      "name": "telemetry-ingest",
+      "verify_jwt": true,
+      "entrypoint": "supabase/functions/telemetry-ingest/index.ts",
+      "runtime_secrets": [
+        "SUPABASE_URL",
+        "SUPABASE_ANON_KEY",
+        "APP_ORIGIN"
+      ]
+    }
+  ],
+  "excluded": [
+    "test-auth",
+    "supabase/.temp",
+    "supabase/seed.sql",
+    ".env*",
+    "credentials and production data"
+  ],
+  "files": [
+    {
+      "path": "supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql",
+      "sha256": "d7364c017258a4d72b3e4d3688c1d7c7bef7fd199cf04882d812473c62af984d"
+    },
+    {
+      "path": "supabase/migrations/20260508003000_pasto_ocupacoes.sql",
+      "sha256": "aafb2effd99da90e35e92bf05b909e55d6e1f31047ffff0d1f807a91222a44a9"
+    },
+    {
+      "path": "supabase/migrations/20260508004000_pastos_forrageira_manejo.sql",
+      "sha256": "c399a0ead468ecfea089cfd8970522f40a6077d6eccd0e18805b0989e7110f7e"
+    },
+    {
+      "path": "supabase/migrations/20260508005000_eventos_pasto_avaliacao.sql",
+      "sha256": "95e81847ced161b26040ee5df09896d6caeb2f7b9e0ff51f397925867c3576b6"
+    },
+    {
+      "path": "supabase/migrations/20260511000000_sanitario_complete_agenda_idempotency.sql",
+      "sha256": "bc6ae02f2b4a22bf462590d457f15f5b62af668a97fddd36bff9387d3737387e"
+    },
+    {
+      "path": "supabase/migrations/20260514000000_fix_create_fazenda_primary_membership.sql",
+      "sha256": "04b8f6e64927cabed10e2709f7005b8a4600f92c3b887443079c7fcf28580cdc"
+    },
+    {
+      "path": "supabase/migrations/20260524000000_dry_cow_therapy_agenda_recompute.sql",
+      "sha256": "b4e09b50c1b7e343184032390d21c57ecc5d0b4a995700e6f49b79295fe875ab"
+    },
+    {
+      "path": "supabase/migrations/20260525000000_insumos_inventory.sql",
+      "sha256": "a949becd7476834f1a5efb1c64c73e32fc56795c6494b2345328cef6592595d8"
+    },
+    {
+      "path": "supabase/migrations/20260526000000_anti_zombie_agenda.sql",
+      "sha256": "7fcfc485a8aec67ab66f7918804b94ec1c8a485d35a8f1e965752edec8d2b7c3"
+    },
+    {
+      "path": "supabase/migrations/20260526000100_recompute_on_animal_mutation.sql",
+      "sha256": "75f384bb8c5f04d7cf48271c7d4353fba719dbf959dd815e58e4f5efafeb4b9c"
+    },
+    {
+      "path": "supabase/migrations/20260526000200_reconcile_support_rpcs.sql",
+      "sha256": "62e0ab2bbf4f61bcce7df52c3a12161d84b73d647e9bea870103d8967314ee17"
+    },
+    {
+      "path": "supabase/migrations/20260526000300_vw_animais_peso_atual.sql",
+      "sha256": "a6bd7917f1853ca997caa52dbaf822e422d5a46364b210ebf4e3952794d54d9d"
+    },
+    {
+      "path": "supabase/migrations/20260526000400_vw_animais_carencia_ativa.sql",
+      "sha256": "f3eded9c60811e1ba57bb30c9f35cb0cf26a81843c07e79bd2b585dee48a63db"
+    },
+    {
+      "path": "supabase/migrations/20260526000500_idx_sanitary_completion_key.sql",
+      "sha256": "fb16fd442d0438197fc8be459a1c570f8a0a8c67d175ff0d4d5b06b8c62b152c"
+    },
+    {
+      "path": "supabase/migrations/20260526000600_idx_eventos_unique_source_task.sql",
+      "sha256": "dd49674271212d9dc6bbc216402794d7de55209bcd2d9fdbfde2ee3ee1f8c6c4"
+    },
+    {
+      "path": "supabase/migrations/20260528000001_add_eventos_ecc.sql",
+      "sha256": "9c072cbedf62985f7e85a329b698e5223638817c0c946843ff1a743ad76ed91f"
+    },
+    {
+      "path": "supabase/migrations/20260529000000_insumos_campos_custo_carencia.sql",
+      "sha256": "7dd9bc1f5eca3476e64206f551c46c9fe0373c807157f55b8b5fb2917d98a980"
+    },
+    {
+      "path": "supabase/migrations/20260529000100_update_vw_animais_carencia_ativa.sql",
+      "sha256": "7390997cea0f908e60c24a211bb56b0d89c9447744a9cbf49ada47e903cdc72e"
+    },
+    {
+      "path": "supabase/migrations/20260529000200_financeiro_gerencial.sql",
+      "sha256": "dc0c54f83b8ed954da7c5f8312371932603b33b6d601900bb2370f9a4196366d"
+    },
+    {
+      "path": "supabase/migrations/20260529000300_comercial_operations.sql",
+      "sha256": "f2209f2be80c74d4a000b446e6b329283bf3a4d0836900c03d807390e7c1a7c2"
+    },
+    {
+      "path": "supabase/migrations/20260529000400_sociedade_pecuaria.sql",
+      "sha256": "bcd192162eb075db2d46c9546c112f7970ef2ef0cedba785566f512adb12b509"
+    },
+    {
+      "path": "supabase/migrations/20260530000000_sociedade_pecuaria_sync_metadata.sql",
+      "sha256": "841b66ae3336da53a2e5d317ab049d9ad6636d308912dd7484005f843a371efa"
+    },
+    {
+      "path": "supabase/migrations/20260530000100_sociedade_pecuaria_status_retirado.sql",
+      "sha256": "9fc04be06409d4b80d9f406d1ab443e1e76658c3a39b6f126de5f1654f32bd1b"
+    },
+    {
+      "path": "supabase/migrations/20260531000000_protocolos_sanitarios_itens_immutable_versions.sql",
+      "sha256": "bd944a6dd48fb90721268eac6fff4bd939753758a66fdb4901c922ea318c92cf"
+    },
+    {
+      "path": "supabase/migrations/20260531001000_protocolos_sanitarios_drop_legacy_protocol_item_id.sql",
+      "sha256": "00868f92568be3f5b476a8f95709812a486862697e160ff47c3ec8300ac03ecb"
+    },
+    {
+      "path": "supabase/migrations/20260531002000_eventos_sanitario_operational_traceability.sql",
+      "sha256": "26df354eafb79a0da9e34abd4327897bc6d5724d208165bff5cb822887fa1a34"
+    },
+    {
+      "path": "supabase/migrations/20260601000000_financeiro_estorno_categorias.sql",
+      "sha256": "b6d2fc3af427668c6f0f6abd4c8fae380fb5a50072d659e3f39dfbb07dda19c4"
+    },
+    {
+      "path": "supabase/migrations/20260604090000_insumo_movimentacoes_consumo_nutricao_idempotency.sql",
+      "sha256": "6a9bca040ecfe388b2b4566dd404dd8f39c025829f7d288d6b31e2e28351d126"
+    },
+    {
+      "path": "supabase/migrations/20260606090000_sanitario_agenda_v2_clean_foundation.sql",
+      "sha256": "acbf65b29d94a90011f379b83067bad68875add6d48e515f96d771b1a5ac5f1c"
+    },
+    {
+      "path": "supabase/migrations/20260608090000_sanitario_protocol_product_source_v2.sql",
+      "sha256": "bc56133aa5d2e9bbfbac93e9cb84299f1600f46e26b36582f872773ef2e173a1"
+    },
+    {
+      "path": "supabase/migrations/20260610203500_sanitario_product_class_v2.sql",
+      "sha256": "d5244d274d490c1a0c775995bca948f59b97752c88d485cc0fcfb39fc0a6feee"
+    },
+    {
+      "path": "supabase/migrations/20260615120000_sanitario_protocol_item_product_class_group_v2.sql",
+      "sha256": "60aeefa2bd0b0217cac1137000473c75e23d96eac687696b96de3ee24d95be0a"
+    },
+    {
+      "path": "supabase/migrations/20260722102038_sanitario_sync_v2_expand_foundation.sql",
+      "sha256": "d79727c06284d7a56dbbadba151187ef492c3777bd5a6a6cc7cdf4d9993181f7"
+    },
+    {
+      "path": "supabase/migrations/20260808120000_individual_animal_purchase_sync.sql",
+      "sha256": "05b34004f90839d8eacce7f1cfd245045571246ac98aeb39b5ff4e80df0ab3e8"
+    },
+    {
+      "path": "supabase/migrations/20260813134853_commercial_operation_v2.sql",
+      "sha256": "bbf0ede014dc37a5d0e51207fe7be0955d65bab49a535daf1d3c5ca056e8917b"
+    },
+    {
+      "path": "supabase/migrations/20260813152618_harden_individual_animal_purchase_grants.sql",
+      "sha256": "e14ea82fd3ed0abc56796cdcc57ae57d1a22acc742d22582e73339be38e558a1"
+    },
+    {
+      "path": "supabase/migrations/20260821000000_fix_pgcrypto_digest_search_path.sql",
+      "sha256": "0d5d32a4c2eefe807bcf4b3923521cf2326fe88848e4a142d28e21457b2c53e6"
+    },
+    {
+      "path": "supabase/migrations/20260824100000_app_superadmin_foundation.sql",
+      "sha256": "efd0238418938aa163e43902f7e63b31cf7f859ed88ca35b04cb5bebf161a24b"
+    },
+    {
+      "path": "supabase/migrations/20260824110000_app_superadmin_read_rpcs.sql",
+      "sha256": "b16d168f750c3bf5533ca5e6a5cefd6bf11baea06128ebdda523cc9a0b6bf0bc"
+    },
+    {
+      "path": "supabase/migrations/20260824120000_harden_admin_invites_rpc.sql",
+      "sha256": "3e2b95c2f8409639da1b0fb7144550671d3dff0bb709f28156ad420d2173e7d4"
+    },
+    {
+      "path": "supabase/migrations/20260825080000_app_superadmin_can_create_farm_mutation.sql",
+      "sha256": "7982f81f4d77147ff1ff0f66a774c215c7611049790da2e0a74ada5a28756c8e"
+    },
+    {
+      "path": "supabase/migrations/20260826230107_reconcile_authenticated_table_privileges.sql",
+      "sha256": "8ffe9ffc625151b75e4f3712de9db517fc4422c2a610856135470d1ffe78c0ff"
+    },
+    {
+      "path": "supabase/migrations/20260827100000_harden_internal_and_trigger_function_privileges.sql",
+      "sha256": "e1dbaec815faf78481893218e7859053d9e9b81cc3c92942ea037f7a9189e040"
+    },
+    {
+      "path": "supabase/migrations/20260827110000_harden_domain_and_farm_admin_rpc_privileges.sql",
+      "sha256": "f16a448a6c84ac6a40039e08c4cd4a0ba708a4c6587fd36ded68a9744748856b"
+    },
+    {
+      "path": "supabase/migrations/20260827120000_harden_get_user_emails_rpc.sql",
+      "sha256": "87a9e216e9e4c52079895079e32f47da518fd019e68fa27a037bd1f31d2269c7"
+    },
+    {
+      "path": "supabase/migrations/20260829193636_c2_search_path_hardening.sql",
+      "sha256": "803e64df2c5ba99c00923f1959fd4b4ca9a88f62d482428f1099e310b75f3ee8"
+    },
+    {
+      "path": "supabase/migrations/20260908050000_c3_auth_rls_initplan_hardening.sql",
+      "sha256": "6b5001613ad43e98015621aca6c562ca32ca9b93e9842c7c5d9713d2f0572895"
+    },
+    {
+      "path": "supabase/migrations/20260908060000_c4_1a_exact_permissive_cleanup.sql",
+      "sha256": "f1f35c5554f8e19fd8af6c89c63fde83580b78f6106dc0de288023587478ce86"
+    },
+    {
+      "path": "supabase/migrations/20260908070000_c4_1b_subsumed_operational_cleanup.sql",
+      "sha256": "b8c04ffc452c06e0517ba6d9a4b91d4fccdce7bbd6c9c0cd5c21daea80664bf8"
+    },
+    {
+      "path": "supabase/migrations/20260913232253_f24_acl_forward_only_reconciliation.sql",
+      "sha256": "43d4f6b3ef1c4d72ac2ac65549709e6f41fadb7d7494006b1776566ad3d1ab33"
+    },
+    {
+      "path": "supabase/migrations/20260914014309_f24_1a1_sanitario_reconcile_backend_wrapper.sql",
+      "sha256": "d1238d854d6e53a2130b33f3c373335f70d0c6afa17d761ea98b065e6e39fe12"
+    },
+    {
+      "path": "supabase/migrations/20260923132000_sanitario_source_key_identity.sql",
+      "sha256": "57b47a920fdd8edf4753b72e582fac26a95895885bfb499b988dd3866a8009d8"
+    },
+    {
+      "path": "supabase/migrations/20260927120000_f24_4c_animais_state_revision.sql",
+      "sha256": "ce66713c4c3e5f4abb72b9dfeeb52c7a3d0c36b0e3e17cb96c0030c6e74a9caa"
+    },
+    {
+      "path": "supabase/migrations/20261001200402_f24_4e21a_animal_lot_movement_foundation.sql",
+      "sha256": "7ce21e1c68dee6ab1a4d39f57184f20ab6bb0b9640e4df534f6dd9389f022ab7"
+    },
+    {
+      "path": "supabase/migrations/20261002005751_f24_4e211a_server_completion_gate.sql",
+      "sha256": "d5b9e6fc2bbe06b69947077f1799ad7d50875ab171b6371fbddd6a9792efc174"
+    },
+    {
+      "path": "supabase/migrations/20261003120000_f24_4e2_close_generic_animal_lot_fact_boundary.sql",
+      "sha256": "724f7e8d67d674e75cde203452b728a4b9b51c0f65d9da9249d4288db856b635"
+    },
+    {
+      "path": "supabase/migrations/20261004210000_sanitario_sync_v2_revision_conflict_pt409.sql",
+      "sha256": "6bf645860785678b9543df8a877c7ec2cd49f299acfd9a56e21b5893c4dfccfe"
+    },
+    {
+      "path": "supabase/migrations/20261005175412_f24_4e_lot_pasture_subject_boundary.sql",
+      "sha256": "253562a0b6c1cfc77924f8dda86444b4a169a09ad94f727345b88655792478a7"
+    },
+    {
+      "path": "supabase/migrations/20261008202000_f24_5e3_remote_telemetry_retention.sql",
+      "sha256": "0fc59fae328862b98e66f25126a40e8dde06df6581de31eec88679fd90e5e2db"
+    },
+    {
+      "path": "supabase/migrations/20261008202024_f24_5e3_remote_telemetry_retention_cron.sql",
+      "sha256": "fd8ca0ceca2d6c1fd70abe2a8a9b0d7e383f9eb0bb4b78364953f4eb66a5aacc"
+    },
+    {
+      "path": "supabase/migrations/20261015070038_sanitario_agenda_catalog_v2_references.sql",
+      "sha256": "625fe8940f09476833205d44978031dcfd10223fb0683ee08afd7cd4ed0cd916"
+    },
+    {
+      "path": "supabase/migrations/20261017080447_sanitario_catalog_review_v2.sql",
+      "sha256": "6b73f0dce568eb37c6941f5fa7354dde7604aeba070a5a815a211fc96efabd1e"
+    },
+    {
+      "path": "supabase/migrations/20261017195545_sanitario_planning_convergence_v2.sql",
+      "sha256": "8b6b0577e6f07280ee58ead78221fcec6c5b9973aad8222e225c350a9ff36593"
+    },
+    {
+      "path": "src/lib/animals/taxonomyFactsContract.ts",
+      "sha256": "81c3f1710a3aa18a6c53635dcd3a0b59c4c54d573537c8c72c4eb6ffe083aa68"
+    },
+    {
+      "path": "supabase/functions/_shared/mutationRecord.ts",
+      "sha256": "ecc2feec7d2e391e9c0e22e310f0b2a1c1be50b1d0f2a7ada7c54488f57cc091"
+    },
+    {
+      "path": "supabase/functions/deno.json",
+      "sha256": "088e4d9020ad4a1b1c9b9691e7f8f432d22765c3b3069dbfb5032c649595659c"
+    },
+    {
+      "path": "supabase/functions/sanitario-reconcile/index.ts",
+      "sha256": "4fb1ba5a77a1f8a2277f53ac3b161f30a762c9f59c6a4769fba5aa79cc3b6549"
+    },
+    {
+      "path": "supabase/functions/sync-batch/commercial-operation-v2.ts",
+      "sha256": "e01b89b1098677f8c67585d45b1a6deeef0a1acb10b8679fa6c42c3b9b0e118a"
+    },
+    {
+      "path": "supabase/functions/sync-batch/commercial-purchase.ts",
+      "sha256": "6cdbb86d8e451e3da7a97adbfb69d066cc467e078481f60e55c0d0cd205958bc"
+    },
+    {
+      "path": "supabase/functions/sync-batch/flags.ts",
+      "sha256": "277950e3ab9835e97c755ef798bcc3a8f20b2ffcc03b5b8ec63f7175aa60ab85"
+    },
+    {
+      "path": "supabase/functions/sync-batch/index.ts",
+      "sha256": "c92da95e72dd281a03ddd9e272d91fe62ff815aa33b3efc62283450e4cd3cc5d"
+    },
+    {
+      "path": "supabase/functions/sync-batch/inventory-dependency.ts",
+      "sha256": "30b46647b0406187236a53f7e3daed30300d3781ced2abbe6fe7dc4c4090d08f"
+    },
+    {
+      "path": "supabase/functions/sync-batch/movement-v1.ts",
+      "sha256": "1971943005b13a009dcb4dde3cf04132c3f39ed17ed2ced3026ed5428d7f7895"
+    },
+    {
+      "path": "supabase/functions/sync-batch/reproduction-diagnosis.ts",
+      "sha256": "52615e90189aeb0eac9007a88ec381ca7da0ca619af6af017259586273f59c9b"
+    },
+    {
+      "path": "supabase/functions/sync-batch/rules.ts",
+      "sha256": "7fc6d6c319f6f0488be2260eee5f789ca43b8a8be8faf0453448a157b18febc5"
+    },
+    {
+      "path": "supabase/functions/sync-batch/sanitario-v2.ts",
+      "sha256": "ba57856ed4850b016b6ddf47e755515c8d0ddc0fd2648fd9562f92644a2ebeae"
+    },
+    {
+      "path": "supabase/functions/sync-batch/sanitary-product-evidence.ts",
+      "sha256": "00e11ddd46045e6510d01f8ba0fb14082f0f5f049ae1044ae31c5bc287c319ea"
+    },
+    {
+      "path": "supabase/functions/sync-batch/taxonomy.ts",
+      "sha256": "4d738557440cfe4491fc84a84781da9aa47e34e7311e49ccd1e33de9855ff3ba"
+    },
+    {
+      "path": "supabase/functions/telemetry-ingest/index.ts",
+      "sha256": "142a757024dd3029dce95d5aebae787166b54b5e3d12fc03c0f44545f68a8a11"
+    },
+    {
+      "path": "docs/review/evidence/SANITARIO_PROTOCOLS_V2_CANONICAL_PAYLOAD_12F10.json",
+      "sha256": "51df1c3884f463992113d0d3ac89e3c9534ce68726e9829972838cae2132cf73"
+    },
+    {
+      "path": "docs/review/evidence/SANITARIO_V2_FECHAMENTO_DECISOES_20261016.json",
+      "sha256": "f7dcda6d73f917177b1f5f358d7c2dae9db289b3b2839ebc7590c5698359c185"
+    },
+    {
+      "path": "docs/review/evidence/SANITARIO_V2_APROVACAO_PENDENTE_20261017.json",
+      "sha256": "df1beaccc0dd5a494595fb156e35eca55d67cc923f6d5b420721fc902da99cc5"
+    },
+    {
+      "path": "scripts/codex/import-sanitario-protocols-v2.mjs",
+      "sha256": "535bc48886ceab21ae0b0b9cc3e9be3f9e5e0686acedbcd19b72c82f97036a30"
+    },
+    {
+      "path": "scripts/codex/sanitario-v2-contract.mjs",
+      "sha256": "e1f8f332587362899c93670c4070c19c5b83462c52df3eafb2317a4dc634208d"
+    },
+    {
+      "path": "scripts/codex/prepare-sanitario-approval-v2.mjs",
+      "sha256": "e1db8dbf53aa73bb2bb249dff775e5b5ab1eef9bdc75d531ff8c876b56058966"
+    },
+    {
+      "path": "scripts/codex/prepare-sanitario-homologation.mjs",
+      "sha256": "98adeba15193c28fcea29be89062469c22357e486f6008fe80a5f4f20413a624"
+    },
+    {
+      "path": "scripts/codex/verify-sanitario-homologation-target.mjs",
+      "sha256": "29fa963ee183cc47d3bd32920ab02f6433f695d9fa9f9305eb499c96c17fbfb0"
+    },
+    {
+      "path": "scripts/codex/backend-environment.mjs",
+      "sha256": "9d9ebe97e36f670f3aa36ef557ab4a8d24f4205be3fb5c555891f3310ea0215d"
+    },
+    {
+      "path": "config/backend-targets.json",
+      "sha256": "5a57af3142409f5a026de8c15e1bfd02a25d25f2ed236981c04605d7c53aef48"
+    },
+    {
+      "path": "supabase/config.toml",
+      "sha256": "c26fb01a845fcba385daca1acbb8a32e9a34a60a24e2e099d63a3e6aeca8ff12"
+    }
+  ],
+  "candidate": {
+    "path": "candidate.review.json",
+    "sha256": "2b3adab34d0eb58dcc5d8fa976d1cd852d41f204e00063b776e2271d60753fe6",
+    "schema_form": 3,
+    "schema_decisions": 4,
+    "review_only": true,
+    "import_real_authorized": false,
+    "operational_approvals": 0,
+    "ready_items": 7,
+    "commercial_pending": 7,
+    "restricted": 6,
+    "review_digest_authority": "sanitario_catalog_review_preview_v2; not the candidate file hash",
+    "decisions": [
+      {
+        "id": "B19",
+        "scope": "Somente Agenda genérica de avaliação, sem produto/dose/via/carência e sem declarar obrigação em UF risco A.",
+        "submission_status": "READY_FOR_GLOBAL_REVIEW",
+        "versions": [
+          {
+            "protocol_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+            "item_id": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+            "protocol_version": 1,
+            "logical_item_key": "b19_femeas_3_8_meses",
+            "version": 3,
+            "expected_previous_id": "22508d25-1b95-44b2-b2a3-50d57cb8ba7d",
+            "expected_previous_version": 2
+          }
+        ],
+        "required_before_catalog_decision": [],
+        "conditions": [
+          "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
+          "versoes esperadas conferidas sob lock",
+          "fontes por campo materializadas e aprovadas no catalogo",
+          "catalogo e permissao promovidos juntos por publicador autorizado",
+          "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+          "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
+        ],
+        "catalog_review": {
+          "reviewer_role": "authorized_catalog_reviewer",
+          "reviewer_name": null,
+          "actor_id": null,
+          "approved_at": null,
+          "decision_reference": null,
+          "reviewed_content_digest": null,
+          "decision_status": "PENDING",
+          "requires_farm_veterinarian": false,
+          "requires_crmv_by_default": false,
+          "requires_specific_farm": false,
+          "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+        },
+        "farm_activation": {
+          "actor": "authorized_farm_user",
+          "confirmation_required": true,
+          "context_definition": {},
+          "professional_identification_required_by_default": false
+        },
+        "execution_compliance": {
+          "evaluated_at": "execution_and_official_proof",
+          "real_product_required_when_applicable": true,
+          "professional_required_only_when_applicable": true,
+          "professional_sve_registration_required_for_b19": true,
+          "missing_planned_professional_blocks_agenda": false,
+          "planning_authorizes_medication_dose_or_withdrawal": false,
+          "planned_professional": null
+        }
+      },
+      {
+        "id": "CLO",
+        "scope": "Três etapas de uma formulação comercial selecionada; não generalizar FORTRESS7 para toda a classe.",
+        "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
+        "versions": [
+          {
+            "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+            "item_id": "fe0ddfbc-6b4b-5161-843f-b4cfbd4bff53",
+            "protocol_version": 1,
+            "logical_item_key": "clostridial_primovac_dose1",
+            "version": 2,
+            "expected_previous_id": "b846a0ae-481e-47b3-a9ce-a3f43afb0484",
+            "expected_previous_version": 1
+          },
+          {
+            "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+            "item_id": "675e30b0-0654-5407-824e-a73eeead11b4",
+            "protocol_version": 1,
+            "logical_item_key": "clostridial_primovac_dose2",
+            "version": 3,
+            "expected_previous_id": "c0aaa4e1-458c-4121-a34b-a9a7a996eec1",
+            "expected_previous_version": 2
+          },
+          {
+            "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+            "item_id": "a694a3c6-63b3-5e4b-b035-ceb7b3d0e626",
+            "protocol_version": 1,
+            "logical_item_key": "clostridial_reforco_anual",
+            "version": 2,
+            "expected_previous_id": "136af00d-eeeb-44b9-87c4-c153cc1fc28b",
+            "expected_previous_version": 1
+          }
+        ],
+        "required_before_catalog_decision": [
+          "COMMERCIAL_FORTRESS7_ZOETIS.registration.current_validity",
+          "COMMERCIAL_FORTRESS7_ZOETIS.eligibility.minimum_age_or_responsible_category_criterion",
+          "COMMERCIAL_FORTRESS7_ZOETIS.authorization.pregnancy",
+          "COMMERCIAL_FORTRESS7_ZOETIS.authorization.lactation"
+        ],
+        "conditions": [
+          "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
+          "versoes esperadas conferidas sob lock",
+          "fontes por campo materializadas e aprovadas no catalogo",
+          "catalogo e permissao promovidos juntos por publicador autorizado",
+          "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+          "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
+        ],
+        "catalog_review": {
+          "reviewer_role": "authorized_catalog_reviewer",
+          "reviewer_name": null,
+          "actor_id": null,
+          "approved_at": null,
+          "decision_reference": null,
+          "reviewed_content_digest": null,
+          "decision_status": "PENDING",
+          "requires_farm_veterinarian": false,
+          "requires_crmv_by_default": false,
+          "requires_specific_farm": false,
+          "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+        },
+        "farm_activation": {
+          "actor": "authorized_farm_user",
+          "confirmation_required": true,
+          "context_definition": {},
+          "professional_identification_required_by_default": false
+        },
+        "execution_compliance": {
+          "evaluated_at": "execution_and_official_proof",
+          "real_product_required_when_applicable": true,
+          "professional_required_only_when_applicable": true,
+          "professional_sve_registration_required_for_b19": false,
+          "missing_planned_professional_blocks_agenda": false,
+          "planning_authorizes_medication_dose_or_withdrawal": false,
+          "planned_professional": null
+        }
+      },
+      {
+        "id": "LEP",
+        "scope": "LEPTOFERM5 bovina: dose inicial única e recorrência anual, sem alternativa semestral implícita.",
+        "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
+        "versions": [
+          {
+            "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+            "item_id": "85f9ce5a-6173-5183-aca9-c4106ce938cd",
+            "protocol_version": 1,
+            "logical_item_key": "lepto_primovac_dose1",
+            "version": 2,
+            "expected_previous_id": "017e2c3e-fac6-45f0-ad63-e1795fb40730",
+            "expected_previous_version": 1
+          },
+          {
+            "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+            "item_id": "76e411fe-8690-5229-a3e7-cf0b0d4a2f11",
+            "protocol_version": 1,
+            "logical_item_key": "lepto_reforco_anual_semestral",
+            "version": 2,
+            "expected_previous_id": "9791a745-6d5d-4a72-9a14-d7e0b9a99626",
+            "expected_previous_version": 1
+          }
+        ],
+        "required_before_catalog_decision": [
+          "COMMERCIAL_LEPTOFERM5_ZOETIS.registration.current_validity",
+          "COMMERCIAL_LEPTOFERM5_ZOETIS.eligibility.minimum_age_or_responsible_category_criterion",
+          "COMMERCIAL_LEPTOFERM5_ZOETIS.authorization.pregnancy",
+          "COMMERCIAL_LEPTOFERM5_ZOETIS.authorization.lactation"
+        ],
+        "conditions": [
+          "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
+          "versoes esperadas conferidas sob lock",
+          "fontes por campo materializadas e aprovadas no catalogo",
+          "catalogo e permissao promovidos juntos por publicador autorizado",
+          "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+          "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
+        ],
+        "catalog_review": {
+          "reviewer_role": "authorized_catalog_reviewer",
+          "reviewer_name": null,
+          "actor_id": null,
+          "approved_at": null,
+          "decision_reference": null,
+          "reviewed_content_digest": null,
+          "decision_status": "PENDING",
+          "requires_farm_veterinarian": false,
+          "requires_crmv_by_default": false,
+          "requires_specific_farm": false,
+          "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+        },
+        "farm_activation": {
+          "actor": "authorized_farm_user",
+          "confirmation_required": true,
+          "context_definition": {},
+          "professional_identification_required_by_default": false
+        },
+        "execution_compliance": {
+          "evaluated_at": "execution_and_official_proof",
+          "real_product_required_when_applicable": true,
+          "professional_required_only_when_applicable": true,
+          "professional_sve_registration_required_for_b19": false,
+          "missing_planned_professional_blocks_agenda": false,
+          "planning_authorizes_medication_dose_or_withdrawal": false,
+          "planned_professional": null
+        }
+      },
+      {
+        "id": "IBR",
+        "scope": "Esquema da formulação documentada; segunda dose apenas quando tecnicamente indicada.",
+        "submission_status": "COMMERCIAL_EVIDENCE_REQUIRED",
+        "versions": [
+          {
+            "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+            "item_id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+            "protocol_version": 1,
+            "logical_item_key": "ibr_bvd_primovac_dose1",
+            "version": 2,
+            "expected_previous_id": "2a35a390-7e3a-4fa1-944c-9118ddeaaebe",
+            "expected_previous_version": 1
+          },
+          {
+            "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+            "item_id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+            "protocol_version": 1,
+            "logical_item_key": "ibr_bvd_primovac_dose2",
+            "version": 3,
+            "expected_previous_id": "26b7e5bb-8f0d-4ef7-a757-a76e621df0e4",
+            "expected_previous_version": 2
+          }
+        ],
+        "required_before_catalog_decision": [
+          "COMMERCIAL_POLIGUARD_MSD.registration.current_validity",
+          "COMMERCIAL_POLIGUARD_MSD.source.full_current_label",
+          "COMMERCIAL_POLIGUARD_MSD.authorization.lactation",
+          "COMMERCIAL_POLIGUARD_MSD.registration.current_holder"
+        ],
+        "conditions": [
+          "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
+          "versoes esperadas conferidas sob lock",
+          "fontes por campo materializadas e aprovadas no catalogo",
+          "catalogo e permissao promovidos juntos por publicador autorizado",
+          "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+          "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
+        ],
+        "catalog_review": {
+          "reviewer_role": "authorized_catalog_reviewer",
+          "reviewer_name": null,
+          "actor_id": null,
+          "approved_at": null,
+          "decision_reference": null,
+          "reviewed_content_digest": null,
+          "decision_status": "PENDING",
+          "requires_farm_veterinarian": false,
+          "requires_crmv_by_default": false,
+          "requires_specific_farm": false,
+          "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+        },
+        "farm_activation": {
+          "actor": "authorized_farm_user",
+          "confirmation_required": true,
+          "context_definition": {},
+          "professional_identification_required_by_default": false
+        },
+        "execution_compliance": {
+          "evaluated_at": "execution_and_official_proof",
+          "real_product_required_when_applicable": true,
+          "professional_required_only_when_applicable": true,
+          "professional_sve_registration_required_for_b19": false,
+          "missing_planned_professional_blocks_agenda": false,
+          "planning_authorizes_medication_dose_or_withdrawal": false,
+          "planned_professional": null
+        }
+      },
+      {
+        "id": "PAR",
+        "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
+        "submission_status": "READY_FOR_GLOBAL_REVIEW",
+        "versions": [
+          {
+            "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+            "item_id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+            "protocol_version": 1,
+            "logical_item_key": "recria_maio",
+            "version": 2,
+            "expected_previous_id": "38c59c96-d854-4583-8283-02e4bd3065a2",
+            "expected_previous_version": 1
+          },
+          {
+            "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+            "item_id": "c1866199-bf9d-506e-af05-dd84f3165c90",
+            "protocol_version": 1,
+            "logical_item_key": "recria_julho",
+            "version": 2,
+            "expected_previous_id": "5501697e-d3de-499a-9bdb-405b277675c9",
+            "expected_previous_version": 1
+          },
+          {
+            "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+            "item_id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+            "protocol_version": 1,
+            "logical_item_key": "recria_setembro",
+            "version": 2,
+            "expected_previous_id": "f8d9ae48-213d-44b0-919e-14cc12e828c5",
+            "expected_previous_version": 1
+          }
+        ],
+        "required_before_catalog_decision": [],
+        "conditions": [
+          "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
+          "versoes esperadas conferidas sob lock",
+          "fontes por campo materializadas e aprovadas no catalogo",
+          "catalogo e permissao promovidos juntos por publicador autorizado",
+          "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+          "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
+        ],
+        "catalog_review": {
+          "reviewer_role": "authorized_catalog_reviewer",
+          "reviewer_name": null,
+          "actor_id": null,
+          "approved_at": null,
+          "decision_reference": null,
+          "reviewed_content_digest": null,
+          "decision_status": "PENDING",
+          "requires_farm_veterinarian": false,
+          "requires_crmv_by_default": false,
+          "requires_specific_farm": false,
+          "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+        },
+        "farm_activation": {
+          "actor": "authorized_farm_user",
+          "confirmation_required": true,
+          "context_definition": {
+            "fazenda_id": null,
+            "uf": null,
+            "region": null,
+            "production_system": null,
+            "eligible_categories": null,
+            "responsible_reference": null,
+            "regionalCalendar.uf": null,
+            "regionalCalendar.months": null,
+            "management=rearing": null,
+            "life_stage=recria": null
+          },
+          "professional_identification_required_by_default": false
+        },
+        "execution_compliance": {
+          "evaluated_at": "execution_and_official_proof",
+          "real_product_required_when_applicable": true,
+          "professional_required_only_when_applicable": true,
+          "professional_sve_registration_required_for_b19": false,
+          "missing_planned_professional_blocks_agenda": false,
+          "planning_authorizes_medication_dose_or_withdrawal": false,
+          "planned_professional": null
+        }
+      },
+      {
+        "id": "DES",
+        "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
+        "submission_status": "READY_FOR_GLOBAL_REVIEW",
+        "versions": [
+          {
+            "protocol_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+            "item_id": "e711773e-88ee-5107-aa73-68e7337468be",
+            "protocol_version": 1,
+            "logical_item_key": "pre_desmama_situacional",
+            "version": 2,
+            "expected_previous_id": "296b0b88-3105-471b-89b3-e4796bd74d47",
+            "expected_previous_version": 1
+          }
+        ],
+        "required_before_catalog_decision": [],
+        "conditions": [
+          "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
+          "versoes esperadas conferidas sob lock",
+          "fontes por campo materializadas e aprovadas no catalogo",
+          "catalogo e permissao promovidos juntos por publicador autorizado",
+          "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+          "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
+        ],
+        "catalog_review": {
+          "reviewer_role": "authorized_catalog_reviewer",
+          "reviewer_name": null,
+          "actor_id": null,
+          "approved_at": null,
+          "decision_reference": null,
+          "reviewed_content_digest": null,
+          "decision_status": "PENDING",
+          "requires_farm_veterinarian": false,
+          "requires_crmv_by_default": false,
+          "requires_specific_farm": false,
+          "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+        },
+        "farm_activation": {
+          "actor": "authorized_farm_user",
+          "confirmation_required": true,
+          "context_definition": {
+            "fazenda_id": null,
+            "uf": null,
+            "region": null,
+            "production_system": null,
+            "eligible_categories": null,
+            "responsible_reference": null,
+            "preWeaningBasis.kind": null,
+            "preWeaningBasis.reference": null,
+            "management=pre_weaning": null
+          },
+          "professional_identification_required_by_default": false
+        },
+        "execution_compliance": {
+          "evaluated_at": "execution_and_official_proof",
+          "real_product_required_when_applicable": true,
+          "professional_required_only_when_applicable": true,
+          "professional_sve_registration_required_for_b19": false,
+          "missing_planned_professional_blocks_agenda": false,
+          "planning_authorizes_medication_dose_or_withdrawal": false,
+          "planned_professional": null
+        }
+      },
+      {
+        "id": "CONF",
+        "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
+        "submission_status": "READY_FOR_GLOBAL_REVIEW",
+        "versions": [
+          {
+            "protocol_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+            "item_id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+            "protocol_version": 1,
+            "logical_item_key": "pre_confinamento_dose_unica",
+            "version": 2,
+            "expected_previous_id": "abf01867-fe1c-4638-8d4c-80929bbe0e00",
+            "expected_previous_version": 1
+          }
+        ],
+        "required_before_catalog_decision": [],
+        "conditions": [
+          "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
+          "versoes esperadas conferidas sob lock",
+          "fontes por campo materializadas e aprovadas no catalogo",
+          "catalogo e permissao promovidos juntos por publicador autorizado",
+          "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+          "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
+        ],
+        "catalog_review": {
+          "reviewer_role": "authorized_catalog_reviewer",
+          "reviewer_name": null,
+          "actor_id": null,
+          "approved_at": null,
+          "decision_reference": null,
+          "reviewed_content_digest": null,
+          "decision_status": "PENDING",
+          "requires_farm_veterinarian": false,
+          "requires_crmv_by_default": false,
+          "requires_specific_farm": false,
+          "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+        },
+        "farm_activation": {
+          "actor": "authorized_farm_user",
+          "confirmation_required": true,
+          "context_definition": {
+            "fazenda_id": null,
+            "uf": null,
+            "region": null,
+            "production_system": null,
+            "eligible_categories": null,
+            "responsible_reference": null,
+            "scheduledContext.date": null,
+            "scheduledContext.animalIds": null,
+            "scheduledContext.reference": null,
+            "management=pre_feedlot": null,
+            "destination_or_management": null
+          },
+          "professional_identification_required_by_default": false
+        },
+        "execution_compliance": {
+          "evaluated_at": "execution_and_official_proof",
+          "real_product_required_when_applicable": true,
+          "professional_required_only_when_applicable": true,
+          "professional_sve_registration_required_for_b19": false,
+          "missing_planned_professional_blocks_agenda": false,
+          "planning_authorizes_medication_dose_or_withdrawal": false,
+          "planned_professional": null
+        }
+      },
+      {
+        "id": "PARTO",
+        "scope": "Avaliacao/manejo generico contextual, limitado a UF DF nesta versao; sem produto, dose, via ou carencia. Aprovar globalmente sem exigir fazenda ou MV executor.",
+        "submission_status": "READY_FOR_GLOBAL_REVIEW",
+        "versions": [
+          {
+            "protocol_id": "c51c944b-431f-4533-8505-65bea3bec156",
+            "item_id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+            "protocol_version": 1,
+            "logical_item_key": "matrizes_pre_parto_antiparasitario",
+            "version": 2,
+            "expected_previous_id": "53006754-98ea-4ad0-8cf1-a20b8898f84b",
+            "expected_previous_version": 1
+          }
+        ],
+        "required_before_catalog_decision": [],
+        "conditions": [
+          "revisao curatorial rastreavel por ator autorizado, data e referencia vinculados ao conteudo revisado",
+          "versoes esperadas conferidas sob lock",
+          "fontes por campo materializadas e aprovadas no catalogo",
+          "catalogo e permissao promovidos juntos por publicador autorizado",
+          "usuario autorizado confirma plano e preenche contexto aplicavel na fazenda",
+          "conformidade profissional, produto, fato e comprovacao na execucao quando exigidos pela regra aplicavel"
+        ],
+        "catalog_review": {
+          "reviewer_role": "authorized_catalog_reviewer",
+          "reviewer_name": null,
+          "actor_id": null,
+          "approved_at": null,
+          "decision_reference": null,
+          "reviewed_content_digest": null,
+          "decision_status": "PENDING",
+          "requires_farm_veterinarian": false,
+          "requires_crmv_by_default": false,
+          "requires_specific_farm": false,
+          "statement": "Registrar decisao verificavel da governanca sobre regra/fontes/versao; nao representa o profissional que executara o procedimento na fazenda."
+        },
+        "farm_activation": {
+          "actor": "authorized_farm_user",
+          "confirmation_required": true,
+          "context_definition": {
+            "fazenda_id": null,
+            "uf": null,
+            "region": null,
+            "production_system": null,
+            "eligible_categories": null,
+            "responsible_reference": null,
+            "scheduledContext.date": null,
+            "scheduledContext.animalIds": null,
+            "scheduledContext.reference": null,
+            "reproductiveContext=prepartum": null,
+            "sex=femea": null,
+            "intervention_scope=assessment_only": null
+          },
+          "professional_identification_required_by_default": false
+        },
+        "execution_compliance": {
+          "evaluated_at": "execution_and_official_proof",
+          "real_product_required_when_applicable": true,
+          "professional_required_only_when_applicable": true,
+          "professional_sve_registration_required_for_b19": false,
+          "missing_planned_professional_blocks_agenda": false,
+          "planning_authorizes_medication_dose_or_withdrawal": false,
+          "planned_professional": null
+        }
+      }
+    ]
+  },
+  "item_inventory": [
+    {
+      "id": "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+      "protocol_id": "faeb5058-bf8f-46d1-877b-a32c32a62aad",
+      "logical_item_key": "b19_femeas_3_8_meses",
+      "version": 3,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "B19"
+    },
+    {
+      "id": "fe0ddfbc-6b4b-5161-843f-b4cfbd4bff53",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "logical_item_key": "clostridial_primovac_dose1",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "CLO"
+    },
+    {
+      "id": "675e30b0-0654-5407-824e-a73eeead11b4",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "logical_item_key": "clostridial_primovac_dose2",
+      "version": 3,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "CLO"
+    },
+    {
+      "id": "a694a3c6-63b3-5e4b-b035-ceb7b3d0e626",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "logical_item_key": "clostridial_reforco_anual",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "CLO"
+    },
+    {
+      "id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
+      "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+      "logical_item_key": "raiva_primovac_dose1",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "RAIVA"
+    },
+    {
+      "id": "f62a7a12-0604-4539-8245-5564e4e3592e",
+      "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+      "logical_item_key": "raiva_primovac_reforco_30d",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "RAIVA"
+    },
+    {
+      "id": "e5430f23-2f84-4812-9caa-85bb6596304d",
+      "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+      "logical_item_key": "raiva_reforco_anual_area_risco",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "RAIVA"
+    },
+    {
+      "id": "85f9ce5a-6173-5183-aca9-c4106ce938cd",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "logical_item_key": "lepto_primovac_dose1",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "LEP"
+    },
+    {
+      "id": "77c52cb2-069e-4d84-89d4-1cb26236ab5a",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "logical_item_key": "lepto_primovac_dose2",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "LEP2"
+    },
+    {
+      "id": "76e411fe-8690-5229-a3e7-cf0b0d4a2f11",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "logical_item_key": "lepto_reforco_anual_semestral",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "LEP"
+    },
+    {
+      "id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+      "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+      "logical_item_key": "ibr_bvd_primovac_dose1",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "IBR"
+    },
+    {
+      "id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+      "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+      "logical_item_key": "ibr_bvd_primovac_dose2",
+      "version": 3,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "IBR"
+    },
+    {
+      "id": "dd09c61e-6686-4b1c-99b7-ef9c3f15dc6b",
+      "protocol_id": "9bec9aff-af10-4960-b567-c5d4698f540f",
+      "logical_item_key": "fmd_historico_contingencia",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "FMD"
+    },
+    {
+      "id": "fa867ec0-acdf-4b8c-a12e-2620faca4e08",
+      "protocol_id": "9bec9aff-af10-4960-b567-c5d4698f540f",
+      "logical_item_key": "fmd_bloqueio_vacinacao_rotina",
+      "version": 1,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "FMD"
+    },
+    {
+      "id": "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+      "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+      "logical_item_key": "recria_maio",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "PAR"
+    },
+    {
+      "id": "c1866199-bf9d-506e-af05-dd84f3165c90",
+      "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+      "logical_item_key": "recria_julho",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "PAR"
+    },
+    {
+      "id": "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+      "protocol_id": "5cc9a03e-cde4-4730-a9dd-3e7ab536fb2d",
+      "logical_item_key": "recria_setembro",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "PAR"
+    },
+    {
+      "id": "e711773e-88ee-5107-aa73-68e7337468be",
+      "protocol_id": "1b6fc8c9-4835-41dd-ace9-4c4c4d7afbe1",
+      "logical_item_key": "pre_desmama_situacional",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "DES"
+    },
+    {
+      "id": "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+      "protocol_id": "56d66340-e21e-4d60-8933-d99a3514b41d",
+      "logical_item_key": "pre_confinamento_dose_unica",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "CONF"
+    },
+    {
+      "id": "e10a3a77-a91e-5fd4-afab-1276526404ef",
+      "protocol_id": "c51c944b-431f-4533-8505-65bea3bec156",
+      "logical_item_key": "matrizes_pre_parto_antiparasitario",
+      "version": 2,
+      "status": "draft",
+      "allows_agenda_auto": false,
+      "decision_set": "PARTO"
+    }
+  ],
+  "permissions": {
+    "catalog_review": "authenticated + public.is_app_admin(), server auth.uid() and transaction_timestamp()",
+    "private_sync_rpcs": "service_role only; server revalidates actor membership, owner/manager, farm gate and revision",
+    "global_approval_needs_farm_or_executor_vet": false
+  },
+  "remote_authorizations": [
+    {
+      "id": "H01",
+      "operation": "Provision new exclusive Supabase project; organization, region, cost and owner",
+      "authorized": false,
+      "actor_id": null,
+      "decision_reference": null
+    },
+    {
+      "id": "H02",
+      "operation": "Bind exclusive ref, public key digest, preview origin and independent Auth settings",
+      "authorized": false,
+      "actor_id": null,
+      "decision_reference": null
+    },
+    {
+      "id": "H03",
+      "operation": "Run remote migration dry-run, approve exact file hashes, then apply migrations",
+      "authorized": false,
+      "actor_id": null,
+      "decision_reference": null
+    },
+    {
+      "id": "H04",
+      "operation": "Deploy only named Functions and set APP_ORIGIN in the exclusive project",
+      "authorized": false,
+      "actor_id": null,
+      "decision_reference": null
+    },
+    {
+      "id": "H05",
+      "operation": "Promote exact candidate to canonical draft payload in a reviewed local commit",
+      "authorized": false,
+      "actor_id": null,
+      "decision_reference": null
+    },
+    {
+      "id": "H06",
+      "operation": "Remote import dry-run and explicit draft import, without technical approval",
+      "authorized": false,
+      "actor_id": null,
+      "decision_reference": null
+    },
+    {
+      "id": "H07",
+      "operation": "Grant catalog reviewer permission to a real identified authorized user",
+      "authorized": false,
+      "actor_id": null,
+      "decision_reference": null
+    },
+    {
+      "id": "H08",
+      "operation": "Reviewer explicitly decides each of the five ready sets through existing RPC/UI",
+      "authorized": false,
+      "actor_id": null,
+      "decision_reference": null
+    },
+    {
+      "id": "H09",
+      "operation": "Provision test farm/members and authorize narrow remote sync gate and preview rollout",
+      "authorized": false,
+      "actor_id": null,
+      "decision_reference": null
+    },
+    {
+      "id": "H10",
+      "operation": "Execute remote A/B smoke using actual test context and recorded identities",
+      "authorized": false,
+      "actor_id": null,
+      "decision_reference": null
+    }
+  ],
+  "recovery": {
+    "forward_only": true,
+    "preserve_queue_ids_receipts_history": true,
+    "stop_new_enqueues_before_disabling_farm_gate": true,
+    "automatic_rollback_or_reset": false,
+    "historical_text_agenda_id_migration": false
+  }
+}

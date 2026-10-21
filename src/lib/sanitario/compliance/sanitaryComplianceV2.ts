@@ -316,7 +316,7 @@ export function buildSanitaryComplianceV2(input: {
         `${row.animalId}|${row.protocolId}|${row.itemKey}`,
       );
       const blocked =
-        row.blockers.length > 0 ||
+        row.precheck.blockers.length > 0 ||
         protocol.status === "retired" ||
         protocol.legalStatus === "bloqueado" ||
         item.itemStatus === "bloqueado" ||
@@ -333,7 +333,7 @@ export function buildSanitaryComplianceV2(input: {
       if (blocked) {
         status = "blocked";
         evidenceLabel =
-          row.blockers[0] ?? "Item bloqueado pela regra sanitária.";
+          row.precheck.blockers[0] ?? "Item bloqueado pela regra sanitária.";
         evidenceOrigin = "technical_block";
         evidenceOriginLabel = "Bloqueio técnico do catálogo";
       } else if (row.status === "not_applicable") {

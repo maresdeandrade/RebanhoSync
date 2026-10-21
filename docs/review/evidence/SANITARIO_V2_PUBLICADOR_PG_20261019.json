@@ -1,0 +1,54 @@
+{
+  "environment": "dedicated local PostgreSQL database; real RLS/roles/locks; JWT transport simulated via PostgREST session claims",
+  "cases": [
+    {
+      "name": "upgrade preserves all original physical versions and rejects obsolete review",
+      "result": "PASS"
+    },
+    {
+      "name": "authenticated non-admin, anonymous and direct global writes cannot approve",
+      "result": "PASS"
+    },
+    {
+      "name": "retired or legally blocked protocol cannot be reactivated by review",
+      "result": "PASS"
+    },
+    {
+      "name": "hash and protocol version divergence fail without audit/publication",
+      "result": "PASS"
+    },
+    {
+      "name": "authorized explicit B19 approval, trusted actor/time, exact scope and lost-ACK replay",
+      "result": "PASS"
+    },
+    {
+      "name": "two reviewers race: one decision wins, other version/hash conflicts",
+      "result": "PASS"
+    },
+    {
+      "name": "audit failure rolls back catalog and same request recovers safely",
+      "result": "PASS"
+    },
+    {
+      "name": "rejection is auditable and does not enable flags",
+      "result": "PASS"
+    },
+    {
+      "name": "registered evidence changes invalidate the reviewed digest",
+      "result": "PASS"
+    },
+    {
+      "name": "all six permanent restrictions and seven commercial evidence gaps stay blocked",
+      "result": "PASS"
+    },
+    {
+      "name": "complete remaining eligible assessments without a farm or veterinarian",
+      "result": "PASS"
+    }
+  ],
+  "result": "PASS",
+  "approved_in_disposable_database": 7,
+  "real_catalog_authorizations": 0,
+  "catalog_file": "C:\\Users\\mares\\AppData\\Local\\Temp\\sanitario-review-pg-XIESNL\\approved-catalog.json",
+  "disposable_database_removed": true
+}

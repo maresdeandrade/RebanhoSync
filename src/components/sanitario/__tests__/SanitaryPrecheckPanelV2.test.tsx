@@ -145,6 +145,7 @@ function buildSequentialCatalog(): SanitaryProtocolCatalogReadModelV2 {
 }
 
 const baseAnimal: SanitaryPrecheckAnimalResumoV2 = {
+  uf: "MG",
   id: "animal-1",
   especie: "bovino",
   sexo: "femea",

@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "artifact": "sanitary-v2-local-homologation",
+  "report_date": "2026-10-19",
+  "base": "43f2360449322d1e5dfdbf3671a56d6fba1ab9a3",
+  "branch": "codex/sanitario-v2-convergencia",
+  "observed_main": "350955f91c2b06859ba7d093926d3f5b27389b86",
+  "common_ancestor": "b748a5941d513ef3a293e5e8a98f31eb051dfeb6",
+  "remote_writes": 0,
+  "real_curatorial_approvals": 0,
+  "isolated_remote_staging_proven": false,
+  "remote_inventory_observed_date": "2026-10-17",
+  "production": {
+    "project_ref": "zqloazqzhwauamcejmuz",
+    "catalog_protocols": 0,
+    "catalog_items": 0,
+    "auto_permissions": 0,
+    "review_rpcs_installed": false,
+    "frontend": "https://rebanho-sync.vercel.app",
+    "bundle_sha256": "94639b1a09b5556e82ab05de85acf0f0bc4fb2e391831805a11204ef857c65c6"
+  },
+  "counts": {
+    "items": 20,
+    "ready": 7,
+    "commercial_pending": 7,
+    "consultative_rabies": 3,
+    "blocked_aftosa_lep2": 3,
+    "automatically_generated_in_local_fixture": 7
+  },
+  "schema_discrepancy": {
+    "current_form_schema": 3,
+    "current_candidate_sha256": "2b3adab34d0eb58dcc5d8fa976d1cd852d41f204e00063b776e2271d60753fe6",
+    "current_decisions_sha256": "f7dcda6d73f917177b1f5f358d7c2dae9db289b3b2839ebc7590c5698359c185",
+    "preserved_old_schema": 2,
+    "preserved_old_candidate_sha256": "9bb5ad1789c7061994f212cd500e8d5e64cd301332dec354aa2b9a800bb67c56",
+    "preserved_old_file_sha256": "ad912cdb6830233646c6ab4f0fadbb9ca740378aba4a90e103930dc343783388"
+  },
+  "tests": {
+    "main": {
+      "passed": 467,
+      "skipped": 15,
+      "failed": 0
+    },
+    "published_fixture_supplement": {
+      "passed": 15,
+      "skipped": 0,
+      "failed": 0
+    },
+    "distinct_passed": 482,
+    "native_supabase_chromium": {
+      "passed": 17,
+      "evidence": "SANITARIO_V2_CONVERGENCIA_TESTES_20261019.json",
+      "cleanup": true
+    },
+    "native_postgresql_publisher": {
+      "passed": 11,
+      "observed_date": "2026-10-17",
+      "evidence": "SANITARIO_V2_PUBLICADOR_PG_20261019.json",
+      "result": "PASS"
+    },
+    "fallow": {
+      "verdict": "pass",
+      "base": "43f2360449322d1e5dfdbf3671a56d6fba1ab9a3",
+      "attribution": {
+        "gate": "new-only",
+        "dead_code_introduced": 0,
+        "dead_code_inherited": 11,
+        "complexity_introduced": 0,
+        "complexity_inherited": 29,
+        "duplication_introduced": 0,
+        "duplication_inherited": 12,
+        "styling_introduced": 0,
+        "styling_inherited": 0,
+        "duplication_demoted": 0
+      },
+      "unresolved_imports": 0
+    },
+    "lint": {
+      "affected_files": 20,
+      "exit": 0
+    },
+    "production_build_negative_check": "rejected homologation endpoint before bundling",
+    "build": {
+      "result": "PASS",
+      "command": "node node_modules/vite/bin/vite.js build --mode homologation",
+      "duration_observed": "1m 10s",
+      "warnings": [
+        "Browserslist data old",
+        "static/dynamic import overlap",
+        "chunks above 500 kB"
+      ]
+    },
+    "document_contracts": {
+      "result": "PASS",
+      "command": "node scripts/antigravity/run_bash.mjs scripts/antigravity/docs_gates.sh"
+    }
+  },
+  "source_files": {
+    "src/lib/offline/__tests__/sanitarioV2Cutover.test.ts": "fa3a2424c28ffc0e7e4f9419b35ce1752b9cda116078ed8c20b921d2571c31a3",
+    "src/lib/offline/__tests__/sanitarioV2PullCutover.test.ts": "bc638cb97457f41b08bb38085a264b8c3fe24fe2b9d798a61ccc7f903a1d2c91",
+    "src/lib/offline/ops.ts": "bdf48a5cf27b7d6d5bc22ad84355726a62c19624218d77f93b07b3f5f66951ad",
+    "src/lib/offline/pull.ts": "60d92ab7ed62447f9d4b14f141676c2e5e03f559841b32eb2d788f8688b6774c",
+    "src/lib/offline/sanitarioV2Cutover.ts": "f4df6d1b28713a2c124449a434c38eb865d6f6f455746a72733c693ebf4065cc",
+    "src/lib/offline/syncWorker.ts": "672053723f3fdc10272e9ff0b43e232211e324dfe0ac97b366f2099a50ec29c2",
+    "src/lib/offline/types.ts": "07b2d9b36317e7cf3b9048ad742c9e31de59f24c554b91bf75996876fea8c2f8",
+    "src/lib/sanitario/agenda/sanitaryAutomationPlanV2.ts": "9472548c2bbba3ac913f57e75752425d7ba8fb536223c7c82fea25e88a8776aa",
+    "src/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2.ts": "2e207deb439c14e1368406d780e63f46c7ea339ccbd7fdd3b6721a75605b66c5",
+    "src/lib/sanitario/agenda/sanitaryManualAgendaV2.ts": "7017d05c40d45e1fd51b2a66a5a9dc295074a837cf4660fa90611848db9f7e0e",
+    "src/lib/sanitario/windows/sanitaryProtocolWindowsV2.ts": "b512f0fc59a87ab01145916d125351d7e9b74d55855cca5240e0521e293f62b7",
+    "supabase/functions/sync-batch/sanitario-v2.test.ts": "7d1813c7729bb90c467671fb68dbbc53b18f38d2dafaab0c8f37afb4c41fa2fe",
+    "supabase/functions/sync-batch/sanitario-v2.ts": "ba57856ed4850b016b6ddf47e755515c8d0ddc0fd2648fd9562f92644a2ebeae",
+    "tests/codex/sanitario-v2-review.supabase.mjs": "1d238efafe7e013a0b4f1be3ea23130f1a97c47e12fd708336d84dba11bd8653",
+    "vite.config.ts": "ab639513b68f0330deb3ad4725d7e264db2965b3961aef21749456c41975c5b0",
+    ".env.homologation.example": "f1d108cfc8275a0fc340e529363a67e0be53d9b0cec0ef3262141f40e42362df",
+    "config/backend-targets.json": "5a57af3142409f5a026de8c15e1bfd02a25d25f2ed236981c04605d7c53aef48",
+    "scripts/codex/backend-environment.mjs": "9d9ebe97e36f670f3aa36ef557ab4a8d24f4205be3fb5c555891f3310ea0215d",
+    "src/lib/sanitario/agenda/__tests__/sanitaryPlanningSyncV2.test.ts": "c291f0913ddfe762f55336b947180343f6a3b709c927bac96e47c419c0f418a9",
+    "src/lib/sanitario/agenda/sanitaryPlanningSyncV2.ts": "1fc874980868830efbf924a90315aecc9cdec402be33762264e7b212825fde8f",
+    "supabase/migrations/20261017195545_sanitario_planning_convergence_v2.sql": "8b6b0577e6f07280ee58ead78221fcec6c5b9973aad8222e225c350a9ff36593",
+    "tests/codex/backend-environment.test.mjs": "97847c2b80fcb79005e2634027c9d04c0533cd225c5c2f477a5afdb111a4a811",
+    "tests/codex/sanitario-v2-convergence.fixture.mjs": "ad8a5c700586302cfad2431cb7158908a675f436af7b3480fea43397cea73ebc"
+  },
+  "verification": {
+    "classification": "READY",
+    "real_remote_release": "NOT_EXECUTED",
+    "review_scope": "working tree against 43f2360449322d1e5dfdbf3671a56d6fba1ab9a3; tracked and untracked inspected",
+    "source_of_truth_preserved": true,
+    "remote_authorizations_granted": 0,
+    "scope": "local homologation patch; no remote publication"
+  },
+  "supabase_catalog_and_projects_rechecked_date": "2026-10-19"
+}
