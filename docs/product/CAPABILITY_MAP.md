@@ -101,7 +101,7 @@ Não inferir peso atual confiável, aptidão reprodutiva nem aptidão/liberaçã
 
 ### Limites
 
-Agenda não é histórico.  
+Agenda não é histórico.
 Agenda concluída sem evento não é prova operacional suficiente.
 
 ---

@@ -79,8 +79,8 @@ As seguintes ações estão **permitidas no MVP**:
 > ⚠️ **Regra obrigatória:**
 > * `sanitario:livre_carencia` $\neq$ `comercial:apto_venda`
 > * `sanitario:livre_carencia` $\neq$ `comercial:apto_abate`
-> 
-> 
+>
+>
 
 ### Peso atual confiável
 
