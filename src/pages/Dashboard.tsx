@@ -152,7 +152,7 @@ function subscribeToConnectivity(onChange: () => void) {
     events.forEach((event) => window.removeEventListener(event, onChange));
 }
 
-const DashboardContent = ({ activeFarmId }: { activeFarmId: string }) => {
+const Dashboard = ({ activeFarmId }: { activeFarmId: string }) => {
   const online = useSyncExternalStore(
     subscribeToConnectivity,
     () => navigator.onLine,
@@ -1404,7 +1404,7 @@ const DashboardContent = ({ activeFarmId }: { activeFarmId: string }) => {
   );
 };
 
-const Dashboard = () => {
+const DashboardPage = () => {
   const { activeFarmId } = useAuth();
   if (!activeFarmId) {
     return (
@@ -1417,9 +1417,9 @@ const Dashboard = () => {
   }
   return (
     <DashboardReadBoundary key={activeFarmId}>
-      <DashboardContent activeFarmId={activeFarmId} />
+      <Dashboard activeFarmId={activeFarmId} />
     </DashboardReadBoundary>
   );
 };
 
-export default Dashboard;
+export default DashboardPage;

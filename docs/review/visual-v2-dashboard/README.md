@@ -49,12 +49,14 @@ As três propriedades `data` efetivamente recebidas pelo Recharts foram comparad
 - `pnpm exec vitest run src/pages/__tests__/Dashboard.test.tsx src/components/ui/__tests__/metric-card.test.tsx src/components/ui/__tests__/section-header.test.tsx --reporter=dot`: 18 testes em três arquivos aprovados.
 - `pnpm run lint`: código zero.
 - `pnpm exec prettier --check src/pages/Dashboard.tsx src/pages/__tests__/Dashboard.test.tsx`: aprovado.
-- `pnpm exec fallow audit --gate new-only`: código zero; oito achados herdados excluídos pelo gate existente. Configuração e supressões inalteradas.
+- `pnpm exec fallow audit --gate new-only --changed-since origin/main`: código zero; nove achados herdados e nenhum novo. Configuração e supressões inalteradas. A base foi explicitada porque, após o push, o upstream da branch aponta ao próprio HEAD.
 - `pnpm run build`: aprovado, com aviso de chunks maiores que 500 kB.
 - `git diff --check`: aprovado.
 - `pnpm run gates:docs`: aprovado; headers, continuidade e contrato documental coerentes.
 
 O resultado remoto de **Required validation** e o HEAD final devem ser consultados no PR DRAFT correspondente; este relatório registra as evidências locais anteriores à publicação.
+
+A primeira execução remota parou no Fallow: renomear o componente existente para `DashboardContent` fez sua complexidade herdada ser atribuída a uma função nova. O componente manteve o nome original `Dashboard`, e o wrapper adicionado recebeu o nome `DashboardPage`. A reprodução com base explícita confirmou zero achados novos após essa correção de identidade; nenhuma configuração ou supressão foi alterada.
 
 ## Capturas
 
