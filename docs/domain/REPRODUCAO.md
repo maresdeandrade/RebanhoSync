@@ -1,7 +1,8 @@
 # Reprodução — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-10-20
+
+**Baseline documental original:** `32d7779`
 
 ## Objetivo
 
@@ -26,20 +27,26 @@ O escopo confirmado principal envolve:
 
 ---
 
+## Registro factual implementado e escopo
+
+Na baseline de código `origin/main@27a3bed`, há implementação versionada para registrar cobertura e IA, diagnóstico vinculado a episódio, parto, aborto/perda gestacional, vínculo mãe-cria e correções factuais quando modeladas. Eventos e detalhes reprodutivos sustentam projeções reconstruíveis de estado; essas projeções permanecem `state_*`/read models, não histórico. Referências: `src/lib/reproduction/register.ts`, `src/lib/reproduction/status.ts`, `src/lib/reproduction/remoteSync.ts` e testes `src/lib/reproduction/__tests__/register.test.ts`, `src/lib/reproduction/__tests__/status.test.ts`, `src/lib/reproduction/__tests__/remoteSync.test.ts`. A Fase 13 consta como funcionalmente encerrada em `docs/context/PROJECT_STATUS.md`; esses testes versionados não foram executados nesta reconciliação e não comprovam deployment remoto.
+
+Essa capacidade factual individual não foi encontrada como inclusão explícita no MVP consultado. Não convertê-la em compromisso de produto nem confundi-la com automação ampla.
+
+---
+
 ## Escopo não confirmado como motor amplo
 
-Não assumir sem validação específica:
+Não assumir como suporte implementado ou capacidade do MVP:
 
-* IATF ampla;
-* cobertura;
-* inseminação artificial completa;
-* diagnóstico de gestação;
-* reconcepção;
+* motor amplo de IATF;
+* automação integral de IA/cobertura;
+* motor abrangente de diagnóstico de gestação/reconcepção;
 * estação de monta completa;
 * indicadores reprodutivos avançados;
 * motor universal de calendário reprodutivo.
 
-> ⚠️ **Regra:** Esses temas podem existir futuramente, mas não devem ser inferidos.
+> **Regra:** Registro factual individual de cobertura/IA/diagnóstico não comprova automação ampla, decisão clínica ou performance reprodutiva avançada; possibilidade futura não é compromisso de desenvolvimento sem roadmap aprovado.
 
 ---
 
@@ -150,13 +157,13 @@ Estado atual pode ser lido por `state_*` ou read model equivalente. Não deve su
 
 ### Status
 
-Não confirmado como motor amplo.
+Não há comprovação de motor amplo. O registro factual individual descrito em “Registro factual implementado e escopo” é uma capacidade distinta.
 
 ### Regra
 
-Não criar documentação ou UI afirmando suporte amplo se o código não validar.
+Não afirmar suporte a automação ampla, decisão clínica, calendário universal, estação de monta ou indicadores avançados com base apenas em Evento individual ou projeção.
 
-Termos que exigem confirmação: IATF, IA, cobertura, touro em estação, diagnóstico de gestação, reconcepção, taxa de prenhez, intervalo entre partos e taxa de desmame.
+Termos que exigem qualificação explícita: “IATF automatizada”, “IA/cobertura integral”, “diagnóstico automatizado”, reconcepção, taxa de prenhez, intervalo entre partos e taxa de desmame.
 
 ---
 
@@ -182,7 +189,7 @@ Verificar:
 
 * parto sem cria;
 * natimorto;
-* aborto, se modelado;
+* aborto/perda gestacional, com Evento factual e vínculo ao episódio quando disponível;
 * cria sem sexo informado;
 * mãe vendida/morta;
 * cria duplicada por retry;

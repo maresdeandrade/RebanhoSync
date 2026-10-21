@@ -1,8 +1,9 @@
 ```md
 # Out of Scope — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-10-20
+
+**Baseline documental original:** `32d7779`
 
 ## Objetivo
 
@@ -105,16 +106,18 @@ Fora do MVP como afirmação automática. Não basta ter a última pesagem. Exig
 
 ### Motor reprodutivo amplo
 
+Ficam fora do MVP como **motor automatizado amplo**:
+
 * IATF ampla;
-* IA completa;
-* cobertura;
-* diagnóstico de gestação;
-* reconcepção;
+* automação integral de IA e cobertura;
+* motor abrangente de diagnóstico de gestação e reconcepção;
 * estação de monta completa;
 * taxa de prenhez automatizada;
 * motor universal de calendário reprodutivo.
 
-> 📌 **Escopo confirmado principal:** Parto, pós-parto, cria e vínculo mãe-cria.
+Há implementação versionada de registros factuais individuais de cobertura/IA e diagnóstico ligado a episódio, além de projeções reprodutivas. Isso não equivale ao motor amplo acima nem inclui automaticamente esses registros no MVP; o escopo de produto permanece a definir onde não houver decisão explícita.
+
+> 📌 **Escopo confirmado principal do MVP:** Parto, pós-parto, cria e vínculo mãe-cria.
 
 ### Analytics preditivo
 

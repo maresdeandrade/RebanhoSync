@@ -4,17 +4,14 @@ Plataforma offline-first para gestão pecuária, com React/TypeScript, Dexie e S
 
 ## Estado atual
 
-- Beta interno.
-- Fase 12 tecnicamente encerrada; Fase 13 é a próxima fase de desenvolvimento.
-- Conformidade Sanitária v2 validada localmente como read model derivado e somente leitura.
-- Documentação curta do Sanitário v2 local concluída.
-- Sync Sanitário v2 concluído tecnicamente e certificado funcionalmente no staging com `sync-batch` v20.
-- Hardening integrado local desses incrementos executado e documentado.
-- `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026 após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`; [evidência canônica](docs/context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Rollout e importação real continuam não autorizados.
-- Gate sanitário remoto desligado; feature flag local `false`; rollout não autorizado.
-- Próxima fase: **Fase 13 — Reprodução Operacional v1**.
+- Beta interno; **Fase 24 — Release Hardening / Scale Readiness** está ativa.
+- F24.5 está integrada. F24.6 permanece ativa; F24.6A1 foi integrada pelo PR #200.
+- A certificação F24.6A1 é limitada ao reconnect 1k descrito no [relatório](docs/review/F24_6A1_RECONNECT_1K_CERTIFICATION.md); não declara capacidade geral de escala.
+- F24.6A2 é proposta de inventário estático; seu escopo e critérios precisam ser formalizados antes do início.
+- O Sync Sanitário v2 está implementado sob gate remoto desligado. Recertificação completa, importação real e rollout não estão autorizados.
+- Produção não está provisionada. Merge em `main` não comprova implantação operacional.
 
-Produção não foi alterada. O ambiente remoto usado nesta fase é o Supabase staging `zqloazqzhwauamcejmuz`.
+Consulte o [estado canônico do projeto](docs/context/PROJECT_STATUS.md) para fase, limites e distinção entre implementação, integração e ativação.
 
 ## Contratos essenciais
 
@@ -31,9 +28,10 @@ Produção não foi alterada. O ambiente remoto usado nesta fase é o Supabase s
 ## Navegação documental
 
 - [Índice da documentação](./docs/README.md)
+- [Matriz de rastreabilidade](./docs/product/REQUIREMENTS_TRACEABILITY.md)
 - [Estado atual](./docs/context/PROJECT_STATUS.md)
 - [Roadmap](./docs/product/ROADMAP.md)
-- [Plano ativo e transição para a Fase 13](./docs/review/ACTIVE_PHASE_PLAN.md)
+- [Plano ativo da Fase 24](./docs/review/ACTIVE_PHASE_PLAN.md)
 - [Handoff técnico atual](./docs/review/CURRENT_PHASE_HANDOFF.md)
 - [Arquitetura](./docs/technical/ARCHITECTURE.md)
 - [Sanitário](./docs/domain/SANITARIO.md)

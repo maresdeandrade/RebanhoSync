@@ -1,14 +1,9 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-10-13
-Baseline documental de abertura da Fase 18: `ada8376b545b2ae3a3706de2f09305e0ad0ca848`; `origin/main@e806443d8d326d9fb5c025e6aa55d5c73582a015`
-Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
-Baseline de abertura da Fase 20: `main@5dc7195e5b0d96eee74a9512317a2b30b9c21a58`
-Merge do hardening transversal: `4e208ba090daa652f2735c94403317ed4ecbf045`
-Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
-PR do hardening transversal: `#96`
-Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A — Performance / Scale Baseline)**.
-Próxima fase de desenvolvimento: **Fase 24 — integração administrativa da F24.6A1 certificada; nenhuma nova subfase**.
+Atualizado em: 2026-10-20
+Baseline integrada consultada: `origin/main@27a3bed971639c41c0ca458379a6b9b5f02ef8dc`
+Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no escopo certificado)**.
+Próxima fase de desenvolvimento: **Fase 24 — proposta de inventário F24.6A2; escopo e critérios devem ser formalizados antes do início**.
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.
@@ -37,11 +32,11 @@ O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é 
 
 **F24.6A1 — certificação concluída / fechamento administrativo (13/10/2026):** `RECONNECT_1K = CERTIFIED` em `main@869f006679827f3baddb0afed3c3cbf22e976fa5`: smoke aprovado, 5/5 runs sequenciais de 1.000 gestos, 1.000 animais, duas fazendas 500/500, warm, agenda vazia; mediana 146,46s. ACKs, fila/obrigações zeradas, isolamento, convergência, revisão única e cleanup comprovados no [relatório único](../review/F24_6A1_RECONNECT_1K_CERTIFICATION.md), com evidências versionadas e hashes auditáveis. Baseline E1/E2 e falhas anteriores preservadas; sem repetição do benchmark nesta publicação.
 
-Fechamento preparado neste pacote: **`F24.6A1 = CLOSED / INTEGRATED` somente após o merge deste PR na main**, restrito ao envelope certificado; antes do merge, certificação concluída e integração pendente. Não há nova subfase, novo relatório ou documentação pós-merge exigidos. F24.6 continua ACTIVE; nenhuma execução posterior foi autorizada. Preservados os riscos de certificação local/heap amostrado/n=5 e causa interna do primeiro 502 não capturada.
+Fechamento integrado pelo PR #200 (`99a421713abb0401f58bb9f8edfad38b5777758c`): **`F24.6A1 = CLOSED / INTEGRATED` somente no envelope reconnect 1k certificado**. A medição permanece referenciada a `main@869f006679827f3baddb0afed3c3cbf22e976fa5`; o merge e o head atual não alteram o escopo do resultado. F24.6 continua ACTIVE. Os riscos de certificação local, heap amostrado, n=5 e causa interna do primeiro 502 permanecem registrados.
 
 **F24.6A1-H — snapshot histórico substituído (12/10/2026):** PR [#196](https://github.com/maresdeandrade/RebanhoSync/pull/196) `MERGED` em `6cf239fddf6a33249dbba8ce99de180e1772280e`, head integrado `694f4921d96b4acc7c07eb347d68c2d69e98c6ed`. Patch C+D, remediações Fallow G1/G2 e compatibilidade Vitest G5/G6 integrados. CI incremental [38162109877](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162109877) e gate completo [38162234927](https://github.com/maresdeandrade/RebanhoSync/actions/runs/38162234927) aprovados; gate completo com build, cleanup, 431 arquivos/3644 testes aprovados e 3 arquivos/59 testes skipped. Os quatro testes de performance executaram seus dez casos. F24.6 permanece ACTIVE; `RECONNECT_1K = NOT_CERTIFIED`, ganho geral de latência/memória NOT_PROVEN.
 
-Baseline operacional observado: `origin/main@cd1855dba81f06c4b49ce29621af5cc20573cae9`. O avanço após #196 é o PR #197 (`605cec2`), restrito a UI de reprodução/parentesco e tsconfig; não altera C+D, testes pós-ACK ou harness. Baseline histórica E1/E2 continua `3b3bc96db331c2917167cf8370024332f505d9f7`; séries, parâmetros, hashes e relatórios históricos preservados. Próxima execução: preparar o harness para adoção explícita do baseline integrado e retomar reconnect 1k conforme o plano no handoff; nenhum benchmark executado em H.
+**Snapshot operacional anterior à integração do PR #200 — HISTORICAL_CORRECT / SUPERSEDED:** Baseline operacional observado: `origin/main@cd1855dba81f06c4b49ce29621af5cc20573cae9`. O avanço após #196 é o PR #197 (`605cec2`), restrito a UI de reprodução/parentesco e tsconfig; não altera C+D, testes pós-ACK ou harness. Baseline histórica E1/E2 continua `3b3bc96db331c2917167cf8370024332f505d9f7`; séries, parâmetros, hashes e relatórios históricos preservados. Próxima execução: preparar o harness para adoção explícita do baseline integrado e retomar reconnect 1k conforme o plano no handoff; nenhum benchmark executado em H.
 
 **F24.6A1-E2 — snapshot histórico anterior à integração (SUPERSEDED):** [Seed e comparação A/B](../review/F24_6A1E2_SEED_DIAGNOSIS_AND_AB_COMPLETION.md) = `READY_FOR_REVIEW`. Série independente do patch final: 5/5 originais e 5/5 otimizados, 100 gestos/duas fazendas, todos íntegros. Medianas: 4.550.194→287.621 bytes, 5200→300 linhas, 16.825,40→16.097,00ms; requests/pulls preservados e intervalos de latência sobrepostos. Instrumentação somente no harness, fontes funcionais e 93 arquivos anteriores preservados. Causa do seed antigo LIMIT_NOT_PROVEN; perda de diagnóstico do wrapper corrigida e prova artificial de captura aprovada, sem atribuir quota real. Probes pequenos e sete checks funcionais PASS; ambiente próprio removido, compartilhado inalterado. Reconnect 1k NÃO CERTIFICADO; sem otimização adicional ou integração autorizada. Checagem final: origin/main avançou para 35df487c2b21b3e98fc27fdd255cf82b80748140 (PRs #193/#194, somente layout Registrar); HEAD e benchmark preservam baseline fixa 3b3bc96d, sem impacto nos módulos exercitados.
 
@@ -300,11 +295,9 @@ Limites: as outras RPCs autoritativas não foram exercitadas nessa recertificaç
 
 ## Próximo desenvolvimento
 
-**Transição vigente:** F24.4/F24.4F CLOSED / INTEGRATED pelo PR #181;
-F24.5 IN_PROGRESS, F24.5A READY_FOR_REVIEW (review APPROVED) e F24.5B NEXT.
-Base operacional `main@3da8c89a5dd8c2d793d8d34af749a68c9c81f59a`;
-plano de B vinculado acima. O parágrafo seguinte é HISTORICAL_CORRECT / SUPERSEDED:
-preserva o estado anterior à correção do guard e à integração F24.4F, sem reescrever E1/E2.
+**Estado vigente — 20/10/2026:** F24.6 continua ACTIVE; F24.6A1 está CLOSED / INTEGRATED pelo PR #200 somente no envelope reconnect 1k certificado. O resultado não comprova capacidade geral de escala. F24.6A2 é uma proposta de inventário estático independente; formalizar escopo e critérios antes de iniciar. Não iniciar medição, otimização ou rollout por inferência.
+
+O próximo parágrafo é `HISTORICAL_CORRECT / SUPERSEDED` e preserva um snapshot da F24.4E/F24.5, não o estado corrente.
 
 A Fase 22 e a Fase 23 permanecem formalmente encerradas. A F24.0 estabeleceu a baseline de release sem reabrir fases concluídas; a F24.1 fechou a inspeção com `MIGRATION_PRODUCTION_DELTA = BLOCKED`; F24.2, F24.3, F24.4A, F24.4B, F24.4C e F24.4D estão `CLOSED`. A F24.4D encerrou a caracterização cross-device e autoridade de relógio na branch `feat/f24-4d-cross-device-clock-authority`; a F24.4 permanece `IN_PROGRESS` e **F24.4E — Conflict Resolution Contract** permanece em andamento; E1 está integrada e E2 Animal→Lote está fechada e integrada pelo PR #175, com G3 resolvido somente nessa vertical. O blocker stale Sanitário v2 foi fechado em 05/10/2026; certificação remota completa e autorização de rollout continuam pendentes, e produção permanece `NOT_AUTHORIZED`.
 
