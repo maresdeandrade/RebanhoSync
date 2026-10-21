@@ -133,17 +133,7 @@ export function SanitaryAutomaticPlanPanelV2({
               saving={saving}
               setDraft={updateDraft}
             />
-            {unavailable.length ? <div role="alert" className="space-y-2 text-sm">
-              <p>{unavailable.length} regra(s) do plano salvo estão indisponíveis ou com versão alterada. Remova-as antes de ativar uma revisão.</p>
-              <details><summary>Revisar seleções indisponíveis</summary>
-                <ul>{unavailable.map((rule) => <li key={rule.itemId}>
-                  {formatSanitaryProtocolItemLabelV2(source?.catalog.items.find((item) => item.id === rule.itemId)?.logicalItemKey ?? rule.itemId)} · versão {rule.itemVersion}
-                  <Button type="button" variant="outline" size="sm" onClick={() => updateDraft((previous) => ({
-                    ...previous, rules: previous.rules.filter((entry) => entry.itemId !== rule.itemId),
-                  }))}>Remover seleção</Button>
-                </li>)}</ul>
-              </details>
-            </div> : null}
+            <UnavailablePlanRules source={source} unavailable={unavailable} updateDraft={updateDraft} />
             <p className="text-sm text-muted-foreground">Regras pendentes, restrições e justificativas técnicas: <Link className="underline" to="/protocolos-sanitarios/catalogo-v2">Consultar catálogo sanitário</Link>.</p>
             <PlanPreview preview={preview} />
             <label className="flex items-center gap-2 text-sm">
@@ -154,39 +144,52 @@ export function SanitaryAutomaticPlanPanelV2({
               />
               Revisei o plano e autorizo a geração automática das regras selecionadas.
             </label>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                disabled={saving || !confirmed || !draft.rules.length || unavailable.length > 0}
-                onClick={() => save(true)}
-              >
-                {active
-                  ? "Salvar revisão do plano"
-                  : "Ativar plano automático"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving || !active}
-                onClick={() => save(false)}
-              >
-                Desativar plano automático
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy || saving}
-                onClick={() => reevaluate()}
-              >
-                Reavaliar plano
-              </Button>
-            </div>
+            <PlanActions state={{ saving, confirmed, active, busy, hasRules: Boolean(draft.rules.length), hasUnavailable: unavailable.length > 0 }}
+              onSave={save} onReevaluate={reevaluate} />
             <GeneratedPlanAgendas source={source} />
         </fieldset> : null}
       </details>
       <PlanFeedback message={message} error={error} />
     </section>
   );
+}
+
+function PlanActions({ state, onSave, onReevaluate }: {
+  state: { saving: boolean; confirmed: boolean; active: boolean; busy: boolean; hasRules: boolean; hasUnavailable: boolean };
+  onSave: (enabled: boolean) => Promise<void>;
+  onReevaluate: () => unknown;
+}) {
+  return <div className="flex flex-wrap gap-2">
+    <Button type="button" disabled={state.saving || !state.confirmed || !state.hasRules || state.hasUnavailable}
+      onClick={() => onSave(true)}>
+      {state.active ? "Salvar revisão do plano" : "Ativar plano automático"}
+    </Button>
+    <Button type="button" variant="outline" disabled={state.saving || !state.active} onClick={() => onSave(false)}>
+      Desativar plano automático
+    </Button>
+    <Button type="button" variant="outline" disabled={state.busy || state.saving} onClick={() => onReevaluate()}>
+      Reavaliar plano
+    </Button>
+  </div>;
+}
+
+function UnavailablePlanRules({ source, unavailable, updateDraft }: {
+  source: Props["source"];
+  unavailable: SanitaryAutomationDraftV2["rules"];
+  updateDraft: React.Dispatch<React.SetStateAction<SanitaryAutomationDraftV2>>;
+}) {
+  if (!unavailable.length) return null;
+  return <div role="alert" className="space-y-2 text-sm">
+    <p>{unavailable.length} regra(s) do plano salvo estão indisponíveis ou com versão alterada. Remova-as antes de ativar uma revisão.</p>
+    <details><summary>Revisar seleções indisponíveis</summary>
+      <ul>{unavailable.map((rule) => <li key={rule.itemId}>
+        {formatSanitaryProtocolItemLabelV2(source?.catalog.items.find((item) => item.id === rule.itemId)?.logicalItemKey ?? rule.itemId)} · versão {rule.itemVersion}
+        <Button type="button" variant="outline" size="sm" onClick={() => updateDraft((previous) => ({
+          ...previous, rules: previous.rules.filter((entry) => entry.itemId !== rule.itemId),
+        }))}>Remover seleção</Button>
+      </li>)}</ul>
+    </details>
+  </div>;
 }
 
 function planSaveError(cause: unknown) {

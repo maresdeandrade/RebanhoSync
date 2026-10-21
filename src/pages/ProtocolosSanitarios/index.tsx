@@ -290,11 +290,7 @@ const ProtocolosSanitarios = () => {
         meta={<><StatusBadge tone="info">Local e offline</StatusBadge><StatusBadge tone="neutral">Execução explícita</StatusBadge></>}
       />
 
-      <div className="space-y-2 text-sm">
-        <Button type="button" variant="outline" disabled={refreshing} onClick={refresh}>{refreshing ? "Atualizando catálogo..." : "Atualizar catálogo"}</Button>
-        <p className="text-muted-foreground">Planejamentos são salvos neste dispositivo e podem ser consultados offline. A sincronização sanitária depende da liberação do ambiente.</p>
-        {refreshError ? <p role="status" className="text-muted-foreground">{refreshError}</p> : null}
-      </div>
+      <CatalogRefreshControls refreshing={refreshing} refresh={refresh} refreshError={refreshError} />
       <SanitaryAutomaticPlanPanelV2 key={activeFarmId} fazendaId={activeFarmId} actorId={automationActor(user)} source={currentFarmSource(windowSource, activeFarmId)} />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="h-auto flex-wrap justify-start">
@@ -401,5 +397,15 @@ const ProtocolosSanitarios = () => {
     </PageContainer>
   );
 };
+
+function CatalogRefreshControls({ refreshing, refresh, refreshError }: {
+  refreshing: boolean; refresh: () => void; refreshError: string | null;
+}) {
+  return <div className="space-y-2 text-sm">
+    <Button type="button" variant="outline" disabled={refreshing} onClick={refresh}>{refreshing ? "Atualizando catálogo..." : "Atualizar catálogo"}</Button>
+    <p className="text-muted-foreground">Planejamentos são salvos neste dispositivo e podem ser consultados offline. A sincronização sanitária depende da liberação do ambiente.</p>
+    {refreshError ? <p role="status" className="text-muted-foreground">{refreshError}</p> : null}
+  </div>;
+}
 
 export default ProtocolosSanitarios;

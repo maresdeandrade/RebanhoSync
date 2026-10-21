@@ -27,16 +27,21 @@ export function SanitaryRuleContextEditorV2({ item, source, context, onChange, h
       {hasOverride ? <Button type="button" variant="outline" size="sm" onClick={onReset}>Usar contexto geral</Button> : null}
       <PlanContextFields prefix={`${label}: `} context={context} onChange={onChange} />
       {item.eligibilityRule.requires_mv_or_management_context ? <PreWeaningBasisFields context={context} onChange={onChange} /> : null}
-      {Array.isArray(months) ? <label className="flex items-center gap-2 py-2">
-        <Checkbox aria-label={`Adotar calendário regional ${label}`}
-          checked={Boolean(context.regionalCalendar)}
-          onCheckedChange={(checked) => onChange({ ...context, regionalCalendar: checked === true
-            ? { uf: source?.farmUf ?? "", months: months.filter((value): value is number => typeof value === "number") } : undefined })} />
-        Adotar nesta fazenda o calendário da versão técnica, mês(es) {months.join(", ")}, UF {source?.farmUf ?? "não informada"}.
-      </label> : null}
+      {Array.isArray(months) ? <RegionalCalendarField source={source} context={context} onChange={onChange} months={months} label={label} /> : null}
       {dated ? <ScheduledContextFields source={source} context={context} onChange={onChange} /> : null}
     </div> : null}
   </details>;
+}
+
+function RegionalCalendarField({ source, context, onChange, months, label }:
+  Pick<Props, "source" | "context" | "onChange"> & { months: unknown[]; label: string }) {
+  return <label className="flex items-center gap-2 py-2">
+    <Checkbox aria-label={`Adotar calendário regional ${label}`}
+      checked={Boolean(context.regionalCalendar)}
+      onCheckedChange={(checked) => onChange({ ...context, regionalCalendar: checked === true
+        ? { uf: source?.farmUf ?? "", months: months.filter((value): value is number => typeof value === "number") } : undefined })} />
+    Adotar nesta fazenda o calendário da versão técnica, mês(es) {months.join(", ")}, UF {source?.farmUf ?? "não informada"}.
+  </label>;
 }
 
 function PreWeaningBasisFields({ context, onChange }: Pick<Props, "context" | "onChange">) {

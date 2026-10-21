@@ -11,20 +11,28 @@ const labels = {
   AUTOMACAO_AUTORIZADA: "Automação autorizada na versão",
 };
 
+function coverageContext(draft: SanitaryAutomationDraftV2, itemId: string) {
+  return draft.ruleContexts?.[itemId] ?? draft.context;
+}
+
+function coverageRow(source: SanitaryProtocolWindowSourceV2,
+  item: SanitaryProtocolWindowSourceV2["catalog"]["items"][number],
+  { draft, date }: { draft: SanitaryAutomationDraftV2; date: string }) {
+  const protocol = source.catalog.protocols.find((entry) => entry.id === item.protocolId);
+  if (!protocol) return [];
+  const readiness = assessSanitaryAutomationReadinessV2(protocol, item);
+  const window = buildSanitaryProtocolWindowV2({ source, protocolId: protocol.id, itemId: item.id, evaluatedAt: date,
+    operationalContext: coverageContext(draft, item.id), generationMode: "automatic" });
+  return [{ item, protocol, readiness, animals: window?.rows ?? [] }];
+}
+
 export function SanitaryAutomationCoveragePanelV2({ source, draft, date }: {
   source: SanitaryProtocolWindowSourceV2 | undefined; draft: SanitaryAutomationDraftV2; date: string;
 }) {
   const [open, setOpen] = useState(false);
   const rows = useMemo(() => {
     if (!open || !source) return [];
-    return source.catalog.items.flatMap((item) => {
-      const protocol = source.catalog.protocols.find((entry) => entry.id === item.protocolId);
-      if (!protocol) return [];
-      const readiness = assessSanitaryAutomationReadinessV2(protocol, item);
-      const window = buildSanitaryProtocolWindowV2({ source, protocolId: protocol.id, itemId: item.id, evaluatedAt: date,
-        operationalContext: draft.ruleContexts?.[item.id] ?? draft.context, generationMode: "automatic" });
-      return [{ item, protocol, readiness, animals: window?.rows ?? [] }];
-    });
+    return source.catalog.items.flatMap((item) => coverageRow(source, item, { draft, date }));
   }, [source, draft, date, open]);
   return <details onToggle={(event) => setOpen(event.currentTarget.open)}>
     <summary>Cobertura, sugestões e restrições de todos os itens</summary>
