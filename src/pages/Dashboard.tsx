@@ -987,11 +987,15 @@ const Dashboard = ({ activeFarmId }: { activeFarmId: string }) => {
                       axisLine={false}
                     />
                     <Tooltip
+                      position={{ x: 0 }}
+                      wrapperStyle={{ maxWidth: "100%" }}
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         borderColor: "hsl(var(--border))",
                         color: "hsl(var(--foreground))",
                         borderRadius: 12,
+                        whiteSpace: "normal",
+                        overflowWrap: "anywhere",
                       }}
                       cursor={{ fill: "hsl(var(--muted))" }}
                     />
@@ -1078,11 +1082,15 @@ const Dashboard = ({ activeFarmId }: { activeFarmId: string }) => {
                           axisLine={false}
                         />
                         <Tooltip
+                          position={{ x: 0 }}
+                          wrapperStyle={{ maxWidth: "100%" }}
                           contentStyle={{
                             backgroundColor: "hsl(var(--card))",
                             borderColor: "hsl(var(--border))",
                             color: "hsl(var(--foreground))",
                             borderRadius: 12,
+                            whiteSpace: "normal",
+                            overflowWrap: "anywhere",
                           }}
                         />
                         <Line
@@ -1171,11 +1179,15 @@ const Dashboard = ({ activeFarmId }: { activeFarmId: string }) => {
                           axisLine={false}
                         />
                         <Tooltip
+                          position={{ x: 0 }}
+                          wrapperStyle={{ maxWidth: "100%" }}
                           contentStyle={{
                             backgroundColor: "hsl(var(--card))",
                             borderColor: "hsl(var(--border))",
                             color: "hsl(var(--foreground))",
                             borderRadius: 12,
+                            whiteSpace: "normal",
+                            overflowWrap: "anywhere",
                           }}
                           cursor={{ fill: "hsl(var(--muted))" }}
                         />

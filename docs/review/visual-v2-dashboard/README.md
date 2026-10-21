@@ -9,6 +9,7 @@ Branch: `codex/visual-v2-dashboard`.
 - Indicadores de rebanho e agenda estavam restritos a badges pequenos. Agora usam os componentes `MetricCard` e `SectionHeader` existentes.
 - O cabeçalho informa o recorte da fazenda ativa e a natureza local dos dados. A identificação nominal continua no seletor de fazenda do shell; nenhuma consulta foi acrescentada.
 - Gráficos de categorias usam barras horizontais, eixos legíveis e cores do tema. Os valores completos ficam disponíveis também em texto, com detalhes nativos acessíveis por teclado.
+- Tooltips alinham ao início do gráfico, respeitam sua largura e quebram nomes longos, inclusive em 320 px.
 - A curva de peso continua representando os dez eventos mais recentes, com peso em kg por evento. O texto explicita que não é média do rebanho.
 - Falhas de processamento, rejeições e pendências de envio têm descrições distintas. A amostra de rejeições explicita o limite de 120 registros e o total disponível.
 - Leitura pendente, ausência de fazenda, vazio, offline e falha local têm apresentações próprias. O conteúdo é remontado pela chave da fazenda para descartar a visão anterior durante a troca.
@@ -46,6 +47,7 @@ As três propriedades `data` efetivamente recebidas pelo Recharts foram comparad
 - Chromium 153: 320, 390 e 1280 px, claro/escuro; séries preenchidas, categoria longa, detalhes dos valores, teclado no accordion, offline e troca A → B. Sem erros de página nos cenários de dados e sem overflow horizontal.
 - Chromium 320 px: vazio com Dexie real; loading e erro com suspensão/falha sintética da leitura.
 - Chromium nas seis combinações de largura/tema: número de 16 dígitos injetado apenas no fixture, sem overflow; foco em link e abertura dos valores com Enter.
+- Tooltip de categoria longa nas seis combinações: sem overflow. O cenário de 320 px reproduziu 556 px de largura de documento antes da contenção; após o ajuste, a largura permaneceu em 320 px.
 - `pnpm exec vitest run src/pages/__tests__/Dashboard.test.tsx src/components/ui/__tests__/metric-card.test.tsx src/components/ui/__tests__/section-header.test.tsx --reporter=dot`: 18 testes em três arquivos aprovados.
 - `pnpm run lint`: código zero.
 - `pnpm exec prettier --check src/pages/Dashboard.tsx src/pages/__tests__/Dashboard.test.tsx`: aprovado.
