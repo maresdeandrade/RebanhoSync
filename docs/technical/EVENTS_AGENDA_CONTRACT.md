@@ -1,4 +1,3 @@
-```md
 # Events and Agenda Contract — RebanhoSync
 
 Atualizado em: 2026-06-06
@@ -331,7 +330,3 @@ Uma mudança respeita este contrato quando:
 * regra vem de protocolo;
 * tag/sinal/insight não vira fonte primária;
 * decisão crítica só ocorre com fonte técnica explícita.
-
-```
-
-```

@@ -1,4 +1,3 @@
-```md
 # MVP Scope — RebanhoSync
 
 Atualizado em: 2026-10-20
@@ -222,5 +221,3 @@ Rejeitar ou adiar quando:
 - ameaça offline-first;
 - cria risco de RLS/multi-tenant;
 - adiciona fluxo avançado antes de estabilizar o básico.
-
-```
