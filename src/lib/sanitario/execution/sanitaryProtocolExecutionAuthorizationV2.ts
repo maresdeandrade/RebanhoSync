@@ -4,6 +4,13 @@ import type {
   SanitarioProtocoloLocalV2,
 } from "@/lib/offline/types";
 
+function canonicalJson(value: unknown): string {
+  const ordered = (entry: unknown): unknown => Array.isArray(entry) ? entry.map(ordered) :
+    entry && typeof entry === "object" ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, nested]) => [key, ordered(nested)])) : entry;
+  return JSON.stringify(ordered(value));
+}
+
 function protocolUnavailable(
   agenda: SanitarioAgendaLocalV2,
   protocol: SanitarioProtocoloLocalV2 | undefined,
@@ -90,6 +97,21 @@ function requirementRejections(agenda: SanitarioAgendaLocalV2, item: SanitarioPr
   return rejected;
 }
 
+function isAlertAgenda(agenda: SanitarioAgendaLocalV2) {
+  const snapshotAction = agenda.protocol_item_snapshot.actionType ?? agenda.protocol_item_snapshot.action_type;
+  const snapshotStatus = agenda.protocol_item_snapshot.itemStatus ?? agenda.protocol_item_snapshot.item_status;
+  return snapshotAction === "alerta" || snapshotStatus === "somente_alerta" || agenda.acao_sanitaria === "alerta";
+}
+
+function classSchemeEvidenceMismatch(agenda: SanitarioAgendaLocalV2, item: SanitarioProtocoloItemVersionLocalV2) {
+  const evidence = agenda.protocol_item_snapshot.planningEvidence as Record<string, unknown> | undefined;
+  return evidence?.planningScope !== "class_scheme" || evidence.itemVersion !== item.version ||
+    evidence.executionProductPolicy !== item.snapshot_template.executionProductPolicy ||
+    canonicalJson(evidence.sourceRefsByField) !== canonicalJson(item.source_refs_by_field) ||
+    canonicalJson(evidence.operationalWindowRule) !== canonicalJson(item.operational_window_rule) ||
+    canonicalJson(evidence.boosterRule) !== canonicalJson(item.booster_rule ?? {});
+}
+
 // Prospective use requires current catalog approval. Explicit factual registration
 // preserves already performed applications; catalog review becomes an audit warning.
 // Identity, tenant scope and immutable item bindings remain enforced in both modes.
@@ -102,15 +124,16 @@ export function sanitaryProtocolExecutionRejectionsV2(
 ): string[] {
   const rejected: string[] = [];
   const factual = mode === "executed_fact";
+  if (!factual && agenda.protocol_item_snapshot.planningKind === "avaliacao_manejo_generica") {
+    rejected.push("generic_agenda_requires_explicit_scheme_revalidation");
+  }
   if (protocolUnavailable(agenda, protocol, factual)) {
     rejected.push("protocol_not_available");
   } else if (!factual && protocol && protocolUnapproved(protocol)) {
     rejected.push("protocol_not_approved");
   }
   rejected.push(...jurisdictionRejections(protocol, factual, farmUf));
-  const snapshotAction = agenda.protocol_item_snapshot.actionType ?? agenda.protocol_item_snapshot.action_type;
-  const snapshotStatus = agenda.protocol_item_snapshot.itemStatus ?? agenda.protocol_item_snapshot.item_status;
-  if (snapshotAction === "alerta" || snapshotStatus === "somente_alerta" || agenda.acao_sanitaria === "alerta") {
+  if (isAlertAgenda(agenda)) {
     rejected.push("protocol_item_not_executable");
   }
   if (itemUnavailable(agenda, item, factual)) {
@@ -120,6 +143,11 @@ export function sanitaryProtocolExecutionRejectionsV2(
   }
   if (item && !item.deleted_at) {
     rejected.push(...requirementRejections(agenda, item));
+    const metadata = item.snapshot_template.metadata as Record<string, unknown> | undefined;
+    if (!factual && metadata?.planning_scope === "class_scheme" &&
+      classSchemeEvidenceMismatch(agenda, item)) {
+      rejected.push("class_scheme_snapshot_required");
+    }
   }
   return rejected;
 }

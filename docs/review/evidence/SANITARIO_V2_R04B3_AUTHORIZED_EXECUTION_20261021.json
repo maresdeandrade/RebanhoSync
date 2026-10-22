@@ -1,0 +1,133 @@
+{
+  "artifact": "sanitario_r04b3_authorized_execution_attempt",
+  "classification": "BLOCKED_REMOTE_CONNECTION",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "authorization": {
+    "valid": true,
+    "source": "User AUTORIZO — R04B.3: Publicação Incremental Controlada",
+    "must_not_be_requested_again": true,
+    "scope": [
+      "protected preflight",
+      "exact migration dry-run/apply",
+      "exact canonical incremental publication",
+      "integrity/replay",
+      "5 individual and2 grouped authenticated previews"
+    ],
+    "excludes": [
+      "curatorial decisions",
+      "gates ON",
+      "homologation",
+      "operational changes",
+      "other migrations",
+      "deploy",
+      "push",
+      "merge"
+    ]
+  },
+  "certified_package": {
+    "branch": "codex/sanitario-v2-convergencia",
+    "head": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+    "manifest_files_verified": 36,
+    "mismatches": [],
+    "all_eight_input_hashes_intact": true,
+    "migration_version": "20261020232807",
+    "migration_sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59",
+    "delta_digest": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+    "authorized_copy": "C:/Users/mares/AppData/Local/Temp/r04b3-authorized-iaugEF/delta-authorized.json",
+    "authorized_copy_canonical_validate_exit_code": 0,
+    "authorized_copy_same_content_digest": true,
+    "original_certified_artifact_unchanged": true
+  },
+  "preflight": {
+    "observed_at": "2026-10-21T11:08:14.887455+00:00",
+    "full_snapshot": "SANITARIO_V2_R04B3_AUTHORIZED_PREFLIGHT_20261021.json",
+    "curatorial_read_set_matches_accepted_baseline": true,
+    "verified_collections": [
+      "migrations",
+      "functions and ACLs",
+      "protocols",
+      "items",
+      "sources",
+      "coverage",
+      "classes",
+      "products",
+      "product_sources",
+      "decisions",
+      "relevant_triggers"
+    ],
+    "operational_observation": {
+      "events": 4,
+      "animals": 4,
+      "agendas": 7,
+      "gates_enabled": 0
+    },
+    "independent_operational_changes_not_used_as_blocker": true
+  },
+  "connection_evidence": {
+    "canonical_driver": "pg.Client via DB_URL in existing public canonical CLI",
+    "configured_environment_presence": {
+      "DB_URL": false,
+      "SUPABASE_DB_PASSWORD": false,
+      "PGPASSFILE": false,
+      "PGSERVICE": false,
+      "SUPABASE_ACCESS_TOKEN": false
+    },
+    "checked_project_env_keys": "Only frontend Supabase settings and Vercel OIDC; no PostgreSQL credential",
+    "standard_password_files_present": false,
+    "direct_host": "db.zqloazqzhwauamcejmuz.supabase.co",
+    "direct_dns_lookup_error": "ENOTFOUND",
+    "direct_dns_aaaa": "2600:1f1e:dbb:f602:5c5b:11e1:b5a3:a9c7",
+    "direct_ipv6_tcp_error": "ENETUNREACH",
+    "pooler_host": "aws-1-sa-east-1.pooler.supabase.com",
+    "pooler_port": 5432,
+    "pooler_tcp_reachable": true,
+    "saved_pooler_user_matches_canonical_project_guard": true,
+    "saved_pooler_url_has_password": false,
+    "database_password_available_in_checked_configuration": false,
+    "management_api_readonly_available": true,
+    "management_api_does_not_replace_canonical_postgres_driver": true,
+    "cli_auth_role_not_rotated": true,
+    "no_credentials_or_tokens_printed_or_persisted": true
+  },
+  "execution": {
+    "remote_migration_dry_run": false,
+    "remote_migration_apply": false,
+    "remote_catalog_publication": false,
+    "remote_publication_replay": false,
+    "authenticated_candidate_previews": 0,
+    "real_group_digests": 0,
+    "curatorial_decision_calls": 0,
+    "operational_write_commands": 0,
+    "gate_write_commands": 0,
+    "canonical_writer_replaced_or_guard_bypassed": false,
+    "browser": "Existing real RebanhoSync tab inspected; returned to original Agenda route. Normal page navigation may emit application telemetry; no operational action submitted."
+  },
+  "final_observed_state": {
+    "observed_at": "2026-10-21T11:14:11.370679+00:00",
+    "migrations": 63,
+    "target_migration_exists": false,
+    "items": 20,
+    "approved": 7,
+    "candidates_present": 0,
+    "r05_agendas": 7,
+    "r05_events": 4,
+    "r05_animals": 4,
+    "enabled_gates": 0
+  },
+  "concrete_blocker": "No authenticated PostgreSQL connection usable by the exact canonical publisher: direct IPv6 unreachable; reachable session pooler has no database credential in checked executor configuration.",
+  "required_to_resume": "Configure an authenticated PostgreSQL pooler connection privately in the executor environment, with verified TLS and project binding; do not send secrets in chat. Reuse existing authorization, reconfirm protected read-set and then execute exact certified path.",
+  "do_not_claim": [
+    "migration applied",
+    "delta published",
+    "five candidates approved",
+    "authenticated previews obtained",
+    "AWAITING_CURATORIAL_APPROVAL"
+  ],
+  "local_validation": {
+    "diff_check_exit_code": 0,
+    "broken_links": 0,
+    "certified_files_unchanged": 36,
+    "report_sha256": "addcc17b6c03ece78371fb3dc19980bd1ab02cc90488aba7b2db32daae6172b8",
+    "preflight_sha256": "4462afbaca840b07864790284d9a571596427ebd79a2de3b1d2c1fa6c9897d66"
+  }
+}

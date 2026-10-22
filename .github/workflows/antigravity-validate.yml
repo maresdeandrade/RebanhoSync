@@ -268,6 +268,12 @@ jobs:
 
       - name: Build
         if: steps.scope.outputs.needs_build == 'true'
+        # This artifact checks compilation only; it cannot target a live backend.
+        env:
+          VITE_BACKEND_ENV: ci-synthetic
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_FUNCTIONS_URL: https://example.supabase.co/functions/v1
+          VITE_SUPABASE_PUBLISHABLE_KEY: example-publishable-key
         run: pnpm run build
 
       # -----------------------------------------------------------------------
@@ -318,7 +324,7 @@ jobs:
               head_sha="${GITHUB_SHA:?Missing workflow_dispatch commit}"
               git cat-file -e "${head_sha}^{commit}"
               base_sha="$(git rev-parse --verify "${head_sha}^" 2>/dev/null || git hash-object -t tree /dev/null)"
-              git diff --check "$base_sha" "$head_sha"
+              git -c core.whitespace=cr-at-eol diff --check "$base_sha" "$head_sha"
               exit 0
               ;;
             *)
@@ -333,7 +339,8 @@ jobs:
           fi
           git cat-file -e "${base_sha}^{commit}"
           git cat-file -e "${head_sha}^{commit}"
-          git diff --check "$base_sha...$head_sha"
+          # Accept CRLF terminators; spaces/tabs at line ends remain errors.
+          git -c core.whitespace=cr-at-eol diff --check "$base_sha...$head_sha"
 
       # Chamada direta ao gate documental.
       # Não exige pnpm nem instalação das dependências do projeto.

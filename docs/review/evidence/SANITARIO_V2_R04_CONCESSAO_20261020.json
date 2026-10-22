@@ -1,0 +1,92 @@
+{
+  "artifact": "sanitario_r04_administrative_grant",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "source_commit": "d6f902d17f4b7f59c0e0115dfcea08f6b3665cda",
+  "authorization_reference": "R04_ADMIN_AUTHORIZATION_20261020",
+  "target_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+  "status": "ADMINISTRATIVE_GRANT_EXECUTED_CATALOG_DECISIONS_PENDING",
+  "receipt": {
+    "audit": {
+      "id": "9fdb61b5-11ca-455c-b262-34fbbc312670",
+      "action": "APP_SUPERADMIN_GRANTED",
+      "metadata": {
+        "project_ref": "zqloazqzhwauamcejmuz",
+        "r05_authorized": false,
+        "database_auth_uid": null,
+        "database_executor": "postgres",
+        "execution_channel": "supabase_management_api",
+        "authorization_channel": "explicit_human_message_in_current_task",
+        "actor_user_id_semantics": "Account identified by the human as their own and explicitly authorizing this administrative grant; not an authenticated Supabase session assertion.",
+        "authorization_reference": "R04_ADMIN_AUTHORIZATION_20261020",
+        "created_by_is_null_reason": "Management API operator has no Supabase Auth subject; no creator identity is fabricated.",
+        "catalog_decisions_authorized": false,
+        "role_persists_until_revocation": true,
+        "supabase_authenticated_session_used": false
+      },
+      "target_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "created_at": "2026-10-20T03:03:21.95063+00:00",
+      "state_after": {
+        "notes": "R04_ADMIN_AUTHORIZATION_20261020: explicit human authorization; global application role until revoked; catalog decisions require separate explicit confirmation.",
+        "user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+        "created_at": "2026-10-20T03:03:21.95063+00:00",
+        "created_by": null
+      },
+      "target_type": "app_superadmins",
+      "state_before": {
+        "app_superadmin": false
+      },
+      "actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+    },
+    "items": 20,
+    "stock": 0,
+    "events": 3,
+    "agendas": 0,
+    "agendas_v2": 0,
+    "observed_at": "2026-10-20T03:04:14.808932+00:00",
+    "granted_user": {
+      "notes": "R04_ADMIN_AUTHORIZATION_20261020: explicit human authorization; global application role until revoked; catalog decisions require separate explicit confirmation.",
+      "user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+      "created_at": "2026-10-20T03:03:21.95063+00:00",
+      "created_by": null
+    },
+    "enabled_gates": 0,
+    "automatic_items": 0,
+    "catalog_decisions": 0,
+    "total_superadmins": 1,
+    "approved_protocols": 0
+  },
+  "validation": {
+    "transactional_dry_run_rolled_back": true,
+    "zero_rows_after_dry_run": true,
+    "same_request_replayed": true,
+    "authenticated_runtime_is_app_admin_not_yet_observed": true,
+    "database": {
+      "superadmins": 1,
+      "grant_audits": 1,
+      "enabled_gates": 0,
+      "automatic_items": 0,
+      "catalog_decisions": 0,
+      "authenticated_can_call_preview": true,
+      "authenticated_can_call_decision": true,
+      "authenticated_can_select_own_grant": true,
+      "authenticated_can_call_is_app_admin": true
+    },
+    "same_request_audit_count_after_replay": 1
+  },
+  "manual_backoffice": {
+    "url": "http://127.0.0.1:5184/admin",
+    "project_ref": "zqloazqzhwauamcejmuz",
+    "source": "existing branch runtime; no deploy",
+    "public_key_digest_verified": true,
+    "session_user_login_required": true,
+    "ui_request_ids": "The existing Backoffice generates and preserves its request_id when the human confirms; use that exact ID on retries. Prepared package IDs remain proposed, not executed.",
+    "http_admin": 200,
+    "http_curatorial_module": 200,
+    "published_frontend_curatorial_module_available": false
+  },
+  "automatic_approvals": 0,
+  "r05_executed": false,
+  "sql_sha256": "ddf845410eb62cf468c5a11bc1702a8adeec92ba50b1162e66ea7eb9a6022b14",
+  "local_verification": "scope, transaction dry-run/apply/replay, receipt, pending manual selections, package hash and links checked",
+  "overall_r04_status": "PARTIAL_ADMIN_GRANTED_REAL_SESSION_AND_FIVE_CONFIRMATIONS_PENDING"
+}

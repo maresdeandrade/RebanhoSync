@@ -331,23 +331,19 @@ async function getPendingRecordIds(
   if (protectedTables.size === 0) return pendingIds;
 
   const operations = await db.queue_ops.toArray();
+  const farmByTransaction = new Map((await db.queue_gestures.toArray()).map(gesture => [gesture.client_tx_id, gesture.fazenda_id]));
   for (const operation of operations) {
     if (
       operation.sync_state === "REJECTED" ||
       reconciled.has(operation.client_op_id)
     )
       continue;
-    const candidates = [
-      { table: operation.table, record: operation.record },
-      ...getMovementPendingCandidates(operation),
-      ...getPendingCommercialPurchaseRecords(operation),
-      ...getPendingCommercialOperationRecords(operation),
-    ];
+    const candidates = getOperationCandidates(operation, farmByTransaction.get(operation.client_tx_id));
     for (const candidate of candidates) {
       const remoteTable = getRemoteTableName(candidate.table);
       if (!protectedTables.has(remoteTable)) continue;
       if (candidate.record?.fazenda_id !== fazendaId) continue;
-      const id = PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
+      const id = remoteTable === "fazenda_sanidade_config" ? candidate.record.fazenda_id : PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
         ? getFactualEventId(remoteTable, candidate.record)
         : candidate.record?.id;
       if (typeof id !== "string") continue;
@@ -376,8 +372,31 @@ function getSanitarioPendingEventId(
   return typeof event?.id === "string" ? event.id : null;
 }
 
+function getPendingPlanningRecords(operation: Operation, legacyFarmId?: string) {
+  const envelope = operation.record;
+  if (envelope.domain !== "sanitario_v2") return [];
+  const payload = remoteRecord(envelope.payload);
+  const agenda = remoteRecord(payload.agenda);
+  const closure = remoteRecord(payload.closure);
+  const farm = envelope.fazenda_id ?? legacyFarmId;
+  const agendaId = agenda.id ?? payload.agenda_id ?? closure.agenda_id;
+  const candidates: Array<{table: string; record: RemoteRow}> = [];
+  if (typeof agendaId === "string") {
+    candidates.push({table: "sanitario_agenda_v2", record: {id: agendaId, fazenda_id: farm}});
+    candidates.push(...pendingAgendaAnimals(payload, agendaId, farm));
+  }
+  if (typeof closure.id === "string") candidates.push({table: "sanitario_agenda_closures_v2", record: {...closure, fazenda_id: farm}});
+  return candidates;
+}
+function remoteRecord(value: unknown) { return asRemoteRow(value) ?? {}; }
+function pendingAgendaAnimals(payload: RemoteRow, agendaId: string, farm: unknown) {
+  if (!Array.isArray(payload.animal_ids)) return [];
+  return payload.animal_ids.map(animalId => ({table: "sanitario_agenda_animais_v2", record: {agenda_id: agendaId, animal_id: animalId, fazenda_id: farm}}));
+}
+
 function getOperationCandidates(
   operation: Awaited<ReturnType<typeof db.queue_ops.toArray>>[number],
+  legacyFarmId?: string,
 ) {
   const candidates: Array<{ table: string; record: RemoteRow }> = [
     { table: operation.table, record: operation.record },
@@ -386,6 +405,7 @@ function getOperationCandidates(
     ...getPendingCommercialOperationRecords(operation),
   ];
   const eventId = getSanitarioPendingEventId(operation);
+  candidates.push(...getPendingPlanningRecords(operation, legacyFarmId));
 
   if (eventId) {
     candidates.push(
@@ -472,7 +492,7 @@ function protectPendingRecordRows(
   const ids = pendingRecordIds.get(remoteTable);
   if (!ids || ids.size === 0) return { rows, skipped: false };
   const safeRows = rows.filter((row) => {
-    const id = PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
+    const id = remoteTable === "fazenda_sanidade_config" ? row.fazenda_id : PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
       ? getFactualEventId(remoteTable, row)
       : row.id;
     return typeof id !== "string" || !ids.has(id);
@@ -780,6 +800,7 @@ export const pullDataForFarm = async (
     ...new Set([
       ...storeNames,
       "queue_ops",
+      "queue_gestures",
       ...(options.reconciliation?.stores ?? []),
     ]),
   ];
@@ -1216,6 +1237,7 @@ export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
 
 export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
   const orderedTables = [
+    "fazenda_sanidade_config",
     "sanitario_agenda_v2",
     "sanitario_agenda_animais_v2",
     "eventos",

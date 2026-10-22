@@ -1,0 +1,252 @@
+{
+  "artifact": "sanitario_r04b3_operational_rebaseline_result",
+  "classification": "PREFLIGHT_READY_FOR_RESUMPTION",
+  "observed_at": "2026-10-21T10:55:24.816219+00:00",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "branch": "codex/sanitario-v2-convergencia",
+  "head": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+  "supersedes_prior_blocker_classification": true,
+  "prior_evidence_not_rewritten": true,
+  "authorization": {
+    "operational_baseline_accepted_by_owner": true,
+    "remote_preflight_allowed": true,
+    "remote_migration_publication_explicit_authorization_valid": false,
+    "reason": "Latest express authorization was read-only and excluded migration/publication. Current request conditions writes on an existing valid express authorization; it does not grant one unconditionally.",
+    "request_only_missing_authorization": true,
+    "approval_calls_forbidden": true
+  },
+  "certified_package": {
+    "migration_version": "20261020232807",
+    "migration_sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59",
+    "delta_sha256": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+    "manifest_files_verified": 36,
+    "hash_mismatches": [],
+    "input_hashes_intact": true,
+    "original_import_gate": {
+      "import_real_authorized": false,
+      "authorization_reference": null
+    },
+    "content_or_runtime_changes": 0,
+    "public_cli_validate_exit_code": 0
+  },
+  "curatorial_read_set_checks": {
+    "migrations": {
+      "count": 63,
+      "full_rows_equal_to_prior": true
+    },
+    "functions": {
+      "count": 4,
+      "full_rows_equal_to_prior": true
+    },
+    "protocols": {
+      "count": 10,
+      "full_rows_equal_to_prior": true
+    },
+    "items": {
+      "count": 20,
+      "full_rows_equal_to_prior": true
+    },
+    "sources": {
+      "count": 16,
+      "full_rows_equal_to_prior": true
+    },
+    "coverage": {
+      "count": 71,
+      "full_rows_equal_to_prior": true
+    },
+    "classes": {
+      "count": 8,
+      "full_rows_equal_to_prior": true
+    },
+    "products": {
+      "count": 3,
+      "full_rows_equal_to_prior": true
+    },
+    "product_sources": {
+      "count": 0,
+      "full_rows_equal_to_prior": true
+    }
+  },
+  "previous_decision_checks": [
+    {
+      "id": "f3853908-6139-46d6-8861-0ad317a9370f",
+      "receipt_unchanged": true,
+      "request_unchanged": true,
+      "digest_matches": true
+    },
+    {
+      "id": "ea3a973d-bce4-4235-9e6a-a1041f28d78d",
+      "receipt_unchanged": true,
+      "request_unchanged": true,
+      "digest_matches": true
+    },
+    {
+      "id": "6ec6ef7f-c856-4b8c-9c13-402cc5ce2e0f",
+      "receipt_unchanged": true,
+      "request_unchanged": true,
+      "digest_matches": true
+    },
+    {
+      "id": "944b6b41-a67f-4634-b241-f7825ce1d47a",
+      "receipt_unchanged": true,
+      "request_unchanged": true,
+      "digest_matches": true
+    },
+    {
+      "id": "ee6b3e75-493e-4cb2-9a91-c6aef53847b2",
+      "receipt_unchanged": true,
+      "request_unchanged": true,
+      "digest_matches": true
+    }
+  ],
+  "operational_observations": {
+    "animals": {
+      "count": 4,
+      "full_rows_equal_to_previous_observation": true
+    },
+    "events": {
+      "count": 4,
+      "full_rows_equal_to_previous_observation": true
+    },
+    "details": {
+      "count": 3,
+      "full_rows_equal_to_previous_observation": true
+    },
+    "cases": {
+      "count": 3,
+      "full_rows_equal_to_previous_observation": true
+    },
+    "agendas": {
+      "count": 7,
+      "full_rows_equal_to_previous_observation": true
+    },
+    "agenda_animals": {
+      "count": 7,
+      "full_rows_equal_to_previous_observation": true
+    },
+    "closures": {
+      "count": 1,
+      "full_rows_equal_to_previous_observation": true
+    },
+    "gates": {
+      "count": 1,
+      "full_rows_equal_to_previous_observation": true
+    },
+    "legacy_agendas": {
+      "count": 0,
+      "full_rows_equal_to_previous_observation": true
+    },
+    "stock_movements": {
+      "count": 0,
+      "full_rows_equal_to_previous_observation": true
+    },
+    "receipts": {
+      "count": 15,
+      "full_rows_equal_to_previous_observation": true
+    }
+  },
+  "invariants": {
+    "approved_items": 7,
+    "original_seven_agendas_full_rows_equal": true,
+    "migrations": 63,
+    "gates_enabled": 0,
+    "candidates_present": 0
+  },
+  "write_set_verified": {
+    "migration": {
+      "ddl_functions": [
+        "internal_sanitario_review_content_v2",
+        "internal_sanitario_review_fields_v2",
+        "sanitario_catalog_decide_v2"
+      ],
+      "history_version": "20261020232807",
+      "operational_dml": 0,
+      "grants_rls_changed": false,
+      "decision_function_invoked": false
+    },
+    "delta": {
+      "tables": [
+        "sanitario_protocolo_itens_versions_v2",
+        "sanitario_fonte_cobertura_campos_v2",
+        "sanitario_product_classes_v2",
+        "sanitario_produto_fontes_v2"
+      ],
+      "expected_create": 15,
+      "expected_update": 7,
+      "source_product_protocol_parents_read_only": true,
+      "operational_dml": 0,
+      "operational_recalculation_calls": 0
+    },
+    "triggers": {
+      "reviewed": 7,
+      "effects": "updated_at on the current catalog row; parent/scope/group guards; no operational writes/recalculation"
+    },
+    "cas_locks_replay_audit_checks_preserved": true,
+    "existing_local_validation_reused": "SANITARIO_V2_R04B2_POSTGRES_20261021.json; 17 PASS, not rerun"
+  },
+  "comparison_policy": {
+    "curatorial": "Protect identities/versions/content/evidence/ACLs/history/digests; reject relevant concurrent change, never silently refresh CAS.",
+    "operational": "Preserve the four accepted Events/animals and their references; seven Agendas and gates remain protected. Independent operations in other tables are observations, not automatic corruption/preflight blockers.",
+    "before_after": "Check only expected changes in four delta tables plus three function definitions/history; all unchanged curator parents/decisions/approvals remain equal. Do not require zero Events or a frozen whole-farm baseline.",
+    "existing_transaction_guards": "Exact certified migration batch keeps its before/after in-transaction data guard; current four Events are valid input. An independent concurrent commit may conservatively roll back that attempt. Recheck protected read-set and classify a retry as concurrency, without relabeling independent operations as curatorial drift or disabling guards."
+  },
+  "accepted_operational_records": {
+    "event_ids": [
+      "14500307-5fa2-482e-938b-f96832979f58",
+      "8993273e-d735-4c97-9171-06b591433927",
+      "b8e1aadb-0df6-4d0f-8a7c-23f1bda5fdd3",
+      "fc5d058f-058b-4d5a-b650-c5d4c682d585"
+    ],
+    "animal_ids": [
+      "4cfe67bd-e318-4c9d-847f-f11e7dc5e32f",
+      "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+      "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+      "ffb9ed45-79db-43e9-be13-5fb829b0c170"
+    ],
+    "no_physical_execution_or_human_authorship_or_test_purpose_inferred": true,
+    "f001_not_marked_synthetic": true
+  },
+  "execution": {
+    "remote_sql_readonly_queries": 1,
+    "remote_project_readonly_lookups": 1,
+    "remote_mutations": 0,
+    "migration_applied": false,
+    "delta_published": false,
+    "authenticated_previews": 0,
+    "approvals": 0,
+    "gates_activated": 0,
+    "agendas_changed": 0,
+    "events_animals_changed": 0,
+    "deploy_push_merge": 0
+  },
+  "baseline_artifact": "SANITARIO_V2_R04B3_ACCEPTED_OPERATIONAL_BASELINE_20261021.json",
+  "next_authorization": {
+    "project_ref": "zqloazqzhwauamcejmuz",
+    "migration_sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59",
+    "delta_sha256": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+    "allowed": [
+      "Reconfirm protected read-set immediately before writing",
+      "Run exact migration batch dry-run and apply only version20261020232807",
+      "Publish only exact delta via existing canonical --incremental CLI",
+      "Verify integrity/replay and obtain 5 individual plus2 grouped previews with real authenticated curator session"
+    ],
+    "excluded": [
+      "sanitario_catalog_decide_v2",
+      "CLO/LEP approvals",
+      "gates ON",
+      "R05 homologation",
+      "operational corrections",
+      "deploy",
+      "push",
+      "merge"
+    ]
+  },
+  "local_validation": {
+    "diff_check_exit_code": 0,
+    "broken_links": 0,
+    "certified_code_modified": false,
+    "tests_or_audits_repeated": false,
+    "documentation_sha256": "7d838f0eac086ae51a495c25814c7fe8a00b3b626981b4880269973771f16b37",
+    "accepted_baseline_sha256": "919a18f7082ad81e048d0f663b090d943cace5757e209d02d34f2fc17c57628d"
+  }
+}

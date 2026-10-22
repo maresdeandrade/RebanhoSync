@@ -1,0 +1,313 @@
+{
+  "artifact": "sanitario_r04b3_readonly_repreflight_result",
+  "status": "BLOCKED_PREFLIGHT",
+  "ready_for_resumption": false,
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "observed_at": "2026-10-21T10:26:49.564666+00:00",
+  "remote_mutations": 0,
+  "classification": {
+    "three_sanitary_events": "Identified subsequent legacy registration on synthetic R05 animals, independent of canonical CLO/LEP versions. No presumed database corruption.",
+    "test_purpose": "Synthetic animal origin explicit; transaction as independently authorized test not established.",
+    "physical_execution": "Not confirmed; electronic declaration not independent clinical proof.",
+    "blocker": "Additional commercial Event and new animal F001 outside the three records acknowledged by owner; farm baseline differs in more than the authorized exception."
+  },
+  "local_integrity": {
+    "branch": "codex/sanitario-v2-convergencia",
+    "head": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+    "manifest_files": 36,
+    "mismatches": [],
+    "migration_sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59",
+    "delta_digest": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+    "authorized_digest_unchanged": true,
+    "input_hashes_intact": true,
+    "original_import_authorized": false,
+    "historical_r05_files": [
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R05_REMOTE_20261020.json",
+        "sha256": "78dbea3ee4fa0a0efe65ba9f4bc693d9329b65e5d534e198e2a3b87a4f1dadea",
+        "equals_head": true
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R05_EXECUCAO_20261020.md",
+        "sha256": "b187b99a68b8132201752a9e4c3206dc69c5f27bbb9dd0b6df4373d7f95c443a",
+        "equals_head": true
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R05_CLIENT_A_20261020.json.gz",
+        "sha256": "3009a0fe2e76d1de9940848ccd7a010bb26680e394fd7216861abf194a09c967",
+        "equals_head": true
+      },
+      {
+        "path": "docs/review/evidence/SANITARIO_V2_R05_CLIENT_B_20261020.json.gz",
+        "sha256": "13f9279bfd6ea0ed650f8d39d7caf2f2e1267f037644a11d3ccfad20800fe532",
+        "equals_head": true
+      }
+    ]
+  },
+  "comparisons": {
+    "since_initial_r04b3": {
+      "items": {
+        "old_count": 20,
+        "new_count": 20,
+        "full_rows_equal": true
+      },
+      "protocols": {
+        "old_count": 10,
+        "new_count": 10,
+        "full_rows_equal": true
+      },
+      "sources": {
+        "old_count": 16,
+        "new_count": 16,
+        "full_rows_equal": true
+      },
+      "coverage": {
+        "old_count": 71,
+        "new_count": 71,
+        "full_rows_equal": true
+      },
+      "products": {
+        "old_count": 3,
+        "new_count": 3,
+        "full_rows_equal": true
+      },
+      "classes": {
+        "old_count": 8,
+        "new_count": 8,
+        "full_rows_equal": true
+      },
+      "product_sources": {
+        "old_count": 0,
+        "new_count": 0,
+        "full_rows_equal": true
+      },
+      "gates": {
+        "old_count": 1,
+        "new_count": 1,
+        "full_rows_equal": true
+      },
+      "agendas": {
+        "old_count": 7,
+        "new_count": 7,
+        "full_rows_equal": true
+      },
+      "functions": {
+        "old_count": 4,
+        "new_count": 4,
+        "full_rows_equal": true
+      }
+    },
+    "against_historical_r04b": {
+      "full_items_equal": true,
+      "full_protocols_equal": true,
+      "full_agendas_equal": true
+    },
+    "against_historical_r05": {
+      "full_ledger_equal": true,
+      "full_closures_equal": true,
+      "original_animal_seed_fields_equal": true,
+      "animal_comparison_source": "R05_CLIENT_A steps[2] seed rows; compares fields recorded in historical projection, not missing generated columns",
+      "original_animal_count": 3,
+      "current_animal_count": 4,
+      "original_events": 0,
+      "current_events": 4,
+      "original_stock": 0,
+      "current_stock": 0
+    },
+    "three_events_preserved": true,
+    "details_preserved": true,
+    "cases_preserved": true,
+    "approved_items": 7,
+    "decisions": 5,
+    "gates_enabled": 0,
+    "migrations": 63,
+    "history_version_name_equal": true,
+    "candidates_present": 0
+  },
+  "provenance": {
+    "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+    "client_tx_id": "6dc95ada-c842-4b9c-b382-1f42eb5f761f",
+    "transport_actor_user_id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+    "actor_meaning": "Authenticated account principal; not proof of human authorship or original task authorization",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "function": "/functions/v1/sync-batch",
+    "function_version": "28",
+    "request_id": "01a15d0b-82f4-73d1-a3f2-e09dd426fef6",
+    "execution_id": "74b9656c-9b80-4e03-a962-5e92b6840a8d",
+    "http_status": "200",
+    "rest_201_writes": 9,
+    "telemetry_success_operations": 9,
+    "canonical_v2_receipts": 0,
+    "legacy_ack_body_available": false,
+    "no_receipt_fabricated": true,
+    "client_clock_ahead_of_server_seconds_approx": 6
+  },
+  "b19": [
+    {
+      "animal_id": "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+      "identificacao": "R05-M6M-SINTETICO",
+      "status": "not_applicable",
+      "documentary_pending": false,
+      "reasons": [
+        "B19 se aplica a fêmeas bovinas/bubalinas."
+      ]
+    },
+    {
+      "animal_id": "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+      "identificacao": "R05-F6M-SINTETICA",
+      "status": "in_action_window",
+      "documentary_pending": false,
+      "reasons": [
+        "Fêmea bovina/bubalina dentro da janela B19 de 3 a 8 meses."
+      ]
+    },
+    {
+      "animal_id": "ffb9ed45-79db-43e9-be13-5fb829b0c170",
+      "identificacao": "R05-MATRIZ-SINTETICA",
+      "status": "insufficient_data",
+      "documentary_pending": true,
+      "reasons": [
+        "Fêmea adulta sem comprovação documental de B19."
+      ]
+    }
+  ],
+  "domain_impact": {
+    "pure_domain_diagnostic_passed": 1,
+    "canonical_history_events": 0,
+    "class_scheme_compatibility": [
+      {
+        "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+        "accepted_events": 0
+      },
+      {
+        "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+        "accepted_events": 0
+      },
+      {
+        "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+        "accepted_events": 0
+      },
+      {
+        "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+        "accepted_events": 0
+      },
+      {
+        "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+        "accepted_events": 0
+      }
+    ],
+    "three_events_have_no_protocol_item_reference": true,
+    "b19_nonconforming_age_sex_records": 2,
+    "clo_lep_canonical_publication_conflict_observed": false,
+    "legacy_history": "Three vaccination declarations and three open cases persist in legacy read models; not erased, medically certified or promoted to original R05 evidence"
+  },
+  "additional_changes": {
+    "events": [
+      {
+        "id": "b8e1aadb-0df6-4d0f-8a7c-23f1bda5fdd3",
+        "dominio": "comercial",
+        "lote_id": null,
+        "payload": {
+          "kind": "commercial_operation_v2",
+          "domain_op_id": "b8e1aadb-0df6-4d0f-8a7c-23f1bda5fdd3"
+        },
+        "animal_id": "4cfe67bd-e318-4c9d-847f-f11e7dc5e32f",
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "created_at": "2026-10-21T10:02:14.836115+00:00",
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T10:02:14.836115+00:00",
+        "observacoes": "Compra vinculada ao cadastro do animal",
+        "occurred_at": "2026-09-20T12:00:00+00:00",
+        "occurred_on": "2026-09-20",
+        "client_op_id": "4c60542b-caaf-4b2f-9d08-8325555524d5",
+        "client_tx_id": "07bd224c-b299-4903-b128-8e112f1d88fc",
+        "domain_op_id": null,
+        "source_tx_id": null,
+        "source_task_id": null,
+        "corrige_evento_id": null,
+        "sanitario_caso_id": null,
+        "client_recorded_at": "2026-10-21T10:02:24.993+00:00",
+        "server_received_at": "2026-10-21T10:02:14.836115+00:00",
+        "source_client_op_id": null,
+        "sanitario_sync_v2_nature": null,
+        "sanitario_contract_version": null,
+        "source_sanitario_agenda_v2_id": null
+      }
+    ],
+    "animals": [
+      {
+        "id": "4cfe67bd-e318-4c9d-847f-f11e7dc5e32f",
+        "nome": null,
+        "raca": null,
+        "rfid": null,
+        "sexo": "F",
+        "mae_id": null,
+        "origem": "compra",
+        "pai_id": null,
+        "status": "ativo",
+        "especie": "bovino",
+        "lote_id": null,
+        "payload": {
+          "lifecycle": {
+            "estagio_vida": "cria_aleitamento",
+            "estagio_source": "manual",
+            "estagio_recorded_at": "2026-10-21T10:02:24.984Z"
+          }
+        },
+        "revision": 1,
+        "client_id": "browser:1fec66b3-adaf-4ea6-a8df-594ce4354b06",
+        "created_at": "2026-10-21T10:02:14.836115+00:00",
+        "data_saida": null,
+        "deleted_at": null,
+        "fazenda_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+        "updated_at": "2026-10-21T10:02:14.836115+00:00",
+        "observacoes": null,
+        "papel_macho": null,
+        "client_op_id": "7bc7c49a-52ca-4951-9563-d5cf88bf5fe9",
+        "client_tx_id": "07bd224c-b299-4903-b128-8e112f1d88fc",
+        "data_entrada": "2026-09-20",
+        "identificacao": "F001",
+        "data_nascimento": "2026-06-20",
+        "habilitado_monta": false,
+        "movement_version": 0,
+        "client_recorded_at": "2026-10-21T10:02:24.993+00:00",
+        "server_received_at": "2026-10-21T10:02:14.836115+00:00",
+        "movement_head_event_id": null
+      }
+    ]
+  },
+  "baseline_artifact": "SANITARIO_V2_R04B3_UPDATED_BASELINE_20261021.json",
+  "original_baselines_not_rewritten": true,
+  "validation": {
+    "scope": "Remote SQL/log reads; pure domain diagnostic on frozen rows",
+    "temporary_test": "scratch/r04b3-readonly-PRxd0g/history.test.ts",
+    "test_passed": 1,
+    "test_failed": 0,
+    "db_mocked_to_prevent_persistence": true,
+    "initial_readonly_query_error": "42703 assumed id on composite relation; corrected JSON row ordering, no schema change",
+    "diff_check_exit_code": 0,
+    "documentation_broken_links": 0,
+    "evidence_sha256": {
+      "docs/review/SANITARIO_V2_R04B3_REPREFLIGHT_20261021.md": "29538742fce80704250cd741796bbbcd3356badb2052cc42dcaff9cc2ced710a",
+      "docs/review/evidence/SANITARIO_V2_R04B3_REPREFLIGHT_PROVENANCE_20261021.json": "4f0b1c4e04a4082ee545ec6f659fd4064db828c0db1b45f51b2934aef95c1a0b",
+      "docs/review/evidence/SANITARIO_V2_R04B3_UPDATED_BASELINE_20261021.json": "6bde1c2bbb2178aa6bc342a2f9773af100089f44dd8ad025be5b0ea7d5a0d7f2",
+      "docs/review/evidence/SANITARIO_V2_R04B3_UPDATED_BASELINE_QUERY_20261021.sql": "388c41aee4be6b65f2db986fbe4b056f1e033c2378b574b0be0c0a2cb30d7929",
+      "docs/review/evidence/SANITARIO_V2_R04B3_HISTORY_PROJECTION_20261021.json": "ffb92edcc6bf11f275c450e2ad7160d1df17e3e087b448497034aebd67ca8e63"
+    }
+  },
+  "not_executed": [
+    "migration",
+    "delta dry-run/apply",
+    "curatorial decision",
+    "authenticated candidate preview",
+    "gate activation",
+    "remote functional test",
+    "homologation",
+    "deploy",
+    "push",
+    "merge",
+    "Event/Agenda correction"
+  ],
+  "next_step": "Review additional commercial registration/new animal before authorizing another baseline validation; no destructive cleanup or alteration of certified digest."
+}

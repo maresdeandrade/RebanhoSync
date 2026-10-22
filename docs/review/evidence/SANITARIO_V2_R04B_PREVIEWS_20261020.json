@@ -1,0 +1,1424 @@
+{
+  "artifact": "sanitario_r04b_curatorial_previews",
+  "artifact_version": 1,
+  "created_on": "2026-10-20",
+  "timezone": "America/Sao_Paulo",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "branch": "codex/sanitario-v2-convergencia",
+  "baseline_head": "b5b6ffc9f515874577003efd2cce3ef4492bdb74",
+  "approval_semantics": "Aprovação técnica das propostas não aprova catálogo remoto, vacinação ou execução; submissão global exige autorização específica, conteúdo aplicado e novo preview autenticado.",
+  "execute_import": false,
+  "execute_remote": false,
+  "approved": false,
+  "source_rows_proposed": [
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0001",
+      "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Fortress-7.pdf",
+      "kind": "bula",
+      "scope": "global",
+      "title": "Fortress 7 — Bacterina Toxoide contra Carbúnculo Sintomático, Gangrena Gasosa e Enterotoxemia dos Bovinos",
+      "issuer": "Zoetis",
+      "version": "R04B — recorte para avaliação, 2026-10-20",
+      "metadata": {
+        "document_type": "manufacturer_label_pdf",
+        "pdf_created_at": "2013-09-10",
+        "pdf_modified_at": "2014-01-21",
+        "proposal_only": true,
+        "not_registered": true,
+        "derived_from_source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "review_scope": "Somente fatos literais do fabricante e avaliação bovina sem aplicação; não certifica bula integral vigente, segurança reprodutiva ou registro comercial.",
+        "source_type_observed": "bula PDF do fabricante"
+      },
+      "strength": "forte",
+      "fazenda_id": null,
+      "source_key": "SRC_BULA_FORTRESS7_R04B_ASSESSMENT_20261020",
+      "accessed_at": "2026-10-20",
+      "limitations": [
+        "Somente avaliação genérica em bovinos; não autoriza vacinação, produto, dose, via, intervalo de aplicação ou carência.",
+        "Vigência comercial é verificada por fonte regulatória separada.",
+        "Campos não declarados permanecem desconhecidos."
+      ],
+      "published_at": null,
+      "evidence_status": "SIM_BULA",
+      "jurisdiction_uf": null,
+      "jurisdiction_zone": null,
+      "jurisdiction_country": "BR"
+    },
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0005",
+      "url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+      "kind": "bula",
+      "scope": "global",
+      "title": "Resumo da Bula — POLIGUARD",
+      "issuer": "MSD Saúde Animal Brasil",
+      "version": "R04B — recorte para avaliação, 2026-10-20",
+      "metadata": {
+        "document_type": "manufacturer_bula_summary_page",
+        "modified_at_source": "2024-10-16",
+        "historical_registration": {
+          "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+          "issuer": "MAPA",
+          "number": "9.299/2007",
+          "section": "POLIGUARD (p. 137)",
+          "accessed_at": "2026-10-14",
+          "document_date": "2014-04-15",
+          "current_validity": "unknown"
+        },
+        "proposal_only": true,
+        "not_registered": true,
+        "derived_from_source_id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "review_scope": "Somente fatos literais do fabricante e avaliação bovina sem aplicação; não certifica bula integral vigente, segurança reprodutiva ou registro comercial.",
+        "source_type_observed": "resumo oficial de bula, não bula integral"
+      },
+      "strength": "forte",
+      "fazenda_id": null,
+      "source_key": "SRC_BULA_POLIGUARD_R04B_ASSESSMENT_20261020",
+      "accessed_at": "2026-10-20",
+      "limitations": [
+        "Somente avaliação genérica em bovinos; não autoriza vacinação, produto, dose, via, intervalo de aplicação ou carência.",
+        "Vigência comercial é verificada por fonte regulatória separada.",
+        "Campos não declarados permanecem desconhecidos."
+      ],
+      "published_at": null,
+      "evidence_status": "SIM_BULA",
+      "jurisdiction_uf": null,
+      "jurisdiction_zone": null,
+      "jurisdiction_country": "BR"
+    },
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0009",
+      "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
+      "kind": "bula",
+      "scope": "global",
+      "title": "Leptoferm 5/2 mL — Vacina Inativada Contra Leptospirose Bovina e Suína",
+      "issuer": "Zoetis Inc.; representante no Brasil Zoetis Indústria de Produtos Veterinários Ltda.",
+      "version": "R04B — recorte para avaliação, 2026-10-20",
+      "metadata": {
+        "artwork": "40040644",
+        "mapa_license": "5.037",
+        "document_type": "manufacturer_label_pdf",
+        "pdf_created_at": "2023-01-06",
+        "pdf_modified_at": "2023-01-06",
+        "proposal_only": true,
+        "not_registered": true,
+        "derived_from_source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "review_scope": "Somente fatos literais do fabricante e avaliação bovina sem aplicação; não certifica bula integral vigente, segurança reprodutiva ou registro comercial.",
+        "source_type_observed": "bula PDF do fabricante"
+      },
+      "strength": "forte",
+      "fazenda_id": null,
+      "source_key": "SRC_BULA_LEPTOFERM5_R04B_ASSESSMENT_20261020",
+      "accessed_at": "2026-10-20",
+      "limitations": [
+        "Somente avaliação genérica em bovinos; não autoriza vacinação, produto, dose, via, intervalo de aplicação ou carência.",
+        "Vigência comercial é verificada por fonte regulatória separada.",
+        "Campos não declarados permanecem desconhecidos."
+      ],
+      "published_at": null,
+      "evidence_status": "SIM_BULA",
+      "jurisdiction_uf": null,
+      "jurisdiction_zone": null,
+      "jurisdiction_country": "BR"
+    }
+  ],
+  "coverage_rows_proposed": [
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0002",
+      "source_id": "b5a8471c-3c15-496d-80b2-5be68f8d0001",
+      "field_key": "eligibility_rule",
+      "coverage_status": "covers",
+      "notes": "Indicação bovina fundamenta avaliação nessa espécie; sem elegibilidade para aplicação."
+    },
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0003",
+      "source_id": "b5a8471c-3c15-496d-80b2-5be68f8d0001",
+      "field_key": "operational_window",
+      "coverage_status": "covers",
+      "notes": "Avaliação por contexto manual, sem prazo ou esquema de aplicação inferido. A escolha do escopo de avaliação é decisão curatorial proposta."
+    },
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0004",
+      "source_id": "b5a8471c-3c15-496d-80b2-5be68f8d0001",
+      "field_key": "product_requirement",
+      "coverage_status": "covers",
+      "notes": "Avaliação sem aplicação não seleciona nem administra produto. Esta cobertura não afirma ausência de necessidade de produto na vacinação."
+    },
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0006",
+      "source_id": "b5a8471c-3c15-496d-80b2-5be68f8d0005",
+      "field_key": "eligibility_rule",
+      "coverage_status": "covers",
+      "notes": "Indicação bovina fundamenta avaliação nessa espécie; sem elegibilidade para aplicação."
+    },
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0007",
+      "source_id": "b5a8471c-3c15-496d-80b2-5be68f8d0005",
+      "field_key": "operational_window",
+      "coverage_status": "covers",
+      "notes": "Avaliação por contexto manual, sem prazo ou esquema de aplicação inferido. A escolha do escopo de avaliação é decisão curatorial proposta."
+    },
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0008",
+      "source_id": "b5a8471c-3c15-496d-80b2-5be68f8d0005",
+      "field_key": "product_requirement",
+      "coverage_status": "covers",
+      "notes": "Avaliação sem aplicação não seleciona nem administra produto. Esta cobertura não afirma ausência de necessidade de produto na vacinação."
+    },
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0010",
+      "source_id": "b5a8471c-3c15-496d-80b2-5be68f8d0009",
+      "field_key": "eligibility_rule",
+      "coverage_status": "covers",
+      "notes": "Indicação bovina fundamenta avaliação nessa espécie; sem elegibilidade para aplicação."
+    },
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0011",
+      "source_id": "b5a8471c-3c15-496d-80b2-5be68f8d0009",
+      "field_key": "operational_window",
+      "coverage_status": "covers",
+      "notes": "Avaliação por contexto manual, sem prazo ou esquema de aplicação inferido. A escolha do escopo de avaliação é decisão curatorial proposta."
+    },
+    {
+      "id": "b5a8471c-3c15-496d-80b2-5be68f8d0012",
+      "source_id": "b5a8471c-3c15-496d-80b2-5be68f8d0009",
+      "field_key": "product_requirement",
+      "coverage_status": "covers",
+      "notes": "Avaliação sem aplicação não seleciona nem administra produto. Esta cobertura não afirma ausência de necessidade de produto na vacinação."
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": "R04B-01",
+      "family": "clostridioses",
+      "logical_item_key": "clostridial_primovac_dose1",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "protocol_version": 1,
+      "current_item_id": "fe0ddfbc-6b4b-5161-843f-b4cfbd4bff53",
+      "current_version": 2,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "recomendado",
+        "allows_agenda_auto": false
+      },
+      "classification": "LIBERÁVEL COM RESTRIÇÕES",
+      "classification_scope": "Nova versão de avaliação genérica bovina sem aplicação; não vacinação específica.",
+      "evidence_by_field": {
+        "source_key": "SRC_BULA_FORTRESS7",
+        "sources": [
+          "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Fortress-7.pdf",
+          "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+        ],
+        "registration": {
+          "finding": "VIGENTE no indicador oficial; 5.893/1997; Zoetis Indústria de Produtos Veterinários Ltda.",
+          "scope": "Situação exibida no painel atualizado em 20/10/2026 06:00:47. A expressão do indicador agrupa EM RENOVAÇÃO em VIGENTE; não foi obtido certificado ou status bruto."
+        },
+        "species": "Bovino. Bubalino fora do escopo desta proposta.",
+        "age": "Bula não declara idade mínima. Não inventar faixa nem tratar silêncio como contraindicação; avaliação individual permanece necessária para aplicação.",
+        "indication": "Prevenção auxiliar das clostridioses explicitadas na bula, em bovinos sadios; não extrapolar valências.",
+        "interval": "Duas doses iniciais, 28–42 dias; revacinação anual com dose única. Sem tolerância adicional demonstrada.",
+        "pregnancy": "Não declarada na bula consultada; sem prova de proibição ou de segurança irrestrita.",
+        "lactation": "Não declarada; não inferir segurança irrestrita nem carência zero para leite.",
+        "product": "Fortress 7, Zoetis; cadastro existente 239a438c-abe0-568e-b24b-793001a08f98, precisa_validar no baseline.",
+        "dose": "5 mL, expressa na bula; somente Fortress 7.",
+        "route": "Subcutânea, expressa na bula; somente Fortress 7.",
+        "withdrawal": "Não aplicar nos 21 dias anteriores ao abate. Leite desconhecido. Planejamento não cria carência ativa.",
+        "item_interval": "{\"type\":\"hybrid\",\"anchor\":\"manual_context\"}"
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir autorização bubalina para variante exclusivamente bovina.",
+        "Não converter idade mínima não declarada em contraindicação.",
+        "Não bloquear consulta/avaliação por carência desconhecida de execução."
+      ],
+      "owner_technical_authorization_ready": true,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [
+        "Fontes/coverage_ids e UUID físico do candidato são propostos, inexistentes no banco.",
+        "Digest local do pacote não substitui reviewed_content_digest da RPC."
+      ],
+      "minimum_adjustment": "Criar versão física de avaliação genérica; ação manejo_sanitario, nenhum produto/dose/via, sem recorrência de vacinação. Registrar fonte/cobertura limitada aos três campos curatoriais e supersessão; preservar versões anteriores.",
+      "concrete_impediment": "A versão atual é vacinação draft, sem vinculação comercial e fontes normalizadas por campo. Para a avaliação proposta, falta somente autorização específica do proprietário e publicação do candidato com suas fontes; não falta evidência bubalina ou carência de execução.",
+      "technical_recommendation": "Aceitar a proposta restrita de avaliação. Após autorização de conteúdo, registrar fontes/coberturas e nova versão pelo publicador canônico; obter preview autenticado e digest real antes da aprovação global separada.",
+      "proposed_item": {
+        "id": "b5a8471c-3c15-496d-80b2-5be68f8d0013",
+        "status": "draft",
+        "version": 3,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "manejo_sanitario",
+        "item_status": "recomendado",
+        "limitations": [
+          "assessment_only",
+          "not_a_vaccination_order",
+          "bovine_scope_only",
+          "no_product_dose_route_or_withdrawal_authorized"
+        ],
+        "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "booster_rule": {
+          "recurrenceRule": {
+            "kind": "none"
+          },
+          "tolerance": null
+        },
+        "product_class": null,
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ]
+        },
+        "logical_item_key": "clostridial_primovac_dose1",
+        "snapshot_template": {
+          "metadata": {
+            "supersedes": {
+              "id": "fe0ddfbc-6b4b-5161-843f-b4cfbd4bff53",
+              "version": 2,
+              "reason": "Avaliação genérica sem aplicação; alteração semântica proposta, não publicada."
+            },
+            "agenda_allowed": false,
+            "curationStatus": "prepared_for_decision",
+            "automationStatus": "decision_required",
+            "approved_for_catalog": false,
+            "planning_scope": "assessment_only",
+            "proposal_only": true
+          },
+          "sourceGaps": [],
+          "sourcePolicy": {
+            "assessment": "Somente avaliação genérica sob contexto explícito; não antecipa esquema ou execução.",
+            "applicationEvidence": {
+              "source_key": "SRC_BULA_FORTRESS7",
+              "sources": [
+                "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Fortress-7.pdf",
+                "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+              ],
+              "registration": {
+                "finding": "VIGENTE no indicador oficial; 5.893/1997; Zoetis Indústria de Produtos Veterinários Ltda.",
+                "scope": "Situação exibida no painel atualizado em 20/10/2026 06:00:47. A expressão do indicador agrupa EM RENOVAÇÃO em VIGENTE; não foi obtido certificado ou status bruto."
+              },
+              "species": "Bovino. Bubalino fora do escopo desta proposta.",
+              "age": "Bula não declara idade mínima. Não inventar faixa nem tratar silêncio como contraindicação; avaliação individual permanece necessária para aplicação.",
+              "indication": "Prevenção auxiliar das clostridioses explicitadas na bula, em bovinos sadios; não extrapolar valências.",
+              "interval": "Duas doses iniciais, 28–42 dias; revacinação anual com dose única. Sem tolerância adicional demonstrada.",
+              "pregnancy": "Não declarada na bula consultada; sem prova de proibição ou de segurança irrestrita.",
+              "lactation": "Não declarada; não inferir segurança irrestrita nem carência zero para leite.",
+              "product": "Fortress 7, Zoetis; cadastro existente 239a438c-abe0-568e-b24b-793001a08f98, precisa_validar no baseline.",
+              "dose": "5 mL, expressa na bula; somente Fortress 7.",
+              "route": "Subcutânea, expressa na bula; somente Fortress 7.",
+              "withdrawal": "Não aplicar nos 21 dias anteriores ao abate. Leite desconhecido. Planejamento não cria carência ativa."
+            },
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "executionProductPolicy": "not_required"
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "source_ref": "SRC_BULA_FORTRESS7_R04B_ASSESSMENT_20261020",
+              "id": "b5a8471c-3c15-496d-80b2-5be68f8d0001",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Fortress 7 — Bacterina Toxoide contra Carbúnculo Sintomático, Gangrena Gasosa e Enterotoxemia dos Bovinos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "b5a8471c-3c15-496d-80b2-5be68f8d0002"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "source_ref": "SRC_BULA_FORTRESS7_R04B_ASSESSMENT_20261020",
+              "id": "b5a8471c-3c15-496d-80b2-5be68f8d0001",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Fortress 7 — Bacterina Toxoide contra Carbúnculo Sintomático, Gangrena Gasosa e Enterotoxemia dos Bovinos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "b5a8471c-3c15-496d-80b2-5be68f8d0003"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "source_ref": "SRC_BULA_FORTRESS7_R04B_ASSESSMENT_20261020",
+              "id": "b5a8471c-3c15-496d-80b2-5be68f8d0001",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Fortress 7 — Bacterina Toxoide contra Carbúnculo Sintomático, Gangrena Gasosa e Enterotoxemia dos Bovinos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "b5a8471c-3c15-496d-80b2-5be68f8d0004"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_BULA_FORTRESS7_R04B_ASSESSMENT_20261020"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "hybrid",
+          "anchor": "manual_context"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "none"
+      },
+      "proposed_changed_fields": [
+        "id",
+        "version",
+        "action_type",
+        "limitations",
+        "booster_rule",
+        "product_class",
+        "snapshot_template",
+        "source_refs_by_field",
+        "species_authorization",
+        "product_requirement_kind"
+      ],
+      "future_rpc_effect": {
+        "item_status": "active",
+        "allows_agenda_auto": true,
+        "scope": "Somente avaliação genérica versionada; gate/plano de fazenda continuam separados."
+      }
+    },
+    {
+      "decision_id": "R04B-02",
+      "family": "clostridioses",
+      "logical_item_key": "clostridial_primovac_dose2",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "protocol_version": 1,
+      "current_item_id": "675e30b0-0654-5407-824e-a73eeead11b4",
+      "current_version": 3,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "recomendado",
+        "allows_agenda_auto": false
+      },
+      "classification": "PENDENTE DE EVIDÊNCIA ESPECÍFICA",
+      "classification_scope": "Automação do esquema específico atual; consulta e avaliação manual disponíveis.",
+      "evidence_by_field": {
+        "source_key": "SRC_BULA_FORTRESS7",
+        "sources": [
+          "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Fortress-7.pdf",
+          "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+        ],
+        "registration": {
+          "finding": "VIGENTE no indicador oficial; 5.893/1997; Zoetis Indústria de Produtos Veterinários Ltda.",
+          "scope": "Situação exibida no painel atualizado em 20/10/2026 06:00:47. A expressão do indicador agrupa EM RENOVAÇÃO em VIGENTE; não foi obtido certificado ou status bruto."
+        },
+        "species": "Bovino. Bubalino fora do escopo desta proposta.",
+        "age": "Bula não declara idade mínima. Não inventar faixa nem tratar silêncio como contraindicação; avaliação individual permanece necessária para aplicação.",
+        "indication": "Prevenção auxiliar das clostridioses explicitadas na bula, em bovinos sadios; não extrapolar valências.",
+        "interval": "Duas doses iniciais, 28–42 dias; revacinação anual com dose única. Sem tolerância adicional demonstrada.",
+        "pregnancy": "Não declarada na bula consultada; sem prova de proibição ou de segurança irrestrita.",
+        "lactation": "Não declarada; não inferir segurança irrestrita nem carência zero para leite.",
+        "product": "Fortress 7, Zoetis; cadastro existente 239a438c-abe0-568e-b24b-793001a08f98, precisa_validar no baseline.",
+        "dose": "5 mL, expressa na bula; somente Fortress 7.",
+        "route": "Subcutânea, expressa na bula; somente Fortress 7.",
+        "withdrawal": "Não aplicar nos 21 dias anteriores ao abate. Leite desconhecido. Planejamento não cria carência ativa.",
+        "item_interval": "{\"type\":\"relative\",\"anchor\":\"previous_dose\",\"max_offset_days\":42,\"min_offset_days\":28}"
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir autorização bubalina para variante exclusivamente bovina.",
+        "Não converter idade mínima não declarada em contraindicação.",
+        "Não bloquear consulta/avaliação por carência desconhecida de execução."
+      ],
+      "owner_technical_authorization_ready": false,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [],
+      "minimum_adjustment": "Preservar âncora factual, dependência e intervalo corretos; retirar apenas a exigência bubalina do escopo bovino. Vincular produto e fontes por campo numa nova versão após completar a evidência específica; não rebatizar o reforço como avaliação independente para contornar o contrato.",
+      "concrete_impediment": "Produto atual ainda precisa_validar, sem produto/dose/via vinculados ao item; falta delimitação aplicável de categoria/condições individuais e cobertura normalizada por campo. Gestação/lactação e leite não têm evidência para uma liberação irrestrita.",
+      "technical_recommendation": "Manter sem automação específica; permitir consulta/avaliação manual dos campos comprovados. Não repetir obtenção de vigência Fortress/Leptoferm: painel oficial já conferido."
+    },
+    {
+      "decision_id": "R04B-03",
+      "family": "clostridioses",
+      "logical_item_key": "clostridial_reforco_anual",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "protocol_version": 1,
+      "current_item_id": "a694a3c6-63b3-5e4b-b035-ceb7b3d0e626",
+      "current_version": 2,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "recomendado",
+        "allows_agenda_auto": false
+      },
+      "classification": "PENDENTE DE EVIDÊNCIA ESPECÍFICA",
+      "classification_scope": "Automação do esquema específico atual; consulta e avaliação manual disponíveis.",
+      "evidence_by_field": {
+        "source_key": "SRC_BULA_FORTRESS7",
+        "sources": [
+          "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Fortress-7.pdf",
+          "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+        ],
+        "registration": {
+          "finding": "VIGENTE no indicador oficial; 5.893/1997; Zoetis Indústria de Produtos Veterinários Ltda.",
+          "scope": "Situação exibida no painel atualizado em 20/10/2026 06:00:47. A expressão do indicador agrupa EM RENOVAÇÃO em VIGENTE; não foi obtido certificado ou status bruto."
+        },
+        "species": "Bovino. Bubalino fora do escopo desta proposta.",
+        "age": "Bula não declara idade mínima. Não inventar faixa nem tratar silêncio como contraindicação; avaliação individual permanece necessária para aplicação.",
+        "indication": "Prevenção auxiliar das clostridioses explicitadas na bula, em bovinos sadios; não extrapolar valências.",
+        "interval": "Duas doses iniciais, 28–42 dias; revacinação anual com dose única. Sem tolerância adicional demonstrada.",
+        "pregnancy": "Não declarada na bula consultada; sem prova de proibição ou de segurança irrestrita.",
+        "lactation": "Não declarada; não inferir segurança irrestrita nem carência zero para leite.",
+        "product": "Fortress 7, Zoetis; cadastro existente 239a438c-abe0-568e-b24b-793001a08f98, precisa_validar no baseline.",
+        "dose": "5 mL, expressa na bula; somente Fortress 7.",
+        "route": "Subcutânea, expressa na bula; somente Fortress 7.",
+        "withdrawal": "Não aplicar nos 21 dias anteriores ao abate. Leite desconhecido. Planejamento não cria carência ativa.",
+        "item_interval": "{\"type\":\"hybrid\",\"anchor\":\"last_execution\"}"
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir autorização bubalina para variante exclusivamente bovina.",
+        "Não converter idade mínima não declarada em contraindicação.",
+        "Não bloquear consulta/avaliação por carência desconhecida de execução."
+      ],
+      "owner_technical_authorization_ready": false,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [
+        "A revacinação anual está comprovada; tolerância de 30 dias não está. Retirar a tolerância da futura variante de aplicação."
+      ],
+      "minimum_adjustment": "Preservar âncora factual, dependência e intervalo corretos; retirar apenas a exigência bubalina do escopo bovino. Vincular produto e fontes por campo numa nova versão após completar a evidência específica; não rebatizar o reforço como avaliação independente para contornar o contrato.",
+      "concrete_impediment": "Produto atual ainda precisa_validar, sem produto/dose/via vinculados ao item; falta delimitação aplicável de categoria/condições individuais e cobertura normalizada por campo. Gestação/lactação e leite não têm evidência para uma liberação irrestrita.",
+      "technical_recommendation": "Manter sem automação específica; permitir consulta/avaliação manual dos campos comprovados. Não repetir obtenção de vigência Fortress/Leptoferm: painel oficial já conferido."
+    },
+    {
+      "decision_id": "R04B-04",
+      "family": "febre_aftosa",
+      "logical_item_key": "fmd_bloqueio_vacinacao_rotina",
+      "protocol_id": "9bec9aff-af10-4960-b567-c5d4698f540f",
+      "protocol_version": 1,
+      "current_item_id": "fa867ec0-acdf-4b8c-a12e-2620faca4e08",
+      "current_version": 1,
+      "current_state": {
+        "protocol_status": "retired",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "bloqueado",
+        "allows_agenda_auto": false
+      },
+      "classification": "LIBERÁVEL COM RESTRIÇÕES",
+      "classification_scope": "Informação regulatória e consulta histórica; sem planejamento operacional.",
+      "evidence_by_field": {
+        "sources": [
+          "https://www.adaf.am.gov.br/wp-content/uploads/2024/06/PORTARIA-MAPA-No-678-DE-30-DE-ABRIL-DE-2024-PORTARIA-MAPA-No-678-DE-30-DE-ABRIL-DE-2024-DOU-Imprensa-Nacional.pdf",
+          "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/febre-aftosa/combate-febre-aftosa"
+        ],
+        "routine_vaccination": "Restrita pelas normas de zona livre sem vacinação; art. 2 da Portaria 665/2024 alterada por 678/2024 nas UFs listadas.",
+        "history": "Consulta histórica/documental permitida; registrar fato não legitima uso irregular.",
+        "contingency": "Exige ato e comando específicos da autoridade sanitária; plano de contingência sozinho não autoriza.",
+        "product_dose_route_withdrawal": "Não aplicáveis à informação regulatória; não atribuir produtos ou esquema."
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não tratar restrição de vacinação como proibição de consulta/histórico."
+      ],
+      "owner_technical_authorization_ready": true,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [],
+      "minimum_adjustment": "Nenhuma alteração de status/flags: preservar retired/bloqueado e consulta/histórico. Acrescentar a referência direta à Portaria e ao status atual como justificativa documental.",
+      "concrete_impediment": "Vacinação rotineira incompatível com o regime regulatório. Contingência requer ato/comando específico; nenhum foi apresentado ou criado.",
+      "technical_recommendation": "Autorizar somente consulta regulatória/histórica; não usar RPC de aprovação automática nem restaurar vacinação rotineira."
+    },
+    {
+      "decision_id": "R04B-05",
+      "family": "febre_aftosa",
+      "logical_item_key": "fmd_historico_contingencia",
+      "protocol_id": "9bec9aff-af10-4960-b567-c5d4698f540f",
+      "protocol_version": 1,
+      "current_item_id": "dd09c61e-6686-4b1c-99b7-ef9c3f15dc6b",
+      "current_version": 1,
+      "current_state": {
+        "protocol_status": "retired",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "bloqueado",
+        "allows_agenda_auto": false
+      },
+      "classification": "LIBERÁVEL COM RESTRIÇÕES",
+      "classification_scope": "Informação regulatória e consulta histórica; sem planejamento operacional.",
+      "evidence_by_field": {
+        "sources": [
+          "https://www.adaf.am.gov.br/wp-content/uploads/2024/06/PORTARIA-MAPA-No-678-DE-30-DE-ABRIL-DE-2024-PORTARIA-MAPA-No-678-DE-30-DE-ABRIL-DE-2024-DOU-Imprensa-Nacional.pdf",
+          "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/febre-aftosa/combate-febre-aftosa"
+        ],
+        "routine_vaccination": "Restrita pelas normas de zona livre sem vacinação; art. 2 da Portaria 665/2024 alterada por 678/2024 nas UFs listadas.",
+        "history": "Consulta histórica/documental permitida; registrar fato não legitima uso irregular.",
+        "contingency": "Exige ato e comando específicos da autoridade sanitária; plano de contingência sozinho não autoriza.",
+        "product_dose_route_withdrawal": "Não aplicáveis à informação regulatória; não atribuir produtos ou esquema."
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não tratar restrição de vacinação como proibição de consulta/histórico."
+      ],
+      "owner_technical_authorization_ready": true,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [],
+      "minimum_adjustment": "Nenhuma alteração de status/flags: preservar retired/bloqueado e consulta/histórico. Acrescentar a referência direta à Portaria e ao status atual como justificativa documental.",
+      "concrete_impediment": "Vacinação rotineira incompatível com o regime regulatório. Contingência requer ato/comando específico; nenhum foi apresentado ou criado.",
+      "technical_recommendation": "Autorizar somente consulta regulatória/histórica; não usar RPC de aprovação automática nem restaurar vacinação rotineira."
+    },
+    {
+      "decision_id": "R04B-06",
+      "family": "ibr_bvd",
+      "logical_item_key": "ibr_bvd_primovac_dose1",
+      "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+      "protocol_version": 1,
+      "current_item_id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+      "current_version": 2,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "recomendado",
+        "allows_agenda_auto": false
+      },
+      "classification": "LIBERÁVEL COM RESTRIÇÕES",
+      "classification_scope": "Nova versão de avaliação genérica bovina sem aplicação; não vacinação específica.",
+      "evidence_by_field": {
+        "source_key": "SRC_BULA_POLIGUARD",
+        "sources": [
+          "https://www.msd-saude-animal.com.br/produto/poliguard/",
+          "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+        ],
+        "registration": {
+          "finding": "Vigência não confirmada. Não encontrado por POLIGUARD ou 9.299 no painel; registro 9.299/2007 permanece histórico.",
+          "scope": "Ausência na busca não comprova cancelamento. Titular atual e bula integral vigente permanecem pendentes."
+        },
+        "species": "Bovino explícito no resumo oficial; sem exigência bubalina nesta proposta.",
+        "age": "Primeira dose após quatro meses para filhos de mães vacinadas. Não transformar essa condição em idade mínima universal nem inferir o estado imunológico materno.",
+        "indication": "IBR, BVD e leptospirose; antígenos inativados, descritos no resumo oficial do fabricante.",
+        "interval": "Duas doses de primovacinação com 21–30 dias; reforço de 12 meses.",
+        "pregnancy": "Resumo oficial permite vacinação de vacas prenhes. Esta evidência não se transfere a outra formulação.",
+        "lactation": "Resumo não explicita condição específica nem carência para leite.",
+        "product": "Poliguard; cadastro existente 4cab4bd3-491d-595b-ab88-3432bcca03c8, precisa_validar. Não atribuir fabricação à Zoetis.",
+        "dose": "5 mL, explícitos no resumo oficial.",
+        "route": "Subcutânea, explícita no resumo oficial.",
+        "withdrawal": "Carne e leite não informados no resumo consultado; manter unknown, sem converter em zero.",
+        "item_interval": "{\"type\":\"hybrid\",\"anchor\":\"manual_context\"}"
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir autorização bubalina para variante exclusivamente bovina.",
+        "Não converter idade mínima não declarada em contraindicação.",
+        "Não bloquear consulta/avaliação por carência desconhecida de execução."
+      ],
+      "owner_technical_authorization_ready": true,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [
+        "Fontes/coverage_ids e UUID físico do candidato são propostos, inexistentes no banco.",
+        "Digest local do pacote não substitui reviewed_content_digest da RPC."
+      ],
+      "minimum_adjustment": "Criar versão física de avaliação genérica; ação manejo_sanitario, nenhum produto/dose/via, sem recorrência de vacinação. Registrar fonte/cobertura limitada aos três campos curatoriais e supersessão; preservar versões anteriores.",
+      "concrete_impediment": "A versão atual é vacinação draft, sem vinculação comercial e fontes normalizadas por campo. Para a avaliação proposta, falta somente autorização específica do proprietário e publicação do candidato com suas fontes; não falta evidência bubalina ou carência de execução.",
+      "technical_recommendation": "Aceitar a proposta restrita de avaliação. Após autorização de conteúdo, registrar fontes/coberturas e nova versão pelo publicador canônico; obter preview autenticado e digest real antes da aprovação global separada.",
+      "proposed_item": {
+        "id": "b5a8471c-3c15-496d-80b2-5be68f8d0014",
+        "status": "draft",
+        "version": 3,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "manejo_sanitario",
+        "item_status": "recomendado",
+        "limitations": [
+          "assessment_only",
+          "not_a_vaccination_order",
+          "bovine_scope_only",
+          "no_product_dose_route_or_withdrawal_authorized"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "recurrenceRule": {
+            "kind": "none"
+          },
+          "tolerance": null
+        },
+        "product_class": null,
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ]
+        },
+        "logical_item_key": "ibr_bvd_primovac_dose1",
+        "snapshot_template": {
+          "metadata": {
+            "supersedes": {
+              "id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+              "version": 2,
+              "reason": "Avaliação genérica sem aplicação; alteração semântica proposta, não publicada."
+            },
+            "agenda_allowed": false,
+            "curationStatus": "prepared_for_decision",
+            "automationStatus": "decision_required",
+            "approved_for_catalog": false,
+            "planning_scope": "assessment_only",
+            "proposal_only": true
+          },
+          "sourceGaps": [],
+          "sourcePolicy": {
+            "assessment": "Somente avaliação genérica sob contexto explícito; não antecipa esquema ou execução.",
+            "applicationEvidence": {
+              "source_key": "SRC_BULA_POLIGUARD",
+              "sources": [
+                "https://www.msd-saude-animal.com.br/produto/poliguard/",
+                "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+              ],
+              "registration": {
+                "finding": "Vigência não confirmada. Não encontrado por POLIGUARD ou 9.299 no painel; registro 9.299/2007 permanece histórico.",
+                "scope": "Ausência na busca não comprova cancelamento. Titular atual e bula integral vigente permanecem pendentes."
+              },
+              "species": "Bovino explícito no resumo oficial; sem exigência bubalina nesta proposta.",
+              "age": "Primeira dose após quatro meses para filhos de mães vacinadas. Não transformar essa condição em idade mínima universal nem inferir o estado imunológico materno.",
+              "indication": "IBR, BVD e leptospirose; antígenos inativados, descritos no resumo oficial do fabricante.",
+              "interval": "Duas doses de primovacinação com 21–30 dias; reforço de 12 meses.",
+              "pregnancy": "Resumo oficial permite vacinação de vacas prenhes. Esta evidência não se transfere a outra formulação.",
+              "lactation": "Resumo não explicita condição específica nem carência para leite.",
+              "product": "Poliguard; cadastro existente 4cab4bd3-491d-595b-ab88-3432bcca03c8, precisa_validar. Não atribuir fabricação à Zoetis.",
+              "dose": "5 mL, explícitos no resumo oficial.",
+              "route": "Subcutânea, explícita no resumo oficial.",
+              "withdrawal": "Carne e leite não informados no resumo consultado; manter unknown, sem converter em zero."
+            },
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "executionProductPolicy": "not_required"
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD_R04B_ASSESSMENT_20261020",
+              "id": "b5a8471c-3c15-496d-80b2-5be68f8d0005",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Resumo da Bula — POLIGUARD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "b5a8471c-3c15-496d-80b2-5be68f8d0006"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD_R04B_ASSESSMENT_20261020",
+              "id": "b5a8471c-3c15-496d-80b2-5be68f8d0005",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Resumo da Bula — POLIGUARD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "b5a8471c-3c15-496d-80b2-5be68f8d0007"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD_R04B_ASSESSMENT_20261020",
+              "id": "b5a8471c-3c15-496d-80b2-5be68f8d0005",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Resumo da Bula — POLIGUARD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "b5a8471c-3c15-496d-80b2-5be68f8d0008"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_BULA_POLIGUARD_R04B_ASSESSMENT_20261020"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "hybrid",
+          "anchor": "manual_context"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "none"
+      },
+      "proposed_changed_fields": [
+        "id",
+        "version",
+        "action_type",
+        "limitations",
+        "booster_rule",
+        "product_class",
+        "snapshot_template",
+        "source_refs_by_field",
+        "species_authorization",
+        "product_requirement_kind"
+      ],
+      "future_rpc_effect": {
+        "item_status": "active",
+        "allows_agenda_auto": true,
+        "scope": "Somente avaliação genérica versionada; gate/plano de fazenda continuam separados."
+      }
+    },
+    {
+      "decision_id": "R04B-07",
+      "family": "ibr_bvd",
+      "logical_item_key": "ibr_bvd_primovac_dose2",
+      "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+      "protocol_version": 1,
+      "current_item_id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+      "current_version": 3,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "recomendado",
+        "allows_agenda_auto": false
+      },
+      "classification": "PENDENTE DE EVIDÊNCIA ESPECÍFICA",
+      "classification_scope": "Automação do esquema específico atual; consulta e avaliação manual disponíveis.",
+      "evidence_by_field": {
+        "source_key": "SRC_BULA_POLIGUARD",
+        "sources": [
+          "https://www.msd-saude-animal.com.br/produto/poliguard/",
+          "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+        ],
+        "registration": {
+          "finding": "Vigência não confirmada. Não encontrado por POLIGUARD ou 9.299 no painel; registro 9.299/2007 permanece histórico.",
+          "scope": "Ausência na busca não comprova cancelamento. Titular atual e bula integral vigente permanecem pendentes."
+        },
+        "species": "Bovino explícito no resumo oficial; sem exigência bubalina nesta proposta.",
+        "age": "Primeira dose após quatro meses para filhos de mães vacinadas. Não transformar essa condição em idade mínima universal nem inferir o estado imunológico materno.",
+        "indication": "IBR, BVD e leptospirose; antígenos inativados, descritos no resumo oficial do fabricante.",
+        "interval": "Duas doses de primovacinação com 21–30 dias; reforço de 12 meses.",
+        "pregnancy": "Resumo oficial permite vacinação de vacas prenhes. Esta evidência não se transfere a outra formulação.",
+        "lactation": "Resumo não explicita condição específica nem carência para leite.",
+        "product": "Poliguard; cadastro existente 4cab4bd3-491d-595b-ab88-3432bcca03c8, precisa_validar. Não atribuir fabricação à Zoetis.",
+        "dose": "5 mL, explícitos no resumo oficial.",
+        "route": "Subcutânea, explícita no resumo oficial.",
+        "withdrawal": "Carne e leite não informados no resumo consultado; manter unknown, sem converter em zero.",
+        "item_interval": "{\"type\":\"relative\",\"anchor\":\"previous_dose\",\"max_offset_days\":30,\"min_offset_days\":21}"
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir autorização bubalina para variante exclusivamente bovina.",
+        "Não converter idade mínima não declarada em contraindicação.",
+        "Não bloquear consulta/avaliação por carência desconhecida de execução."
+      ],
+      "owner_technical_authorization_ready": false,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [],
+      "minimum_adjustment": "Preservar âncora factual, dependência e intervalo corretos; retirar apenas a exigência bubalina do escopo bovino. Vincular produto e fontes por campo numa nova versão após completar a evidência específica; não rebatizar o reforço como avaliação independente para contornar o contrato.",
+      "concrete_impediment": "Vigência e titular atuais de Poliguard não confirmados; carências ausentes no resumo; dose anterior factual e esquema/produto compatíveis necessários.",
+      "technical_recommendation": "Manter sem automação específica; permitir consulta/avaliação manual dos campos comprovados. Não repetir obtenção de vigência Fortress/Leptoferm: painel oficial já conferido."
+    },
+    {
+      "decision_id": "R04B-08",
+      "family": "leptospirose",
+      "logical_item_key": "lepto_primovac_dose1",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "protocol_version": 1,
+      "current_item_id": "85f9ce5a-6173-5183-aca9-c4106ce938cd",
+      "current_version": 2,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "condicional",
+        "allows_agenda_auto": false
+      },
+      "classification": "LIBERÁVEL COM RESTRIÇÕES",
+      "classification_scope": "Nova versão de avaliação genérica bovina sem aplicação; não vacinação específica.",
+      "evidence_by_field": {
+        "source_key": "SRC_BULA_LEPTOFERM5",
+        "sources": [
+          "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
+          "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+        ],
+        "registration": {
+          "finding": "VIGENTE no indicador oficial; 5.037/1995; Zoetis Indústria de Produtos Veterinários Ltda.",
+          "scope": "Painel atualizado em 20/10/2026 06:00:47. Bula informa licença 5.037 de 15/03/1995; indicador agrupa EM RENOVAÇÃO em VIGENTE."
+        },
+        "species": "Bovino e suíno nas fontes; a proposta é somente bovina. Esquema suíno não se transfere a bovino.",
+        "age": "Bula não declara idade mínima. Não inventar faixa nem impor proibição por ausência.",
+        "indication": "Prevenção auxiliar de leptospirose pelos sorovares nomeados, em animais sadios.",
+        "interval": "Bovinos: dose inicial única e revacinação anual única. Duas doses iniciais são descritas para suínos. Semestral não sustentado.",
+        "pregnancy": "Não declarada; não inferir proibição nem segurança irrestrita.",
+        "lactation": "Não declarada; carência de leite desconhecida.",
+        "product": "Leptoferm 5/2 mL, Zoetis; cadastro existente 820e0950-e617-5fcd-a3b7-351f855b2ba4, precisa_validar.",
+        "dose": "2 mL, explícitos na bula.",
+        "route": "Intramuscular, explícita na bula.",
+        "withdrawal": "Não aplicar nos 21 dias anteriores ao abate; leite desconhecido. Não calcular carência ativa a partir de Agenda.",
+        "item_interval": "{\"type\":\"hybrid\",\"anchor\":\"manual_context\"}"
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir autorização bubalina para variante exclusivamente bovina.",
+        "Não converter idade mínima não declarada em contraindicação.",
+        "Não bloquear consulta/avaliação por carência desconhecida de execução."
+      ],
+      "owner_technical_authorization_ready": true,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [
+        "Fontes/coverage_ids e UUID físico do candidato são propostos, inexistentes no banco.",
+        "Digest local do pacote não substitui reviewed_content_digest da RPC."
+      ],
+      "minimum_adjustment": "Criar versão física de avaliação genérica; ação manejo_sanitario, nenhum produto/dose/via, sem recorrência de vacinação. Registrar fonte/cobertura limitada aos três campos curatoriais e supersessão; preservar versões anteriores.",
+      "concrete_impediment": "A versão atual é vacinação draft, sem vinculação comercial e fontes normalizadas por campo. Para a avaliação proposta, falta somente autorização específica do proprietário e publicação do candidato com suas fontes; não falta evidência bubalina ou carência de execução.",
+      "technical_recommendation": "Aceitar a proposta restrita de avaliação. Após autorização de conteúdo, registrar fontes/coberturas e nova versão pelo publicador canônico; obter preview autenticado e digest real antes da aprovação global separada.",
+      "proposed_item": {
+        "id": "b5a8471c-3c15-496d-80b2-5be68f8d0015",
+        "status": "draft",
+        "version": 3,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "manejo_sanitario",
+        "item_status": "condicional",
+        "limitations": [
+          "assessment_only",
+          "not_a_vaccination_order",
+          "bovine_scope_only",
+          "no_product_dose_route_or_withdrawal_authorized"
+        ],
+        "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "booster_rule": {
+          "recurrenceRule": {
+            "kind": "none"
+          },
+          "tolerance": null
+        },
+        "product_class": null,
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "requires_risk_context": true
+        },
+        "logical_item_key": "lepto_primovac_dose1",
+        "snapshot_template": {
+          "metadata": {
+            "supersedes": {
+              "id": "85f9ce5a-6173-5183-aca9-c4106ce938cd",
+              "version": 2,
+              "reason": "Avaliação genérica sem aplicação; alteração semântica proposta, não publicada."
+            },
+            "agenda_allowed": false,
+            "curationStatus": "prepared_for_decision",
+            "automationStatus": "decision_required",
+            "approved_for_catalog": false,
+            "planning_scope": "assessment_only",
+            "proposal_only": true
+          },
+          "sourceGaps": [],
+          "sourcePolicy": {
+            "assessment": "Somente avaliação genérica sob contexto explícito; não antecipa esquema ou execução.",
+            "applicationEvidence": {
+              "source_key": "SRC_BULA_LEPTOFERM5",
+              "sources": [
+                "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
+                "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+              ],
+              "registration": {
+                "finding": "VIGENTE no indicador oficial; 5.037/1995; Zoetis Indústria de Produtos Veterinários Ltda.",
+                "scope": "Painel atualizado em 20/10/2026 06:00:47. Bula informa licença 5.037 de 15/03/1995; indicador agrupa EM RENOVAÇÃO em VIGENTE."
+              },
+              "species": "Bovino e suíno nas fontes; a proposta é somente bovina. Esquema suíno não se transfere a bovino.",
+              "age": "Bula não declara idade mínima. Não inventar faixa nem impor proibição por ausência.",
+              "indication": "Prevenção auxiliar de leptospirose pelos sorovares nomeados, em animais sadios.",
+              "interval": "Bovinos: dose inicial única e revacinação anual única. Duas doses iniciais são descritas para suínos. Semestral não sustentado.",
+              "pregnancy": "Não declarada; não inferir proibição nem segurança irrestrita.",
+              "lactation": "Não declarada; carência de leite desconhecida.",
+              "product": "Leptoferm 5/2 mL, Zoetis; cadastro existente 820e0950-e617-5fcd-a3b7-351f855b2ba4, precisa_validar.",
+              "dose": "2 mL, explícitos na bula.",
+              "route": "Intramuscular, explícita na bula.",
+              "withdrawal": "Não aplicar nos 21 dias anteriores ao abate; leite desconhecido. Não calcular carência ativa a partir de Agenda."
+            },
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "executionProductPolicy": "not_required"
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "source_ref": "SRC_BULA_LEPTOFERM5_R04B_ASSESSMENT_20261020",
+              "id": "b5a8471c-3c15-496d-80b2-5be68f8d0009",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Leptoferm 5/2 mL — Vacina Inativada Contra Leptospirose Bovina e Suína",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "b5a8471c-3c15-496d-80b2-5be68f8d0010"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "source_ref": "SRC_BULA_LEPTOFERM5_R04B_ASSESSMENT_20261020",
+              "id": "b5a8471c-3c15-496d-80b2-5be68f8d0009",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Leptoferm 5/2 mL — Vacina Inativada Contra Leptospirose Bovina e Suína",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "b5a8471c-3c15-496d-80b2-5be68f8d0011"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "source_ref": "SRC_BULA_LEPTOFERM5_R04B_ASSESSMENT_20261020",
+              "id": "b5a8471c-3c15-496d-80b2-5be68f8d0009",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Leptoferm 5/2 mL — Vacina Inativada Contra Leptospirose Bovina e Suína",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "b5a8471c-3c15-496d-80b2-5be68f8d0012"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_BULA_LEPTOFERM5_R04B_ASSESSMENT_20261020"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "hybrid",
+          "anchor": "manual_context"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "none"
+      },
+      "proposed_changed_fields": [
+        "id",
+        "version",
+        "action_type",
+        "limitations",
+        "booster_rule",
+        "product_class",
+        "snapshot_template",
+        "source_refs_by_field",
+        "species_authorization",
+        "product_requirement_kind"
+      ],
+      "future_rpc_effect": {
+        "item_status": "active",
+        "allows_agenda_auto": true,
+        "scope": "Somente avaliação genérica versionada; gate/plano de fazenda continuam separados."
+      }
+    },
+    {
+      "decision_id": "R04B-09",
+      "family": "leptospirose",
+      "logical_item_key": "lepto_primovac_dose2",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "protocol_version": 1,
+      "current_item_id": "77c52cb2-069e-4d84-89d4-1cb26236ab5a",
+      "current_version": 1,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "bloqueado",
+        "allows_agenda_auto": false
+      },
+      "classification": "INCOMPATÍVEL COM A FONTE",
+      "classification_scope": "Segunda dose bovina usando Leptoferm 5/2 mL.",
+      "evidence_by_field": {
+        "source_key": "SRC_BULA_LEPTOFERM5",
+        "sources": [
+          "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
+          "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+        ],
+        "registration": {
+          "finding": "VIGENTE no indicador oficial; 5.037/1995; Zoetis Indústria de Produtos Veterinários Ltda.",
+          "scope": "Painel atualizado em 20/10/2026 06:00:47. Bula informa licença 5.037 de 15/03/1995; indicador agrupa EM RENOVAÇÃO em VIGENTE."
+        },
+        "species": "Bovino e suíno nas fontes; a proposta é somente bovina. Esquema suíno não se transfere a bovino.",
+        "age": "Bula não declara idade mínima. Não inventar faixa nem impor proibição por ausência.",
+        "indication": "Prevenção auxiliar de leptospirose pelos sorovares nomeados, em animais sadios.",
+        "interval": "Bovinos: dose inicial única e revacinação anual única. Duas doses iniciais são descritas para suínos. Semestral não sustentado.",
+        "pregnancy": "Não declarada; não inferir proibição nem segurança irrestrita.",
+        "lactation": "Não declarada; carência de leite desconhecida.",
+        "product": "Leptoferm 5/2 mL, Zoetis; cadastro existente 820e0950-e617-5fcd-a3b7-351f855b2ba4, precisa_validar.",
+        "dose": "2 mL, explícitos na bula.",
+        "route": "Intramuscular, explícita na bula.",
+        "withdrawal": "Não aplicar nos 21 dias anteriores ao abate; leite desconhecido. Não calcular carência ativa a partir de Agenda.",
+        "item_interval": "{\"type\":\"blocked\",\"anchor\":\"product_label\",\"reason\":\"current_bovine_reference_supports_single_initial_dose\"}"
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir autorização bubalina para variante exclusivamente bovina.",
+        "Não converter idade mínima não declarada em contraindicação.",
+        "Não bloquear consulta/avaliação por carência desconhecida de execução."
+      ],
+      "owner_technical_authorization_ready": false,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [],
+      "minimum_adjustment": "Preservar bloqueio do esquema bovino Leptoferm, sem dose 2. Outra formulação que exija duas doses exige variante, fontes e versionamento próprios; não trocar somente o source_ref.",
+      "concrete_impediment": "Bula Leptoferm: dose inicial única para bovinos; série de duas doses pertence ao esquema suíno.",
+      "technical_recommendation": "Não aprovar esta segunda dose para Leptoferm bovino. Preservar consulta e eventual registro factual, sem validar uso pela existência do fato."
+    },
+    {
+      "decision_id": "R04B-10",
+      "family": "leptospirose",
+      "logical_item_key": "lepto_reforco_anual_semestral",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "protocol_version": 1,
+      "current_item_id": "76e411fe-8690-5229-a3e7-cf0b0d4a2f11",
+      "current_version": 2,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "condicional",
+        "allows_agenda_auto": false
+      },
+      "classification": "PENDENTE DE EVIDÊNCIA ESPECÍFICA",
+      "classification_scope": "Automação do esquema específico atual; consulta e avaliação manual disponíveis.",
+      "evidence_by_field": {
+        "source_key": "SRC_BULA_LEPTOFERM5",
+        "sources": [
+          "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
+          "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html"
+        ],
+        "registration": {
+          "finding": "VIGENTE no indicador oficial; 5.037/1995; Zoetis Indústria de Produtos Veterinários Ltda.",
+          "scope": "Painel atualizado em 20/10/2026 06:00:47. Bula informa licença 5.037 de 15/03/1995; indicador agrupa EM RENOVAÇÃO em VIGENTE."
+        },
+        "species": "Bovino e suíno nas fontes; a proposta é somente bovina. Esquema suíno não se transfere a bovino.",
+        "age": "Bula não declara idade mínima. Não inventar faixa nem impor proibição por ausência.",
+        "indication": "Prevenção auxiliar de leptospirose pelos sorovares nomeados, em animais sadios.",
+        "interval": "Bovinos: dose inicial única e revacinação anual única. Duas doses iniciais são descritas para suínos. Semestral não sustentado.",
+        "pregnancy": "Não declarada; não inferir proibição nem segurança irrestrita.",
+        "lactation": "Não declarada; carência de leite desconhecida.",
+        "product": "Leptoferm 5/2 mL, Zoetis; cadastro existente 820e0950-e617-5fcd-a3b7-351f855b2ba4, precisa_validar.",
+        "dose": "2 mL, explícitos na bula.",
+        "route": "Intramuscular, explícita na bula.",
+        "withdrawal": "Não aplicar nos 21 dias anteriores ao abate; leite desconhecido. Não calcular carência ativa a partir de Agenda.",
+        "item_interval": "{\"type\":\"relative\",\"anchor\":\"last_execution\"}"
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir autorização bubalina para variante exclusivamente bovina.",
+        "Não converter idade mínima não declarada em contraindicação.",
+        "Não bloquear consulta/avaliação por carência desconhecida de execução."
+      ],
+      "owner_technical_authorization_ready": false,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [
+        "Liberar apenas a alternativa anual quando o esquema específico estiver completo. A palavra semestral na chave lógica não autoriza 180 dias.",
+        "Tolerância de 30 dias não consta da bula: removê-la da futura variante de aplicação ou fundamentá-la separadamente."
+      ],
+      "minimum_adjustment": "Preservar âncora factual, dependência e intervalo corretos; retirar apenas a exigência bubalina do escopo bovino. Vincular produto e fontes por campo numa nova versão após completar a evidência específica; não rebatizar o reforço como avaliação independente para contornar o contrato.",
+      "concrete_impediment": "Produto atual ainda precisa_validar, sem produto/dose/via vinculados ao item; falta delimitação aplicável de categoria/condições individuais e cobertura normalizada por campo. Gestação/lactação e leite não têm evidência para uma liberação irrestrita.",
+      "technical_recommendation": "Manter sem automação específica; permitir consulta/avaliação manual dos campos comprovados. Não repetir obtenção de vigência Fortress/Leptoferm: painel oficial já conferido."
+    },
+    {
+      "decision_id": "R04B-11",
+      "family": "raiva_herbivoros",
+      "logical_item_key": "raiva_primovac_dose1",
+      "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+      "protocol_version": 1,
+      "current_item_id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
+      "current_version": 1,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "condicional",
+        "allows_agenda_auto": false
+      },
+      "classification": "LIBERÁVEL COM RESTRIÇÕES",
+      "classification_scope": "Consulta e manejo manual; sem automação da vacinação.",
+      "evidence_by_field": {
+        "sources": [
+          "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/qualidade-dos-servicos-veterinarios/arquivos/pncrh/in_05_2002_alt__n_41_2020_norma_tecnica_controle_rh.pdf"
+        ],
+        "species": "Bovídeos/equídeos na norma; escopo atual bovino/bubalino preservado.",
+        "age": "≥3 meses em áreas de ocorrência; menores dependem de critério MV.",
+        "indication": "Profilaxia; focos/perifocos e situações regionais não equivalem a condição universal para consulta/manual.",
+        "interval": "Dose inicial sob contexto técnico adequado; não gerar por suspeita genérica.",
+        "product": "Vacina inativada previamente licenciada; nenhum produto individual foi selecionado nesta revisão.",
+        "dose": "2 mL na norma, sem atribuição a produto executado.",
+        "route": "SC ou IM na norma; produto real deve ser compatível.",
+        "pregnancy": "Sem declaração produto-específica nesta revisão.",
+        "lactation": "Sem declaração produto-específica nesta revisão.",
+        "withdrawal": "Norma não individualiza carência; produto executado e fonte próprios exigidos."
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir foco/perifoco simultaneamente a toda consulta ou manejo voluntário.",
+        "Não tratar no_agenda_auto como proibição de consulta ou registro factual."
+      ],
+      "owner_technical_authorization_ready": true,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [],
+      "minimum_adjustment": "Nenhuma alteração operacional para preservar consulta/manual. Distinguir no texto curatorial risco regional de foco/perifoco, manter no_agenda_auto, manual_only e versões v1. Revisão de automação é outra decisão versionada, não edição de flag.",
+      "concrete_impediment": "Para automação: guard explícito por família e no_agenda_auto; falta decisão versionada, contexto regional aplicável e esquema do produto. Não é impedimento de consulta/manual.",
+      "technical_recommendation": "Autorizar somente interpretação/manual restritos. Não enviar approved pela RPC atual, pois ela habilita allows_agenda_auto=true e recusa esta família."
+    },
+    {
+      "decision_id": "R04B-12",
+      "family": "raiva_herbivoros",
+      "logical_item_key": "raiva_primovac_reforco_30d",
+      "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+      "protocol_version": 1,
+      "current_item_id": "f62a7a12-0604-4539-8245-5564e4e3592e",
+      "current_version": 1,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "condicional",
+        "allows_agenda_auto": false
+      },
+      "classification": "LIBERÁVEL COM RESTRIÇÕES",
+      "classification_scope": "Consulta e manejo manual; sem automação da vacinação.",
+      "evidence_by_field": {
+        "sources": [
+          "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/qualidade-dos-servicos-veterinarios/arquivos/pncrh/in_05_2002_alt__n_41_2020_norma_tecnica_controle_rh.pdf"
+        ],
+        "species": "Bovídeos/equídeos na norma; escopo atual bovino/bubalino preservado.",
+        "age": "≥3 meses em áreas de ocorrência; menores dependem de critério MV.",
+        "indication": "Profilaxia; focos/perifocos e situações regionais não equivalem a condição universal para consulta/manual.",
+        "interval": "Reforço 30 dias após Evento da dose inicial, IN 5/2002 art. 8 §2.",
+        "product": "Vacina inativada previamente licenciada; nenhum produto individual foi selecionado nesta revisão.",
+        "dose": "2 mL na norma, sem atribuição a produto executado.",
+        "route": "SC ou IM na norma; produto real deve ser compatível.",
+        "pregnancy": "Sem declaração produto-específica nesta revisão.",
+        "lactation": "Sem declaração produto-específica nesta revisão.",
+        "withdrawal": "Norma não individualiza carência; produto executado e fonte próprios exigidos."
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir foco/perifoco simultaneamente a toda consulta ou manejo voluntário.",
+        "Não tratar no_agenda_auto como proibição de consulta ou registro factual."
+      ],
+      "owner_technical_authorization_ready": true,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [
+        "Preservar 30 dias e vínculo ao Evento anterior; não usar Agenda concluída como dose."
+      ],
+      "minimum_adjustment": "Nenhuma alteração operacional para preservar consulta/manual. Distinguir no texto curatorial risco regional de foco/perifoco, manter no_agenda_auto, manual_only e versões v1. Revisão de automação é outra decisão versionada, não edição de flag.",
+      "concrete_impediment": "Para automação: guard explícito por família e no_agenda_auto; falta decisão versionada, contexto regional aplicável e esquema do produto. Não é impedimento de consulta/manual.",
+      "technical_recommendation": "Autorizar somente interpretação/manual restritos. Não enviar approved pela RPC atual, pois ela habilita allows_agenda_auto=true e recusa esta família."
+    },
+    {
+      "decision_id": "R04B-13",
+      "family": "raiva_herbivoros",
+      "logical_item_key": "raiva_reforco_anual_area_risco",
+      "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+      "protocol_version": 1,
+      "current_item_id": "e5430f23-2f84-4812-9caa-85bb6596304d",
+      "current_version": 1,
+      "current_state": {
+        "protocol_status": "draft",
+        "protocol_approval": "draft",
+        "item_status": "draft",
+        "technical_status": "condicional",
+        "allows_agenda_auto": false
+      },
+      "classification": "LIBERÁVEL COM RESTRIÇÕES",
+      "classification_scope": "Consulta e manejo manual; sem automação da vacinação.",
+      "evidence_by_field": {
+        "sources": [
+          "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/qualidade-dos-servicos-veterinarios/arquivos/pncrh/in_05_2002_alt__n_41_2020_norma_tecnica_controle_rh.pdf"
+        ],
+        "species": "Bovídeos/equídeos na norma; escopo atual bovino/bubalino preservado.",
+        "age": "≥3 meses em áreas de ocorrência; menores dependem de critério MV.",
+        "indication": "Profilaxia; focos/perifocos e situações regionais não equivalem a condição universal para consulta/manual.",
+        "interval": "Imunidade máxima para revacinação de 12 meses, art. 10; tolerância +30 dias não sustentada.",
+        "product": "Vacina inativada previamente licenciada; nenhum produto individual foi selecionado nesta revisão.",
+        "dose": "2 mL na norma, sem atribuição a produto executado.",
+        "route": "SC ou IM na norma; produto real deve ser compatível.",
+        "pregnancy": "Sem declaração produto-específica nesta revisão.",
+        "lactation": "Sem declaração produto-específica nesta revisão.",
+        "withdrawal": "Norma não individualiza carência; produto executado e fonte próprios exigidos."
+      },
+      "unsupported_generic_blocks_removed": [
+        "Não exigir foco/perifoco simultaneamente a toda consulta ou manejo voluntário.",
+        "Não tratar no_agenda_auto como proibição de consulta ou registro factual."
+      ],
+      "owner_technical_authorization_ready": true,
+      "live_rpc_approval_ready_now": false,
+      "authenticated_rpc_preview_obtained": false,
+      "submitted": false,
+      "owner_authorization": null,
+      "remote_review_digest": null,
+      "notes": [
+        "Não autorizar a tolerância de +30 dias: a norma limita a imunidade considerada a no máximo 12 meses."
+      ],
+      "minimum_adjustment": "Nenhuma alteração operacional para preservar consulta/manual. Distinguir no texto curatorial risco regional de foco/perifoco, manter no_agenda_auto, manual_only e versões v1. Revisão de automação é outra decisão versionada, não edição de flag.",
+      "concrete_impediment": "Para automação: guard explícito por família e no_agenda_auto; falta decisão versionada, contexto regional aplicável e esquema do produto. Não é impedimento de consulta/manual.",
+      "technical_recommendation": "Autorizar somente interpretação/manual restritos. Não enviar approved pela RPC atual, pois ela habilita allows_agenda_auto=true e recusa esta família."
+    }
+  ],
+  "counts": {
+    "reviewed": 13,
+    "liberavel": 0,
+    "liberavel_com_restricoes": 8,
+    "pendente_de_evidencia_especifica": 4,
+    "incompativel_com_a_fonte": 1,
+    "owner_technical_proposals_ready": 8,
+    "initial_assessment_versions_proposed": 3,
+    "live_rpc_decisions_ready": 0
+  },
+  "source_evidence": {
+    "mapa_ui": "SANITARIO_V2_R04B_MAPA_UI_20261020.json",
+    "remote_baseline": "SANITARIO_V2_R04B_BASELINE_20261020.json",
+    "sipeagro_open_csv": {
+      "url": "https://dados.agricultura.gov.br/dataset/52a01565-72d6-410e-b21b-64035831a7be/resource/7ce5fac0-9c8f-4e14-82d9-6deab9b5e2e9/download/sipeagroprodutoveterinario.csv",
+      "downloaded_text_sha256": "18d2908fe0d07b3f5b67afd1e9fbdb4d49731ab1d2d4993564a9af62324c421c",
+      "rows_including_header": 67002,
+      "observation": "O recurso chamado Produto Veterinário contém estabelecimentos, sem campo de denominação de produto/licença individual. Zero correspondências dos três nomes não prova cancelamento nem vigência."
+    }
+  },
+  "invariants": {
+    "r05_preserved": true,
+    "approved_seven_untouched": true,
+    "gates_off": true,
+    "existing_agendas_events_unchanged": true,
+    "no_schema_sync_rpc_change": true,
+    "version_history_preserved": true,
+    "no_product_dose_route_withdrawal_inferred": true,
+    "no_bubalino_requirement_for_bovino_proposal": true
+  },
+  "validation": {
+    "rpc_preview_obtained": false,
+    "local_projection_only": true,
+    "not_a_live_digest": true
+  },
+  "remote_mutations": 0,
+  "product_evidence_metadata_proposals": [
+    {
+      "product_id": "239a438c-abe0-568e-b24b-793001a08f98",
+      "field": "metadata.registration_current_validity",
+      "current_value": "unknown",
+      "proposed_value": "verified",
+      "evidence_kind": "official_published_indicator",
+      "evidence": "MAPA painel Produtos Biológicos, 20/10/2026 06:00:47; Fortress 7; 5.893/1997; VIGENTE; Zoetis.",
+      "limit": "Indicador agrupa EM RENOVAÇÃO em VIGENTE; não há certificado/status bruto.",
+      "does_not_change": "status_curatorial, idade, gestação/lactação, dose, via, carência e snapshots antigos",
+      "requires_owner_authorization": true,
+      "applied": false
+    },
+    {
+      "product_id": "820e0950-e617-5fcd-a3b7-351f855b2ba4",
+      "field": "metadata.registration_current_validity",
+      "current_value": "unknown",
+      "proposed_value": "verified",
+      "evidence_kind": "official_published_indicator",
+      "evidence": "MAPA painel Produtos Biológicos, 20/10/2026 06:00:47; Leptoferm - 5/2 ML; 5.037/1995; VIGENTE; Zoetis.",
+      "limit": "Indicador agrupa EM RENOVAÇÃO em VIGENTE; não há certificado/status bruto.",
+      "does_not_change": "status_curatorial, idade, gestação/lactação, dose, via, carência e snapshots antigos",
+      "requires_owner_authorization": true,
+      "applied": false
+    }
+  ],
+  "superseded_by": "SANITARIO_V2_R04B_CLASS_PREVIEWS_20261021.json",
+  "do_not_submit": true,
+  "supersession_reason": "Pedido posterior proíbe converter vacinação em avaliação na mesma chave; decisões e candidatas abaixo são históricas e não têm prontidão atual."
+}

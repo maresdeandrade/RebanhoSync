@@ -18,6 +18,7 @@ vi.mock("../db", () => {
     db: {
       tables: [{ name: "state_animais" }, { name: "state_lotes" }],
       queue_ops: { toArray: vi.fn(async () => []) },
+      queue_gestures: { toArray: vi.fn(async () => []) },
       table: vi.fn(),
       transaction: vi.fn(),
     },
@@ -91,7 +92,7 @@ describe("pullDataForFarm", () => {
 
     expect(db.transaction).toHaveBeenCalledWith(
       "rw",
-      [storeNameAnimais, storeNameLotes, "queue_ops"],
+      [storeNameAnimais, storeNameLotes, "queue_ops", "queue_gestures"],
       expect.any(Function),
     );
 
@@ -139,7 +140,7 @@ describe("pullDataForFarm", () => {
 
     expect(db.transaction).toHaveBeenCalledWith(
       "rw",
-      ["state_animais", "queue_ops"],
+      ["state_animais", "queue_ops", "queue_gestures"],
       expect.any(Function),
     );
   });

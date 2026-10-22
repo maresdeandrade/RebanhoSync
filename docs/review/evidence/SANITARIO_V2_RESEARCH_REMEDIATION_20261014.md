@@ -1,5 +1,8 @@
 # Sanitário V2 — Pesquisa, correções e decisão por escopo
 
+> **Referência posterior, sem reescrever o relatório histórico:** em 15/10/2026 as **18 pendências de planejamento** receberam propostas de liberação condicional por item/produto/contexto, preservando os limites de registro factual e carência deste relatório. Ver [política 15/10](../SANITARIO_V2_POLITICA_AGENDA_CONDICIONAL_20261015.md) e [matriz de decisões](SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv). Não há alteração do payload ou aprovação prospectiva nesta documentação. **Ajustes A–E incorporados:** restrição `no_agenda_auto` mantém **todos os três itens de raiva** sem automação até revisão **aprovada e versionada**; vacinas multivalentes (ex.: Fertiguard/Poliguard) exigem composição, janela e histórico compatíveis para **uma única aplicação/Evento** com cobertura multiprotocolo rastreável; B19 concilia períodos federais e somente os prazos estaduais de comprovação preserváveis pelo art. 3º; Agenda genérica não adquire esquema/dose por inferência; relatórios locais e os quatro achados Fallow permanecem **relatados, sem IDs brutos conferidos**. Revisar a [matriz por 20 itens](SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv) junto com a política.
+
+
 > Relatório histórico recebido no ZIP. Baseline, ambiente e resultados abaixo pertencem à execução de origem; não certificam a integração atual. Consulte [integração na main atual](SANITARIO_V2_INTEGRATION_20261014.md) para adaptações e resultados reproduzidos neste checkout.
 
 Atualizado em: 2026-10-14

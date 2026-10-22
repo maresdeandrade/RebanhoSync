@@ -1,0 +1,161 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>R05 — cliente operacional</title>
+<h1>R05 — cliente operacional</h1><p>Somente fazenda sintética autorizada. Serviços e filas canônicos; sem alteração de autenticação.</p>
+<label>Cenário <select id="action"><option>inventory</option><option>prepare</option><option>seed</option><option>preview</option>
+<option>offline</option><option>online</option><option>save-plan</option><option>generate</option>
+<option>sync</option><option>pull</option><option>lost-ack</option><option>plan-update</option>
+<option>reschedule</option><option>cancel</option><option>switch-farm</option><option>restore-farm</option>
+<option>rls</option><option>auth-401</option><option>refresh-auth</option><option>interrupted-request</option>
+<option>recover</option><option>expiry-arm</option><option>expiry-resume</option><option>disable</option></select></label><button id="run" disabled>Executar cenário selecionado</button>
+<button id="export">Exportar evidência sanitizada</button><pre id="status">Inicializando…</pre><details><summary>Evidência acumulada</summary><pre id="result"></pre></details>
+<script type="module">
+import {supabase} from '/src/lib/supabase.ts';
+import {env} from '/src/lib/env.ts';
+import {db} from '/src/lib/offline/db.ts';
+import {getClientId,createGesture} from '/src/lib/offline/ops.ts';
+import {getActiveFarmId,setActiveFarmId} from '/src/lib/storage.ts';
+import {getCurrentLocalReadOwnership} from '/src/lib/offline/localReadBoundary.ts';
+import {pullDataForFarm,pullSanitarioProtocolCatalogV2,pullSanitarioTechnicalCatalogV2,pullSanitarioV2CutoverState,pullSanitarioAgendaV2} from '/src/lib/offline/pull.ts';
+import {applySanitarioV2Cutover,setSanitarioV2PushEnabled,isSanitarioV2PushEnabled} from '/src/lib/offline/sanitarioV2Cutover.ts';
+import {processGesture,withGestureLock,drainReconciliationObligations,recoverStaleSyncingGesturesOnce,recoverErroredGesturesOnce} from '/src/lib/offline/syncWorker.ts';
+import {saveSanitaryAutomationPlanV2,readSanitaryAutomationPlanV2,selectSanitaryAutomationRuleV2} from '/src/lib/sanitario/agenda/sanitaryAutomationPlanV2.ts';
+import {loadSanitaryProtocolWindowSourceV2,EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2} from '/src/lib/sanitario/windows/sanitaryProtocolWindowsV2.ts';
+import {previewSanitaryAutomaticPlanV2,generateSanitaryAutomaticAgendasV2} from '/src/lib/sanitario/agenda/sanitaryAutomaticGenerationV2.ts';
+import {rescheduleLocalSanitaryAgendaV2,cancelLocalSanitaryAgendaV2} from '/src/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2.ts';
+const farm='2d8a30d9-bd9c-41b4-a71d-93d2d293058f',actor='0f00a75c-32a9-4555-a840-cb0f13f2d3f7',ref='zqloazqzhwauamcejmuz';
+const date='2026-10-20',label=new URL(location.href).searchParams.get('client')??'unknown';
+const key='R05:sanitario:evidence:20261020',evidence=JSON.parse(localStorage.getItem(key)||'{"steps":[],"transport":[]}');
+const originalFetch=window.fetch.bind(window);let fault='none';
+let releaseExpiryGesture,releaseExpiryAuth;
+supabase.auth.onAuthStateChange((event,session)=>{if(event==='TOKEN_REFRESHED'){(evidence.auth_events??=[]).push({event,at:new Date().toISOString(),actor:session?.user.id??null,expires_at:session?.expires_at??null});persist();}});
+const assert=(value,message)=>{if(!value)throw new Error(message)};
+const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
+const digest=async value=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(canonical(value))))].map(n=>n.toString(16).padStart(2,'0')).join('');
+function persist(){localStorage.setItem(key,JSON.stringify(evidence));document.querySelector('#result').textContent=JSON.stringify(evidence,null,2)}
+window.fetch=async(input,options)=>{
+  const url=String(input?.url??input);
+  if(url.startsWith(env.supabaseUrl)&&fault==='offline')throw new TypeError('R05 injected offline transport — no request sent');
+  if(!url.includes('/functions/v1/sync-batch'))return originalFetch(input,options);
+  const request=JSON.parse(options?.body??'{}');
+  assert(request.fazenda_id===farm,'R05 transport cannot write another farm');
+  if(fault==='auth401'){
+    fault='none';const headers=new Headers(options.headers);headers.delete('Authorization');
+    const denied=await originalFetch(input,{...options,headers});
+    evidence.transport.push({at:new Date().toISOString(),fault:'authorization_header_deliberately_omitted_not_natural_JWT_expiry',request,http_status:denied.status,response:await denied.clone().json()});persist();
+    assert(denied.status===401,'Expected genuine server HTTP 401');return denied;
+  }
+  const response=await originalFetch(input,options);let body;
+  try{body=await response.clone().json()}catch{body={unparsed:true}}
+  evidence.transport.push({at:new Date().toISOString(),request,http_status:response.status,response:body,fault});persist();
+  if(fault==='lostack'&&response.ok){fault='none';throw new TypeError('R05 accepted response deliberately withheld from worker')}
+  if(fault==='interrupted'&&response.ok){fault='none';document.querySelector('#status').textContent='INTERRUPT_NOW — remote response received; worker has no ACK. Close this tab and reopen same profile.';return new Promise(()=>{})}
+  return response;
+};
+async function inventory(){
+  const [gestures,ops,obligations,cutovers,ownership,session]=await Promise.all([db.queue_gestures.toArray(),db.queue_ops.toArray(),db.sync_reconcile_obligations.toArray(),db.sync_sanitario_v2_cutovers.toArray(),getCurrentLocalReadOwnership(),supabase.auth.getSession()]);
+  return {label,client_id:getClientId(),active_farm:getActiveFarmId(),ownership,auth_user_id:session.data.session?.user.id??null,jwt_expires_at:session.data.session?.expires_at??null,rejections:await db.queue_rejections.toArray(),
+    gestures:gestures.map(g=>({id:g.client_tx_id,farm:g.fazenda_id,status:g.status,next:g.next_attempt_at,error:g.last_error})),
+    ops:ops.map(o=>({id:o.client_op_id,tx:o.client_tx_id,table:o.table,command:o.record.command??null,state:o.sync_state,next:o.next_attempt_at,error:o.last_error})),
+    queue_digest:await digest({gestures,ops}),obligations,cutovers,push_enabled:isSanitarioV2PushEnabled(ref)};
+}
+async function snapshot(){const [config,agendas,links,closures,events,stock]=await Promise.all([db.state_fazenda_sanidade_config.get(farm),db.ops_sanitario_agenda_v2.where('fazenda_id').equals(farm).toArray(),db.ops_sanitario_agenda_animais_v2.where('fazenda_id').equals(farm).toArray(),db.ops_sanitario_agenda_closures_v2.where('fazenda_id').equals(farm).toArray(),db.event_eventos.where('fazenda_id').equals(farm).count(),db.state_insumo_movimentacoes.where('fazenda_id').equals(farm).count()]);return {inventory:await inventory(),plan:readSanitaryAutomationPlanV2(config),agendas,links,closures,events,stock};}
+async function draft(){
+ const source=await loadSanitaryProtocolWindowSourceV2(farm),packet=await(await originalFetch('/docs/review/evidence/SANITARIO_V2_R04_PREPARADA_20261019.json')).json();
+ const items=packet.decisions.flatMap(d=>d.versions).map(v=>source.catalog.items.find(i=>i.id===v.item_id&&i.version===v.version));assert(items.every(Boolean),'Seven approved versions missing');
+ const animals=source.animals.filter(a=>a.identificacao?.startsWith('R05-'));
+ const rules=items.map(i=>selectSanitaryAutomationRuleV2(source.catalog.protocols.find(p=>p.id===i.protocolId),i));
+ const ruleContexts=Object.fromEntries(items.map(i=>{
+ let context={...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2};
+ if(i.logicalItemKey.startsWith('recria_'))context={...context,management:'rearing',regionalCalendar:{uf:'DF',months:i.operationalWindowRule.calendar_months}};
+ if(i.logicalItemKey==='pre_desmama_situacional')context={...context,management:'pre_weaning',preWeaningBasis:{kind:'intensive_dairy',reference:'R05 contexto exclusivamente sintético de avaliação pré-desmama, sem execução'}};
+ if(i.logicalItemKey==='pre_confinamento_dose_unica')context={...context,management:'pre_feedlot',scheduledContext:{date,animalIds:animals.map(a=>a.id),reference:'R05 destino de confinamento exclusivamente sintético; avaliação, sem execução'}};
+ if(i.logicalItemKey==='matrizes_pre_parto_antiparasitario')context={...context,reproductiveContext:'prepartum',scheduledContext:{date,animalIds:animals.filter(a=>a.identificacao==='R05-MATRIZ-SINTETICA').map(a=>a.id),reference:'R05 contexto gestacional exclusivamente sintético; nenhum parto ou diagnóstico factual registrado'}};
+ return [i.id,context];}));
+ return {source,draft:{rules,context:{...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2},ruleContexts}};
+}
+async function sync(){
+ const results=[];
+ for(let pass=0;pass<3;pass++){
+ const gestures=(await db.queue_gestures.where('fazenda_id').equals(farm).toArray()).filter(g=>g.status==='PENDING');
+ if(!gestures.length)break;
+ for(const gesture of gestures){await processGesture(gesture);results.push(await db.queue_gestures.get(gesture.client_tx_id));}
+ }
+ await drainReconciliationObligations(farm);
+ return results;
+}
+async function pull(){await pullDataForFarm(farm,['animais','fazenda_sanidade_config'],{mode:'merge'});await pullSanitarioAgendaV2(farm);return snapshot()}
+async function scenario(action){
+ if(action==='inventory')return snapshot();
+ if(action==='prepare'){
+  const auth=await supabase.auth.getUser();assert(!auth.error&&auth.data.user?.id===actor,'Real curator authentication required');
+  const membership=await supabase.from('user_fazendas').select('role').eq('user_id',actor).eq('fazenda_id',farm).single();assert(!membership.error&&['owner','manager'].includes(membership.data.role),'Membership missing');
+  const before=await inventory();setActiveFarmId(farm);
+  await pullSanitarioProtocolCatalogV2();await pullSanitarioTechnicalCatalogV2(farm);await pullDataForFarm(farm,['animais','fazenda_sanidade_config'],{mode:'merge'});
+  const cutover=await applySanitarioV2Cutover(farm,pullSanitarioV2CutoverState);assert(cutover.status==='APPLIED','Cutover incomplete');setSanitarioV2PushEnabled(true,ref);
+  return {before,after:await snapshot()};
+ }
+ if(action==='seed'){
+  const existing=await db.state_animais.where('fazenda_id').equals(farm).toArray();assert(!existing.some(a=>a.identificacao?.startsWith('R05-')),'Synthetic seed already present');
+  const rows=[['R05-F6M-SINTETICA','F','2026-04-20'],['R05-M6M-SINTETICO','M','2026-04-20'],['R05-MATRIZ-SINTETICA','F','2023-01-01']].map(([identificacao,sexo,data_nascimento])=>({id:crypto.randomUUID(),fazenda_id:farm,identificacao,sexo,data_nascimento,especie:'bovino',status:'ativo',lote_id:null,habilitado_monta:false,payload:{homologacao:{phase:'R05',synthetic:true,purpose:'sanitary assessment planning only; no real execution'}}}));
+  const tx=await createGesture(farm,rows.map(record=>({table:'animais',action:'INSERT',record})));return {tx,rows,sync:await sync(),state:await snapshot()};
+ }
+ if(action==='offline'){fault='offline';return {fault,inventory:await inventory()}}
+ if(action==='online'){fault='none';return {fault,inventory:await inventory()}}
+ if(action==='save-plan'){const d=await draft(),previous=readSanitaryAutomationPlanV2(await db.state_fazenda_sanidade_config.get(farm));const plan=await saveSanitaryAutomationPlanV2({fazendaId:farm,expectedRevision:previous?.revision??0,draft:d.draft,enabled:true,confirmed:true,actorId:actor});return {plan,state:await snapshot()}}
+ if(action==='generate')return {generation:await generateSanitaryAutomaticAgendasV2({fazendaId:farm,referenceDate:date}),state:await snapshot()};
+ if(action==='preview'){
+ const d=await draft(),real=previewSanitaryAutomaticPlanV2(d.source,d.draft,date);
+ const sc=previewSanitaryAutomaticPlanV2({...d.source,farmUf:'SC',farmConfig:{...d.source.farmConfig,uf:'SC'}},d.draft,date);
+ const restricted=d.source.catalog.items.filter(i=>!i.allowsAgendaAuto).map(i=>({itemId:i.id,key:i.logicalItemKey,preview:previewSanitaryAutomaticPlanV2(d.source,{...d.draft,rules:[selectSanitaryAutomationRuleV2(d.source.catalog.protocols.find(p=>p.id===i.protocolId),i)]},date)}));
+ return {date,real,sc_simulation_only:sc,restricted};
+ }
+ if(action==='sync')return {results:await sync(),state:await snapshot()};
+ if(action==='pull')return pull();
+ if(action==='plan-update'){
+ const previous=readSanitaryAutomationPlanV2(await db.state_fazenda_sanidade_config.get(farm));assert(previous,'No plan');
+ return {before:previous,plan:await saveSanitaryAutomationPlanV2({fazendaId:farm,expectedRevision:previous.revision,draft:{rules:previous.rules,context:{...previous.context,riskContext:label==='A'},ruleContexts:previous.ruleContexts},enabled:true,confirmed:true,actorId:actor}),state:await snapshot()};
+ }
+ if(action==='lost-ack'||action==='auth-401'||action==='interrupted-request'){fault=action==='lost-ack'?'lostack':action==='auth-401'?'auth401':'interrupted';return {results:await sync(),state:await snapshot()}}
+ if(action==='refresh-auth'){const before=await inventory();const refreshed=await supabase.auth.refreshSession();assert(!refreshed.error&&refreshed.data.user?.id===actor,'Real session refresh failed');return {before,after:await inventory()};}
+ if(action==='reschedule'||action==='cancel'){
+ const agendas=await db.ops_sanitario_agenda_v2.where('fazenda_id').equals(farm).toArray();
+ const agenda=agendas.find(a=>a.protocol_item_version_id===(action==='reschedule'?'0aa8fb30-fe4f-5a37-a100-ead8f568d5e3':'a6c83dd1-80fd-551a-b877-ee3a9eab1f1e'));
+ assert(agenda,'Target agenda unavailable');
+ if(action==='reschedule')await rescheduleLocalSanitaryAgendaV2({fazendaId:farm,agendaId:agenda.id,plannedFor:'2026-10-23'});else await cancelLocalSanitaryAgendaV2({fazendaId:farm,agendaId:agenda.id});return snapshot();
+ }
+ if(action==='switch-farm'){const before=await inventory();setActiveFarmId('3be9fa3f-7991-4231-8982-144ca368a9ef');return {before,after:await inventory()};}
+ if(action==='restore-farm'){setActiveFarmId(farm);return inventory();}
+ if(action==='rls'){
+ const deniedFarm='71d3bd9f-fec1-4439-a96b-6536ebb20cb4';
+ const own=await supabase.from('user_fazendas').select('user_id,role').eq('fazenda_id',farm);
+ const denied=await supabase.from('user_fazendas').select('user_id,role').eq('fazenda_id',deniedFarm);
+ const invisible=await supabase.from('fazendas').select('id').eq('id',deniedFarm);
+ return {own,outsider_membership:denied,outsider_farm:invisible,read_only:true};
+ }
+ if(action==='recover'){await recoverStaleSyncingGesturesOnce();await recoverErroredGesturesOnce();return {results:await sync(),state:await snapshot()};}
+ if(action==='expiry-arm'){
+  const session=await supabase.auth.getSession();assert(session.data.session?.user.id===actor,'Real session required');
+  await supabase.auth.stopAutoRefresh();
+  const pending=await db.queue_ops.toArray();assert(pending.length===1,'Exactly one pending test operation required');
+  await new Promise((resolve,reject)=>{void withGestureLock(pending[0].client_tx_id,async acquired=>{if(!acquired){reject(new Error('Concurrent worker claimed the pending gesture'));return;}return new Promise(release=>{releaseExpiryGesture=release;resolve();});});});
+  evidence.natural_expiry={armed_at:new Date().toISOString(),expires_at:session.data.session.expires_at,queue_before:await inventory(),tokens_exported:false,canonical_gesture_lock_held:true};
+  await new Promise(resolve=>{void navigator.locks.request(`lock:sb-${ref}-auth-token`,async()=>new Promise(release=>{releaseExpiryAuth=release;resolve();}));});
+  evidence.natural_expiry.sdk_auth_lock_held=true;
+  setTimeout(()=>{releaseExpiryAuth?.();releaseExpiryGesture?.();},Math.max(0,session.data.session.expires_at*1000-Date.now()+120000));
+  fault='offline';return {natural_expiry:evidence.natural_expiry,network_fault:'offline until actual token expiry; no invented JWT'};
+ }
+ if(action==='expiry-resume'){
+  const expiry=evidence.natural_expiry;assert(expiry&&Date.now()>expiry.expires_at*1000,'Original JWT has not naturally expired');
+  const observedExpiredAt=new Date().toISOString();const pendingBefore=await db.queue_ops.toArray();fault='none';
+  releaseExpiryAuth?.();const refreshed=await supabase.auth.getSession();
+  assert(refreshed.data.session?.user.id===actor&&refreshed.data.session.expires_at>expiry.expires_at,'Natural expiry did not produce authenticated session refresh');
+  releaseExpiryGesture?.();
+  const results=await sync();const state=await snapshot();await supabase.auth.startAutoRefresh();
+  return {original_jwt_expired_at:expiry.expires_at,observed_expired_at:observedExpiredAt,pending_ids_before:pendingBefore.map(o=>o.client_op_id),auth_events:evidence.auth_events,results,state};
+ }
+ if(action==='disable'){fault='none';releaseExpiryAuth?.();releaseExpiryGesture?.();await supabase.auth.startAutoRefresh();setSanitarioV2PushEnabled(false,ref);return snapshot();}
+ throw new Error('Unknown scenario');
+}
+try{assert(location.origin==='http://127.0.0.1:5184'&&new URL(env.supabaseUrl).hostname===`${ref}.supabase.co`,'Local controlled target required');const auth=await supabase.auth.getUser();assert(!auth.error&&auth.data.user?.id===actor,'Real owner login required');await db.open();evidence.client_id=getClientId();evidence.label=label;evidence.farm_id=farm;evidence.actor=actor;persist();document.querySelector('#status').textContent=`READY ${label} ${getClientId()}`;document.querySelector('#run').disabled=false;}catch(error){document.querySelector('#status').textContent=error.message;}
+document.querySelector('#run').onclick=async()=>{const button=document.querySelector('#run');button.disabled=true;const action=document.querySelector('#action').value;const step={action,started_at:new Date().toISOString()};evidence.steps.push(step);try{step.result=await scenario(action);step.status='OBSERVED';}catch(error){step.status='ERROR';step.error=error.message;}step.finished_at=new Date().toISOString();persist();document.querySelector('#status').textContent=JSON.stringify(step,null,2);button.disabled=false;};
+document.querySelector('#export').onclick=()=>{const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([JSON.stringify(evidence,null,2)+'\n'],{type:'application/json'}));link.download=`SANITARIO_V2_R05_CLIENT_${label}_20261020.json`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);};
+</script></html>

@@ -1,0 +1,59 @@
+{
+  "artifact": "read_only_frozen_snapshot_domain_projection",
+  "real_remote_rpc": false,
+  "db_mocked_only_to_prevent_persistence": true,
+  "canonical_history_events": 0,
+  "b19": [
+    {
+      "animal_id": "bc5a5d02-ba10-4834-9812-6e59cd690cef",
+      "identificacao": "R05-M6M-SINTETICO",
+      "status": "not_applicable",
+      "documentary_pending": false,
+      "reasons": [
+        "B19 se aplica a fêmeas bovinas/bubalinas."
+      ]
+    },
+    {
+      "animal_id": "bde78a72-f299-4c0e-9b15-51bb7cbfe5c9",
+      "identificacao": "R05-F6M-SINTETICA",
+      "status": "in_action_window",
+      "documentary_pending": false,
+      "reasons": [
+        "Fêmea bovina/bubalina dentro da janela B19 de 3 a 8 meses."
+      ]
+    },
+    {
+      "animal_id": "ffb9ed45-79db-43e9-be13-5fb829b0c170",
+      "identificacao": "R05-MATRIZ-SINTETICA",
+      "status": "insufficient_data",
+      "documentary_pending": true,
+      "reasons": [
+        "Fêmea adulta sem comprovação documental de B19."
+      ]
+    }
+  ],
+  "class_scheme_compatibility": [
+    {
+      "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+      "accepted_events": 0
+    },
+    {
+      "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+      "accepted_events": 0
+    },
+    {
+      "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+      "accepted_events": 0
+    },
+    {
+      "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+      "accepted_events": 0
+    },
+    {
+      "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+      "accepted_events": 0
+    }
+  ],
+  "physical_execution_certified": false,
+  "remote_mutations": 0
+}

@@ -33,7 +33,9 @@ export type SanitarioSyncV2Command =
   | "create_agenda"
   | "replace_agenda_animals"
   | "apply_factual_core"
-  | "close_agenda";
+  | "close_agenda"
+  | "set_automation_plan"
+  | "reschedule_agenda";
 export type SanitarioSyncV2ResultStatus =
   | "APPLIED"
   | "RETRYABLE"

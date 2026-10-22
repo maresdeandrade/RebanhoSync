@@ -25,6 +25,7 @@ import type { ExecutedProductTechnicalSnapshotV2 } from "@/lib/sanitario/rules/s
 import { buildExecutedProductTechnicalSnapshotV2 } from "./executedProductTechnicalSnapshotV2";
 import { projectOperationalWithdrawalLegacyFieldsV2 } from "./operationalWithdrawalSnapshotV2";
 import { sanitaryProtocolExecutionRejectionsV2 } from "./sanitaryProtocolExecutionAuthorizationV2";
+import { classSchemeExecutionEvidenceV2 } from "./sanitaryClassSchemeExecutionV2";
 
 export type ExecuteSanitaryAgendaInputV2 = {
   fazendaId: string;
@@ -692,7 +693,14 @@ export async function executeSanitaryAgendaV2(
     if (productRequirementKind(current) === "product_class" && requiredClass && product.classe !== requiredClass) {
       throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:product_class_mismatch");
     }
-    return product.status_curatorial !== "ativo" ? [`product_curation_${product.status_curatorial}`] : [];
+    const warnings = product.status_curatorial !== "ativo" ? [`product_curation_${product.status_curatorial}`] : [];
+    const evidence = current.protocol_item_snapshot.planningEvidence as Record<string, unknown> | undefined;
+    if (evidence?.planningScope === "class_scheme" &&
+      (!product.registro_numero?.trim() || product.metadata.registration_current_validity !== "verified")) {
+      if (input.registrationMode !== "executed_fact") throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:product_registration_unverified");
+      warnings.push("product_registration_unverified");
+    }
+    return warnings;
   };
   catalogReviewWarnings.push(...await assertProductApproval(agenda));
 
@@ -772,8 +780,49 @@ export async function executeSanitaryAgendaV2(
       factualReferenceAt: basicValidation.executedAt,
       withdrawalRules,
     });
+    const planningEvidence = agenda.protocol_item_snapshot.planningEvidence as Record<string, unknown> | undefined;
+    if (planningEvidence?.planningScope === "class_scheme") {
+      const compatibility = classSchemeExecutionEvidenceV2({
+        agenda, snapshot: productTechnicalSnapshot, productSources, coverages,
+        sources: sources.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)),
+      });
+      if (!compatibility) {
+        if (input.registrationMode !== "executed_fact") {
+          throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:class_scheme_product_incompatible");
+        }
+        catalogReviewWarnings.push("class_scheme_product_incompatible");
+      } else {
+        productTechnicalSnapshot.fieldEvidence.push(compatibility);
+        if (compatibility.sourceRef && !productTechnicalSnapshot.sourceRefs.some((ref) => ref.id === compatibility.sourceRef!.id)) {
+          productTechnicalSnapshot.sourceRefs.push(compatibility.sourceRef);
+        }
+      }
+    }
   }
   const withdrawal = withdrawalResolution(productTechnicalSnapshot);
+
+  const recheckClassScheme = async (current: SanitarioAgendaLocalV2): Promise<string[]> => {
+    const evidence = current.protocol_item_snapshot.planningEvidence as Record<string, unknown> | undefined;
+    if (evidence?.planningScope !== "class_scheme" || !productTechnicalSnapshot) return [];
+    if (JSON.stringify(current.protocol_item_snapshot) !== JSON.stringify(agenda.protocol_item_snapshot)) {
+      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:class_scheme_planning_changed");
+    }
+    const links = await localDb.catalog_sanitario_produto_fontes_v2.where("product_id").equals(productTechnicalSnapshot.executedProductId).toArray();
+    const ids = Array.from(new Set(links.map(link => link.source_id)));
+    const [sources, coverages] = await Promise.all([
+      localDb.catalog_sanitario_fontes_tecnicas_v2.bulkGet(ids),
+      ids.length ? localDb.catalog_sanitario_fonte_cobertura_campos_v2.where("source_id").anyOf(ids).toArray() : Promise.resolve([]),
+    ]);
+    const compatibility = classSchemeExecutionEvidenceV2({ agenda: current, snapshot: productTechnicalSnapshot,
+      productSources: links, coverages, sources: sources.filter((s): s is NonNullable<typeof s> => Boolean(s)) });
+    productTechnicalSnapshot.fieldEvidence = productTechnicalSnapshot.fieldEvidence.filter(field => field.reason !== "class_scheme_product_compatibility_verified");
+    if (compatibility) {
+      productTechnicalSnapshot.fieldEvidence.push(compatibility);
+      return [];
+    }
+    if (input.registrationMode !== "executed_fact") throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:class_scheme_product_incompatible");
+    return ["class_scheme_product_incompatible"];
+  };
 
   let inventory: {
     insumoId: string;
@@ -881,6 +930,9 @@ export async function executeSanitaryAgendaV2(
       localDb.catalog_sanitario_protocolo_itens_versions_v2,
       localDb.state_fazenda_sanidade_config,
       localDb.catalog_sanitario_produtos_v2,
+      localDb.catalog_sanitario_produto_fontes_v2,
+      localDb.catalog_sanitario_fontes_tecnicas_v2,
+      localDb.catalog_sanitario_fonte_cobertura_campos_v2,
     ],
     async () => {
       const current = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
@@ -894,6 +946,7 @@ export async function executeSanitaryAgendaV2(
       const currentWarnings = [
         ...await assertProtocolAuthorization(current),
         ...await assertProductApproval(current),
+        ...await recheckClassScheme(current),
       ];
       // Event, detail and queued operation share this payload until persistence.
       records.payload.catalog_review_warnings = currentWarnings;

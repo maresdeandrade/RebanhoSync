@@ -288,6 +288,7 @@ function buildCatalog(): SanitaryProtocolCatalogReadModelV2 {
 
 const baseAnimal: SanitaryPrecheckAnimalResumoV2 = {
   id: "animal-1",
+  uf: "MG",
   especie: "bovino",
   sexo: "femea",
   nascimento: "2026-01-01",
@@ -373,6 +374,8 @@ describe("precheckSanitaryProtocolsV2", () => {
     expect(result.documentaryPending).toBe(false);
     expect(result.createsAgenda).toBe(false);
     expect(result.createsEvent).toBe(false);
+    expect(result.createsStockMovement).toBe(false);
+    expect(result.createsActiveWithdrawal).toBe(false);
     if (!uf) expect(result.warnings).toContain("UF ausente para verificar exceções e proibições regionais de B19.");
     if (uf === "SC") expect(result.warnings).toContain("B19 não autorizada na UF conforme fonte oficial regional do catálogo.");
   });
@@ -449,6 +452,64 @@ describe("precheckSanitaryProtocolsV2", () => {
       "Fêmea adulta exige comprovação documental de B19.",
     );
     expect(result.createsAgenda).toBe(false);
+  });
+
+  it.each([undefined, null, "", "MG", "SC"])(
+    "B19 adulta compõe pendência documental e restrição regional sem autorizar operações: %s",
+    (uf) => {
+      const result = resultByItem(
+        buildCatalog(),
+        { ...baseAnimal, uf, nascimento: "2024-01-01" },
+        "b19_femeas_3_8_meses",
+      );
+
+      expect(result.status).toBe(
+        uf === "SC" ? "not_applicable" : "insufficient_data",
+      );
+      expect(result.documentaryPending).toBe(uf !== "SC");
+      if (uf !== "SC") {
+        expect(result.documentaryPendingReasons).toContain(
+          "Fêmea adulta exige comprovação documental de B19.",
+        );
+      }
+      expect(result.blockers).toEqual(
+        !uf
+          ? ["UF ausente para verificar exceções e proibições regionais de B19."]
+          : uf === "SC"
+            ? ["B19 não autorizada na UF conforme fonte oficial regional do catálogo."]
+            : [],
+      );
+      expect(result.createsAgenda).toBe(false);
+      expect(result.createsEvent).toBe(false);
+      expect(result.createsStockMovement).toBe(false);
+      expect(result.createsActiveWithdrawal).toBe(false);
+    },
+  );
+
+  it("B19 adulta declarada sem UF mantém pendência documental e bloqueio regional", () => {
+    const result = resultByItem(
+      buildCatalog(),
+      { ...baseAnimal, uf: undefined, nascimento: "2024-01-01" },
+      "b19_femeas_3_8_meses",
+      "2026-05-01",
+      eventHistory("brucelose_b19", "b19_femeas_3_8_meses", "2024-06-01", {
+        source: "external_declared",
+        evidenceClass: "declared",
+      }),
+    );
+
+    expect(result.status).toBe("insufficient_data");
+    expect(result.documentaryPending).toBe(true);
+    expect(result.reasons).toContain(
+      "B19 informada apenas por declaração sem documento suficiente.",
+    );
+    expect(result.blockers).toContain(
+      "UF ausente para verificar exceções e proibições regionais de B19.",
+    );
+    expect(result.createsAgenda).toBe(false);
+    expect(result.createsEvent).toBe(false);
+    expect(result.createsStockMovement).toBe(false);
+    expect(result.createsActiveWithdrawal).toBe(false);
   });
 
   it("B19 adulta com historico externo documentado fica comprovada", () => {

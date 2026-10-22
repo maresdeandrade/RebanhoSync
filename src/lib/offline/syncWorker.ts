@@ -25,6 +25,7 @@ import {
   STANDARD_EVENT_DETAIL_REMOTE_TABLES,
 } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
+import { hasPendingSanitaryPlanningDependencyV2, mapQueuedSanitaryPlanV2, queuedSanitaryPlanV2 } from "@/lib/sanitario/agenda/sanitaryPlanningSyncV2";
 import { getAffectedStores, reapplyOpLocal, rollbackOpLocal } from "./ops";
 import { preservePendingAnimalDeletesAfterRollback } from "./animalDeleteRollback";
 import { sortOpsForSync } from "./syncOrder";
@@ -333,6 +334,8 @@ function isSanitarioAgendaCutoverRequired(
     command === "create_agenda" ||
     command === "replace_agenda_animals" ||
     command === "close_agenda" ||
+    command === "reschedule_agenda" ||
+    command === "set_automation_plan" ||
     typeof canonical.agenda_id === "string" ||
     typeof canonical.closure_id === "string"
   );
@@ -856,12 +859,10 @@ function readSanitarioCommand(
     : {};
   const candidate = record.command ?? canonical.command;
 
-  return candidate === "create_agenda" ||
-    candidate === "replace_agenda_animals" ||
-    candidate === "apply_factual_core" ||
-    candidate === "close_agenda"
-    ? candidate
-    : undefined;
+  if (queuedSanitaryPlanV2(op)) return "set_automation_plan";
+
+  const commands: readonly string[] = ["create_agenda", "replace_agenda_animals", "apply_factual_core", "close_agenda", "set_automation_plan", "reschedule_agenda"];
+  return commands.includes(candidate as string) ? candidate as SanitarioSyncV2Command : undefined;
 }
 
 type QueueOperationUpdate = Partial<
@@ -958,7 +959,7 @@ async function processSanitarioCanonicalResults(
   const sanitarioOpIds = new Set(
     sentOps
       .filter(
-        (op) => isRecord(op.record) && op.record.domain === "sanitario_v2",
+        (op) => (isRecord(op.record) && op.record.domain === "sanitario_v2") || Boolean(queuedSanitaryPlanV2(op)),
       )
       .map((op) => op.client_op_id),
   );
@@ -1647,21 +1648,18 @@ function mapMovementForSync(op: Operation, fazendaId: string) {
   return { ...op.record };
 }
 
-export function mapOperationForSync(
-  op: Operation,
-  fazendaId: string,
-): Record<string, unknown> {
-  if (isMovementOperation(op)) return mapMovementForSync(op, fazendaId);
-  if (isRecord(op.record) && op.record.domain === "sanitario_v2") {
-    if (
-      op.record.client_op_id !== op.client_op_id ||
-      op.record.client_tx_id !== op.client_tx_id ||
-      op.record.domain_op_id !== op.domain_op_id
-    ) {
-      throw new Error("SANITARIO_V2_QUEUED_IDENTITY_MISMATCH");
-    }
-    return { ...op.record };
+function queuedSanitaryEnvelope(op: Operation): Record<string, unknown> | null {
+  if (!isRecord(op.record) || op.record.domain !== "sanitario_v2") return null;
+  if (op.record.client_op_id !== op.client_op_id || op.record.client_tx_id !== op.client_tx_id || op.record.domain_op_id !== op.domain_op_id) {
+    throw new Error("SANITARIO_V2_QUEUED_IDENTITY_MISMATCH");
   }
+  return { ...op.record };
+}
+
+export function mapOperationForSync(op: Operation, fazendaId: string): Record<string, unknown> {
+  if (isMovementOperation(op)) return mapMovementForSync(op, fazendaId);
+  const sanitary = mapQueuedSanitaryPlanV2(op, fazendaId) ?? queuedSanitaryEnvelope(op);
+  if (sanitary) return sanitary;
   if (isCommercialPurchaseEnvelope(op.record)) {
     if (
       op.record.client_op_id !== op.client_op_id ||
@@ -2049,6 +2047,15 @@ export async function processGesture(gesture: Gesture) {
     }
 
     let ops = sortOpsForSync(readyOps);
+    if (ops.some(op => op.record?.domain === "sanitario_v2" || queuedSanitaryPlanV2(op))) {
+      const pendingPlanning = await db.queue_ops.toArray();
+      if (ops.some(op => hasPendingSanitaryPlanningDependencyV2(op, pendingPlanning))) {
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: "PENDING", last_error: "SANITARIO_LOCAL_PREDECESSOR_PENDING",
+        });
+        return;
+      }
+    }
 
     try {
     const { supabase, session } = await getValidSession();

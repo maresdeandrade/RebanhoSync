@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { buildSanitaryWindowPlanningPreviewV2 } from "@/lib/sanitario/preview/sanitaryWindowPlanningPreviewV2";
 import { Input } from "@/components/ui/input";
 import { SanitaryProtocolWindowTableV2 } from "@/components/sanitario/SanitaryProtocolWindowTableV2";
 import type { SanitaryWindowSortKeyV2 } from "@/components/sanitario/SanitaryProtocolWindowTableV2";
@@ -15,6 +17,7 @@ import {
 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sanitaryEligibility";
 import { formatSanitaryProtocolItemLabelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
+import type { SanitaryGenerationModeV2 } from "@/lib/sanitario/agenda/sanitaryPlanningPolicyV2";
 
 const initialFilters: SanitaryProtocolWindowFiltersV2 = {
   lotId: "todos",
@@ -70,6 +73,7 @@ type Props = {
     rows: SanitaryProtocolWindowRowV2[],
     plannedFor: string,
     operationalContext: SanitaryOperationalContextV2,
+    generationMode?: SanitaryGenerationModeV2,
   ) => Promise<void>;
 };
 
@@ -128,6 +132,7 @@ export function SanitaryProtocolWindowPanelV2({
   onPlan,
 }: Props) {
   const [protocolId, setProtocolId] = useState("");
+  const [generationMode, setGenerationMode] = useState<SanitaryGenerationModeV2>("manual");
   const [itemId, setItemId] = useState("");
   const [evaluatedAt, setEvaluatedAt] = useState(todayKey);
   const [plannedFor, setPlannedFor] = useState(todayKey);
@@ -142,6 +147,11 @@ export function SanitaryProtocolWindowPanelV2({
     );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [planning, setPlanning] = useState(false);
+  const submitting = useRef(false);
+  const [review, setReview] = useState<{ rows: SanitaryProtocolWindowRowV2[]; plannedFor: string; context: SanitaryOperationalContextV2 } | null>(null);
+  const [planningError, setPlanningError] = useState<string | null>(null);
+  const reviewPreview = useMemo(() => review ? buildSanitaryWindowPlanningPreviewV2(review) : null, [review]);
+  const reviewWarnings = [...new Set(review?.rows.flatMap((row) => row.warnings) ?? [])];
   const protocols = source?.catalog.protocols ?? [];
   const items = source?.catalog.items.filter((item) => item.protocolId === protocolId) ?? [];
   const filteredAnimal = source?.animals.find((entry) => entry.id === filters.animalId);
@@ -166,7 +176,7 @@ export function SanitaryProtocolWindowPanelV2({
 
   useEffect(
     () => setSelectedIds(new Set()),
-    [itemId, evaluatedAt, filters, operationalContext],
+    [itemId, evaluatedAt, filters, operationalContext, generationMode],
   );
 
   const result = useMemo(
@@ -179,9 +189,10 @@ export function SanitaryProtocolWindowPanelV2({
             evaluatedAt,
             filters,
             operationalContext,
+            generationMode,
           })
         : null,
-    [evaluatedAt, filters, itemId, operationalContext, protocolId, source],
+    [evaluatedAt, filters, itemId, operationalContext, protocolId, source, generationMode],
   );
   const categoryResult = useMemo(
     () =>
@@ -193,9 +204,10 @@ export function SanitaryProtocolWindowPanelV2({
             evaluatedAt,
             filters: { ...filters, category: "todas" },
             operationalContext,
+            generationMode,
           })
         : null,
-    [evaluatedAt, filters, itemId, operationalContext, protocolId, source],
+    [evaluatedAt, filters, itemId, operationalContext, protocolId, source, generationMode],
   );
   const selectedRows = result?.rows.filter((row) => selectedIds.has(row.animalId) && row.canSelect) ?? [];
   const visibleRows = useMemo(
@@ -223,12 +235,22 @@ export function SanitaryProtocolWindowPanelV2({
   );
 
   const planSelected = async () => {
-    if (visibleSelectedRows.length === 0 || !plannedFor) return;
+    if (!review || submitting.current) return;
+    submitting.current = true;
+    setPlanningError(null);
     setPlanning(true);
     try {
-      await onPlan(visibleSelectedRows, plannedFor, operationalContext);
+      if (review.rows[0]?.generationMode === "automatic") {
+        await onPlan(review.rows, review.plannedFor, review.context, "automatic");
+      } else {
+        await onPlan(review.rows, review.plannedFor, review.context);
+      }
+      setReview(null);
       setSelectedIds(new Set());
+    } catch (error) {
+      setPlanningError(error instanceof Error ? error.message : "Não foi possível salvar o planejamento. Tente novamente.");
     } finally {
+      submitting.current = false;
       setPlanning(false);
     }
   };
@@ -269,6 +291,15 @@ export function SanitaryProtocolWindowPanelV2({
       <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
         Isso cria agenda futura, não execução. Produto real, dose, via, estoque e carência permanecem exclusivos do registro executado.
       </div>
+
+      {protocols.length === 0 ? <div role="status" className="rounded-lg border border-dashed border-border p-4 text-sm">Nenhum protocolo disponível no catálogo local. Use Atualizar catálogo quando houver conexão. Se continuar vazio, a implantação deve disponibilizar o catálogo no ambiente; produtos cadastrados isoladamente não criam protocolos.</div> : null}
+
+      <label className="block space-y-1 text-sm"><span className="font-medium">Geração de Agenda</span>
+        <select aria-label="Geração de Agenda" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={generationMode} onChange={(event) => setGenerationMode(event.target.value as SanitaryGenerationModeV2)}>
+          <option value="manual">Planejamento manual confirmado</option>
+          <option value="automatic">Geração condicional por regra autorizada</option>
+        </select>
+      </label>
 
       {filters.animalId !== "todos" ? (
         <div className="flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
@@ -379,10 +410,36 @@ export function SanitaryProtocolWindowPanelV2({
           />
           <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-border p-4">
             <div className="space-y-3"><label className="block space-y-1 text-sm"><span className="font-medium">Data planejada</span><Input aria-label="Data planejada da agenda agrupada" type="date" value={plannedFor} onChange={(event) => setPlannedFor(event.target.value)} /></label><div className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">Contexto usado neste planejamento:</span> raiva {operationalContext.rabiesRiskArea === null ? "não informada" : operationalContext.rabiesRiskArea ? "em área de risco" : "fora de área de risco"}; cadência {operationalContext.sanitaryCadence === "annual" ? "anual" : operationalContext.sanitaryCadence === "semiannual" ? "semestral" : "não informada"}; reprodução {operationalContext.reproductiveContext === "prepartum" ? "pré-parto" : operationalContext.reproductiveContext === "peripartum" ? "periparto" : "não informada"}; manejo {operationalContext.management === "pre_weaning" ? "pré-desmama" : operationalContext.management === "rearing" ? "recria" : operationalContext.management === "pre_feedlot" ? "pré-confinamento" : operationalContext.management === "deferred_pasture" ? "pasto vedado" : "não informado"}.</div></div>
-            <div className="flex items-center gap-3"><span className="text-sm text-muted-foreground">{visibleSelectedRows.length} selecionado(s)</span><Button type="button" disabled={visibleSelectedRows.length === 0 || !plannedFor || planning} onClick={planSelected}><CalendarPlus className="h-4 w-4" />Planejar agenda para selecionados</Button></div>
+            <div className="flex items-center gap-3"><span className="text-sm text-muted-foreground">{visibleSelectedRows.length} selecionado(s)</span><Button type="button" disabled={visibleSelectedRows.length === 0 || !plannedFor || planning} onClick={() => { setPlanningError(null); setReview({ rows: visibleSelectedRows, plannedFor, context: { ...operationalContext } }); }}><CalendarPlus className="h-4 w-4" />Planejar agenda para selecionados</Button></div>
           </div>
         </>
       ) : null}
+      <Dialog open={!!review} onOpenChange={(open) => { if (!open && !submitting.current) setReview(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Revisar planejamento sanitário</DialogTitle>
+            <DialogDescription>Confirme os animais e a data. Este planejamento cria somente intenção futura, sem Evento, baixa de estoque ou carência ativa.</DialogDescription>
+          </DialogHeader>
+          {review ? <div className="max-h-80 space-y-3 overflow-auto text-sm">
+            <p><strong>Data planejada:</strong> {review.plannedFor.split("-").reverse().join("/")}</p>
+            <p>{reviewPreview?.summary.totalAnimals} animal(is) selecionado(s).</p>
+            <p>{review.rows[0]?.planningKind === "avaliacao_manejo_generica" ? "Avaliação/manejo genérico: sem produto, dose, via ou esquema de aplicação." : "Esquema definido: produto e histórico revalidados ao salvar."}</p>
+            <ul className="space-y-2">{review.rows.map((row) => <li key={`${row.itemId}:${row.animalId}`}><strong>{row.identification}</strong> · {row.lotLabel}<br />{row.protocolLabel} · {row.itemLabel}<br /><span className="text-muted-foreground">{row.reason}</span></li>)}</ul>
+            {reviewWarnings.length ? <details>
+              <summary className="cursor-pointer">Cuidados técnicos do planejamento ({reviewWarnings.length})</summary>
+              <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
+                {reviewWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+              </ul>
+            </details> : null}
+            <p>Produto já cadastrado será reutilizado na execução. Produto real, dose e via serão confirmados no registro factual.</p>
+          </div> : null}
+          {planningError ? <p role="alert" className="text-sm text-destructive">{planningError}</p> : null}
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={planning} onClick={() => setReview(null)}>Voltar à seleção</Button>
+            <Button type="button" disabled={planning || !reviewPreview?.commands.length || !!reviewPreview?.rejected.length} onClick={planSelected}>{planning ? "Salvando..." : "Confirmar e gerar Agenda"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

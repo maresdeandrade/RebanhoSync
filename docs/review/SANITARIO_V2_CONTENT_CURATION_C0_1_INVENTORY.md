@@ -1,5 +1,8 @@
 # Sanitário v2 — Content Curation C0.1
 
+> **Atualização de leitura — 15/10/2026:** este inventário C0.1 permanece histórico. A revisão das 18 pendências propõe capacidades diferenciadas para Agenda e distingue produto comercial de uma intenção de manejo. Consulte a [política vigente como proposta documental](SANITARIO_V2_POLITICA_AGENDA_CONDICIONAL_20261015.md) e a [matriz de 20 itens](evidence/SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv). O payload/import gate ainda não foi alterado por esta revisão. **Ajustes A–E incorporados:** restrição `no_agenda_auto` mantém **todos os três itens de raiva** sem automação até revisão **aprovada e versionada**; vacinas multivalentes (ex.: Fertiguard/Poliguard) exigem composição, janela e histórico compatíveis para **uma única aplicação/Evento** com cobertura multiprotocolo rastreável; B19 concilia períodos federais e somente os prazos estaduais de comprovação preserváveis pelo art. 3º; Agenda genérica não adquire esquema/dose por inferência; relatórios locais e os quatro achados Fallow permanecem **relatados, sem IDs brutos conferidos**. Revisar a [matriz por 20 itens](evidence/SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv) junto com a política.
+
+
 > Inventário histórico de descoberta. Em 2026-10-14, o payload corrente contém 16 fontes, 71 coberturas, 8 classes, 4 grupos, 12 members, 10 protocolos e 20 itens. Os diferimentos C0.3/C0.4 abaixo não descrevem mais o estado atual. Consulte `SANITARIO_V2_TECHNICAL_VALIDATION_QUEUE.md` e o payload 12F10 para o estado revisado; nenhum produto/uso operacional foi aprovado.
 
 Atualizado em: 2026-09-23

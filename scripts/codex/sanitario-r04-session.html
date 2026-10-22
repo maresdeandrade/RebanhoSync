@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<title>R04 — decisões autorizadas</title>
+<h1>R04 — decisões autorizadas</h1>
+<p>Executor operacional local. Usa a sessão real e o publicador canônico. Não altera gates nem executa R05.</p>
+<button id="run" disabled>Persistir cinco decisões autorizadas e verificar replay</button>
+<pre id="status">Verificando sessão e pacote…</pre>
+<pre id="result"></pre>
+<script type="module">
+import { supabase } from '/src/lib/supabase.ts';
+import { env } from '/src/lib/env.ts';
+import { previewCatalogReviewV2, submitCatalogReviewV2, savePendingCatalogReviewV2,
+  clearPendingCatalogReviewV2 } from '/src/lib/sanitario/catalog/sanitaryCatalogReviewV2.ts';
+
+const actor = '0f00a75c-32a9-4555-a840-cb0f13f2d3f7';
+const packetHash = '7978961233575379fa351a9e3d1cbbd093443ed0dd44367890e733dd4e203771';
+const authorized = {
+  B19: {
+    digest: '6bec021054a6645c098c82841237da36249882f21c93d4db7d7b4a135cf8ff79',
+    justification: 'Aprovo a avaliação genérica B19 para fêmeas bovinas/bubalinas de 3–8 meses, preservando as regras aplicáveis por UF, a exclusão de SC e a exceção de obrigatoriedade para UF de risco A. A aprovação não define produto, dose, via ou carência e não comprova execução.'
+  },
+  PAR: {
+    digest: '2cbb23339144d507b7809793e0d221c8f43490cb0b5ee9e9186b8fdf28b68843',
+    justification: 'Aprovo exclusivamente avaliação genérica da recria em maio/julho/setembro no DF, condicionada ao contexto da fazenda e à elegibilidade individual. A fonte regional não autoriza extrapolação, rotação química, produto, dose, via ou carência. Gates permanecem OFF.'
+  },
+  DES: {
+    digest: '4eff45e967d0847c5d3055cfa0e23f3d85709331655f6905489205b8181e8cfc',
+    justification: 'Aprovo exclusivamente avaliação genérica pré-desmama de bovinos no DF, condicionada ao contexto de manejo ou decisão profissional; não constitui tratamento universal nem autoriza produto, dose, via ou carência. Gates permanecem OFF.'
+  },
+  CONF: {
+    digest: '8d1a9b234d2c7fee699f134fdb997cfb68f259ef656bd4a3be777ec1ac989f9d',
+    justification: 'Aprovo exclusivamente avaliação genérica pré-confinamento ou pasto vedado para bovinos no DF, exigindo contexto explícito de destino/manejo. O nome do item não autoriza aplicação, produto, dose, via ou carência. Gates permanecem OFF.'
+  },
+  PARTO: {
+    digest: '31026dfe2d54546d6c7fba43c6b659f84688b4769420c1d245c13c86e6f80c16',
+    justification: 'Aprovo exclusivamente avaliação genérica de matrizes bovinas no DF, condicionada a contexto gestacional/periparto explícito. A fonte não autoriza janela individual, produto, dose, via, segurança em gestação/lactação ou carência. Gates permanecem OFF.'
+  }
+};
+const status = document.querySelector('#status');
+const output = document.querySelector('#result');
+const button = document.querySelector('#run');
+const evidence = { artifact: 'sanitario_r04_authenticated_execution', project_ref: 'zqloazqzhwauamcejmuz',
+  packet_sha256: packetHash, authorization: 'explicit_owner_message_in_current_chat', decisions: [] };
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const canonical = value => JSON.stringify(value, (_, v) => v && !Array.isArray(v) && typeof v === 'object'
+  ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v);
+async function verifyActor() {
+  const auth = await supabase.auth.getUser();
+  assert(!auth.error && auth.data.user?.id === actor, 'Sessão real do curador esperado ausente');
+  const admin = await supabase.rpc('is_app_admin');
+  assert(!admin.error && admin.data === true, 'Permissão administrativa não confirmada');
+}
+let packet;
+try {
+  assert(location.origin === 'http://127.0.0.1:5184', 'Somente origem local R04');
+  assert(new URL(env.supabaseUrl).hostname === 'zqloazqzhwauamcejmuz.supabase.co', 'Projeto divergente');
+  const response = await fetch('/docs/review/evidence/SANITARIO_V2_R04_PREPARADA_20261019.json');
+  assert(response.ok, 'Pacote R04 indisponível');
+  const bytes = await response.arrayBuffer();
+  const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(x => x.toString(16).padStart(2, '0')).join('');
+  assert(hash === packetHash, 'SHA256 do pacote divergente');
+  packet = JSON.parse(new TextDecoder().decode(bytes));
+  assert(packet.decisions.length === 5 && packet.decisions.every(d => authorized[d.id]), 'Escopo divergente');
+  await verifyActor();
+  evidence.authenticated_actor_id = actor;
+  status.textContent = `Sessão autenticada e is_app_admin confirmados: ${actor}. Pacote SHA256 conferido. Nenhuma decisão enviada.`;
+  button.disabled = false;
+} catch (error) { status.textContent = error.message; }
+
+button.addEventListener('click', async () => {
+  button.disabled = true;
+  for (const decision of packet.decisions) {
+    const entry = { group: decision.id, request_id: decision.request_id };
+    evidence.decisions.push(entry);
+    const approved = authorized[decision.id];
+    const command = { requestId: decision.request_id, protocolId: decision.versions[0].protocol_id,
+      expectedVersion: 1, itemIds: decision.versions.map(v => v.item_id), digest: approved.digest,
+      result: 'approved', justification: approved.justification };
+    try {
+      status.textContent = `Verificando ${decision.id}…`;
+      await verifyActor();
+      const old = await supabase.from('app_admin_audit_events').select('actor_user_id,action,metadata,state_after').eq('id', command.requestId).maybeSingle();
+      assert(!old.error, old.error?.message ?? 'Auditoria indisponível');
+      if (old.data) {
+        const request = {protocol_id: command.protocolId, expected_version: 1, item_ids: [...command.itemIds].sort(),
+          digest: command.digest, result: command.result, justification: command.justification};
+        assert(old.data.actor_user_id === actor && old.data.action === 'SANITARY_RULE_DECISION_V2'
+          && canonical(old.data.metadata.request) === canonical(request), 'Recibo existente diverge do pedido autorizado');
+        entry.previous_receipt = old.data.state_after;
+      } else {
+        const preview = await previewCatalogReviewV2({id: command.protocolId, version: 1}, command.itemIds);
+        entry.preview = preview;
+        assert(preview.reviewed_content_digest === command.digest, 'Digest alterado');
+        assert(preview.blockers.length === 0, `Blockers: ${preview.blockers.join('; ')}`);
+        assert(preview.protocol_id === command.protocolId && preview.expected_version === 1, 'Protocolo/versão divergente');
+        assert(canonical(preview.content.items.map(i => ({id: i.id, version: i.version})).sort((a,b) => a.id.localeCompare(b.id)))
+          === canonical(decision.versions.map(v => ({id: v.item_id, version: v.version})).sort((a,b) => a.id.localeCompare(b.id))), 'Itens/versões divergentes');
+      }
+      savePendingCatalogReviewV2(actor, command);
+      const receipt = await submitCatalogReviewV2(command);
+      entry.command = command;
+      entry.receipt = receipt;
+      assert(receipt.actor_id === actor && receipt.reviewed_content_digest === command.digest
+        && receipt.decision_reference === `sanitary-v2:${command.requestId}` && receipt.result === 'approved', 'Recibo divergente');
+      const replay = await submitCatalogReviewV2(command);
+      assert(canonical(replay) === canonical(receipt), 'Replay divergiu do recibo original');
+      if (entry.previous_receipt) assert(canonical(receipt) === canonical(entry.previous_receipt), 'Recibo original alterado');
+      entry.replay_receipt = replay;
+      entry.idempotency_verified = true;
+      entry.status = 'PERSISTED_AND_REPLAYED';
+      clearPendingCatalogReviewV2(actor, command.requestId);
+    } catch (error) { entry.status = 'STOPPED'; entry.error = error.message; }
+    output.textContent = JSON.stringify(evidence, null, 2);
+  }
+  status.textContent = evidence.decisions.every(d => d.status === 'PERSISTED_AND_REPLAYED')
+    ? 'Cinco decisões persistidas e cinco replays idênticos. Verificação independente do banco ainda necessária.'
+    : 'Execução encerrada: consultar divergência específica em cada conjunto.';
+});
+</script>
+</html>

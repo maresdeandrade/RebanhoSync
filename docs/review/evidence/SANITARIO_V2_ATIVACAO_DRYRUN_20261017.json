@@ -1,0 +1,19 @@
+{
+  "result": "PASS",
+  "environment": "fresh PostgreSQL WASM in memory, loopback only",
+  "limitations": [
+    "Auth/tenant prerequisites stubbed",
+    "No hosted RLS or concurrency certification",
+    "No writes performed by the planner or CLI"
+  ],
+  "candidate_sha256": "2b3adab34d0eb58dcc5d8fa976d1cd852d41f204e00063b776e2271d60753fe6",
+  "plan_counts": {
+    "create": 144,
+    "reject": 4
+  },
+  "expected_member_rejections": 4,
+  "tables_checked_empty": 8,
+  "actual_cli_dry_run_exit": 0,
+  "canonical_bytes_unchanged": true,
+  "signatures_created": 0
+}

@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/lib/offline/db";
 import {
-  SANITARIO_V2_STAGING_PROJECT_REF,
   setSanitarioV2PushEnabled,
 } from "@/lib/offline/sanitarioV2Cutover";
 import type { Evento, EventoSanitario } from "@/lib/offline/types";
@@ -243,12 +242,14 @@ async function seedTechnicalCatalog() {
 
 describe("sanitary correction v2", () => {
   beforeEach(async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:54321");
     await db.open();
     await clear();
   });
   afterEach(async () => {
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
-    setSanitarioV2PushEnabled(false, SANITARIO_V2_STAGING_PROJECT_REF);
+    setSanitarioV2PushEnabled(false, "local");
     await clear();
   });
 
@@ -518,7 +519,7 @@ describe("sanitary correction v2", () => {
 
   it("enfileira o núcleo corretivo com identidades estáveis e retry não duplica", async () => {
     await seed();
-    setSanitarioV2PushEnabled(true, SANITARIO_V2_STAGING_PROJECT_REF);
+    setSanitarioV2PushEnabled(true, "local");
     await db.sync_sanitario_v2_cutovers.put({
       key: `${FARM}:2`,
       fazenda_id: FARM,
@@ -533,7 +534,7 @@ describe("sanitary correction v2", () => {
     });
     const sync = {
       clientId: "correction-client",
-      projectRef: SANITARIO_V2_STAGING_PROJECT_REF,
+      projectRef: "local",
       clientTxId: "60000000-0000-4000-8000-000000000001",
       domainOpId: "70000000-0000-4000-8000-000000000001",
     };

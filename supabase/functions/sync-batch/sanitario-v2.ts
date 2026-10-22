@@ -6,7 +6,9 @@ export type SanitarioSyncV2Command =
   | "create_agenda"
   | "replace_agenda_animals"
   | "apply_factual_core"
-  | "close_agenda";
+  | "close_agenda"
+  | "set_automation_plan"
+  | "reschedule_agenda";
 
 export type SanitarioSyncV2Status =
   | "APPLIED"
@@ -140,7 +142,21 @@ export type SanitarioSyncV2Operation =
   | CreateAgendaOperation
   | ReplaceAgendaAnimalsOperation
   | ApplyFactualCoreOperation
-  | CloseAgendaOperation;
+  | CloseAgendaOperation
+  | SetAutomationPlanOperation
+  | RescheduleAgendaOperation;
+
+export interface SetAutomationPlanOperation extends SanitarioSyncV2OperationBase {
+  command: "set_automation_plan";
+  expected_revision: number;
+  payload: { plan: Record<string, unknown>; expected_plan: Record<string, unknown> | null };
+}
+
+export interface RescheduleAgendaOperation extends SanitarioSyncV2OperationBase {
+  command: "reschedule_agenda";
+  expected_revision: number;
+  payload: { agenda_id: string; data_programada: string };
+}
 
 export interface SanitarioSyncV2Gate {
   enabled: boolean;
@@ -174,7 +190,9 @@ export interface SanitarioRpcCall {
     | "internal_sanitario_sync_v2_create_agenda"
     | "internal_sanitario_sync_v2_replace_agenda_animals"
     | "internal_sanitario_sync_v2_apply_factual_core"
-    | "internal_sanitario_sync_v2_close_agenda";
+    | "internal_sanitario_sync_v2_close_agenda"
+    | "internal_sanitario_sync_v2_set_automation_plan"
+    | "internal_sanitario_sync_v2_reschedule_agenda";
   args: Record<string, unknown>;
 }
 
@@ -232,6 +250,8 @@ const COMMANDS = new Set<SanitarioSyncV2Command>([
   "replace_agenda_animals",
   "apply_factual_core",
   "close_agenda",
+  "set_automation_plan",
+  "reschedule_agenda",
 ]);
 
 const COMMAND_ALLOWED_ROLES: Record<
@@ -242,6 +262,8 @@ const COMMAND_ALLOWED_ROLES: Record<
   replace_agenda_animals: new Set(["owner", "manager"]),
   apply_factual_core: new Set(["owner", "manager", "cowboy"]),
   close_agenda: new Set(["owner", "manager"]),
+  set_automation_plan: new Set(["owner", "manager"]),
+  reschedule_agenda: new Set(["owner", "manager"]),
 };
 
 const EXTERNAL_HISTORY_EVIDENCE_FIELDS = new Set([
@@ -746,6 +768,24 @@ export function validateSanitarioSyncV2Operation(
   }
 
   const command = raw.command as SanitarioSyncV2Command;
+  if (command === "set_automation_plan" || command === "reschedule_agenda") {
+    if (!isRevision(raw.expected_revision)) {
+      return { ok: false, result: reject(raw, "SANITARIO_EXPECTED_REVISION_REQUIRED") };
+    }
+    if (command === "set_automation_plan") {
+      const plan = payload.plan;
+      if (!isRecord(plan) || ![1, 2].includes(Number(plan.schemaVersion)) ||
+        (payload.expected_plan !== null && !isRecord(payload.expected_plan)) ||
+        typeof plan.enabled !== "boolean" || plan.revision !== Number(raw.expected_revision) + 1 ||
+        !Array.isArray(plan.rules) || plan.rules.length > 20 || !isRecord(plan.context)) {
+        return { ok: false, result: reject(raw, "SANITARIO_PLAN_INVALID") };
+      }
+    } else if (!isUuid(payload.agenda_id) || typeof payload.data_programada !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(payload.data_programada) ||
+      Number.isNaN(Date.parse(payload.data_programada))) {
+      return { ok: false, result: reject(raw, "SANITARIO_AGENDA_SCHEDULE_INVALID") };
+    }
+  }
   if (command === "create_agenda") {
     if (!isRecord(payload.agenda) || !isUuid(payload.agenda.id)) {
       return {
@@ -896,6 +936,18 @@ export function buildSanitarioSyncV2RpcCall(
   };
 
   switch (operation.command) {
+    case "set_automation_plan":
+      return {
+        functionName: "internal_sanitario_sync_v2_set_automation_plan",
+        args: { ...common, expected_revision: operation.expected_revision, client_id: context.clientId,
+          client_tx_id: context.clientTxId, plan: operation.payload.plan, expected_plan: operation.payload.expected_plan },
+      };
+    case "reschedule_agenda":
+      return {
+        functionName: "internal_sanitario_sync_v2_reschedule_agenda",
+        args: { ...common, expected_revision: operation.expected_revision, client_id: context.clientId,
+          agenda_id: operation.payload.agenda_id, planned_for: operation.payload.data_programada },
+      };
     case "create_agenda":
       return {
         functionName: "internal_sanitario_sync_v2_create_agenda",
@@ -964,10 +1016,10 @@ function isTimeoutError(error: SanitarioDbError): boolean {
   return error.code === "57014" || /timeout|timed out|abort/i.test(message);
 }
 
-function isDependencyError(error: SanitarioDbError): boolean {
-  return ["42883", "42P01", "42704", "PGRST202", "PGRST205"].includes(
-    error.code ?? "",
-  );
+function dependencyReason(error: SanitarioDbError, reason: string | null): string | null {
+  if (["42883", "42P01", "42704", "PGRST202", "PGRST205"].includes(error.code ?? "")) return "SANITARIO_SYNC_V2_DEPENDENCY_UNAVAILABLE";
+  if (error.code === "23503" && ["SANITARIO_AGENDA_NOT_FOUND", "SANITARIO_PLAN_CONFIG_NOT_FOUND"].includes(reason ?? "")) return reason;
+  return null;
 }
 
 function normalizeCanonicalResult(
@@ -987,6 +1039,8 @@ function normalizeCanonicalResult(
     ? data.evento_id
     : typeof data.closure_id === "string"
     ? data.closure_id
+    : typeof data.fazenda_id === "string"
+    ? data.fazenda_id
     : undefined;
   const canonicalStatus = typeof data.status === "string"
     ? data.status
@@ -1013,7 +1067,7 @@ function isSanitarioConflictError(
   databaseReason: string | null,
 ): boolean {
   return ["40001", "23505"].includes(error.code ?? "") ||
-    ["SANITARIO_AGENDA_REVISION_CONFLICT", "SANITARIO_AGENDA_NOT_EXECUTABLE"]
+    ["SANITARIO_PLAN_REVISION_CONFLICT", "SANITARIO_AGENDA_REVISION_CONFLICT", "SANITARIO_AGENDA_NOT_EXECUTABLE"]
       .includes(databaseReason ?? "");
 }
 
@@ -1029,10 +1083,11 @@ export function classifySanitarioSyncV2Error(
       retryable: true,
     };
   }
-  if (isDependencyError(error)) {
+  const dependency = dependencyReason(error, databaseReason);
+  if (dependency) {
     return reject(
       operation,
-      "SANITARIO_SYNC_V2_DEPENDENCY_UNAVAILABLE",
+      dependency,
       "BLOCKED_DEPENDENCY",
     );
   }

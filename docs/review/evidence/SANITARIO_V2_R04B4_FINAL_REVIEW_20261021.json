@@ -1,0 +1,289 @@
+{
+  "artifact": "sanitario_r04b4_final_review_and_curatorial_recommendations",
+  "observed_at": "2026-10-21T19:47:26.875Z",
+  "reviewed_code_head": "000de171358c1be57804c31cbfe6ed6c5d194c86",
+  "main": "315fd86eb59f400b4b9cf7a5b4666bef9cd5a97b",
+  "r04b3_status": "AWAITING_CURATORIAL_APPROVAL",
+  "preview_evidence": "docs/review/evidence/SANITARIO_V2_R04B3_AUTHENTICATED_PREVIEWS_POSTCONSOLIDATION_20261021.json",
+  "preview_raw_sha256": "20c44e8f9711e63333dca4ecbd04e2d08b4612d205bda001ec68b4884dd287f5",
+  "preview_calls_repeated": 0,
+  "remote_readset_unchanged": true,
+  "remote_readset_rows": 19,
+  "remote_operations": {
+    "migrations": 64,
+    "r05_events": 4,
+    "r05_agendas": 7,
+    "enabled_gates": 0,
+    "sanitary_decisions": 5
+  },
+  "curatorial_routines": [
+    {
+      "signature": "internal_sanitario_review_content_v2(uuid,uuid[])",
+      "definition_md5": "913fa476a676f22ecd8de79892693b32",
+      "live_matches_published": true,
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "search_path": [
+        "search_path=pg_catalog, public"
+      ],
+      "security_definer": false
+    },
+    {
+      "signature": "internal_sanitario_review_fields_v2(jsonb,uuid,timestamp with time zone,text)",
+      "definition_md5": "1bd649520991fc283726dcceefd970d7",
+      "live_matches_published": true,
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "search_path": [
+        "search_path=pg_catalog, public"
+      ],
+      "security_definer": false
+    },
+    {
+      "signature": "sanitario_catalog_decide_v2(uuid,integer,uuid[],text,text,text,uuid)",
+      "definition_md5": "6f1c09ab957fa90f1a29cbca0cb06754",
+      "live_matches_published": true,
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "search_path": [
+        "search_path=pg_catalog, public"
+      ],
+      "security_definer": true
+    },
+    {
+      "signature": "sanitario_catalog_review_preview_v2(uuid,integer,uuid[])",
+      "definition_md5": "69d2c3708ebbee8b15b49076c7946bde",
+      "live_matches_published": true,
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "search_path": [
+        "search_path=pg_catalog, public"
+      ],
+      "security_definer": true
+    }
+  ],
+  "rebaseline": {
+    "runtime_delta": 0,
+    "dependency_delta": 0,
+    "backed_up_files_verified": 347,
+    "bundles": [
+      {
+        "name": "history.bundle",
+        "sha256": "1f90a34ca4d08acd9a881af46b9214ad1122a0140b97b20c0657ecaa6b6a2b1a",
+        "match": true
+      },
+      {
+        "name": "consolidated-history.bundle",
+        "sha256": "b3b68da0e3e9029eedc2407821d6eb7e9c5ebc1598ebef0cb4e73768e13632c3",
+        "match": true
+      }
+    ],
+    "recovery_stash_present": true,
+    "source_files_rechecked": 303
+  },
+  "input_correction": {
+    "user_supplied_lep_digest_truncated": true,
+    "certified_lep_digest": "f80230a1aa845e3659a939f8cb118c3b3a39d10e234efe99844f8bcf5ef62bc1",
+    "canonical_digest_modified": false
+  },
+  "recommendations": [
+    {
+      "group": "CLO",
+      "family": "clostridioses",
+      "digest": "83b5fe310eac94e2d9912bd425e1e147b4263e2ccaab594f5fc2c11a592410b3",
+      "source_url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Fortress-7.pdf",
+      "source_page": 1,
+      "source_lines": [
+        11,
+        14,
+        23,
+        25
+      ],
+      "source_facts": "Bovinos sadios; série inicial de duas aplicações em 4–6 semanas; revacinação anual.",
+      "rationale": "A janela de 28–42 dias e a recorrência anual coincidem com a variante documentada. A implementação exige histórico factual compatível para etapas dependentes e produto comprovado na execução.",
+      "recommendation": "APPROVE",
+      "classification": "INFERRED — recommendation based on confirmed sources/content, not authorization",
+      "scope": "Exact bovine planning variant and captured physical versions only; no product or clinical execution approval",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "protocol_version": 1,
+      "item_ids": [
+        "0625eedf-f069-5ee4-ae50-decd329176e6",
+        "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+        "d4a9602e-b011-5b33-a1c9-890b36da1b46"
+      ],
+      "item_versions": [
+        {
+          "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+          "key": "clostridial_primovac_dose1",
+          "version": 3
+        },
+        {
+          "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+          "key": "clostridial_primovac_dose2",
+          "version": 4
+        },
+        {
+          "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+          "key": "clostridial_reforco_anual",
+          "version": 3
+        }
+      ],
+      "source_accessed_on": "2026-10-21",
+      "source_authority": "Manufacturer official label; current commercial registration not independently certified",
+      "limits": [
+        "Do not generalize to every product in the class or to buffalo.",
+        "Unknown age/pregnancy/lactation fields remain unknown.",
+        "Product, clinical suitability, dose, route and withdrawal must be checked at execution against the actual product evidence."
+      ],
+      "alternatives": {
+        "APPROVE": "A future authorized canonical decision activates the selected catalog rules and permits their prospective planning flags; it does not itself create Agenda/Event/stock writes or enable farm gates.",
+        "REJECT": "A future authorized rejection records an audit receipt, preserving draft items without enabling them.",
+        "REQUIRES_REVISION": "Keep draft and disabled; prepare a separately reviewed/versioned proposal if scope or technical evidence changes. Do not alter existing digests."
+      },
+      "express_owner_authorization_required": true,
+      "authorized": false,
+      "decision_rpc_called": false
+    },
+    {
+      "group": "LEP",
+      "family": "leptospirose",
+      "digest": "f80230a1aa845e3659a939f8cb118c3b3a39d10e234efe99844f8bcf5ef62bc1",
+      "source_url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
+      "source_page": 1,
+      "source_lines": [
+        6,
+        12,
+        17,
+        21
+      ],
+      "source_facts": "Para bovinos, dose inicial única e revacinação anual; a série inicial dupla descrita é para suínos.",
+      "rationale": "A versão bovina de planejamento não acrescenta segunda dose genérica nem periodicidade semestral. O contexto de risco restringe a primeira intenção; o reforço anual depende de fato compatível.",
+      "recommendation": "APPROVE",
+      "classification": "INFERRED — recommendation based on confirmed sources/content, not authorization",
+      "scope": "Exact bovine planning variant and captured physical versions only; no product or clinical execution approval",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "protocol_version": 1,
+      "item_ids": [
+        "d69c754c-1d61-5680-abfe-92fc1d43209b",
+        "f3122e73-549d-594a-aed6-5dd4ab93c0d9"
+      ],
+      "item_versions": [
+        {
+          "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+          "key": "lepto_primovac_dose1",
+          "version": 3
+        },
+        {
+          "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+          "key": "lepto_reforco_anual_semestral",
+          "version": 3
+        }
+      ],
+      "source_accessed_on": "2026-10-21",
+      "source_authority": "Manufacturer official label; current commercial registration not independently certified",
+      "limits": [
+        "Do not generalize to every product in the class or to buffalo.",
+        "Unknown age/pregnancy/lactation fields remain unknown.",
+        "Product, clinical suitability, dose, route and withdrawal must be checked at execution against the actual product evidence."
+      ],
+      "alternatives": {
+        "APPROVE": "A future authorized canonical decision activates the selected catalog rules and permits their prospective planning flags; it does not itself create Agenda/Event/stock writes or enable farm gates.",
+        "REJECT": "A future authorized rejection records an audit receipt, preserving draft items without enabling them.",
+        "REQUIRES_REVISION": "Keep draft and disabled; prepare a separately reviewed/versioned proposal if scope or technical evidence changes. Do not alter existing digests."
+      },
+      "express_owner_authorization_required": true,
+      "authorized": false,
+      "decision_rpc_called": false
+    }
+  ],
+  "code_review": {
+    "confirmed_runtime_findings": [],
+    "new_runtime_patches": 0,
+    "tests_reused": {
+      "runtime_unchanged_from_certified_head": true,
+      "dependencies_unchanged": true,
+      "lockfiles_changed": "",
+      "runtime_cases_reused": 2163,
+      "skips": 6,
+      "native_postgres_cases_reused": 17,
+      "new_runtime_tests": 0
+    },
+    "new_runtime_tests": 0,
+    "limitations": [
+      "Prioritized review and reused tests do not certify every production flow.",
+      "No physical device test or remote operational R05 contract-v2 recertification."
+    ]
+  },
+  "worktrees": [
+    {
+      "name": "Principal",
+      "classification": "PRESERVE",
+      "changes": 0
+    },
+    {
+      "name": "F24.6A1",
+      "classification": "PRESERVE",
+      "changes": 18,
+      "reason": "Five differing harness variants still preserved; no retirement requested."
+    },
+    {
+      "name": "R04B2",
+      "classification": "RETIREMENT_CANDIDATE",
+      "changes": 68,
+      "exclusive_commits": 0,
+      "unpreserved_useful_changes": 0,
+      "unique_scratch_files": 2,
+      "scratch_backups_verified": true,
+      "cache_cli_latest_not_merged": true
+    },
+    {
+      "name": "Animal Detail C2",
+      "classification": "RETIREMENT_CANDIDATE",
+      "changes": 5,
+      "exclusive_commits": 0,
+      "unpreserved_useful_changes": 0,
+      "reason": "Three files identical; remaining component/test differences superseded by later main commercial work."
+    },
+    {
+      "name": "Consolidation temporary",
+      "classification": "RETIREMENT_CANDIDATE",
+      "changes": 0,
+      "exclusive_commits": 0,
+      "managed_attachment": true
+    },
+    {
+      "name": "Kilo",
+      "classification": "PRESERVE",
+      "changes": 0,
+      "active_process": 27964
+    }
+  ],
+  "process_checks": {
+    "codex_active_chat_principal": true,
+    "kilo_pid": 27964,
+    "candidate_paths_in_process_arguments": [],
+    "limitations": "No candidate references observed in filtered node/deno/kilo/codex command lines; full cwd/handle inventory of external programs not available. Recheck at retirement."
+  },
+  "constraints": {
+    "no_push": true,
+    "no_remote_pr": true,
+    "no_merge": true,
+    "no_deploy": true,
+    "no_remote_migration": true,
+    "no_operational_write": true,
+    "no_decision": true,
+    "no_gate_change": true,
+    "no_worktree_removal": true
+  },
+  "readiness": "READY_FOR_PR_REVIEW",
+  "document_validation": {
+    "json_and_local_links": "exit 0; check-docs.mjs",
+    "docs_gates": "exit 0; docs-gates.log"
+  }
+}

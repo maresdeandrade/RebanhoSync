@@ -1,0 +1,425 @@
+{
+  "artifact": "sanitario_r04b3_authenticated_previews_postconsolidation_review",
+  "evaluated_at": "2026-10-21T18:56:32.491Z",
+  "status": "AWAITING_CURATORIAL_APPROVAL",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "identity": {
+    "id": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7",
+    "email": "maresdeandrade@gmail.com",
+    "superadmin": true,
+    "verified_at": "2026-10-21T18:51:42.930Z",
+    "verified_by": [
+      "auth.getUser",
+      "is_app_admin"
+    ]
+  },
+  "started_at": "2026-10-21T18:51:49.757Z",
+  "completed_at": "2026-10-21T18:51:51.795Z",
+  "raw_sha256": "20c44e8f9711e63333dca4ecbd04e2d08b4612d205bda001ec68b4884dd287f5",
+  "plan_sha256": "b207e7b2d21e423a5b7a0ec09697cddc99e06e62583e8e99459197e0b7c182ba",
+  "completed": 7,
+  "expected": 7,
+  "requests": [
+    {
+      "order": 1,
+      "kind": "individual",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "protocol_version": 1,
+      "requested_item_ids": [
+        "0625eedf-f069-5ee4-ae50-decd329176e6"
+      ],
+      "observed_versions": [
+        {
+          "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+          "key": "clostridial_primovac_dose1",
+          "version": 3
+        }
+      ],
+      "http_status": 200,
+      "error": null,
+      "blockers": [],
+      "reviewed_content_digest": "4df5c6d9fd5bf927bf28ad96e84ff3f010460b4aec197e817c55b0e3236bebd5",
+      "digest_recomputed_matches": true,
+      "group_matches_individuals": null,
+      "certified_item_fields_match": true,
+      "sources": [
+        {
+          "id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+          "source_key": "SRC_BULA_FORTRESS7"
+        }
+      ],
+      "coverage_rows": 4,
+      "classes": [
+        "vacina_clostridial"
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "individual",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "protocol_version": 1,
+      "requested_item_ids": [
+        "cb8fad2f-5836-5939-a64f-ce6a323acd1c"
+      ],
+      "observed_versions": [
+        {
+          "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+          "key": "clostridial_primovac_dose2",
+          "version": 4
+        }
+      ],
+      "http_status": 200,
+      "error": null,
+      "blockers": [],
+      "reviewed_content_digest": "b596508e5d198d9a2f88072398595cf2be4a860cd799acda6b5f791e8dcfba4d",
+      "digest_recomputed_matches": true,
+      "group_matches_individuals": null,
+      "certified_item_fields_match": true,
+      "sources": [
+        {
+          "id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+          "source_key": "SRC_BULA_FORTRESS7"
+        }
+      ],
+      "coverage_rows": 4,
+      "classes": [
+        "vacina_clostridial"
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "individual",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "protocol_version": 1,
+      "requested_item_ids": [
+        "d4a9602e-b011-5b33-a1c9-890b36da1b46"
+      ],
+      "observed_versions": [
+        {
+          "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+          "key": "clostridial_reforco_anual",
+          "version": 3
+        }
+      ],
+      "http_status": 200,
+      "error": null,
+      "blockers": [],
+      "reviewed_content_digest": "0999e6443151baa6e0562c10272138924f529982103a0fdefa088fa8fd0abd82",
+      "digest_recomputed_matches": true,
+      "group_matches_individuals": null,
+      "certified_item_fields_match": true,
+      "sources": [
+        {
+          "id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+          "source_key": "SRC_BULA_FORTRESS7"
+        }
+      ],
+      "coverage_rows": 4,
+      "classes": [
+        "vacina_clostridial"
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "individual",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "protocol_version": 1,
+      "requested_item_ids": [
+        "d69c754c-1d61-5680-abfe-92fc1d43209b"
+      ],
+      "observed_versions": [
+        {
+          "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+          "key": "lepto_primovac_dose1",
+          "version": 3
+        }
+      ],
+      "http_status": 200,
+      "error": null,
+      "blockers": [],
+      "reviewed_content_digest": "6db2fef7c074ba8c2623d7877169685188ccf0bdcaae0bfa3f1b23f14bc53dec",
+      "digest_recomputed_matches": true,
+      "group_matches_individuals": null,
+      "certified_item_fields_match": true,
+      "sources": [
+        {
+          "id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+          "source_key": "SRC_BULA_LEPTOFERM5"
+        }
+      ],
+      "coverage_rows": 4,
+      "classes": [
+        "vacina_leptospirose"
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "individual",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "protocol_version": 1,
+      "requested_item_ids": [
+        "f3122e73-549d-594a-aed6-5dd4ab93c0d9"
+      ],
+      "observed_versions": [
+        {
+          "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+          "key": "lepto_reforco_anual_semestral",
+          "version": 3
+        }
+      ],
+      "http_status": 200,
+      "error": null,
+      "blockers": [],
+      "reviewed_content_digest": "687ab3a2a39c8c01b02ca63b781ec4df45e884adea1a8dddd500b89e37086c67",
+      "digest_recomputed_matches": true,
+      "group_matches_individuals": null,
+      "certified_item_fields_match": true,
+      "sources": [
+        {
+          "id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+          "source_key": "SRC_BULA_LEPTOFERM5"
+        }
+      ],
+      "coverage_rows": 4,
+      "classes": [
+        "vacina_leptospirose"
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "grouped",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "protocol_version": 1,
+      "requested_item_ids": [
+        "0625eedf-f069-5ee4-ae50-decd329176e6",
+        "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+        "d4a9602e-b011-5b33-a1c9-890b36da1b46"
+      ],
+      "observed_versions": [
+        {
+          "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+          "key": "clostridial_primovac_dose1",
+          "version": 3
+        },
+        {
+          "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+          "key": "clostridial_primovac_dose2",
+          "version": 4
+        },
+        {
+          "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+          "key": "clostridial_reforco_anual",
+          "version": 3
+        }
+      ],
+      "http_status": 200,
+      "error": null,
+      "blockers": [],
+      "reviewed_content_digest": "83b5fe310eac94e2d9912bd425e1e147b4263e2ccaab594f5fc2c11a592410b3",
+      "digest_recomputed_matches": true,
+      "group_matches_individuals": true,
+      "certified_item_fields_match": true,
+      "sources": [
+        {
+          "id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+          "source_key": "SRC_BULA_FORTRESS7"
+        }
+      ],
+      "coverage_rows": 4,
+      "classes": [
+        "vacina_clostridial"
+      ]
+    },
+    {
+      "order": 7,
+      "kind": "grouped",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "protocol_version": 1,
+      "requested_item_ids": [
+        "d69c754c-1d61-5680-abfe-92fc1d43209b",
+        "f3122e73-549d-594a-aed6-5dd4ab93c0d9"
+      ],
+      "observed_versions": [
+        {
+          "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+          "key": "lepto_primovac_dose1",
+          "version": 3
+        },
+        {
+          "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+          "key": "lepto_reforco_anual_semestral",
+          "version": 3
+        }
+      ],
+      "http_status": 200,
+      "error": null,
+      "blockers": [],
+      "reviewed_content_digest": "f80230a1aa845e3659a939f8cb118c3b3a39d10e234efe99844f8bcf5ef62bc1",
+      "digest_recomputed_matches": true,
+      "group_matches_individuals": true,
+      "certified_item_fields_match": true,
+      "sources": [
+        {
+          "id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+          "source_key": "SRC_BULA_LEPTOFERM5"
+        }
+      ],
+      "coverage_rows": 4,
+      "classes": [
+        "vacina_leptospirose"
+      ]
+    }
+  ],
+  "grouped_digests": [
+    {
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "reviewed_content_digest": "83b5fe310eac94e2d9912bd425e1e147b4263e2ccaab594f5fc2c11a592410b3"
+    },
+    {
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "reviewed_content_digest": "f80230a1aa845e3659a939f8cb118c3b3a39d10e234efe99844f8bcf5ef62bc1"
+    }
+  ],
+  "checks": {
+    "exact_plan_scopes": true,
+    "verified_user_and_admin": true,
+    "all_http_200": true,
+    "no_rpc_errors": true,
+    "no_server_blockers": true,
+    "versions_match_plan": true,
+    "item_content_matches_certified_delta": true,
+    "sha256_pg_jsonb_recomputed_all_seven": true,
+    "group_content_equals_individual_content": true,
+    "all_items_draft": true,
+    "automation_disabled": true,
+    "product_dose_route_unassigned": true,
+    "classes_manual_only": true,
+    "can_validate_execution": false,
+    "credential_fields_absent": true
+  },
+  "curatorial_approval": {
+    "authorized": false,
+    "executed": false
+  },
+  "limitations": [
+    "Technical consistency review; not a curatorial decision.",
+    "Digests bind captured content; a later content change requires a new preview before a decision.",
+    "Unknown age/pregnancy/lactation fields remain unknown; bovine-only variants do not validate the whole product class.",
+    "The LEP annual/semiannual logical key carries an annual recurrence in version 3; no semiannual schedule was added."
+  ],
+  "remote_postcheck": {
+    "observed_at": "2026-10-21T18:56:09.020Z",
+    "project_ref": "zqloazqzhwauamcejmuz",
+    "method": "SELECT rows fingerprints and counts only; no RPC invocation",
+    "readset": [
+      {
+        "id": "268fec8b-41db-5265-a24e-9be51069f340",
+        "md5": "5a112a951d0d84398a9b1f9922403179",
+        "table_name": "sanitario_fonte_cobertura_campos_v2"
+      },
+      {
+        "id": "301443de-d9af-5385-a603-0d62d1a1eaec",
+        "md5": "c196af54914d0c0aa748a9c9e2e3e06c",
+        "table_name": "sanitario_fonte_cobertura_campos_v2"
+      },
+      {
+        "id": "3df13a70-4200-532b-a8f4-25023a57db93",
+        "md5": "9249f965f12ae3bef8dd7621bb80bdad",
+        "table_name": "sanitario_fonte_cobertura_campos_v2"
+      },
+      {
+        "id": "67685b03-f8e3-5c10-ade6-49995015d2e1",
+        "md5": "9245eec376060028ff9591142d031189",
+        "table_name": "sanitario_fonte_cobertura_campos_v2"
+      },
+      {
+        "id": "6edeb374-f0e1-574f-a85a-b463cac0ba4d",
+        "md5": "8bcde4724bb333edd7f24711ea0f297b",
+        "table_name": "sanitario_fonte_cobertura_campos_v2"
+      },
+      {
+        "id": "8d4c875b-d40f-5d81-a2ef-5aa16aeea9cf",
+        "md5": "2c4054454f45d1413fa27f395f7f8cd3",
+        "table_name": "sanitario_fonte_cobertura_campos_v2"
+      },
+      {
+        "id": "a64b0bfd-fedb-5ebb-ae5e-6606da84bb59",
+        "md5": "5f96adcd59e6e1dcc6477aa6e345d7a4",
+        "table_name": "sanitario_fonte_cobertura_campos_v2"
+      },
+      {
+        "id": "c3c65027-8204-532f-a35a-1d58d6576f82",
+        "md5": "857fcf6448d004fcfd8ea8ad8544295d",
+        "table_name": "sanitario_fonte_cobertura_campos_v2"
+      },
+      {
+        "id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "md5": "f25743fa45a000cab67c9ec082d47e0e",
+        "table_name": "sanitario_fontes_tecnicas_v2"
+      },
+      {
+        "id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "md5": "c91f9df9adf7e066b30c11ecece5f0be",
+        "table_name": "sanitario_fontes_tecnicas_v2"
+      },
+      {
+        "id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+        "md5": "54e4f579b3ec02372cdf6956c9ef8b1d",
+        "table_name": "sanitario_product_classes_v2"
+      },
+      {
+        "id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+        "md5": "50e7ff03b70500964635bf21b9ba42f8",
+        "table_name": "sanitario_product_classes_v2"
+      },
+      {
+        "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+        "md5": "51718dd84c4f5f5a70151b4614f52a9a",
+        "table_name": "sanitario_protocolo_itens_versions_v2"
+      },
+      {
+        "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+        "md5": "81a7c7b74d9b7a2d4c362c178a731bb5",
+        "table_name": "sanitario_protocolo_itens_versions_v2"
+      },
+      {
+        "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+        "md5": "41e370864c049a5291b425a8f88aeaa7",
+        "table_name": "sanitario_protocolo_itens_versions_v2"
+      },
+      {
+        "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+        "md5": "c8b91c38b887f94fd2fff294043cd8a6",
+        "table_name": "sanitario_protocolo_itens_versions_v2"
+      },
+      {
+        "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+        "md5": "334a508336d6832ea1546ec2aca21764",
+        "table_name": "sanitario_protocolo_itens_versions_v2"
+      },
+      {
+        "id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "md5": "72a0c0bf369619c078080d4f2623000a",
+        "table_name": "sanitario_protocolos_v2"
+      },
+      {
+        "id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "md5": "37fc7be386189c9813fa95db67223093",
+        "table_name": "sanitario_protocolos_v2"
+      }
+    ],
+    "operations": {
+      "migrations": 64,
+      "r05_events": 4,
+      "r05_agendas": 7,
+      "enabled_gates": 0,
+      "sanitary_decisions": 5
+    },
+    "readset_rows": 19,
+    "all_readset_fingerprints_match": true,
+    "operational_counts_match_previous_baseline": true,
+    "limitation": "Counts alone do not prove byte identity of every operational row. No operational writer was invoked by this workflow."
+  },
+  "evidence_path": "docs/review/evidence/SANITARIO_V2_R04B3_AUTHENTICATED_PREVIEWS_POSTCONSOLIDATION_20261021.json",
+  "publication_plan_path": "docs/review/evidence/SANITARIO_V2_R04B2_PUBLICATION_PLAN_20261021.json"
+}

@@ -1,0 +1,224 @@
+{
+  "artifact": "sanitario_r04b2_publication_plan",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "prepared_only": true,
+  "remote_executed": false,
+  "remote_authorized": false,
+  "content_sha256": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+  "migration": {
+    "path": "supabase/migrations/20261020232807_sanitario_class_scheme_planning_v2.sql",
+    "sha256": "c490630d646a9d99a8fc424c07cc73f73485b6e6bd5ae2d5b6a5582f06e29e59"
+  },
+  "baseline": {
+    "source": "docs/review/evidence/SANITARIO_V2_R04B_CLASS_REMOTE_FINAL_20261020.json",
+    "live_reconfirmed": false,
+    "migrations_before": 63,
+    "migrations_after": 64,
+    "approved_items": 7,
+    "r05_agendas": 7,
+    "r05_events": 0,
+    "gates_enabled": 0,
+    "prior_decisions": 5
+  },
+  "scope": {
+    "new_item_versions": 5,
+    "new_coverage": 8,
+    "class_reviews": 2,
+    "product_source_links": 2,
+    "read_only_sources": 2,
+    "read_only_products": 2,
+    "read_only_protocols": 2,
+    "predecessors_retired": 5,
+    "expected_create": 15,
+    "expected_update": 7,
+    "existing_agenda_writes": 0
+  },
+  "steps": [
+    {
+      "order": 1,
+      "action": "Reconfirmar baseline remoto read-only e comparar linhas/rotinas/ACLs com evidência; qualquer drift suspende escrita",
+      "authorization": "owner_preflight_migration_delta",
+      "artifact": "docs/review/evidence/SANITARIO_V2_R04B2_PREFLIGHT_20261021.sql"
+    },
+    {
+      "order": 2,
+      "action": "Dry-run transacional e aplicar exclusivamente migration 20261020232807, preservando versão/nome/bytes e guards63→64",
+      "authorization": "owner_preflight_migration_delta",
+      "dry_run": "docs/review/evidence/SANITARIO_V2_R04B2_MIGRATION_DRY_RUN_20261021.sql",
+      "apply": "docs/review/evidence/SANITARIO_V2_R04B2_MIGRATION_APPLY_20261021.sql"
+    },
+    {
+      "order": 3,
+      "action": "Autorizar uma cópia do mesmo digest e publicar delta somente pelo CLI canônico --incremental; retry é no-op, conflito exige nova análise/autorização",
+      "authorization": "owner_preflight_migration_delta",
+      "artifact": "docs/review/evidence/SANITARIO_V2_R04B2_CANONICAL_DELTA_20261021.json"
+    },
+    {
+      "order": 4,
+      "action": "Obter cinco previews individuais e dois previews agrupados com sessão autenticada do principal autorizado",
+      "authorization": "owner_preflight_migration_delta",
+      "rpc": "sanitario_catalog_review_preview_v2"
+    },
+    {
+      "order": 5,
+      "action": "Apresentar digests reais e justificativas ao proprietário; não fabricar nem reaproveitar digests locais",
+      "authorization": "specific_decisions_not_yet_available"
+    },
+    {
+      "order": 6,
+      "action": "Somente após autorização específica de cada digest agrupado, emitir duas decisões canônicas com request_id estável e guardar recibos",
+      "authorization": "separate_owner_decision_for_exact_digest",
+      "rpc": "sanitario_catalog_decide_v2"
+    },
+    {
+      "order": 7,
+      "action": "Homologar incrementalmente na fazenda R05 somente com autorização própria; não reexecutar R05 nem alterar sete Agendas existentes",
+      "authorization": "separate_incremental_homologation"
+    },
+    {
+      "order": 8,
+      "action": "Reconfirmar gates OFF, sete Agendas imutáveis e histórico original preservado; capturar evidência",
+      "authorization": "read_only_postcheck"
+    }
+  ],
+  "individual_previews": [
+    {
+      "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+      "version": 3,
+      "logical_item_key": "clostridial_primovac_dose1",
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "_expected_version": 1,
+        "_item_ids": [
+          "0625eedf-f069-5ee4-ae50-decd329176e6"
+        ]
+      }
+    },
+    {
+      "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+      "version": 4,
+      "logical_item_key": "clostridial_primovac_dose2",
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "_expected_version": 1,
+        "_item_ids": [
+          "cb8fad2f-5836-5939-a64f-ce6a323acd1c"
+        ]
+      }
+    },
+    {
+      "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+      "version": 3,
+      "logical_item_key": "clostridial_reforco_anual",
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "_expected_version": 1,
+        "_item_ids": [
+          "d4a9602e-b011-5b33-a1c9-890b36da1b46"
+        ]
+      }
+    },
+    {
+      "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+      "version": 3,
+      "logical_item_key": "lepto_primovac_dose1",
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "_expected_version": 1,
+        "_item_ids": [
+          "d69c754c-1d61-5680-abfe-92fc1d43209b"
+        ]
+      }
+    },
+    {
+      "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+      "version": 3,
+      "logical_item_key": "lepto_reforco_anual_semestral",
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "_expected_version": 1,
+        "_item_ids": [
+          "f3122e73-549d-594a-aed6-5dd4ab93c0d9"
+        ]
+      }
+    }
+  ],
+  "authoritative_groups": [
+    {
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "expected_version": 1,
+      "candidates": [
+        {
+          "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+          "version": 3,
+          "logical_item_key": "clostridial_primovac_dose1"
+        },
+        {
+          "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+          "version": 4,
+          "logical_item_key": "clostridial_primovac_dose2"
+        },
+        {
+          "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+          "version": 3,
+          "logical_item_key": "clostridial_reforco_anual"
+        }
+      ],
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "_expected_version": 1,
+        "_item_ids": [
+          "0625eedf-f069-5ee4-ae50-decd329176e6",
+          "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+          "d4a9602e-b011-5b33-a1c9-890b36da1b46"
+        ]
+      },
+      "reviewed_content_digest": null,
+      "owner_authorized": false,
+      "request_id": null,
+      "justification_proposed": "Autorizar exclusivamente o planejamento bovino da variante documentada, sem seleção antecipada de produto/dose/via/carência; execução condicionada a produto e compatibilidade específicos comprovados."
+    },
+    {
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "expected_version": 1,
+      "candidates": [
+        {
+          "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+          "version": 3,
+          "logical_item_key": "lepto_primovac_dose1"
+        },
+        {
+          "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+          "version": 3,
+          "logical_item_key": "lepto_reforco_anual_semestral"
+        }
+      ],
+      "rpc": "sanitario_catalog_review_preview_v2",
+      "args": {
+        "_protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "_expected_version": 1,
+        "_item_ids": [
+          "d69c754c-1d61-5680-abfe-92fc1d43209b",
+          "f3122e73-549d-594a-aed6-5dd4ab93c0d9"
+        ]
+      },
+      "reviewed_content_digest": null,
+      "owner_authorized": false,
+      "request_id": null,
+      "justification_proposed": "Autorizar exclusivamente o planejamento bovino da variante documentada, sem seleção antecipada de produto/dose/via/carência; execução condicionada a produto e compatibilidade específicos comprovados."
+    }
+  ],
+  "notes": [
+    "Cinco previews individuais são revisáveis; para decisão usar dois grupos atômicos: aprovar um item muda o protocolo e invalida os outros digests individuais anteriores.",
+    "Nenhuma aprovação real preparada por antecipação: digest remoto, actor e request_id permanecem ausentes até sessão real e autorização específica.",
+    "Cobertura de bula comprova apenas a variante; classes continuam manual_only/can_validate_execution=false. Produtos não são curados por este delta.",
+    "Testes R05 usam snapshots/IDs com contract_version=null. Não certificam o transporte Auth/Edge nem R05 contract v2 remotos."
+  ],
+  "runbook": "docs/review/SANITARIO_V2_R04B2_CERTIFICACAO_20261021.md"
+}

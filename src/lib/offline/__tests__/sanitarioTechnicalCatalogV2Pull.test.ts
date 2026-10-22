@@ -32,6 +32,7 @@ vi.mock("../db", () => ({
     queue_ops: {
       toArray: vi.fn(async () => []),
     },
+    queue_gestures: { toArray: vi.fn(async () => []) },
     table: vi.fn(),
     transaction: vi.fn(),
   },

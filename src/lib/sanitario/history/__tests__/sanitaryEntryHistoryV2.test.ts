@@ -1,11 +1,10 @@
 /** @vitest-environment jsdom */
 import "fake-indexeddb/auto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/lib/offline/db";
 import {
   applySanitarioV2Cutover,
-  SANITARIO_V2_STAGING_PROJECT_REF,
   setSanitarioV2PushEnabled,
 } from "@/lib/offline/sanitarioV2Cutover";
 import type {
@@ -83,13 +82,15 @@ async function clearStores() {
 
 describe("sanitaryEntryHistoryV2", () => {
   beforeEach(async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:54321");
     await db.open();
     await clearStores();
-    setSanitarioV2PushEnabled(false, SANITARIO_V2_STAGING_PROJECT_REF);
+    setSanitarioV2PushEnabled(false, "local");
   });
 
   afterEach(async () => {
-    setSanitarioV2PushEnabled(false, SANITARIO_V2_STAGING_PROJECT_REF);
+    vi.unstubAllEnvs();
+    setSanitarioV2PushEnabled(false, "local");
     await clearStores();
   });
 
@@ -167,7 +168,7 @@ describe("sanitaryEntryHistoryV2", () => {
 
   it("enfileira external_declared como standalone_fact sem efeitos operacionais", async () => {
     await applySanitarioV2Cutover(FARM_ID, async () => undefined);
-    setSanitarioV2PushEnabled(true, SANITARIO_V2_STAGING_PROJECT_REF);
+    setSanitarioV2PushEnabled(true, "local");
     const result = await createSanitaryEntryHistoryV2({
       fazendaId: FARM_ID,
       animalId: ANIMAL_ID,
@@ -181,7 +182,7 @@ describe("sanitaryEntryHistoryV2", () => {
       catalog,
       sync: {
         clientId: "staging-client",
-        projectRef: SANITARIO_V2_STAGING_PROJECT_REF,
+        projectRef: "local",
       },
     });
 

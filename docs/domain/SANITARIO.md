@@ -1,3 +1,5 @@
+> **Adendo normativo proposto — 15/10/2026 (não implementado):** para planejamento Sanitário V2, separar **consulta**, **sugestão**, **Agenda manual condicional**, **Agenda automática condicional** e **execução factual**. Produto comercial ainda não identificado **não bloqueia Agenda genérica de manejo**, mas não autoriza selecionar dose, via, carência, esquema de reforço ou produto. A automação requer regra/versionamento aprovados, contexto da fazenda, elegibilidade individual, Evento anterior quando necessário e deduplicação persistente; não cria Evento, estoque ou carência. **Esta revisão não altera os estados do catálogo ou flags**, nem autoriza importação. Ver [política e decisões por 20 itens](../review/SANITARIO_V2_POLITICA_AGENDA_CONDICIONAL_20261015.md) e [matriz de decisões](../review/evidence/SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv). **Ajustes A–E incorporados:** restrição `no_agenda_auto` mantém **todos os três itens de raiva** sem automação até revisão **aprovada e versionada**; vacinas multivalentes (ex.: Fertiguard/Poliguard) exigem composição, janela e histórico compatíveis para **uma única aplicação/Evento** com cobertura multiprotocolo rastreável; B19 concilia períodos federais e somente os prazos estaduais de comprovação preserváveis pelo art. 3º; Agenda genérica não adquire esquema/dose por inferência; relatórios locais e os quatro achados Fallow permanecem **relatados, sem IDs brutos conferidos**. Revisar a [matriz por 20 itens](../review/evidence/SANITARIO_V2_MATRIZ_DECISAO_AGENDA_20261015.csv) junto com a política.
+
 ```markdown
 # Sanitário — RebanhoSync
 
@@ -51,6 +53,16 @@ Fora do escopo deste documento:
 - resultado econômico global.
 
 ---
+
+## Planejamento condicional local — revisão A–E de 16/10/2026
+
+- `protocol_item_snapshot.planningKind` distingue `avaliacao_manejo_generica` e `aplicacao_esquema_definido` no writer local; tarefas anteriores não são migradas nem reinterpretadas.
+- Novas intenções dos callers manuais legados são avaliações genéricas. Esquemas definidos exigem produto/formulação, autorização explícita por espécie/sexo/idade, fontes por campo e histórico do mesmo produto quando aplicável.
+- A geração condicional revalida catálogo/contexto/dados factuais sob transação Dexie; `allows_agenda_auto` e `no_agenda_auto` não são alterados pela UI ou pelo histórico.
+- B19 exige UF, mantém proibição em SC e distingue elegibilidade/fato/comprovação. Não há novo cálculo de prazo de comprovação estadual neste patch.
+- Conformidade histórica usa pré-checagem factual, não a ausência de aprovação prospectiva do catálogo.
+- Cobertura multiprotocolo permanece informativa; o modelo factual singular impede materializar duas aplicações equivalentes como se fossem independentes. Nenhuma relação persistente nova é inferida.
+- Evidência, testes e restrições: [entrega local A–E](../review/evidence/SANITARIO_V2_A_E_IMPLEMENTACAO_LOCAL_20261016.md).
 
 ## Contrato central
 
@@ -970,6 +982,18 @@ Regras atuais:
 
 A rota `/protocolos-sanitarios` é a Central Sanitária operacional. Ela concentra planejamento, janelas, elegibilidade, preview completo, agenda manual local, catálogo sanitário, histórico sanitário e pendências documentais.
 
+O plano automático da fazenda usa `state_fazenda_sanidade_config.payload.sanitary_agenda_automation_v2`, com referências exatas a protocolo/item/versão/produto, contexto, revisão e confirmação da ativação. A gravação reutiliza o gesture canônico de configuração; não cria outro catálogo. A confirmação vale para o plano ativado, dispensando confirmação de cada tarefa.
+
+O campo opcional `ruleContexts` permite contexto por versão física do item, preservando a leitura de planos antigos com contexto comum. Calendários exigem adoção explícita para a UF, limitada aos meses da versão aprovada; recria usa o estágio de vida canônico, sem confundi-lo com categoria zootécnica. Pré-desmama exige sistema intensivo/leiteiro ou orientação referenciada. Pré-confinamento e avaliação pré-parto exigem data, referência e alvos; esses dados são intenção programada, não fatos de deslocamento ou reprodução. Pré-parto respeita sexo e contexto reprodutivo. Leptospirose dose 2 continua bloqueada na referência canônica atual; outra formulação depende de variante, esquema e aprovação próprios.
+
+Planos com contextos avançados são gravados com `schemaVersion: 2`; planos V1 continuam legíveis. Clientes anteriores, que aceitam somente V1, rejeitam o plano V2 antes de gerar ou sobrescrever intenções, evitando ignorar silenciosamente as novas condições. Operações/Agendas anteriores não são regravadas por essa evolução.
+
+Identidades de calendário são por ano/mês e contextos programados usam sua data. Fato de ano anterior não elimina a próxima janela; segunda dose comprovadamente executada não é recriada apenas por faltar Agenda local. Cancelamento automático suprime sua janela, preservando a possibilidade de outro manejo explicitamente programado. A Central apresenta cobertura, sugestões e motivos de exclusão de todos os itens carregados, sem transformar normalização em autorização.
+
+A abertura da Central, alterações dos dados locais e reconnect reavaliam as regras selecionadas. O writer revalida plano, versão, autorização técnica, janela e elegibilidade sob a mesma transação das intenções. A identidade por fazenda/animal/regra/versão/janela é persistente; retries preservam Agendas geradas, reagendamentos e cancelamentos. Reforços usam o histórico factual compatível do precheck. Planejamento não cria Evento, estoque ou carência.
+
+A automação continua local: o writer de Agenda não enfileira push remoto e nenhuma flag sanitária é habilitada. A configuração segue a fila existente, mas convergência de planos concorrentes entre dispositivos e sincronização das Agendas automáticas ainda exigem homologação do contrato remoto. `allows_agenda_auto=false`, `no_agenda_auto` e falta de aprovação técnica continuam bloqueantes; fixtures aprovadas não autorizam itens do catálogo operacional.
+
 Superfícies:
 
 - `Janelas sanitárias`: seleção por protocolo/item, contexto operacional explícito, pré-checagem local e filtro inicial por animal ou lote;
@@ -1024,6 +1048,24 @@ Devem ficar fechados sob demanda:
 - listas completas de candidatas, atrasadas, bloqueadas e não aplicáveis.
 
 Essas abas não devem exibir lista linear repetida de todos os itens nem botões por item no modo compacto.
+
+### Revisão curatorial eletrônica V2
+
+A revisão global ocorre no Backoffice, com ação explícita de administrador autorizado em `app_superadmins`. Não exige fazenda ou identificação do futuro executor. A RPC valida a permissão no banco, o hash do conteúdo e as versões; decisão e promoção dos registros canônicos são atômicas e auditadas em `app_admin_audit_events`.
+
+Somente os itens selecionados e tecnicamente completos recebem permissão automática. A avaliação genérica B19 conserva as condições normativas de elegibilidade e execução. As seis avaliações PAR/DES/CONF/PARTO com fonte Embrapa regional conservam o limite de UF `DF`, contexto individual e ausência de produto/dose/via/carência. A fonte permanece apoio: a decisão registrada por campo não a transforma em norma/bula. Uma fazenda não amplia o alcance regional da versão aprovada.
+
+As sete versões dependentes de evidência comercial permanecem sem aprovação; os três itens de raiva conservam `no_agenda_auto`, os dois de aftosa e LEP2 canônica continuam bloqueados. Publicação de regra não gera Agenda por si só: o plano persistente da fazenda exige ativação explícita e o motor existente avalia cada animal. Ver [evidência e homologação](../review/evidence/SANITARIO_V2_APROVACAO_ELETRONICA_20261017.md).
+
+### Planejamento por classe — contrato local R04B
+
+Novas versões podem optar por `snapshot_template.metadata.planning_scope=class_scheme`, mantendo a ação de vacinação e a chave lógica. Reutilizam `product_requirement_kind=product_class` e `executionProductPolicy=required_at_execution`, sem produto, dose ou via antecipados. Exigem fonte/cobertura por elegibilidade, janela, classe e espécie; uma bula sustenta somente sua variante, não toda a classe. Dose 2 exige Evento compatível; o reforço anual parte da conclusão da série inicial definida em `booster_rule.previous_logical_item_key` ou do próprio reforço factual, sem tolerância inventada.
+
+A Agenda congela versão, janela, fontes e recorrência nos JSON existentes. Na aplicação, o produto real precisa comprovar compatibilidade com a variante e vigência comercial; a transação revalida essa prova. Registro explícito de fato ocorrido preserva não conformidades como alertas, sem convertê-las em autorização. Carência continua dependente do produto/fato, com desconhecidos preservados.
+
+Esse contrato está implementado localmente e a migration curatorial correspondente não foi aplicada ao remoto. Cinco candidatas estão preparadas, nenhuma aprovada; os sete itens e as Agendas R05 permanecem preservados. Raiva conserva consulta/manual e depende de variante regional aprovada para futura automação; aftosa continua fora da vacinação de rotina; LEP2 v1 permanece incompatível com Leptoferm bovino. Ver [matriz e previews R04B](../review/SANITARIO_V2_R04B_CLASSES_20261021.md).
+
+R04B.2 prepara publicação incremental pelo importador canônico existente: cinco versões, oito coberturas, duas revisões de classe e dois vínculos produto/fonte. Pais existentes são apenas referências; produtos não recebem autorização de aplicação. A aprovação canônica também limpa `proposal_only`, mantendo flags coerentes com `allows_agenda_auto`. Publicação, decisões por digest e homologação incremental dependem de autorizações distintas. Ver [certificação e plano executável R04B.2](../review/SANITARIO_V2_R04B2_CERTIFICACAO_20261021.md).
 
 ### Antipadrões proibidos
 

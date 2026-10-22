@@ -1049,3 +1049,41 @@ describe("sync-batch sanitario v2: serialização estrita", () => {
     expect(factualCall.args.detail_payload).not.toHaveProperty("client_tx_id");
   });
 });
+
+describe("sanitary planning convergence commands", () => {
+  const planCommand = () => ({ ...createAgendaOperation(), command: "set_automation_plan", expected_revision: 0,
+    payload: { expected_plan: null, plan: { schemaVersion: 2, revision: 1, enabled: true, rules: [], context: {} } } });
+  it("maps authenticated actor, transaction and plan CAS to the existing service boundary", async () => {
+    const deps = dependencies({ rpcData: { command: "set_automation_plan", fazenda_id: ids.farm, status: "saved", revision: 1 } });
+    const result = await executeSanitarioSyncV2Operation(planCommand(), context, deps);
+    expect(result).toMatchObject({ status: "APPLIED", canonical_entity_id: ids.farm, current_revision: 1 });
+    expect(deps.callRpc).toHaveBeenCalledWith(expect.objectContaining({ functionName: "internal_sanitario_sync_v2_set_automation_plan",
+      args: expect.objectContaining({ actor_user_id: ids.actor, fazenda_id: ids.farm, client_id: context.clientId, client_tx_id: ids.tx, expected_revision: 0 }) }));
+  });
+  it("rejects a cowboy, untrusted actor and mismatching farm before calling the RPC", async () => {
+    for (const [raw, ctx] of [[planCommand(), { ...context, membershipRole: "cowboy" }],
+      [{ ...planCommand(), actor_user_id: ids.actor }, context], [{ ...planCommand(), fazenda_id: ids.animal }, context]] as const) {
+      const deps = dependencies();
+      expect((await executeSanitarioSyncV2Operation(raw, ctx, deps)).status).toBe("REJECTED");
+      expect(deps.callRpc).not.toHaveBeenCalled();
+    }
+  });
+  it.each([undefined, -1, 1.5])("requires an immutable expected plan revision (%s)", async expected => {
+    const deps = dependencies();
+    expect((await executeSanitarioSyncV2Operation({ ...planCommand(), expected_revision: expected }, context, deps)).status).toBe("REJECTED");
+    expect(deps.callRpc).not.toHaveBeenCalled();
+  });
+  it("classifies an explicit plan PT409 as conflict without retry or automatic overwrite", async () => {
+    const result = await executeSanitarioSyncV2Operation(planCommand(), context,
+      dependencies({ rpcError: { code: "PT409", message: "SANITARIO_PLAN_REVISION_CONFLICT current_revision=4" } }));
+    expect(result).toMatchObject({ status: "CONFLICT", reason_code: "SANITARIO_PLAN_REVISION_CONFLICT", current_revision: 4, retryable: false });
+  });
+  it("maps schedule changes without generating any factual command", async () => {
+    const deps = dependencies();
+    await executeSanitarioSyncV2Operation({ ...createAgendaOperation(), command: "reschedule_agenda", expected_revision: 2,
+      payload: { agenda_id: ids.agenda, data_programada: "2026-11-01" } }, context, deps);
+    expect(deps.callRpc).toHaveBeenCalledWith({ functionName: "internal_sanitario_sync_v2_reschedule_agenda", args: {
+      actor_user_id: ids.actor, fazenda_id: ids.farm, contract_version: 2, client_op_id: ids.op, domain_op_id: ids.domainOp,
+      client_id: context.clientId, expected_revision: 2, agenda_id: ids.agenda, planned_for: "2026-11-01" } });
+  });
+});

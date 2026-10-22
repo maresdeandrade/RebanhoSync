@@ -71,6 +71,7 @@ const lote: SanitaryPrecheckLoteResumoV2 = {
 const animals: SanitaryPrecheckAnimalResumoV2[] = [
   {
     id: "animal-1",
+    uf: "MG",
     especie: "bovino",
     sexo: "F",
     nascimento: "2024-01-01",

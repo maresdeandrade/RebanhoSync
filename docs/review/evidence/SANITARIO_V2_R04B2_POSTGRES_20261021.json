@@ -1,0 +1,103 @@
+{
+  "environment": "dedicated local PostgreSQL database; real RLS/roles/locks; JWT transport simulated via PostgREST session claims",
+  "cases": [
+    {
+      "name": "R04B.2 exact migration dry-run, history CAS, apply and retry preserve data",
+      "result": "PASS"
+    },
+    {
+      "name": "upgrade preserves all original physical versions and rejects obsolete review",
+      "result": "PASS"
+    },
+    {
+      "name": "authenticated non-admin, anonymous and direct global writes cannot approve",
+      "result": "PASS"
+    },
+    {
+      "name": "retired or legally blocked protocol cannot be reactivated by review",
+      "result": "PASS"
+    },
+    {
+      "name": "hash and protocol version divergence fail without audit/publication",
+      "result": "PASS"
+    },
+    {
+      "name": "authorized explicit B19 approval, trusted actor/time, exact scope and lost-ACK replay",
+      "result": "PASS"
+    },
+    {
+      "name": "two reviewers race: one decision wins, other version/hash conflicts",
+      "result": "PASS"
+    },
+    {
+      "name": "audit failure rolls back catalog and same request recovers safely",
+      "result": "PASS"
+    },
+    {
+      "name": "rejection is auditable and does not enable flags",
+      "result": "PASS"
+    },
+    {
+      "name": "registered evidence changes invalidate the reviewed digest",
+      "result": "PASS"
+    },
+    {
+      "name": "all six permanent restrictions and seven commercial evidence gaps stay blocked",
+      "result": "PASS"
+    },
+    {
+      "name": "complete remaining eligible assessments without a farm or veterinarian",
+      "result": "PASS"
+    },
+    {
+      "name": "R04B class scheme keeps registry evidence, digest, authorization and concurrent replay",
+      "result": "PASS"
+    },
+    {
+      "name": "R04B.2 public incremental dry-run, explicit authorization and CAS reject changed source without writes",
+      "result": "PASS"
+    },
+    {
+      "name": "R04B.2 failed canonical publication rolls back candidates, class reviews, coverage and links",
+      "result": "PASS"
+    },
+    {
+      "name": "R04B.2 concurrent public imports and lost-ACK replay converge with exact supersession",
+      "result": "PASS"
+    },
+    {
+      "name": "R04B.2 five authenticated previews, grouped approvals, flags and authorized replay preserve R04/R05",
+      "result": "PASS"
+    }
+  ],
+  "migration": {
+    "version": "20261020232807",
+    "dry_run_rollback": true,
+    "exact_history": true,
+    "retry_noop": true,
+    "baseline_conflict_rejected": true,
+    "history_conflict_rejected": true,
+    "baseline_fingerprint": "c40e67629196f2e6f4d1e3f3e2908ce1",
+    "dry_run_sql_sha256": "c4cdd1f7f83feca61adfb443ca6a3bc8b16853215a7a42ce919bad589f8465d6",
+    "apply_sql_sha256": "0fcafd896ce85df7118de6bf2e6b48cabf4f082da309ecf8f8fb67acf8d8d485"
+  },
+  "incremental": {
+    "content_sha256": "55a71d9f4adb6b4fcbbfe9cd5d26ee8c15fd4fc99f1106b50d02dc830ca877e4",
+    "candidates": 5,
+    "coverage": 8,
+    "classes": 2,
+    "product_links": 2,
+    "individual_authenticated_previews": 5,
+    "authoritative_group_digests": 2,
+    "original_approvals_preserved": 7,
+    "r05_agendas_preserved": 7,
+    "agenda_fixture": "R05 IDs/snapshots copied as legacy contract=null; no gate activation or R05 rerun",
+    "real_remote_mutations": 0
+  },
+  "result": "PASS",
+  "original_approvals_preserved": 7,
+  "approved_in_disposable_database": 13,
+  "real_catalog_authorizations": 0,
+  "catalog_file": "C:\\Users\\mares\\AppData\\Local\\Temp\\sanitario-review-pg-JDUlrM\\approved-catalog.json",
+  "disposable_database_removed": true
+}

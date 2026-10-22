@@ -1,0 +1,293 @@
+{
+  "project": "sanitary-review-989099a4",
+  "environment": "isolated local Supabase; synthetic users only",
+  "cases": [
+    "HTTP authenticated non-admin rejected",
+    "HTTP JWT reviewer publishes exact B19 version atomically",
+    "HTTP lost-ACK replay returns same audit receipt",
+    "Five decision sets: seven exact candidate versions approved by synthetic authorized reviewer",
+    "Two Chromium contexts independently pull the seven published versions through authenticated RLS",
+    "Offline plan is durable in A, then canonical in PostgreSQL and received in B",
+    "Offline automatic Agendas from A and B converge without duplicates across seven candidate items",
+    "Another UUID cannot duplicate an existing automatic intent",
+    "All seven pending commercial items and all six protected items reject automatic creation",
+    "Lost ACK preserves operation identity; replay converges after the remote commit",
+    "A signed expired session receives 401; real Auth refresh and retry preserve the queued intent",
+    "An injected failure after schedule mutation rolls back the entire RPC; retry applies once",
+    "Reschedule, cancellation and reconnect converge; later generation does not recreate the same intent",
+    "Farm switch retains the original queued farm and does not write the newly selected farm",
+    "Concurrent farm plan revisions conflict; the rejected client receives the canonical version",
+    "RLS denies another farm; direct plan overwrite cannot bypass the canonical writer",
+    "Planning creates no facts, stock movements or withdrawals; pending and restricted items remain unauthorized"
+  ],
+  "baseline_checks": [
+    "authenticated privileges: grants + policies",
+    "user_profiles: privilegio de tabela + RLS",
+    "user_settings: privilegio de tabela + RLS",
+    "1/5 RLS + fluxo owner/fazenda",
+    "2/5 estrutura produtiva + FKs compostas",
+    "3/5 RLS por papel",
+    "4/5 evento sanitario direto sem agenda legada",
+    "5/5 sync-batch real",
+    "OK baseline funcional Supabase validada"
+  ],
+  "convergence_step": "Planning creates no facts, stock movements or withdrawals; pending and restricted items remain unauthorized",
+  "plan_roundtrip_transport": [
+    {
+      "status": "DONE",
+      "result": "APPLIED",
+      "results": [
+        {
+          "status": "APPLIED"
+        }
+      ]
+    }
+  ],
+  "generation_first": {
+    "a": {
+      "created": 5,
+      "failures": [],
+      "enabled": true
+    },
+    "b": {
+      "created": 5,
+      "failures": [],
+      "enabled": true
+    }
+  },
+  "automatically_generated_item_ids": [
+    "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+    "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+    "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+    "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+    "c1866199-bf9d-506e-af05-dd84f3165c90",
+    "e10a3a77-a91e-5fd4-afab-1276526404ef",
+    "e711773e-88ee-5107-aa73-68e7337468be"
+  ],
+  "restricted_automatic_creation_attempts_rejected": 13,
+  "expired_session": {
+    "auth_rejected_expired_token": true,
+    "refresh_statuses": [
+      200
+    ],
+    "operation_applied": true
+  },
+  "partial_failure": {
+    "rolled_back_revision": "2",
+    "queue_state": "RETRYABLE"
+  },
+  "planning_effects": {
+    "facts": 0,
+    "details": 0,
+    "stock": 0,
+    "authorized": 7
+  },
+  "transport": [
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 0
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "status": 401
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "RETRYABLE",
+          "reason": "SANITARIO_FIXTURE_PARTIAL_TIMEOUT"
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 3
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 4
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 5
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 1
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "APPLIED",
+          "revision": 2
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "results": [
+        {
+          "status": "CONFLICT",
+          "reason": "SANITARIO_PLAN_REVISION_CONFLICT",
+          "revision": 2
+        }
+      ]
+    }
+  ],
+  "clients": "two independent Chromium contexts, Auth users, IndexedDB and localStorage; real worker, pull, Edge, RPC and PostgreSQL",
+  "real_catalog_authorizations": 0,
+  "result": "PASS",
+  "own_project_removed": true
+}
