@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import pg from "pg";
 import { classDeltaDigest, prepareClassDelta } from "./prepare-sanitario-class-delta-v2.mjs";
+import { BASELINE_PATH as CLOSURE_BASELINE_PATH, prepareClosureCandidates, prepareClosureDelta, prepareClosureBootstrap, CLOSURE_DELTA_KIND } from "./prepare-sanitario-closure-v2.mjs";
 import {
   CANONICAL_ARTIFACT_VERSION,
   assertStableIdentity,
@@ -891,7 +892,9 @@ export async function buildPlan(client, data, { lockRows = false, incremental = 
         existing = found[0] ?? null;
         reason = identityReason(publisher, row, found) ?? "";
         if (!reason) {
-          if (incremental && ["source_rows", "product_rows", "protocol_rows"].includes(publisher.collection)) {
+          const newClosureSource = incremental?.delta_kind === "closure_eligible_20261022" && publisher.collection === "source_rows" &&
+            !incremental.baseline.source_rows.some(s => s.id === canonical.id);
+          if (incremental && !newClosureSource && ["source_rows", "product_rows", "protocol_rows"].includes(publisher.collection)) {
             assert(existing, "INCREMENTAL_REFERENCE_MISSING");
             row = existing;
             action = "skip";
@@ -1050,31 +1053,127 @@ async function applyImport(client) {
 }
 
 // Private engine: all production calls must pass through the authorized entrypoint.
-async function applyTransaction(client, data, { incremental = null } = {}) {
+async function applyTransaction(client, data, { incremental = null, bootstrap = null } = {}) {
   await client.query("begin");
   try {
     await client.query("set local lock_timeout = '5s'");
     await client.query("set local statement_timeout = '60s'");
     await client.query("select pg_advisory_xact_lock(hashtext($1))", [IMPORT_LOCK_KEY]);
+    if (bootstrap) {
+      const replay = await bootstrapReplay(client, bootstrap);
+      if (replay) {
+        await captureIncrementalProtectedState(client, incremental);
+        await client.query("commit");
+        return { bootstrap: replay, replay: true };
+      }
+    }
     if (incremental) {
       // Same order as curatorial decisions: protocols/items before technical evidence.
       await client.query("select id from public.sanitario_protocolos_v2 where id=any($1::uuid[]) order by id for update",
-        [data.protocol_rows.map(p => p.id)]);
+        [[...new Set([...data.protocol_rows.map(p => p.id), ...(bootstrap?.groups.map(g => g.protocol_id) ?? [])])]]);
       await client.query("select id from public.sanitario_protocolo_itens_versions_v2 where id=any($1::uuid[]) order by id for update",
-        [[...data.protocol_item_rows.map(i => i.id), ...incremental.baseline.predecessors.map(i => i.id)]]);
+        [[...new Set([...data.protocol_item_rows.map(i => i.id), ...incremental.baseline.predecessors.map(i => i.id),
+          ...(bootstrap?.groups.flatMap(g => g.item_versions.map(i => i.id)) ?? [])])]]);
     }
     const preserved = incremental ? await captureIncrementalProtectedState(client, incremental) : null;
     const plan = await buildPlan(client, data, { lockRows: true, incremental });
     assertPublishablePlan(plan);
     for (const operation of plan) await writeOperation(client, operation);
     assertConvergedPlan(await buildPlan(client, data, { lockRows: true, incremental }));
+    const receipt = bootstrap ? await bootstrapInitialCatalog(client, bootstrap, incremental.import_gate.authorization_reference) : null;
     if (incremental) assert(!isDifferent(preserved, await captureIncrementalProtectedState(client, incremental)), "INCREMENTAL_PROTECTED_STATE_CHANGED");
     await client.query("commit");
-    return summarize(plan);
+    return { ...summarize(plan), ...(receipt ? { bootstrap: receipt } : {}) };
   } catch (error) {
     await client.query("rollback");
     throw error;
   }
+}
+
+// Deployment bootstrap, not an interactive curatorial decision. Only the gated DB-owner
+// publisher reaches this function. It has no public RPC, session spoof or new grants.
+async function bootstrapCatalogState(client, plan) {
+  const groups = [];
+  for (const group of plan.groups) groups.push((await client.query(
+    "select public.internal_sanitario_review_content_v2($1,$2) as content",
+    [group.protocol_id, group.item_versions.map(i => i.id)])).rows[0].content);
+  return groups;
+}
+
+async function bootstrapReplay(client, plan) {
+  const audit = (await client.query("select * from public.app_admin_audit_events where id=$1", [plan.request_id])).rows[0];
+  if (!audit) return null;
+  assert(audit.action === "SANITARY_CATALOG_BOOTSTRAP_V2" && !isDifferent(audit.metadata.plan, plan), "BOOTSTRAP_REQUEST_CONFLICT");
+  assert(!isDifferent(await bootstrapCatalogState(client, plan), audit.state_after.catalog_after), "BOOTSTRAP_REPLAY_CONTENT_CONFLICT");
+  return audit.state_after;
+}
+
+async function bootstrapInitialCatalog(client, plan, authorizationReference) {
+  const executor = (await client.query("select current_user as role, session_user as session_role")).rows[0];
+  assert(["postgres", "supabase_admin"].includes(executor.role), "BOOTSTRAP_DATABASE_OWNER_REQUIRED");
+  const admins = (await client.query("select user_id from public.app_superadmins order by user_id for share")).rows;
+  assert(admins.length === 1, "BOOTSTRAP_SINGLE_ADMIN_REQUIRED");
+  const principal = admins[0].user_id;
+  assert(!(await client.query("select id from public.app_admin_audit_events where action='SANITARY_CATALOG_BOOTSTRAP_V2'")).rows.length,
+    "INITIAL_BOOTSTRAP_ALREADY_EXISTS");
+  const families = (await client.query("select family_code,status,approval_status from public.sanitario_protocolos_v2 where deleted_at is null and scope='global'")).rows;
+  const preservedFamilies = ["brucelose_b19", "controle_parasitario_recria_5_7_9", "vermifugacao_pre_desmama", "vermifugacao_pre_confinamento_pasto_vedado", "matrizes_pre_parto"];
+  assert(preservedFamilies.every(f => families.some(p => p.family_code === f && p.status === "active" && p.approval_status === "approved")) &&
+    families.some(p => p.family_code === "febre_aftosa" && p.status === "retired"), "BOOTSTRAP_INITIAL_BASELINE_REQUIRED");
+  await client.query("select id from public.sanitario_protocolos_v2 where id=any($1::uuid[]) order by id for update", [plan.groups.map(g => g.protocol_id)]);
+  await client.query("select id from public.sanitario_protocolo_itens_versions_v2 where id=any($1::uuid[]) order by id for update", [plan.groups.flatMap(g => g.item_versions.map(i => i.id))]);
+  let contents = await bootstrapCatalogState(client, plan);
+  for (const [table, field] of [["sanitario_fontes_tecnicas_v2", "sources"], ["sanitario_fonte_cobertura_campos_v2", "coverage"],
+    ["sanitario_produtos_v2", "products"], ["sanitario_product_classes_v2", "classes"]]) {
+    await client.query(`select id from public.${table} where id=any($1::uuid[]) order by id for share`,
+      [[...new Set(contents.flatMap(c => c[field].map(r => r.id)))]]);
+  }
+  contents = await bootstrapCatalogState(client, plan);
+  const at = (await client.query("select transaction_timestamp() as at")).rows[0].at.toISOString();
+  const reference = `sanitary-bootstrap-v2:${plan.request_id}`;
+  const groups = [];
+  for (let n = 0; n < plan.groups.length; n++) {
+    const group = plan.groups[n], content = contents[n];
+    assert(content.protocol.scope === "global" && !content.protocol.fazenda_id && content.protocol.family_code === group.family &&
+      content.protocol.version === group.expected_version && content.protocol.status === "draft" && content.protocol.approval_status === "draft", "BOOTSTRAP_PROTOCOL_CAS_CONFLICT");
+    assert(!isDifferent(content.items.map(i => ({ id: i.id, version: i.version, logical_item_key: i.logical_item_key })).sort((a,b) => a.id.localeCompare(b.id)), group.item_versions), "BOOTSTRAP_ITEM_CAS_CONFLICT");
+    const digest = (await client.query("select encode(extensions.digest($1::jsonb::text,'sha256'),'hex') as digest", [JSON.stringify(content)])).rows[0].digest;
+    assert(!group.expected_content_digest || group.expected_content_digest === digest, "BOOTSTRAP_CONTENT_DIGEST_CONFLICT");
+    const mappings = (await client.query("select public.internal_sanitario_review_fields_v2($1,$2,$3,$4) as fields", [content, principal, at, reference])).rows[0].fields;
+    for (const item of content.items) {
+      const auto = item.snapshot_template.metadata.catalog_review_scope !== "manual_planning";
+      const refs = mappings[item.id];
+      for (const [field, entries] of Object.entries(refs)) for (const ref of entries) {
+        // Do not claim that a person reviewed this field. Preserve technical coverage
+        // and record the administrative deployment provenance under its own name.
+        delete ref.metadata?.catalogFieldReview;
+        ref.metadata = { ...ref.metadata, catalogBootstrap: { version: plan.version, reference, executedAt: at,
+          administratorPrincipalId: principal, protocolId: group.protocol_id, itemId: item.id, itemVersion: item.version, field } };
+      }
+      const metadata = { ...item.snapshot_template.metadata, proposal_only: false, agenda_allowed: auto, approved_for_catalog: true,
+        curationStatus: "approved_for_catalog", automationStatus: auto ? "agenda_allowed" : "manual_only",
+        approval_basis: "administrative_initial_bootstrap", catalog_bootstrap_reference: reference,
+        catalog_bootstrap_version: plan.version, bootstrap_content_digest: digest };
+      const result = await client.query(`update public.sanitario_protocolo_itens_versions_v2 set status='active',allows_agenda_auto=$2,
+        source_refs_by_field=$3,snapshot_template=jsonb_set(snapshot_template,'{metadata}',$4::jsonb)
+        where id=$1 and version=$5 and status='draft' and deleted_at is null`, [item.id, auto, JSON.stringify(refs), JSON.stringify(metadata), item.version]);
+      assert(result.rowCount === 1, "BOOTSTRAP_ITEM_CAS_CONFLICT");
+    }
+    const auto = content.items.some(i => i.snapshot_template.metadata.catalog_review_scope !== "manual_planning");
+    await client.query(`update public.sanitario_protocolos_v2 set status='active',approval_status='approved',approved_by=null,approved_at=$2,
+      metadata=metadata||$3::jsonb where id=$1`, [group.protocol_id, at, JSON.stringify({ agenda_allowed: auto, approved_for_catalog: true,
+      curationStatus: "approved_for_catalog", automationStatus: auto ? "agenda_allowed" : "manual_only",
+      approval_basis: "administrative_initial_bootstrap", catalog_bootstrap_reference: reference, catalog_bootstrap_version: plan.version })]);
+    groups.push({ family: group.family, protocol_id: group.protocol_id, content_digest: digest, item_versions: group.item_versions });
+  }
+  const receipt = { bootstrap_reference: reference, bootstrap_version: plan.version, executed_at: at, interactive_review: false,
+    administrator_principal_id: principal, database_executor: executor, groups, catalog_after: await bootstrapCatalogState(client, plan) };
+  await client.query(`insert into public.app_admin_audit_events(id,actor_user_id,action,target_type,target_id,state_before,state_after,metadata)
+    values($1,$2,'SANITARY_CATALOG_BOOTSTRAP_V2','sanitario_global_catalog',$3,$4,$5,$6)`,
+  [plan.request_id, principal, plan.version, JSON.stringify({ groups: contents }), JSON.stringify(receipt),
+    JSON.stringify({ plan, authorization_reference: authorizationReference, source: "versioned_initial_deployment",
+      actor_semantics: "sole_administrator_onboarding_principal", interactive_review: false })]);
+  return receipt;
 }
 
 function validateIncrementalPayload(payload) {
@@ -1086,6 +1185,12 @@ function validateIncrementalPayload(payload) {
       "INCREMENTAL_INPUT_CHANGED");
   }
   const inputJson = key => JSON.parse(readFileSync(payload.inputs[key].path, "utf8"));
+  if (payload.delta_kind === CLOSURE_DELTA_KIND) {
+    const prepared = prepareClosureDelta(inputJson("baseline").catalog, inputJson("candidates"), inputJson("preservation"), payload.inputs);
+    assert(prepared.content_sha256 === payload.content_sha256 && prepared.project_ref === payload.project_ref, "INCREMENTAL_PREPARATION_MISMATCH");
+    return validateCanonicalTechnicalContract(payload).data;
+  }
+  assert(payload.delta_kind === undefined, "INCREMENTAL_UNKNOWN_DELTA_KIND");
   const prepared = prepareClassDelta(inputJson("canonical"), inputJson("previews"), inputJson("baseline"), inputJson("technical"), payload.inputs);
   assert(prepared.content_sha256 === payload.content_sha256, "INCREMENTAL_PREPARATION_MISMATCH");
   assert(payload.project_ref === prepared.project_ref, "INCREMENTAL_PROJECT_SCOPE_MISMATCH");
@@ -1120,8 +1225,17 @@ function validateIncrementalPayload(payload) {
 }
 
 async function reviewedDeltaReplay(client, publisher, existing, row) {
-  if (existing.status !== "active" || !existing.allows_agenda_auto) return false;
+  const auto = row.snapshot_template?.metadata?.catalog_review_scope !== "manual_planning";
+  if (existing.status !== "active" || existing.allows_agenda_auto !== auto) return false;
   const meta = existing.snapshot_template?.metadata ?? {};
+  const bootstrapId = /^sanitary-bootstrap-v2:([a-f0-9-]{36})$/.exec(meta.catalog_bootstrap_reference ?? "")?.[1];
+  if (bootstrapId) {
+    const audit = (await client.query("select * from public.app_admin_audit_events where id=$1 and action='SANITARY_CATALOG_BOOTSTRAP_V2'", [bootstrapId])).rows[0];
+    const before = audit?.state_before?.groups?.flatMap(g => g.items).find(i => i.id === row.id);
+    const after = audit?.state_after?.catalog_after?.flatMap(g => g.items).find(i => i.id === row.id);
+    const expected = after && Object.fromEntries(Object.keys(row).map(k => [k, after[k]]));
+    return Boolean(before && expected && !compareRow(publisher, before, row) && !compareRow(publisher, existing, expected));
+  }
   const id = /^sanitary-v2:([a-f0-9-]{36})$/.exec(meta.catalog_decision_reference ?? "")?.[1];
   if (!id) return false;
   const audit = (await client.query("select * from public.app_admin_audit_events where id=$1 and action='SANITARY_RULE_DECISION_V2'", [id])).rows[0];
@@ -1130,9 +1244,9 @@ async function reviewedDeltaReplay(client, publisher, existing, row) {
   if (!before || compareRow(publisher, before, row) || receipt?.result !== "approved" || receipt.actor_id !== audit.actor_user_id ||
     receipt.reviewed_content_digest !== meta.reviewed_content_digest) return false;
   const expected = structuredClone(row);
-  expected.status = "active"; expected.allows_agenda_auto = true;
-  expected.snapshot_template.metadata = { ...row.snapshot_template.metadata, proposal_only: false, agenda_allowed: true,
-    approved_for_catalog: true, curationStatus: "approved_for_catalog", automationStatus: "agenda_allowed",
+  expected.status = "active"; expected.allows_agenda_auto = auto;
+  expected.snapshot_template.metadata = { ...row.snapshot_template.metadata, proposal_only: false, agenda_allowed: auto,
+    approved_for_catalog: true, curationStatus: "approved_for_catalog", automationStatus: auto ? "agenda_allowed" : "manual_only",
     catalog_decision_reference: meta.catalog_decision_reference, reviewed_content_digest: meta.reviewed_content_digest };
   expected.source_refs_by_field = Object.fromEntries(Object.entries(row.source_refs_by_field).map(([field, refs]) => [field, refs.map(r => ({
     source_ref: r.source_ref, id: r.id, kind: r.kind, scope: "global", title: r.title, strength: r.strength,
@@ -1154,12 +1268,26 @@ async function assertIncrementalBaseline(client, packet, operations, lockRows) {
       if (collection === "product_class_rows" && !compareRow(publisher, op.existing, op.row)) continue;
       if (noWrites && collection === "protocol_rows" && op.existing.status === "active" &&
         op.existing.approval_status === "approved" && operations.some(o => o.collection === "protocol_item_rows" && o.existing?.protocol_id === before.id && o.existing.status === "active")) {
+        const auto = operations.some(o => o.collection === "protocol_item_rows" && o.existing?.protocol_id === before.id && o.existing.allows_agenda_auto);
         expected.status = "active"; expected.approval_status = "approved";
-        expected.metadata = { ...expected.metadata, agenda_allowed: true, approved_for_catalog: true,
-          curationStatus: "approved_for_catalog", automationStatus: "agenda_allowed" };
+        expected.metadata = { ...expected.metadata, agenda_allowed: auto, approved_for_catalog: true,
+          curationStatus: "approved_for_catalog", automationStatus: auto ? "agenda_allowed" : "manual_only" };
+        const reference = op.existing.metadata?.catalog_bootstrap_reference;
+        if (reference) {
+          const audit = (await client.query("select state_after from public.app_admin_audit_events where id=$1 and action='SANITARY_CATALOG_BOOTSTRAP_V2'", [reference.replace("sanitary-bootstrap-v2:", "")])).rows[0];
+          const after = audit?.state_after?.catalog_after?.find(g => g.protocol.id === before.id)?.protocol;
+          assert(after && !compareRow(publisher, op.existing, Object.fromEntries(Object.keys(expected).map(k => [k, after[k]]))), "BOOTSTRAP_PROTOCOL_REPLAY_CONFLICT");
+          expected.metadata = after.metadata;
+        }
       }
       assert(!compareRow(publisher, op.existing, expected), `INCREMENTAL_BASELINE_CONFLICT:${collection}:${before.id}`);
     }
+  }
+  // New logical variants must start at v1 without an independently published competing identity.
+  for (const next of packet.payload.protocol_item_rows.filter(i => !i.snapshot_template.metadata.supersedes)) {
+    assert(packet.delta_kind === "closure_eligible_20261022" && next.version === 1, "INCREMENTAL_PREDECESSOR_REQUIRED");
+    const competing = (await client.query("select id from public.sanitario_protocolo_itens_versions_v2 where protocol_id=$1 and logical_item_key=$2 and id<>$3", [next.protocol_id, next.logical_item_key, next.id])).rows;
+    assert(!competing.length, "INCREMENTAL_NEW_LOGICAL_KEY_CONFLICT");
   }
   for (const before of packet.baseline.predecessors) {
     const actual = (await client.query(`select to_jsonb(t) as row from public.sanitario_protocolo_itens_versions_v2 t where id=$1${lockRows ? " for update" : ""}`, [before.id])).rows[0]?.row;
@@ -1188,12 +1316,18 @@ async function captureIncrementalProtectedState(client, packet) {
 async function incrementalMain(args) {
   const index = args.indexOf("--incremental"), file = args[index + 1];
   assert(file && !file.startsWith("--"), usage());
-  const mode = parseMode(args.filter((_, n) => n !== index && n !== index + 1));
+  const bootstrapIndex = args.indexOf("--bootstrap-initial"), bootstrapFile = bootstrapIndex >= 0 ? args[bootstrapIndex + 1] : null;
+  assert(bootstrapIndex < 0 || bootstrapFile && !bootstrapFile.startsWith("--"), "BOOTSTRAP_PLAN_REQUIRED");
+  const mode = parseMode(args.filter((_, n) => n !== index && n !== index + 1 && (bootstrapIndex < 0 || n !== bootstrapIndex && n !== bootstrapIndex + 1)));
   const payload = JSON.parse(readFileSync(file, "utf8"));
   const data = validateIncrementalPayload(payload);
+  const bootstrap = bootstrapFile ? JSON.parse(readFileSync(bootstrapFile, "utf8")) : null;
+  if (bootstrap) assert(!isDifferent(bootstrap, prepareClosureBootstrap(payload,
+    JSON.parse(readFileSync(payload.inputs.baseline.path, "utf8")).catalog, bootstrap.request_id)), "BOOTSTRAP_PLAN_CHANGED");
   if (mode === "validate") {
     console.log(JSON.stringify({ incremental: true, content_sha256: payload.content_sha256,
-      protocol_items: 5, coverage: 8, classes: 2, product_links: 2, read_only_parent_collections: 3, approved: false }));
+      protocol_items: data.protocol_item_rows.length, coverage: data.coverage_rows.length, classes: data.product_class_rows.length,
+      product_links: data.product_source_rows.length, bootstrap: bootstrap?.version ?? null, approved: false }));
     return;
   }
   if (mode === "apply") {
@@ -1210,7 +1344,7 @@ async function incrementalMain(args) {
     console.log(`database host=${target.host} port=${target.port} database=${target.database} local=${target.local}`);
     console.log(JSON.stringify({ content_sha256: payload.content_sha256, authorization_reference: payload.import_gate.authorization_reference }));
     printPlan(`incremental-${mode}`, plan);
-    if (mode === "apply") console.log(JSON.stringify(await applyTransaction(client, data, { incremental: payload })));
+    if (mode === "apply") console.log(JSON.stringify(await applyTransaction(client, data, { incremental: payload, bootstrap })));
   } finally { await client.end(); }
 }
 async function main() {
@@ -1225,7 +1359,12 @@ async function main() {
   if (reviewPath) assert(payload.review_only === true && payload.import_gate?.import_real_authorized === false,
     "REVIEW_ONLY_ARTIFACT_REQUIRED");
   if (mode === "apply") assertApplyGate(payload);
-  const data = validateCanonicalPayload(payload);
+  const closureReview = Boolean(reviewPath) && payload.artifact === "sanitario_closure_review_candidates";
+  if (closureReview) {
+    const expected = prepareClosureCandidates(JSON.parse(readFileSync(CLOSURE_BASELINE_PATH, "utf8")).catalog, payload.identities);
+    assert(!isDifferent(payload, expected), "CLOSURE_REVIEW_PREPARATION_MISMATCH");
+  }
+  const data = closureReview ? validateCanonicalTechnicalContract(payload).data : validateCanonicalPayload(payload);
 
   if (mode === "validate") {
     console.log("12G validate OK");

@@ -1,0 +1,2712 @@
+{
+  "artifact": "sanitario_protocols_v2_incremental_delta",
+  "artifact_version": "13.0.0-canonical-contract",
+  "identity_model": "VERSIONED_EXPLICIT_UUID",
+  "delta_kind": "closure_eligible_20261022",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "execute_import": false,
+  "approved": false,
+  "import_gate": {
+    "import_real_authorized": false,
+    "authorization_reference": null
+  },
+  "inputs": {
+    "baseline": {
+      "path": "docs/review/evidence/SANITARIO_V2_CLOSURE_BASELINE_20261022.json",
+      "sha256": "91e956fc92034874a450cb0ee0e9db8713e9f4040cc2c2f19ab29cb9457a76ac"
+    },
+    "candidates": {
+      "path": "docs/review/evidence/SANITARIO_V2_CLOSURE_CANDIDATES_20261022.json",
+      "sha256": "fdc485f64e4eb9b5923686fb425df0ce4833ce99b51900bd5bb0a1499e5a0e77"
+    },
+    "preservation": {
+      "path": "docs/review/evidence/SANITARIO_V2_R04B2_CANONICAL_DELTA_20261021.json",
+      "sha256": "7dcca6a5d73facf40df1867de7950f9badaa39b1a96bee6eb5b4ac046c7552a5"
+    },
+    "publisher": {
+      "path": "scripts/codex/import-sanitario-protocols-v2.mjs",
+      "sha256": "2daa9cde20bc20203bbb4c73f76c43905a8f1755e3883f7671ad3304eae05d57"
+    },
+    "preparer": {
+      "path": "scripts/codex/prepare-sanitario-closure-v2.mjs",
+      "sha256": "f11cf9adfcc81a5a8118287e308415bb9f402346f44c9d22302642b900daefda"
+    },
+    "contract": {
+      "path": "scripts/codex/sanitario-v2-contract.mjs",
+      "sha256": "e1f8f332587362899c93670c4070c19c5b83462c52df3eafb2317a4dc634208d"
+    },
+    "migration": {
+      "path": "supabase/migrations/20261022230000_sanitario_manual_catalog_review_v2.sql",
+      "sha256": "e04bb97b90cb55734afa0f1be4e661b44858794b155bd84a387bbdee7d851382"
+    }
+  },
+  "payload": {
+    "source_rows": [
+      {
+        "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "title": "Poliguard — resumo da bula oficial MSD",
+        "url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+        "issuer": "MSD Saúde Animal",
+        "kind": "bula",
+        "scope": "global",
+        "strength": "forte",
+        "evidence_status": "SIM_BULA",
+        "accessed_at": "2026-10-22",
+        "jurisdiction_country": "BR",
+        "limitations": [
+          "bovine_label_only",
+          "not_product_registration_verification"
+        ]
+      },
+      {
+        "id": "39ede6d7-969b-4802-b570-915532402008",
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+        "url": "https://br.virbac.com/products/biologicos/bovigen-v4j5",
+        "issuer": "Virbac",
+        "kind": "bula",
+        "scope": "global",
+        "strength": "forte",
+        "evidence_status": "SIM_BULA",
+        "accessed_at": "2026-10-22",
+        "jurisdiction_country": "BR",
+        "limitations": [
+          "bovine_label_only",
+          "not_product_registration_verification"
+        ]
+      },
+      {
+        "id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "url": "https://br.virbac.com/products/biologicos/bovigen-repro-total-se",
+        "kind": "bibliografia",
+        "scope": "global",
+        "title": "Bovigen® Repro Total SE",
+        "issuer": "Virbac Brasil",
+        "version": null,
+        "metadata": {
+          "document_type": "manufacturer_product_page",
+          "historical_registration": {
+            "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+            "issuer": "MAPA",
+            "number": "9.776/2013",
+            "section": "BOVIGEN REPRO TOTAL SE (p. 26)",
+            "accessed_at": "2026-10-14",
+            "document_date": "2014-04-15",
+            "current_validity": "unknown"
+          }
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Fonte oficial do fabricante; versão integral vigente e confirmação regulatória atual pendentes. Registro histórico MAPA localizado, sem prova de vigência em 2026.",
+          "Não autoriza carência zero, bubalinos ou segurança reprodutiva não expressa."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "2bfe30a5-8c7e-4949-8133-98380a96d53d",
+        "url": "https://goias.gov.br/agrodefesa/perguntas-e-respostas-defesa-sanitaria-animal/",
+        "kind": "guideline_apoio",
+        "scope": "global",
+        "title": "Perguntas e respostas — Defesa Sanitária Animal: raiva dos herbívoros",
+        "issuer": "Agência Goiana de Defesa Agropecuária — Agrodefesa",
+        "version": "página atualizada em 26/06/2026",
+        "metadata": {
+          "document_type": "state_official_faq",
+          "updated_at_source": "2026-06-26"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-09-24",
+        "limitations": [
+          "Página institucional informa que a vacinação antirrábica não é obrigatória e é recomendada como prevenção em Goiás.",
+          "Não substitui eventual ato superveniente, alerta de foco/perifoco ou determinação específica do serviço veterinário oficial.",
+          "Não substitui a bula do produto executado."
+        ],
+        "published_at": "2026-06-26",
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": "GO",
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/qualidade-dos-servicos-veterinarios/arquivos/pncrh/in_05_2002_alt__n_41_2020_norma_tecnica_controle_rh.pdf",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+        "issuer": "Ministério da Agricultura, Pecuária e Abastecimento — MAPA",
+        "version": "alterada pela IN 41/2020",
+        "metadata": {
+          "document_type": "consolidated_norm_pdf",
+          "document_identifier": "IN 5/2002; Processo 21000.009298/2001-82",
+          "consolidated_amendment_at": "2020-06-19"
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "O coverage deve ser vinculado aos artigos aplicáveis.",
+          "A norma não substitui a bula do produto executado."
+        ],
+        "published_at": "2002-03-01",
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "ce25d79d-2843-45a8-a872-233eecc6f6f7",
+        "url": "https://www.sinj.df.gov.br/sinj/Norma/aad0c985c1f8436096680bbb41dcf7a7/Portaria_452_27_11_2025.html",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Portaria nº 452, de 27 de novembro de 2025 — vacinação contra raiva dos herbívoros no Distrito Federal",
+        "issuer": "Secretaria de Estado da Agricultura, Abastecimento e Desenvolvimento Rural do Distrito Federal — SEAGRI-DF",
+        "version": "vigente; revoga a Portaria nº 59/2024",
+        "metadata": {
+          "norm_number": "Portaria SEAGRI-DF 452/2025",
+          "revoked_norm": "Portaria SEAGRI-DF 59/2024",
+          "document_type": "state_official_norm_html",
+          "minimum_age_months": 3,
+          "mandatory_radius_km": 12
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Aplicação restrita ao Distrito Federal e às propriedades classificadas como foco ou perifoco pelo OESA-DF.",
+          "A delimitação depende de ocorrência confirmada, georreferenciamento, cadastro e alerta oficial; não pode ser inferida apenas pelo endereço da fazenda.",
+          "Não substitui a bula do produto executado nem autoriza cálculo de carência sem produto real."
+        ],
+        "published_at": "2025-12-01",
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": "DF",
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "da121227-8e8a-4a18-b290-0a0528bb5762",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/raiva-dos-herbivoros-e-eeb/vacina-antirrabica",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Vacina Antirrábica",
+        "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+        "version": null,
+        "metadata": {
+          "document_type": "institutional_topic_page",
+          "updated_at_source": "2023-03-28"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_RAIVA_VACINA",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Página contextual; não substitui bula, ato normativo ou overlay regional.",
+          "Não prova produto executado nem carência."
+        ],
+        "published_at": "2022-11-03",
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Resumo da Bula — POLIGUARD",
+        "issuer": "MSD Saúde Animal Brasil",
+        "version": null,
+        "metadata": {
+          "document_type": "manufacturer_bula_summary_page",
+          "modified_at_source": "2024-10-16",
+          "historical_registration": {
+            "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+            "issuer": "MAPA",
+            "number": "9.299/2007",
+            "section": "POLIGUARD (p. 137)",
+            "accessed_at": "2026-10-14",
+            "document_date": "2014-04-15",
+            "current_validity": "unknown"
+          }
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_BULA_POLIGUARD",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Fonte oficial do fabricante; versão integral vigente e confirmação regulatória atual pendentes. Registro histórico MAPA localizado, sem prova de vigência em 2026.",
+          "Não autoriza carência zero, bubalinos ou segurança reprodutiva não expressa."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      }
+    ],
+    "coverage_rows": [
+      {
+        "id": "0fea7cd6-3749-45c3-a14e-9ba3000fe4dd",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "field_key": "eligibility_rule",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "29b0713b-4a4f-45c5-b84a-47960670da36",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "field_key": "operational_window",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "cade4476-81ff-429c-97d8-751bd9c48ae7",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "field_key": "product_requirement",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "0ade968a-eb7c-460a-b529-2dc4369e7ace",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "field_key": "species_authorization",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "67389c7b-8db2-49af-a344-f898ef4b781e",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "field_key": "eligibility_rule",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "7c51c5dc-5990-4efe-a818-d840376828d5",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "field_key": "operational_window",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "100bcbf2-f64e-4f16-8ec9-d7ea512d87db",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "field_key": "product_requirement",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "d2799bde-4d9b-470f-9b3f-c4421dfddc9d",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "field_key": "species_authorization",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "443b7717-3ba2-4d19-90fb-78c9f499f754",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "field_key": "eligibility_rule",
+        "coverage_status": "covers",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria."
+      },
+      {
+        "id": "36991be4-14c6-48c3-8e16-2d968d0d7765",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "field_key": "operational_window",
+        "coverage_status": "covers",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria."
+      },
+      {
+        "id": "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "field_key": "product_requirement",
+        "coverage_status": "covers",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria."
+      },
+      {
+        "id": "27e04dae-65fe-4d03-977b-a4a95354db1e",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "field_key": "species_authorization",
+        "coverage_status": "covers",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria."
+      }
+    ],
+    "product_rows": [],
+    "product_authorization_rows": [],
+    "product_source_rows": [],
+    "dose_rule_rows": [],
+    "withdrawal_rule_rows": [],
+    "withdrawal_source_rows": [],
+    "product_class_rows": [
+      {
+        "id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+        "name": "Vacina contra raiva dos herbivoros",
+        "scope": "global",
+        "metadata": {
+          "taxonomy_kind": "technical_product_class",
+          "can_validate_execution": false,
+          "requires_executed_product_for_withdrawal": true
+        },
+        "class_key": "vacina_raiva_herbivoros",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "limitations": [
+          "requires_real_product",
+          "requires_regional_risk_context",
+          "product_specific_schedule",
+          "product_specific_species_authorization",
+          "withdrawal_by_executed_product",
+          "do_not_generalize_product_label"
+        ],
+        "product_type": "vacina",
+        "species_scope": [
+          "bovino",
+          "bubalino"
+        ],
+        "curation_status": "needs_review",
+        "product_subtype": null,
+        "target_condition": "raiva_dos_herbivoros",
+        "automation_status": "manual_only"
+      },
+      {
+        "id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+        "name": "Vacinas utilizadas no contexto funcional IBR/BVD",
+        "scope": "global",
+        "metadata": {
+          "taxonomy_kind": "restricted_functional_class",
+          "functional_scope": "ibr_bvd",
+          "can_validate_execution": false,
+          "products_are_not_equivalent": true,
+          "requires_executed_product_for_withdrawal": true
+        },
+        "class_key": "vacina_ibr_bvd",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "limitations": [
+          "requires_real_product",
+          "product_specific_composition",
+          "product_specific_schedule",
+          "product_specific_reproductive_restrictions",
+          "withdrawal_by_executed_product",
+          "do_not_generalize_product_label"
+        ],
+        "product_type": "vacina",
+        "species_scope": [
+          "bovino"
+        ],
+        "curation_status": "approved_for_catalog",
+        "product_subtype": null,
+        "target_condition": "ibr_bvd",
+        "automation_status": "manual_only"
+      }
+    ],
+    "product_class_group_rows": [],
+    "product_class_group_member_rows": [],
+    "product_class_default_rule_rows": [],
+    "protocol_rows": [
+      {
+        "id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "name": "IBR/BVD",
+        "scope": "global",
+        "status": "draft",
+        "version": 1,
+        "metadata": {
+          "sourceGaps": [
+            "source_gap_product_withdrawal_snapshot",
+            "source_gap_bubalino"
+          ],
+          "agenda_allowed": false,
+          "curationStatus": "prepared_for_decision",
+          "automationStatus": "manual_only",
+          "approved_for_catalog": false
+        },
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "approved_at": null,
+        "approved_by": null,
+        "family_code": "ibr_bvd",
+        "legal_status": "recomendado_tecnico",
+        "species_scope": [
+          "bovino"
+        ],
+        "approval_status": "draft",
+        "jurisdiction_scope": {},
+        "source_refs_snapshot": [
+          {
+            "field": "eligibility",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "dose",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "route",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "recurrence",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "restrictions",
+            "source_ref": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE"
+          }
+        ],
+        "protocol_key": "ibr_bvd"
+      },
+      {
+        "id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "name": "Raiva dos herbivoros",
+        "scope": "global",
+        "status": "draft",
+        "version": 1,
+        "metadata": {
+          "sourceGaps": [
+            "requires_risk_area_overlay",
+            "requires_focus_or_perifocus_context",
+            "source_gap_product_withdrawal_snapshot"
+          ],
+          "restrictions": [
+            "regional_risk_context_required",
+            "no_agenda_auto",
+            "product_real_required_for_execution",
+            "withdrawal_requires_product_label"
+          ],
+          "agenda_allowed": false,
+          "curationStatus": "needs_review",
+          "overlay_policy": "Sem inferência automática por UF ou município. O produtor declara o contexto regional da fazenda; atos oficiais conhecidos prevalecem e a ausência de ato materializado não significa dispensa.",
+          "automationStatus": "manual_only",
+          "overlay_reviewed_at": "2026-09-24",
+          "approved_for_catalog": false,
+          "original_legal_status": "condicional_regional",
+          "overlay_model_version": "2026-2027-producer-declared",
+          "official_overlays_materialized": {
+            "DF": {
+              "status": "mandatory_focus_perifocus",
+              "activation": "official_alert_and_georeferenced_delimitation",
+              "review_due": "2027-01-15",
+              "source_ref": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA",
+              "valid_from": "2025-12-01",
+              "minimum_age_months": 3,
+              "perifocus_radius_km": 12
+            },
+            "GO": {
+              "status": "recommended_not_mandatory",
+              "activation": "manual_only_unless_supervening_sve_order",
+              "review_due": "2027-01-15",
+              "source_ref": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026",
+              "valid_as_of": "2026-06-26"
+            }
+          },
+          "producer_regional_recommendation": {
+            "scope": "fazenda",
+            "effect": "advisory_only",
+            "default": "unknown",
+            "allowed_values": [
+              "recommended",
+              "not_recommended",
+              "unknown"
+            ],
+            "may_create_event": false,
+            "may_suggest_agenda": true,
+            "source_note_allowed": true,
+            "valid_until_allowed": true,
+            "may_define_withdrawal": false,
+            "municipality_required": false,
+            "may_override_official_act": false,
+            "may_create_agenda_automatically": false,
+            "product_real_required_for_execution": true
+          }
+        },
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "approved_at": null,
+        "approved_by": null,
+        "family_code": "raiva_herbivoros",
+        "legal_status": "condicional",
+        "species_scope": [
+          "bovino",
+          "bubalino"
+        ],
+        "approval_status": "draft",
+        "jurisdiction_scope": {
+          "requires_regional_overlay": true
+        },
+        "source_refs_snapshot": [
+          {
+            "field": "eligibility",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "field": "dose",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "route",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "recurrence",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "restrictions",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "regional_overlay_df",
+            "source_ref": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA"
+          },
+          {
+            "field": "regional_overlay_go",
+            "source_ref": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026"
+          }
+        ],
+        "protocol_key": "raiva_herbivoros"
+      }
+    ],
+    "protocol_item_rows": [
+      {
+        "id": "4ea47c38-74ec-42d9-9555-6b5869f0e0da",
+        "status": "draft",
+        "version": 3,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_1"
+          }
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "category": "bezerro",
+          "maternal_age_conditions": {
+            "vaccinated": {
+              "min_months": 4,
+              "exclusive": true
+            },
+            "unvaccinated": {
+              "no_minimum_in_source": true
+            }
+          }
+        },
+        "logical_item_key": "ibr_bvd_primovac_dose1",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "poliguard",
+            "approval_blockers": [
+              "canonical_publisher_scope_extension",
+              "authenticated_preview_and_explicit_decision",
+              "class_review_required"
+            ],
+            "supersedes": {
+              "id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+              "version": 2,
+              "reason": "Proposta prospectiva; histórico preservado."
+            }
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "0fea7cd6-3749-45c3-a14e-9ba3000fe4dd"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "29b0713b-4a4f-45c5-b84a-47960670da36"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "cade4476-81ff-429c-97d8-751bd9c48ae7"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "0ade968a-eb7c-460a-b529-2dc4369e7ace"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "hybrid",
+          "anchor": "manual_context"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "ibr_bvd",
+        "class_key": "vacina_ibr_bvd"
+      },
+      {
+        "id": "2ec754f9-0260-4524-abee-ebdafb56c231",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_1"
+          }
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "category": "bezerro",
+          "maternal_age_conditions": {
+            "vaccinated": {
+              "min_months": 2
+            },
+            "unvaccinated": {
+              "min_days": 15
+            }
+          }
+        },
+        "logical_item_key": "ibr_bvd_v4j5_primovac_dose1",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "v4j5",
+            "approval_blockers": []
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "67389c7b-8db2-49af-a344-f898ef4b781e"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "7c51c5dc-5990-4efe-a818-d840376828d5"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "100bcbf2-f64e-4f16-8ec9-d7ea512d87db"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "d2799bde-4d9b-470f-9b3f-c4421dfddc9d"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "hybrid",
+          "anchor": "manual_context"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "ibr_bvd",
+        "class_key": "vacina_ibr_bvd"
+      },
+      {
+        "id": "6906d0bd-a882-4371-9c4b-4ec5d70c387b",
+        "status": "draft",
+        "version": 4,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_2"
+          },
+          "previous_logical_item_key": "ibr_bvd_primovac_dose1"
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "category": "bezerro",
+          "maternal_age_conditions": {
+            "vaccinated": {
+              "min_months": 4,
+              "exclusive": true
+            },
+            "unvaccinated": {
+              "no_minimum_in_source": true
+            }
+          },
+          "requires_previous_dose": "ibr_bvd_primovac_dose1"
+        },
+        "logical_item_key": "ibr_bvd_primovac_dose2",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "poliguard",
+            "approval_blockers": [
+              "canonical_publisher_scope_extension",
+              "authenticated_preview_and_explicit_decision",
+              "class_review_required"
+            ],
+            "supersedes": {
+              "id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+              "version": 3,
+              "reason": "Proposta prospectiva; histórico preservado."
+            }
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "0fea7cd6-3749-45c3-a14e-9ba3000fe4dd"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "29b0713b-4a4f-45c5-b84a-47960670da36"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "cade4476-81ff-429c-97d8-751bd9c48ae7"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "0ade968a-eb7c-460a-b529-2dc4369e7ace"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative",
+          "anchor": "previous_dose",
+          "max_offset_days": 30,
+          "min_offset_days": 21
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "ibr_bvd",
+        "class_key": "vacina_ibr_bvd"
+      },
+      {
+        "id": "afd1c6f6-6d21-4aa1-89b6-63fc22e66966",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_2"
+          },
+          "previous_logical_item_key": "ibr_bvd_v4j5_primovac_dose1"
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "category": "bezerro",
+          "maternal_age_conditions": {
+            "vaccinated": {
+              "min_months": 2
+            },
+            "unvaccinated": {
+              "min_days": 15
+            }
+          },
+          "requires_previous_dose": "ibr_bvd_v4j5_primovac_dose1"
+        },
+        "logical_item_key": "ibr_bvd_v4j5_primovac_dose2",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "v4j5",
+            "approval_blockers": []
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "67389c7b-8db2-49af-a344-f898ef4b781e"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "7c51c5dc-5990-4efe-a818-d840376828d5"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "100bcbf2-f64e-4f16-8ec9-d7ea512d87db"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "d2799bde-4d9b-470f-9b3f-c4421dfddc9d"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative",
+          "anchor": "previous_dose",
+          "max_offset_days": 30,
+          "min_offset_days": 21
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "ibr_bvd",
+        "class_key": "vacina_ibr_bvd"
+      },
+      {
+        "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+        "status": "draft",
+        "version": 2,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "booster_rule": {
+          "tolerance": {
+            "days": 0
+          },
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_1"
+          }
+        },
+        "product_class": "vacina_raiva_herbivoros",
+        "eligibility_rule": {
+          "species": [
+            "bovino",
+            "bubalino"
+          ],
+          "requires_risk_area_overlay": true,
+          "requires_regional_overlay": true
+        },
+        "logical_item_key": "raiva_primovac_dose1",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "manual_only",
+            "variant_key": "national_manual_rabies",
+            "approval_blockers": [],
+            "supersedes": {
+              "id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
+              "version": 1,
+              "reason": "Proposta prospectiva; histórico preservado."
+            },
+            "catalog_review_scope": "manual_planning"
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "species": "bubalino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "regional_overlay",
+          "anchor": "risk_area_definition",
+          "requires_regional_overlay": true
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "raiva_herbivoros",
+        "class_key": "vacina_raiva_herbivoros"
+      },
+      {
+        "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+        "status": "draft",
+        "version": 2,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "booster_rule": {
+          "anchor": "previous_dose",
+          "tolerance": {
+            "days": 0
+          },
+          "recurrenceRule": {
+            "kind": "booster_after_initial_dose"
+          },
+          "max_offset_days": 30,
+          "min_offset_days": 30,
+          "previous_logical_item_key": "raiva_primovac_dose1"
+        },
+        "product_class": "vacina_raiva_herbivoros",
+        "eligibility_rule": {
+          "species": [
+            "bovino",
+            "bubalino"
+          ],
+          "requires_previous_dose": "raiva_primovac_dose1",
+          "requires_risk_area_overlay": true,
+          "requires_regional_overlay": true
+        },
+        "logical_item_key": "raiva_primovac_reforco_30d",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "manual_only",
+            "variant_key": "national_manual_rabies",
+            "approval_blockers": [],
+            "supersedes": {
+              "id": "f62a7a12-0604-4539-8245-5564e4e3592e",
+              "version": 1,
+              "reason": "Proposta prospectiva; histórico preservado."
+            },
+            "catalog_review_scope": "manual_planning"
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "species": "bubalino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative_to_previous_dose",
+          "anchor": "previous_dose",
+          "max_offset_days": 30,
+          "min_offset_days": 30,
+          "target_offset_days": 30,
+          "previous_logical_item_key": "raiva_primovac_dose1"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "raiva_herbivoros",
+        "class_key": "vacina_raiva_herbivoros"
+      },
+      {
+        "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+        "status": "draft",
+        "version": 2,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "booster_rule": {
+          "tolerance": {
+            "days": 0
+          },
+          "recurrenceRule": {
+            "kind": "annual"
+          },
+          "previous_logical_item_key": "raiva_primovac_reforco_30d"
+        },
+        "product_class": "vacina_raiva_herbivoros",
+        "eligibility_rule": {
+          "species": [
+            "bovino",
+            "bubalino"
+          ],
+          "requires_risk_area_overlay": true,
+          "requires_regional_overlay": true
+        },
+        "logical_item_key": "raiva_reforco_anual_area_risco",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "manual_only",
+            "variant_key": "national_manual_rabies",
+            "approval_blockers": [],
+            "supersedes": {
+              "id": "e5430f23-2f84-4812-9caa-85bb6596304d",
+              "version": 1,
+              "reason": "Proposta prospectiva; histórico preservado."
+            },
+            "catalog_review_scope": "manual_planning"
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "species": "bubalino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "regional_overlay",
+          "anchor": "risk_area_definition",
+          "recurrence": "annual_if_risk_area"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "raiva_herbivoros",
+        "class_key": "vacina_raiva_herbivoros"
+      }
+    ],
+    "memberRejections": []
+  },
+  "baseline": {
+    "source_rows": [
+      {
+        "id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "url": "https://br.virbac.com/products/biologicos/bovigen-repro-total-se",
+        "kind": "bibliografia",
+        "scope": "global",
+        "title": "Bovigen® Repro Total SE",
+        "issuer": "Virbac Brasil",
+        "version": null,
+        "metadata": {
+          "document_type": "manufacturer_product_page",
+          "historical_registration": {
+            "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+            "issuer": "MAPA",
+            "number": "9.776/2013",
+            "section": "BOVIGEN REPRO TOTAL SE (p. 26)",
+            "accessed_at": "2026-10-14",
+            "document_date": "2014-04-15",
+            "current_validity": "unknown"
+          }
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Fonte oficial do fabricante; versão integral vigente e confirmação regulatória atual pendentes. Registro histórico MAPA localizado, sem prova de vigência em 2026.",
+          "Não autoriza carência zero, bubalinos ou segurança reprodutiva não expressa."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "2bfe30a5-8c7e-4949-8133-98380a96d53d",
+        "url": "https://goias.gov.br/agrodefesa/perguntas-e-respostas-defesa-sanitaria-animal/",
+        "kind": "guideline_apoio",
+        "scope": "global",
+        "title": "Perguntas e respostas — Defesa Sanitária Animal: raiva dos herbívoros",
+        "issuer": "Agência Goiana de Defesa Agropecuária — Agrodefesa",
+        "version": "página atualizada em 26/06/2026",
+        "metadata": {
+          "document_type": "state_official_faq",
+          "updated_at_source": "2026-06-26"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-09-24",
+        "limitations": [
+          "Página institucional informa que a vacinação antirrábica não é obrigatória e é recomendada como prevenção em Goiás.",
+          "Não substitui eventual ato superveniente, alerta de foco/perifoco ou determinação específica do serviço veterinário oficial.",
+          "Não substitui a bula do produto executado."
+        ],
+        "published_at": "2026-06-26",
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": "GO",
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/qualidade-dos-servicos-veterinarios/arquivos/pncrh/in_05_2002_alt__n_41_2020_norma_tecnica_controle_rh.pdf",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+        "issuer": "Ministério da Agricultura, Pecuária e Abastecimento — MAPA",
+        "version": "alterada pela IN 41/2020",
+        "metadata": {
+          "document_type": "consolidated_norm_pdf",
+          "document_identifier": "IN 5/2002; Processo 21000.009298/2001-82",
+          "consolidated_amendment_at": "2020-06-19"
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "O coverage deve ser vinculado aos artigos aplicáveis.",
+          "A norma não substitui a bula do produto executado."
+        ],
+        "published_at": "2002-03-01",
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "ce25d79d-2843-45a8-a872-233eecc6f6f7",
+        "url": "https://www.sinj.df.gov.br/sinj/Norma/aad0c985c1f8436096680bbb41dcf7a7/Portaria_452_27_11_2025.html",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Portaria nº 452, de 27 de novembro de 2025 — vacinação contra raiva dos herbívoros no Distrito Federal",
+        "issuer": "Secretaria de Estado da Agricultura, Abastecimento e Desenvolvimento Rural do Distrito Federal — SEAGRI-DF",
+        "version": "vigente; revoga a Portaria nº 59/2024",
+        "metadata": {
+          "norm_number": "Portaria SEAGRI-DF 452/2025",
+          "revoked_norm": "Portaria SEAGRI-DF 59/2024",
+          "document_type": "state_official_norm_html",
+          "minimum_age_months": 3,
+          "mandatory_radius_km": 12
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Aplicação restrita ao Distrito Federal e às propriedades classificadas como foco ou perifoco pelo OESA-DF.",
+          "A delimitação depende de ocorrência confirmada, georreferenciamento, cadastro e alerta oficial; não pode ser inferida apenas pelo endereço da fazenda.",
+          "Não substitui a bula do produto executado nem autoriza cálculo de carência sem produto real."
+        ],
+        "published_at": "2025-12-01",
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": "DF",
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "da121227-8e8a-4a18-b290-0a0528bb5762",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/raiva-dos-herbivoros-e-eeb/vacina-antirrabica",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Vacina Antirrábica",
+        "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+        "version": null,
+        "metadata": {
+          "document_type": "institutional_topic_page",
+          "updated_at_source": "2023-03-28"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_RAIVA_VACINA",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Página contextual; não substitui bula, ato normativo ou overlay regional.",
+          "Não prova produto executado nem carência."
+        ],
+        "published_at": "2022-11-03",
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Resumo da Bula — POLIGUARD",
+        "issuer": "MSD Saúde Animal Brasil",
+        "version": null,
+        "metadata": {
+          "document_type": "manufacturer_bula_summary_page",
+          "modified_at_source": "2024-10-16",
+          "historical_registration": {
+            "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+            "issuer": "MAPA",
+            "number": "9.299/2007",
+            "section": "POLIGUARD (p. 137)",
+            "accessed_at": "2026-10-14",
+            "document_date": "2014-04-15",
+            "current_validity": "unknown"
+          }
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_BULA_POLIGUARD",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Fonte oficial do fabricante; versão integral vigente e confirmação regulatória atual pendentes. Registro histórico MAPA localizado, sem prova de vigência em 2026.",
+          "Não autoriza carência zero, bubalinos ou segurança reprodutiva não expressa."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      }
+    ],
+    "product_rows": [],
+    "protocol_rows": [
+      {
+        "id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "name": "IBR/BVD",
+        "scope": "global",
+        "status": "draft",
+        "version": 1,
+        "metadata": {
+          "sourceGaps": [
+            "source_gap_product_withdrawal_snapshot",
+            "source_gap_bubalino"
+          ],
+          "agenda_allowed": false,
+          "curationStatus": "prepared_for_decision",
+          "automationStatus": "manual_only",
+          "approved_for_catalog": false
+        },
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "approved_at": null,
+        "approved_by": null,
+        "family_code": "ibr_bvd",
+        "legal_status": "recomendado_tecnico",
+        "species_scope": [
+          "bovino"
+        ],
+        "approval_status": "draft",
+        "jurisdiction_scope": {},
+        "source_refs_snapshot": [
+          {
+            "field": "eligibility",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "dose",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "route",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "recurrence",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "restrictions",
+            "source_ref": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE"
+          }
+        ],
+        "protocol_key": "ibr_bvd"
+      },
+      {
+        "id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "name": "Raiva dos herbivoros",
+        "scope": "global",
+        "status": "draft",
+        "version": 1,
+        "metadata": {
+          "sourceGaps": [
+            "requires_risk_area_overlay",
+            "requires_focus_or_perifocus_context",
+            "source_gap_product_withdrawal_snapshot"
+          ],
+          "restrictions": [
+            "regional_risk_context_required",
+            "no_agenda_auto",
+            "product_real_required_for_execution",
+            "withdrawal_requires_product_label"
+          ],
+          "agenda_allowed": false,
+          "curationStatus": "needs_review",
+          "overlay_policy": "Sem inferência automática por UF ou município. O produtor declara o contexto regional da fazenda; atos oficiais conhecidos prevalecem e a ausência de ato materializado não significa dispensa.",
+          "automationStatus": "manual_only",
+          "overlay_reviewed_at": "2026-09-24",
+          "approved_for_catalog": false,
+          "original_legal_status": "condicional_regional",
+          "overlay_model_version": "2026-2027-producer-declared",
+          "official_overlays_materialized": {
+            "DF": {
+              "status": "mandatory_focus_perifocus",
+              "activation": "official_alert_and_georeferenced_delimitation",
+              "review_due": "2027-01-15",
+              "source_ref": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA",
+              "valid_from": "2025-12-01",
+              "minimum_age_months": 3,
+              "perifocus_radius_km": 12
+            },
+            "GO": {
+              "status": "recommended_not_mandatory",
+              "activation": "manual_only_unless_supervening_sve_order",
+              "review_due": "2027-01-15",
+              "source_ref": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026",
+              "valid_as_of": "2026-06-26"
+            }
+          },
+          "producer_regional_recommendation": {
+            "scope": "fazenda",
+            "effect": "advisory_only",
+            "default": "unknown",
+            "allowed_values": [
+              "recommended",
+              "not_recommended",
+              "unknown"
+            ],
+            "may_create_event": false,
+            "may_suggest_agenda": true,
+            "source_note_allowed": true,
+            "valid_until_allowed": true,
+            "may_define_withdrawal": false,
+            "municipality_required": false,
+            "may_override_official_act": false,
+            "may_create_agenda_automatically": false,
+            "product_real_required_for_execution": true
+          }
+        },
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "approved_at": null,
+        "approved_by": null,
+        "family_code": "raiva_herbivoros",
+        "legal_status": "condicional",
+        "species_scope": [
+          "bovino",
+          "bubalino"
+        ],
+        "approval_status": "draft",
+        "jurisdiction_scope": {
+          "requires_regional_overlay": true
+        },
+        "source_refs_snapshot": [
+          {
+            "field": "eligibility",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "field": "dose",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "route",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "recurrence",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "restrictions",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "regional_overlay_df",
+            "source_ref": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA"
+          },
+          {
+            "field": "regional_overlay_go",
+            "source_ref": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026"
+          }
+        ],
+        "protocol_key": "raiva_herbivoros"
+      }
+    ],
+    "product_class_rows": [
+      {
+        "id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+        "name": "Vacina contra raiva dos herbivoros",
+        "scope": "global",
+        "metadata": {
+          "taxonomy_kind": "technical_product_class",
+          "can_validate_execution": false,
+          "requires_executed_product_for_withdrawal": true
+        },
+        "class_key": "vacina_raiva_herbivoros",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "limitations": [
+          "requires_real_product",
+          "requires_regional_risk_context",
+          "product_specific_schedule",
+          "product_specific_species_authorization",
+          "withdrawal_by_executed_product",
+          "do_not_generalize_product_label"
+        ],
+        "product_type": "vacina",
+        "species_scope": [
+          "bovino",
+          "bubalino"
+        ],
+        "curation_status": "needs_review",
+        "product_subtype": null,
+        "target_condition": "raiva_dos_herbivoros",
+        "automation_status": "manual_only"
+      },
+      {
+        "id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+        "name": "Vacinas utilizadas no contexto funcional IBR/BVD",
+        "scope": "global",
+        "metadata": {
+          "taxonomy_kind": "restricted_functional_class",
+          "functional_scope": "ibr_bvd",
+          "can_validate_execution": false,
+          "products_are_not_equivalent": true,
+          "requires_executed_product_for_withdrawal": true
+        },
+        "class_key": "vacina_ibr_bvd",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "limitations": [
+          "requires_real_product",
+          "product_specific_composition",
+          "product_specific_schedule",
+          "product_specific_reproductive_restrictions",
+          "withdrawal_by_executed_product",
+          "do_not_generalize_product_label"
+        ],
+        "product_type": "vacina",
+        "species_scope": [
+          "bovino"
+        ],
+        "curation_status": "needs_review",
+        "product_subtype": null,
+        "target_condition": "ibr_bvd",
+        "automation_status": "manual_only"
+      }
+    ],
+    "predecessors": [
+      {
+        "id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "product_id": null,
+        "route_rule": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "requires_risk_area_overlay",
+          "requires_focus_or_perifocus_context",
+          "requires_regional_overlay",
+          "source_gap_product_withdrawal_snapshot",
+          "requires_executed_product_snapshot",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_1"
+          }
+        },
+        "product_class": "vacina_raiva_herbivoros",
+        "eligibility_rule": {
+          "species": [
+            "bovino",
+            "bubalino"
+          ],
+          "requires_risk_area_overlay": true
+        },
+        "logical_item_key": "raiva_primovac_dose1",
+        "snapshot_template": {
+          "metadata": {
+            "agenda_allowed": false,
+            "curationStatus": "needs_review",
+            "automationStatus": "manual_only",
+            "approved_for_catalog": false
+          },
+          "sourceGaps": [
+            "requires_risk_area_overlay",
+            "requires_focus_or_perifocus_context",
+            "requires_regional_overlay",
+            "source_gap_product_withdrawal_snapshot"
+          ],
+          "restrictions": [
+            "regional_risk_context_required",
+            "no_agenda_auto"
+          ],
+          "sourcePolicy": {
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "executionProductPolicy": "required_at_execution"
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "dose": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ],
+          "route": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ],
+          "recurrence": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ],
+          "eligibility": [
+            {
+              "source_ref": "SRC_MAPA_RAIVA_VACINA"
+            }
+          ],
+          "restrictions": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "species": "bubalino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "regional_overlay",
+          "anchor": "risk_area_definition",
+          "requires_regional_overlay": true
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class"
+      },
+      {
+        "id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+        "status": "draft",
+        "version": 3,
+        "dose_rule": null,
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "product_id": null,
+        "route_rule": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "action_type": "vacinacao",
+        "item_status": "recomendado",
+        "limitations": [
+          "source_gap_product_withdrawal_snapshot",
+          "source_gap_bubalino",
+          "interval_reference_product_only"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_2"
+          }
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ]
+        },
+        "logical_item_key": "ibr_bvd_primovac_dose2",
+        "snapshot_template": {
+          "metadata": {
+            "supersedes": {
+              "id": "26b7e5bb-8f0d-4ef7-a757-a76e621df0e4",
+              "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada.",
+              "version": 2
+            },
+            "agenda_allowed": false,
+            "curationStatus": "prepared_for_decision",
+            "automationStatus": "decision_required",
+            "approved_for_catalog": false
+          },
+          "sourceGaps": [
+            "source_gap_product_withdrawal_snapshot",
+            "source_gap_bubalino"
+          ],
+          "sourcePolicy": {
+            "withdrawal": "by_executed_product_snapshot",
+            "operational_window": "reference_product_only; não generalizar para alternativas com esquema diferente"
+          },
+          "executionProductPolicy": "required_at_execution"
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "dose": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD"
+            }
+          ],
+          "route": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD"
+            }
+          ],
+          "recurrence": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD"
+            }
+          ],
+          "eligibility": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD"
+            }
+          ],
+          "restrictions": [
+            {
+              "source_ref": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE"
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative",
+          "anchor": "previous_dose",
+          "max_offset_days": 30,
+          "min_offset_days": 21
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class"
+      },
+      {
+        "id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+        "status": "draft",
+        "version": 2,
+        "dose_rule": null,
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "product_id": null,
+        "route_rule": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "action_type": "vacinacao",
+        "item_status": "recomendado",
+        "limitations": [
+          "source_gap_product_withdrawal_snapshot",
+          "source_gap_bubalino"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_1"
+          }
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ]
+        },
+        "logical_item_key": "ibr_bvd_primovac_dose1",
+        "snapshot_template": {
+          "metadata": {
+            "supersedes": {
+              "id": "2a35a390-7e3a-4fa1-944c-9118ddeaaebe",
+              "reason": "Proposta de nova versão para decisão curatorial; não aprovada nem aplicada.",
+              "version": 1
+            },
+            "agenda_allowed": false,
+            "curationStatus": "prepared_for_decision",
+            "automationStatus": "decision_required",
+            "approved_for_catalog": false
+          },
+          "sourceGaps": [
+            "source_gap_product_withdrawal_snapshot",
+            "source_gap_bubalino"
+          ],
+          "sourcePolicy": {
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "executionProductPolicy": "required_at_execution"
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "dose": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD"
+            }
+          ],
+          "route": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD"
+            }
+          ],
+          "recurrence": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD"
+            }
+          ],
+          "eligibility": [
+            {
+              "source_ref": "SRC_BULA_POLIGUARD"
+            }
+          ],
+          "restrictions": [
+            {
+              "source_ref": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE"
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "hybrid",
+          "anchor": "manual_context"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class"
+      },
+      {
+        "id": "e5430f23-2f84-4812-9caa-85bb6596304d",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "product_id": null,
+        "route_rule": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "requires_risk_area_overlay",
+          "requires_focus_or_perifocus_context",
+          "annual_if_risk_area",
+          "source_gap_product_withdrawal_snapshot",
+          "requires_executed_product_snapshot",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "booster_rule": {
+          "tolerance": {
+            "days": 30
+          },
+          "recurrenceRule": {
+            "kind": "annual_if_risk_area"
+          }
+        },
+        "product_class": "vacina_raiva_herbivoros",
+        "eligibility_rule": {
+          "species": [
+            "bovino",
+            "bubalino"
+          ],
+          "requires_risk_area_overlay": true
+        },
+        "logical_item_key": "raiva_reforco_anual_area_risco",
+        "snapshot_template": {
+          "metadata": {
+            "agenda_allowed": false,
+            "curationStatus": "needs_review",
+            "automationStatus": "manual_only",
+            "approved_for_catalog": false
+          },
+          "sourceGaps": [
+            "requires_risk_area_overlay",
+            "requires_focus_or_perifocus_context",
+            "source_gap_product_withdrawal_snapshot"
+          ],
+          "restrictions": [
+            "regional_risk_context_required",
+            "no_agenda_auto"
+          ],
+          "sourcePolicy": {
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "executionProductPolicy": "required_at_execution"
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "dose": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ],
+          "route": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ],
+          "recurrence": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ],
+          "eligibility": [
+            {
+              "source_ref": "SRC_MAPA_RAIVA_VACINA"
+            }
+          ],
+          "restrictions": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "species": "bubalino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "regional_overlay",
+          "anchor": "risk_area_definition",
+          "recurrence": "annual_if_risk_area"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class"
+      },
+      {
+        "id": "f62a7a12-0604-4539-8245-5564e4e3592e",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "product_id": null,
+        "route_rule": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "requires_previous_dose",
+          "requires_risk_area_overlay",
+          "requires_focus_or_perifocus_context",
+          "target_30_days_conservative_no_grace_window",
+          "source_gap_product_withdrawal_snapshot",
+          "requires_executed_product_snapshot",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "booster_rule": {
+          "anchor": "previous_dose",
+          "tolerance": {
+            "days": 0
+          },
+          "recurrenceRule": {
+            "kind": "booster_after_initial_dose"
+          },
+          "max_offset_days": 30,
+          "min_offset_days": 30,
+          "previous_logical_item_key": "raiva_primovac_dose1"
+        },
+        "product_class": "vacina_raiva_herbivoros",
+        "eligibility_rule": {
+          "species": [
+            "bovino",
+            "bubalino"
+          ],
+          "requires_previous_dose": "raiva_primovac_dose1",
+          "requires_risk_area_overlay": true
+        },
+        "logical_item_key": "raiva_primovac_reforco_30d",
+        "snapshot_template": {
+          "metadata": {
+            "agenda_allowed": false,
+            "curationStatus": "needs_review",
+            "automationStatus": "manual_only",
+            "approved_for_catalog": false
+          },
+          "sourceGaps": [
+            "requires_risk_area_overlay",
+            "requires_focus_or_perifocus_context",
+            "source_gap_product_withdrawal_snapshot"
+          ],
+          "restrictions": [
+            "regional_risk_context_required",
+            "previous_dose_required",
+            "no_agenda_auto"
+          ],
+          "sourcePolicy": {
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "executionProductPolicy": "required_at_execution"
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "dose": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ],
+          "route": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ],
+          "recurrence": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ],
+          "eligibility": [
+            {
+              "source_ref": "SRC_MAPA_RAIVA_VACINA"
+            }
+          ],
+          "restrictions": [
+            {
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "species": "bubalino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative_to_previous_dose",
+          "anchor": "previous_dose",
+          "max_offset_days": 30,
+          "min_offset_days": 30,
+          "target_offset_days": 30,
+          "previous_logical_item_key": "raiva_primovac_dose1"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class"
+      }
+    ]
+  },
+  "protected": {
+    "approved_item_ids": [
+      "0aa8fb30-fe4f-5a37-a100-ead8f568d5e3",
+      "4efb40be-1a71-5380-a9e8-c9e2d9c72d62",
+      "a6c83dd1-80fd-551a-b877-ee3a9eab1f1e",
+      "b34673c2-5d51-5d25-9ee2-60bfe5825550",
+      "c1866199-bf9d-506e-af05-dd84f3165c90",
+      "e10a3a77-a91e-5fd4-afab-1276526404ef",
+      "e711773e-88ee-5107-aa73-68e7337468be"
+    ],
+    "r05_farm_id": "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
+    "r05_agenda_ids": [
+      "23231621-4d80-5e72-99fd-0813d7acffdc",
+      "2b9e8f06-e304-5e47-9bf4-3d3856794f31",
+      "61d7fd70-c5ee-5813-ad57-5a22f26f442d",
+      "77c1f16e-8452-5cf5-a245-73b0168b8e17",
+      "acc118b5-1359-5d38-b6dc-f3d7bbfc5202",
+      "be0c86d1-cf5e-596c-b3bf-e4f7c36f2d4a",
+      "d2b03710-726c-556d-8a78-98a2dd341207"
+    ]
+  },
+  "content_sha256": "838574908702eb3568cd6d47814141196e3c47046bf1732e2ac2bfff98844860"
+}

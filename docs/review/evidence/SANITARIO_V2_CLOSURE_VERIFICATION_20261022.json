@@ -1,0 +1,140 @@
+{
+  "date": "2026-10-22",
+  "baseline_head": "40e04fa58b45aa1cfc2faf1ecbb4033ec326c21b",
+  "local_patch_classification": "READY WITH CAVEAT",
+  "operational_closure": "NOT READY",
+  "remote_writes": 0,
+  "remote_decision_receipts": [],
+  "remote_postcheck": {
+    "identical": {
+      "items": true,
+      "classes": true,
+      "sources": true,
+      "coverage": true,
+      "decisions": true,
+      "protocols": true,
+      "migrations": true
+    },
+    "enabled_gates": 0,
+    "protocols": [
+      {
+        "family": "ibr_bvd",
+        "status": "draft",
+        "approval": "draft"
+      },
+      {
+        "family": "vermifugacao_pre_desmama",
+        "status": "active",
+        "approval": "approved"
+      },
+      {
+        "family": "vermifugacao_pre_confinamento_pasto_vedado",
+        "status": "active",
+        "approval": "approved"
+      },
+      {
+        "family": "controle_parasitario_recria_5_7_9",
+        "status": "active",
+        "approval": "approved"
+      },
+      {
+        "family": "leptospirose",
+        "status": "draft",
+        "approval": "draft"
+      },
+      {
+        "family": "raiva_herbivoros",
+        "status": "draft",
+        "approval": "draft"
+      },
+      {
+        "family": "febre_aftosa",
+        "status": "retired",
+        "approval": "draft"
+      },
+      {
+        "family": "clostridioses",
+        "status": "draft",
+        "approval": "draft"
+      },
+      {
+        "family": "matrizes_pre_parto",
+        "status": "active",
+        "approval": "approved"
+      },
+      {
+        "family": "brucelose_b19",
+        "status": "active",
+        "approval": "approved"
+      }
+    ],
+    "decisions": 5,
+    "migrations": 64
+  },
+  "local_candidate_records": 12,
+  "candidate_identity_semantics": "Prospective UUIDs generated once; no claim that they already exist remotely.",
+  "migration": {
+    "path": "supabase/migrations/20261022230000_sanitario_manual_catalog_review_v2.sql",
+    "applied_remotely": false,
+    "verified_in_disposable_postgres": true
+  },
+  "validation": [
+    {
+      "command": "pnpm test -- (focused sanitary precheck/windows/automation/regional context, Central UI, farm-location hook)",
+      "distinct_tests_observed": 167,
+      "result": "passed across focused executions; not a single global run"
+    },
+    {
+      "command": "node --test tests/codex/sanitario-v2-closure-preparation.test.mjs",
+      "tests": 3,
+      "result": "passed"
+    },
+    {
+      "command": "node tests/codex/sanitario-v2-review.postgres.mjs",
+      "cases": 20,
+      "result": "passed",
+      "environment": "new disposable local PostgreSQL container; auth session claims simulated for role/lock/CAS tests; no remote human decision",
+      "evidence": "C:/Users/mares/AppData/Local/Temp/sanitario-review-pg-lCxsw4/evidence.json"
+    },
+    {
+      "command": "pnpm exec eslint (changed runtime/preparation files and related tests)",
+      "result": "passed"
+    },
+    {
+      "command": "pnpm run build:dev",
+      "result": "passed",
+      "warnings": [
+        "outdated Browserslist dataset",
+        "mixed dynamic/static Dexie import",
+        "chunks above 500 kB"
+      ]
+    },
+    {
+      "command": "pnpm run gates:docs",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    },
+    {
+      "command": "node scripts/codex/validate-supabase-baseline-functional.mjs",
+      "result": "refused",
+      "reason": "No explicit disposable full Supabase target configured. Existing local database was not declared disposable."
+    }
+  ],
+  "not_executed": [
+    "Remote migrations, publication, decisions, deploy and gate activation",
+    "New authenticated human previews; read-only server content digests matched previous CLO/LEP captures",
+    "Global regression and production build"
+  ],
+  "remaining": [
+    "Specific authorization and authenticated curation required before remote changes. Review-only packet cannot be applied by its CLI path.",
+    "CattleMaster calf/reproductive and Bovigen Lepto 8 maternal/prenatal/reproductive contexts remain intentionally blocked; Bovela cannot prove IBR.",
+    "Full Supabase Auth/PostgREST baseline not rerun in an explicitly disposable complete stack."
+  ],
+  "unrelated_change_preserved": {
+    "path": "supabase/.temp/cli-latest",
+    "change": "v2.115.0 to v2.121.0 observed during work; not reverted or attributed to the sanitary patch"
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "remote_state_verified": {"verified_at_utc":"2026-10-23 02:52:31 UTC","protocols":[{"status":"active","version":1,"family_code":"brucelose_b19","approval_status":"approved"},{"status":"draft","version":1,"family_code":"clostridioses","approval_status":"draft"},{"status":"active","version":1,"family_code":"controle_parasitario_recria_5_7_9","approval_status":"approved"},{"status":"retired","version":1,"family_code":"febre_aftosa","approval_status":"draft"},{"status":"draft","version":1,"family_code":"ibr_bvd","approval_status":"draft"},{"status":"draft","version":1,"family_code":"leptospirose","approval_status":"draft"},{"status":"active","version":1,"family_code":"matrizes_pre_parto","approval_status":"approved"},{"status":"draft","version":1,"family_code":"raiva_herbivoros","approval_status":"draft"},{"status":"active","version":1,"family_code":"vermifugacao_pre_confinamento_pasto_vedado","approval_status":"approved"},{"status":"active","version":1,"family_code":"vermifugacao_pre_desmama","approval_status":"approved"}],"gates_enabled":0,"bootstrap_receipts":0,"interactive_decisions":5,"manual_migration_applied":false},
+  "artifact": "sanitario_initial_bootstrap_local_validation",
+  "environment": "dedicated local PostgreSQL database; real RLS/roles/locks; JWT transport simulated via PostgREST session claims",
+  "cases": [
+    {
+      "name": "R04B.2 exact migration dry-run, history CAS, apply and retry preserve data",
+      "result": "PASS"
+    },
+    {
+      "name": "upgrade preserves all original physical versions and rejects obsolete review",
+      "result": "PASS"
+    },
+    {
+      "name": "authenticated non-admin, anonymous and direct global writes cannot approve",
+      "result": "PASS"
+    },
+    {
+      "name": "retired or legally blocked protocol cannot be reactivated by review",
+      "result": "PASS"
+    },
+    {
+      "name": "hash and protocol version divergence fail without audit/publication",
+      "result": "PASS"
+    },
+    {
+      "name": "authorized explicit B19 approval, trusted actor/time, exact scope and lost-ACK replay",
+      "result": "PASS"
+    },
+    {
+      "name": "two reviewers race: one decision wins, other version/hash conflicts",
+      "result": "PASS"
+    },
+    {
+      "name": "audit failure rolls back catalog and same request recovers safely",
+      "result": "PASS"
+    },
+    {
+      "name": "rejection is auditable and does not enable flags",
+      "result": "PASS"
+    },
+    {
+      "name": "registered evidence changes invalidate the reviewed digest",
+      "result": "PASS"
+    },
+    {
+      "name": "all six permanent restrictions and seven commercial evidence gaps stay blocked",
+      "result": "PASS"
+    },
+    {
+      "name": "complete remaining eligible assessments without a farm or veterinarian",
+      "result": "PASS"
+    },
+    {
+      "name": "R04B class scheme keeps registry evidence, digest, authorization and concurrent replay",
+      "result": "PASS"
+    },
+    {
+      "name": "R04B.2 public incremental dry-run, explicit authorization and CAS reject changed source without writes",
+      "result": "PASS"
+    },
+    {
+      "name": "R04B.2 failed canonical publication rolls back candidates, class reviews, coverage and links",
+      "result": "PASS"
+    },
+    {
+      "name": "R04B.2 concurrent public imports and lost-ACK replay converge with exact supersession",
+      "result": "PASS"
+    },
+    {
+      "name": "initial bootstrap reuses publication authorization and rejects a changed CLO/LEP digest atomically",
+      "result": "PASS"
+    },
+    {
+      "name": "initial bootstrap audit failure rolls back publication, coverage, class changes and approvals",
+      "result": "PASS"
+    },
+    {
+      "name": "initial bootstrap reaches nine families with distinct deployment provenance and convergent concurrent replay",
+      "result": "PASS"
+    }
+  ],
+  "migration": {
+    "version": "20261020232807",
+    "dry_run_rollback": true,
+    "exact_history": true,
+    "retry_noop": true,
+    "baseline_conflict_rejected": true,
+    "history_conflict_rejected": true,
+    "baseline_fingerprint": "c40e67629196f2e6f4d1e3f3e2908ce1",
+    "dry_run_sql_sha256": "c4cdd1f7f83feca61adfb443ca6a3bc8b16853215a7a42ce919bad589f8465d6",
+    "apply_sql_sha256": "0fcafd896ce85df7118de6bf2e6b48cabf4f082da309ecf8f8fb67acf8d8d485"
+  },
+  "result": "PASS",
+  "original_approvals_preserved": 7,
+  "approved_in_disposable_database": 17,
+  "real_catalog_authorizations": 0,
+  "disposable_database_removed": true,
+  "observed_at_utc": "2026-10-23 02:51:32 UTC",
+  "plan_sha256": "5767f1bde80044b2e630cc0236f086d187e35ba7c4a646df4a79d3be810a98c5",
+  "publication_sha256": "838574908702eb3568cd6d47814141196e3c47046bf1732e2ac2bfff98844860",
+  "receipt_summary": {
+    "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+    "version": "sanitario-initial-20261022-v1",
+    "interactive_review": false,
+    "groups": [
+      {
+        "family": "clostridioses",
+        "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+        "item_versions": [
+          {
+            "id": "0625eedf-f069-5ee4-ae50-decd329176e6",
+            "version": 3,
+            "logical_item_key": "clostridial_primovac_dose1"
+          },
+          {
+            "id": "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+            "version": 4,
+            "logical_item_key": "clostridial_primovac_dose2"
+          },
+          {
+            "id": "d4a9602e-b011-5b33-a1c9-890b36da1b46",
+            "version": 3,
+            "logical_item_key": "clostridial_reforco_anual"
+          }
+        ],
+        "content_digest": "83b5fe310eac94e2d9912bd425e1e147b4263e2ccaab594f5fc2c11a592410b3"
+      },
+      {
+        "family": "leptospirose",
+        "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "item_versions": [
+          {
+            "id": "d69c754c-1d61-5680-abfe-92fc1d43209b",
+            "version": 3,
+            "logical_item_key": "lepto_primovac_dose1"
+          },
+          {
+            "id": "f3122e73-549d-594a-aed6-5dd4ab93c0d9",
+            "version": 3,
+            "logical_item_key": "lepto_reforco_anual_semestral"
+          }
+        ],
+        "content_digest": "f80230a1aa845e3659a939f8cb118c3b3a39d10e234efe99844f8bcf5ef62bc1"
+      },
+      {
+        "family": "ibr_bvd",
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "item_versions": [
+          {
+            "id": "2ec754f9-0260-4524-abee-ebdafb56c231",
+            "version": 1,
+            "logical_item_key": "ibr_bvd_v4j5_primovac_dose1"
+          },
+          {
+            "id": "4ea47c38-74ec-42d9-9555-6b5869f0e0da",
+            "version": 3,
+            "logical_item_key": "ibr_bvd_primovac_dose1"
+          },
+          {
+            "id": "6906d0bd-a882-4371-9c4b-4ec5d70c387b",
+            "version": 4,
+            "logical_item_key": "ibr_bvd_primovac_dose2"
+          },
+          {
+            "id": "afd1c6f6-6d21-4aa1-89b6-63fc22e66966",
+            "version": 1,
+            "logical_item_key": "ibr_bvd_v4j5_primovac_dose2"
+          }
+        ],
+        "content_digest": "c0f0ac9f980a931a62a7a5950a2d650e8cd0f43aa11ef0ef943c4c9cbc5cb41b"
+      },
+      {
+        "family": "raiva_herbivoros",
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "item_versions": [
+          {
+            "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+            "version": 2,
+            "logical_item_key": "raiva_primovac_reforco_30d"
+          },
+          {
+            "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+            "version": 2,
+            "logical_item_key": "raiva_reforco_anual_area_risco"
+          },
+          {
+            "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+            "version": 2,
+            "logical_item_key": "raiva_primovac_dose1"
+          }
+        ],
+        "content_digest": "e80be337ec447c3d6e3a36c8fa8f41989b33df8ebb7ab986c43e43d54f86612c"
+      }
+    ],
+    "environment": "synthetic disposable PostgreSQL only; not a remote deployment receipt"
+  },
+  "remote_writes_executed": 0,
+  "node_tests": 5,
+  "focused_eslint": "PASS",
+  "git_diff_check": "PASS",
+  "docs_gates": "PASS",
+  "runtime_tests": "Unchanged from previously recorded validation; no redundant runtime test run",
+  "not_executed": "Remote deployment; full Supabase Auth/PostgREST stack"
+}

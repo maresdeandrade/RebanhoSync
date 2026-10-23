@@ -1,0 +1,45 @@
+{
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "remote_writes_executed": 0,
+  "remote_receipts": [],
+  "read_only_digest_check": true,
+  "scopes": [
+    {
+      "family_code": "leptospirose",
+      "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+      "expected_version": 1,
+      "item_ids": [
+        "d69c754c-1d61-5680-abfe-92fc1d43209b",
+        "f3122e73-549d-594a-aed6-5dd4ab93c0d9"
+      ],
+      "content_digest_read_only": "f80230a1aa845e3659a939f8cb118c3b3a39d10e234efe99844f8bcf5ef62bc1",
+      "authenticated_preview_repeated": false,
+      "preview_rpc": "sanitario_catalog_review_preview_v2",
+      "decision_rpc": "sanitario_catalog_decide_v2",
+      "result_proposed": "approved",
+      "authorized": false
+    },
+    {
+      "family_code": "clostridioses",
+      "protocol_id": "c033a955-0492-4f0f-b068-667c127c80ad",
+      "expected_version": 1,
+      "item_ids": [
+        "0625eedf-f069-5ee4-ae50-decd329176e6",
+        "cb8fad2f-5836-5939-a64f-ce6a323acd1c",
+        "d4a9602e-b011-5b33-a1c9-890b36da1b46"
+      ],
+      "content_digest_read_only": "83b5fe310eac94e2d9912bd425e1e147b4263e2ccaab594f5fc2c11a592410b3",
+      "authenticated_preview_repeated": false,
+      "preview_rpc": "sanitario_catalog_review_preview_v2",
+      "decision_rpc": "sanitario_catalog_decide_v2",
+      "result_proposed": "approved",
+      "authorized": false
+    }
+  ],
+  "limitations": [
+    "SELECT interno de conteúdo e digest não equivale a preview com sessão humana autenticada.",
+    "Repetir os dois previews autenticados antes de qualquer decisão autorizada.",
+    "Aprovação habilita flags prospectivos dos cinco itens no catálogo; gate de fazenda permanece desligado.",
+    "Nenhum produto, aplicação factual, dose, via ou carência de execução é aprovado por este escopo."
+  ]
+}

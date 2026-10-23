@@ -1,0 +1,170 @@
+{
+  "status": "superseded_by_administrative_initial_bootstrap",
+  "superseded_by": "docs/review/evidence/SANITARIO_V2_INITIAL_BOOTSTRAP_EXECUTION_20261022.json",
+  "artifact": "sanitario_v2_closure_execution_sequence",
+  "recorded_at_utc": "2026-10-23 02:23:14 UTC",
+  "baseline_head": "40e04fa58b45aa1cfc2faf1ecbb4033ec326c21b",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "environment": "Shared RebanhoSync backend; no isolated remote verified",
+  "remote_state_observed": {
+    "approved_families": 5,
+    "retired_family": "febre_aftosa",
+    "current_items": 20,
+    "sources": 16,
+    "curatorial_decisions": 5,
+    "gates_enabled": 0,
+    "manual_migration_applied": false,
+    "competing_v4j5_items": 0
+  },
+  "authorization": {
+    "migration": false,
+    "publication": false,
+    "curatorial_decisions": false,
+    "request": "Pending explicit classes A/B/C question in current chat; no remote writes authorized by this artifact"
+  },
+  "sequence": [
+    {
+      "operation": "CLO/LEP authenticated preview and canonical decisions",
+      "independent_of": [
+        "manual migration",
+        "new candidate publication"
+      ],
+      "scope_file": "docs/review/evidence/SANITARIO_V2_CLO_LEP_DECISION_SCOPE_20261022.json",
+      "preview_rpc": "sanitario_catalog_review_preview_v2",
+      "decision_rpc": "sanitario_catalog_decide_v2",
+      "read_only_digests_reconfirmed": {
+        "clostridioses": "83b5fe310eac94e2d9912bd425e1e147b4263e2ccaab594f5fc2c11a592410b3",
+        "leptospirose": "f80230a1aa845e3659a939f8cb118c3b3a39d10e234efe99844f8bcf5ef62bc1"
+      },
+      "requires": "Class C authorization and real curator session. No internal SQL SELECT or simulated claims substitute for authenticated preview."
+    },
+    {
+      "operation": "Forward-only manual review migration",
+      "requires": "Class A authorization",
+      "file": "supabase/migrations/20261022230000_sanitario_manual_catalog_review_v2.sql",
+      "changes": "Two canonical review functions only; no seed, approval, ACL or gate changes"
+    },
+    {
+      "operation": "Eligible incremental publication",
+      "requires": "Class B authorization; no implicit authorization for decisions",
+      "file": "docs/review/evidence/SANITARIO_V2_CLOSURE_ELIGIBLE_DELTA_20261022.json",
+      "content_sha256": "48bd9aea22c0c5ad80a860d3874e7aa0a4745eedee5cee9e88bb62256ea27d46",
+      "counts": {
+        "items": 7,
+        "new_sources": 2,
+        "coverage": 12,
+        "new_products": 0
+      },
+      "writer": "scripts/codex/import-sanitario-protocols-v2.mjs --incremental",
+      "validation_command": "node scripts/codex/import-sanitario-protocols-v2.mjs --incremental docs/review/evidence/SANITARIO_V2_CLOSURE_ELIGIBLE_DELTA_20261022.json --validate",
+      "apply_requirements": [
+        "import_gate.import_real_authorized=true with explicit authorization_reference in an authorized copy",
+        "ALLOW_SANITARIO_IMPORT=1",
+        "SANITARIO_IMPORT_CONFIRM matching canonical artifact version",
+        "SANITARIO_DELTA_CONFIRM matching content_sha256",
+        "DB_URL resolved privately; never print or persist credentials",
+        "dry-run and CAS must pass against the current remote"
+      ],
+      "groups": [
+        {
+          "family": "ibr_bvd",
+          "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+          "expected_version": 1,
+          "item_versions": [
+            {
+              "id": "4ea47c38-74ec-42d9-9555-6b5869f0e0da",
+              "version": 3
+            },
+            {
+              "id": "2ec754f9-0260-4524-abee-ebdafb56c231",
+              "version": 1
+            },
+            {
+              "id": "6906d0bd-a882-4371-9c4b-4ec5d70c387b",
+              "version": 4
+            },
+            {
+              "id": "afd1c6f6-6d21-4aa1-89b6-63fc22e66966",
+              "version": 1
+            }
+          ]
+        },
+        {
+          "family": "raiva_herbivoros",
+          "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+          "expected_version": 1,
+          "item_versions": [
+            {
+              "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+              "version": 2
+            },
+            {
+              "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+              "version": 2
+            },
+            {
+              "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "operation": "IBR/BVD authenticated preview and decision",
+      "requires": "Class C authorization after eligible publication",
+      "scope": "Four listed Poliguard/V4J5 items only; new digest obtained from authenticated preview",
+      "exclude": [
+        "CattleMaster",
+        "Bovigen Lepto 8",
+        "Leptoferm D2"
+      ]
+    },
+    {
+      "operation": "Rabies authenticated preview and manual-only decision",
+      "requires": "Class C authorization, eligible publication and manual review migration",
+      "scope": "Three listed rabies v2 items only; no_agenda_auto retained; new digest obtained after publication"
+    },
+    {
+      "operation": "Independent remote verification and receipts",
+      "requires": "After each authorized class/group",
+      "verify": [
+        "Canonical audit action SANITARY_RULE_DECISION_V2, actual actor, exact item versions and current digest",
+        "Same request_id replay returns original receipt; do not generate a second decision for a lost ACK",
+        "Nine specified catalogue families active/approved only if all four group decisions persist",
+        "Aftosa retired, original approvals and Leptoferm D2 preserved, gates OFF",
+        "No Evento, Agenda, stock or factual history rewrite"
+      ],
+      "continue_independent_groups_on_failure": true
+    }
+  ],
+  "validations": {
+    "preparation_node_tests": 4,
+    "focused_eslint": "PASS",
+    "docs_gates": "PASS",
+    "git_diff_check": "PASS",
+    "disposable_postgresql": {
+      "result": "PASS",
+      "cases": 23,
+      "removed": true
+    },
+    "postgresql_scope_unchanged_after_fingerprint_refresh": true,
+    "postgresql_evidence": "C:/Users/mares/AppData/Local/Temp/sanitario-review-pg-qJvppH/evidence.json",
+    "prior_runtime_validation": "Previous turn evidence retained in SANITARIO_V2_CLOSURE_VERIFICATION_20261022.json; runtime files unchanged this continuation",
+    "not_run": [
+      "Full Supabase Auth/PostgREST disposable stack",
+      "Authenticated remote preview: no RebanhoSync session in accessible browser tabs",
+      "Remote migrations/publication/decisions: authorization pending"
+    ]
+  },
+  "remote_writes_executed": 0,
+  "new_remote_receipts": [],
+  "classification": {
+    "local_patch": "READY WITH CAVEAT",
+    "operational_closure": "NOT READY",
+    "caveats": [
+      "Remote authorization required by current user request",
+      "Real curator session required for authenticated previews and decisions"
+    ]
+  }
+}
