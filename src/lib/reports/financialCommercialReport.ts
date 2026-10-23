@@ -6,6 +6,8 @@ import type {
 } from "@/lib/offline/types";
 import {
   classifyCommercialOperation,
+  isCommercialOperationV2,
+  isCommercialSimulation,
   resolveCommercialFinanceLink,
   resolveFinancialEventLink,
 } from "@/lib/finance/classification";
@@ -19,7 +21,10 @@ import type {
 } from "./operationalSummaryTypes";
 import type { resolveMetricTimezone } from "./operationalSummaryCalendar";
 import { asRecord, readNestedNumber } from "./reportPayload";
-import { addTraceabilityCost, toSortedTraceabilityRows } from "./reportTraceability";
+import {
+  addTraceabilityCost,
+  toSortedTraceabilityRows,
+} from "./reportTraceability";
 
 export interface FinancialReportInput {
   input: Pick<
@@ -50,42 +55,94 @@ function getCommercialTotalArrobas(detail: EventoComercial): number | null {
   return readNestedNumber(pricing, "total_arrobas");
 }
 
-function isCommercialOperationV2(evento: Evento): boolean {
-  const payload = asRecord(evento.payload);
-  return payload?.kind === "commercial_operation_v2";
+function calculateFinancialEvidence({
+  input,
+  range,
+  metricTimezone,
+}: Pick<FinancialReportInput, "input" | "range" | "metricTimezone">) {
+  return calculateObservedEconomicResult(
+    selectEconomicCoverage({
+      fazendaId: input.fazendaId,
+      period: {
+        from: range.from,
+        to: range.to,
+        timezone: metricTimezone.timezone ?? "UTC",
+      },
+      sourceCoverage: {
+        financeTransactions: input.financeTransactions ? "VERIFIED" : "UNKNOWN",
+        financeCategories: input.financeCategories ? "VERIFIED" : "UNKNOWN",
+        commercialOperations: input.eventosComercial ? "VERIFIED" : "UNKNOWN",
+      },
+      transactions: input.financeTransactions ?? [],
+      categories: input.financeCategories ?? [],
+      events: input.eventos,
+      commercialDetails: input.eventosComercial ?? [],
+    }),
+  );
 }
 
-const COMMERCIAL_SIMULATION_KINDS = new Set([
-  "simulation",
-  "commercial_simulation",
-  "simulacao",
-  "simulacao_comercial",
-]);
+function createFinancialTotals(
+  observedEconomicResult: ReturnType<typeof calculateFinancialEvidence>,
+) {
+  return {
+    entradas:
+      observedEconomicResult.status === "CALCULATED"
+        ? observedEconomicResult.observedRevenue
+        : null,
+    saidas:
+      observedEconomicResult.status === "CALCULATED"
+        ? observedEconomicResult.observedCost
+        : null,
+    saldo:
+      observedEconomicResult.status === "CALCULATED"
+        ? observedEconomicResult.observedResult
+        : null,
+    transacoes:
+      observedEconomicResult.coverage.coverage.realizedTransactionsInPeriod,
+    compras: 0,
+    vendas: 0,
+    entradasCompetencia: 0,
+    saidasCompetencia: 0,
+    previstosAPagar: 0,
+    previstosAReceber: 0,
+    vencidosAPagar: 0,
+    vencidosAReceber: 0,
+    observedEconomicResult,
+  };
+}
 
-function isCommercialSimulation(
-  evento: Evento,
-  detalhe: EventoComercial | undefined,
-): boolean {
-  const payload = asRecord(evento.payload);
-  const snapshot = asRecord(detalhe?.snapshot);
-  const explicitBoolean = [
-    payload?.simulation,
-    payload?.is_simulation,
-    snapshot?.simulation,
-    snapshot?.is_simulation,
-  ].some((value) => value === true);
-  const hasSimulationKind = [
-    payload?.kind,
-    payload?.operation_kind,
-    snapshot?.kind,
-    snapshot?.operation_kind,
-  ].some(
-    (value) =>
-      typeof value === "string" &&
-      COMMERCIAL_SIMULATION_KINDS.has(value.trim().toLowerCase()),
-  );
+type FinancialTotals = ReturnType<typeof createFinancialTotals>;
+type DateInRange = (value: string | null | undefined) => boolean;
 
-  return explicitBoolean || hasSimulationKind;
+function addForecastDueTotals(
+  financeiro: FinancialTotals,
+  transaction: FinanceTransaction,
+  range: ReportRange,
+  isDateInRange: DateInRange,
+) {
+  if (isDateInRange(transaction.due_date)) {
+    if (transaction.direction === "entrada") {
+      financeiro.previstosAReceber += transaction.valor_total;
+      if (transaction.due_date! < range.to)
+        financeiro.vencidosAReceber += transaction.valor_total;
+    } else {
+      financeiro.previstosAPagar += transaction.valor_total;
+      if (transaction.due_date! < range.to)
+        financeiro.vencidosAPagar += transaction.valor_total;
+    }
+  }
+}
+
+function addCompetenceTotals(
+  financeiro: FinancialTotals,
+  transaction: FinanceTransaction,
+  isDateInRange: DateInRange,
+) {
+  if (isDateInRange(transaction.competence_date)) {
+    if (transaction.direction === "entrada")
+      financeiro.entradasCompetencia += transaction.valor_total;
+    else financeiro.saidasCompetencia += transaction.valor_total;
+  }
 }
 
 export function buildFinancialReport({
@@ -127,51 +184,13 @@ export function buildFinancialReport({
     return dateKey >= range.from && dateKey <= range.to;
   };
 
-  const observedEconomicResult = calculateObservedEconomicResult(
-    selectEconomicCoverage({
-      fazendaId: input.fazendaId,
-      period: {
-        from: range.from,
-        to: range.to,
-        timezone: metricTimezone.timezone ?? "UTC",
-      },
-      sourceCoverage: {
-        financeTransactions: input.financeTransactions ? "VERIFIED" : "UNKNOWN",
-        financeCategories: input.financeCategories ? "VERIFIED" : "UNKNOWN",
-        commercialOperations: input.eventosComercial ? "VERIFIED" : "UNKNOWN",
-      },
-      transactions: input.financeTransactions ?? [],
-      categories: input.financeCategories ?? [],
-      events: input.eventos,
-      commercialDetails: input.eventosComercial ?? [],
-    }),
-  );
+  const observedEconomicResult = calculateFinancialEvidence({
+    input,
+    range,
+    metricTimezone,
+  });
 
-  const financeiro = {
-    entradas:
-      observedEconomicResult.status === "CALCULATED"
-        ? observedEconomicResult.observedRevenue
-        : null,
-    saidas:
-      observedEconomicResult.status === "CALCULATED"
-        ? observedEconomicResult.observedCost
-        : null,
-    saldo:
-      observedEconomicResult.status === "CALCULATED"
-        ? observedEconomicResult.observedResult
-        : null,
-    transacoes:
-      observedEconomicResult.coverage.coverage.realizedTransactionsInPeriod,
-    compras: 0,
-    vendas: 0,
-    entradasCompetencia: 0,
-    saidasCompetencia: 0,
-    previstosAPagar: 0,
-    previstosAReceber: 0,
-    vencidosAPagar: 0,
-    vencidosAReceber: 0,
-    observedEconomicResult,
-  };
+  const financeiro = createFinancialTotals(observedEconomicResult);
 
   for (const transaction of activeFinanceTransactions) {
     if (transaction.status === "cancelado") continue;
@@ -181,28 +200,10 @@ export function buildFinancialReport({
     }
 
     if (transaction.status === "realizado") {
-      if (isDateInRange(transaction.competence_date)) {
-        if (transaction.direction === "entrada")
-          financeiro.entradasCompetencia += transaction.valor_total;
-        else financeiro.saidasCompetencia += transaction.valor_total;
-      }
+      addCompetenceTotals(financeiro, transaction, isDateInRange);
     } else if (transaction.status === "previsto") {
-      if (isDateInRange(transaction.due_date)) {
-        if (transaction.direction === "entrada") {
-          financeiro.previstosAReceber += transaction.valor_total;
-          if (transaction.due_date! < range.to)
-            financeiro.vencidosAReceber += transaction.valor_total;
-        } else {
-          financeiro.previstosAPagar += transaction.valor_total;
-          if (transaction.due_date! < range.to)
-            financeiro.vencidosAPagar += transaction.valor_total;
-        }
-      }
-      if (isDateInRange(transaction.competence_date)) {
-        if (transaction.direction === "entrada")
-          financeiro.entradasCompetencia += transaction.valor_total;
-        else financeiro.saidasCompetencia += transaction.valor_total;
-      }
+      addForecastDueTotals(financeiro, transaction, range, isDateInRange);
+      addCompetenceTotals(financeiro, transaction, isDateInRange);
     }
   }
 
@@ -242,6 +243,24 @@ function createCommercialTraceability({
       normalizedAmount,
     );
 
+    addAnimalCosts(evento, detalhe, normalizedAmount);
+    addLoteCosts(evento, detalhe, normalizedAmount);
+    addSociedadeCosts(detalhe, normalizedAmount);
+  }
+
+  function readSociedadeId(record: Record<string, unknown>) {
+    return typeof record.sociedadeId === "string"
+      ? record.sociedadeId
+      : typeof record.sociedade_id === "string"
+        ? record.sociedade_id
+        : null;
+  }
+
+  function addAnimalCosts(
+    evento: Evento,
+    detalhe: EventoComercial,
+    normalizedAmount: number,
+  ) {
     for (const animalId of detalhe.animal_ids ??
       (evento.animal_id ? [evento.animal_id] : [])) {
       addTraceabilityCost(
@@ -251,7 +270,13 @@ function createCommercialTraceability({
         normalizedAmount,
       );
     }
+  }
 
+  function addLoteCosts(
+    evento: Evento,
+    detalhe: EventoComercial,
+    normalizedAmount: number,
+  ) {
     addTraceabilityCost(
       commercialLote,
       detalhe.lote_id ?? evento.lote_id,
@@ -260,21 +285,21 @@ function createCommercialTraceability({
         evento.lote_id,
       normalizedAmount,
     );
+  }
 
+  function addSociedadeCosts(
+    detalhe: EventoComercial,
+    normalizedAmount: number,
+  ) {
     const sociedadeSnapshot = detalhe.sociedade_snapshot;
     if (sociedadeSnapshot && typeof sociedadeSnapshot === "object") {
       const list = Array.isArray(sociedadeSnapshot)
         ? sociedadeSnapshot
         : [sociedadeSnapshot];
       for (const raw of list) {
-        if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
-        const record = raw as Record<string, unknown>;
-        const sociedadeId =
-          typeof record.sociedadeId === "string"
-            ? record.sociedadeId
-            : typeof record.sociedade_id === "string"
-              ? record.sociedade_id
-              : null;
+        const record = asRecord(raw);
+        if (!record) continue;
+        const sociedadeId = readSociedadeId(record);
         if (!sociedadeId) continue;
         addTraceabilityCost(
           commercialSociedade,
@@ -299,6 +324,135 @@ function createCommercialTraceability({
   }
 
   return { addEvent, toRows };
+}
+
+function accumulateCommercialTotals(
+  commercialEvents: Array<{ evento: Evento; detalhe: EventoComercial }>,
+  commercialTraceability: ReturnType<typeof createCommercialTraceability>,
+) {
+  const totals = {
+    commercialReceita: 0,
+    commercialCusto: 0,
+    commercialGrossTotal: 0,
+    commercialNetTotal: 0,
+    commercialHeads: 0,
+    commercialWeightKg: 0,
+    commercialArrobas: 0,
+    commercialGrossComplete: true,
+    commercialNetComplete: true,
+    commercialWeightComplete: true,
+    commercialArrobasComplete: true,
+  };
+  for (const { evento, detalhe } of commercialEvents) {
+    addCommercialDeclaredTotals(totals, detalhe);
+    addCommercialFinancialTotals(
+      totals,
+      evento,
+      detalhe,
+      commercialTraceability,
+    );
+  }
+  return totals;
+}
+
+type CommercialTotals = ReturnType<typeof accumulateCommercialTotals>;
+
+function addCommercialDeclaredTotals(
+  totals: CommercialTotals,
+  detalhe: EventoComercial,
+) {
+  totals.commercialHeads += detalhe.quantidade_animais;
+  if (detalhe.valor_bruto == null) {
+    totals.commercialGrossComplete = false;
+  } else {
+    totals.commercialGrossTotal += detalhe.valor_bruto;
+  }
+  if (detalhe.valor_liquido_derivado == null) {
+    totals.commercialNetComplete = false;
+  } else {
+    totals.commercialNetTotal += detalhe.valor_liquido_derivado;
+  }
+  if (detalhe.peso_vivo_total == null) {
+    totals.commercialWeightComplete = false;
+  } else {
+    totals.commercialWeightKg += detalhe.peso_vivo_total;
+  }
+  const totalArrobas = getCommercialTotalArrobas(detalhe);
+  if (totalArrobas == null) {
+    totals.commercialArrobasComplete = false;
+  } else {
+    totals.commercialArrobas += totalArrobas;
+  }
+}
+
+function addCommercialFinancialTotals(
+  totals: CommercialTotals,
+  evento: Evento,
+  detalhe: EventoComercial,
+  commercialTraceability: ReturnType<typeof createCommercialTraceability>,
+) {
+  const amount = Number(
+    detalhe.valor_liquido_derivado ?? detalhe.valor_bruto ?? 0,
+  );
+  const normalizedAmount = Number.isFinite(amount) ? amount : 0;
+
+  if (detalhe.operation_type === "venda") {
+    totals.commercialReceita = Number(
+      (totals.commercialReceita + normalizedAmount).toFixed(2),
+    );
+  } else {
+    totals.commercialCusto = Number(
+      (totals.commercialCusto + normalizedAmount).toFixed(2),
+    );
+  }
+
+  commercialTraceability.addEvent(evento, detalhe, normalizedAmount);
+}
+
+function countExpectedCommercialEvents(
+  eventos: Evento[],
+  commercialByEventId: CommercialReportInput["commercialByEventId"],
+) {
+  return eventos.filter((evento) => {
+    if (evento.dominio !== "comercial") return false;
+    const detalhe = commercialByEventId.get(evento.id);
+    if (!detalhe) {
+      // For counting purposes, if detail is missing we still check if it *should* have been included
+      // to flag it as partial.
+      return (
+        isCommercialOperationV2(evento) &&
+        !isCommercialSimulation(evento, undefined)
+      );
+    }
+    const classification = classifyCommercialOperation(
+      evento,
+      detalhe,
+      undefined,
+    );
+    return classification.includedInCommercialAggregate;
+  }).length;
+}
+
+function resolveCommercialValue(
+  events: Array<{ detalhe: EventoComercial }>,
+  complete: boolean,
+  total: number,
+  readAmount: (detail: EventoComercial) => number | null | undefined,
+) {
+  if (events.length === 0) return 0;
+  if (complete || events.some((item) => readAmount(item.detalhe) != null))
+    return Number(total.toFixed(2));
+  return null;
+}
+
+function commercialAverage(
+  value: number | null,
+  quantity: number,
+  complete = true,
+) {
+  return value != null && complete && quantity > 0
+    ? Number((value / quantity).toFixed(2))
+    : null;
 }
 
 export function buildCommercialReport({
@@ -339,95 +493,39 @@ export function buildCommercialReport({
     animalById,
     loteById,
   });
-  let commercialReceita = 0;
-  let commercialCusto = 0;
-  let commercialGrossTotal = 0;
-  let commercialNetTotal = 0;
-  let commercialHeads = 0;
-  let commercialWeightKg = 0;
-  let commercialArrobas = 0;
-  let commercialGrossComplete = true;
-  let commercialNetComplete = true;
-  let commercialWeightComplete = true;
-  let commercialArrobasComplete = true;
+  const {
+    commercialReceita,
+    commercialCusto,
+    commercialGrossTotal,
+    commercialNetTotal,
+    commercialHeads,
+    commercialWeightKg,
+    commercialArrobas,
+    commercialGrossComplete,
+    commercialNetComplete,
+    commercialWeightComplete,
+    commercialArrobasComplete,
+  } = accumulateCommercialTotals(commercialEvents, commercialTraceability);
 
-  for (const { evento, detalhe } of commercialEvents) {
-    commercialHeads += detalhe.quantidade_animais;
-    if (detalhe.valor_bruto == null) {
-      commercialGrossComplete = false;
-    } else {
-      commercialGrossTotal += detalhe.valor_bruto;
-    }
-    if (detalhe.valor_liquido_derivado == null) {
-      commercialNetComplete = false;
-    } else {
-      commercialNetTotal += detalhe.valor_liquido_derivado;
-    }
-    if (detalhe.peso_vivo_total == null) {
-      commercialWeightComplete = false;
-    } else {
-      commercialWeightKg += detalhe.peso_vivo_total;
-    }
-    const totalArrobas = getCommercialTotalArrobas(detalhe);
-    if (totalArrobas == null) {
-      commercialArrobasComplete = false;
-    } else {
-      commercialArrobas += totalArrobas;
-    }
-    const amount = Number(
-      detalhe.valor_liquido_derivado ?? detalhe.valor_bruto ?? 0,
-    );
-    const normalizedAmount = Number.isFinite(amount) ? amount : 0;
-
-    if (detalhe.operation_type === "venda") {
-      commercialReceita = Number(
-        (commercialReceita + normalizedAmount).toFixed(2),
-      );
-    } else {
-      commercialCusto = Number((commercialCusto + normalizedAmount).toFixed(2));
-    }
-
-    commercialTraceability.addEvent(evento, detalhe, normalizedAmount);
-  }
-
-  const commercialEventCount = eventos.filter((evento) => {
-    if (evento.dominio !== "comercial") return false;
-    const detalhe = commercialByEventId.get(evento.id);
-    if (!detalhe) {
-      // For counting purposes, if detail is missing we still check if it *should* have been included
-      // to flag it as partial.
-      return (
-        isCommercialOperationV2(evento) &&
-        !isCommercialSimulation(evento, undefined)
-      );
-    }
-    const classification = classifyCommercialOperation(
-      evento,
-      detalhe,
-      undefined,
-    );
-    return classification.includedInCommercialAggregate;
-  }).length;
+  const commercialEventCount = countExpectedCommercialEvents(
+    eventos,
+    commercialByEventId,
+  );
   const commercialDetailsComplete =
     commercialEventCount === commercialEvents.length;
-  const commercialGrossValue =
-    commercialEvents.length === 0
-      ? 0
-      : commercialGrossComplete
-        ? Number(commercialGrossTotal.toFixed(2))
-        : commercialEvents.some((item) => item.detalhe.valor_bruto != null)
-          ? Number(commercialGrossTotal.toFixed(2))
-          : null;
-  const commercialNetValue =
-    commercialEvents.length === 0
-      ? 0
-      : commercialNetComplete
-        ? Number(commercialNetTotal.toFixed(2))
-        : commercialEvents.some(
-              (item) => item.detalhe.valor_liquido_derivado != null,
-            )
-          ? Number(commercialNetTotal.toFixed(2))
-          : null;
+  const commercialGrossValue = resolveCommercialValue(
+    commercialEvents,
+    commercialGrossComplete,
+    commercialGrossTotal,
+    (detail) => detail.valor_bruto,
+  );
+  const commercialNetValue = resolveCommercialValue(
+    commercialEvents,
+    commercialNetComplete,
+    commercialNetTotal,
+    (detail) => detail.valor_liquido_derivado,
+  );
+
   const comercial: CommercialTraceabilitySummary = {
     totalReceita: commercialReceita,
     totalCusto: commercialCusto,
@@ -438,16 +536,15 @@ export function buildCommercialReport({
       commercialEvents.length === 0 || commercialWeightComplete
         ? commercialWeightKg
         : null,
-    precoMedioCabecaLiquido:
-      commercialNetValue != null && commercialHeads > 0
-        ? Number((commercialNetValue / commercialHeads).toFixed(2))
-        : null,
-    precoMedioArrobaLiquido:
-      commercialNetValue != null &&
-      commercialArrobasComplete &&
-      commercialArrobas > 0
-        ? Number((commercialNetValue / commercialArrobas).toFixed(2))
-        : null,
+    precoMedioCabecaLiquido: commercialAverage(
+      commercialNetValue,
+      commercialHeads,
+    ),
+    precoMedioArrobaLiquido: commercialAverage(
+      commercialNetValue,
+      commercialArrobas,
+      commercialArrobasComplete,
+    ),
     operations: commercialEvents.length,
     ...commercialTraceability.toRows(),
   };

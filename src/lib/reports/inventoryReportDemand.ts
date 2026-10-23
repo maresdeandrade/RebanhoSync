@@ -74,15 +74,19 @@ function getFutureDemandQuantityPerAnimal(
   protocolItem: ProtocoloSanitarioItem | null,
 ): number | null {
   return (
-    readNumberPayload(item.payload, "quantityPerAnimal") ??
-    readNumberPayload(item.payload, "quantity_per_animal") ??
-    readNumberPayload(item.payload, "quantidade_por_animal") ??
-    readNumberPayload(item.source_ref, "quantityPerAnimal") ??
-    readNumberPayload(item.source_ref, "quantity_per_animal") ??
-    readNumberPayload(item.source_ref, "quantidade_por_animal") ??
-    readNumberPayload(protocolItem?.payload, "quantityPerAnimal") ??
-    readNumberPayload(protocolItem?.payload, "quantity_per_animal") ??
-    readNumberPayload(protocolItem?.payload, "quantidade_por_animal")
+    readQuantityPerAnimal(item.payload) ??
+    readQuantityPerAnimal(item.source_ref) ??
+    readQuantityPerAnimal(protocolItem?.payload)
+  );
+}
+
+function readQuantityPerAnimal(
+  payload: Parameters<typeof readNumberPayload>[0],
+): number | null {
+  return (
+    readNumberPayload(payload, "quantityPerAnimal") ??
+    readNumberPayload(payload, "quantity_per_animal") ??
+    readNumberPayload(payload, "quantidade_por_animal")
   );
 }
 
@@ -101,7 +105,50 @@ function getFutureDemandUnit(
   );
 }
 
-function adaptFutureSupplyAgenda(
+function countAnimalsByLot(animals: Animal[]) {
+  const animalCountByLote = new Map<string, number>();
+  for (const animal of animals) {
+    if (!animal.lote_id) continue;
+    animalCountByLote.set(
+      animal.lote_id,
+      (animalCountByLote.get(animal.lote_id) ?? 0) + 1,
+    );
+  }
+  return animalCountByLote;
+}
+
+function getAgendaAnimalCount(
+  item: AgendaItem,
+  animalCountByLote: Map<string, number>,
+) {
+  if (item.animal_id) return 1;
+  return item.lote_id ? (animalCountByLote.get(item.lote_id) ?? 1) : 1;
+}
+
+function adaptLegacySupplyAgendaItem(
+  item: AgendaItem,
+  protocolItem: ProtocoloSanitarioItem | null,
+  animalCountByLote: Map<string, number>,
+) {
+  return {
+    id: item.id,
+    status: item.status,
+    dueDate: item.data_prevista,
+    deletedAt: item.deleted_at,
+    domain: item.dominio,
+    animalId: item.animal_id,
+    loteId: item.lote_id,
+    protocolId: protocolItem?.protocolo_id ?? null,
+    protocolItemVersionId: protocolItem?.id ?? item.protocol_item_version_id,
+    productId: getFutureDemandProductId(item, protocolItem),
+    productName: getFutureDemandProductName(item, protocolItem),
+    productUnit: getFutureDemandUnit(item, protocolItem),
+    quantityPerAnimal: getFutureDemandQuantityPerAnimal(item, protocolItem),
+    animalCount: getAgendaAnimalCount(item, animalCountByLote),
+  };
+}
+
+function buildLegacySupplyAgenda(
   input: InventoryDemandInput,
   animals: Animal[],
   agendaAberta: AgendaItem[],
@@ -111,41 +158,17 @@ function adaptFutureSupplyAgenda(
       .filter((item) => !item.deleted_at)
       .map((item) => [item.id, item]),
   );
-  const animalCountByLote = new Map<string, number>();
-  for (const animal of animals) {
-    if (!animal.lote_id) continue;
-    animalCountByLote.set(
-      animal.lote_id,
-      (animalCountByLote.get(animal.lote_id) ?? 0) + 1,
-    );
-  }
-  const legacySupplyAgendaItems = agendaAberta.map((item) => {
+  const animalCountByLote = countAnimalsByLot(animals);
+  return agendaAberta.map((item) => {
     const protocolItem = item.protocol_item_version_id
       ? (protocolItemByIdForDemand.get(item.protocol_item_version_id) ?? null)
       : null;
-
-    return {
-      id: item.id,
-      status: item.status,
-      dueDate: item.data_prevista,
-      deletedAt: item.deleted_at,
-      domain: item.dominio,
-      animalId: item.animal_id,
-      loteId: item.lote_id,
-      protocolId: protocolItem?.protocolo_id ?? null,
-      protocolItemVersionId: protocolItem?.id ?? item.protocol_item_version_id,
-      productId: getFutureDemandProductId(item, protocolItem),
-      productName: getFutureDemandProductName(item, protocolItem),
-      productUnit: getFutureDemandUnit(item, protocolItem),
-      quantityPerAnimal: getFutureDemandQuantityPerAnimal(item, protocolItem),
-      animalCount: item.animal_id
-        ? 1
-        : item.lote_id
-          ? (animalCountByLote.get(item.lote_id) ?? 1)
-          : 1,
-    };
+    return adaptLegacySupplyAgendaItem(item, protocolItem, animalCountByLote);
   });
-  const composedSanitaryAgendaItems =
+}
+
+function selectComposedSupplyAgenda(input: InventoryDemandInput) {
+  return (
     input.futureSanitaryAgendaItems ??
     (input.sanitarioAgendaV2 !== undefined
       ? selectFutureSanitarySupplyAgenda({
@@ -157,7 +180,21 @@ function adaptFutureSupplyAgenda(
           lots: input.lotes,
           protocolItems: input.protocoloItensSanitarios ?? [],
         })
-      : undefined);
+      : undefined)
+  );
+}
+
+function adaptFutureSupplyAgenda(
+  input: InventoryDemandInput,
+  animals: Animal[],
+  agendaAberta: AgendaItem[],
+) {
+  const legacySupplyAgendaItems = buildLegacySupplyAgenda(
+    input,
+    animals,
+    agendaAberta,
+  );
+  const composedSanitaryAgendaItems = selectComposedSupplyAgenda(input);
   const usingComposedSanitaryAgenda = composedSanitaryAgendaItems !== undefined;
   const supplyAgendaItems =
     composedSanitaryAgendaItems ?? legacySupplyAgendaItems;
@@ -235,12 +272,26 @@ function summarizeFutureDemandGroups(
   return { futureDemandGroups, futureDemandMissingQuantity };
 }
 
-function buildReplenishmentAlerts(
+function matchesReplenishmentDemand(
+  demand: InventoryFutureDemandRow,
+  demandName: string,
+  insumo: InventoryDemandStock["insumos"][number],
+) {
+  const matchesProduct =
+    demand.productId && insumo.produto_veterinario_id === demand.productId;
+  const matchesName =
+    demandName.length > 0 &&
+    (insumo.nome.trim().toLowerCase() === demandName ||
+      insumo.nome.trim().toLowerCase().includes(demandName));
+  return (
+    (matchesProduct || matchesName) &&
+    insumo.unidade_base === demand.productUnit
+  );
+}
+
+function aggregateReplenishmentDemand(
   futureDemandGroups: InventoryFutureDemandRow[],
-  {
-    insumos,
-    inventorySaldoByInsumo,
-  }: Pick<InventoryDemandStock, "insumos" | "inventorySaldoByInsumo">,
+  insumos: InventoryDemandStock["insumos"],
 ) {
   const futureDemandByInventoryItem = new Map<string, number>();
   for (const demand of futureDemandGroups) {
@@ -248,15 +299,7 @@ function buildReplenishmentAlerts(
     const demandName = demand.productName.trim().toLowerCase();
 
     for (const insumo of insumos) {
-      const matchesProduct =
-        demand.productId && insumo.produto_veterinario_id === demand.productId;
-      const matchesName =
-        demandName.length > 0 &&
-        (insumo.nome.trim().toLowerCase() === demandName ||
-          insumo.nome.trim().toLowerCase().includes(demandName));
-      const sameUnit = insumo.unidade_base === demand.productUnit;
-
-      if ((matchesProduct || matchesName) && sameUnit) {
+      if (matchesReplenishmentDemand(demand, demandName, insumo)) {
         futureDemandByInventoryItem.set(
           insumo.id,
           (futureDemandByInventoryItem.get(insumo.id) ?? 0) +
@@ -265,6 +308,20 @@ function buildReplenishmentAlerts(
       }
     }
   }
+  return futureDemandByInventoryItem;
+}
+
+function buildReplenishmentAlerts(
+  futureDemandGroups: InventoryFutureDemandRow[],
+  {
+    insumos,
+    inventorySaldoByInsumo,
+  }: Pick<InventoryDemandStock, "insumos" | "inventorySaldoByInsumo">,
+) {
+  const futureDemandByInventoryItem = aggregateReplenishmentDemand(
+    futureDemandGroups,
+    insumos,
+  );
   const replenishmentAlerts = insumos
     .filter((insumo) => insumo.ativo)
     .map<InventoryReplenishmentAlertRow | null>((insumo) => {

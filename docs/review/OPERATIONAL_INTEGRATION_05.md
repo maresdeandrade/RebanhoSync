@@ -162,3 +162,36 @@ se este relatório acompanha o PR. Não incluir governança ou arquivos de outra
 worktrees. Não aplicar novamente o monólito de CONTRACT-04. Worktrees e artefatos
 preservados. Preparação de título/corpo de PR ocorre somente após este gate;
 nenhuma criação de PR ou operação remota é autorizada implicitamente.
+
+## Correção posterior do audit no PR #240
+
+O CI do commit inicial `658296d` falhou em `fallow audit --gate new-only`.
+A validação local anterior usou health/report-only, que não comprova esse gate.
+Reprodução com base explícita origin/main: 19 achados novos de complexidade,
+uma duplicação e seis achados herdados excluídos (cinco dependências e um teste).
+Alguns corpos vieram literalmente do monólito, mas continuavam acima dos limites
+ao serem movidos para os módulos novos. Não houve mudança de CI, thresholds,
+baseline, suppressions, dependências ou regras de negócio para obter aprovação.
+
+Correção nos oito módulos de agregação: helpers privados por responsabilidade
+para cobertura, linhas de atenção, escopo opcional por fazenda, estoque/demanda,
+evidência sanitária, métricas e financeiro/comercial. Reutilizados os classificadores
+comerciais já exportados por `finance/classification.ts`, removendo duplicação.
+As métricas de tamanho/complexidade registradas acima são da certificação inicial,
+antes deste ajuste interno; não representam uma medição global posterior.
+
+Validação nova observada:
+
+- `pnpm exec fallow audit --gate new-only --base origin/main --format json --no-cache`:
+  verdict pass, exit 0; zero achado novo em todas as categorias. Achados herdados
+  continuam reportados normalmente; não foram ocultados por configuração.
+- 58/58 testes de reports/Home/Relatórios, 34,74 s.
+- Paridade contra monólito corrigido: 38/38 testes, 40 relatórios completos,
+  ordem das chaves e não mutação, 2,44 s.
+- TypeScript direcionado: `[]`, exit 0. ESLint nos oito arquivos: exit 0.
+- Revisão independente do diff: alteração de ordem de chaves no estoque foi
+  identificada e restaurada; nenhum finding pendente no código final.
+- Harness temporário novamente removido de source; diff check aprovado.
+
+Gate local da correção: READY. A execução remota posterior é evidência separada;
+nenhuma conclusão de CI aprovado é inferida a partir desse resultado local.

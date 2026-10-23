@@ -15,6 +15,13 @@ function filterFarmRows<T extends { fazenda_id: string }>(
   return (rows ?? []).filter((row) => row.fazenda_id === fazendaId);
 }
 
+function filterOptionalFarmRows<T extends { fazenda_id: string }>(
+  rows: readonly T[] | undefined,
+  fazendaId: string,
+): T[] | undefined {
+  return rows ? filterFarmRows(rows, fazendaId) : undefined;
+}
+
 function scopeOperationalSummaryInput(
   input: OperationalSummaryInput,
 ): OperationalSummaryInput {
@@ -30,55 +37,53 @@ function scopeOperationalSummaryInput(
     pastos: filterFarmRows(input.pastos, fazendaId),
     agenda: filterFarmRows(input.agenda, fazendaId),
     eventos: filterFarmRows(input.eventos, fazendaId),
-    eventosSanitario: input.eventosSanitario
-      ? filterFarmRows(input.eventosSanitario, fazendaId)
-      : undefined,
-    eventosComercial: input.eventosComercial
-      ? filterFarmRows(input.eventosComercial, fazendaId)
-      : undefined,
-    eventosReproducao: input.eventosReproducao
-      ? filterFarmRows(input.eventosReproducao, fazendaId)
-      : undefined,
+    eventosSanitario: filterOptionalFarmRows(input.eventosSanitario, fazendaId),
+    eventosComercial: filterOptionalFarmRows(input.eventosComercial, fazendaId),
+    eventosReproducao: filterOptionalFarmRows(
+      input.eventosReproducao,
+      fazendaId,
+    ),
     eventosPesagem: filterFarmRows(input.eventosPesagem, fazendaId),
     eventosFinanceiro: filterFarmRows(input.eventosFinanceiro, fazendaId),
-    financeTransactions: input.financeTransactions
-      ? filterFarmRows(input.financeTransactions, fazendaId)
-      : undefined,
-    financeCategories: input.financeCategories
-      ? filterFarmRows(input.financeCategories, fazendaId)
-      : undefined,
-    sociedadesPecuarias: input.sociedadesPecuarias
-      ? filterFarmRows(input.sociedadesPecuarias, fazendaId)
-      : undefined,
-    sociedadeAnimais: input.sociedadeAnimais
-      ? filterFarmRows(input.sociedadeAnimais, fazendaId)
-      : undefined,
+    financeTransactions: filterOptionalFarmRows(
+      input.financeTransactions,
+      fazendaId,
+    ),
+    financeCategories: filterOptionalFarmRows(
+      input.financeCategories,
+      fazendaId,
+    ),
+    sociedadesPecuarias: filterOptionalFarmRows(
+      input.sociedadesPecuarias,
+      fazendaId,
+    ),
+    sociedadeAnimais: filterOptionalFarmRows(input.sociedadeAnimais, fazendaId),
     gestures: filterFarmRows(input.gestures, fazendaId),
     rejections: input.rejections.filter(
       (rejection) => rejection.fazenda_id === fazendaId,
     ),
-    protocolosSanitarios: input.protocolosSanitarios
-      ? filterFarmRows(input.protocolosSanitarios, fazendaId)
-      : undefined,
-    protocoloItensSanitarios: input.protocoloItensSanitarios
-      ? filterFarmRows(input.protocoloItensSanitarios, fazendaId)
-      : undefined,
+    protocolosSanitarios: filterOptionalFarmRows(
+      input.protocolosSanitarios,
+      fazendaId,
+    ),
+    protocoloItensSanitarios: filterOptionalFarmRows(
+      input.protocoloItensSanitarios,
+      fazendaId,
+    ),
     fazendaSanidadeConfig:
       input.fazendaSanidadeConfig?.fazenda_id === fazendaId
         ? input.fazendaSanidadeConfig
         : null,
-    insumos: input.insumos
-      ? filterFarmRows(input.insumos, fazendaId)
-      : undefined,
-    insumoApresentacoes: input.insumoApresentacoes
-      ? filterFarmRows(input.insumoApresentacoes, fazendaId)
-      : undefined,
-    insumoLotes: input.insumoLotes
-      ? filterFarmRows(input.insumoLotes, fazendaId)
-      : undefined,
-    insumoMovimentacoes: input.insumoMovimentacoes
-      ? filterFarmRows(input.insumoMovimentacoes, fazendaId)
-      : undefined,
+    insumos: filterOptionalFarmRows(input.insumos, fazendaId),
+    insumoApresentacoes: filterOptionalFarmRows(
+      input.insumoApresentacoes,
+      fazendaId,
+    ),
+    insumoLotes: filterOptionalFarmRows(input.insumoLotes, fazendaId),
+    insumoMovimentacoes: filterOptionalFarmRows(
+      input.insumoMovimentacoes,
+      fazendaId,
+    ),
   };
 }
 

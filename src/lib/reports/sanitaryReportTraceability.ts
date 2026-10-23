@@ -29,17 +29,10 @@ type SanitaryReportTraceabilityArgs = {
   loteById: Map<string, string>;
 };
 
-function summarizeSanitaryPrerequisites({
-  eventos,
-  sanitaryDetailByEventId,
-  stock: { insumos, activeInventoryLots, apresentacaoById, inventoryMovements },
-}: Pick<
-  SanitaryReportTraceabilityArgs,
-  "eventos" | "sanitaryDetailByEventId" | "stock"
->) {
-  const sanitaryEvents = eventos.filter(
-    (evento) => evento.dominio === "sanitario",
-  );
+function collectCatalogLinkedEvents(
+  sanitaryEvents: Evento[],
+  sanitaryDetailByEventId: Map<string, EventoSanitario>,
+) {
   const sanitaryCatalogProductIds = new Set<string>();
   let catalogLinkedEvents = 0;
   for (const event of sanitaryEvents) {
@@ -53,7 +46,13 @@ function summarizeSanitaryPrerequisites({
       sanitaryCatalogProductIds.add(catalogProductId);
     }
   }
+  return { sanitaryCatalogProductIds, catalogLinkedEvents };
+}
 
+function summarizeCatalogMappings(
+  sanitaryCatalogProductIds: Set<string>,
+  { insumos, activeInventoryLots, apresentacaoById }: SanitaryReportStock,
+) {
   let activeLotMappedCatalogProducts = 0;
   let presentationMappedCatalogProducts = 0;
   let reliablyMappedCatalogProducts = 0;
@@ -86,7 +85,32 @@ function summarizeSanitaryPrerequisites({
       reliablyMappedCatalogProducts += 1;
     }
   }
+  return {
+    activeLotMappedCatalogProducts,
+    presentationMappedCatalogProducts,
+    reliablyMappedCatalogProducts,
+  };
+}
 
+function summarizeSanitaryPrerequisites({
+  eventos,
+  sanitaryDetailByEventId,
+  stock,
+}: Pick<
+  SanitaryReportTraceabilityArgs,
+  "eventos" | "sanitaryDetailByEventId" | "stock"
+>) {
+  const sanitaryEvents = eventos.filter(
+    (evento) => evento.dominio === "sanitario",
+  );
+  const { sanitaryCatalogProductIds, catalogLinkedEvents } =
+    collectCatalogLinkedEvents(sanitaryEvents, sanitaryDetailByEventId);
+  const {
+    activeLotMappedCatalogProducts,
+    presentationMappedCatalogProducts,
+    reliablyMappedCatalogProducts,
+  } = summarizeCatalogMappings(sanitaryCatalogProductIds, stock);
+  const { inventoryMovements } = stock;
   const assistedSanitaryConsumptionMovements = inventoryMovements.filter(
     (movement) =>
       movement.tipo === "consumo_sanitario" &&
@@ -125,6 +149,145 @@ function summarizeSanitaryPrerequisites({
   return { sanitaryEvents, sanitaryPhase3Prerequisites };
 }
 
+function hasTraceableProduct(detail: EventoSanitario) {
+  return Boolean(
+    detail.produto_veterinario_id ||
+    detail.produto_nome_snapshot ||
+    detail.produto,
+  );
+}
+
+function hasTraceableDoseRoute(detail: EventoSanitario) {
+  return Boolean(
+    typeof detail.dose_quantidade === "number" &&
+    detail.dose_quantidade > 0 &&
+    detail.dose_unidade &&
+    detail.via_aplicacao,
+  );
+}
+
+function hasStockInconsistency(
+  detail: EventoSanitario,
+  event: Evento,
+  timezone: string,
+) {
+  return (
+    detail.estoque_lote_id &&
+    (!detail.estoque_lote_codigo_snapshot ||
+      !detail.validade_produto ||
+      detail.validade_produto < getEventDateKey(event, timezone))
+  );
+}
+
+function resolveTraceProtocol(
+  detail: EventoSanitario,
+  sanitaryProtocolItemById: Map<
+    string,
+    NonNullable<OperationalSummaryInput["protocoloItensSanitarios"]>[number]
+  >,
+) {
+  const protocolItem = detail.protocol_item_version_id
+    ? (sanitaryProtocolItemById.get(detail.protocol_item_version_id) ?? null)
+    : null;
+  const protocolLabel = protocolItem
+    ? `${protocolItem.item_code ?? protocolItem.tipo} / v${protocolItem.version}`
+    : detail.protocol_item_version
+      ? `Item sanitario v${detail.protocol_item_version}`
+      : "Sem protocolo";
+
+  return { protocolItem, protocolLabel };
+}
+
+type TraceCostMap = Map<string, SanitaryTraceabilityCostRow>;
+
+function addProductTraceCosts(
+  detail: EventoSanitario,
+  cost: number,
+  sanitaryTraceProduct: TraceCostMap,
+  sanitaryTraceStockLot: TraceCostMap,
+) {
+  addTraceabilityCost(
+    sanitaryTraceProduct,
+    detail.produto_veterinario_id ??
+      detail.produto_nome_snapshot ??
+      detail.produto,
+    detail.produto_nome_snapshot ?? detail.produto,
+    cost,
+  );
+  addTraceabilityCost(
+    sanitaryTraceStockLot,
+    detail.estoque_lote_id ?? detail.estoque_lote_codigo_snapshot,
+    detail.estoque_lote_codigo_snapshot ?? "Sem lote de estoque",
+    cost,
+  );
+}
+
+function addContextTraceCosts(
+  detail: EventoSanitario,
+  event: Evento,
+  cost: number,
+  { protocolItem, protocolLabel }: ReturnType<typeof resolveTraceProtocol>,
+  animalById: Map<string, string>,
+  loteById: Map<string, string>,
+  sanitaryTraceAnimal: TraceCostMap,
+  sanitaryTraceLote: TraceCostMap,
+  sanitaryTraceProtocol: TraceCostMap,
+) {
+  addTraceabilityCost(
+    sanitaryTraceAnimal,
+    event.animal_id,
+    animalById.get(event.animal_id ?? "") ?? "Sem animal",
+    cost,
+  );
+  addTraceabilityCost(
+    sanitaryTraceLote,
+    event.lote_id,
+    loteById.get(event.lote_id ?? "") ?? "Sem lote pecuario",
+    cost,
+  );
+  addTraceabilityCost(
+    sanitaryTraceProtocol,
+    detail.protocol_item_version_id ?? protocolItem?.logical_item_key,
+    protocolLabel,
+    cost,
+  );
+}
+
+type TraceabilityCounts = Pick<
+  SanitaryTraceabilitySummary,
+  | "eventsWithStructuredProduct"
+  | "eventsWithStockLot"
+  | "eventsWithoutCompleteTraceability"
+  | "productsWithoutStockLot"
+  | "missingCostEvents"
+  | "stockInconsistencyEvents"
+>;
+
+function countProductTraceability(
+  detail: EventoSanitario,
+  counts: TraceabilityCounts,
+) {
+  if (detail.produto_veterinario_id) counts.eventsWithStructuredProduct += 1;
+  const hasProduct = hasTraceableProduct(detail);
+  if (!hasProduct || !hasTraceableDoseRoute(detail))
+    counts.eventsWithoutCompleteTraceability += 1;
+  if (hasProduct && detail.custo_total_snapshot == null)
+    counts.missingCostEvents += 1;
+}
+
+function countStockTraceability(
+  detail: EventoSanitario,
+  event: Evento,
+  timezone: string,
+  counts: TraceabilityCounts,
+) {
+  if (detail.estoque_lote_id) counts.eventsWithStockLot += 1;
+  if (hasTraceableProduct(detail) && !detail.estoque_lote_id)
+    counts.productsWithoutStockLot += 1;
+  if (hasStockInconsistency(detail, event, timezone))
+    counts.stockInconsistencyEvents += 1;
+}
+
 function summarizeSanitaryTraceability(
   {
     input,
@@ -141,12 +304,14 @@ function summarizeSanitaryTraceability(
   const sanitaryTraceLote = new Map<string, SanitaryTraceabilityCostRow>();
   const sanitaryTraceProtocol = new Map<string, SanitaryTraceabilityCostRow>();
   let sanitaryTraceTotalCost = 0;
-  let eventsWithStructuredProduct = 0;
-  let eventsWithStockLot = 0;
-  let eventsWithoutCompleteTraceability = 0;
-  let productsWithoutStockLot = 0;
-  let missingCostEvents = 0;
-  let stockInconsistencyEvents = 0;
+  const counts = {
+    eventsWithStructuredProduct: 0,
+    eventsWithStockLot: 0,
+    eventsWithoutCompleteTraceability: 0,
+    productsWithoutStockLot: 0,
+    missingCostEvents: 0,
+    stockInconsistencyEvents: 0,
+  };
   const sanitaryProtocolItemById = new Map(
     (input.protocoloItensSanitarios ?? [])
       .filter((item) => !item.deleted_at)
@@ -159,83 +324,31 @@ function summarizeSanitaryTraceability(
 
     const cost = detail.custo_total_snapshot ?? 0;
     sanitaryTraceTotalCost = Number((sanitaryTraceTotalCost + cost).toFixed(2));
-    if (detail.produto_veterinario_id) eventsWithStructuredProduct += 1;
-    if (detail.estoque_lote_id) eventsWithStockLot += 1;
-    const hasProduct = Boolean(
-      detail.produto_veterinario_id ||
-      detail.produto_nome_snapshot ||
-      detail.produto,
-    );
-    const hasDoseVia = Boolean(
-      typeof detail.dose_quantidade === "number" &&
-      detail.dose_quantidade > 0 &&
-      detail.dose_unidade &&
-      detail.via_aplicacao,
-    );
-    if (!hasProduct || !hasDoseVia) eventsWithoutCompleteTraceability += 1;
-    if (hasProduct && !detail.estoque_lote_id) productsWithoutStockLot += 1;
-    if (hasProduct && detail.custo_total_snapshot == null)
-      missingCostEvents += 1;
-    if (
-      detail.estoque_lote_id &&
-      (!detail.estoque_lote_codigo_snapshot ||
-        !detail.validade_produto ||
-        detail.validade_produto <
-          getEventDateKey(event, metricTimezone.timezone))
-    ) {
-      stockInconsistencyEvents += 1;
-    }
-    const protocolItem = detail.protocol_item_version_id
-      ? (sanitaryProtocolItemById.get(detail.protocol_item_version_id) ?? null)
-      : null;
-    const protocolLabel = protocolItem
-      ? `${protocolItem.item_code ?? protocolItem.tipo} / v${protocolItem.version}`
-      : detail.protocol_item_version
-        ? `Item sanitario v${detail.protocol_item_version}`
-        : "Sem protocolo";
-
-    addTraceabilityCost(
+    countProductTraceability(detail, counts);
+    countStockTraceability(detail, event, metricTimezone.timezone, counts);
+    const protocol = resolveTraceProtocol(detail, sanitaryProtocolItemById);
+    addProductTraceCosts(
+      detail,
+      cost,
       sanitaryTraceProduct,
-      detail.produto_veterinario_id ??
-        detail.produto_nome_snapshot ??
-        detail.produto,
-      detail.produto_nome_snapshot ?? detail.produto,
-      cost,
-    );
-    addTraceabilityCost(
       sanitaryTraceStockLot,
-      detail.estoque_lote_id ?? detail.estoque_lote_codigo_snapshot,
-      detail.estoque_lote_codigo_snapshot ?? "Sem lote de estoque",
-      cost,
     );
-    addTraceabilityCost(
+    addContextTraceCosts(
+      detail,
+      event,
+      cost,
+      protocol,
+      animalById,
+      loteById,
       sanitaryTraceAnimal,
-      event.animal_id,
-      animalById.get(event.animal_id ?? "") ?? "Sem animal",
-      cost,
-    );
-    addTraceabilityCost(
       sanitaryTraceLote,
-      event.lote_id,
-      loteById.get(event.lote_id ?? "") ?? "Sem lote pecuario",
-      cost,
-    );
-    addTraceabilityCost(
       sanitaryTraceProtocol,
-      detail.protocol_item_version_id ?? protocolItem?.logical_item_key,
-      protocolLabel,
-      cost,
     );
   }
 
   const sanitaryTraceability: SanitaryTraceabilitySummary = {
     totalCost: sanitaryTraceTotalCost,
-    eventsWithStructuredProduct,
-    eventsWithStockLot,
-    eventsWithoutCompleteTraceability,
-    productsWithoutStockLot,
-    missingCostEvents,
-    stockInconsistencyEvents,
+    ...counts,
     byProduct: toSortedTraceabilityRows(sanitaryTraceProduct),
     byStockLot: toSortedTraceabilityRows(sanitaryTraceStockLot),
     byAnimal: toSortedTraceabilityRows(sanitaryTraceAnimal),

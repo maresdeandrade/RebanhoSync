@@ -40,6 +40,125 @@ function getMetricCoverageDomain(key: OperationalMetricKey): string {
   return "operacional";
 }
 
+type CoverageInput = Pick<
+  OperationalSummaryInput,
+  "fazendaId" | "historicalCoverage" | "gestures" | "rejections"
+>;
+type ExplicitCoverage = NonNullable<
+  OperationalSummaryInput["historicalCoverage"]
+>[OperationalMetricKey];
+
+function resolveCoverageState(
+  kind: MetricCoverage["kind"],
+  useExplicit: boolean,
+  explicit: ExplicitCoverage,
+  fallback: MetricCoverage["state"],
+): MetricCoverage["state"] {
+  return kind === "current_snapshot"
+    ? "not_applicable"
+    : kind === "planning"
+      ? "partial"
+      : useExplicit
+        ? explicit.state
+        : fallback;
+}
+function resolveCoverageEvidence(
+  kind: MetricCoverage["kind"],
+  useExplicit: boolean,
+  explicit: ExplicitCoverage,
+  fallback: string[],
+): string[] {
+  return kind === "current_snapshot"
+    ? ["Read model local atual filtrado por fazenda_id."]
+    : kind === "planning"
+      ? ["Agenda representa planejamento futuro e nao comprova execucao."]
+      : useExplicit
+        ? explicit.evidence
+        : fallback;
+}
+function resolvePendingCoverage(pending: number, explicit: ExplicitCoverage) {
+  return pending > 0
+    ? { pendingLocalOperations: pending }
+    : explicit?.pendingLocalOperations !== undefined
+      ? { pendingLocalOperations: explicit.pendingLocalOperations }
+      : {};
+}
+function buildMetricCoverage(
+  key: OperationalMetricKey,
+  kind: MetricCoverage["kind"],
+  input: CoverageInput,
+  pending: number,
+  fallbackState: MetricCoverage["state"],
+  fallbackEvidence: string[],
+): MetricCoverage {
+  const explicit = input.historicalCoverage?.[key];
+  const useExplicit =
+    kind === "historical" && explicit !== undefined && pending === 0;
+  return {
+    kind,
+    state: resolveCoverageState(kind, useExplicit, explicit, fallbackState),
+    scope: { fazendaId: input.fazendaId, domain: getMetricCoverageDomain(key) },
+    evidence: resolveCoverageEvidence(
+      kind,
+      useExplicit,
+      explicit,
+      fallbackEvidence,
+    ),
+    ...resolvePendingCoverage(pending, explicit),
+  };
+}
+function needsHistoricalDowngrade(
+  kind: MetricCoverage["kind"],
+  metric: MetricResult<number>,
+  coverage: MetricCoverage,
+): boolean {
+  return (
+    kind === "historical" &&
+    ["complete", "partial", "unavailable"].includes(metric.status) &&
+    coverage.state !== "verified"
+  );
+}
+function downgradeHistoricalMetric(
+  metric: MetricResult<number>,
+  coverage: MetricCoverage,
+  limitations: string[],
+): Pick<MetricResult<number>, "status" | "value"> {
+  const hasLocalEvidence = metric.value != null && metric.value !== 0;
+  const status =
+    coverage.state === "partial" || hasLocalEvidence
+      ? "partial"
+      : "unavailable";
+  const value = status === "unavailable" ? null : metric.value;
+  limitations.push(
+    hasLocalEvidence
+      ? "Valor representa o conjunto local observado, mas a cobertura historica completa nao foi comprovada."
+      : "Zero local nao e tratado como zero factual porque a cobertura historica completa nao foi comprovada.",
+  );
+  return { status, value };
+}
+function closeMetricValue(
+  metric: MetricResult<number>,
+  kind: MetricCoverage["kind"],
+  coverage: MetricCoverage,
+  limitations: string[],
+) {
+  let status = metric.status;
+  let value = metric.value;
+  if (needsHistoricalDowngrade(kind, metric, coverage)) {
+    const closed = downgradeHistoricalMetric(metric, coverage, limitations);
+    status = closed.status;
+    value = closed.value;
+  }
+  if (kind === "planning" && metric.status === "complete") {
+    status = "partial";
+    limitations.push(
+      "Demanda futura e planejamento local; nao ha prova de cobertura historica nem de execucao.",
+    );
+  }
+  if (status === "unavailable") value = null;
+  return { status, value };
+}
+
 export function closeMetricSemantics(
   metrics: Record<OperationalMetricKey, MetricResult<number>>,
   input: Pick<
@@ -68,78 +187,24 @@ export function closeMetricSemantics(
     Object.entries(metrics).map(([rawKey, metric]) => {
       const key = rawKey as OperationalMetricKey;
       const kind = getMetricCoverageKind(key);
-      const explicitCoverage = input.historicalCoverage?.[key];
-      const canUseExplicitCoverage =
-        kind === "historical" &&
-        explicitCoverage !== undefined &&
-        pendingLocalOperations === 0;
-      const coverage: MetricCoverage = {
+      const coverage = buildMetricCoverage(
+        key,
         kind,
-        state:
-          kind === "current_snapshot"
-            ? "not_applicable"
-            : kind === "planning"
-              ? "partial"
-              : canUseExplicitCoverage
-                ? explicitCoverage.state
-                : historicalCoverageState,
-        scope: {
-          fazendaId: input.fazendaId,
-          domain: getMetricCoverageDomain(key),
-        },
-        evidence:
-          kind === "current_snapshot"
-            ? ["Read model local atual filtrado por fazenda_id."]
-            : kind === "planning"
-              ? [
-                  "Agenda representa planejamento futuro e nao comprova execucao.",
-                ]
-              : canUseExplicitCoverage
-                ? explicitCoverage.evidence
-                : historicalEvidence,
-        ...(pendingLocalOperations > 0
-          ? { pendingLocalOperations }
-          : explicitCoverage?.pendingLocalOperations !== undefined
-            ? {
-                pendingLocalOperations: explicitCoverage.pendingLocalOperations,
-              }
-            : {}),
-      };
+        input,
+        pendingLocalOperations,
+        historicalCoverageState,
+        historicalEvidence,
+      );
       const limitations = [
         ...metric.limitations,
         ...(metricTimezone.limitation ? [metricTimezone.limitation] : []),
       ];
-      let status = metric.status;
-      let value = metric.value;
-
-      if (
-        kind === "historical" &&
-        (metric.status === "complete" ||
-          metric.status === "partial" ||
-          metric.status === "unavailable") &&
-        coverage.state !== "verified"
-      ) {
-        const hasLocalEvidence = metric.value != null && metric.value !== 0;
-        status =
-          coverage.state === "partial" || hasLocalEvidence
-            ? "partial"
-            : "unavailable";
-        value = status === "unavailable" ? null : metric.value;
-        limitations.push(
-          hasLocalEvidence
-            ? "Valor representa o conjunto local observado, mas a cobertura historica completa nao foi comprovada."
-            : "Zero local nao e tratado como zero factual porque a cobertura historica completa nao foi comprovada.",
-        );
-      }
-
-      if (kind === "planning" && metric.status === "complete") {
-        status = "partial";
-        limitations.push(
-          "Demanda futura e planejamento local; nao ha prova de cobertura historica nem de execucao.",
-        );
-      }
-
-      if (status === "unavailable") value = null;
+      const { status, value } = closeMetricValue(
+        metric,
+        kind,
+        coverage,
+        limitations,
+      );
 
       return [
         key,

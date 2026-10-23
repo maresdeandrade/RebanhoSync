@@ -153,6 +153,95 @@ function summarizeInventoryPartialCost(
   return partialCost;
 }
 
+function getInventoryTypeLabel(tipo: string | undefined): string {
+  if (tipo === "sanitario") return "Sanitario";
+  if (tipo === "nutricional") return "Nutricional";
+  return "Outro";
+}
+
+function getResupplyGap(
+  resupply: ReturnType<typeof evaluateInventoryResupply>,
+) {
+  if (resupply.status === "critical") return resupply.gapToMinimum;
+  if (resupply.status === "warning") return resupply.gapToReorderPoint;
+  return 0;
+}
+
+function summarizeLotMovements(movements: InsumoMovimentacao[]) {
+  return movements.reduce(
+    (acc, movement) => {
+      const signal = getInventoryMovementSignal(movement.tipo);
+      if (signal === "entrada") acc.entradas += movement.quantidade_base;
+      if (signal === "saida") acc.saidas += movement.quantidade_base;
+      return acc;
+    },
+    { entradas: 0, saidas: 0 },
+  );
+}
+
+type StockProduct = NonNullable<InventoryStockInput["insumos"]>[number];
+type StockPresentation = NonNullable<
+  InventoryStockInput["insumoApresentacoes"]
+>[number];
+
+function getInventoryProductFields(insumo: StockProduct | undefined) {
+  return {
+    insumoId: insumo?.id ?? null,
+    productId: insumo?.produto_veterinario_id ?? null,
+    categoria: normalizeInventoryCategory(insumo?.categoria),
+    insumo: insumo?.nome ?? "Insumo sem cadastro",
+    tipo: getInventoryTypeLabel(insumo?.tipo),
+  };
+}
+
+function getInventoryLotFields(
+  lot: InsumoLote,
+  apresentacao: StockPresentation | undefined,
+) {
+  return {
+    id: lot.id,
+    lote: lot.identificacao_lote ?? "Sem identificacao",
+    apresentacao: apresentacao?.nome ?? "Sem apresentacao",
+    unidadeBase: lot.unidade_base,
+    saldo: lot.saldo_atual_base,
+    status: lot.status,
+    validade: lot.validade,
+    local: lot.local_armazenamento,
+  };
+}
+
+function buildInventoryItemRow(
+  lot: InsumoLote,
+  insumo: StockProduct | undefined,
+  apresentacao: StockPresentation | undefined,
+  movements: InsumoMovimentacao[],
+  inventoryBalance: number | undefined,
+): InventoryReportItemRow {
+  const movementTotals = summarizeLotMovements(movements);
+  const resupply = evaluateInventoryResupply(
+    inventoryBalance ?? lot.saldo_atual_base,
+    parseInventoryResupplyPolicy(insumo?.payload),
+  );
+  const lotFields = getInventoryLotFields(lot, apresentacao);
+  return {
+    id: lotFields.id,
+    ...getInventoryProductFields(insumo),
+    lote: lotFields.lote,
+    apresentacao: lotFields.apresentacao,
+    unidadeBase: lotFields.unidadeBase,
+    saldo: lotFields.saldo,
+    entradas: movementTotals.entradas,
+    saidas: movementTotals.saidas,
+    status: lotFields.status,
+    validade: lotFields.validade,
+    local: lotFields.local,
+    resupplyStatus: resupply.status,
+    minimumStockBase: resupply.minimumStockBase,
+    reorderPointBase: resupply.reorderPointBase,
+    resupplyGap: getResupplyGap(resupply),
+  };
+}
+
 export function buildInventoryStock({
   input,
   metricTimezone,
@@ -204,52 +293,13 @@ export function buildInventoryStock({
       const apresentacao = lot.apresentacao_id
         ? apresentacaoById.get(lot.apresentacao_id)
         : undefined;
-      const movements = movementsByLot.get(lot.id) ?? [];
-      const movementTotals = movements.reduce(
-        (acc, movement) => {
-          const signal = getInventoryMovementSignal(movement.tipo);
-          if (signal === "entrada") acc.entradas += movement.quantidade_base;
-          if (signal === "saida") acc.saidas += movement.quantidade_base;
-          return acc;
-        },
-        { entradas: 0, saidas: 0 },
+      return buildInventoryItemRow(
+        lot,
+        insumo,
+        apresentacao,
+        movementsByLot.get(lot.id) ?? [],
+        inventorySaldoByInsumo.get(lot.insumo_id),
       );
-      const resupply = evaluateInventoryResupply(
-        inventorySaldoByInsumo.get(lot.insumo_id) ?? lot.saldo_atual_base,
-        parseInventoryResupplyPolicy(insumo?.payload),
-      );
-
-      return {
-        id: lot.id,
-        insumoId: insumo?.id ?? null,
-        productId: insumo?.produto_veterinario_id ?? null,
-        categoria: normalizeInventoryCategory(insumo?.categoria),
-        insumo: insumo?.nome ?? "Insumo sem cadastro",
-        tipo:
-          insumo?.tipo === "sanitario"
-            ? "Sanitario"
-            : insumo?.tipo === "nutricional"
-              ? "Nutricional"
-              : "Outro",
-        lote: lot.identificacao_lote ?? "Sem identificacao",
-        apresentacao: apresentacao?.nome ?? "Sem apresentacao",
-        unidadeBase: lot.unidade_base,
-        saldo: lot.saldo_atual_base,
-        entradas: movementTotals.entradas,
-        saidas: movementTotals.saidas,
-        status: lot.status,
-        validade: lot.validade,
-        local: lot.local_armazenamento,
-        resupplyStatus: resupply.status,
-        minimumStockBase: resupply.minimumStockBase,
-        reorderPointBase: resupply.reorderPointBase,
-        resupplyGap:
-          resupply.status === "critical"
-            ? resupply.gapToMinimum
-            : resupply.status === "warning"
-              ? resupply.gapToReorderPoint
-              : 0,
-      };
     })
     .sort((left, right) =>
       `${left.categoria} ${left.insumo} ${left.lote}`.localeCompare(

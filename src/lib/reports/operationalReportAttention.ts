@@ -147,6 +147,60 @@ export function buildOperationalReadModels({
   };
 }
 
+function agendaProtocolItem(
+  item: AgendaItem,
+  items: ReadonlyMap<string, ProtocoloSanitarioItem>,
+) {
+  return item.protocol_item_version_id
+    ? (items.get(item.protocol_item_version_id) ?? null)
+    : null;
+}
+function agendaSchedule(
+  item: AgendaItem,
+  protocolItem: ProtocoloSanitarioItem | null,
+) {
+  return item.dominio === "sanitario"
+    ? describeSanitaryAgendaScheduleMeta({
+        intervalDays:
+          item.interval_days_applied ?? protocolItem?.intervalo_dias ?? null,
+        payloads: [
+          protocolItem?.payload ?? null,
+          item.payload,
+          item.source_ref,
+        ],
+      })
+    : null;
+}
+function agendaScheduleLabels(scheduleMeta: ReturnType<typeof agendaSchedule>) {
+  return {
+    scheduleLabel: scheduleMeta?.label,
+    scheduleModeLabel: scheduleMeta?.modeLabel,
+    scheduleAnchorLabel: scheduleMeta?.anchorLabel ?? undefined,
+  };
+}
+function agendaTitle(
+  item: AgendaItem,
+  sanitaryItem: SanitaryAttentionRow | undefined,
+) {
+  return (
+    sanitaryItem?.titulo ??
+    `${DOMAIN_LABEL[item.dominio]}: ${item.tipo.replaceAll("_", " ")}`
+  );
+}
+function agendaContext(
+  item: AgendaItem,
+  sanitaryItem: SanitaryAttentionRow | undefined,
+  animalById: ReadonlyMap<string, string>,
+  loteById: ReadonlyMap<string, string>,
+) {
+  return (
+    sanitaryItem?.contexto ??
+    animalById.get(item.animal_id ?? "") ??
+    loteById.get(item.lote_id ?? "") ??
+    "Sem animal ou lote vinculado"
+  );
+}
+
 export function buildOperationalAttentionRows({
   agendaAberta,
   sanitaryAttentionById,
@@ -174,38 +228,15 @@ export function buildOperationalAttentionRows({
     .slice(0, 10)
     .map((item) => {
       const sanitaryItem = sanitaryAttentionById.get(item.id);
-      const protocolItem = item.protocol_item_version_id
-        ? (sanitaryProtocolItemById.get(item.protocol_item_version_id) ?? null)
-        : null;
-      const scheduleMeta =
-        item.dominio === "sanitario"
-          ? describeSanitaryAgendaScheduleMeta({
-              intervalDays:
-                item.interval_days_applied ??
-                protocolItem?.intervalo_dias ??
-                null,
-              payloads: [
-                protocolItem?.payload ?? null,
-                item.payload,
-                item.source_ref,
-              ],
-            })
-          : null;
+      const protocolItem = agendaProtocolItem(item, sanitaryProtocolItemById);
+      const scheduleMeta = agendaSchedule(item, protocolItem);
 
       return {
         id: item.id,
         data: item.data_prevista,
-        titulo:
-          sanitaryItem?.titulo ??
-          `${DOMAIN_LABEL[item.dominio]}: ${item.tipo.replaceAll("_", " ")}`,
-        contexto:
-          sanitaryItem?.contexto ??
-          animalById.get(item.animal_id ?? "") ??
-          loteById.get(item.lote_id ?? "") ??
-          "Sem animal ou lote vinculado",
-        scheduleLabel: scheduleMeta?.label,
-        scheduleModeLabel: scheduleMeta?.modeLabel,
-        scheduleAnchorLabel: scheduleMeta?.anchorLabel ?? undefined,
+        titulo: agendaTitle(item, sanitaryItem),
+        contexto: agendaContext(item, sanitaryItem, animalById, loteById),
+        ...agendaScheduleLabels(scheduleMeta),
         operationalClassLabel: sanitaryItem
           ? getSanitaryAttentionOperationalClassLabel(
               sanitaryItem.operationalClass,

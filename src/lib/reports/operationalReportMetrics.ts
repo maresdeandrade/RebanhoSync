@@ -81,6 +81,19 @@ function prepareHerdEvidence(
     commercialDetailsComplete && deathEventsWithoutAnimal === 0
       ? "complete"
       : "partial";
+  const { historicalCategoryValue, historicalCategoryStatus } =
+    prepareHistoricalCategoryEvidence(eventos);
+  return {
+    herdEntryCount,
+    herdExitCount,
+    herdEntryStatus,
+    herdExitStatus,
+    historicalCategoryValue,
+    historicalCategoryStatus,
+  };
+}
+
+function prepareHistoricalCategoryEvidence(eventos: Evento[]) {
   const historicalCategoryLabels = new Set<string>();
   for (const event of eventos) {
     const category =
@@ -94,10 +107,6 @@ function prepareHerdEvidence(
   const historicalCategoryStatus: MetricStatus =
     historicalCategoryValue === null ? "unavailable" : "partial";
   return {
-    herdEntryCount,
-    herdExitCount,
-    herdEntryStatus,
-    herdExitStatus,
     historicalCategoryValue,
     historicalCategoryStatus,
   };
@@ -130,6 +139,27 @@ function prepareFinanceEvidence(
       : financeDetailsComplete
         ? "complete"
         : "partial";
+  const { financeSources, financeMetricLimitations } =
+    prepareFinanceLedgerEvidence(input, financeDetailsComplete);
+  const {
+    observedFinanceMetricStatus,
+    observedFinanceSources,
+    observedFinanceLimitations,
+  } = prepareObservedFinanceEvidence(observedEconomicResult);
+  return {
+    financeMetricStatus,
+    financeSources,
+    financeMetricLimitations,
+    observedFinanceMetricStatus,
+    observedFinanceSources,
+    observedFinanceLimitations,
+  };
+}
+
+function prepareFinanceLedgerEvidence(
+  input: Pick<OperationalSummaryInput, "financeTransactions">,
+  financeDetailsComplete: boolean,
+) {
   const financeSources = input.financeTransactions
     ? [
         { name: "state_finance_transactions", role: "primary" as const },
@@ -149,6 +179,12 @@ function prepareFinanceEvidence(
       ? []
       : ["Existem Eventos financeiros sem detalhe carregado."]),
   ];
+  return { financeSources, financeMetricLimitations };
+}
+
+function prepareObservedFinanceEvidence(
+  observedEconomicResult: Finance["observedEconomicResult"],
+) {
   const observedFinanceMetricStatus: MetricStatus =
     observedEconomicResult.status === "NOT_CALCULATED"
       ? "unavailable"
@@ -168,9 +204,6 @@ function prepareFinanceEvidence(
       : []),
   ];
   return {
-    financeMetricStatus,
-    financeSources,
-    financeMetricLimitations,
     observedFinanceMetricStatus,
     observedFinanceSources,
     observedFinanceLimitations,
@@ -228,14 +261,13 @@ function prepareCommercialEvidence(commercial: Commercial) {
     commercialHeads,
     commercialArrobas,
   } = commercial;
-  const commercialStatus: "complete" | "partial" =
-    !commercialDetailsComplete ||
-    !commercialGrossComplete ||
-    !commercialNetComplete ||
-    !commercialWeightComplete ||
-    !commercialArrobasComplete
-      ? "partial"
-      : "complete";
+  const commercialStatus = resolveCommercialCompleteness(
+    commercialDetailsComplete,
+    commercialGrossComplete,
+    commercialNetComplete,
+    commercialWeightComplete,
+    commercialArrobasComplete,
+  );
   const commercialPriceHeadStatus: MetricStatus =
     commercialStatus === "partial"
       ? "partial"
@@ -255,6 +287,22 @@ function prepareCommercialEvidence(commercial: Commercial) {
     commercialPriceHeadStatus,
     commercialPriceArrobaStatus,
   };
+}
+
+function resolveCommercialCompleteness(
+  commercialDetailsComplete: boolean,
+  commercialGrossComplete: boolean,
+  commercialNetComplete: boolean,
+  commercialWeightComplete: boolean,
+  commercialArrobasComplete: boolean,
+): "complete" | "partial" {
+  return !commercialDetailsComplete ||
+    !commercialGrossComplete ||
+    !commercialNetComplete ||
+    !commercialWeightComplete ||
+    !commercialArrobasComplete
+    ? "partial"
+    : "complete";
 }
 
 function buildHerdMetrics(
@@ -625,6 +673,41 @@ function buildAnimalMetrics(
       ],
       period: historicalPeriod,
     }),
+    ...buildAverageWeightMetric(
+      pesagens,
+      totalPeso,
+      weightDetailsComplete,
+      historicalPeriod,
+    ),
+    ...buildLastWeightMetric(
+      ultimaPesagem,
+      weightDetailsComplete,
+      historicalPeriod,
+    ),
+    ...buildReproductiveActivityMetrics(
+      reproductiveSummary,
+      reproductionLoaded,
+      reproductiveCoverageStatus,
+      historicalPeriod,
+    ),
+    ...buildReproductiveOutcomeMetrics(
+      reproductiveSummary,
+      reproductionLoaded,
+      reproductiveCoverageStatus,
+      partoEventsInPeriod,
+      birthsComplete,
+      historicalPeriod,
+    ),
+  };
+}
+
+function buildAverageWeightMetric(
+  pesagens: Weights["pesagens"],
+  totalPeso: Weights["totalPeso"],
+  weightDetailsComplete: boolean,
+  historicalPeriod: Period,
+): Metrics<"pesagem_media_kg"> {
+  return {
     pesagem_media_kg: makeMetric<number>({
       value:
         pesagens.length > 0 && weightDetailsComplete
@@ -642,6 +725,15 @@ function buildAnimalMetrics(
       ],
       period: historicalPeriod,
     }),
+  };
+}
+
+function buildLastWeightMetric(
+  ultimaPesagem: Weights["ultimaPesagem"],
+  weightDetailsComplete: boolean,
+  historicalPeriod: Period,
+): Metrics<"pesagem_ultimo_kg"> {
+  return {
     pesagem_ultimo_kg: makeMetric<number>({
       value: weightDetailsComplete
         ? (ultimaPesagem?.detalhe.peso_kg ?? null)
@@ -658,6 +750,21 @@ function buildAnimalMetrics(
       ],
       period: historicalPeriod,
     }),
+  };
+}
+
+function buildReproductiveActivityMetrics(
+  reproductiveSummary: Reproduction["reproductiveSummary"],
+  reproductionLoaded: boolean,
+  reproductiveCoverageStatus: Reproduction["reproductiveCoverageStatus"],
+  historicalPeriod: Period,
+): Metrics<
+  | "repro_matrizes"
+  | "repro_servicos"
+  | "repro_diagnosticos"
+  | "repro_prenhas_atuais"
+> {
+  return {
     repro_matrizes: makeMetric<number>({
       value: reproductiveSummary.matrizes,
       status: "complete",
@@ -695,6 +802,18 @@ function buildAnimalMetrics(
         "Prenhez atual e projeção reconstruida do historico factual; nao usa Agenda nem taxonomy_facts.",
       ],
     }),
+  };
+}
+
+function buildReproductiveOutcomeMetrics(
+  reproductiveSummary: Reproduction["reproductiveSummary"],
+  reproductionLoaded: boolean,
+  reproductiveCoverageStatus: Reproduction["reproductiveCoverageStatus"],
+  partoEventsInPeriod: Reproduction["partoEventsInPeriod"],
+  birthsComplete: boolean,
+  historicalPeriod: Period,
+): Metrics<"repro_partos" | "repro_abortos" | "repro_nascimentos"> {
+  return {
     repro_partos: makeMetric<number>({
       value: reproductionLoaded ? reproductiveSummary.partos : null,
       status: reproductiveCoverageStatus,
@@ -774,6 +893,26 @@ function buildSanitaryInventoryMetrics(
         "Saldo atual e read model; custo ausente permanece parcial no bloco de custo.",
       ],
     }),
+    ...buildInventoryFlowMetrics(
+      inventoryMovements,
+      inventoryLoaded,
+      historicalPeriod,
+    ),
+    estoque_demanda_futura: makeMetric<number>({
+      value: futureDemandMetricValue,
+      status: futureDemandMetricStatus,
+      sources: [{ name: futureDemandSource, role: "primary" }],
+      limitations: futureDemandLimitations,
+    }),
+  };
+}
+
+function buildInventoryFlowMetrics(
+  inventoryMovements: Stock["inventoryMovements"],
+  inventoryLoaded: boolean,
+  historicalPeriod: Period,
+): Metrics<"estoque_entradas" | "estoque_saidas"> {
+  return {
     estoque_entradas: makeMetric<number>({
       value: inventoryLoaded
         ? inventoryMovements.reduce(
@@ -803,12 +942,6 @@ function buildSanitaryInventoryMetrics(
       status: inventoryLoaded ? "complete" : "unavailable",
       sources: [{ name: "state_insumo_movimentacoes", role: "primary" }],
       period: historicalPeriod,
-    }),
-    estoque_demanda_futura: makeMetric<number>({
-      value: futureDemandMetricValue,
-      status: futureDemandMetricStatus,
-      sources: [{ name: futureDemandSource, role: "primary" }],
-      limitations: futureDemandLimitations,
     }),
   };
 }
