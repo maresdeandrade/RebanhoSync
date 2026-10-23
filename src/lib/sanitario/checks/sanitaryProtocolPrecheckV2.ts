@@ -474,27 +474,12 @@ function resolveHistoryWindowDays(input: {
   anchorDate?: string;
 }): { minDays: number; maxDays: number } | null {
   if (input.requirement.kind === "previous_dose") {
-    const minDays = readNumber(
-      input.item.operationalWindowRule.min_offset_days,
-    );
-    const maxDays = readNumber(
-      input.item.operationalWindowRule.max_offset_days,
-    );
-    return minDays !== null && maxDays !== null && maxDays >= minDays
-      ? { minDays, maxDays }
-      : null;
+    return previousDoseWindowDays(input.item);
   }
 
   const recurrenceKind = readRecurrenceKind(input.item);
   if (recurrenceKind === "annual_or_semester_by_risk") {
-    if (!input.cadence) return null;
-    const intervalDays = input.cadence === "semiannual" ? 182 : 365;
-    const toleranceDays =
-      readNumber(readRecord(input.item.boosterRule.tolerance).days) ?? 0;
-    return {
-      minDays: intervalDays - toleranceDays,
-      maxDays: intervalDays + toleranceDays,
-    };
+    return riskCadenceWindowDays(input.item, input.cadence);
   }
   if (recurrenceKind !== "annual" && recurrenceKind !== "annual_if_risk_area") {
     return null;
@@ -502,21 +487,37 @@ function resolveHistoryWindowDays(input: {
   const toleranceDays =
     readNumber(readRecord(input.item.boosterRule.tolerance).days) ?? 0;
   if (isSanitaryClassSchemeV2(input.item) && input.anchorDate) {
-    const anchor = parseDateKey(input.anchorDate);
-    if (!anchor) return null;
-    const anniversary = new Date(anchor);
-    anniversary.setUTCDate(1);
-    anniversary.setUTCFullYear(anniversary.getUTCFullYear() + 1);
-    const lastDay = new Date(Date.UTC(anniversary.getUTCFullYear(), anniversary.getUTCMonth() + 1, 0)).getUTCDate();
-    anniversary.setUTCDate(Math.min(anchor.getUTCDate(), lastDay));
-    const interval = daysBetween(input.anchorDate, anniversary.toISOString().slice(0, 10));
-    if (interval === null) return null;
-    return { minDays: interval - toleranceDays, maxDays: interval + toleranceDays };
+    return calendarAnnualWindowDays(input.anchorDate, toleranceDays);
   }
   return {
     minDays: 365 - toleranceDays,
     maxDays: 365 + toleranceDays,
   };
+}
+
+function previousDoseWindowDays(item: SanitaryProtocolItemV2ReadModel) {
+  const minDays = readNumber(item.operationalWindowRule.min_offset_days);
+  const maxDays = readNumber(item.operationalWindowRule.max_offset_days);
+  return minDays !== null && maxDays !== null && maxDays >= minDays ? { minDays, maxDays } : null;
+}
+
+function riskCadenceWindowDays(item: SanitaryProtocolItemV2ReadModel, cadence: SanitaryPrecheckAnimalResumoV2["sanitaryCadence"]) {
+  if (!cadence) return null;
+  const intervalDays = cadence === "semiannual" ? 182 : 365;
+  const toleranceDays = readNumber(readRecord(item.boosterRule.tolerance).days) ?? 0;
+  return { minDays: intervalDays - toleranceDays, maxDays: intervalDays + toleranceDays };
+}
+
+function calendarAnnualWindowDays(anchorDate: string, toleranceDays: number) {
+  const anchor = parseDateKey(anchorDate);
+  if (!anchor) return null;
+  const anniversary = new Date(anchor);
+  anniversary.setUTCDate(1);
+  anniversary.setUTCFullYear(anniversary.getUTCFullYear() + 1);
+  const lastDay = new Date(Date.UTC(anniversary.getUTCFullYear(), anniversary.getUTCMonth() + 1, 0)).getUTCDate();
+  anniversary.setUTCDate(Math.min(anchor.getUTCDate(), lastDay));
+  const interval = daysBetween(anchorDate, anniversary.toISOString().slice(0, 10));
+  return interval === null ? null : { minDays: interval - toleranceDays, maxDays: interval + toleranceDays };
 }
 
 function evaluateHistoryRequirement(input: {
@@ -1131,24 +1132,48 @@ function evaluateMaternalAgeContext(
 ): { status: SanitaryEligibilityStatus; reasons: string[] } | null {
   const conditions = item.eligibilityRule.maternal_age_conditions;
   if (!conditions) return null;
-  const evidence = animal.maternalVaccination;
-  const birth = parseDateKey(animal.nascimento ?? "");
-  const at = parseDateKey(today);
-  const condition = readRecord(readRecord(conditions)[evidence?.status ?? "unknown"]);
-  if (!evidence?.evidenceReference?.trim() || !["vaccinated", "unvaccinated"].includes(evidence.status) ||
-    !birth || !at || at < birth || Object.keys(condition).length === 0) {
+  const condition = documentedMaternalCondition(conditions, animal.maternalVaccination);
+  const dates = maternalEvaluationDates(animal.nascimento, today);
+  if (!condition || !dates) {
     return { status: "insufficient_data", reasons: ["Histórico materno documentado e condição etária da variante necessários."] };
   }
+  return maternalAgeRestriction(condition, dates.birth, dates.at);
+}
+
+function documentedMaternalCondition(conditions: unknown, evidence: SanitaryPrecheckAnimalResumoV2["maternalVaccination"]) {
+  if (!evidence?.evidenceReference?.trim()) return null;
+  if (!["vaccinated", "unvaccinated"].includes(evidence.status)) return null;
+  const condition = readRecord(readRecord(conditions)[evidence.status]);
+  return Object.keys(condition).length === 0 ? null : condition;
+}
+
+function maternalEvaluationDates(birthDate: string | null | undefined, today: string) {
+  const birth = parseDateKey(birthDate ?? "");
+  const at = parseDateKey(today);
+  return !birth || !at || at < birth ? null : { birth, at };
+}
+
+function validMaternalMinimum(value: number | null) {
+  return value === null || Number.isInteger(value) && value >= 0;
+}
+
+function maternalAgeRestriction(condition: Record<string, unknown>, birth: Date, at: Date): ReturnType<typeof evaluateMaternalAgeContext> {
   const months = readNumber(condition.min_months);
   const days = readNumber(condition.min_days);
   if (months === null && days === null) {
     return condition.no_minimum_in_source === true ? null :
       { status: "insufficient_data", reasons: ["Condição etária materna incompleta nesta variante."] };
   }
-  if ((months !== null && (!Number.isInteger(months) || months < 0)) ||
-    (days !== null && (!Number.isInteger(days) || days < 0))) {
+  if (!validMaternalMinimum(months) || !validMaternalMinimum(days)) {
     return { status: "insufficient_data", reasons: ["Condição etária materna inválida nesta variante."] };
   }
+  const minimum = maternalMinimumDate(birth, months, days);
+  return at < minimum || (condition.exclusive === true && at.getTime() === minimum.getTime())
+    ? { status: "not_yet_eligible", reasons: ["Idade abaixo da condição específica do histórico materno desta variante."] }
+    : null;
+}
+
+function maternalMinimumDate(birth: Date, months: number | null, days: number | null) {
   const minimum = new Date(birth);
   if (months !== null) {
     minimum.setUTCDate(1);
@@ -1157,9 +1182,7 @@ function evaluateMaternalAgeContext(
     minimum.setUTCDate(Math.min(birth.getUTCDate(), lastDay));
   }
   if (days !== null) minimum.setUTCDate(minimum.getUTCDate() + days);
-  return at < minimum || (condition.exclusive === true && at.getTime() === minimum.getTime())
-    ? { status: "not_yet_eligible", reasons: ["Idade abaixo da condição específica do histórico materno desta variante."] }
-    : null;
+  return minimum;
 }
 
 function evaluateCategoryContext(item: SanitaryProtocolItemV2ReadModel, animal: SanitaryPrecheckAnimalResumoV2): { status: SanitaryEligibilityStatus; reasons: string[] } | null {

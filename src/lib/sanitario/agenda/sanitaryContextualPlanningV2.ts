@@ -43,16 +43,28 @@ function rabiesTechnicalBlockers(input: Parameters<typeof sanitaryContextualPlan
   const metadata = input.item.snapshotTemplate.metadata as Record<string, unknown> | undefined;
   if (metadata?.catalog_review_scope !== "manual_planning") return [];
   const birth = input.animalBirthDate;
-  if (!birth || !sanitaryScheduledDateValidV2(birth) || !sanitaryScheduledDateValidV2(input.evaluatedAt) || birth > input.evaluatedAt)
+  if (!birth || !validRabiesBirth(birth, input.evaluatedAt))
     return ["Nascimento válido necessário para identificar avaliação específica em menores de três meses."];
-  const at = new Date(`${input.evaluatedAt}T00:00:00Z`);
+  if (requiresRabiesAssessment(input.item, birth, input.evaluatedAt) && !confirmedRabiesAssessment(input.context))
+    return ["Esta indicação exige confirmação técnica e identificação do responsável; menores de três meses exigem avaliação específica."];
+  return [];
+}
+
+function validRabiesBirth(birth: string, evaluatedAt: string) {
+  return sanitaryScheduledDateValidV2(birth) && sanitaryScheduledDateValidV2(evaluatedAt) && birth <= evaluatedAt;
+}
+
+function confirmedRabiesAssessment(context: SanitaryRuleContextDetailsV2) {
+  const assessment = context.rabiesTechnicalAssessment;
+  return assessment?.confirmed && Boolean(assessment.responsibleReference.trim());
+}
+
+function requiresRabiesAssessment(item: SanitaryProtocolItemV2ReadModel, birth: string, evaluatedAt: string) {
+  const at = new Date(`${evaluatedAt}T00:00:00Z`);
   const birthDate = new Date(`${birth}T00:00:00Z`);
   const ageMonths = (at.getUTCFullYear() - birthDate.getUTCFullYear()) * 12 + at.getUTCMonth() - birthDate.getUTCMonth()
     - (at.getUTCDate() < birthDate.getUTCDate() ? 1 : 0);
-  if ((ageMonths < 3 || input.item.eligibilityRule.requires_contextual_veterinary_decision === true) &&
-    (!input.context.rabiesTechnicalAssessment?.confirmed || !input.context.rabiesTechnicalAssessment.responsibleReference.trim()))
-    return ["Esta indicação exige confirmação técnica e identificação do responsável; menores de três meses exigem avaliação específica."];
-  return [];
+  return ageMonths < 3 || item.eligibilityRule.requires_contextual_veterinary_decision === true;
 }
 
 function validPreWeaningBasis(context: SanitaryRuleContextDetailsV2) {

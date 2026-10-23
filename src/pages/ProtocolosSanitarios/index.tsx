@@ -75,6 +75,20 @@ function sourceExecutedEvents(source: SanitaryProtocolWindowSourceV2 | undefined
   return source?.executedEvents ?? [];
 }
 
+function sourceWithFarmLocation(source: SanitaryProtocolWindowSourceV2 | undefined, location: ReturnType<typeof useSanitaryFarmLocationV2>) {
+  if (!source) return source;
+  return { ...source, farmMunicipality: location && location.fazendaId === source.fazendaId ? location.municipio : null };
+}
+
+function useFarmWindowSource(activeFarmId: string | null, planningRevision: number) {
+  const farmLocation = useSanitaryFarmLocationV2(activeFarmId);
+  const localWindowSource = useLiveQuery(
+    () => (activeFarmId ? loadSanitaryProtocolWindowSourceV2(activeFarmId) : undefined),
+    [activeFarmId, planningRevision],
+  );
+  return useMemo(() => sourceWithFarmLocation(localWindowSource, farmLocation), [localWindowSource, farmLocation]);
+}
+
 function CentralExecutedEvents({ events: executedEvents, onOpen }: { events: SanitaryCentralExecutedEventV2[]; onOpen: () => void }) {
   return (
     <>{executedEvents.length === 0 ? (
@@ -148,14 +162,7 @@ const ProtocolosSanitarios = () => {
     () => (activeFarmId ? listLocalSanitaryAgendasV2(activeFarmId, db) : []),
     [activeFarmId, planningRevision],
   );
-  const farmLocation = useSanitaryFarmLocationV2(activeFarmId);
-  const localWindowSource = useLiveQuery(
-    () => (activeFarmId ? loadSanitaryProtocolWindowSourceV2(activeFarmId) : undefined),
-    [activeFarmId, planningRevision],
-  );
-  const windowSource = useMemo(() => localWindowSource && ({ ...localWindowSource,
-    farmMunicipality: farmLocation && farmLocation.fazendaId === localWindowSource.fazendaId ? farmLocation.municipio : null,
-  }), [localWindowSource, farmLocation]);
+  const windowSource = useFarmWindowSource(activeFarmId, planningRevision);
   const documentaryDate = new Date().toISOString().slice(0, 10);
   const documentaryPendencies = useMemo(() => activeTab === "historico" ? listSanitaryDocumentaryPendenciesV2({
     source: windowSource,

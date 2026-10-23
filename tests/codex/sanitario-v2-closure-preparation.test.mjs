@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { execFileSync, spawnSync } from "node:child_process";
-import { prepareClosureCandidates, prepareClosureDelta, prepareClosureBootstrap, BASELINE_PATH, CANDIDATE_PATH, ELIGIBLE_DELTA_PATH, BOOTSTRAP_PATH } from "../../scripts/codex/prepare-sanitario-closure-v2.mjs";
+import { prepareClosureCandidates, prepareClosureDelta, prepareClosureBootstrap, BASELINE_PATH, CANDIDATE_PATH, ELIGIBLE_DELTA_PATH, BOOTSTRAP_PATH, BOOTSTRAP_VERSION } from "../../scripts/codex/prepare-sanitario-closure-v2.mjs";
 const baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8")).catalog;
 const prepared = JSON.parse(readFileSync(CANDIDATE_PATH, "utf8"));
 test("candidate replay preserves prospective identities, approved scopes and blocked Leptoferm D2", () => {
@@ -55,6 +55,7 @@ test("eligible delta uses the same incremental route, isolates incomplete varian
 test("versioned initial bootstrap binds exactly four groups without claiming interactive review", () => {
   const delta = JSON.parse(readFileSync(ELIGIBLE_DELTA_PATH, "utf8"));
   const plan = JSON.parse(readFileSync(BOOTSTRAP_PATH, "utf8"));
+  assert.equal(plan.version, BOOTSTRAP_VERSION, "Persisted bootstrap manifest must match the declared deployment version");
   assert.deepEqual(plan, prepareClosureBootstrap(delta, baseline, plan.request_id));
   assert.equal(plan.groups.length, 4); assert.equal(plan.groups.flatMap(g => g.item_versions).length, 12);
   assert.equal(plan.interactive_review, false);
