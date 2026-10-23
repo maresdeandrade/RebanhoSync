@@ -25,6 +25,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { db } from "@/lib/offline/db";
 import { useSanitaryPlanningRefreshV2 } from "./helpers/useSanitaryPlanningRefreshV2";
+import { useSanitaryFarmLocationV2 } from "./helpers/useSanitaryFarmLocationV2";
 import { useAuth } from "@/hooks/useAuth";
 import {
   cancelLocalSanitaryAgendaV2,
@@ -147,10 +148,14 @@ const ProtocolosSanitarios = () => {
     () => (activeFarmId ? listLocalSanitaryAgendasV2(activeFarmId, db) : []),
     [activeFarmId, planningRevision],
   );
-  const windowSource = useLiveQuery(
+  const farmLocation = useSanitaryFarmLocationV2(activeFarmId);
+  const localWindowSource = useLiveQuery(
     () => (activeFarmId ? loadSanitaryProtocolWindowSourceV2(activeFarmId) : undefined),
     [activeFarmId, planningRevision],
   );
+  const windowSource = useMemo(() => localWindowSource && ({ ...localWindowSource,
+    farmMunicipality: farmLocation && farmLocation.fazendaId === localWindowSource.fazendaId ? farmLocation.municipio : null,
+  }), [localWindowSource, farmLocation]);
   const documentaryDate = new Date().toISOString().slice(0, 10);
   const documentaryPendencies = useMemo(() => activeTab === "historico" ? listSanitaryDocumentaryPendenciesV2({
     source: windowSource,
