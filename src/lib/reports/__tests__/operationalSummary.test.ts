@@ -142,6 +142,28 @@ const baseGesture = {
   created_at: "2026-03-20T10:00:00.000Z",
 } satisfies Omit<Gesture, "client_tx_id" | "status">;
 
+describe("pastagem operational report contract", () => {
+  it("counts factual pasture events and labels future tasks without counting them as executed", () => {
+    const now = new Date("2026-03-29T12:00:00Z");
+    const report = buildOperationalSummary({
+      fazendaId: "farm-1", farmTimezone: "UTC", animals: [], lotes: [], pastos: [],
+      agenda: [{ ...baseAgenda, id: "pasture-task", dominio: "pastagem", tipo: "avaliacao_pasto", data_prevista: "2026-03-30" }],
+      eventos: [
+        { ...baseEvento, id: "pasture-fact", dominio: "pastagem", occurred_at: "2026-03-28T12:00:00Z" },
+        { ...baseEvento, id: "foreign-fact", fazenda_id: "farm-2", dominio: "pastagem", occurred_at: "2026-03-28T12:00:00Z" },
+        { ...baseEvento, id: "deleted-fact", dominio: "pastagem", occurred_at: "2026-03-28T12:00:00Z", deleted_at: "2026-03-29T10:00:00Z" },
+      ],
+      eventosFinanceiro: [], eventosPesagem: [], gestures: [], rejections: [],
+    }, resolveReportRange("30d", now, "UTC"), now);
+    expect(report.manejoByDomain[report.manejoByDomain.length - 1]).toEqual({ label: "Pastagem", value: 1 });
+    expect(report.recentEvents).toHaveLength(1);
+    expect(report.recentEvents[0].dominio).toBe("Pastagem");
+    expect(report.agendaAttention[0].titulo).toBe("Pastagem: avaliacao pasto");
+    expect(report.summary.eventosPeriodo).toBe(1);
+    expect(report.summary.agendaAberta).toBe(1);
+  });
+});
+
 describe("resolveReportRange", () => {
   it("builds current month range", () => {
     const range = resolveReportRange(
@@ -2262,6 +2284,85 @@ describe("Phase 16 finance event and ledger semantics", () => {
 
       expect(report.metrics.financeiro_entradas.status).toBe("unavailable");
       expect(report.metrics.financeiro_entradas.value).toBeNull();
+    });
+  });
+});
+
+describe("refactor boundaries between observed data and metric completeness", () => {
+  it("keeps the observed weight without promoting incomplete factual coverage", () => {
+    const now = new Date("2026-03-29T12:00:00Z");
+    const report = buildOperationalSummary(
+      {
+        fazendaId: "farm-1",
+        farmTimezone: "UTC",
+        animals: [],
+        lotes: [],
+        pastos: [],
+        agenda: [],
+        eventos: [
+          {
+            ...baseEvento,
+            id: "weighed",
+            dominio: "pesagem",
+            occurred_at: "2026-03-27T08:00:00Z",
+          },
+          {
+            ...baseEvento,
+            id: "missing-detail",
+            dominio: "pesagem",
+            occurred_at: "2026-03-28T08:00:00Z",
+          },
+        ],
+        eventosPesagem: [
+          {
+            evento_id: "weighed",
+            fazenda_id: "farm-1",
+            peso_kg: 420,
+            payload: {},
+            client_id: baseEvento.client_id,
+            client_op_id: baseEvento.client_op_id,
+            client_tx_id: null,
+            client_recorded_at: baseEvento.client_recorded_at,
+            server_received_at: baseEvento.server_received_at,
+            created_at: baseEvento.created_at,
+            updated_at: baseEvento.updated_at,
+            deleted_at: null,
+          },
+        ],
+        eventosFinanceiro: [],
+        gestures: [],
+        rejections: [],
+        historicalCoverage: {
+          pesagem_eventos: { state: "verified", evidence: ["fixture factual"] },
+          pesagem_media_kg: {
+            state: "verified",
+            evidence: ["fixture factual"],
+          },
+          pesagem_ultimo_kg: {
+            state: "verified",
+            evidence: ["fixture factual"],
+          },
+        },
+      },
+      resolveReportRange("30d", now, "UTC"),
+      now,
+    );
+    expect(report.pesagem).toMatchObject({
+      totalPesagens: 1,
+      pesoMedioKg: 420,
+      ultimoPesoKg: 420,
+    });
+    expect(report.metrics.pesagem_eventos).toMatchObject({
+      value: 1,
+      status: "partial",
+    });
+    expect(report.metrics.pesagem_media_kg).toMatchObject({
+      value: null,
+      status: "partial",
+    });
+    expect(report.metrics.pesagem_ultimo_kg).toMatchObject({
+      value: null,
+      status: "partial",
     });
   });
 });
