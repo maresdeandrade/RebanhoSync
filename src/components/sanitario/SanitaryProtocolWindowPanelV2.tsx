@@ -153,12 +153,18 @@ export function SanitaryProtocolWindowPanelV2({
   const reviewPreview = useMemo(() => review ? buildSanitaryWindowPlanningPreviewV2(review) : null, [review]);
   const reviewWarnings = [...new Set(review?.rows.flatMap((row) => row.warnings) ?? [])];
   const protocols = source?.catalog.protocols ?? [];
+  const rabiesSelected = protocols.some(protocol => protocol.id === protocolId && protocol.familyCode === "raiva_herbivoros");
   const items = source?.catalog.items.filter((item) => item.protocolId === protocolId) ?? [];
   const filteredAnimal = source?.animals.find((entry) => entry.id === filters.animalId);
   const filteredLot = source?.lots.find((entry) => entry.id === filters.lotId);
   const lotContext = source?.lots.find((entry) => entry.id === initialLotContextId);
   const filteredAnimalLabel =
     filteredAnimal?.nome?.trim() || filteredAnimal?.identificacao || "animal selecionado";
+  useEffect(() => {
+    setOperationalContext(EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2);
+    setSelectedIds(new Set());
+    setReview(null);
+  }, [source?.fazendaId]);
   const filteredLotLabel = filteredLot?.nome || "lote selecionado";
 
   useEffect(() => {
@@ -345,6 +351,11 @@ export function SanitaryProtocolWindowPanelV2({
         </div>
       </section>
 
+      {rabiesSelected && <section className="space-y-3 rounded-lg border border-border p-4" aria-label="Avaliação técnica para raiva">
+        <p className="text-sm text-muted-foreground">Consulta e planejamento manual não presumem obrigatoriedade regional. Menores de três meses e indicações contextuais exigem avaliação técnica.</p>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={operationalContext.rabiesTechnicalAssessment?.confirmed ?? false} onChange={event => setOperationalContext(current => ({ ...current, rabiesTechnicalAssessment: { responsibleReference: current.rabiesTechnicalAssessment?.responsibleReference ?? "", confirmed: event.target.checked } }))} />Confirmo a avaliação técnica desta indicação</label>
+        <label className="block space-y-1 text-sm"><span>Responsável pela avaliação</span><Input aria-label="Responsável pela avaliação de raiva" value={operationalContext.rabiesTechnicalAssessment?.responsibleReference ?? ""} onChange={event => setOperationalContext(current => ({ ...current, rabiesTechnicalAssessment: { confirmed: current.rabiesTechnicalAssessment?.confirmed ?? false, responsibleReference: event.target.value } }))} /></label>
+      </section>}
       <section className="grid gap-3 rounded-lg border border-border p-4 md:grid-cols-3 lg:grid-cols-6" aria-label="Filtros das janelas sanitárias">
         <label className="space-y-1 text-sm lg:col-span-2"><span className="font-medium">Protocolo</span><select aria-label="Selecionar protocolo" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={protocolId} onChange={(event) => setProtocolId(event.target.value)}><option value="">Selecione</option>{protocols.map((protocol) => <option key={protocol.id} value={protocol.id}>{protocol.name}</option>)}</select></label>
         <label className="space-y-1 text-sm lg:col-span-2"><span className="font-medium">Item do protocolo</span><select aria-label="Selecionar item do protocolo" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={itemId} disabled={!protocolId} onChange={(event) => setItemId(event.target.value)}><option value="">Selecione</option>{items.map((item) => <option key={item.id} value={item.id}>{formatSanitaryProtocolItemLabelV2(item.logicalItemKey)}</option>)}</select></label>

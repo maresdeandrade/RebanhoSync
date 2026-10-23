@@ -27,6 +27,7 @@ import {
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import {
   precheckSanitaryProtocolsForAnimalV2,
+  readMaternalVaccinationEvidenceV2,
   type SanitaryExecutedHistoryV2,
   type SanitaryProtocolPrecheckResultV2,
 } from "@/lib/sanitario/checks/sanitaryProtocolPrecheckV2";
@@ -52,10 +53,12 @@ import { readSanitaryAutomationPlanV2, resolveSanitaryAutomationRuleV2 } from ".
 import { sanitaryAutomaticIdentityV2, suppressedSanitaryAutomaticIntentV2 } from "../agenda/sanitaryAutomaticIdentityV2";
 import { sanitaryContextualPlanningBlockersV2, type SanitaryRuleContextDetailsV2 } from "../agenda/sanitaryContextualPlanningV2";
 import { isSanitaryClassSchemeV2 } from "../agenda/sanitaryClassSchemeV2";
+import { resolveSanitaryRabiesRegionalContextV2 } from "../agenda/sanitaryRabiesRegionalContextV2";
 
 export type SanitaryProtocolWindowSourceV2 = {
   fazendaId?: string;
   farmUf?: string | null;
+  farmMunicipality?: string | null;
   farmConfig?: FazendaSanidadeConfig;
   products?: SanitarioProdutoLocalV2[];
   productSpeciesAuthorizations?: SanitarioProdutoEspecieAutorizacaoLocalV2[];
@@ -464,6 +467,10 @@ export function buildSanitaryProtocolWindowV2(input: {
               ? true
               : null,
           managementContext: operationalContext.management,
+          maternalVaccination: readMaternalVaccinationEvidenceV2({ motherId: animal.mae_id, birthDate: animal.data_nascimento,
+            item, history: input.source.executedHistory }) ?? operationalContext.maternalVaccinationsByAnimalId?.[animal.id],
+          rabiesManualPlanning: (input.generationMode ?? "manual") === "manual" &&
+            (item.snapshotTemplate.metadata as Record<string, unknown> | undefined)?.catalog_review_scope === "manual_planning",
         },
         catalog: itemEvaluationCatalog(input.source.catalog, item),
         executedHistory: historyByAnimal.has(animal.id)
@@ -488,7 +495,8 @@ export function buildSanitaryProtocolWindowV2(input: {
       const planningKind = sanitaryPlanningKindV2(item);
       planningBlockers.push(...itemVersionPlanningBlockers(input.source, item, animal, input.evaluatedAt));
       planningBlockers.push(...sanitaryContextualPlanningBlockersV2({ item, context: operationalContext,
-        farmUf: input.source.farmUf, animalId: animal.id, evaluatedAt: input.evaluatedAt }));
+        farmUf: input.source.farmUf, fazendaId: input.source.fazendaId, animalId: animal.id,
+        animalBirthDate: animal.data_nascimento, evaluatedAt: input.evaluatedAt }));
       const itemBlocked =
         result.blockers.length > 0 ||
         planningBlockers.length > 0 ||
@@ -519,7 +527,9 @@ export function buildSanitaryProtocolWindowV2(input: {
         itemLabel: formatSanitaryProtocolItemLabelV2(item.logicalItemKey),
         status: result.status,
         reason: result.reasons[0] ?? "Sem motivo adicional informado.",
-        warnings: result.warnings,
+        warnings: protocol.familyCode === "raiva_herbivoros" ? [...result.warnings,
+          resolveSanitaryRabiesRegionalContextV2({ protocol, config: input.source.farmConfig, fazendaId: input.source.fazendaId,
+            municipality: input.source.farmMunicipality, evaluatedAt: input.evaluatedAt }).explanation] : result.warnings,
         blockers: [...result.blockers, ...planningBlockers],
         documentaryPending: result.documentaryPending,
         documentaryPendingReasons: result.documentaryPendingReasons,

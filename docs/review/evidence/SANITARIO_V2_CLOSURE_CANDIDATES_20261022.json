@@ -1,0 +1,2741 @@
+{
+  "artifact": "sanitario_closure_review_candidates",
+  "artifact_version": "13.0.0-canonical-contract",
+  "identity_model": "VERSIONED_EXPLICIT_UUID",
+  "review_only": true,
+  "approved": false,
+  "execute_import": false,
+  "import_gate": {
+    "import_real_authorized": false,
+    "authorization_reference": null
+  },
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "identities": {
+    "source:poliguard": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+    "coverage:poliguard:eligibility_rule": "0fea7cd6-3749-45c3-a14e-9ba3000fe4dd",
+    "coverage:poliguard:operational_window": "29b0713b-4a4f-45c5-b84a-47960670da36",
+    "coverage:poliguard:product_requirement": "cade4476-81ff-429c-97d8-751bd9c48ae7",
+    "coverage:poliguard:species_authorization": "0ade968a-eb7c-460a-b529-2dc4369e7ace",
+    "source:cattlemaster": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+    "coverage:cattlemaster:eligibility_rule": "f74042d9-e4ae-481f-befc-87c26a876e22",
+    "coverage:cattlemaster:operational_window": "56b3a74d-02ed-4ac6-a2ae-f2d1eb324f6f",
+    "coverage:cattlemaster:product_requirement": "99bbee3a-c531-4a2c-b8a2-fe93a0c25029",
+    "coverage:cattlemaster:species_authorization": "896f6c9d-8e20-41d1-842e-9ed5fa99d327",
+    "source:v4j5": "39ede6d7-969b-4802-b570-915532402008",
+    "coverage:v4j5:eligibility_rule": "67389c7b-8db2-49af-a344-f898ef4b781e",
+    "coverage:v4j5:operational_window": "7c51c5dc-5990-4efe-a818-d840376828d5",
+    "coverage:v4j5:product_requirement": "100bcbf2-f64e-4f16-8ec9-d7ea512d87db",
+    "coverage:v4j5:species_authorization": "d2799bde-4d9b-470f-9b3f-c4421dfddc9d",
+    "source:lepto8": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+    "coverage:lepto8:eligibility_rule": "02b46f2d-da6c-41c8-a835-2918c7ebb8dc",
+    "coverage:lepto8:operational_window": "8b24c2cb-e9b9-4d10-982a-12d2e467d084",
+    "coverage:lepto8:product_requirement": "96112df5-6577-45c1-a269-99b355652b4b",
+    "coverage:lepto8:species_authorization": "d0114535-9366-4920-8956-a4dec546c167",
+    "item:ibr_bvd_primovac_dose1": "4ea47c38-74ec-42d9-9555-6b5869f0e0da",
+    "item:ibr_bvd_primovac_dose2": "6906d0bd-a882-4371-9c4b-4ec5d70c387b",
+    "item:ibr_bvd_v4j5_primovac_dose1": "2ec754f9-0260-4524-abee-ebdafb56c231",
+    "item:ibr_bvd_v4j5_primovac_dose2": "afd1c6f6-6d21-4aa1-89b6-63fc22e66966",
+    "item:ibr_bvd_cattlemaster_gold_primovac_dose1": "e2145b07-c499-453c-887d-7fa32849ba27",
+    "item:ibr_bvd_cattlemaster_gold_primovac_dose2": "ace5c11f-3742-4fbf-9782-0eb820eacee5",
+    "item:lepto_bovigen8_primovac_dose1": "9e3516f3-5842-408f-b18d-2d3fce841409",
+    "item:lepto_bovigen8_primovac_dose2": "3d27cce4-f910-400d-83de-4e97b9b3ffeb",
+    "item:lepto_bovigen8_reforco_anual": "007e28c8-6bfa-450a-adcf-6361203f546d",
+    "item:raiva_primovac_dose1": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+    "item:raiva_primovac_reforco_30d": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+    "item:raiva_reforco_anual_area_risco": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+    "coverage:rabies:eligibility_rule": "443b7717-3ba2-4d19-90fb-78c9f499f754",
+    "coverage:rabies:operational_window": "36991be4-14c6-48c3-8e16-2d968d0d7765",
+    "coverage:rabies:product_requirement": "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3",
+    "coverage:rabies:species_authorization": "27e04dae-65fe-4d03-977b-a4a95354db1e"
+  },
+  "payload": {
+    "source_rows": [
+      {
+        "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "title": "Poliguard — resumo da bula oficial MSD",
+        "url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+        "issuer": "MSD Saúde Animal",
+        "kind": "bula",
+        "scope": "global",
+        "strength": "forte",
+        "evidence_status": "SIM_BULA",
+        "accessed_at": "2026-10-22",
+        "jurisdiction_country": "BR",
+        "limitations": [
+          "bovine_label_only",
+          "not_product_registration_verification"
+        ]
+      },
+      {
+        "id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+        "source_key": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+        "title": "CattleMaster GOLD FP 5/L5 — bula oficial Zoetis",
+        "url": "https://www.zoetis.com.br/especies/bovinos/cattlemaster-gold/download/bula-cattlemaster-gold.pdf",
+        "issuer": "Zoetis",
+        "kind": "bula",
+        "scope": "global",
+        "strength": "forte",
+        "evidence_status": "SIM_BULA",
+        "accessed_at": "2026-10-22",
+        "jurisdiction_country": "BR",
+        "limitations": [
+          "bovine_label_only",
+          "not_product_registration_verification"
+        ]
+      },
+      {
+        "id": "39ede6d7-969b-4802-b570-915532402008",
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+        "url": "https://br.virbac.com/products/biologicos/bovigen-v4j5",
+        "issuer": "Virbac",
+        "kind": "bula",
+        "scope": "global",
+        "strength": "forte",
+        "evidence_status": "SIM_BULA",
+        "accessed_at": "2026-10-22",
+        "jurisdiction_country": "BR",
+        "limitations": [
+          "bovine_label_only",
+          "not_product_registration_verification"
+        ]
+      },
+      {
+        "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+        "source_key": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+        "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+        "url": "https://br.virbac.com/products/biologicos/bovigen-lepto-8",
+        "issuer": "Virbac",
+        "kind": "bula",
+        "scope": "global",
+        "strength": "forte",
+        "evidence_status": "SIM_BULA",
+        "accessed_at": "2026-10-22",
+        "jurisdiction_country": "BR",
+        "limitations": [
+          "bovine_label_only",
+          "not_product_registration_verification"
+        ]
+      },
+      {
+        "id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "url": "https://br.virbac.com/products/biologicos/bovigen-repro-total-se",
+        "kind": "bibliografia",
+        "scope": "global",
+        "title": "Bovigen® Repro Total SE",
+        "issuer": "Virbac Brasil",
+        "version": null,
+        "metadata": {
+          "document_type": "manufacturer_product_page",
+          "historical_registration": {
+            "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+            "issuer": "MAPA",
+            "number": "9.776/2013",
+            "section": "BOVIGEN REPRO TOTAL SE (p. 26)",
+            "accessed_at": "2026-10-14",
+            "document_date": "2014-04-15",
+            "current_validity": "unknown"
+          }
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Fonte oficial do fabricante; versão integral vigente e confirmação regulatória atual pendentes. Registro histórico MAPA localizado, sem prova de vigência em 2026.",
+          "Não autoriza carência zero, bubalinos ou segurança reprodutiva não expressa."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "2bfe30a5-8c7e-4949-8133-98380a96d53d",
+        "url": "https://goias.gov.br/agrodefesa/perguntas-e-respostas-defesa-sanitaria-animal/",
+        "kind": "guideline_apoio",
+        "scope": "global",
+        "title": "Perguntas e respostas — Defesa Sanitária Animal: raiva dos herbívoros",
+        "issuer": "Agência Goiana de Defesa Agropecuária — Agrodefesa",
+        "version": "página atualizada em 26/06/2026",
+        "metadata": {
+          "document_type": "state_official_faq",
+          "updated_at_source": "2026-06-26"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-09-24",
+        "limitations": [
+          "Página institucional informa que a vacinação antirrábica não é obrigatória e é recomendada como prevenção em Goiás.",
+          "Não substitui eventual ato superveniente, alerta de foco/perifoco ou determinação específica do serviço veterinário oficial.",
+          "Não substitui a bula do produto executado."
+        ],
+        "published_at": "2026-06-26",
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": "GO",
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/qualidade-dos-servicos-veterinarios/arquivos/pncrh/in_05_2002_alt__n_41_2020_norma_tecnica_controle_rh.pdf",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+        "issuer": "Ministério da Agricultura, Pecuária e Abastecimento — MAPA",
+        "version": "alterada pela IN 41/2020",
+        "metadata": {
+          "document_type": "consolidated_norm_pdf",
+          "document_identifier": "IN 5/2002; Processo 21000.009298/2001-82",
+          "consolidated_amendment_at": "2020-06-19"
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "O coverage deve ser vinculado aos artigos aplicáveis.",
+          "A norma não substitui a bula do produto executado."
+        ],
+        "published_at": "2002-03-01",
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Leptoferm 5/2 mL — Vacina Inativada Contra Leptospirose Bovina e Suína",
+        "issuer": "Zoetis Inc.; representante no Brasil Zoetis Indústria de Produtos Veterinários Ltda.",
+        "version": "v2",
+        "metadata": {
+          "artwork": "40040644",
+          "mapa_license": "5.037",
+          "document_type": "manufacturer_label_pdf",
+          "pdf_created_at": "2023-01-06",
+          "pdf_modified_at": "2023-01-06"
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_BULA_LEPTOFERM5",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Evidência exclusiva de Leptoferm 5/2 mL; não valida segunda dose genérica, classe inteira ou bubalinos."
+        ],
+        "published_at": null,
+        "evidence_status": "SIM_BULA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "ce25d79d-2843-45a8-a872-233eecc6f6f7",
+        "url": "https://www.sinj.df.gov.br/sinj/Norma/aad0c985c1f8436096680bbb41dcf7a7/Portaria_452_27_11_2025.html",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Portaria nº 452, de 27 de novembro de 2025 — vacinação contra raiva dos herbívoros no Distrito Federal",
+        "issuer": "Secretaria de Estado da Agricultura, Abastecimento e Desenvolvimento Rural do Distrito Federal — SEAGRI-DF",
+        "version": "vigente; revoga a Portaria nº 59/2024",
+        "metadata": {
+          "norm_number": "Portaria SEAGRI-DF 452/2025",
+          "revoked_norm": "Portaria SEAGRI-DF 59/2024",
+          "document_type": "state_official_norm_html",
+          "minimum_age_months": 3,
+          "mandatory_radius_km": 12
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Aplicação restrita ao Distrito Federal e às propriedades classificadas como foco ou perifoco pelo OESA-DF.",
+          "A delimitação depende de ocorrência confirmada, georreferenciamento, cadastro e alerta oficial; não pode ser inferida apenas pelo endereço da fazenda.",
+          "Não substitui a bula do produto executado nem autoriza cálculo de carência sem produto real."
+        ],
+        "published_at": "2025-12-01",
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": "DF",
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "da121227-8e8a-4a18-b290-0a0528bb5762",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/raiva-dos-herbivoros-e-eeb/vacina-antirrabica",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Vacina Antirrábica",
+        "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+        "version": null,
+        "metadata": {
+          "document_type": "institutional_topic_page",
+          "updated_at_source": "2023-03-28"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_RAIVA_VACINA",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Página contextual; não substitui bula, ato normativo ou overlay regional.",
+          "Não prova produto executado nem carência."
+        ],
+        "published_at": "2022-11-03",
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Resumo da Bula — POLIGUARD",
+        "issuer": "MSD Saúde Animal Brasil",
+        "version": null,
+        "metadata": {
+          "document_type": "manufacturer_bula_summary_page",
+          "modified_at_source": "2024-10-16",
+          "historical_registration": {
+            "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+            "issuer": "MAPA",
+            "number": "9.299/2007",
+            "section": "POLIGUARD (p. 137)",
+            "accessed_at": "2026-10-14",
+            "document_date": "2014-04-15",
+            "current_validity": "unknown"
+          }
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_BULA_POLIGUARD",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Fonte oficial do fabricante; versão integral vigente e confirmação regulatória atual pendentes. Registro histórico MAPA localizado, sem prova de vigência em 2026.",
+          "Não autoriza carência zero, bubalinos ou segurança reprodutiva não expressa."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      }
+    ],
+    "coverage_rows": [
+      {
+        "id": "0fea7cd6-3749-45c3-a14e-9ba3000fe4dd",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "field_key": "eligibility_rule",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "29b0713b-4a4f-45c5-b84a-47960670da36",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "field_key": "operational_window",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "cade4476-81ff-429c-97d8-751bd9c48ae7",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "field_key": "product_requirement",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "0ade968a-eb7c-460a-b529-2dc4369e7ace",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "field_key": "species_authorization",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "f74042d9-e4ae-481f-befc-87c26a876e22",
+        "source_id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+        "source_key": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+        "field_key": "eligibility_rule",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação CattleMaster GOLD FP 5/L5 — bula oficial Zoetis; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "56b3a74d-02ed-4ac6-a2ae-f2d1eb324f6f",
+        "source_id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+        "source_key": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+        "field_key": "operational_window",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação CattleMaster GOLD FP 5/L5 — bula oficial Zoetis; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "99bbee3a-c531-4a2c-b8a2-fe93a0c25029",
+        "source_id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+        "source_key": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+        "field_key": "product_requirement",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação CattleMaster GOLD FP 5/L5 — bula oficial Zoetis; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "896f6c9d-8e20-41d1-842e-9ed5fa99d327",
+        "source_id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+        "source_key": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+        "field_key": "species_authorization",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação CattleMaster GOLD FP 5/L5 — bula oficial Zoetis; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "67389c7b-8db2-49af-a344-f898ef4b781e",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "field_key": "eligibility_rule",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "7c51c5dc-5990-4efe-a818-d840376828d5",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "field_key": "operational_window",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "100bcbf2-f64e-4f16-8ec9-d7ea512d87db",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "field_key": "product_requirement",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "d2799bde-4d9b-470f-9b3f-c4421dfddc9d",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "field_key": "species_authorization",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "02b46f2d-da6c-41c8-a835-2918c7ebb8dc",
+        "source_id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+        "source_key": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+        "field_key": "eligibility_rule",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen Lepto 8 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "8b24c2cb-e9b9-4d10-982a-12d2e467d084",
+        "source_id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+        "source_key": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+        "field_key": "operational_window",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen Lepto 8 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "96112df5-6577-45c1-a269-99b355652b4b",
+        "source_id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+        "source_key": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+        "field_key": "product_requirement",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen Lepto 8 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "d0114535-9366-4920-8956-a4dec546c167",
+        "source_id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+        "source_key": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+        "field_key": "species_authorization",
+        "coverage_status": "covers",
+        "notes": "Somente a formulação Bovigen Lepto 8 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada."
+      },
+      {
+        "id": "443b7717-3ba2-4d19-90fb-78c9f499f754",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "field_key": "eligibility_rule",
+        "coverage_status": "covers",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria."
+      },
+      {
+        "id": "36991be4-14c6-48c3-8e16-2d968d0d7765",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "field_key": "operational_window",
+        "coverage_status": "covers",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria."
+      },
+      {
+        "id": "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "field_key": "product_requirement",
+        "coverage_status": "covers",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria."
+      },
+      {
+        "id": "27e04dae-65fe-4d03-977b-a4a95354db1e",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "field_key": "species_authorization",
+        "coverage_status": "covers",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria."
+      }
+    ],
+    "product_rows": [],
+    "product_authorization_rows": [],
+    "product_source_rows": [],
+    "dose_rule_rows": [],
+    "withdrawal_rule_rows": [],
+    "withdrawal_source_rows": [],
+    "product_class_rows": [
+      {
+        "id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+        "name": "Vacina contra raiva dos herbivoros",
+        "scope": "global",
+        "metadata": {
+          "taxonomy_kind": "technical_product_class",
+          "can_validate_execution": false,
+          "requires_executed_product_for_withdrawal": true
+        },
+        "class_key": "vacina_raiva_herbivoros",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "limitations": [
+          "requires_real_product",
+          "requires_regional_risk_context",
+          "product_specific_schedule",
+          "product_specific_species_authorization",
+          "withdrawal_by_executed_product",
+          "do_not_generalize_product_label"
+        ],
+        "product_type": "vacina",
+        "species_scope": [
+          "bovino",
+          "bubalino"
+        ],
+        "curation_status": "needs_review",
+        "product_subtype": null,
+        "target_condition": "raiva_dos_herbivoros",
+        "automation_status": "manual_only"
+      },
+      {
+        "id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+        "name": "Vacina contra leptospirose",
+        "scope": "global",
+        "metadata": {
+          "taxonomy_kind": "technical_product_class",
+          "can_validate_execution": false,
+          "requires_executed_product_for_withdrawal": true
+        },
+        "class_key": "vacina_leptospirose",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-21T13:26:42.832693+00:00",
+        "limitations": [
+          "requires_real_product",
+          "product_specific_composition",
+          "product_specific_schedule",
+          "product_specific_reproductive_restrictions",
+          "withdrawal_by_executed_product",
+          "do_not_generalize_product_label"
+        ],
+        "product_type": "vacina",
+        "species_scope": [
+          "bovino"
+        ],
+        "curation_status": "approved_for_catalog",
+        "product_subtype": null,
+        "target_condition": "leptospirose",
+        "automation_status": "manual_only"
+      },
+      {
+        "id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+        "name": "Vacinas utilizadas no contexto funcional IBR/BVD",
+        "scope": "global",
+        "metadata": {
+          "taxonomy_kind": "restricted_functional_class",
+          "functional_scope": "ibr_bvd",
+          "can_validate_execution": false,
+          "products_are_not_equivalent": true,
+          "requires_executed_product_for_withdrawal": true
+        },
+        "class_key": "vacina_ibr_bvd",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "limitations": [
+          "requires_real_product",
+          "product_specific_composition",
+          "product_specific_schedule",
+          "product_specific_reproductive_restrictions",
+          "withdrawal_by_executed_product",
+          "do_not_generalize_product_label"
+        ],
+        "product_type": "vacina",
+        "species_scope": [
+          "bovino"
+        ],
+        "curation_status": "needs_review",
+        "product_subtype": null,
+        "target_condition": "ibr_bvd",
+        "automation_status": "manual_only"
+      }
+    ],
+    "product_class_group_rows": [],
+    "product_class_group_member_rows": [],
+    "product_class_default_rule_rows": [],
+    "protocol_rows": [
+      {
+        "id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "name": "IBR/BVD",
+        "scope": "global",
+        "status": "draft",
+        "version": 1,
+        "metadata": {
+          "sourceGaps": [
+            "source_gap_product_withdrawal_snapshot",
+            "source_gap_bubalino"
+          ],
+          "agenda_allowed": false,
+          "curationStatus": "prepared_for_decision",
+          "automationStatus": "manual_only",
+          "approved_for_catalog": false
+        },
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "approved_at": null,
+        "approved_by": null,
+        "family_code": "ibr_bvd",
+        "legal_status": "recomendado_tecnico",
+        "species_scope": [
+          "bovino"
+        ],
+        "approval_status": "draft",
+        "jurisdiction_scope": {},
+        "source_refs_snapshot": [
+          {
+            "field": "eligibility",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "dose",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "route",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "recurrence",
+            "source_ref": "SRC_BULA_POLIGUARD"
+          },
+          {
+            "field": "restrictions",
+            "source_ref": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE"
+          }
+        ],
+        "protocol_key": "ibr_bvd"
+      },
+      {
+        "id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "name": "Leptospirose",
+        "scope": "global",
+        "status": "draft",
+        "version": 1,
+        "metadata": {
+          "sourceGaps": [
+            "source_gap_risk_product",
+            "source_gap_bubalino",
+            "source_gap_product_withdrawal_snapshot"
+          ],
+          "agenda_allowed": false,
+          "curationStatus": "prepared_for_decision",
+          "automationStatus": "manual_only",
+          "approved_for_catalog": false
+        },
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "approved_at": null,
+        "approved_by": null,
+        "family_code": "leptospirose",
+        "legal_status": "recomendado_tecnico",
+        "species_scope": [
+          "bovino"
+        ],
+        "approval_status": "draft",
+        "jurisdiction_scope": {},
+        "source_refs_snapshot": [
+          {
+            "field": "dose",
+            "source_ref": "SRC_BULA_LEPTOFERM5"
+          },
+          {
+            "field": "route",
+            "source_ref": "SRC_BULA_LEPTOFERM5"
+          },
+          {
+            "field": "recurrence",
+            "source_ref": "SRC_BULA_LEPTOFERM5"
+          },
+          {
+            "field": "withdrawal",
+            "source_ref": "SRC_BULA_LEPTOFERM5"
+          }
+        ],
+        "protocol_key": "leptospirose"
+      },
+      {
+        "id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "name": "Raiva dos herbivoros",
+        "scope": "global",
+        "status": "draft",
+        "version": 1,
+        "metadata": {
+          "sourceGaps": [
+            "requires_risk_area_overlay",
+            "requires_focus_or_perifocus_context",
+            "source_gap_product_withdrawal_snapshot"
+          ],
+          "restrictions": [
+            "regional_risk_context_required",
+            "no_agenda_auto",
+            "product_real_required_for_execution",
+            "withdrawal_requires_product_label"
+          ],
+          "agenda_allowed": false,
+          "curationStatus": "needs_review",
+          "overlay_policy": "Sem inferência automática por UF ou município. O produtor declara o contexto regional da fazenda; atos oficiais conhecidos prevalecem e a ausência de ato materializado não significa dispensa.",
+          "automationStatus": "manual_only",
+          "overlay_reviewed_at": "2026-09-24",
+          "approved_for_catalog": false,
+          "original_legal_status": "condicional_regional",
+          "overlay_model_version": "2026-2027-producer-declared",
+          "official_overlays_materialized": {
+            "DF": {
+              "status": "mandatory_focus_perifocus",
+              "activation": "official_alert_and_georeferenced_delimitation",
+              "review_due": "2027-01-15",
+              "source_ref": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA",
+              "valid_from": "2025-12-01",
+              "minimum_age_months": 3,
+              "perifocus_radius_km": 12
+            },
+            "GO": {
+              "status": "recommended_not_mandatory",
+              "activation": "manual_only_unless_supervening_sve_order",
+              "review_due": "2027-01-15",
+              "source_ref": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026",
+              "valid_as_of": "2026-06-26"
+            }
+          },
+          "producer_regional_recommendation": {
+            "scope": "fazenda",
+            "effect": "advisory_only",
+            "default": "unknown",
+            "allowed_values": [
+              "recommended",
+              "not_recommended",
+              "unknown"
+            ],
+            "may_create_event": false,
+            "may_suggest_agenda": true,
+            "source_note_allowed": true,
+            "valid_until_allowed": true,
+            "may_define_withdrawal": false,
+            "municipality_required": false,
+            "may_override_official_act": false,
+            "may_create_agenda_automatically": false,
+            "product_real_required_for_execution": true
+          }
+        },
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "approved_at": null,
+        "approved_by": null,
+        "family_code": "raiva_herbivoros",
+        "legal_status": "condicional",
+        "species_scope": [
+          "bovino",
+          "bubalino"
+        ],
+        "approval_status": "draft",
+        "jurisdiction_scope": {
+          "requires_regional_overlay": true
+        },
+        "source_refs_snapshot": [
+          {
+            "field": "eligibility",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "field": "dose",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "route",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "recurrence",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "restrictions",
+            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS"
+          },
+          {
+            "field": "regional_overlay_df",
+            "source_ref": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA"
+          },
+          {
+            "field": "regional_overlay_go",
+            "source_ref": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026"
+          }
+        ],
+        "protocol_key": "raiva_herbivoros"
+      }
+    ],
+    "protocol_item_rows": [
+      {
+        "id": "4ea47c38-74ec-42d9-9555-6b5869f0e0da",
+        "status": "draft",
+        "version": 3,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_1"
+          }
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "category": "bezerro",
+          "maternal_age_conditions": {
+            "vaccinated": {
+              "min_months": 4,
+              "exclusive": true
+            },
+            "unvaccinated": {
+              "no_minimum_in_source": true
+            }
+          }
+        },
+        "logical_item_key": "ibr_bvd_primovac_dose1",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "poliguard",
+            "approval_blockers": [
+              "canonical_publisher_scope_extension",
+              "authenticated_preview_and_explicit_decision",
+              "class_review_required"
+            ],
+            "supersedes": {
+              "id": "85fd413b-649f-5353-a6b2-7a03f1b08d58",
+              "version": 2,
+              "reason": "Proposta prospectiva; histórico preservado."
+            }
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "0fea7cd6-3749-45c3-a14e-9ba3000fe4dd"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "29b0713b-4a4f-45c5-b84a-47960670da36"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "cade4476-81ff-429c-97d8-751bd9c48ae7"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "0ade968a-eb7c-460a-b529-2dc4369e7ace"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "hybrid",
+          "anchor": "manual_context"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "ibr_bvd",
+        "class_key": "vacina_ibr_bvd"
+      },
+      {
+        "id": "2ec754f9-0260-4524-abee-ebdafb56c231",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_1"
+          }
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "category": "bezerro",
+          "maternal_age_conditions": {
+            "vaccinated": {
+              "min_months": 2
+            },
+            "unvaccinated": {
+              "min_days": 15
+            }
+          }
+        },
+        "logical_item_key": "ibr_bvd_v4j5_primovac_dose1",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "v4j5",
+            "approval_blockers": []
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "67389c7b-8db2-49af-a344-f898ef4b781e"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "7c51c5dc-5990-4efe-a818-d840376828d5"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "100bcbf2-f64e-4f16-8ec9-d7ea512d87db"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "d2799bde-4d9b-470f-9b3f-c4421dfddc9d"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "hybrid",
+          "anchor": "manual_context"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "ibr_bvd",
+        "class_key": "vacina_ibr_bvd"
+      },
+      {
+        "id": "e2145b07-c499-453c-887d-7fa32849ba27",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "bloqueado",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "calf_revaccination_and_reproductive_context_require_runtime"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_1"
+          }
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ]
+        },
+        "logical_item_key": "ibr_bvd_cattlemaster_gold_primovac_dose1",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "cattlemaster",
+            "approval_blockers": [
+              "calf_revaccination_and_reproductive_context_require_runtime"
+            ]
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+              "source_ref": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "CattleMaster GOLD FP 5/L5 — bula oficial Zoetis",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "f74042d9-e4ae-481f-befc-87c26a876e22"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+              "source_ref": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "CattleMaster GOLD FP 5/L5 — bula oficial Zoetis",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "56b3a74d-02ed-4ac6-a2ae-f2d1eb324f6f"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+              "source_ref": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "CattleMaster GOLD FP 5/L5 — bula oficial Zoetis",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "99bbee3a-c531-4a2c-b8a2-fe93a0c25029"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+              "source_ref": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "CattleMaster GOLD FP 5/L5 — bula oficial Zoetis",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "896f6c9d-8e20-41d1-842e-9ed5fa99d327"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "hybrid",
+          "anchor": "manual_context"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "ibr_bvd",
+        "class_key": "vacina_ibr_bvd"
+      },
+      {
+        "id": "6906d0bd-a882-4371-9c4b-4ec5d70c387b",
+        "status": "draft",
+        "version": 4,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_2"
+          },
+          "previous_logical_item_key": "ibr_bvd_primovac_dose1"
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "category": "bezerro",
+          "maternal_age_conditions": {
+            "vaccinated": {
+              "min_months": 4,
+              "exclusive": true
+            },
+            "unvaccinated": {
+              "no_minimum_in_source": true
+            }
+          },
+          "requires_previous_dose": "ibr_bvd_primovac_dose1"
+        },
+        "logical_item_key": "ibr_bvd_primovac_dose2",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "poliguard",
+            "approval_blockers": [
+              "canonical_publisher_scope_extension",
+              "authenticated_preview_and_explicit_decision",
+              "class_review_required"
+            ],
+            "supersedes": {
+              "id": "6d8b7130-c1a5-577e-ac60-1d127eca0b8d",
+              "version": 3,
+              "reason": "Proposta prospectiva; histórico preservado."
+            }
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "0fea7cd6-3749-45c3-a14e-9ba3000fe4dd"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "29b0713b-4a4f-45c5-b84a-47960670da36"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "cade4476-81ff-429c-97d8-751bd9c48ae7"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+              "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Poliguard — resumo da bula oficial MSD",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "0ade968a-eb7c-460a-b529-2dc4369e7ace"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MSD_POLIGUARD_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative",
+          "anchor": "previous_dose",
+          "max_offset_days": 30,
+          "min_offset_days": 21
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "ibr_bvd",
+        "class_key": "vacina_ibr_bvd"
+      },
+      {
+        "id": "afd1c6f6-6d21-4aa1-89b6-63fc22e66966",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_2"
+          },
+          "previous_logical_item_key": "ibr_bvd_v4j5_primovac_dose1"
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "category": "bezerro",
+          "maternal_age_conditions": {
+            "vaccinated": {
+              "min_months": 2
+            },
+            "unvaccinated": {
+              "min_days": 15
+            }
+          },
+          "requires_previous_dose": "ibr_bvd_v4j5_primovac_dose1"
+        },
+        "logical_item_key": "ibr_bvd_v4j5_primovac_dose2",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "v4j5",
+            "approval_blockers": []
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "67389c7b-8db2-49af-a344-f898ef4b781e"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "7c51c5dc-5990-4efe-a818-d840376828d5"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "100bcbf2-f64e-4f16-8ec9-d7ea512d87db"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "39ede6d7-969b-4802-b570-915532402008",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "d2799bde-4d9b-470f-9b3f-c4421dfddc9d"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative",
+          "anchor": "previous_dose",
+          "max_offset_days": 30,
+          "min_offset_days": 21
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "ibr_bvd",
+        "class_key": "vacina_ibr_bvd"
+      },
+      {
+        "id": "ace5c11f-3742-4fbf-9782-0eb820eacee5",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "bloqueado",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "calf_revaccination_and_reproductive_context_require_runtime"
+        ],
+        "protocol_id": "0fb9a0a5-760f-4c43-9495-b7300d3caa71",
+        "booster_rule": {
+          "tolerance": null,
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_2"
+          },
+          "previous_logical_item_key": "ibr_bvd_cattlemaster_gold_primovac_dose1"
+        },
+        "product_class": "vacina_ibr_bvd",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "requires_previous_dose": "ibr_bvd_cattlemaster_gold_primovac_dose1"
+        },
+        "logical_item_key": "ibr_bvd_cattlemaster_gold_primovac_dose2",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "cattlemaster",
+            "approval_blockers": [
+              "calf_revaccination_and_reproductive_context_require_runtime"
+            ]
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+              "source_ref": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "CattleMaster GOLD FP 5/L5 — bula oficial Zoetis",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "f74042d9-e4ae-481f-befc-87c26a876e22"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+              "source_ref": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "CattleMaster GOLD FP 5/L5 — bula oficial Zoetis",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "56b3a74d-02ed-4ac6-a2ae-f2d1eb324f6f"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+              "source_ref": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "CattleMaster GOLD FP 5/L5 — bula oficial Zoetis",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "99bbee3a-c531-4a2c-b8a2-fe93a0c25029"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "ccb0f4bc-b602-4aa6-8fec-76958c23c13c",
+              "source_ref": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "CattleMaster GOLD FP 5/L5 — bula oficial Zoetis",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "896f6c9d-8e20-41d1-842e-9ed5fa99d327"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative",
+          "anchor": "previous_dose",
+          "min_offset_days": 21,
+          "max_offset_days": 21
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "ibr_bvd",
+        "class_key": "vacina_ibr_bvd"
+      },
+      {
+        "id": "9e3516f3-5842-408f-b18d-2d3fce841409",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "bloqueado",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "maternal_prenatal_mortality_and_reproductive_context_require_runtime"
+        ],
+        "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "booster_rule": {
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_1"
+          },
+          "tolerance": {
+            "days": 0
+          }
+        },
+        "product_class": "vacina_leptospirose",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ]
+        },
+        "logical_item_key": "lepto_bovigen8_primovac_dose1",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "lepto8",
+            "approval_blockers": [
+              "maternal_prenatal_mortality_and_reproductive_context_require_runtime"
+            ]
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "02b46f2d-da6c-41c8-a835-2918c7ebb8dc"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "8b24c2cb-e9b9-4d10-982a-12d2e467d084"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "96112df5-6577-45c1-a269-99b355652b4b"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "d0114535-9366-4920-8956-a4dec546c167"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "hybrid",
+          "anchor": "manual_context"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "leptospirose",
+        "class_key": "vacina_leptospirose"
+      },
+      {
+        "id": "3d27cce4-f910-400d-83de-4e97b9b3ffeb",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "bloqueado",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "maternal_prenatal_mortality_and_reproductive_context_require_runtime"
+        ],
+        "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "booster_rule": {
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_2"
+          },
+          "tolerance": {
+            "days": 0
+          },
+          "previous_logical_item_key": "lepto_bovigen8_primovac_dose1"
+        },
+        "product_class": "vacina_leptospirose",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ],
+          "requires_previous_dose": "lepto_bovigen8_primovac_dose1"
+        },
+        "logical_item_key": "lepto_bovigen8_primovac_dose2",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "lepto8",
+            "approval_blockers": [
+              "maternal_prenatal_mortality_and_reproductive_context_require_runtime"
+            ]
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "02b46f2d-da6c-41c8-a835-2918c7ebb8dc"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "8b24c2cb-e9b9-4d10-982a-12d2e467d084"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "96112df5-6577-45c1-a269-99b355652b4b"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "d0114535-9366-4920-8956-a4dec546c167"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative",
+          "anchor": "previous_dose",
+          "min_offset_days": 21,
+          "max_offset_days": 30
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "leptospirose",
+        "class_key": "vacina_leptospirose"
+      },
+      {
+        "id": "007e28c8-6bfa-450a-adcf-6361203f546d",
+        "status": "draft",
+        "version": 1,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "bloqueado",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "maternal_prenatal_mortality_and_reproductive_context_require_runtime"
+        ],
+        "protocol_id": "6e5f7841-bd23-4572-83bf-09bbf579eaf5",
+        "booster_rule": {
+          "recurrenceRule": {
+            "kind": "annual"
+          },
+          "tolerance": {
+            "days": 0
+          },
+          "previous_logical_item_key": "lepto_bovigen8_primovac_dose2"
+        },
+        "product_class": "vacina_leptospirose",
+        "eligibility_rule": {
+          "species": [
+            "bovino"
+          ]
+        },
+        "logical_item_key": "lepto_bovigen8_reforco_anual",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "decision_required",
+            "variant_key": "lepto8",
+            "approval_blockers": [
+              "maternal_prenatal_mortality_and_reproductive_context_require_runtime"
+            ]
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "02b46f2d-da6c-41c8-a835-2918c7ebb8dc"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "8b24c2cb-e9b9-4d10-982a-12d2e467d084"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "96112df5-6577-45c1-a269-99b355652b4b"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7aadc1a1-ebad-44ae-8520-04ff5b383f98",
+              "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+              "kind": "bula",
+              "scope": "global",
+              "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+              "strength": "forte",
+              "evidenceStatus": "SIM_BULA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "d0114535-9366-4920-8956-a4dec546c167"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative",
+          "anchor": "last_execution"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "leptospirose",
+        "class_key": "vacina_leptospirose"
+      },
+      {
+        "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+        "status": "draft",
+        "version": 2,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "booster_rule": {
+          "tolerance": {
+            "days": 0
+          },
+          "recurrenceRule": {
+            "kind": "primovaccination_dose_1"
+          }
+        },
+        "product_class": "vacina_raiva_herbivoros",
+        "eligibility_rule": {
+          "species": [
+            "bovino",
+            "bubalino"
+          ],
+          "requires_risk_area_overlay": true,
+          "requires_regional_overlay": true
+        },
+        "logical_item_key": "raiva_primovac_dose1",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "manual_only",
+            "variant_key": "national_manual_rabies",
+            "approval_blockers": [],
+            "supersedes": {
+              "id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
+              "version": 1,
+              "reason": "Proposta prospectiva; histórico preservado."
+            },
+            "catalog_review_scope": "manual_planning"
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "species": "bubalino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "regional_overlay",
+          "anchor": "risk_area_definition",
+          "requires_regional_overlay": true
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "raiva_herbivoros",
+        "class_key": "vacina_raiva_herbivoros"
+      },
+      {
+        "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+        "status": "draft",
+        "version": 2,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "booster_rule": {
+          "anchor": "previous_dose",
+          "tolerance": {
+            "days": 0
+          },
+          "recurrenceRule": {
+            "kind": "booster_after_initial_dose"
+          },
+          "max_offset_days": 30,
+          "min_offset_days": 30,
+          "previous_logical_item_key": "raiva_primovac_dose1"
+        },
+        "product_class": "vacina_raiva_herbivoros",
+        "eligibility_rule": {
+          "species": [
+            "bovino",
+            "bubalino"
+          ],
+          "requires_previous_dose": "raiva_primovac_dose1",
+          "requires_risk_area_overlay": true,
+          "requires_regional_overlay": true
+        },
+        "logical_item_key": "raiva_primovac_reforco_30d",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "manual_only",
+            "variant_key": "national_manual_rabies",
+            "approval_blockers": [],
+            "supersedes": {
+              "id": "f62a7a12-0604-4539-8245-5564e4e3592e",
+              "version": 1,
+              "reason": "Proposta prospectiva; histórico preservado."
+            },
+            "catalog_review_scope": "manual_planning"
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "species": "bubalino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "relative_to_previous_dose",
+          "anchor": "previous_dose",
+          "max_offset_days": 30,
+          "min_offset_days": 30,
+          "target_offset_days": 30,
+          "previous_logical_item_key": "raiva_primovac_dose1"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "raiva_herbivoros",
+        "class_key": "vacina_raiva_herbivoros"
+      },
+      {
+        "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+        "status": "draft",
+        "version": 2,
+        "dose_rule": null,
+        "product_id": null,
+        "route_rule": null,
+        "action_type": "vacinacao",
+        "item_status": "condicional",
+        "limitations": [
+          "bovine_only",
+          "do_not_generalize_class",
+          "withdrawal_by_executed_product",
+          "no_agenda_auto"
+        ],
+        "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+        "booster_rule": {
+          "tolerance": {
+            "days": 0
+          },
+          "recurrenceRule": {
+            "kind": "annual"
+          },
+          "previous_logical_item_key": "raiva_primovac_reforco_30d"
+        },
+        "product_class": "vacina_raiva_herbivoros",
+        "eligibility_rule": {
+          "species": [
+            "bovino",
+            "bubalino"
+          ],
+          "requires_risk_area_overlay": true,
+          "requires_regional_overlay": true
+        },
+        "logical_item_key": "raiva_reforco_anual_area_risco",
+        "snapshot_template": {
+          "executionProductPolicy": "required_at_execution",
+          "sourcePolicy": {
+            "operational_window": "compatible_product_required_at_execution",
+            "withdrawal": "by_executed_product_snapshot"
+          },
+          "metadata": {
+            "proposal_only": true,
+            "planning_scope": "class_scheme",
+            "agenda_allowed": false,
+            "approved_for_catalog": false,
+            "automationStatus": "manual_only",
+            "variant_key": "national_manual_rabies",
+            "approval_blockers": [],
+            "supersedes": {
+              "id": "e5430f23-2f84-4812-9caa-85bb6596304d",
+              "version": 1,
+              "reason": "Proposta prospectiva; histórico preservado."
+            },
+            "catalog_review_scope": "manual_planning"
+          }
+        },
+        "allows_agenda_auto": false,
+        "source_refs_by_field": {
+          "eligibility_rule": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "eligibility_rule"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                ]
+              }
+            }
+          ],
+          "operational_window": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "operational_window"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                ]
+              }
+            }
+          ],
+          "product_requirement": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "product_requirement"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                ]
+              }
+            }
+          ],
+          "species_authorization": [
+            {
+              "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+              "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+              "kind": "norma_oficial",
+              "scope": "global",
+              "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+              "strength": "forte",
+              "evidenceStatus": "SIM_NORMA",
+              "fieldKeys": [
+                "species_authorization"
+              ],
+              "metadata": {
+                "coverage_ids": [
+                  "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                ]
+              }
+            }
+          ]
+        },
+        "species_authorization": [
+          {
+            "species": "bovino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          },
+          {
+            "species": "bubalino",
+            "source_ref": "SRC_MAPA_RAIVA_VACINA"
+          }
+        ],
+        "product_class_group_id": null,
+        "operational_window_rule": {
+          "type": "regional_overlay",
+          "anchor": "risk_area_definition",
+          "recurrence": "annual_if_risk_area"
+        },
+        "requires_mv_responsavel": false,
+        "product_requirement_kind": "product_class",
+        "protocol_key": "raiva_herbivoros",
+        "class_key": "vacina_raiva_herbivoros"
+      }
+    ],
+    "memberRejections": []
+  },
+  "label_facts_for_review_only": {
+    "poliguard": {
+      "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+      "title": "Poliguard — resumo da bula oficial MSD",
+      "url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+      "issuer": "MSD Saúde Animal",
+      "dose_ml": 5,
+      "route": "SC",
+      "interval": [
+        21,
+        30
+      ],
+      "milk_withdrawal": "unknown",
+      "slaughter_withdrawal": "unknown"
+    },
+    "cattlemaster": {
+      "source_key": "SRC_ZOETIS_CATTLEMASTER_GOLD_REVIEW_20261022",
+      "title": "CattleMaster GOLD FP 5/L5 — bula oficial Zoetis",
+      "url": "https://www.zoetis.com.br/especies/bovinos/cattlemaster-gold/download/bula-cattlemaster-gold.pdf",
+      "issuer": "Zoetis",
+      "dose_ml": 5,
+      "route": "SC",
+      "interval": [
+        21,
+        21
+      ],
+      "milk_withdrawal": "unknown",
+      "slaughter_withdrawal": "unknown"
+    },
+    "v4j5": {
+      "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+      "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+      "url": "https://br.virbac.com/products/biologicos/bovigen-v4j5",
+      "issuer": "Virbac",
+      "dose_ml": 5,
+      "route": "SC",
+      "interval": [
+        21,
+        30
+      ],
+      "milk_withdrawal": "unknown",
+      "slaughter_withdrawal": "unknown"
+    },
+    "lepto8": {
+      "source_key": "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022",
+      "title": "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
+      "url": "https://br.virbac.com/products/biologicos/bovigen-lepto-8",
+      "issuer": "Virbac",
+      "dose_ml": 3,
+      "route": "SC",
+      "interval": [
+        21,
+        30
+      ],
+      "milk_withdrawal": "unknown",
+      "slaughter_withdrawal": "unknown"
+    }
+  },
+  "excluded": [
+    {
+      "variant": "bovela",
+      "reason": "BVD-only; no IBR coverage inferred. Brazilian label and scoped contract still required."
+    }
+  ],
+  "publication_blockers": [
+    "This full review artifact cannot be applied. Only its separately validated eligible subset uses the existing incremental publisher.",
+    "No remote publication or curatorial authorization. Taxonomic class review does not approve execution.",
+    "Rabies global candidates authorize consultation/manual planning only; farm adoption and regional applicability remain separate. Global automation stays blocked."
+  ]
+}

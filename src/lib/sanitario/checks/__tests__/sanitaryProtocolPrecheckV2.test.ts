@@ -6,6 +6,7 @@ import {
   precheckSanitaryProtocolsForAnimalV2,
   precheckSanitaryProtocolsForLotV2,
   precheckSanitaryProtocolsV2,
+  readMaternalVaccinationEvidenceV2,
   type SanitaryPrecheckAnimalResumoV2,
 } from "../sanitaryProtocolPrecheckV2";
 import {
@@ -317,6 +318,49 @@ function resultByItem(
   return result!;
 }
 
+describe("elegibilidade materna opt-in por variante", () => {
+  const key = "ibr_bvd_primovac_dose1";
+  function variant(conditions: Record<string, unknown>) {
+    const catalog = buildCatalog();
+    const target = catalog.items.find(i => i.logicalItemKey === key)!;
+    target.eligibilityRule = { species: ["bovino"], maternal_age_conditions: conditions };
+    return catalog;
+  }
+  const poliguard = { vaccinated: { min_months: 4, exclusive: true }, unvaccinated: { no_minimum_in_source: true } };
+  it("usa fato materno compatível anterior ao nascimento; ausência e fato posterior continuam desconhecidos", () => {
+    const target = variant(poliguard).items.find(i => i.logicalItemKey === key)!;
+    target.snapshotTemplate = { metadata: { planning_scope: "class_scheme" } };
+    target.sourceRefsByField = { operational_window: [{ kind: "bula", scope: "global", strength: "forte", evidenceStatus: "SIM_BULA", fieldKeys: ["operational_window"], metadata: { coverage_ids: ["maternal-coverage"] } }] };
+    const history = [{ animalId: "mother", events: [{ eventId: "maternal-event", source: "event" as const, executedAt: "2025-12-01",
+      productId: "real-product", productClass: target.productClass, classSchemeCoverageId: "maternal-coverage" }] }];
+    const read = (birthDate: string, motherId = "mother") => readMaternalVaccinationEvidenceV2({ motherId, birthDate, item: target, history });
+    expect(read("2026-01-01")).toEqual({ status: "vaccinated", evidenceReference: "event:maternal-event" });
+    expect(read("2025-11-01")).toBeNull();
+    expect(read("2026-01-01", "another-mother")).toBeNull();
+    history[0].events[0].classSchemeCoverageId = "other-scheme";
+    expect(read("2026-01-01")).toBeNull();
+  });
+  it("histórico desconhecido ou sem referência é indeterminado", () => {
+    for (const maternalVaccination of [undefined, { status: "vaccinated" as const, evidenceReference: "" }]) {
+      expect(resultByItem(variant(poliguard), { ...baseAnimal, maternalVaccination }, key).status).toBe("insufficient_data");
+    }
+  });
+  it("Poliguard aplica quatro meses somente ao histórico materno vacinado e sem arredondar para 120 dias", () => {
+    const animal = { ...baseAnimal, nascimento: "2026-01-01", maternalVaccination: { status: "vaccinated" as const, evidenceReference: "Documento materno" } };
+    expect(resultByItem(variant(poliguard), animal, key, "2026-05-01").status).toBe("not_yet_eligible");
+    expect(resultByItem(variant(poliguard), animal, key, "2026-05-02").status).toBe("in_action_window");
+    expect(resultByItem(variant(poliguard), { ...animal, maternalVaccination: { status: "unvaccinated", evidenceReference: "Documento materno" } }, key, "2026-03-01").status).toBe("in_action_window");
+  });
+  it("V4J5 distingue 15 dias e dois meses e não altera regra sem marcador", () => {
+    const catalog = variant({ vaccinated: { min_months: 2 }, unvaccinated: { min_days: 15 } });
+    const animal = { ...baseAnimal, nascimento: "2026-01-01", maternalVaccination: { status: "unvaccinated" as const, evidenceReference: "Documento materno" } };
+    expect(resultByItem(catalog, animal, key, "2026-01-15").status).toBe("not_yet_eligible");
+    expect(resultByItem(catalog, animal, key, "2026-01-16").status).toBe("in_action_window");
+    expect(resultByItem(catalog, { ...animal, maternalVaccination: { status: "vaccinated", evidenceReference: "Documento materno" } }, key, "2026-02-28").status).toBe("not_yet_eligible");
+    expect(resultByItem(buildCatalog(), baseAnimal, key).status).toBe("in_action_window");
+  });
+});
+
 function eventHistory(
   familyCode: string | undefined,
   itemKey: string | undefined,
@@ -344,6 +388,16 @@ function eventHistory(
 }
 
 describe("precheckSanitaryProtocolsV2", () => {
+  it("reforço anual de variante segue o aniversário do calendário em ano bissexto", () => {
+    const catalog = buildCatalog();
+    const target = catalog.items.find(i => i.logicalItemKey === "lepto_reforco_anual_semestral")!;
+    target.snapshotTemplate = { metadata: { planning_scope: "class_scheme" } };
+    target.boosterRule = { recurrenceRule: { kind: "annual" }, tolerance: { days: 0 }, previous_logical_item_key: "lepto_primovac_dose1" };
+    target.sourceRefsByField = { operational_window: [{ kind: "bula", scope: "global", strength: "forte", evidenceStatus: "SIM_BULA", fieldKeys: ["operational_window"], metadata: { coverage_ids: ["leap-coverage"] } }] };
+    const history = eventHistory("leptospirose", "lepto_primovac_dose1", "2023-03-01", { productClass: target.productClass, classSchemeCoverageId: "leap-coverage" });
+    expect(resultByItem(catalog, baseAnimal, target.logicalItemKey, "2024-02-29", history).status).toBe("eligible_soon");
+    expect(resultByItem(catalog, baseAnimal, target.logicalItemKey, "2024-03-01", history).status).toBe("in_action_window");
+  });
   it.each([null, "SC", "MG"])("considera UF no escopo B19 sem criar fato: %s", (uf) => {
     const catalog: SanitaryProtocolCatalogReadModelV2 = {
       protocols: [protocol("brucelose_b19", { metadata: { requires_uf_context: true, excluded_ufs: ["SC"] } })].map(adaptSanitaryProtocolV2Row),

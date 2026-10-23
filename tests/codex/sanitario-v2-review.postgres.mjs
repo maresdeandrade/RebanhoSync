@@ -1,7 +1,7 @@
 // Real PostgreSQL/roles/locks in a NEW disposable local database; never the hosted DB.
 import assert from "node:assert/strict";
 import { execFile, execFileSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -10,6 +10,10 @@ import pg from "pg";
 import * as contract from "../../scripts/codex/sanitario-v2-contract.mjs";
 import { buildApprovalCandidate, DECISION_PATH } from "../../scripts/codex/prepare-sanitario-approval-v2.mjs";
 import { prepareClassMigration } from "../../scripts/codex/prepare-sanitario-class-migration-v2.mjs";
+import { verifyManualCatalogReview } from "./sanitario-v2-manual-review.cases.mjs";
+import { verifyClosurePublication } from "./sanitario-v2-closure-publication.cases.mjs";
+import { verifyInitialBootstrap } from "./sanitario-v2-initial-bootstrap.cases.mjs";
+import { prepareClassDelta } from "../../scripts/codex/prepare-sanitario-class-delta-v2.mjs";
 
 const root = process.cwd(), sourceContainer = "supabase_db_GestaoAgro";
 const container = `sanitario-review-${randomUUID().replaceAll("-", "")}`;
@@ -60,7 +64,7 @@ try {
     "select format('create role %I nologin;',rolname) from pg_roles where rolname not like 'pg_%' and rolname <> 'postgres' and rolname not like 'rebanhosync_%'"]);
   psql(roles + "\nalter role supabase_admin superuser login; alter role service_role bypassrls; create schema extensions; create extension pgcrypto with schema extensions;");
   psql(docker(["exec",sourceContainer,"pg_dump","-U","postgres","-d","postgres","--schema-only","--schema=auth","--no-owner"]),"supabase_admin");
-  const sql = readdirSync("supabase/migrations").filter(n=>n.endsWith(".sql")&&!n.startsWith("20261020232807_")).sort()
+  const sql = readdirSync("supabase/migrations").filter(n=>n.endsWith(".sql")&&!n.startsWith("20261020232807_")&&!n.startsWith("20261022230000_")).sort()
     .map(name=>`\\echo APPLY ${name}\n${readFileSync(path.join("supabase/migrations",name),"utf8")}`).join("\n");
   try { psql(sql); } catch(error) { throw new Error(`Fresh schema: ${error.stderr?.toString().slice(-1800)}`); }
   client = await connect();
@@ -233,8 +237,15 @@ try {
     assert.equal(row.source_refs_by_field.operational_window[0].metadata.catalogFieldReview.scope,"class_scheme");
     assert.equal((await client.query("select count(*)::int as n from public.app_admin_audit_events where target_id=$1",[protocolId])).rows[0].n,1);
   });
-  const deltaPath="docs/review/evidence/SANITARIO_V2_R04B2_CANONICAL_DELTA_20261021.json";
-  const delta=JSON.parse(readFileSync(deltaPath,"utf8")), deltaItems=delta.payload.protocol_item_rows;
+  // Rebaseline only test-input fingerprints for this publisher revision. Historical evidence stays immutable.
+  const historicalDelta=JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_R04B2_CANONICAL_DELTA_20261021.json","utf8"));
+  const currentInputs=Object.fromEntries(Object.entries(historicalDelta.inputs).map(([key,input])=>[key,
+    {...input,sha256:createHash("sha256").update(readFileSync(input.path)).digest("hex")} ]));
+  const inputJson=key=>JSON.parse(readFileSync(currentInputs[key].path,"utf8"));
+  const delta=prepareClassDelta(inputJson("canonical"),inputJson("previews"),inputJson("baseline"),inputJson("technical"),currentInputs);
+  assert.deepEqual(delta.payload,historicalDelta.payload,"Test rebaseline cannot alter the publication payload");
+  const deltaPath=path.join(dir,"current-publisher-delta.json");writeFileSync(deltaPath,JSON.stringify(delta));
+  const deltaItems=delta.payload.protocol_item_rows;
   // Complete the R03 product-reference fixture using the same existing engine.
   // No production authorization is introduced by this test-only fixture setup.
   const fixtureData=Object.fromEntries(Object.keys(contract.validateCanonicalTechnicalContract(JSON.parse(cb)).data).map(k=>[k,[]]));
@@ -292,6 +303,10 @@ try {
       assert.equal(rows.filter(r=>r.status==="active"&&!r.deleted_at).length,0);
     }
   });
+  if (process.argv.includes("--initial-bootstrap")) {
+    await client.query(readFileSync("supabase/migrations/20261022230000_sanitario_manual_catalog_review_v2.sql", "utf8"));
+    await verifyInitialBootstrap({ client, admin, second, check, dir, database, contract });
+  } else {
   await check("R04B.2 five authenticated previews, grouped approvals, flags and authorized replay preserve R04/R05",async()=>{
     const individual=await asUser(admin,async c=>{ const result=[];for(const i of deltaItems) result.push(await preview(c,i.protocol_id,[i.id]));return result; });
     assert(individual.every(v=>v.blockers.length===0));
@@ -320,9 +335,13 @@ try {
   const catalog={protocols:(await client.query("select * from public.sanitario_protocolos_v2 where deleted_at is null")).rows,
     items:(await client.query("select * from public.sanitario_protocolo_itens_versions_v2 where deleted_at is null")).rows};
   writeFileSync(path.join(dir,"approved-catalog.json"),JSON.stringify(catalog,null,2)+"\n");
+  await client.query(readFileSync("supabase/migrations/20261022230000_sanitario_manual_catalog_review_v2.sql", "utf8"));
+  await verifyClosurePublication({ client, asUser, admin, preview, decide, check, dir, database, contract });
+  await verifyManualCatalogReview({ client, asUser, admin, outsider, preview, decide, check });
+  }
   report.result="PASS"; report.original_approvals_preserved=7;
-  report.approved_in_disposable_database=catalog.items.filter(i=>i.allows_agenda_auto).length;
-  report.real_catalog_authorizations=0; report.catalog_file=path.join(dir,"approved-catalog.json");
+  report.approved_in_disposable_database=(await client.query("select count(*)::int n from public.sanitario_protocolo_itens_versions_v2 where allows_agenda_auto")).rows[0].n;
+  report.real_catalog_authorizations=0;
 } catch(error) { report.result="FAIL";report.error=error.message;console.error(error.message);process.exitCode=1;
 } finally {
   await client?.end();

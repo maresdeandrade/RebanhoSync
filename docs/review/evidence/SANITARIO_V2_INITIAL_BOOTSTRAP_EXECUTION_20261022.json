@@ -1,0 +1,68 @@
+{
+  "artifact": "sanitario_initial_bootstrap_execution_sequence",
+  "version": "sanitario-initial-20261022-v1",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "baseline_head": "40e04fa58b45aa1cfc2faf1ecbb4033ec326c21b",
+  "authorized_for_remote_execution": false,
+  "supersedes": "docs/review/evidence/SANITARIO_V2_CLOSURE_EXECUTION_20261022.json",
+  "plan_file": "docs/review/evidence/SANITARIO_V2_INITIAL_BOOTSTRAP_20261022.json",
+  "plan_sha256": "5767f1bde80044b2e630cc0236f086d187e35ba7c4a646df4a79d3be810a98c5",
+  "publication_file": "docs/review/evidence/SANITARIO_V2_CLOSURE_ELIGIBLE_DELTA_20261022.json",
+  "publication_sha256": "838574908702eb3568cd6d47814141196e3c47046bf1732e2ac2bfff98844860",
+  "confirmed_remote_state": {
+    "administrators": 1,
+    "approved_families": 5,
+    "aftosa": "retired",
+    "gates_enabled": 0,
+    "bootstrap_receipts": 0
+  },
+  "sequence": [
+    {
+      "step": 1,
+      "operation": "Apply only 20261022230000_sanitario_manual_catalog_review_v2",
+      "requires": "Explicit execution authorization",
+      "effects": "Existing technical validation supports manual rabies; no seed, approvals, grants or gate activation"
+    },
+    {
+      "step": 2,
+      "operation": "Existing publisher: incremental publication and initial bootstrap in the same transaction",
+      "requires": "Same explicit execution authorization and a privately configured remote DB_URL",
+      "command": "node scripts/codex/import-sanitario-protocols-v2.mjs --incremental <authorized-copy-of-publication-file> --bootstrap-initial docs/review/evidence/SANITARIO_V2_INITIAL_BOOTSTRAP_20261022.json --apply",
+      "existing_publication_gate": "Use an authorized copy with import_gate.import_real_authorized=true and a factual authorization_reference; original packet stays unauthorized. Existing ALLOW_SANITARIO_IMPORT, SANITARIO_IMPORT_CONFIRM and SANITARIO_DELTA_CONFIRM apply. No additional approval stage.",
+      "effects": "Seven new draft item versions, two new sources and twelve coverages; activate twelve scoped items across four families; preserve original five families, aftosa retired, Leptoferm D2 restriction and gates OFF",
+      "audit": "One SANITARY_CATALOG_BOOTSTRAP_V2 receipt; administrator is onboarding principal, executor is the DB role; interactive_review=false, approved_by=null on the four target protocols. No human decision or auth session is fabricated.",
+      "technical_guards": "Single actual admin; fixed version and scope; content/digest CAS; shared locks, validation and transaction; audit failure rolls back publication and bootstrap; replay checks the original audit and exact post-state"
+    },
+    {
+      "step": 3,
+      "operation": "Read-only independent remote verification",
+      "verify": [
+        "Nine specified families active/approved and aftosa retired",
+        "All original approvals unchanged; Leptoferm D2 restricted; incomplete variants absent from eligible publication",
+        "Raiva retains no_agenda_auto and allows_agenda_auto=false",
+        "No added SANITARY_RULE_DECISION_V2 action; bootstrap action and version persisted",
+        "Gates OFF; no Evento, Agenda, stock or factual history rewrite",
+        "Same request replay returns original receipt without new audit"
+      ],
+      "requires": "No further human curatorial session"
+    }
+  ],
+  "local_validation_file": "docs/review/evidence/SANITARIO_V2_INITIAL_BOOTSTRAP_VALIDATION_20261022.json",
+  "connection_prerequisite": {
+    "matching_remote_DB_URL_found": false,
+    "checked": "Current process and standard repository .env files, connection values never printed",
+    "available": "Supabase connector remote reads confirmed",
+    "reason": "Existing canonical publisher uses pg.Client and DB_URL; connector SQL access does not configure that connection",
+    "resolution": "Provide the PostgreSQL connection privately through the local execution environment; do not send credentials in chat"
+  },
+  "remote_writes_executed": 0,
+  "new_remote_receipts": [],
+  "classification": {
+    "local": "READY WITH CAVEAT",
+    "remote_target": "NOT ACHIEVED",
+    "remaining": [
+      "Explicit remote execution authorization, as requested by the user",
+      "Private DB_URL connection for the existing publisher"
+    ]
+  }
+}
