@@ -142,7 +142,15 @@ describe("UX14 — HTML humano e CSV canonico", () => {
       const report = reportWithCoverage(status);
       const canonical = JSON.stringify(report);
       const csv = buildOperationalSummaryCsv(report, "Fazenda UX14");
-      expect(createHash("sha256").update(csv).digest("hex")).toBe(
+      // Contract 04 adds exactly one zero-count pasture row to these empty fixtures.
+      // Preserve the old hash for every other byte instead of replacing golden hashes.
+      const pastureRow = "manejo;Pastagem;0";
+      const csvLines = csv.split("\r\n");
+      expect(csvLines.filter((line) => line === pastureRow)).toEqual([pastureRow]);
+      const csvBeforePasture = csvLines
+        .filter((line) => line !== pastureRow)
+        .join("\r\n");
+      expect(createHash("sha256").update(csvBeforePasture).digest("hex")).toBe(
         BASELINE_CSV_HASHES[status],
       );
       const html = buildOperationalSummaryPrintHtml(report, "Fazenda UX14");
