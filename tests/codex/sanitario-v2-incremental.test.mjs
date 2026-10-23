@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { classDeltaDigest } from "../../scripts/codex/prepare-sanitario-class-delta-v2.mjs";
+import { classDeltaDigest, prepareClassDelta } from "../../scripts/codex/prepare-sanitario-class-delta-v2.mjs";
 
 const publisher = "scripts/codex/import-sanitario-protocols-v2.mjs";
-const delta = "docs/review/evidence/SANITARIO_V2_R04B2_CANONICAL_DELTA_20261021.json";
+const historical = JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_R04B2_CANONICAL_DELTA_20261021.json", "utf8"));
+// Test the current publisher without rewriting the certified historical packet.
+const inputs = Object.fromEntries(Object.entries(historical.inputs).map(([key, input]) => [key,
+  { ...input, sha256: createHash("sha256").update(readFileSync(input.path)).digest("hex") }]));
+const inputJson = key => JSON.parse(readFileSync(inputs[key].path, "utf8"));
+const current = prepareClassDelta(inputJson("canonical"), inputJson("previews"), inputJson("baseline"), inputJson("technical"), inputs);
+assert.deepEqual(current.payload, historical.payload, "Test fingerprints cannot change the certified publication payload");
+const delta = path.join(mkdtempSync(path.join(tmpdir(), "r04b2-current-publisher-")), "delta.json");
+writeFileSync(delta, JSON.stringify(current));
 
 describe("public incremental sanitary publisher", () => {
   it("validates only the five bounded class candidates through the canonical entrypoint", () => {
