@@ -334,8 +334,9 @@ export default function SanitarioCatalogoV2() {
                         catalog.productClassGroups,
                       );
                     return (
-                      <div
+                      <article
                         key={item.id}
+                        aria-label={`${item.logicalItemKey} — versão ${item.version}`}
                         className="rounded-lg border border-border bg-background p-3"
                       >
                         <div className="flex flex-wrap items-center gap-2">
@@ -373,6 +374,8 @@ export default function SanitarioCatalogoV2() {
                             </AccordionTrigger>
                             <AccordionContent className="space-y-3 pb-1">
                               <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                                <Detail label="Versão do protocolo" value={`v${selectedProtocol?.version ?? "—"}`} />
+                                <Detail label="Versão do item" value={`v${item.version}`} />
                                 <Detail
                                   label="Chave técnica"
                                   value={item.logicalItemKey}
@@ -392,6 +395,7 @@ export default function SanitarioCatalogoV2() {
                                   )}
                                 />
                               </dl>
+                              <TechnicalSources sources={item.sourceRefsByField} />
                               <div className="space-y-1 text-sm">
                                 <div className="text-xs font-medium text-muted-foreground">
                                   Limitações operacionais
@@ -421,7 +425,7 @@ export default function SanitarioCatalogoV2() {
                             </AccordionContent>
                           </AccordionItem>
                         </Accordion>
-                      </div>
+                      </article>
                     );
                   })}
                 </CardContent>
@@ -436,6 +440,33 @@ export default function SanitarioCatalogoV2() {
 
 function Metric({ label, value }: { label: string; value: number | string }) {
   return <MetricCard label={label} value={value} />;
+}
+
+function TechnicalSources({ sources }: { sources: JsonRecord }) {
+  const labels: Record<string, string> = {
+    eligibility_rule: "Elegibilidade", operational_window: "Janela operacional",
+    product_requirement: "Requisito de produto", species_authorization: "Autorização por espécie",
+    dose: "Dose", route: "Via",
+  };
+  const fields = Object.entries(sources).flatMap(([field, value]) =>
+    Array.isArray(value) ? value.filter((ref): ref is JsonRecord =>
+      !!ref && typeof ref === "object" && !Array.isArray(ref) && typeof ref.title === "string",
+    ).map((ref) => ({ field, ref })) : [],
+  );
+  return <section className="space-y-2 text-sm" aria-label="Fontes técnicas por campo">
+    <p className="font-medium">Fontes técnicas por campo</p>
+    {fields.length ? <ul className="space-y-2">{fields.map(({ field, ref }, index) => {
+      const metadata = ref.metadata && typeof ref.metadata === "object" && !Array.isArray(ref.metadata)
+        ? ref.metadata as JsonRecord : {};
+      const coverage = Array.isArray(metadata.coverage_ids) ? metadata.coverage_ids.filter((id): id is string => typeof id === "string") : [];
+      return <li key={`${field}:${index}`} className="break-words rounded border border-border p-2">
+        <p>{String(ref.title)}</p>
+        <p className="text-xs text-muted-foreground">{labels[field] ?? field} · {typeof ref.evidenceStatus === "string" ? ref.evidenceStatus : "Evidência não informada"}</p>
+        {typeof ref.source_ref === "string" ? <p className="text-xs text-muted-foreground">Referência: {ref.source_ref}</p> : null}
+        {coverage.length ? <p className="text-xs text-muted-foreground">Coberturas: {coverage.join(", ")}</p> : null}
+      </li>;
+    })}</ul> : <p className="text-muted-foreground">Sem fontes por campo informadas nesta versão.</p>}
+  </section>;
 }
 
 function Detail({

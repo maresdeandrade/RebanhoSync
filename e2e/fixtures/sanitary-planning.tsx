@@ -4,14 +4,18 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
-import { AuthProvider } from "../../src/hooks/useAuth";
+import { AuthProvider, useAuth } from "../../src/hooks/useAuth";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { RequireAuth } from "../../src/components/auth/RequireAuth";
+import { RequireFarm } from "../../src/components/auth/RequireFarm";
 import { supabase } from "../../src/lib/supabase";
 import { db } from "../../src/lib/offline/db";
 import { establishLocalOwnership } from "../../src/lib/offline/ownership";
 import ProtocolosSanitarios from "../../src/pages/ProtocolosSanitarios";
 import SelectFazenda from "../../src/pages/SelectFazenda";
+import SanitarioCatalogoV2 from "../../src/pages/SanitarioCatalogoV2";
 import "../../src/globals.css";
-import { seedNormalizedFixture, seedNormalizedHistory, normalizedDraft, automaticItemKeys } from "../../src/lib/sanitario/agenda/__tests__/fixtures/sanitaryNormalizedFixtureV2";
+import { seedNormalizedFixture, seedNormalizedHistory, seedPublishedCatalogFixture, normalizedDraft, automaticItemKeys } from "../../src/lib/sanitario/agenda/__tests__/fixtures/sanitaryNormalizedFixtureV2";
 import { saveSanitaryAutomationPlanV2 } from "../../src/lib/sanitario/agenda/sanitaryAutomationPlanV2";
 
 const endpoint = new URL(import.meta.env.VITE_SUPABASE_URL);
@@ -20,11 +24,37 @@ if (endpoint.hostname !== "127.0.0.1" || endpoint.port !== "59997") {
 }
 
 const user = { id: "00000000-0000-4000-8000-000000000001", email: "sintetico@example.invalid" };
+const recovery = new URLSearchParams(location.search).has("recovery") || sessionStorage.getItem("sanitary-fixture-recovery") === "1";
+if (recovery) sessionStorage.setItem("sanitary-fixture-recovery", "1");
+type FixtureAuthState = "valid" | "expired" | "signed_out";
+let authState = (localStorage.getItem("sanitary-fixture-auth") ?? "valid") as FixtureAuthState;
+const authListeners = new Set<(event: AuthChangeEvent, session: Session | null) => void>();
+const fixtureSession = () => authState === "signed_out" ? null : ({ user,
+  expires_at: Math.floor(Date.now() / 1000) + (authState === "valid" ? 3600 : -60),
+} as Session);
 Object.assign(supabase.auth, {
   getSession: async () => ({ data: { session: { user } }, error: null }),
   getUser: async () => ({ data: { user }, error: null }),
   onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
 });
+if (recovery) {
+  Object.assign(supabase.auth, {
+    getSession: async () => ({ data: { session: fixtureSession() }, error: authState === "expired" ? { message: "Sessão sintética expirada" } : null }),
+    getUser: async () => ({ data: { user: authState === "valid" ? user : null }, error: authState === "valid" ? null : { message: "Não autenticado", status: 401 } }),
+    refreshSession: async () => ({ data: { session: authState === "valid" ? fixtureSession() : null }, error: authState === "valid" ? null : { message: "Refresh sintético recusado", status: 401 } }),
+    onAuthStateChange: (callback: (event: AuthChangeEvent, session: Session | null) => void) => {
+      authListeners.add(callback);
+      return { data: { subscription: { unsubscribe: () => authListeners.delete(callback) } } };
+    },
+  });
+  Object.assign(window, { sanitaryRecoveryAuth: {
+    set(state: FixtureAuthState) {
+      authState = state;
+      localStorage.setItem("sanitary-fixture-auth", state);
+      for (const listener of authListeners) listener(state === "signed_out" ? "SIGNED_OUT" : state === "valid" ? "SIGNED_IN" : "TOKEN_REFRESHED", fixtureSession());
+    },
+  } });
+}
 await establishLocalOwnership({ user } as never);
 const farm = "00000000-0000-4000-8000-000000000010";
 const otherFarm = "00000000-0000-4000-8000-000000000020";
@@ -33,7 +63,12 @@ const item = "00000000-0000-4000-8000-000000000040";
 const now = "2026-07-04T12:00:00.000Z";
 const stamp = { created_at: now, updated_at: now, deleted_at: null };
 const integral = new URLSearchParams(location.search).has("integral");
-if (!await db.state_animais.count() && !integral) {
+const homologated = new URLSearchParams(location.search).has("homologado");
+if (!await db.state_animais.count() && homologated) {
+  const { default: catalog } = await import("../../docs/review/evidence/SANITARIO_V2_VF2_CATALOG_READONLY_20261023.json");
+  await seedPublishedCatalogFixture(farm, catalog);
+}
+if (!await db.state_animais.count() && !integral && !homologated) {
   await db.state_lotes.put({ id: "lot-test", fazenda_id: farm, nome: "Bezerras de teste", ...stamp } as never);
   await db.state_fazenda_sanidade_config.put({ fazenda_id: farm, uf: "MG", ...stamp } as never);
   for (const [id, identification, farmId, sex] of [
@@ -68,12 +103,28 @@ if (integral && !await db.state_animais.count()) {
   await saveSanitaryAutomationPlanV2({ fazendaId: farm, actorId: user.id, expectedRevision: 0,
     draft: await normalizedDraft(farm), enabled: false, confirmed: false });
 }
+export function RecoveryProbe() {
+  const { activeFarmId, role, refreshSettings, setActiveFarm } = useAuth();
+  React.useEffect(() => {
+    Object.assign(window, { sanitaryRecoveryContext: { refreshSettings, setActiveFarm } });
+  }, [refreshSettings, setActiveFarm]);
+  return <aside aria-label="Observação da fixture VF3">
+    <output aria-label="Fazenda ativa na fixture">{activeFarmId ?? "nenhuma"}</output>
+    <output aria-label="Papel ativo na fixture">{role ?? "nenhum"}</output>
+    <button onClick={() => void refreshSettings()}>Reconsultar contexto da fixture</button>
+  </aside>;
+}
+const operational = (element: React.ReactNode) => recovery
+  ? <RequireAuth><RequireFarm>{element}</RequireFarm></RequireAuth> : element;
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode><AuthProvider><BrowserRouter>
+    {recovery ? <RecoveryProbe /> : null}
     <nav className="p-4"><Link to="/select-fazenda">Trocar fazenda</Link></nav>
     <Routes>
-      <Route path="/select-fazenda" element={<SelectFazenda />} />
-      <Route path="/protocolos-sanitarios" element={<ProtocolosSanitarios />} />
+      <Route path="/select-fazenda" element={recovery ? <RequireAuth><SelectFazenda /></RequireAuth> : <SelectFazenda />} />
+      <Route path="/protocolos-sanitarios" element={operational(<ProtocolosSanitarios />)} />
+      <Route path="/protocolos-sanitarios/catalogo-v2" element={operational(<SanitarioCatalogoV2 />)} />
+      {recovery ? <Route path="/login" element={<p>Sessão encerrada — fixture VF3</p>} /> : null}
       <Route path="/home" element={<Navigate to="/protocolos-sanitarios" replace />} />
       <Route path="*" element={<Navigate to="/select-fazenda" replace />} />
     </Routes><Toaster />

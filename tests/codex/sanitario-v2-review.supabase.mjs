@@ -34,6 +34,7 @@ try {
   for (const port of [54320, 54321, 54322, 54323, 54324, 54325, 54327, 54329]) config = config.replaceAll(String(port), String(port + 1100));
   config = config.replace("inspector_port = 8083", "inspector_port = 55483").replace(/(\[db.seed\]\r?\nenabled = )true/, "$1false");
   config = config.replace(/^\[local_smtp\]$/m, "[local_smtp]\nport = 55424");
+  if (process.argv.includes("--vf4")) config = config.replace("jwt_expiry = 3600", "jwt_expiry = 60");
   writeFileSync(path.join(dest, "config.toml"), config);
   cpSync("supabase/migrations", path.join(dest, "migrations"), { recursive: true });
   cpSync("supabase/functions", path.join(dest, "functions"), { recursive: true });
@@ -67,6 +68,11 @@ try {
     if (!ready) await new Promise(resolve => setTimeout(resolve, 500));
   }
   assert(ready, "Isolated Edge auth gate unavailable");
+  if (process.argv.includes("--vf4")) {
+    db = new pg.Client({ connectionString: env.DB_URL }); await db.connect();
+    const { runSanitaryRecoveryVF4 } = await import("./sanitario-v2-vf4.fixture.mjs");
+    await runSanitaryRecoveryVF4({ db, env, report });
+  } else {
   const baseline = await child(["scripts/codex/validate-supabase-baseline-functional.mjs"], { ...process.env, ...env,
     FUNCTIONS_URL: `${env.API_URL}/functions/v1`, REBANHOSYNC_DISPOSABLE_LOCAL_DB: "1", REBANHOSYNC_SKIP_FUNCTIONS_SERVE: "1" });
   report.baseline_checks = baseline.stdout.split(/\r?\n/).filter(line => /^authenticated privileges|^user_profiles:|^user_settings:|^[1-5]\/5|^OK baseline/.test(line));
@@ -100,6 +106,7 @@ try {
   report.cases.push("HTTP lost-ACK replay returns same audit receipt");
   if (process.argv.includes("--convergence")) {
     await runSanitaryConvergenceFixture({ db, env, adminClient, sessions, packet, report });
+  }
   }
   report.result = "PASS";
 } catch (error) { report.result = "FAIL"; report.failure = /^[A-Z_]+$/.test(error.message) ? error.message : "ISOLATED_CHECK_FAILED";

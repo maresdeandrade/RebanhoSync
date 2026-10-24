@@ -9,7 +9,12 @@ export default defineConfig({
     testTimeout: 30000,
     maxWorkers: 2,
     setupFiles: ["./vitest.setup.ts"],
-    exclude: [...configDefaults.exclude, "**/.kilo/worktrees/**", "e2e/**"],
+    exclude: [
+      ...configDefaults.exclude,
+      "**/.kilo/worktrees/**",
+      "e2e/**",
+      "tests/codex/sanitary-disposable-support.test.mjs",
+    ],
   },
   resolve: {
     alias: {

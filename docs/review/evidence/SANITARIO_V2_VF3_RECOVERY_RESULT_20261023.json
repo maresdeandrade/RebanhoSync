@@ -1,0 +1,2658 @@
+{
+  "artifact": "sanitario_v2_vf3_recovery_client_evidence",
+  "baseline": "4b43fc10ec9dfd0c19527c22c4d725799d9e7969",
+  "branch": "codex/sanitario-v2-functional-validation",
+  "catalog_snapshot_sha256": "c9744cf2e6b6a9b95e11e68d74990cdb0af887f849c9acde9421bb720d80fdcc",
+  "environment": "Chromium, real AuthProvider/RequireAuth/RequireFarm/Dexie/services; synthetic identity and HTTP restricted to localhost; production not accessed",
+  "cases": [
+    {
+      "title": "VF3 farm-switch descarta contexto regional e refreshSettings atrasados de A",
+      "status": "PASS",
+      "source_run": "scratch/sanitary-vf3-green.json",
+      "duration_ms": 3296,
+      "evidence": [
+        {
+          "name": "vf3-farm-switch-evidence",
+          "data": {
+            "state": {
+              "agendas": [],
+              "animals": [],
+              "ops": [],
+              "gestures": [],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            },
+            "activeFarm": "00000000-0000-4000-8000-000000000020",
+            "delayedSettings": true,
+            "delayedRegion": true
+          }
+        }
+      ]
+    },
+    {
+      "title": "VF3 restart real do contexto Chromium preserva Agenda e fila offline sem duplicidade",
+      "status": "PASS",
+      "source_run": "scratch/sanitary-vf3-green.json",
+      "duration_ms": 27338,
+      "evidence": [
+        {
+          "name": "vf3-real-context-restart-evidence",
+          "data": {
+            "profile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\scratch\\sanitary-vf3-profile-RWzAQK",
+            "closedOriginalBrowser": true,
+            "before": {
+              "agendas": [
+                {
+                  "id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-09b6d63c-ac34-48ea-985b-d6d4fe5b8e72",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "status": "programada",
+                  "dedup_key": "00000000-0000-4000-8000-000000000010|sanitario-agenda-v2|protocol:704d9498-c721-40f5-b8a2-451444df4ab2|item:d1d24e1b-9948-4ce4-9f18-b6b19d3d658f|product:none|class:vacina_raiva_herbivoros|action:none|lote:none|date:2026-07-04|start:none|end:none|animals:adult|target:adult",
+                  "client_id": "00000000-0000-4000-8000-000000000001",
+                  "client_op_id": "sanitary-window-09b6d63c-ac34-48ea-985b-d6d4fe5b8e72",
+                  "client_tx_id": null,
+                  "client_recorded_at": "2026-07-04T12:00:10.692Z",
+                  "server_received_at": "2026-07-04T12:00:10.692Z",
+                  "source_demand_key": "sanitary_precheck_preview_v2:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "preview_group_id": "animal:adult:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "protocolo_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                  "protocol_item_version_id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "protocol_item_snapshot": {
+                    "planningKind": "aplicacao_esquema_definido",
+                    "generationMode": "manual",
+                    "planningEvidence": {
+                      "itemVersion": 2,
+                      "planningScope": "class_scheme",
+                      "executionProductPolicy": "required_at_execution",
+                      "sourceRefsByField": {
+                        "eligibility_rule": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "eligibility_rule",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "eligibility_rule"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "operational_window": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "operational_window",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "operational_window"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "product_requirement": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "product_requirement",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "product_requirement"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "species_authorization": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "species_authorization",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "species_authorization"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ]
+                      },
+                      "operationalWindowRule": {
+                        "type": "regional_overlay",
+                        "anchor": "risk_area_definition",
+                        "requires_regional_overlay": true
+                      },
+                      "boosterRule": {
+                        "tolerance": {
+                          "days": 0
+                        },
+                        "recurrenceRule": {
+                          "kind": "primovaccination_dose_1"
+                        }
+                      }
+                    },
+                    "sourceKind": "sanitary_precheck_preview_v2",
+                    "actionType": "vacinacao",
+                    "productId": null,
+                    "familyCode": "raiva_herbivoros",
+                    "itemKey": "raiva_primovac_dose1",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "protocolName": "Raiva dos herbivoros",
+                    "precheckStatus": "in_action_window",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "operationalContext": {
+                      "rabiesRiskArea": null,
+                      "sanitaryCadence": null,
+                      "reproductiveContext": null,
+                      "management": null
+                    }
+                  },
+                  "janela_inicio": "2026-07-04",
+                  "janela_fim": null,
+                  "data_programada": "2026-07-04",
+                  "lote_id": null,
+                  "produto_veterinario_id": null,
+                  "produto_snapshot": {
+                    "planningOnly": true,
+                    "realProductDefinedOnlyAtExecution": true,
+                    "doseDefinedOnlyAtExecution": true,
+                    "withdrawalDefinedOnlyAtExecution": true,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null
+                  },
+                  "produto_classe": "vacina_raiva_herbivoros",
+                  "acao_sanitaria": "vacinacao",
+                  "execution_evento_id": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "target": {
+                      "scope": "animal",
+                      "id": "adult",
+                      "fazendaId": "00000000-0000-4000-8000-000000000010"
+                    },
+                    "targetAnimalIds": [
+                      "adult"
+                    ],
+                    "targetAnimalScope": "animais_explicitos",
+                    "previewStatus": "in_action_window",
+                    "protocolName": "Raiva dos herbivoros",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "blockers": [],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "notes": null,
+                    "createdBy": "00000000-0000-4000-8000-000000000001",
+                    "automationKey": null,
+                    "automationWindowKey": null,
+                    "automationPlanRevision": null,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "createsEvent": false,
+                    "createsStockMovement": false,
+                    "createsActiveWithdrawal": false
+                  },
+                  "created_at": "2026-07-04T12:00:10.692Z",
+                  "updated_at": "2026-07-04T12:00:10.692Z",
+                  "deleted_at": null
+                }
+              ],
+              "animals": [
+                {
+                  "agenda_id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-09b6d63c-ac34-48ea-985b-d6d4fe5b8e72",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "animal_id": "adult",
+                  "planned_status": "planejado",
+                  "execution_evento_id": null,
+                  "not_executed_reason": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "targetScope": "animal",
+                    "createsEvent": false
+                  },
+                  "created_at": "2026-07-04T12:00:10.692Z",
+                  "updated_at": "2026-07-04T12:00:10.692Z"
+                }
+              ],
+              "ops": [
+                {
+                  "table": "fazenda_sanidade_config",
+                  "action": "UPDATE",
+                  "record": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "payload": {
+                      "sanitary_agenda_automation_v2": {
+                        "schemaVersion": 1,
+                        "revision": 1,
+                        "enabled": false,
+                        "rules": [],
+                        "context": {
+                          "rabiesRiskArea": null,
+                          "sanitaryCadence": null,
+                          "reproductiveContext": null,
+                          "management": null
+                        },
+                        "confirmedBy": "00000000-0000-4000-8000-000000000001",
+                        "confirmedAt": "2026-07-04T12:00:11.377Z",
+                        "updatedAt": "2026-07-04T12:00:11.377Z"
+                      }
+                    },
+                    "client_id": "browser:6fdb71dd-5031-4075-83df-872d824316d7",
+                    "client_op_id": "86034019-3057-425c-af94-ce575da2f964",
+                    "client_tx_id": "de9b8990-856f-4c03-8fd0-3647ebe78f01",
+                    "client_recorded_at": "2026-07-04T12:00:11.384Z"
+                  },
+                  "client_tx_id": "de9b8990-856f-4c03-8fd0-3647ebe78f01",
+                  "client_op_id": "86034019-3057-425c-af94-ce575da2f964",
+                  "op_order": 0,
+                  "created_at": "2026-07-04T12:00:11.384Z",
+                  "before_snapshot": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "uf": "DF",
+                    "payload": {},
+                    "created_at": "2026-07-04",
+                    "updated_at": "2026-07-04",
+                    "deleted_at": null
+                  }
+                }
+              ],
+              "gestures": [
+                {
+                  "client_tx_id": "de9b8990-856f-4c03-8fd0-3647ebe78f01",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "client_id": "browser:6fdb71dd-5031-4075-83df-872d824316d7",
+                  "status": "PENDING",
+                  "created_at": "2026-07-04T12:00:11.384Z"
+                }
+              ],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            },
+            "rehydrated": {
+              "agendas": [
+                {
+                  "id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-09b6d63c-ac34-48ea-985b-d6d4fe5b8e72",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "status": "programada",
+                  "dedup_key": "00000000-0000-4000-8000-000000000010|sanitario-agenda-v2|protocol:704d9498-c721-40f5-b8a2-451444df4ab2|item:d1d24e1b-9948-4ce4-9f18-b6b19d3d658f|product:none|class:vacina_raiva_herbivoros|action:none|lote:none|date:2026-07-04|start:none|end:none|animals:adult|target:adult",
+                  "client_id": "00000000-0000-4000-8000-000000000001",
+                  "client_op_id": "sanitary-window-09b6d63c-ac34-48ea-985b-d6d4fe5b8e72",
+                  "client_tx_id": null,
+                  "client_recorded_at": "2026-07-04T12:00:10.692Z",
+                  "server_received_at": "2026-07-04T12:00:10.692Z",
+                  "source_demand_key": "sanitary_precheck_preview_v2:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "preview_group_id": "animal:adult:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "protocolo_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                  "protocol_item_version_id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "protocol_item_snapshot": {
+                    "planningKind": "aplicacao_esquema_definido",
+                    "generationMode": "manual",
+                    "planningEvidence": {
+                      "itemVersion": 2,
+                      "planningScope": "class_scheme",
+                      "executionProductPolicy": "required_at_execution",
+                      "sourceRefsByField": {
+                        "eligibility_rule": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "eligibility_rule",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "eligibility_rule"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "operational_window": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "operational_window",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "operational_window"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "product_requirement": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "product_requirement",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "product_requirement"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "species_authorization": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "species_authorization",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "species_authorization"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ]
+                      },
+                      "operationalWindowRule": {
+                        "type": "regional_overlay",
+                        "anchor": "risk_area_definition",
+                        "requires_regional_overlay": true
+                      },
+                      "boosterRule": {
+                        "tolerance": {
+                          "days": 0
+                        },
+                        "recurrenceRule": {
+                          "kind": "primovaccination_dose_1"
+                        }
+                      }
+                    },
+                    "sourceKind": "sanitary_precheck_preview_v2",
+                    "actionType": "vacinacao",
+                    "productId": null,
+                    "familyCode": "raiva_herbivoros",
+                    "itemKey": "raiva_primovac_dose1",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "protocolName": "Raiva dos herbivoros",
+                    "precheckStatus": "in_action_window",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "operationalContext": {
+                      "rabiesRiskArea": null,
+                      "sanitaryCadence": null,
+                      "reproductiveContext": null,
+                      "management": null
+                    }
+                  },
+                  "janela_inicio": "2026-07-04",
+                  "janela_fim": null,
+                  "data_programada": "2026-07-04",
+                  "lote_id": null,
+                  "produto_veterinario_id": null,
+                  "produto_snapshot": {
+                    "planningOnly": true,
+                    "realProductDefinedOnlyAtExecution": true,
+                    "doseDefinedOnlyAtExecution": true,
+                    "withdrawalDefinedOnlyAtExecution": true,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null
+                  },
+                  "produto_classe": "vacina_raiva_herbivoros",
+                  "acao_sanitaria": "vacinacao",
+                  "execution_evento_id": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "target": {
+                      "scope": "animal",
+                      "id": "adult",
+                      "fazendaId": "00000000-0000-4000-8000-000000000010"
+                    },
+                    "targetAnimalIds": [
+                      "adult"
+                    ],
+                    "targetAnimalScope": "animais_explicitos",
+                    "previewStatus": "in_action_window",
+                    "protocolName": "Raiva dos herbivoros",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "blockers": [],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "notes": null,
+                    "createdBy": "00000000-0000-4000-8000-000000000001",
+                    "automationKey": null,
+                    "automationWindowKey": null,
+                    "automationPlanRevision": null,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "createsEvent": false,
+                    "createsStockMovement": false,
+                    "createsActiveWithdrawal": false
+                  },
+                  "created_at": "2026-07-04T12:00:10.692Z",
+                  "updated_at": "2026-07-04T12:00:10.692Z",
+                  "deleted_at": null
+                }
+              ],
+              "animals": [
+                {
+                  "agenda_id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-09b6d63c-ac34-48ea-985b-d6d4fe5b8e72",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "animal_id": "adult",
+                  "planned_status": "planejado",
+                  "execution_evento_id": null,
+                  "not_executed_reason": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "targetScope": "animal",
+                    "createsEvent": false
+                  },
+                  "created_at": "2026-07-04T12:00:10.692Z",
+                  "updated_at": "2026-07-04T12:00:10.692Z"
+                }
+              ],
+              "ops": [
+                {
+                  "table": "fazenda_sanidade_config",
+                  "action": "UPDATE",
+                  "record": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "payload": {
+                      "sanitary_agenda_automation_v2": {
+                        "schemaVersion": 1,
+                        "revision": 1,
+                        "enabled": false,
+                        "rules": [],
+                        "context": {
+                          "rabiesRiskArea": null,
+                          "sanitaryCadence": null,
+                          "reproductiveContext": null,
+                          "management": null
+                        },
+                        "confirmedBy": "00000000-0000-4000-8000-000000000001",
+                        "confirmedAt": "2026-07-04T12:00:11.377Z",
+                        "updatedAt": "2026-07-04T12:00:11.377Z"
+                      }
+                    },
+                    "client_id": "browser:6fdb71dd-5031-4075-83df-872d824316d7",
+                    "client_op_id": "86034019-3057-425c-af94-ce575da2f964",
+                    "client_tx_id": "de9b8990-856f-4c03-8fd0-3647ebe78f01",
+                    "client_recorded_at": "2026-07-04T12:00:11.384Z"
+                  },
+                  "client_tx_id": "de9b8990-856f-4c03-8fd0-3647ebe78f01",
+                  "client_op_id": "86034019-3057-425c-af94-ce575da2f964",
+                  "op_order": 0,
+                  "created_at": "2026-07-04T12:00:11.384Z",
+                  "before_snapshot": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "uf": "DF",
+                    "payload": {},
+                    "created_at": "2026-07-04",
+                    "updated_at": "2026-07-04",
+                    "deleted_at": null
+                  }
+                }
+              ],
+              "gestures": [
+                {
+                  "client_tx_id": "de9b8990-856f-4c03-8fd0-3647ebe78f01",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "client_id": "browser:6fdb71dd-5031-4075-83df-872d824316d7",
+                  "status": "PENDING",
+                  "created_at": "2026-07-04T12:00:11.384Z"
+                }
+              ],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            },
+            "after": {
+              "agendas": [
+                {
+                  "id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-09b6d63c-ac34-48ea-985b-d6d4fe5b8e72",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "status": "programada",
+                  "dedup_key": "00000000-0000-4000-8000-000000000010|sanitario-agenda-v2|protocol:704d9498-c721-40f5-b8a2-451444df4ab2|item:d1d24e1b-9948-4ce4-9f18-b6b19d3d658f|product:none|class:vacina_raiva_herbivoros|action:none|lote:none|date:2026-07-04|start:none|end:none|animals:adult|target:adult",
+                  "client_id": "00000000-0000-4000-8000-000000000001",
+                  "client_op_id": "sanitary-window-09b6d63c-ac34-48ea-985b-d6d4fe5b8e72",
+                  "client_tx_id": null,
+                  "client_recorded_at": "2026-07-04T12:00:10.692Z",
+                  "server_received_at": "2026-07-04T12:00:10.692Z",
+                  "source_demand_key": "sanitary_precheck_preview_v2:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "preview_group_id": "animal:adult:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "protocolo_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                  "protocol_item_version_id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "protocol_item_snapshot": {
+                    "planningKind": "aplicacao_esquema_definido",
+                    "generationMode": "manual",
+                    "planningEvidence": {
+                      "itemVersion": 2,
+                      "planningScope": "class_scheme",
+                      "executionProductPolicy": "required_at_execution",
+                      "sourceRefsByField": {
+                        "eligibility_rule": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "eligibility_rule",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "eligibility_rule"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "operational_window": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "operational_window",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "operational_window"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "product_requirement": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "product_requirement",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "product_requirement"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "species_authorization": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "species_authorization",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "species_authorization"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ]
+                      },
+                      "operationalWindowRule": {
+                        "type": "regional_overlay",
+                        "anchor": "risk_area_definition",
+                        "requires_regional_overlay": true
+                      },
+                      "boosterRule": {
+                        "tolerance": {
+                          "days": 0
+                        },
+                        "recurrenceRule": {
+                          "kind": "primovaccination_dose_1"
+                        }
+                      }
+                    },
+                    "sourceKind": "sanitary_precheck_preview_v2",
+                    "actionType": "vacinacao",
+                    "productId": null,
+                    "familyCode": "raiva_herbivoros",
+                    "itemKey": "raiva_primovac_dose1",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "protocolName": "Raiva dos herbivoros",
+                    "precheckStatus": "in_action_window",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "operationalContext": {
+                      "rabiesRiskArea": null,
+                      "sanitaryCadence": null,
+                      "reproductiveContext": null,
+                      "management": null
+                    }
+                  },
+                  "janela_inicio": "2026-07-04",
+                  "janela_fim": null,
+                  "data_programada": "2026-07-04",
+                  "lote_id": null,
+                  "produto_veterinario_id": null,
+                  "produto_snapshot": {
+                    "planningOnly": true,
+                    "realProductDefinedOnlyAtExecution": true,
+                    "doseDefinedOnlyAtExecution": true,
+                    "withdrawalDefinedOnlyAtExecution": true,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null
+                  },
+                  "produto_classe": "vacina_raiva_herbivoros",
+                  "acao_sanitaria": "vacinacao",
+                  "execution_evento_id": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "target": {
+                      "scope": "animal",
+                      "id": "adult",
+                      "fazendaId": "00000000-0000-4000-8000-000000000010"
+                    },
+                    "targetAnimalIds": [
+                      "adult"
+                    ],
+                    "targetAnimalScope": "animais_explicitos",
+                    "previewStatus": "in_action_window",
+                    "protocolName": "Raiva dos herbivoros",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "blockers": [],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "notes": null,
+                    "createdBy": "00000000-0000-4000-8000-000000000001",
+                    "automationKey": null,
+                    "automationWindowKey": null,
+                    "automationPlanRevision": null,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "createsEvent": false,
+                    "createsStockMovement": false,
+                    "createsActiveWithdrawal": false
+                  },
+                  "created_at": "2026-07-04T12:00:10.692Z",
+                  "updated_at": "2026-07-04T12:00:10.692Z",
+                  "deleted_at": null
+                }
+              ],
+              "animals": [
+                {
+                  "agenda_id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-09b6d63c-ac34-48ea-985b-d6d4fe5b8e72",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "animal_id": "adult",
+                  "planned_status": "planejado",
+                  "execution_evento_id": null,
+                  "not_executed_reason": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "targetScope": "animal",
+                    "createsEvent": false
+                  },
+                  "created_at": "2026-07-04T12:00:10.692Z",
+                  "updated_at": "2026-07-04T12:00:10.692Z"
+                }
+              ],
+              "ops": [
+                {
+                  "table": "fazenda_sanidade_config",
+                  "action": "UPDATE",
+                  "record": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "payload": {
+                      "sanitary_agenda_automation_v2": {
+                        "schemaVersion": 1,
+                        "revision": 1,
+                        "enabled": false,
+                        "rules": [],
+                        "context": {
+                          "rabiesRiskArea": null,
+                          "sanitaryCadence": null,
+                          "reproductiveContext": null,
+                          "management": null
+                        },
+                        "confirmedBy": "00000000-0000-4000-8000-000000000001",
+                        "confirmedAt": "2026-07-04T12:00:11.377Z",
+                        "updatedAt": "2026-07-04T12:00:11.377Z"
+                      }
+                    },
+                    "client_id": "browser:6fdb71dd-5031-4075-83df-872d824316d7",
+                    "client_op_id": "86034019-3057-425c-af94-ce575da2f964",
+                    "client_tx_id": "de9b8990-856f-4c03-8fd0-3647ebe78f01",
+                    "client_recorded_at": "2026-07-04T12:00:11.384Z"
+                  },
+                  "client_tx_id": "de9b8990-856f-4c03-8fd0-3647ebe78f01",
+                  "client_op_id": "86034019-3057-425c-af94-ce575da2f964",
+                  "op_order": 0,
+                  "created_at": "2026-07-04T12:00:11.384Z",
+                  "before_snapshot": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "uf": "DF",
+                    "payload": {},
+                    "created_at": "2026-07-04",
+                    "updated_at": "2026-07-04",
+                    "deleted_at": null
+                  }
+                }
+              ],
+              "gestures": [
+                {
+                  "client_tx_id": "de9b8990-856f-4c03-8fd0-3647ebe78f01",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "client_id": "browser:6fdb71dd-5031-4075-83df-872d824316d7",
+                  "status": "PENDING",
+                  "created_at": "2026-07-04T12:00:11.384Z"
+                }
+              ],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "VF3 sessão expirada preserva intenção e fila, bloqueia escrita e recupera a mesma conta",
+      "status": "PASS",
+      "source_run": "scratch/sanitary-vf3-session-final.json",
+      "duration_ms": 24661,
+      "evidence": [
+        {
+          "name": "vf3-session-evidence",
+          "data": {
+            "queued": {
+              "agendas": [
+                {
+                  "id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-95f378f8-593f-447a-837e-4d99bed0e607",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "status": "programada",
+                  "dedup_key": "00000000-0000-4000-8000-000000000010|sanitario-agenda-v2|protocol:704d9498-c721-40f5-b8a2-451444df4ab2|item:d1d24e1b-9948-4ce4-9f18-b6b19d3d658f|product:none|class:vacina_raiva_herbivoros|action:none|lote:none|date:2026-07-04|start:none|end:none|animals:adult|target:adult",
+                  "client_id": "00000000-0000-4000-8000-000000000001",
+                  "client_op_id": "sanitary-window-95f378f8-593f-447a-837e-4d99bed0e607",
+                  "client_tx_id": null,
+                  "client_recorded_at": "2026-07-04T12:00:16.639Z",
+                  "server_received_at": "2026-07-04T12:00:16.639Z",
+                  "source_demand_key": "sanitary_precheck_preview_v2:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "preview_group_id": "animal:adult:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "protocolo_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                  "protocol_item_version_id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "protocol_item_snapshot": {
+                    "planningKind": "aplicacao_esquema_definido",
+                    "generationMode": "manual",
+                    "planningEvidence": {
+                      "itemVersion": 2,
+                      "planningScope": "class_scheme",
+                      "executionProductPolicy": "required_at_execution",
+                      "sourceRefsByField": {
+                        "eligibility_rule": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "eligibility_rule",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "eligibility_rule"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "operational_window": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "operational_window",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "operational_window"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "product_requirement": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "product_requirement",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "product_requirement"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "species_authorization": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "species_authorization",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "species_authorization"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ]
+                      },
+                      "operationalWindowRule": {
+                        "type": "regional_overlay",
+                        "anchor": "risk_area_definition",
+                        "requires_regional_overlay": true
+                      },
+                      "boosterRule": {
+                        "tolerance": {
+                          "days": 0
+                        },
+                        "recurrenceRule": {
+                          "kind": "primovaccination_dose_1"
+                        }
+                      }
+                    },
+                    "sourceKind": "sanitary_precheck_preview_v2",
+                    "actionType": "vacinacao",
+                    "productId": null,
+                    "familyCode": "raiva_herbivoros",
+                    "itemKey": "raiva_primovac_dose1",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "protocolName": "Raiva dos herbivoros",
+                    "precheckStatus": "in_action_window",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "operationalContext": {
+                      "rabiesRiskArea": null,
+                      "sanitaryCadence": null,
+                      "reproductiveContext": null,
+                      "management": null
+                    }
+                  },
+                  "janela_inicio": "2026-07-04",
+                  "janela_fim": null,
+                  "data_programada": "2026-07-04",
+                  "lote_id": null,
+                  "produto_veterinario_id": null,
+                  "produto_snapshot": {
+                    "planningOnly": true,
+                    "realProductDefinedOnlyAtExecution": true,
+                    "doseDefinedOnlyAtExecution": true,
+                    "withdrawalDefinedOnlyAtExecution": true,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null
+                  },
+                  "produto_classe": "vacina_raiva_herbivoros",
+                  "acao_sanitaria": "vacinacao",
+                  "execution_evento_id": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "target": {
+                      "scope": "animal",
+                      "id": "adult",
+                      "fazendaId": "00000000-0000-4000-8000-000000000010"
+                    },
+                    "targetAnimalIds": [
+                      "adult"
+                    ],
+                    "targetAnimalScope": "animais_explicitos",
+                    "previewStatus": "in_action_window",
+                    "protocolName": "Raiva dos herbivoros",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "blockers": [],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "notes": null,
+                    "createdBy": "00000000-0000-4000-8000-000000000001",
+                    "automationKey": null,
+                    "automationWindowKey": null,
+                    "automationPlanRevision": null,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "createsEvent": false,
+                    "createsStockMovement": false,
+                    "createsActiveWithdrawal": false
+                  },
+                  "created_at": "2026-07-04T12:00:16.639Z",
+                  "updated_at": "2026-07-04T12:00:16.639Z",
+                  "deleted_at": null
+                }
+              ],
+              "animals": [
+                {
+                  "agenda_id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-95f378f8-593f-447a-837e-4d99bed0e607",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "animal_id": "adult",
+                  "planned_status": "planejado",
+                  "execution_evento_id": null,
+                  "not_executed_reason": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "targetScope": "animal",
+                    "createsEvent": false
+                  },
+                  "created_at": "2026-07-04T12:00:16.639Z",
+                  "updated_at": "2026-07-04T12:00:16.639Z"
+                }
+              ],
+              "ops": [
+                {
+                  "table": "fazenda_sanidade_config",
+                  "action": "UPDATE",
+                  "record": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "payload": {
+                      "sanitary_agenda_automation_v2": {
+                        "schemaVersion": 1,
+                        "revision": 1,
+                        "enabled": false,
+                        "rules": [],
+                        "context": {
+                          "rabiesRiskArea": null,
+                          "sanitaryCadence": null,
+                          "reproductiveContext": null,
+                          "management": null
+                        },
+                        "confirmedBy": "00000000-0000-4000-8000-000000000001",
+                        "confirmedAt": "2026-07-04T12:00:17.014Z",
+                        "updatedAt": "2026-07-04T12:00:17.014Z"
+                      }
+                    },
+                    "client_id": "browser:e8031496-66af-4329-967f-95f05c12e453",
+                    "client_op_id": "755090bf-75e4-4f8c-8ce2-864cc8d70d55",
+                    "client_tx_id": "d85729cb-5861-40c1-b58a-a3782bc96a4c",
+                    "client_recorded_at": "2026-07-04T12:00:17.021Z"
+                  },
+                  "client_tx_id": "d85729cb-5861-40c1-b58a-a3782bc96a4c",
+                  "client_op_id": "755090bf-75e4-4f8c-8ce2-864cc8d70d55",
+                  "op_order": 0,
+                  "created_at": "2026-07-04T12:00:17.021Z",
+                  "before_snapshot": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "uf": "DF",
+                    "payload": {},
+                    "created_at": "2026-07-04",
+                    "updated_at": "2026-07-04",
+                    "deleted_at": null
+                  }
+                }
+              ],
+              "gestures": [
+                {
+                  "client_tx_id": "d85729cb-5861-40c1-b58a-a3782bc96a4c",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "client_id": "browser:e8031496-66af-4329-967f-95f05c12e453",
+                  "status": "PENDING",
+                  "created_at": "2026-07-04T12:00:17.021Z"
+                }
+              ],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            },
+            "signedOut": {
+              "agendas": [
+                {
+                  "id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-95f378f8-593f-447a-837e-4d99bed0e607",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "status": "programada",
+                  "dedup_key": "00000000-0000-4000-8000-000000000010|sanitario-agenda-v2|protocol:704d9498-c721-40f5-b8a2-451444df4ab2|item:d1d24e1b-9948-4ce4-9f18-b6b19d3d658f|product:none|class:vacina_raiva_herbivoros|action:none|lote:none|date:2026-07-04|start:none|end:none|animals:adult|target:adult",
+                  "client_id": "00000000-0000-4000-8000-000000000001",
+                  "client_op_id": "sanitary-window-95f378f8-593f-447a-837e-4d99bed0e607",
+                  "client_tx_id": null,
+                  "client_recorded_at": "2026-07-04T12:00:16.639Z",
+                  "server_received_at": "2026-07-04T12:00:16.639Z",
+                  "source_demand_key": "sanitary_precheck_preview_v2:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "preview_group_id": "animal:adult:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "protocolo_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                  "protocol_item_version_id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "protocol_item_snapshot": {
+                    "planningKind": "aplicacao_esquema_definido",
+                    "generationMode": "manual",
+                    "planningEvidence": {
+                      "itemVersion": 2,
+                      "planningScope": "class_scheme",
+                      "executionProductPolicy": "required_at_execution",
+                      "sourceRefsByField": {
+                        "eligibility_rule": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "eligibility_rule",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "eligibility_rule"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "operational_window": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "operational_window",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "operational_window"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "product_requirement": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "product_requirement",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "product_requirement"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "species_authorization": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "species_authorization",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "species_authorization"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ]
+                      },
+                      "operationalWindowRule": {
+                        "type": "regional_overlay",
+                        "anchor": "risk_area_definition",
+                        "requires_regional_overlay": true
+                      },
+                      "boosterRule": {
+                        "tolerance": {
+                          "days": 0
+                        },
+                        "recurrenceRule": {
+                          "kind": "primovaccination_dose_1"
+                        }
+                      }
+                    },
+                    "sourceKind": "sanitary_precheck_preview_v2",
+                    "actionType": "vacinacao",
+                    "productId": null,
+                    "familyCode": "raiva_herbivoros",
+                    "itemKey": "raiva_primovac_dose1",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "protocolName": "Raiva dos herbivoros",
+                    "precheckStatus": "in_action_window",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "operationalContext": {
+                      "rabiesRiskArea": null,
+                      "sanitaryCadence": null,
+                      "reproductiveContext": null,
+                      "management": null
+                    }
+                  },
+                  "janela_inicio": "2026-07-04",
+                  "janela_fim": null,
+                  "data_programada": "2026-07-04",
+                  "lote_id": null,
+                  "produto_veterinario_id": null,
+                  "produto_snapshot": {
+                    "planningOnly": true,
+                    "realProductDefinedOnlyAtExecution": true,
+                    "doseDefinedOnlyAtExecution": true,
+                    "withdrawalDefinedOnlyAtExecution": true,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null
+                  },
+                  "produto_classe": "vacina_raiva_herbivoros",
+                  "acao_sanitaria": "vacinacao",
+                  "execution_evento_id": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "target": {
+                      "scope": "animal",
+                      "id": "adult",
+                      "fazendaId": "00000000-0000-4000-8000-000000000010"
+                    },
+                    "targetAnimalIds": [
+                      "adult"
+                    ],
+                    "targetAnimalScope": "animais_explicitos",
+                    "previewStatus": "in_action_window",
+                    "protocolName": "Raiva dos herbivoros",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "blockers": [],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "notes": null,
+                    "createdBy": "00000000-0000-4000-8000-000000000001",
+                    "automationKey": null,
+                    "automationWindowKey": null,
+                    "automationPlanRevision": null,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "createsEvent": false,
+                    "createsStockMovement": false,
+                    "createsActiveWithdrawal": false
+                  },
+                  "created_at": "2026-07-04T12:00:16.639Z",
+                  "updated_at": "2026-07-04T12:00:16.639Z",
+                  "deleted_at": null
+                }
+              ],
+              "animals": [
+                {
+                  "agenda_id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-95f378f8-593f-447a-837e-4d99bed0e607",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "animal_id": "adult",
+                  "planned_status": "planejado",
+                  "execution_evento_id": null,
+                  "not_executed_reason": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "targetScope": "animal",
+                    "createsEvent": false
+                  },
+                  "created_at": "2026-07-04T12:00:16.639Z",
+                  "updated_at": "2026-07-04T12:00:16.639Z"
+                }
+              ],
+              "ops": [
+                {
+                  "table": "fazenda_sanidade_config",
+                  "action": "UPDATE",
+                  "record": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "payload": {
+                      "sanitary_agenda_automation_v2": {
+                        "schemaVersion": 1,
+                        "revision": 1,
+                        "enabled": false,
+                        "rules": [],
+                        "context": {
+                          "rabiesRiskArea": null,
+                          "sanitaryCadence": null,
+                          "reproductiveContext": null,
+                          "management": null
+                        },
+                        "confirmedBy": "00000000-0000-4000-8000-000000000001",
+                        "confirmedAt": "2026-07-04T12:00:17.014Z",
+                        "updatedAt": "2026-07-04T12:00:17.014Z"
+                      }
+                    },
+                    "client_id": "browser:e8031496-66af-4329-967f-95f05c12e453",
+                    "client_op_id": "755090bf-75e4-4f8c-8ce2-864cc8d70d55",
+                    "client_tx_id": "d85729cb-5861-40c1-b58a-a3782bc96a4c",
+                    "client_recorded_at": "2026-07-04T12:00:17.021Z"
+                  },
+                  "client_tx_id": "d85729cb-5861-40c1-b58a-a3782bc96a4c",
+                  "client_op_id": "755090bf-75e4-4f8c-8ce2-864cc8d70d55",
+                  "op_order": 0,
+                  "created_at": "2026-07-04T12:00:17.021Z",
+                  "before_snapshot": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "uf": "DF",
+                    "payload": {},
+                    "created_at": "2026-07-04",
+                    "updated_at": "2026-07-04",
+                    "deleted_at": null
+                  }
+                }
+              ],
+              "gestures": [
+                {
+                  "client_tx_id": "d85729cb-5861-40c1-b58a-a3782bc96a4c",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "client_id": "browser:e8031496-66af-4329-967f-95f05c12e453",
+                  "status": "ERROR",
+                  "created_at": "2026-07-04T12:00:17.021Z",
+                  "diagnostics": {
+                    "last_attempt_started_at": "2026-07-04T12:00:17.296Z",
+                    "blocked": {
+                      "code": "AUTH_UNAVAILABLE",
+                      "observed_at": "2026-07-04T12:00:17.308Z"
+                    },
+                    "client_op_ids": [
+                      "755090bf-75e4-4f8c-8ce2-864cc8d70d55"
+                    ],
+                    "last_failure": {
+                      "code": "SYNC_FAILURE",
+                      "cause_code": "SYNC_FAILURE",
+                      "observed_at": "2026-07-04T12:00:17.305Z",
+                      "retry_count": 0
+                    }
+                  },
+                  "sync_result": "ERROR",
+                  "completed_at": "2026-07-04T12:00:17.303Z",
+                  "last_error": "Nao autenticado - sessao expirada (Refresh sintético recusado)"
+                }
+              ],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            },
+            "restored": {
+              "agendas": [
+                {
+                  "id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-95f378f8-593f-447a-837e-4d99bed0e607",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "status": "programada",
+                  "dedup_key": "00000000-0000-4000-8000-000000000010|sanitario-agenda-v2|protocol:704d9498-c721-40f5-b8a2-451444df4ab2|item:d1d24e1b-9948-4ce4-9f18-b6b19d3d658f|product:none|class:vacina_raiva_herbivoros|action:none|lote:none|date:2026-07-04|start:none|end:none|animals:adult|target:adult",
+                  "client_id": "00000000-0000-4000-8000-000000000001",
+                  "client_op_id": "sanitary-window-95f378f8-593f-447a-837e-4d99bed0e607",
+                  "client_tx_id": null,
+                  "client_recorded_at": "2026-07-04T12:00:16.639Z",
+                  "server_received_at": "2026-07-04T12:00:16.639Z",
+                  "source_demand_key": "sanitary_precheck_preview_v2:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "preview_group_id": "animal:adult:704d9498-c721-40f5-b8a2-451444df4ab2:raiva_primovac_dose1",
+                  "protocolo_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                  "protocol_item_version_id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "protocol_item_snapshot": {
+                    "planningKind": "aplicacao_esquema_definido",
+                    "generationMode": "manual",
+                    "planningEvidence": {
+                      "itemVersion": 2,
+                      "planningScope": "class_scheme",
+                      "executionProductPolicy": "required_at_execution",
+                      "sourceRefsByField": {
+                        "eligibility_rule": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "443b7717-3ba2-4d19-90fb-78c9f499f754"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "eligibility_rule",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "eligibility_rule"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "operational_window": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "36991be4-14c6-48c3-8e16-2d968d0d7765"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "operational_window",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "operational_window"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "product_requirement": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "product_requirement",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "product_requirement"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ],
+                        "species_authorization": [
+                          {
+                            "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+                            "kind": "norma_oficial",
+                            "scope": "global",
+                            "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+                            "metadata": {
+                              "coverage_ids": [
+                                "27e04dae-65fe-4d03-977b-a4a95354db1e"
+                              ],
+                              "catalogBootstrap": {
+                                "field": "species_authorization",
+                                "itemId": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                                "version": "sanitario-initial-20261022-v1",
+                                "reference": "sanitary-bootstrap-v2:e798ee50-7bda-4cd8-bebe-6ac5e44e8315",
+                                "executedAt": "2026-10-23T05:06:05.683Z",
+                                "protocolId": "704d9498-c721-40f5-b8a2-451444df4ab2",
+                                "itemVersion": 2,
+                                "administratorPrincipalId": "0f00a75c-32a9-4555-a840-cb0f13f2d3f7"
+                              }
+                            },
+                            "strength": "forte",
+                            "fieldKeys": [
+                              "species_authorization"
+                            ],
+                            "source_ref": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+                            "evidenceStatus": "SIM_NORMA"
+                          }
+                        ]
+                      },
+                      "operationalWindowRule": {
+                        "type": "regional_overlay",
+                        "anchor": "risk_area_definition",
+                        "requires_regional_overlay": true
+                      },
+                      "boosterRule": {
+                        "tolerance": {
+                          "days": 0
+                        },
+                        "recurrenceRule": {
+                          "kind": "primovaccination_dose_1"
+                        }
+                      }
+                    },
+                    "sourceKind": "sanitary_precheck_preview_v2",
+                    "actionType": "vacinacao",
+                    "productId": null,
+                    "familyCode": "raiva_herbivoros",
+                    "itemKey": "raiva_primovac_dose1",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "protocolName": "Raiva dos herbivoros",
+                    "precheckStatus": "in_action_window",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "operationalContext": {
+                      "rabiesRiskArea": null,
+                      "sanitaryCadence": null,
+                      "reproductiveContext": null,
+                      "management": null
+                    }
+                  },
+                  "janela_inicio": "2026-07-04",
+                  "janela_fim": null,
+                  "data_programada": "2026-07-04",
+                  "lote_id": null,
+                  "produto_veterinario_id": null,
+                  "produto_snapshot": {
+                    "planningOnly": true,
+                    "realProductDefinedOnlyAtExecution": true,
+                    "doseDefinedOnlyAtExecution": true,
+                    "withdrawalDefinedOnlyAtExecution": true,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null
+                  },
+                  "produto_classe": "vacina_raiva_herbivoros",
+                  "acao_sanitaria": "vacinacao",
+                  "execution_evento_id": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "target": {
+                      "scope": "animal",
+                      "id": "adult",
+                      "fazendaId": "00000000-0000-4000-8000-000000000010"
+                    },
+                    "targetAnimalIds": [
+                      "adult"
+                    ],
+                    "targetAnimalScope": "animais_explicitos",
+                    "previewStatus": "in_action_window",
+                    "protocolName": "Raiva dos herbivoros",
+                    "itemLabel": "Primovacinação — dose 1",
+                    "reasons": [
+                      "Consulta e planejamento manual; não presume obrigatoriedade regional."
+                    ],
+                    "blockers": [],
+                    "warnings": [
+                      "Produto real e avaliação técnica continuam obrigatórios na execução.",
+                      "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
+                    ],
+                    "notes": null,
+                    "createdBy": "00000000-0000-4000-8000-000000000001",
+                    "automationKey": null,
+                    "automationWindowKey": null,
+                    "automationPlanRevision": null,
+                    "productRequirementKind": "product_class",
+                    "productClass": "vacina_raiva_herbivoros",
+                    "productClassGroupId": null,
+                    "productClassGroupName": null,
+                    "createsEvent": false,
+                    "createsStockMovement": false,
+                    "createsActiveWithdrawal": false
+                  },
+                  "created_at": "2026-07-04T12:00:16.639Z",
+                  "updated_at": "2026-07-04T12:00:16.639Z",
+                  "deleted_at": null
+                }
+              ],
+              "animals": [
+                {
+                  "agenda_id": "manual-sanitary-agenda-v2:00000000-0000-4000-8000-000000000010:sanitary-window-95f378f8-593f-447a-837e-4d99bed0e607",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "animal_id": "adult",
+                  "planned_status": "planejado",
+                  "execution_evento_id": null,
+                  "not_executed_reason": null,
+                  "metadata": {
+                    "source": "sanitary_precheck_preview_v2",
+                    "targetScope": "animal",
+                    "createsEvent": false
+                  },
+                  "created_at": "2026-07-04T12:00:16.639Z",
+                  "updated_at": "2026-07-04T12:00:16.639Z"
+                }
+              ],
+              "ops": [
+                {
+                  "table": "fazenda_sanidade_config",
+                  "action": "UPDATE",
+                  "record": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "payload": {
+                      "sanitary_agenda_automation_v2": {
+                        "schemaVersion": 1,
+                        "revision": 1,
+                        "enabled": false,
+                        "rules": [],
+                        "context": {
+                          "rabiesRiskArea": null,
+                          "sanitaryCadence": null,
+                          "reproductiveContext": null,
+                          "management": null
+                        },
+                        "confirmedBy": "00000000-0000-4000-8000-000000000001",
+                        "confirmedAt": "2026-07-04T12:00:17.014Z",
+                        "updatedAt": "2026-07-04T12:00:17.014Z"
+                      }
+                    },
+                    "client_id": "browser:e8031496-66af-4329-967f-95f05c12e453",
+                    "client_op_id": "755090bf-75e4-4f8c-8ce2-864cc8d70d55",
+                    "client_tx_id": "d85729cb-5861-40c1-b58a-a3782bc96a4c",
+                    "client_recorded_at": "2026-07-04T12:00:17.021Z"
+                  },
+                  "client_tx_id": "d85729cb-5861-40c1-b58a-a3782bc96a4c",
+                  "client_op_id": "755090bf-75e4-4f8c-8ce2-864cc8d70d55",
+                  "op_order": 0,
+                  "created_at": "2026-07-04T12:00:17.021Z",
+                  "before_snapshot": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "uf": "DF",
+                    "payload": {},
+                    "created_at": "2026-07-04",
+                    "updated_at": "2026-07-04",
+                    "deleted_at": null
+                  }
+                }
+              ],
+              "gestures": [
+                {
+                  "client_tx_id": "d85729cb-5861-40c1-b58a-a3782bc96a4c",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "client_id": "browser:e8031496-66af-4329-967f-95f05c12e453",
+                  "status": "PENDING",
+                  "created_at": "2026-07-04T12:00:17.021Z",
+                  "diagnostics": {
+                    "last_attempt_started_at": "2026-07-04T12:02:24.054Z",
+                    "client_op_ids": [
+                      "755090bf-75e4-4f8c-8ce2-864cc8d70d55"
+                    ],
+                    "last_failure": {
+                      "code": "HTTP_503",
+                      "cause_code": "HTTP_503",
+                      "observed_at": "2026-07-04T12:02:24.073Z",
+                      "retry_count": 1
+                    }
+                  },
+                  "last_error": "HTTP 503 - {\"message\":\"Backend sintético indisponível; nenhuma operação aceita\"}",
+                  "retry_count": 1,
+                  "next_attempt_at": "2026-07-04T12:02:28.825Z"
+                }
+              ],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            },
+            "syntheticBatchAttempts": 1
+          }
+        }
+      ]
+    },
+    {
+      "title": "VF3 papel atrasado de A não sobrevive à troca para B e ao logout",
+      "status": "PASS",
+      "source_run": "scratch/sanitary-vf3-auth-final.json",
+      "duration_ms": 1155,
+      "evidence": [
+        {
+          "name": "vf3-delayed-role-logout-evidence",
+          "data": {
+            "roleWaiting": true,
+            "activeFarm": null,
+            "role": null,
+            "state": {
+              "agendas": [],
+              "animals": [],
+              "ops": [],
+              "gestures": [],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "VF3 HTTP 401 sintético interrompe retry até reautenticação e preserva a identidade",
+      "status": "PASS",
+      "source_run": "scratch/sanitary-vf3-http401-final.json",
+      "duration_ms": 7281,
+      "evidence": [
+        {
+          "name": "vf3-http401-evidence",
+          "data": {
+            "before": {
+              "agendas": [],
+              "animals": [],
+              "ops": [
+                {
+                  "table": "fazenda_sanidade_config",
+                  "action": "UPDATE",
+                  "record": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "payload": {
+                      "sanitary_agenda_automation_v2": {
+                        "schemaVersion": 1,
+                        "revision": 1,
+                        "enabled": false,
+                        "rules": [],
+                        "context": {
+                          "rabiesRiskArea": null,
+                          "sanitaryCadence": null,
+                          "reproductiveContext": null,
+                          "management": null
+                        },
+                        "confirmedBy": "00000000-0000-4000-8000-000000000001",
+                        "confirmedAt": "2026-07-04T12:00:06.882Z",
+                        "updatedAt": "2026-07-04T12:00:06.882Z"
+                      }
+                    },
+                    "client_id": "browser:92ffbc97-6a7d-4042-9d85-b9c067d169e8",
+                    "client_op_id": "102c96d1-993b-4b86-ac6f-336959f5c276",
+                    "client_tx_id": "a37b1380-8752-4382-83cf-b1307885e185",
+                    "client_recorded_at": "2026-07-04T12:00:06.885Z"
+                  },
+                  "client_tx_id": "a37b1380-8752-4382-83cf-b1307885e185",
+                  "client_op_id": "102c96d1-993b-4b86-ac6f-336959f5c276",
+                  "op_order": 0,
+                  "created_at": "2026-07-04T12:00:06.885Z",
+                  "before_snapshot": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "uf": "DF",
+                    "payload": {},
+                    "created_at": "2026-07-04",
+                    "updated_at": "2026-07-04",
+                    "deleted_at": null
+                  }
+                }
+              ],
+              "gestures": [
+                {
+                  "client_tx_id": "a37b1380-8752-4382-83cf-b1307885e185",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "client_id": "browser:92ffbc97-6a7d-4042-9d85-b9c067d169e8",
+                  "status": "PENDING",
+                  "created_at": "2026-07-04T12:00:06.885Z"
+                }
+              ],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            },
+            "blocked": {
+              "agendas": [],
+              "animals": [],
+              "ops": [
+                {
+                  "table": "fazenda_sanidade_config",
+                  "action": "UPDATE",
+                  "record": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "payload": {
+                      "sanitary_agenda_automation_v2": {
+                        "schemaVersion": 1,
+                        "revision": 1,
+                        "enabled": false,
+                        "rules": [],
+                        "context": {
+                          "rabiesRiskArea": null,
+                          "sanitaryCadence": null,
+                          "reproductiveContext": null,
+                          "management": null
+                        },
+                        "confirmedBy": "00000000-0000-4000-8000-000000000001",
+                        "confirmedAt": "2026-07-04T12:00:06.882Z",
+                        "updatedAt": "2026-07-04T12:00:06.882Z"
+                      }
+                    },
+                    "client_id": "browser:92ffbc97-6a7d-4042-9d85-b9c067d169e8",
+                    "client_op_id": "102c96d1-993b-4b86-ac6f-336959f5c276",
+                    "client_tx_id": "a37b1380-8752-4382-83cf-b1307885e185",
+                    "client_recorded_at": "2026-07-04T12:00:06.885Z"
+                  },
+                  "client_tx_id": "a37b1380-8752-4382-83cf-b1307885e185",
+                  "client_op_id": "102c96d1-993b-4b86-ac6f-336959f5c276",
+                  "op_order": 0,
+                  "created_at": "2026-07-04T12:00:06.885Z",
+                  "before_snapshot": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "uf": "DF",
+                    "payload": {},
+                    "created_at": "2026-07-04",
+                    "updated_at": "2026-07-04",
+                    "deleted_at": null
+                  }
+                }
+              ],
+              "gestures": [
+                {
+                  "client_tx_id": "a37b1380-8752-4382-83cf-b1307885e185",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "client_id": "browser:92ffbc97-6a7d-4042-9d85-b9c067d169e8",
+                  "status": "ERROR",
+                  "created_at": "2026-07-04T12:00:06.885Z",
+                  "diagnostics": {
+                    "last_attempt_started_at": "2026-07-04T12:00:06.961Z",
+                    "blocked": {
+                      "code": "AUTH_UNAVAILABLE",
+                      "observed_at": "2026-07-04T12:00:06.991Z"
+                    },
+                    "client_op_ids": [
+                      "102c96d1-993b-4b86-ac6f-336959f5c276"
+                    ],
+                    "last_failure": {
+                      "code": "HTTP_401",
+                      "cause_code": "HTTP_401",
+                      "observed_at": "2026-07-04T12:00:06.990Z",
+                      "retry_count": 0
+                    }
+                  },
+                  "sync_result": "ERROR",
+                  "completed_at": "2026-07-04T12:00:06.989Z",
+                  "last_error": "HTTP 401 - refresh failed: Refresh sintético recusado"
+                }
+              ],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            },
+            "after": {
+              "agendas": [],
+              "animals": [],
+              "ops": [
+                {
+                  "table": "fazenda_sanidade_config",
+                  "action": "UPDATE",
+                  "record": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "payload": {
+                      "sanitary_agenda_automation_v2": {
+                        "schemaVersion": 1,
+                        "revision": 1,
+                        "enabled": false,
+                        "rules": [],
+                        "context": {
+                          "rabiesRiskArea": null,
+                          "sanitaryCadence": null,
+                          "reproductiveContext": null,
+                          "management": null
+                        },
+                        "confirmedBy": "00000000-0000-4000-8000-000000000001",
+                        "confirmedAt": "2026-07-04T12:00:06.882Z",
+                        "updatedAt": "2026-07-04T12:00:06.882Z"
+                      }
+                    },
+                    "client_id": "browser:92ffbc97-6a7d-4042-9d85-b9c067d169e8",
+                    "client_op_id": "102c96d1-993b-4b86-ac6f-336959f5c276",
+                    "client_tx_id": "a37b1380-8752-4382-83cf-b1307885e185",
+                    "client_recorded_at": "2026-07-04T12:00:06.885Z"
+                  },
+                  "client_tx_id": "a37b1380-8752-4382-83cf-b1307885e185",
+                  "client_op_id": "102c96d1-993b-4b86-ac6f-336959f5c276",
+                  "op_order": 0,
+                  "created_at": "2026-07-04T12:00:06.885Z",
+                  "before_snapshot": {
+                    "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                    "uf": "DF",
+                    "payload": {},
+                    "created_at": "2026-07-04",
+                    "updated_at": "2026-07-04",
+                    "deleted_at": null
+                  }
+                }
+              ],
+              "gestures": [
+                {
+                  "client_tx_id": "a37b1380-8752-4382-83cf-b1307885e185",
+                  "fazenda_id": "00000000-0000-4000-8000-000000000010",
+                  "client_id": "browser:92ffbc97-6a7d-4042-9d85-b9c067d169e8",
+                  "status": "PENDING",
+                  "created_at": "2026-07-04T12:00:06.885Z",
+                  "diagnostics": {
+                    "last_attempt_started_at": "2026-07-04T12:00:07.091Z",
+                    "client_op_ids": [
+                      "102c96d1-993b-4b86-ac6f-336959f5c276"
+                    ],
+                    "last_failure": {
+                      "code": "HTTP_503",
+                      "cause_code": "HTTP_503",
+                      "observed_at": "2026-07-04T12:00:07.098Z",
+                      "retry_count": 1
+                    }
+                  },
+                  "last_error": "HTTP 503 - {\"message\":\"Backend sintético indisponível; nenhuma operação aceita\"}",
+                  "retry_count": 1,
+                  "next_attempt_at": "2026-07-04T12:00:11.118Z"
+                }
+              ],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            },
+            "attempts": 2,
+            "samePayloadOnRetry": true
+          }
+        }
+      ]
+    },
+    {
+      "title": "VF3 catálogo HTTP atrasado durante preview de A preserva contexto de B",
+      "status": "PASS",
+      "source_run": "scratch/sanitary-vf3-catalog-final.json",
+      "duration_ms": 31247,
+      "evidence": [
+        {
+          "name": "vf3-delayed-catalog-evidence",
+          "data": {
+            "waiting": true,
+            "delivered": true,
+            "activeFarm": "00000000-0000-4000-8000-000000000020",
+            "state": {
+              "agendas": [],
+              "animals": [],
+              "ops": [],
+              "gestures": [],
+              "events": 0,
+              "movements": 0,
+              "pushFlag": null,
+              "rabies": [
+                {
+                  "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                },
+                {
+                  "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+                  "auto": false,
+                  "limitations": [
+                    "bovine_only",
+                    "do_not_generalize_class",
+                    "withdrawal_by_executed_product",
+                    "no_agenda_auto"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "unit_tests": {
+    "ownership": 1,
+    "regional_location": 2,
+    "failed": 0
+  },
+  "eslint_exit_code": 0,
+  "typecheck": {
+    "exit_code": 1,
+    "prior_vf2_count": 38,
+    "current_count": 38,
+    "added": [],
+    "removed": [],
+    "comparison": "local VF2 diagnostic artifact, not an isolated Git baseline"
+  },
+  "defect": {
+    "severity": "HIGH",
+    "mechanism": "An older refreshSettings response for farm A restored A after explicit switch to B",
+    "red_run": "scratch/sanitary-vf3-recovery-red.json",
+    "fixed_in": "src/hooks/useAuth.tsx"
+  },
+  "blocked": [
+    {
+      "scenario": "Real backend convergence, server deduplication and partial acceptance/recovery",
+      "reason": "config/backend-targets.json identifies the existing project as production, homologation_project_refs is empty, and no exclusive disposable backend was provided or used"
+    }
+  ],
+  "not_run": [
+    "Production PWA offline cold start without local Vite assets",
+    "Real Supabase authentication/refresh and remote RLS/gate enforcement",
+    "Abrupt process crash; actual persistent Chromium context shutdown/restart was executed instead"
+  ],
+  "real_remote_mutations": 0,
+  "independent_review": {
+    "scope": "src/hooks/useAuth.tsx VF3 diff, read only",
+    "findings": [],
+    "reviewer": "vf3_auth_review",
+    "limits": "Does not prove real Auth/RLS/backend behavior"
+  }
+}
