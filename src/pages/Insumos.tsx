@@ -32,10 +32,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toolbar, ToolbarGroup } from "@/components/ui/toolbar";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  evaluateNutritionalInventoryConsumptionReadiness,
-  projectInventoryLotBalance,
-} from "@/lib/inventory/inventoryContracts";
+import { evaluateNutritionalInventoryConsumptionReadiness } from "@/lib/inventory/inventoryContracts";
 import { resolveInventoryLotUnitCost } from "@/lib/inventory/costing";
 import {
   CUSTOM_CATEGORY_VALUE,
@@ -58,7 +55,6 @@ import {
   getInventoryItemOptions,
 } from "@/lib/inventory/inventoryItemSuggestions";
 import {
-  evaluateInventoryResupply,
   parseInventoryResupplyPolicy,
   type InventoryResupplyEvaluation,
 } from "@/lib/inventory/resupplyPolicy";
@@ -67,14 +63,10 @@ import { createGesture } from "@/lib/offline/ops";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import type {
   Evento,
-  EventoNutricao,
-  EventoPastoAvaliacao,
-  EventoSanitario,
   Insumo,
   InsumoApresentacao,
   InsumoLote,
   InsumoLoteStatusEnum,
-  InsumoMovimentacao,
   InsumoTipoEnum,
   InsumoUnidadeBaseEnum,
   InsumoUnidadeCompraEnum,
@@ -90,12 +82,18 @@ import {
   formatNumber,
 } from "./Insumos/helpers/formatting";
 import type {
+  InventorySnapshot,
   EntryForm,
   LotEditForm,
   ConsumptionForm,
   ManualMovementForm,
   SourceOption,
 } from "./Insumos/types";
+import {
+  buildInventoryProjection,
+  buildInventoryViewModel,
+  computeLotBalance,
+} from "./Insumos/helpers/buildInventoryViewModel";
 import { buildLotEditOperations } from "./Insumos/helpers/buildLotEditOperations";
 import { resolveLotEditCosts } from "./Insumos/helpers/resolveLotEditCosts";
 import { validateLotEditForm } from "./Insumos/helpers/validateLotEditForm";
@@ -110,35 +108,6 @@ import {
   buildManualMovementOperations,
   buildConsumptionOperations,
 } from "./Insumos/helpers/buildInventoryMovementOperations";
-
-type InventorySnapshot = {
-  insumos: Insumo[];
-  apresentacoes: InsumoApresentacao[];
-  lotes: InsumoLote[];
-  movimentacoes: InsumoMovimentacao[];
-  eventos: Evento[];
-  sanitario: EventoSanitario[];
-  nutricao: EventoNutricao[];
-  pasto: EventoPastoAvaliacao[];
-  produtos: ProdutoVeterinarioCatalogEntry[];
-  pendingTxIds: Set<string>;
-};
-
-type LotMovementSummary = {
-  entradas: number;
-  saidas: number;
-};
-
-type LotRow = {
-  lot: InsumoLote;
-  insumo: Insumo | undefined;
-  apresentacao: InsumoApresentacao | undefined;
-  category: string;
-  movimentoPeriodo: LotMovementSummary;
-  saldoOperacional: number;
-  saldoInsumo: number;
-  resupply: InventoryResupplyEvaluation;
-};
 
 const NONE_VALUE = "__none__";
 const CUSTOM_ITEM_VALUE = "__custom_item__";
@@ -229,11 +198,6 @@ function parsePositiveNumber(value: string): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function normalizeCategory(value: string | null | undefined) {
-  const category = value?.trim();
-  return category || "Sem categoria";
-}
-
 function getResupplyTone(
   status: InventoryResupplyEvaluation["status"],
 ): "neutral" | "success" | "warning" | "danger" {
@@ -248,61 +212,6 @@ function getResupplyLabel(status: InventoryResupplyEvaluation["status"]) {
   if (status === "warning") return "Ressuprir";
   if (status === "ok") return "Estoque adequado";
   return "Sem parametro";
-}
-
-function isMovementInPeriod(
-  movement: InsumoMovimentacao,
-  periodDays: number | null,
-) {
-  if (!periodDays) return true;
-  const occurredAt = new Date(movement.occurred_at).getTime();
-  if (!Number.isFinite(occurredAt)) return false;
-  const cutoff = Date.now() - periodDays * 24 * 60 * 60 * 1000;
-  return occurredAt >= cutoff;
-}
-
-function summarizeLotMovements(
-  lot: InsumoLote,
-  movements: InsumoMovimentacao[],
-  periodDays: number | null,
-): LotMovementSummary {
-  return movements.reduce<LotMovementSummary>(
-    (summary, movement) => {
-      if (
-        movement.insumo_lote_id !== lot.id ||
-        !isMovementInPeriod(movement, periodDays)
-      ) {
-        return summary;
-      }
-
-      if (
-        movement.tipo === "entrada" ||
-        movement.tipo === "ajuste_positivo" ||
-        movement.tipo === "transferencia_entrada"
-      ) {
-        return {
-          ...summary,
-          entradas: summary.entradas + movement.quantidade_base,
-        };
-      }
-
-      if (
-        movement.tipo === "ajuste_negativo" ||
-        movement.tipo === "consumo_sanitario" ||
-        movement.tipo === "consumo_nutricao" ||
-        movement.tipo === "perda" ||
-        movement.tipo === "transferencia_saida"
-      ) {
-        return {
-          ...summary,
-          saidas: summary.saidas + movement.quantidade_base,
-        };
-      }
-
-      return summary;
-    },
-    { entradas: 0, saidas: 0 },
-  );
 }
 
 function buildSourceOptions(snapshot: InventorySnapshot): SourceOption[] {
@@ -396,24 +305,6 @@ function buildSourceOptions(snapshot: InventorySnapshot): SourceOption[] {
       return [];
     })
     .sort((a, b) => b.eventoId.localeCompare(a.eventoId));
-}
-
-function computeLotBalance(
-  lot: InsumoLote,
-  movements: InsumoMovimentacao[],
-  pendingTxIds: Set<string>,
-) {
-  const pendingMovements = movements.filter(
-    (movement) =>
-      movement.insumo_lote_id === lot.id &&
-      movement.client_tx_id &&
-      pendingTxIds.has(movement.client_tx_id),
-  );
-
-  return projectInventoryLotBalance({
-    saldoAtualBase: lot.saldo_atual_base,
-    movements: pendingMovements,
-  });
 }
 
 function buildLotEditForm(
@@ -612,76 +503,12 @@ export default function Insumos() {
     [selectedPeriod],
   );
 
-  const lotRows = useMemo(() => {
-    if (!snapshot) return [];
-    const searchLower = search.trim().toLowerCase();
-    const saldoByInsumo = new Map<string, number>();
-
-    for (const lot of snapshot.lotes) {
-      saldoByInsumo.set(
-        lot.insumo_id,
-        (saldoByInsumo.get(lot.insumo_id) ?? 0) +
-          computeLotBalance(lot, snapshot.movimentacoes, snapshot.pendingTxIds),
-      );
-    }
-
-    return snapshot.lotes
-      .map<LotRow>((lot) => {
-        const insumo = insumoById.get(lot.insumo_id);
-        const apresentacao = lot.apresentacao_id
-          ? apresentacaoById.get(lot.apresentacao_id)
-          : undefined;
-        const saldoOperacional = computeLotBalance(
-          lot,
-          snapshot.movimentacoes,
-          snapshot.pendingTxIds,
-        );
-        const saldoInsumo =
-          saldoByInsumo.get(lot.insumo_id) ?? saldoOperacional;
-        const category = normalizeCategory(insumo?.categoria);
-        const movimentoPeriodo = summarizeLotMovements(
-          lot,
-          snapshot.movimentacoes,
-          periodDays,
-        );
-        return {
-          lot,
-          insumo,
-          apresentacao,
-          category,
-          movimentoPeriodo,
-          saldoOperacional,
-          saldoInsumo,
-          resupply: evaluateInventoryResupply(
-            saldoInsumo,
-            parseInventoryResupplyPolicy(insumo?.payload),
-          ),
-        };
-      })
-      .filter(({ lot, insumo, apresentacao }) => {
-        if (!searchLower) return true;
-        return [
-          insumo?.nome ?? "",
-          insumo?.categoria ?? "",
-          apresentacao?.nome ?? "",
-          apresentacao?.fabricante ?? "",
-          lot.identificacao_lote ?? "",
-          lot.fabricante ?? "",
-          lot.local_armazenamento ?? "",
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(searchLower);
-      })
-      .sort((a, b) =>
-        (a.insumo?.nome ?? "").localeCompare(b.insumo?.nome ?? ""),
-      );
-  }, [apresentacaoById, insumoById, periodDays, search, snapshot]);
-
-  const categoryOptions = useMemo(() => {
-    const categories = Array.from(new Set(lotRows.map((row) => row.category)));
-    return categories.sort((a, b) => a.localeCompare(b));
-  }, [lotRows]);
+  const inventoryProjection = useMemo(
+    () =>
+      buildInventoryProjection(snapshot, { search, periodDays }, Date.now()),
+    [periodDays, search, snapshot],
+  );
+  const { lotRows, categoryOptions } = inventoryProjection;
 
   useEffect(() => {
     if (
@@ -692,49 +519,14 @@ export default function Insumos() {
     }
   }, [categoryOptions, selectedCategory]);
 
-  const filteredLotRows = useMemo(
+  const { filteredLotRows, filteredTotals, filteredResupplyTotals } = useMemo(
     () =>
-      lotRows.filter(({ category, insumo }) => {
-        const categoryMatches =
-          selectedCategory === ALL_CATEGORIES_VALUE ||
-          category === selectedCategory;
-        const typeMatches =
-          selectedType === ALL_TYPES_VALUE || insumo?.tipo === selectedType;
-        return categoryMatches && typeMatches;
+      buildInventoryViewModel(inventoryProjection, {
+        selectedCategory,
+        selectedType,
       }),
-    [lotRows, selectedCategory, selectedType],
+    [inventoryProjection, selectedCategory, selectedType],
   );
-
-  const filteredTotals = useMemo(
-    () =>
-      filteredLotRows.reduce(
-        (totals, row) => ({
-          saldo: totals.saldo + row.saldoOperacional,
-          entradas: totals.entradas + row.movimentoPeriodo.entradas,
-          saidas: totals.saidas + row.movimentoPeriodo.saidas,
-        }),
-        { saldo: 0, entradas: 0, saidas: 0 },
-      ),
-    [filteredLotRows],
-  );
-
-  const filteredResupplyTotals = useMemo(() => {
-    const byInsumo = new Map<string, InventoryResupplyEvaluation>();
-    for (const row of filteredLotRows) {
-      if (!row.insumo) continue;
-      byInsumo.set(row.insumo.id, row.resupply);
-    }
-
-    return Array.from(byInsumo.values()).reduce(
-      (acc, item) => {
-        if (item.status !== "unconfigured") acc.configured += 1;
-        if (item.status === "warning") acc.warning += 1;
-        if (item.status === "critical") acc.critical += 1;
-        return acc;
-      },
-      { configured: 0, warning: 0, critical: 0 },
-    );
-  }, [filteredLotRows]);
 
   const selectedSource = sourceOptions.find(
     (source) => source.key === consumptionForm.sourceKey,
