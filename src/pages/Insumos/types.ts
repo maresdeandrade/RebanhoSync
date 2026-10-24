@@ -1,4 +1,16 @@
 import type {
+  Evento,
+  EventoNutricao,
+  EventoPastoAvaliacao,
+  EventoSanitario,
+  Insumo,
+  InsumoApresentacao,
+  InsumoLote,
+  InsumoMovimentacao,
+  ProdutoVeterinarioCatalogEntry,
+} from "@/lib/offline/types";
+import type { InventoryResupplyEvaluation } from "@/lib/inventory/resupplyPolicy";
+import type {
   InsumoLoteStatusEnum,
   InsumoMovimentacaoTipoEnum,
   InsumoTipoEnum,
@@ -75,4 +87,58 @@ export type SourceOption = {
   animalId: string | null;
   rebanhoLoteId: string | null;
   pastoId: string | null;
+};
+export type InventorySnapshot = {
+  insumos: Insumo[];
+  apresentacoes: InsumoApresentacao[];
+  lotes: InsumoLote[];
+  movimentacoes: InsumoMovimentacao[];
+  eventos: Evento[];
+  sanitario: EventoSanitario[];
+  nutricao: EventoNutricao[];
+  pasto: EventoPastoAvaliacao[];
+  produtos: ProdutoVeterinarioCatalogEntry[];
+  pendingTxIds: Set<string>;
+};
+
+export type LotMovementSummary = {
+  entradas: number;
+  saidas: number;
+};
+
+export type LotRow = {
+  lot: InsumoLote;
+  insumo: Insumo | undefined;
+  apresentacao: InsumoApresentacao | undefined;
+  category: string;
+  movimentoPeriodo: LotMovementSummary;
+  saldoOperacional: number;
+  saldoInsumo: number;
+  resupply: InventoryResupplyEvaluation;
+};
+
+export type InventoryProjectionInput = Pick<
+  InventorySnapshot,
+  "insumos" | "apresentacoes" | "lotes" | "movimentacoes" | "pendingTxIds"
+>;
+export type InventoryProjectionFilters = {
+  search: string;
+  periodDays: number | null;
+};
+export type InventoryRowFilters = {
+  selectedCategory: string;
+  selectedType: string;
+};
+export type InventoryProjection = {
+  lotRows: LotRow[];
+  categoryOptions: string[];
+};
+export type InventoryViewModel = InventoryProjection & {
+  filteredLotRows: LotRow[];
+  filteredTotals: { saldo: number; entradas: number; saidas: number };
+  filteredResupplyTotals: {
+    configured: number;
+    warning: number;
+    critical: number;
+  };
 };
