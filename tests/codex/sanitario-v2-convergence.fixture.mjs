@@ -4,6 +4,7 @@ import { randomUUID, createHmac } from "node:crypto";
 import { chromium } from "@playwright/test";
 import { createServer } from "vite";
 import { createClient } from "@supabase/supabase-js";
+import { restrictContextToLoopback } from "./sanitary-disposable-support.fixture.mjs";
 
 export async function runSanitaryConvergenceFixture({
   db,
@@ -151,11 +152,7 @@ export async function runSanitaryConvergenceFixture({
           body: "<!doctype html><html><body>Homologação sanitária local</body></html>",
         }),
       );
-      await context.route("**/*", (route) =>
-        new URL(route.request().url()).hostname === "127.0.0.1"
-          ? route.fallback()
-          : route.abort(),
-      );
+      await restrictContextToLoopback(context);
       const page = await context.newPage();
       page.on("response", async (response) => {
         if (response.url().endsWith("/functions/v1/sync-batch")) {

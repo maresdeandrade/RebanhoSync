@@ -8,6 +8,7 @@ import path from "node:path";
 import process from "node:process";
 import pg from "pg";
 import { createClient } from "@supabase/supabase-js";
+import { createConfirmedTestSession } from "./sanitary-disposable-support.fixture.mjs";
 
 const workdir = process.env.SANITARIO_REVIEW_WORKDIR;
 assert(workdir, "SANITARIO_REVIEW_WORKDIR must name this run's disposable project");
@@ -55,12 +56,9 @@ async function test(name, fn) {
 async function user(label) {
   const password = `${randomUUID()}-Aa1!`;
   const email = `sanitario-review-${label}-${runId}@example.test`;
-  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
-  assert.ifError(created.error);
   const client = createClient(env.API_URL, env.ANON_KEY, options);
-  const signed = await client.auth.signInWithPassword({ email, password });
-  assert.ifError(signed.error);
-  return { id: created.data.user.id, token: signed.data.session.access_token, client, email, password };
+  const signed = await createConfirmedTestSession(admin, client, { email, password });
+  return { id: signed.user.id, token: signed.session.access_token, client, email, password };
 }
 async function withRole(role, actorId, fn) {
   await db.query("begin");

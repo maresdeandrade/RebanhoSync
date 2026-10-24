@@ -4,11 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/offline/db";
 import { generateSanitaryAutomaticAgendasV2 } from "../sanitaryAutomaticGenerationV2";
 import { saveSanitaryAutomationPlanV2 } from "../sanitaryAutomationPlanV2";
-import { blockedItemKeys, normalizedDraft, normalizedItems, seedNormalizedFixture, normalizedDate } from "./fixtures/sanitaryNormalizedFixtureV2";
+import { blockedItemKeys, normalizedDraft, normalizedItems, seedPublishedCatalogFixture, normalizedDate } from "./fixtures/sanitaryNormalizedFixtureV2";
 
 vi.mock("@/lib/offline/localReadBoundary", () => ({ requireTenantSensitiveRead: vi.fn().mockResolvedValue(undefined),
   requireTenantSensitiveWrite: vi.fn().mockResolvedValue(undefined), requireTenantSensitiveAccess: vi.fn().mockResolvedValue(undefined) }));
-// Only consume rows actually published by the native PostgreSQL RPC harness.
+// Consume publication evidence from the RPC harness or a read-only remote export.
 const catalogPath = process.env.SANITARIO_APPROVED_CATALOG;
 const catalog = catalogPath ? JSON.parse(readFileSync(catalogPath, "utf8")) : null;
 const keys = ["b19_femeas_3_8_meses", "recria_maio", "recria_julho", "recria_setembro", "pre_desmama_situacional", "pre_confinamento_dose_unica", "matrizes_pre_parto_antiparasitario"];
@@ -25,10 +25,7 @@ async function activate(selected: string[], date = normalizedDate) {
 describe.skipIf(!catalog)("catálogo publicado pela RPC real → plano existente → Agendas locais", () => {
   beforeEach(async () => {
     vi.stubGlobal("localStorage", { getItem: () => "fixture-client", setItem: vi.fn() });
-    await db.open(); await clear(); await seedNormalizedFixture("farm", false);
-    await db.catalog_sanitario_protocolos_v2.clear(); await db.catalog_sanitario_protocolo_itens_versions_v2.clear();
-    await db.catalog_sanitario_protocolos_v2.bulkPut(catalog.protocols);
-    await db.catalog_sanitario_protocolo_itens_versions_v2.bulkPut(catalog.items);
+    await db.open(); await clear(); await seedPublishedCatalogFixture("farm", catalog);
   });
   afterEach(async () => { await clear(); vi.unstubAllGlobals(); });
   it.each(keys)("gera avaliação somente para versão efetivamente aprovada: %s", async key => {
@@ -53,8 +50,8 @@ describe.skipIf(!catalog)("catálogo publicado pela RPC real → plano existente
     db.close(); await db.open();
     expect((await generate()).created).toBe(0);
     // R04B can add reviewed class schemes; the six permanent restrictions remain.
-    const restricted = catalog.items.filter((item: { logical_item_key: string }) =>
-      item.logical_item_key.startsWith("raiva_") || blockedItemKeys.includes(item.logical_item_key));
+    const restricted = catalog.items.filter((item: { logical_item_key: string; status: string }) =>
+      item.status !== "retired" && (item.logical_item_key.startsWith("raiva_") || blockedItemKeys.includes(item.logical_item_key)));
     expect(restricted).toHaveLength(6);
     expect(restricted.every((item: { allows_agenda_auto: boolean }) => !item.allows_agenda_auto)).toBe(true);
     expect(await db.event_eventos.count()).toBe(0);

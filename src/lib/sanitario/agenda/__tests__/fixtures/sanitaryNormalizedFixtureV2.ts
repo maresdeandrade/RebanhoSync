@@ -81,3 +81,22 @@ export async function normalizedDraft(farmId = "farm", keys = automaticItemKeys,
     ruleContexts: Object.fromEntries(items.map((item) => [item.id, fixtureContext(item.logicalItemKey, date)])),
   };
 }
+
+// Read-only publication evidence replaces synthetic catalog approvals verbatim.
+// Animals/configuration stay disposable; this helper never publishes remotely.
+export async function seedPublishedCatalogFixture(farmId: string, catalog: {
+  protocols: unknown[]; items: unknown[]; groups?: unknown[]; groupMembers?: unknown[];
+  sources?: unknown[]; coverage?: unknown[];
+}) {
+  await seedNormalizedFixture(farmId, false);
+  await db.catalog_sanitario_protocolos_v2.clear();
+  await db.catalog_sanitario_protocolo_itens_versions_v2.clear();
+  await db.catalog_sanitario_produtos_v2.clear();
+  await db.catalog_sanitario_produto_especie_autorizacao_v2.clear();
+  await db.catalog_sanitario_protocolos_v2.bulkPut(catalog.protocols as never[]);
+  await db.catalog_sanitario_protocolo_itens_versions_v2.bulkPut(catalog.items as never[]);
+  await db.catalog_sanitario_product_class_groups_v2.bulkPut((catalog.groups ?? []) as never[]);
+  await db.catalog_sanitario_product_class_group_members_v2.bulkPut((catalog.groupMembers ?? []) as never[]);
+  await db.catalog_sanitario_fontes_tecnicas_v2.bulkPut((catalog.sources ?? []) as never[]);
+  await db.catalog_sanitario_fonte_cobertura_campos_v2.bulkPut((catalog.coverage ?? []) as never[]);
+}
