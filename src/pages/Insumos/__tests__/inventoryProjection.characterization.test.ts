@@ -208,6 +208,44 @@ for (const [label, project] of [
         project(snapshot, { selectedCategory: "absent" }).filteredLotRows,
       ).toEqual([]);
     });
+    it.each([
+      ["insumo name", "sal", ["a1", "a2"]],
+      ["category", "nutrição", ["a1", "a2"]],
+      ["presentation name", "especial", ["a2"]],
+      ["presentation manufacturer", "fornecedor", ["a2"]],
+      ["lot identification", "primeiro", ["a1"]],
+      ["lot manufacturer", "fábrica", ["a1"]],
+      ["lot storage", "galpão", ["a1"]],
+      ["missing field", "undefined", []],
+    ])(
+      "searches %s without changing missing-field normalization",
+      (_, search, ids) => {
+        expect(
+          project(fixture(), { search: search as string }).lotRows.map(
+            (r) => r.lot.id,
+          ),
+        ).toEqual(ids);
+      },
+    );
+    it.each([
+      ["entrada", 3, 0],
+      ["ajuste_positivo", 3, 0],
+      ["transferencia_entrada", 3, 0],
+      ["ajuste_negativo", 0, 3],
+      ["consumo_sanitario", 0, 3],
+      ["consumo_nutricao", 0, 3],
+      ["perda", 0, 3],
+      ["transferencia_saida", 0, 3],
+    ] as const)(
+      "keeps %s in its original period direction",
+      (tipo, entradas, saidas) => {
+        const snapshot = fixture();
+        snapshot.movimentacoes[0].tipo = tipo;
+        const view = project(snapshot);
+        expect(view.filteredTotals.entradas).toBe(entradas);
+        expect(view.filteredTotals.saidas).toBe(saidas);
+      },
+    );
     it("handles missing inputs, presentations, categories and empty lists", () => {
       const snapshot = fixture();
       snapshot.insumos = [];

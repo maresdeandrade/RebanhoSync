@@ -35,6 +35,43 @@ function isMovementInPeriod(
   return occurredAt >= cutoff;
 }
 
+function isIncomingMovement(type: InsumoMovimentacao["tipo"]) {
+  return (
+    type === "entrada" ||
+    type === "ajuste_positivo" ||
+    type === "transferencia_entrada"
+  );
+}
+
+function isOutgoingMovement(type: InsumoMovimentacao["tipo"]) {
+  return (
+    type === "ajuste_negativo" ||
+    type === "consumo_sanitario" ||
+    type === "consumo_nutricao" ||
+    type === "perda" ||
+    type === "transferencia_saida"
+  );
+}
+
+function inventorySearchText({
+  lot,
+  insumo,
+  apresentacao,
+}: Pick<LotRow, "lot" | "insumo" | "apresentacao">) {
+  // Array.join preserves the previous empty-string fallback for null/undefined.
+  return [
+    insumo?.nome,
+    insumo?.categoria,
+    apresentacao?.nome,
+    apresentacao?.fabricante,
+    lot.identificacao_lote,
+    lot.fabricante,
+    lot.local_armazenamento,
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
 function summarizeLotMovements(
   lot: InsumoLote,
   movements: InsumoMovimentacao[],
@@ -50,24 +87,14 @@ function summarizeLotMovements(
         return summary;
       }
 
-      if (
-        movement.tipo === "entrada" ||
-        movement.tipo === "ajuste_positivo" ||
-        movement.tipo === "transferencia_entrada"
-      ) {
+      if (isIncomingMovement(movement.tipo)) {
         return {
           ...summary,
           entradas: summary.entradas + movement.quantidade_base,
         };
       }
 
-      if (
-        movement.tipo === "ajuste_negativo" ||
-        movement.tipo === "consumo_sanitario" ||
-        movement.tipo === "consumo_nutricao" ||
-        movement.tipo === "perda" ||
-        movement.tipo === "transferencia_saida"
-      ) {
+      if (isOutgoingMovement(movement.tipo)) {
         return {
           ...summary,
           saidas: summary.saidas + movement.quantidade_base,
@@ -157,20 +184,9 @@ export function buildInventoryProjection(
           ),
         };
       })
-      .filter(({ lot, insumo, apresentacao }) => {
+      .filter((row) => {
         if (!searchLower) return true;
-        return [
-          insumo?.nome ?? "",
-          insumo?.categoria ?? "",
-          apresentacao?.nome ?? "",
-          apresentacao?.fabricante ?? "",
-          lot.identificacao_lote ?? "",
-          lot.fabricante ?? "",
-          lot.local_armazenamento ?? "",
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(searchLower);
+        return inventorySearchText(row).includes(searchLower);
       })
       .sort((a, b) =>
         (a.insumo?.nome ?? "").localeCompare(b.insumo?.nome ?? ""),
