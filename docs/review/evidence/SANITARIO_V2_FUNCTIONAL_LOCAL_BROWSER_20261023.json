@@ -1,0 +1,56 @@
+{
+  "artifact": "sanitario_v2_functional_local_browser",
+  "baseline": "4b43fc10ec9dfd0c19527c22c4d725799d9e7969",
+  "command": "pnpm exec playwright test --config e2e/sanitary-planning.config.ts --reporter=json",
+  "stats": {
+    "startTime": "2026-10-23T11:58:57.668Z",
+    "duration": 34531.113,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "scope": "Real pages and services, Chromium and IndexedDB; synthetic identity, HTTP and approved catalog fixture; no remote writes",
+  "scenarios": [
+    {
+      "title": "B19 aprovada em fixture gera Agenda genérica condicional, offline e sem fatos",
+      "status": "expected",
+      "duration_ms": 9453
+    },
+    {
+      "title": "nascimento e sexo ausentes impedem seleção e não criam intenção ou fato",
+      "status": "expected",
+      "duration_ms": 1221
+    },
+    {
+      "title": "catálogo navegável offline, raiva restrita e aftosa retirada em 1440px",
+      "status": "expected",
+      "duration_ms": 2802
+    },
+    {
+      "title": "catálogo navegável offline, raiva restrita e aftosa retirada em 390px",
+      "status": "expected",
+      "duration_ms": 2739
+    },
+    {
+      "title": "plano confirmado gera sozinho, recupera offline e respeita cancelamento e farm-switch",
+      "status": "expected",
+      "duration_ms": 2537
+    },
+    {
+      "title": "fazenda → protocolo → seleção → revisão → Agenda; offline, reload, reagendamento, cancelamento e farm-switch",
+      "status": "expected",
+      "duration_ms": 4941
+    },
+    {
+      "title": "catálogo vazio informa indisponibilidade sem fabricar protocolos ou produtos",
+      "status": "expected",
+      "duration_ms": 1107
+    },
+    {
+      "title": "plano integral exclui itens restritos e automatiza vários protocolos com histórico e recuperação offline",
+      "status": "expected",
+      "duration_ms": 2378
+    }
+  ]
+}

@@ -1,0 +1,358 @@
+{
+  "artifact": "sanitario_v2_vf4_real_server_validation",
+  "date": "2026-10-24",
+  "status": "VALIDATED_WITH_CAVEATS",
+  "baseline": {
+    "branch": "codex/sanitario-v2-functional-validation",
+    "head": "4b43fc10ec9dfd0c19527c22c4d725799d9e7969",
+    "worktree": "C:\\Users\\mares\\dyad-apps\\GestaoAgro",
+    "clean": false,
+    "staged": [],
+    "attribution": "VF4 modifies only the two named test files and adds report/evidence; VF1–VF3 and concurrent runtime edits are preserved"
+  },
+  "source_run": "scratch/sanitary-vf4-run5.log",
+  "result": {
+    "project": "sanitary-review-1e6d7817",
+    "environment": {
+      "kind": "owned disposable local Supabase",
+      "api": "http://127.0.0.1:55421",
+      "db_host": "127.0.0.1",
+      "db_port": 55422,
+      "real": [
+        "GoTrue Auth/JWT",
+        "PostgREST",
+        "PostgreSQL/RLS",
+        "Edge sync-batch",
+        "Chromium/Dexie/worker"
+      ],
+      "production_accessed": false,
+      "synthetic_users": 4,
+      "farms": [
+        "3b702a14-f84c-423a-9e47-55d7d2643757",
+        "16fbc63c-72d5-4f48-a91a-90043b7580ed"
+      ],
+      "jwt_expiry_seconds": 60
+    },
+    "cases": [
+      {
+        "name": "Auth real: login de quatro identidades e refresh válido",
+        "status": "PASS",
+        "evidence": {
+          "users": 4,
+          "refresh": "accepted",
+          "tokens_recorded": false
+        }
+      },
+      {
+        "name": "RLS HTTP: matriz A/B/ambas/outsider, escrita e manipulação de fazenda",
+        "status": "PASS",
+        "evidence": {
+          "matrix": [
+            {
+              "actor": "A",
+              "read": 1,
+              "write_A": 1
+            },
+            {
+              "actor": "B",
+              "read": 1,
+              "write_A": 0
+            },
+            {
+              "actor": "both",
+              "read": 2,
+              "write_A": 1
+            },
+            {
+              "actor": "outsider",
+              "read": 0,
+              "write_A": 0
+            }
+          ],
+          "spoof_code": "42501",
+          "direct_internal_rpc": "42501"
+        }
+      },
+      {
+        "name": "Gate OFF real rejeita membro autorizado sem persistir operação",
+        "status": "PASS",
+        "evidence": {
+          "reason": "SANITARIO_SYNC_DISABLED",
+          "rows": 0
+        }
+      },
+      {
+        "name": "Gate local autorizado: criação manual A/B sem Evento e leitura RLS de Agenda",
+        "status": "PASS",
+        "evidence": {
+          "agendas": 2,
+          "facts": 0
+        }
+      },
+      {
+        "name": "Servidor rejeita outsider, envelope cross-tenant, fazenda adulterada e animal de B em A",
+        "status": "PASS",
+        "evidence": {
+          "attempts": 4,
+          "unauthorized_rows": 0
+        }
+      },
+      {
+        "name": "Replay e concorrência reais: mesmo UUID, um recibo e uma Agenda",
+        "status": "PASS",
+        "evidence": {
+          "replay_status": "APPLIED",
+          "concurrent_statuses": [
+            "APPLIED",
+            "APPLIED"
+          ],
+          "ledger_rows": 2
+        }
+      },
+      {
+        "name": "Lote real heterogêneo: APPLIED, rejeição, dependência e conflito; replay preserva sucesso",
+        "status": "PASS",
+        "evidence": {
+          "statuses": [
+            "APPLIED",
+            "REJECTED",
+            "BLOCKED_DEPENDENCY",
+            "CONFLICT"
+          ],
+          "reasons": [
+            null,
+            "SANITARIO_AGENDA_TARGET_CROSS_FARM_OR_MISSING",
+            "SANITARIO_AGENDA_NOT_FOUND",
+            "SANITARIO_AGENDA_REVISION_CONFLICT"
+          ],
+          "success_receipt_preserved": true,
+          "dependency_supplied": true,
+          "dependent_retry": "APPLIED"
+        }
+      },
+      {
+        "name": "Raiva: três versões homologadas recusam criação automática no servidor",
+        "status": "PASS",
+        "evidence": {
+          "reasons": [
+            "SANITARIO_AUTOMATIC_RULE_NOT_APPROVED_OR_ACTIVATED",
+            "SANITARIO_AUTOMATIC_RULE_NOT_APPROVED_OR_ACTIVATED",
+            "SANITARIO_AUTOMATIC_RULE_NOT_APPROVED_OR_ACTIVATED"
+          ],
+          "items": [
+            {
+              "id": "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+              "allows_agenda_auto": false,
+              "limitations": [
+                "bovine_only",
+                "do_not_generalize_class",
+                "withdrawal_by_executed_product",
+                "no_agenda_auto"
+              ]
+            },
+            {
+              "id": "8b08060a-869a-407d-92b3-fbea17dcc11a",
+              "allows_agenda_auto": false,
+              "limitations": [
+                "bovine_only",
+                "do_not_generalize_class",
+                "withdrawal_by_executed_product",
+                "no_agenda_auto"
+              ]
+            },
+            {
+              "id": "b815bbce-f7c1-484d-ad07-4e9238d8986a",
+              "allows_agenda_auto": false,
+              "limitations": [
+                "bovine_only",
+                "do_not_generalize_class",
+                "withdrawal_by_executed_product",
+                "no_agenda_auto"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "Indisponibilidade transitória real da RPC: cancelamento PostgreSQL retorna RETRYABLE e replay aplica uma vez",
+        "status": "PASS",
+        "evidence": {
+          "cancelled_status": "RETRYABLE",
+          "after_retry": "APPLIED",
+          "rows": 1
+        }
+      },
+      {
+        "name": "Fato sintético canônico: aceitação e replay não duplicam Evento ou detalhe",
+        "status": "PASS",
+        "evidence": {
+          "event_id": "0efb9674-5443-4f8d-b443-259f596391f0",
+          "events": 1,
+          "details": 1
+        }
+      },
+      {
+        "name": "ACK perdido após commit, timeout de transporte e reinício do cliente: fila converge sem reaplicar",
+        "status": "PASS",
+        "evidence": {
+          "client_op_id": "e00ecc51-ab43-4946-b6cd-fbe19370fe49",
+          "commit_before_ack_loss": true,
+          "ledger_rows": 1,
+          "remaining_ops": 0,
+          "remote_revision": "1"
+        }
+      },
+      {
+        "name": "Offline/reconnect e farm-switch mantêm fazenda da operação e convergem pelo worker real",
+        "status": "PASS",
+        "evidence": {
+          "queued_farm": "3b702a14-f84c-423a-9e47-55d7d2643757",
+          "selected_farm_during_send": "16fbc63c-72d5-4f48-a91a-90043b7580ed",
+          "canonical_farm": "3b702a14-f84c-423a-9e47-55d7d2643757",
+          "real_ack_held_during_switch": true
+        }
+      },
+      {
+        "name": "Logout real com operação pendente bloqueia envio; novo login recupera a mesma intenção",
+        "status": "PASS",
+        "evidence": {
+          "unauthenticated_batch_attempts": 0,
+          "recovered_client_op_id": "533437ea-e971-47d3-ad3c-12c96323f2e8"
+        }
+      },
+      {
+        "name": "JWT do cliente expira offline com fila pendente; reconnect usa refresh real e conserva identidade",
+        "status": "PASS",
+        "evidence": {
+          "expired_before_reconnect": true,
+          "refresh_http_requests": 13,
+          "client_op_id": "f3d91683-b97e-44d6-bafd-ead2d8f59b72",
+          "receipt_rows": 1,
+          "remaining_ops": 0
+        }
+      },
+      {
+        "name": "JWT realmente expirado: HTTP rejeitado, refresh válido e refresh revogado recusado",
+        "status": "PASS",
+        "evidence": {
+          "expired_http": 401,
+          "expired_write_count": 0,
+          "valid_refresh": true,
+          "revoked_refresh_status": 400,
+          "anonymous_http": 401
+        }
+      },
+      {
+        "name": "Invariantes finais e auditabilidade por operação",
+        "status": "PASS",
+        "evidence": {
+          "events": 1,
+          "details": 1,
+          "stock": 0,
+          "withdrawals": 0,
+          "receipts": 12
+        }
+      }
+    ],
+    "catalog_fixture": {
+      "snapshot_sha256": "c9744cf2e6b6a9b95e11e68d74990cdb0af887f849c9acde9421bb720d80fdcc",
+      "protocol_id": "704d9498-c721-40f5-b8a2-451444df4ab2",
+      "item_ids": [
+        "d1d24e1b-9948-4ce4-9f18-b6b19d3d658f",
+        "8b08060a-869a-407d-92b3-fbea17dcc11a",
+        "b815bbce-f7c1-484d-ad07-4e9238d8986a"
+      ],
+      "changes": [
+        "protocol.created_by=null",
+        "protocol.approved_by=synthetic local user FK"
+      ],
+      "scope": "three active rabies items only; no bootstrap/import/curatorial decisions"
+    },
+    "vf4_step": "Invariantes finais e auditabilidade por operação",
+    "result": "PASS",
+    "test_gates_disabled": true,
+    "own_project_removed": true
+  },
+  "migrations": {
+    "files": 65,
+    "applied_count_observed_via_readonly_sql": 65,
+    "remote_migrations": 0
+  },
+  "working_tree_hashes_at_consolidation": [
+    {
+      "path": "tests/codex/sanitario-v2-review.supabase.mjs",
+      "sha256": "8e53f5ed0cac8c6b47033a7d2df2ffa886057deb5081ed09bb61fe40df50d97f"
+    },
+    {
+      "path": "tests/codex/sanitario-v2-vf4.fixture.mjs",
+      "sha256": "27731937cd59aa2ef859a10987d1cffadb5d9a26f39958ac9288ccb2c8d5613d"
+    },
+    {
+      "path": "src/hooks/useAuth.tsx",
+      "sha256": "0836fa9b50539d6c18025360406206ee054802bfb26876fdfb48adb48162f280"
+    },
+    {
+      "path": "src/lib/offline/syncWorker.ts",
+      "sha256": "672053723f3fdc10272e9ff0b43e232211e324dfe0ac97b366f2099a50ec29c2"
+    },
+    {
+      "path": "src/lib/offline/ops.ts",
+      "sha256": "143cdf342dfa14f2f95f61d3637cbf3a0848469955fe7dbf7829c91fe551ca85"
+    },
+    {
+      "path": "src/lib/offline/ownership.ts",
+      "sha256": "a72b7be7e2974091f585de1078cf570773751797201f16674ab8884f0a765af0"
+    },
+    {
+      "path": "src/lib/offline/localReadBoundary.ts",
+      "sha256": "b64e2fe4051b41dc0dc80b635c6c3a69ce506215e49c7652b7aa6664d9907d46"
+    },
+    {
+      "path": "supabase/functions/sync-batch/index.ts",
+      "sha256": "c92da95e72dd281a03ddd9e272d91fe62ff815aa33b3efc62283450e4cd3cc5d"
+    },
+    {
+      "path": "supabase/functions/sync-batch/sanitario-v2.ts",
+      "sha256": "ba57856ed4850b016b6ddf47e755515c8d0ddc0fd2648fd9562f92644a2ebeae"
+    }
+  ],
+  "checks": {
+    "real_integration_cases": 16,
+    "eslint_exit": 0,
+    "node_syntax_exit": 0,
+    "diff_check_exit": 0,
+    "global_typecheck": "NOT_RUN: no TypeScript/runtime change in VF4"
+  },
+  "independent_review": {
+    "status": "NOT_RUN",
+    "reason": "Reviewer agent could not execute due usage limit; no independent review is claimed"
+  },
+  "limits": [
+    "Local disposable backend only; no cloud/production deployment or operational activation certified",
+    "Actual client page close/new page after lost ACK; no new browser-process kill or production PWA cold start test",
+    "Synthetic standalone executed fact without product-specific withdrawal; planning never created a fact",
+    "Three rabies catalog rows reused; automatic rejection observed with no active farm automation plan, not a separate re-homologation of all catalog guards",
+    "Pending intent is queued with usable real session before disconnect; new local writes with no usable cached session are not certified",
+    "One real heterogeneous batch and recovery; production-sized loads and all possible failure combinations are not certified"
+  ],
+  "fixture_debugging": [
+    {
+      "run": "scratch/sanitary-vf4-run.log",
+      "cause": "Test create_agenda lacked mandatory janela_inicio/client_recorded_at"
+    },
+    {
+      "run": "scratch/sanitary-vf4-run2.log",
+      "cause": "Test retried before persisted worker backoff elapsed"
+    },
+    {
+      "run": "scratch/sanitary-vf4-run3.log",
+      "cause": "Test attempted new offline write with 60s JWT requiring unavailable refresh; boundary rejected with MISMATCH"
+    },
+    {
+      "run": "scratch/sanitary-vf4-run4.log",
+      "cause": "Assertion compared pg Date with SQL date string; SQL text projection corrected"
+    }
+  ],
+  "real_production_mutations": 0,
+  "push_merge_deploy": false
+}

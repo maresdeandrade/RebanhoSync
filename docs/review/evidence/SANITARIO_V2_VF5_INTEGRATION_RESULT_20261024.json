@@ -1,0 +1,840 @@
+{
+  "artifact": "sanitario_v2_vf5_integration_preparation",
+  "date": "2026-10-24",
+  "decision": "READY_FOR_PR",
+  "patch_gate": "READY",
+  "baseline": {
+    "original_branch": "codex/sanitario-v2-functional-validation",
+    "original_head": "4b43fc10ec9dfd0c19527c22c4d725799d9e7969",
+    "origin_main": "31815a260c8aef2798e87a448dce3f973673b4c4",
+    "integration_branch": "codex/sanitario-vf5-integration",
+    "code_head": "fb68d89a834035114d358d5a38bfdf080e9b044d",
+    "worktree": "C:\\Users\\mares\\.codex\\worktrees\\sanitario-vf5-integration\\GestaoAgro"
+  },
+  "code_commits": [
+    "fb68d89a834035114d358d5a38bfdf080e9b044d test(sanitario): consolidate catalog and recovery validation fixtures",
+    "44467258128ee12935bcb99623191cfa24daaf1d fix(sanitario): preserve farm context and expose catalog evidence"
+  ],
+  "inventory": [
+    {
+      "file": "src/hooks/useAuth.tsx",
+      "scope": "VF3 runtime",
+      "sha256": "0836fa9b50539d6c18025360406206ee054802bfb26876fdfb48adb48162f280",
+      "hunks": [
+        {
+          "old_start": 1,
+          "old_lines": 1,
+          "new_start": 1,
+          "new_lines": 1,
+          "context": ""
+        },
+        {
+          "old_start": 101,
+          "old_lines": 0,
+          "new_start": 102,
+          "new_lines": 2,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 121,
+          "old_lines": 0,
+          "new_start": 124,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 122,
+          "old_lines": 0,
+          "new_start": 126,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 143,
+          "old_lines": 0,
+          "new_start": 148,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 150,
+          "old_lines": 0,
+          "new_start": 156,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 179,
+          "old_lines": 0,
+          "new_start": 186,
+          "new_lines": 2,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 183,
+          "old_lines": 0,
+          "new_start": 192,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 194,
+          "old_lines": 0,
+          "new_start": 204,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 204,
+          "old_lines": 0,
+          "new_start": 215,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 218,
+          "old_lines": 0,
+          "new_start": 230,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 230,
+          "old_lines": 0,
+          "new_start": 243,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 235,
+          "old_lines": 0,
+          "new_start": 249,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 240,
+          "old_lines": 0,
+          "new_start": 255,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 241,
+          "old_lines": 0,
+          "new_start": 257,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 268,
+          "old_lines": 0,
+          "new_start": 285,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 282,
+          "old_lines": 0,
+          "new_start": 300,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 286,
+          "old_lines": 1,
+          "new_start": 304,
+          "new_lines": 3,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 340,
+          "old_lines": 0,
+          "new_start": 361,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        },
+        {
+          "old_start": 360,
+          "old_lines": 0,
+          "new_start": 382,
+          "new_lines": 1,
+          "context": "export const AuthProvider = ({ children }: { children: React.ReactNode }) => {"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/SanitarioCatalogoV2.tsx",
+      "scope": "VF2 runtime",
+      "sha256": "7132510fd5663326192b74f14743bc47899ec74c7339e70e7ddc464677775350",
+      "hunks": [
+        {
+          "old_start": 337,
+          "old_lines": 1,
+          "new_start": 337,
+          "new_lines": 1,
+          "context": "export default function SanitarioCatalogoV2() {"
+        },
+        {
+          "old_start": 338,
+          "old_lines": 0,
+          "new_start": 339,
+          "new_lines": 1,
+          "context": "export default function SanitarioCatalogoV2() {"
+        },
+        {
+          "old_start": 375,
+          "old_lines": 0,
+          "new_start": 377,
+          "new_lines": 2,
+          "context": "export default function SanitarioCatalogoV2() {"
+        },
+        {
+          "old_start": 394,
+          "old_lines": 0,
+          "new_start": 398,
+          "new_lines": 1,
+          "context": "export default function SanitarioCatalogoV2() {"
+        },
+        {
+          "old_start": 424,
+          "old_lines": 1,
+          "new_start": 428,
+          "new_lines": 1,
+          "context": "export default function SanitarioCatalogoV2() {"
+        },
+        {
+          "old_start": 440,
+          "old_lines": 0,
+          "new_start": 445,
+          "new_lines": 27,
+          "context": "function Metric({ label, value }: { label: string; value: number | string }) {"
+        }
+      ]
+    },
+    {
+      "file": "e2e/fixtures/sanitary-planning.tsx",
+      "scope": "VF1–VF3 browser coverage; VF5 helper extraction in spec",
+      "sha256": "ebf04e8d46c88d614980488851617628a3c11cbca23be8e2d0d4bacdcc2248c0",
+      "hunks": [
+        {
+          "old_start": 7,
+          "old_lines": 1,
+          "new_start": 7,
+          "new_lines": 4,
+          "context": "import { Toaster } from \"sonner\";"
+        },
+        {
+          "old_start": 12,
+          "old_lines": 0,
+          "new_start": 16,
+          "new_lines": 1,
+          "context": "import SelectFazenda from \"../../src/pages/SelectFazenda\";"
+        },
+        {
+          "old_start": 14,
+          "old_lines": 1,
+          "new_start": 18,
+          "new_lines": 1,
+          "context": "import \"../../src/globals.css\";"
+        },
+        {
+          "old_start": 22,
+          "old_lines": 0,
+          "new_start": 27,
+          "new_lines": 8,
+          "context": "const user = { id: \"00000000-0000-4000-8000-000000000001\", email: \"sintetico@exa"
+        },
+        {
+          "old_start": 27,
+          "old_lines": 0,
+          "new_start": 40,
+          "new_lines": 18,
+          "context": "Object.assign(supabase.auth, {"
+        },
+        {
+          "old_start": 36,
+          "old_lines": 1,
+          "new_start": 66,
+          "new_lines": 6,
+          "context": "const integral = new URLSearchParams(location.search).has(\"integral\");"
+        },
+        {
+          "old_start": 70,
+          "old_lines": 0,
+          "new_start": 106,
+          "new_lines": 13,
+          "context": "if (integral && !await db.state_animais.count()) {"
+        },
+        {
+          "old_start": 72,
+          "old_lines": 0,
+          "new_start": 121,
+          "new_lines": 1,
+          "context": "createRoot(document.getElementById(\"root\")!).render("
+        },
+        {
+          "old_start": 75,
+          "old_lines": 2,
+          "new_start": 124,
+          "new_lines": 4,
+          "context": "createRoot(document.getElementById(\"root\")!).render("
+        }
+      ]
+    },
+    {
+      "file": "e2e/sanitary-planning.spec.ts",
+      "scope": "VF1–VF3 browser coverage; VF5 helper extraction in spec",
+      "sha256": "7cdf6261533989d7d671d0960a42bf8f1613544a4331d81a6244e996cf3b6480",
+      "hunks": [
+        {
+          "old_start": 1,
+          "old_lines": 1,
+          "new_start": 1,
+          "new_lines": 6,
+          "context": ""
+        },
+        {
+          "old_start": 30,
+          "old_lines": 1,
+          "new_start": 35,
+          "new_lines": 1,
+          "context": "async function fulfillSyntheticApi(route: Route, unexpected: string[]) {"
+        },
+        {
+          "old_start": 49,
+          "old_lines": 1,
+          "new_start": 54,
+          "new_lines": 1,
+          "context": "async function prepare(page: Page) {"
+        },
+        {
+          "old_start": 58,
+          "old_lines": 0,
+          "new_start": 64,
+          "new_lines": 171,
+          "context": "async function selectProtocol(page: Page) {"
+        },
+        {
+          "old_start": 86,
+          "old_lines": 0,
+          "new_start": 263,
+          "new_lines": 396,
+          "context": "async function counts(page: Page) {"
+        },
+        {
+          "old_start": 90,
+          "old_lines": 0,
+          "new_start": 663,
+          "new_lines": 1,
+          "context": "test(\"plano confirmado gera sozinho, recupera offline e respeita cancelamento e"
+        },
+        {
+          "old_start": 96,
+          "old_lines": 0,
+          "new_start": 670,
+          "new_lines": 1,
+          "context": "test(\"plano confirmado gera sozinho, recupera offline e respeita cancelamento e"
+        },
+        {
+          "old_start": 103,
+          "old_lines": 0,
+          "new_start": 678,
+          "new_lines": 1,
+          "context": "test(\"plano confirmado gera sozinho, recupera offline e respeita cancelamento e"
+        },
+        {
+          "old_start": 183,
+          "old_lines": 1,
+          "new_start": 758,
+          "new_lines": 1,
+          "context": "test(\"catálogo vazio informa indisponibilidade sem fabricar protocolos ou produ"
+        },
+        {
+          "old_start": 186,
+          "old_lines": 0,
+          "new_start": 762,
+          "new_lines": 1,
+          "context": "test(\"plano integral contempla 20 itens e automatiza vários protocolos com hist"
+        },
+        {
+          "old_start": 188,
+          "old_lines": 1,
+          "new_start": 764,
+          "new_lines": 2,
+          "context": "test(\"plano integral contempla 20 itens e automatiza vários protocolos com hist"
+        },
+        {
+          "old_start": 190,
+          "old_lines": 3,
+          "new_start": 767,
+          "new_lines": 2,
+          "context": "test(\"plano integral contempla 20 itens e automatiza vários protocolos com hist"
+        },
+        {
+          "old_start": 196,
+          "old_lines": 0,
+          "new_start": 773,
+          "new_lines": 1,
+          "context": "test(\"plano integral contempla 20 itens e automatiza vários protocolos com hist"
+        }
+      ]
+    },
+    {
+      "file": "src/lib/sanitario/agenda/__tests__/fixtures/sanitaryNormalizedFixtureV2.ts",
+      "scope": "VF2 published catalog fixture",
+      "sha256": "c1c279c731995a825d5824238edf7a92cc603d3eec1f69d7bfe113d8f06a9a65",
+      "hunks": [
+        {
+          "old_start": 83,
+          "old_lines": 0,
+          "new_start": 84,
+          "new_lines": 19,
+          "context": "export async function normalizedDraft(farmId = \"farm\", keys = automaticItemKeys,"
+        }
+      ]
+    },
+    {
+      "file": "src/lib/sanitario/agenda/__tests__/sanitaryPublishedCatalogV2.test.ts",
+      "scope": "VF2 published catalog fixture",
+      "sha256": "b406fd7406bdf3370ce3cec47ae571ab026229b6094675f2985af1414ba09f39",
+      "hunks": [
+        {
+          "old_start": 7,
+          "old_lines": 1,
+          "new_start": 7,
+          "new_lines": 1,
+          "context": "import { saveSanitaryAutomationPlanV2 } from \"../sanitaryAutomationPlanV2\";"
+        },
+        {
+          "old_start": 11,
+          "old_lines": 1,
+          "new_start": 11,
+          "new_lines": 1,
+          "context": "vi.mock(\"@/lib/offline/localReadBoundary\", () => ({ requireTenantSensitiveRead:"
+        },
+        {
+          "old_start": 28,
+          "old_lines": 4,
+          "new_start": 28,
+          "new_lines": 1,
+          "context": "describe.skipIf(!catalog)(\"catálogo publicado pela RPC real → plano existente"
+        },
+        {
+          "old_start": 56,
+          "old_lines": 2,
+          "new_start": 53,
+          "new_lines": 2,
+          "context": "describe.skipIf(!catalog)(\"catálogo publicado pela RPC real → plano existente"
+        }
+      ]
+    },
+    {
+      "file": "tests/codex/sanitario-v2-review.supabase.mjs",
+      "scope": "VF4 real integration harness",
+      "sha256": "8e53f5ed0cac8c6b47033a7d2df2ffa886057deb5081ed09bb61fe40df50d97f",
+      "hunks": [
+        {
+          "old_start": 36,
+          "old_lines": 0,
+          "new_start": 37,
+          "new_lines": 1,
+          "context": "try {"
+        },
+        {
+          "old_start": 69,
+          "old_lines": 0,
+          "new_start": 71,
+          "new_lines": 5,
+          "context": "try {"
+        },
+        {
+          "old_start": 103,
+          "old_lines": 0,
+          "new_start": 110,
+          "new_lines": 1,
+          "context": "try {"
+        }
+      ]
+    },
+    {
+      "file": "tests/codex/sanitario-v2-vf4.fixture.mjs",
+      "scope": "VF4 real integration harness",
+      "sha256": "b3d71bfff9ae4568e2ae551cfdc70893a17c9f43d0767a14a2b6f974c721f60f",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 300,
+          "context": ""
+        }
+      ]
+    },
+    {
+      "file": "docs/review/SANITARIO_V2_VALIDACAO_FUNCIONAL_20261023.md",
+      "scope": "historical evidence/fixture",
+      "sha256": "770c6d7f5b944ed730ed09efd97f8991012d24ab31d43c5b1bd8a005970c38e7",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 97,
+          "context": "new untracked evidence file at consolidation"
+        }
+      ]
+    },
+    {
+      "file": "docs/review/SANITARIO_V2_VF2_VALIDACAO_20261023.md",
+      "scope": "historical evidence/fixture",
+      "sha256": "96d35b09bcb4f1c4b05b40bc81fdd23422eb68a04c16ebb9c0e61bcc396ce0ba",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 136,
+          "context": "new untracked evidence file at consolidation"
+        }
+      ]
+    },
+    {
+      "file": "docs/review/SANITARIO_V2_VF3_VALIDACAO_20261023.md",
+      "scope": "historical evidence/fixture",
+      "sha256": "e40decb0902d49dec3925b26a4f6779eaf9681449e2318441376e2838a5a1c81",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 88,
+          "context": "new untracked evidence file at consolidation"
+        }
+      ]
+    },
+    {
+      "file": "docs/review/SANITARIO_V2_VF4_VALIDACAO_20261024.md",
+      "scope": "historical evidence/fixture",
+      "sha256": "95d0c15ea4e3da3507684d5ab3f442ac5af9c7de0173922db31238b3276a28d8",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 97,
+          "context": "new untracked evidence file at consolidation"
+        }
+      ]
+    },
+    {
+      "file": "docs/review/evidence/SANITARIO_V2_FUNCTIONAL_LOCAL_BROWSER_20261023.json",
+      "scope": "historical evidence/fixture",
+      "sha256": "a30f626a03f7bfd8e09b27df666d64df8ac38c687b2178fa94576e0cd1b094ec",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 56,
+          "context": "new untracked evidence file at consolidation"
+        }
+      ]
+    },
+    {
+      "file": "docs/review/evidence/SANITARIO_V2_FUNCTIONAL_DESKTOP_20261023.png",
+      "scope": "historical evidence/fixture",
+      "sha256": "f8864cad623a21246edd3afeffff8b2b3b74eb9efd66be7b5ff046159634b41e",
+      "hunks": {
+        "binary": true
+      }
+    },
+    {
+      "file": "docs/review/evidence/SANITARIO_V2_FUNCTIONAL_MOBILE_20261023.png",
+      "scope": "historical evidence/fixture",
+      "sha256": "427586cf9b04bfd16c999255389099831cf9ca7c63995cc77a9d448dafc0673b",
+      "hunks": {
+        "binary": true
+      }
+    },
+    {
+      "file": "docs/review/evidence/SANITARIO_V2_VF2_CATALOG_READONLY_20261023.json",
+      "scope": "historical evidence/fixture",
+      "sha256": "c9744cf2e6b6a9b95e11e68d74990cdb0af887f849c9acde9421bb720d80fdcc",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 7553,
+          "context": ""
+        }
+      ]
+    },
+    {
+      "file": "docs/review/evidence/SANITARIO_V2_VF2_CATALOG_READONLY_20261023.sql",
+      "scope": "historical evidence/fixture",
+      "sha256": "777d0862122af511d8e03f546f2748dbac07f714745fb20e0a59fc3acfdf9e64",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 9,
+          "context": "new untracked evidence file at consolidation"
+        }
+      ]
+    },
+    {
+      "file": "docs/review/evidence/SANITARIO_V2_VF2_FUNCTIONAL_RESULT_20261023.json",
+      "scope": "historical evidence/fixture",
+      "sha256": "c4b8bae0e0fa55dc26336bf85b1ac71b201e076e7195162c06607a78020fad20",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 56,
+          "context": "new untracked evidence file at consolidation"
+        }
+      ]
+    },
+    {
+      "file": "docs/review/evidence/SANITARIO_V2_VF2_RAIVA_CATALOGO_20261023.png",
+      "scope": "historical evidence/fixture",
+      "sha256": "4c5e9bd24c2278c3d8515cc48673b1af4937ee5669c1eaa55f1d034db5b1a708",
+      "hunks": {
+        "binary": true
+      }
+    },
+    {
+      "file": "docs/review/evidence/SANITARIO_V2_VF3_RECOVERY_RESULT_20261023.json",
+      "scope": "historical evidence/fixture",
+      "sha256": "ab6993f8ac2814e5fed1d752cc8fc81cf05bc84d1f7935365a5ee478b9d04072",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 2658,
+          "context": "new untracked evidence file at consolidation"
+        }
+      ]
+    },
+    {
+      "file": "docs/review/evidence/SANITARIO_V2_VF4_RECOVERY_RESULT_20261024.json",
+      "scope": "historical evidence/fixture",
+      "sha256": "79546fca716be1afcd0c163cd79e3fc3060ad7aca0858e892fd4b229dda23cfc",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 358,
+          "context": "new untracked evidence file at consolidation"
+        }
+      ]
+    },
+    {
+      "file": "tests/codex/sanitary-disposable-support.fixture.mjs",
+      "scope": "VF5 scoped CI remediation",
+      "sha256": "764b9d07330efd42873b1ed82a8b391a0dabc6869fdb5c2705449b90598fe2b0",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 15,
+          "context": ""
+        }
+      ]
+    },
+    {
+      "file": "tests/codex/sanitary-disposable-support.test.mjs",
+      "scope": "VF5 scoped CI remediation",
+      "sha256": "ea820973a55ce9297fd8f8d57aa61afdccec15a21e0ea430e906e1dbaa5974c1",
+      "hunks": [
+        {
+          "old_start": 0,
+          "old_lines": 0,
+          "new_start": 1,
+          "new_lines": 41,
+          "context": ""
+        }
+      ]
+    },
+    {
+      "file": "tests/codex/sanitario-v2-convergence.fixture.mjs",
+      "scope": "VF5 scoped CI remediation",
+      "sha256": "df9196fa41faaa42c134f7d308350db8210dfb66c6b42e18d06b1d0c4c586c68",
+      "hunks": [
+        {
+          "old_start": 6,
+          "old_lines": 0,
+          "new_start": 7,
+          "new_lines": 1,
+          "context": "import { createClient } from \"@supabase/supabase-js\";"
+        },
+        {
+          "old_start": 154,
+          "old_lines": 5,
+          "new_start": 155,
+          "new_lines": 1,
+          "context": "export async function runSanitaryConvergenceFixture({"
+        }
+      ]
+    },
+    {
+      "file": "tests/codex/sanitario-v2-remote-factual.integration.mjs",
+      "scope": "VF5 scoped CI remediation",
+      "sha256": "1726e69daa02c63c9464f1916fbe8c980e9e83fe60aa09ac2013b732c30e8052",
+      "hunks": [
+        {
+          "old_start": 10,
+          "old_lines": 0,
+          "new_start": 11,
+          "new_lines": 1,
+          "context": "import { createClient } from \"@supabase/supabase-js\";"
+        },
+        {
+          "old_start": 58,
+          "old_lines": 2,
+          "new_start": 58,
+          "new_lines": 0,
+          "context": "async function user(label) {"
+        },
+        {
+          "old_start": 61,
+          "old_lines": 3,
+          "new_start": 60,
+          "new_lines": 2,
+          "context": "async function user(label) {"
+        }
+      ]
+    }
+  ],
+  "original_source_preserved": true,
+  "excluded": [
+    "AGENTS.md",
+    ".agents/rules/*",
+    "scripts/codex/import-sanitario-protocols-v2.mjs",
+    "tests/codex/sanitario-v2-publisher.test.mjs",
+    "src/lib/reproduction/*",
+    "src/components/events/ReproductionForm.tsx",
+    "src/lib/offline/ops.ts",
+    "src/main.tsx",
+    "src/lib/testFarm/*",
+    ".tmp/*",
+    "supabase/.temp/cli-latest",
+    "F6–F9/UI_STRUCT reports and evidence"
+  ],
+  "independent_review": {
+    "status": "COMPLETED_READ_ONLY",
+    "reviewer": "vf5_review",
+    "introduced_findings": {
+      "Critical": 0,
+      "Important": 0,
+      "Minor": 0
+    },
+    "follow_up": "VF5 helper extraction and ops.ts exclusion reviewed; unchanged Auth order, SDK object shape, route order and all catalog assertions"
+  },
+  "validation": {
+    "unit": {
+      "catalog": 13,
+      "regional": 2,
+      "ownership": 1,
+      "published_catalog": 15,
+      "total_distinct": 31
+    },
+    "helper_tests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "browser": {
+      "distinct": 6,
+      "first_run": {
+        "startTime": "2026-10-24T10:09:40.536Z",
+        "duration": 103201.207,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "after_helper_extraction": {
+        "startTime": "2026-10-24T15:34:34.581Z",
+        "duration": 25252.274999999998,
+        "expected": 2,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "repeated_affected_cases": 2
+    },
+    "eslint_exit": 0,
+    "node_syntax_exit": 0,
+    "docs_gate_exit": 0,
+    "build": {
+      "exit": 0,
+      "context": "CI=true, VITE_BACKEND_ENV=ci-synthetic, example backend; compilation only"
+    },
+    "fallow": {
+      "verdict": "pass",
+      "base_ref": "31815a260c8aef2798e87a448dce3f973673b4c4",
+      "attribution": {
+        "gate": "new-only",
+        "dead_code_introduced": 0,
+        "dead_code_inherited": 5,
+        "complexity_introduced": 0,
+        "complexity_inherited": 3,
+        "duplication_introduced": 0,
+        "duplication_inherited": 1,
+        "styling_introduced": 0,
+        "styling_inherited": 1,
+        "duplication_demoted": 0
+      }
+    },
+    "typescript": "38 preexisting independent; see separate isolated-baseline triage JSON",
+    "diff_check_exit": 0
+  },
+  "ci_remediation": {
+    "before": {
+      "complexity_introduced": 2,
+      "duplication_introduced": 2
+    },
+    "after": {
+      "complexity_introduced": 0,
+      "duplication_introduced": 0
+    },
+    "changes": "Extracted existing assertions/predicate and shared synthetic Auth/network preparation; no suppressions or runtime refactor"
+  },
+  "vf4_reuse": {
+    "status": "HISTORICAL_REAL_PASS_16",
+    "rerun": false,
+    "server_contracts_unchanged": true,
+    "ops_hash_difference": "Excluded concurrent animal UPDATE revision persistence; guard returns unless table=animais; sanitary operations use sanitario_v2 INSERT",
+    "fixture_difference": "VF5 only extracts equivalent preparation helpers; independently reviewed and tested with four narrow helper cases"
+  },
+  "limits": [
+    "TypeScript command remains exit 1 with 38 verified preexisting diagnostics; no global clean-typecheck claim",
+    "Preexisting post-selection remote persistence/session-ownership races were not reproduced or fixed; no broad Auth race claim",
+    "No production rollout, cloud equivalence, physical mobile or PWA cold start certification"
+  ],
+  "remote_operations": {
+    "supabase_mutations": 0,
+    "migrations": 0,
+    "bootstrap": 0,
+    "gates_activated": 0,
+    "deploy": 0,
+    "push": 0,
+    "merge": 0
+  },
+  "logs": {
+    "unit": "scratch/vf5-unit.log",
+    "unit_environment_retry": "scratch/vf5-unit-env.log",
+    "helpers": "scratch/vf5-support-test.log",
+    "eslint": "scratch/vf5-eslint-final.log",
+    "build": "scratch/vf5-build.log",
+    "docs": "scratch/vf5-doc-gates.log",
+    "fallow": "scratch/vf5-fallow-final.json"
+  }
+}

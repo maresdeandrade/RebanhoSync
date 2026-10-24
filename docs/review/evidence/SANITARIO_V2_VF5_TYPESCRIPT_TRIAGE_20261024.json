@@ -1,0 +1,519 @@
+{
+  "artifact": "sanitario_v2_vf5_typescript_triage",
+  "command": "pnpm exec tsc --noEmit --project e2e/tsconfig.json",
+  "exit_code": 1,
+  "counts": {
+    "old_baseline": 38,
+    "current_main": 38,
+    "integration": 38,
+    "concurrent": 38,
+    "preexisting_independent": 38,
+    "introduced_by_vf": 0,
+    "introduced_by_concurrent": 0,
+    "undetermined": 0
+  },
+  "comparison": "Exact primary diagnostics after normalizing only checkout absolute paths; all 38 agree in both clean Git baselines and integration",
+  "concurrent_line_shifts": [
+    "src/lib/reproduction/remoteSync.ts(468,63): error TS2345: Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly Evento[]'.",
+    "src/lib/reproduction/remoteSync.ts(470,49): error TS2345: Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly EventoReproducao[]'.",
+    "src/lib/reproduction/remoteSync.ts(472,63): error TS2345: Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly Animal[]'.",
+    "src/lib/reproduction/remoteSync.ts(474,43): error TS2345: Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly AgendaItem[]'."
+  ],
+  "dependency_setup": "Separate offline frozen-lockfile installs; same repository packageManager and unchanged lockfiles; no shared node_modules",
+  "diagnostics": [
+    {
+      "file": "e2e/f24-4d8-local-queue-clock-skew.spec.ts",
+      "line": 249,
+      "column": 13,
+      "code": "TS2339",
+      "message": "Property 'wakeUpDurableSyncWork' does not exist on type 'typeof import(\"<ROOT>/src/lib/offline/syncWorker\")'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "line": 291,
+      "column": 44,
+      "code": "TS2339",
+      "message": "Property 'completed_at' does not exist on type 'unknown'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "line": 293,
+      "column": 44,
+      "code": "TS2339",
+      "message": "Property 'last_weight_kg' does not exist on type 'unknown'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "line": 293,
+      "column": 82,
+      "code": "TS2339",
+      "message": "Property 'last_weight_kg' does not exist on type 'unknown'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "line": 321,
+      "column": 51,
+      "code": "TS2339",
+      "message": "Property 'estagio_vida' does not exist on type 'unknown'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "line": 390,
+      "column": 51,
+      "code": "TS2339",
+      "message": "Property 'estagio_vida' does not exist on type 'unknown'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "line": 423,
+      "column": 49,
+      "code": "TS2339",
+      "message": "Property 'estagio_vida' does not exist on type 'unknown'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/animals/lifecycle.ts",
+      "line": 443,
+      "column": 18,
+      "code": "TS2677",
+      "message": "A type predicate's type must be assignable to its parameter's type.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "line": 8,
+      "column": 17,
+      "code": "TS2345",
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "line": 15,
+      "column": 17,
+      "code": "TS2345",
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "line": 22,
+      "column": 17,
+      "code": "TS2345",
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "line": 29,
+      "column": 17,
+      "code": "TS2345",
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "line": 37,
+      "column": 19,
+      "code": "TS2345",
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "line": 44,
+      "column": 19,
+      "code": "TS2345",
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "line": 51,
+      "column": 19,
+      "code": "TS2345",
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/insights/latestObservedWeight.ts",
+      "line": 70,
+      "column": 7,
+      "code": "TS2322",
+      "message": "Type 'ObservedWeightConflict' is not assignable to type '{ code: LatestObservedWeightConflictCode; measuredAt: string; eventIds: string[]; }'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/insights/observedWeightEvidence.ts",
+      "line": 147,
+      "column": 5,
+      "code": "TS2322",
+      "message": "Type '{ event: Pick<Evento, \"fazenda_id\" | \"id\" | \"occurred_at\" | \"animal_id\" | \"dominio\"> & Partial<Pick<Evento, \"deleted_at\">>; timestamp: number; }[]' is not assignable to type 'EligibleEvent[]'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/insights/observedWeightEvidence.ts",
+      "line": 178,
+      "column": 7,
+      "code": "TS2322",
+      "message": "Type 'EventoPesagem | (Pick<EventoPesagem, \"fazenda_id\" | \"evento_id\" | \"peso_kg\"> & Partial<Pick<EventoPesagem, \"deleted_at\">>)' is not assignable to type 'EventoPesagem'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/insights/observedWeightEvidence.ts",
+      "line": 179,
+      "column": 7,
+      "code": "TS2740",
+      "message": "Type 'Pick<EventoPesagem, \"fazenda_id\" | \"evento_id\" | \"peso_kg\"> & Partial<Pick<EventoPesagem, \"deleted_at\">>' is missing the following properties from type 'EventoPesagem': payload, client_id, client_op_id, client_tx_id, and 4 more.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "line": 365,
+      "column": 63,
+      "code": "TS2537",
+      "message": "Type '{}' has no matching index signature for type 'number'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "line": 398,
+      "column": 63,
+      "code": "TS2537",
+      "message": "Type '{}' has no matching index signature for type 'number'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "line": 431,
+      "column": 10,
+      "code": "TS2322",
+      "message": "Type 'IndexableType[]' is not assignable to type 'IndexableType'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "line": 921,
+      "column": 9,
+      "code": "TS2554",
+      "message": "Expected 4 arguments, but got 3.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "line": 1046,
+      "column": 9,
+      "code": "TS2554",
+      "message": "Expected 4 arguments, but got 3.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "line": 1179,
+      "column": 9,
+      "code": "TS2554",
+      "message": "Expected 4 arguments, but got 3.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/offline/syncWorker.ts",
+      "line": 1160,
+      "column": 71,
+      "code": "TS2339",
+      "message": "Property 'op_id' does not exist on type '{ op: Operation; result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus; }; }'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/offline/syncWorker.ts",
+      "line": 1662,
+      "column": 17,
+      "code": "TS2322",
+      "message": "Type 'Record<string, unknown> | SanitarioV2QueuedOperation' is not assignable to type 'Record<string, unknown>'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "line": 458,
+      "column": 63,
+      "code": "TS2345",
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly Evento[]'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "line": 460,
+      "column": 49,
+      "code": "TS2345",
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly EventoReproducao[]'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "line": 462,
+      "column": 63,
+      "code": "TS2345",
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly Animal[]'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "line": 464,
+      "column": 43,
+      "code": "TS2345",
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly AgendaItem[]'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/sanitario/compliance/biosecurityOccurrence.ts",
+      "line": 554,
+      "column": 16,
+      "code": "TS2550",
+      "message": "Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "line": 227,
+      "column": 9,
+      "code": "TS2345",
+      "message": "Argument of type '\"Cálculo parcial com base apenas nos custos informados. Custos ausentes não foram assumidos como zero.\"' is not assignable to parameter of type '\"Simulação prospectiva com premissas editáveis; não constitui recomendação técnica ou comercial.\" | \"O peso observado provém de pesagem factual registrada e não representa o peso em tempo real.\" | \"O GMD assumido no cenário é uma premissa projetada e não garante ganho de peso futuro.\" | \"Custos fixos da fazenda, dep...'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "line": 231,
+      "column": 9,
+      "code": "TS2345",
+      "message": "Argument of type '\"Custos incrementais não informados. Margem parcial simulada e preço de equilíbrio não foram calculados.\"' is not assignable to parameter of type '\"Simulação prospectiva com premissas editáveis; não constitui recomendação técnica ou comercial.\" | \"O peso observado provém de pesagem factual registrada e não representa o peso em tempo real.\" | \"O GMD assumido no cenário é uma premissa projetada e não garante ganho de peso futuro.\" | \"Custos fixos da fazenda, dep...'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "line": 365,
+      "column": 32,
+      "code": "TS2339",
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "line": 371,
+      "column": 71,
+      "code": "TS2339",
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "line": 379,
+      "column": 33,
+      "code": "TS2339",
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "line": 385,
+      "column": 77,
+      "code": "TS2339",
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.",
+      "classification": "PREEXISTING_INDEPENDENT",
+      "confirmed_in": [
+        "4b43fc10ec9dfd0c19527c22c4d725799d9e7969 clean checkout",
+        "31815a260c8aef2798e87a448dce3f973673b4c4 clean checkout",
+        "VF5 integration tree"
+      ]
+    }
+  ]
+}

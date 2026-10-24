@@ -1,0 +1,56 @@
+{
+  "artifact": "sanitario_v2_vf2_functional_evidence",
+  "baseline": "4b43fc10ec9dfd0c19527c22c4d725799d9e7969",
+  "snapshot_sha256": "c9744cf2e6b6a9b95e11e68d74990cdb0af887f849c9acde9421bb720d80fdcc",
+  "snapshot": "SANITARIO_V2_VF2_CATALOG_READONLY_20261023.json",
+  "browser_scenarios": [
+    {
+      "title": "VF2 catálogo homologado mantém IDs, versões, fontes e restrições verificáveis",
+      "status": "expected",
+      "duration_ms": 11250,
+      "run": "scratch/sanitary-vf2-catalog-final.json"
+    },
+    {
+      "title": "VF2 raiva manual homologada: raiva_primovac_dose1",
+      "status": "expected",
+      "duration_ms": 4972,
+      "run": "scratch/sanitary-vf2-rabies-final.json"
+    },
+    {
+      "title": "VF2 raiva manual homologada: raiva_primovac_reforco_30d",
+      "status": "expected",
+      "duration_ms": 2714,
+      "run": "scratch/sanitary-vf2-rabies-final.json"
+    },
+    {
+      "title": "VF2 raiva manual homologada: raiva_reforco_anual_area_risco",
+      "status": "expected",
+      "duration_ms": 2103,
+      "run": "scratch/sanitary-vf2-rabies-final.json"
+    },
+    {
+      "title": "VF2 variantes incompletas, aftosa, automação de raiva e nascimento ausente ficam bloqueados",
+      "status": "expected",
+      "duration_ms": 1754,
+      "run": "scratch/sanitary-vf2-browser.json"
+    }
+  ],
+  "published_catalog_tests": {
+    "passed": 15,
+    "skipped": 0
+  },
+  "catalog_component_tests": {
+    "passed": 13,
+    "skipped": 0
+  },
+  "eslint": {
+    "exit_code": 0,
+    "scope": "five VF2 code files"
+  },
+  "typecheck": {
+    "exit_code": 1,
+    "diagnostics": 38,
+    "diagnostics_in_vf2_files": 0
+  },
+  "remote_mutations": 0
+}
