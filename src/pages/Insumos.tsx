@@ -94,6 +94,7 @@ import {
   buildInventoryViewModel,
   computeLotBalance,
 } from "./Insumos/helpers/buildInventoryViewModel";
+import { readInventorySnapshot } from "./Insumos/adapters/readInventorySnapshot";
 import { buildLotEditOperations } from "./Insumos/helpers/buildLotEditOperations";
 import { resolveLotEditCosts } from "./Insumos/helpers/resolveLotEditCosts";
 import { validateLotEditForm } from "./Insumos/helpers/validateLotEditForm";
@@ -400,70 +401,10 @@ export default function Insumos() {
   }, [activeFarmId]);
 
   const snapshot =
-    useLiveQuery<InventorySnapshot | null>(async () => {
-      if (!activeFarmId) return null;
-      const [
-        insumos,
-        apresentacoes,
-        lotes,
-        movimentacoes,
-        eventos,
-        sanitario,
-        nutricao,
-        pasto,
-        produtos,
-        gestures,
-      ] = await Promise.all([
-        db.state_insumos.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.state_insumo_apresentacoes
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .toArray(),
-        db.state_insumo_lotes
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .toArray(),
-        db.state_insumo_movimentacoes
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .toArray(),
-        db.event_eventos.where("fazenda_id").equals(activeFarmId).toArray(),
-        db.event_eventos_sanitario
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .toArray(),
-        db.event_eventos_nutricao
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .toArray(),
-        db.event_eventos_pasto_avaliacao
-          .where("fazenda_id")
-          .equals(activeFarmId)
-          .toArray(),
-        db.catalog_produtos_veterinarios.toArray(),
-        db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
-      ]);
-
-      return {
-        insumos: insumos.filter((item) => !item.deleted_at),
-        apresentacoes: apresentacoes.filter((item) => !item.deleted_at),
-        lotes: lotes.filter((item) => !item.deleted_at),
-        movimentacoes: movimentacoes.filter((item) => !item.deleted_at),
-        eventos,
-        sanitario: sanitario.filter((item) => !item.deleted_at),
-        nutricao: nutricao.filter((item) => !item.deleted_at),
-        pasto: pasto.filter((item) => !item.deleted_at),
-        produtos,
-        pendingTxIds: new Set(
-          gestures
-            .filter(
-              (gesture) =>
-                gesture.status !== "DONE" && gesture.status !== "SYNCED",
-            )
-            .map((gesture) => gesture.client_tx_id),
-        ),
-      };
-    }, [activeFarmId]) ?? null;
+    useLiveQuery<InventorySnapshot | null>(
+      () => readInventorySnapshot(activeFarmId),
+      [activeFarmId],
+    ) ?? null;
 
   const insumoById = useMemo(
     () => new Map((snapshot?.insumos ?? []).map((item) => [item.id, item])),
