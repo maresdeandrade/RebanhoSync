@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -99,6 +99,8 @@ async function fetchFirstAccessibleFarmId(userId: string) {
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  // Invalidate in-flight settings/role/metadata reads on an explicit farm or session change.
+  const farmContextRevision = useRef(0);
   const [session, setSession] = useState<Session | null>(null);
   const [localOwnership, setLocalOwnership] =
     useState<LocalOwnershipDecision | null>(null);
@@ -119,7 +121,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
 
   const loadRoleForFarm = useCallback(async (userId: string, farmId: string) => {
+    const request = farmContextRevision.current;
     const nextRole = await fetchMembershipRole(userId, farmId);
+    if (request !== farmContextRevision.current) return;
     setRole(nextRole);
   }, []);
 
@@ -141,6 +145,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const loadFarmExperienceForFarm = useCallback(async (farmId: string) => {
+    const request = farmContextRevision.current;
     const { data, error } = await supabase
       .from("fazendas")
       .select("metadata")
@@ -148,6 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .is("deleted_at", null)
       .maybeSingle();
 
+    if (request !== farmContextRevision.current) return;
     if (error) {
       console.warn("[useAuth] Error fetching farm metadata:", error);
       setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
@@ -177,10 +183,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   const refreshSettings = useCallback(async () => {
+    const request = farmContextRevision.current;
+    const isCurrent = () => request === farmContextRevision.current;
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+      if (!isCurrent()) return;
       if (!user) {
         setIsSuperAdmin(false);
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
@@ -192,6 +201,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Avaliar SuperAdmin de forma defensiva e assíncrona
       const adminStatus = await checkIsSuperAdmin(supabase);
+      if (!isCurrent()) return;
       setIsSuperAdmin(adminStatus);
 
       const localFarmId = getActiveFarmId();
@@ -202,6 +212,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq("user_id", user.id)
         .maybeSingle();
 
+      if (!isCurrent()) return;
       if (error && error.code !== "PGRST116") {
         console.warn("[useAuth] Error fetching user_settings:", error);
         return;
@@ -216,6 +227,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (resolvedFarmId) {
         const nextRole = await fetchMembershipRole(user.id, resolvedFarmId);
+        if (!isCurrent()) return;
 
         if (nextRole) {
           if (resolvedFarmId !== localFarmId) {
@@ -228,17 +240,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setActiveFarmId(resolvedFarmId);
           setRole(nextRole);
           await loadFarmExperienceForFarm(resolvedFarmId);
+          if (!isCurrent()) return;
           if (!settings?.active_fazenda_id && localFarmId === resolvedFarmId) {
             persistLocalFarmId = localFarmId;
           }
         } else {
           const fallbackFarmId = await fetchFirstAccessibleFarmId(user.id);
+          if (!isCurrent()) return;
 
           if (fallbackFarmId) {
             storeActiveFarmId(fallbackFarmId);
             setActiveFarmId(fallbackFarmId);
             await persistActiveFarmToRemote(user.id, fallbackFarmId);
+            if (!isCurrent()) return;
             await loadFarmContext(user.id, fallbackFarmId);
+            if (!isCurrent()) return;
           } else {
             removeActiveFarmId();
             setActiveFarmId(null);
@@ -266,6 +282,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           );
         }
         await persistActiveFarmToRemote(user.id, persistLocalFarmId);
+        if (!isCurrent()) return;
       }
 
       // Apply theme preference
@@ -280,10 +297,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [loadFarmContext, loadFarmExperienceForFarm, persistActiveFarmToRemote]);
 
   const setActiveFarm = async (farmId: string) => {
+    const request = ++farmContextRevision.current;
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user || request !== farmContextRevision.current) return;
+    // Also supersede refreshes begun while getUser was resolving this selection.
+    ++farmContextRevision.current;
 
     setActiveFarmId(farmId);
     storeActiveFarmId(farmId);
@@ -338,6 +358,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         void applyAuthenticatedSession(session).finally(() => setLoading(false));
         return;
       } else {
+        ++farmContextRevision.current;
         setSession(null);
         setLocalOwnership(null);
         setActiveFarmId(null);
@@ -358,6 +379,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [applyAuthenticatedSession]);
 
   const signOut = async () => {
+    ++farmContextRevision.current;
     try {
       await supabase.auth.signOut();
       setLocalOwnership(null);
