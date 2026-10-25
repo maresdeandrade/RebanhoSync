@@ -16,6 +16,7 @@
     "scripts/codex/prepare-dry-cow-ui-smoke.mjs",
     "scripts/codex/run-dry-cow-ui-smoke-cdp.mjs",
     "scripts/codex/import-sanitario-protocols-v2.mjs",
+    "scripts/codex/prepare-sanitario-products-f6.mjs",
     "scripts/codex/sanitario-r01-atomic-sql.mjs",
     "scripts/codex/verify-sanitario-r05-evidence.mjs",
     "tests/codex/sanitario-r01-legacy-payloads.local.mjs",
