@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-10-20
-Baseline integrada consultada: `origin/main@27a3bed971639c41c0ca458379a6b9b5f02ef8dc`
+Atualizado em: 2026-10-25
+Baseline integrada consultada: `origin/main@20fd5c6fbd7cfbccf1d3db1446cf8a8e3fd60aaa`
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no escopo certificado)**.
 Próxima fase de desenvolvimento: **Fase 24 — proposta de inventário F24.6A2; escopo e critérios devem ser formalizados antes do início**.
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
@@ -29,6 +29,12 @@ com fila heterogênea foram certificados. Kill real de processo/browser permanec
 O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é a referência arquitetural canônica dos fluxos operacionais. Código e migrations ativas mantêm precedência factual; os resumos deste `PROJECT_STATUS.md` registram estado e contexto, mas não redefinem contratos do mapa.
 
 ## Estado atual
+
+**Sanitário V2 — integração pública F6–F9 CLOSED / INTEGRATED (25/10/2026):** PR [#244](https://github.com/maresdeandrade/RebanhoSync/pull/244), merge `0e7f5137a865f2671d035e51d624609a563e441e`, confirmado na `origin/main`. Integra oito arquivos: seis originais da integração pública, registro do preparador no Fallow e teste de closure; inclui as correções de rejeição antecipada de candidatos fora do F6 e de manifests temporários nos testes. [Required validation](https://github.com/maresdeandrade/RebanhoSync/actions/runs/40215999700) e [PR description](https://github.com/maresdeandrade/RebanhoSync/actions/runs/40215999663) passaram no head `00f42b6`. O último CI foi incremental, com 6/6 testes de closure; build skipped, sem certificação de regressão global por esse run.
+
+A publicação F9 é um fato histórico distinto do merge: o [recibo público](../review/evidence/SANITARIO_V2_F9_PUBLIC_RECEIPT.json) registra 39 inserções, zero UPDATE/skip/reject e total de 42 produtos após a operação. O [resumo F6–F9](../review/SANITARIO_V2_F6_F9_PUBLIC_SUMMARY.md) preserva a proveniência histórica. Produtos importados continuam `precisa_validar`, sem aprovação operacional, e três candidatos ficaram retidos. Não houve consulta ao Supabase, importação ou nova publicação neste fechamento. O Sanitário V2 inteiro não está encerrado: [continuidade e proposta delimitada](../review/CURRENT_PHASE_HANDOFF.md#sanitário-v2--continuidade-pós-f9--25102026) e [pendências](../review/OPEN_REVIEW_ITEMS.md#sanitário-v2--pendências-pós-f9).
+
+**Avanço posterior material ao handoff:** PR [#245](https://github.com/maresdeandrade/RebanhoSync/pull/245), merge `20fd5c6fbd7cfbccf1d3db1446cf8a8e3fd60aaa`, integra proteção da seleção pendente de fazenda no `AuthProvider` e isolamento de leitura/comandos/writers de Insumos. [CI #245](https://github.com/maresdeandrade/RebanhoSync/actions/runs/40217452023) passou, incluindo testes e build. Essas proteções já estão implementadas; a certificação sanitária integrada com provider e backend real continua proposta separada, sem prova derivada apenas desse merge. F9 e a fase macro F24 permanecem no estado acima.
 
 **F24.6A1 — certificação concluída / fechamento administrativo (13/10/2026):** `RECONNECT_1K = CERTIFIED` em `main@869f006679827f3baddb0afed3c3cbf22e976fa5`: smoke aprovado, 5/5 runs sequenciais de 1.000 gestos, 1.000 animais, duas fazendas 500/500, warm, agenda vazia; mediana 146,46s. ACKs, fila/obrigações zeradas, isolamento, convergência, revisão única e cleanup comprovados no [relatório único](../review/F24_6A1_RECONNECT_1K_CERTIFICATION.md), com evidências versionadas e hashes auditáveis. Baseline E1/E2 e falhas anteriores preservadas; sem repetição do benchmark nesta publicação.
 

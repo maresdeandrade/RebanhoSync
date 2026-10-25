@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-10-20
+Atualizado em: 2026-10-25 (pendências Sanitário V2; demais trilhas preservadas)
 
 ## Objetivo
 
@@ -11,6 +11,19 @@ F24.1 foi fechada após a reconstrução remota, convergência ACL, `sync-batch`
 F24.1D.1 do `sanitario-reconcile`. O fechamento inclui matriz negativa, consumidor
 `service_role`, E2E 1/1, replay e limpeza. A F24.2 também está fechada no
 [closeout autoritativo](./F24_2_CLOSEOUT_AND_REBASELINE.md). Não existe produção operacional.
+
+## Sanitário V2 — pendências pós-F9
+
+Integração pública F6–F9 encerrada pelo PR #244 em `main@0e7f5137a865f2671d035e51d624609a563e441e`; não é pendência aberta. [Resultado e limites](./LAST_PHASE_RESULT.md). Prioridades abaixo são recomendações para continuidade, não novos bugs confirmados ou autorização de implementação.
+
+| Prioridade | Item aberto e classificação | Fonte / condição de fechamento |
+|---|---|---|
+| P1 para uso operacional dos produtos | **Curadoria/regulatório:** os 39 produtos importados são de revisão (`precisa_validar`); registro vigente, composição, espécie, dose, via e carência não estão certificados. Três candidatos retidos fora do lote. | [Resumo F6–F9](./SANITARIO_V2_F6_F9_PUBLIC_SUMMARY.md). Exige fontes técnicas e decisão curatorial auditável por produto, em tarefa própria; cadastro comercial não libera operação. |
+| P1 antes de certificação completa/rollout | **Cobertura funcional parcial:** VF3 testa provider com Auth sintético; VF4 testa backend real sem montar provider. O #245 já implementou/testou a proteção da seleção pendente, recuperação de settings e papel tardio, além do isolamento de Insumos; isso não é pendência. Falta comprovar a composição sanitária com provider e backend reais, não um novo bug confirmado. | [VF5](./SANITARIO_V2_VF5_INTEGRACAO_20261024.md), [PR #245 integrado](https://github.com/maresdeandrade/RebanhoSync/pull/245) e [proposta delimitada](./CURRENT_PHASE_HANDOFF.md#sanitário-v2--continuidade-pós-f9--25102026). Reutilizar os guards/testes existentes na matriz local integrada antes de generalizar as garantias. F24.7 completa continua pendente. |
+| P2, condicionado ao alvo de liberação | **Limite de certificação:** cold start PWA sem shell/assets, crash real de processo e dispositivo físico não certificados pela VF5; nova intenção sem sessão utilizável ficou fora da VF4. | [Limites VF4](./SANITARIO_V2_VF4_VALIDACAO_20261024.md). Definir contrato/critério do alvo antes de testar; não atribuir bug ou prometer escrita sem sessão. |
+| P2 independente | **Dívida TypeScript:** 38 diagnósticos preexistentes no escopo `e2e/tsconfig.json`, triados na VF5; não houve nova contagem nesta atividade. | [Triagem VF5](./evidence/SANITARIO_V2_VF5_TYPESCRIPT_TRIAGE_20261024.json). Correção própria e comparação com baseline; não bloquear artificialmente F9 nem declarar TypeScript global aprovado. |
+
+Os guards de automação, inclusive `no_agenda_auto` dos três itens de raiva, permanecem restrições de produto; não são bugs a remover. Catálogo, configuração, planejamento e execução continuam distintos. F24.7/F24.8 e autorização operacional não são encerradas pelo merge #244. Nenhum bug novo foi reproduzido nesta revisão documental.
 
 ### F24.1B — isolamento de ambientes
 
