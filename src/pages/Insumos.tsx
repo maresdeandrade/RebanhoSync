@@ -1,4 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  assertInventoryCommandContext,
+  type InventoryCommandContext,
+} from "@/lib/inventory/inventoryCommandContext";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
@@ -59,7 +63,7 @@ import {
   type InventoryResupplyEvaluation,
 } from "@/lib/inventory/resupplyPolicy";
 import { db } from "@/lib/offline/db";
-import { createGesture } from "@/lib/offline/ops";
+import { createGesture as persistGesture } from "@/lib/offline/ops";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import type {
   Evento,
@@ -349,8 +353,69 @@ function buildLotEditForm(
   };
 }
 
-export default function Insumos() {
+export default function FarmScopedInsumos() {
+  const { activeFarmId, user, session, role, localOwnership } = useAuth();
+  const authenticated = Boolean(
+    session && user && localOwnership?.status === "OWNED",
+  );
+  const context = useMemo(
+    () => ({
+      farmId: activeFarmId,
+      userId: user?.id ?? null,
+      role,
+      authenticated,
+    }),
+    [activeFarmId, user?.id, role, authenticated],
+  );
+  const currentContext = useRef<InventoryCommandContext | null>(context);
+  currentContext.current = context;
+  useLayoutEffect(() => {
+    currentContext.current = context;
+    return () => {
+      currentContext.current = null;
+    };
+  }, [context]);
+  useEffect(() => {
+    refreshVeterinaryProductsCatalog().catch((error) => {
+      console.warn("[insumos] Falha ao atualizar catalogo veterinario", error);
+    });
+  }, []);
+
+  if (!authenticated)
+    return (
+      <EmptyState
+        title="Sessão indisponível"
+        description="Restabeleça a sessão para acessar o estoque local."
+      />
+    );
+  return (
+    <Insumos
+      key={JSON.stringify([activeFarmId, user?.id])}
+      currentContext={currentContext}
+    />
+  );
+}
+
+function Insumos({
+  currentContext,
+}: {
+  currentContext: { current: InventoryCommandContext | null };
+}) {
   const { activeFarmId, role } = useAuth();
+  const capturedContext = currentContext.current!;
+  const createGesture = (
+    farmId: string,
+    ops: Parameters<typeof persistGesture>[1],
+  ) =>
+    persistGesture(farmId, ops, {
+      validateContext: () =>
+        assertInventoryCommandContext(
+          capturedContext,
+          currentContext.current,
+          farmId,
+          ops,
+        ),
+    });
   const [searchParams] = useSearchParams();
   const sourceEventoId = searchParams.get("sourceEventoId");
   const canManage = role === "owner" || role === "manager";
@@ -376,12 +441,6 @@ export default function Insumos() {
   const [savingManualMovement, setSavingManualMovement] = useState(false);
   const [savingConsumption, setSavingConsumption] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
-
-  useEffect(() => {
-    refreshVeterinaryProductsCatalog().catch((error) => {
-      console.warn("[insumos] Falha ao atualizar catalogo veterinario", error);
-    });
-  }, []);
 
   useEffect(() => {
     if (!activeFarmId) return;

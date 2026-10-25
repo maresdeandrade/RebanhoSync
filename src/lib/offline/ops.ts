@@ -1,3 +1,4 @@
+import { assertInventoryFarmContext, getInventoryFarmContextStores } from "@/lib/inventory/inventoryFarmContext";
 import { db } from "./db";
 import { prepareMovementIntents } from "./movement";
 import type {
@@ -159,6 +160,7 @@ function assertAllowedOfflinePushSurface(op: OperationInput) {
 }
 
 type CreateGestureOptions = {
+  validateContext?: () => void;
   sanitarioAgendaV2?: readonly SanitarioAgendaCreateDraftV2[];
   enqueueSanitarioAgendaV2?: boolean;
   clientTxId?: string;
@@ -222,6 +224,8 @@ export const createGesture = async (
   ops_input: OperationInput[],
   options: CreateGestureOptions = {},
 ) => {
+  const { validateContext = () => undefined } = options;
+  validateContext();
   assertMovementWriterBoundary(ops_input);
   const movementTx = options.clientTxId ?? crypto.randomUUID();
   const movement = ops_input.some(op => op.table === "movement_v1")
@@ -273,6 +277,7 @@ export const createGesture = async (
     if (!sameOperationSet) {
       throw new Error("CLIENT_TX_ID_REUSE_CONFLICT");
     }
+    validateContext();
     return client_tx_id;
   }
 
@@ -428,6 +433,7 @@ export const createGesture = async (
         db.queue_gestures,
         db.queue_ops,
         ...getAffectedStores(ops),
+        ...getInventoryFarmContextStores(ops_input),
         ...(movement ? [db.state_animais] : []),
         ...(sanitarioAgendaV2.length > 0
           ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
@@ -436,6 +442,8 @@ export const createGesture = async (
       async () => {
         transactionStage = "write-gesture";
         await movement?.verify();
+        await assertInventoryFarmContext(fazenda_id, ops_input);
+        validateContext();
         await db.queue_gestures.add(gesture);
         transactionStage = "write-operations";
         await db.queue_ops.bulkAdd(queueOps);
@@ -454,6 +462,7 @@ export const createGesture = async (
             sanitarioAgendaV2.map(({ animal }) => animal),
           );
         }
+        validateContext();
       },
     )
     .catch((error) => {

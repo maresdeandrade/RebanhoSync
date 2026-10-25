@@ -101,6 +101,8 @@ async function fetchFirstAccessibleFarmId(userId: string) {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Invalidate in-flight settings/role/metadata reads on an explicit farm or session change.
   const farmContextRevision = useRef(0);
+  const pendingFarmSelection = useRef<number | null>(null);
+  const [changingFarm, setChangingFarm] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [localOwnership, setLocalOwnership] =
     useState<LocalOwnershipDecision | null>(null);
@@ -183,6 +185,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   const refreshSettings = useCallback(async () => {
+    // An explicit selection owns the context until its role/settings settle.
+    if (pendingFarmSelection.current !== null) return;
     const request = farmContextRevision.current;
     const isCurrent = () => request === farmContextRevision.current;
     try {
@@ -298,20 +302,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const setActiveFarm = async (farmId: string) => {
     const request = ++farmContextRevision.current;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user || request !== farmContextRevision.current) return;
-    // Also supersede refreshes begun while getUser was resolving this selection.
-    ++farmContextRevision.current;
+    pendingFarmSelection.current = request;
+    setChangingFarm(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || request !== farmContextRevision.current) return;
+      // Also supersede refreshes begun while getUser was resolving this selection.
+      ++farmContextRevision.current;
 
-    setActiveFarmId(farmId);
-    storeActiveFarmId(farmId);
+      setRole(null);
+      setActiveFarmId(farmId);
+      storeActiveFarmId(farmId);
 
-    await Promise.all([
-      persistActiveFarmToRemote(user.id, farmId),
-      loadFarmContext(user.id, farmId),
-    ]);
+      await Promise.all([
+        persistActiveFarmToRemote(user.id, farmId),
+        loadFarmContext(user.id, farmId),
+      ]);
+    } finally {
+      if (pendingFarmSelection.current === request) {
+        pendingFarmSelection.current = null;
+        setChangingFarm(false);
+      }
+    }
   };
 
   const applyAuthenticatedSession = useCallback(
@@ -319,6 +333,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const ownership = await establishLocalOwnership(nextSession);
       setLocalOwnership(ownership);
       if (ownership.status !== "OWNED") {
+        ++farmContextRevision.current;
+        pendingFarmSelection.current = null;
+        setChangingFarm(false);
         setSession(null);
         return;
       }
@@ -359,6 +376,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       } else {
         ++farmContextRevision.current;
+        pendingFarmSelection.current = null;
+        setChangingFarm(false);
         setSession(null);
         setLocalOwnership(null);
         setActiveFarmId(null);
@@ -380,6 +399,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     ++farmContextRevision.current;
+    pendingFarmSelection.current = null;
+    setChangingFarm(false);
     try {
       await supabase.auth.signOut();
       setLocalOwnership(null);
@@ -402,7 +423,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         session,
         user: session?.user ?? null,
         localOwnership,
-        loading,
+        loading: loading || changingFarm,
         isSuperAdmin,
         activeFarmId,
         role,
