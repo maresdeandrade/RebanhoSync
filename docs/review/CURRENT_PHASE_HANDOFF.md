@@ -1,9 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-10-20
+Atualizado em: 2026-10-25
 Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED apenas no envelope reconnect 1k; produção não provisionada**
 Próxima fase: **Fase 24 — formalizar escopo e critérios para a proposta de inventário estático F24.6A2; nenhuma medição ou otimização iniciada nesta atualização**
-Baseline integrada consultada: `origin/main@27a3bed971639c41c0ca458379a6b9b5f02ef8dc`
+Baseline integrada consultada: `origin/main@20fd5c6fbd7cfbccf1d3db1446cf8a8e3fd60aaa`
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -22,6 +22,31 @@ Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
+
+## Sanitário V2 — continuidade pós-F9 — 25/10/2026
+
+**FATO CONFIRMADO:** F6–F9 pública `CLOSED / INTEGRATED` pelo PR #244 em `0e7f5137`, ancestral do baseline atual acima. Resultado, oito arquivos integrados, checks e limites no [último resultado](./LAST_PHASE_RESULT.md). Publicação histórica e integração Git são operações distintas; nenhuma nova operação de catálogo foi executada. Os relatórios F6–F9 e VF1–VF5 mantêm suas decisões históricas, sem serem reescritos como certificações atuais.
+
+VF1–VF5 já estão integrados pelo PR #242 (`c9155a5`); os commits `4446725` e `fb68d89` são ancestrais de `main`. O [relatório VF5](./SANITARIO_V2_VF5_INTEGRACAO_20261024.md) documenta catálogo com fontes por campo, correção do contexto obsoleto de fazenda e harnesses de recuperação. O código integrado confirma `farmContextRevision` em `src/hooks/useAuth.tsx`, `TechnicalSources` em `src/pages/SanitarioCatalogoV2.tsx` e os guards de planejamento em `src/lib/sanitario/agenda/sanitaryPlanningPolicyV2.ts`.
+
+**Avanço confirmado do PR #245:** [merge `20fd5c6f`](https://github.com/maresdeandrade/RebanhoSync/pull/245), commit `e865181`, integra `pendingFarmSelection`, `changingFarm` e bloqueio de `refreshSettings` durante seleção explícita; limpa papel anterior e encerra/invalida a transição em perda de sessão ou rejeição de ownership. `src/hooks/__tests__/useAuth.farmContext.test.tsx` cobre seleção/RequireFarm, token refresh, falha de papel/retry, expiração e ownership com dependências simuladas. Insumos também ganhou isolamento de snapshots/formulários/comandos e verificação transacional de referências por fazenda em `createGesture`. São entregas implementadas, não pendências a reimplementar. [Required validation #245](https://github.com/maresdeandrade/RebanhoSync/actions/runs/40217452023) e PR description passaram; teste/build aprovados no head `e865181` não equivalem à certificação sanitária integrada proposta abaixo.
+
+**Limites confirmados da evidência:** VF3 exercitou o provider com Auth sintético; VF4 registrou 16 cenários locais com Auth/RLS/worker reais, sem montar `AuthProvider`. Os testes de contexto do #245 ampliam a cobertura automatizada do provider, mas não compõem esse fluxo sanitário com Auth/RLS/worker reais. Isso é cobertura parcial da composição entre UI, sessão e backend, não bug novo demonstrado. Cold start PWA sem shell/assets, crash real de processo e aparelho físico não foram certificados pela VF5. Os 38 diagnósticos TypeScript da triagem VF5 são dívida histórica comprovada, não recontada neste fechamento. Não foi reproduzido novo bug funcional nesta atividade documental; os dois defeitos de CI do PR #244 estão corrigidos e integrados.
+
+**INFERÊNCIA:** compor o provider real com a matriz local de recuperação é o próximo incremento técnico de maior utilidade antes de propor certificação completa/rollout; a cobertura separada não comprova essa composição. Curadoria dos produtos é uma trilha independente, sem autorização automática decorrente da F9. A prioridade proposta está nas [pendências pós-F9](./OPEN_REVIEW_ITEMS.md#sanitário-v2--pendências-pós-f9).
+
+### Próxima execução recomendada — certificação integrada de sessão e recuperação
+
+Proposta de escopo para a trilha Sanitário V2, **não iniciada nem classificada READY/CLOSED**. Não substitui F24.6A2, não inicia F24.7 inteira e não autoriza rollout.
+
+- **Objetivo:** caracterizar a composição `AuthProvider` já protegido pelo #245 → planejamento manual → fila/worker → backend local real em expiração/refresh de sessão e troca A→B com respostas atrasadas. Não reimplementar os guards de seleção/settings/papel ou o isolamento de Insumos já integrados.
+- **Áreas-alvo:** `src/hooks/useAuth.tsx` e `src/hooks/__tests__/useAuth.farmContext.test.tsx` como referências implementadas; `e2e/fixtures/sanitary-planning.tsx`, `e2e/sanitary-planning.spec.ts`; `tests/codex/sanitario-v2-vf4.fixture.mjs` e o harness local existente. Inspecionar callers antes de definir o patch; priorizar composição dos testes. Correção funcional dependerá de defeito reproduzido e escopo explícito.
+- **Dependências:** nova autorização para execução/provisionamento de backend exclusivamente local descartável; Docker/CLI/browser disponíveis; duas fazendas e usuários sintéticos; baseline congelado pós-fetch e isolamento das worktrees concorrentes. Preservar os 65 migrations usados historicamente sem assumir que a contagem futura será igual.
+- **Critérios de aceite:** fluxo real via provider; contexto B não recebe settings/papel/dados tardios de A; expiração e recuperação preservam identidade da intenção e da fila; replay/lost ACK não duplicam registros; rejeições não são convertidas em sucesso; UI, Dexie e PostgreSQL conferidos no mesmo cenário; controle negativo de autorização/RLS; cleanup e gates de teste OFF; evidência sanitizada por cenário e checks focados do patch.
+- **Riscos:** timing de Auth ainda não caracterizado nessa composição, interferência entre harnesses e confusão entre validação local e rollout. Restringir rede a loopback e não usar ambiente compartilhado. PWA cold start/crash físico e correção global TypeScript ficam fora desse incremento.
+- **Paralelismo possível:** inventário documental de fontes/curadoria pode avançar em worktree separada, sem editar provider, harnesses, payloads ou recibos. Backend/portas e arquivos comuns de E2E ficam sob um único executor; não executar duas matrizes no mesmo ambiente. Nenhuma delegação foi iniciada neste fechamento.
+
+**Prompt de continuidade:** na `origin/main` atual, confirme a presença dos merges #244 e #245, leia este bloco e as pendências pós-F9. Após autorização específica para testes com backend local descartável, delimite a matriz `AuthProvider` real + Auth/RLS/worker para sessão expirada/recuperada e farm-switch A→B com resposta tardia, preservando e reutilizando os guards/testes do #245. Não reimplemente o isolamento de Insumos. Reutilize os harnesses existentes em worktree isolada; não toque remoto, catálogo F6–F9, migrations ou gates operacionais. Priorize caracterização; só corrija runtime mediante reprodução e autorização de escopo. Entregue diff mínimo, evidências por cenário, cleanup e validação focada, sem declarar rollout liberado.
 
 ## F24.6A1-H — registro histórico da preparação (13/10/2026; superado pela integração)
 
