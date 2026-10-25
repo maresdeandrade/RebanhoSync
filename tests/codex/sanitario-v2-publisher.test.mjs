@@ -207,6 +207,31 @@ describe("publisher remote TLS connection", () => {
     expect(connectionArgs).toEqual(["apply", false, projectRef, { commercialProductsOnly: true }]);
   });
 
+  it.each([
+    ["nao-existe.json", "REVIEW_CANDIDATE_CANNOT_APPLY", 0],
+    ["arbitrary/SANITARIO_V2_F6_PRODUCTS_REVIEW.json", "REVIEW_CANDIDATE_CANNOT_APPLY", 0],
+    ["docs/review/evidence/../arbitrary.json", "REVIEW_CANDIDATE_CANNOT_APPLY", 0],
+    ["docs/review/evidence/SANITARIO_V2_F6_PRODUCTS_REVIEW.json", "COMMERCIAL_REVIEW_DIGEST_MISMATCH", 1],
+  ])("blocks untrusted commercial apply input %s before connection", async (reviewPath, error, expectedReads) => {
+    const review = JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_F6_PRODUCTS_REVIEW.json", "utf8"));
+    review.payload.product_rows[0].nome_comercial += " adulterado";
+    let reads = 0, connections = 0;
+    const mainSource = publisherSource.slice(
+      publisherSource.indexOf("async function main()"), publisherSource.indexOf("const INVOKED_AS_SCRIPT"),
+    );
+    const main = runInNewContext(`${privateSource}\n${mainSource}\nconnectDb = onConnect; main;`, {
+      ...contract, path, existsSync, Date, URL, createHash,
+      process: { cwd: () => process.cwd(), argv: ["node", "publisher", "--apply", "--review-candidate", reviewPath],
+        env: { SANITARIO_PRODUCTS_CONFIRM: review.content_sha256,
+          SANITARIO_PRODUCTS_AUTHORIZATION_REF: "SYNTHETIC-TEST-AUTHORIZATION" } },
+      readFileSync: () => { reads++; return JSON.stringify(review); },
+      onConnect: () => { connections++; throw new Error("UNEXPECTED_CONNECTION"); },
+    });
+    await expect(main()).rejects.toThrow(error);
+    expect(reads).toBe(expectedReads);
+    expect(connections).toBe(0);
+  });
+
   it("preserves the local disposable review path", async () => {
     const { rawConnect, calls } = sandbox(undefined);
     await rawConnect("dry-run", true);

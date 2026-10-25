@@ -1449,6 +1449,10 @@ async function main() {
   const reviewPath = reviewIndex >= 0 ? args[reviewIndex + 1] : null;
   if (reviewIndex >= 0) assert(reviewPath && !reviewPath.startsWith("--"), usage());
   const mode = parseMode(reviewIndex >= 0 ? args.filter((_, index) => index !== reviewIndex && index !== reviewIndex + 1) : args);
+  if (reviewPath && mode === "apply") {
+    assert(path.resolve(reviewPath) === path.join(ROOT, "docs/review/evidence/SANITARIO_V2_F6_PRODUCTS_REVIEW.json"),
+      "REVIEW_CANDIDATE_CANNOT_APPLY");
+  }
   const payload = reviewPath ? JSON.parse(readFileSync(reviewPath, "utf8")) : readJsonPayload();
   const commercialProductReview = Boolean(reviewPath) &&
     payload.artifact === "sanitario_commercial_products_v2_review_candidates";
