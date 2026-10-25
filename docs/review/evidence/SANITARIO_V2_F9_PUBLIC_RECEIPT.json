@@ -1,0 +1,39 @@
+{
+  "artifact": "sanitario_v2_f6_f9_public_receipt",
+  "evidence_scope": "historical_local_evidence_no_remote_revalidation",
+  "verdict": "PUBLISHED_AND_VERIFIED",
+  "payload_file_sha256": "c2ff9fb6b3df3cfc6df668a1fdccd374a3a0ed39abc7f6636d6622c3b7ff159a",
+  "payload_content_sha256": "a777233b2d8083d4d1b89c93947df74cec210a9ef8571576dbd35dcbac3b84e1",
+  "publisher_sha256": "61cf2a8076746c255af6153b54ef4a040e640ef16dcc9dd4434037ae7b4b65f5",
+  "receipt": {
+    "acknowledged": true,
+    "ack": "F6 commercial products apply OK",
+    "exit_code": 0,
+    "create": 39,
+    "update": 0,
+    "skip": 0,
+    "reject": 0
+  },
+  "products_total": 42,
+  "checks": {
+    "tls_verified": true,
+    "imported_products_persisted": true,
+    "previous_products_preserved": true,
+    "products_active": true,
+    "no_duplicates": true,
+    "pending_curatorial_review": true,
+    "imported_products_review_only": true,
+    "no_operational_approval": true,
+    "read_only_convergence": true,
+    "protected_state_unchanged": true,
+    "schema_contract_unchanged": true,
+    "payload_unchanged": true,
+    "publisher_unchanged": true
+  },
+  "limitations": [
+    "Resumo derivado do recibo operacional original preservado; sem nova consulta remota nesta correcao.",
+    "Cadastro comercial de revisao; nao comprova homologacao regulatoria, registro vigente, dose, via ou carencia.",
+    "Nao autoriza selecao automatica de produto, planejamento ou execucao operacional.",
+    "Comparacoes de snapshots nao auditam transacoes concorrentes intermediarias; nao houve replay remoto de escrita."
+  ]
+}
