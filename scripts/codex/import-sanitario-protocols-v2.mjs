@@ -4,6 +4,7 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
+import { checkServerIdentity } from "node:tls";
 import pg from "pg";
 import { classDeltaDigest, prepareClassDelta } from "./prepare-sanitario-class-delta-v2.mjs";
 import { BASELINE_PATH as CLOSURE_BASELINE_PATH, prepareClosureCandidates, prepareClosureDelta, prepareClosureBootstrap, CLOSURE_DELTA_KIND } from "./prepare-sanitario-closure-v2.mjs";
@@ -80,6 +81,7 @@ function usage() {
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run",
     "  --validate/--dry-run aceitam --review-candidate <arquivo>; dry-run de candidato exige banco local descartavel.",
     "  --validate/--dry-run/--apply aceitam --incremental <delta>; apply exige autorizacao e SANITARIO_DELTA_CONFIRM=<content_sha256>.",
+    "  --review-candidate <arquivo> --apply so e aceito para produtos comerciais (sanitario_commercial_products_v2_review_candidates); exige SANITARIO_PRODUCTS_CONFIRM=<content_sha256> e SANITARIO_PRODUCTS_AUTHORIZATION_REF.",
     `  ALLOW_SANITARIO_IMPORT=1 SANITARIO_IMPORT_CONFIRM=${EXPECTED.artifactVersion} node scripts/codex/import-sanitario-protocols-v2.mjs --apply`,
     "  Em banco remoto, tambem exige ALLOW_SANITARIO_REMOTE_IMPORT=1.",
   ].join("\n");
@@ -368,6 +370,67 @@ function validateCanonicalPayload(payload) {
   return contract.data;
 }
 
+function commercialProductReviewDigest(payload) {
+  const { content_sha256, ...content } = payload;
+  return createHash("sha256").update(stableStringify(content)).digest("hex");
+}
+
+function validateCommercialProductReviewPayload(payload) {
+  const { data } = validateCanonicalTechnicalContract(payload);
+  assert(payload.artifact === "sanitario_commercial_products_v2_review_candidates", "COMMERCIAL_REVIEW_ARTIFACT_REQUIRED");
+  assert(payload.artifact_version === CANONICAL_ARTIFACT_VERSION, "COMMERCIAL_REVIEW_ARTIFACT_VERSION_MISMATCH");
+  assert(payload.execute_import === false && payload.approved === false && payload.review_only === true,
+    "COMMERCIAL_REVIEW_ONLY_REQUIRED");
+  assert(payload.import_gate?.import_real_authorized === false && payload.import_gate?.remote_write_authorized === false &&
+    payload.import_gate?.regulatory_confirmed === false && payload.import_gate?.authorization_reference == null,
+  "COMMERCIAL_REVIEW_IMPORT_GATE_MUST_REMAIN_CLOSED");
+  assert(payload.content_sha256 === commercialProductReviewDigest(payload), "COMMERCIAL_REVIEW_DIGEST_MISMATCH");
+  assert(payload.counts?.products === 39 && data.product_rows.length === 39, "COMMERCIAL_REVIEW_EXACT_39_PRODUCTS_REQUIRED");
+  const heldNames = new Set((payload.held ?? []).map((product) => product.nome_comercial));
+  assert(payload.counts?.held === 3 && heldNames.size === 3 &&
+    ["Fortress 8", "Lepto-Bac 6", "Valbazen 10 Cobalto"].every((name) => heldNames.has(name)),
+  "COMMERCIAL_REVIEW_HELD_SET_MISMATCH");
+  assert(payload.source_artifacts?.candidate_json?.sha256 && /^[0-9a-f]{64}$/.test(payload.source_artifacts.candidate_json.sha256),
+    "COMMERCIAL_REVIEW_SOURCE_JSON_DIGEST_REQUIRED");
+  assert(payload.source_artifacts?.decision_csv?.sha256 && /^[0-9a-f]{64}$/.test(payload.source_artifacts.decision_csv.sha256),
+    "COMMERCIAL_REVIEW_DECISION_CSV_DIGEST_REQUIRED");
+
+  for (const [collection, entries] of Object.entries(data)) {
+    if (collection !== "product_rows" && collection !== "memberRejections") {
+      assert(entries.length === 0, `COMMERCIAL_REVIEW_COLLECTION_FORBIDDEN:${collection}`);
+    }
+  }
+  assert(data.product_rows.length > 0 && data.memberRejections.length === 0,
+    "COMMERCIAL_REVIEW_PRODUCTS_REQUIRED_OR_FORBIDDEN_REJECTIONS_PRESENT");
+
+  const lotCodes = new Set();
+  const naturalKeys = new Set();
+  const excludedCommercialNames = new Set(["fortress 8", "lepto-bac 6", "valbazen 10 cobalto"]);
+  for (const [index, product] of data.product_rows.entries()) {
+    const pathLabel = `product_rows[${index}]`;
+    assert(product.status_curatorial === "precisa_validar", `${pathLabel}:COMMERCIAL_REVIEW_STATUS_REQUIRED`);
+    assert(product.registro_orgao == null && product.registro_numero == null, `${pathLabel}:OFFICIAL_REGISTRATION_MUST_REMAIN_NULL`);
+    assert(product.principio_ativo == null && product.apresentacao == null, `${pathLabel}:UNVERIFIED_TECHNICAL_FIELDS_MUST_REMAIN_NULL`);
+    const metadata = product.metadata;
+    assert(metadata?.review_only === true && metadata.registration_current_validity === "unknown",
+      `${pathLabel}:REGULATORY_REVIEW_METADATA_REQUIRED`);
+    assert(metadata.approved_for_catalog === false && metadata.operational_authorization === false &&
+      metadata.allows_agenda_auto === false && metadata.automatic_product_selection_authorized === false,
+    `${pathLabel}:OPERATIONAL_FLAGS_MUST_REMAIN_DISABLED`);
+    assert(typeof metadata.source_url === "string" && /^https?:\/\//.test(metadata.source_url),
+      `${pathLabel}:RESEARCH_SOURCE_REQUIRED`);
+    assert(typeof metadata.research_lot_code === "string" && !lotCodes.has(metadata.research_lot_code),
+      `${pathLabel}:DUPLICATE_OR_MISSING_RESEARCH_LOT_CODE`);
+    lotCodes.add(metadata.research_lot_code);
+    const normalizedName = product.nome_comercial.trim().replace(/\s+/g, " ").toLocaleLowerCase("pt-BR");
+    assert(!excludedCommercialNames.has(normalizedName), `${pathLabel}:HELD_PRODUCT_INCLUDED`);
+    const naturalKey = [normalizedName, product.registro_orgao ?? "", product.registro_numero ?? ""].join("|");
+    assert(!naturalKeys.has(naturalKey), `${pathLabel}:DUPLICATE_COMMERCIAL_NATURAL_KEY`);
+    naturalKeys.add(naturalKey);
+  }
+  return data;
+}
+
 function readSupabaseStatusEnv() {
   if (process.env.DB_URL?.trim()) return { DB_URL: process.env.DB_URL.trim() };
   const output = execFileSync("supabase", ["status", "-o", "env"], {
@@ -450,9 +513,14 @@ function assertApplyAuthorized(dbUrl) {
   return target;
 }
 
-async function connectDb(mode, reviewOnly = false, incrementalProjectRef = null) {
+async function connectDb(mode, reviewOnly = false, incrementalProjectRef = null, { commercialProductsOnly = false } = {}) {
+  if (commercialProductsOnly) {
+    assert(mode === "apply" && process.env.DB_URL?.trim(), "COMMERCIAL_DB_URL_REQUIRED");
+    assert(/^[a-z0-9]{20}$/.test(incrementalProjectRef ?? ""), "COMMERCIAL_PROJECT_REF_REQUIRED");
+  }
   const env = readSupabaseStatusEnv();
   const target = describeDatabase(env.DB_URL);
+  if (commercialProductsOnly) assert(!target.local, "COMMERCIAL_REMOTE_DATABASE_REQUIRED");
   if (incrementalProjectRef) {
     const url = new URL(env.DB_URL);
     assert(!url.search, "INCREMENTAL_DATABASE_OPTIONS_FORBIDDEN");
@@ -463,8 +531,30 @@ async function connectDb(mode, reviewOnly = false, incrementalProjectRef = null)
   // pg connection-string query options can override the URL hostname.
   if (reviewOnly) assert(target.local && !new URL(env.DB_URL).search, "REVIEW_CANDIDATE_REQUIRES_LOCAL_DATABASE");
   if (mode === "apply") assertApplyAuthorized(env.DB_URL);
-  const client = new Client({ connectionString: env.DB_URL });
-  await client.connect();
+  const config = { connectionString: env.DB_URL };
+  if (!target.local) {
+    const url = new URL(env.DB_URL);
+    // pg parses URL options after config and can replace both the host and SSL.
+    assert(!url.search && !url.hash, "REMOTE_DATABASE_OPTIONS_FORBIDDEN");
+    assert(url.username && url.password, "REMOTE_DATABASE_CREDENTIALS_REQUIRED");
+    // Use Node's trusted CA roots (including NODE_EXTRA_CA_CERTS when configured).
+    // Explicit options override PGSSLMODE; verify the direct/pooler hostname too.
+    config.ssl = { rejectUnauthorized: true, servername: target.host, checkServerIdentity };
+  }
+  const client = new Client(config);
+  try {
+    await client.connect();
+  } catch (error) {
+    await client.end().catch(() => {});
+    if (!target.local) fail("REMOTE_DATABASE_CONNECTION_FAILED");
+    throw error;
+  }
+  // The client-facing socket is the TLS evidence, including with Session Pooler.
+  // pg_stat_ssl behind a pooler describes a different connection.
+  if (!target.local && !(client.connection?.stream?.encrypted === true && client.connection.stream.authorized === true)) {
+    await client.end().catch(() => {});
+    fail("REMOTE_DATABASE_TLS_NOT_VERIFIED");
+  }
   return { client, target };
 }
 
@@ -1053,7 +1143,7 @@ async function applyImport(client) {
 }
 
 // Private engine: all production calls must pass through the authorized entrypoint.
-async function applyTransaction(client, data, { incremental = null, bootstrap = null } = {}) {
+async function applyTransaction(client, data, { incremental = null, bootstrap = null, commercialProductsOnly = false } = {}) {
   await client.query("begin");
   try {
     await client.query("set local lock_timeout = '5s'");
@@ -1078,6 +1168,11 @@ async function applyTransaction(client, data, { incremental = null, bootstrap = 
     const preserved = incremental ? await captureIncrementalProtectedState(client, incremental) : null;
     const plan = await buildPlan(client, data, { lockRows: true, incremental });
     assertPublishablePlan(plan);
+    if (commercialProductsOnly) {
+      const updates = plan.filter((operation) => operation.collection === "product_rows" && operation.action === "update");
+      assert(updates.length === 0,
+        `PRODUCTS_APPLY_UPDATE_FORBIDDEN: ${stableStringify(updates.map(({ key, reason }) => ({ key, reason })))}`);
+    }
     for (const operation of plan) await writeOperation(client, operation);
     assertConvergedPlan(await buildPlan(client, data, { lockRows: true, incremental }));
     const receipt = bootstrap ? await bootstrapInitialCatalog(client, bootstrap, incremental.import_gate.authorization_reference) : null;
@@ -1354,27 +1449,43 @@ async function main() {
   const reviewPath = reviewIndex >= 0 ? args[reviewIndex + 1] : null;
   if (reviewIndex >= 0) assert(reviewPath && !reviewPath.startsWith("--"), usage());
   const mode = parseMode(reviewIndex >= 0 ? args.filter((_, index) => index !== reviewIndex && index !== reviewIndex + 1) : args);
-  assert(!reviewPath || mode !== "apply", "REVIEW_CANDIDATE_CANNOT_APPLY");
   const payload = reviewPath ? JSON.parse(readFileSync(reviewPath, "utf8")) : readJsonPayload();
+  const commercialProductReview = Boolean(reviewPath) &&
+    payload.artifact === "sanitario_commercial_products_v2_review_candidates";
   if (reviewPath) assert(payload.review_only === true && payload.import_gate?.import_real_authorized === false,
     "REVIEW_ONLY_ARTIFACT_REQUIRED");
-  if (mode === "apply") assertApplyGate(payload);
+  if (mode === "apply") {
+    if (commercialProductReview) {
+      assert(process.env.SANITARIO_PRODUCTS_CONFIRM === payload.content_sha256,
+        `Products apply bloqueado: defina SANITARIO_PRODUCTS_CONFIRM=${payload.content_sha256}.`);
+      const reference = process.env.SANITARIO_PRODUCTS_AUTHORIZATION_REF;
+      assert(typeof reference === "string" && reference.trim().length >= 10,
+        "Products apply bloqueado: defina SANITARIO_PRODUCTS_AUTHORIZATION_REF com referencia explicita.");
+    } else {
+      assert(!reviewPath, "REVIEW_CANDIDATE_CANNOT_APPLY");
+      assertApplyGate(payload);
+    }
+  }
   const closureReview = Boolean(reviewPath) && payload.artifact === "sanitario_closure_review_candidates";
   if (closureReview) {
     const expected = prepareClosureCandidates(JSON.parse(readFileSync(CLOSURE_BASELINE_PATH, "utf8")).catalog, payload.identities);
     assert(!isDifferent(payload, expected), "CLOSURE_REVIEW_PREPARATION_MISMATCH");
   }
-  const data = closureReview ? validateCanonicalTechnicalContract(payload).data : validateCanonicalPayload(payload);
+  const data = commercialProductReview
+    ? validateCommercialProductReviewPayload(payload)
+    : closureReview ? validateCanonicalTechnicalContract(payload).data : validateCanonicalPayload(payload);
 
   if (mode === "validate") {
-    console.log("12G validate OK");
+    console.log(commercialProductReview ? "F6 commercial product validate OK" : "12G validate OK");
     console.log(
       JSON.stringify(
         {
           payload: reviewPath ? "review candidate (not authorized for import)" : PAYLOAD_REL,
+          artifact: payload.artifact,
           artifact_version: payload.artifact_version,
           canonical_validation_complete: PIPELINE_STATUS.CANONICAL_VALIDATION_COMPLETE,
           publisher_complete: PIPELINE_STATUS.PUBLISHER_COMPLETE,
+          products: data.product_rows.length,
           protocols: data.protocol_rows.length,
           items: data.protocol_item_rows.length,
           sources: data.source_rows.length,
@@ -1392,7 +1503,15 @@ async function main() {
     return;
   }
 
-  const connection = await connectDb(mode, Boolean(reviewPath));
+  const commercialProjectRef = commercialProductReview && mode === "apply"
+    ? (() => {
+      const ref = readFileSync(path.join(ROOT, "supabase/.temp/project-ref"), "utf8").trim();
+      assert(/^[a-z0-9]{20}$/.test(ref), "COMMERCIAL_PROJECT_REF_REQUIRED: projeto vinculado ausente em supabase/.temp/project-ref.");
+      return ref;
+    })()
+    : null;
+  const connection = await connectDb(mode, Boolean(reviewPath) && mode !== "apply", commercialProjectRef,
+    { commercialProductsOnly: commercialProductReview && mode === "apply" });
   const { client } = connection;
   try {
     console.log(
@@ -1407,12 +1526,25 @@ async function main() {
       return;
     }
 
-    const preflightPlan = await buildPlan(client, data);
-    assertPublishablePlan(preflightPlan);
-    printPlan("apply-plan", preflightPlan);
-    const counts = await applyImport(client);
-    console.log("12G apply OK");
-    console.log(`summary ${JSON.stringify(counts)}`);
+    if (commercialProductReview) {
+      const plan = await buildPlan(client, data);
+      assertPublishablePlan(plan);
+      printPlan("apply-plan", plan);
+      const updates = plan.filter((op) => op.collection === "product_rows" && op.action === "update");
+      assert(updates.length === 0,
+        `PRODUCTS_APPLY_UPDATE_FORBIDDEN: ${stableStringify(updates.map(({ key, reason }) => ({ key, reason })))}`);
+      const counts = await applyTransaction(client, data, { commercialProductsOnly: true });
+      console.log("F6 commercial products apply OK");
+      console.log(JSON.stringify({ content_sha256: payload.content_sha256, project_ref: commercialProjectRef,
+        authorization_reference: process.env.SANITARIO_PRODUCTS_AUTHORIZATION_REF, ...counts }));
+    } else {
+      const preflightPlan = await buildPlan(client, data);
+      assertPublishablePlan(preflightPlan);
+      printPlan("apply-plan", preflightPlan);
+      const counts = await applyImport(client);
+      console.log("12G apply OK");
+      console.log(`summary ${JSON.stringify(counts)}`);
+    }
   } finally {
     await client.end();
   }

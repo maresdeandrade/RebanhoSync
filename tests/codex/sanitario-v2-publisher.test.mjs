@@ -3,6 +3,9 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { runInNewContext } from "node:vm";
+import { checkServerIdentity } from "node:tls";
+import { createHash } from "node:crypto";
+import pg from "pg";
 import * as contract from "../../scripts/codex/sanitario-v2-contract.mjs";
 import * as publicPublisher from "../../scripts/codex/import-sanitario-protocols-v2.mjs";
 import {
@@ -40,6 +43,176 @@ const applyTransactionForTest = runInNewContext(`${privateSource}\napplyTransact
 });
 const applyImportForTest = runInNewContext(`${privateSource}\napplyImport;`, {
   ...contract, process, path, existsSync, readFileSync: readHistoricalInput, Date,
+});
+
+describe("publisher remote TLS connection", () => {
+  // Synthetic 20-character reference matching the production format only.
+  const projectRef = "syntheticproject0001";
+  // Synthetic credential, never used to connect to a server.
+  const directUrl = `postgresql://postgres:synthetic-password@db.${projectRef}.supabase.co:5432/postgres`;
+  const poolerUrl = `postgresql://postgres.${projectRef}:synthetic-password@aws-0-sa-east-1.pooler.supabase.com:5432/postgres`;
+
+  function sandbox(dbUrl, { stream = { encrypted: true, authorized: true }, connectError = null, env = {} } = {}) {
+    const calls = { fallback: 0, clients: [], connected: 0, ended: 0 };
+    const connect = runInNewContext(`${privateSource}\nconnectDb;`, {
+      ...contract, path, existsSync, readFileSync, Date, URL, checkServerIdentity,
+      process: { cwd: () => process.cwd(), env: {
+        DB_URL: dbUrl, ALLOW_SANITARIO_IMPORT: "1", ALLOW_SANITARIO_REMOTE_IMPORT: "1",
+        SANITARIO_IMPORT_CONFIRM: contract.CANONICAL_ARTIFACT_VERSION, ...env,
+      } },
+      execFileSync: () => { calls.fallback++; return 'DB_URL="postgresql://localhost/test"'; },
+      Client: class {
+        constructor(config) { calls.clients.push(config); this.connection = { stream }; }
+        async connect() { calls.connected++; if (connectError) throw connectError; }
+        async end() { calls.ended++; }
+      },
+    });
+    return { calls, connect: () => connect("apply", false, projectRef, { commercialProductsOnly: true }), rawConnect: connect };
+  }
+
+  it.each([undefined, "", "   "])("requires explicit DB_URL without CLI fallback (%s)", async (url) => {
+    const { connect, calls } = sandbox(url);
+    await expect(connect()).rejects.toThrow("COMMERCIAL_DB_URL_REQUIRED");
+    expect(calls.fallback).toBe(0);
+    expect(calls.clients).toHaveLength(0);
+  });
+
+  it.each([
+    ["postgresql://postgres:synthetic-password@localhost:54322/postgres", "COMMERCIAL_REMOTE_DATABASE_REQUIRED"],
+    ["postgresql://postgres:synthetic-password@127.0.0.1:54322/postgres", "COMMERCIAL_REMOTE_DATABASE_REQUIRED"],
+    ["postgresql://postgres:synthetic-password@db.otherproject.supabase.co/postgres", "INCREMENTAL_PROJECT_TARGET_MISMATCH"],
+    [poolerUrl.replace(`postgres.${projectRef}`, "postgres.otherproject"), "INCREMENTAL_PROJECT_TARGET_MISMATCH"],
+    [directUrl + "?sslmode=no-verify", "INCREMENTAL_DATABASE_OPTIONS_FORBIDDEN"],
+    [directUrl + "?host=localhost", "INCREMENTAL_DATABASE_OPTIONS_FORBIDDEN"],
+    [directUrl + "#sslmode=disable", "REMOTE_DATABASE_OPTIONS_FORBIDDEN"],
+    [poolerUrl.replace(".pooler.supabase.com", ".pooler.supabase.com.evil.invalid"), "INCREMENTAL_PROJECT_TARGET_MISMATCH"],
+    [directUrl.replace("postgres:synthetic-password@", "postgres@"), "REMOTE_DATABASE_CREDENTIALS_REQUIRED"],
+    [directUrl.replace("postgres:synthetic-password@", ""), "REMOTE_DATABASE_CREDENTIALS_REQUIRED"],
+    ["not-a-database-url", "DB_URL invalida"],
+  ])("rejects unsafe destination or missing credentials before creating a client (%s)", async (url, message) => {
+    const { connect, calls } = sandbox(url);
+    await expect(connect()).rejects.toThrow(message);
+    expect(calls.clients).toHaveLength(0);
+    expect(calls.fallback).toBe(0);
+  });
+
+  it.each([directUrl, poolerUrl])("requires verified TLS independently of PGSSLMODE (%s)", async (url) => {
+    const { connect, calls } = sandbox(url, { env: { PGSSLMODE: "no-verify" } });
+    const result = await connect();
+    expect(result.target.local).toBe(false);
+    expect(calls.fallback).toBe(0);
+    const config = calls.clients[0];
+    // Parse with the installed driver too: URL parameters must not override SSL.
+    const actualClient = new pg.Client(config);
+    expect(actualClient.ssl.rejectUnauthorized).toBe(true);
+    expect(actualClient.ssl.servername).toBe(new URL(url).hostname);
+    expect(actualClient.ssl.checkServerIdentity).toBe(checkServerIdentity);
+    const host = new URL(url).hostname;
+    expect(config.ssl.checkServerIdentity(host, { subjectaltname: `DNS:${host}` })).toBeUndefined();
+    expect(config.ssl.checkServerIdentity(host, { subjectaltname: "DNS:wrong.invalid" })).toBeInstanceOf(Error);
+    expect(calls.connected).toBe(1);
+  });
+
+  it.each([{ encrypted: false, authorized: true }, { encrypted: true, authorized: false }, {}])(
+    "rejects an unverified client TLS socket and closes it (%j)", async (stream) => {
+      const { connect, calls } = sandbox(directUrl, { stream });
+      await expect(connect()).rejects.toThrow("REMOTE_DATABASE_TLS_NOT_VERIFIED");
+      expect(calls.ended).toBe(1);
+    },
+  );
+
+  it("does not disclose driver errors containing credentials", async () => {
+    const { connect, calls } = sandbox(directUrl, { connectError: new Error(`authentication failed: ${directUrl}`) });
+    await expect(connect()).rejects.toThrow(/^REMOTE_DATABASE_CONNECTION_FAILED$/);
+    expect(calls.ended).toBe(1);
+  });
+
+  it("does not use ambient credentials when DB_URL omits its password", async () => {
+    const { connect, calls } = sandbox(directUrl.replace(":synthetic-password", ""), {
+      env: { PGPASSWORD: "ambient-synthetic-password", PGUSER: "postgres" },
+    });
+    await expect(connect()).rejects.toThrow("REMOTE_DATABASE_CREDENTIALS_REQUIRED");
+    expect(calls.clients).toHaveLength(0);
+  });
+
+  it("requires a project reference for commercial apply", async () => {
+    const { rawConnect, calls } = sandbox(directUrl);
+    await expect(rawConnect("apply", false, null, { commercialProductsOnly: true }))
+      .rejects.toThrow("COMMERCIAL_PROJECT_REF_REQUIRED");
+    expect(calls.clients).toHaveLength(0);
+  });
+
+  it.each([
+    { ALLOW_SANITARIO_IMPORT: "0" },
+    { ALLOW_SANITARIO_REMOTE_IMPORT: "0" },
+    { SANITARIO_IMPORT_CONFIRM: "wrong-version" },
+  ])("preserves the independent apply authorization gates (%j)", async (env) => {
+    const { connect, calls } = sandbox(directUrl, { env });
+    await expect(connect()).rejects.toThrow(/bloqueado/);
+    expect(calls.clients).toHaveLength(0);
+    expect(calls.fallback).toBe(0);
+  });
+
+  it.each(["CERT_HAS_EXPIRED", "SELF_SIGNED_CERT_IN_CHAIN", "ERR_TLS_CERT_ALTNAME_INVALID"])(
+    "closes failed TLS connections without retry or fallback (%s)", async (code) => {
+      const { connect, calls } = sandbox(poolerUrl, {
+        connectError: Object.assign(new Error("synthetic TLS verification failure"), { code }),
+      });
+      await expect(connect()).rejects.toThrow(/^REMOTE_DATABASE_CONNECTION_FAILED$/);
+      expect(calls.connected).toBe(1);
+      expect(calls.ended).toBe(1);
+      expect(calls.fallback).toBe(0);
+    },
+  );
+
+  it.each(["dry-run", "apply"])("preserves canonical local %s without requiring a commercial destination", async (mode) => {
+    const { rawConnect, calls } = sandbox(undefined);
+    const result = await rawConnect(mode);
+    expect(result.target.local).toBe(true);
+    expect(calls.fallback).toBe(1);
+    expect(calls.clients[0].ssl).toBeUndefined();
+  });
+
+  it.each([directUrl, poolerUrl])("preserves incremental remote dry-run with verified TLS (%s)", async (url) => {
+    const { rawConnect, calls } = sandbox(url, { env: { ALLOW_SANITARIO_IMPORT: "0", ALLOW_SANITARIO_REMOTE_IMPORT: "0" } });
+    await rawConnect("dry-run", false, projectRef);
+    expect(calls.clients[0].ssl.rejectUnauthorized).toBe(true);
+    expect(calls.clients[0].ssl.checkServerIdentity).toBe(checkServerIdentity);
+    expect(calls.fallback).toBe(0);
+  });
+
+  it.each([directUrl, poolerUrl])("continues to reject remote disposable review (%s)", async (url) => {
+    const { rawConnect, calls } = sandbox(url);
+    await expect(rawConnect("dry-run", true)).rejects.toThrow("REVIEW_CANDIDATE_REQUIRES_LOCAL_DATABASE");
+    expect(calls.clients).toHaveLength(0);
+  });
+
+  it("wires the commercial entrypoint to the explicit remote connection guard", async () => {
+    const reviewPath = "docs/review/evidence/SANITARIO_V2_F6_PRODUCTS_REVIEW.json";
+    const review = JSON.parse(readFileSync(reviewPath, "utf8"));
+    let connectionArgs;
+    const mainSource = publisherSource.slice(
+      publisherSource.indexOf("async function main()"), publisherSource.indexOf("const INVOKED_AS_SCRIPT"),
+    );
+    const main = runInNewContext(`${privateSource}\n${mainSource}\nconnectDb = onConnect; main;`, {
+      ...contract, path, existsSync, Date, URL, createHash,
+      process: { cwd: () => process.cwd(), argv: ["node", "publisher", "--apply", "--review-candidate", reviewPath],
+        env: { SANITARIO_PRODUCTS_CONFIRM: review.content_sha256,
+          SANITARIO_PRODUCTS_AUTHORIZATION_REF: "SYNTHETIC-TEST-AUTHORIZATION" } },
+      readFileSync: (file, ...options) => String(file).replaceAll("\\", "/").endsWith("supabase/.temp/project-ref")
+        ? projectRef : readFileSync(file, ...options),
+      onConnect: (...args) => { connectionArgs = args; throw new Error("STOP_BEFORE_CONNECTION"); },
+    });
+    await expect(main()).rejects.toThrow("STOP_BEFORE_CONNECTION");
+    expect(connectionArgs).toEqual(["apply", false, projectRef, { commercialProductsOnly: true }]);
+  });
+
+  it("preserves the local disposable review path", async () => {
+    const { rawConnect, calls } = sandbox(undefined);
+    await rawConnect("dry-run", true);
+    expect(calls.fallback).toBe(1);
+    expect(calls.clients[0].ssl).toBeUndefined();
+  });
 });
 const otherId = "00000000-0000-4000-8000-000000000001";
 const farmA = "00000000-0000-4000-8000-000000000002";
@@ -905,6 +1078,64 @@ describe("sanitario v2 publisher P1", () => {
     for (const collection of ["product_class_rows", "product_class_group_rows", "protocol_rows"]) {
       expect(plan.some((op) => op.collection === collection && op.action === "reject")).toBe(true);
     }
+  });
+
+  it("creates 39 F6 commercial products beside three existing rows and replays as skips under the transactional guard", async () => {
+    const reviewPayload = JSON.parse(readFileSync(path.resolve(
+      "docs/review/evidence/SANITARIO_V2_F6_PRODUCTS_REVIEW.json",
+    ), "utf8"));
+    const data = validateCanonicalTechnicalContract(reviewPayload).data;
+    expect(data.product_rows).toHaveLength(39);
+    for (const collection of Object.keys(data)) if (collection !== "product_rows") data[collection] = [];
+    const baseline = [otherId, farmA, farmB].map((id, index) => ({
+      id, product_key: `BASELINE_${index + 1}`, nome_comercial: `Produto pré-existente ${index + 1}`,
+      registro_orgao: null, registro_numero: null, fabricante: "Fabricante baseline", classe: "vacina",
+      tipo_produto: "vacina", status_curatorial: "precisa_validar", metadata: { baseline: true }, deleted_at: null,
+    }));
+    const client = new MemoryClient({ [p2Tables.product_rows]: baseline });
+
+    expect((await buildPlan(client, data)).filter((op) => op.collection === "product_rows" && op.action === "create"))
+      .toHaveLength(39);
+    expect(await applyTransactionForTest(client, data, { commercialProductsOnly: true }))
+      .toEqual({ create: 39, update: 0, skip: 0, reject: 0 });
+    expect(await applyTransactionForTest(client, data, { commercialProductsOnly: true }))
+      .toEqual({ create: 0, update: 0, skip: 39, reject: 0 });
+    expect(client.rows[p2Tables.product_rows].filter((row) => baseline.some((prior) => prior.id === row.id)))
+      .toEqual(baseline);
+    expect(client.rows[p2Tables.product_rows]).toHaveLength(42);
+  });
+
+  it("rejects a divergent commercial product inserted after preflight without updating it", async () => {
+    const data = p2Fixture();
+    for (const collection of Object.keys(data)) if (collection !== "product_rows") data[collection] = [];
+    const client = new MemoryClient();
+    const preflight = await buildPlan(client, data);
+    expect(findOperation(preflight, "product_rows", data.product_rows[0]).action).toBe("create");
+
+    const competitor = structuredClone(findOperation(preflight, "product_rows", data.product_rows[0]).row);
+    competitor.metadata = { concurrent_change: true };
+    client.rows[p2Tables.product_rows] = [competitor];
+    const beforeTransaction = structuredClone(client.rows);
+
+    await expect(applyTransactionForTest(client, data, { commercialProductsOnly: true }))
+      .rejects.toThrow("PRODUCTS_APPLY_UPDATE_FORBIDDEN");
+    expect(client.rows).toEqual(beforeTransaction);
+    expect(client.queries.some((query) => query.text.startsWith("update public."))).toBe(false);
+    expect(client.queries.at(-1).text).toBe("rollback");
+  });
+
+  it("skips an identical commercial product inserted after preflight", async () => {
+    const data = p2Fixture();
+    for (const collection of Object.keys(data)) if (collection !== "product_rows") data[collection] = [];
+    const client = new MemoryClient();
+    const preflight = await buildPlan(client, data);
+    expect(findOperation(preflight, "product_rows", data.product_rows[0]).action).toBe("create");
+    client.rows[p2Tables.product_rows] = [structuredClone(findOperation(preflight, "product_rows", data.product_rows[0]).row)];
+
+    await expect(applyTransactionForTest(client, data, { commercialProductsOnly: true }))
+      .resolves.toEqual({ create: 0, update: 0, skip: 1, reject: 0 });
+    expect(client.queries.some((query) => query.text.startsWith("update public."))).toBe(false);
+    expect(client.queries.at(-1).text).toBe("commit");
   });
 
   it("rebuilds under the transaction lock, writes 141 explicit UUIDs in FK order and replays as skips", async () => {
