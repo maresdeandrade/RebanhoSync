@@ -75,6 +75,7 @@ describe("test farm environment and authentication boundary", () => {
   it("accepts any authenticated local owner account without a hardcoded personal email", async () => {
     vi.stubEnv("DEV", true);
     vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:54321");
+    vi.stubEnv("VITE_SUPABASE_FUNCTIONS_URL", "http://127.0.0.1:54321/functions/v1");
     vi.stubGlobal("window", { location: { hostname: "localhost" } });
     vi.stubGlobal("navigator", {});
     vi.spyOn(supabase.auth, "getUser").mockResolvedValue({ data: { user: { id: "local-owner", email: "owner@example.test" } }, error: null } as never);
@@ -89,6 +90,7 @@ describe("test farm persisted verification", () => {
   function authenticatedLocalOwner(role: string = "owner", membershipError: object | null = null) {
     vi.stubEnv("DEV", true);
     vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:54321");
+    vi.stubEnv("VITE_SUPABASE_FUNCTIONS_URL", "http://127.0.0.1:54321/functions/v1");
     vi.stubGlobal("window", { location: { hostname: "localhost" } });
     vi.spyOn(supabase.auth, "getUser").mockResolvedValue({ data: { user: { id: "owner" } }, error: null } as never);
     vi.spyOn(storage, "getActiveFarmId").mockReturnValue("farm");
