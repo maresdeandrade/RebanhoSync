@@ -1,6 +1,6 @@
 ---
 name: sync-offline-rollback
-description: Use when a RebanhoSync task touches Dexie, offline-first behavior, sync queue, gestures, rollback, retry, reconcile, partial success, or local-remote conflict handling.
+description: Usar quando a tarefa afetar concretamente persistência local/Dexie, gestures, fila, retry, replay, rollback, reconciliação, sucesso parcial ou conflito local-remoto do RebanhoSync. Não usar por simples menção a offline/sync, para mudanças visuais sem persistência ou RLS exclusivamente remoto.
 role: engineering
 ---
 
@@ -167,31 +167,29 @@ Consider:
 
 ## Validation
 
-Follow `.agents/rules/rtk.md`.
+Seguir `.agents/rules/rtk.md`, com `rtk` opcional. Selecionar checks pelo contrato e pelas camadas efetivamente alteradas.
 
-### Minimum for sync/offline task:
+Verificações locais mínimas:
 ```bash
 git status --short --untracked-files=all
 git diff --check
 ```
 
-* plus the related test command.
+| Escopo observado | Validação |
+|---|---|
+| Operação local delimitada, sem mudança de contrato compartilhado | Testes focados da operação e de seus caminhos de falha; verificações locais pertinentes. |
+| Fila, mapeamento, payload, retry ou reconcile compartilhado entre fluxos | Testes das áreas e consumidores impactados; lint/build conforme risco e `rtk.md`. |
+| Contrato crítico ou alteração ampla entre camadas local/remota | Validação ampliada justificada pelos contratos afetados; domínio crítico exige testes focados, lint e build conforme `rtk.md`. Suíte global/E2E somente quando escopo, risco e autorização justificarem. |
 
-### For broader sync change:
+Nos caminhos afetados, preservar testes de idempotência, concorrência, duplicidade/replay, crash/restart, reconnect, farm-switch com operações pendentes, falha parcial, auth expirada e compatibilidade local-remota. Registrar o motivo quando um cenário não se aplicar; a redução de escopo não permite omitir risco pertinente.
 
-```bash
-rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
-
-```
-
-### If `sync-batch`, RLS, RPC, or Supabase contract is touched:
+Quando o contrato remoto Supabase/RLS/RPC/migration/sync-batch for afetado, executar a validação funcional de baseline pertinente, conforme `rtk.md`:
 
 ```bash
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
-
+node scripts/codex/validate-supabase-baseline-functional.mjs
 ```
+
+Registrar comandos, resultados observados e validações não executadas com motivo. Não declarar validação sem evidência.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: prepare-pr
-description: Autoridade interna para preparar título e corpo final de PR do RebanhoSync a partir de uma verificação classificada como READY. Usa o template atual do repositório e somente evidência verificada. Não usar com READY WITH CAVEAT, NOT READY, escopo incerto, implementação em andamento ou antes do rebanhosync-verification-gate.
+description: Usar para preparar título e corpo de PR do RebanhoSync quando o patch estiver concluído, houver verification gate READY vigente para o mesmo conteúdo e escopo e o template atual de PR estiver disponível. Não usar com READY WITH CAVEAT, NOT READY, evidência obsoleta, escopo incerto ou patch alterado após a verificação.
 role: lifecycle
 ---
 

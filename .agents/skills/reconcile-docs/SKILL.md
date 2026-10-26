@@ -1,6 +1,6 @@
 ---
 name: reconcile-docs
-description: Reconcilia a documentação do RebanhoSync com o estado real de código, migrations e testes, atualizando somente snapshots, contratos, documentos derivados, manuais, prompts ou skills realmente afetados. Usar após mudança funcional/arquitetural, diante de drift documental ou para analisar a fase atual pelo repositório. Não usar para ajuste apenas visual, refactor sem delta, microcopy isolada, validação final do patch ou narrativa de PR.
+description: Usar quando houver drift documental comprovado ou atualização documental explicitamente autorizada no RebanhoSync, inclusive por mudança normativa ou de governança sem alteração de runtime. Não usar para consulta somente leitura sobre fase atual, status ou roadmap, validação final de patch ou narrativa de PR.
 role: lifecycle
 ---
 
@@ -41,7 +41,7 @@ Aplicar as precedências factual e procedimental definidas em `.agents/rules/COR
 ## Restrições
 
 - Não usar `docs/archive/**` como verdade operacional.
-- Não atualizar documento derivado sem delta funcional real.
+- Atualizar documento derivado somente com delta factual ou normativo comprovado na fonte aplicável; mudanças de governança não exigem alteração de runtime.
 - Não repetir contratos já definidos em `.agents/rules/CORE_RULES.md` ou `docs/context/SOURCE_OF_TRUTH.md`.
 - Não reescrever documento estável por conveniência.
 - Não documentar comportamento presumido ou teste não executado.

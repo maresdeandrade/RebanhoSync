@@ -1,6 +1,6 @@
 ---
 name: rebanhosync-verification-gate
-description: Valida um patch concluído do RebanhoSync, inspeciona diff tracked, staged e arquivos untracked, confirma escopo, contratos de domínio e evidências de teste e classifica a entrega antes de PR ou merge. Usar quando a implementação estiver concluída, houver mudanças locais a revisar ou a tarefa tocar domínio crítico, sync, RLS, migrations ou documentação. Não usar durante descoberta, planejamento, implementação em curso ou apenas para escrever o PR.
+description: Usar quando um patch do RebanhoSync estiver concluído e aguardando verificação técnica. Não usar durante descoberta, planejamento ou implementação em andamento, por simples menção a domínio crítico, sanitário, sync, RLS, migrations ou documentação, nem apenas para escrever o PR.
 role: lifecycle
 ---
 

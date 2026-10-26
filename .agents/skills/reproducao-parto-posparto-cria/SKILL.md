@@ -119,31 +119,29 @@ Cover scenarios: happy path parto + cria, duplicate retry, missing mother, calf 
 
 ## Validation
 
-Follow `.agents/rules/rtk.md`.
+Seguir `.agents/rules/rtk.md`, com `rtk` opcional. Definir a validação pelo escopo e risco efetivamente afetados, não pela simples menção a Evento ou sync.
 
-### Minimum check:
+Verificações locais mínimas:
 ```bash
 git status --short --untracked-files=all
 git diff --check
 ```
 
-* plus the related reproduction tests.
+| Escopo observado | Validação |
+|---|---|
+| Mudança localizada, sem alteração de contrato compartilhado | Testes focados do fluxo reprodutivo e verificações locais pertinentes. |
+| Mudança em writers, vínculos ou interfaces compartilhadas | Testes das áreas e consumidores impactados; lint/build conforme o risco e `rtk.md`. |
+| Mudança ampla ou crítica | Ampliar a validação com justificativa pelo contrato afetado; domínio crítico exige testes focados, lint e build conforme `rtk.md`. Suíte global/E2E somente quando escopo, risco e autorização justificarem. |
 
-### If sync/event creation is touched:
+Preservar cobertura pertinente de vínculo mãe–parto–cria, isolamento, idempotência, retry, rollback e falha parcial. Tocar criação de Evento ou sync não exige suíte completa automaticamente.
 
-```bash
-rtk pnpm run lint
-rtk pnpm test
-rtk pnpm run build
-
-```
-
-### If Supabase/RLS/RPC is touched:
+Quando o contrato remoto Supabase/RLS/RPC/migration/sync-batch for afetado, executar a validação funcional de baseline pertinente, conforme `rtk.md`:
 
 ```bash
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
-
+node scripts/codex/validate-supabase-baseline-functional.mjs
 ```
+
+Registrar comandos, resultados observados e validações não executadas com motivo. Não declarar validação sem evidência.
 
 ---
 
