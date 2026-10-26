@@ -159,4 +159,21 @@ describe("calfJourney", () => {
 
     expect(stage.key).toBe("desmamado");
   });
+
+  it("allows deterministic agenda ids", () => {
+    const createAgendaId = (dedupKey: string) => `agenda:${dedupKey}`;
+    const firstPlan = buildCalfJourneyAgendaOps({
+      fazendaId: "farm-1",
+      calf: createCalf(),
+      mother: { id: "matriz-1", identificacao: "MAT-001" },
+      createAgendaId,
+    });
+    const secondPlan = buildCalfJourneyAgendaOps({
+      fazendaId: "farm-1",
+      calf: createCalf(),
+      mother: { id: "matriz-1", identificacao: "MAT-001" },
+      createAgendaId,
+    });
+    expect(firstPlan).toEqual(secondPlan);
+  });
 });

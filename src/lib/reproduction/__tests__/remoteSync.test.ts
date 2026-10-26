@@ -257,6 +257,40 @@ describe("reproduction diagnosis remote pull", () => {
     await db.state_animais.clear();
   });
 
+  it("accepts the same recorded instant formatted by PostgreSQL without hiding a real timestamp conflict", async () => {
+    await seedAnimal("cow-offset");
+    const service = eventRow("service-offset", "cow-offset", now);
+    const detail = detailRow("service-offset", "cobertura", {});
+    await db.event_eventos_reproducao.put(detail as never);
+    mockRemote([service], [{ ...detail, client_recorded_at: "2026-03-01T10:00:00+00:00" }]);
+    await expect(pullReproductionDiagnosisState("farm-1")).resolves.toBeDefined();
+    mockRemote([service], [{ ...detail, client_recorded_at: "2026-03-01T10:00:00.001+00:00" }]);
+    await expect(pullReproductionDiagnosisState("farm-1")).rejects.toThrow("REPRO_PULL_DETAIL_CONFLICT");
+  });
+
+  it("preserves microsecond conflicts while normalizing equivalent timezone offsets", async () => {
+    await seedAnimal("cow-microseconds");
+    const service = eventRow("service-microseconds", "cow-microseconds", now);
+    const detail = { ...detailRow("service-microseconds", "cobertura", {}), client_recorded_at: "2026-03-01T10:00:00.123456Z" };
+    await db.event_eventos_reproducao.put(detail as never);
+    mockRemote([service], [{ ...detail, client_recorded_at: "2026-03-01T07:00:00.123456-03:00" }]);
+    await expect(pullReproductionDiagnosisState("farm-1")).resolves.toBeDefined();
+    mockRemote([service], [{ ...detail, client_recorded_at: "2026-03-01T10:00:00.123457Z" }]);
+    await expect(pullReproductionDiagnosisState("farm-1")).rejects.toThrow("REPRO_PULL_DETAIL_CONFLICT");
+  });
+
+  it("ignores undefined payload keys omitted by JSON transport but rejects changed factual values", async () => {
+    await seedAnimal("cow-undefined");
+    const service = eventRow("service-undefined", "cow-undefined", now);
+    const detail = detailRow("service-undefined", "cobertura", { tecnica_livre: "monta_natural", resultado: undefined });
+    await db.event_eventos_reproducao.put(detail as never);
+    const remote = JSON.parse(JSON.stringify(detail));
+    mockRemote([service], [remote]);
+    await expect(pullReproductionDiagnosisState("farm-1")).resolves.toBeDefined();
+    mockRemote([service], [{ ...remote, payload: { ...remote.payload, tecnica_livre: "alterada" } }]);
+    await expect(pullReproductionDiagnosisState("farm-1")).rejects.toThrow("REPRO_PULL_DETAIL_CONFLICT");
+  });
+
   it.each([
     ["positivo", true, "2026-10-30", "2026-10-30"],
     ["positivo", true, null, "2026-10-20"],

@@ -93,6 +93,7 @@ export interface BuildCalfJourneyAgendaOpsInput {
   >;
   mother: Pick<Animal, "id" | "identificacao">;
   existingAgendaItems?: CalfJourneyExistingAgendaItem[];
+  createAgendaId?: (dedupKey: string) => string;
 }
 
 export type BuildUmbigoCareAgendaOpsInput = Omit<
@@ -219,6 +220,7 @@ export function buildUmbigoCareAgendaOps({
   calf,
   mother,
   existingAgendaItems = [],
+  createAgendaId = () => crypto.randomUUID(),
 }: BuildUmbigoCareAgendaOpsInput) {
   const birthDate = calf.data_nascimento ?? new Date().toISOString().slice(0, 10);
   const birthEventId = getBirthEventId(calf.payload);
@@ -243,7 +245,7 @@ export function buildUmbigoCareAgendaOps({
       table: "agenda_itens",
       action: "INSERT",
       record: {
-        id: crypto.randomUUID(),
+        id: createAgendaId(dedupKey),
         dominio: "sanitario",
         tipo: "cura_umbigo",
         status: "agendado",
@@ -367,6 +369,7 @@ export function buildCalfJourneyAgendaOps({
   calf,
   mother,
   existingAgendaItems = [],
+  createAgendaId = () => crypto.randomUUID(),
 }: BuildCalfJourneyAgendaOpsInput) {
   const birthDate = calf.data_nascimento ?? new Date().toISOString().slice(0, 10);
   const birthEventId = getBirthEventId(calf.payload);
@@ -404,6 +407,7 @@ export function buildCalfJourneyAgendaOps({
         calf,
         mother,
         existingAgendaItems,
+        createAgendaId,
       });
       ops.push(...agendaBuild.ops);
       continue;
@@ -416,7 +420,7 @@ export function buildCalfJourneyAgendaOps({
       table: "agenda_itens",
       action: "INSERT",
       record: {
-        id: crypto.randomUUID(),
+        id: createAgendaId(dedupKey),
         dominio: milestone.dominio,
         tipo: milestone.tipo,
         status: "agendado",

@@ -575,6 +575,7 @@ export const reapplyOpLocal = async (op: Operation) => {
 
   if (op.action === "UPDATE") {
     const existing = await store.get(recordKey);
+    await persistExpectedAnimalRevision(op, existing);
     await store.put(existing ? { ...existing, ...op.record } : op.record);
     return;
   }
@@ -612,6 +613,15 @@ export function getAffectedStores(ops: Operation[]) {
   return Array.from(tableNames)
     .map((t) => db.table(t))
     .filter(Boolean);
+}
+
+async function assertRetryAnimalFarm(operation: Operation, farmId: string) {
+  if (operation.table !== "animais") return;
+  const animalId = operation.record.id;
+  const animal = animalId ? await db.state_animais.get(String(animalId)) : undefined;
+  if (animal && animal.fazenda_id !== farmId) {
+    throw new Error("REJECTED_OPERATION_IDENTITY_MISMATCH");
+  }
 }
 
 export async function retryRejectedOperation(rejection: Rejection) {
@@ -663,7 +673,10 @@ export async function retryRejectedOperation(rejection: Rejection) {
       const retryOps = currentSiblings.filter(op => op.sync_state === "REJECTED" &&
         (!factualRetry || isFactualCore(op) ||
           (op.table === "state_insumo_movimentacoes" && op.record.tipo === "consumo_sanitario")));
-      if (!factualRetry) await reapplyOpLocal(currentOperation);
+      if (!factualRetry) {
+        await assertRetryAnimalFarm(currentOperation, gesture.fazenda_id);
+        await reapplyOpLocal(currentOperation);
+      }
       for (const retryOp of factualRetry ? retryOps : [currentOperation]) {
         await db.queue_ops.update(retryOp.client_op_id, {
         sync_state: "PENDING",
