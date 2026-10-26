@@ -17,6 +17,7 @@ Fontes de continuidade:
 - [Roadmap](./product/ROADMAP.md)
 - [Plano ativo](./review/ACTIVE_PHASE_PLAN.md)
 - [Handoff técnico atual](./review/CURRENT_PHASE_HANDOFF.md)
+- [Índice mestre do portfólio A–I](./review/MASTER_BACKLOG.md) — cruza iniciativas, evidências e dependências; não substitui status de fases ou certificações.
 
 ## Contratos centrais
 
