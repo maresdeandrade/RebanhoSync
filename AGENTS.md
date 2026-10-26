@@ -211,6 +211,7 @@ Mudança mobile não autoriza alterar domínio compartilhado sem necessidade dem
 ## 8. Skills e lifecycle
 
 Use `.agents/rules/CONTEXT_LOADING.md` para seleção.
+Para skills de método, incluindo Superpowers quando solicitado ou pertinente, siga as adaptações e os limites desse roteamento.
 Em implementação:
 - escolha uma skill principal;
 - use no máximo uma skill de apoio quando existir interseção técnica concreta;
