@@ -100,11 +100,12 @@ function isRecord(value: unknown): value is RemoteRow {
 }
 
 function canonicalize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalize);
-  if (!isRecord(value)) return value ?? null;
-  return Object.fromEntries(
-    Object.keys(value).filter(key => value[key] !== undefined).sort().map((key) => [key, canonicalize(value[key])]),
-  );
+  if (isRecord(value)) {
+    const entries = Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined);
+    entries.sort(([left], [right]) => left < right ? -1 : Number(left > right));
+    return Object.fromEntries(entries.map(([key, fieldValue]) => [key, canonicalize(fieldValue)]));
+  }
+  return Array.isArray(value) ? value.map(canonicalize) : value ?? null;
 }
 
 function sameFact(
