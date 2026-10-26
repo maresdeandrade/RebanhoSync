@@ -13,7 +13,7 @@ Não fazer sem justificativa explícita:
 * Abrir `docs/archive/**` como fonte operacional;
 * Abrir todos os arquivos `AGENTS.md`;
 * Abrir todos os arquivos `SKILL.md`;
-* Usar mais de uma skill principal;
+* Usar mais de uma skill principal simultaneamente;
 * Rodar busca global genérica antes de delimitar a dúvida;
 * Carregar manual completo para uma tela específica;
 * Carregar matriz KPI completa para tarefa não financeira;
@@ -30,7 +30,7 @@ Antes de expandir o contexto:
 1. Classificar o tipo real da tarefa.
 2. Identificar arquivos-alvo prováveis.
 3. Ler o `AGENTS.md` local da área afetada, se existir.
-4. Escolher no máximo uma skill principal.
+4. Escolher no máximo uma skill principal para a fase atual.
 5. Ler apenas documentos específicos do domínio.
 6. Expandir somente se permanecer uma lacuna técnica relevante.
 
@@ -50,7 +50,7 @@ Expandir contexto somente se:
 * Envolve arquitetura entre módulos;
 * A tarefa pede explicitamente uma auditoria ampla.
 
-Uma segunda skill só é permitida se a expansão revelar interseção real de domínio crítico. Menção incidental a outro domínio não basta.
+Uma skill de apoio só é permitida quando houver interseção técnica concreta e justificada, conforme `CONTEXT_LOADING.md`. Menção incidental não basta.
 
 ---
 

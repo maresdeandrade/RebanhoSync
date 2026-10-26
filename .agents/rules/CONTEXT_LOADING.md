@@ -55,6 +55,18 @@ Sync/offline, migrations/RLS e regras de domínio não devem ser carregados como
 
 ---
 
+## Skills de método — Superpowers
+
+Quando solicitado ou pertinente, use as skills instaladas do Superpowers como método de engenharia, respeitando a precedência de `CORE_RULES.md`. Elas não substituem contratos, especializações ou gates locais.
+
+* Confirme a disponibilidade no catálogo da sessão e leia somente o `SKILL.md` escolhido e as referências necessárias. Não fixe caminhos pessoais ou versões do cache, nem copie ou instale o plugin no repositório. Se estiver indisponível, registre a limitação e siga somente o fluxo local autorizado.
+* Em implementação especializada, mantenha a skill local do risco dominante como principal; método genérico pode ser apoio quando houver interseção técnica concreta. Sem especialização aplicável, uma skill de método pode ser principal. Preserve o limite de uma principal e até uma de apoio.
+* Skills usadas em fases sequenciais não são uso simultâneo. Encerre a fase com seu resultado antes de trocar a principal; não divida artificialmente o trabalho para contornar os limites de contexto.
+* Adapte rotinas genéricas ao escopo e à autorização existentes: planos, worktrees, commits, publicação, descarte e validações amplas não são exigências automáticas do método. Siga `rtk.md` para validação proporcional e não repita checks válidos sem mudança relevante.
+* Revisão independente só pode ser alegada quando realmente realizada. Use as ferramentas de delegação apenas quando disponíveis e permitidas pelo runtime; não altere a configuração do host para habilitá-las.
+
+---
+
 ## Tarefa localizada
 
 Carregar:
