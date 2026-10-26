@@ -1,13 +1,12 @@
+import { isLocalTestFarmBackend, isLocalTestFarmHost } from "./environment";
 import { testFarmConsoleApi } from "./service";
 
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 export function installTestFarmDevConsole() {
   if (!import.meta.env.DEV || typeof window === "undefined") return false;
-  if (!LOCAL_HOSTS.has(window.location.hostname)) return false;
-  try {
-    if (!LOCAL_HOSTS.has(new URL(import.meta.env.VITE_SUPABASE_URL).hostname)) return false;
-  } catch { return false; }
+  if (!isLocalTestFarmHost(window.location.hostname) || !isLocalTestFarmBackend(
+    import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_FUNCTIONS_URL,
+  )) return false;
   if (window.__REBANHOSYNC_TEST_FARM__) return true;
 
   Object.defineProperty(window, "__REBANHOSYNC_TEST_FARM__", {

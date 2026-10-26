@@ -1,3 +1,4 @@
+import { deterministicUuidFromText } from "@/lib/reproduction/deterministicUuid";
 import type { AnimalRegistrationDraft } from "@/lib/animals/registration";
 
 export const TEST_FARM_SPEC = {
@@ -52,26 +53,7 @@ export interface TestFarmDefinition {
   reproductionEpisodes: TestFarmReproductionEpisode[];
 }
 
-export function testFarmStableId(value: string) {
-  const bytes: number[] = [];
-  for (let block = 0; block < 4; block += 1) {
-    let hash = 0x811c9dc5 ^ (block * 0x9e3779b1);
-    for (let index = 0; index < value.length; index += 1) {
-      hash ^= value.charCodeAt(index);
-      hash = Math.imul(hash, 0x01000193);
-    }
-    bytes.push(
-      (hash >>> 24) & 0xff,
-      (hash >>> 16) & 0xff,
-      (hash >>> 8) & 0xff,
-      hash & 0xff,
-    );
-  }
-  bytes[6] = (bytes[6] & 0x0f) | 0x50;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
+export const testFarmStableId = deterministicUuidFromText;
 
 function dateKey(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -137,7 +119,9 @@ function makeEpisode({
   outcome: { type: "parto"; calfId: string } | { type: "aborto" } | null;
   diagnosis?: { date: string; result: "positivo" | "negativo" };
 }): TestFarmReproductionEpisode {
-  const id = testFarmStableId(`${TEST_FARM_SPEC.logicalId}:episode:${motherId}:${date}`);
+  const id = testFarmStableId(
+    `${TEST_FARM_SPEC.logicalId}:episode:${motherId}:${date}`,
+  );
   const serviceId = testFarmStableId(`${id}:service`);
   const episode: TestFarmReproductionEpisode = {
     id,
@@ -172,12 +156,14 @@ function makeEpisode({
   return episode;
 }
 
-export function createTestFarmDefinition(): TestFarmDefinition {
-  const animals: TestFarmAnimalDefinition[] = [];
-  const reproductionEpisodes: TestFarmReproductionEpisode[] = [];
-  const dams = new Map<number, TestFarmAnimalDefinition>();
-  const sires: TestFarmAnimalDefinition[] = [];
+interface DefinitionBuilder {
+  animals: TestFarmAnimalDefinition[];
+  reproductionEpisodes: TestFarmReproductionEpisode[];
+  dams: Map<number, TestFarmAnimalDefinition>;
+  sires: TestFarmAnimalDefinition[];
+}
 
+function addSires({ sires }: DefinitionBuilder) {
   for (let index = 1; index <= 4; index += 1) {
     sires.push(
       makeAnimal({
@@ -189,20 +175,35 @@ export function createTestFarmDefinition(): TestFarmDefinition {
       }),
     );
   }
+}
 
+function breedingCowBirthYear(index: number) {
+  return index <= 10
+    ? 2011 + Math.floor((index - 1) / 2)
+    : index <= 20
+      ? 2018 + Math.floor((index - 11) / 3)
+      : index <= 30
+        ? 2023
+        : 2015 + (index % 6);
+}
+
+function breedingCowMother(index: number, dams: DefinitionBuilder["dams"]) {
+  return index >= 11 && index <= 20
+    ? dams.get(((index - 11) % 10) + 1)
+    : index >= 21 && index <= 30
+      ? dams.get(index - 10)
+      : undefined;
+}
+
+function addBreedingCows({
+  animals,
+  reproductionEpisodes,
+  dams,
+  sires,
+}: DefinitionBuilder) {
   for (let index = 1; index <= 50; index += 1) {
-    const birthYear = index <= 10
-      ? 2011 + Math.floor((index - 1) / 2)
-      : index <= 20
-        ? 2018 + Math.floor((index - 11) / 3)
-        : index <= 30
-          ? 2023
-          : 2015 + (index % 6);
-    const mother = index >= 11 && index <= 20
-      ? dams.get(((index - 11) % 10) + 1)
-      : index >= 21 && index <= 30
-        ? dams.get(index - 10)
-        : undefined;
+    const birthYear = breedingCowBirthYear(index);
+    const mother = breedingCowMother(index, dams);
     const animal = makeAnimal({
       tag: `MAT-${String(index).padStart(3, "0")}`,
       category: "vaca_reprodutiva",
@@ -225,13 +226,21 @@ export function createTestFarmDefinition(): TestFarmDefinition {
       );
     }
   }
+}
 
+function addHeifers({
+  animals,
+  reproductionEpisodes,
+  dams,
+  sires,
+}: DefinitionBuilder) {
   for (let index = 1; index <= 20; index += 1) {
     const mother = dams.get(((index - 1) % 10) + 1)!;
     const sire = sires[(index - 1) % sires.length]!;
-    const birthDate = index <= 10
-      ? `2024-02-${String((index % 20) + 1).padStart(2, "0")}`
-      : `2024-12-${String((index % 20) + 1).padStart(2, "0")}`;
+    const birthDate =
+      index <= 10
+        ? `2024-02-${String((index % 20) + 1).padStart(2, "0")}`
+        : `2024-12-${String((index % 20) + 1).padStart(2, "0")}`;
     const animal = makeAnimal({
       tag: `NOV-${String(index).padStart(3, "0")}`,
       category: "novilha",
@@ -251,7 +260,14 @@ export function createTestFarmDefinition(): TestFarmDefinition {
       }),
     );
   }
+}
 
+function addRearingMales({
+  animals,
+  reproductionEpisodes,
+  dams,
+  sires,
+}: DefinitionBuilder) {
   for (let index = 1; index <= 8; index += 1) {
     const mother = dams.get(index)!;
     const sire = sires[(index - 1) % sires.length]!;
@@ -274,7 +290,13 @@ export function createTestFarmDefinition(): TestFarmDefinition {
       }),
     );
   }
+}
 
+function addRecentCalves({
+  animals,
+  reproductionEpisodes,
+  sires,
+}: DefinitionBuilder) {
   const recentCalfMothers = [
     ...animals.slice(0, 10),
     ...animals.slice(10, 20),
@@ -309,9 +331,13 @@ export function createTestFarmDefinition(): TestFarmDefinition {
       ["F", "bezerra", "BZ-F"],
       ["M", "bezerro", "BZ-M"],
     ] as const) {
-      const mother = recentCalfMothers[(index - 1) * 2 + (sex === "M" ? 1 : 0)]!;
+      const mother =
+        recentCalfMothers[(index - 1) * 2 + (sex === "M" ? 1 : 0)]!;
       const sire = sires[(index - 1) % sires.length]!;
-      const birthDate = sex === "F" ? calfBirthDates[index]!.female : calfBirthDates[index]!.male;
+      const birthDate =
+        sex === "F"
+          ? calfBirthDates[index]!.female
+          : calfBirthDates[index]!.male;
       const animal = makeAnimal({
         tag: `${prefix}-${String(index).padStart(3, "0")}`,
         category,
@@ -332,7 +358,9 @@ export function createTestFarmDefinition(): TestFarmDefinition {
       );
     }
   }
+}
 
+function addNonReproductiveCows({ animals }: DefinitionBuilder) {
   const nonReproductiveCows = [1, 2].map((index) =>
     makeAnimal({
       tag: `FORA-${String(index).padStart(3, "0")}`,
@@ -343,7 +371,13 @@ export function createTestFarmDefinition(): TestFarmDefinition {
     }),
   );
   animals.push(...nonReproductiveCows);
+}
 
+function addOpenPregnancies({
+  animals,
+  reproductionEpisodes,
+  sires,
+}: DefinitionBuilder) {
   for (let index = 21; index <= 30; index += 1) {
     const mother = animals[index - 1]!;
     const serviceDate = addDays("2026-04-20", index - 21);
@@ -367,7 +401,13 @@ export function createTestFarmDefinition(): TestFarmDefinition {
       },
     });
   }
+}
 
+function addNegativeDiagnoses({
+  animals,
+  reproductionEpisodes,
+  sires,
+}: DefinitionBuilder) {
   for (let index = 31; index <= 36; index += 1) {
     const mother = animals[index - 1]!;
     const serviceDate = `2026-06-${String(index - 30).padStart(2, "0")}`;
@@ -389,7 +429,13 @@ export function createTestFarmDefinition(): TestFarmDefinition {
       },
     });
   }
+}
 
+function addPregnancyLosses({
+  animals,
+  reproductionEpisodes,
+  sires,
+}: DefinitionBuilder) {
   for (let index = 37; index <= 38; index += 1) {
     const mother = animals[index - 1]!;
     const serviceDate = `2026-05-1${index - 32}`;
@@ -407,7 +453,25 @@ export function createTestFarmDefinition(): TestFarmDefinition {
     });
     reproductionEpisodes.push(episode);
   }
+}
 
+export function createTestFarmDefinition(): TestFarmDefinition {
+  const builder: DefinitionBuilder = {
+    animals: [],
+    reproductionEpisodes: [],
+    dams: new Map(),
+    sires: [],
+  };
+  addSires(builder);
+  addBreedingCows(builder);
+  addHeifers(builder);
+  addRearingMales(builder);
+  addRecentCalves(builder);
+  addNonReproductiveCows(builder);
+  addOpenPregnancies(builder);
+  addNegativeDiagnoses(builder);
+  addPregnancyLosses(builder);
+  const { animals, reproductionEpisodes, sires } = builder;
   animals.push(...sires);
 
   return {
@@ -420,7 +484,9 @@ export function createTestFarmDefinition(): TestFarmDefinition {
 function isDateKey(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T12:00:00.000Z`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  return (
+    !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+  );
 }
 
 function daysBetween(start: string, end: string) {
@@ -431,17 +497,49 @@ function daysBetween(start: string, end: string) {
   );
 }
 
-export function validateTestFarmDefinition(definition: TestFarmDefinition) {
-  const issues: string[] = [];
-  const animalById = new Map(definition.animals.map((animal) => [animal.id, animal]));
-  const idSet = new Set<string>();
-  const identificationSet = new Set<string>();
-  const categoryCounts = new Map<TestFarmCategory, number>();
+interface DefinitionValidation {
+  definition: TestFarmDefinition;
+  issues: string[];
+  animalById: Map<string, TestFarmAnimalDefinition>;
+  idSet: Set<string>;
+  identificationSet: Set<string>;
+  categoryCounts: Map<TestFarmCategory, number>;
+}
 
-  if (definition.animals.length !== TEST_FARM_SPEC.expectedAnimals) {
-    issues.push(`expected ${TEST_FARM_SPEC.expectedAnimals} animals; received ${definition.animals.length}`);
+function validateParentage(
+  animal: TestFarmAnimalDefinition,
+  animalById: Map<string, TestFarmAnimalDefinition>,
+  issues: string[],
+) {
+  for (const [relationship, parentId, expectedSex] of [
+    ["mother", animal.draft.maeId, "F"],
+    ["sire", animal.draft.paiId, "M"],
+  ] as const) {
+    if (!parentId) continue;
+    const parent = animalById.get(parentId);
+    if (!parent) {
+      issues.push(
+        `missing ${relationship} ${parentId} for ${animal.identification}`,
+      );
+    } else {
+      if (parent.draft.sexo !== expectedSex) {
+        issues.push(
+          `${relationship} sex mismatch for ${animal.identification}`,
+        );
+      }
+      validateParentAge(animal, parent, relationship, issues);
+    }
   }
+}
 
+function validateAnimals({
+  definition,
+  issues,
+  animalById,
+  idSet,
+  identificationSet,
+  categoryCounts,
+}: DefinitionValidation) {
   for (const animal of definition.animals) {
     if (idSet.has(animal.id)) issues.push(`duplicate animal id ${animal.id}`);
     idSet.add(animal.id);
@@ -449,43 +547,44 @@ export function validateTestFarmDefinition(definition: TestFarmDefinition) {
       issues.push(`duplicate animal identification ${animal.identification}`);
     }
     identificationSet.add(animal.identification);
-    categoryCounts.set(animal.category, (categoryCounts.get(animal.category) ?? 0) + 1);
-    if (!isDateKey(animal.draft.dataNascimento ?? "")) {
-      issues.push(`invalid birth date for ${animal.identification}`);
-    } else if (animal.draft.dataNascimento! > TEST_FARM_SPEC.referenceDate) {
-      issues.push(`birth date after reference date for ${animal.identification}`);
+    categoryCounts.set(
+      animal.category,
+      (categoryCounts.get(animal.category) ?? 0) + 1,
+    );
+    validateAnimalBirth(animal, issues);
+    if (
+      animal.draft.id !== animal.id ||
+      animal.draft.identificacao !== animal.identification
+    ) {
+      issues.push(
+        `registration identity mismatch for ${animal.identification}`,
+      );
     }
-    if (animal.draft.id !== animal.id || animal.draft.identificacao !== animal.identification) {
-      issues.push(`registration identity mismatch for ${animal.identification}`);
-    }
-    for (const [relationship, parentId, expectedSex] of [
-      ["mother", animal.draft.maeId, "F"],
-      ["sire", animal.draft.paiId, "M"],
-    ] as const) {
-      if (!parentId) continue;
-      const parent = animalById.get(parentId);
-      if (!parent) {
-        issues.push(`missing ${relationship} ${parentId} for ${animal.identification}`);
-      } else {
-        if (parent.draft.sexo !== expectedSex) {
-          issues.push(`${relationship} sex mismatch for ${animal.identification}`);
-        }
-        const parentBirth = parent.draft.dataNascimento ?? "";
-        const childBirth = animal.draft.dataNascimento ?? "";
-        if (!isDateKey(parentBirth) || !isDateKey(childBirth) || daysBetween(parentBirth, childBirth) < 548) {
-          issues.push(`${relationship} age chronology invalid for ${animal.identification}`);
-        }
-      }
-    }
+    validateParentage(animal, animalById, issues);
   }
+}
 
-  for (const [category, expectedCount] of Object.entries(TEST_FARM_CATEGORY_COUNTS) as [TestFarmCategory, number][]) {
+function validateCategoryCounts({
+  issues,
+  categoryCounts,
+}: DefinitionValidation) {
+  for (const [category, expectedCount] of Object.entries(
+    TEST_FARM_CATEGORY_COUNTS,
+  ) as [TestFarmCategory, number][]) {
     const actualCount = categoryCounts.get(category) ?? 0;
     if (actualCount !== expectedCount) {
-      issues.push(`category ${category} expected ${expectedCount}; received ${actualCount}`);
+      issues.push(
+        `category ${category} expected ${expectedCount}; received ${actualCount}`,
+      );
     }
   }
+}
 
+function validateGenealogy({
+  definition,
+  issues,
+  animalById,
+}: DefinitionValidation) {
   const visitState = new Map<string, "visiting" | "visited">();
   const visit = (animalId: string) => {
     if (visitState.get(animalId) === "visiting") {
@@ -502,71 +601,84 @@ export function validateTestFarmDefinition(definition: TestFarmDefinition) {
     visitState.set(animalId, "visited");
   };
   for (const animal of definition.animals) visit(animal.id);
+}
 
+function validateEpisodeDiagnosis(
+  episode: TestFarmReproductionEpisode,
+  issues: string[],
+) {
+  if (episode.diagnosis) {
+    if (
+      !isDateKey(episode.diagnosis.date) ||
+      episode.diagnosis.date <= episode.service.date
+    ) {
+      issues.push(`diagnosis chronology invalid for episode ${episode.id}`);
+    }
+    if (episode.diagnosis.result === "positivo") {
+      const expectedBirthDate = addDays(episode.service.date, 283);
+      if (episode.diagnosis.expectedBirthDate !== expectedBirthDate) {
+        issues.push(
+          `positive diagnosis due date mismatch for episode ${episode.id}`,
+        );
+      }
+    } else if (episode.diagnosis.expectedBirthDate) {
+      issues.push(`negative diagnosis has due date for episode ${episode.id}`);
+    }
+  }
+}
+
+function validateEpisodeOutcome(
+  episode: TestFarmReproductionEpisode,
+  animalById: Map<string, TestFarmAnimalDefinition>,
+  issues: string[],
+) {
+  if (episode.outcome) {
+    if (
+      !isDateKey(episode.outcome.date) ||
+      episode.outcome.date <= episode.service.date
+    ) {
+      issues.push(`outcome chronology invalid for episode ${episode.id}`);
+    }
+    if (episode.diagnosis?.result === "negativo") {
+      issues.push(`negative diagnosis has outcome for episode ${episode.id}`);
+    }
+    validateParturition(
+      { ...episode, outcome: episode.outcome },
+      animalById,
+      issues,
+    );
+    if (episode.diagnosis && episode.diagnosis.date >= episode.outcome.date) {
+      issues.push(`diagnosis occurs after outcome for episode ${episode.id}`);
+    }
+  }
+}
+
+function validateEpisodes({
+  definition,
+  issues,
+  animalById,
+}: DefinitionValidation) {
   const episodeIds = new Set<string>();
   const eventIds = new Set<string>();
   for (const episode of definition.reproductionEpisodes) {
-    if (episodeIds.has(episode.id)) issues.push(`duplicate reproduction episode ${episode.id}`);
+    if (episodeIds.has(episode.id))
+      issues.push(`duplicate reproduction episode ${episode.id}`);
     episodeIds.add(episode.id);
     const mother = animalById.get(episode.motherId);
     const sire = animalById.get(episode.sireId);
-    if (!mother || mother.draft.sexo !== "F") issues.push(`invalid episode mother ${episode.motherId}`);
-    if (!sire || sire.draft.sexo !== "M") issues.push(`invalid episode sire ${episode.sireId}`);
-    for (const eventId of [episode.service.id, episode.diagnosis?.id, episode.outcome?.id]) {
-      if (!eventId) continue;
-      if (eventIds.has(eventId)) issues.push(`duplicate reproduction event ${eventId}`);
-      eventIds.add(eventId);
-    }
-    for (const factDate of [
-      episode.service.date,
-      episode.diagnosis?.date,
-      episode.outcome?.date,
-    ]) {
-      if (factDate && isDateKey(factDate) && factDate > TEST_FARM_SPEC.referenceDate) {
-        issues.push(`reproduction fact after reference date for episode ${episode.id}`);
-      }
-    }
-    if (!isDateKey(episode.service.date) || !mother?.draft.dataNascimento || episode.service.date <= mother.draft.dataNascimento) {
-      issues.push(`service date invalid for episode ${episode.id}`);
-    }
-    if (episode.diagnosis) {
-      if (!isDateKey(episode.diagnosis.date) || episode.diagnosis.date <= episode.service.date) {
-        issues.push(`diagnosis chronology invalid for episode ${episode.id}`);
-      }
-      if (episode.diagnosis.result === "positivo") {
-        const expectedBirthDate = addDays(episode.service.date, 283);
-        if (episode.diagnosis.expectedBirthDate !== expectedBirthDate) {
-          issues.push(`positive diagnosis due date mismatch for episode ${episode.id}`);
-        }
-      } else if (episode.diagnosis.expectedBirthDate) {
-        issues.push(`negative diagnosis has due date for episode ${episode.id}`);
-      }
-    }
-    if (episode.outcome) {
-      if (!isDateKey(episode.outcome.date) || episode.outcome.date <= episode.service.date) {
-        issues.push(`outcome chronology invalid for episode ${episode.id}`);
-      }
-      if (episode.diagnosis?.result === "negativo") {
-        issues.push(`negative diagnosis has outcome for episode ${episode.id}`);
-      }
-      if (episode.outcome.type === "parto") {
-        const calf = animalById.get(episode.outcome.calfId);
-        if (!calf || calf.draft.maeId !== episode.motherId || calf.draft.paiId !== episode.sireId) {
-          issues.push(`parturition parentage mismatch for episode ${episode.id}`);
-        }
-        if (calf?.draft.dataNascimento !== episode.outcome.date) {
-          issues.push(`parturition date mismatch for episode ${episode.id}`);
-        }
-        if (daysBetween(episode.service.date, episode.outcome.date) !== 283) {
-          issues.push(`parturition gestation interval mismatch for episode ${episode.id}`);
-        }
-      }
-      if (episode.diagnosis && episode.diagnosis.date >= episode.outcome.date) {
-        issues.push(`diagnosis occurs after outcome for episode ${episode.id}`);
-      }
-    }
+    if (!mother || mother.draft.sexo !== "F")
+      issues.push(`invalid episode mother ${episode.motherId}`);
+    if (!sire || sire.draft.sexo !== "M")
+      issues.push(`invalid episode sire ${episode.sireId}`);
+    validateEpisodeEventIds(episode, eventIds, issues);
+    validateEpisodeFactDates(episode, issues);
+    validateEpisodeService(episode, mother, issues);
+    validateEpisodeDiagnosis(episode, issues);
+    validateEpisodeOutcome(episode, animalById, issues);
   }
+}
 
+function validateEpisodeChains({ definition, issues }: DefinitionValidation) {
   const episodesByMother = new Map<string, TestFarmReproductionEpisode[]>();
   for (const episode of definition.reproductionEpisodes) {
     episodesByMother.set(episode.motherId, [
@@ -575,28 +687,203 @@ export function validateTestFarmDefinition(definition: TestFarmDefinition) {
     ]);
   }
   for (const [motherId, episodes] of episodesByMother) {
-    const ordered = [...episodes].sort((left, right) =>
-      left.service.date.localeCompare(right.service.date),
+    validateMotherEpisodeChain(motherId, episodes, issues);
+  }
+}
+
+export function validateTestFarmDefinition(definition: TestFarmDefinition) {
+  const issues: string[] = [];
+  const animalById = new Map(
+    definition.animals.map((animal) => [animal.id, animal]),
+  );
+  const idSet = new Set<string>();
+  const identificationSet = new Set<string>();
+  const categoryCounts = new Map<TestFarmCategory, number>();
+
+  if (definition.animals.length !== TEST_FARM_SPEC.expectedAnimals) {
+    issues.push(
+      `expected ${TEST_FARM_SPEC.expectedAnimals} animals; received ${definition.animals.length}`,
     );
-    let previousOutcomeDate: string | null = null;
-    let previousPartoDate: string | null = null;
-    let previousOpenPregnancy = false;
-    for (const episode of ordered) {
-      if (previousOpenPregnancy) {
-        issues.push(`overlapping reproduction episodes for mother ${motherId} at episode ${episode.id}`);
-      } else if (previousOutcomeDate && episode.service.date <= previousOutcomeDate) {
-        issues.push(`overlapping reproduction episodes for mother ${motherId} at episode ${episode.id}`);
-      }
-      if (episode.outcome?.type === "parto") {
-        if (previousPartoDate && daysBetween(previousPartoDate, episode.outcome.date) < 283) {
-          issues.push(`calving interval too short for mother ${motherId} at episode ${episode.id}`);
-        }
-        previousPartoDate = episode.outcome.date;
-      }
-      previousOpenPregnancy = !episode.outcome && episode.diagnosis?.result === "positivo";
-      if (episode.outcome) previousOutcomeDate = episode.outcome.date;
-    }
   }
 
+  const context = {
+    definition,
+    issues,
+    animalById,
+    idSet,
+    identificationSet,
+    categoryCounts,
+  };
+  validateAnimals(context);
+  validateCategoryCounts(context);
+  validateGenealogy(context);
+  validateEpisodes(context);
+  validateEpisodeChains(context);
+
   return issues;
+}
+
+function validateAnimalBirth(
+  animal: TestFarmAnimalDefinition,
+  issues: string[],
+) {
+  if (!isDateKey(animal.draft.dataNascimento ?? "")) {
+    issues.push(`invalid birth date for ${animal.identification}`);
+  } else if (animal.draft.dataNascimento! > TEST_FARM_SPEC.referenceDate) {
+    issues.push(`birth date after reference date for ${animal.identification}`);
+  }
+}
+
+function validateParentAge(
+  animal: TestFarmAnimalDefinition,
+  parent: TestFarmAnimalDefinition,
+  relationship: string,
+  issues: string[],
+) {
+  const parentBirth = parent.draft.dataNascimento ?? "";
+  const childBirth = animal.draft.dataNascimento ?? "";
+  if (
+    !isDateKey(parentBirth) ||
+    !isDateKey(childBirth) ||
+    daysBetween(parentBirth, childBirth) < 548
+  ) {
+    issues.push(
+      `${relationship} age chronology invalid for ${animal.identification}`,
+    );
+  }
+}
+
+function validateEpisodeEventIds(
+  episode: TestFarmReproductionEpisode,
+  eventIds: Set<string>,
+  issues: string[],
+) {
+  for (const eventId of [
+    episode.service.id,
+    episode.diagnosis?.id,
+    episode.outcome?.id,
+  ]) {
+    if (!eventId) continue;
+    if (eventIds.has(eventId))
+      issues.push(`duplicate reproduction event ${eventId}`);
+    eventIds.add(eventId);
+  }
+}
+
+function validateEpisodeFactDates(
+  episode: TestFarmReproductionEpisode,
+  issues: string[],
+) {
+  for (const factDate of [
+    episode.service.date,
+    episode.diagnosis?.date,
+    episode.outcome?.date,
+  ]) {
+    if (
+      factDate &&
+      isDateKey(factDate) &&
+      factDate > TEST_FARM_SPEC.referenceDate
+    ) {
+      issues.push(
+        `reproduction fact after reference date for episode ${episode.id}`,
+      );
+    }
+  }
+}
+
+function validateParturition(
+  episode: TestFarmReproductionEpisode & {
+    outcome: NonNullable<TestFarmReproductionEpisode["outcome"]>;
+  },
+  animalById: Map<string, TestFarmAnimalDefinition>,
+  issues: string[],
+) {
+  if (episode.outcome.type === "parto") {
+    const calf = animalById.get(episode.outcome.calfId);
+    if (
+      !calf ||
+      calf.draft.maeId !== episode.motherId ||
+      calf.draft.paiId !== episode.sireId
+    ) {
+      issues.push(`parturition parentage mismatch for episode ${episode.id}`);
+    }
+    if (calf?.draft.dataNascimento !== episode.outcome.date) {
+      issues.push(`parturition date mismatch for episode ${episode.id}`);
+    }
+    if (daysBetween(episode.service.date, episode.outcome.date) !== 283) {
+      issues.push(
+        `parturition gestation interval mismatch for episode ${episode.id}`,
+      );
+    }
+  }
+}
+
+function validateMotherEpisodeChain(
+  motherId: string,
+  episodes: TestFarmReproductionEpisode[],
+  issues: string[],
+) {
+  const ordered = [...episodes].sort((left, right) =>
+    left.service.date.localeCompare(right.service.date),
+  );
+  let previousOutcomeDate: string | null = null;
+  let previousPartoDate: string | null = null;
+  let previousOpenPregnancy = false;
+  for (const episode of ordered) {
+    if (previousOpenPregnancy) {
+      issues.push(
+        `overlapping reproduction episodes for mother ${motherId} at episode ${episode.id}`,
+      );
+    } else if (
+      previousOutcomeDate &&
+      episode.service.date <= previousOutcomeDate
+    ) {
+      issues.push(
+        `overlapping reproduction episodes for mother ${motherId} at episode ${episode.id}`,
+      );
+    }
+    previousPartoDate = validateCalvingInterval(
+      episode,
+      motherId,
+      previousPartoDate,
+      issues,
+    );
+    previousOpenPregnancy =
+      !episode.outcome && episode.diagnosis?.result === "positivo";
+    if (episode.outcome) previousOutcomeDate = episode.outcome.date;
+  }
+}
+
+function validateCalvingInterval(
+  episode: TestFarmReproductionEpisode,
+  motherId: string,
+  previousPartoDate: string | null,
+  issues: string[],
+) {
+  if (episode.outcome?.type === "parto") {
+    if (
+      previousPartoDate &&
+      daysBetween(previousPartoDate, episode.outcome.date) < 283
+    ) {
+      issues.push(
+        `calving interval too short for mother ${motherId} at episode ${episode.id}`,
+      );
+    }
+    previousPartoDate = episode.outcome.date;
+  }
+  return previousPartoDate;
+}
+
+function validateEpisodeService(
+  episode: TestFarmReproductionEpisode,
+  mother: TestFarmAnimalDefinition | undefined,
+  issues: string[],
+) {
+  if (
+    !isDateKey(episode.service.date) ||
+    !mother?.draft.dataNascimento ||
+    episode.service.date <= mother.draft.dataNascimento
+  ) {
+    issues.push(`service date invalid for episode ${episode.id}`);
+  }
 }
