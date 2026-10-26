@@ -8,6 +8,12 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { Toaster as AppToaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/react";
 
+if (import.meta.env.DEV) {
+  void import("@/lib/testFarm/devConsole").then(({ installTestFarmDevConsole }) => {
+    installTestFarmDevConsole();
+  });
+}
+
 createRoot(document.getElementById("root")!).render(
   <AuthProvider>
     <App />
