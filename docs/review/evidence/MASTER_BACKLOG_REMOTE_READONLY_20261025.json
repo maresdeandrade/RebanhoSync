@@ -1,0 +1,37 @@
+{
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "project_name": "RebanhoSync",
+  "environment_classification": "projeto dos relatórios F9; classificação como produção não presumida",
+  "access": "Supabase connector; transaction READ ONLY; aggregate SELECT",
+  "observed_at": "2026-10-25T19:54:54.963409+00:00",
+  "constraint": [{
+    "name": "fk_eventos_sanitario_lote_insumo_fazenda",
+    "validated": false,
+    "definition": "FOREIGN KEY (estoque_lote_id, insumo_id, fazenda_id) REFERENCES insumo_lotes(id, insumo_id, fazenda_id) ON DELETE RESTRICT NOT VALID"
+  }],
+  "protocols": [
+    {"scope": "global", "status": "retired", "approval_status": "draft", "count": 1},
+    {"scope": "global", "status": "active", "approval_status": "approved", "count": 9}
+  ],
+  "products": [{"status_curatorial": "precisa_validar", "count": 42}],
+  "legacy_counts": {
+    "produtos_veterinarios": 18,
+    "protocolos_sanitarios": 0,
+    "protocolos_sanitarios_itens": 0
+  },
+  "rls": [
+    {"table": "eventos_animais", "rls": true},
+    {"table": "fazenda_sanidade_config", "rls": true},
+    {"table": "produtos_veterinarios", "rls": true},
+    {"table": "protocolos_sanitarios", "rls": true},
+    {"table": "protocolos_sanitarios_itens", "rls": true},
+    {"table": "sanitario_produtos_v2", "rls": true},
+    {"table": "sanitario_protocolos_v2", "rls": true}
+  ],
+  "limits": [
+    "Observação pontual; não certifica policies/grants/RPCs nem RLS global.",
+    "A contagem de 42 produtos não identifica a proveniência individual dos 39 F6.",
+    "NOT VALID não prova registros órfãos; dados históricos não foram diagnosticados.",
+    "Aprovação de protocolo não implica curadoria de produto ou autorização operacional."
+  ]
+}
