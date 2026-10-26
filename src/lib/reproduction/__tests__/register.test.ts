@@ -664,6 +664,13 @@ describe("buildReproductionGesture", () => {
         tipo: "parto",
         dataParto: "2026-03-30",
         numeroCrias: 1,
+        crias: [{
+          localId: "cria-unica",
+          identificacao: "BZ-105",
+          sexo: "F",
+          especie: "bovino",
+          raca: "nelore",
+        }],
         episodeLinkMethod: "manual",
         episodeEventoId: "servico-1",
       },
@@ -672,6 +679,48 @@ describe("buildReproductionGesture", () => {
     expect(result.ops[2]?.table).toBe("animais");
     expect(result.ops[2]?.record.pai_id).toBe("touro-9");
     expect(result.ops[2]?.record.mae_id).toBe("matriz-1");
+    expect(result.ops[2]?.record.especie).toBe("bovino");
+    expect(result.ops[2]?.record.raca).toBe("nelore");
+  });
+
+  it.each([{ especie: "invalid" }, { raca: "invalid" }])("rejects unsupported calf taxonomy %j before writing", async (taxonomy) => {
+    await seedAnimal("mother-taxonomy");
+    await expect(registerReproductionGesture({
+      fazendaId: "farm-1", animalId: "mother-taxonomy", eventId: "birth-taxonomy",
+      occurredAt: "2026-03-30T12:00:00Z",
+      data: { tipo: "parto", dataParto: "2026-03-30", numeroCrias: 1,
+        crias: [{ localId: "calf-taxonomy", identificacao: "C1", sexo: "F", ...taxonomy } as never] },
+    })).rejects.toThrow();
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+  });
+
+  it("inherits maternal species, preserves legacy replay, and rejects explicit species changes", async () => {
+    await seedAnimal("mother-species");
+    const input = {
+      fazendaId: "farm-1", animalId: "mother-species", eventId: "birth-species",
+      occurredAt: "2026-03-30T12:00:00Z",
+      data: { tipo: "parto" as const, dataParto: "2026-03-30", numeroCrias: 1,
+        crias: [{ localId: "calf-species", identificacao: "C1", sexo: "F" as const }] },
+    };
+    const first = await registerReproductionGesture(input);
+    expect((await db.state_animais.get("calf-species"))?.especie).toBe("bovino");
+    await expect(registerReproductionGesture({ ...input, data: { ...input.data,
+      crias: [{ ...input.data.crias[0], especie: "bubalino" }] } })).rejects.toThrow();
+    await db.state_animais.update("calf-species", { especie: null });
+    expect((await registerReproductionGesture(input)).txId).toBe(first.txId);
+    expect((await db.state_animais.get("calf-species"))?.especie).toBeNull();
+  });
+
+  it("rechecks caller context after asynchronous preparation before committing a birth", async () => {
+    await seedAnimal("mother-context");
+    let checks = 0;
+    await expect(registerReproductionGesture({ fazendaId: "farm-1", animalId: "mother-context",
+      data: { tipo: "parto", dataParto: "2026-03-30", numeroCrias: 1 } },
+      { validateContext: () => { if (++checks > 1) throw new Error("FARM_CHANGED"); } },
+    )).rejects.toThrow("FARM_CHANGED");
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
   });
 
   it("returns calf ids after registering parto", async () => {
@@ -763,6 +812,42 @@ describe("buildReproductionGesture", () => {
       data_ultimo_parto: "2026-07-20",
     });
     expect(taxonomyFacts).not.toHaveProperty("data_prevista_parto");
+  });
+
+  it("replays a historical birth after a later service without changing its episode", async () => {
+    await seedAnimal("matriz-historical-birth-replay");
+    await seedService({
+      id: "service-historical-birth",
+      animalId: "matriz-historical-birth-replay",
+      occurredAt: "2026-01-10T10:00:00.000Z",
+    });
+    const birthInput = {
+      fazendaId: "farm-1",
+      animalId: "matriz-historical-birth-replay",
+      eventId: "birth-historical-replay",
+      occurredAt: "2026-10-20T10:00:00.000Z",
+      data: {
+        tipo: "parto" as const,
+        dataParto: "2026-10-20",
+        numeroCrias: 1,
+        episodeEventoId: "service-historical-birth",
+        episodeLinkMethod: "manual" as const,
+      },
+    };
+    const first = await registerReproductionGesture(birthInput);
+    await seedService({
+      id: "service-after-historical-birth",
+      animalId: "matriz-historical-birth-replay",
+      occurredAt: "2026-11-01T10:00:00.000Z",
+    });
+
+    const replay = await registerReproductionGesture(birthInput);
+
+    expect(replay.txId).toBe(first.txId);
+    expect(replay.calfIds).toEqual(first.calfIds);
+    expect(await db.event_eventos.count()).toBe(3);
+    expect(await db.event_eventos_reproducao.count()).toBe(3);
+    expect(await db.state_animais.count()).toBe(2);
   });
 
   it("retries a twin birth without duplicating event, calves, agenda or queue", async () => {

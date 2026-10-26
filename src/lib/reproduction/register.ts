@@ -1,3 +1,5 @@
+import { ANIMAL_SPECIES_OPTIONS } from "@/lib/animals/species";
+import { ANIMAL_BREED_OPTIONS } from "@/lib/animals/catalogs";
 import type { ReproductionCalfDraft } from "@/components/events/ReproductionForm";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import {
@@ -54,6 +56,7 @@ export interface BuildReproductionGestureInput {
   animalIdentificacao?: string;
   loteId?: string | null;
   paiId?: string | null;
+  maeEspecie?: string | null;
   maeRaca?: string | null;
 }
 
@@ -351,11 +354,12 @@ function buildGeneratedCalves(
     animalIdentificacao,
     loteId = null,
     paiId = null,
+    maeEspecie = null,
     maeRaca = null,
     data,
   }: Pick<
     BuildReproductionGestureInput,
-    "animalId" | "animalIdentificacao" | "loteId" | "paiId" | "maeRaca" | "data"
+    "animalId" | "animalIdentificacao" | "loteId" | "paiId" | "maeEspecie" | "maeRaca" | "data"
   >,
 ): {
   calfIds: string[];
@@ -382,6 +386,14 @@ function buildGeneratedCalves(
       sanitarioAgendaV2: SanitarioAgendaCreateDraftV2[];
     } => {
       const cria = data.crias?.[index];
+      const species = cria?.especie ?? maeEspecie;
+      const breed = cria?.raca ?? maeRaca;
+      if (species != null && !ANIMAL_SPECIES_OPTIONS.some(option => option.value === species)) {
+        throwReproIssues([{ code: "REPRO_CALF_SPECIES_INVALID", field: "crias", message: "Especie da cria invalida." }]);
+      }
+      if (cria?.raca != null && !ANIMAL_BREED_OPTIONS.some(option => option.value === cria.raca)) {
+        throwReproIssues([{ code: "REPRO_CALF_BREED_INVALID", field: "crias", message: "Raca da cria invalida." }]);
+      }
       const criaId =
         cria?.localId || deterministicUuidFromText(`${eventId}:calf:${index + 1}`);
       const sexo = cria?.sexo || (index === 0 ? "F" : "M");
@@ -393,6 +405,7 @@ function buildGeneratedCalves(
         status: "ativo",
         lote_id: loteId,
         data_nascimento: birthDate,
+        especie: species,
         data_entrada: null,
         data_saida: null,
         pai_id: paiId,
@@ -400,7 +413,7 @@ function buildGeneratedCalves(
         nome: cria?.nome?.trim() || null,
         rfid: null,
         origem: "nascimento",
-        raca: maeRaca,
+        raca: breed,
         papel_macho: null,
         habilitado_monta: false,
         observacoes: null,
@@ -512,7 +525,8 @@ async function resolvePartoContext(
       ? existingPartoPayload.episode_link_method
       : null;
   const replaysExistingParto = Boolean(
-    existingPartoDetail && !input.data.episodeEventoId,
+    existingPartoDetail &&
+    (!input.data.episodeEventoId || input.data.episodeEventoId === existingEpisodeId),
   );
   const requestedEpisodeId = input.data.episodeEventoId ?? null;
   const episodeId =
@@ -524,6 +538,7 @@ async function resolvePartoContext(
       episodeEventoId: null,
       episodeLinkMethod: "unlinked" as const,
       paiId: input.data.machoId ?? existingPartoDetail?.macho_id ?? null,
+      maeEspecie: mother.especie,
       maeRaca: mother.raca,
     };
   }
@@ -571,6 +586,7 @@ async function resolvePartoContext(
         ? "manual" as const
         : "auto_last_open_service" as const,
     paiId: input.data.machoId ?? serviceDetail!.macho_id ?? null,
+    maeEspecie: mother.especie,
     maeRaca: mother.raca,
   };
 }
@@ -979,6 +995,7 @@ export function buildReproductionGesture({
   animalIdentificacao,
   loteId = null,
   paiId = null,
+  maeEspecie = null,
   maeRaca = null,
   data,
 }: BuildReproductionGestureInput): ReproductionGestureBuildResult {
@@ -1040,6 +1057,7 @@ export function buildReproductionGesture({
         animalIdentificacao,
         loteId,
         paiId,
+        maeEspecie,
         maeRaca,
         data,
       });
@@ -1072,6 +1090,7 @@ export async function prepareReproductionGesture(
     ...input,
     occurredAt,
     paiId: partoContext.paiId,
+    maeEspecie: partoContext.maeEspecie ?? input.maeEspecie,
     maeRaca: partoContext.maeRaca,
     data: {
       ...input.data,
@@ -1246,9 +1265,13 @@ async function resolveExistingOperation(
   );
   const sameCalves = expectedCalfOps.every((op, index) => {
     const persisted = persistedCalves[index];
+    const requestedSpecies = input.data.crias?.[index]?.especie;
+    // Legacy clients omitted species; only an explicit request participates in replay identity.
+    const sameRequestedSpecies = requestedSpecies === undefined || persisted?.especie === requestedSpecies;
     return Boolean(
       persisted &&
         persisted.fazenda_id === input.fazendaId &&
+        sameRequestedSpecies &&
         sameCanonicalValue(calfIdentity(persisted), calfIdentity(op.record)),
     );
   });
@@ -1285,10 +1308,13 @@ async function resolveExistingOperation(
 
 export async function registerReproductionGesture(
   input: BuildReproductionGestureInput,
+  options: { validateContext?: () => void } = {},
 ) {
+  options.validateContext?.();
   await requireTenantSensitiveAccess();
   const built = await prepareReproductionGesture(input);
   const existing = await resolveExistingOperation(input, built);
+  options.validateContext?.();
   if (existing) {
     return {
       txId: existing.txId,
@@ -1305,6 +1331,7 @@ export async function registerReproductionGesture(
     enqueueSanitarioAgendaV2 = false;
   }
   const txId = await createGesture(input.fazendaId, built.ops, {
+    validateContext: options.validateContext,
     sanitarioAgendaV2: built.sanitarioAgendaV2,
     enqueueSanitarioAgendaV2,
   });

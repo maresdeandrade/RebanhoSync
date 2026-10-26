@@ -2,6 +2,8 @@ import { useEffect, type ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { db } from "@/lib/offline/db";
+import type { AnimalBreedEnum } from "@/lib/animals/catalogs";
+import type { AnimalSpeciesEnum } from "@/lib/animals/species";
 import type { ReproTipoEnum } from "@/lib/offline/types";
 import {
   REPRODUCTION_BULL_REFERENCE_OPTIONS,
@@ -35,6 +37,8 @@ export interface ReproductionCalfDraft {
   identificacao: string;
   sexo: "M" | "F";
   nome?: string;
+  especie?: AnimalSpeciesEnum;
+  raca?: AnimalBreedEnum | null;
 }
 
 export interface ReproductionEventData {

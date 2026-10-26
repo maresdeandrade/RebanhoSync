@@ -103,7 +103,7 @@ function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (!isRecord(value)) return value ?? null;
   return Object.fromEntries(
-    Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]),
+    Object.keys(value).filter(key => value[key] !== undefined).sort().map((key) => [key, canonicalize(value[key])]),
   );
 }
 
@@ -112,8 +112,18 @@ function sameFact(
   right: RemoteRow,
   fields: readonly string[],
 ) {
+  const normalizeInstant = (value: unknown) => {
+    if (typeof value !== "string") return value;
+    const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+    if (!match) return value;
+    const seconds = Date.parse(`${match[1]}${match[3]}`);
+    if (!Number.isFinite(seconds)) return value;
+    // Preserve sub-millisecond differences; only normalize timezone/zero padding.
+    return `${new Date(seconds).toISOString().slice(0, 19)}.${(match[2] ?? "").padEnd(9, "0")}Z`;
+  };
   const select = (row: RemoteRow) => Object.fromEntries(
-    fields.map((field) => [field, row[field] ?? null]),
+    fields.map((field) => [field, field === "occurred_at" || field === "client_recorded_at"
+      ? normalizeInstant(row[field] ?? null) : row[field] ?? null]),
   );
   return JSON.stringify(canonicalize(select(left))) ===
     JSON.stringify(canonicalize(select(right)));
