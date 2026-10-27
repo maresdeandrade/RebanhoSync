@@ -38,6 +38,10 @@ const PIPELINE_STATUS = {
 
 const LOCAL_DATABASE_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 const IMPORT_LOCK_KEY = "rebanhosync:sanitario-protocols-v2:12F10";
+const C02_P11_SHA256 = "751ba7c3fb4c0bb912e2f2a401c8b7405a37ad22e2615b9d326823aa0df64275";
+const C02_LOCAL_DATABASE = "rebanhosync_c02_p11";
+const C02_LOCAL_MARKER = "C02_P11_DISPOSABLE_LOCAL_ONLY";
+const C02_F6_SHA256 = "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367";
 
 const DEPRECATED_ACTIVE_ITEMS = [
   {
@@ -79,6 +83,7 @@ function usage() {
     "Uso:",
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --validate",
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run",
+    "  --validate/--dry-run/--apply-local --c02-p11/--c02-f6 <candidata> [--local-port <porta>]; C02 somente em banco local descartavel identificado.",
     "  --validate/--dry-run aceitam --review-candidate <arquivo>; dry-run de candidato exige banco local descartavel.",
     "  --validate/--dry-run/--apply aceitam --incremental <delta>; apply exige autorizacao e SANITARIO_DELTA_CONFIRM=<content_sha256>.",
     "  --review-candidate <arquivo> --apply so e aceito para produtos comerciais (sanitario_commercial_products_v2_review_candidates); exige SANITARIO_PRODUCTS_CONFIRM=<content_sha256> e SANITARIO_PRODUCTS_AUTHORIZATION_REF.",
@@ -1143,12 +1148,16 @@ async function applyImport(client) {
 }
 
 // Private engine: all production calls must pass through the authorized entrypoint.
-async function applyTransaction(client, data, { incremental = null, bootstrap = null, commercialProductsOnly = false } = {}) {
+async function applyTransaction(client, data, { incremental = null, bootstrap = null, commercialProductsOnly = false, c02 = null } = {}) {
   await client.query("begin");
   try {
     await client.query("set local lock_timeout = '5s'");
     await client.query("set local statement_timeout = '60s'");
     await client.query("select pg_advisory_xact_lock(hashtext($1))", [IMPORT_LOCK_KEY]);
+    if (c02) {
+      await preserveC02Baseline(client, data, c02);
+      if (c02.scope === "F6") await reuseC02Sources(client, data);
+    }
     if (bootstrap) {
       const replay = await bootstrapReplay(client, bootstrap);
       if (replay) {
@@ -1168,6 +1177,7 @@ async function applyTransaction(client, data, { incremental = null, bootstrap = 
     const preserved = incremental ? await captureIncrementalProtectedState(client, incremental) : null;
     const plan = await buildPlan(client, data, { lockRows: true, incremental });
     assertPublishablePlan(plan);
+    if (c02) assertC02Plan(plan, data, c02);
     if (commercialProductsOnly) {
       const updates = plan.filter((operation) => operation.collection === "product_rows" && operation.action === "update");
       assert(updates.length === 0,
@@ -1183,6 +1193,140 @@ async function applyTransaction(client, data, { incremental = null, bootstrap = 
     await client.query("rollback");
     throw error;
   }
+}
+
+// Reviewed bytes are the allowlist; neither packet flags nor environment authorize writes.
+async function preserveC02Baseline(client, data, context, lockRows = true) {
+  for (const candidate of [...data.product_rows].sort((a, b) => a.id.localeCompare(b.id))) {
+    const baseline = context.baseline?.find(p => p.id === candidate.id) ?? candidate;
+    const prefix = `C02_${context.scope}`;
+    const { rows: [existing] } = await client.query(
+      `select * from public.sanitario_produtos_v2 where id=$1${lockRows ? " for update" : ""}`, [candidate.id],
+    );
+    assert(existing && !existing.deleted_at && existing.status_curatorial === "precisa_validar", `${prefix}_BASELINE_NOT_PENDING`);
+    for (const field of ["id", "nome_comercial", "classe", "tipo_produto", "registro_orgao", "registro_numero",
+      ...(context.scope === "P11" ? ["fabricante"] : [])]) {
+      assert((existing[field] ?? null) === (baseline[field] ?? null), `${prefix}_IDENTITY_CONFLICT:${field}`);
+    }
+    for (const field of ["principio_ativo", "apresentacao", ...(context.scope === "F6" ? ["fabricante"] : [])]) {
+      const previous = context.scope === "P11" ? null : baseline[field] ?? null;
+      assert((existing[field] ?? null) === previous || existing[field] === candidate[field], `${prefix}_CONTENT_CONFLICT:${field}`);
+    }
+    const metadata = existing.metadata;
+    assert(metadata && typeof metadata === "object" && !Array.isArray(metadata) && metadata.review_only === true,
+      `${prefix}_REVIEW_METADATA_REQUIRED`);
+    for (const flag of ["approved_for_catalog", "operational_authorization", "allows_agenda_auto", "automatic_product_selection_authorized"]) {
+      assert(metadata[flag] === false, `${prefix}_OPERATIONAL_FLAG:${flag}`);
+    }
+    assert(FORBIDDEN_TRUE_FLAGS.every(flag => metadata[flag] !== true), `${prefix}_OPERATIONAL_METADATA`);
+    // Keep every current metadata key, including unrelated concurrent additions.
+    candidate.metadata = structuredClone(metadata);
+  }
+}
+
+// Reuse only equivalent global evidence. Identity/content conflicts and ambiguous
+// matches fail before any write; never silently merge different technical evidence.
+async function reuseC02Sources(client, data, lockRows = true) {
+  const mapping = new Map();
+  for (const source of data.source_rows) {
+    const oldKey = source.source_key;
+    const matches = (await client.query(`select * from public.sanitario_fontes_tecnicas_v2
+      where id=$1 or (scope='global' and fazenda_id is null and (source_key=$2 or url=$3))
+      order by id${lockRows ? " for update" : ""}`, [source.id, oldKey, source.url])).rows;
+    assert(matches.length <= 1, "C02_F6_SOURCE_AMBIGUOUS");
+    if (matches.length) {
+      const existing = matches[0];
+      assert(!existing.deleted_at, "C02_F6_SOURCE_TOMBSTONED");
+      for (const field of ["url", "kind", "scope", "fazenda_id", "version", "strength", "evidence_status",
+        "jurisdiction_country", "jurisdiction_uf", "jurisdiction_zone"]) {
+        assert((existing[field] ?? null) === (source[field] ?? null), `C02_F6_SOURCE_CONFLICT:${field}`);
+      }
+      assert(!isDifferent(existing.limitations, source.limitations), "C02_F6_SOURCE_CONFLICT:limitations");
+      for (const field of Object.keys(sourceInsertRow(source))) {
+        const value = existing[field];
+        source[field] = value instanceof Date ? value.toISOString().slice(0, 10) : structuredClone(value);
+      }
+    }
+    mapping.set(oldKey, source.source_key);
+  }
+  for (const rows of Object.values(data)) if (Array.isArray(rows)) for (const row of rows) {
+    if (row.source_key && mapping.has(row.source_key)) row.source_key = mapping.get(row.source_key);
+    if (row.source_keys) row.source_keys = row.source_keys.map(key => mapping.get(key) ?? key);
+  }
+  for (const coverage of data.coverage_rows) {
+    const source = data.source_rows.find(s => s.source_key === coverage.source_key);
+    const matches = (await client.query(`select * from public.sanitario_fonte_cobertura_campos_v2
+      where id=$1 or (source_id=$2 and field_key=$3) order by id${lockRows ? " for update" : ""}`,
+    [coverage.id, source.id, coverage.field_key])).rows;
+    assert(matches.length <= 1, "C02_F6_COVERAGE_AMBIGUOUS");
+    if (matches.length) {
+      const existing = matches[0];
+      assert(!existing.deleted_at && existing.source_id === source.id && existing.field_key === coverage.field_key &&
+        existing.coverage_status === coverage.coverage_status, "C02_F6_COVERAGE_CONFLICT");
+      coverage.id = existing.id;
+      coverage.notes = existing.notes;
+    }
+  }
+}
+
+function assertC02Plan(plan, data, context) {
+  const products = new Set(data.product_rows.map(p => p.id));
+  assert(plan.every(op => ["create", "skip"].includes(op.action) ||
+    (op.action === "update" && op.table === "sanitario_produtos_v2" && products.has(op.canonical_id))),
+  `C02_${context.scope}_EXISTING_TECHNICAL_CONTENT_CONFLICT`);
+}
+
+async function c02Main(args) {
+  const scope = args.includes("--c02-f6") ? "F6" : "P11";
+  const flag = scope === "F6" ? "--c02-f6" : "--c02-p11";
+  const prefix = `C02_${scope}`;
+  const database = scope === "F6" ? "rebanhosync_c02_f6" : C02_LOCAL_DATABASE;
+  const marker = scope === "F6" ? "C02_F6_DISPOSABLE_LOCAL_ONLY" : C02_LOCAL_MARKER;
+  const modes = args.filter(arg => ["--validate", "--dry-run", "--apply-local"].includes(arg));
+  assert(modes.length === 1, `${prefix}_LOCAL_MODE_REQUIRED`);
+  const options = new Map();
+  for (let index = 0; index < args.length; index++) {
+    if (modes.includes(args[index])) continue;
+    assert([flag, "--local-port"].includes(args[index]) && !options.has(args[index]), `${prefix}_INVALID_ARGUMENT`);
+    const value = args[++index];
+    assert(value && !value.startsWith("--"), `${prefix}_ARGUMENT_VALUE_REQUIRED`);
+    options.set(args[index - 1], value);
+  }
+  const raw = readFileSync(options.get(flag), "utf8");
+  assert(createHash("sha256").update(raw).digest("hex") === (scope === "F6" ? C02_F6_SHA256 : C02_P11_SHA256), `${prefix}_CANDIDATE_CHANGED`);
+  const packet = JSON.parse(raw);
+  const data = validateCanonicalTechnicalContract(packet).data;
+  const context = { scope, baseline: packet.baseline?.product_rows };
+  if (modes[0] === "--validate") {
+    console.log(`C02 ${scope} validate OK; review-only; no database connection`);
+    return;
+  }
+  const port = Number(options.get("--local-port"));
+  assert(Number.isInteger(port) && port > 0 && port <= 65535, `${prefix}_LOCAL_PORT_REQUIRED`);
+  // No DB_URL, env-file, host flag, SSL override or remote-import escape hatch.
+  const client = new Client({ host: "127.0.0.1", port, database,
+    user: "postgres", password: "", ssl: false, options: "", connectionTimeoutMillis: 5000 });
+  try {
+    await client.connect();
+    const { rows: [target] } = await client.query(`select current_database() as database,
+      shobj_description(oid, 'pg_database') as marker from pg_database where datname=current_database()`);
+    assert(target?.database === database && target.marker === marker, `${prefix}_DISPOSABLE_DATABASE_REQUIRED`);
+    if (modes[0] === "--apply-local") {
+      const summary = await applyTransaction(client, data, { c02: context });
+      console.log(`C02 ${scope} local summary ${JSON.stringify(summary)}`);
+    } else {
+      await client.query("begin read only");
+      try {
+        // Read-only counterpart; apply always repeats these checks under a row lock.
+        await preserveC02Baseline(client, data, context, false);
+        if (scope === "F6") await reuseC02Sources(client, data, false);
+        const plan = await buildPlan(client, data);
+        assertPublishablePlan(plan);
+        assertC02Plan(plan, data, context);
+        printPlan(`C02 ${scope} local dry-run`, plan);
+      } finally { await client.query("rollback"); }
+    }
+  } finally { await client.end(); }
 }
 
 // Deployment bootstrap, not an interactive curatorial decision. Only the gated DB-owner
@@ -1444,6 +1588,7 @@ async function incrementalMain(args) {
 }
 async function main() {
   const args = process.argv.slice(2);
+  if (args.includes("--c02-p11") || args.includes("--c02-f6")) return c02Main(args);
   if (args.includes("--incremental")) return incrementalMain(args);
   const reviewIndex = args.indexOf("--review-candidate");
   const reviewPath = reviewIndex >= 0 ? args[reviewIndex + 1] : null;

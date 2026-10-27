@@ -1,0 +1,51 @@
+{
+  "observed_at": "2026-10-26T20:52:11.674Z",
+  "database": "task-owned disposable local PostgreSQL",
+  "server_version": "17.6",
+  "container_id": "b6e8b8c4750424e3b71f56542295f923974926bd2dfce23e075c6c8d37cd8ad2",
+  "local_port": 63338,
+  "candidate_sha256": "751ba7c3fb4c0bb912e2f2a401c8b7405a37ad22e2615b9d326823aa0df64275",
+  "ddl_sources": [
+    "supabase/migrations/20260608090000_sanitario_protocol_product_source_v2.sql",
+    "supabase/migrations/20260923132000_sanitario_source_key_identity.sql"
+  ],
+  "scope": "Active technical table/type/index DDL; external FK fixtures; no RLS/auth certification",
+  "results": [
+    "fresh local P11 fixture",
+    "SQL dry-run: 19 creates + 1 updates; zero persistent changes",
+    "mid-transaction SQL failure rolls back source, product enrichment and every technical row",
+    "two concurrent SQL applications serialize; replay skips all 20 rows",
+    "SQL replay converges with 20 skips and no duplicate or content change",
+    "UUID, MAPA identity, complete concurrent metadata, pending states and false flags preserved",
+    "curated product rejected in both apply and dry-run, without partial changes",
+    "registration identity and unexpected existing enrichment rejected without overwrite",
+    "conflicting existing technical rule rejected instead of silently updated",
+    "existing operational authorization rejected, never reset or promoted by pilot",
+    "active source identity unique index rejects duplicate UUID for the same source key",
+    "unmarked local target rejected despite remote-import env override"
+  ],
+  "first_apply": {
+    "create": 19,
+    "update": 1,
+    "skip": 0,
+    "reject": 0
+  },
+  "replay": {
+    "create": 0,
+    "update": 0,
+    "skip": 20,
+    "reject": 0
+  },
+  "final_counts": {
+    "sanitario_fontes_tecnicas_v2": 1,
+    "sanitario_fonte_cobertura_campos_v2": 6,
+    "sanitario_produtos_v2": 1,
+    "sanitario_produto_especie_autorizacao_v2": 1,
+    "sanitario_produto_fontes_v2": 6,
+    "sanitario_produto_dose_rules_v2": 1,
+    "sanitario_produto_carencia_rules_v2": 2,
+    "sanitario_produto_carencia_fontes_v2": 2
+  },
+  "remote_connections": 0,
+  "schema_or_migration_files_modified": false
+}

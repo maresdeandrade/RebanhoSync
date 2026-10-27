@@ -20,6 +20,8 @@
     "scripts/codex/sanitario-r01-atomic-sql.mjs",
     "scripts/codex/verify-sanitario-r05-evidence.mjs",
     "tests/codex/sanitario-r01-legacy-payloads.local.mjs",
+    "tests/codex/sanitario-c02-p11.local.mjs",
+    "docs/review/evidence/SANITARIO_V2_C02_DRY_RUN_20261026.mjs",
     "scripts/codex/test-rpc-duplicidade.mjs",
     "scripts/codex/validate-sanitario-adapter-payloads-12f5.mjs",
     "scripts/codex/validate-sanitario-adapter-payloads-12f8.mjs",
@@ -53,7 +55,8 @@
   "health": {
     "ignore": [
       "scripts/**",
-      "tests/codex/**"
+      "tests/codex/**",
+      "docs/review/evidence/SANITARIO_V2_C02_DRY_RUN_20261026.mjs"
     ]
   },
 
