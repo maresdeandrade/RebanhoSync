@@ -1,0 +1,251 @@
+{
+  "artifact": "sanitario_c02_technical_review_candidate",
+  "artifact_version": "13.0.0-canonical-contract",
+  "identity_model": "VERSIONED_EXPLICIT_UUID",
+  "execute_import": false,
+  "approved": false,
+  "review_only": true,
+  "import_gate": {
+    "import_real_authorized": false,
+    "remote_write_authorized": false
+  },
+  "payload": {
+    "source_rows": [
+      {
+        "id": "9218da1b-8759-545c-9ec8-4bcd5351c15e",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "kind": "bula",
+        "scope": "global",
+        "fazenda_id": null,
+        "title": "Cydectin 1% — bula brasileira ART-21644 v2.0",
+        "issuer": "Zoetis Indústria de Produtos Veterinários Ltda.",
+        "version": "ART-21644 v2.0 / 40013750 GQ-030",
+        "published_at": null,
+        "accessed_at": "2026-10-26",
+        "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Cydectin/pdf/cydectin-bula.pdf",
+        "jurisdiction_country": "BR",
+        "strength": "forte",
+        "evidence_status": "SIM_BULA",
+        "limitations": [
+          "Documento identificado; data de aprovação interna 23/09/2016 não é vigência de registro.",
+          "Caracterização documental; não aprova produto nem operação."
+        ],
+        "metadata": {
+          "review_only": true
+        }
+      }
+    ],
+    "coverage_rows": [
+      {
+        "id": "22400d3b-522c-538a-b8de-7856b9eacb55",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "species_authorization",
+        "coverage_status": "covers",
+        "notes": "Bula pp.1–2; ver relatório C02 P11."
+      },
+      {
+        "id": "034e706a-0a79-5126-b192-bebc4e0055fc",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "dose",
+        "coverage_status": "covers",
+        "notes": "Bula pp.1–2; ver relatório C02 P11."
+      },
+      {
+        "id": "6168e301-a2a3-5dce-bf8c-e05489abdf8a",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "route",
+        "coverage_status": "covers",
+        "notes": "Bula pp.1–2; ver relatório C02 P11."
+      },
+      {
+        "id": "4fb63c1d-95af-5158-b8fa-536ea1116837",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "presentation",
+        "coverage_status": "covers",
+        "notes": "Bula pp.1–2; ver relatório C02 P11."
+      },
+      {
+        "id": "b49ba057-3451-53ef-8b0d-0cbf6f707481",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "withdrawal",
+        "coverage_status": "covers",
+        "notes": "Bula pp.1–2; ver relatório C02 P11."
+      },
+      {
+        "id": "c50930cc-bb81-5539-9610-fcf59f8493c3",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "composition",
+        "coverage_status": "covers",
+        "notes": "Bula pp.1–2; ver relatório C02 P11."
+      }
+    ],
+    "product_rows": [
+      {
+        "apresentacao": "Solução injetável; frascos de 50 mL, 500 mL e 1000 mL",
+        "classe": "antiparasitario",
+        "fabricante": "Zoetis",
+        "id": "7fc44e31-3373-50de-97fd-58e874938938",
+        "metadata": {
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "automatic_product_selection_authorized": false,
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "manufacturer_proposed_not_regulatory_confirmed": true,
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "registration_mentioned_unverified": {
+            "authority": "MAPA",
+            "number": "6709"
+          },
+          "research_batch": "f5_20261023_review_only",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "research_lot_code": "P11",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "review_only": true,
+          "semantic_review_notes": null,
+          "source_url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Cydectin/pdf/cydectin-bula.pdf"
+        },
+        "nome_comercial": "Cydectin 1%",
+        "principio_ativo": "Moxidectina 1 g/100 mL",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "registro_numero": null,
+        "registro_orgao": null,
+        "status_curatorial": "precisa_validar",
+        "tipo_produto": "antiparasitario"
+      }
+    ],
+    "product_authorization_rows": [
+      {
+        "id": "408e3136-c16a-5db1-824b-45e07a448c95",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "species_code": "bovino",
+        "aptitude": "all",
+        "authorization_status": "PRECISA_VALIDAR",
+        "lactacao_permitida": null,
+        "gestacao_permitida": null,
+        "requires_mv_responsavel": false,
+        "limitations": [
+          "Bula documenta bovinos; manter revisão pendente.",
+          "Não aplicar em fêmeas produtoras de leite para consumo humano; não generalizar a toda lactação."
+        ],
+        "metadata": {
+          "review_only": true
+        }
+      }
+    ],
+    "product_source_rows": [
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "species_authorization"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "dose"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "route"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "presentation"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "withdrawal"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "composition"
+      }
+    ],
+    "dose_rule_rows": [
+      {
+        "id": "06bebafa-6d1f-52cd-82d5-7de76621d773",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "species_code": "bovino",
+        "aptitude": "all",
+        "route": "SC",
+        "dose_quantity": 0.02,
+        "dose_unit": "mL",
+        "dose_basis": "kg_peso_vivo",
+        "status_curatorial": "precisa_validar",
+        "limitations": [
+          "Normalização aritmética: 1 mL/50 kg = 0,02 mL/kg.",
+          "A fonte não estabelece intervalo fixo de reaplicação."
+        ]
+      }
+    ],
+    "withdrawal_rule_rows": [
+      {
+        "id": "59c1a4d7-f0bd-5011-9f2e-88faa19c95ee",
+        "withdrawal_rule_key": "C02_F6_P11_CYDECTIN_CORTE",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "species_code": "bovino",
+        "aptitude": "corte",
+        "route": "SC",
+        "dose_basis": "kg_peso_vivo",
+        "meat_days": 28,
+        "milk_days": null,
+        "milk_hours": null,
+        "applicability": "period",
+        "status_curatorial": "precisa_validar",
+        "source_keys": [
+          "SRC_C02_F6_P11_CYDECTIN_ART21644_V2"
+        ],
+        "limitations": [
+          "Regra documental pendente; sem carência ativa ou autorização operacional.",
+          "Contexto mista não é inferido por esta candidata."
+        ]
+      },
+      {
+        "id": "00cc448a-1633-5e93-bfb8-5b70320af50a",
+        "withdrawal_rule_key": "C02_F6_P11_CYDECTIN_LEITE",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "species_code": "bovino",
+        "aptitude": "leite",
+        "route": "SC",
+        "dose_basis": "kg_peso_vivo",
+        "meat_days": null,
+        "milk_days": null,
+        "milk_hours": null,
+        "applicability": "not_permitted",
+        "status_curatorial": "precisa_validar",
+        "source_keys": [
+          "SRC_C02_F6_P11_CYDECTIN_ART21644_V2"
+        ],
+        "limitations": [
+          "Regra documental pendente; sem carência ativa ou autorização operacional.",
+          "Contexto mista não é inferido por esta candidata."
+        ]
+      }
+    ],
+    "withdrawal_source_rows": [
+      {
+        "withdrawal_rule_key": "C02_F6_P11_CYDECTIN_CORTE",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "withdrawal"
+      },
+      {
+        "withdrawal_rule_key": "C02_F6_P11_CYDECTIN_LEITE",
+        "source_key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+        "field_key": "withdrawal"
+      }
+    ],
+    "product_class_rows": [],
+    "product_class_group_rows": [],
+    "product_class_group_member_rows": [],
+    "product_class_default_rule_rows": [],
+    "protocol_rows": [],
+    "protocol_item_rows": []
+  }
+}

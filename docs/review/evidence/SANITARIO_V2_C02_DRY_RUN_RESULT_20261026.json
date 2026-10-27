@@ -1,0 +1,149 @@
+{
+  "mode": "LOCAL_CANONICAL_PLANNER_SIMULATION",
+  "baseline": "historical F6 P11 fixture; other technical rows assumed absent only in simulation",
+  "limitations": [
+    "No SQL engine, transaction, RLS, current remote snapshot, CAS or concurrency certified",
+    "Not the publisher CLI --dry-run",
+    "Pilot only; remaining 38 products mapped in inventory, not simulated"
+  ],
+  "candidate_sha256": "751ba7c3fb4c0bb912e2f2a401c8b7405a37ad22e2615b9d326823aa0df64275",
+  "canonical_validation": "passed",
+  "first_plan": {
+    "create": 19,
+    "update": 1
+  },
+  "replay_plan": {
+    "skip": 20
+  },
+  "controls": {
+    "curated_product_rejected": true,
+    "registration_identity_change_rejected": true,
+    "unsourced_zero_rejected": true,
+    "pending_statuses_preserved": true
+  },
+  "sql_selects_simulated": 40,
+  "sql_writes": 0,
+  "remote_connections": 0,
+  "operations": [
+    {
+      "table": "sanitario_fontes_tecnicas_v2",
+      "key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_fonte_cobertura_campos_v2",
+      "key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2:dose",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_fonte_cobertura_campos_v2",
+      "key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2:species_authorization",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_fonte_cobertura_campos_v2",
+      "key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2:presentation",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_fonte_cobertura_campos_v2",
+      "key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2:route",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_fonte_cobertura_campos_v2",
+      "key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2:withdrawal",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_fonte_cobertura_campos_v2",
+      "key": "SRC_C02_F6_P11_CYDECTIN_ART21644_V2:composition",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produtos_v2",
+      "key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+      "action": "update",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_especie_autorizacao_v2",
+      "key": "408e3136-c16a-5db1-824b-45e07a448c95",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_fontes_v2",
+      "key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1:SRC_C02_F6_P11_CYDECTIN_ART21644_V2:species_authorization",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_fontes_v2",
+      "key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1:SRC_C02_F6_P11_CYDECTIN_ART21644_V2:dose",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_fontes_v2",
+      "key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1:SRC_C02_F6_P11_CYDECTIN_ART21644_V2:route",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_fontes_v2",
+      "key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1:SRC_C02_F6_P11_CYDECTIN_ART21644_V2:presentation",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_fontes_v2",
+      "key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1:SRC_C02_F6_P11_CYDECTIN_ART21644_V2:withdrawal",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_fontes_v2",
+      "key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1:SRC_C02_F6_P11_CYDECTIN_ART21644_V2:composition",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_dose_rules_v2",
+      "key": "06bebafa-6d1f-52cd-82d5-7de76621d773",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_carencia_rules_v2",
+      "key": "C02_F6_P11_CYDECTIN_LEITE",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_carencia_rules_v2",
+      "key": "C02_F6_P11_CYDECTIN_CORTE",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_carencia_fontes_v2",
+      "key": "C02_F6_P11_CYDECTIN_CORTE:SRC_C02_F6_P11_CYDECTIN_ART21644_V2:withdrawal",
+      "action": "create",
+      "reason": ""
+    },
+    {
+      "table": "sanitario_produto_carencia_fontes_v2",
+      "key": "C02_F6_P11_CYDECTIN_LEITE:SRC_C02_F6_P11_CYDECTIN_ART21644_V2:withdrawal",
+      "action": "create",
+      "reason": ""
+    }
+  ]
+}
