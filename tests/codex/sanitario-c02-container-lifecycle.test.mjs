@@ -3,11 +3,7 @@ import { mkdtempSync, writeFileSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-
-const module = await import("../../scripts/codex/run-sanitario-c02-disposable.mjs").catch(error => {
-  if (error.code === "ERR_MODULE_NOT_FOUND") return {};
-  throw error;
-});
+import { withDisposableC02 } from "../../scripts/codex/run-sanitario-c02-disposable.mjs";
 const externalId = "b".repeat(64);
 function engine(options = {}) {
   const containers = new Map([[externalId, { state: "running", runId: "external", autoRemove: false }]]);
@@ -55,8 +51,8 @@ function engine(options = {}) {
 }
 const directory = () => mkdtempSync(path.join(tmpdir(), "c02-lifecycle-test-"));
 const launch = options => {
-  expect(module.withDisposableC02, "A managed launcher must replace detached run + stop without removal").toBeTypeOf("function");
-  return module.withDisposableC02(options);
+  expect(withDisposableC02, "A managed launcher must replace detached run + stop without removal").toBeTypeOf("function");
+  return withDisposableC02(options);
 };
 
 describe("C02 execution-owned container lifecycle (simulated Docker only)", () => {
