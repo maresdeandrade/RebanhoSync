@@ -1,3 +1,5 @@
+import Dexie from "dexie";
+
 // Matches the PostgreSQL v1 normalizer for the JSON values emitted by the client.
 const encoder = new TextEncoder();
 function compareUtf8(a: string, b: string) {
@@ -123,7 +125,7 @@ export async function movementCommandDigest(input: Record<string, unknown>) {
   const bytes = encoder.encode(
     canonicalMovementJson(normalizeMovementInput(input)),
   );
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const digest = await Dexie.waitFor(crypto.subtle.digest("SHA-256", bytes));
   return Array.from(new Uint8Array(digest), (b) =>
     b.toString(16).padStart(2, "0"),
   ).join("");

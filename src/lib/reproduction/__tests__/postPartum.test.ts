@@ -61,7 +61,7 @@ describe("buildPostPartumOps", () => {
     expect(result.weighedCount).toBe(1);
     expect(result.umbigoCount).toBe(1);
     expect(result.agendaCount).toBe(14);
-    expect(result.ops).toHaveLength(21);
+    expect(result.ops).toHaveLength(13);
     expect(result.ops.filter(op => op.table === "movement_v1")).toEqual([
       expect.objectContaining({ record: expect.objectContaining({ subject_id: "cria-1", to_lote_id: "bezerreiro", movement_mode: "operational" }) }),
     ]);
@@ -146,7 +146,8 @@ describe("buildPostPartumOps", () => {
     });
 
     const agendaOps = result.ops.filter((op) => op.table === "agenda_itens");
-    expect(agendaOps).toHaveLength(14);
+    expect(agendaOps).toHaveLength(6);
+    expect(result.sanitarioAgendaV2).toHaveLength(8);
     expect(agendaOps[0]?.record).toMatchObject({
       animal_id: "cria-1",
       status: "agendado",
@@ -156,7 +157,7 @@ describe("buildPostPartumOps", () => {
       agendaOps
         .map((op) => op.record.dedup_key)
         .filter((dedupKey) => String(dedupKey).includes(":cura_umbigo")),
-    ).toHaveLength(6);
+    ).toHaveLength(0);
     expect(
       agendaOps.map((op) => op.record.dedup_key),
     ).not.toContain("calf_journey:cria-1:cura_umbigo:d0:manha");

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   Link,
@@ -16,11 +16,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageIntro } from "@/components/ui/page-intro";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
+import { CalfSanitaryAgenda } from "@/components/animals/CalfSanitaryAgenda";
 import { formatWeightInput } from "@/lib/format/weight";
 import { db } from "@/lib/offline/db";
-import { createGesture } from "@/lib/offline/ops";
 import type { Animal } from "@/lib/offline/types";
-import { buildPostPartumOps } from "@/lib/reproduction/postPartum";
+import { registerPostPartumGesture } from "@/lib/reproduction/registerPostPartum";
 import {
   getBirthEventId,
   getNeonatalSetup,
@@ -53,7 +53,9 @@ function getInitialDraft(
 }
 
 export default function AnimalPosParto() {
-  const { farmMeasurementConfig } = useAuth();
+  const { farmMeasurementConfig, activeFarmId, user, role } = useAuth();
+  const context = useRef({ fazendaId: activeFarmId, userId: user?.id ?? null, role });
+  context.current = { fazendaId: activeFarmId, userId: user?.id ?? null, role };
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -233,8 +235,8 @@ export default function AnimalPosParto() {
     setIsSaving(true);
     try {
       const occurredAt = new Date().toISOString();
-      const { ops, weighedCount, umbigoCount, agendaCount } =
-        buildPostPartumOps({
+      const { weighedCount, umbigoCount, agendaCount, sanitary } =
+        await registerPostPartumGesture({
           fazendaId: mother.fazenda_id,
           weightUnit: farmMeasurementConfig.weight_unit,
           mother: {
@@ -246,14 +248,7 @@ export default function AnimalPosParto() {
           occurredAt,
           birthEventId: eventId,
           existingAgendaItems: journeyAgendaItems ?? [],
-        });
-
-      if (ops.length === 0) {
-        showError("Nenhuma atualizacao valida para salvar.");
-        return;
-      }
-
-      await createGesture(mother.fazenda_id, ops);
+        }, () => context.current);
       showSuccess(
         `Execução registrada com sucesso. Pós-parto finalizado para ${calves.length} cria(s). ${
           weighedCount > 0
@@ -271,6 +266,7 @@ export default function AnimalPosParto() {
           calves.length > 1 ? "Seguindo a rotina da primeira cria. " : ""
         }Sincronizacao pendente.`,
       );
+      if (sanitary.unavailable > 0) showError("O planejamento sanitário está indisponível neste contexto. Nenhuma nova atividade sanitária foi criada. Os fatos registrados foram preservados.");
 
       const params = new URLSearchParams();
       if (eventId) {
@@ -367,6 +363,8 @@ export default function AnimalPosParto() {
           </>
         }
       />
+
+      <CalfSanitaryAgenda fazendaId={activeFarmId === mother.fazenda_id ? activeFarmId : null} animalIds={(calves ?? []).map(calf => calf.id)} />
 
       {drafts.length > 1 && (
         <Card>

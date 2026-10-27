@@ -1,7 +1,7 @@
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import type { FarmWeightUnit } from "@/lib/farms/measurementConfig";
 import { parseWeightInput } from "@/lib/format/weight";
-import type { AgendaItem, Animal, OperationInput } from "@/lib/offline/types";
+import type { AgendaItem, Animal, OperationInput, SanitarioAgendaCreateDraftV2 } from "@/lib/offline/types";
 import {
   buildCalfJourneyAgendaOps,
   isUmbigoCareAgendaItem,
@@ -22,7 +22,7 @@ export interface PostPartumCalfDraft {
   curaUmbigo: boolean;
 }
 
-interface BuildPostPartumOpsInput {
+export interface BuildPostPartumOpsInput {
   fazendaId: string;
   weightUnit?: FarmWeightUnit;
   mother: Pick<Animal, "id" | "identificacao">;
@@ -44,6 +44,7 @@ interface BuildPostPartumOpsInput {
 
 interface PostPartumBuildResult {
   ops: OperationInput[];
+  sanitarioAgendaV2: SanitarioAgendaCreateDraftV2[];
   weighedCount: number;
   umbigoCount: number;
   agendaCount: number;
@@ -61,6 +62,7 @@ export function buildPostPartumOps({
 }: BuildPostPartumOpsInput): PostPartumBuildResult {
   const calfMap = new Map(calves.map((calf) => [calf.id, calf]));
   const ops: OperationInput[] = [];
+  const sanitarioAgendaV2: SanitarioAgendaCreateDraftV2[] = [];
   let weighedCount = 0;
   let umbigoCount = 0;
   let agendaCount = 0;
@@ -213,11 +215,13 @@ export function buildPostPartumOps({
       existingAgendaItems,
     });
     ops.push(...agendaBuild.ops);
+    sanitarioAgendaV2.push(...agendaBuild.sanitarioAgendaV2);
     agendaCount += agendaBuild.createdCount;
   }
 
   return {
     ops,
+    sanitarioAgendaV2,
     weighedCount,
     umbigoCount,
     agendaCount,

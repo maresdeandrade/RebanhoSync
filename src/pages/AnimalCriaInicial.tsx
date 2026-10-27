@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   Link,
@@ -30,6 +30,8 @@ import {
 import { AnimalKinshipBadges } from "@/components/animals/AnimalKinshipBadges";
 import { AnimalWeightVariationBadge } from "@/components/animals/AnimalWeightVariationBadge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { CalfSanitaryAgenda } from "@/components/animals/CalfSanitaryAgenda";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,7 +72,7 @@ import {
   hasPendingNeonatalSetup,
   wasGeneratedFromBirthEvent,
 } from "@/lib/reproduction/neonatal";
-import { buildPostPartumOps } from "@/lib/reproduction/postPartum";
+import { registerPostPartumGesture } from "@/lib/reproduction/registerPostPartum";
 import { showError, showSuccess } from "@/utils/toast";
 import {
   buildAnimalWeightHistory,
@@ -117,7 +119,9 @@ function getInitialDraft(
 }
 
 export default function AnimalCriaInicial() {
-  const { farmMeasurementConfig, farmLifecycleConfig } = useAuth();
+  const { farmMeasurementConfig, farmLifecycleConfig, activeFarmId, user, role } = useAuth();
+  const context = useRef({ fazendaId: activeFarmId, userId: user?.id ?? null, role });
+  context.current = { fazendaId: activeFarmId, userId: user?.id ?? null, role };
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -346,8 +350,8 @@ export default function AnimalCriaInicial() {
     try {
       const occurredAt = new Date().toISOString();
       const birthEventId = getBirthEventId(calf.payload);
-      const { ops, weighedCount, umbigoCount, agendaCount } =
-        buildPostPartumOps({
+      const { weighedCount, umbigoCount, agendaCount, sanitary } =
+        await registerPostPartumGesture({
           fazendaId: calf.fazenda_id,
           weightUnit: farmMeasurementConfig.weight_unit,
           mother: {
@@ -359,14 +363,7 @@ export default function AnimalCriaInicial() {
           occurredAt,
           birthEventId,
           existingAgendaItems: journeyAgendaItems ?? [],
-        });
-
-      if (ops.length === 0) {
-        showError("Nenhuma atualizacao valida para salvar.");
-        return;
-      }
-
-      await createGesture(calf.fazenda_id, ops);
+        }, () => context.current);
       showSuccess(
         `Execução registrada com sucesso. ${
           weighedCount > 0 ? `${weighedCount} pesagem inicial registrada. ` : ""
@@ -378,6 +375,7 @@ export default function AnimalCriaInicial() {
             : ""
         }Sincronizacao pendente.`,
       );
+      if (sanitary.unavailable > 0) showError("O planejamento sanitário está indisponível neste contexto. Nenhuma nova atividade sanitária foi criada. Os fatos registrados foram preservados.");
     } catch {
       showError("Erro ao salvar a ficha inicial da cria.");
     } finally {
@@ -477,6 +475,7 @@ export default function AnimalCriaInicial() {
 
   return (
     <div className="space-y-5">
+      <CalfSanitaryAgenda fazendaId={activeFarmId === calf.fazenda_id ? activeFarmId : null} animalIds={[calf.id]} />
       <PageIntro
         variant="plain"
         eyebrow="Cria"
