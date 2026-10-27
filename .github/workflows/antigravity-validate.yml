@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  packages: read
 
 concurrency:
   group: antigravity-validate-${{ github.event.pull_request.number || (github.event_name == 'merge_group' && github.sha) || github.ref }}
@@ -21,7 +22,7 @@ defaults:
 
 env:
   CI: true
-  SUPABASE_INTERNAL_IMAGE_REGISTRY: public.ecr.aws
+  SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
 
   # JavaScript actions usam Node 24.
   # O runtime do projeto continua controlado por actions/setup-node.
@@ -167,6 +168,15 @@ jobs:
         uses: supabase/setup-cli@v3
         with:
           version: 2.72.7
+
+      - name: Authenticate Supabase image pulls
+        if: steps.scope.outputs.needs_supabase == 'true'
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          logout: true
 
       - name: Start disposable Supabase
         if: steps.scope.outputs.needs_supabase == 'true'
