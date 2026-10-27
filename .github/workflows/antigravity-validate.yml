@@ -21,6 +21,7 @@ defaults:
 
 env:
   CI: true
+  SUPABASE_INTERNAL_IMAGE_REGISTRY: public.ecr.aws
 
   # JavaScript actions usam Node 24.
   # O runtime do projeto continua controlado por actions/setup-node.
