@@ -1,0 +1,566 @@
+{
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "observed_at": "2026-10-27T16:44:48.805135+00:00",
+  "snapshot": "471795:471795:",
+  "remote_access": "READ ONLY; SELECT; ROLLBACK",
+  "remote_writes_this_task": 0,
+  "comparison_baseline": "SANITARIO_V2_C02_REMOTE_APPROVAL_AFTER_20261027.json",
+  "current_snapshot": "SANITARIO_V2_C02_POST_APPROVAL_READONLY_20261027.json",
+  "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+  "changes": [
+    {
+      "id": "0168212e-2443-5eaf-97f1-108924e58d4d",
+      "code": "P25",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "0f1b6c73-c50f-5ad4-a308-29788de7429a",
+      "code": "P23",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "12128db7-71ff-551d-92e0-18418140b91b",
+      "code": "P22",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "1628cf40-3676-53a6-9fe2-4e154936167b",
+      "code": "P15",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "1957cff0-3741-5dd8-bf81-b157a2d575c8",
+      "code": "P14",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "234204f8-4113-5294-8aa2-b0d2b3f83d95",
+      "code": "P30",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "33521603-7562-551e-8a66-5b5d3523b83d",
+      "code": "P28",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "36ea6650-6c8f-5a56-a778-bfb6e428102d",
+      "code": "P13",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "3e0a501b-1742-506c-a094-d8a18ad8a98a",
+      "code": "P24",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "3eb90dec-26cb-525e-b106-530c2ffc67e0",
+      "code": "P40",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "453b1b35-93a4-5790-8217-7b7e83c78c49",
+      "code": "P05",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "45e406f2-303e-528b-8146-804f38492815",
+      "code": "P03",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "4f011f00-0ae7-5b4e-97d3-b093578df236",
+      "code": "P39",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "53678137-452a-5910-9bc6-67022504a6ce",
+      "code": "P33",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "5402b0be-eabb-5bce-91e8-242db1112151",
+      "code": "P12",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "55e88d23-83c9-5421-ba2f-7da1b979c03b",
+      "code": "P21",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "6417c886-2a93-599a-b74a-c72ac1c03752",
+      "code": "P18",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "670001a6-3634-582b-a277-f3bc65f89a0e",
+      "code": "P36",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "725304b5-c3c2-57b3-b255-a85032a23a55",
+      "code": "P42",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "7fc44e31-3373-50de-97fd-58e874938938",
+      "code": "P11",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+      "code": "P07",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "942f1bf9-874b-5c46-ae35-a44648dcc893",
+      "code": "P31",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+      "code": "P08",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "a805aad2-7cd4-567e-8ace-676bf7cfd9f4",
+      "code": "P29",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "a90ae0cf-d97b-577c-a622-080f2db70c3c",
+      "code": "P26",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "a919841d-69b7-5340-848c-3c121b840ff8",
+      "code": "P41",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "af618de9-e22b-5ad7-a852-43933c6cb3d3",
+      "code": "P20",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07",
+      "code": "P34",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "ba59c489-49d5-5362-b5f4-94818c90deb4",
+      "code": "P01",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+      "code": "P27",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+      "code": "P09",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "d66dddec-b33c-5882-bcc4-b3a82389d349",
+      "code": "P16",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+      "code": "P38",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c",
+      "code": "P17",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "dfed6e97-286a-5404-985b-528d0befa1ec",
+      "code": "P19",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "e5043b4b-6646-52d9-a40d-b2b46d18e774",
+      "code": "P32",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "ebd8a49a-47ed-5cbf-a225-4dfe10ffadaa",
+      "code": "P37",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "ec3eb33d-b739-5a62-826d-fee85e04a9dd",
+      "code": "P06",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    },
+    {
+      "id": "f5540551-7dd6-5176-b909-22916e5ed3de",
+      "code": "P02",
+      "fields": [
+        "metadata",
+        "updated_at"
+      ],
+      "metadata_fields": [
+        "approved_for_catalog"
+      ],
+      "catalog_before": false,
+      "catalog_after": true,
+      "updated_at": "2026-10-27T16:38:39.741744+00:00"
+    }
+  ],
+  "all_seven_other_tables_unchanged": true,
+  "three_non_f6_products_unchanged": true,
+  "review_only": {
+    "current": true,
+    "meaning": "Historical provenance of initial F6 review-only publication; current registration approval derives from active status, catalog flag and audited C02 receipt.",
+    "remote_rewrite_performed": false
+  },
+  "attribution": "Catalog flag change reported by user and verified by read-only snapshot; this task did not execute or infer its authorizing SQL or executor."
+}

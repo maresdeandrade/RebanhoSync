@@ -1,0 +1,3163 @@
+{
+  "provenance": {
+    "tool": "Supabase.execute_sql",
+    "project_id": "zqloazqzhwauamcejmuz",
+    "query": "begin isolation level repeatable read read only;\nselect jsonb_build_object(\n'project_ref','zqloazqzhwauamcejmuz',\n'observed_at',clock_timestamp(),\n'snapshot',pg_current_snapshot()::text,\n'isolation',current_setting('transaction_isolation'),\n'read_only',current_setting('transaction_read_only'),\n'executor',current_user,'session_executor',session_user,\n'database',current_database(),'server_version',current_setting('server_version'),\n'tables',(select jsonb_agg(jsonb_build_object('table',c.relname,'owner',pg_get_userbyid(c.relowner),'rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity,'can_enrich',has_table_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE'))) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname in ('sanitario_fontes_tecnicas_v2','sanitario_fonte_cobertura_campos_v2','sanitario_produtos_v2','sanitario_produto_especie_autorizacao_v2','sanitario_produto_fontes_v2','sanitario_produto_dose_rules_v2','sanitario_produto_carencia_rules_v2','sanitario_produto_carencia_fontes_v2')),\n'rows',jsonb_build_object('sanitario_fontes_tecnicas_v2',(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.sanitario_fontes_tecnicas_v2 t),\n'sanitario_fonte_cobertura_campos_v2',(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.sanitario_fonte_cobertura_campos_v2 t),\n'sanitario_produtos_v2',(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.sanitario_produtos_v2 t),\n'sanitario_produto_especie_autorizacao_v2',(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.sanitario_produto_especie_autorizacao_v2 t),\n'sanitario_produto_fontes_v2',(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.sanitario_produto_fontes_v2 t),\n'sanitario_produto_dose_rules_v2',(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.sanitario_produto_dose_rules_v2 t),\n'sanitario_produto_carencia_rules_v2',(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.sanitario_produto_carencia_rules_v2 t),\n'sanitario_produto_carencia_fontes_v2',(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.sanitario_produto_carencia_fontes_v2 t))\n) as snapshot;\nrollback;"
+  },
+  "rows": {
+    "sanitario_produtos_v2": [
+      {
+        "id": "0168212e-2443-5eaf-97f1-108924e58d4d",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/vacinas-bovinos.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P25",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Cattle Master 4 L5: nomes próximos, verificar formulação",
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Zoetis",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Cattle Master 4",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "0f1b6c73-c50f-5ad4-a308-29788de7429a",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/botulinomax/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P23",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Ceva",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "BOTULINOMAX",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "12128db7-71ff-551d-92e0-18418140b91b",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/starvac-12",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P22",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "10.231 (2019)",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Labovet",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "StarVac 12",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "1628cf40-3676-53a6-9fe2-4e154936167b",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/anavac/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P15",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_brucelose_b19"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Ceva",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "ANAVAC B19",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "1957cff0-3741-5dd8-bf81-b157a2d575c8",
+        "classe": "ectoparasiticida",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/exzolt-2/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P14",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Ectoparasiticida; não atribuir classe antiparasitária de manejo automaticamente | Ectoparasiticida à base de fluralaner; não confundir com anti-helmíntico",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "fora_classes_v2"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "ectoparasiticida",
+        "nome_comercial": "Exzolt 5% Bovinos",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "234204f8-4113-5294-8aa2-b0d2b3f83d95",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/ranger/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P30",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Ranger LA 3,5%: extensão da marca, produto distinto a confirmar",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ranger",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "239a438c-abe0-568e-b24b-793001a08f98",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Fortress-7.pdf",
+          "review_only": true,
+          "pending_fields": [
+            "registration.current_validity",
+            "eligibility.minimum_age_or_responsible_category_criterion",
+            "authorization.pregnancy",
+            "authorization.lactation"
+          ],
+          "presentation_evidence": "EV_ZOETIS_CATALOGO_FORTRESS7",
+          "registration_evidence": "EV_MAPA_REGISTROS_2014",
+          "registration_current_validity": "unknown"
+        },
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "fabricante": "Zoetis",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "apresentacao": "{\"volumes_ml\":[50,250],\"doses\":[10,50],\"source\":\"EV_ZOETIS_CATALOGO_FORTRESS7\"}",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Fortress 7",
+        "registro_orgao": "MAPA",
+        "principio_ativo": null,
+        "registro_numero": "5.893/1997",
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "33521603-7562-551e-8a66-5b5d3523b83d",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/poli-star/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P28",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Bovilis Poli-Star T: nomes próximos, verificar registro e composição",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Poli-Star",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "36ea6650-6c8f-5a56-a778-bfb6e428102d",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/panacur-10/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P13",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "benzimidazois"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Panacur 10%",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "3e0a501b-1742-506c-a094-d8a18ad8a98a",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/vacinas-bovinos.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P24",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Vacina respiratória multivalente; não tratar como vacina leptospirose",
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Zoetis",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Bovi-Shield Gold One Shot",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "3eb90dec-26cb-525e-b106-530c2ffc67e0",
+        "classe": "ectoparasiticida",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/combo-pour-on/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P40",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "fora_classes_v2"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Ceva",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "ectoparasiticida",
+        "nome_comercial": "COMBO Pour On",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "453b1b35-93a4-5790-8217-7b7e83c78c49",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/covexin-9/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P05",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Fortress 7 (V2): vacina da mesma classe, NÃO é duplicação presumida",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Covexin 9",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "45e406f2-303e-528b-8146-804f38492815",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/raivacel-multi/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P03",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_raiva_herbivoros"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Raivacel Multi",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "4cab4bd3-491d-595b-ab88-3432bcca03c8",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+          "review_only": true,
+          "pending_fields": [
+            "registration.current_validity",
+            "source.full_current_label",
+            "authorization.lactation",
+            "registration.current_holder"
+          ],
+          "presentation_evidence": "SRC_BULA_POLIGUARD",
+          "registration_evidence": "EV_MAPA_REGISTROS_2014",
+          "registration_current_validity": "unknown"
+        },
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saude Animal (pagina comercial atual); Vallee S/A (fabricante na lista MAPA 2014)",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "apresentacao": "{\"volumes_ml\":[100,250],\"source\":\"SRC_BULA_POLIGUARD\"}",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Poliguard",
+        "registro_orgao": "MAPA",
+        "principio_ativo": null,
+        "registro_numero": "9.299/2007",
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "4f011f00-0ae7-5b4e-97d3-b093578df236",
+        "classe": "ectoparasiticida",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/fluron-gold/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P39",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "fora_classes_v2"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Ceva",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "ectoparasiticida",
+        "nome_comercial": "FLURON Gold",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "53678137-452a-5910-9bc6-67022504a6ce",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/endoparasiticidas.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P33",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "imidazotiazoleis"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Zoetis",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ripercol L 150 F",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "5402b0be-eabb-5bce-91e8-242db1112151",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/ranger-la-35/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P12",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Ranger: extensão da marca, produto distinto a confirmar | Restrições de uso na fase de terminação; dose/carência por bula específica",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ranger LA 3,5%",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "55e88d23-83c9-5421-ba2f-7da1b979c03b",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/vacina-starvac",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P21",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "7.774 (2001)",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Labovet",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "StarVac",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "6417c886-2a93-599a-b74a-c72ac1c03752",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/vacina-antirrabica-inativada-labovet-para-herbivoros",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P18",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_raiva_herbivoros"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "6.197 (1997)",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Labovet",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Vacina Antirrábica Inativada para Herbívoros Labovet",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "670001a6-3634-582b-a277-f3bc65f89a0e",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/ticson-3-50/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P36",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas (confirmar)"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Ceva",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ticson 3.50",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "725304b5-c3c2-57b3-b255-a85032a23a55",
+        "classe": "ectoparasiticida",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/tick-gard/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P42",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Bula informa carência prolongada e restrição para leite",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "fora_classes_v2"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "ectoparasiticida",
+        "nome_comercial": "Tick Gard",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "7fc44e31-3373-50de-97fd-58e874938938",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Cydectin/pdf/cydectin-bula.pdf",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P11",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "6709",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Zoetis",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Cydectin 1%",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "820e0950-e617-5fcd-a3b7-351f855b2ba4",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
+          "review_only": true,
+          "pending_fields": [
+            "registration.current_validity",
+            "eligibility.minimum_age_or_responsible_category_criterion",
+            "authorization.pregnancy",
+            "authorization.lactation"
+          ],
+          "presentation_evidence": "SRC_BULA_LEPTOFERM5",
+          "registration_evidence": "SRC_BULA_LEPTOFERM5",
+          "registration_current_validity": "unknown"
+        },
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "fabricante": "Zoetis Inc.; importador Zoetis Industria de Produtos Veterinarios Ltda.",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "apresentacao": "{\"doses\":[10,50],\"source\":\"SRC_BULA_LEPTOFERM5\"}",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Leptoferm 5/2 mL",
+        "registro_orgao": "MAPA",
+        "principio_ativo": null,
+        "registro_numero": "5.037",
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/vacinas-bovinos.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P07",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Vacina multivalente: validar escopo de cada classe antes de associar | Multivalente IBR/BVD + leptospirose; não generalizar elegibilidade",
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd",
+            "vacina_leptospirose"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Zoetis",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Cattle Master 4 L5",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "942f1bf9-874b-5c46-ae35-a44648dcc893",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/solution-35/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P31",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Bula informa proibição em bovinos de corte em terminação; revisar indicação e carência",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas (confirmar)"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Solution 3,5%",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/vacinas-bovinos.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P08",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Cattle Master 4 L5 e Cattle Master 4: conferir apresentação/registro | Multivalente IBR/BVD + leptospirose; não generalizar elegibilidade",
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd",
+            "vacina_leptospirose"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Zoetis",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Cattle Master Gold FP 5/L5",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "a805aad2-7cd4-567e-8ace-676bf7cfd9f4",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/exceller/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P29",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Exceller",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "a90ae0cf-d97b-577c-a622-080f2db70c3c",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/bovilis-vista-once-sq/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P26",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Bula estabelece indicações e restrições específicas; não inferir cobertura de leptospirose",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Bovilis Vista Once SQ",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "a919841d-69b7-5340-848c-3c121b840ff8",
+        "classe": "ectoparasiticida",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/pecuaria/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P41",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "fora_classes_v2"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "ectoparasiticida",
+        "nome_comercial": "Butox P CE25",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "af618de9-e22b-5ad7-a852-43933c6cb3d3",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/vacina-clostrimune-10th",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P20",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Labovet",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Clostrimune 10TH",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/endoparasiticidas.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P34",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "imidazotiazoleis"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Zoetis",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ripercol L Injetável",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "ba59c489-49d5-5362-b5f4-94818c90deb4",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/_assets/pdf/bula-aborvac-br.pdf",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P01",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_brucelose_b19"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "0523",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Zoetis",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Abor-Vac",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/fertiguard-selenium-max/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P27",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd",
+            "vacina_leptospirose"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "FertiGuard Selenium Max",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/todos-os-produtos/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P09",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Vacina multivalente: validar escopo de cada classe antes de associar | Multivalente; confirmação comercial em catálogo, sem registro vigente conferido",
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd",
+            "vacina_leptospirose"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Bovilis Vista 5 L5 CFP",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "d66dddec-b33c-5882-bcc4-b3a82389d349",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/vacina-contra-a-brucelose-bovina",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P16",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_brucelose_b19"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "3.785 (1991)",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Labovet",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Vacina Liofilizada contra a Brucelose Bovina Labovet",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/eprecis-2/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P38",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas (confirmar)"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Ceva",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Eprecis",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/rabmune/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P17",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_raiva_herbivoros"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Ceva",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "RABMUNE",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "dfed6e97-286a-5404-985b-528d0befa1ec",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/vacina-clostrimune-8",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P19",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "7.274 (2000)",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Labovet",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Clostrimune 8",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "e5043b4b-6646-52d9-a40d-b2b46d18e774",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/supramec-pour-on/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P32",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Supramec Pour-On",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "ebd8a49a-47ed-5cbf-a225-4dfe10ffadaa",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/puritec-gold/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P37",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": null,
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas (confirmar)"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Ceva",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Puritec Gold",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "ec3eb33d-b739-5a62-826d-fee85e04a9dd",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/bovilis-poli-star-t/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P06",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "Poli-Star: nomes próximos, verificar registro e composição",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Bovilis Poli-Star T",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      },
+      {
+        "id": "f5540551-7dd6-5176-b909-22916e5ed3de",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/rb-51/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P02",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": false,
+          "semantic_review_notes": "RB-51 diferente de B19: não vincular ao protocolo B19 | Cepa RB-51 diferente da B19; não vincular ao item B19 automaticamente",
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "sem_classe_rb51"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "MSD Saúde Animal",
+        "updated_at": "2026-10-24T16:27:42.781729+00:00",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Bovilis RB-51",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "precisa_validar"
+      }
+    ],
+    "sanitario_produto_fontes_v2": [
+      {
+        "field_key": "operational_window",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-21T13:26:42.832693+00:00",
+        "product_id": "820e0950-e617-5fcd-a3b7-351f855b2ba4"
+      },
+      {
+        "field_key": "operational_window",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-21T13:26:42.832693+00:00",
+        "product_id": "239a438c-abe0-568e-b24b-793001a08f98"
+      }
+    ],
+    "sanitario_fontes_tecnicas_v2": [
+      {
+        "id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "url": "https://br.virbac.com/products/biologicos/bovigen-repro-total-se",
+        "kind": "bibliografia",
+        "scope": "global",
+        "title": "Bovigen® Repro Total SE",
+        "issuer": "Virbac Brasil",
+        "version": null,
+        "metadata": {
+          "document_type": "manufacturer_product_page",
+          "historical_registration": {
+            "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+            "issuer": "MAPA",
+            "number": "9.776/2013",
+            "section": "BOVIGEN REPRO TOTAL SE (p. 26)",
+            "accessed_at": "2026-10-14",
+            "document_date": "2014-04-15",
+            "current_validity": "unknown"
+          }
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_VIRBAC_BOVIGEN_REPRO_TOTAL_SE_PAGE",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Fonte oficial do fabricante; versão integral vigente e confirmação regulatória atual pendentes. Registro histórico MAPA localizado, sem prova de vigência em 2026.",
+          "Não autoriza carência zero, bubalinos ou segurança reprodutiva não expressa."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "21100dc5-1485-4c60-93b6-007c39eaa0d1",
+        "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Abor-Vac.pdf",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Abor-Vac — Vacina contra Brucelose",
+        "issuer": "Zoetis Indústria de Produtos Veterinários Ltda.",
+        "version": "GQ-047/version 1/2022-07-01",
+        "metadata": {
+          "artwork": "40039374",
+          "mapa_license": "0523",
+          "document_type": "manufacturer_label_pdf",
+          "pdf_modified_at": "2023-04-20"
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_BULA_ABORVAC_B19",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Evidência exclusiva do produto Abor-Vac; não generalizar para a classe B19 nem para execução sem produto real."
+        ],
+        "published_at": null,
+        "evidence_status": "SIM_BULA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "2bfe30a5-8c7e-4949-8133-98380a96d53d",
+        "url": "https://goias.gov.br/agrodefesa/perguntas-e-respostas-defesa-sanitaria-animal/",
+        "kind": "guideline_apoio",
+        "scope": "global",
+        "title": "Perguntas e respostas — Defesa Sanitária Animal: raiva dos herbívoros",
+        "issuer": "Agência Goiana de Defesa Agropecuária — Agrodefesa",
+        "version": "página atualizada em 26/06/2026",
+        "metadata": {
+          "document_type": "state_official_faq",
+          "updated_at_source": "2026-06-26"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_AGRODEFESA_GO_RAIVA_FAQ_2026",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-09-24",
+        "limitations": [
+          "Página institucional informa que a vacinação antirrábica não é obrigatória e é recomendada como prevenção em Goiás.",
+          "Não substitui eventual ato superveniente, alerta de foco/perifoco ou determinação específica do serviço veterinário oficial.",
+          "Não substitui a bula do produto executado."
+        ],
+        "published_at": "2026-06-26",
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": "GO",
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "39ede6d7-969b-4802-b570-915532402008",
+        "url": "https://br.virbac.com/products/biologicos/bovigen-v4j5",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Bovigen V4J5 — informações oficiais Virbac Brasil",
+        "issuer": "Virbac",
+        "version": null,
+        "metadata": {},
+        "strength": "forte",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_VIRBAC_BOVIGEN_V4J5_REVIEW_20261022",
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "accessed_at": "2026-10-22",
+        "limitations": [
+          "bovine_label_only",
+          "not_product_registration_verification"
+        ],
+        "published_at": null,
+        "evidence_status": "SIM_BULA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "59345fb2-bc0b-460f-b60c-084aa7bf2049",
+        "url": "https://www.cidasc.sc.gov.br/defesasanitariaanimal/defesa-sanitaria-animal-2/",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "CIDASC — proibição estadual de B19 e uso de RB51",
+        "issuer": "CIDASC",
+        "version": null,
+        "metadata": {
+          "section": "Coordenação Estadual de Erradicação de Brucelose e Tuberculose / Vacinação com RB51",
+          "cited_acts": [
+            "Portaria SAR 17/2012",
+            "Portaria SAR 19/2017",
+            "IS 007/2018"
+          ],
+          "document_type": "state_official_program_page",
+          "routine_b19_prohibited": true,
+          "publication_date_unknown": true
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_CIDASC_SC_B19_PROHIBITION",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Não autoriza produto comercial nem carência."
+        ],
+        "published_at": null,
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": "SC",
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/pncebt/principais-normas-pncebt/portaria-1-633-de-12-de-junho-de-2026.pdf",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Portaria SDA/MAPA 1.633/2026 — campanha nacional contra brucelose",
+        "issuer": "MAPA/SDA",
+        "version": null,
+        "metadata": {
+          "sections": [
+            "art. 1 §§1-2",
+            "arts. 2-3"
+          ],
+          "document_type": "official_norm_pdf",
+          "proof_deadlines": [
+            "10/07 do ano da vacinação",
+            "10/01 do ano seguinte"
+          ],
+          "document_identifier": "Portaria SDA/MAPA 1.633, de 12/06/2026; DOU 16/06/2026, seção 1, p. 23",
+          "campaign_excludes_risk_class_A": true,
+          "preexisting_state_proof_deadlines_preserved": true
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_PORTARIA_1633_2026_BRUCELOSE",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Não autoriza produto comercial nem carência."
+        ],
+        "published_at": "2026-06-16",
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "6d71faf9-6f58-473b-a2e1-f136cee4f453",
+        "url": "https://wikisda.agricultura.gov.br/pt-br/Sa%C3%BAde-Animal/Plano-de-contingencia-para-febre-aftosa",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Plano de contingência para febre aftosa — versão 2.0",
+        "issuer": "Departamento de Saúde Animal / Secretaria de Defesa Agropecuária — MAPA",
+        "version": "2.0/2020; vigência indeterminada e revisão anual",
+        "metadata": {
+          "validity": "indeterminada",
+          "document_type": "official_contingency_plan",
+          "edited_at_source": "2026-01-16",
+          "review_frequency": "anual"
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_PLANO_CONTINGENCIA_FMD_V2",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-09-24",
+        "limitations": [
+          "Plano de resposta a emergência; não autoriza vacinação preventiva rotineira.",
+          "A vacinação emergencial depende de decisão conjunta MAPA/SVE e, quando adotada, fica sob controle do serviço veterinário oficial."
+        ],
+        "published_at": null,
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/qualidade-dos-servicos-veterinarios/arquivos/pncrh/in_05_2002_alt__n_41_2020_norma_tecnica_controle_rh.pdf",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Instrução Normativa nº 5/2002 — Normas Técnicas para o Controle da Raiva dos Herbívoros Domésticos",
+        "issuer": "Ministério da Agricultura, Pecuária e Abastecimento — MAPA",
+        "version": "alterada pela IN 41/2020",
+        "metadata": {
+          "document_type": "consolidated_norm_pdf",
+          "document_identifier": "IN 5/2002; Processo 21000.009298/2001-82",
+          "consolidated_amendment_at": "2020-06-19"
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_IN_05_2002_RAIVA_HERBIVOROS",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "O coverage deve ser vinculado aos artigos aplicáveis.",
+          "A norma não substitui a bula do produto executado."
+        ],
+        "published_at": "2002-03-01",
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "url": "https://www.infoteca.cnptia.embrapa.br/bitstream/doc/562842/1/rectec26.pdf",
+        "kind": "guideline_apoio",
+        "scope": "global",
+        "title": "Controle Estratégico da Verminose Bovina em Propriedades Rurais no Distrito Federal",
+        "issuer": "Embrapa Cerrados",
+        "version": "Recomendação Técnica 26, 1ª edição",
+        "metadata": {
+          "document_type": "technical_recommendation_pdf",
+          "publication_informed": "2001-06"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_EMBRAPA_REC_TEC_26_VERMINOSE_DF",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Recomendação regional para DF/Cerrado; extrapolação para outras regiões exige validação.",
+          "Não substitui bula para produto, dose, via, carência ou autorização por espécie."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Poliguard — resumo da bula oficial MSD",
+        "issuer": "MSD Saúde Animal",
+        "version": null,
+        "metadata": {},
+        "strength": "forte",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MSD_POLIGUARD_REVIEW_20261022",
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "accessed_at": "2026-10-22",
+        "limitations": [
+          "bovine_label_only",
+          "not_product_registration_verification"
+        ],
+        "published_at": null,
+        "evidence_status": "SIM_BULA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Leptoferm5.2.pdf",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Leptoferm 5/2 mL — Vacina Inativada Contra Leptospirose Bovina e Suína",
+        "issuer": "Zoetis Inc.; representante no Brasil Zoetis Indústria de Produtos Veterinários Ltda.",
+        "version": "v2",
+        "metadata": {
+          "artwork": "40040644",
+          "mapa_license": "5.037",
+          "document_type": "manufacturer_label_pdf",
+          "pdf_created_at": "2023-01-06",
+          "pdf_modified_at": "2023-01-06"
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_BULA_LEPTOFERM5",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Evidência exclusiva de Leptoferm 5/2 mL; não valida segunda dose genérica, classe inteira ou bubalinos."
+        ],
+        "published_at": null,
+        "evidence_status": "SIM_BULA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "bd9b1b9a-7842-414a-b6ab-c807d97f888e",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/febre-aftosa/campanha-febre-aftosa",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Quantitativo de rebanho e dados sobre vacinação",
+        "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+        "version": null,
+        "metadata": {
+          "cited_norm": "Portaria MAPA 678, de 30/04/2024",
+          "document_type": "institutional_data_page",
+          "updated_at_source": "2025-10-15"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_PNEFA_DADOS_VACINACAO",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Página institucional dinâmica; não substitui a Portaria MAPA 678/2024 ou ato vigente.",
+          "Não prova futura contingência; vacinação rotineira permanece bloqueada."
+        ],
+        "published_at": "2020-02-04",
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "ce25d79d-2843-45a8-a872-233eecc6f6f7",
+        "url": "https://www.sinj.df.gov.br/sinj/Norma/aad0c985c1f8436096680bbb41dcf7a7/Portaria_452_27_11_2025.html",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Portaria nº 452, de 27 de novembro de 2025 — vacinação contra raiva dos herbívoros no Distrito Federal",
+        "issuer": "Secretaria de Estado da Agricultura, Abastecimento e Desenvolvimento Rural do Distrito Federal — SEAGRI-DF",
+        "version": "vigente; revoga a Portaria nº 59/2024",
+        "metadata": {
+          "norm_number": "Portaria SEAGRI-DF 452/2025",
+          "revoked_norm": "Portaria SEAGRI-DF 59/2024",
+          "document_type": "state_official_norm_html",
+          "minimum_age_months": 3,
+          "mandatory_radius_km": 12
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_SEAGRI_DF_PORTARIA_452_2025_RAIVA",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Aplicação restrita ao Distrito Federal e às propriedades classificadas como foco ou perifoco pelo OESA-DF.",
+          "A delimitação depende de ocorrência confirmada, georreferenciamento, cadastro e alerta oficial; não pode ser inferida apenas pelo endereço da fazenda.",
+          "Não substitui a bula do produto executado nem autoriza cálculo de carência sem produto real."
+        ],
+        "published_at": "2025-12-01",
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": "DF",
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/transito-animal/cgtqa-legis/in-mapa-no-10-3-03-2017-pncebt.pdf",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Instrução Normativa SDA/MAPA nº 10, de 3 de março de 2017 — Regulamento Técnico do PNCEBT",
+        "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+        "version": "consolidada com alterações até a IN 11/2020",
+        "metadata": {
+          "norm_number": "IN SDA/MAPA 10/2017",
+          "document_type": "official_norm_pdf",
+          "reviewed_sections": [
+            "arts. 9–16",
+            "art. 10: exclusão UF risco A"
+          ],
+          "consolidated_through": "IN 11/2020"
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_IN_10_2017_PNCEBT",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "A norma define o programa e a execução oficial; dose, via e carência continuam produto-específicas."
+        ],
+        "published_at": "2017-03-03",
+        "evidence_status": "SIM_NORMA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "d3309c2c-bc43-409a-bd80-952d5ee1523f",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/pncebt/controle-e-erradicacao-da-brucelose-e-tuberculose-pncebt",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Programa Nacional de Controle e Erradicação da Brucelose e da Tuberculose Animal - PNCEBT",
+        "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+        "version": null,
+        "metadata": {
+          "cited_norm": "IN 10, de 03/03/2017",
+          "document_type": "institutional_program_page",
+          "updated_at_source": "2025-10-21"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_PNCEBT_BRUCELOSE",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Página institucional dinâmica; não substitui o ato normativo vigente.",
+          "A identidade documental não valida isoladamente o coverage dos campos técnicos."
+        ],
+        "published_at": "2017-01-05",
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "da121227-8e8a-4a18-b290-0a0528bb5762",
+        "url": "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/raiva-dos-herbivoros-e-eeb/vacina-antirrabica",
+        "kind": "norma_oficial",
+        "scope": "global",
+        "title": "Vacina Antirrábica",
+        "issuer": "Ministério da Agricultura e Pecuária — MAPA",
+        "version": null,
+        "metadata": {
+          "document_type": "institutional_topic_page",
+          "updated_at_source": "2023-03-28"
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_MAPA_RAIVA_VACINA",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Página contextual; não substitui bula, ato normativo ou overlay regional.",
+          "Não prova produto executado nem carência."
+        ],
+        "published_at": "2022-11-03",
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "url": "https://www.msd-saude-animal.com.br/produto/poliguard/",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Resumo da Bula — POLIGUARD",
+        "issuer": "MSD Saúde Animal Brasil",
+        "version": null,
+        "metadata": {
+          "document_type": "manufacturer_bula_summary_page",
+          "modified_at_source": "2024-10-16",
+          "historical_registration": {
+            "url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/listas/Lista_produtos_vigentes_abril2014.pdf",
+            "issuer": "MAPA",
+            "number": "9.299/2007",
+            "section": "POLIGUARD (p. 137)",
+            "accessed_at": "2026-10-14",
+            "document_date": "2014-04-15",
+            "current_validity": "unknown"
+          }
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_BULA_POLIGUARD",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Fonte oficial do fabricante; versão integral vigente e confirmação regulatória atual pendentes. Registro histórico MAPA localizado, sem prova de vigência em 2026.",
+          "Não autoriza carência zero, bubalinos ou segurança reprodutiva não expressa."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Bulario/_assets/Fortress-7.pdf",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Fortress 7 — Bacterina Toxoide contra Carbúnculo Sintomático, Gangrena Gasosa e Enterotoxemia dos Bovinos",
+        "issuer": "Zoetis",
+        "version": null,
+        "metadata": {
+          "document_type": "manufacturer_label_pdf",
+          "pdf_created_at": "2013-09-10",
+          "pdf_modified_at": "2014-01-21"
+        },
+        "strength": "forte",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_BULA_FORTRESS7",
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "accessed_at": "2026-10-14",
+        "limitations": [
+          "Evidência produto-específica; não cobre genericamente vacina_clostridial nem bubalinos."
+        ],
+        "published_at": null,
+        "evidence_status": "SIM_BULA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      }
+    ],
+    "sanitario_produto_dose_rules_v2": [],
+    "sanitario_fonte_cobertura_campos_v2": [
+      {
+        "id": "08663e7c-daa7-46c5-aeaa-573d5476f790",
+        "notes": "VAL-PAR-010: calendário maio/julho/setembro é regional para DF/Cerrado.",
+        "field_key": "regional_applicability_5_7_9",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "0ade968a-eb7c-460a-b529-2dc4369e7ace",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada.",
+        "field_key": "species_authorization",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "0bb67245-6327-4b18-bc80-d0f2af0be293",
+        "notes": "VAL-FMD-002: todo o país deixou a estratégia preventiva por vacinação.",
+        "field_key": "routine_vaccination_block",
+        "source_id": "bd9b1b9a-7842-414a-b6ab-c807d97f888e",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "0fea7cd6-3749-45c3-a14e-9ba3000fe4dd",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada.",
+        "field_key": "eligibility_rule",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "100bcbf2-f64e-4f16-8ec9-d7ea512d87db",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada.",
+        "field_key": "product_requirement",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "12c41d28-30f9-4fe4-83d8-db4d2d0ce713",
+        "notes": "VAL-RAI-003: ato permanente vigente em 2026; recomenda reforço semestral até 24 meses e anual acima de dois anos, sujeito a alerta e reavaliação anual do OESA-DF. Revisar para 2027.",
+        "field_key": "recommendation_2026_2027_df",
+        "source_id": "ce25d79d-2843-45a8-a872-233eecc6f6f7",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "18282c10-1203-479a-9244-4bb9d0c8e31d",
+        "notes": "VAL-PAR-012: não define critérios atuais de resistência para decisão automatizada.",
+        "field_key": "parasite_resistance",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "1b2fad62-6321-4218-aa1a-279dd4a24202",
+        "notes": "VAL-CLO-001: informa 21 dias para abate; não informa carência para leite.",
+        "field_key": "withdrawal",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "216da1d7-076f-4dbe-8504-792c7f87123d",
+        "notes": "VAL-PAR-005: não autoriza produto específico para bubalinos.",
+        "field_key": "species_authorization_bubalino",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "268fec8b-41db-5265-a24e-9be51069f340",
+        "notes": "Somente variante bovina descrita nesta bula; não valida toda a classe. Primovacinação e recorrência literais; aplicação exige produto compatível. Idade/gestação/lactação não declaradas permanecem desconhecidas.",
+        "field_key": "eligibility_rule",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-21T13:26:42.832693+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-21T13:26:42.832693+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "27c3082b-4972-4d7b-87eb-71492fd94d20",
+        "notes": "VAL-B19-007: fêmeas bovinas de 3 a 8 meses.",
+        "field_key": "sex_age",
+        "source_id": "21100dc5-1485-4c60-93b6-007c39eaa0d1",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "27e04dae-65fe-4d03-977b-a4a95354db1e",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria.",
+        "field_key": "species_authorization",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "29b0713b-4a4f-45c5-b84a-47960670da36",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada.",
+        "field_key": "operational_window",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "301443de-d9af-5385-a603-0d62d1a1eaec",
+        "notes": "Somente variante bovina descrita nesta bula; não valida toda a classe. Primovacinação e recorrência literais; aplicação exige produto compatível. Idade/gestação/lactação não declaradas permanecem desconhecidas.",
+        "field_key": "species_authorization",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-21T13:26:42.832693+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-21T13:26:42.832693+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "305eacc6-5cd4-4c70-aa3e-f4298ac04499",
+        "notes": "VAL-CLO-004: 5 mL por via subcutânea.",
+        "field_key": "dose_route",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "30fecad0-3a8b-4a7f-aaaa-3e3c8346d11b",
+        "notes": "VAL-FMD-003: DSA/SDA-MAPA e serviço veterinário estadual definem a estratégia; a coordenação operacional federal cabe ao COEZOO no foco confirmado.",
+        "field_key": "emergency_authority",
+        "source_id": "6d71faf9-6f58-473b-a2e1-f136cee4f453",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "36991be4-14c6-48c3-8e16-2d968d0d7765",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria.",
+        "field_key": "operational_window",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "37499895-7e25-4f24-9aca-6191cf34eee1",
+        "notes": "VAL-PAR-001: sustenta contexto estratégico, mas não produto, dose, via ou carência.",
+        "field_key": "product_executed_required",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "37bd9cf1-2394-4bc8-a763-91584a9396e4",
+        "notes": "Campanha nacional exclui UF risco A; prazos nacionais de comprovação preservam campanhas estaduais anteriores.",
+        "field_key": "official_record",
+        "source_id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "39106f32-24ac-4f95-a0ac-1cdf29ab8669",
+        "notes": "VAL-PAR-011: não sustenta automação de rotação de classes químicas.",
+        "field_key": "chemical_class_rotation",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "3df13a70-4200-532b-a8f4-25023a57db93",
+        "notes": "Somente variante bovina descrita nesta bula; não valida toda a classe. Primovacinação e recorrência literais; aplicação exige produto compatível. Idade/gestação/lactação não declaradas permanecem desconhecidas.",
+        "field_key": "operational_window",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-21T13:26:42.832693+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-21T13:26:42.832693+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "443b7717-3ba2-4d19-90fb-78c9f499f754",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria.",
+        "field_key": "eligibility_rule",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "4bd6b884-65ba-44e0-ba99-aaf657ad8b78",
+        "notes": "VAL-PAR-004: depende da bula do produto executado.",
+        "field_key": "meat_withdrawal",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "4e30c65d-1334-45be-b548-0bcfb899dcd6",
+        "notes": "B19 proibida em Santa Catarina; não substitui validação do produto ou de demais UFs.",
+        "field_key": "regional_restrictions",
+        "source_id": "59345fb2-bc0b-460f-b60c-084aa7bf2049",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "4f075c67-8f84-4959-b2a5-64ec4f0f5f7a",
+        "notes": "VAL-RAI-001: regra nacional para vacinação em áreas com ocorrência.",
+        "field_key": "national_rule",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "4f910d70-d9d8-4b8b-959a-257a5447859d",
+        "notes": "VAL-B19-005: norma abrange bovinos e bubalinos.",
+        "field_key": "species_authorization",
+        "source_id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "50052075-e097-4309-b77f-8567a6ff9d45",
+        "notes": "VAL-RAI-002: página oficial atualizada em 2026 classifica a vacinação em Goiás como recomendada, não obrigatória, sem afastar determinação superveniente do SVE.",
+        "field_key": "regional_rule_go",
+        "source_id": "2bfe30a5-8c7e-4949-8133-98380a96d53d",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "521b7127-7b0d-4d36-800e-a8a4be76c024",
+        "notes": "VAL-FMD-001: registra suspensão nacional da vacinação desde 2 de maio de 2024.",
+        "field_key": "national_status",
+        "source_id": "bd9b1b9a-7842-414a-b6ab-c807d97f888e",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "531324a5-2b26-493e-9c33-8c652bcc58c2",
+        "notes": "B19 proibida em Santa Catarina; não substitui validação do produto ou de demais UFs.",
+        "field_key": "legal_requirement",
+        "source_id": "59345fb2-bc0b-460f-b60c-084aa7bf2049",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "544b05f8-f1c4-48bf-93d8-d105da2ec022",
+        "notes": "VAL-LEP-003: restrições de gestação e lactação não foram declaradas.",
+        "field_key": "gestation_lactation",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "6074dba2-6055-41ec-a4bf-2a2ea49ff817",
+        "notes": "Campanha nacional exclui UF risco A; prazos nacionais de comprovação preservam campanhas estaduais anteriores.",
+        "field_key": "regional_restrictions",
+        "source_id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "61263a7f-c9da-4816-9e7a-0339d07ea1d2",
+        "notes": "VAL-IBR-004: número de registro oficial não consta da página consultada.",
+        "field_key": "official_registration",
+        "source_id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "61e94ee9-88f3-4ed5-8ea4-233856929d48",
+        "notes": "VAL-LEP-005: bovinos recebem dose inicial única; segunda dose é prescrita apenas para suínos.",
+        "field_key": "primary_interval",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "631b58f2-49ac-410e-904c-e8d80d403d4c",
+        "notes": "VAL-B19-007: fêmeas bovinas e bubalinas de 3 a 8 meses.",
+        "field_key": "sex_age",
+        "source_id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "6680c8da-8f0a-45c3-b47d-81c14af72bda",
+        "notes": "Campanha nacional exclui UF risco A; prazos nacionais de comprovação preservam campanhas estaduais anteriores.",
+        "field_key": "legal_requirement",
+        "source_id": "62a33b20-c3f3-41c5-a060-16db6dd26326",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "67389c7b-8db2-49af-a344-f898ef4b781e",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada.",
+        "field_key": "eligibility_rule",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "67685b03-f8e3-5c10-ade6-49995015d2e1",
+        "notes": "Somente variante bovina descrita nesta bula; não valida toda a classe. Primovacinação e recorrência literais; aplicação exige produto compatível. Idade/gestação/lactação não declaradas permanecem desconhecidas.",
+        "field_key": "species_authorization",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-21T13:26:42.832693+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-21T13:26:42.832693+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "69a803ce-30c2-4a3c-a85e-24158e97d45e",
+        "notes": "VAL-PAR-006: descreve tratamento pré-desmama em sistema leiteiro, condicionado ao contexto.",
+        "field_key": "pre_weaning_criteria",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "6bbcba61-5681-4e70-af50-40b9b296bf44",
+        "notes": "VAL-IBR-001: página oficial permite vacinação de vacas gestantes.",
+        "field_key": "reproductive_restrictions",
+        "source_id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "6c59987e-b526-4347-9c01-c64979b2915f",
+        "notes": "VAL-B19-005: a bula consultada explicita bovinos, sem autorização bubalina.",
+        "field_key": "species_authorization_bubalino",
+        "source_id": "21100dc5-1485-4c60-93b6-007c39eaa0d1",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "6edeb374-f0e1-574f-a85a-b463cac0ba4d",
+        "notes": "Somente variante bovina descrita nesta bula; não valida toda a classe. Primovacinação e recorrência literais; aplicação exige produto compatível. Idade/gestação/lactação não declaradas permanecem desconhecidas.",
+        "field_key": "eligibility_rule",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-21T13:26:42.832693+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-21T13:26:42.832693+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "741baae1-969a-400c-9ede-a50a38837d13",
+        "notes": "VAL-PAR-008: recomenda vacas em julho/agosto no Brasil Central, sem janela individual pré-parto nem bula.",
+        "field_key": "pre_partum_criteria",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "797aa2fc-d6b6-4b69-9966-d2ec7c8380d0",
+        "notes": "VAL-PAR-007: recomenda tratamento na entrada em confinamento ou pasto vedado.",
+        "field_key": "pre_confinement_criteria",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "7af1b82e-d717-4a5c-a009-07eb109c4c21",
+        "notes": "VAL-B19-002: execução sob responsabilidade de médico-veterinário cadastrado no SVO.",
+        "field_key": "responsible_veterinarian",
+        "source_id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "7baf1b60-4f9b-4eb6-954f-550e55573955",
+        "notes": "VAL-RAI-004: norma não individualiza produto executado nem carência.",
+        "field_key": "product_withdrawal",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "7c51c5dc-5990-4efe-a818-d840376828d5",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada.",
+        "field_key": "operational_window",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "7cb81b10-1c97-498a-b4fa-3932d71c90ce",
+        "notes": "VAL-FMD-003: página institucional não define autoridade e condições de vacinação emergencial.",
+        "field_key": "contingency_emergency",
+        "source_id": "bd9b1b9a-7842-414a-b6ab-c807d97f888e",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "804997a5-4642-4345-b7df-5caa39e3187b",
+        "notes": "VAL-CLO-005: duas doses com intervalo de 4 a 6 semanas.",
+        "field_key": "primary_interval",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "832b7061-9712-44cc-8462-6903f2ba551a",
+        "notes": "VAL-RAI-002: no DF, vacinação obrigatória para bovinos, bubalinos e equídeos acima de três meses em foco/perifoco delimitado pelo OESA-DF.",
+        "field_key": "regional_rule_df",
+        "source_id": "ce25d79d-2843-45a8-a872-233eecc6f6f7",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "884afcff-7658-4a11-b740-067edd1ddb52",
+        "notes": "VAL-LEP-002: indicação consultada cobre bovinos e suínos, não bubalinos.",
+        "field_key": "species_authorization_bubalino",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "88f918c5-a3fc-4d5c-81f4-51cedfee1989",
+        "notes": "VAL-IBR-002: carência não localizada na fonte oficial consultada.",
+        "field_key": "withdrawal",
+        "source_id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "8ba75125-a274-4bd0-8683-d7816b3fa41d",
+        "notes": "VAL-RAI-007: imunidade máxima de 12 meses e vacinação sistemática em áreas de ocorrência.",
+        "field_key": "risk_area_recurrence",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "8d4c875b-d40f-5d81-a2ef-5aa16aeea9cf",
+        "notes": "Somente variante bovina descrita nesta bula; não valida toda a classe. Primovacinação e recorrência literais; aplicação exige produto compatível. Idade/gestação/lactação não declaradas permanecem desconhecidas.",
+        "field_key": "product_requirement",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-21T13:26:42.832693+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-21T13:26:42.832693+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "8f0fc4f3-7f37-4d53-869d-0be110b6d96d",
+        "notes": "VAL-IBR-003: indicação consultada é bovina.",
+        "field_key": "species_authorization_bubalino",
+        "source_id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "8fd29f84-f026-4470-a77b-95868d2353f8",
+        "notes": "VAL-CLO-003: idade mínima não foi declarada na bula consultada.",
+        "field_key": "minimum_age_conditions",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "948b0fb3-d28b-4d20-8ef2-45633439910c",
+        "notes": "VAL-B19-003: comprovação ao menos semestral por atestado ou sistema oficial.",
+        "field_key": "official_vaccination_record",
+        "source_id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "950abb21-d4e3-4720-984b-a9ef14afba32",
+        "notes": "VAL-RAI-002: exige legislação específica das UFs, mas não contém os overlays estaduais.",
+        "field_key": "regional_rule",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "9df1b1cb-bfc9-4253-9ae7-a30e31115d40",
+        "notes": "VAL-IBR-002: carência não localizada na fonte oficial consultada.",
+        "field_key": "withdrawal",
+        "source_id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "a0021f58-fbf1-4c71-ad9d-b50de669fe3e",
+        "notes": "VAL-RAI-003: sustenta vacinação em foco/perifoco conforme geografia local, sem comprovação operacional regional.",
+        "field_key": "risk_focus_perifocus",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "a3ca6cbd-8379-4733-8185-27124fcb85d0",
+        "notes": "VAL-FMD-004: o plano inclui bovinos e bubalinos entre as espécies suscetíveis abrangidas pela resposta oficial.",
+        "field_key": "species_authorization",
+        "source_id": "6d71faf9-6f58-473b-a2e1-f136cee4f453",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "a64b0bfd-fedb-5ebb-ae5e-6606da84bb59",
+        "notes": "Somente variante bovina descrita nesta bula; não valida toda a classe. Primovacinação e recorrência literais; aplicação exige produto compatível. Idade/gestação/lactação não declaradas permanecem desconhecidas.",
+        "field_key": "operational_window",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-21T13:26:42.832693+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-21T13:26:42.832693+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "a68324cc-24d6-4fbd-90fd-8f00d2d0347a",
+        "notes": "VAL-B19-006: Abor-Vac sustenta uso bovino, sem cobrir toda a abrangência da norma.",
+        "field_key": "divergence_norma_bula",
+        "source_id": "21100dc5-1485-4c60-93b6-007c39eaa0d1",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "ab010fbd-12d3-4ec6-bded-dda208eab1f0",
+        "notes": "VAL-IBR-006: 5 mL por via subcutânea.",
+        "field_key": "dose_route",
+        "source_id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "b3a9d692-90bb-44fe-86e9-2b3579186ec4",
+        "notes": "VAL-IBR-005: composição e indicação reprodutiva estão explícitas.",
+        "field_key": "composition_indication",
+        "source_id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "c2533d93-9c1f-4be1-85b6-216c3846733b",
+        "notes": "VAL-IBR-004: número de registro oficial não consta da página consultada.",
+        "field_key": "official_registration",
+        "source_id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "c3c65027-8204-532f-a35a-1d58d6576f82",
+        "notes": "Somente variante bovina descrita nesta bula; não valida toda a classe. Primovacinação e recorrência literais; aplicação exige produto compatível. Idade/gestação/lactação não declaradas permanecem desconhecidas.",
+        "field_key": "product_requirement",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-21T13:26:42.832693+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-21T13:26:42.832693+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "c48604d3-b428-4c0b-b598-1e4f7b38137d",
+        "notes": "VAL-CLO-002: indicação consultada é bovina.",
+        "field_key": "species_authorization_bubalino",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "c8327155-9855-4d5c-9638-39797a7bfd79",
+        "notes": "VAL-LEP-006: sustenta reforço anual, não a alternativa semestral por risco.",
+        "field_key": "recurrence_risk",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "c8d8b79a-4119-4964-be2a-40b706a1fc62",
+        "notes": "VAL-PAR-003: depende da bula do produto executado.",
+        "field_key": "milk_withdrawal",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "c92d355b-a2ce-4964-ab52-7dc559f6e082",
+        "notes": "VAL-RAI-006: reforço 30 dias após a primeira dose em primovacinados.",
+        "field_key": "primary_booster_interval",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "cade4476-81ff-429c-97d8-751bd9c48ae7",
+        "notes": "Somente a formulação Poliguard — resumo da bula oficial MSD; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada.",
+        "field_key": "product_requirement",
+        "source_id": "7e28a751-8385-4d81-9ca9-b1caa964f6f8",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "d247d101-eeae-46f4-8b9b-3da1c954af9b",
+        "notes": "VAL-B19-001: arts. 9 e 10; fêmeas bovinas/bubalinas 3–8 meses, excetuadas UF classificadas A. Portaria 1.633/2026 mantém a exceção.",
+        "field_key": "legal_requirement",
+        "source_id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "d2799bde-4d9b-470f-9b3f-c4421dfddc9d",
+        "notes": "Somente a formulação Bovigen V4J5 — informações oficiais Virbac Brasil; condições maternas/reprodutivas próprias, sem generalização por classe. Proposta não aprovada.",
+        "field_key": "species_authorization",
+        "source_id": "39ede6d7-969b-4802-b570-915532402008",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "d511cf25-22a1-472e-8050-da737d35397f",
+        "notes": "VAL-IBR-005: composição e indicação IBR/BVD/leptospirose estão explícitas.",
+        "field_key": "composition_indication",
+        "source_id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "da872fb4-5bef-4dd3-92eb-bca554378b8d",
+        "notes": "VAL-PAR-002: depende da bula do produto executado.",
+        "field_key": "gestation_lactation",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "e02423d6-4cab-46f4-af73-06a54f5e82dc",
+        "notes": "VAL-IBR-007: duas doses com intervalo de 21 a 30 dias.",
+        "field_key": "primary_schedule",
+        "source_id": "dfd38930-6313-494c-bb56-2256265b81e3",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "e05b6c72-56ba-4884-82c6-e8203bd8abbe",
+        "notes": "VAL-IBR-007: segunda dose após 21 a 30 dias.",
+        "field_key": "primary_schedule",
+        "source_id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "e3909094-9636-45b8-9d0b-10a07ec003c4",
+        "notes": "VAL-CLO-006: reforço anual em dose única.",
+        "field_key": "booster",
+        "source_id": "e009b927-fe7e-414d-8a37-cef5a2ee7ff7",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "e4e9592a-7849-4861-9306-3c6c31937d79",
+        "notes": "VAL-IBR-001: página oficial permite vacinação de fêmeas gestantes.",
+        "field_key": "reproductive_restrictions",
+        "source_id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "eb097b4a-93b8-4c8e-9cfa-4d6f945edf70",
+        "notes": "VAL-LEP-001: informa 21 dias antes do abate; não informa carência para leite.",
+        "field_key": "withdrawal",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "ebe63954-1b2b-456f-a0fc-a5bbe49f20e4",
+        "notes": "VAL-LEP-004: 2 mL por via intramuscular.",
+        "field_key": "dose_route",
+        "source_id": "953be191-f9ae-44ab-bb97-aa29fac824f4",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "efd3a2f5-740d-43df-bb9c-28263449b76c",
+        "notes": "VAL-RAI-005: 2 mL por via subcutânea ou intramuscular.",
+        "field_key": "dose_route",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "f1ea8b11-33d4-4514-ae8b-c703a5d7dde3",
+        "notes": "Consulta e planejamento manual nacional conforme IN 5/2002; aplicação regional por fazenda. Sem automação global, produto real e carência somente por evidência própria.",
+        "field_key": "product_requirement",
+        "source_id": "7769a101-ff60-4037-b33a-aec46f8935ab",
+        "created_at": "2026-10-23T05:06:05.683744+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-23T05:06:05.683744+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "f484182b-f272-4b16-a19a-aad8bb209c9a",
+        "notes": "VAL-B19-004: marcação facial esquerda e exceções de identificação individual previstas na norma.",
+        "field_key": "mandatory_marking",
+        "source_id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "f51148b9-a553-4285-bf8f-7b49403520de",
+        "notes": "VAL-FMD-004: histórico inclui bovinos e bubalinos, sem regra atual de contingência por espécie.",
+        "field_key": "species_authorization",
+        "source_id": "bd9b1b9a-7842-414a-b6ab-c807d97f888e",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "f9eec01a-66cc-4a8f-9439-1c51f32ac6c1",
+        "notes": "VAL-PAR-009: não sustenta dose calculada por peso para produto executado.",
+        "field_key": "weight_requirement",
+        "source_id": "7bd1bcf3-e5b5-4cb1-aef1-71415d69c526",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      },
+      {
+        "id": "faad1770-b7f7-4a2e-8211-79310c22eb25",
+        "notes": "VAL-RAI-003: foco exige caso confirmado; perifoco alcança propriedades suscetíveis em até 12 km, definidas por georreferenciamento, cadastro e características sanitárias/ambientais.",
+        "field_key": "risk_focus_perifocus_df",
+        "source_id": "ce25d79d-2843-45a8-a872-233eecc6f6f7",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "fc235a01-0bda-4763-b8b3-cff5c2f1bee8",
+        "notes": "VAL-IBR-006: 5 mL por via subcutânea.",
+        "field_key": "dose_route",
+        "source_id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "fc7c759f-ad2e-41d4-b6b0-c6191553e6f9",
+        "notes": "VAL-FMD-003: vacinação emergencial pode integrar a resposta a foco ou risco elevado, após avaliação operacional/econômica e decisão conjunta MAPA/SVE; adotada a estratégia, torna-se compulsória e controlada pelo SVO.",
+        "field_key": "contingency_emergency",
+        "source_id": "6d71faf9-6f58-473b-a2e1-f136cee4f453",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "fda54bdc-1ac5-4558-a822-7e7b6d1035af",
+        "notes": "VAL-B19-006: norma define espécies e execução, mas não substitui a autorização produto-específica.",
+        "field_key": "divergence_norma_bula",
+        "source_id": "d307d7e9-3860-4c20-a5f3-e0780282dcb1",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "partially_covers"
+      },
+      {
+        "id": "ffc25d80-baf2-49ed-aa05-d16d93ea0667",
+        "notes": "VAL-IBR-003: indicação consultada é bovina.",
+        "field_key": "species_authorization_bubalino",
+        "source_id": "012b58e9-48b8-4d50-8a41-ef352b02e8d5",
+        "created_at": "2026-10-19T21:55:34.830747+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-19T21:55:34.830747+00:00",
+        "coverage_status": "does_not_cover"
+      }
+    ],
+    "sanitario_produto_carencia_rules_v2": [],
+    "sanitario_produto_carencia_fontes_v2": [],
+    "sanitario_produto_especie_autorizacao_v2": []
+  },
+  "tables": [
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_fonte_cobertura_campos_v2",
+      "force_rls": false,
+      "can_enrich": true
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_fontes_tecnicas_v2",
+      "force_rls": false,
+      "can_enrich": true
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produto_carencia_fontes_v2",
+      "force_rls": false,
+      "can_enrich": true
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produto_carencia_rules_v2",
+      "force_rls": false,
+      "can_enrich": true
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produto_dose_rules_v2",
+      "force_rls": false,
+      "can_enrich": true
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produto_especie_autorizacao_v2",
+      "force_rls": false,
+      "can_enrich": true
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produto_fontes_v2",
+      "force_rls": false,
+      "can_enrich": true
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produtos_v2",
+      "force_rls": false,
+      "can_enrich": true
+    }
+  ],
+  "database": "postgres",
+  "executor": "postgres",
+  "snapshot": "471787:471787:",
+  "isolation": "repeatable read",
+  "read_only": "on",
+  "observed_at": "2026-10-27T15:19:32.425058+00:00",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "server_version": "17.11",
+  "session_executor": "postgres"
+}

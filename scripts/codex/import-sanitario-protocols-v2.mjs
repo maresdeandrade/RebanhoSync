@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -42,6 +42,7 @@ const C02_P11_SHA256 = "751ba7c3fb4c0bb912e2f2a401c8b7405a37ad22e2615b9d326823aa
 const C02_LOCAL_DATABASE = "rebanhosync_c02_p11";
 const C02_LOCAL_MARKER = "C02_P11_DISPOSABLE_LOCAL_ONLY";
 const C02_F6_SHA256 = "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367";
+const C02_ADMIN_PROJECT_REF = "zqloazqzhwauamcejmuz";
 
 const DEPRECATED_ACTIVE_ITEMS = [
   {
@@ -84,6 +85,8 @@ function usage() {
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --validate",
     "  node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run",
     "  --validate/--dry-run/--apply-local --c02-p11/--c02-f6 <candidata> [--local-port <porta>]; C02 somente em banco local descartavel identificado.",
+    "  --c02-admin <candidata F6> --project-ref <ref>: validate/dry-run administrativo; apply-local exige banco descartavel.",
+    "  --apply --c02-admin exige --emit-mcp-apply <novo SQL> --mcp-snapshot <snapshot> --local-port <porta> --authorization-ref <referencia> --confirm-c02 <SHA256> --c02-action <technical|approve>; gera transacao MCP a partir do writer local; nao conecta para escrita remota.",
     "  --validate/--dry-run aceitam --review-candidate <arquivo>; dry-run de candidato exige banco local descartavel.",
     "  --validate/--dry-run/--apply aceitam --incremental <delta>; apply exige autorizacao e SANITARIO_DELTA_CONFIRM=<content_sha256>.",
     "  --review-candidate <arquivo> --apply so e aceito para produtos comerciais (sanitario_commercial_products_v2_review_candidates); exige SANITARIO_PRODUCTS_CONFIRM=<content_sha256> e SANITARIO_PRODUCTS_AUTHORIZATION_REF.",
@@ -1155,6 +1158,7 @@ async function applyTransaction(client, data, { incremental = null, bootstrap = 
     await client.query("set local statement_timeout = '60s'");
     await client.query("select pg_advisory_xact_lock(hashtext($1))", [IMPORT_LOCK_KEY]);
     if (c02) {
+      if (c02.admin) await assertC02AdminAccess(client);
       await preserveC02Baseline(client, data, c02);
       if (c02.scope === "F6") await reuseC02Sources(client, data);
     }
@@ -1185,6 +1189,7 @@ async function applyTransaction(client, data, { incremental = null, bootstrap = 
     }
     for (const operation of plan) await writeOperation(client, operation);
     assertConvergedPlan(await buildPlan(client, data, { lockRows: true, incremental }));
+    if (c02?.approve) await approveC02Products(client, data, c02);
     const receipt = bootstrap ? await bootstrapInitialCatalog(client, bootstrap, incremental.import_gate.authorization_reference) : null;
     if (incremental) assert(!isDifferent(preserved, await captureIncrementalProtectedState(client, incremental)), "INCREMENTAL_PROTECTED_STATE_CHANGED");
     await client.query("commit");
@@ -1203,7 +1208,18 @@ async function preserveC02Baseline(client, data, context, lockRows = true) {
     const { rows: [existing] } = await client.query(
       `select * from public.sanitario_produtos_v2 where id=$1${lockRows ? " for update" : ""}`, [candidate.id],
     );
-    assert(existing && !existing.deleted_at && existing.status_curatorial === "precisa_validar", `${prefix}_BASELINE_NOT_PENDING`);
+    const approved = context.admin && existing?.status_curatorial === "ativo" &&
+      existing.metadata?.c02_cadastral_approval?.candidate_sha256 === C02_F6_SHA256 &&
+      existing.metadata.c02_cadastral_approval.project_ref === C02_ADMIN_PROJECT_REF &&
+      existing.metadata.c02_cadastral_approval.scope === "product_registration_only" &&
+      existing.metadata.c02_cadastral_approval.executor === "postgres" &&
+      existing.metadata.c02_cadastral_approval.authorization_source === "explicit_user_request" &&
+      typeof existing.metadata.c02_cadastral_approval.authorization_reference === "string" &&
+      existing.metadata.c02_cadastral_approval.authorization_reference.length >= 10 &&
+      typeof existing.metadata.c02_cadastral_approval.approved_at === "string" &&
+      Number.isFinite(Date.parse(existing.metadata.c02_cadastral_approval.approved_at));
+    assert(existing && !existing.deleted_at && (existing.status_curatorial === "precisa_validar" || approved), `${prefix}_BASELINE_NOT_PENDING`);
+    if (approved) candidate.status_curatorial = "ativo";
     for (const field of ["id", "nome_comercial", "classe", "tipo_produto", "registro_orgao", "registro_numero",
       ...(context.scope === "P11" ? ["fabricante"] : [])]) {
       assert((existing[field] ?? null) === (baseline[field] ?? null), `${prefix}_IDENTITY_CONFLICT:${field}`);
@@ -1213,12 +1229,17 @@ async function preserveC02Baseline(client, data, context, lockRows = true) {
       assert((existing[field] ?? null) === previous || existing[field] === candidate[field], `${prefix}_CONTENT_CONFLICT:${field}`);
     }
     const metadata = existing.metadata;
+    // review_only records the historical F6 publication provenance. Current
+    // registration approval requires both the active status and its C02 receipt;
+    // neither flag grants execution, dose or withdrawal authorization.
     assert(metadata && typeof metadata === "object" && !Array.isArray(metadata) && metadata.review_only === true,
       `${prefix}_REVIEW_METADATA_REQUIRED`);
-    for (const flag of ["approved_for_catalog", "operational_authorization", "allows_agenda_auto", "automatic_product_selection_authorized"]) {
+    assert(metadata.approved_for_catalog === Boolean(approved), `${prefix}_CATALOG_APPROVAL_FLAG`);
+    for (const flag of ["operational_authorization", "allows_agenda_auto", "automatic_product_selection_authorized"]) {
       assert(metadata[flag] === false, `${prefix}_OPERATIONAL_FLAG:${flag}`);
     }
-    assert(FORBIDDEN_TRUE_FLAGS.every(flag => metadata[flag] !== true), `${prefix}_OPERATIONAL_METADATA`);
+    assert(FORBIDDEN_TRUE_FLAGS.every(flag => (flag === "approved_for_catalog" && approved) || metadata[flag] !== true),
+      `${prefix}_OPERATIONAL_METADATA`);
     // Keep every current metadata key, including unrelated concurrent additions.
     candidate.metadata = structuredClone(metadata);
   }
@@ -1276,29 +1297,224 @@ function assertC02Plan(plan, data, context) {
   `C02_${context.scope}_EXISTING_TECHNICAL_CONTENT_CONFLICT`);
 }
 
+async function assertC02AdminAccess(client) {
+  const { rows: [role] } = await client.query("select current_user as executor, session_user as session_executor");
+  assert(role?.executor === "postgres" && role.session_executor === "postgres", "C02_ADMIN_POSTGRES_SESSION_REQUIRED");
+  const { rows } = await client.query(`select c.relname, pg_get_userbyid(c.relowner) as owner,
+    c.relrowsecurity, c.relforcerowsecurity,
+    has_table_privilege(current_user,c.oid,'SELECT') and has_table_privilege(current_user,c.oid,'INSERT')
+      and has_table_privilege(current_user,c.oid,'UPDATE') as can_enrich
+    from pg_class c join pg_namespace n on n.oid=c.relnamespace
+    where n.nspname='public' and c.relkind='r' and c.relname=any($1::text[])`,
+  [PUBLISHERS.filter(p => ["source_rows", "coverage_rows", "product_rows", "product_authorization_rows",
+    "product_source_rows", "dose_rule_rows", "withdrawal_rule_rows", "withdrawal_source_rows"].includes(p.collection)).map(p => p.table)]);
+  assert(rows.length === 8 && rows.every(r => r.owner === "postgres" && r.relrowsecurity && !r.relforcerowsecurity && r.can_enrich),
+    "C02_ADMIN_DATABASE_CONTRACT_MISMATCH");
+}
+
+// Approval is separate from technical evidence and never promotes child rules.
+async function approveC02Products(client, data, context) {
+  assert(context.admin && context.authorizationRef, "C02_APPROVAL_AUTHORIZATION_REQUIRED");
+  const ids = data.product_rows.map(p => p.id);
+  const { rows: unsafe } = await client.query(`select id from public.sanitario_produto_dose_rules_v2
+    where product_id=any($1::uuid[]) and status_curatorial<>'precisa_validar' and deleted_at is null
+    union all select id from public.sanitario_produto_carencia_rules_v2
+    where product_id=any($1::uuid[]) and status_curatorial<>'precisa_validar' and deleted_at is null
+    union all select id from public.sanitario_produto_especie_autorizacao_v2
+    where product_id=any($1::uuid[]) and authorization_status<>'PRECISA_VALIDAR' and deleted_at is null`, [ids]);
+  assert(unsafe.length === 0, "C02_APPROVAL_CHILD_RULE_STATE_CONFLICT");
+  const receipt = { candidate_sha256: C02_F6_SHA256, project_ref: C02_ADMIN_PROJECT_REF,
+    scope: "product_registration_only", authorization_reference: context.authorizationRef,
+    executor: "postgres", authorization_source: "explicit_user_request" };
+  for (const product of data.product_rows) {
+    if (product.status_curatorial === "ativo") continue;
+    const result = await client.query(`update public.sanitario_produtos_v2
+      set status_curatorial='ativo', metadata=jsonb_set(jsonb_set(metadata,'{approved_for_catalog}','true'::jsonb),'{c02_cadastral_approval}',
+        $2::jsonb || jsonb_build_object('approved_at',transaction_timestamp()))
+      where id=$1 and status_curatorial='precisa_validar' and deleted_at is null returning id`,
+    [product.id, JSON.stringify(receipt)]);
+    assert(result.rowCount === 1, "C02_APPROVAL_CONCURRENT_STATE_CONFLICT");
+  }
+}
+
+const c02Tables = () => PUBLISHERS.filter(p => ["source_rows", "coverage_rows", "product_rows", "product_authorization_rows",
+  "product_source_rows", "dose_rule_rows", "withdrawal_rule_rows", "withdrawal_source_rows"].includes(p.collection)).map(p => p.table);
+
+function c02SqlLiteral(value) {
+  if (value === null) return "NULL";
+  if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
+  if (typeof value === "number") { assert(Number.isFinite(value), "C02_SQL_NUMBER_REQUIRED"); return String(value); }
+  assert(typeof value === "string" && !value.includes("\u0000"), "C02_SQL_STRING_REQUIRED");
+  return "'" + value.replaceAll("'", "''") + "'";
+}
+
+function c02StateSql(normalized = false) {
+  return "jsonb_build_object(" + c02Tables().map(table => {
+    const row = normalized ? "(to_jsonb(t)-'created_at'-'updated_at') #- '{metadata,c02_cadastral_approval,approved_at}'" : "to_jsonb(t)";
+    return `'${table}',(select encode(sha256(convert_to(coalesce(jsonb_agg(${row} order by (${row})::text collate "C"),'[]'::jsonb)::text,'UTF8')),'hex') from public.${table} t)`;
+  }).join(",") + ")";
+}
+
+function c02ContractsSql() {
+  return `(select jsonb_agg(jsonb_build_object(
+    'table',c.relname,'owner',pg_get_userbyid(c.relowner),'rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity,
+    'select',has_table_privilege(current_user,c.oid,'SELECT'),'insert',has_table_privilege(current_user,c.oid,'INSERT'),'update',has_table_privilege(current_user,c.oid,'UPDATE'),
+    'columns',(select jsonb_agg(jsonb_build_object('name',a.attname,'type',format_type(a.atttypid,a.atttypmod),'not_null',a.attnotnull,'default',pg_get_expr(d.adbin,d.adrelid)) order by a.attnum)
+      from pg_attribute a left join pg_attrdef d on d.adrelid=a.attrelid and d.adnum=a.attnum where a.attrelid=c.oid and a.attnum>0 and not a.attisdropped),
+    'constraints',(select coalesce(jsonb_agg(pg_get_constraintdef(con.oid) order by con.conname),'[]'::jsonb) from pg_constraint con where con.conrelid=c.oid),
+    'indexes',(select coalesce(jsonb_agg(i.indexdef order by i.indexname),'[]'::jsonb) from pg_indexes i where i.schemaname='public' and i.tablename=c.relname),
+    'triggers',(select coalesce(jsonb_agg(pg_get_triggerdef(t.oid) order by t.tgname),'[]'::jsonb) from pg_trigger t where t.tgrelid=c.oid and not t.tgisinternal)
+    ) order by c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname in (${c02Tables().map(c02SqlLiteral).join(",")}))`;
+}
+
+// Serializes SQL emitted by writeOperation / approveC02Products, not a second
+// planner. A full before-image CAS and post-image assertion bridge the MCP call.
+function compileC02McpTransaction({ projectRef, candidateDigest, authorizationRef,
+  before, after, contracts, writes, summary, approve = false }) {
+  assert(projectRef === C02_ADMIN_PROJECT_REF, "C02_ADMIN_PROJECT_REQUIRED");
+  assert(candidateDigest === C02_F6_SHA256, "C02_ADMIN_CANDIDATE_CHANGED");
+  assert(typeof authorizationRef === "string" && authorizationRef.trim().length >= 10, "C02_ADMIN_AUTHORIZATION_REQUIRED");
+  assert(contracts?.length === 8 && c02Tables().every(t => before?.[t] && after?.[t]), "C02_MCP_SNAPSHOT_REQUIRED");
+  assert(writes.every(w => /^(insert into|update) public\.\w+/i.test(w.sql.trim()) &&
+    c02Tables().includes(w.sql.match(/public\.(\w+)/)[1]) && !w.sql.includes(";")), "C02_MCP_NONCANONICAL_WRITE");
+  const json = value => c02SqlLiteral(JSON.stringify(value)) + "::jsonb";
+  const statements = writes.map(w => {
+    const sql = w.sql.replace(/\$(\d+)\b/g, (_, n) => {
+      assert(Number(n) <= w.values.length, "C02_MCP_BINDING_MISSING");
+      return c02SqlLiteral(w.values[Number(n)-1]);
+    });
+    return `execute ${c02SqlLiteral(sql)}; get diagnostics affected = row_count;
+      if affected<>1 then raise exception 'C02_MCP_WRITE_ROW_COUNT_CONFLICT'; end if;`;
+  }).join("\n");
+  const body = `declare affected integer; begin
+    if current_user<>'postgres' or session_user<>'postgres' then raise exception 'C02_ADMIN_POSTGRES_SESSION_REQUIRED'; end if;
+    if ${c02ContractsSql()} is distinct from ${json([...contracts].sort((a,b)=>a.table.localeCompare(b.table)))} then
+      raise exception 'C02_MCP_SCHEMA_OR_PRIVILEGE_DRIFT'; end if;
+    if ${c02StateSql(true)} = ${json(after)} then
+      perform set_config('rebanhosync.c02_result',${json({ replay: true, skip: approve ? 39 : 652, authorization_reference: authorizationRef })}::text,true);
+      return;
+    end if;
+    if ${c02StateSql()} is distinct from ${json(before)} then raise exception 'C02_MCP_BASELINE_DRIFT'; end if;
+    ${statements}
+    if ${c02StateSql(true)} is distinct from ${json(after)} then raise exception 'C02_MCP_POSTCONDITION_FAILED'; end if;
+    perform set_config('rebanhosync.c02_result',${json({ ...summary, approved: approve ? 39 : 0, replay: false,
+      authorization_reference: authorizationRef, candidate_sha256: candidateDigest, project_ref: projectRef })}::text,true);
+  end`;
+  const delimiter = "$c02_" + createHash("sha256").update(body).digest("hex").slice(0,20) + "$";
+  assert(!body.includes(delimiter), "C02_MCP_DELIMITER_COLLISION");
+  return `-- Canonical C02 writer; project ${projectRef}; reviewed SHA256 ${candidateDigest}
+begin;
+set local standard_conforming_strings=on;
+set local lock_timeout='5s';
+set local statement_timeout='60s';
+select pg_advisory_xact_lock(hashtext(${c02SqlLiteral(IMPORT_LOCK_KEY)}));
+lock table ${c02Tables().map(t=>"public."+t).join(",")} in share row exclusive mode;
+do ${delimiter} ${body} ${delimiter};
+select current_setting('rebanhosync.c02_result')::jsonb as receipt;
+commit;
+`;
+}
+
+async function prepareC02McpSql(client, raw, snapshotFile, output, context) {
+  const snapshot = JSON.parse(readFileSync(snapshotFile, "utf8"));
+  assert(snapshot.project_ref === C02_ADMIN_PROJECT_REF && snapshot.read_only === "on" &&
+    snapshot.isolation === "repeatable read" && snapshot.executor === "postgres" && snapshot.session_executor === "postgres",
+  "C02_MCP_CONSISTENT_ADMIN_SNAPSHOT_REQUIRED");
+  assert(snapshot.contracts?.length === 8 && snapshot.contracts.every(c => c.owner === "postgres" && c.rls &&
+    !c.force_rls && c.select && c.insert && c.update), "C02_ADMIN_DATABASE_CONTRACT_MISMATCH");
+  let before;
+  const writes = [];
+  let after;
+  const recorder = { query: async (sql, values = []) => {
+    // Roll back local execution after the writer's convergence check; emit only
+    // the queries actually accepted by that same transaction.
+    if (sql === "commit") {
+      after = (await client.query(`select ${c02StateSql(true)} as state`)).rows[0].state;
+      return client.query("rollback");
+    }
+    const result = await client.query(sql, values);
+    if (sql === "select pg_advisory_xact_lock(hashtext($1))") {
+      // Verify the materialization and capture its before-image under the same
+      // transaction/locks as planning. A local change while waiting must fail.
+      await client.query(`lock table ${c02Tables().map(t=>"public."+t).join(",")} in share row exclusive mode`);
+      for (const table of c02Tables()) {
+        const actual = (await client.query(`select to_jsonb(t) as row from public.${table} t`)).rows.map(r=>stableStringify(r.row)).sort();
+        const expected = snapshot.rows[table].map(r=>stableStringify(r)).sort();
+        assert(!isDifferent(actual, expected), "C02_MCP_LOCAL_SNAPSHOT_MISMATCH");
+      }
+      before = (await client.query(`select ${c02StateSql()} as state`)).rows[0].state;
+    }
+    if (/^(insert into|update) public\./i.test(sql.trim())) writes.push({ sql, values });
+    return result;
+  }};
+  const packet = JSON.parse(raw);
+  const summary = await applyTransaction(recorder, validateCanonicalTechnicalContract(packet).data,
+    { c02: { ...context, baseline: packet.baseline.product_rows } });
+  const sql = compileC02McpTransaction({ projectRef: C02_ADMIN_PROJECT_REF, candidateDigest: C02_F6_SHA256,
+    authorizationRef: context.authorizationRef, before, after, contracts: snapshot.contracts, writes, summary, approve: context.approve });
+  writeFileSync(output, sql, { flag: "wx" });
+  console.log(JSON.stringify({ summary, writes: writes.length, approve: context.approve,
+    sql_sha256: createHash("sha256").update(sql).digest("hex"), remote_executed: false, local_transaction_rolled_back: true }));
+}
+
 async function c02Main(args) {
-  const scope = args.includes("--c02-f6") ? "F6" : "P11";
-  const flag = scope === "F6" ? "--c02-f6" : "--c02-p11";
-  const prefix = `C02_${scope}`;
+  const admin = args.includes("--c02-admin");
+  const scope = admin || args.includes("--c02-f6") ? "F6" : "P11";
+  const flag = admin ? "--c02-admin" : scope === "F6" ? "--c02-f6" : "--c02-p11";
+  const prefix = `C02_${admin ? "ADMIN" : scope}`;
+  // No legacy flag/environment enables a direct remote write. The authorized
+  // MCP path emits a guarded transaction from execution of this same writer.
+  const mcp = admin && args.includes("--emit-mcp-apply");
+  assert(!admin || !args.includes("--apply") || mcp, "C02_ADMIN_REMOTE_WRITE_DISABLED");
   const database = scope === "F6" ? "rebanhosync_c02_f6" : C02_LOCAL_DATABASE;
   const marker = scope === "F6" ? "C02_F6_DISPOSABLE_LOCAL_ONLY" : C02_LOCAL_MARKER;
-  const modes = args.filter(arg => ["--validate", "--dry-run", "--apply-local"].includes(arg));
+  const modes = args.filter(arg => ["--validate", "--dry-run", "--apply-local", ...(mcp ? ["--apply"] : [])].includes(arg));
   assert(modes.length === 1, `${prefix}_LOCAL_MODE_REQUIRED`);
   const options = new Map();
   for (let index = 0; index < args.length; index++) {
     if (modes.includes(args[index])) continue;
-    assert([flag, "--local-port"].includes(args[index]) && !options.has(args[index]), `${prefix}_INVALID_ARGUMENT`);
+    assert([flag, "--local-port", ...(admin ? ["--project-ref"] : []),
+      ...(mcp ? ["--emit-mcp-apply", "--mcp-snapshot", "--authorization-ref", "--confirm-c02", "--c02-action"] : [])].includes(args[index]) && !options.has(args[index]), `${prefix}_INVALID_ARGUMENT`);
     const value = args[++index];
     assert(value && !value.startsWith("--"), `${prefix}_ARGUMENT_VALUE_REQUIRED`);
     options.set(args[index - 1], value);
   }
+  if (admin) assert(options.get("--project-ref") === C02_ADMIN_PROJECT_REF, "C02_ADMIN_PROJECT_REQUIRED");
   const raw = readFileSync(options.get(flag), "utf8");
   assert(createHash("sha256").update(raw).digest("hex") === (scope === "F6" ? C02_F6_SHA256 : C02_P11_SHA256), `${prefix}_CANDIDATE_CHANGED`);
   const packet = JSON.parse(raw);
   const data = validateCanonicalTechnicalContract(packet).data;
-  const context = { scope, baseline: packet.baseline?.product_rows };
+  const context = { scope, baseline: packet.baseline?.product_rows, admin };
+  if (mcp) {
+    assert(modes[0] === "--apply" && options.get("--confirm-c02") === C02_F6_SHA256, "C02_MCP_EXPLICIT_CONFIRMATION_REQUIRED");
+    assert(options.has("--mcp-snapshot") && options.get("--authorization-ref")?.length >= 10, "C02_MCP_AUTHORIZATION_REQUIRED");
+    assert(["technical", "approve"].includes(options.get("--c02-action")), "C02_MCP_ACTION_REQUIRED");
+    context.authorizationRef = options.get("--authorization-ref");
+    context.approve = options.get("--c02-action") === "approve";
+  }
   if (modes[0] === "--validate") {
-    console.log(`C02 ${scope} validate OK; review-only; no database connection`);
+    console.log(`C02 ${admin ? "ADMIN" : scope} validate OK; review-only; no database connection`);
+    return;
+  }
+  if (admin && modes[0] === "--dry-run" && !options.has("--local-port")) {
+    assert(process.env.DB_URL?.trim(), "C02_ADMIN_DB_URL_REQUIRED");
+    const target = describeDatabase(process.env.DB_URL);
+    const url = new URL(process.env.DB_URL);
+    assert(!target.local && target.database === "postgres" &&
+      ["postgres", `postgres.${C02_ADMIN_PROJECT_REF}`].includes(decodeURIComponent(url.username)), "C02_ADMIN_TARGET_REQUIRED");
+    const { client } = await connectDb("dry-run", false, C02_ADMIN_PROJECT_REF);
+    try {
+      await client.query("begin isolation level repeatable read read only");
+      try {
+        await assertC02AdminAccess(client);
+        await preserveC02Baseline(client, data, context, false);
+        await reuseC02Sources(client, data, false);
+        const plan = await buildPlan(client, data);
+        assertPublishablePlan(plan);
+        assertC02Plan(plan, data, context);
+        printPlan("C02 ADMIN remote read-only dry-run", plan);
+      } finally { await client.query("rollback"); }
+    } finally { await client.end(); }
     return;
   }
   const port = Number(options.get("--local-port"));
@@ -1311,13 +1527,16 @@ async function c02Main(args) {
     const { rows: [target] } = await client.query(`select current_database() as database,
       shobj_description(oid, 'pg_database') as marker from pg_database where datname=current_database()`);
     assert(target?.database === database && target.marker === marker, `${prefix}_DISPOSABLE_DATABASE_REQUIRED`);
-    if (modes[0] === "--apply-local") {
+    if (mcp) {
+      await prepareC02McpSql(client, raw, options.get("--mcp-snapshot"), options.get("--emit-mcp-apply"), context);
+    } else if (modes[0] === "--apply-local") {
       const summary = await applyTransaction(client, data, { c02: context });
       console.log(`C02 ${scope} local summary ${JSON.stringify(summary)}`);
     } else {
       await client.query("begin read only");
       try {
         // Read-only counterpart; apply always repeats these checks under a row lock.
+        if (admin) await assertC02AdminAccess(client);
         await preserveC02Baseline(client, data, context, false);
         if (scope === "F6") await reuseC02Sources(client, data, false);
         const plan = await buildPlan(client, data);
@@ -1588,7 +1807,7 @@ async function incrementalMain(args) {
 }
 async function main() {
   const args = process.argv.slice(2);
-  if (args.includes("--c02-p11") || args.includes("--c02-f6")) return c02Main(args);
+  if (args.includes("--c02-p11") || args.includes("--c02-f6") || args.includes("--c02-admin")) return c02Main(args);
   if (args.includes("--incremental")) return incrementalMain(args);
   const reviewIndex = args.indexOf("--review-candidate");
   const reviewPath = reviewIndex >= 0 ? args[reviewIndex + 1] : null;

@@ -1,0 +1,71 @@
+{
+  "controls": [
+    "Exact fresh materialization of the consistent MCP baseline",
+    "Concurrent baseline/metadata drift rejected without partial writes",
+    "Failure after all 652 canonical writes rolls back all eight tables",
+    "Unprivileged authenticated role cannot execute packet",
+    "Shared canonical advisory lock rejects concurrent application at five-second timeout",
+    "Successful retry applies 613 creates and 39 updates; exact packet replay skips 652 without mutation",
+    "All 42 identities and complete product metadata preserved, including three non-F6 products",
+    "Local preparation race reproduced before fix, rejected under canonical/table locks after fix; positive emission still rolls back"
+  ],
+  "first": {
+    "skip": 0,
+    "create": 613,
+    "reject": 0,
+    "replay": false,
+    "update": 39,
+    "approved": 0,
+    "project_ref": "zqloazqzhwauamcejmuz",
+    "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+    "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+  },
+  "replay": {
+    "skip": 652,
+    "replay": true,
+    "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+  },
+  "sql_sha256": "f0fe069352f5710837b6e4aa867d989761f7cfd20528d322d534066b8d06f53a",
+  "tables_after": {
+    "sanitario_produtos_v2": 42,
+    "sanitario_produto_fontes_v2": 214,
+    "sanitario_fontes_tecnicas_v2": 59,
+    "sanitario_produto_dose_rules_v2": 39,
+    "sanitario_fonte_cobertura_campos_v2": 297,
+    "sanitario_produto_carencia_rules_v2": 38,
+    "sanitario_produto_carencia_fontes_v2": 38,
+    "sanitario_produto_especie_autorizacao_v2": 39
+  },
+  "local_container": "rebanhosync-c02-f6-sql-2026102702",
+  "scope": "Disposable local PostgreSQL only; exact generated MCP transaction",
+  "local_preparation_race": {
+    "before_fix": {
+      "reproduced": true,
+      "unexpected_packet_emitted": true,
+      "local_metadata_in_packet": true,
+      "scope": "local only"
+    },
+    "after_fix": {
+      "rejected": true,
+      "error": "C02_MCP_LOCAL_SNAPSHOT_MISMATCH",
+      "packet_emitted": false,
+      "scope": "local only"
+    },
+    "positive_after_fix": {
+      "summary": {
+        "create": 613,
+        "update": 39,
+        "skip": 0,
+        "reject": 0
+      },
+      "writes": 652,
+      "approve": false,
+      "sql_sha256": "8d3706a64a1e72dcf1b49ba1ed4a29d5b7343099563c0f22a9f4d3d8a1b90979",
+      "remote_executed": false,
+      "local_transaction_rolled_back": true
+    },
+    "unchanged_local_fixture_after_preparation": true,
+    "regression_test": "tests/codex/sanitario-c02-admin.test.mjs",
+    "local_reproduction_script": "C:/Users/mares/.codex/tmp/c02-supabase-preparation/mcp-preparation-race.local.mjs"
+  }
+}
