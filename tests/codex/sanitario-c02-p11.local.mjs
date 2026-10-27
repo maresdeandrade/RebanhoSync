@@ -1,9 +1,11 @@
 // Explicit opt-in SQL rehearsal against this task's fresh, disposable container.
-// No reset/delete, remote URL, production credentials or RLS certification.
+// No reset/delete, remote URL, production credentials or full Auth certification.
 import assert from "node:assert/strict";
 import { execFileSync, execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createHash } from "node:crypto";
 import pg from "pg";
 import { buildPlan, sourceInsertRow, coverageInsertRow } from "../../scripts/codex/import-sanitario-protocols-v2.mjs";
@@ -11,8 +13,14 @@ import { buildPlan, sourceInsertRow, coverageInsertRow } from "../../scripts/cod
 const [container, portText, scope = "p11", securityMode] = process.argv.slice(2);
 assert.ok(["p11", "f6"].includes(scope));
 const full = scope === "f6";
-assert.ok(process.argv.slice(2).length <= 4 && (!securityMode || (full && securityMode === "integration")));
-const integration = securityMode === "integration";
+assert.ok(process.argv.slice(2).length <= 4 && (!securityMode || (full && ["integration", "admin", "post-approval"].includes(securityMode))));
+const postApproval = securityMode === "post-approval";
+const admin = securityMode === "admin" || postApproval;
+const integration = ["integration", "admin", "post-approval"].includes(securityMode);
+const originalSnapshotFile = "docs/review/evidence/SANITARIO_V2_C02_SUPABASE_READONLY_SNAPSHOT_20261026.json";
+const remoteSnapshotFile = postApproval ? "docs/review/evidence/SANITARIO_V2_C02_POST_APPROVAL_READONLY_20261027.json" : originalSnapshotFile;
+const originalSnapshot = admin ? JSON.parse(readFileSync(originalSnapshotFile, "utf8")) : null;
+const remoteSnapshot = postApproval ? { ...originalSnapshot, ...JSON.parse(readFileSync(remoteSnapshotFile, "utf8")) } : originalSnapshot;
 const prefix = `C02_${scope.toUpperCase()}`;
 assert.match(container ?? "", new RegExp("^rebanhosync-c02-" + scope + "-sql-\\d+$"));
 const port = Number(portText);
@@ -32,7 +40,8 @@ const id = candidate.payload.product_rows[0].id;
 const results = [];
 const record = label => { results.push(label); console.log(`OK ${label}`); };
 const run = promisify(execFile);
-const cli = mode => run(process.execPath, ["scripts/codex/import-sanitario-protocols-v2.mjs", mode, `--c02-${scope}`, candidateFile, "--local-port", String(port)], {
+const cli = mode => run(process.execPath, ["scripts/codex/import-sanitario-protocols-v2.mjs", mode, admin ? "--c02-admin" : `--c02-${scope}`, candidateFile,
+  ...(admin ? ["--project-ref", remoteSnapshot.project_ref] : []), "--local-port", String(port)], {
   env: { ...process.env, DB_URL: "must-not-be-read", ALLOW_SANITARIO_REMOTE_IMPORT: "1" },
 });
 async function snapshot() {
@@ -45,6 +54,81 @@ async function deniedWithoutWrites(pattern, mode = "--apply-local") {
   const before = await snapshot();
   await assert.rejects(cli(mode), error => pattern.test(error.stderr));
   assert.deepEqual(await snapshot(), before);
+}
+
+async function postApprovalReplay() {
+  for (const table of tables) for (const row of remoteSnapshot.rows[table]) {
+    const columns = Object.keys(row);
+    await db.query(`insert into public.${table} (${columns.join(",")}) values (${columns.map((_,i)=>"$"+(i+1)).join(",")})`,
+      columns.map(c=>row[c] && typeof row[c]==="object" ? JSON.stringify(row[c]) : row[c]));
+  }
+  const before = await snapshot();
+  for (const table of tables) assert.deepEqual(before[table], remoteSnapshot.rows[table].map(r=>JSON.stringify(r)).sort());
+  record("exact materialization of current read-only post-approval snapshot");
+  const dry = await cli("--dry-run");
+  const summary = JSON.parse(dry.stdout.split("\n").find(l=>l.startsWith("summary ")).slice(8));
+  assert.deepEqual(summary, { create: 0, update: 0, skip: 652, reject: 0 });
+  assert.deepEqual(await snapshot(), before);
+  record("canonical post-approval dry-run skips 652; all UUIDs, metadata and provenance unchanged");
+  const directory = mkdtempSync(join(tmpdir(), "c02-post-approval-"));
+  const sqlFile = join(directory, "local-only-replay.sql");
+  const preparation = await run(process.execPath, ["scripts/codex/import-sanitario-protocols-v2.mjs",
+    "--apply", "--c02-admin", candidateFile, "--project-ref", remoteSnapshot.project_ref, "--local-port", String(port),
+    "--emit-mcp-apply", sqlFile, "--mcp-snapshot", remoteSnapshotFile, "--authorization-ref", "C02-POST-APPROVAL-LOCAL-REPLAY",
+    "--confirm-c02", createHash("sha256").update(readFileSync(candidateFile)).digest("hex"), "--c02-action", "technical"],
+  { env: { ...process.env, DB_URL: "must-not-connect" } });
+  const prepared = JSON.parse(preparation.stdout.trim());
+  assert.equal(prepared.writes, 0);
+  assert.equal(prepared.local_transaction_rolled_back, true);
+  assert.deepEqual(await snapshot(), before);
+  const sql = readFileSync(sqlFile, "utf8");
+  assert.equal(/^\s*execute '/m.test(sql), false);
+  const result = await db.query(sql);
+  const replay = result.find(r=>r.rows?.[0]?.receipt)?.rows[0].receipt;
+  assert.equal(replay.replay, true);
+  assert.equal(replay.skip, 652);
+  assert.deepEqual(await snapshot(), before);
+  record("MCP packet contains zero DML, rolls back local preparation and converges under real PostgreSQL locks");
+  const approved = remoteSnapshot.rows.sanitario_produtos_v2.filter(p=>p.metadata?.c02_cadastral_approval);
+  assert.equal(approved.length,39);
+  assert(approved.every(p=>p.status_curatorial==="ativo" && p.metadata.approved_for_catalog===true && p.metadata.review_only===true));
+  assert(remoteSnapshot.rows.sanitario_produto_dose_rules_v2.every(r=>r.status_curatorial==="precisa_validar"));
+  assert(remoteSnapshot.rows.sanitario_produto_carencia_rules_v2.every(r=>r.status_curatorial==="precisa_validar"));
+  assert(remoteSnapshot.rows.sanitario_produto_especie_autorizacao_v2.every(r=>r.authorization_status==="PRECISA_VALIDAR"));
+  record("39 approved registrations remain separate from pending dose, withdrawal and species rules");
+  const writer = readFileSync("scripts/codex/import-sanitario-protocols-v2.mjs","utf8");
+  const approve = new Function("assert", "C02_ADMIN_PROJECT_REF", "C02_F6_SHA256",
+    writer.slice(writer.indexOf("async function approveC02Products("),writer.indexOf("\nconst c02Tables"))+
+    ";return approveC02Products;")(assert, remoteSnapshot.project_ref,
+    createHash("sha256").update(readFileSync(candidateFile)).digest("hex"));
+  await db.query("begin");
+  try {
+    const product = candidate.payload.product_rows[0];
+    await db.query(`update public.sanitario_produtos_v2 set status_curatorial='precisa_validar',
+      metadata=jsonb_set(metadata-'c02_cadastral_approval','{approved_for_catalog}','false'::jsonb) where id=$1`,[product.id]);
+    await approve(db, { product_rows: [{id:product.id,status_curatorial:"precisa_validar"}] },
+      {admin:true,authorizationRef:"C02-LOCAL-ONLY-APPROVAL-CONSISTENCY"});
+    const row = (await db.query("select to_jsonb(t) as row from public.sanitario_produtos_v2 t where id=$1",[product.id])).rows[0].row;
+    assert.equal(row.status_curatorial,"ativo");
+    assert.equal(row.metadata.approved_for_catalog,true);
+    assert.equal(row.metadata.review_only,true);
+    assert.equal(row.metadata.operational_authorization,false);
+    assert.equal(row.metadata.c02_cadastral_approval.scope,"product_registration_only");
+    const old = remoteSnapshot.rows.sanitario_produtos_v2.find(p=>p.id===product.id);
+    const restored = {...row.metadata,c02_cadastral_approval:old.metadata.c02_cadastral_approval};
+    assert.deepEqual(restored,old.metadata);
+  } finally { await db.query("rollback"); }
+  assert.deepEqual(await snapshot(),before);
+  record("canonical registration approval writes active/catalog flag atomically, preserves historical provenance and rolls back local exercise");
+  writeFileSync("docs/review/evidence/SANITARIO_V2_C02_POST_APPROVAL_LOCAL_RESULT_20261027.json",JSON.stringify({
+    observed_at:new Date().toISOString(), container:container, local_port:port,
+    server_version:(await db.query("show server_version")).rows[0].server_version,
+    remote_observed_at:remoteSnapshot.observed_at, remote_snapshot:remoteSnapshot.snapshot,
+    snapshot_sha256:createHash("sha256").update(readFileSync(remoteSnapshotFile)).digest("hex"),
+    candidate_sha256:createHash("sha256").update(readFileSync(candidateFile)).digest("hex"),
+    results, summary, preparation:prepared, replay, all_eight_tables_unchanged:true,
+    remote_connections:0, remote_writes:0
+  },null,2)+"\n");
 }
 
 await db.connect();
@@ -70,8 +154,8 @@ try {
     return match[0];
   };
   // This optional fixture includes the unchanged sanitary RLS/policies/triggers.
-  // External tenant/auth tables remain minimal; auth.uid() returns null here.
-  // It tests the local administrative role and ACL boundaries, not tenant auth.
+  // External tenant/auth tables remain minimal. Integration uses auth.uid() null;
+  // admin mode uses inspected helpers and synthetic subjects, not signed JWTs.
   const securityDdl = integration ? `
     create type public.farm_role_enum as enum ('cowboy','manager','owner');
     create table public.user_fazendas(user_id uuid, fazenda_id uuid, role public.farm_role_enum, deleted_at timestamptz);
@@ -85,21 +169,45 @@ try {
   const bootstrap = `comment on database ${database} is '${marker}';
     create table if not exists public.fazendas(id uuid primary key);
     create table if not exists auth.users(id uuid primary key);
-    do $$ begin create type public.estado_uf_enum as enum ('SP'); exception when duplicate_object then null; end $$;
+    ${admin ? base.match(/do \$\$ begin create type public.estado_uf_enum[\s\S]*?end \$\$;/)[0] : "do $$ begin create type public.estado_uf_enum as enum ('SP'); exception when duplicate_object then null; end $$;"}
     ${ddl}\n${sourceIdentity}
     grant usage, create on schema public to postgres;
     grant usage on schema auth to postgres;
     alter database ${database} owner to postgres;
     ${tables.map(table => `alter table public.${table} owner to postgres;`).join("\n")}
     grant all on all tables in schema public to postgres;
-    ${securityDdl}`;
+    ${securityDdl}
+    ${admin ? "grant all on public.user_fazendas to postgres;\n" + remoteSnapshot.functions.map(f=>f.definition+";").join("\n") : ""}`;
   execFileSync("docker", ["exec", "-i", container, "psql", "-U", "supabase_admin", "-d", database, "-v", "ON_ERROR_STOP=1"],
     { input: `begin;\n${bootstrap}\ncommit;`, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
+  if (postApproval) await postApprovalReplay();
+  else {
   const originals = JSON.parse(execFileSync("git", ["show", "6f1b8dcec93254d60be73757a6515193240e208c:docs/review/evidence/SANITARIO_V2_F6_PRODUCTS_REVIEW.json"], { encoding: "utf8" })).payload.product_rows;
+  if (admin) {
+    const ids = new Set(originals.map(p => p.id));
+    for (const table of tables) for (const row of remoteSnapshot.rows[table]) {
+      if (table === "sanitario_produtos_v2" && ids.has(row.id)) continue;
+      const columns = Object.keys(row);
+      await db.query(`insert into public.${table} (${columns.join(",")}) values (${columns.map((_,i)=>`$${i+1}`).join(",")})`,
+        columns.map(c => row[c] && typeof row[c] === "object" ? JSON.stringify(row[c]) : row[c]));
+    }
+    const localConstraints = (await db.query(`select con.conname as name,pg_get_constraintdef(con.oid) as definition
+      from pg_constraint con join pg_class c on c.oid=con.conrelid join pg_namespace n on n.oid=c.relnamespace
+      where n.nspname='public' and c.relname=any($1::text[])`, [tables])).rows;
+    assert.deepEqual(localConstraints.map(r=>JSON.stringify(r)).sort(), remoteSnapshot.constraints.map(({name,definition})=>JSON.stringify({name,definition})).sort());
+    const indexes = (await db.query("select * from pg_indexes where schemaname='public' and tablename=any($1::text[])", [tables])).rows;
+    assert.deepEqual(indexes.map(i=>i.indexdef).sort(), remoteSnapshot.indexes.map(i=>i.indexdef).sort());
+    for (const table of remoteSnapshot.tables) {
+      const columns = (await db.query(`select a.attname as name,format_type(a.atttypid,a.atttypmod) as type,a.attnotnull as not_null
+        from pg_attribute a where a.attrelid=$1::regclass and a.attnum>0 and not a.attisdropped order by a.attnum`, [`public.${table.table}`])).rows;
+      assert.deepEqual(columns, table.columns);
+    }
+    record("local clone of read-only remote technical rows; eight table columns, 46 constraints and 19 indexes match destination");
+  }
   const physicals = [];
   for (const baseline of originals.filter(p => full || p.id === id)) {
-    const { product_key: ignored, ...physical } = baseline;
-    physical.metadata = { ...physical.metadata, independent_note: { preserved: true }, semantic_review_notes: "concurrent documentary note" };
+    const { product_key: ignored, ...physical } = admin ? remoteSnapshot.rows.sanitario_produtos_v2.find(p => p.id === baseline.id) : baseline;
+    if (!admin) physical.metadata = { ...physical.metadata, independent_note: { preserved: true }, semantic_review_notes: "concurrent documentary note" };
     const columns = Object.keys(physical);
     await db.query(`insert into public.sanitario_produtos_v2 (${columns.join(",")}) values (${columns.map((_, i) => `$${i + 1}`).join(",")})`,
       columns.map(c => c === "metadata" ? JSON.stringify(physical[c]) : physical[c]));
@@ -107,7 +215,7 @@ try {
   }
   const physical = physicals.find(p => p.id === id);
   let equivalentSource, equivalentCoverage;
-  if (full) {
+  if (full && !admin) {
     // Fixture starts with the already persisted pilot, not a second empty pilot.
     const pilot = JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_C02_P11_REVIEW_CANDIDATE_20261026.json")).payload;
     pilot.product_rows[0].metadata = physical.metadata;
@@ -133,8 +241,12 @@ try {
         columns.map(c => row[c] && typeof row[c] === "object" ? JSON.stringify(row[c]) : row[c]));
     }
   }
-  const expected = full ? { create: 592, update: 38, skip: 22, total: 652 } : { create: 19, update: 1, skip: 0, total: 20 };
-  record(full ? "fresh local F6 fixture: 39 commercial UUIDs, persisted P11 and equivalent source/coverage" : "fresh local P11 fixture");
+  if (admin) {
+    equivalentSource = sourceInsertRow(candidate.payload.source_rows[1]);
+    equivalentCoverage = coverageInsertRow(candidate.payload.coverage_rows.find(c=>c.source_key===equivalentSource.source_key), equivalentSource);
+  }
+  const expected = admin ? { create: 613, update: 39, skip: 0, total: 652 } : full ? { create: 592, update: 38, skip: 22, total: 652 } : { create: 19, update: 1, skip: 0, total: 20 };
+  record(admin ? "administrative local rehearsal from observed 42-product remote snapshot; no remote connection" : full ? "fresh local F6 fixture: 39 commercial UUIDs, persisted P11 and equivalent source/coverage" : "fresh local P11 fixture");
 
   const beforeDry = await snapshot();
   const dry = await cli("--dry-run");
@@ -152,13 +264,24 @@ try {
   await db.query("alter table public.sanitario_produto_carencia_fontes_v2 disable trigger c02_fixture_abort");
   record("mid-transaction SQL failure rolls back source, product enrichment and every technical row");
 
-  const concurrent = await Promise.all([cli("--apply-local"), cli("--apply-local")]);
+  const attempts = await Promise.allSettled([cli("--apply-local"), cli("--apply-local")]);
+  const concurrent = [];
+  let concurrencyRetries = 0;
+  for (const attempt of attempts) {
+    if (attempt.status === "fulfilled") concurrent.push(attempt.value);
+    else if (admin && /canceling statement due to lock timeout/.test(attempt.reason.stderr ?? "")) {
+      // Keep the writer's 5s guard. After the competing caller finishes, an
+      // explicit retry must converge rather than duplicate or partially write.
+      concurrencyRetries++;
+      concurrent.push(await cli("--apply-local"));
+    } else throw attempt.reason;
+  }
   const summaries = concurrent.map(r => JSON.parse(/local summary (.*)/.exec(r.stdout)[1]));
   assert.ok(summaries.some(s => s.create === expected.create && s.update === expected.update));
   assert.ok(summaries.some(s => s.skip === expected.total && !s.create && !s.update));
-  record(`two concurrent SQL applications serialize; replay skips all ${expected.total} rows`);
+  record(concurrencyRetries ? `concurrent lock timeout preserves transaction guard; ${concurrencyRetries} explicit retry converges with ${expected.total} skips` : `two concurrent SQL applications serialize; replay skips all ${expected.total} rows`);
   const afterApply = await snapshot();
-  assert.deepEqual(tables.map(t => afterApply[t].length), full ? [41, 206, 39, 39, 212, 39, 38, 38] : [1, 6, 1, 1, 6, 1, 2, 2]);
+  assert.deepEqual(tables.map(t => afterApply[t].length), admin ? [59, 297, 42, 39, 212, 39, 38, 38] : full ? [41, 206, 39, 39, 212, 39, 38, 38] : [1, 6, 1, 1, 6, 1, 2, 2]);
   const replay = await cli("--apply-local");
   assert.ok(replay.stdout.includes(`"skip":${expected.total}`));
   const replaySummary = JSON.parse(/local summary (.*)/.exec(replay.stdout)[1]);
@@ -201,14 +324,14 @@ try {
         await db.query(`set local role ${role}`);
         if (role === "anon") await assert.rejects(db.query("select * from public.sanitario_produtos_v2"), e => e.code === "42501");
         else {
-          assert.equal((await db.query("select count(*)::int n from public.sanitario_produtos_v2")).rows[0].n, 39);
+          assert.equal((await db.query("select count(*)::int n from public.sanitario_produtos_v2")).rows[0].n, admin ? 42 : 39);
           await assert.rejects(db.query("update public.sanitario_produtos_v2 set principio_ativo=principio_ativo where id=$1", [id]), e => e.code === "42501");
         }
       } finally { await db.query("rollback"); }
     }
     assert.deepEqual(await snapshot(), afterApply);
     securityEvidence = { role, relations, privileges,
-      external_auth_fixture: "auth.uid() returns null; tenant memberships and Supabase Auth not certified" };
+      external_auth_fixture: admin ? "Inspected auth.uid()/membership definitions with synthetic subject IDs; JWT signing and Supabase Auth not certified" : "auth.uid() returns null; tenant memberships and Supabase Auth not certified" };
     record("RLS enabled, real updated_at triggers and postgres ownership support local apply/replay; API roles cannot write technical tables");
   }
 
@@ -249,7 +372,7 @@ try {
       const product = candidate.payload.product_rows.find(p => p.metadata.research_lot_code === code);
       assert.equal((await db.query("select count(*)::int n from public.sanitario_produto_carencia_rules_v2 where product_id=$1 and aptitude='leite'", [product.id])).rows[0].n, 0);
     }
-    record("all 39 identities/metadata preserved; equivalent source/coverage reused; vaccine and antiparasitic evidence retained by field");
+    record(admin ? "all 39 identities/metadata preserved; vaccine and antiparasitic evidence retained by field" : "all 39 identities/metadata preserved; equivalent source/coverage reused; vaccine and antiparasitic evidence retained by field");
     await db.query("update public.sanitario_fontes_tecnicas_v2 set strength='apoio' where id=$1", [equivalentSource.id]);
     await deniedWithoutWrites(/C02_F6_SOURCE_CONFLICT:strength/);
     await db.query("update public.sanitario_fontes_tecnicas_v2 set strength=$2 where id=$1", [equivalentSource.id, equivalentSource.strength]);
@@ -300,9 +423,41 @@ try {
   record("active source identity unique index rejects duplicate UUID for the same source key");
 
   await db.query(`comment on database ${database} is 'unmarked'`);
-  await deniedWithoutWrites(new RegExp(`${prefix}_DISPOSABLE_DATABASE_REQUIRED`), "--dry-run");
+  await deniedWithoutWrites(new RegExp(`${admin ? "C02_ADMIN" : prefix}_DISPOSABLE_DATABASE_REQUIRED`), "--dry-run");
   await db.query(`comment on database ${database} is '${marker}'`);
   record("unmarked local target rejected despite remote-import env override");
+
+  if (admin) {
+    // All extra tenant data is rolled back. This exercises canonical RLS with
+    // synthetic subject IDs; it does not exercise JWT signing or Supabase Auth.
+    const farms = ["00000000-0000-4000-8000-000000000101", "00000000-0000-4000-8000-000000000102"];
+    const users = ["00000000-0000-4000-8000-000000000111", "00000000-0000-4000-8000-000000000112", "00000000-0000-4000-8000-000000000113"];
+    const sources = ["00000000-0000-4000-8000-000000000121", "00000000-0000-4000-8000-000000000122"];
+    const beforeTenants = await snapshot();
+    await db.query("begin");
+    try {
+      for (let i=0;i<2;i++) {
+        await db.query("insert into public.fazendas(id) values($1)", [farms[i]]);
+        await db.query("insert into public.user_fazendas(user_id,fazenda_id,role) values($1,$2,'manager')", [users[i],farms[i]]);
+        await db.query(`insert into public.sanitario_fontes_tecnicas_v2(id,source_key,kind,scope,fazenda_id,title,strength,evidence_status)
+          values($1,$2,'bibliografia','fazenda',$3,'Synthetic tenant fixture','apoio','PRECISA_VALIDAR')`, [sources[i],`SRC_C02_TENANT_${i}`,farms[i]]);
+      }
+      await db.query("set local role authenticated");
+      for (let i=0;i<users.length;i++) {
+        await db.query("select set_config('request.jwt.claim.sub',$1,true)", [users[i]]);
+        const visible = (await db.query("select id from public.sanitario_fontes_tecnicas_v2 where id=any($1::uuid[]) order by id", [sources])).rows;
+        assert.deepEqual(visible.map(r=>r.id), i<2 ? [sources[i]] : []);
+        assert.equal((await db.query("select count(*)::int n from public.sanitario_produtos_v2")).rows[0].n,42);
+      }
+    } finally { await db.query("rollback"); }
+    assert.deepEqual(await snapshot(),beforeTenants);
+    await deniedWithoutWrites(/C02_ADMIN_REMOTE_WRITE_DISABLED/, "--apply");
+    for (const table of [tables[0],tables[1],tables[2]]) {
+      const existingIds = new Set(remoteSnapshot.rows[table].filter(r=>table!==tables[2] || !physicals.some(p=>p.id===r.id)).map(r=>r.id));
+      assert.deepEqual((await snapshot())[table].filter(raw=>existingIds.has(JSON.parse(raw).id)), beforeDry[table].filter(raw=>existingIds.has(JSON.parse(raw).id)));
+    }
+    record("two tenant managers and outsider see only their farm sources; global catalog shared intentionally; remote apply disabled and original unrelated rows preserved");
+  }
 
   const report = {
     observed_at: new Date().toISOString(), database: "task-owned disposable local PostgreSQL",
@@ -312,9 +467,12 @@ try {
     ddl_sources: [migrationFile, identityFile, ...(integration ? [baseFile, aclFile] : [])],
     scope: integration ? "Sanitary DDL, RLS/policies and updated_at triggers; F24 technical ACL projection; local postgres owner; minimal external auth/tenant fixtures" : "Active technical table/type/index DDL; external FK fixtures; no RLS/auth certification",
     ...(integration ? { security: securityEvidence } : {}),
+    ...(admin ? { remote_snapshot_sha256: createHash("sha256").update(readFileSync(remoteSnapshotFile)).digest("hex"), remote_project_inspected_read_only: remoteSnapshot.project_ref } : {}),
     results, first_apply: summaries.find(s => s.create), replay: replaySummary,
+    concurrency_retries: concurrencyRetries,
     final_counts: Object.fromEntries(tables.map(t => [t, afterApply[t].length])),
     remote_connections: 0, schema_or_migration_files_modified: false,
   };
-  writeFileSync(`docs/review/evidence/SANITARIO_V2_C02_${scope.toUpperCase()}_${integration ? "INTEGRATION_" : ""}SQL_RESULT_20261026.json`, JSON.stringify(report, null, 2) + "\n");
+  writeFileSync(`docs/review/evidence/SANITARIO_V2_C02_${scope.toUpperCase()}_${admin ? "ADMIN_" : integration ? "INTEGRATION_" : ""}SQL_RESULT_20261026.json`, JSON.stringify(report, null, 2) + "\n");
+  }
 } finally { await db.end(); }

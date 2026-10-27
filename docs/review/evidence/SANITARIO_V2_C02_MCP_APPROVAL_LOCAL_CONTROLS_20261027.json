@@ -1,0 +1,33 @@
+{
+  "controls": [
+    "All 39 approvals roll back on an intermediate/post-write failure",
+    "39 registration approvals committed locally; exact packet replay skips 39 without mutation",
+    "All seven child/source tables unchanged by registration approval",
+    "All F6 UUIDs and old metadata keys preserved; three non-F6 rows byte-equivalent; approval receipt stamped by database",
+    "Canonical planner after registration approval remains convergent: 652 skips"
+  ],
+  "first": {
+    "skip": 652,
+    "create": 0,
+    "reject": 0,
+    "replay": false,
+    "update": 0,
+    "approved": 39,
+    "project_ref": "zqloazqzhwauamcejmuz",
+    "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+    "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+  },
+  "replay": {
+    "skip": 39,
+    "replay": true,
+    "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+  },
+  "canonical_replay": {
+    "create": 0,
+    "update": 0,
+    "skip": 652,
+    "reject": 0
+  },
+  "sql_sha256": "1254b7725f63e2ea1914c276be04688b83ff8c3da9070fbf0c7f2116aa091560",
+  "local_container": "rebanhosync-c02-f6-sql-2026102703"
+}

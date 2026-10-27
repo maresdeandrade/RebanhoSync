@@ -1,8 +1,8 @@
-# C02 — INTEGRAÇÃO TÉCNICA E PREPARAÇÃO DE PR
+# C02 — SUPABASE: PREPARAÇÃO DA PERSISTÊNCIA CONTROLADA
 
-26/10/2026. **P11 revisado e caminho local ampliado aos 38 produtos restantes, no escritor existente.** PostgreSQL 17.6 descartável: 592 creates + 38 updates + 22 skips, partindo do piloto persistido e de uma fonte/cobertura equivalentes. Replay: 652 skips. Nenhuma promoção curatorial/operacional ou conexão remota.
+27/10/2026. **APLICADO: 613 inserções técnicas, 39 atualizações e 39 cadastros F6 aprovados no projeto autorizado.** Escritas executadas por Supabase MCP em transações geradas pelo writer canônico, com locks, baseline integral e pós-condições. Replays remotos convergentes; regras de dose/carência e autorização por espécie permanecem pendentes.
 
-**Resultado vigente: seção 11.** A seção 10 preserva a expansão local anterior. As seções 1–8 registram a preparação histórica e a seção 9, o piloto anterior. As limitações históricas sobre ausência de entrada C02, ausência de SQL e exclusividade P11 foram superadas localmente pela implementação descrita na seção 10. Não se declara C02 globalmente concluída, curadoria completa de todos os campos ou caminho remoto autorizado.
+**Resultado vigente: seção 16.** A seção 15 preserva a aplicação/aprovação anterior; a seção 14, o dry-run MCP; a seção 13, o impedimento histórico da CLI. Os 39 F6 estão ativos e com approved_for_catalog=true, confirmados por leitura na reconciliação. As demais seções preservam seus estados históricos. A aprovação cadastral não implica liberação de regras críticas, conclusão de campos retidos ou conclusão global da C02.
 
 ## 1. Baseline e escopo
 
@@ -313,6 +313,310 @@ Diff completo e proposta de título/corpo do PR são artefatos locais em `C:/Use
 3. Mudança futura da main ou do conteúdo do patch exige conferir o delta correspondente antes de integrar; não transportar o writer antigo por substituição integral.
 
 Recomendação: decidir sobre commit e abertura do PR a partir deste patch isolado. Nenhuma escrita remota, ativação, commit, push, PR, merge ou deploy foi realizada. Containers próprios foram parados com os dados preservados.
+
+## 12. Supabase e persistência controlada — resultado vigente
+
+### 1. Decisão
+
+**Preparado para avaliação administrativa e aplicação futura controlada. A escrita remota permanece bloqueada por código nesta entrega.** O caminho de validate/dry-run administrativo foi implementado no writer existente; a mesma transação de aplicação foi exercitada somente em PostgreSQL local descartável. A habilitação de apply remoto exige autorização específica e ajuste explícito desse bloqueio; nenhum comando desta versão aplica C02 remotamente.
+
+Main confirmada em `8878cc924b57eefac8ea9a32485bba82a6adef06`, com PR #252 integrado. Worktree reutilizado limpo, branch local `codex/c02-supabase-preparation`; alterações concorrentes e demais worktrees preservados. Não houve commit, push, PR, merge ou deploy nesta execução.
+
+Destino identificado pelo vínculo local existente e pela conta conectada: **RebanhoSync, projeto zqloazqzhwauamcejmuz, sa-east-1, PostgreSQL 17.11**. Esse backend também atende o frontend de produção, conforme o contrato técnico já registrado; não é ambiente descartável de homologação. Acesso remoto realizado exclusivamente por transações `BEGIN READ ONLY` encerradas em rollback, via conector Supabase. Credenciais não foram extraídas, exibidas ou gravadas.
+
+### 2. Alterações realizadas
+
+- `scripts/codex/import-sanitario-protocols-v2.mjs`: opção explícita `--c02-admin`, projeto fixado e candidata F6 pelo hash existente. Validate sem conexão; dry-run remoto em REPEATABLE READ/READ ONLY com TLS e vínculo de projeto do conector SQL já existente; apply-local somente no database/marcador descartável já protegidos. Apply remoto recusado antes de qualquer conexão, mesmo com overrides legados de importação.
+- Guard administrativo privado: exige current_user/session_user postgres, oito tabelas sob ownership postgres, RLS habilitada, FORCE RLS ausente e privilégios SELECT/INSERT/UPDATE. Isso identifica o modelo administrativo existente; não concede privilégio nem remove policy. API roles não passam por esse guard.
+- `tests/codex/sanitario-c02-admin.test.mjs`: oito testes novos de CLI e rejeição de anon/authenticated/service_role no guard, sem novo export público.
+- `tests/codex/sanitario-c02-p11.local.mjs`: modo opcional `f6 admin`, réplica das linhas técnicas inspecionadas, enum UF canônico, funções de segurança conferidas no destino, controles de identidade/ACL/RLS e retry após contenção. Os modos P11/F6/integration anteriores continuam disponíveis.
+- [Snapshot remoto somente leitura](evidence/SANITARIO_V2_C02_SUPABASE_READONLY_SNAPSHOT_20261026.json) e [evidência SQL administrativa local](evidence/SANITARIO_V2_C02_F6_ADMIN_SQL_RESULT_20261026.json). O snapshot registra dados em 27/10/2026 01:22:38 UTC e helpers/triggers em 01:45:08 UTC, em consultas separadas; é evidência datada, não autorização ou garantia de estado futuro.
+- Este relatório foi reconciliado no mesmo trabalho. Candidatas e recibos históricos F6/F9, pesquisas, inventário e evidências anteriores permaneceram intactos. Não foram alterados schema, migrations, RLS, roles, RPCs ou contratos do produto.
+
+### 3. Testes e evidências
+
+```text
+node node_modules/vitest/vitest.mjs run tests/codex/sanitario-c02-admin.test.mjs tests/codex/sanitario-c02-p11.test.mjs tests/codex/sanitario-c02-f6.test.mjs tests/codex/sanitario-v2-publisher.test.mjs --maxWorkers=1
+224/224 passaram: 196 publicador, 9 P11, 11 F6 e 8 administrativos.
+
+node tests/codex/sanitario-c02-p11.local.mjs rebanhosync-c02-f6-sql-2026102624 65504 f6 admin
+Saída 0; PostgreSQL local 17.6, RLS/triggers ativos.
+
+node node_modules/eslint/bin/eslint.js scripts/codex/import-sanitario-protocols-v2.mjs tests/codex/sanitario-c02-admin.test.mjs tests/codex/sanitario-c02-p11.local.mjs
+node --check scripts/codex/import-sanitario-protocols-v2.mjs
+node --check tests/codex/sanitario-c02-p11.local.mjs
+Saída 0. Diff check também sem apontamentos.
+```
+
+O ensaio clonou as 42 linhas de produto, 18 fontes globais e 91 coberturas existentes, sem conectar o harness ao banco remoto. Comparou colunas das oito tabelas, **46 constraints e 19 índices**, iguais aos objetos inspecionados. Lista de **65 migrations** aplicada no destino coincide com os arquivos locais por versão; não se presume igualdade de todo o schema fora do recorte.
+
+Resultados reais: dry-run sem mudança persistida; **613 creates + 39 updates + 0 skips**, replay explícito **0 creates + 0 updates + 652 skips**, zero rejeições no plano convergente. Concorrência serializada, falha intermediária com rollback das oito tabelas, conflitos de identidade/estado/metadata operacional/conteúdo/fontes/coberturas recusados. UUIDs, registro null, metadata integral, estados pendentes e retenções por campo preservados. As 18 fontes, 91 coberturas e três produtos anteriores fora do lote ficaram inalterados.
+
+Verificação adicional de contenção manteve o advisory lock canônico em outra sessão local: timeout de 5s, nenhuma mudança persistida, liberação do lock e retry explícito com 652 skips e snapshot idêntico. A evidência registra esse controle em `lock_timeout_retry`. O timeout de uma tentativa anterior revelou a necessidade de testar esse cenário; não foi ampliado o limite do writer nem adicionada retentativa automática em produção.
+
+Permissões: postgres real da fixture, superuser=false/bypassrls=true; ownership postgres e RLS nas oito tabelas. Matriz de **24 combinações de papel/tabela** confirmou API roles sem escrita técnica, anon sem leitura; tentativas SQL recusadas com 42501. Tenant checks usam dois managers, duas fazendas, um outsider e os helpers inspecionados: cada manager lê somente sua fonte de fazenda; outsider não lê nenhuma delas; os 42 produtos globais são visíveis intencionalmente. Fixtures e alterações de contexto dos testes foram revertidas por rollback.
+
+Foram observadas e corrigidas somente limitações da fixture anterior: enum SP insuficiente para fontes com GO/outras UFs; contagem fixa 39 incompatível com as 42 linhas reais; grants da tabela sintética de membership. Nenhum desses ajustes alterou schema remoto ou contratos de autorização do produto. Os containers próprios foram parados com dados preservados, sem reset ou remoção destrutiva.
+
+Fallow `audit --gate new-only --base 8878cc924b57eefac8ea9a32485bba82a6adef06 --summary`: saída 0, nenhum achado novo. Cinco achados herdados foram excluídos pelo gate existente; a análise comparativa emitiu avisos de node_modules ausente. Nenhuma configuração do Fallow foi alterada nesta tarefa.
+
+Não foram executados build, E2E, regressão global ou `validate-supabase-baseline-functional.mjs`: não há mudança de UI, RPC/schema/sync nem stack local completa de Auth/PostgREST; a validação SQL foi direcionada à execução administrativa modificada. Os testes de tenant usam subject IDs sintéticos e funções inspecionadas, sem certificar login, emissão/validação de JWT ou isolamento de todos os módulos. A CLI administrativa não foi conectada ao destino remoto com DB_URL; a inspeção remota usou a conta conectada do Supabase.
+
+### 4. Divergências encontradas
+
+- Nenhuma diferença de identidade, campos de baseline, metadata ou estado dos **39 produtos F6** no snapshot. Nenhuma fonte coincidente por UUID/key/URL; nenhuma regra de dose/carência, autorização por espécie ou vínculo técnico F6 já persistido nesse recorte. Os três candidatos retidos não entram na candidata.
+- O destino real ainda não tem P11 enriquecido nem a fonte equivalente pré-semeada na fixture anterior. Por isso o plano muda de **592/38/22** para **613/39/0**, sem divergência técnica dos produtos.
+- PostgreSQL remoto **17.11**, local **17.6**. No recorte comparado, colunas, constraints e índices são iguais. O helper set_updated_at remoto usa search_path vazio; a fixture administrativa usa sua definição inspecionada. Membership/roles/RLS são compatíveis com o modelo administrativo avaliado.
+- Os papéis anon/authenticated/service_role não possuem escrita técnica no destino. Não usar REST/service_role para substituir a sessão administrativa postgres, nem criar grants/RPC para contornar esse contrato.
+- Retenções P05/P06/P33/P38/P40/P41 permanecem exatamente como na candidata já revisada; nenhuma foi preenchida ou convertida em zero.
+
+### 5. Operações remotas propostas — não executadas
+
+**Alvo:** projeto zqloazqzhwauamcejmuz, database postgres; host direto db.zqloazqzhwauamcejmuz.supabase.co ou pooler aceito pelo verificador existente; sessão postgres e TLS verificado. DB_URL deve vir de canal administrativo seguro, sem aparecer em argumentos, logs, documentação ou frontend. Nenhuma credencial foi provisionada nesta tarefa.
+
+**Prévia já suportada**, após disponibilizar a credencial administrativa por ambiente seguro:
+
+```text
+node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run --c02-admin docs/review/evidence/SANITARIO_V2_C02_F6_REVIEW_CANDIDATE_20261026.json --project-ref zqloazqzhwauamcejmuz
+```
+
+Essa chamada só lê e termina em rollback. A inspeção via conector e a simulação local não substituem esse replanejamento no estado efetivo anterior à futura aplicação.
+
+**Aplicação futura, somente após autorização específica:** habilitar o gate administrativo de aplicação remota com referência de autorização, projeto e digest explícitos, preservando todas as verificações; reutilizar applyTransaction e o mesmo plano. Nesta versão, `--apply --c02-admin` termina com `C02_ADMIN_REMOTE_WRITE_DISABLED`; nenhum override legado o libera. Não contornar a trava usando os modos de publicação comercial ou o comando local.
+
+Plano esperado para o snapshot inspecionado:
+
+| Operação | Quantidade | Destino canônico |
+| --- | ---: | --- |
+| Criar fontes globais | 41 | sanitario_fontes_tecnicas_v2 |
+| Criar coberturas | 206 | sanitario_fonte_cobertura_campos_v2 |
+| Enriquecer produtos existentes | 39 | sanitario_produtos_v2; identidade/metadata/estados preservados |
+| Criar autorizações pendentes por espécie | 39 | sanitario_produto_especie_autorizacao_v2 |
+| Criar vínculos de produto/fonte | 212 | sanitario_produto_fontes_v2 |
+| Criar regras pendentes de dose | 39 | sanitario_produto_dose_rules_v2 |
+| Criar regras pendentes de carência | 38 | sanitario_produto_carencia_rules_v2 |
+| Criar vínculos de carência/fonte | 38 | sanitario_produto_carencia_fontes_v2 |
+
+Total: **613 criações e 39 enriquecimentos**, numa transação. Fabricantes físicos P23/P37/P39 e demais campos previstos na candidata são enriquecidos sem alterar registro/UUID; nenhum produto novo é cadastrado.
+
+**Interromper antes da escrita** se houver destino/role/TLS incorreto, drift relevante de schema/ACL/RLS, identidade ambígua/tombstone, produto promovido ou flag operacional true, enriquecimento diferente de baseline/alvo, regra técnica conflitante ou fonte/cobertura não equivalente. Replanejar se as contagens mudarem; skips de conteúdo já idêntico podem representar replay, mas não autorizam ignorar conflito. Metadata nova não operacional deve ser preservada sob lock.
+
+**Durante a aplicação autorizada:** advisory lock existente, lock_timeout 5s/statement_timeout 60s, guards e FOR UPDATE; ordem FK do writer; convergência antes de commit. Qualquer erro implica rollback, sem compensação por DELETE. Em timeout/resposta perdida, confirmar o estado e repetir a mesma candidata; não gerar novos UUIDs ou presumir que a primeira transação falhou.
+
+**Conferência pós-escrita proposta:** 59 fontes globais, 297 coberturas globais, 42 produtos, 39 autorizações F6, 212 vínculos de produto, 39 doses pendentes, 38 carências pendentes e 38 vínculos de carência no recorte; conferir todas as identidades/metadata/flags, fontes antigas e os três produtos fora do lote. Obter ACK e dry-run convergente com 652 skips. Nenhuma ativação, protocolo, Evento, Agenda ou estoque integra esse plano.
+
+### 6. Riscos residuais e próximo passo
+
+1. Snapshot datado e consultas separadas: estado remoto pode mudar; repetir dry-run somente leitura imediatamente antes de uma aplicação autorizada. O número de versão local difere do remoto, embora o contrato técnico comparado seja compatível.
+2. Leitura remota pelo conector comprovada; DB_URL/handshake da CLI no destino e Supabase Auth completo não foram exercitados. Os testes de permissões e tenant têm o alcance explícito da fixture, sem certificação integral de autenticação ou todos os tenants.
+3. Escrita remota deliberadamente desabilitada por código e campos técnicos retidos por evidência: próximo passo é a decisão explícita sobre destino/lote/gate de aplicação, mantendo as retenções e estados pendentes. Isso não constitui aprovação de produto ou conclusão global de C02.
+
+**Nenhuma escrita remota, migration remota, alteração de aprovação, commit, push, PR, merge ou deploy foi executada nesta tarefa.**
+
+## 13. Validação remota read-only da CLI — BLOCKED
+
+### Resultado
+
+Não foi possível executar o dry-run administrativo real no projeto zqloazqzhwauamcejmuz: **não há DB_URL administrativa disponível nos canais seguros examinados**. A CLI foi invocada com `--dry-run --c02-admin` e retornou `C02_ADMIN_DB_URL_REQUIRED` antes de abrir conexão. Isso é falha de pré-requisito, não dry-run remoto aprovado. Não se emite READY_FOR_APPLICATION_DECISION.
+
+Branch confirmada `codex/c02-supabase-preparation`, HEAD `8878cc924b57eefac8ea9a32485bba82a6adef06`. O diff inicial era exatamente a preparação anterior: writer, harness local, relatório e três arquivos novos de teste/evidência. Nenhuma mudança concorrente conflitante foi identificada. Nenhum arquivo de runtime foi alterado nesta tarefa.
+
+### Evidências proporcionais
+
+[Evidência desta execução](evidence/SANITARIO_V2_C02_CLI_READONLY_CHECK_20261027.json): contém somente disponibilidade de canais, códigos de saída, hash da candidata e metadados do login; nenhum valor de credencial.
+
+- DB_URL, DATABASE_URL, POSTGRES_URL, SUPABASE_DB_URL, SUPABASE_DB_PASSWORD, PGPASSWORD e PGPASSFILE ausentes do processo. As variáveis administrativas verificadas também não estão configuradas nos escopos User/Machine.
+- Arquivos de ambiente do worktree e do checkout original não contêm as chaves administrativas verificadas. Arquivos PostgreSQL padrão de senha não existem. Credential Manager contém uma entrada Supabase CLI, cujo conteúdo não foi lido; não foi encontrado alvo de senha PostgreSQL relacionado ao projeto.
+- Os utilitários sanitários históricos foram inspecionados com literais/comentários redigidos, sem executá-los. Usavam `supabase db dump --project-ref ... --dry-run` para obter credencial temporária. R01/R03 registram que essa descoberta inicializa/renova/rotaciona cli_login_postgres no remoto, inclusive em dry-run; portanto não foi repetida sob a restrição atual de nenhuma escrita remota.
+- Uma consulta remota estritamente READ ONLY ao catálogo de roles, via conector autorizado, confirmou em **27/10/2026 03:18:44 UTC**: cli_login_postgres existe e está **expirado**, com validade até **23/10/2026 21:51:13 UTC**. Nenhuma senha/hash foi consultado. Essa consulta não foi usada como substituição do dry-run da CLI.
+- `--validate --c02-admin`: saída 0, sem conexão; SHA-256 da candidata continua `6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367`.
+- `--dry-run --c02-admin`: saída 1, `C02_ADMIN_DB_URL_REQUIRED`, sem conexão remota.
+- `--apply --c02-admin` com os overrides legados ALLOW_SANITARIO_IMPORT/ALLOW_SANITARIO_REMOTE_IMPORT/SANITARIO_IMPORT_CONFIRM: saída 1, `C02_ADMIN_REMOTE_WRITE_DISABLED`, antes de conexão. Gate não habilitado.
+
+Não foram repetidos testes de domínio, ensaios SQL locais, curadoria, consultas MAPA, build ou E2E: nenhum código foi modificado. Os resultados anteriores de 224 testes e 19 controles SQL permanecem históricos, não foram convertidos em prova de TLS/sessão/dry-run atual da CLI.
+
+### Operações e divergências
+
+**Plano remoto atual não obtido.** Os 613 creates + 39 updates continuam somente a previsão derivada do snapshot e do ensaio local anteriores. Não há evidência para confirmar ou negar mudança desses números no destino atual; ausência de nova prova não é divergência técnica dos produtos.
+
+Projeto, TLS, sessão administrativa da CLI, schema/estado atual e preservação antes/depois não puderam ser novamente certificados pelo caminho pedido. Como a CLI não abriu conexão, nenhuma alteração persistida foi realizada por ela. A única operação remota nesta tarefa foi SELECT em transação READ ONLY seguida de rollback, sem renovação do login.
+
+### Patch e próximo passo
+
+O conjunto local foi preparado para revisão, incluindo arquivos untracked, em `C:/Users/mares/.codex/tmp/c02-supabase-preparation/C02-SUPABASE-PREPARATION.patch`. Nenhum commit, push, PR, merge ou deploy foi realizado. As alterações desta tarefa limitam-se a este relatório e à evidência do bloqueio; o restante do patch é a preparação já existente.
+
+**Desbloqueio necessário:** disponibilizar uma DB_URL administrativa preexistente do destino, por ambiente de processo/canal seguro, sem colar o valor no chat ou persistir no repositório. A sessão deve cumprir o contrato postgres do writer. Com isso, executar diretamente o comando já implementado, sem nova curadoria ou repetição dos ensaios locais:
+
+```text
+node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run --c02-admin docs/review/evidence/SANITARIO_V2_C02_F6_REVIEW_CANDIDATE_20261026.json --project-ref zqloazqzhwauamcejmuz
+```
+
+A renovação de login pela CLI não é um canal sem efeito de escrita, e não foi autorizada nesta tarefa. Não se criou nova fase preparatória: o impedimento concreto é exclusivamente o acesso administrativo direto. O gate de aplicação, estados operacionais, UUIDs, metadata e campos retidos permanecem como estavam.
+
+## 14. Dry-run sobre estado remoto via Supabase MCP — 27/10/2026
+
+**Decisão: READY_FOR_APPLICATION_DECISION.** O MCP disponível e autenticado no Codex forneceu o snapshot necessário. Nenhuma DB_URL foi exigida, credencial extraída ou login renovado. O resultado autoriza avaliar o plano; não autoriza nem habilita a aplicação.
+
+### Proveniência e consistência
+
+- Worktree atual: branch `codex/c02-supabase-preparation`, HEAD `8878cc924b57eefac8ea9a32485bba82a6adef06`. As alterações locais de preparação foram preservadas; staged vazio.
+- Projeto confirmado por `Supabase.get_project`: `zqloazqzhwauamcejmuz`, RebanhoSync, sa-east-1, ACTIVE_HEALTHY, PostgreSQL 17.11.
+- [Snapshot e SQL integral](evidence/SANITARIO_V2_C02_MCP_SNAPSHOT_20261027.json): uma chamada `Supabase.execute_sql` com `BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY`, um SELECT agregando as oito tabelas e metadata da sessão, seguido de ROLLBACK.
+- Captura: **27/10/2026 15:19:32 UTC (12:19:32 BRT)**; snapshot MVCC `471787:471787:`; isolation `repeatable read`; read_only `on`; current_user/session_user `postgres`. O projeto é identificado pela chamada MCP e por get_project; o identificador literal no SQL é apenas uma anotação de proveniência.
+- As oito tabelas foram copiadas para um contêiner novo, restrito a loopback, sem acesso remoto pela CLI. Comparação integral dos registros JSONB confirmou fidelidade da materialização.
+- O schema local reutilizou as migrations ativas e helpers já inspecionados no ensaio anterior. Não houve nova certificação integral do schema remoto. A configuração inicial de autenticação do contêiner recusou a conexão; foi ajustada somente nesse contêiner descartável e a execução completa subsequente terminou com código 0.
+- Segunda captura read-only em **15:21:46 UTC (12:21:46 BRT)**: mesmo snapshot MVCC e conteúdo integral idêntico nas oito tabelas. Nenhuma operação remota de escrita foi enviada.
+
+### Execução e operações propostas
+
+O writer existente foi executado sobre a materialização local com a candidata fechada, sem qualquer mudança de runtime nesta tarefa:
+
+```text
+node scripts/codex/import-sanitario-protocols-v2.mjs --dry-run --c02-admin docs/review/evidence/SANITARIO_V2_C02_F6_REVIEW_CANDIDATE_20261026.json --project-ref zqloazqzhwauamcejmuz --local-port 65505
+```
+
+Foram reutilizados o validador, preservação do baseline C02, reaproveitamento de fontes, buildPlan e guards canônicos. Não foi criado adaptador que simula predicados SQL, planner alternativo ou catálogo. O snapshot é evidência de leitura, não fonte operacional.
+
+| Tabela | Creates | Updates | Skips | Conflitos |
+| --- | ---: | ---: | ---: | ---: |
+| sanitario_fontes_tecnicas_v2 | 41 | 0 | 0 | 0 |
+| sanitario_fonte_cobertura_campos_v2 | 206 | 0 | 0 | 0 |
+| sanitario_produtos_v2 | 0 | 39 | 0 | 0 |
+| sanitario_produto_especie_autorizacao_v2 | 39 | 0 | 0 | 0 |
+| sanitario_produto_fontes_v2 | 212 | 0 | 0 | 0 |
+| sanitario_produto_dose_rules_v2 | 39 | 0 | 0 | 0 |
+| sanitario_produto_carencia_rules_v2 | 38 | 0 | 0 | 0 |
+| sanitario_produto_carencia_fontes_v2 | 38 | 0 | 0 | 0 |
+| **Total** | **613** | **39** | **0** | **0** |
+
+[Resultado completo e 652 operações](evidence/SANITARIO_V2_C02_MCP_DRY_RUN_RESULT_20261027.json), com hash do snapshot, SHA-256 da candidata, mudanças por produto, contagens por tabela, conferência pós-leitura e hashes locais antes/depois. Candidata preservada: `6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367`.
+
+### Divergências reais e preservação
+
+- **Nenhuma diferença nas contagens** em relação a 613 creates / 39 updates. Nenhum conflito foi detectado pelo caminho canônico.
+- O estado atual contém 42 produtos, 18 fontes globais, 91 coberturas e **dois vínculos de produto/fonte preexistentes em operational_window**. Esses vínculos não coincidem com os 212 novos vínculos e permanecem preservados; não são duplicidades ou divergências técnicas.
+- As 39 atualizações enriquecem principio_ativo/apresentacao e, onde documentado, fabricante. Os UUIDs comerciais existentes, identidade/registro, metadata integral e status pendente são preservados pelos guards executados. Não se propõe alteração dos três produtos fora do F6.
+- Não há fontes de fazenda no snapshot. As 41 fontes propostas são globais. Nenhum dado de membership/animal/fazenda foi carregado ou alterado; este ensaio não certifica integralmente autenticação ou isolamento entre tenants.
+- Retenções de P05/P06/P33/P38/P40/P41 continuam exatamente as da candidata validada. Nenhum campo retido foi reconstruído ou transformado em zero; as linhas técnicas propostas continuam sem promoção operacional.
+
+### Validação, arquivos e riscos residuais
+
+- Dry-run canônico: saída 0, 652 operações, nenhum conflito. Estado local antes/depois idêntico nas oito tabelas; materialização integral igual ao snapshot remoto.
+- Tentativa negativa `--apply --c02-admin`: saída 1, `C02_ADMIN_REMOTE_WRITE_DISABLED`, antes de conectar. O código do gate e os testes legados não foram alterados.
+- `git diff --check` executado. Não foram repetidos os 224 testes/19 controles SQL históricos, curadoria, consultas MAPA, build ou E2E, pois nenhum código de implementação foi modificado.
+- Alterações desta tarefa: este relatório e os dois arquivos de evidência MCP. O patch anterior do writer/harness/testes/evidências permanece separado pelo diff e preservado.
+- Contêiner próprio `rebanhosync-c02-f6-sql-2026102701`, PostgreSQL local 17.6, porta 65505: encerrado após a conferência, sem remoção dos dados. Scripts transitórios de materialização e conferência permanecem em `C:/Users/mares/.codex/tmp/c02-supabase-preparation/mcp-materialize.mjs` e `mcp-verify.mjs`.
+- Limites: o plano representa o instante capturado, usando PostgreSQL 17.6 local sobre dados do remoto 17.11; não prova uma conexão direta CLI/TLS nem a credencial de uma futura aplicação. Os grants/RLS de aplicação e a autenticação completa não foram exercitados remotamente por este dry-run.
+
+**Próximo passo recomendado:** decidir sobre as 613 inserções e 39 atualizações técnicas propostas. Uma aplicação futura exige autorização específica, caminho de escrita explicitamente habilitado/revisado e nova leitura sob os controles transacionais canônicos para rejeitar drift. Nenhuma autorização é inferida deste resultado; o gate permanece fechado. Não houve commit, push, PR, merge ou deploy.
+
+## 15. Aplicação remota e aprovação cadastral F6 — 27/10/2026
+
+**Resultado: APLICADO E 39 CADASTROS APROVADOS.** Destino `zqloazqzhwauamcejmuz`; branch `codex/c02-supabase-preparation`; HEAD `8878cc924b57eefac8ea9a32485bba82a6adef06`. A autorização expressa nesta conversa cobre a persistência técnica e a aprovação cadastral deste lote. Nenhum commit, push, PR, merge ou deploy foi realizado.
+
+### Escritas e estados finais comprovados
+
+| Operação | Resultado remoto |
+| --- | --- |
+| Persistência técnica inicial | **613 creates, 39 updates, 0 skips, 0 conflitos** |
+| Replay da mesma transação técnica, antes da aprovação | **652 skips**, nenhuma escrita |
+| Aprovação cadastral posterior | **39 produtos para ativo**, com recibo individual |
+| Replay da mesma transação de aprovação | **39 skips**, nenhuma escrita |
+| Conferência final | **39 F6 ativos; três produtos externos ao lote inalterados** |
+
+A leitura final ocorreu em **27/10/2026 16:03:54 UTC / 13:03:54 BRT**, PostgreSQL remoto 17.11. Contagens finais: 59 fontes, 297 coberturas, 42 produtos, 39 autorizações por espécie, 214 vínculos produto/fonte, 39 regras de dose, 38 regras de carência e 38 vínculos carência/fonte.
+
+[Recibo consolidado](evidence/SANITARIO_V2_C02_REMOTE_EXECUTION_RECEIPT_20261027.json) contém as respostas de execução/replay, os 39 UUIDs/nomes/códigos do lote, recibos individuais e as conferências finais. Fontes objetivas: [antes](evidence/SANITARIO_V2_C02_REMOTE_APPLY_BEFORE_20261027.json), [após persistência técnica](evidence/SANITARIO_V2_C02_REMOTE_TECHNICAL_AFTER_20261027.json) e [após aprovação](evidence/SANITARIO_V2_C02_REMOTE_APPROVAL_AFTER_20261027.json), cada qual obtido por SELECT em snapshot REPEATABLE READ READ ONLY.
+
+### Implementação e equivalência transacional do transporte MCP
+
+Alteração localizada no mesmo `scripts/codex/import-sanitario-protocols-v2.mjs`:
+
+- A entrada administrativa exige projeto e digest fechados, confirmação explícita, referência de autorização, ação `technical|approve`, snapshot consistente e banco local descartável identificado. A emissão usa `--apply --emit-mcp-apply`; a CLI não ganhou conexão direta genérica de escrita remota. Variáveis e flags legadas continuam incapazes de abrir esse caminho.
+- O snapshot remoto é materializado localmente e comparado integralmente sob o advisory lock canônico e locks das oito tabelas, na mesma transação do planejamento. O writer real executa validador, guards, reaproveitamento de fontes, buildPlan, writeOperation e conferência de convergência; as instruções efetivamente aceitas nessa transação são capturadas. O COMMIT local dessa preparação é substituído por ROLLBACK.
+- O transporte serializa essas instruções canônicas e seus parâmetros. Não reconstrói o planner, não recebe SQL de negócio externo e não cria outro writer. Helpers de transporte continuam privados; o teste de superfície pública do publisher permanece intacto.
+- Cada pacote remoto usa **BEGIN, advisory lock canônico, lock SHARE ROW EXCLUSIVE nas oito tabelas e timeouts de 5s/60s**. Exige current_user/session_user postgres, confere schema/constraints/índices/triggers/ownership/RLS/privilégios contra o snapshot, então confere SHA-256 do estado integral das oito tabelas antes da primeira escrita.
+- A pré-condição integral rejeita qualquer drift desde a execução local dos guards. Os locks impedem alteração concorrente dessas tabelas durante a aplicação. Cada escrita deve afetar exatamente uma linha; a pós-condição compara o estado esperado completo antes do COMMIT. Uma exceção aborta toda a transação.
+- A pós-imagem normaliza somente timestamps de criação/atualização e a data do recibo de aprovação, gerados pelo banco. UUIDs, conteúdo, estados e metadata são comparados. O reconhecimento da pós-imagem torna o mesmo pacote idempotente; divergência funcional causa interrupção.
+- A chamada MCP foi explicitamente direcionada ao projeto autorizado. O conjunto de identidades e os hashes de baseline também vinculam o pacote ao conteúdo desse destino. Nenhuma credencial do plugin foi extraída ou registrada.
+
+Os pacotes efetivamente executados foram preservados sem edição:
+
+- [Persistência técnica](evidence/SANITARIO_V2_C02_REMOTE_TECHNICAL_APPLY_20261027.sql), SHA-256 `f0fe069352f5710837b6e4aa867d989761f7cfd20528d322d534066b8d06f53a`.
+- [Aprovação cadastral](evidence/SANITARIO_V2_C02_REMOTE_CADASTRAL_APPROVAL_20261027.sql), SHA-256 `1254b7725f63e2ea1914c276be04688b83ff8c3da9070fbf0c7f2116aa091560`.
+
+### Semântica da aprovação e auditoria
+
+Foram inspecionados os leitores de execução, carência, janelas e agrupamento multiprotocolo. `status_curatorial=ativo` torna o cadastro elegível como produto; **não promove as regras técnicas filhas**. O leitor de dose exige regra ativa; o de carência exige regra ativa, aplicabilidade e evidência; o planejamento por espécie exige SIM_BULA/SIM_NORMA. Os agrupamentos multiprotocolo continuam informativos e sem materialização autorizada.
+
+A RPC curatoral existente decide protocolos/itens, não cadastros de produto. A operação cadastral foi localizada no writer administrativo existente, separada da aplicação técnica:
+
+- Somente os 39 UUIDs da candidata fechada podem ser aprovados; exige estado pendente, metadata de revisão e flags operacionais preservadas. Regras filhas em estado inesperado interrompem a operação.
+- Cada produto recebeu `metadata.c02_cadastral_approval`, com projeto, digest, escopo `product_registration_only`, executor postgres, referência à autorização explícita e `approved_at` atribuído pelo banco. Todas as chaves anteriores de metadata foram preservadas.
+- Esse recibo audita o comando administrativo no próprio cadastro. Não simula auth.uid(), não atribui uma identidade JWT ao usuário da conversa e não usa a decisão de protocolo como aprovação de produto.
+- O replay reconhece ativo somente com recibo C02 compatível, incluindo referência de autorização, executor e data válidos. Cadastros ativos sem esse recibo continuam rejeitados.
+
+A conferência final comprovou: **39 doses e 38 carências continuam precisa_validar; 39 autorizações por espécie continuam PRECISA_VALIDAR**. Flags históricas de autorização operacional permanecem false. P05/P06/P33/P38/P40/P41 mantêm suas retenções individuais; nenhum campo retido foi criado e ausência de carência não foi convertida em zero.
+
+Os 18 registros de fonte anteriores e os dois vínculos operational_window foram preservados integralmente. Os três produtos externos ao F6 continuam exatamente como estavam; não houve reinclusão automática. A aprovação cadastral não modificou nenhuma das sete tabelas de fontes/regras/vínculos. Schema, constraints, índices, triggers, RLS e privilégios permanecem iguais ao baseline inspecionado. Nenhuma instrução de escrita foi dirigida a Agenda, Eventos, protocolos, estoque, histórico operacional ou tabelas de autorização administrativa.
+
+### Validação observada e arquivos afetados
+
+- **230/230 testes publisher/C02 aprovados** na bateria completa: publisher 196, P11 nove, F6 11, administrativo 14. Após a correção final da preparação local, **15/15 administrativos** passaram, incluindo a nova regressão; os demais módulos não foram alterados por essa correção. As verificações de export/gates impediram a introdução de uma API pública alternativa.
+- **56 testes de leitores aprovados**: snapshot técnico factual oito, carência operacional 17 e janelas 31. O teste de janelas inicialmente não iniciou por variáveis VITE ausentes; após conferir env.ts, executou com URLs de loopback e chave sintética, sem credenciais de produção.
+- **Oito controles do pacote técnico/preparação**: fidelidade do snapshot, drift, rollback após 652 escritas, negação de papel não autorizado, concorrência/timeout, retry/replay, preservação das identidades/metadata e corrida na preparação local. [Resultado local](evidence/SANITARIO_V2_C02_MCP_WRITE_LOCAL_CONTROLS_20261027.json).
+- **Cinco controles SQL cadastrais**: rollback das 39 aprovações, replay, preservação das sete tabelas filhas, identidades/metadata/três externos e convergência canônica pós-aprovação com 652 skips. [Resultado local](evidence/SANITARIO_V2_C02_MCP_APPROVAL_LOCAL_CONTROLS_20261027.json).
+- ESLint focado, sintaxe Node e git diff --check aprovados. A convergência local pós-aprovação foi novamente observada com o guard final de recibo.
+- Na revisão final, uma corrida da preparação foi reproduzida: enquanto o gerador aguardava o advisory lock, uma mudança local posterior à comparação inicial podia contaminar o pacote emitido. A comparação integral e a captura da pré-imagem foram movidas para dentro da transação, após os locks. A mesma corrida passou a falhar com C02_MCP_LOCAL_SNAPSHOT_MISMATCH, sem emissão de pacote; a emissão positiva também foi conferida com rollback local. As escritas remotas já realizadas não sofreram essa corrida, conforme os snapshots e a preservação integral de metadata comprovados. Nenhuma nova escrita remota foi necessária.
+- Os ensaios usam PostgreSQL local 17.6. O harness transitório técnico emitiu aviso de depreciação pg8 por consultas enfileiradas no mesmo cliente; os controles terminaram com saída 0. Não representa certificação integral de Auth, JWT ou isolamento entre tenants.
+- Não foram executados build, E2E, regressão global ou migrations: não houve alteração de frontend, schema, RLS ou RPC. Os controles remotos de estado/permissões e as transações efetivas cobrem o objeto desta execução.
+
+Arquivos alterados nesta tarefa: writer canônico, `tests/codex/sanitario-c02-admin.test.mjs`, este relatório e oito evidências de aplicação (três snapshots, recibo, dois SQLs e dois resultados de controles locais). O harness P11/F6 e os artefatos anteriores já estavam modificados/untracked e foram preservados. Staged permanece vazio.
+
+### Pendências reais e recomendação
+
+1. As retenções P05/P06/P33/P38/P40/P41 continuam documentadas; a aprovação cadastral não resolve esses campos nem promove regras pendentes.
+2. A auditoria administrativa identifica sessão postgres e autorização conversacional, sem certificação de uma sessão Auth humana. Não houve mudança de RLS/permissões ou rollout de automações.
+3. O patch administrativo e as evidências permanecem locais, sem commit/integração. Uma publicação de código exige autorização própria.
+
+**Recomendação:** manter os cadastros aprovados e as regras críticas nos estados atuais. Usar os recibos e o diff para revisão/integração do patch quando autorizada; qualquer ativação de dose, carência ou autorização por espécie deve tratar somente a regra e evidência pertinentes. Não há escrita adicional necessária para cumprir o escopo cadastral desta execução.
+
+## 16. Reconciliação pós-aprovação e preparação de PR — 27/10/2026
+
+**Resultado: patch reconciliado com o estado aprovado; replay local convergente, sem nova escrita remota.** Branch `codex/c02-supabase-preparation`; HEAD e main remota consultada por git ls-remote em `8878cc924b57eefac8ea9a32485bba82a6adef06`. O worktree contém exclusivamente o conjunto C02 identificado: writer, harness/teste administrativo, relatório e evidências; staged vazio. O checkout original e a candidata histórica foram preservados.
+
+### Estado real e alteração remota do flag cadastral
+
+O [snapshot read-only atual](evidence/SANITARIO_V2_C02_POST_APPROVAL_READONLY_20261027.json), capturado pelo Supabase MCP em **27/10/2026 16:44:48 UTC / 13:44:48 BRT**, comprova os 39 UUIDs F6 com status_curatorial=ativo, metadata.approved_for_catalog=true e recibo C02 válido. A leitura usou REPEATABLE READ READ ONLY, sessão postgres e snapshot MVCC `471795:471795:`.
+
+A [comparação por UUID](evidence/SANITARIO_V2_C02_POST_APPROVAL_RECONCILIATION_20261027.json) registra a alteração posterior ao recibo da seção 15: approved_for_catalog passou de false para true nos 39 produtos; somente esse campo de metadata e updated_at diferem. O usuário informou essa alteração, confirmada aqui por SELECT; esta tarefa não executou nem atribuiu autoria ao SQL intermediário. Os snapshots e SQLs históricos permanecem sem reescrita.
+
+As sete outras tabelas estão integralmente iguais ao snapshot pós-aprovação anterior; os três produtos externos ao F6 também. Permanecem pendentes **39 regras de dose, 38 regras de carência e 39 autorizações por espécie**. Nenhuma curadoria, importação ou escrita remota foi repetida.
+
+### Ajuste mínimo e semântica de review_only
+
+- O guard pós-aprovação admite approved_for_catalog=true somente junto de ativo e recibo C02 compatível com projeto, digest, escopo, executor, autorização e data. Rejeita ausência/rebaixamento do flag, recibo inválido, mudança de identidade e promoção operacional.
+- O estado pendente continua exigindo approved_for_catalog=false. Modos locais legados não adquirem aceitação de cadastros ativos. A exceção cadastral não foi aplicada aos demais flags bloqueados.
+- A operação cadastral existente no writer foi alinhada para emitir ativo e approved_for_catalog=true na mesma atualização, com o recibo individual. Esse alinhamento evita reproduzir a inconsistência histórica; foi exercitado somente em transação local com rollback.
+- review_only=true é preservado como proveniência da publicação inicial de pesquisa F6, junto a research_batch/research_stage. O estado atual é definido pelo status, flag cadastral e recibo; review_only não nega uma aprovação posterior nem autoriza execução. Os leitores de produto inspecionados não usam esse marcador como autorização operacional. Nenhum valor remoto ou byte da candidata foi normalizado/regravado.
+- A candidata histórica continua com SHA-256 `6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367`. A adaptação ao estado aprovado ocorre somente na projeção em memória, preservando metadata persistida integralmente.
+
+O suporte MCP e a correção de concorrência foram revistos no diff real: materialização conferida dentro da transação, depois do advisory lock e dos locks das oito tabelas; pacote derivado das instruções do writer, com pré/pós-imagem, contagem de linhas e rollback. O teste de corrida permanece vigente; os ensaios históricos de falha, concorrência e retry foram reaproveitados, sem nova aplicação.
+
+### Validações observadas
+
+- **242/242 testes focados aprovados**: publisher 196, P11 nove, F6 11, administrativo 26. Os 11 novos casos verificam replay aprovado, metadata/candidata preservadas, quatro flags operacionais proibidos, flag cadastral incoerente, recibo, identidade, proveniência, modo legado e produto pendente. A regressão de concorrência da preparação integra a mesma bateria.
+- **Cinco controles PostgreSQL 17.6 locais aprovados**, com cópia exata das oito tabelas do snapshot atual: dry-run canônico com **0 creates / 0 updates / 652 skips / 0 conflitos**, pacote MCP com **zero DML**, rollback da preparação, replay sob locks reais, separação das regras filhas e atualização cadastral coerente exercitada com rollback. Estado das oito tabelas idêntico antes/depois. [Resultado e comando reproduzível](evidence/SANITARIO_V2_C02_POST_APPROVAL_LOCAL_RESULT_20261027.json).
+- Comando do ensaio: `node tests/codex/sanitario-c02-p11.local.mjs rebanhosync-c02-f6-sql-2026102706 65510 f6 post-approval`. Exige contêiner novo, exclusivo e ligado a loopback; nunca reseta fixture existente. O contêiner foi encerrado após o ensaio, sem remoção dos dados.
+- ESLint dos três arquivos JS, node --check e git diff --check: saída 0.
+- Fallow `audit --gate new-only --base 8878cc924b57eefac8ea9a32485bba82a6adef06 --summary`: saída 0, nenhum achado bloqueante novo; cinco dependências herdadas excluídas pelo gate, um aviso de duplicação de seis linhas na fixture e avisos de node_modules no comparador do baseline. Nenhuma dependência/configuração foi alterada para ocultar esses avisos.
+- Build, E2E e regressão global não executados: sem alteração de frontend/fluxos operacionais, schema, RLS, RPC ou migrations. A matriz histórica de 24 combinações de permissões é restrita à fixture SQL e não certifica integralmente Auth/JWT ou isolamento entre tenants.
+
+### Diff e riscos residuais
+
+O conjunto revisável reúne **20 arquivos C02**, incluindo os três artefatos desta reconciliação. O restante era a preparação/aplicação local já existente. Os SQLs de evidência são recibos históricos; a integração do patch não os executa nem autoriza reimportação.
+
+Persistem somente: retenções P05/P06/P33/P38/P40/P41; regras críticas pendentes; limites explícitos dos ensaios Auth/tenant e da auditoria por sessão administrativa postgres. Nenhuma dessas pendências exige modificar a candidata ou impede o replay cadastral validado. Commit, push, abertura do PR e merge continuam sem execução.
 
 [Z2025]: https://www2.zoetis.com.br/content/pt/pages/Microsites/Portifolio-Zoetis-Atacadistas/_assets/Catalogo-Produtos-Marcas-estabelecidas-Zoetis_Bartofil_29042025_1080x2230.pdf
 [ZANTIGO]: https://www.zoetis.com.br/global-assets/private/revista-zoetis-net-paginas-mistas-versao-30-01.pdf

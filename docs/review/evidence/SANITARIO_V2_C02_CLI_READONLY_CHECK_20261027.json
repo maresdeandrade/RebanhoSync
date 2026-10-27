@@ -1,0 +1,43 @@
+{
+  "login_role_read_only_observation": {
+    "observed_at": "2026-10-27 03:18:44.766278+00",
+    "read_only": "on",
+    "executor": "postgres",
+    "rolname": "cli_login_postgres",
+    "rolcanlogin": true,
+    "rolvaliduntil": "2026-10-23 21:51:13.29869+00",
+    "expired": true
+  },
+  "observed_at": "2026-10-27T03:19:12.591Z",
+  "decision": "BLOCKED",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "head": "8878cc924b57eefac8ea9a32485bba82a6adef06",
+  "branch": "codex/c02-supabase-preparation",
+  "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+  "credential_discovery": {
+    "administrative_environment_present": false,
+    "project_env_administrative_keys_present": false,
+    "standard_pgpass_present": false,
+    "windows_credential_target": "Supabase CLI credential target exists; contents not read; no PostgreSQL password target found"
+  },
+  "cli": {
+    "version": "2.117.0",
+    "validate_exit_code": 0,
+    "dry_run_exit_code": 1,
+    "dry_run_error": "C02_ADMIN_DB_URL_REQUIRED",
+    "remote_connection_opened": false,
+    "remote_plan_obtained": false
+  },
+  "write_gate": {
+    "tested_with_legacy_overrides": true,
+    "exit_code": 1,
+    "error": "C02_ADMIN_REMOTE_WRITE_DISABLED"
+  },
+  "historical_plan_only": {
+    "create": 613,
+    "update": 39,
+    "current_remote_plan_confirmed": false
+  },
+  "remote_writes_executed": 0,
+  "credential_values_logged_or_persisted": false
+}

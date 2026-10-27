@@ -1,0 +1,325 @@
+{
+  "observed_at": "2026-10-27T03:01:36.952Z",
+  "database": "task-owned disposable local PostgreSQL",
+  "server_version": "17.6",
+  "container_id": "5c4df24d20e8c19b6777dfd3ea67838b6bbd45a49e596d85bbe80a5b93ca8c7d",
+  "local_port": 65504,
+  "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+  "ddl_sources": [
+    "supabase/migrations/20260608090000_sanitario_protocol_product_source_v2.sql",
+    "supabase/migrations/20260923132000_sanitario_source_key_identity.sql",
+    "supabase/migrations/00000000000000_rebuild_base_schema_sanitario.sql",
+    "supabase/migrations/20260913232253_f24_acl_forward_only_reconciliation.sql"
+  ],
+  "scope": "Sanitary DDL, RLS/policies and updated_at triggers; F24 technical ACL projection; local postgres owner; minimal external auth/tenant fixtures",
+  "security": {
+    "role": {
+      "name": "postgres",
+      "rolsuper": false,
+      "rolbypassrls": true
+    },
+    "relations": [
+      {
+        "relname": "sanitario_fonte_cobertura_campos_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "owner": "postgres"
+      },
+      {
+        "relname": "sanitario_fontes_tecnicas_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "owner": "postgres"
+      },
+      {
+        "relname": "sanitario_produto_carencia_fontes_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "owner": "postgres"
+      },
+      {
+        "relname": "sanitario_produto_carencia_rules_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "owner": "postgres"
+      },
+      {
+        "relname": "sanitario_produto_dose_rules_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "owner": "postgres"
+      },
+      {
+        "relname": "sanitario_produto_especie_autorizacao_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "owner": "postgres"
+      },
+      {
+        "relname": "sanitario_produto_fontes_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "owner": "postgres"
+      },
+      {
+        "relname": "sanitario_produtos_v2",
+        "relrowsecurity": true,
+        "relforcerowsecurity": false,
+        "owner": "postgres"
+      }
+    ],
+    "privileges": [
+      {
+        "role": "anon",
+        "name": "public.sanitario_fonte_cobertura_campos_v2",
+        "can_select": false,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "anon",
+        "name": "public.sanitario_fontes_tecnicas_v2",
+        "can_select": false,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "anon",
+        "name": "public.sanitario_produto_carencia_fontes_v2",
+        "can_select": false,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "anon",
+        "name": "public.sanitario_produto_carencia_rules_v2",
+        "can_select": false,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "anon",
+        "name": "public.sanitario_produto_dose_rules_v2",
+        "can_select": false,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "anon",
+        "name": "public.sanitario_produto_especie_autorizacao_v2",
+        "can_select": false,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "anon",
+        "name": "public.sanitario_produto_fontes_v2",
+        "can_select": false,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "anon",
+        "name": "public.sanitario_produtos_v2",
+        "can_select": false,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "authenticated",
+        "name": "public.sanitario_fonte_cobertura_campos_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "authenticated",
+        "name": "public.sanitario_fontes_tecnicas_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "authenticated",
+        "name": "public.sanitario_produto_carencia_fontes_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "authenticated",
+        "name": "public.sanitario_produto_carencia_rules_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "authenticated",
+        "name": "public.sanitario_produto_dose_rules_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "authenticated",
+        "name": "public.sanitario_produto_especie_autorizacao_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "authenticated",
+        "name": "public.sanitario_produto_fontes_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "authenticated",
+        "name": "public.sanitario_produtos_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "service_role",
+        "name": "public.sanitario_fonte_cobertura_campos_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "service_role",
+        "name": "public.sanitario_fontes_tecnicas_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "service_role",
+        "name": "public.sanitario_produto_carencia_fontes_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "service_role",
+        "name": "public.sanitario_produto_carencia_rules_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "service_role",
+        "name": "public.sanitario_produto_dose_rules_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "service_role",
+        "name": "public.sanitario_produto_especie_autorizacao_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "service_role",
+        "name": "public.sanitario_produto_fontes_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      },
+      {
+        "role": "service_role",
+        "name": "public.sanitario_produtos_v2",
+        "can_select": true,
+        "can_insert": false,
+        "can_update": false,
+        "can_delete": false
+      }
+    ],
+    "external_auth_fixture": "Inspected auth.uid()/membership definitions with synthetic subject IDs; JWT signing and Supabase Auth not certified"
+  },
+  "remote_snapshot_sha256": "f537fb65a632a35e42b135ea23e74ecbd551656a8db21ac54049c7487de1a35b",
+  "remote_project_inspected_read_only": "zqloazqzhwauamcejmuz",
+  "results": [
+    "local clone of read-only remote technical rows; eight table columns, 46 constraints and 19 indexes match destination",
+    "administrative local rehearsal from observed 42-product remote snapshot; no remote connection",
+    "SQL dry-run: 613 creates + 39 updates; zero persistent changes",
+    "mid-transaction SQL failure rolls back source, product enrichment and every technical row",
+    "two concurrent SQL applications serialize; replay skips all 652 rows",
+    "SQL replay converges with 652 skips and no duplicate or content change",
+    "UUID, MAPA identity, complete concurrent metadata, pending states and false flags preserved",
+    "RLS enabled, real updated_at triggers and postgres ownership support local apply/replay; API roles cannot write technical tables",
+    "all 39 identities/metadata preserved; vaccine and antiparasitic evidence retained by field",
+    "incompatible source evidence rejected without partial writes",
+    "ambiguous source, source tombstone and incompatible field coverage rejected without partial writes",
+    "curated product rejected in both apply and dry-run, without partial changes",
+    "registration identity and unexpected existing enrichment rejected without overwrite",
+    "conflicting existing technical rule rejected instead of silently updated",
+    "existing operational authorization rejected, never reset or promoted by pilot",
+    "active source identity unique index rejects duplicate UUID for the same source key",
+    "unmarked local target rejected despite remote-import env override",
+    "two tenant managers and outsider see only their farm sources; global catalog shared intentionally; remote apply disabled and original unrelated rows preserved",
+    "forced advisory lock contention: 5s timeout rejected without writes; explicit retry produced 652 skips with identical snapshot"
+  ],
+  "first_apply": {
+    "create": 613,
+    "update": 39,
+    "skip": 0,
+    "reject": 0
+  },
+  "replay": {
+    "create": 0,
+    "update": 0,
+    "skip": 652,
+    "reject": 0
+  },
+  "concurrency_retries": 0,
+  "final_counts": {
+    "sanitario_fontes_tecnicas_v2": 59,
+    "sanitario_fonte_cobertura_campos_v2": 297,
+    "sanitario_produtos_v2": 42,
+    "sanitario_produto_especie_autorizacao_v2": 39,
+    "sanitario_produto_fontes_v2": 212,
+    "sanitario_produto_dose_rules_v2": 39,
+    "sanitario_produto_carencia_rules_v2": 38,
+    "sanitario_produto_carencia_fontes_v2": 38
+  },
+  "remote_connections": 0,
+  "schema_or_migration_files_modified": false,
+  "lock_timeout_retry": {
+    "observed_at": "2026-10-27T03:03:56.917Z",
+    "timeout_no_writes": true,
+    "retry": {
+      "create": 0,
+      "update": 0,
+      "skip": 652,
+      "reject": 0
+    }
+  }
+}

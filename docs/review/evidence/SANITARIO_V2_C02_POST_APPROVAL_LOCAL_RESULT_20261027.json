@@ -1,0 +1,44 @@
+{
+  "observed_at": "2026-10-27T16:52:04.245Z",
+  "container": "rebanhosync-c02-f6-sql-2026102706",
+  "local_port": 65510,
+  "server_version": "17.6",
+  "remote_observed_at": "2026-10-27T16:44:48.805135+00:00",
+  "remote_snapshot": "471795:471795:",
+  "snapshot_sha256": "99727641aa9b9e2ac0d852ed202dcfe93a4d296d0b3112913253664b6624fac6",
+  "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+  "results": [
+    "exact materialization of current read-only post-approval snapshot",
+    "canonical post-approval dry-run skips 652; all UUIDs, metadata and provenance unchanged",
+    "MCP packet contains zero DML, rolls back local preparation and converges under real PostgreSQL locks",
+    "39 approved registrations remain separate from pending dose, withdrawal and species rules",
+    "canonical registration approval writes active/catalog flag atomically, preserves historical provenance and rolls back local exercise"
+  ],
+  "summary": {
+    "create": 0,
+    "update": 0,
+    "skip": 652,
+    "reject": 0
+  },
+  "preparation": {
+    "summary": {
+      "create": 0,
+      "update": 0,
+      "skip": 652,
+      "reject": 0
+    },
+    "writes": 0,
+    "approve": false,
+    "sql_sha256": "12cf6226f650059344e3086ef10b2194edfb8e2e0805275dc17513a409746915",
+    "remote_executed": false,
+    "local_transaction_rolled_back": true
+  },
+  "replay": {
+    "skip": 652,
+    "replay": true,
+    "authorization_reference": "C02-POST-APPROVAL-LOCAL-REPLAY"
+  },
+  "all_eight_tables_unchanged": true,
+  "remote_connections": 0,
+  "remote_writes": 0
+}
