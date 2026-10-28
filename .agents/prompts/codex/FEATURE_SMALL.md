@@ -1,13 +1,13 @@
 # Codex Prompt — Feature Pequena
 
-Atualizado em: 2026-08-03  
-Versão: 1.2.0
+Atualizado em: 2026-10-28
+Versão: 1.3.0
 
 Use para implementar uma funcionalidade nova, pequena e delimitada. Para corrigir comportamento existente em um ponto conhecido, prefira `PATCH_LOCAL.md`.
 
 ## Modo
 
-`MUTACAO_AUTORIZADA` somente dentro do escopo preenchido neste prompt e da tarefa atual.
+`IMPLEMENTATION` somente dentro do escopo preenchido neste prompt e da tarefa atual.
 
 ## Prompt
 
@@ -43,12 +43,7 @@ Implemente no RebanhoSync:
 
 ## Contexto e skill
 
-1. Leia `AGENTS.md`.
-2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
-3. Se o ponto de intervenção estiver incerto, usar `repository-context-retrieval`, concluir a descoberta e encerrar essa fase antes de selecionar a skill de implementação.
-4. Depois da descoberta, escolher uma skill principal pelo risco dominante da feature.
-5. Usar no máximo uma skill de apoio quando houver interseção técnica concreta; não acumular a skill de descoberta com duas skills de implementação.
-6. Para comandos e validações, seguir `.agents/rules/rtk.md`.
+Aplique o bootstrap único e a rota B de `.agents/rules/CONTEXT_LOADING.md`; risco de contrato crítico exige rota C. Descoberta dirigida somente se o ponto de intervenção permanecer incerto. Seleção e limite de skills seguem o roteador, sem repetir contexto vigente. Para comandos e evidências, siga `.agents/rules/rtk.md`.
 
 ## Antes do patch
 
@@ -60,7 +55,7 @@ Confirme de forma breve:
 - necessidade de migration/RPC/RLS/schema;
 - plano incremental e testes proporcionais.
 
-Se a descoberta não delimitar o ponto de intervenção, parar sem implementar e relatar a lacuna mínima.
+Use plano curto na conversa, sem documento de fase por padrão. Se a descoberta não delimitar o ponto de intervenção, parar sem implementar e relatar a lacuna mínima. Caso contrário, continuar a implementação autorizada até a entrega na mesma sessão.
 
 ## Regras
 
@@ -74,12 +69,7 @@ Se a descoberta não delimitar o ponto de intervenção, parar sem implementar e
 
 ## Validação
 
-Executar validações proporcionais previstas em `.agents/rules/rtk.md`, incluindo:
-
-- estado inicial e final do worktree, inclusive staged e untracked;
-- teste diretamente relacionado;
-- lint/build apenas quando o risco justificar;
-- gate Supabase quando contratos de banco, RLS, RPC, migration ou sync-batch forem tocados.
+Executar as validações proporcionais de `.agents/rules/rtk.md` e demonstrar o resultado funcional observável dos critérios de aceite. Concluir com `rebanhosync-verification-gate`, reutilizando testes e revisão vigentes; build, E2E, Supabase e suíte ampliada somente conforme risco real. Não repetir verificações sem mudança que possa afetar seu resultado.
 
 ## Entrega
 

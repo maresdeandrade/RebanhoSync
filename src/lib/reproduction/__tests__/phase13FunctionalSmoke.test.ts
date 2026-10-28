@@ -88,7 +88,7 @@ describe("Fase 13 functional smoke", () => {
     await clearReproductionSmokeData();
   });
 
-  it("caminho A: IA, diagnostico positivo, parto, cria e seis Agendas neonatais", async () => {
+  it("caminho A: IA, diagnostico positivo, parto, cria e tres Agendas diarias de cura de umbigo", async () => {
     await seedAnimal("matriz-a", "F");
     await seedAnimal("touro-a", "M");
 
@@ -162,8 +162,8 @@ describe("Fase 13 functional smoke", () => {
       events: 3,
       details: 3,
       animals: 3,
-      agendas: 6,
-      agendaAnimals: 6,
+      agendas: 3,
+      agendaAnimals: 3,
     });
     expect(await db.state_agenda_itens.count()).toBe(0);
     expect(

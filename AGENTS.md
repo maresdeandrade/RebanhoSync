@@ -1,415 +1,73 @@
 # RebanhoSync — AGENTS.md
 
-Dispatcher principal para agentes que atuam no RebanhoSync.
-Objetivo: executar tarefas com o menor contexto necessário, preservar contratos do domínio e impedir ampliação implícita de escopo, autorização ou superfície de mudança. Este arquivo é a única autoridade interna de roteamento de contexto e skills.
-
----
-
-## 1. Bootstrap obrigatório
-
-Antes de atuar:
-1. Leia `.agents/rules/CORE_RULES.md`.
-2. Leia `.agents/rules/CONTEXT_LOADING.md`.
-3. Leia `.agents/rules/no-broad-context.md`.
-4. Leia o `AGENTS.md` local da pasta afetada, se existir.
-5. Determine:
-   - objetivo real;
-   - tipo da tarefa;
-   - arquivos/áreas provavelmente afetados;
-   - fonte de verdade aplicável;
-   - validação proporcional esperada.
-
-Não carregue todo o repositório, todos os documentos, rules, skills ou outros `AGENTS.md` por padrão.
-`.agents/archive/**`, `docs/archive/**` e scripts arquivados são históricos. Não são fontes operacionais, salvo solicitação explícita ou necessidade comprovada.
-
----
-
-## 2. Classifique a tarefa antes de agir
-
-Use um único modo principal:
-- `DISCOVERY` — localizar contratos, arquivos, dependências ou causa provável;
-- `DIAGNOSIS` — analisar comportamento sem alterar arquivos;
-- `REVIEW` — revisar diff, PR, commit ou entrega sem modificar arquivos;
-- `IMPLEMENTATION` — modificar somente o escopo autorizado;
-- `VERIFICATION` — validar uma entrega já implementada;
-- `DOCUMENTATION` — alterar documentação sem mudar runtime;
-- `PR_PREPARATION` — produzir título e descrição do PR a partir de entrega já validada, sem revalidar nem alterar implementação.
-
-Revisão, diagnóstico ou auditoria não autorizam implementação.
-Descoberta não autoriza correção automática.
-Validação não autoriza ampliar escopo.
-Preparação de PR não autoriza merge.
-
----
-
-## 3. Precedência
-
-Respeite a hierarquia de instruções do runtime.
-Dentro do repositório, aplique:
-1. tarefa atual;
-2. `AGENTS.md` aplicável ao diretório;
-3. `.agents/rules/CORE_RULES.md`;
-4. demais rules obrigatórias;
-5. skill principal;
-6. no máximo uma skill de apoio;
-7. prompts/templates pertinentes.
-
-`CONTEXT_LOADING.md` é a autoridade interna para roteamento de contexto e skills.
-
-Uma camada inferior nunca pode:
-- ampliar autorização;
-- relaxar segurança;
-- transformar diagnóstico em implementação;
-- autorizar operação destrutiva;
-- substituir contrato implementado por documentação ou prompt.
-
-Rules, skills e prompts orientam execução; não comprovam comportamento do produto.
-
----
-
-## 4. Invariantes globais
-
-Preserve:
-- offline-first;
-- idempotência;
-- retry/replay seguro;
-- reconciliação;
-- recuperação após falha;
-- RLS;
-- multi-tenant;
-- isolamento por `fazenda_id`;
-- auditabilidade;
-- compatibilidade local-remota.
-
-Não:
-- crie fonte paralela de verdade;
-- coloque regra crítica de negócio em componente React;
-- use UI como única barreira de autorização;
-- exponha `service_role` no client;
-- Não imprimir, persistir nem incorporar credenciais, tokens ou segredos em URLs, scripts, logs ou documentação.
-- grave segredos, tokens ou credenciais em código, URL, log ou documentação;
-- altere schema, migrations, seed, RLS, policies ou RPCs sem escopo explícito;
-- refatore por conveniência;
-- declare teste, validação ou comportamento que não tenha sido observado.
-
-Prefira patches pequenos, reversíveis e testáveis.
-
----
-
-## 5. Contratos do domínio
-
-`CORE_RULES.md` é a referência mínima obrigatória.
-Consulte `docs/context/SOURCE_OF_TRUTH.md` somente quando a tarefa exigir determinação explícita de fonte de verdade.
-
-Antes de alterar:
-- writers;
-- Eventos;
-- Agenda;
-- `state_*`;
-- sync;
-- retry;
-- reconciliação;
-- read models;
-- operações bulk;
-- fluxos operacionais;
-
-consulte `docs/architecture/OPERATIONAL_FLOWS.md`.
-
-Contratos fundamentais:
-- Agenda = intenção/tarefa futura.
-- Evento = fato executado e fonte histórica.
-- `state_*` = estado atual/read model.
-- Protocolo = regra/configuração, não execução.
-- Tags, sinais e insights = auxiliares de UX/consulta, nunca fonte primária ou regra crítica.
-- Carência, venda/abate, peso confiável e aptidão operacional exigem fonte técnica explícita.
-
-Não derive fato histórico de estado atual quando houver fonte factual apropriada.
-Não transforme previsão, simulação ou recomendação em execução real.
-
----
-
-## 6. Contexto mínimo por tipo de tarefa
-
-Siga `.agents/rules/CONTEXT_LOADING.md`.
-Use como referência prática:
-
-### Tarefa localizada
-Carregue:
-- arquivos-alvo;
-- testes relacionados;
-- `AGENTS.md` local.
-
-### UX/UI
-Carregue:
-- tela/componente afetado;
-- primitives/tokens necessários;
-- contrato UX pertinente.
-
-Não mova regra de negócio para UI.
-
-### Domínio
-Carregue:
-- contrato normativo aplicável;
-- implementação existente;
-- testes diretamente relacionados.
-
-### Sync/offline
-Carregue:
-- persistência local;
-- fila/operações;
-- retry/replay;
-- idempotência;
-- rollback/compensação;
-- reconciliação;
-- autenticação quando relevante.
-
-Considere obrigatoriamente:
-- concorrência;
-- duplicidade;
-- sucesso parcial;
-- interrupção de rede;
-- fechamento/reabertura;
-- reprocessamento;
-- conflito local-remoto.
-
-### Supabase/RLS
-Carregue:
-- migration ou objeto ativo;
-- policies/RPCs relacionadas;
-- contrato multi-tenant;
-- callers relevantes.
-
-Não trate permissão de UI como segurança.
-
-### Documentação
-Carregue primeiro as fontes de maior precedência e somente depois os documentos derivados.
-
-### Auditoria transversal
-Use índices e buscas dirigidas antes de expandir contexto.
-
----
-
-## 7. Mobile
-
-Ao tocar código compartilhado com Android/iOS, preserve a base React/TypeScript sempre que tecnicamente viável.
-
-Diretrizes:
-- priorizar Capacitor antes de considerar reescrita em React Native/Flutter;
-- preservar Dexie/IndexedDB inicialmente;
-- não introduzir storage nativo alternativo sem evidência técnica;
-- manter regra de negócio independente de APIs específicas do Capacitor;
-- não depender de execução contínua em background para consistência;
-- tratar app suspendido, kill/restart, reconnect e autenticação expirada como casos normais;
-- preservar o mesmo contrato de idempotência e sync utilizado pela aplicação web;
-- separar development, staging e production;
-- impedir build de produção apontando para backend não produtivo.
-
-Mudança mobile não autoriza alterar domínio compartilhado sem necessidade demonstrada.
-
----
-
-## 8. Skills e lifecycle
-
-Use `.agents/rules/CONTEXT_LOADING.md` para seleção.
-Superpowers é o framework preferencial de engenharia genérica quando suas skills estiverem disponíveis no host. Use diretamente as skills instaladas para design, planejamento, testes, debugging, organização da implementação e revisão, conforme o roteamento seletivo em `CONTEXT_LOADING.md`.
-
-As skills próprias continuam responsáveis pelos contratos específicos de domínio, arquitetura, persistência, segurança e sync. Superpowers não cria outra autoridade, não substitui esses contratos nem os gates canônicos.
-
-Em cada fase ou subetapa de implementação:
-- escolha uma skill principal para o objetivo atual;
-- use no máximo uma skill de apoio quando existir interseção técnica concreta;
-- não carregue skill apenas porque a tarefa contém termo relacionado.
-
-Skills de método executadas sequencialmente em subetapas distintas não são carregamento simultâneo. Encerre a subetapa com resultado e evidência antes de trocar a principal; não use essa divisão para acumular skills ou ampliar autorização. Adapte encadeamentos do plugin à precedência e à validação proporcional do projeto.
-
-Se o ponto de intervenção estiver incerto, use `repository-context-retrieval`.
-
-Lifecycle:
-```text
-discovery/diagnosis
-        ↓
-implementation
-        ↓
-verification gate
-        ↓
-PR preparation
-```
-Essas etapas não devem ser confundidas.
-Após implementação, use `rebanhosync-verification-gate` quando aplicável.
-Use `prepare-pr` somente após a entrega estar tecnicamente validada e classificada como `READY`.
-`prepare-pr` é a autoridade interna para a narrativa final do PR em `PR_PREPARATION`; deve usar o template atual do repositório e apenas evidência já verificada.
-Workflows de CI validam estrutura e comportamento automatizável, mas não substituem revisão técnica, verification gate nem geram a narrativa autoritativa do PR.
-
----
-
-## 9. Comandos e validação
-
-Para comandos, pnpm, Graphify, WSL/Windows ou validação local, siga .agents/rules/rtk.md.
-
-Não invente:
-- scripts;
-- flags;
-- parâmetros;
-- arquivos;
-- comandos disponíveis.
-
-Antes de executar comando desconhecido, confirme sua existência quando necessário.
-
-### Validação deve ser proporcional:
-- mudança localizada
-→ testes diretamente relacionados
-- mudança compartilhada relevante
-→ validação ampliada do escopo afetado
-- fechamento de fase
-→ bateria definida pelos critérios de aceite
-
-`scripts/codex/validate.ps1` exige perfil explícito:
-- `focused` → mudança localizada;
-- `standard` → alteração compartilhada relevante;
-- `full` → somente quando escopo/risco exigirem e houver autorização.
-
-### Quando aplicável:
-- pnpm run audit:agents → governança de agentes;
-- pnpm run gates:docs → contratos documentais atuais.
-
-Não repita testes se nenhuma alteração puder modificar o resultado.
-Não execute regressão global, build completo ou E2E por rotina.
-Inspecione tracked, staged e untracked ao revisar ou fechar uma entrega.
-
-### Revisão técnica
-
-Ao revisar PR, commit, patch ou entrega:
-
-1. defina o alvo exato da revisão: PR, intervalo base/head, commit, working tree ou arquivos indicados;
-2. confirme baseline e escopo antes de concluir sobre regressão ou ampliação indevida;
-3. revise primeiro o diff real e expanda contexto somente para provar ou refutar um achado;
-4. não trate descrição de PR, relatório de agente ou comentário como evidência suficiente;
-5. priorize defeitos de correção, segurança, perda de dados, autorização e quebra de contrato antes de estilo ou preferência;
-6. verifique testes existentes e alterados contra o comportamento que o patch realmente modifica;
-7. não corrija automaticamente findings durante `REVIEW`; correção exige autorização de implementação.
-
-Quando aplicável ao escopo, procure explicitamente por:
-- quebra de fonte de verdade ou contrato de domínio;
-- regressão de RLS, autorização, isolamento por `fazenda_id` ou exposição de segredo;
-- concorrência, stale write, duplicidade, idempotência, retry/replay e reprocessamento;
-- sucesso parcial, falha intermediária, crash/restart, offline/reconnect e auth expirada;
-- incompatibilidade entre estado local/remoto, farm-switch ou clientes antigos com operações pendentes;
-- migration destrutiva, mudança não forward-compatible ou ausência de caminho seguro de convergência;
-- testes que passam sem cobrir o risco introduzido, mocks que ocultam o comportamento real ou validações alegadas sem evidência;
-- arquivos gerados, lockfiles, migrations, configs ou mudanças laterais fora do escopo declarado.
-
-Classifique findings por impacto:
-- `BLOCKER` — risco de segurança, perda/corrupção de dados, isolamento multi-tenant, operação destrutiva ou contrato crítico quebrado;
-- `HIGH` — bug funcional provável ou regressão relevante sem mitigação adequada;
-- `MEDIUM` — falha real de robustez, edge case relevante ou cobertura insuficiente com impacto limitado;
-- `LOW` — problema menor e objetivo; não use para preferência estética sem efeito técnico.
-
-Todo finding deve:
-- apontar arquivo e trecho/símbolo afetado quando identificável;
-- explicar o mecanismo da falha, não apenas o sintoma;
-- descrever condição de reprodução ou cenário concreto;
-- separar fato observado de hipótese ainda não comprovada;
-- indicar impacto e, quando útil, a menor direção de correção sem implementar.
-
-Não:
-- infira bug apenas porque o código poderia ser diferente;
-- transforme ausência de evidência em confirmação de defeito;
-- esconda incerteza;
-- sobrecarregue a revisão com nitpicks de estilo sem impacto;
-- declare `PASS` apenas porque nenhum finding foi encontrado.
-
-Se não houver findings bloqueantes, registre o escopo efetivamente revisado, validações observadas e riscos residuais relevantes.
-Use `.agents/rules/RESPONSE_FORMATS.md` para estruturar a saída.
-
----
-
-## 10. Graphify
-
-Use Graphify somente nos casos definidos em .agents/rules/GRAPHIFY_USAGE.md.
-
-Não:
-- gere ou atualize grafo para tarefa local sem impacto estrutural;
-- trate o grafo como fonte superior ao código;
-- use resultado de Graphify como prova isolada de comportamento.
-
----
-
-## 11. Banco, migrations e operações remotas
-
-Antes de alterar banco:
-1. identifique a fonte de verdade;
-2. determine impacto local/remoto;
-3. avalie compatibilidade com clientes offline e versões anteriores;
-4. preserve RLS e isolamento por fazenda;
-5. prefira evolução forward-only;
-6. considere operações pendentes de clientes antigos.
-
-Não execute sem autorização explícita:
-- migration remota;
-- db push remoto;
-- deploy;
-- merge;
-- reset destrutivo;
-- limpeza de dados;
-- alteração de produção;
-- operação irreversível.
-
-Criação de migration local não implica autorização para aplicá-la remotamente.
-
----
-
-## 12. Condições de parada
-
-Pare e reporte antes de modificar quando:
-- o baseline necessário não puder ser confirmado;
-- a fonte de verdade estiver ambígua;
-- houver conflito entre contratos;
-- a mudança exigir ampliar o escopo autorizado;
-- a tarefa exigir operação destrutiva não autorizada;
-- o repositório ou ambiente necessário não estiver acessível;
-- a correção depender de comportamento não comprovado;
-- houver risco de alterar produção, staging ou dados reais sem autorização.
-
-Não substitua evidência ausente por suposição silenciosa.
-
----
-
-## 13. Evidência e conclusão
-
-Diferencie claramente:
-- FATO CONFIRMADO;
-- INFERÊNCIA;
-- RECOMENDAÇÃO.
-
-Uma entrega só pode ser declarada concluída quando existir evidência compatível com seus critérios de aceite.
-
-Não declare:
-- PASS;
-- READY;
-- CLOSED;
-- problema corrigido;
-- teste aprovado;
-
-sem resultado efetivamente observado.
-
-Falha de ambiente deve ser relatada como falha de validação, não convertida em sucesso presumido.
-
----
-
-## 14. Resposta final
-
-Use .agents/rules/RESPONSE_FORMATS.md quando houver formato específico.
-
-Na ausência de formato obrigatório, seja conciso e registre:
-
-decisão/veredito;
-1. fatos confirmados e escopo real;
-2. arquivos afetados;
-3. impacto funcional/domínio/banco, quando aplicável;
-4. validações executadas;
-5. validações não executadas relevantes;
-6. até 3 riscos ou pendências principais.
-
-Não reproduza contexto carregado que não seja necessário para justificar a decisão.
-
----
+Contrato de entrada dos agentes: concluir somente o escopo autorizado, com contexto mínimo, preservando trabalho concorrente e contratos do produto.
+
+## Responsabilidade e precedência
+
+Respeite a hierarquia do runtime. A ordem procedimental e a precedência factual estão em `.agents/rules/CORE_RULES.md`: tarefa atual → AGENTS aplicável → rules obrigatórias → skill principal → apoio pertinente → prompt/template. Camadas inferiores não ampliam autorização, relaxam segurança nem substituem contrato implementado por documentação.
+
+| Autoridade | Responsabilidade |
+|---|---|
+| `AGENTS.md` | Entrada, autorização e limites |
+| `.agents/rules/CORE_RULES.md` | Invariantes normativos e precedências |
+| `.agents/rules/CONTEXT_LOADING.md` | única autoridade interna de roteamento de contexto e skills; seleciona uma principal e no máximo uma skill de apoio pertinente |
+| `.agents/rules/rtk.md` | Comandos e validação proporcional |
+| `rebanhosync-verification-gate` | Classificação técnica final |
+
+## Bootstrap único
+
+Leia uma vez `.agents/rules/CORE_RULES.md`, `.agents/rules/no-broad-context.md`, `.agents/rules/CONTEXT_LOADING.md` e o AGENTS local da área afetada, se existir. Não reinicie o bootstrap por referências em prompts ou skills; releia somente conteúdo alterado ou necessário para uma lacuna concreta.
+
+Defina objetivo, modo, escopo, fonte aplicável e evidência esperada antes de agir. Confirme branch, HEAD, worktree, staged, unstaged e untracked ao trabalhar com Git; preserve alterações preexistentes e não presuma checkout limpo.
+
+## Modos e autorização
+
+| Modo principal | Limite |
+|---|---|
+| `DISCOVERY` | Localizar contratos, arquivos e dependências; não autoriza correção |
+| `DIAGNOSIS` | Analisar comportamento sem alterar arquivos |
+| `REVIEW` | Revisar alvo definido sem modificar arquivos |
+| `IMPLEMENTATION` | Modificar somente o escopo autorizado, pelas rotas A/B/C do roteador |
+| `VERIFICATION` | Validar entrega existente; não amplia escopo nem autoriza correções |
+| `DOCUMENTATION` | Alterar documentação autorizada sem mudar runtime |
+| `PR_PREPARATION` | Usar `prepare-pr` após READY, com template atual e evidência vigente; não revalida, implementa ou autoriza merge |
+
+Diagnóstico, revisão e auditoria não autorizam implementação. Com implementação autorizada e decisões essenciais resolvidas, prossiga até a entrega na mesma sessão: subetapa, troca de skill ou plano não exigem nova aprovação. Skills e CI orientam ou fornecem evidência; não concedem autorização nem substituem o gate.
+
+## Invariantes e segurança
+
+Aplique `CORE_RULES.md`: offline-first, idempotência, retry/replay, recuperação, reconciliação, compatibilidade local-remota, RLS, multi-tenant, `fazenda_id` e auditabilidade. Agenda = intenção; Evento = fato/histórico; `state_*` = estado atual; Protocolo = configuração. Não derive histórico de estado atual nem converta previsão/recomendação em execução.
+
+Não criar fonte paralela de verdade, regra crítica em React ou autorização dependente apenas de UI. Não expor `service_role` no client. Não imprimir, persistir nem incorporar credenciais, tokens ou segredos em código, URLs, scripts, logs ou documentação.
+
+Não alterar schema, migration, seed, RLS, policy ou RPC sem escopo explícito. Mudança local não autoriza aplicação remota. Para contratos de banco, preservar isolamento, evolução forward-only e convergência com clientes antigos/offline e operações pendentes. Não refatorar por conveniência nem sobrescrever trabalho alheio.
+
+## Revisão técnica
+
+- Defina alvo exato e baseline confirmado; revise primeiro o diff real, inclusive staged/untracked, e expanda apenas para provar/refutar achados. Descrição de PR ou relato de agente não comprova comportamento; confronte testes/mocks com o risco alterado.
+- Priorize correção, segurança, perda de dados e contratos. Quando afetados, examine concorrência/stale writes, duplicidade, retry/replay, sucesso parcial, crash/restart, offline/reconnect, auth expirada, farm-switch, clientes antigos e convergência segura de migrations; procure também mudanças laterais e arquivos gerados.
+- Findings devem indicar arquivo/trecho, mecanismo, cenário reproduzível e impacto, distinguindo fato e hipótese. Use BLOCKER para segurança, corrupção/perda de dados, isolamento, operação destrutiva ou contrato crítico; HIGH para regressão funcional relevante; MEDIUM para robustez com impacto limitado; LOW para problema técnico menor. Evite nitpicks e bugs presumidos; ausência de findings não equivale a PASS. Correção exige autorização de implementação.
+
+## Mobile
+
+Ao tocar código compartilhado com Android/iOS:
+
+- Preservar React/TypeScript e priorizar Capacitor antes de reescrita; manter Dexie/IndexedDB inicialmente, sem storage nativo alternativo sem evidência técnica, e domínio independente das APIs do Capacitor.
+- Preservar idempotência/sync da web sem depender de background contínuo; considerar suspensão, kill/restart, reconnect e auth expirada como normais.
+- Separar development, staging e production e impedir build produtivo apontando para backend não produtivo. Mobile não amplia autorização para mudar domínio compartilhado.
+
+## Parada e operações proibidas
+
+Pare antes de modificar e reporte a lacuna se baseline/ambiente não puder ser confirmado, fonte de verdade estiver ambígua, contratos conflitarem, a correção depender de comportamento não comprovado ou exigir ampliar escopo/autorização.
+
+Operações destrutivas ou irreversíveis, descarte/limpeza de dados, reset, push, merge, deploy, migration/db push remotos e alterações de produção, staging ou dados reais exigem autorização explícita. Não substituir evidência ausente por suposição.
+
+## Evidência para conclusão
+
+Use `.agents/rules/rtk.md`: `validate.ps1` exige perfil explícito; `pnpm run audit:agents` e `pnpm run gates:docs` conforme aplicabilidade, sem repetir checks já incluídos. Graphify somente conforme `.agents/rules/GRAPHIFY_USAGE.md`. Não executar regressão global, build ou E2E por rotina.
+
+A classificação final pertence a `rebanhosync-verification-gate`; não declarar PASS, READY, CLOSED ou correção sem evidência observada, nem converter falha de ambiente em sucesso. Reutilizar evidência somente com patch, baseline e condições relevantes inalterados; falta de verificação crítica impede READY.
+
+Entregue decisão, escopo/arquivos reais, validações executadas e limitações, distinguindo fatos, inferências e recomendações; até três riscos/pendências. Use `.agents/rules/RESPONSE_FORMATS.md` quando pertinente. Não reproduzir contexto desnecessário.
+
+`.agents/archive/**`, `docs/archive/**` e scripts arquivados são históricos, não fontes operacionais por padrão; acesso somente por solicitação ou necessidade comprovada.
