@@ -1,7 +1,7 @@
 param(
   [string[]]$TouchedPaths = @(),
   [Parameter(Mandatory = $true)]
-  [ValidateSet("focused", "standard", "full")]
+  [ValidateSet("docs", "focused", "standard", "full")]
   [string]$Profile,
   [string[]]$TestPaths = @(),
   [string[]]$LintPaths = @(),
@@ -28,13 +28,13 @@ function Invoke-Checked {
 function Get-GitPaths {
   $paths = [System.Collections.Generic.List[string]]::new()
   $commands = @(
-    @("diff", "--name-only", "--diff-filter=ACMRTUXB"),
-    @("diff", "--cached", "--name-only", "--diff-filter=ACMRTUXB"),
+    @("diff", "--name-only", "--no-renames"),
+    @("diff", "--cached", "--name-only", "--no-renames"),
     @("ls-files", "--others", "--exclude-standard")
   )
 
   foreach ($arguments in $commands) {
-    $output = & git @arguments
+    $output = & git -c core.quotepath=false @arguments
     if ($LASTEXITCODE -ne 0) {
       throw "Unable to inspect repository paths: git $($arguments -join ' ')"
     }
@@ -88,17 +88,64 @@ foreach ($requiredFile in @("package.json", "pnpm-lock.yaml")) {
   }
 }
 
-if ($TouchedPaths.Count -eq 0) {
-  $TouchedPaths = Get-GitPaths
-  Write-Host "TouchedPaths not supplied; derived from staged, unstaged and untracked files."
-}
-
-$normalizedPaths = @(
+$actualPaths = @(Get-GitPaths)
+$declaredPaths = @(
   $TouchedPaths |
     ForEach-Object { Normalize-RepoPath -Value $_ -RepoRoot $repoRoot } |
     Where-Object { $_ } |
     Sort-Object -Unique
 )
+$omittedPaths = @($actualPaths | Where-Object { $declaredPaths -notcontains $_ })
+$incompleteScope = $TouchedPaths.Count -gt 0 -and $omittedPaths.Count -gt 0
+# A caller's list is advisory, never an allowlist that hides the worktree.
+$normalizedPaths = @(@($actualPaths) + @($declaredPaths) | Sort-Object -Unique)
+if ($incompleteScope) {
+  Write-Warning "Declared scope omits actual changes: $($omittedPaths -join ', ')"
+}
+if ($actualPaths.Count -eq 0) {
+  Write-Host "Validation NONE: no working-tree patch; commits require an explicit base and separate review."
+  exit 2
+}
+
+$documentationOnly = @($normalizedPaths | Where-Object {
+  $_ -notmatch '^(AGENTS\.md|(?:docs/|\.agents/).+\.md)$'
+}).Count -eq 0
+
+# Reject invalid requests before executing potentially expensive checks.
+if ($ConfirmFull -and $Profile -ne "full") { throw "ConfirmFull requires profile full." }
+if ($Profile -eq "docs") {
+  if (-not $documentationOnly) {
+    throw "Profile docs rejects non-documentary scope: $($normalizedPaths -join ', ')"
+  }
+  if ($TestPaths.Count -gt 0 -or $LintPaths.Count -gt 0 -or $IncludeBuild) {
+    throw "Profile docs runs fixed governance checks; do not combine test, lint or build options."
+  }
+}
+if ($Profile -eq "focused" -and $IncludeBuild) {
+  throw "IncludeBuild nao e permitido no perfil focused. Use standard ou full."
+}
+if ($Profile -in @("focused", "standard") -and $TestPaths.Count -eq 0 -and $LintPaths.Count -eq 0 -and -not $IncludeBuild) {
+  Write-Host "Validation NONE: profile $Profile requires explicit TestPaths, LintPaths or an allowed build."
+  exit 2
+}
+if ($documentationOnly -and $Profile -in @("focused", "standard")) {
+  throw "Documentary-only changes require profile docs and its governance checks."
+}
+if ($Profile -eq "full") {
+  if (-not $ConfirmFull) { throw "Perfil full exige -ConfirmFull para confirmar validacao ampla autorizada." }
+  if ($TestPaths.Count -gt 0 -or $LintPaths.Count -gt 0 -or $IncludeBuild) {
+    throw "Perfil full possui contrato fixo; nao combine TestPaths, LintPaths ou IncludeBuild."
+  }
+}
+foreach ($path in @($TestPaths) + @($LintPaths)) {
+  if ($path.StartsWith('-') -or [string]::IsNullOrWhiteSpace($path)) {
+    throw "Check paths must be repository paths, not options: $path"
+  }
+  $normalized = Normalize-RepoPath -Value $path -RepoRoot $repoRoot
+  if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $normalized))) {
+    throw "Check path does not exist: $path"
+  }
+}
 
 $criticalPrefixes = @(
   "src/lib/offline/",
@@ -118,9 +165,10 @@ foreach ($path in $normalizedPaths) {
   if ($criticalTouched) { break }
 }
 
-Write-Host "== RebanhoSync Validation Gate =="
+Write-Host "== RebanhoSync Automated Validation =="
 Write-Host "Repository: $repoRoot"
 Write-Host "Touched paths: $($normalizedPaths.Count)"
+$normalizedPaths | ForEach-Object { Write-Host "- $_" }
 Write-Host "Profile: $Profile"
 if ($criticalTouched) {
   Write-Host "Critical area detected. Review, when applicable:"
@@ -144,10 +192,11 @@ function Invoke-Pnpm {
 }
 
 switch ($Profile) {
+  "docs" {
+    # gates:docs already includes audit:agents' data_contract_audit.sh.
+    Invoke-Pnpm run gates:docs
+  }
   "focused" {
-    if ($IncludeBuild) {
-      throw "IncludeBuild nao e permitido no perfil focused. Use standard ou full."
-    }
     if ($TestPaths.Count -gt 0) {
       Invoke-Pnpm test -- @TestPaths
     }
@@ -156,9 +205,6 @@ switch ($Profile) {
     }
   }
   "standard" {
-    if ($TestPaths.Count -eq 0 -and $LintPaths.Count -eq 0 -and -not $IncludeBuild) {
-      throw "Perfil standard exige TestPaths, LintPaths ou IncludeBuild explicitamente."
-    }
     if ($TestPaths.Count -gt 0) {
       Invoke-Pnpm test -- @TestPaths
     }
@@ -170,17 +216,15 @@ switch ($Profile) {
     }
   }
   "full" {
-    if (-not $ConfirmFull) {
-      throw "Perfil full exige -ConfirmFull para confirmar validacao ampla autorizada."
-    }
-    if ($TestPaths.Count -gt 0 -or $LintPaths.Count -gt 0 -or $IncludeBuild) {
-      throw "Perfil full possui contrato fixo; nao combine TestPaths, LintPaths ou IncludeBuild."
-    }
     Invoke-Pnpm run lint
     Invoke-Pnpm test
     Invoke-Pnpm run build
   }
 }
 
-Write-Host "Validation OK"
+if ($incompleteScope -or (-not $documentationOnly -and $Profile -ne "full" -and $TestPaths.Count -eq 0)) {
+  Write-Host "Validation PARTIAL: checks passed, but scope was incomplete or functional tests are missing."
+  exit 2
+}
+Write-Host "Validation OK: requested checks passed; relevance and READY require the repository verification gate."
 exit 0

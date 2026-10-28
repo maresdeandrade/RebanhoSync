@@ -113,11 +113,7 @@ pnpm run lint
 
 ### Domínio crítico
 
-```bash
-pnpm test -- caminho/do/dominio
-pnpm run lint
-pnpm run build
-```
+Exigir testes focados de comportamento e modos de falha do contrato alterado. Selecionar lint/build conforme impacto real (tipos, imports, integração ou empacotamento) e critérios de aceite; não executar build por mera menção a domínio crítico.
 
 ### Entrega ampla
 
@@ -128,6 +124,7 @@ pnpm run build
 ```
 
 Executar apenas validações proporcionais ao risco e ao escopo.
+Para correções de comportamento, demonstrar relação do teste com o defeito e resultado esperado; lint/build isolados não são evidência funcional. Reutilizar resultados e revisão quando patch, baseline e condições relevantes forem os mesmos. Repetir somente o que uma mudança ou lacuna técnica possa invalidar. Build, E2E, Supabase e suíte ampliada não são passos automáticos.
 
 ---
 
@@ -158,6 +155,20 @@ powershell -File scripts/codex/validate.ps1 -Profile focused -TouchedPaths "<pat
 ```
 
 Não adaptar parâmetros sem ler o script ou documentação correspondente.
+
+### Contrato de `validate.ps1`
+
+- `docs`: somente `AGENTS.md` e Markdown sob `.agents/` ou `docs/`; executa `pnpm run gates:docs`, que já inclui a auditoria de agentes. Rejeita qualquer alteração real fora dessa lista e opções de teste/lint/build.
+- `focused`: exige testes ou lint explícitos; rejeita build. Para comportamento, testes pertinentes são necessários para sucesso completo.
+- `standard`: testes/lint explícitos e build opcional conforme risco; não amplia automaticamente a suíte. Lint/build sem testes em escopo não documental resulta em validação parcial.
+- Escopo exclusivamente documental em `focused`/`standard` deve usar `docs`; lint de Markdown possivelmente ignorado não substitui checks de governança.
+- `full`: contrato fixo lint + suíte completa + build; exige `-ConfirmFull` e autorização explícita. Testar seu despacho em fixture não autoriza executá-lo no projeto.
+
+`TouchedPaths` é informativo: o script sempre inspeciona a união com staged, unstaged e untracked, inclusive remoções e ambos os lados de renomes. Lista parcial é reportada e impede sucesso completo. Não existe exclusão de deltas preexistentes para esconder risco; o gate distingue esses deltas da entrega pelo baseline observado.
+
+Saídas: `Validation OK` (exit 0) indica que as verificações solicitadas passaram; `Validation PARTIAL` (exit 2) indica checks executados com lacuna funcional/escopo incompleto; `Validation NONE` (exit 2) indica ausência de checks ou de patch. Comando falho ou solicitação inválida termina com erro não zero, sem OK. Diff vazio, mesmo com `TouchedPaths`, não comprova commit: revisar intervalo com base explícita no gate.
+
+O script verifica existência/contenção dos caminhos de teste/lint, mas não prova relevância nem cobertura. Registre essa relação no gate; `rebanhosync-verification-gate` permanece a autoridade final e não admite READY com verificação crítica ausente.
 
 ---
 

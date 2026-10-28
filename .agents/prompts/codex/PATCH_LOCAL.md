@@ -1,13 +1,13 @@
 # Codex Prompt — Patch Local
 
-Atualizado em: 2026-08-03  
-Versão: 1.2.0
+Atualizado em: 2026-10-28
+Versão: 1.3.0
 
 Use para corrigir um defeito localizado, com alvo conhecido e sem criar funcionalidade nova ou refatoração ampla.
 
 ## Modo
 
-`MUTACAO_AUTORIZADA` somente dentro do escopo permitido e da tarefa atual.
+`IMPLEMENTATION` somente dentro do escopo permitido e da tarefa atual.
 
 ## Prompt
 
@@ -37,11 +37,7 @@ Corrija no RebanhoSync:
 
 ## Contexto e skill
 
-1. Leia `AGENTS.md`.
-2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
-3. Leia o `AGENTS.md` local, se existir, o arquivo-alvo e o teste relacionado.
-4. Use a skill do domínio principal somente se o defeito tocar regra crítica; não carregue skills por menção incidental.
-5. Para comandos e validações, siga `.agents/rules/rtk.md`.
+Aplique o bootstrap único e a rota A de `.agents/rules/CONTEXT_LOADING.md`; risco de contrato crítico exige rota C. Leia somente o arquivo-alvo e testes/contratos pertinentes. Para comandos e evidências, siga `.agents/rules/rtk.md`. Não repetir contexto vigente, criar plano formal, delegar ou abrir documento de fase por padrão.
 
 ## Diagnóstico mínimo
 
@@ -52,7 +48,7 @@ Antes de editar, registre:
 - menor ponto de correção;
 - risco de regressão e teste que o contém.
 
-Se a causa ou o alvo não estiverem claros, pare o patch e faça descoberta dirigida. Não mascarar sintoma sem compreender o contrato afetado.
+Se a causa ou o alvo não estiverem claros, faça descoberta dirigida e retome a correção autorizada quando delimitados. Pare para decisão somente nas condições de `AGENTS.md`; não mascarar sintoma sem compreender o contrato afetado.
 
 ## Regras
 
@@ -66,13 +62,7 @@ Se a causa ou o alvo não estiverem claros, pare o patch e faça descoberta diri
 
 ## Validação
 
-Siga `.agents/rules/rtk.md` e confirme:
-
-- estado inicial e final do worktree, inclusive staged e untracked;
-- reprodução antes do patch, quando possível;
-- teste relacionado após o patch;
-- `git diff --check`;
-- validações adicionais somente se proporcionais ao risco.
+Siga `.agents/rules/rtk.md`, com reprodução/regressão pertinente, e revise o diff real. Conclua com `rebanhosync-verification-gate` proporcional, reaproveitando evidências válidas. Lint/build isolados não comprovam correção de comportamento. Com autorização suficiente, prossiga até a entrega na mesma sessão.
 
 ## Critérios de aceite
 
