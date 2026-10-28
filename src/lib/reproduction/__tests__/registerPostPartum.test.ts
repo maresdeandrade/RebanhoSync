@@ -15,6 +15,7 @@ vi.mock("@/lib/supabase", () => ({
 import { db } from "@/lib/offline/db";
 import { establishLocalOwnership } from "@/lib/offline/ownership";
 import { buildCalfJourneyAgendaOps } from "../calfJourney";
+import { executeSanitaryAgendaV2 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
 import {
   registerPostPartumGesture,
   type PostPartumContext,
@@ -133,8 +134,82 @@ afterEach(() => {
 });
 
 describe("registro prospectivo pós-parto", () => {
+  it.each(["persisted", "queued"])("does not create another cycle over a %s historical cure fact", async mode => {
+    await enable();
+    const event = { id: "historical-cure", fazenda_id: farm, dominio: "sanitario", animal_id: calfId, occurred_at: now, payload: { procedimento: "cura_umbigo", birth_event_id: birthId }, deleted_at: null };
+    if (mode === "persisted") await db.event_eventos.put(event as never);
+    else await db.queue_ops.put({ client_op_id: "historical-op", client_tx_id: "historical-tx", table: "eventos", action: "INSERT", sync_state: "PENDING", record: event } as Operation);
+    await registerPostPartumGesture(input, readContext);
+    if (mode === "persisted") expect(await db.event_eventos.get(event.id)).toEqual(event);
+    else expect((await db.queue_ops.get("historical-op"))?.record).toEqual(event);
+    expect((await db.ops_sanitario_agenda_v2.toArray()).map(row => row.acao_sanitaria)).toEqual(["revisao_neonatal"]);
+  });
+  it("does not use the old umbilical timestamp as evidence of three executions", async () => {
+    await enable();
+    await db.state_animais.update(calfId, { payload: { ...calf.payload, neonatal_setup: { umbigo_curado_at: now } } });
+    await registerPostPartumGesture(input, readContext);
+    expect((await db.ops_sanitario_agenda_v2.toArray()).filter(row => row.acao_sanitaria === "cura_umbigo")).toHaveLength(3);
+    expect(await db.event_eventos_sanitario.count()).toBe(0);
+    expect((await db.state_animais.get(calfId))?.payload.neonatal_setup).toMatchObject({ umbigo_curado_at: now });
+  });
+  it.each(["persisted", "pending", "tombstoned"])("preserves %s six-slot planning without adding daily intentions", async (mode) => {
+    await enable();
+    const template = buildCalfJourneyAgendaOps({ fazendaId: farm, calf, mother: input.mother }).sanitarioAgendaV2[0];
+    const oldRows = [0, 1, 2].flatMap((day) => ["manha", "tarde"].map((slot) => ({
+      ...template.agenda,
+      id: `old-${day}-${slot}`,
+      fazenda_id: farm,
+      dedup_key: `calf_journey:${calfId}:cura_umbigo:d${day}:${slot}`,
+      metadata: { schedule_kind: "twice_daily_until_dry", schedule_slot: slot, schedule_day_offset: day },
+      revision: 9,
+      deleted_at: mode === "tombstoned" ? now : null,
+    } as SanitarioAgendaLocalV2)));
+    const oldOps = oldRows.map((row) => ({
+      client_op_id: `pending-${row.id}`,
+      client_tx_id: "old-tx",
+      table: "sanitario_v2",
+      action: "INSERT",
+      sync_state: "PENDING",
+      record: {
+        fazenda_id: farm,
+        domain: "sanitario_v2",
+        command: "create_agenda",
+        payload: { agenda: row, animal_ids: [calfId] },
+      },
+    } as Operation));
+    if (mode === "pending") await db.queue_ops.bulkPut(oldOps);
+    else await db.ops_sanitario_agenda_v2.bulkPut(oldRows);
+    await registerPostPartumGesture(input, readContext);
+    if (mode === "pending") {
+      expect(await db.queue_ops.bulkGet(oldOps.map(op => op.client_op_id))).toEqual(oldOps);
+    } else {
+      expect(await db.ops_sanitario_agenda_v2.bulkGet(oldRows.map(row => row.id))).toEqual(oldRows);
+    }
+    const agendas = await db.ops_sanitario_agenda_v2.toArray();
+    expect(agendas.filter(row => row.acao_sanitaria === "cura_umbigo")).toHaveLength(mode === "pending" ? 0 : 6);
+    expect(agendas.filter(row => row.acao_sanitaria === "revisao_neonatal")).toHaveLength(1);
+  });
+
+  it("refuses a neonatal intention without the factual birth evidence", async () => {
+    await enable();
+    await registerPostPartumGesture(input, readContext);
+    const agendas = await db.ops_sanitario_agenda_v2.toArray();
+    const first = agendas.find(row => row.acao_sanitaria === "cura_umbigo")!;
+    const queueBefore = await db.queue_ops.toArray();
+    await expect(executeSanitaryAgendaV2({
+      fazendaId: farm,
+      agendaId: first.id,
+      clientOpId: "66666666-6666-4666-8666-666666666666",
+      executedAt: now,
+      registrationMode: "executed_fact",
+      confirmation: { userConfirmedExecution: true },
+    })).rejects.toThrow("NEONATAL_AGENDA_BIRTH_EVIDENCE_MISSING");
+    expect(await db.event_eventos_sanitario.count()).toBe(0);
+    expect(await db.ops_sanitario_agenda_v2.toArray()).toEqual(agendas);
+    expect(await db.queue_ops.toArray()).toEqual(queueBefore);
+  });
   it.each([false, true])(
-    "persists umbilical facts and stable replay when the screen snapshot has a prior cure=%s",
+    "ignores the chart cure flag and preserves replay with stale cure=%s",
     async (staleCure) => {
       await enable();
       const snapshot = staleCure
@@ -152,30 +227,25 @@ describe("registro prospectivo pós-parto", () => {
         drafts: [{ ...input.drafts[0], curaUmbigo: true }],
       };
       const result = await registerPostPartumGesture(submission, readContext);
-      expect(result.umbigoCount).toBe(1);
+      expect(result.umbigoCount).toBe(0);
       const details = await db.event_eventos_sanitario.toArray();
-      expect(details).toHaveLength(1);
-      expect(details[0].produto).toBe("Cura de umbigo");
-      expect(await db.event_eventos.get(details[0].evento_id)).toMatchObject({
-        dominio: "sanitario",
-        animal_id: calfId,
-      });
+      expect(details).toHaveLength(0);
       expect(await db.event_eventos_pesagem.count()).toBe(1);
-      expect(await db.ops_sanitario_agenda_v2.count()).toBe(1);
+      expect(await db.ops_sanitario_agenda_v2.count()).toBe(4);
       expect(await db.state_agenda_itens.count()).toBe(3);
       const operations = await db.queue_ops.toArray();
       expect(
         operations.filter((op) => op.table === "eventos_sanitario"),
-      ).toHaveLength(1);
+      ).toHaveLength(0);
       const replay = await registerPostPartumGesture(submission, readContext);
       expect(replay.txId).toBe(result.txId);
       expect(replay.replayed).toBe(true);
       expect(await db.queue_ops.toArray()).toEqual(operations);
-      expect(await db.event_eventos_sanitario.count()).toBe(1);
-      expect(await db.event_eventos.count()).toBe(2);
+      expect(await db.event_eventos_sanitario.count()).toBe(0);
+      expect(await db.event_eventos.count()).toBe(1);
     },
   );
-  it("rolls back rebuilt sanitary facts after a stale-cure snapshot and recovers on retry", async () => {
+  it("rolls back chart planning after a stale-cure snapshot and recovers on retry", async () => {
     await enable();
     const submission = {
       ...input,
@@ -212,8 +282,8 @@ describe("registro prospectivo pós-parto", () => {
     }
     hookCleanups.splice(0).forEach((cleanup) => cleanup());
     await registerPostPartumGesture(submission, readContext);
-    expect(await db.event_eventos_sanitario.count()).toBe(1);
-    expect(await db.ops_sanitario_agenda_v2.count()).toBe(1);
+    expect(await db.event_eventos_sanitario.count()).toBe(0);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(4);
   });
   it("persists movement introduced by a newer Dexie lot despite an unchanged screen draft", async () => {
     const lot = "55555555-5555-4555-8555-555555555555";
@@ -250,7 +320,7 @@ describe("registro prospectivo pós-parto", () => {
   it("gate OFF keeps valid facts/non-sanitary work and creates no local-only sanitary intent", async () => {
     const result = await registerPostPartumGesture(input, readContext);
     expect(result.sanitary.created).toBe(0);
-    expect(result.sanitary.unavailable).toBe(7);
+    expect(result.sanitary.unavailable).toBe(4);
     expect(result.sanitary.reason).toBe("gate_off");
     expect(await db.ops_sanitario_agenda_v2.count()).toBe(0);
     expect(await db.state_agenda_itens.count()).toBe(3);
@@ -262,10 +332,10 @@ describe("registro prospectivo pós-parto", () => {
   it("gate ON queues only canonical sanitary commands with the facts in one gesture", async () => {
     await enable();
     const result = await registerPostPartumGesture(input, readContext);
-    expect(result.sanitary.created).toBe(7);
+    expect(result.sanitary.created).toBe(4);
     const ops = await db.queue_ops.toArray();
     expect(ops.filter((op) => op.table === "agenda_itens")).toHaveLength(3);
-    expect(ops.filter((op) => op.table === "sanitario_v2")).toHaveLength(7);
+    expect(ops.filter((op) => op.table === "sanitario_v2")).toHaveLength(4);
     expect(
       ops
         .filter((op) => op.table === "sanitario_v2")
@@ -302,7 +372,7 @@ describe("registro prospectivo pós-parto", () => {
         fazendaId: farm,
         calf,
         mother: input.mother,
-      }).sanitarioAgendaV2[6];
+      }).sanitarioAgendaV2[3];
       const row = {
         ...draft.agenda,
         fazenda_id: farm,
@@ -314,7 +384,7 @@ describe("registro prospectivo pós-parto", () => {
       await db.ops_sanitario_agenda_v2.put(row);
       await registerPostPartumGesture(input, readContext);
       expect(await db.ops_sanitario_agenda_v2.get(row.id)).toEqual(row);
-      expect(await db.ops_sanitario_agenda_v2.count()).toBe(7);
+      expect(await db.ops_sanitario_agenda_v2.count()).toBe(4);
     },
   );
   it("tombstones and a legacy pending operation suppress matching intentions without rewriting either", async () => {
@@ -325,7 +395,7 @@ describe("registro prospectivo pós-parto", () => {
       mother: input.mother,
     }).sanitarioAgendaV2;
     const row = {
-      ...drafts[6].agenda,
+      ...drafts[3].agenda,
       fazenda_id: farm,
       deleted_at: now,
     } as SanitarioAgendaLocalV2;
@@ -368,7 +438,7 @@ describe("registro prospectivo pós-parto", () => {
       deleted_at: now,
     } as AgendaItem);
     await registerPostPartumGesture(input, readContext);
-    expect(await db.ops_sanitario_agenda_v2.count()).toBe(6);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(3);
     expect((await db.state_agenda_itens.get("old"))?.deleted_at).toBe(now);
   });
   it("two concurrent submissions create each sanitary intent once", async () => {
@@ -380,12 +450,12 @@ describe("registro prospectivo pós-parto", () => {
         readContext,
       ),
     ]);
-    expect(await db.ops_sanitario_agenda_v2.count()).toBe(7);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(4);
     expect(
       (await db.queue_ops.toArray()).filter(
         (op) => op.table === "sanitario_v2",
       ),
-    ).toHaveLength(7);
+    ).toHaveLength(4);
   });
   it("replay preserves operation IDs and captured revisions, including after a local reopen", async () => {
     await enable();
@@ -466,7 +536,7 @@ describe("registro prospectivo pós-parto", () => {
       fazendaId: farm,
       calf,
       mother: input.mother,
-    }).sanitarioAgendaV2[6];
+    }).sanitarioAgendaV2[3];
     const other = {
       ...draft.agenda,
       fazenda_id: "other-farm",
@@ -557,10 +627,10 @@ describe("registro prospectivo pós-parto", () => {
       expect((await db.state_animais.get(calfId))?.lote_id).toBe(lot);
       expect(await db.event_eventos_movimentacao.count()).toBe(1);
       expect(await db.event_eventos_pesagem.count()).toBe(1);
-      expect(await db.ops_sanitario_agenda_v2.count()).toBe(gateOn ? 7 : 0);
+      expect(await db.ops_sanitario_agenda_v2.count()).toBe(gateOn ? 4 : 0);
       expect(
         persisted.filter((op) => op.table === "sanitario_v2"),
-      ).toHaveLength(gateOn ? 7 : 0);
+      ).toHaveLength(gateOn ? 4 : 0);
     },
   );
   it("rolls back a neonatal movement with a later failure and recovers on retry", async () => {
@@ -610,7 +680,7 @@ describe("registro prospectivo pós-parto", () => {
     );
     expect(recovered.replayed).toBe(false);
     expect(await db.event_eventos_movimentacao.count()).toBe(1);
-    expect(await db.ops_sanitario_agenda_v2.count()).toBe(7);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(4);
     expect(
       (await db.queue_ops.toArray()).filter((op) => op.table === "movement_v1"),
     ).toHaveLength(1);

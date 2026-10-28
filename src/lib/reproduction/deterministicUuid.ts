@@ -1,4 +1,4 @@
-export function deterministicUuidFromText(value: string) {
+export function deterministicUuidFromText(value: string): `${string}-${string}-${string}-${string}-${string}` {
   const bytes: number[] = [];
   for (let block = 0; block < 4; block += 1) {
     let hash = 0x811c9dc5 ^ (block * 0x9e3779b1);

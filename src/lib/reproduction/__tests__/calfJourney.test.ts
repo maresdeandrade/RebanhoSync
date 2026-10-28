@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/supabase", () => ({ supabase: {} }));
 import type { AgendaItem, Animal } from "@/lib/offline/types";
 import {
   buildCalfJourneyAgendaOps,
@@ -84,6 +85,11 @@ function createAgendaItem(overrides: Partial<AgendaItem> = {}): AgendaItem {
 }
 
 describe("calfJourney", () => {
+  it.each(["cura_umbigo", "revisao_neonatal"])("does not independently execute a legacy %s from the chart", (tipo) => {
+    expect(() => buildCalfJourneyCompletionOps({ fazendaId: "farm-1", calf: createCalf(), mother: null,
+      agendaItem: createAgendaItem({ dominio: "sanitario", tipo, payload: { milestone_key: tipo } }),
+    })).toThrow("Central Sanitária");
+  });
   it("builds automatic agenda milestones up to weaning", () => {
     const result = buildCalfJourneyAgendaOps({
       fazendaId: "farm-1",
@@ -95,26 +101,28 @@ describe("calfJourney", () => {
       existingAgendaItems: [],
     });
 
-    expect(result.createdCount).toBe(10);
+    expect(result.createdCount).toBe(7);
     expect(result.ops.every((op) => op.table === "agenda_itens")).toBe(true);
     const umbigoOps = result.sanitarioAgendaV2.filter(
       (draft) => draft.agenda.acao_sanitaria === "cura_umbigo",
     );
-    expect(umbigoOps).toHaveLength(6);
+    expect(umbigoOps).toHaveLength(3);
     expect(umbigoOps.map((draft) => draft.agenda.data_programada)).toEqual([
       "2026-04-01",
-      "2026-04-01",
       "2026-04-02",
-      "2026-04-02",
-      "2026-04-03",
       "2026-04-03",
     ]);
     expect(umbigoOps[0]?.agenda.metadata).toMatchObject({
-      schedule_kind: "twice_daily_until_dry",
-      min_days: 3,
-      max_days: 5,
-      stop_condition: "umbigo_completamente_seco",
+      schedule_kind: "once_daily_three_days",
+      total_days: 3,
     });
+    expect(umbigoOps.map(({ agenda }) => agenda.dedup_key)).toEqual([
+      "calf_journey:cria-1:cura_umbigo:d0:diario",
+      "calf_journey:cria-1:cura_umbigo:d1:diario",
+      "calf_journey:cria-1:cura_umbigo:d2:diario",
+    ]);
+    expect(new Set(umbigoOps.map(({ agenda }) => agenda.id)).size).toBe(3);
+    expect(umbigoOps.map(({ agenda }) => agenda.metadata.sequence_order)).toEqual([1, 2, 3]);
     expect(result.ops[2]?.record.tipo).toBe("desmame");
     expect(result.ops[2]?.record.data_prevista).toBe("2026-10-28");
   });

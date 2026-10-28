@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/supabase", () => ({ supabase: {} }));
 import {
   hasPendingSanitaryPlanningDependencyV2,
   mapQueuedSanitaryPlanV2,
@@ -24,6 +25,19 @@ const operation = (): Operation => ({
   },
 });
 describe("immutable legacy plan transport", () => {
+  it("keeps a factual execution behind its queued agenda creation or older reschedule", () => {
+    const create = operation(), execution = operation(), reschedule = operation();
+    create.record = { domain: "sanitario_v2", command: "create_agenda", payload: { agenda: { id: "neonatal-d0" } } };
+    execution.record = { domain: "sanitario_v2", command: "apply_factual_core", expected_revision: 1, payload: { event: { source_sanitario_agenda_v2_id: "neonatal-d0" } } };
+    reschedule.record = { domain: "sanitario_v2", command: "reschedule_agenda", expected_revision: 0, payload: { agenda_id: "neonatal-d0" } };
+    const before = structuredClone([create, execution, reschedule]);
+    expect(hasPendingSanitaryPlanningDependencyV2(execution, [create])).toBe(true);
+    expect(hasPendingSanitaryPlanningDependencyV2(execution, [reschedule])).toBe(true);
+    expect([create, execution, reschedule]).toEqual(before);
+    expect(hasPendingSanitaryPlanningDependencyV2(execution, [])).toBe(false);
+    create.record.payload.agenda.id = "another-agenda";
+    expect(hasPendingSanitaryPlanningDependencyV2(execution, [create])).toBe(false);
+  });
   it("retains operation identities and derives CAS from the queued revision", () => {
     const op = operation(),
       before = structuredClone(op);

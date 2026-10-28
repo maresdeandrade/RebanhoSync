@@ -179,6 +179,16 @@ export async function registerPostPartumGesture(
       ...existingV2.map((row) => row.dedup_key),
       ...pendingAgendas.map((row) => row.dedup_key),
     ]);
+    // A persisted or queued twice-daily cycle needs explicit reconciliation.
+    // Do not add a second daily cycle or reinterpret its terminal/tombstoned slots.
+    const oldUmbigoCycles = new Set(
+      [...blockedKeys].flatMap((key) => {
+        const match = typeof key === "string"
+          ? /^(calf_journey:.+:cura_umbigo):d\d+:(?:manha|tarde)$/.exec(key)
+          : null;
+        return match ? [match[1]] : [];
+      }),
+    );
     const blockedIds = new Set([
       ...existingV2.map((row) => row.id),
       ...pendingAgendas.map((row) => row.id),
@@ -194,11 +204,24 @@ export async function registerPostPartumGesture(
       calves: calves.filter((calf) => !!calf),
       existingAgendaItems: legacy,
     });
+    // Old standalone facts have no safe automatic mapping to a daily V2 intention.
+    // Preserve them and do not manufacture a second cycle from a chart reopen.
+    const oldUmbigoFacts = [...await db.event_eventos.where("fazenda_id").equals(input.fazendaId)
+      .filter(event => !event.deleted_at && event.dominio === "sanitario" &&
+        !event.source_sanitario_agenda_v2_id && event.payload.procedimento === "cura_umbigo")
+      .toArray(), ...pending.filter(op => op.table === "eventos" && op.record.dominio === "sanitario" &&
+        !op.record.deleted_at && !op.record.source_sanitario_agenda_v2_id && op.record.payload?.procedimento === "cura_umbigo")
+        .map(op => op.record)];
     // Preserve terminal states, tombstones and old queue entries. No backfill/translation.
     const drafts = built.sanitarioAgendaV2.filter(
       (draft) =>
         !blockedIds.has(draft.agenda.id) &&
-        !blockedKeys.has(draft.agenda.dedup_key),
+        !blockedKeys.has(draft.agenda.dedup_key) &&
+        !oldUmbigoCycles.has(
+          draft.agenda.dedup_key?.replace(/:d\d+:diario$/, "") ?? "",
+        ) &&
+        !(draft.agenda.acao_sanitaria === "cura_umbigo" && oldUmbigoFacts.some(event =>
+          event.animal_id === draft.animal_id && event.payload.birth_event_id === draft.agenda.metadata.birth_event_id)),
     );
     const occupiedIds = await db.ops_sanitario_agenda_v2.bulkGet(
       drafts.map((draft) => draft.agenda.id),

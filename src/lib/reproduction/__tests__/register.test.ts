@@ -1,5 +1,6 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/supabase", () => ({ supabase: { auth: { getSession: vi.fn() } } }));
 import { EventValidationError } from "@/lib/events/validators";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
@@ -539,19 +540,16 @@ describe("buildReproductionGesture", () => {
         (op) => op.table === "agenda_itens" && op.record.dominio === "sanitario",
       ),
     ).toBe(false);
-    expect(result.sanitarioAgendaV2).toHaveLength(6);
+    expect(result.sanitarioAgendaV2).toHaveLength(3);
     expect(result.sanitarioAgendaV2[0]?.agenda.metadata).toMatchObject({
-      schedule_kind: "twice_daily_until_dry",
-      stop_condition: "umbigo_completamente_seco",
+      schedule_kind: "once_daily_three_days",
+      total_days: 3,
     });
     expect(
       result.sanitarioAgendaV2.map(({ agenda }) => agenda.data_programada),
     ).toEqual([
       "2026-03-30",
-      "2026-03-30",
       "2026-03-31",
-      "2026-03-31",
-      "2026-04-01",
       "2026-04-01",
     ]);
     expect(
@@ -560,16 +558,13 @@ describe("buildReproductionGesture", () => {
         agenda.metadata.schedule_slot,
       ]),
     ).toEqual([
-      [0, "manha"],
-      [0, "tarde"],
-      [1, "manha"],
-      [1, "tarde"],
-      [2, "manha"],
-      [2, "tarde"],
+      [0, "diario"],
+      [1, "diario"],
+      [2, "diario"],
     ]);
   });
 
-  it("queues the six neonatal intents with the canonical sanitario_v2 create_agenda command", async () => {
+  it("queues the three daily neonatal intents with the canonical sanitario_v2 create_agenda command", async () => {
     const built = buildReproductionGesture({
       fazendaId: "farm-1",
       animalId: "matriz-command",
@@ -594,7 +589,7 @@ describe("buildReproductionGesture", () => {
     const agendaCommands = queue.filter((op) => op.table === "sanitario_v2");
     const calfOp = queue.find((op) => op.table === "animais");
 
-    expect(agendaCommands).toHaveLength(6);
+    expect(agendaCommands).toHaveLength(3);
     expect(
       agendaCommands.every(
         (op) =>
@@ -758,16 +753,16 @@ describe("buildReproductionGesture", () => {
     expect(calves[1]?.identificacao).toBe("BZ-102");
     expect(calves[0]?.pai_id).toBeNull();
     expect(calves[0]?.payload.birth_event_id).toBe(result.eventId);
-    expect(await db.ops_sanitario_agenda_v2.count()).toBe(12);
-    expect(await db.ops_sanitario_agenda_animais_v2.count()).toBe(12);
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(6);
+    expect(await db.ops_sanitario_agenda_animais_v2.count()).toBe(6);
     expect(await db.state_agenda_itens.count()).toBe(0);
     const agendaAnimals = await db.ops_sanitario_agenda_animais_v2.toArray();
     expect(
       agendaAnimals.filter((item) => item.animal_id === "cria-a"),
-    ).toHaveLength(6);
+    ).toHaveLength(3);
     expect(
       agendaAnimals.filter((item) => item.animal_id === "cria-b"),
-    ).toHaveLength(6);
+    ).toHaveLength(3);
   });
 
   it("ends the current pregnancy projection and preserves its factual history", async () => {
@@ -932,8 +927,8 @@ describe("buildReproductionGesture", () => {
       counts.agendaAnimals,
     );
     expect(await db.queue_ops.count()).toBe(counts.queue);
-    expect(counts.agendas).toBe(6);
-    expect(counts.agendaAnimals).toBe(6);
+    expect(counts.agendas).toBe(3);
+    expect(counts.agendaAnimals).toBe(3);
   });
 
   it("rejects a genuinely different timestamp on replay", async () => {

@@ -185,6 +185,8 @@ it.each(["postpartum", "calf"] as const)(
     expect(
       screen.getByText(/1 atividade\(s\) sanitária\(s\)/i),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /Registrar cura do umbigo/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Registrar manejo na Central Sanitária/i })).toHaveAttribute("href", `/protocolos-sanitarios?tab=agenda&animalId=${calf}`);
   },
 );
 it.each(["postpartum", "calf"] as const)(

@@ -1,5 +1,6 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/supabase", () => ({ supabase: { auth: { getSession: vi.fn() } } }));
 
 import { db } from "@/lib/offline/db";
 import { establishLocalOwnership } from "@/lib/offline/ownership";

@@ -119,7 +119,8 @@ function planningEnvelope(op: Operation) {
   return mapQueuedSanitaryPlanV2(op, op.record.fazenda_id) ?? op.record;
 }
 function agendaTarget(envelope: Operation["record"]) {
-  return envelope.payload?.agenda_id ?? envelope.payload?.closure?.agenda_id;
+  return envelope.payload?.agenda_id ?? envelope.payload?.closure?.agenda_id ??
+    (envelope.command === "apply_factual_core" ? envelope.payload?.event?.source_sanitario_agenda_v2_id : undefined);
 }
 function dependsOnAgenda(
   envelope: Operation["record"],

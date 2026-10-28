@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Baby, HeartPulse, MapPinned, Scale, Sparkles } from "lucide-react";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -66,7 +65,6 @@ export function CalfInitialEditor({
     selectedLote?.pasto_id && pastoById.has(selectedLote.pasto_id)
       ? pastoById.get(selectedLote.pasto_id)
       : null;
-  const umbigoAlreadyRecorded = Boolean(neonatalSetup?.umbigo_curado_at);
 
   return (
     <div className="space-y-4">
@@ -238,22 +236,12 @@ export function CalfInitialEditor({
             Cuidado neonatal
           </div>
           <div className="mt-3 flex items-start gap-3">
-            <Checkbox
-              id={`umbigo-${calf.id}`}
-              checked={draft.curaUmbigo || umbigoAlreadyRecorded}
-              disabled={umbigoAlreadyRecorded}
-              onCheckedChange={(checked) =>
-                onChange({ curaUmbigo: checked === true })
-              }
-            />
             <div className="space-y-1">
-              <Label htmlFor={`umbigo-${calf.id}`} className="cursor-pointer">
-                Registrar cura do umbigo
-              </Label>
+              <Link to={`/protocolos-sanitarios?tab=agenda&animalId=${calf.id}`} className="text-sm font-medium text-primary underline">
+                Registrar manejo na Central Sanitária
+              </Link>
               <p className="text-xs text-muted-foreground">
-                {umbigoAlreadyRecorded
-                  ? `Ja registrada em ${formatDate(neonatalSetup?.umbigo_curado_at ?? null)}.`
-                  : "Cria um evento sanitario proprio sem depender do Registrar."}
+                Confirme cada cura diária e a revisão neonatal na atividade correspondente.
               </p>
             </div>
           </div>

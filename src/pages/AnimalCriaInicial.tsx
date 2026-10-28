@@ -721,7 +721,11 @@ export default function AnimalCriaInicial() {
                     )}
 
                     <div className="flex flex-wrap gap-2">
-                      {item.status === "agendado" ? (
+                      {item.status === "agendado" && item.dominio === "sanitario" ? (
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/protocolos-sanitarios?tab=agenda&animalId=${calf.id}`}>Consultar na Central Sanitária</Link>
+                        </Button>
+                      ) : item.status === "agendado" ? (
                         <Button
                           size="sm"
                           onClick={() => handleJourneyMilestone(item)}

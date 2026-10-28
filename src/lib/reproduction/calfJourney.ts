@@ -9,7 +9,6 @@ import type {
 import {
   getAnimalPayloadRecord,
   getBirthEventId,
-  getNeonatalSetup,
 } from "@/lib/reproduction/neonatal";
 
 export type CalfJourneyMilestoneKey =
@@ -28,25 +27,16 @@ export interface CalfJourneyMilestoneDefinition {
 }
 
 export const UMBIGO_CARE_MIN_DAYS = 3;
-export const UMBIGO_CARE_MAX_DAYS = 5;
 
 const UMBIGO_CARE_SCHEDULE = Array.from(
   { length: UMBIGO_CARE_MIN_DAYS },
-  (_, dayIndex) => [
-    {
-      dayOffset: dayIndex,
-      slot: "manha",
-      slotLabel: "Manha",
-      sequenceOrder: dayIndex * 2 + 1,
-    },
-    {
-      dayOffset: dayIndex,
-      slot: "tarde",
-      slotLabel: "Tarde",
-      sequenceOrder: dayIndex * 2 + 2,
-    },
-  ],
-).flat();
+  (_, dayIndex) => ({
+    dayOffset: dayIndex,
+    slot: "diario",
+    slotLabel: "Diario",
+    sequenceOrder: dayIndex + 1,
+  }),
+);
 
 export const CALF_JOURNEY_MILESTONES: CalfJourneyMilestoneDefinition[] = [
   {
@@ -277,14 +267,12 @@ export function buildUmbigoCareAgendaOps({
           milestone_label: "Cura do umbigo",
           mother_id: mother.id,
           birth_event_id: birthEventId,
-          schedule_kind: "twice_daily_until_dry",
+          schedule_kind: "once_daily_three_days",
           schedule_slot: scheduled.slot,
           schedule_slot_label: scheduled.slotLabel,
           schedule_day_offset: scheduled.dayOffset,
           sequence_order: scheduled.sequenceOrder,
-          min_days: UMBIGO_CARE_MIN_DAYS,
-          max_days: UMBIGO_CARE_MAX_DAYS,
-          stop_condition: "umbigo_completamente_seco",
+          total_days: UMBIGO_CARE_MIN_DAYS,
         },
       },
     });
@@ -319,14 +307,12 @@ export function buildUmbigoCareSanitarioAgendaV2({
       mother_id: mother.id,
       mother_identificacao: mother.identificacao,
       birth_event_id: birthEventId,
-      schedule_kind: "twice_daily_until_dry",
+      schedule_kind: "once_daily_three_days",
       schedule_slot: scheduled.slot,
       schedule_slot_label: scheduled.slotLabel,
       schedule_day_offset: scheduled.dayOffset,
       sequence_order: scheduled.sequenceOrder,
-      min_days: UMBIGO_CARE_MIN_DAYS,
-      max_days: UMBIGO_CARE_MAX_DAYS,
-      stop_condition: "umbigo_completamente_seco",
+      total_days: UMBIGO_CARE_MIN_DAYS,
     };
 
     return {
@@ -375,7 +361,6 @@ export function buildCalfJourneyAgendaOps({
 }: BuildCalfJourneyAgendaOpsInput) {
   const birthDate = calf.data_nascimento ?? new Date().toISOString().slice(0, 10);
   const birthEventId = getBirthEventId(calf.payload);
-  const neonatalSetup = getNeonatalSetup(calf.payload);
   const existingDedupKeys = new Set(
     existingAgendaItems
       .filter((item) => item.animal_id === calf.id)
@@ -394,13 +379,6 @@ export function buildCalfJourneyAgendaOps({
   });
 
   for (const milestone of CALF_JOURNEY_MILESTONES) {
-    if (
-      milestone.key === "cura_umbigo" &&
-      typeof neonatalSetup?.umbigo_curado_at === "string"
-    ) {
-      continue;
-    }
-
     if (milestone.key === "cura_umbigo") {
       if (
         existingAgendaItems.some(
@@ -509,41 +487,9 @@ export function buildCalfJourneyCompletionOps({
   let linkedEventId: string | null = null;
 
   if (milestone.key === "cura_umbigo") {
-    const built = buildEventGesture({
-      dominio: "sanitario",
-      fazendaId,
-      animalId: calf.id,
-      loteId: calf.lote_id ?? null,
-      sourceTaskId: agendaItem.id,
-      occurredAt,
-      observacoes: `Cura do umbigo da cria ${calf.identificacao}`,
-      tipo: "medicamento",
-      produto: "Cura de umbigo",
-      payload: {
-        ...basePayload,
-        procedimento: "cura_umbigo",
-      },
-    });
-    linkedEventId = built.eventId;
-    ops.push(...built.ops);
+    throw new Error("Registre o manejo neonatal na Central Sanitária. A intenção legada será preservada.");
   } else if (milestone.key === "revisao_neonatal") {
-    const built = buildEventGesture({
-      dominio: "sanitario",
-      fazendaId,
-      animalId: calf.id,
-      loteId: calf.lote_id ?? null,
-      sourceTaskId: agendaItem.id,
-      occurredAt,
-      observacoes: `Revisao neonatal da cria ${calf.identificacao}`,
-      tipo: "medicamento",
-      produto: "Revisao neonatal",
-      payload: {
-        ...basePayload,
-        procedimento: "revisao_neonatal",
-      },
-    });
-    linkedEventId = built.eventId;
-    ops.push(...built.ops);
+    throw new Error("Registre o manejo neonatal na Central Sanitária. A intenção legada será preservada.");
   } else if (milestone.key === "pesagem_d7" || milestone.key === "pesagem_d30") {
     if (!Number.isFinite(pesoKg) || (pesoKg ?? 0) <= 0) {
       throw new Error("Informe um peso valido para concluir a pesagem.");

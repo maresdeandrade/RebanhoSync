@@ -41,26 +41,20 @@ describe("jornada prospectiva da cria", () => {
       "2026-10-28",
     ]);
   });
-  it("plans six umbilical slots and a neonatal review without inventing an executed product", () => {
+  it("plans three daily umbilical intentions and an independent neonatal review", () => {
     const { sanitarioAgendaV2 = [] } = buildCalfJourneyAgendaOps(input);
-    expect(sanitarioAgendaV2).toHaveLength(7);
+    expect(sanitarioAgendaV2).toHaveLength(4);
     expect(
       sanitarioAgendaV2.map((draft) => draft.agenda.data_programada),
     ).toEqual([
       "2026-04-01",
-      "2026-04-01",
       "2026-04-02",
-      "2026-04-02",
-      "2026-04-03",
       "2026-04-03",
       "2026-04-04",
     ]);
     expect(
       sanitarioAgendaV2.map((draft) => draft.agenda.acao_sanitaria),
     ).toEqual([
-      "cura_umbigo",
-      "cura_umbigo",
-      "cura_umbigo",
       "cura_umbigo",
       "cura_umbigo",
       "cura_umbigo",
@@ -79,7 +73,7 @@ describe("jornada prospectiva da cria", () => {
       sanitarioAgendaV2.map((draft) => draft.agenda.id),
     );
   });
-  it("preserves executed weighing and umbilical facts while planning only the remaining sanitary milestone", () => {
+  it("records weighing and plans every sanitary milestone without a parallel sanitary fact", () => {
     const result = buildPostPartumOps({
       fazendaId: input.fazendaId,
       mother,
@@ -96,7 +90,7 @@ describe("jornada prospectiva da cria", () => {
       ],
       occurredAt: "2026-04-01T12:00:00.000Z",
     });
-    expect(result.ops.filter((op) => op.table === "eventos")).toHaveLength(2);
+    expect(result.ops.filter((op) => op.table === "eventos")).toHaveLength(1);
     expect(
       result.ops.some(
         (op) => op.table === "eventos_pesagem" && op.record.peso_kg === 32,
@@ -108,7 +102,7 @@ describe("jornada prospectiva da cria", () => {
           op.table === "eventos_sanitario" &&
           op.record.produto === "Cura de umbigo",
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       result.ops.filter(
         (op) =>
@@ -119,6 +113,6 @@ describe("jornada prospectiva da cria", () => {
     ).toHaveLength(0);
     expect(
       result.sanitarioAgendaV2?.map((draft) => draft.agenda.acao_sanitaria),
-    ).toEqual(["revisao_neonatal"]);
+    ).toEqual(["cura_umbigo", "cura_umbigo", "cura_umbigo", "revisao_neonatal"]);
   });
 });
