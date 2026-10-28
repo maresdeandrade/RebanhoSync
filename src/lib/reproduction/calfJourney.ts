@@ -1,4 +1,5 @@
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { deterministicUuidFromText } from "./deterministicUuid";
 import type {
   AgendaItem,
   Animal,
@@ -8,7 +9,6 @@ import type {
 import {
   getAnimalPayloadRecord,
   getBirthEventId,
-  getNeonatalSetup,
 } from "@/lib/reproduction/neonatal";
 
 export type CalfJourneyMilestoneKey =
@@ -27,25 +27,16 @@ export interface CalfJourneyMilestoneDefinition {
 }
 
 export const UMBIGO_CARE_MIN_DAYS = 3;
-export const UMBIGO_CARE_MAX_DAYS = 5;
 
 const UMBIGO_CARE_SCHEDULE = Array.from(
   { length: UMBIGO_CARE_MIN_DAYS },
-  (_, dayIndex) => [
-    {
-      dayOffset: dayIndex,
-      slot: "manha",
-      slotLabel: "Manha",
-      sequenceOrder: dayIndex * 2 + 1,
-    },
-    {
-      dayOffset: dayIndex,
-      slot: "tarde",
-      slotLabel: "Tarde",
-      sequenceOrder: dayIndex * 2 + 2,
-    },
-  ],
-).flat();
+  (_, dayIndex) => ({
+    dayOffset: dayIndex,
+    slot: "diario",
+    slotLabel: "Diario",
+    sequenceOrder: dayIndex + 1,
+  }),
+);
 
 export const CALF_JOURNEY_MILESTONES: CalfJourneyMilestoneDefinition[] = [
   {
@@ -102,7 +93,7 @@ export type BuildUmbigoCareAgendaOpsInput = Omit<
 >;
 
 export interface BuildUmbigoCareSanitarioAgendaV2Input
-  extends BuildUmbigoCareAgendaOpsInput {
+  extends Omit<BuildUmbigoCareAgendaOpsInput, "createAgendaId"> {
   createAgendaId: (dayOffset: number, slot: string) => string;
 }
 
@@ -226,7 +217,7 @@ export function buildUmbigoCareAgendaOps({
   const birthEventId = getBirthEventId(calf.payload);
   const existingDedupKeys = new Set(
     existingAgendaItems
-      .filter((item) => item.animal_id === calf.id && !item.deleted_at)
+      .filter((item) => item.animal_id === calf.id)
       .map((item) => item.dedup_key)
       .filter((value): value is string => Boolean(value)),
   );
@@ -276,14 +267,12 @@ export function buildUmbigoCareAgendaOps({
           milestone_label: "Cura do umbigo",
           mother_id: mother.id,
           birth_event_id: birthEventId,
-          schedule_kind: "twice_daily_until_dry",
+          schedule_kind: "once_daily_three_days",
           schedule_slot: scheduled.slot,
           schedule_slot_label: scheduled.slotLabel,
           schedule_day_offset: scheduled.dayOffset,
           sequence_order: scheduled.sequenceOrder,
-          min_days: UMBIGO_CARE_MIN_DAYS,
-          max_days: UMBIGO_CARE_MAX_DAYS,
-          stop_condition: "umbigo_completamente_seco",
+          total_days: UMBIGO_CARE_MIN_DAYS,
         },
       },
     });
@@ -318,14 +307,12 @@ export function buildUmbigoCareSanitarioAgendaV2({
       mother_id: mother.id,
       mother_identificacao: mother.identificacao,
       birth_event_id: birthEventId,
-      schedule_kind: "twice_daily_until_dry",
+      schedule_kind: "once_daily_three_days",
       schedule_slot: scheduled.slot,
       schedule_slot_label: scheduled.slotLabel,
       schedule_day_offset: scheduled.dayOffset,
       sequence_order: scheduled.sequenceOrder,
-      min_days: UMBIGO_CARE_MIN_DAYS,
-      max_days: UMBIGO_CARE_MAX_DAYS,
-      stop_condition: "umbigo_completamente_seco",
+      total_days: UMBIGO_CARE_MIN_DAYS,
     };
 
     return {
@@ -366,6 +353,7 @@ export function buildUmbigoCareSanitarioAgendaV2({
 }
 
 export function buildCalfJourneyAgendaOps({
+  fazendaId,
   calf,
   mother,
   existingAgendaItems = [],
@@ -373,48 +361,57 @@ export function buildCalfJourneyAgendaOps({
 }: BuildCalfJourneyAgendaOpsInput) {
   const birthDate = calf.data_nascimento ?? new Date().toISOString().slice(0, 10);
   const birthEventId = getBirthEventId(calf.payload);
-  const neonatalSetup = getNeonatalSetup(calf.payload);
   const existingDedupKeys = new Set(
     existingAgendaItems
-      .filter((item) => item.animal_id === calf.id && !item.deleted_at)
+      .filter((item) => item.animal_id === calf.id)
       .map((item) => item.dedup_key)
       .filter((value): value is string => Boolean(value)),
   );
 
   const ops: OperationInput[] = [];
+  const sanitarioAgendaV2: SanitarioAgendaCreateDraftV2[] = [];
+  const birthIdentity = birthEventId ?? `${fazendaId}:${calf.id}`;
+  const umbilicalDrafts = buildUmbigoCareSanitarioAgendaV2({
+    calf, mother,
+    createAgendaId: (offset, slot) => deterministicUuidFromText(
+      `${birthIdentity}:calf:${calf.id}:cura_umbigo:d${offset}:${slot}`,
+    ),
+  });
 
   for (const milestone of CALF_JOURNEY_MILESTONES) {
-    if (
-      milestone.key === "cura_umbigo" &&
-      typeof neonatalSetup?.umbigo_curado_at === "string"
-    ) {
-      continue;
-    }
-
     if (milestone.key === "cura_umbigo") {
       if (
         existingAgendaItems.some(
           (item) =>
             item.animal_id === calf.id &&
-            !item.deleted_at &&
             isUmbigoCareAgendaItem(item),
         )
       ) {
         continue;
       }
 
-      const agendaBuild = buildUmbigoCareAgendaOps({
-        calf,
-        mother,
-        existingAgendaItems,
-        createAgendaId,
-      });
-      ops.push(...agendaBuild.ops);
+      sanitarioAgendaV2.push(...umbilicalDrafts.filter(draft => !existingDedupKeys.has(draft.agenda.dedup_key!)));
       continue;
     }
 
     const dedupKey = getCalfJourneyDedupKey(calf.id, milestone.key);
     if (existingDedupKeys.has(dedupKey)) continue;
+
+    if (milestone.dominio === "sanitario") {
+      const plannedFor = addDays(birthDate, milestone.daysFromBirth);
+      const metadata = { source: "evento_parto", journey: "cria", birth_event_id: birthEventId,
+        mother_id: mother.id, mother_identificacao: mother.identificacao,
+        milestone_key: milestone.key, milestone_label: milestone.title };
+      sanitarioAgendaV2.push({
+        agenda: { ...umbilicalDrafts[0].agenda,
+          id: deterministicUuidFromText(`${birthIdentity}:calf:${calf.id}:${milestone.key}`),
+          dedup_key: dedupKey, source_demand_key: dedupKey, preview_group_id: `${dedupKey}:parto`,
+          data_programada: plannedFor, janela_inicio: plannedFor, janela_fim: plannedFor,
+          acao_sanitaria: milestone.tipo, protocol_item_snapshot: metadata, metadata },
+        animal_id: calf.id, animal_metadata: metadata,
+      });
+      continue;
+    }
 
     ops.push({
       table: "agenda_itens",
@@ -457,8 +454,14 @@ export function buildCalfJourneyAgendaOps({
 
   return {
     ops,
-    createdCount: ops.length,
+    sanitarioAgendaV2,
+    createdCount: ops.length + sanitarioAgendaV2.length,
   };
+}
+
+function assertJourneyWeight(pesoKg: number | null) {
+  if (!Number.isFinite(pesoKg) || (pesoKg ?? 0) <= 0)
+    throw new Error("Informe um peso valido para concluir a pesagem.");
 }
 
 export function buildCalfJourneyCompletionOps({
@@ -489,45 +492,11 @@ export function buildCalfJourneyCompletionOps({
   let linkedEventId: string | null = null;
 
   if (milestone.key === "cura_umbigo") {
-    const built = buildEventGesture({
-      dominio: "sanitario",
-      fazendaId,
-      animalId: calf.id,
-      loteId: calf.lote_id ?? null,
-      sourceTaskId: agendaItem.id,
-      occurredAt,
-      observacoes: `Cura do umbigo da cria ${calf.identificacao}`,
-      tipo: "medicamento",
-      produto: "Cura de umbigo",
-      payload: {
-        ...basePayload,
-        procedimento: "cura_umbigo",
-      },
-    });
-    linkedEventId = built.eventId;
-    ops.push(...built.ops);
+    throw new Error("Registre o manejo neonatal na Central Sanitária. A intenção legada será preservada.");
   } else if (milestone.key === "revisao_neonatal") {
-    const built = buildEventGesture({
-      dominio: "sanitario",
-      fazendaId,
-      animalId: calf.id,
-      loteId: calf.lote_id ?? null,
-      sourceTaskId: agendaItem.id,
-      occurredAt,
-      observacoes: `Revisao neonatal da cria ${calf.identificacao}`,
-      tipo: "medicamento",
-      produto: "Revisao neonatal",
-      payload: {
-        ...basePayload,
-        procedimento: "revisao_neonatal",
-      },
-    });
-    linkedEventId = built.eventId;
-    ops.push(...built.ops);
+    throw new Error("Registre o manejo neonatal na Central Sanitária. A intenção legada será preservada.");
   } else if (milestone.key === "pesagem_d7" || milestone.key === "pesagem_d30") {
-    if (!Number.isFinite(pesoKg) || (pesoKg ?? 0) <= 0) {
-      throw new Error("Informe um peso valido para concluir a pesagem.");
-    }
+    assertJourneyWeight(pesoKg);
     const built = buildEventGesture({
       dominio: "pesagem",
       fazendaId,

@@ -138,6 +138,8 @@ const ProtocolosSanitarios = () => {
   const { activeFarmId, user } = useAuth();
   const currentFarm = useRef(activeFarmId);
   currentFarm.current = activeFarmId;
+  const currentUser = useRef(user?.id);
+  currentUser.current = user?.id;
   const [planningRevision, setPlanningRevision] = useState(0);
   const refreshPlanning = useCallback(() => setPlanningRevision((value) => value + 1), []);
   const { refresh, refreshing, refreshError } = useSanitaryPlanningRefreshV2(activeFarmId, refreshPlanning);
@@ -268,7 +270,11 @@ const ProtocolosSanitarios = () => {
 
   const executeAgenda = async (payloads: Array<Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">>) => {
     const result = await executeSanitaryAgendaBatchV2(
-      payloads.map((payload) => ({ ...payload, fazendaId: activeFarmId })),
+      payloads.map((payload) => ({ ...payload, fazendaId: activeFarmId,
+        assertCurrentContext: () => {
+          if (currentFarm.current !== activeFarmId || !user?.id || currentUser.current !== user.id) throw new Error("SANITARY_EXECUTION_CONTEXT_CHANGED");
+        },
+      })),
     );
     if (result.retryAvailableCount === 0) {
       const stockMovements = result.items.filter(

@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Baby, HeartPulse, MapPinned, Scale, Sparkles } from "lucide-react";
 import { AnimalCategoryBadge } from "@/components/animals/AnimalCategoryBadge";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -47,6 +46,18 @@ function formatDate(value: string | null | undefined) {
   return new Date(value).toLocaleDateString("pt-BR");
 }
 
+function selectedLotPasto(lote: Lote | undefined, pastoById: Map<string, Pasto>) {
+  return lote?.pasto_id && pastoById.has(lote.pasto_id) ? pastoById.get(lote.pasto_id) : null;
+}
+
+function CalfSexBadge({ sexo }: { sexo: Animal["sexo"] }) {
+  return <Badge variant="outline" className={sexo === "F"
+    ? "border-rose-200 bg-rose-50 text-rose-700"
+    : "border-sky-200 bg-sky-50 text-sky-700"}>
+    {sexo === "F" ? "Femea" : "Macho"}
+  </Badge>;
+}
+
 export function CalfInitialEditor({
   calf,
   draft,
@@ -62,11 +73,7 @@ export function CalfInitialEditor({
   const neonatalSetup = getNeonatalSetup(calf.payload);
   const selectedLote =
     draft.loteId && lotes.find((lote) => lote.id === draft.loteId);
-  const selectedPasto =
-    selectedLote?.pasto_id && pastoById.has(selectedLote.pasto_id)
-      ? pastoById.get(selectedLote.pasto_id)
-      : null;
-  const umbigoAlreadyRecorded = Boolean(neonatalSetup?.umbigo_curado_at);
+  const selectedPasto = selectedLotPasto(selectedLote, pastoById);
 
   return (
     <div className="space-y-4">
@@ -78,16 +85,7 @@ export function CalfInitialEditor({
               Cria recem-gerada
             </Badge>
             <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
-            <Badge
-              variant="outline"
-              className={
-                calf.sexo === "F"
-                  ? "border-rose-200 bg-rose-50 text-rose-700"
-                  : "border-sky-200 bg-sky-50 text-sky-700"
-              }
-            >
-              {calf.sexo === "F" ? "Femea" : "Macho"}
-            </Badge>
+            <CalfSexBadge sexo={calf.sexo} />
             {neonatalSetup?.completed_at ? (
               <Badge
                 variant="outline"
@@ -238,22 +236,12 @@ export function CalfInitialEditor({
             Cuidado neonatal
           </div>
           <div className="mt-3 flex items-start gap-3">
-            <Checkbox
-              id={`umbigo-${calf.id}`}
-              checked={draft.curaUmbigo || umbigoAlreadyRecorded}
-              disabled={umbigoAlreadyRecorded}
-              onCheckedChange={(checked) =>
-                onChange({ curaUmbigo: checked === true })
-              }
-            />
             <div className="space-y-1">
-              <Label htmlFor={`umbigo-${calf.id}`} className="cursor-pointer">
-                Registrar cura do umbigo
-              </Label>
+              <Link to={`/protocolos-sanitarios?tab=agenda&animalId=${calf.id}`} className="text-sm font-medium text-primary underline">
+                Registrar manejo na Central Sanitária
+              </Link>
               <p className="text-xs text-muted-foreground">
-                {umbigoAlreadyRecorded
-                  ? `Ja registrada em ${formatDate(neonatalSetup?.umbigo_curado_at ?? null)}.`
-                  : "Cria um evento sanitario proprio sem depender do Registrar."}
+                Confirme cada cura diária e a revisão neonatal na atividade correspondente.
               </p>
             </div>
           </div>

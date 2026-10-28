@@ -1,16 +1,16 @@
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import type { FarmWeightUnit } from "@/lib/farms/measurementConfig";
 import { parseWeightInput } from "@/lib/format/weight";
-import type { AgendaItem, Animal, OperationInput } from "@/lib/offline/types";
+import type { AgendaItem, Animal, OperationInput, SanitarioAgendaCreateDraftV2 } from "@/lib/offline/types";
 import {
   buildCalfJourneyAgendaOps,
-  isUmbigoCareAgendaItem,
   type CalfJourneyExistingAgendaItem,
 } from "@/lib/reproduction/calfJourney";
 import {
   getAnimalPayloadRecord,
   getBirthEventId,
   getNeonatalSetup,
+  type NeonatalSetup,
 } from "@/lib/reproduction/neonatal";
 
 export interface PostPartumCalfDraft {
@@ -22,7 +22,7 @@ export interface PostPartumCalfDraft {
   curaUmbigo: boolean;
 }
 
-interface BuildPostPartumOpsInput {
+export interface BuildPostPartumOpsInput {
   fazendaId: string;
   weightUnit?: FarmWeightUnit;
   mother: Pick<Animal, "id" | "identificacao">;
@@ -44,9 +44,17 @@ interface BuildPostPartumOpsInput {
 
 interface PostPartumBuildResult {
   ops: OperationInput[];
+  sanitarioAgendaV2: SanitarioAgendaCreateDraftV2[];
   weighedCount: number;
   umbigoCount: number;
   agendaCount: number;
+}
+
+function initialWeightFields(setup: NeonatalSetup, pesoKg: number | null, occurredAt: string) {
+  return {
+    initial_weight_kg: pesoKg !== null ? pesoKg : (setup.initial_weight_kg ?? null),
+    initial_weight_recorded_at: pesoKg !== null ? occurredAt : (setup.initial_weight_recorded_at ?? null),
+  };
 }
 
 export function buildPostPartumOps({
@@ -61,8 +69,9 @@ export function buildPostPartumOps({
 }: BuildPostPartumOpsInput): PostPartumBuildResult {
   const calfMap = new Map(calves.map((calf) => [calf.id, calf]));
   const ops: OperationInput[] = [];
+  const sanitarioAgendaV2: SanitarioAgendaCreateDraftV2[] = [];
   let weighedCount = 0;
-  let umbigoCount = 0;
+  const umbigoCount = 0;
   let agendaCount = 0;
 
   for (const draft of drafts) {
@@ -73,10 +82,6 @@ export function buildPostPartumOps({
     const currentNeonatalSetup = getNeonatalSetup(calf.payload) ?? {};
     const currentBirthEventId = getBirthEventId(calf.payload);
     const pesoKg = parseWeightInput(draft.pesoKg, weightUnit);
-    const umbigoAlreadyRecorded =
-      typeof currentNeonatalSetup.umbigo_curado_at === "string";
-    const shouldRegisterUmbigo = draft.curaUmbigo && !umbigoAlreadyRecorded;
-    let umbigoEventId: string | null = null;
 
     const loteChanged = draft.loteId !== calf.lote_id;
     const animalUpdateRecord: Record<string, unknown> = {
@@ -92,18 +97,7 @@ export function buildPostPartumOps({
           mother_id: mother.id,
           father_id: calf.pai_id ?? null,
           initial_lote_id: draft.loteId,
-          initial_weight_kg:
-            pesoKg !== null
-              ? pesoKg
-              : (currentNeonatalSetup.initial_weight_kg ?? null),
-          initial_weight_recorded_at:
-            pesoKg !== null
-              ? occurredAt
-              : (currentNeonatalSetup.initial_weight_recorded_at ?? null),
-          umbigo_curado_at:
-            shouldRegisterUmbigo
-              ? occurredAt
-              : (currentNeonatalSetup.umbigo_curado_at ?? null),
+          ...initialWeightFields(currentNeonatalSetup, pesoKg, occurredAt),
         },
       },
     };
@@ -149,50 +143,8 @@ export function buildPostPartumOps({
       weighedCount += 1;
     }
 
-    if (shouldRegisterUmbigo) {
-      const built = buildEventGesture({
-        dominio: "sanitario",
-        fazendaId,
-        animalId: calf.id,
-        loteId: draft.loteId,
-        occurredAt,
-        tipo: "medicamento",
-        produto: "Cura de umbigo",
-        observacoes: `Cura de umbigo registrada no pos-parto da matriz ${mother.identificacao}`,
-        payload: {
-          fase: "neonatal",
-          procedimento: "cura_umbigo",
-          birth_event_id: birthEventId ?? currentBirthEventId,
-          mother_id: mother.id,
-          father_id: calf.pai_id,
-        },
-      });
-
-      ops.push(...built.ops);
-      umbigoCount += 1;
-      umbigoEventId = built.eventId;
-    }
-
-    const existingUmbigoAgendas = existingAgendaItems.filter(
-      (item) =>
-        item.animal_id === calf.id &&
-        !item.deleted_at &&
-        item.status === "agendado" &&
-        isUmbigoCareAgendaItem(item),
-    );
-    if (umbigoEventId) {
-      for (const existingUmbigoAgenda of existingUmbigoAgendas) {
-        ops.push({
-          table: "agenda_itens",
-          action: "UPDATE",
-          record: {
-            id: existingUmbigoAgenda.id,
-            status: "concluido",
-            source_evento_id: umbigoEventId,
-          },
-        });
-      }
-    }
+    // Sanitary facts belong to the Central's canonical executor, including old callers
+    // still submitting curaUmbigo. Saving the initial chart never executes a cycle.
 
     const agendaBuild = buildCalfJourneyAgendaOps({
       fazendaId,
@@ -202,10 +154,6 @@ export function buildPostPartumOps({
           ...currentPayload,
           neonatal_setup: {
             ...currentNeonatalSetup,
-            umbigo_curado_at:
-              shouldRegisterUmbigo
-                ? occurredAt
-                : (currentNeonatalSetup.umbigo_curado_at ?? null),
           },
         },
       },
@@ -213,11 +161,13 @@ export function buildPostPartumOps({
       existingAgendaItems,
     });
     ops.push(...agendaBuild.ops);
+    sanitarioAgendaV2.push(...agendaBuild.sanitarioAgendaV2);
     agendaCount += agendaBuild.createdCount;
   }
 
   return {
     ops,
+    sanitarioAgendaV2,
     weighedCount,
     umbigoCount,
     agendaCount,

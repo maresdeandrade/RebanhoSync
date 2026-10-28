@@ -21,6 +21,7 @@ defaults:
 
 env:
   CI: true
+  SUPABASE_INTERNAL_IMAGE_REGISTRY: docker.io
 
   # JavaScript actions usam Node 24.
   # O runtime do projeto continua controlado por actions/setup-node.
@@ -157,6 +158,24 @@ jobs:
         if: steps.scope.outputs.pr_scope != 'DOCS'
         run: node --test scripts/ci/classify-validation-scope.node-test.mjs
 
+      - name: Lint
+        if: steps.scope.outputs.needs_app == 'true'
+        run: pnpm run lint
+
+      - name: Fallow audit
+        if: steps.scope.outputs.needs_app == 'true'
+        run: pnpm exec fallow audit --gate new-only
+
+      - name: Build
+        if: steps.scope.outputs.needs_build == 'true'
+        # This artifact checks compilation only; it cannot target a live backend.
+        env:
+          VITE_BACKEND_ENV: ci-synthetic
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_FUNCTIONS_URL: https://example.supabase.co/functions/v1
+          VITE_SUPABASE_PUBLISHABLE_KEY: example-publishable-key
+        run: pnpm run build
+
       # -----------------------------------------------------------------------
       # 4. Supabase — somente alto risco
       # -----------------------------------------------------------------------
@@ -166,6 +185,31 @@ jobs:
         uses: supabase/setup-cli@v3
         with:
           version: 2.72.7
+
+      - name: Preload verified Supabase images
+        if: steps.scope.outputs.needs_supabase == 'true'
+        run: |
+          set -euo pipefail
+
+          # CLI 2.72.7, linux/amd64; preserve its original image names and tags.
+          while read -r image digest; do
+            docker pull --platform linux/amd64 "${image}@${digest}"
+            docker tag "${image}@${digest}" "$image"
+          done <<'IMAGES'
+          supabase/postgres:17.6.1.071 sha256:a7b77866e1d15726fb56420c1fb6d63a3f93b9b4c6e75021d41042a72da97124
+          library/kong:2.8.1 sha256:e21b0b793879ab96720ed4188f9441260273f4bf775bcbff8d435e019ffb759a
+          axllent/mailpit:v1.22.3 sha256:168f762c218e167ba88ae7e48194126eb5ba5e99ef652063e3f14f9c4f0ee70f
+          postgrest/postgrest:v14.3 sha256:7924f769d8b3b173b93711c90d2fc4164667cffc563551d6a13bc5c93aca2487
+          supabase/postgres-meta:v0.95.2 sha256:7a211765a9fe89ee94103441953472af868a9443892e8fb126077cf5cc96b87f
+          supabase/studio:2026.01.12-sha-4e9b718 sha256:d585bc004bf478800a98076fb3125d7f0ba56fcd006d88a40de09493049b20d1
+          darthsim/imgproxy:v3.8.0 sha256:e1a8f4b99dd65b374b5705550505ace929b9dac98694614bbab3510f9e5107dd
+          supabase/edge-runtime:v1.70.0 sha256:c99b95e51da6f8b1a3c27e20ab3a685e36f13ef405a4111ff2ae2461e6e522b2
+          timberio/vector:0.28.1-alpine sha256:6d09a70bc65f8d6a71313aee54a90ed7eeb64bbc5ce83d9b4214f24090ab35a1
+          supabase/gotrue:v2.185.0 sha256:85b4575908b0cb6fa27f0e9a355cf499e98f6c8915f8e17befbd7299bf2b2aab
+          supabase/realtime:v2.69.2 sha256:bc603d95c6c14c01623a6205fe3fb9021b81139dce35764e40793eb42052d01b
+          supabase/storage-api:v1.33.5 sha256:29e18f2d37a875895e438ab1e147dd6e30c67e4cb66cf036f38e0208a07cae13
+          supabase/logflare:1.28.0 sha256:f190a72b1b734d8ef352853ec89e86b5161d4d3d53ec43f1d715b4313998c730
+          IMAGES
 
       - name: Start disposable Supabase
         if: steps.scope.outputs.needs_supabase == 'true'
@@ -218,14 +262,6 @@ jobs:
       # 5. Aplicação
       # -----------------------------------------------------------------------
 
-      - name: Lint
-        if: steps.scope.outputs.needs_app == 'true'
-        run: pnpm run lint
-
-      - name: Fallow audit
-        if: steps.scope.outputs.needs_app == 'true'
-        run: pnpm exec fallow audit --gate new-only
-
       - name: Install Chromium for owned IndexedDB cleanup test
         if: steps.scope.outputs.needs_app == 'true'
         run: pnpm exec playwright install --with-deps chromium
@@ -265,16 +301,6 @@ jobs:
                 "${vitest_args[@]}"
             fi
           fi
-
-      - name: Build
-        if: steps.scope.outputs.needs_build == 'true'
-        # This artifact checks compilation only; it cannot target a live backend.
-        env:
-          VITE_BACKEND_ENV: ci-synthetic
-          VITE_SUPABASE_URL: https://example.supabase.co
-          VITE_SUPABASE_FUNCTIONS_URL: https://example.supabase.co/functions/v1
-          VITE_SUPABASE_PUBLISHABLE_KEY: example-publishable-key
-        run: pnpm run build
 
       # -----------------------------------------------------------------------
       # 6. Cleanup Supabase

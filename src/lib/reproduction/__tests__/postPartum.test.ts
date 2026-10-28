@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/supabase", () => ({ supabase: {} }));
 import { buildPostPartumOps } from "../postPartum";
 
 describe("buildPostPartumOps", () => {
@@ -59,9 +60,9 @@ describe("buildPostPartumOps", () => {
     });
 
     expect(result.weighedCount).toBe(1);
-    expect(result.umbigoCount).toBe(1);
+    expect(result.umbigoCount).toBe(0);
     expect(result.agendaCount).toBe(14);
-    expect(result.ops).toHaveLength(21);
+    expect(result.ops).toHaveLength(11);
     expect(result.ops.filter(op => op.table === "movement_v1")).toEqual([
       expect.objectContaining({ record: expect.objectContaining({ subject_id: "cria-1", to_lote_id: "bezerreiro", movement_mode: "operational" }) }),
     ]);
@@ -87,7 +88,6 @@ describe("buildPostPartumOps", () => {
       father_id: "touro-1",
       initial_lote_id: "bezerreiro",
       initial_weight_kg: 32.5,
-      umbigo_curado_at: "2026-04-01T12:00:00.000Z",
     });
 
     expect(
@@ -116,7 +116,7 @@ describe("buildPostPartumOps", () => {
           op.record.dominio === "sanitario" &&
           op.record.animal_id === "cria-1",
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       result.ops.some(
         (op) =>
@@ -125,7 +125,7 @@ describe("buildPostPartumOps", () => {
           op.record.produto === "Cura de umbigo" &&
           op.record.tipo === "medicamento",
       ),
-    ).toBe(true);
+    ).toBe(false);
 
     const secondAnimalUpdate = result.ops.findLast(
       (op) => op.table === "animais" && op.record.id === "cria-2",
@@ -146,7 +146,8 @@ describe("buildPostPartumOps", () => {
     });
 
     const agendaOps = result.ops.filter((op) => op.table === "agenda_itens");
-    expect(agendaOps).toHaveLength(14);
+    expect(agendaOps).toHaveLength(6);
+    expect(result.sanitarioAgendaV2).toHaveLength(8);
     expect(agendaOps[0]?.record).toMatchObject({
       animal_id: "cria-1",
       status: "agendado",
@@ -156,13 +157,13 @@ describe("buildPostPartumOps", () => {
       agendaOps
         .map((op) => op.record.dedup_key)
         .filter((dedupKey) => String(dedupKey).includes(":cura_umbigo")),
-    ).toHaveLength(6);
+    ).toHaveLength(0);
     expect(
       agendaOps.map((op) => op.record.dedup_key),
     ).not.toContain("calf_journey:cria-1:cura_umbigo:d0:manha");
   });
 
-  it("closes remaining umbigo care agenda slots when the umbilicus is marked dry", () => {
+  it("does not close any legacy intention from the chart cure checkbox", () => {
     const result = buildPostPartumOps({
       fazendaId: "farm-1",
       mother: {
@@ -225,7 +226,7 @@ describe("buildPostPartumOps", () => {
         ["umbigo-1", "umbigo-2"].includes(String(op.record.id)),
     );
 
-    expect(umbigoCompletionOps).toHaveLength(2);
-    expect(umbigoCompletionOps.every((op) => op.record.status === "concluido")).toBe(true);
+    expect(umbigoCompletionOps).toHaveLength(0);
+    expect(result.ops.some(op => op.table === "eventos_sanitario")).toBe(false);
   });
 });

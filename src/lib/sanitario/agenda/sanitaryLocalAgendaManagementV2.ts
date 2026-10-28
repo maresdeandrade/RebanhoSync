@@ -11,6 +11,7 @@ import {
   readSanitaryPlanningSyncContextV2,
 } from "./sanitaryPlanningSyncV2";
 import { sanitaryProtocolExecutionRejectionsV2 } from "@/lib/sanitario/execution/sanitaryProtocolExecutionAuthorizationV2";
+import { birthNeonatalAgendaOrigin } from "@/lib/reproduction/neonatalAgendaExecution";
 import type {
   Animal,
   Lote,
@@ -213,14 +214,18 @@ export async function listLocalSanitaryAgendasV2(
   return activeAgendas
     .map((agenda) => {
       const entries = agendaAnimalsById.get(agenda.id) ?? [];
+      const neonatal = birthNeonatalAgendaOrigin(agenda);
+      const neonatalLabel = !neonatal ? null : neonatal.milestone === "revisao_neonatal"
+        ? "Revisão neonatal"
+        : `Cura do umbigo · D${agenda.metadata.schedule_day_offset}${agenda.metadata.schedule_slot === "manha" ? " · Manhã" : agenda.metadata.schedule_slot === "tarde" ? " · Tarde" : ""}`;
       const protocolLabel =
         readText(agenda.metadata, "protocolName") ??
         readText(agenda.protocol_item_snapshot, "protocolName") ??
-        "Protocolo sanitário";
+        (neonatal ? "Cuidados neonatais" : "Protocolo sanitário");
       const itemLabel =
         readText(agenda.metadata, "itemLabel") ??
         readText(agenda.protocol_item_snapshot, "itemLabel") ??
-        "Item sanitário";
+        neonatalLabel ?? "Item sanitário";
       const hasExecution =
         Boolean(agenda.execution_evento_id) ||
         entries.some(

@@ -26,8 +26,12 @@ import { buildExecutedProductTechnicalSnapshotV2 } from "./executedProductTechni
 import { projectOperationalWithdrawalLegacyFieldsV2 } from "./operationalWithdrawalSnapshotV2";
 import { sanitaryProtocolExecutionRejectionsV2 } from "./sanitaryProtocolExecutionAuthorizationV2";
 import { classSchemeExecutionEvidenceV2 } from "./sanitaryClassSchemeExecutionV2";
+import { assertBirthNeonatalAgendaOrigin, birthNeonatalAgendaOrigin } from "@/lib/reproduction/neonatalAgendaExecution";
+import { deterministicUuidFromText } from "@/lib/reproduction/deterministicUuid";
+import { LOCAL_OWNERSHIP_KEY } from "@/lib/offline/db";
 
 export type ExecuteSanitaryAgendaInputV2 = {
+  assertCurrentContext?: () => void;
   fazendaId: string;
   agendaId: string;
   clientOpId: string;
@@ -100,6 +104,8 @@ export type SanitaryAgendaExecutionDbV2 = Pick<
   | "event_eventos"
   | "event_eventos_sanitario"
   | "event_eventos_animais"
+  | "event_eventos_reproducao"
+  | "local_ownership"
   | "state_insumos"
   | "state_insumo_lotes"
   | "state_insumo_movimentacoes"
@@ -242,6 +248,7 @@ function itemKey(agenda: SanitarioAgendaLocalV2): string | null {
 }
 
 function actionTypeToSanitaryType(actionType: string | null): SanitarioTipoEnum {
+  if (actionType === "cura_umbigo" || actionType === "revisao_neonatal") return "medicamento";
   if (actionType === "vermifugacao") return "vermifugacao";
   if (actionType === "medicamento" || actionType === "tratamento" || actionType === "exame") {
     return "medicamento";
@@ -311,7 +318,7 @@ function validateAgainstAgenda(input: {
   if (agenda.fazenda_id !== request.fazendaId || agenda.deleted_at) {
     rejected.push("agenda_not_found");
   }
-  if (!agenda.protocolo_id || !itemKey(agenda)) rejected.push("missing_protocol_item");
+  if ((!agenda.protocolo_id || !itemKey(agenda)) && !birthNeonatalAgendaOrigin(agenda)) rejected.push("missing_protocol_item");
   if (!agenda.lote_id && animals.length === 0) rejected.push("missing_target");
   if (
     metadata.source === "sanitary_precheck_preview_v2" &&
@@ -354,6 +361,7 @@ function validateAgainstAgenda(input: {
 async function findExistingExecution(
   db: SanitaryAgendaExecutionDbV2,
   input: ExecuteSanitaryAgendaInputV2,
+  neonatal = false,
 ) {
   // Preserve the legacy lookup; sync executions are found by factual origin below.
   const eventId = eventIdFor(input, false);
@@ -364,9 +372,10 @@ async function findExistingExecution(
     .equals(input.fazendaId)
     .filter(
       (event) =>
-        event.source_task_id === input.agendaId &&
-        event.source_client_op_id === input.clientOpId &&
-        !event.deleted_at,
+        !event.deleted_at && (
+          (neonatal && event.source_sanitario_agenda_v2_id === input.agendaId) ||
+          (event.source_task_id === input.agendaId && event.source_client_op_id === input.clientOpId)
+        ),
     )
     .first();
 }
@@ -375,6 +384,14 @@ function withdrawalResolution(
   snapshot: ExecutedProductTechnicalSnapshotV2 | null,
 ): WithdrawalResolutionV2 {
   return projectOperationalWithdrawalLegacyFieldsV2(snapshot?.withdrawalSnapshot);
+}
+
+function readAgendaProtocol(db: SanitaryAgendaExecutionDbV2, id: string | null) {
+  return id ? db.catalog_sanitario_protocolos_v2.get(id) : undefined;
+}
+
+function readAgendaProtocolItem(db: SanitaryAgendaExecutionDbV2, id: string | null) {
+  return id ? db.catalog_sanitario_protocolo_itens_versions_v2.get(id) : undefined;
 }
 
 function syncMeta(
@@ -567,7 +584,8 @@ function buildRecords(input: {
 
   const eventAnimals: EventoAnimalLocalV2[] = targetAnimalIds.map(
     (animalId) => ({
-      id: createUuid(),
+      id: birthNeonatalAgendaOrigin(agenda)
+        ? deterministicUuidFromText(`${eventId}:animal:${animalId}`) : createUuid(),
       fazenda_id: request.fazendaId,
       evento_id: eventId,
       animal_id: animalId,
@@ -616,7 +634,20 @@ export async function executeSanitaryAgendaV2(
     throw new Error(`SANITARY_AGENDA_EXECUTION_REJECTED:${basicValidation.rejected.join(",")}`);
   }
 
-  const existing = await findExistingExecution(localDb, input);
+  const agenda = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
+  const neonatal = agenda && birthNeonatalAgendaOrigin(agenda);
+  let neonatalOwner: string | null = null;
+  const sync = neonatal ? input.sync ?? (await import("@/lib/sanitario/agenda/sanitaryPlanningSyncV2")).readSanitaryPlanningSyncContextV2() ?? null : resolveConfiguredSync(input);
+  if (neonatal) {
+    input.assertCurrentContext?.();
+    if (input.registrationMode !== "executed_fact" || !sync) throw new Error("NEONATAL_EXECUTION_REQUIRES_SYNC_V2");
+    const ownership = await (await import("@/lib/offline/localReadBoundary")).getCurrentLocalReadOwnership();
+    if (ownership.status !== "OWNED") throw new Error("NEONATAL_EXECUTION_OWNERSHIP_CHANGED");
+    neonatalOwner = ownership.currentUserId;
+    input = { ...input, clientOpId: deterministicUuidFromText(`neonatal-primary:${input.fazendaId}:${agenda.id}`) };
+    input.assertCurrentContext?.();
+  }
+  const existing = await findExistingExecution(localDb, input, !!neonatal);
   if (existing) {
     const existingDetail = await localDb.event_eventos_sanitario.get(existing.id);
     return {
@@ -632,7 +663,6 @@ export async function executeSanitaryAgendaV2(
     };
   }
 
-  const agenda = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
   if (!agenda || agenda.deleted_at || agenda.fazenda_id !== input.fazendaId) {
     throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
   }
@@ -659,13 +689,18 @@ export async function executeSanitaryAgendaV2(
   if (!agendaValidation.ok) {
     throw new Error(`SANITARY_AGENDA_EXECUTION_REJECTED:${agendaValidation.rejected.join(",")}`);
   }
+  if (neonatal && agendaAnimals.some(entry => entry.planned_status !== "planejado" || entry.execution_evento_id)) {
+    throw new Error("NEONATAL_EXECUTION_REQUIRES_FACT_RECONCILIATION");
+  }
 
   const assertProtocolAuthorization = async (current: SanitarioAgendaLocalV2) => {
+    if (neonatal && birthNeonatalAgendaOrigin(current)) {
+      await assertBirthNeonatalAgendaOrigin(current, agendaAnimals, localDb);
+      return [];
+    }
     const [protocol, item, farmConfig] = await Promise.all([
-      current.protocolo_id ? localDb.catalog_sanitario_protocolos_v2.get(current.protocolo_id) : undefined,
-      current.protocol_item_version_id
-        ? localDb.catalog_sanitario_protocolo_itens_versions_v2.get(current.protocol_item_version_id)
-        : undefined,
+      readAgendaProtocol(localDb, current.protocolo_id),
+      readAgendaProtocolItem(localDb, current.protocol_item_version_id),
       localDb.state_fazenda_sanidade_config.get(current.fazenda_id),
     ]);
     const uf = farmConfig?.deleted_at ? null : farmConfig?.uf;
@@ -704,12 +739,11 @@ export async function executeSanitaryAgendaV2(
   };
   catalogReviewWarnings.push(...await assertProductApproval(agenda));
 
-  const sync = resolveConfiguredSync(input);
   const factualIdentity = sync
     ? {
-        clientTxId: createUuid(),
+        clientTxId: neonatal ? deterministicUuidFromText(`${input.clientOpId}:tx`) : createUuid(),
         clientOpId: input.clientOpId,
-        domainOpId: createUuid(),
+        domainOpId: neonatal ? deterministicUuidFromText(`${input.clientOpId}:domain`) : createUuid(),
       }
     : undefined;
   const movementIdentity = factualIdentity
@@ -914,6 +948,27 @@ export async function executeSanitaryAgendaV2(
     });
   }
 
+  const assertNeonatalContext = async () => {
+    if (!neonatal) return;
+    input.assertCurrentContext?.();
+    if ((await localDb.local_ownership.get(LOCAL_OWNERSHIP_KEY))?.owner_user_id !== neonatalOwner)
+      throw new Error("NEONATAL_EXECUTION_OWNERSHIP_CHANGED");
+    await validateSanitarioV2Enqueue({ fazendaId: input.fazendaId, projectRef: sync!.projectRef, operations: [factualOperation!] });
+  };
+  const assertNeonatalSnapshot = async (current: SanitarioAgendaLocalV2) => {
+    if (!neonatal) return;
+    await assertNeonatalContext();
+    if (JSON.stringify(current) !== JSON.stringify(agenda)) {
+      if (!current.execution_evento_id) throw new Error("NEONATAL_AGENDA_CHANGED");
+    }
+    const currentAnimals = await localDb.ops_sanitario_agenda_animais_v2.where("agenda_id").equals(current.id).toArray();
+    await assertBirthNeonatalAgendaOrigin(current, currentAnimals, localDb);
+    if (!current.execution_evento_id && currentAnimals.some(entry => entry.planned_status !== "planejado" || entry.execution_evento_id))
+      throw new Error("NEONATAL_EXECUTION_REQUIRES_FACT_RECONCILIATION");
+    if (JSON.stringify(targetAnimalIds(currentAnimals, current)) !== JSON.stringify(agendaValidation.targetAnimalIds))
+      throw new Error("NEONATAL_AGENDA_CHANGED");
+  };
+
   const committed = await localDb.transaction(
     "rw",
     [
@@ -922,6 +977,10 @@ export async function executeSanitaryAgendaV2(
       localDb.event_eventos,
       localDb.event_eventos_sanitario,
       localDb.event_eventos_animais,
+      localDb.event_eventos_reproducao,
+      localDb.state_animais,
+      localDb.local_ownership,
+      localDb.sync_sanitario_v2_cutovers,
       localDb.state_insumo_lotes,
       localDb.state_insumo_movimentacoes,
       localDb.queue_gestures,
@@ -939,6 +998,7 @@ export async function executeSanitaryAgendaV2(
       if (!current || current.deleted_at || current.fazenda_id !== input.fazendaId) {
         throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
       }
+      await assertNeonatalSnapshot(current);
       if (current.execution_evento_id) return { eventId: current.execution_evento_id, created: false };
       if (current.status !== "programada") {
         throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_executable");
@@ -986,6 +1046,7 @@ export async function executeSanitaryAgendaV2(
           updated_at: records.now,
         })),
       );
+      await assertNeonatalContext();
       return { eventId: records.event.id, created: true };
     },
   );
