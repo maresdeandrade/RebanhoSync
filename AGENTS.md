@@ -211,11 +211,16 @@ Mudança mobile não autoriza alterar domínio compartilhado sem necessidade dem
 ## 8. Skills e lifecycle
 
 Use `.agents/rules/CONTEXT_LOADING.md` para seleção.
-Para skills de método, incluindo Superpowers quando solicitado ou pertinente, siga as adaptações e os limites desse roteamento.
-Em implementação:
-- escolha uma skill principal;
+Superpowers é o framework preferencial de engenharia genérica quando suas skills estiverem disponíveis no host. Use diretamente as skills instaladas para design, planejamento, testes, debugging, organização da implementação e revisão, conforme o roteamento seletivo em `CONTEXT_LOADING.md`.
+
+As skills próprias continuam responsáveis pelos contratos específicos de domínio, arquitetura, persistência, segurança e sync. Superpowers não cria outra autoridade, não substitui esses contratos nem os gates canônicos.
+
+Em cada fase ou subetapa de implementação:
+- escolha uma skill principal para o objetivo atual;
 - use no máximo uma skill de apoio quando existir interseção técnica concreta;
 - não carregue skill apenas porque a tarefa contém termo relacionado.
+
+Skills de método executadas sequencialmente em subetapas distintas não são carregamento simultâneo. Encerre a subetapa com resultado e evidência antes de trocar a principal; não use essa divisão para acumular skills ou ampliar autorização. Adapte encadeamentos do plugin à precedência e à validação proporcional do projeto.
 
 Se o ponto de intervenção estiver incerto, use `repository-context-retrieval`.
 

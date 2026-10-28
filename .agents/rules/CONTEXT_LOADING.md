@@ -15,7 +15,7 @@ Antes de escolher uma skill:
 3. Aplicar este arquivo.
 4. Ler `.agents/rules/no-broad-context.md`.
 5. Classificar o tipo real da tarefa.
-6. Escolher no máximo uma skill principal para a fase atual.
+6. Escolher no máximo uma skill principal para a fase ou subetapa atual.
 
 Durante implementação, uma skill de apoio só é permitida quando houver interseção técnica concreta, deve ser justificada e não pode ampliar o escopo. Não abrir todos os `SKILL.md` para decidir.
 
@@ -32,18 +32,21 @@ Aplicar as precedências factual e procedimental definidas exclusivamente em `.a
 * **Lifecycle:** `repository-context-retrieval`, `rebanhosync-verification-gate`, `reconcile-docs` e `prepare-pr`.
 * **Engineering:** `harden-module`, `sync-offline-rollback` e `migrations-rls-contracts`.
 * **Domain:** `animal-cadastro-origem-destino`, `movimentacao-transito-conformidade`, `reproducao-parto-posparto-cria`, `sanitario-registro-operacional` e `sanitario-catalogo-regulatorio-compliance`.
+* **Método de engenharia genérica:** skills instaladas `superpowers:*`, selecionadas por subetapa conforme a seção Superpowers abaixo; não constituem uma nova camada de autoridade.
 
 ### Progressão entre fases
 
 ```txt
 descoberta, se necessária → encerra descoberta
-implementação → 1 skill principal + até 1 apoio → encerra patch
+design/plano, se relevantes → uma principal por subetapa → encerra plano
+testes/implementação → uma principal + até um apoio por subetapa → encerra patch
+revisão independente, quando aplicável → fase separada
 verification gate → fase separada
 reconcile docs, se necessário → fase separada
 prepare PR → fase separada
 ```
 
-Skills de lifecycle executadas depois do patch não contam como skill de apoio da implementação. Não carregar quatro ou mais skills simultaneamente por estarem listadas como possíveis coordenações.
+Skills de método ou lifecycle executadas em subetapas distintas não contam como apoio simultâneo. Registre o resultado da subetapa encerrada e o objetivo da próxima; mantenha somente os contratos e evidências necessários. Não carregar quatro ou mais skills simultaneamente por estarem listadas como possíveis coordenações, nem renomear subetapas para contornar o limite.
 
 * Ponto de intervenção desconhecido: `repository-context-retrieval`.
 * Hotspot conhecido com risco arquitetural: `harden-module` ou a skill do domínio principal, conforme o risco dominante.
@@ -55,15 +58,56 @@ Sync/offline, migrations/RLS e regras de domínio não devem ser carregados como
 
 ---
 
-## Skills de método — Superpowers
+## Superpowers — engenharia genérica
 
-Quando solicitado ou pertinente, use as skills instaladas do Superpowers como método de engenharia, respeitando a precedência de `CORE_RULES.md`. Elas não substituem contratos, especializações ou gates locais.
+### Responsabilidades e descoberta
 
-* Confirme a disponibilidade no catálogo da sessão e leia somente o `SKILL.md` escolhido e as referências necessárias. Não fixe caminhos pessoais ou versões do cache, nem copie ou instale o plugin no repositório. Se estiver indisponível, registre a limitação e siga somente o fluxo local autorizado.
-* Em implementação especializada, mantenha a skill local do risco dominante como principal; método genérico pode ser apoio quando houver interseção técnica concreta. Sem especialização aplicável, uma skill de método pode ser principal. Preserve o limite de uma principal e até uma de apoio.
-* Skills usadas em fases sequenciais não são uso simultâneo. Encerre a fase com seu resultado antes de trocar a principal; não divida artificialmente o trabalho para contornar os limites de contexto.
-* Adapte rotinas genéricas ao escopo e à autorização existentes: planos, worktrees, commits, publicação, descarte e validações amplas não são exigências automáticas do método. Siga `rtk.md` para validação proporcional e não repita checks válidos sem mudança relevante.
-* Revisão independente só pode ser alegada quando realmente realizada. Use as ferramentas de delegação apenas quando disponíveis e permitidas pelo runtime; não altere a configuração do host para habilitá-las.
+| Responsabilidade | Método preferencial | Autoridade específica preservada |
+|---|---|---|
+| Design e plano de mudança relevante | `superpowers:brainstorming` → `superpowers:writing-plans` | Escopo autorizado, contratos e fontes do RebanhoSync |
+| Organização da implementação | `superpowers:executing-plans` ou `superpowers:subagent-driven-development` | Skill local do risco dominante; `harden-module` nas extrações arquiteturais |
+| Testes e causa raiz | `superpowers:test-driven-development`; `superpowers:systematic-debugging` | Contratos reais e validação proporcional em `.agents/rules/rtk.md` |
+| Revisão e evidências | `superpowers:requesting-code-review` → `superpowers:verification-before-completion` | `rebanhosync-verification-gate`; `prepare-pr` somente após READY |
+
+Descubra as skills pelos nomes, descrições e caminhos fornecidos pelo catálogo da sessão. Leia o `SKILL.md` instalado da skill selecionada e somente as referências necessárias. No Codex sem ferramenta dedicada de invocação de skill, essa leitura aplica o procedimento; não invente slash commands, ferramentas ou hooks. `superpowers:using-superpowers` orienta o uso inicial, subordinado ao bootstrap e à precedência do projeto.
+
+A presença de arquivos no cache ou de documentação não comprova ativação. Confirme que a skill aparece no catálogo do host e que seu arquivo é legível. Não fixe caminhos pessoais ou uma versão do cache no repositório; não copie o plugin para `.agents/skills`, não instale nem atualize para resolver uma ausência sem autorização. Se a skill não estiver disponível, registre a limitação e execute apenas o fluxo local autorizado, sem alegar uso do Superpowers.
+
+### Composição por subetapa
+
+* Descoberta de contratos desconhecidos: `repository-context-retrieval` primeiro; encerre a descoberta antes do design.
+* Design: `superpowers:brainstorming` como principal; planejamento: `superpowers:writing-plans` em seguida. Para tarefa simples ou especificação suficiente, use plano curto e prossiga conforme a autorização existente; não imponha rodadas de aprovação, arquivos de plano ou cerimônias redundantes. Pergunte quando uma decisão essencial permanecer sem resposta ou houver condição de parada do projeto.
+* Testes: `superpowers:test-driven-development` como principal, com no máximo uma especialização local se necessária. Leia sua referência instalada `writing-good-tests.md` ao escrever testes; referências da mesma skill não são outra skill.
+* Implementação: escolha a skill local do risco dominante como principal quando houver especialização real, com no máximo uma skill de método como apoio justificado. Sem risco especializado, use a skill de execução como principal. Não empilhe executor, TDD, hardening, domínio e sync: se mais de duas skills forem indispensáveis ao mesmo tempo, redelimite a unidade de trabalho antes de prosseguir. Preserve o ciclo de testes definido na subetapa anterior em cada incremento.
+* Revisão: `superpowers:requesting-code-review` em subetapa separada, com alvo exato e revisor independente quando aplicável. Depois, use `superpowers:verification-before-completion` para conferir alegações contra as evidências; encerre essa conferência antes do gate local. O gate reaproveita resultados válidos, sem repetir comandos inalterados.
+
+### Conflitos e adaptação ao host
+
+| Orientação do plugin | Aplicação no RebanhoSync |
+|---|---|
+| Ativar skills por possibilidade incidental e encadear subskills obrigatórias | Aplicar pertinência concreta e carregamento seletivo. Uma principal e até um apoio por subetapa; encadeamento sequencial não autoriza carregamento acumulado. |
+| TDD rigoroso, apagar código escrito antes do teste e rodar suíte completa | Para comportamento novo/bug, observar RED pela causa esperada antes da correção e GREEN depois; para refatoração, caracterizar o comportamento preservado antes da extração. Não apagar trabalho existente ou concorrente para reiniciar TDD. Docs, microcopy e mudanças triviais sem delta comportamental recebem checks proporcionais, sem testes artificiais. Suíte global, E2E e build extenso somente conforme escopo/risco e autorização; não por rotina do plugin. |
+| Criar worktree, instalar dependências e executar baseline amplo | Inspecionar branch, HEAD, status e worktrees antes de decidir. Reutilizar isolamento adequado; criar worktree apenas quando necessário e autorizado, pelas ferramentas nativas disponíveis. Para patch documental localizado, trabalhar no checkout atual preservando alterações alheias. Usar pnpm e comandos comprovados em `rtk.md`; não instalar dependências por mera instrução genérica. |
+| Commits frequentes, publicação e limpeza ao terminar | Plano/skill não autorizam commit, push, merge, deploy, migration remota, remoção de worktree ou descarte. Respeitar autorização da tarefa; não acionar automaticamente `superpowers:finishing-a-development-branch` quando a entrega termina no patch/gate. Não inferir propriedade de worktree pelo nome da pasta. |
+| Execução contínua e decisões autônomas sobre conflitos | Continuar o trabalho já autorizado; manter todas as condições de parada de `AGENTS.md`. Registrar decisão não autoriza ultrapassar escopo, resolver fonte ambígua por suposição ou ignorar risco de produção. |
+| Delegação, exemplos de modelos e APIs descritas para outros hosts | Usar apenas ferramentas, parâmetros e modelos realmente expostos na sessão. Delegar somente quando permitido pelo runtime e pela tarefa/regra aplicável; não alterar configuração global para habilitar ferramentas. Sem recurso disponível, registrar execução local/autorrevisão e a ausência de independência, sem simular subagente. |
+| Revisão genérica ou findings estacionados pelo executor | Revisar diff real, inclusive staged/untracked, com severidades e limites de REVIEW do projeto. Não corrigir em revisão sem autorização. Finding crítico não resolvido continua bloqueante no gate; parecer do plugin não equivale a READY nem autoriza publicação. |
+| Scripts auxiliares que pressupõem commits e intervalos BASE..HEAD | Confirmar interfaces antes de executar. Para patch não commitado, revisar working tree, staged e untracked contra o HEAD inicial; não usar HEAD..HEAD como evidência nem executar scripts que comitem ou limpem artefatos. Registrar progresso/evidências na tarefa ou plano pertinente, sem infraestrutura paralela obrigatória. |
+
+Para delegação independente, forneça escopo, contratos, arquivos permitidos, baseline e proibições; cada agente recebe contexto mínimo e o mesmo limite de autorização. Use `superpowers:dispatching-parallel-agents` somente para trabalhos independentes sem disputa de arquivos/estado; implementação de tarefas dependentes permanece sequencial. Falha ou ausência de delegação não comprova revisão independente.
+
+### Rotas operacionais
+
+As setas indicam subetapas sequenciais, não skills simultâneas. A execução usa uma das alternativas acima conforme a tarefa; não ativa ambas.
+
+| Tarefa | Roteamento esperado e evidência |
+|---|---|
+| Refatoração complexa de hotspot | Descoberta, se necessária → `superpowers:brainstorming` (limites e comportamento preservado) → `superpowers:writing-plans` (extrações incrementais) → `superpowers:test-driven-development` (caracterização) → implementação incremental com `harden-module` e até um apoio pertinente → revisão independente → conferência de evidências → `rebanhosync-verification-gate`. Comparar comportamento antes/depois; não exigir RED de teste que apenas caracteriza comportamento já existente. |
+| Novo serviço | `repository-context-retrieval`, se contratos ainda desconhecidos → `superpowers:brainstorming` (interfaces/efeitos) → `superpowers:writing-plans` → ciclos RED/GREEN com `superpowers:test-driven-development` → execução/integração com especialização local conforme o risco → revisão independente → conferência de evidências → gate local. Testar o contrato e os modos de falha realmente envolvidos. |
+| Correção de bug | `superpowers:systematic-debugging` (reprodução, rastreamento e causa raiz) → `superpowers:test-driven-development` (regressão falhando pela causa esperada) → correção mínima autorizada com skill local se pertinente → GREEN e checks focados → revisão conforme risco → conferência de evidências → gate local. Pedido somente de diagnóstico encerra antes de teste/correção que altere arquivos. |
+| Engenharia de testes | Descobrir contratos/cobertura diretamente afetados → `superpowers:writing-plans` para cenários relevantes → `superpowers:test-driven-development` e sua referência de bons testes → testes por contrato → verificar sensibilidade a falha real (reprodução, controle negativo ou mutação controlada em ambiente isolado) → revisão de cobertura/redundâncias → conferência de evidências → gate local. Não mudar produto apenas para produzir RED; não presumir sensibilidade porque o teste passa. |
+
+Revisão independente usa `superpowers:requesting-code-review`; conferência de evidências usa `superpowers:verification-before-completion`. Preserve offline-first, Dexie/IndexedDB, Supabase/RLS, isolamento por `fazenda_id`, fontes factuais, idempotência, retries, concorrência, reconciliação e compatibilidade local-remota com as skills locais pertinentes. Uma rota genérica não autoriza tocar esses contratos.
 
 ---
 
