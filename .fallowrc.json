@@ -31,6 +31,7 @@
     "scripts/codex/validate-security-definer-exposure.mjs",
     "scripts/fix-docs-encoding.mjs",
     "scripts/ci/classify-validation-scope.node-test.mjs",
+    "scripts/codex/validate.node-test.mjs",
     "scripts/codex/performance-baseline.mjs",
     "scripts/codex/performance-isolated-backend.mjs",
     "scripts/codex/performance-p0-series.mjs",
