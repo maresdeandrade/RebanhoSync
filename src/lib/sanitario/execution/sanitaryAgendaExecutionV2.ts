@@ -386,6 +386,14 @@ function withdrawalResolution(
   return projectOperationalWithdrawalLegacyFieldsV2(snapshot?.withdrawalSnapshot);
 }
 
+function readAgendaProtocol(db: SanitaryAgendaExecutionDbV2, id: string | null) {
+  return id ? db.catalog_sanitario_protocolos_v2.get(id) : undefined;
+}
+
+function readAgendaProtocolItem(db: SanitaryAgendaExecutionDbV2, id: string | null) {
+  return id ? db.catalog_sanitario_protocolo_itens_versions_v2.get(id) : undefined;
+}
+
 function syncMeta(
   input: ExecuteSanitaryAgendaInputV2,
   now: string,
@@ -691,10 +699,8 @@ export async function executeSanitaryAgendaV2(
       return [];
     }
     const [protocol, item, farmConfig] = await Promise.all([
-      current.protocolo_id ? localDb.catalog_sanitario_protocolos_v2.get(current.protocolo_id) : undefined,
-      current.protocol_item_version_id
-        ? localDb.catalog_sanitario_protocolo_itens_versions_v2.get(current.protocol_item_version_id)
-        : undefined,
+      readAgendaProtocol(localDb, current.protocolo_id),
+      readAgendaProtocolItem(localDb, current.protocol_item_version_id),
       localDb.state_fazenda_sanidade_config.get(current.fazenda_id),
     ]);
     const uf = farmConfig?.deleted_at ? null : farmConfig?.uf;
@@ -942,6 +948,27 @@ export async function executeSanitaryAgendaV2(
     });
   }
 
+  const assertNeonatalContext = async () => {
+    if (!neonatal) return;
+    input.assertCurrentContext?.();
+    if ((await localDb.local_ownership.get(LOCAL_OWNERSHIP_KEY))?.owner_user_id !== neonatalOwner)
+      throw new Error("NEONATAL_EXECUTION_OWNERSHIP_CHANGED");
+    await validateSanitarioV2Enqueue({ fazendaId: input.fazendaId, projectRef: sync!.projectRef, operations: [factualOperation!] });
+  };
+  const assertNeonatalSnapshot = async (current: SanitarioAgendaLocalV2) => {
+    if (!neonatal) return;
+    await assertNeonatalContext();
+    if (JSON.stringify(current) !== JSON.stringify(agenda)) {
+      if (!current.execution_evento_id) throw new Error("NEONATAL_AGENDA_CHANGED");
+    }
+    const currentAnimals = await localDb.ops_sanitario_agenda_animais_v2.where("agenda_id").equals(current.id).toArray();
+    await assertBirthNeonatalAgendaOrigin(current, currentAnimals, localDb);
+    if (!current.execution_evento_id && currentAnimals.some(entry => entry.planned_status !== "planejado" || entry.execution_evento_id))
+      throw new Error("NEONATAL_EXECUTION_REQUIRES_FACT_RECONCILIATION");
+    if (JSON.stringify(targetAnimalIds(currentAnimals, current)) !== JSON.stringify(agendaValidation.targetAnimalIds))
+      throw new Error("NEONATAL_AGENDA_CHANGED");
+  };
+
   const committed = await localDb.transaction(
     "rw",
     [
@@ -971,22 +998,7 @@ export async function executeSanitaryAgendaV2(
       if (!current || current.deleted_at || current.fazenda_id !== input.fazendaId) {
         throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
       }
-      if (neonatal) {
-        input.assertCurrentContext?.();
-        if ((await localDb.local_ownership.get(LOCAL_OWNERSHIP_KEY))?.owner_user_id !== neonatalOwner) {
-          throw new Error("NEONATAL_EXECUTION_OWNERSHIP_CHANGED");
-        }
-        await validateSanitarioV2Enqueue({ fazendaId: input.fazendaId, projectRef: sync!.projectRef, operations: [factualOperation!] });
-        if (JSON.stringify(current) !== JSON.stringify(agenda)) {
-          if (!current.execution_evento_id) throw new Error("NEONATAL_AGENDA_CHANGED");
-        }
-        const currentAnimals = await localDb.ops_sanitario_agenda_animais_v2.where("agenda_id").equals(current.id).toArray();
-        await assertBirthNeonatalAgendaOrigin(current, currentAnimals, localDb);
-        if (!current.execution_evento_id && currentAnimals.some(entry => entry.planned_status !== "planejado" || entry.execution_evento_id)) {
-          throw new Error("NEONATAL_EXECUTION_REQUIRES_FACT_RECONCILIATION");
-        }
-        if (JSON.stringify(targetAnimalIds(currentAnimals, current)) !== JSON.stringify(agendaValidation.targetAnimalIds)) throw new Error("NEONATAL_AGENDA_CHANGED");
-      }
+      await assertNeonatalSnapshot(current);
       if (current.execution_evento_id) return { eventId: current.execution_evento_id, created: false };
       if (current.status !== "programada") {
         throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_executable");
@@ -1034,11 +1046,7 @@ export async function executeSanitaryAgendaV2(
           updated_at: records.now,
         })),
       );
-      if (neonatal) {
-        input.assertCurrentContext?.();
-        if ((await localDb.local_ownership.get(LOCAL_OWNERSHIP_KEY))?.owner_user_id !== neonatalOwner) throw new Error("NEONATAL_EXECUTION_OWNERSHIP_CHANGED");
-        await validateSanitarioV2Enqueue({ fazendaId: input.fazendaId, projectRef: sync!.projectRef, operations: [factualOperation!] });
-      }
+      await assertNeonatalContext();
       return { eventId: records.event.id, created: true };
     },
   );

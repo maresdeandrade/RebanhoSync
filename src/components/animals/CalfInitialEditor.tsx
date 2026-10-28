@@ -46,6 +46,18 @@ function formatDate(value: string | null | undefined) {
   return new Date(value).toLocaleDateString("pt-BR");
 }
 
+function selectedLotPasto(lote: Lote | undefined, pastoById: Map<string, Pasto>) {
+  return lote?.pasto_id && pastoById.has(lote.pasto_id) ? pastoById.get(lote.pasto_id) : null;
+}
+
+function CalfSexBadge({ sexo }: { sexo: Animal["sexo"] }) {
+  return <Badge variant="outline" className={sexo === "F"
+    ? "border-rose-200 bg-rose-50 text-rose-700"
+    : "border-sky-200 bg-sky-50 text-sky-700"}>
+    {sexo === "F" ? "Femea" : "Macho"}
+  </Badge>;
+}
+
 export function CalfInitialEditor({
   calf,
   draft,
@@ -61,10 +73,7 @@ export function CalfInitialEditor({
   const neonatalSetup = getNeonatalSetup(calf.payload);
   const selectedLote =
     draft.loteId && lotes.find((lote) => lote.id === draft.loteId);
-  const selectedPasto =
-    selectedLote?.pasto_id && pastoById.has(selectedLote.pasto_id)
-      ? pastoById.get(selectedLote.pasto_id)
-      : null;
+  const selectedPasto = selectedLotPasto(selectedLote, pastoById);
 
   return (
     <div className="space-y-4">
@@ -76,16 +85,7 @@ export function CalfInitialEditor({
               Cria recem-gerada
             </Badge>
             <AnimalCategoryBadge categoriaLabel={categoriaLabel} />
-            <Badge
-              variant="outline"
-              className={
-                calf.sexo === "F"
-                  ? "border-rose-200 bg-rose-50 text-rose-700"
-                  : "border-sky-200 bg-sky-50 text-sky-700"
-              }
-            >
-              {calf.sexo === "F" ? "Femea" : "Macho"}
-            </Badge>
+            <CalfSexBadge sexo={calf.sexo} />
             {neonatalSetup?.completed_at ? (
               <Badge
                 variant="outline"

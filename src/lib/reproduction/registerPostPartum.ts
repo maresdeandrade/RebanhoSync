@@ -48,6 +48,45 @@ function queuedAgenda(op: Operation) {
   return null;
 }
 
+async function assertPostPartumLocalOwner(userId: string | null) {
+  if ((await db.local_ownership.get(LOCAL_OWNERSHIP_KEY))?.owner_user_id !== userId)
+    throw new Error("POSTPARTUM_CONTEXT_CHANGED");
+}
+
+async function readPostPartumAnimals(input: BuildPostPartumOpsInput) {
+  const mother = await db.state_animais.get(input.mother.id);
+  const calves = await db.state_animais.bulkGet(input.calves.map(calf => calf.id));
+  if (!mother || mother.fazenda_id !== input.fazendaId || mother.deleted_at ||
+    calves.some(calf => !calf || calf.fazenda_id !== input.fazendaId || calf.mae_id !== mother.id || calf.deleted_at))
+    throw new Error("POSTPARTUM_ANIMAL_SCOPE_MISMATCH");
+  const calfIds = new Set(calves.map(calf => calf!.id));
+  if (input.drafts.some(draft => !calfIds.has(draft.calfId)))
+    throw new Error("POSTPARTUM_ANIMAL_SCOPE_MISMATCH");
+  if (input.birthEventId && calves.some(calf => getBirthEventId(calf!.payload) !== input.birthEventId))
+    throw new Error("POSTPARTUM_BIRTH_LINK_MISMATCH");
+  return { mother, calves };
+}
+
+async function sanitaryUnavailableReason(
+  role: FarmRoleEnum | null,
+  sync: ReturnType<typeof readSanitaryPlanningSyncContextV2>,
+  farmId: string,
+  drafts: SanitarioAgendaCreateDraftV2[],
+): Promise<SanitaryUnavailableReason | undefined> {
+  let reason: SanitaryUnavailableReason | undefined;
+  if (role !== "owner" && role !== "manager") reason = "planning_forbidden";
+  else if (!sync) reason = "gate_off";
+  else if ((await db.sync_sanitario_v2_cutovers.get(`${farmId}:2`))?.status !== "APPLIED") reason = "cutover_unavailable";
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!reason && drafts.some(draft => !uuid.test(draft.animal_id))) reason = "legacy_identity";
+  return reason;
+}
+
+function assertPostPartumPlanningContext(drafts: SanitarioAgendaCreateDraftV2[], sync: ReturnType<typeof readSanitaryPlanningSyncContextV2>) {
+  if (drafts.length && readSanitaryPlanningSyncContextV2()?.projectRef !== sync?.projectRef)
+    throw new Error("POSTPARTUM_PLANNING_CONTEXT_CHANGED");
+}
+
 /** Domain-scoped transaction; no change to the generic writer or old envelopes. */
 export async function registerPostPartumGesture(
   input: BuildPostPartumOpsInput,
@@ -106,11 +145,7 @@ export async function registerPostPartumGesture(
   ];
   return db.transaction("rw", stores, async () => {
     assertContext(context, readContext(), input.fazendaId);
-    if (
-      (await db.local_ownership.get(LOCAL_OWNERSHIP_KEY))?.owner_user_id !==
-      context.userId
-    )
-      throw new Error("POSTPARTUM_CONTEXT_CHANGED");
+    await assertPostPartumLocalOwner(context.userId);
     const previous = await db.queue_gestures.get(txId);
     if (previous) {
       if (previous.fazenda_id !== input.fazendaId)
@@ -128,33 +163,7 @@ export async function registerPostPartumGesture(
         },
       };
     }
-    const mother = await db.state_animais.get(input.mother.id);
-    const calves = await db.state_animais.bulkGet(
-      input.calves.map((calf) => calf.id),
-    );
-    if (
-      !mother ||
-      mother.fazenda_id !== input.fazendaId ||
-      mother.deleted_at ||
-      calves.some(
-        (calf) =>
-          !calf ||
-          calf.fazenda_id !== input.fazendaId ||
-          calf.mae_id !== mother.id ||
-          calf.deleted_at,
-      )
-    )
-      throw new Error("POSTPARTUM_ANIMAL_SCOPE_MISMATCH");
-    const calfIds = new Set(calves.map((calf) => calf!.id));
-    if (input.drafts.some((draft) => !calfIds.has(draft.calfId)))
-      throw new Error("POSTPARTUM_ANIMAL_SCOPE_MISMATCH");
-    if (
-      input.birthEventId &&
-      calves.some(
-        (calf) => getBirthEventId(calf!.payload) !== input.birthEventId,
-      )
-    )
-      throw new Error("POSTPARTUM_BIRTH_LINK_MISMATCH");
+    const { mother, calves } = await readPostPartumAnimals(input);
     const legacy = await db.state_agenda_itens
       .where("fazenda_id")
       .equals(input.fazendaId)
@@ -237,20 +246,8 @@ export async function registerPostPartumGesture(
           (blockedIds.has(op.record.id) || blockedKeys.has(op.record.dedup_key))
         ),
     );
-    let reason: SanitaryUnavailableReason | undefined;
     const sync = readSanitaryPlanningSyncContextV2();
-    if (context.role !== "owner" && context.role !== "manager")
-      reason = "planning_forbidden";
-    else if (!sync) reason = "gate_off";
-    else if (
-      (await db.sync_sanitario_v2_cutovers.get(`${input.fazendaId}:2`))
-        ?.status !== "APPLIED"
-    )
-      reason = "cutover_unavailable";
-    const uuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!reason && drafts.some((draft) => !uuid.test(draft.animal_id)))
-      reason = "legacy_identity";
+    const reason = await sanitaryUnavailableReason(context.role, sync, input.fazendaId, drafts);
     const permittedDrafts: SanitarioAgendaCreateDraftV2[] = reason
       ? []
       : drafts;
@@ -261,11 +258,7 @@ export async function registerPostPartumGesture(
       enqueueSanitarioAgendaV2: permittedDrafts.length > 0,
     });
     assertContext(context, readContext(), input.fazendaId);
-    if (
-      permittedDrafts.length &&
-      readSanitaryPlanningSyncContextV2()?.projectRef !== sync?.projectRef
-    )
-      throw new Error("POSTPARTUM_PLANNING_CONTEXT_CHANGED");
+    assertPostPartumPlanningContext(permittedDrafts, sync);
     return {
       txId,
       replayed: false,

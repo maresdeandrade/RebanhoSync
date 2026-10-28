@@ -459,6 +459,11 @@ export function buildCalfJourneyAgendaOps({
   };
 }
 
+function assertJourneyWeight(pesoKg: number | null) {
+  if (!Number.isFinite(pesoKg) || (pesoKg ?? 0) <= 0)
+    throw new Error("Informe um peso valido para concluir a pesagem.");
+}
+
 export function buildCalfJourneyCompletionOps({
   fazendaId,
   calf,
@@ -491,9 +496,7 @@ export function buildCalfJourneyCompletionOps({
   } else if (milestone.key === "revisao_neonatal") {
     throw new Error("Registre o manejo neonatal na Central Sanitária. A intenção legada será preservada.");
   } else if (milestone.key === "pesagem_d7" || milestone.key === "pesagem_d30") {
-    if (!Number.isFinite(pesoKg) || (pesoKg ?? 0) <= 0) {
-      throw new Error("Informe um peso valido para concluir a pesagem.");
-    }
+    assertJourneyWeight(pesoKg);
     const built = buildEventGesture({
       dominio: "pesagem",
       fazendaId,

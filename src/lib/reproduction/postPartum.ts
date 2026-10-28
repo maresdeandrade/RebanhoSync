@@ -10,6 +10,7 @@ import {
   getAnimalPayloadRecord,
   getBirthEventId,
   getNeonatalSetup,
+  type NeonatalSetup,
 } from "@/lib/reproduction/neonatal";
 
 export interface PostPartumCalfDraft {
@@ -47,6 +48,13 @@ interface PostPartumBuildResult {
   weighedCount: number;
   umbigoCount: number;
   agendaCount: number;
+}
+
+function initialWeightFields(setup: NeonatalSetup, pesoKg: number | null, occurredAt: string) {
+  return {
+    initial_weight_kg: pesoKg !== null ? pesoKg : (setup.initial_weight_kg ?? null),
+    initial_weight_recorded_at: pesoKg !== null ? occurredAt : (setup.initial_weight_recorded_at ?? null),
+  };
 }
 
 export function buildPostPartumOps({
@@ -89,14 +97,7 @@ export function buildPostPartumOps({
           mother_id: mother.id,
           father_id: calf.pai_id ?? null,
           initial_lote_id: draft.loteId,
-          initial_weight_kg:
-            pesoKg !== null
-              ? pesoKg
-              : (currentNeonatalSetup.initial_weight_kg ?? null),
-          initial_weight_recorded_at:
-            pesoKg !== null
-              ? occurredAt
-              : (currentNeonatalSetup.initial_weight_recorded_at ?? null),
+          ...initialWeightFields(currentNeonatalSetup, pesoKg, occurredAt),
         },
       },
     };

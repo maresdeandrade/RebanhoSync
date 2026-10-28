@@ -118,6 +118,47 @@ function getInitialDraft(
   };
 }
 
+function journeyStatusLabel(status: AgendaItem["status"]) {
+  switch (status) {
+    case "concluido": return "Concluido";
+    case "agendado": return "Agendado";
+    case "cancelado": return "Cancelado";
+    default: return status;
+  }
+}
+
+function journeyItemLabel(item: AgendaItem) {
+  return (typeof item.payload?.milestone_label === "string" ? item.payload.milestone_label : item.tipo) || "Marco da cria";
+}
+
+function showJourneyWeight(milestoneKey: string | null, status: AgendaItem["status"]) {
+  return (milestoneKey === "pesagem_d7" || milestoneKey === "pesagem_d30") && status === "agendado";
+}
+
+function JourneyItemAction({ item, calfId, processing, onExecute }: {
+  item: AgendaItem;
+  calfId: string;
+  processing: boolean;
+  onExecute: (item: AgendaItem) => Promise<void>;
+}) {
+  if (item.status === "agendado" && item.dominio === "sanitario") {
+    return <Button variant="outline" size="sm" asChild>
+      <Link to={`/protocolos-sanitarios?tab=agenda&animalId=${calfId}`}>Consultar na Central Sanitária</Link>
+    </Button>;
+  }
+  if (item.status === "agendado") {
+    return <Button size="sm" onClick={() => onExecute(item)} disabled={processing}>
+      {processing ? "Executando..." : "Executar etapa"}
+    </Button>;
+  }
+  if (item.source_evento_id) {
+    return <Button variant="outline" size="sm" asChild>
+      <Link to={`/eventos?eventoId=${item.source_evento_id}`}>Ver evento gerado</Link>
+    </Button>;
+  }
+  return null;
+}
+
 export default function AnimalCriaInicial() {
   const { farmMeasurementConfig, farmLifecycleConfig, activeFarmId, user, role } = useAuth();
   const context = useRef({ fazendaId: activeFarmId, userId: user?.id ?? null, role });
@@ -610,9 +651,7 @@ export default function AnimalCriaInicial() {
                   pesoKg: "",
                   loteId: KEEP_CURRENT_LOTE,
                 };
-                const requiresWeight =
-                  milestoneKey === "pesagem_d7" ||
-                  milestoneKey === "pesagem_d30";
+                const requiresWeight = showJourneyWeight(milestoneKey, item.status);
                 const isWeaning = milestoneKey === "desmame";
 
                 return (
@@ -623,9 +662,7 @@ export default function AnimalCriaInicial() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="font-medium">
-                          {(typeof item.payload?.milestone_label === "string"
-                            ? item.payload.milestone_label
-                            : item.tipo) || "Marco da cria"}
+                          {journeyItemLabel(item)}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           Previsto para {formatDate(item.data_prevista)}
@@ -640,19 +677,13 @@ export default function AnimalCriaInicial() {
                               : "border-amber-200 bg-amber-50 text-amber-800"
                           }
                         >
-                          {item.status === "concluido"
-                            ? "Concluido"
-                            : item.status === "agendado"
-                              ? "Agendado"
-                              : item.status === "cancelado"
-                                ? "Cancelado"
-                                : item.status}
+                          {journeyStatusLabel(item.status)}
                         </Badge>
                         <Badge variant="outline">{item.dominio}</Badge>
                       </div>
                     </div>
 
-                    {requiresWeight && item.status === "agendado" && (
+                    {requiresWeight && (
                       <div className="space-y-2">
                         <Label htmlFor={`journey-weight-${item.id}`}>
                           Peso (
@@ -721,29 +752,8 @@ export default function AnimalCriaInicial() {
                     )}
 
                     <div className="flex flex-wrap gap-2">
-                      {item.status === "agendado" && item.dominio === "sanitario" ? (
-                        <Button variant="outline" size="sm" asChild>
-                          <Link to={`/protocolos-sanitarios?tab=agenda&animalId=${calf.id}`}>Consultar na Central Sanitária</Link>
-                        </Button>
-                      ) : item.status === "agendado" ? (
-                        <Button
-                          size="sm"
-                          onClick={() => handleJourneyMilestone(item)}
-                          disabled={processingJourneyItemIds.has(item.id)}
-                        >
-                          {processingJourneyItemIds.has(item.id)
-                            ? "Executando..."
-                            : "Executar etapa"}
-                        </Button>
-                      ) : item.source_evento_id ? (
-                        <Button variant="outline" size="sm" asChild>
-                          <Link
-                            to={`/eventos?eventoId=${item.source_evento_id}`}
-                          >
-                            Ver evento gerado
-                          </Link>
-                        </Button>
-                      ) : null}
+                      <JourneyItemAction item={item} calfId={calf.id}
+                        processing={processingJourneyItemIds.has(item.id)} onExecute={handleJourneyMilestone} />
                     </div>
                   </div>
                 );
