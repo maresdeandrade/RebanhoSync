@@ -1,6 +1,6 @@
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import type { FarmWeightUnit } from "@/lib/farms/measurementConfig";
-import { parseWeightInput } from "@/lib/format/weight";
+import { formatWeightInput, parseWeightInput } from "@/lib/format/weight";
 import type { AgendaItem, Animal, OperationInput, SanitarioAgendaCreateDraftV2 } from "@/lib/offline/types";
 import {
   buildCalfJourneyAgendaOps,
@@ -57,6 +57,22 @@ function initialWeightFields(setup: NeonatalSetup, pesoKg: number | null, occurr
   };
 }
 
+function getNewInitialWeight(setup: NeonatalSetup, pesoKg: number | null, weightUnit: FarmWeightUnit) {
+  const recordedWeightKg = setup.initial_weight_kg;
+  const hasRecordedInitialWeight =
+    typeof recordedWeightKg === "number" ||
+    Boolean(setup.initial_weight_recorded_at);
+  if (
+    hasRecordedInitialWeight && pesoKg !== null &&
+    (typeof recordedWeightKg !== "number" ||
+      formatWeightInput(recordedWeightKg, weightUnit) !==
+        formatWeightInput(pesoKg, weightUnit))
+  ) {
+    throw new Error("POSTPARTUM_INITIAL_WEIGHT_CORRECTION_REQUIRED");
+  }
+  return hasRecordedInitialWeight ? null : pesoKg;
+}
+
 export function buildPostPartumOps({
   fazendaId,
   weightUnit = "kg",
@@ -82,6 +98,9 @@ export function buildPostPartumOps({
     const currentNeonatalSetup = getNeonatalSetup(calf.payload) ?? {};
     const currentBirthEventId = getBirthEventId(calf.payload);
     const pesoKg = parseWeightInput(draft.pesoKg, weightUnit);
+    // Reopening the initial chart is not a new measurement. The persisted
+    // neonatal snapshot is re-read inside registerPostPartumGesture's Dexie tx.
+    const newWeightKg = getNewInitialWeight(currentNeonatalSetup, pesoKg, weightUnit);
 
     const loteChanged = draft.loteId !== calf.lote_id;
     const animalUpdateRecord: Record<string, unknown> = {
@@ -97,7 +116,7 @@ export function buildPostPartumOps({
           mother_id: mother.id,
           father_id: calf.pai_id ?? null,
           initial_lote_id: draft.loteId,
-          ...initialWeightFields(currentNeonatalSetup, pesoKg, occurredAt),
+          ...initialWeightFields(currentNeonatalSetup, newWeightKg, occurredAt),
         },
       },
     };
@@ -122,7 +141,7 @@ export function buildPostPartumOps({
       record: animalUpdateRecord,
     });
 
-    if (pesoKg !== null) {
+    if (newWeightKg !== null) {
       const built = buildEventGesture({
         dominio: "pesagem",
         fazendaId,
@@ -130,7 +149,7 @@ export function buildPostPartumOps({
         loteId: draft.loteId,
         occurredAt,
         observacoes: `Pesagem neonatal apos parto da matriz ${mother.identificacao}`,
-        pesoKg,
+        pesoKg: newWeightKg,
         payload: {
           fase: "neonatal",
           birth_event_id: birthEventId ?? currentBirthEventId,
