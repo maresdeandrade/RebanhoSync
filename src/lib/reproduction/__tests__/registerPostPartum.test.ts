@@ -13,6 +13,8 @@ vi.mock("@/lib/supabase", () => ({
   },
 }));
 import { db } from "@/lib/offline/db";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { createGesture } from "@/lib/offline/ops";
 import { establishLocalOwnership } from "@/lib/offline/ownership";
 import { buildCalfJourneyAgendaOps } from "../calfJourney";
 import { executeSanitaryAgendaV2 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
@@ -441,6 +443,76 @@ describe("registro prospectivo pós-parto", () => {
     expect(await db.ops_sanitario_agenda_v2.count()).toBe(3);
     expect((await db.state_agenda_itens.get("old"))?.deleted_at).toBe(now);
   });
+  it("does not create a second neonatal weighing on reopen, admin edit and replay", async () => {
+    const first = await registerPostPartumGesture(input, readContext);
+    expect(first.weighedCount).toBe(1);
+    const original = await db.event_eventos_pesagem.toArray();
+    expect(original).toHaveLength(1);
+    db.close();
+    await db.open();
+    const secondSubmission = {
+      ...input,
+      occurredAt: "2026-04-01T12:00:01.000Z",
+      drafts: [{ ...input.drafts[0], nome: "Nova identificação cadastral" }],
+    };
+    const second = await registerPostPartumGesture(secondSubmission, readContext);
+    expect(second.replayed).toBe(false);
+    expect(second.weighedCount).toBe(0);
+    expect(await db.event_eventos_pesagem.toArray()).toEqual(original);
+    expect((await db.state_animais.get(calfId))?.payload.neonatal_setup).toMatchObject({
+      initial_weight_kg: 32,
+      initial_weight_recorded_at: now,
+    });
+    const queued = await db.queue_ops.toArray();
+    const replay = await registerPostPartumGesture(secondSubmission, readContext);
+    expect(replay.replayed).toBe(true);
+    expect(replay.txId).toBe(second.txId);
+    expect(await db.queue_ops.toArray()).toEqual(queued);
+  });
+
+  it("rejects silent correction of a previously measured neonatal weight", async () => {
+    await registerPostPartumGesture(input, readContext);
+    const queued = await db.queue_ops.toArray();
+    await expect(registerPostPartumGesture({
+      ...input,
+      occurredAt: "2026-04-01T12:00:01.000Z",
+      drafts: [{ ...input.drafts[0], pesoKg: "34" }],
+    }, readContext)).rejects.toThrow("POSTPARTUM_INITIAL_WEIGHT_CORRECTION_REQUIRED");
+    expect(await db.event_eventos_pesagem.count()).toBe(1);
+    expect(await db.queue_ops.toArray()).toEqual(queued);
+    expect((await db.state_animais.get(calfId))?.payload.neonatal_setup).toMatchObject({
+      initial_weight_kg: 32,
+      initial_weight_recorded_at: now,
+    });
+  });
+
+  it("preserves the first weight when reopening under rounded arroba units", async () => {
+    await registerPostPartumGesture(input, readContext);
+    const result = await registerPostPartumGesture({
+      ...input,
+      weightUnit: "arroba",
+      occurredAt: "2026-04-01T12:00:01.000Z",
+      drafts: [{ ...input.drafts[0], pesoKg: "2,13" }],
+    }, readContext);
+    expect(result.weighedCount).toBe(0);
+    expect(await db.event_eventos_pesagem.count()).toBe(1);
+    expect((await db.state_animais.get(calfId))?.payload.neonatal_setup).toMatchObject({
+      initial_weight_kg: 32,
+      initial_weight_recorded_at: now,
+    });
+  });
+
+  it("allows a legitimate later weighing even at the same numeric value", async () => {
+    await registerPostPartumGesture(input, readContext);
+    const laterWeighing = buildEventGesture({
+      dominio: "pesagem", fazendaId: farm, animalId: calfId, loteId: null,
+      occurredAt: "2026-04-01T12:00:01.000Z", pesoKg: 32,
+    });
+    await createGesture(farm, laterWeighing.ops);
+    expect(await db.event_eventos_pesagem.count()).toBe(2);
+    expect((await db.event_eventos.get(laterWeighing.eventId))?.dominio).toBe("pesagem");
+  });
+
   it("two concurrent submissions create each sanitary intent once", async () => {
     await enable();
     await Promise.all([
@@ -451,6 +523,7 @@ describe("registro prospectivo pós-parto", () => {
       ),
     ]);
     expect(await db.ops_sanitario_agenda_v2.count()).toBe(4);
+    expect(await db.event_eventos_pesagem.count()).toBe(1);
     expect(
       (await db.queue_ops.toArray()).filter(
         (op) => op.table === "sanitario_v2",

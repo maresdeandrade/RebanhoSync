@@ -71,6 +71,9 @@ export function CalfInitialEditor({
   action,
 }: CalfInitialEditorProps) {
   const neonatalSetup = getNeonatalSetup(calf.payload);
+  const hasRecordedInitialWeight =
+    typeof neonatalSetup?.initial_weight_kg === "number" ||
+    Boolean(neonatalSetup?.initial_weight_recorded_at);
   const selectedLote =
     draft.loteId && lotes.find((lote) => lote.id === draft.loteId);
   const selectedPasto = selectedLotPasto(selectedLote, pastoById);
@@ -223,11 +226,17 @@ export function CalfInitialEditor({
             step={getWeightInputStep(weightUnit)}
             inputMode="decimal"
             value={draft.pesoKg}
+            disabled={hasRecordedInitialWeight}
             onChange={(event) => onChange({ pesoKg: event.target.value })}
             placeholder={
               weightUnit === "arroba" ? "Ex: 2,10" : "Ex: 31,5"
             }
           />
+          {hasRecordedInitialWeight && (
+            <p className="text-xs text-muted-foreground">
+              Primeira pesagem já registrada. Para nova medição, use Registrar &gt; Pesagem.
+            </p>
+          )}
         </div>
 
         <div className="rounded-xl border bg-muted/20 p-4">
