@@ -57,6 +57,22 @@ function initialWeightFields(setup: NeonatalSetup, pesoKg: number | null, occurr
   };
 }
 
+function getNewInitialWeight(setup: NeonatalSetup, pesoKg: number | null, weightUnit: FarmWeightUnit) {
+  const recordedWeightKg = setup.initial_weight_kg;
+  const hasRecordedInitialWeight =
+    typeof recordedWeightKg === "number" ||
+    Boolean(setup.initial_weight_recorded_at);
+  if (
+    hasRecordedInitialWeight && pesoKg !== null &&
+    (typeof recordedWeightKg !== "number" ||
+      formatWeightInput(recordedWeightKg, weightUnit) !==
+        formatWeightInput(pesoKg, weightUnit))
+  ) {
+    throw new Error("POSTPARTUM_INITIAL_WEIGHT_CORRECTION_REQUIRED");
+  }
+  return hasRecordedInitialWeight ? null : pesoKg;
+}
+
 export function buildPostPartumOps({
   fazendaId,
   weightUnit = "kg",
@@ -84,19 +100,7 @@ export function buildPostPartumOps({
     const pesoKg = parseWeightInput(draft.pesoKg, weightUnit);
     // Reopening the initial chart is not a new measurement. The persisted
     // neonatal snapshot is re-read inside registerPostPartumGesture's Dexie tx.
-    const recordedWeightKg = currentNeonatalSetup.initial_weight_kg;
-    const hasRecordedInitialWeight =
-      typeof recordedWeightKg === "number" ||
-      Boolean(currentNeonatalSetup.initial_weight_recorded_at);
-    if (
-      hasRecordedInitialWeight && pesoKg !== null &&
-      (typeof recordedWeightKg !== "number" ||
-        formatWeightInput(recordedWeightKg, weightUnit) !==
-          formatWeightInput(pesoKg, weightUnit))
-    ) {
-      throw new Error("POSTPARTUM_INITIAL_WEIGHT_CORRECTION_REQUIRED");
-    }
-    const newWeightKg = hasRecordedInitialWeight ? null : pesoKg;
+    const newWeightKg = getNewInitialWeight(currentNeonatalSetup, pesoKg, weightUnit);
 
     const loteChanged = draft.loteId !== calf.lote_id;
     const animalUpdateRecord: Record<string, unknown> = {

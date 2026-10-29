@@ -19,6 +19,27 @@ import { getNeonatalSetup } from "@/lib/reproduction/neonatal";
 
 export const SEM_LOTE = "__sem_lote__";
 
+function hasInitialWeight(setup: ReturnType<typeof getNeonatalSetup>) {
+  return typeof setup?.initial_weight_kg === "number" ||
+    Boolean(setup?.initial_weight_recorded_at);
+}
+
+function renderInitialLotOptions(lotes: Lote[]) {
+  return lotes.map((lote) => (
+    <SelectItem key={lote.id} value={lote.id}>
+      {lote.nome}
+    </SelectItem>
+  ));
+}
+
+function renderInitialWeightHint(hasRecordedInitialWeight: boolean) {
+  return hasRecordedInitialWeight && (
+    <p className="text-xs text-muted-foreground">
+      Primeira pesagem já registrada. Para nova medição, use Registrar &gt; Pesagem.
+    </p>
+  );
+}
+
 export interface CalfInitialDraft {
   calfId: string;
   identificacao: string;
@@ -71,9 +92,7 @@ export function CalfInitialEditor({
   action,
 }: CalfInitialEditorProps) {
   const neonatalSetup = getNeonatalSetup(calf.payload);
-  const hasRecordedInitialWeight =
-    typeof neonatalSetup?.initial_weight_kg === "number" ||
-    Boolean(neonatalSetup?.initial_weight_recorded_at);
+  const hasRecordedInitialWeight = hasInitialWeight(neonatalSetup);
   const selectedLote =
     draft.loteId && lotes.find((lote) => lote.id === draft.loteId);
   const selectedPasto = selectedLotPasto(selectedLote, pastoById);
@@ -197,11 +216,7 @@ export function CalfInitialEditor({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={SEM_LOTE}>Sem lote</SelectItem>
-              {lotes.map((lote) => (
-                <SelectItem key={lote.id} value={lote.id}>
-                  {lote.nome}
-                </SelectItem>
-              ))}
+              {renderInitialLotOptions(lotes)}
             </SelectContent>
           </Select>
         </div>
@@ -232,11 +247,7 @@ export function CalfInitialEditor({
               weightUnit === "arroba" ? "Ex: 2,10" : "Ex: 31,5"
             }
           />
-          {hasRecordedInitialWeight && (
-            <p className="text-xs text-muted-foreground">
-              Primeira pesagem já registrada. Para nova medição, use Registrar &gt; Pesagem.
-            </p>
-          )}
+          {renderInitialWeightHint(hasRecordedInitialWeight)}
         </div>
 
         <div className="rounded-xl border bg-muted/20 p-4">
