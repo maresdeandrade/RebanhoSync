@@ -52,6 +52,7 @@ export const SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES = [
   "sanitario_produto_fontes_v2",
   "sanitario_produto_dose_rules_v2",
   "sanitario_produto_carencia_rules_v2",
+  "sanitario_produto_carencia_fontes_v2",
 ] as const;
 
 export const SANITARIO_PROTOCOL_CATALOG_V2_REMOTE_TABLES = [
@@ -664,6 +665,10 @@ async function writeMergeResults(
       const rows = effectiveResults[remote] ?? [];
       const store = db.table(local);
 
+      // This composite link has no updated_at/deleted_at. Install only a complete
+      // RLS-visible snapshot, in the same transaction as its catalog parents.
+      if (remote === "sanitario_produto_carencia_fontes_v2") await store.clear();
+
       if (rows.length > 0) {
         if (remote === "eventos_animais") {
           await appendEventoAnimais(store, rows as RemoteRow[]);
@@ -931,6 +936,19 @@ export const pullSanitarioTechnicalCatalogV2 = async (fazenda_id: string) => {
 
   for (const remoteTable of SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES) {
     const localStore = getLocalStoreName(remoteTable);
+    if (remoteTable === "sanitario_produto_carencia_fontes_v2") {
+      const rows: RemoteRow[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabase.from(remoteTable).select("*")
+          .order("withdrawal_rule_id").order("source_id").order("field_key")
+          .range(offset, offset + 999);
+        if (error) throw error;
+        rows.push(...(data ?? []));
+        if ((data?.length ?? 0) < 1000) break;
+      }
+      results[remoteTable] = rows;
+      continue;
+    }
     if (remoteTable === "sanitario_fontes_tecnicas_v2") {
       const globalCursorKey = buildPullCursorKey(remoteTable, "global", null);
       const farmCursorKey = buildPullCursorKey(

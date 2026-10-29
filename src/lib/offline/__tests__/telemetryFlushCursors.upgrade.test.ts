@@ -10,7 +10,7 @@ describe("F24.5E1 — additive v32 to v33 telemetry checkpoint", () => {
     const upgraded = new OfflineDB(name);
     // Full product schema; v33 adds only the new store, excluded from v32 fixture.
     const stores = Object.fromEntries(upgraded.tables
-      .filter(table => table.name !== "telemetry_flush_cursors")
+      .filter(table => !["telemetry_flush_cursors", "catalog_sanitario_produto_carencia_fontes_v2"].includes(table.name))
       .map(table => [table.name, [table.schema.primKey.src, ...table.schema.indexes.map(index => index.src)].join(", ")]));
     const legacy = new Dexie(name);
     legacy.version(32).stores(stores);
@@ -39,8 +39,9 @@ describe("F24.5E1 — additive v32 to v33 telemetry checkpoint", () => {
       const snapshots = Object.fromEntries(await Promise.all(Object.keys(fixtures).map(async table => [table, await legacy.table(table).toArray()])));
       legacy.close();
       await upgraded.open();
-      expect(upgraded.verno).toBe(33);
-      expect(upgraded.tables.map(table => table.name).sort()).toEqual([...Object.keys(stores), "telemetry_flush_cursors"].sort());
+      expect(upgraded.verno).toBe(34);
+      expect(upgraded.tables.map(table => table.name).sort()).toEqual([...Object.keys(stores), "telemetry_flush_cursors", "catalog_sanitario_produto_carencia_fontes_v2"].sort());
+      expect(await upgraded.catalog_sanitario_produto_carencia_fontes_v2.count()).toBe(0);
       for (const [table, rows] of Object.entries(snapshots)) expect(await upgraded.table(table).toArray()).toEqual(rows);
       expect(await upgraded.telemetry_flush_cursors.count()).toBe(0);
       expect(localStorage.getItem(legacyKey)).toBe(legacyCursor);

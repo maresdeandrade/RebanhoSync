@@ -1,0 +1,1125 @@
+{
+  "rows": {
+    "sanitario_produtos_v2": [
+      {
+        "id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/eprecis-2/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P38",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas (confirmar)"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "created_at": "2026-10-24T16:27:42.781729+00:00",
+        "deleted_at": null,
+        "fabricante": "Ceva",
+        "updated_at": "2026-10-27T16:38:39.741744+00:00",
+        "apresentacao": "50 e 500 mL",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Eprecis",
+        "registro_orgao": null,
+        "principio_ativo": "Eprinomectina 2%",
+        "registro_numero": null,
+        "status_curatorial": "ativo"
+      }
+    ],
+    "sanitario_produto_fontes_v2": [
+      {
+        "field_key": "species_authorization",
+        "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+      },
+      {
+        "field_key": "presentation",
+        "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+      },
+      {
+        "field_key": "dose",
+        "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+      },
+      {
+        "field_key": "route",
+        "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+      },
+      {
+        "field_key": "composition",
+        "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+      },
+      {
+        "field_key": "withdrawal",
+        "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+      }
+    ],
+    "sanitario_fontes_tecnicas_v2": [
+      {
+        "id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+        "url": "https://ruminantes.ceva.com.br/products/eprecis-2/",
+        "kind": "bibliografia",
+        "scope": "global",
+        "title": "Fonte técnica oficial C02 — eprecis-2",
+        "issuer": "Ceva",
+        "version": null,
+        "metadata": {
+          "review_only": true
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_C02_F6_5066FF5C87AC8921",
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "accessed_at": "2026-10-26",
+        "limitations": [
+          "Caracterização documental; não autoriza execução."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+        "url": "https://www.ceva.com.br/ceva-na-midia/noticias/precisao-no-controle-das-verminoses-e-essencial-para-pecuaria",
+        "kind": "bibliografia",
+        "scope": "global",
+        "title": "Fonte técnica oficial C02 — noticias",
+        "issuer": "Ceva",
+        "version": null,
+        "metadata": {
+          "review_only": true
+        },
+        "strength": "apoio",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "created_by": null,
+        "deleted_at": null,
+        "fazenda_id": null,
+        "source_key": "SRC_C02_F6_C923DC3C16AA4E5C",
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "accessed_at": "2026-10-26",
+        "limitations": [
+          "Caracterização documental; não autoriza execução."
+        ],
+        "published_at": null,
+        "evidence_status": "PRECISA_VALIDAR",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      }
+    ],
+    "sanitario_produto_dose_rules_v2": [
+      {
+        "id": "5f162ce0-7d7e-54c1-a976-2c1f3785a730",
+        "route": "SC",
+        "aptitude": "all",
+        "dose_unit": "mL",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "deleted_at": null,
+        "dose_basis": "kg_peso_vivo",
+        "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "limitations": [
+          "Somente bovinos neste incremento; demais espécies não generalizadas.",
+          "Fonte e contexto: [Página técnica Ceva](https://ruminantes.ceva.com.br/products/eprecis-2/), “Como usar”; [comunicado técnico Ceva](https://www.ceva.com.br/ceva-na-midia/noticias/precisao-no-controle-das-verminoses-e-essencial-para-pecuaria), parágrafos sobre Eprecis",
+          "Restrições documentadas: Eprinomectina 2%; bovinos, incluindo indicação para estefanofilariose; 1 mL/100 kg SC, máximo 10 mL/ponto; carne 12 dias e leite zero no comunicado; página afirma segurança em gestação/lactação; 50/500 mL.",
+          "Zero leite documentado em comunicado de apoio, sem fonte forte disponível para regra zero."
+        ],
+        "species_code": "bovino",
+        "dose_quantity": 0.01,
+        "max_weight_kg": null,
+        "min_weight_kg": null,
+        "status_curatorial": "precisa_validar"
+      }
+    ],
+    "sanitario_fonte_cobertura_campos_v2": [
+      {
+        "id": "2495e0cc-c6e1-5e9e-8fc0-7c35fc9b868e",
+        "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+        "field_key": "presentation",
+        "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "3e2c3438-77f3-599c-bb47-d04741484c22",
+        "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+        "field_key": "species_authorization",
+        "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "7444e309-357f-5c21-a326-1e6d93817261",
+        "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+        "field_key": "dose",
+        "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "84ab8858-511b-545f-93b2-29d3ac0e1b1c",
+        "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+        "field_key": "route",
+        "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "cf91eb04-7981-552a-8eb3-2b0d9e3146c6",
+        "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+        "field_key": "withdrawal",
+        "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "coverage_status": "covers"
+      },
+      {
+        "id": "ea66f1b7-7e68-5840-b6ca-b09548548966",
+        "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+        "field_key": "composition",
+        "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "deleted_at": null,
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "coverage_status": "covers"
+      }
+    ],
+    "sanitario_produto_carencia_rules_v2": [
+      {
+        "id": "a435e33b-ab52-593a-a2ac-10393f71a88e",
+        "route": null,
+        "aptitude": "corte",
+        "metadata": {
+          "review_only": true
+        },
+        "meat_days": 12,
+        "milk_days": null,
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "deleted_at": null,
+        "dose_basis": null,
+        "milk_hours": null,
+        "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "valid_from": null,
+        "limitations": [
+          "Somente bovinos neste incremento; demais espécies não generalizadas.",
+          "Fonte e contexto: [Página técnica Ceva](https://ruminantes.ceva.com.br/products/eprecis-2/), “Como usar”; [comunicado técnico Ceva](https://www.ceva.com.br/ceva-na-midia/noticias/precisao-no-controle-das-verminoses-e-essencial-para-pecuaria), parágrafos sobre Eprecis",
+          "Restrições documentadas: Eprinomectina 2%; bovinos, incluindo indicação para estefanofilariose; 1 mL/100 kg SC, máximo 10 mL/ponto; carne 12 dias e leite zero no comunicado; página afirma segurança em gestação/lactação; 50/500 mL.",
+          "Zero leite documentado em comunicado de apoio, sem fonte forte disponível para regra zero."
+        ],
+        "valid_until": null,
+        "species_code": "bovino",
+        "applicability": "period",
+        "status_curatorial": "precisa_validar",
+        "zero_requires_explicit_source": true
+      }
+    ],
+    "sanitario_produto_carencia_fontes_v2": [
+      {
+        "field_key": "withdrawal",
+        "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "withdrawal_rule_id": "a435e33b-ab52-593a-a2ac-10393f71a88e"
+      }
+    ],
+    "sanitario_produto_especie_autorizacao_v2": [
+      {
+        "id": "0d03539f-66dc-540a-bfc9-21c6e7604a34",
+        "sexo": null,
+        "aptitude": "all",
+        "metadata": {
+          "review_only": true
+        },
+        "created_at": "2026-10-27T15:59:45.414841+00:00",
+        "deleted_at": null,
+        "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+        "updated_at": "2026-10-27T15:59:45.414841+00:00",
+        "limitations": [
+          "Somente bovinos neste incremento; demais espécies não generalizadas.",
+          "Fonte e contexto: [Página técnica Ceva](https://ruminantes.ceva.com.br/products/eprecis-2/), “Como usar”; [comunicado técnico Ceva](https://www.ceva.com.br/ceva-na-midia/noticias/precisao-no-controle-das-verminoses-e-essencial-para-pecuaria), parágrafos sobre Eprecis",
+          "Restrições documentadas: Eprinomectina 2%; bovinos, incluindo indicação para estefanofilariose; 1 mL/100 kg SC, máximo 10 mL/ponto; carne 12 dias e leite zero no comunicado; página afirma segurança em gestação/lactação; 50/500 mL.",
+          "Zero leite documentado em comunicado de apoio, sem fonte forte disponível para regra zero."
+        ],
+        "species_code": "bovino",
+        "idade_max_dias": null,
+        "idade_min_dias": null,
+        "gestacao_permitida": null,
+        "lactacao_permitida": null,
+        "authorization_status": "PRECISA_VALIDAR",
+        "requires_mv_responsavel": false
+      }
+    ]
+  },
+  "executor": "postgres",
+  "contracts": [
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_fonte_cobertura_campos_v2",
+      "insert": true,
+      "select": true,
+      "update": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "not_null": true
+        },
+        {
+          "name": "source_id",
+          "type": "uuid",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "field_key",
+          "type": "text",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "coverage_status",
+          "type": "sanitario_source_coverage_status_v2_enum",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "not_null": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_sanitario_fonte_cobertura_campos_v2_source ON public.sanitario_fonte_cobertura_campos_v2 USING btree (source_id, field_key) WHERE (deleted_at IS NULL)",
+        "CREATE UNIQUE INDEX sanitario_fonte_cobertura_campos_v2_pkey ON public.sanitario_fonte_cobertura_campos_v2 USING btree (id)",
+        "CREATE UNIQUE INDEX sanitario_fonte_cobertura_campos_v2_unique ON public.sanitario_fonte_cobertura_campos_v2 USING btree (source_id, field_key)"
+      ],
+      "triggers": [
+        "CREATE TRIGGER set_updated_at_sanitario_fonte_cobertura_campos_v2 BEFORE UPDATE ON public.sanitario_fonte_cobertura_campos_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      ],
+      "force_rls": false,
+      "constraints": [
+        "CHECK ((btrim(field_key) <> ''::text))",
+        "PRIMARY KEY (id)",
+        "FOREIGN KEY (source_id) REFERENCES sanitario_fontes_tecnicas_v2(id) ON DELETE CASCADE",
+        "UNIQUE (source_id, field_key)"
+      ]
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_fontes_tecnicas_v2",
+      "insert": true,
+      "select": true,
+      "update": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "not_null": true
+        },
+        {
+          "name": "kind",
+          "type": "sanitario_source_kind_v2_enum",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "scope",
+          "type": "sanitario_source_scope_v2_enum",
+          "default": "'global'::sanitario_source_scope_v2_enum",
+          "not_null": true
+        },
+        {
+          "name": "fazenda_id",
+          "type": "uuid",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "issuer",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "version",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "published_at",
+          "type": "date",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "accessed_at",
+          "type": "date",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "url",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "jurisdiction_country",
+          "type": "text",
+          "default": "'BR'::text",
+          "not_null": false
+        },
+        {
+          "name": "jurisdiction_uf",
+          "type": "estado_uf_enum",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "jurisdiction_zone",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "strength",
+          "type": "sanitario_source_strength_v2_enum",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "evidence_status",
+          "type": "sanitario_evidence_status_v2_enum",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "limitations",
+          "type": "jsonb",
+          "default": "'[]'::jsonb",
+          "not_null": true
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "not_null": true
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "source_key",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_sanitario_fontes_tecnicas_v2_kind ON public.sanitario_fontes_tecnicas_v2 USING btree (kind, strength, evidence_status) WHERE (deleted_at IS NULL)",
+        "CREATE INDEX idx_sanitario_fontes_tecnicas_v2_scope ON public.sanitario_fontes_tecnicas_v2 USING btree (scope, fazenda_id) WHERE (deleted_at IS NULL)",
+        "CREATE UNIQUE INDEX sanitario_fontes_tecnicas_v2_pkey ON public.sanitario_fontes_tecnicas_v2 USING btree (id)",
+        "CREATE UNIQUE INDEX ux_sanitario_fontes_v2_farm_source_key_identity ON public.sanitario_fontes_tecnicas_v2 USING btree (fazenda_id, source_key) WHERE ((scope = 'fazenda'::sanitario_source_scope_v2_enum) AND (fazenda_id IS NOT NULL) AND (source_key IS NOT NULL))",
+        "CREATE UNIQUE INDEX ux_sanitario_fontes_v2_global_source_key_identity ON public.sanitario_fontes_tecnicas_v2 USING btree (source_key) WHERE ((scope = 'global'::sanitario_source_scope_v2_enum) AND (fazenda_id IS NULL) AND (source_key IS NOT NULL))"
+      ],
+      "triggers": [
+        "CREATE TRIGGER set_updated_at_sanitario_fontes_tecnicas_v2 BEFORE UPDATE ON public.sanitario_fontes_tecnicas_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      ],
+      "force_rls": false,
+      "constraints": [
+        "FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL",
+        "FOREIGN KEY (fazenda_id) REFERENCES fazendas(id) ON DELETE CASCADE",
+        "CHECK (((kind <> 'guideline_apoio'::sanitario_source_kind_v2_enum) OR (strength <> 'forte'::sanitario_source_strength_v2_enum)))",
+        "CHECK ((jsonb_typeof(limitations) = 'array'::text))",
+        "CHECK ((jsonb_typeof(metadata) = 'object'::text))",
+        "CHECK (((kind <> 'mv_responsavel'::sanitario_source_kind_v2_enum) OR (scope = 'fazenda'::sanitario_source_scope_v2_enum)))",
+        "PRIMARY KEY (id)",
+        "CHECK ((((scope = 'global'::sanitario_source_scope_v2_enum) AND (fazenda_id IS NULL)) OR ((scope = 'fazenda'::sanitario_source_scope_v2_enum) AND (fazenda_id IS NOT NULL))))",
+        "CHECK (((source_key IS NULL) OR (source_key ~ '^SRC_[A-Z0-9_]+$'::text)))",
+        "CHECK ((btrim(title) <> ''::text))"
+      ]
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produto_carencia_fontes_v2",
+      "insert": true,
+      "select": true,
+      "update": true,
+      "columns": [
+        {
+          "name": "withdrawal_rule_id",
+          "type": "uuid",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "source_id",
+          "type": "uuid",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "field_key",
+          "type": "text",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX sanitario_produto_carencia_fontes_v2_pkey ON public.sanitario_produto_carencia_fontes_v2 USING btree (withdrawal_rule_id, source_id, field_key)"
+      ],
+      "triggers": [],
+      "force_rls": false,
+      "constraints": [
+        "CHECK ((btrim(field_key) <> ''::text))",
+        "PRIMARY KEY (withdrawal_rule_id, source_id, field_key)",
+        "FOREIGN KEY (source_id) REFERENCES sanitario_fontes_tecnicas_v2(id) ON DELETE RESTRICT",
+        "FOREIGN KEY (withdrawal_rule_id) REFERENCES sanitario_produto_carencia_rules_v2(id) ON DELETE CASCADE"
+      ]
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produto_carencia_rules_v2",
+      "insert": true,
+      "select": true,
+      "update": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "not_null": true
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "species_code",
+          "type": "sanitario_species_code_v2_enum",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "aptitude",
+          "type": "sanitario_aptitude_v2_enum",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "route",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "dose_basis",
+          "type": "sanitario_dose_basis_v2_enum",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "meat_days",
+          "type": "integer",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "milk_days",
+          "type": "integer",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "milk_hours",
+          "type": "integer",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "applicability",
+          "type": "sanitario_withdrawal_applicability_v2_enum",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "zero_requires_explicit_source",
+          "type": "boolean",
+          "default": "true",
+          "not_null": true
+        },
+        {
+          "name": "valid_from",
+          "type": "date",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "valid_until",
+          "type": "date",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "status_curatorial",
+          "type": "sanitario_curatorial_status_v2_enum",
+          "default": "'precisa_validar'::sanitario_curatorial_status_v2_enum",
+          "not_null": true
+        },
+        {
+          "name": "limitations",
+          "type": "jsonb",
+          "default": "'[]'::jsonb",
+          "not_null": true
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "not_null": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_sanitario_produto_carencia_rules_v2_product ON public.sanitario_produto_carencia_rules_v2 USING btree (product_id, species_code, aptitude, applicability) WHERE (deleted_at IS NULL)",
+        "CREATE UNIQUE INDEX sanitario_produto_carencia_rules_v2_pkey ON public.sanitario_produto_carencia_rules_v2 USING btree (id)"
+      ],
+      "triggers": [
+        "CREATE TRIGGER set_updated_at_sanitario_produto_carencia_rules_v2 BEFORE UPDATE ON public.sanitario_produto_carencia_rules_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      ],
+      "force_rls": false,
+      "constraints": [
+        "CHECK (((valid_from IS NULL) OR (valid_until IS NULL) OR (valid_from <= valid_until)))",
+        "CHECK ((jsonb_typeof(limitations) = 'array'::text))",
+        "CHECK ((jsonb_typeof(metadata) = 'object'::text))",
+        "CHECK (((applicability <> 'period'::sanitario_withdrawal_applicability_v2_enum) OR (meat_days IS NOT NULL) OR (milk_days IS NOT NULL) OR (milk_hours IS NOT NULL)))",
+        "PRIMARY KEY (id)",
+        "FOREIGN KEY (product_id) REFERENCES sanitario_produtos_v2(id) ON DELETE CASCADE",
+        "CHECK ((((meat_days IS NULL) OR (meat_days >= 0)) AND ((milk_days IS NULL) OR (milk_days >= 0)) AND ((milk_hours IS NULL) OR (milk_hours >= 0))))"
+      ]
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produto_dose_rules_v2",
+      "insert": true,
+      "select": true,
+      "update": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "not_null": true
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "species_code",
+          "type": "sanitario_species_code_v2_enum",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "aptitude",
+          "type": "sanitario_aptitude_v2_enum",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "route",
+          "type": "text",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "dose_quantity",
+          "type": "numeric(12,4)",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "dose_unit",
+          "type": "text",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "dose_basis",
+          "type": "sanitario_dose_basis_v2_enum",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "min_weight_kg",
+          "type": "numeric(12,3)",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "max_weight_kg",
+          "type": "numeric(12,3)",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "limitations",
+          "type": "jsonb",
+          "default": "'[]'::jsonb",
+          "not_null": true
+        },
+        {
+          "name": "status_curatorial",
+          "type": "sanitario_curatorial_status_v2_enum",
+          "default": "'precisa_validar'::sanitario_curatorial_status_v2_enum",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "not_null": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_sanitario_produto_dose_rules_v2_product ON public.sanitario_produto_dose_rules_v2 USING btree (product_id, species_code, aptitude) WHERE (deleted_at IS NULL)",
+        "CREATE UNIQUE INDEX sanitario_produto_dose_rules_v2_pkey ON public.sanitario_produto_dose_rules_v2 USING btree (id)"
+      ],
+      "triggers": [
+        "CREATE TRIGGER set_updated_at_sanitario_produto_dose_rules_v2 BEFORE UPDATE ON public.sanitario_produto_dose_rules_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      ],
+      "force_rls": false,
+      "constraints": [
+        "CHECK ((jsonb_typeof(limitations) = 'array'::text))",
+        "PRIMARY KEY (id)",
+        "FOREIGN KEY (product_id) REFERENCES sanitario_produtos_v2(id) ON DELETE CASCADE",
+        "CHECK ((dose_quantity > (0)::numeric))",
+        "CHECK ((btrim(route) <> ''::text))",
+        "CHECK ((btrim(dose_unit) <> ''::text))",
+        "CHECK ((((min_weight_kg IS NULL) OR (min_weight_kg >= (0)::numeric)) AND ((max_weight_kg IS NULL) OR (max_weight_kg >= (0)::numeric)) AND ((min_weight_kg IS NULL) OR (max_weight_kg IS NULL) OR (min_weight_kg <= max_weight_kg))))"
+      ]
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produto_especie_autorizacao_v2",
+      "insert": true,
+      "select": true,
+      "update": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "not_null": true
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "species_code",
+          "type": "sanitario_species_code_v2_enum",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "authorization_status",
+          "type": "sanitario_evidence_status_v2_enum",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "aptitude",
+          "type": "sanitario_aptitude_v2_enum",
+          "default": "'all'::sanitario_aptitude_v2_enum",
+          "not_null": true
+        },
+        {
+          "name": "sexo",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "idade_min_dias",
+          "type": "integer",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "idade_max_dias",
+          "type": "integer",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "lactacao_permitida",
+          "type": "boolean",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "gestacao_permitida",
+          "type": "boolean",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "requires_mv_responsavel",
+          "type": "boolean",
+          "default": "false",
+          "not_null": true
+        },
+        {
+          "name": "limitations",
+          "type": "jsonb",
+          "default": "'[]'::jsonb",
+          "not_null": true
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "not_null": false
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_sanitario_produto_especie_aut_v2_product ON public.sanitario_produto_especie_autorizacao_v2 USING btree (product_id, species_code, authorization_status) WHERE (deleted_at IS NULL)",
+        "CREATE UNIQUE INDEX sanitario_produto_especie_autorizacao_v2_pkey ON public.sanitario_produto_especie_autorizacao_v2 USING btree (id)",
+        "CREATE UNIQUE INDEX ux_sanitario_produto_especie_autorizacao_v2_scope ON public.sanitario_produto_especie_autorizacao_v2 USING btree (product_id, species_code, aptitude, COALESCE(sexo, 'all'::text)) WHERE (deleted_at IS NULL)"
+      ],
+      "triggers": [
+        "CREATE TRIGGER set_updated_at_sanitario_produto_especie_autorizacao_v2 BEFORE UPDATE ON public.sanitario_produto_especie_autorizacao_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      ],
+      "force_rls": false,
+      "constraints": [
+        "CHECK ((((idade_min_dias IS NULL) OR (idade_min_dias >= 0)) AND ((idade_max_dias IS NULL) OR (idade_max_dias >= 0)) AND ((idade_min_dias IS NULL) OR (idade_max_dias IS NULL) OR (idade_min_dias <= idade_max_dias))))",
+        "CHECK ((jsonb_typeof(limitations) = 'array'::text))",
+        "CHECK ((jsonb_typeof(metadata) = 'object'::text))",
+        "PRIMARY KEY (id)",
+        "FOREIGN KEY (product_id) REFERENCES sanitario_produtos_v2(id) ON DELETE CASCADE"
+      ]
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produto_fontes_v2",
+      "insert": true,
+      "select": true,
+      "update": true,
+      "columns": [
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "source_id",
+          "type": "uuid",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "field_key",
+          "type": "text",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX sanitario_produto_fontes_v2_pkey ON public.sanitario_produto_fontes_v2 USING btree (product_id, source_id, field_key)"
+      ],
+      "triggers": [],
+      "force_rls": false,
+      "constraints": [
+        "CHECK ((btrim(field_key) <> ''::text))",
+        "PRIMARY KEY (product_id, source_id, field_key)",
+        "FOREIGN KEY (product_id) REFERENCES sanitario_produtos_v2(id) ON DELETE CASCADE",
+        "FOREIGN KEY (source_id) REFERENCES sanitario_fontes_tecnicas_v2(id) ON DELETE RESTRICT"
+      ]
+    },
+    {
+      "rls": true,
+      "owner": "postgres",
+      "table": "sanitario_produtos_v2",
+      "insert": true,
+      "select": true,
+      "update": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "not_null": true
+        },
+        {
+          "name": "nome_comercial",
+          "type": "text",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "fabricante",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "registro_orgao",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "registro_numero",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "classe",
+          "type": "text",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "principio_ativo",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "tipo_produto",
+          "type": "text",
+          "default": null,
+          "not_null": true
+        },
+        {
+          "name": "apresentacao",
+          "type": "text",
+          "default": null,
+          "not_null": false
+        },
+        {
+          "name": "status_curatorial",
+          "type": "sanitario_curatorial_status_v2_enum",
+          "default": "'precisa_validar'::sanitario_curatorial_status_v2_enum",
+          "not_null": true
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "not_null": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "not_null": true
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "not_null": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX sanitario_produtos_v2_pkey ON public.sanitario_produtos_v2 USING btree (id)",
+        "CREATE UNIQUE INDEX ux_sanitario_produtos_v2_nome_registro ON public.sanitario_produtos_v2 USING btree (lower(nome_comercial), COALESCE(registro_orgao, ''::text), COALESCE(registro_numero, ''::text)) WHERE (deleted_at IS NULL)"
+      ],
+      "triggers": [
+        "CREATE TRIGGER set_updated_at_sanitario_produtos_v2 BEFORE UPDATE ON public.sanitario_produtos_v2 FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+      ],
+      "force_rls": false,
+      "constraints": [
+        "CHECK ((btrim(classe) <> ''::text))",
+        "CHECK ((jsonb_typeof(metadata) = 'object'::text))",
+        "CHECK ((btrim(nome_comercial) <> ''::text))",
+        "PRIMARY KEY (id)",
+        "CHECK ((btrim(tipo_produto) <> ''::text))"
+      ]
+    }
+  ],
+  "isolation": "repeatable read",
+  "read_only": "on",
+  "captured_at": "2026-10-29T11:49:55.083889+00:00",
+  "project_ref": "zqloazqzhwauamcejmuz",
+  "session_executor": "postgres"
+}

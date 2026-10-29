@@ -1,0 +1,44 @@
+{
+  "artifact": "sanitario_p38_individual_registration_review",
+  "captured_on": "2026-10-29",
+  "classification": "VIGENCIA_CONFIRMADA",
+  "authority": "MAPA — painel público de Produtos Farmacêuticos Veterinários (SIPEAGRO)",
+  "official_entry_url": "https://www.gov.br/agricultura/pt-br/assuntos/insumos-agropecuarios/insumos-pecuarios/produtos-veterinarios/paineis-de-bi-do-mapa",
+  "panel_url": "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Farmaceuticos/Produtos_Farmaceuticos.html",
+  "panel_updated_at_displayed": "29/10/2026 05:50:26",
+  "filtered_row": {
+    "nome_produto": "EPRECIS",
+    "registro_produto": "SP0001290-8",
+    "situacao": "Ativo",
+    "vencimento": "20/05/2029",
+    "estabelecimento": "SESPO INDUSTRIA E COMERCIO LTDA"
+  },
+  "registration_reconciliation": {
+    "bula": "SP 000129-0.000008",
+    "panel": "SP0001290-8",
+    "method": "Mesmos componentes SP/000129/0/8; painel omite separador do estabelecimento e zeros à esquerda da sequência do produto. Nome EPRECIS e titular SESPO coincidem com a bula nacional.",
+    "other_record_excluded": "SP0001290-7: produto importado homônimo; não usado para comprovar o registro solicitado."
+  },
+  "bula": {
+    "url": "https://ruminants.ceva.com/app/uploads/sites/16/2023/10/Eprecis-Bula.pdf",
+    "version": "P12073 V00",
+    "species": "bovino",
+    "route": "SC",
+    "composition": "eprinomectina 2%",
+    "dose": "1 mL/100 kg, aplicação única",
+    "milk_withdrawal_days": 0,
+    "meat_withdrawal_days": 12,
+    "restrictions": [
+      "Segurança não avaliada abaixo de cinco meses.",
+      "Não utilizar em animais sensíveis à eprinomectina.",
+      "Uso sob prescrição e orientação de médico veterinário."
+    ]
+  },
+  "evidence_files": [
+    "SANITARIO_V2_C02_P38_MAPA_REGISTRO_20261029.png"
+  ],
+  "scope": "Comprovação documental individual na data de consulta; não certifica cada condição de uso ou autoriza ativação.",
+  "remote_changes": 0,
+  "candidate_P38_changed": false,
+  "operational_authorization": false
+}

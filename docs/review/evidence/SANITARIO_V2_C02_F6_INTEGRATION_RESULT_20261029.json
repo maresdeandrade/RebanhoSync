@@ -1,0 +1,68 @@
+{
+  "baseline_head": "bc31073565a3c7b15d396c610dd239f382b08db6",
+  "security_commit": "3f3c9607b5bc5e3a52598132069cacce39216e44",
+  "remote_main": "c752c9a24e604fdab1f92ed2807b7dc2b8e75706",
+  "clean_apply_to_main": true,
+  "patch_format": "git diff --unified=0; verify with git apply --cached --unidiff-zero --check",
+  "runtime_files": 9,
+  "tests": {
+    "integration_passed": 162,
+    "after_shared_reader_passed": 70,
+    "enablement_passed": 3
+  },
+  "typecheck": {
+    "baseline": 233,
+    "current": 233,
+    "new_diagnostics": []
+  },
+  "static_check": {
+    "verdict": "pass",
+    "attribution": {
+      "gate": "new-only",
+      "dead_code_introduced": 0,
+      "dead_code_inherited": 5,
+      "complexity_introduced": 0,
+      "complexity_inherited": 15,
+      "duplication_introduced": 0,
+      "duplication_inherited": 12,
+      "styling_introduced": 0,
+      "styling_inherited": 0,
+      "duplication_demoted": 0
+    },
+    "isolated": true,
+    "includes_concurrent_changes": false
+  },
+  "canonical_sql_rehearsals": {
+    "p38_sha256": "c469688995600602f2e6a605849d71b456244fa4768c06c2dc0a45240819221f",
+    "f6_sha256": "e557118904fb039b218899c2425c2f88c3888b3247a40e2fcf4e0c64708fef36",
+    "identical": true,
+    "local_rollback": true,
+    "remote_writes": 0
+  },
+  "enablement": {
+    "ELEGIVEL": 1,
+    "RESTRITO": 17,
+    "INCOMPLETO": 62
+  },
+  "publication": {
+    "pushed": false,
+    "merged": false,
+    "deployed": false,
+    "remote_activation": false
+  },
+  "gate": "READY WITH CAVEAT",
+  "caveat": "Typecheck global herdado falho; CI remoto e implantação não executados.",
+  "initial_remote_main": "20140c074b34857e5f4343f47778f5560e2e2482",
+  "main_tree_equals_baseline": true,
+  "deployment": {
+    "id": "dpl_5WH9Q3rMUKkDsJfzjaXiqz7FBybH",
+    "sha": "c752c9a24e604fdab1f92ed2807b7dc2b8e75706",
+    "ready": true,
+    "dexie_version": 33
+  },
+  "checks": {
+    "eslint_exit": 0,
+    "docs_gates_exit": 0,
+    "diff_check_exit": 0
+  }
+}

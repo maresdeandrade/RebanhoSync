@@ -19,6 +19,7 @@ const stores = [
   "catalog_sanitario_produto_fontes_v2",
   "catalog_sanitario_produto_dose_rules_v2",
   "catalog_sanitario_produto_carencia_rules_v2",
+  "catalog_sanitario_produto_carencia_fontes_v2",
 ] as const;
 
 const now = "2026-06-12T12:00:00.000Z";

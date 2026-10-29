@@ -2,6 +2,7 @@ import type {
   SanitarioFonteCoberturaCampoLocalV2,
   SanitarioFonteTecnicaLocalV2,
   SanitarioProdutoCarenciaRuleLocalV2,
+  SanitarioProdutoCarenciaFonteLocalV2,
   SanitarioProdutoFonteLocalV2,
   SanitarioTechnicalAptitudeV2,
   SanitarioTechnicalDoseBasisV2,
@@ -32,6 +33,7 @@ export type BuildOperationalWithdrawalSnapshotInputV2 = {
   doseBasis: SanitarioTechnicalDoseBasisV2;
   animals: OperationalWithdrawalAnimalContextV2[];
   rules: SanitarioProdutoCarenciaRuleLocalV2[];
+  withdrawalSources?: SanitarioProdutoCarenciaFonteLocalV2[];
   productSources: SanitarioProdutoFonteLocalV2[];
   sources: SanitarioFonteTecnicaLocalV2[];
   coverages: SanitarioFonteCoberturaCampoLocalV2[];
@@ -130,12 +132,14 @@ export function calculateOperationalWithdrawalEndV2(input: {
   return { endsAt: new Date(localMidnightUtc(nextDay) - 1).toISOString(), endsOn };
 }
 
-function semanticRule(rule: SanitarioProdutoCarenciaRuleLocalV2) {
+function purposeValues(rule: SanitarioProdutoCarenciaRuleLocalV2, purpose: "meat" | "milk") {
+  return purpose === "meat" ? [rule.meat_days] : [rule.milk_days, rule.milk_hours];
+}
+
+function semanticRule(rule: SanitarioProdutoCarenciaRuleLocalV2, purpose: "meat" | "milk") {
   return JSON.stringify({
     applicability: rule.applicability,
-    meat_days: rule.meat_days,
-    milk_days: rule.milk_days,
-    milk_hours: rule.milk_hours,
+    values: purposeValues(rule, purpose),
     species_code: rule.species_code,
     aptitude: rule.aptitude,
     route: rule.route,
@@ -143,9 +147,11 @@ function semanticRule(rule: SanitarioProdutoCarenciaRuleLocalV2) {
   });
 }
 
-function evidence(input: BuildOperationalWithdrawalSnapshotInputV2) {
+function evidence(input: BuildOperationalWithdrawalSnapshotInputV2, ruleId: string) {
   const candidates = input.productSources.flatMap((link) => {
     if (link.product_id !== input.productId || link.field_key !== "withdrawal") return [];
+    if (!input.withdrawalSources?.some((entry) => entry.withdrawal_rule_id === ruleId &&
+      entry.source_id === link.source_id && entry.field_key === "withdrawal")) return [];
     const source = input.sources.find((entry) =>
       entry.id === link.source_id && !entry.deleted_at &&
       (entry.scope === "global" || entry.fazenda_id === input.fazendaId) &&
@@ -214,13 +220,17 @@ function resultForPurpose(
     return unknownResult(input, animal, purpose, "unknown", "aptitude_missing");
   }
   const applicable = base.filter((rule) =>
-    rule.aptitude === "all" || rule.aptitude === animal.aptitude
+    (rule.aptitude === "all" || rule.aptitude === animal.aptitude) &&
+    // Numeric rules cover only the purposes they explicitly describe. Keep
+    // contextual restrictions/unknowns independent of missing period values.
+    (!["zero", "period"].includes(rule.applicability) ||
+      purposeValues(rule, purpose).some((value) => value != null))
   );
   if (!applicable.length) return unknownResult(input, animal, purpose, "unknown", "no_applicable_rule");
-  const semantics = new Set(applicable.map(semanticRule));
+  const semantics = new Set(applicable.map((rule) => semanticRule(rule, purpose)));
   if (semantics.size > 1) return unknownResult(input, animal, purpose, "ambiguous", "ambiguous_rule");
   const selected = [...applicable].sort((left, right) => left.id.localeCompare(right.id))[0];
-  const proof = evidence(input);
+  const proof = evidence(input, selected.id);
   if (!proof) return unknownResult(input, animal, purpose, "unknown", "withdrawal_evidence_missing_or_ambiguous");
   const period = purpose === "meat"
     ? (selected.meat_days != null ? { value: selected.meat_days, unit: "days" as const } : null)
@@ -254,7 +264,14 @@ function resultForPurpose(
   if (selected.applicability === "not_permitted") {
     return { ...common, state: "not_permitted", reason: "use_not_permitted", period: null, endsAt: null, endsOn: null };
   }
-  if (selected.applicability === "zero" || selected.applicability === "not_applicable") {
+  if (selected.applicability === "zero") {
+    const values = purposeValues(selected, purpose);
+    if (!values.some((value) => value === 0) || values.some((value) => value != null && value !== 0)) {
+      return unknownResult(input, animal, purpose, "unknown", "purpose_not_explicitly_covered");
+    }
+    return { ...common, state: "explicit_absence", reason: "explicit_no_withdrawal", period: null, endsAt: null, endsOn: null };
+  }
+  if (selected.applicability === "not_applicable") {
     return { ...common, state: "explicit_absence", reason: "explicit_no_withdrawal", period: null, endsAt: null, endsOn: null };
   }
   if (selected.applicability !== "period" || !period || period.value === 0) {

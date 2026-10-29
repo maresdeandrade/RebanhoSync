@@ -39,11 +39,28 @@ const input = (overrides: Partial<BuildOperationalWithdrawalSnapshotInputV2> = {
   factualReferenceAt: "2026-07-02T23:30:00.000Z", route: "subcutanea", doseBasis: "dose",
   animals: [{ animalId: "animal-1", speciesCode: "bovino", aptitude: "corte" }],
   rules: [rule()],
+  withdrawalSources: (overrides.rules ?? [rule()]).map(entry => ({ withdrawal_rule_id: entry.id, source_id: source.id, field_key: "withdrawal", created_at: "2026-01-01T00:00:00Z" })),
   productSources: [{ product_id: "product-1", source_id: source.id, field_key: "withdrawal", created_at: "2026-01-01T00:00:00Z" }],
   sources: [source], coverages: [coverage], ...overrides,
 });
 
 describe("operational withdrawal snapshot v2", () => {
+  it.each([
+    { name: "ausente", withdrawalSources: [] },
+    { name: "outra regra", withdrawalSources: [{ withdrawal_rule_id: "other-rule", source_id: source.id, field_key: "withdrawal", created_at: "2026-01-01" }] },
+    { name: "outro campo", withdrawalSources: [{ withdrawal_rule_id: "rule-1", source_id: source.id, field_key: "dose", created_at: "2026-01-01" }] },
+  ])("fonte de produto não substitui vínculo da regra: $name", ({ withdrawalSources }) => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({ withdrawalSources }));
+    expect(value.results.every(result => result.state === "unknown")).toBe(true);
+  });
+  it("vínculo da regra não autoriza fonte de outro produto nem fallback de cliente antigo", () => {
+    const wrongProduct = buildOperationalWithdrawalSnapshotV2(input({
+      productSources: [{ product_id: "other-product", source_id: source.id, field_key: "withdrawal", created_at: "2026-01-01" }],
+    }));
+    expect(wrongProduct.results.every(result => result.state === "unknown")).toBe(true);
+    const legacy = buildOperationalWithdrawalSnapshotV2(input({ withdrawalSources: undefined }));
+    expect(legacy.results.every(result => result.state === "unknown")).toBe(true);
+  });
   it("calcula carência factual com evidência explícita", () => {
     const value = buildOperationalWithdrawalSnapshotV2(input());
     expect(value.results.map((result) => [result.purpose, result.state])).toEqual([
@@ -64,10 +81,163 @@ describe("operational withdrawal snapshot v2", () => {
   });
 
   it("distingue ausência explicitamente comprovada de desconhecida", () => {
-    const absent = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ applicability: "zero", meat_days: null, milk_days: null })] }));
+    const absent = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ applicability: "zero", meat_days: 0, milk_days: 0 })] }));
     const unknown = buildOperationalWithdrawalSnapshotV2(input({ sources: [] }));
     expect(absent.results.every((result) => result.state === "explicit_absence")).toBe(true);
     expect(unknown.results.every((result) => result.state === "unknown")).toBe(true);
+  });
+
+  it("P38 sintético ativo: leite zero não comprova carne zero", () => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({
+      route: "SC",
+      animals: [{ animalId: "animal-1", speciesCode: "bovino", aptitude: "leite" }],
+      rules: [rule({ aptitude: "leite", route: "SC", applicability: "zero", meat_days: null, milk_days: 0 })],
+    }));
+    expect(value.results.find(result => result.purpose === "milk")).toMatchObject({ state: "explicit_absence", ruleId: "rule-1" });
+    expect(value.results.find(result => result.purpose === "meat")).toMatchObject({ state: "unknown", period: null, sourceRef: null });
+    expect(projectOperationalWithdrawalLegacyFieldsV2(value)).toMatchObject({
+      carneDias: null, carneAte: null, leiteDias: null, leiteAte: null, createsActiveWithdrawal: false,
+    });
+  });
+
+  it("zero com todos os valores nulos permanece desconhecido", () => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ applicability: "zero", meat_days: null, milk_days: null })] }));
+    expect(value.results.every(result => result.state === "unknown")).toBe(true);
+  });
+
+  it("separa regras complementares de carne com prazo e leite zero", () => {
+    const request = input({ rules: [
+      rule({ id: "meat-period", meat_days: 12, milk_days: null }),
+      rule({ id: "milk-zero", meat_days: null, milk_days: 0, applicability: "zero" }),
+    ] });
+    const before = structuredClone(request);
+    const value = buildOperationalWithdrawalSnapshotV2(request);
+    expect(value.results.find(result => result.purpose === "meat")).toMatchObject({
+      state: "calculated", ruleId: "meat-period", equivalentRuleIds: ["meat-period"],
+      period: { value: 12, unit: "days" }, endsOn: "2026-07-14", endsAt: "2026-07-15T02:59:59.999Z",
+    });
+    expect(value.results.find(result => result.purpose === "milk")).toMatchObject({
+      state: "explicit_absence", ruleId: "milk-zero", equivalentRuleIds: ["milk-zero"],
+    });
+    expect(projectOperationalWithdrawalLegacyFieldsV2(value)).toMatchObject({
+      carneDias: 12, carneAte: "2026-07-14", leiteDias: null, leiteAte: null, createsActiveWithdrawal: true,
+    });
+    expect(buildOperationalWithdrawalSnapshotV2({ ...request, rules: [...request.rules].reverse() })).toEqual(value);
+    expect(buildOperationalWithdrawalSnapshotV2(request)).toEqual(value);
+    expect(request).toEqual(before);
+  });
+
+  it("compara equivalência somente na finalidade avaliada", () => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [
+      rule({ id: "rule-b", milk_days: 3 }), rule({ id: "rule-a", milk_days: 2 }),
+    ] }));
+    expect(value.results.find(result => result.purpose === "meat")).toMatchObject({
+      state: "calculated", ruleId: "rule-a", equivalentRuleIds: ["rule-a", "rule-b"],
+    });
+    expect(value.results.find(result => result.purpose === "milk").state).toBe("ambiguous");
+  });
+
+  it("zero e prazo positivo para a mesma finalidade permanecem ambíguos", () => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [
+      rule({ id: "zero", applicability: "zero", meat_days: null, milk_days: 0 }),
+      rule({ id: "period", meat_days: null, milk_days: 2 }),
+    ] }));
+    expect(value.results.find(result => result.purpose === "milk").state).toBe("ambiguous");
+    expect(value.results.find(result => result.purpose === "meat").state).toBe("unknown");
+  });
+
+  it.each([
+    { meat_days: null, milk_days: 0, milk_hours: null },
+    { meat_days: null, milk_days: null, milk_hours: 0 },
+  ])("zero de leite explícito em dias ou horas não cobre carne: %j", values => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ ...values, applicability: "zero" })] }));
+    expect(value.results.find(result => result.purpose === "milk").state).toBe("explicit_absence");
+    expect(value.results.find(result => result.purpose === "meat").state).toBe("unknown");
+  });
+
+  it.each([
+    { milk_days: 2, milk_hours: null },
+    { milk_days: 0, milk_hours: 12 },
+    { milk_days: 2, milk_hours: 0 },
+  ])("zero inconsistente não comprova ausência: %j", values => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ ...values, meat_days: null, applicability: "zero" })] }));
+    expect(value.results.every(result => result.state === "unknown")).toBe(true);
+  });
+
+  it.each(["precisa_validar", "bloqueado", "arquivado"] as const)("ignora regra %s", status_curatorial => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ status_curatorial, applicability: "zero", meat_days: 0, milk_days: 0 })] }));
+    expect(value.results.every(result => result.state === "unknown")).toBe(true);
+  });
+
+  it.each([
+    { name: "ausente", sources: [] },
+    { name: "fraca", sources: [{ ...source, strength: "apoio" as const }] },
+    { name: "outra fazenda", sources: [{ ...source, scope: "fazenda" as const, fazenda_id: "farm-2" }] },
+  ])("zero não dispensa fonte forte da fazenda correta: $name", ({ sources }) => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({
+      sources,
+      rules: [rule({ applicability: "zero", meat_days: 0, milk_days: 0 })],
+    }));
+    expect(value.results.every(result => result.state === "unknown")).toBe(true);
+  });
+
+  it.each(["not_permitted", "not_applicable"] as const)("preserva %s sem períodos", applicability => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ applicability, meat_days: null, milk_days: null })] }));
+    expect(value.results.every(result => result.state === (applicability === "not_permitted" ? "not_permitted" : "explicit_absence"))).toBe(true);
+  });
+
+  it("zero explícito de carne não cobre leite sem valor", () => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ applicability: "zero", meat_days: 0, milk_days: null })] }));
+    expect(value.results.find(result => result.purpose === "meat")?.state).toBe("explicit_absence");
+    expect(value.results.find(result => result.purpose === "milk")?.state).toBe("unknown");
+  });
+
+  it.each(["leite", "corte", "mista"] as const)("regra ativa de leite respeita aptidão %s", aptitude => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({
+      animals: [{ animalId: "animal-1", speciesCode: "bovino", aptitude }],
+      rules: [rule({ aptitude: "leite", applicability: "zero", meat_days: null, milk_days: 0 })],
+    }));
+    expect(value.results.find(result => result.purpose === "meat")?.state).toBe("unknown");
+    expect(value.results.find(result => result.purpose === "milk")?.state)
+      .toBe(aptitude === "leite" ? "explicit_absence" : "unknown");
+  });
+
+  it.each([
+    { name: "sem cobertura", coverages: [] },
+    { name: "outro campo", coverages: [{ ...coverage, field_key: "dose" as const }] },
+    { name: "cobertura tombstonada", coverages: [{ ...coverage, deleted_at: "2026-07-01" }] },
+  ])("zero exige cobertura withdrawal válida: $name", ({ coverages }) => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({
+      coverages, rules: [rule({ applicability: "zero", meat_days: 0, milk_days: 0 })],
+    }));
+    expect(value.results.every(result => result.state === "unknown")).toBe(true);
+  });
+
+  it("aceita fonte forte da própria fazenda e rejeita evidência ambígua", () => {
+    const request = input({
+      sources: [{ ...source, scope: "fazenda", fazenda_id: "farm-1" }],
+      rules: [rule({ applicability: "zero", meat_days: 0, milk_days: 0 })],
+    });
+    expect(buildOperationalWithdrawalSnapshotV2(request).results.every(result => result.state === "explicit_absence")).toBe(true);
+    const secondSource = { ...source, id: "source-2" };
+    const ambiguous = buildOperationalWithdrawalSnapshotV2({
+      ...request, sources: [...request.sources, secondSource],
+      coverages: [coverage, { ...coverage, id: "coverage-2", source_id: secondSource.id }],
+      productSources: [...request.productSources, { ...request.productSources[0], source_id: secondSource.id }],
+      withdrawalSources: [...request.withdrawalSources!, { ...request.withdrawalSources![0], source_id: secondSource.id }],
+    });
+    expect(ambiguous.results.every(result => result.state === "unknown")).toBe(true);
+  });
+
+  it.each([
+    { valid_from: "2026-07-03" },
+    { valid_until: "2026-07-01" },
+    { deleted_at: "2026-07-01" },
+  ])("zero fora da vigência ou tombstonado não é usado: %j", values => {
+    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({
+      ...values, applicability: "zero", meat_days: 0, milk_days: 0,
+    })] }));
+    expect(value.results.every(result => result.state === "unknown")).toBe(true);
   });
 
   it("fonte ausente não fabrica carência", () => {
@@ -80,9 +250,10 @@ describe("operational withdrawal snapshot v2", () => {
     expect(value.results.every((result) => result.reason === "technical_product_unavailable")).toBe(true);
   });
 
-  it("mais de uma regra não equivalente permanece ambígua", () => {
+  it("contradição em carne bloqueia carne e preserva leite equivalente", () => {
     const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule(), rule({ id: "rule-2", meat_days: 5 })] }));
-    expect(value.results.every((result) => result.state === "ambiguous")).toBe(true);
+    expect(value.results.find(result => result.purpose === "meat")?.state).toBe("ambiguous");
+    expect(value.results.find(result => result.purpose === "milk")?.state).toBe("calculated");
   });
 
   it("regras semanticamente equivalentes têm seleção determinística", () => {

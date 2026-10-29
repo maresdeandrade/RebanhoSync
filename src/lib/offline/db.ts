@@ -49,6 +49,7 @@ import {
   type SanitarioProductClassGroupMemberLocalV2,
   type SanitarioProductClassLocalV2,
   type SanitarioProdutoCarenciaRuleLocalV2,
+  type SanitarioProdutoCarenciaFonteLocalV2,
   type SanitarioProdutoDoseRuleLocalV2,
   type SanitarioProdutoEspecieAutorizacaoLocalV2,
   type SanitarioProdutoFonteLocalV2,
@@ -180,6 +181,10 @@ export class OfflineDB extends Dexie {
   catalog_sanitario_produto_carencia_rules_v2!: Table<
     SanitarioProdutoCarenciaRuleLocalV2,
     string
+  >;
+  catalog_sanitario_produto_carencia_fontes_v2!: Table<
+    SanitarioProdutoCarenciaFonteLocalV2,
+    [string, string, string]
   >;
   catalog_sanitario_protocolos_v2!: Table<SanitarioProtocoloLocalV2, string>;
   catalog_sanitario_protocolo_itens_versions_v2!: Table<
@@ -863,6 +868,11 @@ export class OfflineDB extends Dexie {
     });
     // F24.5E1: additive delivery checkpoint; never backfill or infer historical ACKs.
     this.version(33).stores({ telemetry_flush_cursors: "fazenda_id" });
+    // Additive pull-only provenance; no inferred links or changes to pending work.
+    this.version(34).stores({
+      catalog_sanitario_produto_carencia_fontes_v2:
+        "[withdrawal_rule_id+source_id+field_key], withdrawal_rule_id, source_id, field_key",
+    });
   }
 }
 
