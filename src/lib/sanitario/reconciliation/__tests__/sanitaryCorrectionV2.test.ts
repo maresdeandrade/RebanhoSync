@@ -100,6 +100,7 @@ async function clear() {
     db.catalog_sanitario_produto_fontes_v2.clear(),
     db.catalog_sanitario_produto_dose_rules_v2.clear(),
     db.catalog_sanitario_produto_carencia_rules_v2.clear(),
+    db.catalog_sanitario_produto_carencia_fontes_v2.clear(),
     db.catalog_sanitario_produto_especie_autorizacao_v2.clear(),
     db.state_fazenda_sanidade_config.clear(),
     db.queue_gestures.clear(),
@@ -238,9 +239,31 @@ async function seedTechnicalCatalog() {
     status_curatorial: "ativo", limitations: [], metadata: {}, created_at: NOW,
     updated_at: NOW, deleted_at: null,
   });
+  await db.catalog_sanitario_produto_carencia_fontes_v2.put({
+    withdrawal_rule_id: "withdrawal-rule-1", source_id: "source-1", field_key: "withdrawal", created_at: NOW,
+  });
 }
 
 describe("sanitary correction v2", () => {
+  it.each([true, false])("P38 sintético na correção: leite zero exige vínculo da regra (%s)", async linked => {
+    await seed();
+    await seedTechnicalCatalog();
+    await db.state_fazenda_sanidade_config.update(FARM, { aptidao: "leite" });
+    await db.catalog_sanitario_produto_carencia_rules_v2.update("withdrawal-rule-1", {
+      aptitude: "leite", applicability: "zero", meat_days: null, milk_days: 0, milk_hours: null,
+    });
+    if (!linked) await db.catalog_sanitario_produto_carencia_fontes_v2.clear();
+    const original = await db.event_eventos_sanitario.get(ORIGINAL);
+    await createSanitaryCorrectionV2(correction({
+      correctionType: "complemento_rastreabilidade", changes: { executed_at: "2026-07-05T12:00:00.000Z" },
+    }), db);
+    const detail = await db.event_eventos_sanitario.get(CORRECTION_1);
+    expect(detail?.produto_snapshot).toMatchObject({ withdrawalSnapshot: { results: expect.arrayContaining([
+      expect.objectContaining({ purpose: "meat", state: "unknown" }),
+      expect.objectContaining({ purpose: "milk", state: linked ? "explicit_absence" : "unknown" }),
+    ]) } });
+    expect(await db.event_eventos_sanitario.get(ORIGINAL)).toEqual(original);
+  });
   beforeEach(async () => {
     vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:54321");
     await db.open();

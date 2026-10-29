@@ -296,6 +296,7 @@ async function clearScope() {
     db.state_insumo_lotes.clear(),
     db.state_insumo_movimentacoes.clear(),
     db.catalog_sanitario_produto_carencia_rules_v2.clear(),
+    db.catalog_sanitario_produto_carencia_fontes_v2.clear(),
     db.catalog_sanitario_produtos_v2.clear(),
     db.catalog_sanitario_protocolos_v2.clear(),
     db.catalog_sanitario_protocolo_itens_versions_v2.clear(),
@@ -339,6 +340,9 @@ async function seedAgenda(record = agenda()) {
 
 async function seedWithdrawalContext() {
   const now = "2026-01-01T00:00:00.000Z";
+  await db.catalog_sanitario_produto_carencia_fontes_v2.put({
+    withdrawal_rule_id: withdrawalRule().id, source_id: "withdrawal-source", field_key: "withdrawal", created_at: now,
+  });
   await db.catalog_sanitario_produtos_v2.put({
     id: "product-1", nome_comercial: "Vacina Raiva", fabricante: "Lab",
     registro_orgao: "MAPA", registro_numero: "1", classe: "vacina_raiva",
@@ -1055,6 +1059,26 @@ describe("executeSanitaryAgendaV2", () => {
       carencia_leite_dias: null,
       carencia_leite_ate: null,
     });
+  });
+
+  it.each([true, false])("P38 sintético na execução: leite zero exige vínculo da regra (%s)", async linked => {
+    await seedAgenda();
+    await seedWithdrawalContext();
+    await db.state_fazenda_sanidade_config.update("farm-1", { aptidao: "leite" });
+    await db.catalog_sanitario_produto_carencia_rules_v2.put(withdrawalRule({
+      aptitude: "leite", applicability: "zero", meat_days: null, milk_days: 0,
+    }));
+    if (!linked) await db.catalog_sanitario_produto_carencia_fontes_v2.clear();
+    const result = await executeSanitaryAgendaV2(baseInput, db);
+    const detail = await db.event_eventos_sanitario.get(result.eventId);
+    expect(detail?.produto_snapshot).toMatchObject({ withdrawalSnapshot: { results: expect.arrayContaining([
+      expect.objectContaining({ purpose: "meat", state: "unknown" }),
+      expect.objectContaining({ purpose: "milk", state: linked ? "explicit_absence" : "unknown" }),
+    ]) } });
+    expect(result.createsActiveWithdrawal).toBe(false);
+    await db.catalog_sanitario_produto_carencia_fontes_v2.clear();
+    expect((await executeSanitaryAgendaV2(baseInput, db)).eventId).toBe(result.eventId);
+    expect((await db.event_eventos_sanitario.get(result.eventId))?.produto_snapshot).toEqual(detail?.produto_snapshot);
   });
 
   it("baixa estoque somente após evento e não deixa falha de estoque marcar agenda como executada", async () => {

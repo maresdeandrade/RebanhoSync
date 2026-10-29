@@ -3,6 +3,7 @@ import type {
   SanitarioFonteTecnicaLocalV2,
   SanitarioProdutoDoseRuleLocalV2,
   SanitarioProdutoCarenciaRuleLocalV2,
+  SanitarioProdutoCarenciaFonteLocalV2,
   SanitarioProdutoEspecieAutorizacaoLocalV2,
   SanitarioProdutoFonteLocalV2,
   SanitarioProdutoLocalV2,
@@ -39,6 +40,7 @@ export type BuildExecutedProductTechnicalSnapshotInputV2 = {
   speciesAuthorizations: SanitarioProdutoEspecieAutorizacaoLocalV2[];
   factualReferenceAt?: string;
   withdrawalRules?: SanitarioProdutoCarenciaRuleLocalV2[];
+  withdrawalSources?: SanitarioProdutoCarenciaFonteLocalV2[];
 };
 
 const TECHNICAL_FIELDS = ["species_authorization", "dose", "route", "presentation"] as const;
@@ -275,6 +277,7 @@ export function buildExecutedProductTechnicalSnapshotV2(
         aptitude: animal.aptitude ?? null,
       })),
       rules: input.withdrawalRules,
+      withdrawalSources: input.withdrawalSources,
       productSources: input.productSources,
       sources: input.sources,
       coverages: input.coverages,

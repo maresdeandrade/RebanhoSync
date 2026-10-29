@@ -31,6 +31,8 @@ const resultLog: Array<{ table: string; count: number }> = [];
 function makeQuery(table: string) {
   const filters: Array<{ op: FilterOp; column: string; value: unknown }> = [];
   const query = {
+    order: vi.fn(() => query),
+    range: vi.fn((start: number, end: number) => Promise.resolve({ data: filterRows(table, filters).slice(start, end + 1), error: null })),
     select: vi.fn((column = "*") => {
       queryLog.push({ table, op: "select", column, value: null });
       return query;
@@ -88,6 +90,28 @@ function filterRows(table: string, filters: Array<{ op: FilterOp; column: string
 }
 
 describe("sanitario v2 incremental pull cursors", () => {
+  it("paginação/reconnect substitui vínculos completos e falha de rede preserva cache", async () => {
+    const table = "sanitario_produto_carencia_fontes_v2";
+    const store = db.catalog_sanitario_produto_carencia_fontes_v2;
+    remoteRows[table] = Array.from({ length: 1001 }, (_, index) => ({
+      withdrawal_rule_id: `rule-${index}`, source_id: "source", field_key: "withdrawal", created_at: "2026-10-29",
+    }));
+    await pullSanitarioTechnicalCatalogV2("farm-A");
+    expect(await store.count()).toBe(1001);
+    await pullSanitarioTechnicalCatalogV2("farm-A");
+    expect(await store.count()).toBe(1001);
+    remoteRows[table] = [remoteRows[table][0]];
+    await pullSanitarioTechnicalCatalogV2("farm-A");
+    const offline = await store.toArray();
+    expect(offline).toHaveLength(1);
+    vi.mocked(supabase.from).mockImplementation((name: string) => {
+      if (name === table) throw new Error("offline-before-install");
+      return makeQuery(name) as never;
+    });
+    await expect(pullSanitarioTechnicalCatalogV2("farm-B")).rejects.toThrow("offline-before-install");
+    expect(await store.toArray()).toEqual(offline);
+    expect(await db.sync_pull_cursors.get(`${table}:unscoped:null`)).toBeUndefined();
+  });
   const fazendaId = "farm-cursor-12e5";
 
   beforeEach(async () => {

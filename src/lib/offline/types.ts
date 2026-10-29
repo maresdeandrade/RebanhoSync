@@ -1210,6 +1210,13 @@ export interface SanitarioProdutoFonteLocalV2 {
   created_at: string;
 }
 
+export interface SanitarioProdutoCarenciaFonteLocalV2 {
+  withdrawal_rule_id: string;
+  source_id: string;
+  field_key: string;
+  created_at: string;
+}
+
 export interface SanitarioProdutoDoseRuleLocalV2 {
   id: string;
   product_id: string;

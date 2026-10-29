@@ -1,3 +1,4 @@
+import { readWithdrawalEvidenceCatalogV2 } from "./withdrawalEvidenceCatalogV2";
 import { buildInventoryCostSnapshot } from "@/lib/inventory/costing";
 import { env } from "@/lib/env";
 import { db as defaultDb, type OfflineDB } from "@/lib/offline/db";
@@ -110,6 +111,7 @@ export type SanitaryAgendaExecutionDbV2 = Pick<
   | "state_insumo_lotes"
   | "state_insumo_movimentacoes"
   | "catalog_sanitario_produto_carencia_rules_v2"
+  | "catalog_sanitario_produto_carencia_fontes_v2"
   | "catalog_sanitario_produtos_v2"
   | "catalog_sanitario_protocolos_v2"
   | "catalog_sanitario_protocolo_itens_versions_v2"
@@ -773,16 +775,7 @@ export async function executeSanitaryAgendaV2(
       localDb.state_animais.bulkGet(agendaValidation.targetAnimalIds),
       localDb.state_fazenda_sanidade_config.get(input.fazendaId),
     ]);
-    const sourceIds = Array.from(new Set(productSources.map((entry) => entry.source_id)));
-    const [sources, coverages] = await Promise.all([
-      localDb.catalog_sanitario_fontes_tecnicas_v2.bulkGet(sourceIds),
-      sourceIds.length > 0
-        ? localDb.catalog_sanitario_fonte_cobertura_campos_v2
-            .where("source_id")
-            .anyOf(sourceIds)
-            .toArray()
-        : Promise.resolve([]),
-    ]);
+    const { withdrawalSources, sources, coverages } = await readWithdrawalEvidenceCatalogV2(localDb, withdrawalRules, productSources);
     productTechnicalSnapshot = buildExecutedProductTechnicalSnapshotV2({
       eventId: eventIdFor(input, Boolean(factualIdentity)),
       fazendaId: input.fazendaId,
@@ -813,6 +806,7 @@ export async function executeSanitaryAgendaV2(
       speciesAuthorizations,
       factualReferenceAt: basicValidation.executedAt,
       withdrawalRules,
+      withdrawalSources,
     });
     const planningEvidence = agenda.protocol_item_snapshot.planningEvidence as Record<string, unknown> | undefined;
     if (planningEvidence?.planningScope === "class_scheme") {

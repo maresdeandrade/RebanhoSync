@@ -1,3 +1,4 @@
+import { readWithdrawalEvidenceCatalogV2 } from "../execution/withdrawalEvidenceCatalogV2";
 import { db as defaultDb, type OfflineDB } from "@/lib/offline/db";
 import {
   buildApplyFactualCoreOperation,
@@ -63,6 +64,7 @@ export type SanitaryCorrectionDbV2 = Pick<
   | "catalog_sanitario_produto_fontes_v2"
   | "catalog_sanitario_produto_dose_rules_v2"
   | "catalog_sanitario_produto_carencia_rules_v2"
+  | "catalog_sanitario_produto_carencia_fontes_v2"
   | "catalog_sanitario_produto_especie_autorizacao_v2"
   | "state_fazenda_sanidade_config"
   | "sync_sanitario_v2_cutovers"
@@ -312,18 +314,7 @@ async function buildTechnicalSnapshot(input: {
       ),
       input.db.state_fazenda_sanidade_config.get(input.fazendaId),
     ]);
-  const sourceIds = Array.from(
-    new Set(productSources.map((entry) => entry.source_id)),
-  );
-  const [sources, coverages] = await Promise.all([
-    input.db.catalog_sanitario_fontes_tecnicas_v2.bulkGet(sourceIds),
-    sourceIds.length
-      ? input.db.catalog_sanitario_fonte_cobertura_campos_v2
-          .where("source_id")
-          .anyOf(sourceIds)
-          .toArray()
-      : Promise.resolve([]),
-  ]);
+  const { withdrawalSources, sources, coverages } = await readWithdrawalEvidenceCatalogV2(input.db, withdrawalRules, productSources);
   return buildExecutedProductTechnicalSnapshotV2({
     eventId: input.eventId,
     fazendaId: input.fazendaId,
@@ -353,6 +344,7 @@ async function buildTechnicalSnapshot(input: {
     speciesAuthorizations: authorizations,
     factualReferenceAt: input.factualReferenceAt,
     withdrawalRules,
+    withdrawalSources,
   });
 }
 

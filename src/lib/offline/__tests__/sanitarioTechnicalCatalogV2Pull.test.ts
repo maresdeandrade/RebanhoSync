@@ -23,6 +23,7 @@ const { localStores } = vi.hoisted(() => ({
     "catalog_sanitario_produto_fontes_v2",
     "catalog_sanitario_produto_dose_rules_v2",
     "catalog_sanitario_produto_carencia_rules_v2",
+    "catalog_sanitario_produto_carencia_fontes_v2",
   ] as const,
 }));
 
@@ -69,12 +70,14 @@ const makeQuery = (table: string) => {
         value: null,
       });
 
-      if (table !== "sanitario_fontes_tecnicas_v2") {
+      if (table !== "sanitario_fontes_tecnicas_v2" && table !== "sanitario_produto_carencia_fontes_v2") {
         return Promise.resolve({ data: rowsByTable[table] ?? [], error: null });
       }
 
       return query;
     }),
+    order: vi.fn(() => query),
+    range: vi.fn((start: number, end: number) => Promise.resolve({ data: (rowsByTable[table] ?? []).slice(start, end + 1), error: null })),
     eq: vi.fn((column: string, value: unknown) => {
       queryLog.push({
         queryId: currentQueryId,
@@ -224,6 +227,9 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
         deleted_at: "2026-06-12T16:00:00Z",
       },
     ];
+    rowsByTable.sanitario_produto_carencia_fontes_v2 = [{
+      withdrawal_rule_id: "withdrawal-1", source_id: "source-global", field_key: "withdrawal", created_at: "2026-06-12",
+    }];
 
     (supabase.from as unknown as Mock).mockImplementation((table: string) =>
       makeQuery(table),
@@ -252,7 +258,7 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
 
     await pullSanitarioTechnicalCatalogV2(fazendaId);
 
-    expect(supabase.from).toHaveBeenCalledTimes(8);
+    expect(supabase.from).toHaveBeenCalledTimes(9);
     const sourceQueryGroups = Object.values(
       queryLog
         .filter((entry) => entry.table === "sanitario_fontes_tecnicas_v2")
@@ -377,7 +383,8 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
     expect(db.table).not.toHaveBeenCalledWith("queue_ops");
     expect(fetchSpy).not.toHaveBeenCalled();
     for (const store of storesByName.values()) {
-      expect(store.clear).not.toHaveBeenCalled();
+      if (store === storesByName.get("catalog_sanitario_produto_carencia_fontes_v2")) expect(store.clear).toHaveBeenCalledOnce();
+      else expect(store.clear).not.toHaveBeenCalled();
     }
   });
 
