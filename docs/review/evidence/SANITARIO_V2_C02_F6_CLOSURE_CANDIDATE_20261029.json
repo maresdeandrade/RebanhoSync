@@ -1,0 +1,2190 @@
+{
+  "artifact": "sanitario_c02_technical_review_candidate",
+  "artifact_version": "13.0.0-canonical-contract",
+  "identity_model": "VERSIONED_EXPLICIT_UUID",
+  "execute_import": false,
+  "approved": false,
+  "review_only": true,
+  "import_gate": {
+    "import_real_authorized": false,
+    "remote_write_authorized": false
+  },
+  "review_evidence": {
+    "scope": "F6 consolidated documentary closure, no operational activation",
+    "snapshot_file": "SANITARIO_V2_C02_F6_CLOSURE_ADMIN_BEFORE_20261029.json",
+    "primary_p34_sha256": "9966748778e078f81a025ea1507da803e1d357ab96a99aafe24380dce58d3ab5",
+    "source_artifacts": [
+      "SANITARIO_V2_C02_LOTE_F6_CONSOLIDADO_20261026.md",
+      "SANITARIO_V2_C02_P38_REGULATORIO_20261029.json",
+      "SANITARIO_V2_C02_P33_CORTE_SC_REVIEW_CANDIDATE_20261029.json"
+    ],
+    "policy": "Only confirmed deltas; all product references unchanged; all new rules pending; no source covers unrelated fields."
+  },
+  "payload": {
+    "source_rows": [
+      {
+        "id": "c0ea02f0-f18f-5084-b37d-38e454698cfe",
+        "source_key": "SRC_C02_F6_P33_RIPERCOL_150F_BULA",
+        "kind": "bula",
+        "scope": "global",
+        "fazenda_id": null,
+        "title": "Ripercol L - 150F — bula brasileira, carência de abate",
+        "issuer": "Zoetis",
+        "version": null,
+        "published_at": null,
+        "accessed_at": "2026-10-29",
+        "url": "https://www.zoetis.com.br/global-assets/private/ripercol_150f_1.pdf",
+        "jurisdiction_country": "BR",
+        "strength": "forte",
+        "evidence_status": "SIM_BULA",
+        "limitations": [
+          "Sem versão ou data editorial impressa identificável; vigência regulatória atual não certificada.",
+          "Uso documental somente para abate bovino SC. Divergência de leite retida; não autoriza operação."
+        ],
+        "metadata": {
+          "review_only": true
+        }
+      },
+      {
+        "id": "c6ab8b68-1bbf-583c-82c9-2bfbc2ca6507",
+        "url": "https://ruminants.ceva.com/app/uploads/sites/16/2023/10/Eprecis-Bula.pdf",
+        "kind": "bula",
+        "scope": "global",
+        "title": "Eprecis — bula brasileira P12073 V00",
+        "issuer": "Sespo Indústria e Comércio Ltda. — grupo Ceva Santé Animale",
+        "version": "P12073 V00",
+        "metadata": {
+          "review_only": true
+        },
+        "strength": "forte",
+        "created_by": null,
+        "fazenda_id": null,
+        "source_key": "SRC_C02_P38_EPRECIS_P12073_V00",
+        "accessed_at": "2026-10-28",
+        "limitations": [
+          "Bula documental; vigência regulatória atual não reconfirmada.",
+          "Não autoriza execução nem promove regra operacional."
+        ],
+        "published_at": null,
+        "evidence_status": "SIM_BULA",
+        "jurisdiction_uf": null,
+        "jurisdiction_zone": null,
+        "jurisdiction_country": "BR"
+      },
+      {
+        "id": "ea580dd1-9d7b-5ab7-8fa9-fbbcb4a0eb4e",
+        "source_key": "SRC_C02_F6_CLOSURE_P34_BULA_INJETAVEL",
+        "kind": "bula",
+        "scope": "global",
+        "fazenda_id": null,
+        "title": "Ripercol L Injetável — bula primária parcial",
+        "issuer": "Zoetis",
+        "version": null,
+        "published_at": null,
+        "accessed_at": "2026-10-29",
+        "url": "https://www.zoetis.com.br/global-assets/private/ripercol_l_injetavel_1.pdf",
+        "jurisdiction_country": "BR",
+        "strength": "forte",
+        "evidence_status": "SIM_BULA",
+        "limitations": [
+          "Arquivo termina durante armazenamento; não contém quadro de carência. NÃO cobre withdrawal.",
+          "Página inclui bovinos/suínos e SC/IM; neste lote só se reforça a documentação bovino SC já existente, sem criar outras autorizações.",
+          "Dose condicional por infestação grave não é nova regra executável."
+        ],
+        "metadata": {
+          "review_only": true
+        }
+      },
+      {
+        "id": "58f61d9e-b677-5a12-9107-9cff4bd4f310",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "kind": "bibliografia",
+        "scope": "global",
+        "fazenda_id": null,
+        "title": "MAPA — registros individuais bio, consulta 29/10/2026",
+        "issuer": "Ministério da Agricultura e Pecuária",
+        "version": "painel 2026-10-29 06:00:52",
+        "published_at": null,
+        "accessed_at": "2026-10-29",
+        "url": "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Biologicos/Produtos_Biologicos.html",
+        "jurisdiction_country": "BR",
+        "strength": "forte",
+        "evidence_status": "SIM_NORMA",
+        "limitations": [
+          "Base regulatória oficial; SIM_NORMA identifica evidência oficial, não uma bula ou permissão clínica.",
+          "Somente registration e identidades individuais enumeradas na cobertura; não comprova dose, carência, via ou autorização por espécie.",
+          "Registro do produto/metadata aprovados não são reescritos; associação documental não libera operação."
+        ],
+        "metadata": {
+          "review_only": true
+        }
+      },
+      {
+        "id": "c9921db1-95c0-5868-bfe2-4aba7a8a93f3",
+        "source_key": "SRC_C02_F6_MAPA_20261029_PHARMA",
+        "kind": "bibliografia",
+        "scope": "global",
+        "fazenda_id": null,
+        "title": "MAPA — registros individuais pharma, consulta 29/10/2026",
+        "issuer": "Ministério da Agricultura e Pecuária",
+        "version": "painel 2026-10-29 05:50:26",
+        "published_at": null,
+        "accessed_at": "2026-10-29",
+        "url": "https://mapa-indicadores.agricultura.gov.br/publico/extensions/Produtos_Farmaceuticos/Produtos_Farmaceuticos.html",
+        "jurisdiction_country": "BR",
+        "strength": "forte",
+        "evidence_status": "SIM_NORMA",
+        "limitations": [
+          "Base regulatória oficial; SIM_NORMA identifica evidência oficial, não uma bula ou permissão clínica.",
+          "Somente registration e identidades individuais enumeradas na cobertura; não comprova dose, carência, via ou autorização por espécie.",
+          "Registro do produto/metadata aprovados não são reescritos; associação documental não libera operação."
+        ],
+        "metadata": {
+          "review_only": true
+        }
+      }
+    ],
+    "coverage_rows": [
+      {
+        "id": "5c26551c-b2d3-5d6a-b714-a58088241843",
+        "source_key": "SRC_C02_F6_P33_RIPERCOL_150F_BULA",
+        "field_key": "withdrawal",
+        "coverage_status": "covers",
+        "notes": "Página única, Período de carência: abate bovino 7 dias após última aplicação. Via subcutânea em Modo de usar. Leite fora do recorte por divergência documental."
+      },
+      {
+        "id": "af5e9b44-7460-5338-a4fb-ca23bf80c27a",
+        "notes": "Página 1, quadro Período de carência: bovinos, leite sem carência; abate 12 dias após última aplicação. Via SC em Posologia e modo de usar. Este incremento propõe somente leite bovino SC; não altera corte ou mista.",
+        "field_key": "withdrawal",
+        "coverage_status": "covers",
+        "source_key": "SRC_C02_P38_EPRECIS_P12073_V00"
+      },
+      {
+        "id": "5446ca3c-ae4a-5bcf-ace4-6d4a0e5b732f",
+        "source_key": "SRC_C02_F6_CLOSURE_P34_BULA_INJETAVEL",
+        "field_key": "composition",
+        "coverage_status": "covers",
+        "notes": "Página única examinada visualmente; cloridrato levamisol 7,5 g/100 mL, bovino, 1 mL/20 kg, SC entre as vias expressas. Sem prova de carência neste PDF."
+      },
+      {
+        "id": "cb0393dc-bb1b-5ac5-8908-6dde8c7b69c5",
+        "source_key": "SRC_C02_F6_CLOSURE_P34_BULA_INJETAVEL",
+        "field_key": "dose",
+        "coverage_status": "covers",
+        "notes": "Página única examinada visualmente; cloridrato levamisol 7,5 g/100 mL, bovino, 1 mL/20 kg, SC entre as vias expressas. Sem prova de carência neste PDF."
+      },
+      {
+        "id": "731efc63-c891-5b4b-8023-5efdfa14d753",
+        "source_key": "SRC_C02_F6_CLOSURE_P34_BULA_INJETAVEL",
+        "field_key": "route",
+        "coverage_status": "covers",
+        "notes": "Página única examinada visualmente; cloridrato levamisol 7,5 g/100 mL, bovino, 1 mL/20 kg, SC entre as vias expressas. Sem prova de carência neste PDF."
+      },
+      {
+        "id": "dce7c8ab-fe8c-57ad-a71c-02930c9c79cc",
+        "source_key": "SRC_C02_F6_CLOSURE_P34_BULA_INJETAVEL",
+        "field_key": "species_authorization",
+        "coverage_status": "covers",
+        "notes": "Página única examinada visualmente; cloridrato levamisol 7,5 g/100 mL, bovino, 1 mL/20 kg, SC entre as vias expressas. Sem prova de carência neste PDF."
+      },
+      {
+        "id": "9f9a2134-02ca-5b8b-819f-6350307d06fe",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration",
+        "coverage_status": "covers",
+        "notes": "[{\"product_id\":\"ba59c489-49d5-5362-b5f4-94818c90deb4\",\"panel\":\"bio\",\"name\":\"ABOR-VAC\",\"status\":\"VIGENTE\",\"registration\":\"523/1977\",\"holder\":\"ZOETIS INDÚSTRIA DE PRODUTOS VETERINÁRIOS LTDA.\"},{\"product_id\":\"f5540551-7dd6-5176-b909-22916e5ed3de\",\"panel\":\"bio\",\"name\":\"BOVILIS RB-51\",\"status\":\"VIGENTE\",\"registration\":\"9.614/2011\",\"holder\":\"MERCK SHARP & DOHME SAÚDE ANIMAL LTDA.\"},{\"product_id\":\"453b1b35-93a4-5790-8217-7b7e83c78c49\",\"panel\":\"bio\",\"name\":\"COVEXIN 9\",\"status\":\"VIGENTE\",\"registration\":\"6.171/1997\",\"holder\":\"MERCK SHARP & DOHME SAÚDE ANIMAL LTDA.\"},{\"product_id\":\"88c4a3c9-868d-5eb0-974c-b16812a8918e\",\"panel\":\"bio\",\"name\":\"CATTLEMASTER 4 + L5\",\"status\":\"VIGENTE\",\"registration\":\"5.603/1996\",\"holder\":\"ZOETIS INDÚSTRIA DE PRODUTOS VETERINÁRIOS LTDA.\"},{\"product_id\":\"a1cae25c-7d96-5cd9-b5b3-fb2e74632545\",\"panel\":\"bio\",\"name\":\"CATTLEMASTER GOLD FP 5/L5\",\"status\":\"VIGENTE\",\"registration\":\"9.525/2009\",\"holder\":\"ZOETIS INDÚSTRIA DE PRODUTOS VETERINÁRIOS LTDA.\"},{\"product_id\":\"d1702fc4-01bb-59be-84a2-eab38babe223\",\"panel\":\"bio\",\"name\":\"BOVILIS VISTA 5 L5 CFP\",\"status\":\"VIGENTE\",\"registration\":\"10.610/2025\",\"holder\":\"MERCK SHARP & DOHME SAÚDE ANIMAL LTDA.\"},{\"product_id\":\"1628cf40-3676-53a6-9fe2-4e154936167b\",\"panel\":\"bio\",\"name\":\"ANAVAC B 19\",\"status\":\"VIGENTE\",\"registration\":\"4.728/1994\",\"holder\":\"CEVA SAÚDE ANIMAL LTDA.\"},{\"product_id\":\"dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c\",\"panel\":\"bio\",\"name\":\"RABMUNE CONTRA RAIVA DOS HERBÍVOROS\",\"status\":\"VIGENTE\",\"registration\":\"10.101/2015\",\"holder\":\"CEVA SAÚDE ANIMAL LTDA.\"},{\"product_id\":\"6417c886-2a93-599a-b74a-c72ac1c03752\",\"panel\":\"bio\",\"name\":\"VACINA ANTI-RÁBICA INATIVADA LABOVET\",\"status\":\"VIGENTE\",\"registration\":\"6.197/1997\",\"holder\":\"LABOVET PRODUTOS VETERINÁRIOS LTDA.\"},{\"product_id\":\"dfed6e97-286a-5404-985b-528d0befa1ec\",\"panel\":\"bio\",\"name\":\"CLOSTRIMUNE 8\",\"status\":\"VIGENTE\",\"registration\":\"7.274/2000\",\"holder\":\"LABOVET PRODUTOS VETERINÁRIOS LTDA.\"},{\"product_id\":\"af618de9-e22b-5ad7-a852-43933c6cb3d3\",\"panel\":\"bio\",\"name\":\"CLOSTRIMUNE 10 TH\",\"status\":\"VIGENTE\",\"registration\":\"10.227/2019\",\"holder\":\"LABOVET PRODUTOS VETERINÁRIOS LTDA.\"},{\"product_id\":\"55e88d23-83c9-5421-ba2f-7da1b979c03b\",\"panel\":\"bio\",\"name\":\"STAR VAC\",\"status\":\"VIGENTE\",\"registration\":\"7.774/2001\",\"holder\":\"LABOVET PRODUTOS VETERINÁRIOS LTDA.\"},{\"product_id\":\"12128db7-71ff-551d-92e0-18418140b91b\",\"panel\":\"bio\",\"name\":\"STARVAC 12 BTH\",\"status\":\"VIGENTE\",\"registration\":\"10.231/2019\",\"holder\":\"LABOVET PRODUTOS VETERINÁRIOS LTDA.\"},{\"product_id\":\"0f1b6c73-c50f-5ad4-a308-29788de7429a\",\"panel\":\"bio\",\"name\":\"BOTULINOMAX\",\"status\":\"VIGENTE\",\"registration\":\"8.610/2003\",\"holder\":\"CEVA VETERINÁRIA S.A.\"},{\"product_id\":\"3e0a501b-1742-506c-a094-d8a18ad8a98a\",\"panel\":\"bio\",\"name\":\"BOVI-SHIELD GOLD ONE SHOT\",\"status\":\"VIGENTE\",\"registration\":\"10.272/2019\",\"holder\":\"ZOETIS INDÚSTRIA DE PRODUTOS VETERINÁRIOS LTDA.\"},{\"product_id\":\"a90ae0cf-d97b-577c-a622-080f2db70c3c\",\"panel\":\"bio\",\"name\":\"BOVILIS VISTA ONCE SQ\",\"status\":\"VIGENTE\",\"registration\":\"10.418/2021\",\"holder\":\"MERCK SHARP & DOHME SAÚDE ANIMAL LTDA.\"},{\"product_id\":\"c2171cd8-1865-5d12-90c0-22062043bc73\",\"panel\":\"bio\",\"name\":\"FERTIGUARD SELENIUM MAX\",\"status\":\"VIGENTE\",\"registration\":\"9.296/2007\",\"holder\":\"MERCK SHARP & DOHME SAÚDE ANIMAL LTDA.\"}]"
+      },
+      {
+        "id": "1ed4f539-686d-5d64-ad81-a9c9ad5d308d",
+        "source_key": "SRC_C02_F6_MAPA_20261029_PHARMA",
+        "field_key": "registration",
+        "coverage_status": "covers",
+        "notes": "[{\"product_id\":\"7fc44e31-3373-50de-97fd-58e874938938\",\"panel\":\"pharma\",\"name\":\"CYDECTIN\",\"registration\":\"SP0000728-99\",\"status\":\"Ativo\",\"expires\":\"07/02/2029\",\"holder\":\"zoetis INDUSTRIA DE PRODUTOS VETERINÁRIOS LTDA - 31\"},{\"product_id\":\"5402b0be-eabb-5bce-91e8-242db1112151\",\"panel\":\"pharma\",\"name\":\"RANGER® LA 3,5%\",\"registration\":\"SP0000361-76\",\"status\":\"Ativo\",\"expires\":\"04/02/2031\",\"holder\":\"MERCK SHARP & DOHME SAUDE ANIMAL LTDA.\"},{\"product_id\":\"1957cff0-3741-5dd8-bf81-b157a2d575c8\",\"panel\":\"pharma\",\"name\":\"EXZOLT 5%\",\"registration\":\"SP0000361-28\",\"status\":\"Ativo\",\"expires\":\"23/03/2032\",\"holder\":\"MERCK SHARP & DOHME SAUDE ANIMAL LTDA.\"},{\"product_id\":\"e5043b4b-6646-52d9-a40d-b2b46d18e774\",\"panel\":\"pharma\",\"name\":\"SUPRAMEC POUR-ON\",\"registration\":\"SP0000361-3\",\"status\":\"Ativo\",\"expires\":\"08/05/2031\",\"holder\":\"MERCK SHARP & DOHME SAUDE ANIMAL LTDA.\"},{\"product_id\":\"670001a6-3634-582b-a277-f3bc65f89a0e\",\"panel\":\"pharma\",\"name\":\"TICSON 3.50\",\"registration\":\"SP0001290-6\",\"status\":\"Ativo\",\"expires\":\"02/10/2030\",\"holder\":\"SESPO INDUSTRIA E COMERCIO LTDA\"},{\"product_id\":\"db743728-59e2-5ecb-8b2e-211ab170618f\",\"panel\":\"pharma\",\"name\":\"EPRECIS\",\"registration\":\"SP0001290-8\",\"status\":\"Ativo\",\"expires\":\"20/05/2029\",\"holder\":\"SESPO INDUSTRIA E COMERCIO LTDA\"}]"
+      }
+    ],
+    "product_rows": [
+      {
+        "id": "ba59c489-49d5-5362-b5f4-94818c90deb4",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/_assets/pdf/bula-aborvac-br.pdf",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P01",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_brucelose_b19"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "0523",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Zoetis",
+        "apresentacao": "5, 10, 15, 20 e 25 doses",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Abor-Vac",
+        "registro_orgao": null,
+        "principio_ativo": "Brucella abortus B19 viva, liofilizada",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P01_ABOR_VAC"
+      },
+      {
+        "id": "f5540551-7dd6-5176-b909-22916e5ed3de",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/rb-51/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P02",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "RB-51 diferente de B19: não vincular ao protocolo B19 | Cepa RB-51 diferente da B19; não vincular ao item B19 automaticamente",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "sem_classe_rb51"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Bovilis RB-51",
+        "registro_orgao": null,
+        "principio_ativo": "Brucella abortus RB-51 viva atenuada, liofilizada",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P02_BOVILIS_RB_51"
+      },
+      {
+        "id": "45e406f2-303e-528b-8146-804f38492815",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/raivacel-multi/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P03",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_raiva_herbivoros"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "40, 50 e 100 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Raivacel Multi",
+        "registro_orgao": null,
+        "principio_ativo": "Vírus rábico Pasteur inativado por BEI",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P03_RAIVACEL_MULTI"
+      },
+      {
+        "id": "453b1b35-93a4-5790-8217-7b7e83c78c49",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/covexin-9/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P05",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Fortress 7 (V2): vacina da mesma classe, NÃO é duplicação presumida",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "50, 100 e 250 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Covexin 9",
+        "registro_orgao": null,
+        "principio_ativo": "Clostridium septicum, novyi, sordellii, haemolyticum, chauvoei e perfringens A/B/C/D inativados",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P05_COVEXIN_9"
+      },
+      {
+        "id": "ec3eb33d-b739-5a62-826d-fee85e04a9dd",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/bovilis-poli-star-t/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P06",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Poli-Star: nomes próximos, verificar registro e composição",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "100, 150, 250 e 500 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Bovilis Poli-Star T",
+        "registro_orgao": null,
+        "principio_ativo": "Toxoides clostridiais incluindo tetani e botulinum C/D; anacultura de C. chauvoei",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P06_BOVILIS_POLI_STAR_T"
+      },
+      {
+        "id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/vacinas-bovinos.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P07",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Vacina multivalente: validar escopo de cada classe antes de associar | Multivalente IBR/BVD + leptospirose; não generalizar elegibilidade",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd",
+            "vacina_leptospirose"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Zoetis",
+        "apresentacao": "10 e 25 doses",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Cattle Master 4 L5",
+        "registro_orgao": null,
+        "principio_ativo": "IBR, PI3 e BRSV vivos; BVD e cinco leptospiras inativados",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P07_CATTLE_MASTER_4_L5"
+      },
+      {
+        "id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/vacinas-bovinos.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P08",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Cattle Master 4 L5 e Cattle Master 4: conferir apresentação/registro | Multivalente IBR/BVD + leptospirose; não generalizar elegibilidade",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd",
+            "vacina_leptospirose"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Zoetis",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "Cattle Master Gold FP 5/L5",
+        "registro_orgao": null,
+        "principio_ativo": "IBR e PI3 termossensíveis; BRSV modificado; BVD 1/2 e cinco leptospiras inativados",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P08_CATTLE_MASTER_GOLD_FP_5_L5"
+      },
+      {
+        "id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/todos-os-produtos/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P09",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Vacina multivalente: validar escopo de cada classe antes de associar | Multivalente; confirmação comercial em catálogo, sem registro vigente conferido",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd",
+            "vacina_leptospirose"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "10 e 50 doses",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Bovilis Vista 5 L5 CFP",
+        "registro_orgao": null,
+        "principio_ativo": "IBR, BVD 1/2, PI3 e BRSV vivos modificados; cinco leptospiras inativadas",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P09_BOVILIS_VISTA_5_L5_CFP"
+      },
+      {
+        "id": "7fc44e31-3373-50de-97fd-58e874938938",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Cydectin/pdf/cydectin-bula.pdf",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P11",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "6709",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Zoetis",
+        "apresentacao": "Solução injetável; frascos de 50 mL, 500 mL e 1000 mL",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Cydectin 1%",
+        "registro_orgao": null,
+        "principio_ativo": "Moxidectina 1 g/100 mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1"
+      },
+      {
+        "id": "5402b0be-eabb-5bce-91e8-242db1112151",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/ranger-la-35/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P12",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Ranger: extensão da marca, produto distinto a confirmar | Restrições de uso na fase de terminação; dose/carência por bula específica",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "50 e 500 mL",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ranger LA 3,5%",
+        "registro_orgao": null,
+        "principio_ativo": "Ivermectina 3,5 g/100 mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P12_RANGER_LA_3_5"
+      },
+      {
+        "id": "36ea6650-6c8f-5a56-a778-bfb6e428102d",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/panacur-10/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P13",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "benzimidazois"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "20 mL e 1 L",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Panacur 10%",
+        "registro_orgao": null,
+        "principio_ativo": "Fembendazol 100 mg/mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P13_PANACUR_10"
+      },
+      {
+        "id": "1957cff0-3741-5dd8-bf81-b157a2d575c8",
+        "classe": "ectoparasiticida",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/exzolt-2/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P14",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Ectoparasiticida; não atribuir classe antiparasitária de manejo automaticamente | Ectoparasiticida à base de fluralaner; não confundir com anti-helmíntico",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "fora_classes_v2"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "250 mL, 1 L e 5 L",
+        "tipo_produto": "ectoparasiticida",
+        "nome_comercial": "Exzolt 5% Bovinos",
+        "registro_orgao": null,
+        "principio_ativo": "Fluralaner 5%",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P14_EXZOLT_5_BOVINOS"
+      },
+      {
+        "id": "1628cf40-3676-53a6-9fe2-4e154936167b",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/anavac/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P15",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_brucelose_b19"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Ceva",
+        "apresentacao": "15 doses / 30 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "ANAVAC B19",
+        "registro_orgao": null,
+        "principio_ativo": null,
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P15_ANAVAC_B19"
+      },
+      {
+        "id": "d66dddec-b33c-5882-bcc4-b3a82389d349",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/vacina-contra-a-brucelose-bovina",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P16",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_brucelose_b19"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "3.785 (1991)",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Labovet",
+        "apresentacao": "10 e 15 doses",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Vacina Liofilizada contra a Brucelose Bovina Labovet",
+        "registro_orgao": null,
+        "principio_ativo": "Brucella abortus B19 viva; mínimo de 60 bilhões de germes viáveis/dose",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P16_VACINA_LIOFILIZADA_CONTRA_A_BRUCELOSE_BOVINA_LABOVET"
+      },
+      {
+        "id": "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/rabmune/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P17",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_raiva_herbivoros"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Ceva",
+        "apresentacao": "25 e 50 doses",
+        "tipo_produto": "vacina",
+        "nome_comercial": "RABMUNE",
+        "registro_orgao": null,
+        "principio_ativo": "Vírus rábico PV inativado por beta-propiolactona; hidróxido de alumínio e saponina",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P17_RABMUNE"
+      },
+      {
+        "id": "6417c886-2a93-599a-b74a-c72ac1c03752",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/vacina-antirrabica-inativada-labovet-para-herbivoros",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P18",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_raiva_herbivoros"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "6.197 (1997)",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Labovet",
+        "apresentacao": "25 doses / 50 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Vacina Antirrábica Inativada para Herbívoros Labovet",
+        "registro_orgao": null,
+        "principio_ativo": "Vírus rábico Pasteur inativado por BEI; hidróxido de alumínio",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P18_VACINA_ANTIRRABICA_INATIVADA_PARA_HERBIVOROS_LABOVET"
+      },
+      {
+        "id": "dfed6e97-286a-5404-985b-528d0befa1ec",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/vacina-clostrimune-8",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P19",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "7.274 (2000)",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Labovet",
+        "apresentacao": "50, 100 e 250 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Clostrimune 8",
+        "registro_orgao": null,
+        "principio_ativo": "Bacterina/toxoides clostridiais incluindo C. tetani; sem botulínicos na fórmula listada",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P19_CLOSTRIMUNE_8"
+      },
+      {
+        "id": "af618de9-e22b-5ad7-a852-43933c6cb3d3",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/vacina-clostrimune-10th",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P20",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Labovet",
+        "apresentacao": "50, 100 e 250 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Clostrimune 10TH",
+        "registro_orgao": null,
+        "principio_ativo": "Clostrídios incluindo perfringens A/B/C/D, tetani e haemolyticum",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P20_CLOSTRIMUNE_10TH"
+      },
+      {
+        "id": "55e88d23-83c9-5421-ba2f-7da1b979c03b",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/vacina-starvac",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P21",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "7.774 (2001)",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Labovet",
+        "apresentacao": "50, 100 e 250 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "StarVac",
+        "registro_orgao": null,
+        "principio_ativo": "Clostrídios incluindo botulinum C/D e perfringens B/C/D",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P21_STARVAC"
+      },
+      {
+        "id": "12128db7-71ff-551d-92e0-18418140b91b",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://labovet.com.br/produtos/starvac-12",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P22",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": "10.231 (2019)",
+            "authority": "MAPA"
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Labovet",
+        "apresentacao": "50, 100 e 250 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "StarVac 12",
+        "registro_orgao": null,
+        "principio_ativo": "Clostrídios incluindo botulinum C/D, perfringens A/B/C/D, tetani e haemolyticum",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P22_STARVAC_12"
+      },
+      {
+        "id": "0f1b6c73-c50f-5ad4-a308-29788de7429a",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/botulinomax/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P23",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Labovet Produtos Veterinários Ltda.",
+        "apresentacao": "100 e 250 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "BOTULINOMAX",
+        "registro_orgao": null,
+        "principio_ativo": "Clostrídios incluindo botulinum C/D",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P23_BOTULINOMAX"
+      },
+      {
+        "id": "3e0a501b-1742-506c-a094-d8a18ad8a98a",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/vacinas-bovinos.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P24",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Vacina respiratória multivalente; não tratar como vacina leptospirose",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Zoetis",
+        "apresentacao": "50 doses / 100 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Bovi-Shield Gold One Shot",
+        "registro_orgao": null,
+        "principio_ativo": "IBR, BVD 1/2, PI3 e BRSV vivos modificados; toxoide de Mannheimia haemolytica",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P24_BOVI_SHIELD_GOLD_ONE_SHOT"
+      },
+      {
+        "id": "0168212e-2443-5eaf-97f1-108924e58d4d",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/vacinas-bovinos.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P25",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Cattle Master 4 L5: nomes próximos, verificar formulação",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Zoetis",
+        "apresentacao": "25 doses",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Cattle Master 4",
+        "registro_orgao": null,
+        "principio_ativo": "IBR, BRSV e PI3 vivos; BVD inativado",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P25_CATTLE_MASTER_4"
+      },
+      {
+        "id": "a90ae0cf-d97b-577c-a622-080f2db70c3c",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/bovilis-vista-once-sq/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P26",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Bula estabelece indicações e restrições específicas; não inferir cobertura de leptospirose",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "5, 10, 50 e 100 doses",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Bovilis Vista Once SQ",
+        "registro_orgao": null,
+        "principio_ativo": "IBR, BVD 1/2, PI3, BRSV, Mannheimia e Pasteurella",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P26_BOVILIS_VISTA_ONCE_SQ"
+      },
+      {
+        "id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/fertiguard-selenium-max/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P27",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_ibr_bvd",
+            "vacina_leptospirose"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": null,
+        "tipo_produto": "vacina",
+        "nome_comercial": "FertiGuard Selenium Max",
+        "registro_orgao": null,
+        "principio_ativo": "IBR, BVD, PI3 e BRSV inativados; seis leptospiras; Campylobacter fetus fetus/venerealis; selenato de sódio 4,8 mg/mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P27_FERTIGUARD_SELENIUM_MAX"
+      },
+      {
+        "id": "33521603-7562-551e-8a66-5b5d3523b83d",
+        "classe": "vacina",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/poli-star/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P28",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Bovilis Poli-Star T: nomes próximos, verificar registro e composição",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "vacina_clostridial"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "50, 100 e 250 mL",
+        "tipo_produto": "vacina",
+        "nome_comercial": "Poli-Star",
+        "registro_orgao": null,
+        "principio_ativo": "Clostrídios incluindo botulinum C/D",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P28_POLI_STAR"
+      },
+      {
+        "id": "a805aad2-7cd4-567e-8ace-676bf7cfd9f4",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/exceller/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P29",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "50, 200 e 500 mL",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Exceller",
+        "registro_orgao": null,
+        "principio_ativo": "Doramectina 1 g/100 mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P29_EXCELLER"
+      },
+      {
+        "id": "234204f8-4113-5294-8aa2-b0d2b3f83d95",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/ranger/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P30",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Ranger LA 3,5%: extensão da marca, produto distinto a confirmar",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "50 e 500 mL",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ranger",
+        "registro_orgao": null,
+        "principio_ativo": "Ivermectina 1 g/100 mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P30_RANGER"
+      },
+      {
+        "id": "942f1bf9-874b-5c46-ae35-a44648dcc893",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/solution-35/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P31",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Bula informa proibição em bovinos de corte em terminação; revisar indicação e carência",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas (confirmar)"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": null,
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Solution 3,5%",
+        "registro_orgao": null,
+        "principio_ativo": "Ivermectina 2,25 g e abamectina 1,25 g/100 mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P31_SOLUTION_3_5"
+      },
+      {
+        "id": "e5043b4b-6646-52d9-a40d-b2b46d18e774",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/supramec-pour-on/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P32",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "1 L e 5 L",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Supramec Pour-On",
+        "registro_orgao": null,
+        "principio_ativo": "Ivermectina 5 mg/mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P32_SUPRAMEC_POUR_ON"
+      },
+      {
+        "id": "53678137-452a-5910-9bc6-67022504a6ce",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/endoparasiticidas.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P33",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "imidazotiazoleis"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Zoetis",
+        "apresentacao": "250 mL",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ripercol L 150 F",
+        "registro_orgao": null,
+        "principio_ativo": "Fosfato de levamisol 18,8 g/100 mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P33_RIPERCOL_L_150_F"
+      },
+      {
+        "id": "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/endoparasiticidas.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P34",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "imidazotiazoleis"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Zoetis",
+        "apresentacao": "30, 100 e 250 mL",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ripercol L Injetável",
+        "registro_orgao": null,
+        "principio_ativo": "Cloridrato de levamisol 7,5 g/100 mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P34_RIPERCOL_L_INJETAVEL"
+      },
+      {
+        "id": "670001a6-3634-582b-a277-f3bc65f89a0e",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/ticson-3-50/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P36",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas (confirmar)"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Ceva",
+        "apresentacao": "500 mL e 1 L",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ticson 3.50",
+        "registro_orgao": null,
+        "principio_ativo": "Ivermectina 3,5%",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P36_TICSON_3_50"
+      },
+      {
+        "id": "ebd8a49a-47ed-5cbf-a225-4dfe10ffadaa",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/puritec-gold/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P37",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas (confirmar)"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Sespo Indústria e Comércio Ltda.",
+        "apresentacao": "50, 250, 500 mL e 1 L",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Puritec Gold",
+        "registro_orgao": null,
+        "principio_ativo": "Ivermectina B1a 3,5 g/100 mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P37_PURITEC_GOLD"
+      },
+      {
+        "id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/eprecis-2/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P38",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "lactonas_macrociclicas (confirmar)"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Ceva",
+        "apresentacao": "50 e 500 mL",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Eprecis",
+        "registro_orgao": null,
+        "principio_ativo": "Eprinomectina 2%",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P38_EPRECIS"
+      },
+      {
+        "id": "4f011f00-0ae7-5b4e-97d3-b093578df236",
+        "classe": "ectoparasiticida",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/fluron-gold/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P39",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "fora_classes_v2"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Ipanema Indústria de Produtos Veterinários Ltda.",
+        "apresentacao": "1 L e 2 L",
+        "tipo_produto": "ectoparasiticida",
+        "nome_comercial": "FLURON Gold",
+        "registro_orgao": null,
+        "principio_ativo": "Cipermetrina 5%, clorpirifós 7%, fluazuron 2,5% e butóxido de piperonila 5%",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P39_FLURON_GOLD"
+      },
+      {
+        "id": "3eb90dec-26cb-525e-b106-530c2ffc67e0",
+        "classe": "ectoparasiticida",
+        "metadata": {
+          "source_url": "https://ruminantes.ceva.com.br/products/combo-pour-on/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P40",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "fora_classes_v2"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Ceva",
+        "apresentacao": "1 L e 5 L",
+        "tipo_produto": "ectoparasiticida",
+        "nome_comercial": "COMBO Pour On",
+        "registro_orgao": null,
+        "principio_ativo": "Cipermetrina 5 g e clorpirifós 7 g/100 mL; BPO presente, quantidade/unidade retida",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P40_COMBO_POUR_ON"
+      },
+      {
+        "id": "a919841d-69b7-5340-848c-3c121b840ff8",
+        "classe": "ectoparasiticida",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/pecuaria/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P41",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "fora_classes_v2"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "20, 100, 500 mL e 1 L",
+        "tipo_produto": "ectoparasiticida",
+        "nome_comercial": "Butox P CE25",
+        "registro_orgao": null,
+        "principio_ativo": "Deltametrina; concentração não normalizada",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P41_BUTOX_P_CE25"
+      },
+      {
+        "id": "725304b5-c3c2-57b3-b255-a85032a23a55",
+        "classe": "ectoparasiticida",
+        "metadata": {
+          "source_url": "https://www.msd-saude-animal.com.br/produto/tick-gard/",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P42",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": "Bula informa carência prolongada e restrição para leite",
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "fora_classes_v2"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "MSD Saúde Animal",
+        "apresentacao": "1 L e 5 L",
+        "tipo_produto": "ectoparasiticida",
+        "nome_comercial": "Tick Gard",
+        "registro_orgao": null,
+        "principio_ativo": "Fluazuron e fipronil; concentração por volume não inferida",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P42_TICK_GARD"
+      }
+    ],
+    "product_authorization_rows": [],
+    "product_source_rows": [
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P33_RIPERCOL_L_150_F",
+        "source_key": "SRC_C02_F6_P33_RIPERCOL_150F_BULA",
+        "field_key": "withdrawal"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P38_EPRECIS",
+        "source_key": "SRC_C02_P38_EPRECIS_P12073_V00",
+        "field_key": "withdrawal"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P34_RIPERCOL_L_INJETAVEL",
+        "source_key": "SRC_C02_F6_CLOSURE_P34_BULA_INJETAVEL",
+        "field_key": "composition"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P34_RIPERCOL_L_INJETAVEL",
+        "source_key": "SRC_C02_F6_CLOSURE_P34_BULA_INJETAVEL",
+        "field_key": "dose"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P34_RIPERCOL_L_INJETAVEL",
+        "source_key": "SRC_C02_F6_CLOSURE_P34_BULA_INJETAVEL",
+        "field_key": "route"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P34_RIPERCOL_L_INJETAVEL",
+        "source_key": "SRC_C02_F6_CLOSURE_P34_BULA_INJETAVEL",
+        "field_key": "species_authorization"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P01_ABOR_VAC",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P02_BOVILIS_RB_51",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P05_COVEXIN_9",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P07_CATTLE_MASTER_4_L5",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P08_CATTLE_MASTER_GOLD_FP_5_L5",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P09_BOVILIS_VISTA_5_L5_CFP",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P15_ANAVAC_B19",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P17_RABMUNE",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P18_VACINA_ANTIRRABICA_INATIVADA_PARA_HERBIVOROS_LABOVET",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P19_CLOSTRIMUNE_8",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P20_CLOSTRIMUNE_10TH",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P21_STARVAC",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P22_STARVAC_12",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P23_BOTULINOMAX",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P24_BOVI_SHIELD_GOLD_ONE_SHOT",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P26_BOVILIS_VISTA_ONCE_SQ",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P27_FERTIGUARD_SELENIUM_MAX",
+        "source_key": "SRC_C02_F6_MAPA_20261029_BIO",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P11_CYDECTIN_1",
+        "source_key": "SRC_C02_F6_MAPA_20261029_PHARMA",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P12_RANGER_LA_3_5",
+        "source_key": "SRC_C02_F6_MAPA_20261029_PHARMA",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P14_EXZOLT_5_BOVINOS",
+        "source_key": "SRC_C02_F6_MAPA_20261029_PHARMA",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P32_SUPRAMEC_POUR_ON",
+        "source_key": "SRC_C02_F6_MAPA_20261029_PHARMA",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P36_TICSON_3_50",
+        "source_key": "SRC_C02_F6_MAPA_20261029_PHARMA",
+        "field_key": "registration"
+      },
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P38_EPRECIS",
+        "source_key": "SRC_C02_F6_MAPA_20261029_PHARMA",
+        "field_key": "registration"
+      }
+    ],
+    "dose_rule_rows": [],
+    "withdrawal_rule_rows": [
+      {
+        "id": "2651d9d7-390e-50ed-8065-4c4ba7b1ed1c",
+        "withdrawal_rule_key": "C02_F6_P33_RIPERCOL_150F_CORTE_SC_BULA",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P33_RIPERCOL_L_150_F",
+        "species_code": "bovino",
+        "aptitude": "corte",
+        "route": "SC",
+        "dose_basis": null,
+        "applicability": "period",
+        "milk_days": null,
+        "milk_hours": null,
+        "meat_days": 7,
+        "zero_requires_explicit_source": true,
+        "status_curatorial": "precisa_validar",
+        "valid_from": null,
+        "valid_until": null,
+        "source_keys": [
+          "SRC_C02_F6_P33_RIPERCOL_150F_BULA"
+        ],
+        "limitations": [
+          "Somente abate de bovinos tratados por via SC nas condições da bula; não estender para leite, mista, outras vias ou espécies.",
+          "Regra anterior com route=null permanece pendente e intocada. Esta versão explicita SC sem alterar identidade preexistente.",
+          "Candidata local sem autorização de escrita remota ou ativação. Divergência leite 2/3 dias não resolvida."
+        ],
+        "metadata": {
+          "review_only": true
+        }
+      },
+      {
+        "id": "04012eb3-618b-5813-a387-a16f769d2a64",
+        "withdrawal_rule_key": "C02_F6_CLOSURE_P38_CORTE_SC_P12073_V00",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P38_EPRECIS",
+        "species_code": "bovino",
+        "aptitude": "corte",
+        "route": "SC",
+        "dose_basis": null,
+        "meat_days": 12,
+        "milk_days": null,
+        "milk_hours": null,
+        "applicability": "period",
+        "zero_requires_explicit_source": true,
+        "status_curatorial": "precisa_validar",
+        "valid_from": null,
+        "valid_until": null,
+        "source_keys": [
+          "SRC_C02_P38_EPRECIS_P12073_V00"
+        ],
+        "limitations": [
+          "Bula P12073 V00: abate 12 dias após última aplicação, bovinos SC. Não altera regra anterior sem via, dose, espécie ou flags operacionais."
+        ],
+        "metadata": {
+          "review_only": true
+        }
+      }
+    ],
+    "withdrawal_source_rows": [
+      {
+        "withdrawal_rule_key": "C02_F6_P33_RIPERCOL_150F_CORTE_SC_BULA",
+        "source_key": "SRC_C02_F6_P33_RIPERCOL_150F_BULA",
+        "field_key": "withdrawal"
+      },
+      {
+        "withdrawal_rule_key": "C02_F6_CLOSURE_P38_CORTE_SC_P12073_V00",
+        "source_key": "SRC_C02_P38_EPRECIS_P12073_V00",
+        "field_key": "withdrawal"
+      }
+    ],
+    "product_class_rows": [],
+    "product_class_group_rows": [],
+    "product_class_group_member_rows": [],
+    "product_class_default_rule_rows": [],
+    "protocol_rows": [],
+    "protocol_item_rows": []
+  }
+}

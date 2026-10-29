@@ -1,0 +1,135 @@
+{
+  "artifact": "sanitario_p38_integration_and_f6_review",
+  "date": "2026-10-29",
+  "baseline": {
+    "branch": "codex/optimize-agent-infrastructure",
+    "head": "4aacd94facbfb67dabc188c6a5df0553dfcba764",
+    "remote_main": "20140c074b34857e5f4343f47778f5560e2e2482",
+    "worktree": "C:/Users/mares/dyad-apps/GestaoAgro",
+    "worktree_count": 1,
+    "staged_files": [],
+    "main_to_head_files": [
+      "src/components/animals/CalfInitialEditor.tsx",
+      "src/lib/reproduction/__tests__/registerPostPartum.test.ts",
+      "src/lib/reproduction/postPartum.ts"
+    ],
+    "preserved_concurrent_files": [
+      "docs/review/MASTER_BACKLOG.md",
+      "docs/review/MASTER_BACKLOG_EXECUTION_PLAN.md",
+      "src/lib/reproduction/__tests__/calfJourney.test.ts",
+      "src/lib/reproduction/calfJourney.ts",
+      "src/lib/testFarm/service.ts",
+      "docs/ux/UX-DISCOVERY-02.md"
+    ]
+  },
+  "deployment": {
+    "id": "dpl_6P2kx5yMarubVmWsiHKGsbpmcvVQ",
+    "url": "rebanho-sync-qt74vfwe7-joao-paulo-mares-projects.vercel.app",
+    "target": "production",
+    "state": "READY",
+    "created_at": 1793227295899,
+    "sha": "20140c074b34857e5f4343f47778f5560e2e2482",
+    "branch": "main",
+    "aliases": [
+      "rebanho-sync.vercel.app"
+    ],
+    "evidence_method": "Vercel list_deployments/get_deployment/get_project; Git source metadata and git show of deployed SHA"
+  },
+  "compatibility": {
+    "classification": "COMPATIBILIDADE_INSUFICIENTE_PARA_ATIVAR_P38",
+    "deployed_dexie_version": 33,
+    "local_dexie_version": 34,
+    "deployed_missing": [
+      "sanitario_produto_carencia_fontes_v2 pull/store",
+      "purpose-specific zero semantics",
+      "selected-rule withdrawal evidence"
+    ],
+    "deploy_performed": false
+  },
+  "validation_reused": {
+    "evidence": "SANITARIO_V2_C02_P38_LOCAL_RESULT_20261029.json",
+    "head_matches": true,
+    "runtime_modified_in_this_continuation": false,
+    "tests_passed": 397,
+    "files": 14,
+    "typecheck": {
+      "baseline": 233,
+      "current": 233,
+      "new_diagnostics": [],
+      "comparison_key": [
+        "file",
+        "code",
+        "message"
+      ],
+      "global_pass": false
+    },
+    "limits": "Recibo anterior contém resumo comparativo e diagnósticos dos arquivos tocados, não o inventário completo dos 233. Não foi repetido typecheck sem delta runtime."
+  },
+  "regulatory": {
+    "classification": "VIGENCIA_CONFIRMADA",
+    "evidence": "SANITARIO_V2_C02_P38_REGULATORIO_20261029.json",
+    "remote_changes": 0
+  },
+  "next_f6": {
+    "product": "P33 — Ripercol L 150 F",
+    "product_id": "53678137-452a-5910-9bc6-67022504a6ce",
+    "field": "withdrawal: bovino/corte/SC, meat_days=7",
+    "candidate": "SANITARIO_V2_C02_P33_CORTE_SC_REVIEW_CANDIDATE_20261029.json",
+    "remote_changes": 0,
+    "activation": false,
+    "planner_dry_run": {
+      "create": 5,
+      "skip": 1,
+      "update": 0
+    },
+    "memory_replay": {
+      "skip": 6
+    },
+    "postgres_rehearsal": false,
+    "tests_passed": 7
+  },
+  "gate": {
+    "integration": "READY WITH CAVEAT",
+    "regulatory_p38": "VIGENCIA_CONFIRMADA",
+    "curadoria_proximo_f6": "CONFIRMADO_DOCUMENTAL_ABATE_SC; CANDIDATA_LOCAL_VALIDADA",
+    "operational_release": false
+  },
+  "runtime_manifest": [
+    {
+      "path": "scripts/codex/import-sanitario-protocols-v2.mjs",
+      "sha256": "3572a11b5e593074e90a1c5a79d2586f65a178ae8cff23d4e867850550675135"
+    },
+    {
+      "path": "src/lib/offline/db.ts",
+      "sha256": "3993085007639eb8ee431da26af83ce6d3262c40a15bfe36e2ac39ec8626e726"
+    },
+    {
+      "path": "src/lib/offline/pull.ts",
+      "sha256": "134b0786efa8fa98cc560c74de38b62d58f5c5295afdfa5c29a5e7f1c3e18905"
+    },
+    {
+      "path": "src/lib/offline/tableMap.ts",
+      "sha256": "8f56ae5d3e4b92af43360ca3c09771dd31087e78f4f6976a9e81bfd7d878bdd6"
+    },
+    {
+      "path": "src/lib/offline/types.ts",
+      "sha256": "e2d222c5e7029e5f6a048ed5ed726cff1a82028af496ac7732899764923d812b"
+    },
+    {
+      "path": "src/lib/sanitario/execution/operationalWithdrawalSnapshotV2.ts",
+      "sha256": "74eb15109102d9d1fcc0320c84775c5f22b6a0b8bbb11c085888682cb27d9799"
+    },
+    {
+      "path": "src/lib/sanitario/execution/executedProductTechnicalSnapshotV2.ts",
+      "sha256": "5d4436460beb7ad104a311bc31b88f856367d05f7be0628394223612c849b5bf"
+    },
+    {
+      "path": "src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts",
+      "sha256": "b3642695755cb0cbdaa8c3a0d9fe64eb2a8867cdc29db3909c3a21eb440f2f4c"
+    },
+    {
+      "path": "src/lib/sanitario/reconciliation/sanitaryCorrectionV2.ts",
+      "sha256": "706bd19f02b5d8784a05665b6f4b96a139f87c9dc95075d3f077b2bf8d13f236"
+    }
+  ]
+}

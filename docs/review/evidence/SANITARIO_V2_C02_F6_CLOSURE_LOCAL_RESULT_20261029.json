@@ -1,0 +1,139 @@
+{
+  "date": "2026-10-29",
+  "head": "4aacd94facbfb67dabc188c6a5df0553dfcba764",
+  "branch": "codex/optimize-agent-infrastructure",
+  "scope": {
+    "products": 39,
+    "common_fields": 351,
+    "counts": {
+      "CONFIRMADO": 288,
+      "DIVERGENTE": 19,
+      "SEM_EVIDENCIA": 44
+    },
+    "confirmed_persisted_before": 260,
+    "confirmed_persisted_after": 283,
+    "new_registration_provenance_fields": 23,
+    "confirmed_not_structured": 5
+  },
+  "candidate_sha256": "f09d9ebc4c4873693740b2afe218ce75ceff4cff3c66218a4e5be4bf6d4389bb",
+  "sql_sha256": "e557118904fb039b218899c2425c2f88c3888b3247a40e2fcf4e0c64708fef36",
+  "tests": {
+    "command": "pnpm test -- tests/codex/sanitario-f6-closure.test.mjs tests/codex/sanitario-c02-p38.test.mjs tests/codex/sanitario-c02-p33.test.mjs --reporter=dot",
+    "files": 3,
+    "passed": 33,
+    "failed": 0,
+    "exit_code": 0
+  },
+  "postgres_rehearsal": {
+    "command": "node tests/codex/sanitario-f6-closure.local.mjs",
+    "create": 43,
+    "update": 0,
+    "skip": 42,
+    "reject": 0,
+    "canonical_convergence_checked": true,
+    "local_rolled_back": true,
+    "remote_executed_by_harness": false,
+    "exit_code": 0,
+    "initial_failure": "Fixture local não incluía GO/SC/DF no enum UF; corrigida somente no harness."
+  },
+  "checks": {
+    "eslint_four_touched_js_exit": 0,
+    "node_check_four_js_exit": 0,
+    "docs_gates_exit": 0,
+    "diff_check_exit": 0,
+    "csv_matrix_products": 39,
+    "csv_exception_fields": 63
+  },
+  "runtime_infrastructure": {
+    "runtime_files_hash_compared": 8,
+    "changed": [],
+    "reused_tests": 397,
+    "reused_typecheck": {
+      "baseline_count": 233,
+      "current_count": 233,
+      "new_diagnostics": [],
+      "global_pass": false
+    },
+    "deployment_id": "dpl_6P2kx5yMarubVmWsiHKGsbpmcvVQ",
+    "remote_main": "20140c074b34857e5f4343f47778f5560e2e2482",
+    "compatibility": "INSUFICIENTE_PARA_ATIVACAO",
+    "deployed_dexie": 33,
+    "local_dexie": 34
+  },
+  "remote": {
+    "receipt": "SANITARIO_V2_C02_F6_CLOSURE_REMOTE_RESULT_20261029.json",
+    "create": 43,
+    "update": 0,
+    "approved": 0,
+    "replay_skip": 85,
+    "all_previous_rows_unchanged": true,
+    "inserted_identities": {
+      "sanitario_fontes_tecnicas_v2": [
+        "58f61d9e-b677-5a12-9107-9cff4bd4f310",
+        "c0ea02f0-f18f-5084-b37d-38e454698cfe",
+        "c9921db1-95c0-5868-bfe2-4aba7a8a93f3",
+        "ea580dd1-9d7b-5ab7-8fa9-fbbcb4a0eb4e"
+      ],
+      "sanitario_fonte_cobertura_campos_v2": [
+        "1ed4f539-686d-5d64-ad81-a9c9ad5d308d",
+        "5446ca3c-ae4a-5bcf-ace4-6d4a0e5b732f",
+        "5c26551c-b2d3-5d6a-b714-a58088241843",
+        "731efc63-c891-5b4b-8023-5efdfa14d753",
+        "9f9a2134-02ca-5b8b-819f-6350307d06fe",
+        "cb0393dc-bb1b-5ac5-8908-6dde8c7b69c5",
+        "dce7c8ab-fe8c-57ad-a71c-02930c9c79cc"
+      ],
+      "sanitario_produto_fontes_v2": [
+        "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07:ea580dd1-9d7b-5ab7-8fa9-fbbcb4a0eb4e:composition",
+        "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07:ea580dd1-9d7b-5ab7-8fa9-fbbcb4a0eb4e:dose",
+        "0f1b6c73-c50f-5ad4-a308-29788de7429a:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "12128db7-71ff-551d-92e0-18418140b91b:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "1628cf40-3676-53a6-9fe2-4e154936167b:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "3e0a501b-1742-506c-a094-d8a18ad8a98a:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "453b1b35-93a4-5790-8217-7b7e83c78c49:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "55e88d23-83c9-5421-ba2f-7da1b979c03b:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "6417c886-2a93-599a-b74a-c72ac1c03752:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "88c4a3c9-868d-5eb0-974c-b16812a8918e:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "a1cae25c-7d96-5cd9-b5b3-fb2e74632545:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "a90ae0cf-d97b-577c-a622-080f2db70c3c:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "af618de9-e22b-5ad7-a852-43933c6cb3d3:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "ba59c489-49d5-5362-b5f4-94818c90deb4:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "c2171cd8-1865-5d12-90c0-22062043bc73:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "d1702fc4-01bb-59be-84a2-eab38babe223:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "dfed6e97-286a-5404-985b-528d0befa1ec:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "f5540551-7dd6-5176-b909-22916e5ed3de:58f61d9e-b677-5a12-9107-9cff4bd4f310:registration",
+        "1957cff0-3741-5dd8-bf81-b157a2d575c8:c9921db1-95c0-5868-bfe2-4aba7a8a93f3:registration",
+        "5402b0be-eabb-5bce-91e8-242db1112151:c9921db1-95c0-5868-bfe2-4aba7a8a93f3:registration",
+        "670001a6-3634-582b-a277-f3bc65f89a0e:c9921db1-95c0-5868-bfe2-4aba7a8a93f3:registration",
+        "7fc44e31-3373-50de-97fd-58e874938938:c9921db1-95c0-5868-bfe2-4aba7a8a93f3:registration",
+        "db743728-59e2-5ecb-8b2e-211ab170618f:c9921db1-95c0-5868-bfe2-4aba7a8a93f3:registration",
+        "e5043b4b-6646-52d9-a40d-b2b46d18e774:c9921db1-95c0-5868-bfe2-4aba7a8a93f3:registration",
+        "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07:ea580dd1-9d7b-5ab7-8fa9-fbbcb4a0eb4e:route",
+        "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07:ea580dd1-9d7b-5ab7-8fa9-fbbcb4a0eb4e:species_authorization",
+        "53678137-452a-5910-9bc6-67022504a6ce:c0ea02f0-f18f-5084-b37d-38e454698cfe:withdrawal"
+      ],
+      "sanitario_produto_carencia_rules_v2": [
+        "04012eb3-618b-5813-a387-a16f769d2a64",
+        "2651d9d7-390e-50ed-8065-4c4ba7b1ed1c"
+      ],
+      "sanitario_produto_carencia_fontes_v2": [
+        "2651d9d7-390e-50ed-8065-4c4ba7b1ed1c:c0ea02f0-f18f-5084-b37d-38e454698cfe:withdrawal",
+        "04012eb3-618b-5813-a387-a16f769d2a64:c6ab8b68-1bbf-583c-82c9-2bfbc2ca6507:withdrawal"
+      ]
+    }
+  },
+  "gate": "READY WITH CAVEAT",
+  "operational_release": false,
+  "limitations": [
+    "23 campos de registro persistidos por vínculo documental e identidades na cobertura; colunas de registro e metadata aprovadas não foram alteradas.",
+    "Quatro conflitos técnicos e 15 retenções regulatórias mantidos; P06 tem correspondência de licença ainda a confirmar pela bula.",
+    "Typecheck global herdado permanece falho; nenhum delta TS nesta continuidade."
+  ],
+  "classification_control": {
+    "red_observed": true,
+    "previous_behavior": "Valor preenchido sem prova retornava CONFIRMADO no classificador documental.",
+    "corrected_behavior": "CONFIRMADO requer prova primária; 351 células reconciliadas com os mesmos totais.",
+    "remote_data_changed": false
+  }
+}

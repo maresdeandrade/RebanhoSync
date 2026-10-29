@@ -1,0 +1,559 @@
+diff --git a/src/lib/offline/__tests__/sanitarioIncrementalPullCursor.test.ts b/src/lib/offline/__tests__/sanitarioIncrementalPullCursor.test.ts
+index bbb3bd1..a698b3e 100644
+--- a/src/lib/offline/__tests__/sanitarioIncrementalPullCursor.test.ts
++++ b/src/lib/offline/__tests__/sanitarioIncrementalPullCursor.test.ts
+@@ -33,0 +34,2 @@ function makeQuery(table: string) {
++    order: vi.fn(() => query),
++    range: vi.fn((start: number, end: number) => Promise.resolve({ data: filterRows(table, filters).slice(start, end + 1), error: null })),
+@@ -90,0 +93,22 @@ describe("sanitario v2 incremental pull cursors", () => {
++  it("paginação/reconnect substitui vínculos completos e falha de rede preserva cache", async () => {
++    const table = "sanitario_produto_carencia_fontes_v2";
++    const store = db.catalog_sanitario_produto_carencia_fontes_v2;
++    remoteRows[table] = Array.from({ length: 1001 }, (_, index) => ({
++      withdrawal_rule_id: `rule-${index}`, source_id: "source", field_key: "withdrawal", created_at: "2026-10-29",
++    }));
++    await pullSanitarioTechnicalCatalogV2("farm-A");
++    expect(await store.count()).toBe(1001);
++    await pullSanitarioTechnicalCatalogV2("farm-A");
++    expect(await store.count()).toBe(1001);
++    remoteRows[table] = [remoteRows[table][0]];
++    await pullSanitarioTechnicalCatalogV2("farm-A");
++    const offline = await store.toArray();
++    expect(offline).toHaveLength(1);
++    vi.mocked(supabase.from).mockImplementation((name: string) => {
++      if (name === table) throw new Error("offline-before-install");
++      return makeQuery(name) as never;
++    });
++    await expect(pullSanitarioTechnicalCatalogV2("farm-B")).rejects.toThrow("offline-before-install");
++    expect(await store.toArray()).toEqual(offline);
++    expect(await db.sync_pull_cursors.get(`${table}:unscoped:null`)).toBeUndefined();
++  });
+diff --git a/src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Pull.test.ts b/src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Pull.test.ts
+index 99fc126..0fe4850 100644
+--- a/src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Pull.test.ts
++++ b/src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Pull.test.ts
+@@ -25,0 +26 @@ const { localStores } = vi.hoisted(() => ({
++    "catalog_sanitario_produto_carencia_fontes_v2",
+@@ -72 +73 @@ const makeQuery = (table: string) => {
+-      if (table !== "sanitario_fontes_tecnicas_v2") {
++      if (table !== "sanitario_fontes_tecnicas_v2" && table !== "sanitario_produto_carencia_fontes_v2") {
+@@ -77,0 +79,2 @@ const makeQuery = (table: string) => {
++    order: vi.fn(() => query),
++    range: vi.fn((start: number, end: number) => Promise.resolve({ data: (rowsByTable[table] ?? []).slice(start, end + 1), error: null })),
+@@ -226,0 +230,3 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
++    rowsByTable.sanitario_produto_carencia_fontes_v2 = [{
++      withdrawal_rule_id: "withdrawal-1", source_id: "source-global", field_key: "withdrawal", created_at: "2026-06-12",
++    }];
+@@ -255 +261 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
+-    expect(supabase.from).toHaveBeenCalledTimes(8);
++    expect(supabase.from).toHaveBeenCalledTimes(9);
+@@ -380 +386,2 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
+-      expect(store.clear).not.toHaveBeenCalled();
++      if (store === storesByName.get("catalog_sanitario_produto_carencia_fontes_v2")) expect(store.clear).toHaveBeenCalledOnce();
++      else expect(store.clear).not.toHaveBeenCalled();
+diff --git a/src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Store.test.ts b/src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Store.test.ts
+index 7737903..0fdd369 100644
+--- a/src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Store.test.ts
++++ b/src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Store.test.ts
+@@ -21,0 +22 @@ const stores = [
++  "catalog_sanitario_produto_carencia_fontes_v2",
+diff --git a/src/lib/offline/__tests__/sanitarioWithdrawalSources.upgrade.test.ts b/src/lib/offline/__tests__/sanitarioWithdrawalSources.upgrade.test.ts
+new file mode 100644
+index 0000000..636ed62
+--- /dev/null
++++ b/src/lib/offline/__tests__/sanitarioWithdrawalSources.upgrade.test.ts
+@@ -0,0 +1,38 @@
++/** @vitest-environment jsdom */
++import "fake-indexeddb/auto";
++import Dexie from "dexie";
++import { describe, expect, it } from "vitest";
++import { OfflineDB } from "../db";
++
++describe("v34 withdrawal provenance is additive and pull-only", () => {
++  it("preserves v33 records, pending operations and old-client reopen without inventing links", async () => {
++    const name = `P38-provenance-${crypto.randomUUID()}`;
++    const current = new OfflineDB(name);
++    const stores = Object.fromEntries(current.tables.filter(t => t.name !== "catalog_sanitario_produto_carencia_fontes_v2")
++      .map(t => [t.name, [t.schema.primKey.src, ...t.schema.indexes.map(i => i.src)].join(",")]));
++    const old = new Dexie(name);
++    old.version(33).stores(stores);
++    try {
++      await old.open();
++      const pending = { client_op_id: "pending", client_tx_id: "tx", table: "animais", action: "UPDATE", record: { id: "animal", fazenda_id: "farm-A" }, sync_state: "PENDING" };
++      await old.table("queue_ops").put(pending);
++      await old.table("catalog_sanitario_produto_carencia_rules_v2").put({ id: "old-rule", product_id: "product", deleted_at: null });
++      old.close();
++      await current.open();
++      expect(current.verno).toBe(34);
++      expect(await current.queue_ops.toArray()).toEqual([pending]);
++      expect(await current.catalog_sanitario_produto_carencia_rules_v2.get("old-rule")).toMatchObject({ product_id: "product" });
++      expect(await current.catalog_sanitario_produto_carencia_fontes_v2.count()).toBe(0);
++      const link = { withdrawal_rule_id: "old-rule", source_id: "source", field_key: "withdrawal", created_at: "2026-10-29" };
++      await current.catalog_sanitario_produto_carencia_fontes_v2.put(link);
++      current.close();
++      await old.open();
++      expect(await old.table("queue_ops").toArray()).toEqual([pending]);
++      old.close();
++      await current.open();
++      expect(await current.catalog_sanitario_produto_carencia_fontes_v2.toArray()).toEqual([link]);
++    } finally {
++      old.close(); current.close(); await Dexie.delete(name);
++    }
++  });
++});
+diff --git a/src/lib/offline/__tests__/telemetryFlushCursors.upgrade.test.ts b/src/lib/offline/__tests__/telemetryFlushCursors.upgrade.test.ts
+index 6a94c95..f16ba46 100644
+--- a/src/lib/offline/__tests__/telemetryFlushCursors.upgrade.test.ts
++++ b/src/lib/offline/__tests__/telemetryFlushCursors.upgrade.test.ts
+@@ -13 +13 @@ describe("F24.5E1 — additive v32 to v33 telemetry checkpoint", () => {
+-      .filter(table => table.name !== "telemetry_flush_cursors")
++      .filter(table => !["telemetry_flush_cursors", "catalog_sanitario_produto_carencia_fontes_v2"].includes(table.name))
+@@ -42,2 +42,3 @@ describe("F24.5E1 — additive v32 to v33 telemetry checkpoint", () => {
+-      expect(upgraded.verno).toBe(33);
+-      expect(upgraded.tables.map(table => table.name).sort()).toEqual([...Object.keys(stores), "telemetry_flush_cursors"].sort());
++      expect(upgraded.verno).toBe(34);
++      expect(upgraded.tables.map(table => table.name).sort()).toEqual([...Object.keys(stores), "telemetry_flush_cursors", "catalog_sanitario_produto_carencia_fontes_v2"].sort());
++      expect(await upgraded.catalog_sanitario_produto_carencia_fontes_v2.count()).toBe(0);
+diff --git a/src/lib/offline/db.ts b/src/lib/offline/db.ts
+index 0619664..d7af993 100644
+--- a/src/lib/offline/db.ts
++++ b/src/lib/offline/db.ts
+@@ -51,0 +52 @@ import {
++  type SanitarioProdutoCarenciaFonteLocalV2,
+@@ -183,0 +185,4 @@ export class OfflineDB extends Dexie {
++  catalog_sanitario_produto_carencia_fontes_v2!: Table<
++    SanitarioProdutoCarenciaFonteLocalV2,
++    [string, string, string]
++  >;
+@@ -865,0 +871,5 @@ export class OfflineDB extends Dexie {
++    // Additive pull-only provenance; no inferred links or changes to pending work.
++    this.version(34).stores({
++      catalog_sanitario_produto_carencia_fontes_v2:
++        "[withdrawal_rule_id+source_id+field_key], withdrawal_rule_id, source_id, field_key",
++    });
+diff --git a/src/lib/offline/pull.ts b/src/lib/offline/pull.ts
+index 7c80ff4..a73a9a2 100644
+--- a/src/lib/offline/pull.ts
++++ b/src/lib/offline/pull.ts
+@@ -54,0 +55 @@ export const SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES = [
++  "sanitario_produto_carencia_fontes_v2",
+@@ -666,0 +668,4 @@ async function writeMergeResults(
++      // This composite link has no updated_at/deleted_at. Install only a complete
++      // RLS-visible snapshot, in the same transaction as its catalog parents.
++      if (remote === "sanitario_produto_carencia_fontes_v2") await store.clear();
++
+@@ -933,0 +939,13 @@ export const pullSanitarioTechnicalCatalogV2 = async (fazenda_id: string) => {
++    if (remoteTable === "sanitario_produto_carencia_fontes_v2") {
++      const rows: RemoteRow[] = [];
++      for (let offset = 0; ; offset += 1000) {
++        const { data, error } = await supabase.from(remoteTable).select("*")
++          .order("withdrawal_rule_id").order("source_id").order("field_key")
++          .range(offset, offset + 999);
++        if (error) throw error;
++        rows.push(...(data ?? []));
++        if ((data?.length ?? 0) < 1000) break;
++      }
++      results[remoteTable] = rows;
++      continue;
++    }
+diff --git a/src/lib/offline/tableMap.ts b/src/lib/offline/tableMap.ts
+index 5a77094..81cda5d 100644
+--- a/src/lib/offline/tableMap.ts
++++ b/src/lib/offline/tableMap.ts
+@@ -66,0 +67,2 @@ export const TABLE_MAP: Record<string, string> = {
++  sanitario_produto_carencia_fontes_v2:
++    "catalog_sanitario_produto_carencia_fontes_v2",
+diff --git a/src/lib/offline/types.ts b/src/lib/offline/types.ts
+index d15555e..cfd25b6 100644
+--- a/src/lib/offline/types.ts
++++ b/src/lib/offline/types.ts
+@@ -1212,0 +1213,7 @@ export interface SanitarioProdutoFonteLocalV2 {
++export interface SanitarioProdutoCarenciaFonteLocalV2 {
++  withdrawal_rule_id: string;
++  source_id: string;
++  field_key: string;
++  created_at: string;
++}
++
+diff --git a/src/lib/sanitario/execution/__tests__/operationalWithdrawalSnapshotV2.test.ts b/src/lib/sanitario/execution/__tests__/operationalWithdrawalSnapshotV2.test.ts
+index bd4d457..ceb8167 100644
+--- a/src/lib/sanitario/execution/__tests__/operationalWithdrawalSnapshotV2.test.ts
++++ b/src/lib/sanitario/execution/__tests__/operationalWithdrawalSnapshotV2.test.ts
+@@ -41,0 +42 @@ const input = (overrides: Partial<BuildOperationalWithdrawalSnapshotInputV2> = {
++  withdrawalSources: (overrides.rules ?? [rule()]).map(entry => ({ withdrawal_rule_id: entry.id, source_id: source.id, field_key: "withdrawal", created_at: "2026-01-01T00:00:00Z" })),
+@@ -46,0 +48,16 @@ describe("operational withdrawal snapshot v2", () => {
++  it.each([
++    { name: "ausente", withdrawalSources: [] },
++    { name: "outra regra", withdrawalSources: [{ withdrawal_rule_id: "other-rule", source_id: source.id, field_key: "withdrawal", created_at: "2026-01-01" }] },
++    { name: "outro campo", withdrawalSources: [{ withdrawal_rule_id: "rule-1", source_id: source.id, field_key: "dose", created_at: "2026-01-01" }] },
++  ])("fonte de produto não substitui vínculo da regra: $name", ({ withdrawalSources }) => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({ withdrawalSources }));
++    expect(value.results.every(result => result.state === "unknown")).toBe(true);
++  });
++  it("vínculo da regra não autoriza fonte de outro produto nem fallback de cliente antigo", () => {
++    const wrongProduct = buildOperationalWithdrawalSnapshotV2(input({
++      productSources: [{ product_id: "other-product", source_id: source.id, field_key: "withdrawal", created_at: "2026-01-01" }],
++    }));
++    expect(wrongProduct.results.every(result => result.state === "unknown")).toBe(true);
++    const legacy = buildOperationalWithdrawalSnapshotV2(input({ withdrawalSources: undefined }));
++    expect(legacy.results.every(result => result.state === "unknown")).toBe(true);
++  });
+@@ -67 +84 @@ describe("operational withdrawal snapshot v2", () => {
+-    const absent = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ applicability: "zero", meat_days: null, milk_days: null })] }));
++    const absent = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ applicability: "zero", meat_days: 0, milk_days: 0 })] }));
+@@ -72,0 +90,153 @@ describe("operational withdrawal snapshot v2", () => {
++  it("P38 sintético ativo: leite zero não comprova carne zero", () => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({
++      route: "SC",
++      animals: [{ animalId: "animal-1", speciesCode: "bovino", aptitude: "leite" }],
++      rules: [rule({ aptitude: "leite", route: "SC", applicability: "zero", meat_days: null, milk_days: 0 })],
++    }));
++    expect(value.results.find(result => result.purpose === "milk")).toMatchObject({ state: "explicit_absence", ruleId: "rule-1" });
++    expect(value.results.find(result => result.purpose === "meat")).toMatchObject({ state: "unknown", period: null, sourceRef: null });
++    expect(projectOperationalWithdrawalLegacyFieldsV2(value)).toMatchObject({
++      carneDias: null, carneAte: null, leiteDias: null, leiteAte: null, createsActiveWithdrawal: false,
++    });
++  });
++
++  it("zero com todos os valores nulos permanece desconhecido", () => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ applicability: "zero", meat_days: null, milk_days: null })] }));
++    expect(value.results.every(result => result.state === "unknown")).toBe(true);
++  });
++
++  it("separa regras complementares de carne com prazo e leite zero", () => {
++    const request = input({ rules: [
++      rule({ id: "meat-period", meat_days: 12, milk_days: null }),
++      rule({ id: "milk-zero", meat_days: null, milk_days: 0, applicability: "zero" }),
++    ] });
++    const before = structuredClone(request);
++    const value = buildOperationalWithdrawalSnapshotV2(request);
++    expect(value.results.find(result => result.purpose === "meat")).toMatchObject({
++      state: "calculated", ruleId: "meat-period", equivalentRuleIds: ["meat-period"],
++      period: { value: 12, unit: "days" }, endsOn: "2026-07-14", endsAt: "2026-07-15T02:59:59.999Z",
++    });
++    expect(value.results.find(result => result.purpose === "milk")).toMatchObject({
++      state: "explicit_absence", ruleId: "milk-zero", equivalentRuleIds: ["milk-zero"],
++    });
++    expect(projectOperationalWithdrawalLegacyFieldsV2(value)).toMatchObject({
++      carneDias: 12, carneAte: "2026-07-14", leiteDias: null, leiteAte: null, createsActiveWithdrawal: true,
++    });
++    expect(buildOperationalWithdrawalSnapshotV2({ ...request, rules: [...request.rules].reverse() })).toEqual(value);
++    expect(buildOperationalWithdrawalSnapshotV2(request)).toEqual(value);
++    expect(request).toEqual(before);
++  });
++
++  it("compara equivalência somente na finalidade avaliada", () => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [
++      rule({ id: "rule-b", milk_days: 3 }), rule({ id: "rule-a", milk_days: 2 }),
++    ] }));
++    expect(value.results.find(result => result.purpose === "meat")).toMatchObject({
++      state: "calculated", ruleId: "rule-a", equivalentRuleIds: ["rule-a", "rule-b"],
++    });
++    expect(value.results.find(result => result.purpose === "milk").state).toBe("ambiguous");
++  });
++
++  it("zero e prazo positivo para a mesma finalidade permanecem ambíguos", () => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [
++      rule({ id: "zero", applicability: "zero", meat_days: null, milk_days: 0 }),
++      rule({ id: "period", meat_days: null, milk_days: 2 }),
++    ] }));
++    expect(value.results.find(result => result.purpose === "milk").state).toBe("ambiguous");
++    expect(value.results.find(result => result.purpose === "meat").state).toBe("unknown");
++  });
++
++  it.each([
++    { meat_days: null, milk_days: 0, milk_hours: null },
++    { meat_days: null, milk_days: null, milk_hours: 0 },
++  ])("zero de leite explícito em dias ou horas não cobre carne: %j", values => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ ...values, applicability: "zero" })] }));
++    expect(value.results.find(result => result.purpose === "milk").state).toBe("explicit_absence");
++    expect(value.results.find(result => result.purpose === "meat").state).toBe("unknown");
++  });
++
++  it.each([
++    { milk_days: 2, milk_hours: null },
++    { milk_days: 0, milk_hours: 12 },
++    { milk_days: 2, milk_hours: 0 },
++  ])("zero inconsistente não comprova ausência: %j", values => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ ...values, meat_days: null, applicability: "zero" })] }));
++    expect(value.results.every(result => result.state === "unknown")).toBe(true);
++  });
++
++  it.each(["precisa_validar", "bloqueado", "arquivado"] as const)("ignora regra %s", status_curatorial => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ status_curatorial, applicability: "zero", meat_days: 0, milk_days: 0 })] }));
++    expect(value.results.every(result => result.state === "unknown")).toBe(true);
++  });
++
++  it.each([
++    { name: "ausente", sources: [] },
++    { name: "fraca", sources: [{ ...source, strength: "apoio" as const }] },
++    { name: "outra fazenda", sources: [{ ...source, scope: "fazenda" as const, fazenda_id: "farm-2" }] },
++  ])("zero não dispensa fonte forte da fazenda correta: $name", ({ sources }) => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({
++      sources,
++      rules: [rule({ applicability: "zero", meat_days: 0, milk_days: 0 })],
++    }));
++    expect(value.results.every(result => result.state === "unknown")).toBe(true);
++  });
++
++  it.each(["not_permitted", "not_applicable"] as const)("preserva %s sem períodos", applicability => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ applicability, meat_days: null, milk_days: null })] }));
++    expect(value.results.every(result => result.state === (applicability === "not_permitted" ? "not_permitted" : "explicit_absence"))).toBe(true);
++  });
++
++  it("zero explícito de carne não cobre leite sem valor", () => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({ applicability: "zero", meat_days: 0, milk_days: null })] }));
++    expect(value.results.find(result => result.purpose === "meat")?.state).toBe("explicit_absence");
++    expect(value.results.find(result => result.purpose === "milk")?.state).toBe("unknown");
++  });
++
++  it.each(["leite", "corte", "mista"] as const)("regra ativa de leite respeita aptidão %s", aptitude => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({
++      animals: [{ animalId: "animal-1", speciesCode: "bovino", aptitude }],
++      rules: [rule({ aptitude: "leite", applicability: "zero", meat_days: null, milk_days: 0 })],
++    }));
++    expect(value.results.find(result => result.purpose === "meat")?.state).toBe("unknown");
++    expect(value.results.find(result => result.purpose === "milk")?.state)
++      .toBe(aptitude === "leite" ? "explicit_absence" : "unknown");
++  });
++
++  it.each([
++    { name: "sem cobertura", coverages: [] },
++    { name: "outro campo", coverages: [{ ...coverage, field_key: "dose" as const }] },
++    { name: "cobertura tombstonada", coverages: [{ ...coverage, deleted_at: "2026-07-01" }] },
++  ])("zero exige cobertura withdrawal válida: $name", ({ coverages }) => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({
++      coverages, rules: [rule({ applicability: "zero", meat_days: 0, milk_days: 0 })],
++    }));
++    expect(value.results.every(result => result.state === "unknown")).toBe(true);
++  });
++
++  it("aceita fonte forte da própria fazenda e rejeita evidência ambígua", () => {
++    const request = input({
++      sources: [{ ...source, scope: "fazenda", fazenda_id: "farm-1" }],
++      rules: [rule({ applicability: "zero", meat_days: 0, milk_days: 0 })],
++    });
++    expect(buildOperationalWithdrawalSnapshotV2(request).results.every(result => result.state === "explicit_absence")).toBe(true);
++    const secondSource = { ...source, id: "source-2" };
++    const ambiguous = buildOperationalWithdrawalSnapshotV2({
++      ...request, sources: [...request.sources, secondSource],
++      coverages: [coverage, { ...coverage, id: "coverage-2", source_id: secondSource.id }],
++      productSources: [...request.productSources, { ...request.productSources[0], source_id: secondSource.id }],
++      withdrawalSources: [...request.withdrawalSources!, { ...request.withdrawalSources![0], source_id: secondSource.id }],
++    });
++    expect(ambiguous.results.every(result => result.state === "unknown")).toBe(true);
++  });
++
++  it.each([
++    { valid_from: "2026-07-03" },
++    { valid_until: "2026-07-01" },
++    { deleted_at: "2026-07-01" },
++  ])("zero fora da vigência ou tombstonado não é usado: %j", values => {
++    const value = buildOperationalWithdrawalSnapshotV2(input({ rules: [rule({
++      ...values, applicability: "zero", meat_days: 0, milk_days: 0,
++    })] }));
++    expect(value.results.every(result => result.state === "unknown")).toBe(true);
++  });
++
+@@ -83 +253 @@ describe("operational withdrawal snapshot v2", () => {
+-  it("mais de uma regra não equivalente permanece ambígua", () => {
++  it("contradição em carne bloqueia carne e preserva leite equivalente", () => {
+@@ -85 +255,2 @@ describe("operational withdrawal snapshot v2", () => {
+-    expect(value.results.every((result) => result.state === "ambiguous")).toBe(true);
++    expect(value.results.find(result => result.purpose === "meat")?.state).toBe("ambiguous");
++    expect(value.results.find(result => result.purpose === "milk")?.state).toBe("calculated");
+diff --git a/src/lib/sanitario/execution/__tests__/sanitaryAgendaExecutionV2.test.ts b/src/lib/sanitario/execution/__tests__/sanitaryAgendaExecutionV2.test.ts
+index 81021d9..c799079 100644
+--- a/src/lib/sanitario/execution/__tests__/sanitaryAgendaExecutionV2.test.ts
++++ b/src/lib/sanitario/execution/__tests__/sanitaryAgendaExecutionV2.test.ts
+@@ -298,0 +299 @@ async function clearScope() {
++    db.catalog_sanitario_produto_carencia_fontes_v2.clear(),
+@@ -341,0 +343,3 @@ async function seedWithdrawalContext() {
++  await db.catalog_sanitario_produto_carencia_fontes_v2.put({
++    withdrawal_rule_id: withdrawalRule().id, source_id: "withdrawal-source", field_key: "withdrawal", created_at: now,
++  });
+@@ -1059,0 +1064,20 @@ describe("executeSanitaryAgendaV2", () => {
++  it.each([true, false])("P38 sintético na execução: leite zero exige vínculo da regra (%s)", async linked => {
++    await seedAgenda();
++    await seedWithdrawalContext();
++    await db.state_fazenda_sanidade_config.update("farm-1", { aptidao: "leite" });
++    await db.catalog_sanitario_produto_carencia_rules_v2.put(withdrawalRule({
++      aptitude: "leite", applicability: "zero", meat_days: null, milk_days: 0,
++    }));
++    if (!linked) await db.catalog_sanitario_produto_carencia_fontes_v2.clear();
++    const result = await executeSanitaryAgendaV2(baseInput, db);
++    const detail = await db.event_eventos_sanitario.get(result.eventId);
++    expect(detail?.produto_snapshot).toMatchObject({ withdrawalSnapshot: { results: expect.arrayContaining([
++      expect.objectContaining({ purpose: "meat", state: "unknown" }),
++      expect.objectContaining({ purpose: "milk", state: linked ? "explicit_absence" : "unknown" }),
++    ]) } });
++    expect(result.createsActiveWithdrawal).toBe(false);
++    await db.catalog_sanitario_produto_carencia_fontes_v2.clear();
++    expect((await executeSanitaryAgendaV2(baseInput, db)).eventId).toBe(result.eventId);
++    expect((await db.event_eventos_sanitario.get(result.eventId))?.produto_snapshot).toEqual(detail?.produto_snapshot);
++  });
++
+diff --git a/src/lib/sanitario/execution/executedProductTechnicalSnapshotV2.ts b/src/lib/sanitario/execution/executedProductTechnicalSnapshotV2.ts
+index c880f02..37271cb 100644
+--- a/src/lib/sanitario/execution/executedProductTechnicalSnapshotV2.ts
++++ b/src/lib/sanitario/execution/executedProductTechnicalSnapshotV2.ts
+@@ -5,0 +6 @@ import type {
++  SanitarioProdutoCarenciaFonteLocalV2,
+@@ -41,0 +43 @@ export type BuildExecutedProductTechnicalSnapshotInputV2 = {
++  withdrawalSources?: SanitarioProdutoCarenciaFonteLocalV2[];
+@@ -277,0 +280 @@ export function buildExecutedProductTechnicalSnapshotV2(
++      withdrawalSources: input.withdrawalSources,
+diff --git a/src/lib/sanitario/execution/operationalWithdrawalSnapshotV2.ts b/src/lib/sanitario/execution/operationalWithdrawalSnapshotV2.ts
+index e6b5342..1f6c549 100644
+--- a/src/lib/sanitario/execution/operationalWithdrawalSnapshotV2.ts
++++ b/src/lib/sanitario/execution/operationalWithdrawalSnapshotV2.ts
+@@ -4,0 +5 @@ import type {
++  SanitarioProdutoCarenciaFonteLocalV2,
+@@ -34,0 +36 @@ export type BuildOperationalWithdrawalSnapshotInputV2 = {
++  withdrawalSources?: SanitarioProdutoCarenciaFonteLocalV2[];
+@@ -133 +135,5 @@ export function calculateOperationalWithdrawalEndV2(input: {
+-function semanticRule(rule: SanitarioProdutoCarenciaRuleLocalV2) {
++function purposeValues(rule: SanitarioProdutoCarenciaRuleLocalV2, purpose: "meat" | "milk") {
++  return purpose === "meat" ? [rule.meat_days] : [rule.milk_days, rule.milk_hours];
++}
++
++function semanticRule(rule: SanitarioProdutoCarenciaRuleLocalV2, purpose: "meat" | "milk") {
+@@ -136,3 +142 @@ function semanticRule(rule: SanitarioProdutoCarenciaRuleLocalV2) {
+-    meat_days: rule.meat_days,
+-    milk_days: rule.milk_days,
+-    milk_hours: rule.milk_hours,
++    values: purposeValues(rule, purpose),
+@@ -146 +150 @@ function semanticRule(rule: SanitarioProdutoCarenciaRuleLocalV2) {
+-function evidence(input: BuildOperationalWithdrawalSnapshotInputV2) {
++function evidence(input: BuildOperationalWithdrawalSnapshotInputV2, ruleId: string) {
+@@ -148,0 +153,2 @@ function evidence(input: BuildOperationalWithdrawalSnapshotInputV2) {
++    if (!input.withdrawalSources?.some((entry) => entry.withdrawal_rule_id === ruleId &&
++      entry.source_id === link.source_id && entry.field_key === "withdrawal")) return [];
+@@ -217 +223,5 @@ function resultForPurpose(
+-    rule.aptitude === "all" || rule.aptitude === animal.aptitude
++    (rule.aptitude === "all" || rule.aptitude === animal.aptitude) &&
++    // Numeric rules cover only the purposes they explicitly describe. Keep
++    // contextual restrictions/unknowns independent of missing period values.
++    (!["zero", "period"].includes(rule.applicability) ||
++      purposeValues(rule, purpose).some((value) => value != null))
+@@ -220 +230 @@ function resultForPurpose(
+-  const semantics = new Set(applicable.map(semanticRule));
++  const semantics = new Set(applicable.map((rule) => semanticRule(rule, purpose)));
+@@ -223 +233 @@ function resultForPurpose(
+-  const proof = evidence(input);
++  const proof = evidence(input, selected.id);
+@@ -257 +267,8 @@ function resultForPurpose(
+-  if (selected.applicability === "zero" || selected.applicability === "not_applicable") {
++  if (selected.applicability === "zero") {
++    const values = purposeValues(selected, purpose);
++    if (!values.some((value) => value === 0) || values.some((value) => value != null && value !== 0)) {
++      return unknownResult(input, animal, purpose, "unknown", "purpose_not_explicitly_covered");
++    }
++    return { ...common, state: "explicit_absence", reason: "explicit_no_withdrawal", period: null, endsAt: null, endsOn: null };
++  }
++  if (selected.applicability === "not_applicable") {
+diff --git a/src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts b/src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts
+index 10c691a..251ca38 100644
+--- a/src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts
++++ b/src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts
+@@ -0,0 +1 @@
++import { readWithdrawalEvidenceCatalogV2 } from "./withdrawalEvidenceCatalogV2";
+@@ -112,0 +114 @@ export type SanitaryAgendaExecutionDbV2 = Pick<
++  | "catalog_sanitario_produto_carencia_fontes_v2"
+@@ -776,10 +778 @@ export async function executeSanitaryAgendaV2(
+-    const sourceIds = Array.from(new Set(productSources.map((entry) => entry.source_id)));
+-    const [sources, coverages] = await Promise.all([
+-      localDb.catalog_sanitario_fontes_tecnicas_v2.bulkGet(sourceIds),
+-      sourceIds.length > 0
+-        ? localDb.catalog_sanitario_fonte_cobertura_campos_v2
+-            .where("source_id")
+-            .anyOf(sourceIds)
+-            .toArray()
+-        : Promise.resolve([]),
+-    ]);
++    const { withdrawalSources, sources, coverages } = await readWithdrawalEvidenceCatalogV2(localDb, withdrawalRules, productSources);
+@@ -815,0 +809 @@ export async function executeSanitaryAgendaV2(
++      withdrawalSources,
+diff --git a/src/lib/sanitario/execution/withdrawalEvidenceCatalogV2.ts b/src/lib/sanitario/execution/withdrawalEvidenceCatalogV2.ts
+new file mode 100644
+index 0000000..e879d41
+--- /dev/null
++++ b/src/lib/sanitario/execution/withdrawalEvidenceCatalogV2.ts
+@@ -0,0 +1,23 @@
++import type { OfflineDB } from "@/lib/offline/db";
++import type { SanitarioProdutoCarenciaRuleLocalV2, SanitarioProdutoFonteLocalV2 } from "@/lib/offline/types";
++
++type EvidenceDb = Pick<OfflineDB, "catalog_sanitario_produto_carencia_fontes_v2" | "catalog_sanitario_fontes_tecnicas_v2" | "catalog_sanitario_fonte_cobertura_campos_v2">;
++
++export async function readWithdrawalEvidenceCatalogV2(
++  db: EvidenceDb,
++  rules: SanitarioProdutoCarenciaRuleLocalV2[],
++  productSources: SanitarioProdutoFonteLocalV2[],
++) {
++  const withdrawalSources = rules.length
++    ? await db.catalog_sanitario_produto_carencia_fontes_v2
++        .where("withdrawal_rule_id").anyOf(rules.map(rule => rule.id)).toArray()
++    : [];
++  const sourceIds = [...new Set(productSources.map(entry => entry.source_id))];
++  const [sources, coverages] = await Promise.all([
++    db.catalog_sanitario_fontes_tecnicas_v2.bulkGet(sourceIds),
++    sourceIds.length
++      ? db.catalog_sanitario_fonte_cobertura_campos_v2.where("source_id").anyOf(sourceIds).toArray()
++      : Promise.resolve([]),
++  ]);
++  return { withdrawalSources, sources, coverages };
++}
+diff --git a/src/lib/sanitario/reconciliation/__tests__/sanitaryCorrectionV2.test.ts b/src/lib/sanitario/reconciliation/__tests__/sanitaryCorrectionV2.test.ts
+index 6925658..025d39d 100644
+--- a/src/lib/sanitario/reconciliation/__tests__/sanitaryCorrectionV2.test.ts
++++ b/src/lib/sanitario/reconciliation/__tests__/sanitaryCorrectionV2.test.ts
+@@ -102,0 +103 @@ async function clear() {
++    db.catalog_sanitario_produto_carencia_fontes_v2.clear(),
+@@ -240,0 +242,3 @@ async function seedTechnicalCatalog() {
++  await db.catalog_sanitario_produto_carencia_fontes_v2.put({
++    withdrawal_rule_id: "withdrawal-rule-1", source_id: "source-1", field_key: "withdrawal", created_at: NOW,
++  });
+@@ -243,0 +248,19 @@ describe("sanitary correction v2", () => {
++  it.each([true, false])("P38 sintético na correção: leite zero exige vínculo da regra (%s)", async linked => {
++    await seed();
++    await seedTechnicalCatalog();
++    await db.state_fazenda_sanidade_config.update(FARM, { aptidao: "leite" });
++    await db.catalog_sanitario_produto_carencia_rules_v2.update("withdrawal-rule-1", {
++      aptitude: "leite", applicability: "zero", meat_days: null, milk_days: 0, milk_hours: null,
++    });
++    if (!linked) await db.catalog_sanitario_produto_carencia_fontes_v2.clear();
++    const original = await db.event_eventos_sanitario.get(ORIGINAL);
++    await createSanitaryCorrectionV2(correction({
++      correctionType: "complemento_rastreabilidade", changes: { executed_at: "2026-07-05T12:00:00.000Z" },
++    }), db);
++    const detail = await db.event_eventos_sanitario.get(CORRECTION_1);
++    expect(detail?.produto_snapshot).toMatchObject({ withdrawalSnapshot: { results: expect.arrayContaining([
++      expect.objectContaining({ purpose: "meat", state: "unknown" }),
++      expect.objectContaining({ purpose: "milk", state: linked ? "explicit_absence" : "unknown" }),
++    ]) } });
++    expect(await db.event_eventos_sanitario.get(ORIGINAL)).toEqual(original);
++  });
+diff --git a/src/lib/sanitario/reconciliation/sanitaryCorrectionV2.ts b/src/lib/sanitario/reconciliation/sanitaryCorrectionV2.ts
+index 49958f6..55cd8ab 100644
+--- a/src/lib/sanitario/reconciliation/sanitaryCorrectionV2.ts
++++ b/src/lib/sanitario/reconciliation/sanitaryCorrectionV2.ts
+@@ -0,0 +1 @@
++import { readWithdrawalEvidenceCatalogV2 } from "../execution/withdrawalEvidenceCatalogV2";
+@@ -65,0 +67 @@ export type SanitaryCorrectionDbV2 = Pick<
++  | "catalog_sanitario_produto_carencia_fontes_v2"
+@@ -315,12 +317 @@ async function buildTechnicalSnapshot(input: {
+-  const sourceIds = Array.from(
+-    new Set(productSources.map((entry) => entry.source_id)),
+-  );
+-  const [sources, coverages] = await Promise.all([
+-    input.db.catalog_sanitario_fontes_tecnicas_v2.bulkGet(sourceIds),
+-    sourceIds.length
+-      ? input.db.catalog_sanitario_fonte_cobertura_campos_v2
+-          .where("source_id")
+-          .anyOf(sourceIds)
+-          .toArray()
+-      : Promise.resolve([]),
+-  ]);
++  const { withdrawalSources, sources, coverages } = await readWithdrawalEvidenceCatalogV2(input.db, withdrawalRules, productSources);
+@@ -355,0 +347 @@ async function buildTechnicalSnapshot(input: {
++    withdrawalSources,

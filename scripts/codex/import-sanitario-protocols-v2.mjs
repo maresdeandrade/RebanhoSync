@@ -1370,9 +1370,10 @@ function c02ContractsSql() {
 // Serializes SQL emitted by writeOperation / approveC02Products, not a second
 // planner. A full before-image CAS and post-image assertion bridge the MCP call.
 function compileC02McpTransaction({ projectRef, candidateDigest, authorizationRef,
-  before, after, contracts, writes, summary, approve = false }) {
+  before, after, contracts, writes, summary, approve = false,
+  expectedDigest = C02_F6_SHA256, stateSql = c02StateSql, replaySkip = 652 }) {
   assert(projectRef === C02_ADMIN_PROJECT_REF, "C02_ADMIN_PROJECT_REQUIRED");
-  assert(candidateDigest === C02_F6_SHA256, "C02_ADMIN_CANDIDATE_CHANGED");
+  assert(candidateDigest === expectedDigest, "C02_ADMIN_CANDIDATE_CHANGED");
   assert(typeof authorizationRef === "string" && authorizationRef.trim().length >= 10, "C02_ADMIN_AUTHORIZATION_REQUIRED");
   assert(contracts?.length === 8 && c02Tables().every(t => before?.[t] && after?.[t]), "C02_MCP_SNAPSHOT_REQUIRED");
   assert(writes.every(w => /^(insert into|update) public\.\w+/i.test(w.sql.trim()) &&
@@ -1390,13 +1391,13 @@ function compileC02McpTransaction({ projectRef, candidateDigest, authorizationRe
     if current_user<>'postgres' or session_user<>'postgres' then raise exception 'C02_ADMIN_POSTGRES_SESSION_REQUIRED'; end if;
     if ${c02ContractsSql()} is distinct from ${json([...contracts].sort((a,b)=>a.table.localeCompare(b.table)))} then
       raise exception 'C02_MCP_SCHEMA_OR_PRIVILEGE_DRIFT'; end if;
-    if ${c02StateSql(true)} = ${json(after)} then
-      perform set_config('rebanhosync.c02_result',${json({ replay: true, skip: approve ? 39 : 652, authorization_reference: authorizationRef })}::text,true);
+    if ${stateSql(true)} = ${json(after)} then
+      perform set_config('rebanhosync.c02_result',${json({ replay: true, skip: approve ? 39 : replaySkip, authorization_reference: authorizationRef })}::text,true);
       return;
     end if;
-    if ${c02StateSql()} is distinct from ${json(before)} then raise exception 'C02_MCP_BASELINE_DRIFT'; end if;
+    if ${stateSql()} is distinct from ${json(before)} then raise exception 'C02_MCP_BASELINE_DRIFT'; end if;
     ${statements}
-    if ${c02StateSql(true)} is distinct from ${json(after)} then raise exception 'C02_MCP_POSTCONDITION_FAILED'; end if;
+    if ${stateSql(true)} is distinct from ${json(after)} then raise exception 'C02_MCP_POSTCONDITION_FAILED'; end if;
     perform set_config('rebanhosync.c02_result',${json({ ...summary, approved: approve ? 39 : 0, replay: false,
       authorization_reference: authorizationRef, candidate_sha256: candidateDigest, project_ref: projectRef })}::text,true);
   end`;
@@ -1805,8 +1806,97 @@ async function incrementalMain(args) {
     if (mode === "apply") console.log(JSON.stringify(await applyTransaction(client, data, { incremental: payload, bootstrap })));
   } finally { await client.end(); }
 }
+// Closed P38 increment: same planner, transactional writer and MCP compiler.
+// It only emits SQL after rehearsal against a fresh loopback materialization.
+const C02_P38_SHA256 = "8b3a14846c8e0f90e7f355cf2a25b36bd10d3f8c587a22943edb57310b635330";
+function p38StateSql(normalized = false) {
+  const product = "'db743728-59e2-5ecb-8b2e-211ab170618f'::uuid";
+  const sourceWhere = "id in ('3dfa7ffc-b505-5440-826f-84fc87ac8d6f','8d47206a-fe64-5a8d-8587-72675c8cfb94','c6ab8b68-1bbf-583c-82c9-2bfbc2ca6507') or source_key='SRC_C02_P38_EPRECIS_P12073_V00' or url='https://ruminants.ceva.com/app/uploads/sites/16/2023/10/Eprecis-Bula.pdf'";
+  const sources = `(select id from public.sanitario_fontes_tecnicas_v2 where ${sourceWhere})`;
+  const rules = `(select id from public.sanitario_produto_carencia_rules_v2 where product_id=${product} or id='a4f5dff8-f48c-5a73-9d64-a5493ad8203c')`;
+  const where = {
+    sanitario_produtos_v2: `id=${product} or lower(nome_comercial)='eprecis'`,
+    sanitario_fontes_tecnicas_v2: sourceWhere,
+    sanitario_fonte_cobertura_campos_v2: `source_id in ${sources} or id='af5e9b44-7460-5338-a4fb-ca23bf80c27a'`,
+    sanitario_produto_carencia_rules_v2: `product_id=${product} or id='a4f5dff8-f48c-5a73-9d64-a5493ad8203c'`,
+    sanitario_produto_carencia_fontes_v2: `withdrawal_rule_id in ${rules}`,
+  };
+  return "jsonb_build_object(" + c02Tables().map(table => {
+    const row = normalized ? "(to_jsonb(t)-'created_at'-'updated_at') #- '{metadata,c02_cadastral_approval,approved_at}'" : "to_jsonb(t)";
+    return `'${table}',(select encode(sha256(convert_to(coalesce(jsonb_agg(${row} order by (${row})::text collate "C"),'[]'::jsonb)::text,'UTF8')),'hex') from public.${table} t where ${where[table] ?? `product_id=${product}`})`;
+  }).join(",") + ")";
+}
+
+async function c02P38Main(args, closure = false) {
+  const flag = closure ? "--c02-f6-closure" : "--c02-p38";
+  const prefix = closure ? "C02_F6_CLOSURE" : "C02_P38";
+  const digest = closure ? "f09d9ebc4c4873693740b2afe218ce75ceff4cff3c66218a4e5be4bf6d4389bb" : C02_P38_SHA256;
+  const stateSql = closure ? c02StateSql : p38StateSql;
+  const planCount = closure ? 85 : 6;
+  const allowed = [flag, "--local-port", "--mcp-snapshot", "--emit-mcp-apply", "--project-ref", "--authorization-ref"];
+  const options = new Map();
+  for (let i = 0; i < args.length; i += 2) {
+    assert(allowed.includes(args[i]) && !options.has(args[i]) && args[i + 1] && !args[i + 1].startsWith("--"), "C02_P38_INVALID_ARGUMENT");
+    options.set(args[i], args[i + 1]);
+  }
+  assert(allowed.every(flag => options.has(flag)), "C02_P38_ARGUMENT_REQUIRED");
+  assert(options.get("--project-ref") === C02_ADMIN_PROJECT_REF && options.get("--authorization-ref").length >= 10, `${prefix}_AUTHORIZATION_REQUIRED`);
+  const raw = readFileSync(options.get(flag), "utf8");
+  assert(createHash("sha256").update(raw).digest("hex") === digest, `${prefix}_CANDIDATE_CHANGED`);
+  const packet = JSON.parse(raw);
+  const data = validateCanonicalTechnicalContract(packet).data;
+  const snapshot = JSON.parse(readFileSync(options.get("--mcp-snapshot"), "utf8"));
+  assert(snapshot.project_ref === C02_ADMIN_PROJECT_REF && snapshot.read_only === "on" &&
+    snapshot.isolation === "repeatable read" && snapshot.executor === "postgres" && snapshot.session_executor === "postgres" &&
+    snapshot.contracts?.length === 8, "C02_P38_REMOTE_SNAPSHOT_REQUIRED");
+  const port = Number(options.get("--local-port"));
+  assert(Number.isInteger(port) && port > 0 && port <= 65535, "C02_P38_LOCAL_PORT_REQUIRED");
+  const client = new Client({ host: "127.0.0.1", port, user: "postgres", database: "rebanhosync_c02_p11" });
+  await client.connect();
+  let before, after;
+  const writes = [];
+  try {
+    assert((await client.query("select shobj_description(oid,'pg_database') as marker from pg_database where datname=current_database()"))
+      .rows[0].marker === (closure ? "C02_F6_CLOSURE_DISPOSABLE_LOCAL_ONLY" : "C02_P38_DISPOSABLE_LOCAL_ONLY"), `${prefix}_DISPOSABLE_MARKER_REQUIRED`);
+    const recorder = { query: async (sql, values = []) => {
+      if (sql === "commit") {
+        after = (await client.query(`select ${stateSql(true)} as state`)).rows[0].state;
+        return client.query("rollback");
+      }
+      const result = await client.query(sql, values);
+      if (sql === "select pg_advisory_xact_lock(hashtext($1))") {
+        await client.query(`lock table ${c02Tables().map(t => "public." + t).join(",")} in share row exclusive mode`);
+        for (const table of c02Tables()) {
+          const actual = (await client.query(`select to_jsonb(t) as row from public.${table} t`)).rows.map(r => stableStringify(r.row)).sort();
+          assert(!isDifferent(actual, snapshot.rows[table].map(stableStringify).sort()), "C02_P38_LOCAL_SNAPSHOT_MISMATCH");
+        }
+        before = (await client.query(`select ${stateSql()} as state`)).rows[0].state;
+      }
+      if (/^(insert into|update) public\./i.test(sql.trim())) {
+        assert(sql.trim().startsWith("insert into"), "C02_P38_EXISTING_UPDATE_FORBIDDEN");
+        writes.push({ sql, values });
+      }
+      return result;
+    }};
+    const plan = await buildPlan(client, data);
+    assertPublishablePlan(plan);
+    assert(plan.length === planCount && plan.every(op => ["create", "skip"].includes(op.action)) &&
+      plan.filter(op => op.collection === "product_rows" && op.action === "skip").length === (closure ? 39 : 1), `${prefix}_PLAN_SCOPE_CONFLICT`);
+    if (closure) assert(plan.filter(op => op.action === "create").length === 43, "C02_F6_CLOSURE_DELTA_COUNT_CONFLICT");
+    const summary = await applyTransaction(recorder, data);
+    const sql = compileC02McpTransaction({ projectRef: C02_ADMIN_PROJECT_REF, candidateDigest: digest,
+      expectedDigest: digest, stateSql, replaySkip: planCount,
+      authorizationRef: options.get("--authorization-ref"), before, after, contracts: snapshot.contracts, writes, summary });
+    writeFileSync(options.get("--emit-mcp-apply"), sql, { flag: "wx" });
+    console.log(JSON.stringify({ summary, writes: writes.length, local_rolled_back: true, remote_executed: false,
+      candidate_sha256: digest, sql_sha256: createHash("sha256").update(sql).digest("hex") }));
+  } finally { await client.end(); }
+}
+
 async function main() {
   const args = process.argv.slice(2);
+  if (args.includes("--c02-f6-closure")) return c02P38Main(args, true);
+  if (args.includes("--c02-p38")) return c02P38Main(args);
   if (args.includes("--c02-p11") || args.includes("--c02-f6") || args.includes("--c02-admin")) return c02Main(args);
   if (args.includes("--incremental")) return incrementalMain(args);
   const reviewIndex = args.indexOf("--review-candidate");

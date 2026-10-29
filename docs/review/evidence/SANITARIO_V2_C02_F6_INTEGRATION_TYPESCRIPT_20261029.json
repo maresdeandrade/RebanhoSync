@@ -1,0 +1,2361 @@
+{
+  "head": "bc31073565a3c7b15d396c610dd239f382b08db6",
+  "command": "TypeScript compiler API, tsconfig.app.json, noEmit; HEAD overlay for eight runtime paths only",
+  "prior_baseline_count": 233,
+  "baseline_count": 233,
+  "current_count": 233,
+  "new_diagnostics": [],
+  "comparison_key": [
+    "file",
+    "code",
+    "message"
+  ],
+  "overlay_paths": [
+    "src/lib/offline/db.ts",
+    "src/lib/offline/pull.ts",
+    "src/lib/offline/tableMap.ts",
+    "src/lib/offline/types.ts",
+    "src/lib/sanitario/execution/operationalWithdrawalSnapshotV2.ts",
+    "src/lib/sanitario/execution/executedProductTechnicalSnapshotV2.ts",
+    "src/lib/sanitario/execution/sanitaryAgendaExecutionV2.ts",
+    "src/lib/sanitario/reconciliation/sanitaryCorrectionV2.ts"
+  ],
+  "baseline": [
+    {
+      "file": "src/components/manejo/MudarPastoLote.tsx",
+      "code": 2740,
+      "message": "Type '{ id: string; fazenda_id: string; nome: string; pasto_id?: string; }' is missing the following properties from type 'Lote': status, touro_id, observacoes, payload, and 8 more."
+    },
+    {
+      "file": "src/components/sanitario/FarmProtocolManager.tsx",
+      "code": 2322,
+      "message": "Type '{ table: string; action: string; record: { id: string; }; }' is not assignable to type 'OperationInput'.   Types of property 'action' are incompatible.     Type 'string' is not assignable to type 'OpAction'."
+    },
+    {
+      "file": "src/components/sanitario/FarmProtocolManager.tsx",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type 'OpAction'."
+    },
+    {
+      "file": "src/components/sanitario/FarmProtocolManager.tsx",
+      "code": 2345,
+      "message": "Argument of type 'ProtocoloSanitarioItem' is not assignable to parameter of type 'TaxonomyInput'.   Type 'ProtocoloSanitarioItem' is not assignable to type 'TaxonomyRecord'.     Index signature for type 'string' is missing in type 'ProtocoloSanitarioItem'."
+    },
+    {
+      "file": "src/components/sanitario/OfficialSanitaryPackManager.tsx",
+      "code": 2339,
+      "message": "Property 'finally' does not exist on type 'PromiseLike<void>'."
+    },
+    {
+      "file": "src/components/sanitario/ProtocolItemDraftEditor.tsx",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'SanitaryLayer'."
+    },
+    {
+      "file": "src/components/sanitario/ProtocolItemDraftEditor.tsx",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'SanitaryScopeType'."
+    },
+    {
+      "file": "src/components/sanitario/ProtocolItemDraftEditor.tsx",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'SanitaryCalendarMode'."
+    },
+    {
+      "file": "src/components/sanitario/ProtocolItemDraftEditor.tsx",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'SanitaryCalendarAnchor'."
+    },
+    {
+      "file": "src/components/sanitario/SanitaryAnimalSummaryPanelV2.tsx",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"insufficient_data\"' and '\"not_applicable\"' have no overlap."
+    },
+    {
+      "file": "src/components/sanitario/SanitaryPrecheckPanelV2.tsx",
+      "code": 2339,
+      "message": "Property 'animal' does not exist on type '{ animal: SanitaryPrecheckAnimalResumoV2; } | { lote: SanitaryPrecheckLoteResumoV2; animals?: SanitaryPrecheckAnimalResumoV2[]; }'.   Property 'animal' does not exist on type '{ lote: SanitaryPrecheckLoteResumoV2; animals?: SanitaryPrecheckAnimalResumoV2[]; }'."
+    },
+    {
+      "file": "src/components/sanitario/SanitaryPrecheckPanelV2.tsx",
+      "code": 2339,
+      "message": "Property 'lote' does not exist on type '{ animal: SanitaryPrecheckAnimalResumoV2; } | { lote: SanitaryPrecheckLoteResumoV2; animals?: SanitaryPrecheckAnimalResumoV2[]; }'.   Property 'lote' does not exist on type '{ animal: SanitaryPrecheckAnimalResumoV2; }'."
+    },
+    {
+      "file": "src/components/sanitario/SanitaryPrecheckPanelV2.tsx",
+      "code": 2339,
+      "message": "Property 'animals' does not exist on type '{ animal: SanitaryPrecheckAnimalResumoV2; } | { lote: SanitaryPrecheckLoteResumoV2; animals?: SanitaryPrecheckAnimalResumoV2[]; }'.   Property 'animals' does not exist on type '{ animal: SanitaryPrecheckAnimalResumoV2; }'."
+    },
+    {
+      "file": "src/components/settings/SyncHealthPanel.tsx",
+      "code": 2322,
+      "message": "Type '\"warning\" | \"critical\"' is not assignable to type '\"warning\" | \"pending\" | \"info\" | \"success\" | \"unknown\" | \"neutral\" | \"danger\" | \"conflict\" | \"offline\" | \"notPermitted\"'.   Type '\"critical\"' is not assignable to type '\"warning\" | \"pending\" | \"info\" | \"success\" | \"unknown\" | \"neutral\" | \"danger\" | \"conflict\" | \"offline\" | \"notPermitted\"'."
+    },
+    {
+      "file": "src/components/ui/state-banner.tsx",
+      "code": 2430,
+      "message": "Interface 'StateBannerProps' incorrectly extends interface 'HTMLAttributes<HTMLDivElement>'.   Types of property 'title' are incompatible.     Type 'ReactNode' is not assignable to type 'string'.       Type 'number' is not assignable to type 'string'."
+    },
+    {
+      "file": "src/features/occupancy/cockpitManejoAdapter.ts",
+      "code": 2339,
+      "message": "Property 'due_date' does not exist on type 'AgendaItem'."
+    },
+    {
+      "file": "src/features/occupancy/cockpitManejoAdapter.ts",
+      "code": 2339,
+      "message": "Property 'due_date' does not exist on type 'AgendaItem'."
+    },
+    {
+      "file": "src/features/occupancy/cockpitManejoAdapter.ts",
+      "code": 2339,
+      "message": "Property 'due_date' does not exist on type 'AgendaItem'."
+    },
+    {
+      "file": "src/features/occupancy/cockpitManejoAdapter.ts",
+      "code": 2339,
+      "message": "Property 'due_date' does not exist on type 'AgendaItem'."
+    },
+    {
+      "file": "src/features/occupancy/InfrastructureCard.tsx",
+      "code": 2322,
+      "message": "Type '\"warning\"' is not assignable to type '\"default\" | \"destructive\" | \"outline\" | \"secondary\"'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalHomeIndicatorsAdapter.ts",
+      "code": 2322,
+      "message": "Type '(FactualEvent & { fazenda_id: string; dominio: \"pesagem\"; })[]' is not assignable to type 'readonly (Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\"> & Partial<Pick<Evento, \"deleted_at\">>)[]'.   Type 'FactualEvent & { fazenda_id: string; dominio: \"pesagem\"; }' is not assignable to type 'Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\"> & Partial<Pick<Evento, \"deleted_at\">>'.     Type 'FactualEvent & { fazenda_id: string; dominio: \"pesagem\"; }' is not assignable to type 'Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\">'.       Property 'animal_id' is optional in type 'FactualEvent & { fazenda_id: string; dominio: \"pesagem\"; }' but required in type 'Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\">'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produto' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carenciaCarneAte' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carencia_carne_ate' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carenciaLeiteAte' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carencia_leite_ate' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carenciaCarneDias' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carencia_carne_dias' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carenciaLeiteDias' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carencia_leite_dias' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produtoVeterinarioId' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produto_veterinario_id' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produtoNomeSnapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produto_nome_snapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produto' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'estoqueLoteId' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'estoque_lote_id' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'estoqueLoteCodigoSnapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'estoque_lote_codigo_snapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'validadeProduto' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'validade_produto' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'doseQuantidade' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'dose_quantidade' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'doseUnidade' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'dose_unidade' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'viaAplicacao' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'via_aplicacao' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'custoUnitarioSnapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'custo_unitario_snapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'custoTotalSnapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'custo_total_snapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/OperationalInsightsPanel.tsx",
+      "code": 2724,
+      "message": "'\"@/features/operationalInsights/operationalInsightsAdapter\"' has no exported member named 'OperationalSignal'. Did you mean 'OperationalSignalsView'?"
+    },
+    {
+      "file": "src/hooks/useProtocolItemDraft.ts",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'SanitaryCalendarMode'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'completed_at' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'last_weight_kg' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'last_weight_kg' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'estagio_vida' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'estagio_vida' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'estagio_vida' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/lifecycle.ts",
+      "code": 2677,
+      "message": "A type predicate's type must be assignable to its parameter's type.   Type 'PendingAnimalLifecycleTransition' is not assignable to type '{ animalId: string; identificacao: string; currentStage: AnimalLifeStageEnum; targetStage: AnimalLifeStageEnum; queueKind: PendingAnimalLifecycleKind; ... 4 more ...; dedupKey: string; }'.     Property 'dedupKey' is optional in type 'PendingAnimalLifecycleTransition' but required in type '{ animalId: string; identificacao: string; currentStage: AnimalLifeStageEnum; targetStage: AnimalLifeStageEnum; queueKind: PendingAnimalLifecycleKind; ... 4 more ...; dedupKey: string; }'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"not_permitted\"; statusReason: string; data: null; evidence: { primarySources: DecisionEvidenceSource[]; auxiliarySources: DecisionEvidenceSource[]; convergence: { ...; }[]; coverage: undefined[]; limitations: string[]; conflicts: undefined[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<WeightDataQuality>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao autoriza venda ou abate\", \"nao declara aptidao operacional\", \"nao transforma o ultimo peso em peso atual garantido\", \"nao cria Evento, Agenda ou state_*\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: DecisionRecommendationStatus; statusReason: string; data: null; evidence: { primarySources: DecisionEvidenceSource[]; ... 4 more ...; conflicts: undefined[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<WeightDataQuality>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao autoriza venda ou abate\", \"nao declara aptidao operacional\", \"nao transforma o ultimo peso em peso atual garantido\", \"nao cria Evento, Agenda ou state_*\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"ambiguous\"; statusReason: string; data: null; evidence: { primarySources: DecisionEvidenceSource[]; auxiliarySources: DecisionEvidenceSource[]; convergence: { ...; }[]; coverage: string[]; limitations: string[]; conflicts: DecisionEvidenceConflict[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<WeightDataQuality>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao autoriza venda ou abate\", \"nao declara aptidao operacional\", \"nao transforma o ultimo peso em peso atual garantido\", \"nao cria Evento, Agenda ou state_*\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"partial\" | \"unknown\"; statusReason: string; data: { summary: string; quality: \"missing_detail\"; freshnessLimitDays: number; }; evidence: { primarySources: DecisionEvidenceSource[]; ... 4 more ...; conflicts: undefined[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<WeightDataQuality>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao autoriza venda ou abate\", \"nao declara aptidao operacional\", \"nao transforma o ultimo peso em peso atual garantido\", \"nao cria Evento, Agenda ou state_*\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"partial\" | \"confirmed\"; statusReason: string; data: { summary: string; quality: \"fresh\" | \"stale\"; eventId: string; weightKg: number; weighedAt: string; ageDays: number; freshnessLimitDays: number; }; ... 8 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<WeightDataQuality>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao autoriza venda ou abate\", \"nao declara aptidao operacional\", \"nao transforma o ultimo peso em peso atual garantido\", \"nao cria Evento, Agenda ou state_*\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: DecisionRecommendationStatus; statusReason: string; data: null; evidence: { primarySources: DecisionEvidenceSource[]; ... 4 more ...; conflicts: undefined[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<OverdueAgendaData>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao conclui nem altera Agenda\", \"nao cria Evento\", \"nao infere execucao a partir de Agenda concluida\", \"nao usa Protocolo, tag ou insight como prova de execucao\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"ambiguous\"; statusReason: string; data: OverdueAgendaData; evidence: { primarySources: DecisionEvidenceSource[]; auxiliarySources: DecisionEvidenceSource[]; convergence: { ...; }[]; coverage: string[]; limitations: string[]; conflicts: DecisionEvidenceConflict[]; }; ... 7 more ...; prohibitedActions: read...' is not assignable to type 'DecisionRecommendation<OverdueAgendaData>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao conclui nem altera Agenda\", \"nao cria Evento\", \"nao infere execucao a partir de Agenda concluida\", \"nao usa Protocolo, tag ou insight como prova de execucao\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"partial\" | \"unknown\" | \"confirmed\"; statusReason: string; data: OverdueAgendaData; evidence: { primarySources: DecisionEvidenceSource[]; ... 4 more ...; conflicts: undefined[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<OverdueAgendaData>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao conclui nem altera Agenda\", \"nao cria Evento\", \"nao infere execucao a partir de Agenda concluida\", \"nao usa Protocolo, tag ou insight como prova de execucao\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/latestObservedWeight.ts",
+      "code": 2322,
+      "message": "Type 'ObservedWeightConflict' is not assignable to type '{ code: LatestObservedWeightConflictCode; measuredAt: string; eventIds: string[]; }'.   Types of property 'code' are incompatible.     Type 'ObservedWeightConflictCode' is not assignable to type 'LatestObservedWeightConflictCode'.       Type '\"MEASUREMENT_TIMESTAMP_CONFLICT\"' is not assignable to type 'LatestObservedWeightConflictCode'. Did you mean '\"LATEST_MEASUREMENT_TIMESTAMP_CONFLICT\"'?"
+    },
+    {
+      "file": "src/lib/insights/observedWeightEvidence.ts",
+      "code": 2322,
+      "message": "Type '{ event: Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\"> & Partial<Pick<Evento, \"deleted_at\">>; timestamp: number; }[]' is not assignable to type 'EligibleEvent[]'.   Type '{ event: Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\"> & Partial<Pick<Evento, \"deleted_at\">>; timestamp: number; }' is not assignable to type 'EligibleEvent'.     Types of property 'event' are incompatible.       Type 'Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\"> & Partial<Pick<Evento, \"deleted_at\">>' is missing the following properties from type 'Evento': lote_id, source_task_id, source_tx_id, source_client_op_id, and 10 more."
+    },
+    {
+      "file": "src/lib/insights/observedWeightEvidence.ts",
+      "code": 2322,
+      "message": "Type 'EventoPesagem | (Pick<EventoPesagem, \"fazenda_id\" | \"evento_id\" | \"peso_kg\"> & Partial<Pick<EventoPesagem, \"deleted_at\">>)' is not assignable to type 'EventoPesagem'.   Type 'Pick<EventoPesagem, \"fazenda_id\" | \"evento_id\" | \"peso_kg\"> & Partial<Pick<EventoPesagem, \"deleted_at\">>' is missing the following properties from type 'EventoPesagem': payload, client_id, client_op_id, client_tx_id, and 4 more."
+    },
+    {
+      "file": "src/lib/insights/observedWeightEvidence.ts",
+      "code": 2740,
+      "message": "Type 'Pick<EventoPesagem, \"fazenda_id\" | \"evento_id\" | \"peso_kg\"> & Partial<Pick<EventoPesagem, \"deleted_at\">>' is missing the following properties from type 'EventoPesagem': payload, client_id, client_op_id, client_tx_id, and 4 more."
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 1354,
+      "message": "'readonly' type modifier is only permitted on array and tuple literal types."
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 2345,
+      "message": "Argument of type 'AnswerableOperationalInsight<unknown>' is not assignable to parameter of type 'OperationalInsight<readonly AgendaNeedItemInput[]>'.   Type 'AnswerableOperationalInsight<unknown>' is not assignable to type 'AnswerableOperationalInsight<readonly AgendaNeedItemInput[]>'.     Type '{}' is missing the following properties from type 'readonly AgendaNeedItemInput[]': length, concat, join, slice, and 20 more."
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 2345,
+      "message": "Argument of type 'AnswerableOperationalInsight<unknown>' is not assignable to parameter of type 'OperationalInsight<HerdStageSummary>'.   Type 'AnswerableOperationalInsight<unknown>' is not assignable to type 'AnswerableOperationalInsight<HerdStageSummary>'.     Type '{}' is missing the following properties from type 'HerdStageSummary': totalAnimals, byStage, byLote, byStatus, unknownStageCount"
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 2345,
+      "message": "Argument of type 'AnswerableOperationalInsight<unknown>' is not assignable to parameter of type 'OperationalInsight<SanitaryWithdrawalSignalSummary>'.   Type 'AnswerableOperationalInsight<unknown>' is not assignable to type 'AnswerableOperationalInsight<SanitaryWithdrawalSignalSummary>'.     Type '{}' is missing the following properties from type 'SanitaryWithdrawalSignalSummary': source, activeCount, freeCount, evaluatedEventCount, and 2 more."
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 2345,
+      "message": "Argument of type 'AnswerableOperationalInsight<unknown>' is not assignable to parameter of type 'OperationalInsight<SanitaryTraceabilitySignalSummary>'.   Type 'AnswerableOperationalInsight<unknown>' is not assignable to type 'AnswerableOperationalInsight<SanitaryTraceabilitySignalSummary>'.     Type '{}' is missing the following properties from type 'SanitaryTraceabilitySignalSummary': source, evaluatedEventCount, missingTraceabilityCount, productWithoutStockLotCount, and 6 more."
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 2345,
+      "message": "Argument of type 'AnswerableOperationalInsight<unknown>' is not assignable to parameter of type 'OperationalInsight<SanitaryExceptionSignalSummary>'.   Type 'AnswerableOperationalInsight<unknown>' is not assignable to type 'AnswerableOperationalInsight<SanitaryExceptionSignalSummary>'.     Type 'unknown' is not assignable to type 'SanitaryExceptionSignalSummary'.       Type '{}' is missing the following properties from type 'SanitaryExceptionSummary': source, totalOpen, totalResolved, totalIgnored, and 10 more."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2537,
+      "message": "Type '{}' has no matching index signature for type 'number'."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2537,
+      "message": "Type '{}' has no matching index signature for type 'number'."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2322,
+      "message": "Type 'IndexableType[]' is not assignable to type 'IndexableType'.   Type 'IndexableType[]' is not assignable to type 'void[][]'.     Type 'IndexableType' is not assignable to type 'void[]'.       Type 'string' is not assignable to type 'void[]'."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2554,
+      "message": "Expected 4 arguments, but got 3."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2554,
+      "message": "Expected 4 arguments, but got 3."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2554,
+      "message": "Expected 4 arguments, but got 3."
+    },
+    {
+      "file": "src/lib/offline/syncWorker.ts",
+      "code": 2339,
+      "message": "Property 'op_id' does not exist on type '{ op: Operation; result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus; }; }'."
+    },
+    {
+      "file": "src/lib/offline/syncWorker.ts",
+      "code": 2322,
+      "message": "Type 'Record<string, unknown> | SanitarioV2QueuedOperation' is not assignable to type 'Record<string, unknown>'.   Type 'SanitarioV2QueuedOperation' is not assignable to type 'Record<string, unknown>'.     Index signature for type 'string' is missing in type 'SanitarioV2QueuedOperation'."
+    },
+    {
+      "file": "src/lib/reproduction/dashboard.ts",
+      "code": 2741,
+      "message": "Property 'aborto' is missing in type '{ cobertura: string; IA: string; diagnostico: string; parto: string; }' but required in type 'Record<ReproTipoEnum, string>'."
+    },
+    {
+      "file": "src/lib/reproduction/register.ts",
+      "code": 2322,
+      "message": "Type '{ dataPrevistaParto: string; machoId?: string | null; episodeEventoId?: string | null; episodeLinkMethod?: string; tipo: ReproTipoEnum; observacoes?: string; resultadoDiagnostico?: string; ... 6 more ...; doseSemenRef?: string; }' is not assignable to type 'ReproductionDraftInput'.   Types of property 'episodeLinkMethod' are incompatible.     Type 'string' is not assignable to type '\"manual\" | \"auto_last_open_service\" | \"unlinked\"'."
+    },
+    {
+      "file": "src/lib/reproduction/register.ts",
+      "code": 2345,
+      "message": "Argument of type 'Animal' is not assignable to parameter of type 'Record<string, unknown>'.   Index signature for type 'string' is missing in type 'Animal'."
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "code": 2345,
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly Evento[]'.   Type 'RemoteRow' is missing the following properties from type 'Evento': id, fazenda_id, dominio, occurred_at, and 16 more."
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "code": 2345,
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly EventoReproducao[]'.   Type 'RemoteRow' is missing the following properties from type 'EventoReproducao': evento_id, fazenda_id, tipo, macho_id, and 9 more."
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "code": 2345,
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly Animal[]'.   Type 'RemoteRow' is missing the following properties from type 'Animal': id, fazenda_id, identificacao, sexo, and 24 more."
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "code": 2345,
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly AgendaItem[]'.   Type 'RemoteRow' is missing the following properties from type 'AgendaItem': id, fazenda_id, dominio, tipo, and 21 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2305,
+      "message": "Module '\"@/lib/sanitario/engine/schedulerIntegration\"' has no exported member 'ComputedOccurrence'."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; minAgeMonths: number; maxAgeMonths: number; frequency: string; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; minAgeMonths: number; maxAgeMonths: number; frequency: string; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; peso: number; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; peso: number; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; minAgeMonths: number; maxAgeMonths: number; geoInfo: { subregion: string; }; frequency: string; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; minAgeMonths: number; maxAgeMonths: number; geoInfo: { subregion: string; }; frequency: string; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; animal_id: string; tipo: \"vacinacao\"; payload: { produto: string; }; client_recorded_at: Date; }' to type 'EventoSanitario' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; animal_id: string; tipo: \"vacinacao\"; payload: { produto: string; }; client_recorded_at: Date; }' is missing the following properties from type 'EventoSanitario': evento_id, fazenda_id, produto, client_id, and 6 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; dependsOn: { itemId: string; eventMatch: string; }; intervalMonths: number; }[]; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; dependsOn: { itemId: string; eventMatch: string; }; intervalMonths: number; }[]; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; animal_id: string; tipo: \"vacinacao\"; payload: { produto: string; cycle: number; }; client_recorded_at: Date; }' to type 'EventoSanitario' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; animal_id: string; tipo: \"vacinacao\"; payload: { produto: string; cycle: number; }; client_recorded_at: Date; }' is missing the following properties from type 'EventoSanitario': evento_id, fazenda_id, produto, client_id, and 6 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; campaignMonths: number[]; state: string; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; campaignMonths: number[]; state: string; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"sanitario\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; intervalMonths: number; }[]; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"sanitario\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; intervalMonths: number; }[]; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; animal_id: string; tipo: \"sanitario\"; payload: { procedimento: string; produto: string; }; client_recorded_at: Date; }' to type 'EventoSanitario' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; animal_id: string; tipo: \"sanitario\"; payload: { procedimento: string; produto: string; }; client_recorded_at: Date; }' is missing the following properties from type 'EventoSanitario': evento_id, fazenda_id, produto, client_id, and 6 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"procedimento\"; payload: { calendario_base: { mode: string; anchor: string; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"procedimento\"; payload: { calendario_base: { mode: string; anchor: string; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; dependsOn: { itemId: string; eventMatch: string; }; intervalMonths: number; }[]; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; dependsOn: { itemId: string; eventMatch: string; }; intervalMonths: number; }[]; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; campaignMonths: undefined[]; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; campaignMonths: undefined[]; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/catalog/baseProtocols.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'StandardProtocolLegalStatus' and '\"obrigatorio\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/compliance/biosecurityOccurrence.ts",
+      "code": 2550,
+      "message": "Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later."
+    },
+    {
+      "file": "src/lib/sanitario/compliance/biosecurityReadModel.ts",
+      "code": 2677,
+      "message": "A type predicate's type must be assignable to its parameter's type.   Type 'BiosecurityOccurrenceProjection' is not assignable to type '{ eventoId: string; occurredAt: string; animalId: string; loteId: string; localId: string; sourceAgendaItemId: string; linkedEventoId: string; category: BiosecurityOccurrenceCategory; ... 11 more ...; payload: BiosecurityOccurrencePayload; }'.     Types of property 'tipoOcorrencia' are incompatible.       Type 'string' is not assignable to type 'BiosecurityOccurrenceType'."
+    },
+    {
+      "file": "src/lib/sanitario/compliance/regulatoryAnimals.ts",
+      "code": 2322,
+      "message": "Type '{ key: RegulatoryAnalyticsImpactKey; label: string; tone: string; message: string; blockerCount: number; warningCount: number; }[]' is not assignable to type 'AnimalRegulatoryRestriction[]'.   Type '{ key: RegulatoryAnalyticsImpactKey; label: string; tone: string; message: string; blockerCount: number; warningCount: number; }' is not assignable to type 'AnimalRegulatoryRestriction'.     Types of property 'tone' are incompatible.       Type 'string' is not assignable to type '\"warning\" | \"danger\"'."
+    },
+    {
+      "file": "src/lib/sanitario/compliance/regulatoryReadModel.ts",
+      "code": 2677,
+      "message": "A type predicate's type must be assignable to its parameter's type.   Type 'RegulatorySubareaAnalyticalCut' is not assignable to type '{ key: RegulatoryAnalyticsSubareaKey; label: string; openCount: number; blockerCount: number; warningCount: number; adjustmentCount: number; pendingCount: number; tone: \"warning\" | ... 1 more ... | \"danger\"; affectedImpacts: \"nutrition\"[] | ... 1 more ... | \"sale\"[]; recommendation: string; }'.     Types of property 'affectedImpacts' are incompatible.       Type 'RegulatoryAnalyticsImpactKey[]' is not assignable to type '\"nutrition\"[] | \"movementInternal\"[] | \"sale\"[]'.         Type 'RegulatoryAnalyticsImpactKey[]' is not assignable to type '\"nutrition\"[]'.           Type 'RegulatoryAnalyticsImpactKey' is not assignable to type '\"nutrition\"'.             Type '\"movementInternal\"' is not assignable to type '\"nutrition\"'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/anchorResolution.ts",
+      "code": 2339,
+      "message": "Property 'payload' does not exist on type '{ id: string; birthDate: string; sex: \"macho\" | \"femea\"; species: \"bovino\" | \"bubalino\"; categoryCode: string; reproductionStatus?: string; }'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/anchorResolution.ts",
+      "code": 2339,
+      "message": "Property 'payload' does not exist on type '{ id: string; birthDate: string; sex: \"macho\" | \"femea\"; species: \"bovino\" | \"bubalino\"; categoryCode: string; reproductionStatus?: string; }'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/anchorResolution.ts",
+      "code": 2678,
+      "message": "Type '\"recem_parida\"' is not comparable to type 'SanitaryCalendarAnchor'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/anchorResolution.ts",
+      "code": 2339,
+      "message": "Property 'payload' does not exist on type '{ id: string; birthDate: string; sex: \"macho\" | \"femea\"; species: \"bovino\" | \"bubalino\"; categoryCode: string; reproductionStatus?: string; }'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/anchorResolution.ts",
+      "code": 2339,
+      "message": "Property 'payload' does not exist on type '{ id: string; birthDate: string; sex: \"macho\" | \"femea\"; species: \"bovino\" | \"bubalino\"; categoryCode: string; reproductionStatus?: string; }'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/nextOccurrenceService.ts",
+      "code": 2339,
+      "message": "Property 'categoria_zootecnica' does not exist on type 'Animal'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/schedulerIntegration.ts",
+      "code": 2724,
+      "message": "'\"@/lib/sanitario/engine/scheduler\"' has no exported member named 'ComputeNextSanitaryOccurrenceResult'. Did you mean 'computeNextSanitaryOccurrence'?"
+    },
+    {
+      "file": "src/lib/sanitario/engine/schedulerIntegration.ts",
+      "code": 2739,
+      "message": "Type 'Animal' is missing the following properties from type '{ id: string; birthDate: string; sex: \"macho\" | \"femea\"; species: \"bovino\" | \"bubalino\"; categoryCode: string; reproductionStatus?: string; }': birthDate, sex, species, categoryCode"
+    },
+    {
+      "file": "src/lib/sanitario/engine/schedulerIntegration.ts",
+      "code": 2322,
+      "message": "Type 'unknown[]' is not assignable to type 'SanitaryExecutionRecord[]'.   Type '{}' is missing the following properties from type 'SanitaryExecutionRecord': occurrenceId, familyCode, itemCode, regimenVersion, and 7 more."
+    },
+    {
+      "file": "src/lib/sanitario/engine/schedulerIntegration.ts",
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'date' does not exist in type 'SchedulerNowContext'."
+    },
+    {
+      "file": "src/lib/sanitario/hooks/useWithdrawal.ts",
+      "code": 2322,
+      "message": "Type '{ id: string; animal_id: string; lote_id: string; occurred_at: string; deleted_at: string; produto: string; carencia_carne_dias: number; carencia_leite_dias: number; carencia_carne_ate: string; carencia_leite_ate: string; payload: { ...; }; }[]' is not assignable to type 'SanitaryEventInputForReadModel[]'.   Type '{ id: string; animal_id: string; lote_id: string; occurred_at: string; deleted_at: string; produto: string; carencia_carne_dias: number; carencia_leite_dias: number; carencia_carne_ate: string; carencia_leite_ate: string; payload: { ...; }; }' is not assignable to type 'SanitaryEventInputForReadModel'.     The types of 'payload.insumo_snapshot' are incompatible between these types.       Type '{}' is missing the following properties from type 'ProdutoInsumoSnapshot': produto_nome_snapshot, produto_tipo_snapshot, rastreabilidade"
+    },
+    {
+      "file": "src/lib/sanitario/hooks/useWithdrawal.ts",
+      "code": 2322,
+      "message": "Type '{ insumo_snapshot: unknown; carencia_regra_json: unknown; }' is not assignable to type '{ insumo_snapshot?: ProdutoInsumoSnapshot; carencia_regra_json?: { carne_dias?: number; leite_dias?: number; }; }'.   Types of property 'insumo_snapshot' are incompatible.     Type '{}' is missing the following properties from type 'ProdutoInsumoSnapshot': produto_nome_snapshot, produto_tipo_snapshot, rastreabilidade"
+    },
+    {
+      "file": "src/lib/sanitario/hooks/useWithdrawal.ts",
+      "code": 2322,
+      "message": "Type '{ insumo_snapshot: unknown; carencia_regra_json: unknown; }' is not assignable to type '{ insumo_snapshot?: ProdutoInsumoSnapshot; carencia_regra_json?: { carne_dias?: number; leite_dias?: number; }; }'.   Types of property 'insumo_snapshot' are incompatible.     Type '{}' is missing the following properties from type 'ProdutoInsumoSnapshot': produto_nome_snapshot, produto_tipo_snapshot, rastreabilidade"
+    },
+    {
+      "file": "src/lib/sanitario/hooks/useWithdrawal.ts",
+      "code": 2322,
+      "message": "Type '{ insumo_snapshot: unknown; carencia_regra_json: unknown; }' is not assignable to type '{ insumo_snapshot?: ProdutoInsumoSnapshot; carencia_regra_json?: { carne_dias?: number; leite_dias?: number; }; }'.   Types of property 'insumo_snapshot' are incompatible.     Type '{}' is missing the following properties from type 'ProdutoInsumoSnapshot': produto_nome_snapshot, produto_tipo_snapshot, rastreabilidade"
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2305,
+      "message": "Module '\"@/lib/sanitario/models/domain\"' has no exported member 'ExecutionPolicyForMode'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2305,
+      "message": "Module '\"@/lib/sanitario/models/validation\"' has no exported member 'sanitaryLayerEnum'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2305,
+      "message": "Module '\"@/lib/sanitario/models/validation\"' has no exported member 'sanitaryScopeEnum'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2305,
+      "message": "Module '\"@/lib/sanitario/models/validation\"' has no exported member 'sanitaryCalendarModeEnum'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2739,
+      "message": "Type '{ protocolId: string; itemId: string; familyCode: string; itemCode: string; regimenVersion: number; }' is missing the following properties from type 'SanitaryIdentity': layer, scopeType"
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'sexAllowed' does not exist in type 'SanitaryEligibility'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'isComplianceRequired' does not exist in type 'SanitaryCompliance'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'layer' does not exist in type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'layer' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'scopeType' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'generatesAgenda' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'description' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'sexAllowed' does not exist on type 'SanitaryEligibility'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'speciesAllowed' does not exist on type 'SanitaryEligibility'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'categoryAllowed' does not exist on type 'SanitaryEligibility'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'isComplianceRequired' does not exist on type 'SanitaryCompliance'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'complianceDocType' does not exist on type 'SanitaryCompliance'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'dependsOnItemCode' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'productCode' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'productName' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'doseNumber' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/operations/agendaDiagnostics.ts",
+      "code": 2322,
+      "message": "Type '\"success\"' is not assignable to type '\"warning\" | \"info\" | \"neutral\" | \"danger\"'."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2339,
+      "message": "Property 'executionProductPolicy' does not exist on type 'never'."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"required_at_execution\" | \"required_at_agenda\" | \"fixed_by_protocol\"' and '\"not_required\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"required_at_execution\" | \"required_at_agenda\"' and '\"not_required\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"required_at_execution\" | \"required_at_agenda\"' and '\"fixed_by_protocol\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"required_at_execution\" | \"required_at_agenda\"' and '\"not_required\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"required_at_execution\" | \"required_at_agenda\"' and '\"fixed_by_protocol\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProtocolV2.ts",
+      "code": 2339,
+      "message": "Property 'reason' does not exist on type 'ProductRequirementRuleValidationResult'.   Property 'reason' does not exist on type '{ ok: true; }'."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitarySnapshotBuildersV2.ts",
+      "code": 2322,
+      "message": "Type '_ProductRequirementKindLegacy' is not assignable to type '\"none\" | \"specific_product\" | \"product_class\"'.   Type '\"product_class_group\"' is not assignable to type '\"none\" | \"specific_product\" | \"product_class\"'. Did you mean '\"product_class\"'?"
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitarySnapshotBuildersV2.ts",
+      "code": 2322,
+      "message": "Type 'WithdrawalSnapshotV2' is not assignable to type 'OperationalWithdrawalSnapshotV2 & WithdrawalSnapshotV2'.   Type 'WithdrawalSnapshotV2' is missing the following properties from type 'OperationalWithdrawalSnapshotV2': schemaVersion, eventId, productCatalogUpdatedAt, factualReferenceAt, and 2 more."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2345,
+      "message": "Argument of type '\"Cálculo parcial com base apenas nos custos informados. Custos ausentes não foram assumidos como zero.\"' is not assignable to parameter of type '\"Simulação prospectiva com premissas editáveis; não constitui recomendação técnica ou comercial.\" | \"O peso observado provém de pesagem factual registrada e não representa o peso em tempo real.\" | \"O GMD assumido no cenário é uma premissa projetada e não garante ganho de peso futuro.\" | \"Custos fixos da fazenda, dep...'."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2345,
+      "message": "Argument of type '\"Custos incrementais não informados. Margem parcial simulada e preço de equilíbrio não foram calculados.\"' is not assignable to parameter of type '\"Simulação prospectiva com premissas editáveis; não constitui recomendação técnica ou comercial.\" | \"O peso observado provém de pesagem factual registrada e não representa o peso em tempo real.\" | \"O GMD assumido no cenário é uma premissa projetada e não garante ganho de peso futuro.\" | \"Custos fixos da fazenda, dep...'."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2339,
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.   Property 'issue' does not exist on type '{ success: true; line: CommercialPricingLineCalculation; }'."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2339,
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.   Property 'issue' does not exist on type '{ success: true; line: CommercialPricingLineCalculation; }'."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2339,
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.   Property 'issue' does not exist on type '{ success: true; line: CommercialPricingLineCalculation; }'."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2339,
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.   Property 'issue' does not exist on type '{ success: true; line: CommercialPricingLineCalculation; }'."
+    },
+    {
+      "file": "src/pages/Agenda/helpers/derivations.ts",
+      "code": 2345,
+      "message": "Argument of type 'ProtocoloSanitarioItem | { tipo: string; gera_agenda: boolean; payload: Record<string, unknown>; }' is not assignable to parameter of type 'TaxonomyInput'.   Type 'ProtocoloSanitarioItem' is not assignable to type 'TaxonomyInput'.     Type 'ProtocoloSanitarioItem' is not assignable to type 'TaxonomyRecord'.       Index signature for type 'string' is missing in type 'ProtocoloSanitarioItem'."
+    },
+    {
+      "file": "src/pages/Agenda/useAgendaShellState.ts",
+      "code": 2322,
+      "message": "Type 'AgendaScheduleQuickFilter' is not assignable to type 'PersistedAgendaScheduleQuickFilter'.   Type '\"closed\"' is not assignable to type 'PersistedAgendaScheduleQuickFilter'."
+    },
+    {
+      "file": "src/pages/Agenda/useAgendaShellState.ts",
+      "code": 2322,
+      "message": "Type 'AgendaCalendarModeQuickFilter' is not assignable to type 'PersistedAgendaCalendarModeQuickFilter'.   Type '\"campanha\"' is not assignable to type 'PersistedAgendaCalendarModeQuickFilter'."
+    },
+    {
+      "file": "src/pages/Agenda/useAgendaShellState.ts",
+      "code": 2322,
+      "message": "Type 'AgendaCalendarAnchorQuickFilter' is not assignable to type 'PersistedAgendaCalendarAnchorQuickFilter'.   Type '\"nascimento\"' is not assignable to type 'PersistedAgendaCalendarAnchorQuickFilter'."
+    },
+    {
+      "file": "src/pages/AnimalDetalhe.tsx",
+      "code": 2339,
+      "message": "Property 'status' does not exist on type 'AnimalAgendaRow'."
+    },
+    {
+      "file": "src/pages/AnimalDetalhe.tsx",
+      "code": 2345,
+      "message": "Argument of type 'AnimalAgendaRow' is not assignable to parameter of type 'Pick<AgendaItem, \"payload\" | \"source_ref\" | \"tipo\">'.   Type 'AnimalAgendaRow' is missing the following properties from type 'Pick<AgendaItem, \"payload\" | \"source_ref\" | \"tipo\">': payload, source_ref, tipo"
+    },
+    {
+      "file": "src/pages/AnimalDetalhe.tsx",
+      "code": 2339,
+      "message": "Property 'status' does not exist on type 'AnimalAgendaRow'."
+    },
+    {
+      "file": "src/pages/AnimalDetalhe.tsx",
+      "code": 2339,
+      "message": "Property 'id' does not exist on type 'AnimalAgendaRow'."
+    },
+    {
+      "file": "src/pages/AnimalEditar.tsx",
+      "code": 2769,
+      "message": "No overload matches this call.   Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.     Argument of type 'unknown' is not assignable to parameter of type 'string | number | Date'.   Overload 2 of 4, '(value: string | number): Date', gave the following error.     Argument of type 'unknown' is not assignable to parameter of type 'string | number'."
+    },
+    {
+      "file": "src/pages/Dashboard.tsx",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type '\"warning\" | \"pending\" | \"info\" | \"success\" | \"unknown\" | \"neutral\" | \"danger\" | \"conflict\" | \"offline\" | \"notPermitted\"'."
+    },
+    {
+      "file": "src/pages/Eventos.tsx",
+      "code": 2739,
+      "message": "Type '{ sanitario: string; alerta_sanitario: string; conformidade: string; pesagem: string; nutricao: string; movimentacao: string; reproducao: string; financeiro: string; obito: string; }' is missing the following properties from type 'Record<DominioEnum, string>': pastagem, comercial, ecc"
+    },
+    {
+      "file": "src/pages/Home.tsx",
+      "code": 2339,
+      "message": "Property 'weightFreshnessDays' does not exist on type 'FarmLifecycleConfig'."
+    },
+    {
+      "file": "src/pages/Home.tsx",
+      "code": 2339,
+      "message": "Property 'weightFreshnessDays' does not exist on type 'FarmLifecycleConfig'."
+    },
+    {
+      "file": "src/pages/Home.tsx",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type 'MetricTone'."
+    },
+    {
+      "file": "src/pages/LoteDetalhe.tsx",
+      "code": 2339,
+      "message": "Property 'weightFreshnessDays' does not exist on type 'FarmLifecycleConfig'."
+    },
+    {
+      "file": "src/pages/LotesImportar.tsx",
+      "code": 2352,
+      "message": "Conversion of type 'Record<string, unknown>[]' to type 'Pasto[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type 'Record<string, unknown>' is missing the following properties from type 'Pasto': id, fazenda_id, nome, area_ha, and 20 more."
+    },
+    {
+      "file": "src/pages/LotesImportar.tsx",
+      "code": 2352,
+      "message": "Conversion of type 'Record<string, unknown>[]' to type 'Animal[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type 'Record<string, unknown>' is missing the following properties from type 'Animal': id, fazenda_id, identificacao, sexo, and 24 more."
+    },
+    {
+      "file": "src/pages/PastoDetalhe.tsx",
+      "code": 2339,
+      "message": "Property 'weightFreshnessDays' does not exist on type 'FarmLifecycleConfig'."
+    },
+    {
+      "file": "src/pages/PastoNovo.tsx",
+      "code": 2345,
+      "message": "Argument of type 'OperationInput' is not assignable to parameter of type '{ table: string; action: \"INSERT\"; record: { id: string; fazenda_id: string; nome: string; area_ha: number; capacidade_ua: number; tipo_pasto: TipoPastoEnum; tipo_area: string; forrageira_nome: string; ... 10 more ...; deleted_at: any; }; }'.   Types of property 'action' are incompatible.     Type 'OpAction' is not assignable to type '\"INSERT\"'.       Type '\"UPDATE\"' is not assignable to type '\"INSERT\"'."
+    },
+    {
+      "file": "src/pages/ProtocolosSanitarios/index.tsx",
+      "code": 2322,
+      "message": "Type 'Dispatch<SetStateAction<\"conformidade\" | \"agenda\" | \"catalogo\" | \"historico\" | \"janelas\">>' is not assignable to type '(value: string) => void'.   Types of parameters 'value' and 'value' are incompatible.     Type 'string' is not assignable to type 'SetStateAction<\"conformidade\" | \"agenda\" | \"catalogo\" | \"historico\" | \"janelas\">'."
+    },
+    {
+      "file": "src/pages/Registrar/components/useRegistrarFinanceiroPackage.ts",
+      "code": 2322,
+      "message": "Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/components/useRegistrarFinanceiroPackage.ts",
+      "code": 2322,
+      "message": "Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/components/useRegistrarFinanceiroPackage.ts",
+      "code": 2322,
+      "message": "Type '\"venda\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/createRegistrarFinalizeController.ts",
+      "code": 2740,
+      "message": "Type 'ProtocolItemLike' is missing the following properties from type 'ProtocoloSanitarioItem': fazenda_id, version, intervalo_dias, dose_num, and 10 more."
+    },
+    {
+      "file": "src/pages/Registrar/effects/nonFinancialFinalize.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"comercial\" | \"reproducao\" | \"ecc\"' and '\"financeiro\"' have no overlap."
+    },
+    {
+      "file": "src/pages/Registrar/effects/nonFinancialFinalize.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"sanitario\" | \"comercial\" | \"pesagem\" | \"nutricao\" | \"movimentacao\" | \"ecc\"' and '\"financeiro\"' have no overlap."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/actionStepIssues.ts",
+      "code": 2339,
+      "message": "Property 'message' does not exist on type 'SanitaryExecutionPreflightResult'.   Property 'message' does not exist on type '{ ok: true; status: \"ready\" | \"skip\"; }'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/actionStepIssues.ts",
+      "code": 2339,
+      "message": "Property 'message' does not exist on type 'SanitaryExecutionPreflightResult'.   Property 'message' does not exist on type '{ ok: true; status: \"ready\" | \"skip\"; }'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/eventInput.ts",
+      "code": 2345,
+      "message": "Argument of type '\"compra\" | \"venda\" | \"arrendamento\" | \"sociedade_entrada\" | \"sociedade_saida\" | \"doacao_entrada\" | \"doacao_saida\"' is not assignable to parameter of type 'FinanceiroNatureza'.   Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/eventInput.ts",
+      "code": 2345,
+      "message": "Argument of type '\"compra\" | \"venda\" | \"arrendamento\" | \"doacao_entrada\" | \"doacao_saida\"' is not assignable to parameter of type 'FinanceiroNatureza'.   Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/eventInput.ts",
+      "code": 2345,
+      "message": "Argument of type '\"compra\" | \"venda\" | \"arrendamento\" | \"sociedade_entrada\" | \"sociedade_saida\" | \"doacao_entrada\" | \"doacao_saida\"' is not assignable to parameter of type 'FinanceiroNatureza'.   Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/financialFinalize.ts",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type 'EventDomain'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/financialNature.ts",
+      "code": 2322,
+      "message": "Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/financialNature.ts",
+      "code": 2322,
+      "message": "Type '\"venda\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/financialNature.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'FinanceiroNatureza' and '\"venda\"' have no overlap."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/financialNature.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'FinanceiroNatureza' and '\"compra\"' have no overlap."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/preflight.ts",
+      "code": 2339,
+      "message": "Property 'message' does not exist on type 'SanitaryExecutionPreflightResult'.   Property 'message' does not exist on type '{ ok: true; status: \"ready\" | \"skip\"; }'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/sanitaryFinalize.ts",
+      "code": 2741,
+      "message": "Property 'version' is missing in type 'ProtocolItemLike' but required in type 'SanitaryExecutionProtocolItem'."
+    },
+    {
+      "file": "src/pages/Registrar/index.tsx",
+      "code": 2345,
+      "message": "Argument of type '\"compra\" | \"venda\"' is not assignable to parameter of type 'FinanceiroNatureza'.   Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/index.tsx",
+      "code": 2322,
+      "message": "Type '(input: { tipoManejo: RegistrarNonFinancialDomain; fazendaId: string; occurredAt: string; sourceTaskId: string; targetAnimalIds: string[]; animalsMap: Map<string, Animal>; ... 26 more ...; resolveManualSanitaryAgendaCompletionOps?: (input: { ...; }) => Promise<...>; }) => Promise<...>' is not assignable to type '(input: { tipoManejo: EventDomain; fazendaId: string; occurredAt: string; sourceTaskId: string; targetAnimalIds: string[]; animalsMap: Map<string, Animal>; selectedLoteIsSemLote: boolean; ... 21 more ...; comercialData?: unknown; }) => Promise<...>'.   Types of parameters 'input' and 'input' are incompatible.     Type '{ tipoManejo: EventDomain; fazendaId: string; occurredAt: string; sourceTaskId: string; targetAnimalIds: string[]; animalsMap: Map<string, Animal>; selectedLoteIsSemLote: boolean; ... 21 more ...; comercialData?: unknown; }' is not assignable to type '{ tipoManejo: RegistrarNonFinancialDomain; fazendaId: string; occurredAt: string; sourceTaskId: string; targetAnimalIds: string[]; animalsMap: Map<string, Animal>; ... 26 more ...; resolveManualSanitaryAgendaCompletionOps?: (input: { ...; }) => Promise<...>; }'.       Types of property 'tipoManejo' are incompatible.         Type 'EventDomain' is not assignable to type 'RegistrarNonFinancialDomain'.           Type '\"pastagem\"' is not assignable to type 'RegistrarNonFinancialDomain'. Did you mean '\"pesagem\"'?"
+    },
+    {
+      "file": "src/pages/Registrar/index.tsx",
+      "code": 4104,
+      "message": "The type 'readonly [RegistrationStep.SELECT_ANIMALS, RegistrationStep.CHOOSE_ACTION, RegistrationStep.CONFIRM]' is 'readonly' and cannot be assigned to the mutable type 'number[]'."
+    },
+    {
+      "file": "src/pages/Registrar/index.tsx",
+      "code": 2322,
+      "message": "Type 'FinanceTransaction[]' is not assignable to type '{ id: string; occurred_at: string; direction: string; valor: number; description?: string; }[]'.   Property 'valor' is missing in type 'FinanceTransaction' but required in type '{ id: string; occurred_at: string; direction: string; valor: number; description?: string; }'."
+    },
+    {
+      "file": "src/pages/Registrar/useRegistrarActionSectionState.tsx",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type 'number'."
+    },
+    {
+      "file": "src/pages/Registrar/useRegistrarActionSectionState.tsx",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type 'number'."
+    },
+    {
+      "file": "src/pages/Relatorios.tsx",
+      "code": 2304,
+      "message": "Cannot find name 'PageIntro'."
+    }
+  ],
+  "current": [
+    {
+      "file": "src/components/manejo/MudarPastoLote.tsx",
+      "code": 2740,
+      "message": "Type '{ id: string; fazenda_id: string; nome: string; pasto_id?: string; }' is missing the following properties from type 'Lote': status, touro_id, observacoes, payload, and 8 more."
+    },
+    {
+      "file": "src/components/sanitario/FarmProtocolManager.tsx",
+      "code": 2322,
+      "message": "Type '{ table: string; action: string; record: { id: string; }; }' is not assignable to type 'OperationInput'.   Types of property 'action' are incompatible.     Type 'string' is not assignable to type 'OpAction'."
+    },
+    {
+      "file": "src/components/sanitario/FarmProtocolManager.tsx",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type 'OpAction'."
+    },
+    {
+      "file": "src/components/sanitario/FarmProtocolManager.tsx",
+      "code": 2345,
+      "message": "Argument of type 'ProtocoloSanitarioItem' is not assignable to parameter of type 'TaxonomyInput'.   Type 'ProtocoloSanitarioItem' is not assignable to type 'TaxonomyRecord'.     Index signature for type 'string' is missing in type 'ProtocoloSanitarioItem'."
+    },
+    {
+      "file": "src/components/sanitario/OfficialSanitaryPackManager.tsx",
+      "code": 2339,
+      "message": "Property 'finally' does not exist on type 'PromiseLike<void>'."
+    },
+    {
+      "file": "src/components/sanitario/ProtocolItemDraftEditor.tsx",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'SanitaryLayer'."
+    },
+    {
+      "file": "src/components/sanitario/ProtocolItemDraftEditor.tsx",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'SanitaryScopeType'."
+    },
+    {
+      "file": "src/components/sanitario/ProtocolItemDraftEditor.tsx",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'SanitaryCalendarMode'."
+    },
+    {
+      "file": "src/components/sanitario/ProtocolItemDraftEditor.tsx",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'SanitaryCalendarAnchor'."
+    },
+    {
+      "file": "src/components/sanitario/SanitaryAnimalSummaryPanelV2.tsx",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"insufficient_data\"' and '\"not_applicable\"' have no overlap."
+    },
+    {
+      "file": "src/components/sanitario/SanitaryPrecheckPanelV2.tsx",
+      "code": 2339,
+      "message": "Property 'animal' does not exist on type '{ animal: SanitaryPrecheckAnimalResumoV2; } | { lote: SanitaryPrecheckLoteResumoV2; animals?: SanitaryPrecheckAnimalResumoV2[]; }'.   Property 'animal' does not exist on type '{ lote: SanitaryPrecheckLoteResumoV2; animals?: SanitaryPrecheckAnimalResumoV2[]; }'."
+    },
+    {
+      "file": "src/components/sanitario/SanitaryPrecheckPanelV2.tsx",
+      "code": 2339,
+      "message": "Property 'lote' does not exist on type '{ animal: SanitaryPrecheckAnimalResumoV2; } | { lote: SanitaryPrecheckLoteResumoV2; animals?: SanitaryPrecheckAnimalResumoV2[]; }'.   Property 'lote' does not exist on type '{ animal: SanitaryPrecheckAnimalResumoV2; }'."
+    },
+    {
+      "file": "src/components/sanitario/SanitaryPrecheckPanelV2.tsx",
+      "code": 2339,
+      "message": "Property 'animals' does not exist on type '{ animal: SanitaryPrecheckAnimalResumoV2; } | { lote: SanitaryPrecheckLoteResumoV2; animals?: SanitaryPrecheckAnimalResumoV2[]; }'.   Property 'animals' does not exist on type '{ animal: SanitaryPrecheckAnimalResumoV2; }'."
+    },
+    {
+      "file": "src/components/settings/SyncHealthPanel.tsx",
+      "code": 2322,
+      "message": "Type '\"warning\" | \"critical\"' is not assignable to type '\"warning\" | \"pending\" | \"info\" | \"success\" | \"unknown\" | \"neutral\" | \"danger\" | \"conflict\" | \"offline\" | \"notPermitted\"'.   Type '\"critical\"' is not assignable to type '\"warning\" | \"pending\" | \"info\" | \"success\" | \"unknown\" | \"neutral\" | \"danger\" | \"conflict\" | \"offline\" | \"notPermitted\"'."
+    },
+    {
+      "file": "src/components/ui/state-banner.tsx",
+      "code": 2430,
+      "message": "Interface 'StateBannerProps' incorrectly extends interface 'HTMLAttributes<HTMLDivElement>'.   Types of property 'title' are incompatible.     Type 'ReactNode' is not assignable to type 'string'.       Type 'number' is not assignable to type 'string'."
+    },
+    {
+      "file": "src/features/occupancy/cockpitManejoAdapter.ts",
+      "code": 2339,
+      "message": "Property 'due_date' does not exist on type 'AgendaItem'."
+    },
+    {
+      "file": "src/features/occupancy/cockpitManejoAdapter.ts",
+      "code": 2339,
+      "message": "Property 'due_date' does not exist on type 'AgendaItem'."
+    },
+    {
+      "file": "src/features/occupancy/cockpitManejoAdapter.ts",
+      "code": 2339,
+      "message": "Property 'due_date' does not exist on type 'AgendaItem'."
+    },
+    {
+      "file": "src/features/occupancy/cockpitManejoAdapter.ts",
+      "code": 2339,
+      "message": "Property 'due_date' does not exist on type 'AgendaItem'."
+    },
+    {
+      "file": "src/features/occupancy/InfrastructureCard.tsx",
+      "code": 2322,
+      "message": "Type '\"warning\"' is not assignable to type '\"default\" | \"destructive\" | \"outline\" | \"secondary\"'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalHomeIndicatorsAdapter.ts",
+      "code": 2322,
+      "message": "Type '(FactualEvent & { fazenda_id: string; dominio: \"pesagem\"; })[]' is not assignable to type 'readonly (Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\"> & Partial<Pick<Evento, \"deleted_at\">>)[]'.   Type 'FactualEvent & { fazenda_id: string; dominio: \"pesagem\"; }' is not assignable to type 'Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\"> & Partial<Pick<Evento, \"deleted_at\">>'.     Type 'FactualEvent & { fazenda_id: string; dominio: \"pesagem\"; }' is not assignable to type 'Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\">'.       Property 'animal_id' is optional in type 'FactualEvent & { fazenda_id: string; dominio: \"pesagem\"; }' but required in type 'Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\">'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produto' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carenciaCarneAte' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carencia_carne_ate' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carenciaLeiteAte' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carencia_leite_ate' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carenciaCarneDias' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carencia_carne_dias' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carenciaLeiteDias' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'carencia_leite_dias' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produtoVeterinarioId' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produto_veterinario_id' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produtoNomeSnapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produto_nome_snapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'produto' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'estoqueLoteId' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'estoque_lote_id' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'estoqueLoteCodigoSnapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'estoque_lote_codigo_snapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'validadeProduto' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'validade_produto' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'doseQuantidade' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'dose_quantidade' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'doseUnidade' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'dose_unidade' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'viaAplicacao' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'via_aplicacao' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'custoUnitarioSnapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'custo_unitario_snapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'custoTotalSnapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/operationalInsightsAdapter.ts",
+      "code": 2339,
+      "message": "Property 'custo_total_snapshot' does not exist on type 'OperationalInsightsEventRow'."
+    },
+    {
+      "file": "src/features/operationalInsights/OperationalInsightsPanel.tsx",
+      "code": 2724,
+      "message": "'\"@/features/operationalInsights/operationalInsightsAdapter\"' has no exported member named 'OperationalSignal'. Did you mean 'OperationalSignalsView'?"
+    },
+    {
+      "file": "src/hooks/useProtocolItemDraft.ts",
+      "code": 2345,
+      "message": "Argument of type 'string' is not assignable to parameter of type 'SanitaryCalendarMode'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'completed_at' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'last_weight_kg' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'last_weight_kg' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'estagio_vida' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'estagio_vida' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/classificationSnapshot.ts",
+      "code": 2339,
+      "message": "Property 'estagio_vida' does not exist on type 'unknown'."
+    },
+    {
+      "file": "src/lib/animals/lifecycle.ts",
+      "code": 2677,
+      "message": "A type predicate's type must be assignable to its parameter's type.   Type 'PendingAnimalLifecycleTransition' is not assignable to type '{ animalId: string; identificacao: string; currentStage: AnimalLifeStageEnum; targetStage: AnimalLifeStageEnum; queueKind: PendingAnimalLifecycleKind; ... 4 more ...; dedupKey: string; }'.     Property 'dedupKey' is optional in type 'PendingAnimalLifecycleTransition' but required in type '{ animalId: string; identificacao: string; currentStage: AnimalLifeStageEnum; targetStage: AnimalLifeStageEnum; queueKind: PendingAnimalLifecycleKind; ... 4 more ...; dedupKey: string; }'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/events/validators/comercial.ts",
+      "code": 2345,
+      "message": "Argument of type '{ field: string; message: string; }' is not assignable to parameter of type 'EventValidationIssue'.   Property 'code' is missing in type '{ field: string; message: string; }' but required in type 'EventValidationIssue'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"not_permitted\"; statusReason: string; data: null; evidence: { primarySources: DecisionEvidenceSource[]; auxiliarySources: DecisionEvidenceSource[]; convergence: { ...; }[]; coverage: undefined[]; limitations: string[]; conflicts: undefined[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<WeightDataQuality>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao autoriza venda ou abate\", \"nao declara aptidao operacional\", \"nao transforma o ultimo peso em peso atual garantido\", \"nao cria Evento, Agenda ou state_*\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: DecisionRecommendationStatus; statusReason: string; data: null; evidence: { primarySources: DecisionEvidenceSource[]; ... 4 more ...; conflicts: undefined[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<WeightDataQuality>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao autoriza venda ou abate\", \"nao declara aptidao operacional\", \"nao transforma o ultimo peso em peso atual garantido\", \"nao cria Evento, Agenda ou state_*\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"ambiguous\"; statusReason: string; data: null; evidence: { primarySources: DecisionEvidenceSource[]; auxiliarySources: DecisionEvidenceSource[]; convergence: { ...; }[]; coverage: string[]; limitations: string[]; conflicts: DecisionEvidenceConflict[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<WeightDataQuality>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao autoriza venda ou abate\", \"nao declara aptidao operacional\", \"nao transforma o ultimo peso em peso atual garantido\", \"nao cria Evento, Agenda ou state_*\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"partial\" | \"unknown\"; statusReason: string; data: { summary: string; quality: \"missing_detail\"; freshnessLimitDays: number; }; evidence: { primarySources: DecisionEvidenceSource[]; ... 4 more ...; conflicts: undefined[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<WeightDataQuality>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao autoriza venda ou abate\", \"nao declara aptidao operacional\", \"nao transforma o ultimo peso em peso atual garantido\", \"nao cria Evento, Agenda ou state_*\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"partial\" | \"confirmed\"; statusReason: string; data: { summary: string; quality: \"fresh\" | \"stale\"; eventId: string; weightKg: number; weighedAt: string; ageDays: number; freshnessLimitDays: number; }; ... 8 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<WeightDataQuality>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao autoriza venda ou abate\", \"nao declara aptidao operacional\", \"nao transforma o ultimo peso em peso atual garantido\", \"nao cria Evento, Agenda ou state_*\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: DecisionRecommendationStatus; statusReason: string; data: null; evidence: { primarySources: DecisionEvidenceSource[]; ... 4 more ...; conflicts: undefined[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<OverdueAgendaData>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao conclui nem altera Agenda\", \"nao cria Evento\", \"nao infere execucao a partir de Agenda concluida\", \"nao usa Protocolo, tag ou insight como prova de execucao\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"ambiguous\"; statusReason: string; data: OverdueAgendaData; evidence: { primarySources: DecisionEvidenceSource[]; auxiliarySources: DecisionEvidenceSource[]; convergence: { ...; }[]; coverage: string[]; limitations: string[]; conflicts: DecisionEvidenceConflict[]; }; ... 7 more ...; prohibitedActions: read...' is not assignable to type 'DecisionRecommendation<OverdueAgendaData>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao conclui nem altera Agenda\", \"nao cria Evento\", \"nao infere execucao a partir de Agenda concluida\", \"nao usa Protocolo, tag ou insight como prova de execucao\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/decisionRecommendations.ts",
+      "code": 2322,
+      "message": "Type '{ status: \"partial\" | \"unknown\" | \"confirmed\"; statusReason: string; data: OverdueAgendaData; evidence: { primarySources: DecisionEvidenceSource[]; ... 4 more ...; conflicts: undefined[]; }; ... 7 more ...; prohibitedActions: readonly [...]; }' is not assignable to type 'DecisionRecommendation<OverdueAgendaData>'.   Types of property 'prohibitedActions' are incompatible.     The type 'readonly [\"nao conclui nem altera Agenda\", \"nao cria Evento\", \"nao infere execucao a partir de Agenda concluida\", \"nao usa Protocolo, tag ou insight como prova de execucao\"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'."
+    },
+    {
+      "file": "src/lib/insights/latestObservedWeight.ts",
+      "code": 2322,
+      "message": "Type 'ObservedWeightConflict' is not assignable to type '{ code: LatestObservedWeightConflictCode; measuredAt: string; eventIds: string[]; }'.   Types of property 'code' are incompatible.     Type 'ObservedWeightConflictCode' is not assignable to type 'LatestObservedWeightConflictCode'.       Type '\"MEASUREMENT_TIMESTAMP_CONFLICT\"' is not assignable to type 'LatestObservedWeightConflictCode'. Did you mean '\"LATEST_MEASUREMENT_TIMESTAMP_CONFLICT\"'?"
+    },
+    {
+      "file": "src/lib/insights/observedWeightEvidence.ts",
+      "code": 2322,
+      "message": "Type '{ event: Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\"> & Partial<Pick<Evento, \"deleted_at\">>; timestamp: number; }[]' is not assignable to type 'EligibleEvent[]'.   Type '{ event: Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\"> & Partial<Pick<Evento, \"deleted_at\">>; timestamp: number; }' is not assignable to type 'EligibleEvent'.     Types of property 'event' are incompatible.       Type 'Pick<Evento, \"fazenda_id\" | \"id\" | \"dominio\" | \"animal_id\" | \"occurred_at\"> & Partial<Pick<Evento, \"deleted_at\">>' is missing the following properties from type 'Evento': lote_id, source_task_id, source_tx_id, source_client_op_id, and 10 more."
+    },
+    {
+      "file": "src/lib/insights/observedWeightEvidence.ts",
+      "code": 2322,
+      "message": "Type 'EventoPesagem | (Pick<EventoPesagem, \"fazenda_id\" | \"evento_id\" | \"peso_kg\"> & Partial<Pick<EventoPesagem, \"deleted_at\">>)' is not assignable to type 'EventoPesagem'.   Type 'Pick<EventoPesagem, \"fazenda_id\" | \"evento_id\" | \"peso_kg\"> & Partial<Pick<EventoPesagem, \"deleted_at\">>' is missing the following properties from type 'EventoPesagem': payload, client_id, client_op_id, client_tx_id, and 4 more."
+    },
+    {
+      "file": "src/lib/insights/observedWeightEvidence.ts",
+      "code": 2740,
+      "message": "Type 'Pick<EventoPesagem, \"fazenda_id\" | \"evento_id\" | \"peso_kg\"> & Partial<Pick<EventoPesagem, \"deleted_at\">>' is missing the following properties from type 'EventoPesagem': payload, client_id, client_op_id, client_tx_id, and 4 more."
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 1354,
+      "message": "'readonly' type modifier is only permitted on array and tuple literal types."
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 2345,
+      "message": "Argument of type 'AnswerableOperationalInsight<unknown>' is not assignable to parameter of type 'OperationalInsight<readonly AgendaNeedItemInput[]>'.   Type 'AnswerableOperationalInsight<unknown>' is not assignable to type 'AnswerableOperationalInsight<readonly AgendaNeedItemInput[]>'.     Type '{}' is missing the following properties from type 'readonly AgendaNeedItemInput[]': length, concat, join, slice, and 20 more."
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 2345,
+      "message": "Argument of type 'AnswerableOperationalInsight<unknown>' is not assignable to parameter of type 'OperationalInsight<HerdStageSummary>'.   Type 'AnswerableOperationalInsight<unknown>' is not assignable to type 'AnswerableOperationalInsight<HerdStageSummary>'.     Type '{}' is missing the following properties from type 'HerdStageSummary': totalAnimals, byStage, byLote, byStatus, unknownStageCount"
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 2345,
+      "message": "Argument of type 'AnswerableOperationalInsight<unknown>' is not assignable to parameter of type 'OperationalInsight<SanitaryWithdrawalSignalSummary>'.   Type 'AnswerableOperationalInsight<unknown>' is not assignable to type 'AnswerableOperationalInsight<SanitaryWithdrawalSignalSummary>'.     Type '{}' is missing the following properties from type 'SanitaryWithdrawalSignalSummary': source, activeCount, freeCount, evaluatedEventCount, and 2 more."
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 2345,
+      "message": "Argument of type 'AnswerableOperationalInsight<unknown>' is not assignable to parameter of type 'OperationalInsight<SanitaryTraceabilitySignalSummary>'.   Type 'AnswerableOperationalInsight<unknown>' is not assignable to type 'AnswerableOperationalInsight<SanitaryTraceabilitySignalSummary>'.     Type '{}' is missing the following properties from type 'SanitaryTraceabilitySignalSummary': source, evaluatedEventCount, missingTraceabilityCount, productWithoutStockLotCount, and 6 more."
+    },
+    {
+      "file": "src/lib/insights/tagSignals.ts",
+      "code": 2345,
+      "message": "Argument of type 'AnswerableOperationalInsight<unknown>' is not assignable to parameter of type 'OperationalInsight<SanitaryExceptionSignalSummary>'.   Type 'AnswerableOperationalInsight<unknown>' is not assignable to type 'AnswerableOperationalInsight<SanitaryExceptionSignalSummary>'.     Type 'unknown' is not assignable to type 'SanitaryExceptionSignalSummary'.       Type '{}' is missing the following properties from type 'SanitaryExceptionSummary': source, totalOpen, totalResolved, totalIgnored, and 10 more."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2537,
+      "message": "Type '{}' has no matching index signature for type 'number'."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2537,
+      "message": "Type '{}' has no matching index signature for type 'number'."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2322,
+      "message": "Type 'IndexableType[]' is not assignable to type 'IndexableType'.   Type 'IndexableType[]' is not assignable to type 'void[][]'.     Type 'IndexableType' is not assignable to type 'void[]'.       Type 'string' is not assignable to type 'void[]'."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2554,
+      "message": "Expected 4 arguments, but got 3."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2554,
+      "message": "Expected 4 arguments, but got 3."
+    },
+    {
+      "file": "src/lib/offline/pull.ts",
+      "code": 2554,
+      "message": "Expected 4 arguments, but got 3."
+    },
+    {
+      "file": "src/lib/offline/syncWorker.ts",
+      "code": 2339,
+      "message": "Property 'op_id' does not exist on type '{ op: Operation; result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus; }; }'."
+    },
+    {
+      "file": "src/lib/offline/syncWorker.ts",
+      "code": 2322,
+      "message": "Type 'Record<string, unknown> | SanitarioV2QueuedOperation' is not assignable to type 'Record<string, unknown>'.   Type 'SanitarioV2QueuedOperation' is not assignable to type 'Record<string, unknown>'.     Index signature for type 'string' is missing in type 'SanitarioV2QueuedOperation'."
+    },
+    {
+      "file": "src/lib/reproduction/dashboard.ts",
+      "code": 2741,
+      "message": "Property 'aborto' is missing in type '{ cobertura: string; IA: string; diagnostico: string; parto: string; }' but required in type 'Record<ReproTipoEnum, string>'."
+    },
+    {
+      "file": "src/lib/reproduction/register.ts",
+      "code": 2322,
+      "message": "Type '{ dataPrevistaParto: string; machoId?: string | null; episodeEventoId?: string | null; episodeLinkMethod?: string; tipo: ReproTipoEnum; observacoes?: string; resultadoDiagnostico?: string; ... 6 more ...; doseSemenRef?: string; }' is not assignable to type 'ReproductionDraftInput'.   Types of property 'episodeLinkMethod' are incompatible.     Type 'string' is not assignable to type '\"manual\" | \"auto_last_open_service\" | \"unlinked\"'."
+    },
+    {
+      "file": "src/lib/reproduction/register.ts",
+      "code": 2345,
+      "message": "Argument of type 'Animal' is not assignable to parameter of type 'Record<string, unknown>'.   Index signature for type 'string' is missing in type 'Animal'."
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "code": 2345,
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly Evento[]'.   Type 'RemoteRow' is missing the following properties from type 'Evento': id, fazenda_id, dominio, occurred_at, and 16 more."
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "code": 2345,
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly EventoReproducao[]'.   Type 'RemoteRow' is missing the following properties from type 'EventoReproducao': evento_id, fazenda_id, tipo, macho_id, and 9 more."
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "code": 2345,
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly Animal[]'.   Type 'RemoteRow' is missing the following properties from type 'Animal': id, fazenda_id, identificacao, sexo, and 24 more."
+    },
+    {
+      "file": "src/lib/reproduction/remoteSync.ts",
+      "code": 2345,
+      "message": "Argument of type 'RemoteRow[]' is not assignable to parameter of type 'readonly AgendaItem[]'.   Type 'RemoteRow' is missing the following properties from type 'AgendaItem': id, fazenda_id, dominio, tipo, and 21 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2305,
+      "message": "Module '\"@/lib/sanitario/engine/schedulerIntegration\"' has no exported member 'ComputedOccurrence'."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; minAgeMonths: number; maxAgeMonths: number; frequency: string; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; minAgeMonths: number; maxAgeMonths: number; frequency: string; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; peso: number; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; peso: number; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; minAgeMonths: number; maxAgeMonths: number; geoInfo: { subregion: string; }; frequency: string; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; minAgeMonths: number; maxAgeMonths: number; geoInfo: { subregion: string; }; frequency: string; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; animal_id: string; tipo: \"vacinacao\"; payload: { produto: string; }; client_recorded_at: Date; }' to type 'EventoSanitario' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; animal_id: string; tipo: \"vacinacao\"; payload: { produto: string; }; client_recorded_at: Date; }' is missing the following properties from type 'EventoSanitario': evento_id, fazenda_id, produto, client_id, and 6 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; dependsOn: { itemId: string; eventMatch: string; }; intervalMonths: number; }[]; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; dependsOn: { itemId: string; eventMatch: string; }; intervalMonths: number; }[]; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; animal_id: string; tipo: \"vacinacao\"; payload: { produto: string; cycle: number; }; client_recorded_at: Date; }' to type 'EventoSanitario' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; animal_id: string; tipo: \"vacinacao\"; payload: { produto: string; cycle: number; }; client_recorded_at: Date; }' is missing the following properties from type 'EventoSanitario': evento_id, fazenda_id, produto, client_id, and 6 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; campaignMonths: number[]; state: string; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; campaignMonths: number[]; state: string; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"sanitario\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; intervalMonths: number; }[]; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"sanitario\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; intervalMonths: number; }[]; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; animal_id: string; tipo: \"sanitario\"; payload: { procedimento: string; produto: string; }; client_recorded_at: Date; }' to type 'EventoSanitario' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; animal_id: string; tipo: \"sanitario\"; payload: { procedimento: string; produto: string; }; client_recorded_at: Date; }' is missing the following properties from type 'EventoSanitario': evento_id, fazenda_id, produto, client_id, and 6 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"procedimento\"; payload: { calendario_base: { mode: string; anchor: string; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"procedimento\"; payload: { calendario_base: { mode: string; anchor: string; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; dependsOn: { itemId: string; eventMatch: string; }; intervalMonths: number; }[]; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; cycles: { cycle: number; dependsOn: { itemId: string; eventMatch: string; }; intervalMonths: number; }[]; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"F\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; campaignMonths: undefined[]; }; }; }' to type 'ProtocoloSanitarioItem' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ protocolId: string; itemId: string; tipo: \"vacinacao\"; payload: { calendario_base: { mode: string; anchor: string; campaignMonths: undefined[]; }; }; }' is missing the following properties from type 'ProtocoloSanitarioItem': id, fazenda_id, protocolo_id, version, and 13 more."
+    },
+    {
+      "file": "src/lib/sanitario/__fixtures__/scheduler.fixtures.ts",
+      "code": 2352,
+      "message": "Conversion of type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' to type 'Animal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type '{ id: string; nome: string; data_nascimento: string; sexo: \"M\"; categoria_zootecnica: string; }' is missing the following properties from type 'Animal': fazenda_id, identificacao, status, lote_id, and 20 more."
+    },
+    {
+      "file": "src/lib/sanitario/catalog/baseProtocols.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'StandardProtocolLegalStatus' and '\"obrigatorio\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/compliance/biosecurityOccurrence.ts",
+      "code": 2550,
+      "message": "Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later."
+    },
+    {
+      "file": "src/lib/sanitario/compliance/biosecurityReadModel.ts",
+      "code": 2677,
+      "message": "A type predicate's type must be assignable to its parameter's type.   Type 'BiosecurityOccurrenceProjection' is not assignable to type '{ eventoId: string; occurredAt: string; animalId: string; loteId: string; localId: string; sourceAgendaItemId: string; linkedEventoId: string; category: BiosecurityOccurrenceCategory; ... 11 more ...; payload: BiosecurityOccurrencePayload; }'.     Types of property 'tipoOcorrencia' are incompatible.       Type 'string' is not assignable to type 'BiosecurityOccurrenceType'."
+    },
+    {
+      "file": "src/lib/sanitario/compliance/regulatoryAnimals.ts",
+      "code": 2322,
+      "message": "Type '{ key: RegulatoryAnalyticsImpactKey; label: string; tone: string; message: string; blockerCount: number; warningCount: number; }[]' is not assignable to type 'AnimalRegulatoryRestriction[]'.   Type '{ key: RegulatoryAnalyticsImpactKey; label: string; tone: string; message: string; blockerCount: number; warningCount: number; }' is not assignable to type 'AnimalRegulatoryRestriction'.     Types of property 'tone' are incompatible.       Type 'string' is not assignable to type '\"warning\" | \"danger\"'."
+    },
+    {
+      "file": "src/lib/sanitario/compliance/regulatoryReadModel.ts",
+      "code": 2677,
+      "message": "A type predicate's type must be assignable to its parameter's type.   Type 'RegulatorySubareaAnalyticalCut' is not assignable to type '{ key: RegulatoryAnalyticsSubareaKey; label: string; openCount: number; blockerCount: number; warningCount: number; adjustmentCount: number; pendingCount: number; tone: \"warning\" | ... 1 more ... | \"danger\"; affectedImpacts: \"nutrition\"[] | ... 1 more ... | \"sale\"[]; recommendation: string; }'.     Types of property 'affectedImpacts' are incompatible.       Type 'RegulatoryAnalyticsImpactKey[]' is not assignable to type '\"nutrition\"[] | \"movementInternal\"[] | \"sale\"[]'.         Type 'RegulatoryAnalyticsImpactKey[]' is not assignable to type '\"nutrition\"[]'.           Type 'RegulatoryAnalyticsImpactKey' is not assignable to type '\"nutrition\"'.             Type '\"movementInternal\"' is not assignable to type '\"nutrition\"'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/anchorResolution.ts",
+      "code": 2339,
+      "message": "Property 'payload' does not exist on type '{ id: string; birthDate: string; sex: \"macho\" | \"femea\"; species: \"bovino\" | \"bubalino\"; categoryCode: string; reproductionStatus?: string; }'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/anchorResolution.ts",
+      "code": 2339,
+      "message": "Property 'payload' does not exist on type '{ id: string; birthDate: string; sex: \"macho\" | \"femea\"; species: \"bovino\" | \"bubalino\"; categoryCode: string; reproductionStatus?: string; }'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/anchorResolution.ts",
+      "code": 2678,
+      "message": "Type '\"recem_parida\"' is not comparable to type 'SanitaryCalendarAnchor'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/anchorResolution.ts",
+      "code": 2339,
+      "message": "Property 'payload' does not exist on type '{ id: string; birthDate: string; sex: \"macho\" | \"femea\"; species: \"bovino\" | \"bubalino\"; categoryCode: string; reproductionStatus?: string; }'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/anchorResolution.ts",
+      "code": 2339,
+      "message": "Property 'payload' does not exist on type '{ id: string; birthDate: string; sex: \"macho\" | \"femea\"; species: \"bovino\" | \"bubalino\"; categoryCode: string; reproductionStatus?: string; }'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/nextOccurrenceService.ts",
+      "code": 2339,
+      "message": "Property 'categoria_zootecnica' does not exist on type 'Animal'."
+    },
+    {
+      "file": "src/lib/sanitario/engine/schedulerIntegration.ts",
+      "code": 2724,
+      "message": "'\"@/lib/sanitario/engine/scheduler\"' has no exported member named 'ComputeNextSanitaryOccurrenceResult'. Did you mean 'computeNextSanitaryOccurrence'?"
+    },
+    {
+      "file": "src/lib/sanitario/engine/schedulerIntegration.ts",
+      "code": 2739,
+      "message": "Type 'Animal' is missing the following properties from type '{ id: string; birthDate: string; sex: \"macho\" | \"femea\"; species: \"bovino\" | \"bubalino\"; categoryCode: string; reproductionStatus?: string; }': birthDate, sex, species, categoryCode"
+    },
+    {
+      "file": "src/lib/sanitario/engine/schedulerIntegration.ts",
+      "code": 2322,
+      "message": "Type 'unknown[]' is not assignable to type 'SanitaryExecutionRecord[]'.   Type '{}' is missing the following properties from type 'SanitaryExecutionRecord': occurrenceId, familyCode, itemCode, regimenVersion, and 7 more."
+    },
+    {
+      "file": "src/lib/sanitario/engine/schedulerIntegration.ts",
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'date' does not exist in type 'SchedulerNowContext'."
+    },
+    {
+      "file": "src/lib/sanitario/hooks/useWithdrawal.ts",
+      "code": 2322,
+      "message": "Type '{ id: string; animal_id: string; lote_id: string; occurred_at: string; deleted_at: string; produto: string; carencia_carne_dias: number; carencia_leite_dias: number; carencia_carne_ate: string; carencia_leite_ate: string; payload: { ...; }; }[]' is not assignable to type 'SanitaryEventInputForReadModel[]'.   Type '{ id: string; animal_id: string; lote_id: string; occurred_at: string; deleted_at: string; produto: string; carencia_carne_dias: number; carencia_leite_dias: number; carencia_carne_ate: string; carencia_leite_ate: string; payload: { ...; }; }' is not assignable to type 'SanitaryEventInputForReadModel'.     The types of 'payload.insumo_snapshot' are incompatible between these types.       Type '{}' is missing the following properties from type 'ProdutoInsumoSnapshot': produto_nome_snapshot, produto_tipo_snapshot, rastreabilidade"
+    },
+    {
+      "file": "src/lib/sanitario/hooks/useWithdrawal.ts",
+      "code": 2322,
+      "message": "Type '{ insumo_snapshot: unknown; carencia_regra_json: unknown; }' is not assignable to type '{ insumo_snapshot?: ProdutoInsumoSnapshot; carencia_regra_json?: { carne_dias?: number; leite_dias?: number; }; }'.   Types of property 'insumo_snapshot' are incompatible.     Type '{}' is missing the following properties from type 'ProdutoInsumoSnapshot': produto_nome_snapshot, produto_tipo_snapshot, rastreabilidade"
+    },
+    {
+      "file": "src/lib/sanitario/hooks/useWithdrawal.ts",
+      "code": 2322,
+      "message": "Type '{ insumo_snapshot: unknown; carencia_regra_json: unknown; }' is not assignable to type '{ insumo_snapshot?: ProdutoInsumoSnapshot; carencia_regra_json?: { carne_dias?: number; leite_dias?: number; }; }'.   Types of property 'insumo_snapshot' are incompatible.     Type '{}' is missing the following properties from type 'ProdutoInsumoSnapshot': produto_nome_snapshot, produto_tipo_snapshot, rastreabilidade"
+    },
+    {
+      "file": "src/lib/sanitario/hooks/useWithdrawal.ts",
+      "code": 2322,
+      "message": "Type '{ insumo_snapshot: unknown; carencia_regra_json: unknown; }' is not assignable to type '{ insumo_snapshot?: ProdutoInsumoSnapshot; carencia_regra_json?: { carne_dias?: number; leite_dias?: number; }; }'.   Types of property 'insumo_snapshot' are incompatible.     Type '{}' is missing the following properties from type 'ProdutoInsumoSnapshot': produto_nome_snapshot, produto_tipo_snapshot, rastreabilidade"
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2305,
+      "message": "Module '\"@/lib/sanitario/models/domain\"' has no exported member 'ExecutionPolicyForMode'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2305,
+      "message": "Module '\"@/lib/sanitario/models/validation\"' has no exported member 'sanitaryLayerEnum'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2305,
+      "message": "Module '\"@/lib/sanitario/models/validation\"' has no exported member 'sanitaryScopeEnum'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2305,
+      "message": "Module '\"@/lib/sanitario/models/validation\"' has no exported member 'sanitaryCalendarModeEnum'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2739,
+      "message": "Type '{ protocolId: string; itemId: string; familyCode: string; itemCode: string; regimenVersion: number; }' is missing the following properties from type 'SanitaryIdentity': layer, scopeType"
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'sexAllowed' does not exist in type 'SanitaryEligibility'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'isComplianceRequired' does not exist in type 'SanitaryCompliance'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2353,
+      "message": "Object literal may only specify known properties, and 'layer' does not exist in type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'layer' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'scopeType' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'generatesAgenda' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'description' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'sexAllowed' does not exist on type 'SanitaryEligibility'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'speciesAllowed' does not exist on type 'SanitaryEligibility'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'categoryAllowed' does not exist on type 'SanitaryEligibility'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'isComplianceRequired' does not exist on type 'SanitaryCompliance'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'complianceDocType' does not exist on type 'SanitaryCompliance'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'dependsOnItemCode' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'productCode' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'productName' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'doseNumber' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/models/draft.ts",
+      "code": 2339,
+      "message": "Property 'execution' does not exist on type 'SanitaryProtocolItemDomain'."
+    },
+    {
+      "file": "src/lib/sanitario/operations/agendaDiagnostics.ts",
+      "code": 2322,
+      "message": "Type '\"success\"' is not assignable to type '\"warning\" | \"info\" | \"neutral\" | \"danger\"'."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2339,
+      "message": "Property 'executionProductPolicy' does not exist on type 'never'."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"required_at_execution\" | \"required_at_agenda\" | \"fixed_by_protocol\"' and '\"not_required\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"required_at_execution\" | \"required_at_agenda\"' and '\"not_required\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"required_at_execution\" | \"required_at_agenda\"' and '\"fixed_by_protocol\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"required_at_execution\" | \"required_at_agenda\"' and '\"not_required\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProductClassV2.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"required_at_execution\" | \"required_at_agenda\"' and '\"fixed_by_protocol\"' have no overlap."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitaryProtocolV2.ts",
+      "code": 2339,
+      "message": "Property 'reason' does not exist on type 'ProductRequirementRuleValidationResult'.   Property 'reason' does not exist on type '{ ok: true; }'."
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitarySnapshotBuildersV2.ts",
+      "code": 2322,
+      "message": "Type '_ProductRequirementKindLegacy' is not assignable to type '\"none\" | \"specific_product\" | \"product_class\"'.   Type '\"product_class_group\"' is not assignable to type '\"none\" | \"specific_product\" | \"product_class\"'. Did you mean '\"product_class\"'?"
+    },
+    {
+      "file": "src/lib/sanitario/rules/sanitarySnapshotBuildersV2.ts",
+      "code": 2322,
+      "message": "Type 'WithdrawalSnapshotV2' is not assignable to type 'OperationalWithdrawalSnapshotV2 & WithdrawalSnapshotV2'.   Type 'WithdrawalSnapshotV2' is missing the following properties from type 'OperationalWithdrawalSnapshotV2': schemaVersion, eventId, productCatalogUpdatedAt, factualReferenceAt, and 2 more."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2345,
+      "message": "Argument of type '\"Cálculo parcial com base apenas nos custos informados. Custos ausentes não foram assumidos como zero.\"' is not assignable to parameter of type '\"Simulação prospectiva com premissas editáveis; não constitui recomendação técnica ou comercial.\" | \"O peso observado provém de pesagem factual registrada e não representa o peso em tempo real.\" | \"O GMD assumido no cenário é uma premissa projetada e não garante ganho de peso futuro.\" | \"Custos fixos da fazenda, dep...'."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2345,
+      "message": "Argument of type '\"Custos incrementais não informados. Margem parcial simulada e preço de equilíbrio não foram calculados.\"' is not assignable to parameter of type '\"Simulação prospectiva com premissas editáveis; não constitui recomendação técnica ou comercial.\" | \"O peso observado provém de pesagem factual registrada e não representa o peso em tempo real.\" | \"O GMD assumido no cenário é uma premissa projetada e não garante ganho de peso futuro.\" | \"Custos fixos da fazenda, dep...'."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2339,
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.   Property 'issue' does not exist on type '{ success: true; line: CommercialPricingLineCalculation; }'."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2339,
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.   Property 'issue' does not exist on type '{ success: true; line: CommercialPricingLineCalculation; }'."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2339,
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.   Property 'issue' does not exist on type '{ success: true; line: CommercialPricingLineCalculation; }'."
+    },
+    {
+      "file": "src/lib/simulation/productiveCommercialSimulation.ts",
+      "code": 2339,
+      "message": "Property 'issue' does not exist on type 'SingleLineResult'.   Property 'issue' does not exist on type '{ success: true; line: CommercialPricingLineCalculation; }'."
+    },
+    {
+      "file": "src/pages/Agenda/helpers/derivations.ts",
+      "code": 2345,
+      "message": "Argument of type 'ProtocoloSanitarioItem | { tipo: string; gera_agenda: boolean; payload: Record<string, unknown>; }' is not assignable to parameter of type 'TaxonomyInput'.   Type 'ProtocoloSanitarioItem' is not assignable to type 'TaxonomyInput'.     Type 'ProtocoloSanitarioItem' is not assignable to type 'TaxonomyRecord'.       Index signature for type 'string' is missing in type 'ProtocoloSanitarioItem'."
+    },
+    {
+      "file": "src/pages/Agenda/useAgendaShellState.ts",
+      "code": 2322,
+      "message": "Type 'AgendaScheduleQuickFilter' is not assignable to type 'PersistedAgendaScheduleQuickFilter'.   Type '\"closed\"' is not assignable to type 'PersistedAgendaScheduleQuickFilter'."
+    },
+    {
+      "file": "src/pages/Agenda/useAgendaShellState.ts",
+      "code": 2322,
+      "message": "Type 'AgendaCalendarModeQuickFilter' is not assignable to type 'PersistedAgendaCalendarModeQuickFilter'.   Type '\"campanha\"' is not assignable to type 'PersistedAgendaCalendarModeQuickFilter'."
+    },
+    {
+      "file": "src/pages/Agenda/useAgendaShellState.ts",
+      "code": 2322,
+      "message": "Type 'AgendaCalendarAnchorQuickFilter' is not assignable to type 'PersistedAgendaCalendarAnchorQuickFilter'.   Type '\"nascimento\"' is not assignable to type 'PersistedAgendaCalendarAnchorQuickFilter'."
+    },
+    {
+      "file": "src/pages/AnimalDetalhe.tsx",
+      "code": 2339,
+      "message": "Property 'status' does not exist on type 'AnimalAgendaRow'."
+    },
+    {
+      "file": "src/pages/AnimalDetalhe.tsx",
+      "code": 2345,
+      "message": "Argument of type 'AnimalAgendaRow' is not assignable to parameter of type 'Pick<AgendaItem, \"payload\" | \"source_ref\" | \"tipo\">'.   Type 'AnimalAgendaRow' is missing the following properties from type 'Pick<AgendaItem, \"payload\" | \"source_ref\" | \"tipo\">': payload, source_ref, tipo"
+    },
+    {
+      "file": "src/pages/AnimalDetalhe.tsx",
+      "code": 2339,
+      "message": "Property 'status' does not exist on type 'AnimalAgendaRow'."
+    },
+    {
+      "file": "src/pages/AnimalDetalhe.tsx",
+      "code": 2339,
+      "message": "Property 'id' does not exist on type 'AnimalAgendaRow'."
+    },
+    {
+      "file": "src/pages/AnimalEditar.tsx",
+      "code": 2769,
+      "message": "No overload matches this call.   Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.     Argument of type 'unknown' is not assignable to parameter of type 'string | number | Date'.   Overload 2 of 4, '(value: string | number): Date', gave the following error.     Argument of type 'unknown' is not assignable to parameter of type 'string | number'."
+    },
+    {
+      "file": "src/pages/Dashboard.tsx",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type '\"warning\" | \"pending\" | \"info\" | \"success\" | \"unknown\" | \"neutral\" | \"danger\" | \"conflict\" | \"offline\" | \"notPermitted\"'."
+    },
+    {
+      "file": "src/pages/Eventos.tsx",
+      "code": 2739,
+      "message": "Type '{ sanitario: string; alerta_sanitario: string; conformidade: string; pesagem: string; nutricao: string; movimentacao: string; reproducao: string; financeiro: string; obito: string; }' is missing the following properties from type 'Record<DominioEnum, string>': pastagem, comercial, ecc"
+    },
+    {
+      "file": "src/pages/Home.tsx",
+      "code": 2339,
+      "message": "Property 'weightFreshnessDays' does not exist on type 'FarmLifecycleConfig'."
+    },
+    {
+      "file": "src/pages/Home.tsx",
+      "code": 2339,
+      "message": "Property 'weightFreshnessDays' does not exist on type 'FarmLifecycleConfig'."
+    },
+    {
+      "file": "src/pages/Home.tsx",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type 'MetricTone'."
+    },
+    {
+      "file": "src/pages/LoteDetalhe.tsx",
+      "code": 2339,
+      "message": "Property 'weightFreshnessDays' does not exist on type 'FarmLifecycleConfig'."
+    },
+    {
+      "file": "src/pages/LotesImportar.tsx",
+      "code": 2352,
+      "message": "Conversion of type 'Record<string, unknown>[]' to type 'Pasto[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type 'Record<string, unknown>' is missing the following properties from type 'Pasto': id, fazenda_id, nome, area_ha, and 20 more."
+    },
+    {
+      "file": "src/pages/LotesImportar.tsx",
+      "code": 2352,
+      "message": "Conversion of type 'Record<string, unknown>[]' to type 'Animal[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.   Type 'Record<string, unknown>' is missing the following properties from type 'Animal': id, fazenda_id, identificacao, sexo, and 24 more."
+    },
+    {
+      "file": "src/pages/PastoDetalhe.tsx",
+      "code": 2339,
+      "message": "Property 'weightFreshnessDays' does not exist on type 'FarmLifecycleConfig'."
+    },
+    {
+      "file": "src/pages/PastoNovo.tsx",
+      "code": 2345,
+      "message": "Argument of type 'OperationInput' is not assignable to parameter of type '{ table: string; action: \"INSERT\"; record: { id: string; fazenda_id: string; nome: string; area_ha: number; capacidade_ua: number; tipo_pasto: TipoPastoEnum; tipo_area: string; forrageira_nome: string; ... 10 more ...; deleted_at: any; }; }'.   Types of property 'action' are incompatible.     Type 'OpAction' is not assignable to type '\"INSERT\"'.       Type '\"UPDATE\"' is not assignable to type '\"INSERT\"'."
+    },
+    {
+      "file": "src/pages/ProtocolosSanitarios/index.tsx",
+      "code": 2322,
+      "message": "Type 'Dispatch<SetStateAction<\"conformidade\" | \"agenda\" | \"catalogo\" | \"historico\" | \"janelas\">>' is not assignable to type '(value: string) => void'.   Types of parameters 'value' and 'value' are incompatible.     Type 'string' is not assignable to type 'SetStateAction<\"conformidade\" | \"agenda\" | \"catalogo\" | \"historico\" | \"janelas\">'."
+    },
+    {
+      "file": "src/pages/Registrar/components/useRegistrarFinanceiroPackage.ts",
+      "code": 2322,
+      "message": "Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/components/useRegistrarFinanceiroPackage.ts",
+      "code": 2322,
+      "message": "Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/components/useRegistrarFinanceiroPackage.ts",
+      "code": 2322,
+      "message": "Type '\"venda\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/createRegistrarFinalizeController.ts",
+      "code": 2740,
+      "message": "Type 'ProtocolItemLike' is missing the following properties from type 'ProtocoloSanitarioItem': fazenda_id, version, intervalo_dias, dose_num, and 10 more."
+    },
+    {
+      "file": "src/pages/Registrar/effects/nonFinancialFinalize.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"comercial\" | \"reproducao\" | \"ecc\"' and '\"financeiro\"' have no overlap."
+    },
+    {
+      "file": "src/pages/Registrar/effects/nonFinancialFinalize.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types '\"sanitario\" | \"comercial\" | \"pesagem\" | \"nutricao\" | \"movimentacao\" | \"ecc\"' and '\"financeiro\"' have no overlap."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/actionStepIssues.ts",
+      "code": 2339,
+      "message": "Property 'message' does not exist on type 'SanitaryExecutionPreflightResult'.   Property 'message' does not exist on type '{ ok: true; status: \"ready\" | \"skip\"; }'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/actionStepIssues.ts",
+      "code": 2339,
+      "message": "Property 'message' does not exist on type 'SanitaryExecutionPreflightResult'.   Property 'message' does not exist on type '{ ok: true; status: \"ready\" | \"skip\"; }'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/eventInput.ts",
+      "code": 2345,
+      "message": "Argument of type '\"compra\" | \"venda\" | \"arrendamento\" | \"sociedade_entrada\" | \"sociedade_saida\" | \"doacao_entrada\" | \"doacao_saida\"' is not assignable to parameter of type 'FinanceiroNatureza'.   Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/eventInput.ts",
+      "code": 2345,
+      "message": "Argument of type '\"compra\" | \"venda\" | \"arrendamento\" | \"doacao_entrada\" | \"doacao_saida\"' is not assignable to parameter of type 'FinanceiroNatureza'.   Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/eventInput.ts",
+      "code": 2345,
+      "message": "Argument of type '\"compra\" | \"venda\" | \"arrendamento\" | \"sociedade_entrada\" | \"sociedade_saida\" | \"doacao_entrada\" | \"doacao_saida\"' is not assignable to parameter of type 'FinanceiroNatureza'.   Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/financialFinalize.ts",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type 'EventDomain'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/financialNature.ts",
+      "code": 2322,
+      "message": "Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/financialNature.ts",
+      "code": 2322,
+      "message": "Type '\"venda\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/financialNature.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'FinanceiroNatureza' and '\"venda\"' have no overlap."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/financialNature.ts",
+      "code": 2367,
+      "message": "This comparison appears to be unintentional because the types 'FinanceiroNatureza' and '\"compra\"' have no overlap."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/preflight.ts",
+      "code": 2339,
+      "message": "Property 'message' does not exist on type 'SanitaryExecutionPreflightResult'.   Property 'message' does not exist on type '{ ok: true; status: \"ready\" | \"skip\"; }'."
+    },
+    {
+      "file": "src/pages/Registrar/helpers/sanitaryFinalize.ts",
+      "code": 2741,
+      "message": "Property 'version' is missing in type 'ProtocolItemLike' but required in type 'SanitaryExecutionProtocolItem'."
+    },
+    {
+      "file": "src/pages/Registrar/index.tsx",
+      "code": 2345,
+      "message": "Argument of type '\"compra\" | \"venda\"' is not assignable to parameter of type 'FinanceiroNatureza'.   Type '\"compra\"' is not assignable to type 'FinanceiroNatureza'."
+    },
+    {
+      "file": "src/pages/Registrar/index.tsx",
+      "code": 2322,
+      "message": "Type '(input: { tipoManejo: RegistrarNonFinancialDomain; fazendaId: string; occurredAt: string; sourceTaskId: string; targetAnimalIds: string[]; animalsMap: Map<string, Animal>; ... 26 more ...; resolveManualSanitaryAgendaCompletionOps?: (input: { ...; }) => Promise<...>; }) => Promise<...>' is not assignable to type '(input: { tipoManejo: EventDomain; fazendaId: string; occurredAt: string; sourceTaskId: string; targetAnimalIds: string[]; animalsMap: Map<string, Animal>; selectedLoteIsSemLote: boolean; ... 21 more ...; comercialData?: unknown; }) => Promise<...>'.   Types of parameters 'input' and 'input' are incompatible.     Type '{ tipoManejo: EventDomain; fazendaId: string; occurredAt: string; sourceTaskId: string; targetAnimalIds: string[]; animalsMap: Map<string, Animal>; selectedLoteIsSemLote: boolean; ... 21 more ...; comercialData?: unknown; }' is not assignable to type '{ tipoManejo: RegistrarNonFinancialDomain; fazendaId: string; occurredAt: string; sourceTaskId: string; targetAnimalIds: string[]; animalsMap: Map<string, Animal>; ... 26 more ...; resolveManualSanitaryAgendaCompletionOps?: (input: { ...; }) => Promise<...>; }'.       Types of property 'tipoManejo' are incompatible.         Type 'EventDomain' is not assignable to type 'RegistrarNonFinancialDomain'.           Type '\"pastagem\"' is not assignable to type 'RegistrarNonFinancialDomain'. Did you mean '\"pesagem\"'?"
+    },
+    {
+      "file": "src/pages/Registrar/index.tsx",
+      "code": 4104,
+      "message": "The type 'readonly [RegistrationStep.SELECT_ANIMALS, RegistrationStep.CHOOSE_ACTION, RegistrationStep.CONFIRM]' is 'readonly' and cannot be assigned to the mutable type 'number[]'."
+    },
+    {
+      "file": "src/pages/Registrar/index.tsx",
+      "code": 2322,
+      "message": "Type 'FinanceTransaction[]' is not assignable to type '{ id: string; occurred_at: string; direction: string; valor: number; description?: string; }[]'.   Property 'valor' is missing in type 'FinanceTransaction' but required in type '{ id: string; occurred_at: string; direction: string; valor: number; description?: string; }'."
+    },
+    {
+      "file": "src/pages/Registrar/useRegistrarActionSectionState.tsx",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type 'number'."
+    },
+    {
+      "file": "src/pages/Registrar/useRegistrarActionSectionState.tsx",
+      "code": 2322,
+      "message": "Type 'string' is not assignable to type 'number'."
+    },
+    {
+      "file": "src/pages/Relatorios.tsx",
+      "code": 2304,
+      "message": "Cannot find name 'PageIntro'."
+    }
+  ],
+  "validated_code_commit": "3f3c9607b5bc5e3a52598132069cacce39216e44",
+  "baseline_excluded_new_runtime_paths": [
+    "src/lib/sanitario/execution/withdrawalEvidenceCatalogV2.ts"
+  ]
+}

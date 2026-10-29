@@ -1,0 +1,403 @@
+{
+  "artifact": "sanitario_c02_technical_review_candidate",
+  "artifact_version": "13.0.0-canonical-contract",
+  "identity_model": "VERSIONED_EXPLICIT_UUID",
+  "execute_import": false,
+  "approved": false,
+  "review_only": true,
+  "import_gate": {
+    "import_real_authorized": false,
+    "remote_write_authorized": false
+  },
+  "review_evidence": {
+    "decision": "CONFIRMADO_DOCUMENTAL_ABATE_SC",
+    "baseline_head": "4aacd94facbfb67dabc188c6a5df0553dfcba764",
+    "snapshot": {
+      "rows": {
+        "sanitario_produtos_v2": [
+          {
+            "id": "53678137-452a-5910-9bc6-67022504a6ce",
+            "classe": "antiparasitario",
+            "metadata": {
+              "source_url": "https://www.zoetis.com.br/especies/bovinos/endoparasiticidas.aspx",
+              "review_only": true,
+              "research_batch": "f5_20261023_review_only",
+              "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+              "research_source": "F4_CANDIDATOS_SANEADOS",
+              "research_lot_code": "P33",
+              "allows_agenda_auto": false,
+              "approved_for_catalog": true,
+              "semantic_review_notes": null,
+              "c02_cadastral_approval": {
+                "scope": "product_registration_only",
+                "executor": "postgres",
+                "approved_at": "2026-10-27T16:03:12.138103+00:00",
+                "project_ref": "zqloazqzhwauamcejmuz",
+                "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+                "authorization_source": "explicit_user_request",
+                "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+              },
+              "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+              "operational_authorization": false,
+              "registration_current_validity": "unknown",
+              "candidate_class_keys_unverified": [
+                "imidazotiazoleis"
+              ],
+              "registration_mentioned_unverified": {
+                "number": null,
+                "authority": null
+              },
+              "automatic_product_selection_authorized": false,
+              "manufacturer_proposed_not_regulatory_confirmed": true
+            },
+            "created_at": "2026-10-24T16:27:42.781729+00:00",
+            "deleted_at": null,
+            "fabricante": "Zoetis",
+            "updated_at": "2026-10-27T16:38:39.741744+00:00",
+            "apresentacao": "250 mL",
+            "tipo_produto": "antiparasitario",
+            "nome_comercial": "Ripercol L 150 F",
+            "registro_orgao": null,
+            "principio_ativo": "Fosfato de levamisol 18,8 g/100 mL",
+            "registro_numero": null,
+            "status_curatorial": "ativo"
+          }
+        ],
+        "sanitario_produto_fontes_v2": [
+          {
+            "field_key": "species_authorization",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "product_id": "53678137-452a-5910-9bc6-67022504a6ce"
+          },
+          {
+            "field_key": "composition",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "product_id": "53678137-452a-5910-9bc6-67022504a6ce"
+          },
+          {
+            "field_key": "presentation",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "product_id": "53678137-452a-5910-9bc6-67022504a6ce"
+          },
+          {
+            "field_key": "dose",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "product_id": "53678137-452a-5910-9bc6-67022504a6ce"
+          },
+          {
+            "field_key": "route",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "product_id": "53678137-452a-5910-9bc6-67022504a6ce"
+          },
+          {
+            "field_key": "withdrawal",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "product_id": "53678137-452a-5910-9bc6-67022504a6ce"
+          }
+        ],
+        "sanitario_fontes_tecnicas_v2": [
+          {
+            "id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "url": "https://www.zoetis.com.br/global-assets/private/revista-zoetis-net-paginas-mistas-versao-30-01.pdf",
+            "kind": "bibliografia",
+            "scope": "global",
+            "title": "Fonte técnica oficial C02 — private",
+            "issuer": "Zoetis",
+            "version": null,
+            "metadata": {
+              "review_only": true
+            },
+            "strength": "apoio",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "created_by": null,
+            "deleted_at": null,
+            "fazenda_id": null,
+            "source_key": "SRC_C02_F6_045E36B6DA57355C",
+            "updated_at": "2026-10-27T15:59:45.414841+00:00",
+            "accessed_at": "2026-10-26",
+            "limitations": [
+              "Caracterização documental; não autoriza execução."
+            ],
+            "published_at": null,
+            "evidence_status": "PRECISA_VALIDAR",
+            "jurisdiction_uf": null,
+            "jurisdiction_zone": null,
+            "jurisdiction_country": "BR"
+          }
+        ],
+        "sanitario_fonte_cobertura_campos_v2": [
+          {
+            "id": "00e74a62-0540-5002-8f24-8c0449399c37",
+            "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+            "field_key": "composition",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "deleted_at": null,
+            "updated_at": "2026-10-27T15:59:45.414841+00:00",
+            "coverage_status": "covers"
+          },
+          {
+            "id": "2486b359-c8d7-5a31-9042-e793d3401188",
+            "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+            "field_key": "dose",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "deleted_at": null,
+            "updated_at": "2026-10-27T15:59:45.414841+00:00",
+            "coverage_status": "covers"
+          },
+          {
+            "id": "446b37da-1c4b-5a52-93ec-49705d89cea8",
+            "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+            "field_key": "withdrawal",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "deleted_at": null,
+            "updated_at": "2026-10-27T15:59:45.414841+00:00",
+            "coverage_status": "covers"
+          },
+          {
+            "id": "548a4605-bc14-5a0c-8665-2fc91194fb24",
+            "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+            "field_key": "route",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "deleted_at": null,
+            "updated_at": "2026-10-27T15:59:45.414841+00:00",
+            "coverage_status": "covers"
+          },
+          {
+            "id": "c9f17bfc-f5d4-5488-b04b-99e692214890",
+            "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+            "field_key": "presentation",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "deleted_at": null,
+            "updated_at": "2026-10-27T15:59:45.414841+00:00",
+            "coverage_status": "covers"
+          },
+          {
+            "id": "d430faf1-6dbb-5871-8bf3-f32542266ab6",
+            "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+            "field_key": "species_authorization",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "deleted_at": null,
+            "updated_at": "2026-10-27T15:59:45.414841+00:00",
+            "coverage_status": "covers"
+          }
+        ],
+        "sanitario_produto_carencia_rules_v2": [
+          {
+            "id": "6fea1392-a588-569e-a520-e89827be7f14",
+            "route": null,
+            "aptitude": "corte",
+            "metadata": {
+              "review_only": true
+            },
+            "meat_days": 7,
+            "milk_days": null,
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "deleted_at": null,
+            "dose_basis": null,
+            "milk_hours": null,
+            "product_id": "53678137-452a-5910-9bc6-67022504a6ce",
+            "updated_at": "2026-10-27T15:59:45.414841+00:00",
+            "valid_from": null,
+            "limitations": [
+              "Somente bovinos neste incremento; demais espécies não generalizadas.",
+              "Fonte e contexto: [Portfólio Zoetis](https://www.zoetis.com.br/especies/bovinos/endoparasiticidas.aspx), seção homônima; [catálogo técnico Zoetis](https://www.zoetis.com.br/global-assets/private/revista-zoetis-net-paginas-mistas-versao-30-01.pdf), página impressa 84, PDF p.80; [catálogo Zoetis 2025](https://www2.zoetis.com.br/content/pt/pages/Microsites/Portifolio-Zoetis-Atacadistas/_assets/Catalogo-Produtos-Marcas-estabelecidas-Zoetis_Bartofil_29042025_1080x2230.pdf), p.25",
+              "Restrições documentadas: Fosfato de levamisol 18,8 g/100 mL; bovinos; 1 mL/40 kg SC, com exceção de dose para infestações graves dos agentes indicados; repetição situacional em 3–4 semanas; carne 7 dias; leite histórico 48 h, catálogo 2025 3 dias; 250 mL.",
+              "Carência leiteira 48h versus 3d retida; não converter sal/base.",
+              "Dose dobrada condicionada à infestação não estruturada."
+            ],
+            "valid_until": null,
+            "species_code": "bovino",
+            "applicability": "period",
+            "status_curatorial": "precisa_validar",
+            "zero_requires_explicit_source": true
+          }
+        ],
+        "sanitario_produto_carencia_fontes_v2": [
+          {
+            "field_key": "withdrawal",
+            "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+            "created_at": "2026-10-27T15:59:45.414841+00:00",
+            "withdrawal_rule_id": "6fea1392-a588-569e-a520-e89827be7f14"
+          }
+        ]
+      },
+      "read_only": "on",
+      "captured_at": "2026-10-29T17:03:35.299416+00:00",
+      "project_ref": "zqloazqzhwauamcejmuz"
+    },
+    "identity_derivation": {
+      "algorithm": "UUIDv5",
+      "namespace": "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+      "name_prefix": "rebanhosync:",
+      "source_name": "SRC_C02_F6_P33_RIPERCOL_150F_BULA",
+      "coverage_name": "SRC_C02_F6_P33_RIPERCOL_150F_BULA:withdrawal",
+      "rule_name": "C02_F6_P33_RIPERCOL_150F_CORTE_SC_BULA"
+    },
+    "collision_check": {
+      "project_ref": "zqloazqzhwauamcejmuz",
+      "read_only": true,
+      "includes_tombstones": true,
+      "source_uuid_key_url_matches": 0,
+      "coverage_uuid_matches": 0,
+      "rule_uuid_or_product_bovino_corte_SC_matches": 0
+    },
+    "source_locator": {
+      "url": "https://www.zoetis.com.br/global-assets/private/ripercol_150f_1.pdf",
+      "page": 1,
+      "section": "PERÍODO DE CARÊNCIA",
+      "sha256": "606ccf62a63a3e34c4d76ce504bd46a54b011c39315cc59d3963fb1d0918ebba",
+      "inspection": "PDF de uma página rasterizada; renderização local examinada visualmente.",
+      "quote": "BOVINOS: ABATE: O ABATE DOS ANIMAIS TRATADOS SOMENTE DEVE SER REALIZADO 7 DIAS APÓS A ÚLTIMA APLICAÇÃO.",
+      "unresolved": "Carência de leite: bula examinada menciona 2 dias; catálogo de 2025 menciona 3 dias. Não incluída neste recorte.",
+      "version": null,
+      "published_at": null
+    }
+  },
+  "payload": {
+    "source_rows": [
+      {
+        "id": "c0ea02f0-f18f-5084-b37d-38e454698cfe",
+        "source_key": "SRC_C02_F6_P33_RIPERCOL_150F_BULA",
+        "kind": "bula",
+        "scope": "global",
+        "fazenda_id": null,
+        "title": "Ripercol L - 150F — bula brasileira, carência de abate",
+        "issuer": "Zoetis",
+        "version": null,
+        "published_at": null,
+        "accessed_at": "2026-10-29",
+        "url": "https://www.zoetis.com.br/global-assets/private/ripercol_150f_1.pdf",
+        "jurisdiction_country": "BR",
+        "strength": "forte",
+        "evidence_status": "SIM_BULA",
+        "limitations": [
+          "Sem versão ou data editorial impressa identificável; vigência regulatória atual não certificada.",
+          "Uso documental somente para abate bovino SC. Divergência de leite retida; não autoriza operação."
+        ],
+        "metadata": {
+          "review_only": true
+        }
+      }
+    ],
+    "coverage_rows": [
+      {
+        "id": "5c26551c-b2d3-5d6a-b714-a58088241843",
+        "source_key": "SRC_C02_F6_P33_RIPERCOL_150F_BULA",
+        "field_key": "withdrawal",
+        "coverage_status": "covers",
+        "notes": "Página única, Período de carência: abate bovino 7 dias após última aplicação. Via subcutânea em Modo de usar. Leite fora do recorte por divergência documental."
+      }
+    ],
+    "product_rows": [
+      {
+        "id": "53678137-452a-5910-9bc6-67022504a6ce",
+        "classe": "antiparasitario",
+        "metadata": {
+          "source_url": "https://www.zoetis.com.br/especies/bovinos/endoparasiticidas.aspx",
+          "review_only": true,
+          "research_batch": "f5_20261023_review_only",
+          "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+          "research_source": "F4_CANDIDATOS_SANEADOS",
+          "research_lot_code": "P33",
+          "allows_agenda_auto": false,
+          "approved_for_catalog": true,
+          "semantic_review_notes": null,
+          "c02_cadastral_approval": {
+            "scope": "product_registration_only",
+            "executor": "postgres",
+            "approved_at": "2026-10-27T16:03:12.138103+00:00",
+            "project_ref": "zqloazqzhwauamcejmuz",
+            "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+            "authorization_source": "explicit_user_request",
+            "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+          },
+          "research_evidence_level": "CATALOGO_ATUAL_FABRICANTE",
+          "operational_authorization": false,
+          "registration_current_validity": "unknown",
+          "candidate_class_keys_unverified": [
+            "imidazotiazoleis"
+          ],
+          "registration_mentioned_unverified": {
+            "number": null,
+            "authority": null
+          },
+          "automatic_product_selection_authorized": false,
+          "manufacturer_proposed_not_regulatory_confirmed": true
+        },
+        "fabricante": "Zoetis",
+        "apresentacao": "250 mL",
+        "tipo_produto": "antiparasitario",
+        "nome_comercial": "Ripercol L 150 F",
+        "registro_orgao": null,
+        "principio_ativo": "Fosfato de levamisol 18,8 g/100 mL",
+        "registro_numero": null,
+        "status_curatorial": "ativo",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P33_RIPERCOL_L_150_F"
+      }
+    ],
+    "product_source_rows": [
+      {
+        "product_key": "COMMERCIAL_RESEARCH_F5_P33_RIPERCOL_L_150_F",
+        "source_key": "SRC_C02_F6_P33_RIPERCOL_150F_BULA",
+        "field_key": "withdrawal"
+      }
+    ],
+    "withdrawal_rule_rows": [
+      {
+        "id": "2651d9d7-390e-50ed-8065-4c4ba7b1ed1c",
+        "withdrawal_rule_key": "C02_F6_P33_RIPERCOL_150F_CORTE_SC_BULA",
+        "product_key": "COMMERCIAL_RESEARCH_F5_P33_RIPERCOL_L_150_F",
+        "species_code": "bovino",
+        "aptitude": "corte",
+        "route": "SC",
+        "dose_basis": null,
+        "applicability": "period",
+        "milk_days": null,
+        "milk_hours": null,
+        "meat_days": 7,
+        "zero_requires_explicit_source": true,
+        "status_curatorial": "precisa_validar",
+        "valid_from": null,
+        "valid_until": null,
+        "source_keys": [
+          "SRC_C02_F6_P33_RIPERCOL_150F_BULA"
+        ],
+        "limitations": [
+          "Somente abate de bovinos tratados por via SC nas condições da bula; não estender para leite, mista, outras vias ou espécies.",
+          "Regra anterior com route=null permanece pendente e intocada. Esta versão explicita SC sem alterar identidade preexistente.",
+          "Candidata local sem autorização de escrita remota ou ativação. Divergência leite 2/3 dias não resolvida."
+        ],
+        "metadata": {
+          "review_only": true
+        }
+      }
+    ],
+    "withdrawal_source_rows": [
+      {
+        "withdrawal_rule_key": "C02_F6_P33_RIPERCOL_150F_CORTE_SC_BULA",
+        "source_key": "SRC_C02_F6_P33_RIPERCOL_150F_BULA",
+        "field_key": "withdrawal"
+      }
+    ],
+    "product_authorization_rows": [],
+    "dose_rule_rows": [],
+    "product_class_rows": [],
+    "product_class_group_rows": [],
+    "product_class_group_member_rows": [],
+    "product_class_default_rule_rows": [],
+    "protocol_rows": [],
+    "protocol_item_rows": []
+  }
+}

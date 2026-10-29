@@ -1,0 +1,399 @@
+{
+  "decision": "CONFIRMADO_DOCUMENTAL_PERSISTIDO_PENDENTE",
+  "apply": {
+    "skip": 1,
+    "create": 5,
+    "reject": 0,
+    "replay": false,
+    "update": 0,
+    "approved": 0,
+    "project_ref": "zqloazqzhwauamcejmuz",
+    "candidate_sha256": "8b3a14846c8e0f90e7f355cf2a25b36bd10d3f8c587a22943edb57310b635330",
+    "authorization_reference": "C02-P38-20261029-EXPLICIT-USER-EXECUTIVE-CLOSURE"
+  },
+  "replay": {
+    "skip": 6,
+    "replay": true,
+    "authorization_reference": "C02-P38-20261029-EXPLICIT-USER-EXECUTIVE-CLOSURE"
+  },
+  "snapshot": {
+    "rows": {
+      "sanitario_produtos_v2": [
+        {
+          "id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+          "classe": "antiparasitario",
+          "metadata": {
+            "source_url": "https://ruminantes.ceva.com.br/products/eprecis-2/",
+            "review_only": true,
+            "research_batch": "f5_20261023_review_only",
+            "research_stage": "F5_CANDIDATE_REVIEW_ONLY",
+            "research_source": "F4_CANDIDATOS_SANEADOS",
+            "research_lot_code": "P38",
+            "allows_agenda_auto": false,
+            "approved_for_catalog": true,
+            "semantic_review_notes": null,
+            "c02_cadastral_approval": {
+              "scope": "product_registration_only",
+              "executor": "postgres",
+              "approved_at": "2026-10-27T16:03:12.138103+00:00",
+              "project_ref": "zqloazqzhwauamcejmuz",
+              "candidate_sha256": "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367",
+              "authorization_source": "explicit_user_request",
+              "authorization_reference": "C02-F6-20261027-EXPLICIT-USER-TECHNICAL-AND-CADASTRAL"
+            },
+            "research_evidence_level": "PAGINA_OU_BULA_ESPECIFICA_FABRICANTE",
+            "operational_authorization": false,
+            "registration_current_validity": "unknown",
+            "candidate_class_keys_unverified": [
+              "lactonas_macrociclicas (confirmar)"
+            ],
+            "registration_mentioned_unverified": {
+              "number": null,
+              "authority": null
+            },
+            "automatic_product_selection_authorized": false,
+            "manufacturer_proposed_not_regulatory_confirmed": true
+          },
+          "created_at": "2026-10-24T16:27:42.781729+00:00",
+          "deleted_at": null,
+          "fabricante": "Ceva",
+          "updated_at": "2026-10-27T16:38:39.741744+00:00",
+          "apresentacao": "50 e 500 mL",
+          "tipo_produto": "antiparasitario",
+          "nome_comercial": "Eprecis",
+          "registro_orgao": null,
+          "principio_ativo": "Eprinomectina 2%",
+          "registro_numero": null,
+          "status_curatorial": "ativo"
+        }
+      ],
+      "sanitario_produto_fontes_v2": [
+        {
+          "field_key": "species_authorization",
+          "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+        },
+        {
+          "field_key": "presentation",
+          "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+        },
+        {
+          "field_key": "dose",
+          "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+        },
+        {
+          "field_key": "route",
+          "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+        },
+        {
+          "field_key": "composition",
+          "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+        },
+        {
+          "field_key": "withdrawal",
+          "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+        },
+        {
+          "field_key": "withdrawal",
+          "source_id": "c6ab8b68-1bbf-583c-82c9-2bfbc2ca6507",
+          "created_at": "2026-10-29T12:00:54.1638+00:00",
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f"
+        }
+      ],
+      "sanitario_fontes_tecnicas_v2": [
+        {
+          "id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+          "url": "https://ruminantes.ceva.com.br/products/eprecis-2/",
+          "kind": "bibliografia",
+          "scope": "global",
+          "title": "Fonte técnica oficial C02 — eprecis-2",
+          "issuer": "Ceva",
+          "version": null,
+          "metadata": {
+            "review_only": true
+          },
+          "strength": "apoio",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "created_by": null,
+          "deleted_at": null,
+          "fazenda_id": null,
+          "source_key": "SRC_C02_F6_5066FF5C87AC8921",
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "accessed_at": "2026-10-26",
+          "limitations": [
+            "Caracterização documental; não autoriza execução."
+          ],
+          "published_at": null,
+          "evidence_status": "PRECISA_VALIDAR",
+          "jurisdiction_uf": null,
+          "jurisdiction_zone": null,
+          "jurisdiction_country": "BR"
+        },
+        {
+          "id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+          "url": "https://www.ceva.com.br/ceva-na-midia/noticias/precisao-no-controle-das-verminoses-e-essencial-para-pecuaria",
+          "kind": "bibliografia",
+          "scope": "global",
+          "title": "Fonte técnica oficial C02 — noticias",
+          "issuer": "Ceva",
+          "version": null,
+          "metadata": {
+            "review_only": true
+          },
+          "strength": "apoio",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "created_by": null,
+          "deleted_at": null,
+          "fazenda_id": null,
+          "source_key": "SRC_C02_F6_C923DC3C16AA4E5C",
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "accessed_at": "2026-10-26",
+          "limitations": [
+            "Caracterização documental; não autoriza execução."
+          ],
+          "published_at": null,
+          "evidence_status": "PRECISA_VALIDAR",
+          "jurisdiction_uf": null,
+          "jurisdiction_zone": null,
+          "jurisdiction_country": "BR"
+        },
+        {
+          "id": "c6ab8b68-1bbf-583c-82c9-2bfbc2ca6507",
+          "url": "https://ruminants.ceva.com/app/uploads/sites/16/2023/10/Eprecis-Bula.pdf",
+          "kind": "bula",
+          "scope": "global",
+          "title": "Eprecis — bula brasileira P12073 V00",
+          "issuer": "Sespo Indústria e Comércio Ltda. — grupo Ceva Santé Animale",
+          "version": "P12073 V00",
+          "metadata": {
+            "review_only": true
+          },
+          "strength": "forte",
+          "created_at": "2026-10-29T12:00:54.1638+00:00",
+          "created_by": null,
+          "deleted_at": null,
+          "fazenda_id": null,
+          "source_key": "SRC_C02_P38_EPRECIS_P12073_V00",
+          "updated_at": "2026-10-29T12:00:54.1638+00:00",
+          "accessed_at": "2026-10-28",
+          "limitations": [
+            "Bula documental; vigência regulatória atual não reconfirmada.",
+            "Não autoriza execução nem promove regra operacional."
+          ],
+          "published_at": null,
+          "evidence_status": "SIM_BULA",
+          "jurisdiction_uf": null,
+          "jurisdiction_zone": null,
+          "jurisdiction_country": "BR"
+        }
+      ],
+      "sanitario_produto_dose_rules_v2": [
+        {
+          "id": "5f162ce0-7d7e-54c1-a976-2c1f3785a730",
+          "route": "SC",
+          "aptitude": "all",
+          "dose_unit": "mL",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "deleted_at": null,
+          "dose_basis": "kg_peso_vivo",
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "limitations": [
+            "Somente bovinos neste incremento; demais espécies não generalizadas.",
+            "Fonte e contexto: [Página técnica Ceva](https://ruminantes.ceva.com.br/products/eprecis-2/), “Como usar”; [comunicado técnico Ceva](https://www.ceva.com.br/ceva-na-midia/noticias/precisao-no-controle-das-verminoses-e-essencial-para-pecuaria), parágrafos sobre Eprecis",
+            "Restrições documentadas: Eprinomectina 2%; bovinos, incluindo indicação para estefanofilariose; 1 mL/100 kg SC, máximo 10 mL/ponto; carne 12 dias e leite zero no comunicado; página afirma segurança em gestação/lactação; 50/500 mL.",
+            "Zero leite documentado em comunicado de apoio, sem fonte forte disponível para regra zero."
+          ],
+          "species_code": "bovino",
+          "dose_quantity": 0.01,
+          "max_weight_kg": null,
+          "min_weight_kg": null,
+          "status_curatorial": "precisa_validar"
+        }
+      ],
+      "sanitario_fonte_cobertura_campos_v2": [
+        {
+          "id": "2495e0cc-c6e1-5e9e-8fc0-7c35fc9b868e",
+          "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+          "field_key": "presentation",
+          "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "deleted_at": null,
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "coverage_status": "covers"
+        },
+        {
+          "id": "3e2c3438-77f3-599c-bb47-d04741484c22",
+          "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+          "field_key": "species_authorization",
+          "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "deleted_at": null,
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "coverage_status": "covers"
+        },
+        {
+          "id": "7444e309-357f-5c21-a326-1e6d93817261",
+          "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+          "field_key": "dose",
+          "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "deleted_at": null,
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "coverage_status": "covers"
+        },
+        {
+          "id": "84ab8858-511b-545f-93b2-29d3ac0e1b1c",
+          "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+          "field_key": "route",
+          "source_id": "3dfa7ffc-b505-5440-826f-84fc87ac8d6f",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "deleted_at": null,
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "coverage_status": "covers"
+        },
+        {
+          "id": "cf91eb04-7981-552a-8eb3-2b0d9e3146c6",
+          "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+          "field_key": "withdrawal",
+          "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "deleted_at": null,
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "coverage_status": "covers"
+        },
+        {
+          "id": "ea66f1b7-7e68-5840-b6ca-b09548548966",
+          "notes": "Ver linha Pxx e localizadores do consolidado C02; somente os contextos explicitamente documentados.",
+          "field_key": "composition",
+          "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "deleted_at": null,
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "coverage_status": "covers"
+        },
+        {
+          "id": "af5e9b44-7460-5338-a4fb-ca23bf80c27a",
+          "notes": "Página 1, quadro Período de carência: bovinos, leite sem carência; abate 12 dias após última aplicação. Via SC em Posologia e modo de usar. Este incremento propõe somente leite bovino SC; não altera corte ou mista.",
+          "field_key": "withdrawal",
+          "source_id": "c6ab8b68-1bbf-583c-82c9-2bfbc2ca6507",
+          "created_at": "2026-10-29T12:00:54.1638+00:00",
+          "deleted_at": null,
+          "updated_at": "2026-10-29T12:00:54.1638+00:00",
+          "coverage_status": "covers"
+        }
+      ],
+      "sanitario_produto_carencia_rules_v2": [
+        {
+          "id": "a435e33b-ab52-593a-a2ac-10393f71a88e",
+          "route": null,
+          "aptitude": "corte",
+          "metadata": {
+            "review_only": true
+          },
+          "meat_days": 12,
+          "milk_days": null,
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "deleted_at": null,
+          "dose_basis": null,
+          "milk_hours": null,
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "valid_from": null,
+          "limitations": [
+            "Somente bovinos neste incremento; demais espécies não generalizadas.",
+            "Fonte e contexto: [Página técnica Ceva](https://ruminantes.ceva.com.br/products/eprecis-2/), “Como usar”; [comunicado técnico Ceva](https://www.ceva.com.br/ceva-na-midia/noticias/precisao-no-controle-das-verminoses-e-essencial-para-pecuaria), parágrafos sobre Eprecis",
+            "Restrições documentadas: Eprinomectina 2%; bovinos, incluindo indicação para estefanofilariose; 1 mL/100 kg SC, máximo 10 mL/ponto; carne 12 dias e leite zero no comunicado; página afirma segurança em gestação/lactação; 50/500 mL.",
+            "Zero leite documentado em comunicado de apoio, sem fonte forte disponível para regra zero."
+          ],
+          "valid_until": null,
+          "species_code": "bovino",
+          "applicability": "period",
+          "status_curatorial": "precisa_validar",
+          "zero_requires_explicit_source": true
+        },
+        {
+          "id": "a4f5dff8-f48c-5a73-9d64-a5493ad8203c",
+          "route": "SC",
+          "aptitude": "leite",
+          "metadata": {
+            "review_only": true
+          },
+          "meat_days": null,
+          "milk_days": 0,
+          "created_at": "2026-10-29T12:00:54.1638+00:00",
+          "deleted_at": null,
+          "dose_basis": null,
+          "milk_hours": null,
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+          "updated_at": "2026-10-29T12:00:54.1638+00:00",
+          "valid_from": null,
+          "limitations": [
+            "Somente leite bovino por via SC nas condições da bula; não estender para corte, mista ou outras espécies.",
+            "Pendente de decisão curatorial e aplicação autorizada; não gera carência ativa nem autorização operacional."
+          ],
+          "valid_until": null,
+          "species_code": "bovino",
+          "applicability": "zero",
+          "status_curatorial": "precisa_validar",
+          "zero_requires_explicit_source": true
+        }
+      ],
+      "sanitario_produto_carencia_fontes_v2": [
+        {
+          "field_key": "withdrawal",
+          "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "withdrawal_rule_id": "a435e33b-ab52-593a-a2ac-10393f71a88e"
+        },
+        {
+          "field_key": "withdrawal",
+          "source_id": "c6ab8b68-1bbf-583c-82c9-2bfbc2ca6507",
+          "created_at": "2026-10-29T12:00:54.1638+00:00",
+          "withdrawal_rule_id": "a4f5dff8-f48c-5a73-9d64-a5493ad8203c"
+        }
+      ],
+      "sanitario_produto_especie_autorizacao_v2": [
+        {
+          "id": "0d03539f-66dc-540a-bfc9-21c6e7604a34",
+          "sexo": null,
+          "aptitude": "all",
+          "metadata": {
+            "review_only": true
+          },
+          "created_at": "2026-10-27T15:59:45.414841+00:00",
+          "deleted_at": null,
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+          "updated_at": "2026-10-27T15:59:45.414841+00:00",
+          "limitations": [
+            "Somente bovinos neste incremento; demais espécies não generalizadas.",
+            "Fonte e contexto: [Página técnica Ceva](https://ruminantes.ceva.com.br/products/eprecis-2/), “Como usar”; [comunicado técnico Ceva](https://www.ceva.com.br/ceva-na-midia/noticias/precisao-no-controle-das-verminoses-e-essencial-para-pecuaria), parágrafos sobre Eprecis",
+            "Restrições documentadas: Eprinomectina 2%; bovinos, incluindo indicação para estefanofilariose; 1 mL/100 kg SC, máximo 10 mL/ponto; carne 12 dias e leite zero no comunicado; página afirma segurança em gestação/lactação; 50/500 mL.",
+            "Zero leite documentado em comunicado de apoio, sem fonte forte disponível para regra zero."
+          ],
+          "species_code": "bovino",
+          "idade_max_dias": null,
+          "idade_min_dias": null,
+          "gestacao_permitida": null,
+          "lactacao_permitida": null,
+          "authorization_status": "PRECISA_VALIDAR",
+          "requires_mv_responsavel": false
+        }
+      ]
+    },
+    "read_only": "on",
+    "captured_at": "2026-10-29T12:01:30.490322+00:00",
+    "project_ref": "zqloazqzhwauamcejmuz"
+  }
+}

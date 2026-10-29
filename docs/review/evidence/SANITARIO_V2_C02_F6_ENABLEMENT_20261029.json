@@ -1,0 +1,1745 @@
+{
+  "scope": "Prontidão da regra de carência por finalidade e seus pré-requisitos; não certifica execução clínica, automação, venda ou abate.",
+  "global_technical_block": "Publicar e comprovar SHA do contrato v34/proveniência/zero antes de habilitação; não bloqueia cadastro/consulta.",
+  "counts": {
+    "ELEGIVEL": 1,
+    "RESTRITO": 17,
+    "INCOMPLETO": 62
+  },
+  "rows": [
+    {
+      "code": "P01",
+      "product_id": "ba59c489-49d5-5362-b5f4-94818c90deb4",
+      "product": "Abor-Vac",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P01",
+      "product_id": "ba59c489-49d5-5362-b5f4-94818c90deb4",
+      "product": "Abor-Vac",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P02",
+      "product_id": "f5540551-7dd6-5176-b909-22916e5ed3de",
+      "product": "Bovilis RB-51",
+      "purpose": "meat",
+      "rule_id": "e4ec4921-087a-5781-816a-90ad79a435f2",
+      "route": null,
+      "applicability": "period",
+      "period_days": 21,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P02",
+      "product_id": "f5540551-7dd6-5176-b909-22916e5ed3de",
+      "product": "Bovilis RB-51",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P03",
+      "product_id": "45e406f2-303e-528b-8146-804f38492815",
+      "product": "Raivacel Multi",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "registro_individual_cancelado",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Comprovar licença vigente do mesmo produto antes de uso; não substituir por homônimo.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P03",
+      "product_id": "45e406f2-303e-528b-8146-804f38492815",
+      "product": "Raivacel Multi",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "registro_individual_cancelado",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Comprovar licença vigente do mesmo produto antes de uso; não substituir por homônimo.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P05",
+      "product_id": "453b1b35-93a4-5790-8217-7b7e83c78c49",
+      "product": "Covexin 9",
+      "purpose": "meat",
+      "rule_id": "76b24624-f823-5d39-8851-1a6bcef1f20e",
+      "route": null,
+      "applicability": "period",
+      "period_days": 21,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P05",
+      "product_id": "453b1b35-93a4-5790-8217-7b7e83c78c49",
+      "product": "Covexin 9",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P06",
+      "product_id": "ec3eb33d-b739-5a62-826d-fee85e04a9dd",
+      "product": "Bovilis Poli-Star T",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "identidade_da_licenca_a_confirmar",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P06",
+      "product_id": "ec3eb33d-b739-5a62-826d-fee85e04a9dd",
+      "product": "Bovilis Poli-Star T",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "identidade_da_licenca_a_confirmar",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P07",
+      "product_id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+      "product": "Cattle Master 4 L5",
+      "purpose": "meat",
+      "rule_id": "90625503-b433-54f9-95e3-ad9c1b79ff36",
+      "route": null,
+      "applicability": "period",
+      "period_days": 21,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada",
+        "prova_forte_da_regra_ausente",
+        "prova_dose_insuficiente",
+        "prova_route_insuficiente",
+        "prova_species_authorization_insuficiente"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores.",
+        "Conferir cobertura withdrawal e vínculo forte da regra selecionada; não basta fonte do produto.",
+        "Delimitar cobertura primária única do campo dose no contrato existente.",
+        "Delimitar cobertura primária única do campo route no contrato existente.",
+        "Delimitar cobertura primária única do campo species_authorization no contrato existente."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P07",
+      "product_id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+      "product": "Cattle Master 4 L5",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P08",
+      "product_id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+      "product": "Cattle Master Gold FP 5/L5",
+      "purpose": "meat",
+      "rule_id": "5e240bfc-11a7-5e8a-9c6a-c8fc2c310592",
+      "route": null,
+      "applicability": "period",
+      "period_days": 21,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P08",
+      "product_id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+      "product": "Cattle Master Gold FP 5/L5",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P09",
+      "product_id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+      "product": "Bovilis Vista 5 L5 CFP",
+      "purpose": "meat",
+      "rule_id": "729deae4-6cbd-558f-b7a6-2eb150bc55aa",
+      "route": null,
+      "applicability": "period",
+      "period_days": 21,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P09",
+      "product_id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+      "product": "Bovilis Vista 5 L5 CFP",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P11",
+      "product_id": "7fc44e31-3373-50de-97fd-58e874938938",
+      "product": "Cydectin 1%",
+      "purpose": "meat",
+      "rule_id": "59c1a4d7-f0bd-5011-9f2e-88faa19c95ee",
+      "route": "SC",
+      "applicability": "period",
+      "period_days": 28,
+      "state": "ELEGIVEL",
+      "reasons": [],
+      "minimum_actions": [],
+      "clinical_scope": "Bovinos de corte, SC, 1 mL/50 kg; excluir produtoras de leite para consumo humano; respeitar bula ART-21644 v2.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": "Após publicação compatível, decisão curatorial específica e versionada; não promover versões sobrepostas ou autorização ampla."
+    },
+    {
+      "code": "P11",
+      "product_id": "7fc44e31-3373-50de-97fd-58e874938938",
+      "product": "Cydectin 1%",
+      "purpose": "milk",
+      "rule_id": "00cc448a-1633-5e93-bfb8-5b70320af50a",
+      "route": "SC",
+      "applicability": "not_permitted",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "uso_na_finalidade_nao_permitido"
+      ],
+      "minimum_actions": [
+        "Manter a proibição explícita dessa finalidade; nenhuma ativação permissiva."
+      ],
+      "clinical_scope": "Bovinos de corte, SC, 1 mL/50 kg; excluir produtoras de leite para consumo humano; respeitar bula ART-21644 v2.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P12",
+      "product_id": "5402b0be-eabb-5bce-91e8-242db1112151",
+      "product": "Ranger LA 3,5%",
+      "purpose": "meat",
+      "rule_id": "de56df7a-8324-5f0a-a93d-44964ee64842",
+      "route": null,
+      "applicability": "period",
+      "period_days": 128,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P12",
+      "product_id": "5402b0be-eabb-5bce-91e8-242db1112151",
+      "product": "Ranger LA 3,5%",
+      "purpose": "milk",
+      "rule_id": "014569d0-91b8-5842-bae3-f2d148e63666",
+      "route": null,
+      "applicability": "period",
+      "period_days": 19,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P13",
+      "product_id": "36ea6650-6c8f-5a56-a778-bfb6e428102d",
+      "product": "Panacur 10%",
+      "purpose": "meat",
+      "rule_id": "5026e621-6856-522e-a9db-848c582caf82",
+      "route": null,
+      "applicability": "period",
+      "period_days": 11,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P13",
+      "product_id": "36ea6650-6c8f-5a56-a778-bfb6e428102d",
+      "product": "Panacur 10%",
+      "purpose": "milk",
+      "rule_id": "ff9fde16-8bd8-5b53-955d-176da772c10e",
+      "route": null,
+      "applicability": "period",
+      "period_days": 5,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P14",
+      "product_id": "1957cff0-3741-5dd8-bf81-b157a2d575c8",
+      "product": "Exzolt 5% Bovinos",
+      "purpose": "meat",
+      "rule_id": "87980f29-c48a-5471-942c-782cc6c125ee",
+      "route": null,
+      "applicability": "period",
+      "period_days": 42,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P14",
+      "product_id": "1957cff0-3741-5dd8-bf81-b157a2d575c8",
+      "product": "Exzolt 5% Bovinos",
+      "purpose": "milk",
+      "rule_id": "9f4b97bc-aeb5-59dd-a968-51318aa58107",
+      "route": null,
+      "applicability": "not_permitted",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "uso_na_finalidade_nao_permitido"
+      ],
+      "minimum_actions": [
+        "Manter a proibição explícita dessa finalidade; nenhuma ativação permissiva."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P15",
+      "product_id": "1628cf40-3676-53a6-9fe2-4e154936167b",
+      "product": "ANAVAC B19",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P15",
+      "product_id": "1628cf40-3676-53a6-9fe2-4e154936167b",
+      "product": "ANAVAC B19",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P16",
+      "product_id": "d66dddec-b33c-5882-bcc4-b3a82389d349",
+      "product": "Vacina Liofilizada contra a Brucelose Bovina Labovet",
+      "purpose": "meat",
+      "rule_id": "1c9ecce2-148e-5622-8a9a-de422ca91fa4",
+      "route": null,
+      "applicability": "zero",
+      "period_days": 0,
+      "state": "RESTRITO",
+      "reasons": [
+        "registro_individual_cancelado",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Comprovar licença vigente do mesmo produto antes de uso; não substituir por homônimo.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P16",
+      "product_id": "d66dddec-b33c-5882-bcc4-b3a82389d349",
+      "product": "Vacina Liofilizada contra a Brucelose Bovina Labovet",
+      "purpose": "milk",
+      "rule_id": "b13859b5-038c-53ab-9333-334547ed5b68",
+      "route": null,
+      "applicability": "zero",
+      "period_days": 0,
+      "state": "RESTRITO",
+      "reasons": [
+        "registro_individual_cancelado",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Comprovar licença vigente do mesmo produto antes de uso; não substituir por homônimo.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P17",
+      "product_id": "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c",
+      "product": "RABMUNE",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P17",
+      "product_id": "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c",
+      "product": "RABMUNE",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P18",
+      "product_id": "6417c886-2a93-599a-b74a-c72ac1c03752",
+      "product": "Vacina Antirrábica Inativada para Herbívoros Labovet",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P18",
+      "product_id": "6417c886-2a93-599a-b74a-c72ac1c03752",
+      "product": "Vacina Antirrábica Inativada para Herbívoros Labovet",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P19",
+      "product_id": "dfed6e97-286a-5404-985b-528d0befa1ec",
+      "product": "Clostrimune 8",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P19",
+      "product_id": "dfed6e97-286a-5404-985b-528d0befa1ec",
+      "product": "Clostrimune 8",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P20",
+      "product_id": "af618de9-e22b-5ad7-a852-43933c6cb3d3",
+      "product": "Clostrimune 10TH",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P20",
+      "product_id": "af618de9-e22b-5ad7-a852-43933c6cb3d3",
+      "product": "Clostrimune 10TH",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P21",
+      "product_id": "55e88d23-83c9-5421-ba2f-7da1b979c03b",
+      "product": "StarVac",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P21",
+      "product_id": "55e88d23-83c9-5421-ba2f-7da1b979c03b",
+      "product": "StarVac",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P22",
+      "product_id": "12128db7-71ff-551d-92e0-18418140b91b",
+      "product": "StarVac 12",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P22",
+      "product_id": "12128db7-71ff-551d-92e0-18418140b91b",
+      "product": "StarVac 12",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P23",
+      "product_id": "0f1b6c73-c50f-5ad4-a308-29788de7429a",
+      "product": "BOTULINOMAX",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P23",
+      "product_id": "0f1b6c73-c50f-5ad4-a308-29788de7429a",
+      "product": "BOTULINOMAX",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P24",
+      "product_id": "3e0a501b-1742-506c-a094-d8a18ad8a98a",
+      "product": "Bovi-Shield Gold One Shot",
+      "purpose": "meat",
+      "rule_id": "9077509c-5a5e-537f-9ed5-9e31738e9067",
+      "route": null,
+      "applicability": "period",
+      "period_days": 21,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P24",
+      "product_id": "3e0a501b-1742-506c-a094-d8a18ad8a98a",
+      "product": "Bovi-Shield Gold One Shot",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P25",
+      "product_id": "0168212e-2443-5eaf-97f1-108924e58d4d",
+      "product": "Cattle Master 4",
+      "purpose": "meat",
+      "rule_id": "a9a7e715-5093-5f23-bfeb-05e6862b0cc7",
+      "route": null,
+      "applicability": "period",
+      "period_days": 21,
+      "state": "RESTRITO",
+      "reasons": [
+        "registro_individual_cancelado",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Comprovar licença vigente do mesmo produto antes de uso; não substituir por homônimo.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P25",
+      "product_id": "0168212e-2443-5eaf-97f1-108924e58d4d",
+      "product": "Cattle Master 4",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "registro_individual_cancelado",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Comprovar licença vigente do mesmo produto antes de uso; não substituir por homônimo.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P26",
+      "product_id": "a90ae0cf-d97b-577c-a622-080f2db70c3c",
+      "product": "Bovilis Vista Once SQ",
+      "purpose": "meat",
+      "rule_id": "cd99e911-42b5-56d0-bd56-154ce2f07a4f",
+      "route": null,
+      "applicability": "period",
+      "period_days": 21,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P26",
+      "product_id": "a90ae0cf-d97b-577c-a622-080f2db70c3c",
+      "product": "Bovilis Vista Once SQ",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P27",
+      "product_id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+      "product": "FertiGuard Selenium Max",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P27",
+      "product_id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+      "product": "FertiGuard Selenium Max",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P28",
+      "product_id": "33521603-7562-551e-8a66-5b5d3523b83d",
+      "product": "Poli-Star",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P28",
+      "product_id": "33521603-7562-551e-8a66-5b5d3523b83d",
+      "product": "Poli-Star",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P29",
+      "product_id": "a805aad2-7cd4-567e-8ace-676bf7cfd9f4",
+      "product": "Exceller",
+      "purpose": "meat",
+      "rule_id": "05bd5b48-c471-5c3d-8d60-12f2f4151046",
+      "route": null,
+      "applicability": "period",
+      "period_days": 28,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P29",
+      "product_id": "a805aad2-7cd4-567e-8ace-676bf7cfd9f4",
+      "product": "Exceller",
+      "purpose": "milk",
+      "rule_id": "5898714e-a32a-5c92-92d4-909054f1d8d9",
+      "route": null,
+      "applicability": "period",
+      "period_days": 10,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P30",
+      "product_id": "234204f8-4113-5294-8aa2-b0d2b3f83d95",
+      "product": "Ranger",
+      "purpose": "meat",
+      "rule_id": "2d44910d-15a0-5663-b735-7c3349e633ce",
+      "route": null,
+      "applicability": "period",
+      "period_days": 35,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P30",
+      "product_id": "234204f8-4113-5294-8aa2-b0d2b3f83d95",
+      "product": "Ranger",
+      "purpose": "milk",
+      "rule_id": "0509873d-aadb-50f5-9d18-f6c10ea45452",
+      "route": null,
+      "applicability": "not_permitted",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "uso_na_finalidade_nao_permitido"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Manter a proibição explícita dessa finalidade; nenhuma ativação permissiva."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P31",
+      "product_id": "942f1bf9-874b-5c46-ae35-a44648dcc893",
+      "product": "Solution 3,5%",
+      "purpose": "meat",
+      "rule_id": "b4d5f017-f105-5501-a520-4b503ef0a293",
+      "route": null,
+      "applicability": "period",
+      "period_days": 92,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P31",
+      "product_id": "942f1bf9-874b-5c46-ae35-a44648dcc893",
+      "product": "Solution 3,5%",
+      "purpose": "milk",
+      "rule_id": "5803a716-32a6-5206-b722-c99e71c2d080",
+      "route": null,
+      "applicability": "not_permitted",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "uso_na_finalidade_nao_permitido"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Manter a proibição explícita dessa finalidade; nenhuma ativação permissiva."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P32",
+      "product_id": "e5043b4b-6646-52d9-a40d-b2b46d18e774",
+      "product": "Supramec Pour-On",
+      "purpose": "meat",
+      "rule_id": "a4aa21a1-8dc7-5640-93a1-f43b1eab69a1",
+      "route": null,
+      "applicability": "period",
+      "period_days": 28,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P32",
+      "product_id": "e5043b4b-6646-52d9-a40d-b2b46d18e774",
+      "product": "Supramec Pour-On",
+      "purpose": "milk",
+      "rule_id": "f8815388-c930-58a5-9e5a-fc6bda4917b9",
+      "route": null,
+      "applicability": "zero",
+      "period_days": 0,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P33",
+      "product_id": "53678137-452a-5910-9bc6-67022504a6ce",
+      "product": "Ripercol L 150 F",
+      "purpose": "meat",
+      "rule_id": "2651d9d7-390e-50ed-8065-4c4ba7b1ed1c",
+      "route": "SC",
+      "applicability": "period",
+      "period_days": 7,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "prova_dose_insuficiente",
+        "prova_route_insuficiente",
+        "prova_species_authorization_insuficiente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Delimitar cobertura primária única do campo dose no contrato existente.",
+        "Delimitar cobertura primária única do campo route no contrato existente.",
+        "Delimitar cobertura primária única do campo species_authorization no contrato existente."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P33",
+      "product_id": "53678137-452a-5910-9bc6-67022504a6ce",
+      "product": "Ripercol L 150 F",
+      "purpose": "meat",
+      "rule_id": "6fea1392-a588-569e-a520-e89827be7f14",
+      "route": null,
+      "applicability": "period",
+      "period_days": 7,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada",
+        "prova_forte_da_regra_ausente",
+        "prova_dose_insuficiente",
+        "prova_route_insuficiente",
+        "prova_species_authorization_insuficiente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores.",
+        "Conferir cobertura withdrawal e vínculo forte da regra selecionada; não basta fonte do produto.",
+        "Delimitar cobertura primária única do campo dose no contrato existente.",
+        "Delimitar cobertura primária única do campo route no contrato existente.",
+        "Delimitar cobertura primária única do campo species_authorization no contrato existente."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P33",
+      "product_id": "53678137-452a-5910-9bc6-67022504a6ce",
+      "product": "Ripercol L 150 F",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "divergencia_material_milk",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Reconciliar somente a bula/valor dessa finalidade; não bloquear a outra finalidade por essa divergência.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P34",
+      "product_id": "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07",
+      "product": "Ripercol L Injetável",
+      "purpose": "meat",
+      "rule_id": "950e10ff-5ac3-53a5-935c-0205c3a39a11",
+      "route": null,
+      "applicability": "period",
+      "period_days": 4,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada",
+        "prova_forte_da_regra_ausente",
+        "prova_dose_ambigua",
+        "prova_route_ambigua",
+        "prova_species_authorization_ambigua"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores.",
+        "Conferir cobertura withdrawal e vínculo forte da regra selecionada; não basta fonte do produto.",
+        "Delimitar cobertura primária única do campo dose no contrato existente.",
+        "Delimitar cobertura primária única do campo route no contrato existente.",
+        "Delimitar cobertura primária única do campo species_authorization no contrato existente."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P34",
+      "product_id": "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07",
+      "product": "Ripercol L Injetável",
+      "purpose": "milk",
+      "rule_id": "9536e81a-08a6-559b-928a-e12735853bf1",
+      "route": null,
+      "applicability": "period",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada",
+        "prova_forte_da_regra_ausente",
+        "prova_dose_ambigua",
+        "prova_route_ambigua",
+        "prova_species_authorization_ambigua"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores.",
+        "Conferir cobertura withdrawal e vínculo forte da regra selecionada; não basta fonte do produto.",
+        "Delimitar cobertura primária única do campo dose no contrato existente.",
+        "Delimitar cobertura primária única do campo route no contrato existente.",
+        "Delimitar cobertura primária única do campo species_authorization no contrato existente."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P36",
+      "product_id": "670001a6-3634-582b-a277-f3bc65f89a0e",
+      "product": "Ticson 3.50",
+      "purpose": "meat",
+      "rule_id": "624fce32-357c-5768-97ac-2e76f88d5d1e",
+      "route": null,
+      "applicability": "period",
+      "period_days": 109,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada",
+        "prova_forte_da_regra_ausente",
+        "prova_dose_insuficiente",
+        "prova_route_insuficiente",
+        "prova_species_authorization_insuficiente"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores.",
+        "Conferir cobertura withdrawal e vínculo forte da regra selecionada; não basta fonte do produto.",
+        "Delimitar cobertura primária única do campo dose no contrato existente.",
+        "Delimitar cobertura primária única do campo route no contrato existente.",
+        "Delimitar cobertura primária única do campo species_authorization no contrato existente."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P36",
+      "product_id": "670001a6-3634-582b-a277-f3bc65f89a0e",
+      "product": "Ticson 3.50",
+      "purpose": "milk",
+      "rule_id": "ac413aa2-3bd4-5ab8-9d50-29266ea11189",
+      "route": null,
+      "applicability": "not_permitted",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "uso_na_finalidade_nao_permitido"
+      ],
+      "minimum_actions": [
+        "Manter a proibição explícita dessa finalidade; nenhuma ativação permissiva."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P37",
+      "product_id": "ebd8a49a-47ed-5cbf-a225-4dfe10ffadaa",
+      "product": "Puritec Gold",
+      "purpose": "meat",
+      "rule_id": "d6b2a732-4a0d-5ae0-853a-a3774d743993",
+      "route": null,
+      "applicability": "period",
+      "period_days": 117,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P37",
+      "product_id": "ebd8a49a-47ed-5cbf-a225-4dfe10ffadaa",
+      "product": "Puritec Gold",
+      "purpose": "milk",
+      "rule_id": "98c9b31b-a7bd-5463-97b1-315fe1a12342",
+      "route": null,
+      "applicability": "not_permitted",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "uso_na_finalidade_nao_permitido"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Manter a proibição explícita dessa finalidade; nenhuma ativação permissiva."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P38",
+      "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+      "product": "Eprecis",
+      "purpose": "meat",
+      "rule_id": "04012eb3-618b-5813-a387-a16f769d2a64",
+      "route": "SC",
+      "applicability": "period",
+      "period_days": 12,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "prova_dose_insuficiente",
+        "prova_route_insuficiente",
+        "prova_species_authorization_insuficiente",
+        "contexto_clinico_da_autorizacao_a_qualificar"
+      ],
+      "minimum_actions": [
+        "Delimitar cobertura primária única do campo dose no contrato existente.",
+        "Delimitar cobertura primária única do campo route no contrato existente.",
+        "Delimitar cobertura primária única do campo species_authorization no contrato existente.",
+        "Qualificar a autorização pendente com as precauções P12073 V00 já conhecidas: segurança não avaliada abaixo de cinco meses, sensibilidade e orientação MV; não inventar conversão mensal em dias ou proibição mais ampla."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P38",
+      "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+      "product": "Eprecis",
+      "purpose": "meat",
+      "rule_id": "a435e33b-ab52-593a-a2ac-10393f71a88e",
+      "route": null,
+      "applicability": "period",
+      "period_days": 12,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "via_da_regra_nao_delimitada",
+        "prova_forte_da_regra_ausente",
+        "prova_dose_insuficiente",
+        "prova_route_insuficiente",
+        "prova_species_authorization_insuficiente",
+        "contexto_clinico_da_autorizacao_a_qualificar"
+      ],
+      "minimum_actions": [
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores.",
+        "Conferir cobertura withdrawal e vínculo forte da regra selecionada; não basta fonte do produto.",
+        "Delimitar cobertura primária única do campo dose no contrato existente.",
+        "Delimitar cobertura primária única do campo route no contrato existente.",
+        "Delimitar cobertura primária única do campo species_authorization no contrato existente.",
+        "Qualificar a autorização pendente com as precauções P12073 V00 já conhecidas: segurança não avaliada abaixo de cinco meses, sensibilidade e orientação MV; não inventar conversão mensal em dias ou proibição mais ampla."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P38",
+      "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+      "product": "Eprecis",
+      "purpose": "milk",
+      "rule_id": "a4f5dff8-f48c-5a73-9d64-a5493ad8203c",
+      "route": "SC",
+      "applicability": "zero",
+      "period_days": 0,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "prova_dose_insuficiente",
+        "prova_route_insuficiente",
+        "prova_species_authorization_insuficiente",
+        "contexto_clinico_da_autorizacao_a_qualificar"
+      ],
+      "minimum_actions": [
+        "Delimitar cobertura primária única do campo dose no contrato existente.",
+        "Delimitar cobertura primária única do campo route no contrato existente.",
+        "Delimitar cobertura primária única do campo species_authorization no contrato existente.",
+        "Qualificar a autorização pendente com as precauções P12073 V00 já conhecidas: segurança não avaliada abaixo de cinco meses, sensibilidade e orientação MV; não inventar conversão mensal em dias ou proibição mais ampla."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P39",
+      "product_id": "4f011f00-0ae7-5b4e-97d3-b093578df236",
+      "product": "FLURON Gold",
+      "purpose": "meat",
+      "rule_id": "f2041a3d-c8c2-5919-9cee-4c8892926d50",
+      "route": null,
+      "applicability": "period",
+      "period_days": 91,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P39",
+      "product_id": "4f011f00-0ae7-5b4e-97d3-b093578df236",
+      "product": "FLURON Gold",
+      "purpose": "milk",
+      "rule_id": "fe757092-eca0-5334-badf-6cfbf16aa101",
+      "route": null,
+      "applicability": "not_permitted",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "uso_na_finalidade_nao_permitido"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Manter a proibição explícita dessa finalidade; nenhuma ativação permissiva."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P40",
+      "product_id": "3eb90dec-26cb-525e-b106-530c2ffc67e0",
+      "product": "COMBO Pour On",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "divergencia_material_meat",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Reconciliar somente a bula/valor dessa finalidade; não bloquear a outra finalidade por essa divergência.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P40",
+      "product_id": "3eb90dec-26cb-525e-b106-530c2ffc67e0",
+      "product": "COMBO Pour On",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "divergencia_material_milk",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Reconciliar somente a bula/valor dessa finalidade; não bloquear a outra finalidade por essa divergência.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P41",
+      "product_id": "a919841d-69b7-5340-848c-3c121b840ff8",
+      "product": "Butox P CE25",
+      "purpose": "meat",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P41",
+      "product_id": "a919841d-69b7-5340-848c-3c121b840ff8",
+      "product": "Butox P CE25",
+      "purpose": "milk",
+      "rule_id": null,
+      "route": null,
+      "applicability": "unknown",
+      "period_days": null,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "regra_da_finalidade_ausente"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Obter prazo/proibição explícito da finalidade; não inferir zero."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P42",
+      "product_id": "725304b5-c3c2-57b3-b255-a85032a23a55",
+      "product": "Tick Gard",
+      "purpose": "meat",
+      "rule_id": "a99ea9c3-fa93-538e-a53c-1d7f7509f6b7",
+      "route": null,
+      "applicability": "period",
+      "period_days": 148,
+      "state": "INCOMPLETO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "via_da_regra_nao_delimitada"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Preparar versão restrita à via comprovada antes de ativar uma regra hoje sem via; preservar a identidade/histórico anteriores."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    },
+    {
+      "code": "P42",
+      "product_id": "725304b5-c3c2-57b3-b255-a85032a23a55",
+      "product": "Tick Gard",
+      "purpose": "milk",
+      "rule_id": "0f3131bb-f96d-577d-a9c8-86f640e41517",
+      "route": null,
+      "applicability": "not_permitted",
+      "period_days": null,
+      "state": "RESTRITO",
+      "reasons": [
+        "vigencia_individual_nao_confirmada",
+        "uso_na_finalidade_nao_permitido"
+      ],
+      "minimum_actions": [
+        "Resolver somente a identidade/vigência individual indicada na exceção regulatória.",
+        "Manter a proibição explícita dessa finalidade; nenhuma ativação permissiva."
+      ],
+      "clinical_scope": "Somente espécie, aptidão, via e restrições da fonte específica; não extrapolar contexto.",
+      "currently_enabled": false,
+      "administrative_action_if_eligible": null
+    }
+  ]
+}

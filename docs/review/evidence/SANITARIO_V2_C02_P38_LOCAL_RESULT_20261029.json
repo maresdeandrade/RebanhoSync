@@ -1,0 +1,135 @@
+{
+  "head": "4aacd94facbfb67dabc188c6a5df0553dfcba764",
+  "tests": {
+    "total": 397,
+    "passed": 397,
+    "failed": 0,
+    "success": true,
+    "files": [
+      {
+        "file": "tests/codex/sanitario-c02-admin.test.mjs",
+        "passed": true,
+        "count": 26
+      },
+      {
+        "file": "tests/codex/sanitario-c02-p38.test.mjs",
+        "passed": true,
+        "count": 13
+      },
+      {
+        "file": "tests/codex/sanitario-v2-publisher.test.mjs",
+        "passed": true,
+        "count": 196
+      },
+      {
+        "file": "src/lib/offline/__tests__/sanitarioAgendaV2Sync.test.ts",
+        "passed": true,
+        "count": 9
+      },
+      {
+        "file": "src/lib/offline/__tests__/sanitarioIncrementalPullCursor.test.ts",
+        "passed": true,
+        "count": 5
+      },
+      {
+        "file": "src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Pull.test.ts",
+        "passed": true,
+        "count": 2
+      },
+      {
+        "file": "src/lib/offline/__tests__/sanitarioTechnicalCatalogV2Store.test.ts",
+        "passed": true,
+        "count": 4
+      },
+      {
+        "file": "src/lib/offline/__tests__/sanitarioWithdrawalSources.upgrade.test.ts",
+        "passed": true,
+        "count": 1
+      },
+      {
+        "file": "src/lib/offline/__tests__/telemetryFlushCursors.upgrade.test.ts",
+        "passed": true,
+        "count": 2
+      },
+      {
+        "file": "src/lib/sanitario/execution/__tests__/executedProductTechnicalSnapshotV2.test.ts",
+        "passed": true,
+        "count": 8
+      },
+      {
+        "file": "src/lib/sanitario/execution/__tests__/operationalWithdrawalSnapshotV2.test.ts",
+        "passed": true,
+        "count": 50
+      },
+      {
+        "file": "src/lib/sanitario/execution/__tests__/sanitaryAgendaExecutionV2.test.ts",
+        "passed": true,
+        "count": 56
+      },
+      {
+        "file": "src/lib/sanitario/execution/__tests__/sanitaryEventExecution.test.ts",
+        "passed": true,
+        "count": 11
+      },
+      {
+        "file": "src/lib/sanitario/reconciliation/__tests__/sanitaryCorrectionV2.test.ts",
+        "passed": true,
+        "count": 14
+      }
+    ]
+  },
+  "typecheck": {
+    "command": "pnpm exec tsc -p tsconfig.app.json --noEmit",
+    "exit_code": 1,
+    "comparison": {
+      "baseline_model": "HEAD overlay only for eight touched runtime files; unrelated local changes preserved",
+      "baseline_count": 233,
+      "current_count": 233,
+      "new_diagnostics": [],
+      "touched_diagnostics": [
+        {
+          "file": "src/lib/offline/pull.ts",
+          "code": 2537,
+          "message": "Type '{}' has no matching index signature for type 'number'."
+        },
+        {
+          "file": "src/lib/offline/pull.ts",
+          "code": 2537,
+          "message": "Type '{}' has no matching index signature for type 'number'."
+        },
+        {
+          "file": "src/lib/offline/pull.ts",
+          "code": 2322,
+          "message": "Type 'IndexableType[]' is not assignable to type 'IndexableType'.   Type 'IndexableType[]' is not assignable to type 'void[][]'.     Type 'IndexableType' is not assignable to type 'void[]'.       Type 'string' is not assignable to type 'void[]'."
+        },
+        {
+          "file": "src/lib/offline/pull.ts",
+          "code": 2554,
+          "message": "Expected 4 arguments, but got 3."
+        },
+        {
+          "file": "src/lib/offline/pull.ts",
+          "code": 2554,
+          "message": "Expected 4 arguments, but got 3."
+        },
+        {
+          "file": "src/lib/offline/pull.ts",
+          "code": 2554,
+          "message": "Expected 4 arguments, but got 3."
+        }
+      ]
+    }
+  },
+  "postgres_rehearsal": {
+    "command": "node tests/codex/sanitario-c02-p38.local.mjs",
+    "create": 5,
+    "update": 0,
+    "skip": 1,
+    "local_transaction_rolled_back": true,
+    "remote_connections": 0
+  },
+  "limitations": [
+    "Typecheck global falho; paridade com overlay HEAD, sem novos diagnósticos identificados.",
+    "Testes locais não comprovam compatibilidade do cliente implantado."
+  ]
+}
