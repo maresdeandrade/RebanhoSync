@@ -1,7 +1,8 @@
 // Disposable Supabase project: actual Auth/JWT/PostgREST and existing functional baseline.
 // CLI credentials are used only in memory and are never included in the report.
 import assert from "node:assert/strict";
-import { execFileSync, spawn } from "node:child_process";
+import { execFile, execFileSync, spawn } from "node:child_process";
+import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,18 +14,21 @@ import * as contract from "../../scripts/codex/sanitario-v2-contract.mjs";
 import { existsSync } from "node:fs";
 import { buildApprovalCandidate, CANONICAL_PATH, DECISION_PATH } from "../../scripts/codex/prepare-sanitario-approval-v2.mjs";
 import { runSanitaryConvergenceFixture } from "./sanitario-v2-convergence.fixture.mjs";
+import { settleOwnedCleanup } from "./c05-loopback-docker.fixture.mjs";
 
 const directory = mkdtempSync(path.join(tmpdir(), "sanitario-review-supabase-"));
 const project = `sanitary-review-${randomUUID().slice(0, 8)}`;
 const report = { project, environment: "isolated local Supabase; synthetic users only", cases: [] };
-const cli = args => execFileSync("supabase", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
+let dockerAdapter;
+const cli = async args => (await promisify(execFile)("supabase", args, { env: dockerAdapter ? {...process.env,DOCKER_HOST:dockerAdapter.host} : process.env, encoding: "utf8", windowsHide: true, maxBuffer: 16 * 1024 * 1024 })).stdout;
 const child = (args, env) => new Promise(resolve => {
   const task = spawn(process.execPath, args, { env, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
   let stdout = "", stderr = "";
   task.stdout.on("data", chunk => { stdout += chunk; }); task.stderr.on("data", chunk => { stderr += chunk; });
   task.on("close", code => resolve({ code, stdout, stderr }));
 });
-let db, edge;
+let db, edge, ownedNetwork;
+const c05 = process.argv.includes("--c05");
 const edgeDiagnostics = [];
 try {
   const dockerHost = execFileSync("docker", ["context", "inspect", "--format", "{{.Endpoints.docker.Host}}"], { encoding: "utf8", windowsHide: true }).trim();
@@ -34,21 +38,52 @@ try {
   for (const port of [54320, 54321, 54322, 54323, 54324, 54325, 54327, 54329]) config = config.replaceAll(String(port), String(port + 1100));
   config = config.replace("inspector_port = 8083", "inspector_port = 55483").replace(/(\[db.seed\]\r?\nenabled = )true/, "$1false");
   config = config.replace(/^\[local_smtp\]$/m, "[local_smtp]\nport = 55424");
-  if (process.argv.includes("--vf4")) config = config.replace("jwt_expiry = 3600", "jwt_expiry = 60");
+  // C05 mounts AuthProvider: keep TTL above the SDK's 90s refresh margin.
+  // A 60s TTL makes every refreshed session immediately eligible for refresh.
+  if (c05) config = config.replace("jwt_expiry = 3600", "jwt_expiry = 120");
+  else if (process.argv.includes("--vf4")) config = config.replace("jwt_expiry = 3600", "jwt_expiry = 60");
   writeFileSync(path.join(dest, "config.toml"), config);
   cpSync("supabase/migrations", path.join(dest, "migrations"), { recursive: true });
   cpSync("supabase/functions", path.join(dest, "functions"), { recursive: true });
   mkdirSync(path.join(directory, "src/lib/animals"), { recursive: true });
   cpSync("src/lib/animals/taxonomyFactsContract.ts", path.join(directory, "src/lib/animals/taxonomyFactsContract.ts"));
   console.log("Starting dedicated local Auth/PostgREST project");
-  try { cli(["start", "--workdir", directory, "--exclude", "studio,postgres-meta,realtime,storage-api,imgproxy,logflare,vector,supavisor"]); }
-  catch (error) { report.start_diagnostics = error.stderr?.toString().split(/\r?\n/).filter(line => /ERROR:|SQLSTATE|At statement|failed to/.test(line)).map(line => line.replace(/https?:\/\/\S+|postgres(?:ql)?:\/\/\S+|eyJ[\w.-]+/g, "[REDACTED]")).slice(-10); throw new Error("ISOLATED_START_FAILED"); }
-  const env = Object.fromEntries(cli(["status", "-o", "env", "--workdir", directory]).split(/\r?\n/).flatMap(line => {
+  if (c05) {
+    // Loopback publication with outbound masquerading disabled. Docker internal bridges
+    // suppress published ports altogether, preventing the host-side CLI from reaching Postgres.
+    // Fail closed on occupied ports, before creating any backend resource.
+    const { createServer } = await import("node:net");
+    for (const port of [55420,55421,55422,55423,55424,55425,55427,55429,55483,8181]) {
+      await new Promise((resolve,reject)=>{const server=createServer();server.once("error",reject);server.listen(port,"0.0.0.0",()=>server.close(resolve));});
+    }
+    execFileSync("docker", ["network", "create", "--label", `com.rebanhosync.c05.run=${project}`,
+      "--opt", "com.docker.network.bridge.enable_ip_masquerade=false",
+      "--opt", "com.docker.network.bridge.host_binding_ipv4=127.0.0.1", project], { windowsHide:true, stdio:"pipe" });
+    ownedNetwork = project;
+    report.network = { outbound_masquerade:false, bind:"127.0.0.1", exclusive:true };
+    const { startLoopbackDockerAdapter }=await import("./c05-loopback-docker.fixture.mjs");
+    dockerAdapter=await startLoopbackDockerAdapter(dockerHost,project);
+  }
+  try { await cli(["start", "--workdir", directory, ...(ownedNetwork ? ["--network-id",ownedNetwork] : []), "--exclude", "studio,postgres-meta,realtime,storage-api,imgproxy,logflare,vector,supavisor"]); }
+  catch (error) { report.start_diagnostics = error.stderr?.toString().split(/\r?\n/).filter(line => /ERROR:|SQLSTATE|At statement|failed to|connection refused|timed out|unhealthy|not ready|Cannot|Error response/.test(line)).map(line => line.replace(/https?:\/\/\S+|postgres(?:ql)?:\/\/\S+|eyJ[\w.-]+/g, "[REDACTED]")).slice(-10); throw new Error("ISOLATED_START_FAILED"); }
+  if (c05) {
+    const containers=JSON.parse(execFileSync("docker",["network","inspect",ownedNetwork],{encoding:"utf8",windowsHide:true}))[0].Containers;
+    report.loopback_bindings=[];
+    for(const id of Object.keys(containers)) {
+      const info=JSON.parse(execFileSync("docker",["inspect",id],{encoding:"utf8",windowsHide:true}))[0];
+      for(const bindings of Object.values(info.NetworkSettings.Ports??{}))for(const binding of bindings??[]) {
+        assert.equal(binding.HostIp,"127.0.0.1","C05 requires loopback-only publication");
+        report.loopback_bindings.push({container:info.Name,host:binding.HostIp,port:binding.HostPort});
+      }
+    }
+    assert(report.loopback_bindings.length>0,"No reachable loopback publications");
+  }
+  const env = Object.fromEntries((await cli(["status", "-o", "env", "--workdir", directory])).split(/\r?\n/).flatMap(line => {
     const match = line.match(/^([A-Z0-9_]+)="(.*)"$/); return match ? [[match[1], match[2]]] : [];
   }));
   assert.equal(new URL(env.DB_URL).hostname, "127.0.0.1"); assert.equal(new URL(env.API_URL).port, "55421");
   writeFileSync(path.join(directory, "empty.env"), "");
-  edge = spawn("supabase", ["functions", "serve", "--workdir", directory, "--env-file", path.join(directory, "empty.env")], { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+  edge = spawn("supabase", ["functions", "serve", "--workdir", directory, ...(ownedNetwork ? ["--network-id",ownedNetwork] : []), "--env-file", path.join(directory, "empty.env")], { env:dockerAdapter ? {...process.env,DOCKER_HOST:dockerAdapter.host} : process.env, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
   const diagnose = chunk => {
     for (const line of chunk.toString().split(/\r?\n/).filter(line => /worker boot error|failed to|Module not found|Uncaught|Error:|error sending request|Caused by/i.test(line))) {
       edgeDiagnostics.push(line.replace(/https?:\/\/\S+|postgres(?:ql)?:\/\/\S+|eyJ[\w.-]+|sb_(?:secret|publishable)_[\w-]+/g, "[REDACTED]"));
@@ -68,7 +103,7 @@ try {
     if (!ready) await new Promise(resolve => setTimeout(resolve, 500));
   }
   assert(ready, "Isolated Edge auth gate unavailable");
-  if (process.argv.includes("--vf4")) {
+  if (process.argv.includes("--vf4") || c05) {
     db = new pg.Client({ connectionString: env.DB_URL }); await db.connect();
     const { runSanitaryRecoveryVF4 } = await import("./sanitario-v2-vf4.fixture.mjs");
     await runSanitaryRecoveryVF4({ db, env, report });
@@ -113,9 +148,18 @@ try {
   report.failure_detail = error.message.replace(/https?:\/\/\S+|postgres(?:ql)?:\/\/\S+|eyJ[\w.-]+|sb_(?:secret|publishable)_[\w-]+/g, "[REDACTED]").slice(0, 3000);
   report.edge_diagnostics = edgeDiagnostics.slice(-12); process.exitCode = 1;
 } finally {
-  await db?.end(); edge?.kill();
-  try { cli(["stop", "--project-id", project, "--no-backup", "--workdir", directory]); report.own_project_removed = true; }
-  catch { report.own_project_removed = false; process.exitCode = 1; }
+  const steps=[
+    ["db_connection_closed",()=>db?.end()],
+    ["edge_process_stopped",()=>edge?.kill()],
+    ["own_project_removed",()=>cli(["stop", "--project-id", project, "--no-backup", "--workdir", directory])],
+    ...(ownedNetwork ? [["own_network_removed",()=>execFileSync("docker",["network","rm",ownedNetwork],{windowsHide:true,stdio:"pipe"})]] : []),
+    ["docker_adapter_closed",()=>dockerAdapter?.close()],
+  ];
+  const failed=await settleOwnedCleanup(steps.map(([name,cleanup])=>[name,async()=>{await cleanup();report[name]=true;}]));
+  if(failed.length) {
+    for(const name of failed)report[name]=false;
+    report.cleanup_failures=failed;report.result="FAIL";report.failure??="OWNED_CLEANUP_FAILED";process.exitCode=1;
+  }
   writeFileSync(path.join(directory, "evidence.json"), JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify({ result: report.result, failure: report.failure, checks: report.cases.length, evidence: path.join(directory, "evidence.json"), cleanup: report.own_project_removed }));
 }

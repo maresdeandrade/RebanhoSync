@@ -1157,7 +1157,7 @@ async function processSanitarioCanonicalResults(
         await upsertReconciliationObligations([
           { fazendaId: gesture.fazenda_id, scope: "sanitario-v2",
             origins: [{ client_tx_id: gesture.client_tx_id,
-              client_op_ids: matchedForReconcile.map(result => result.op_id) }] },
+              client_op_ids: matchedForReconcile.map(({ op }) => op.client_op_id) }] },
         ]);
       }
 

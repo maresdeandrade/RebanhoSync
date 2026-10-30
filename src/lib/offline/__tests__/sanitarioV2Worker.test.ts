@@ -110,6 +110,30 @@ async function loadGesture(clientTxId: string) {
 }
 
 describe("sanitario_v2 canonical worker/reconcile", () => {
+  it("preserva UUID da operacao na origem da obrigacao sanitaria", async () => {
+    await db.sync_reconcile_obligations.clear();
+    try {
+      const { gesture } = await seedGesture(["create_agenda"], "c05-origin");
+      respondWith([{
+        op_id: "op-c05-origin-0",
+        client_op_id: "op-c05-origin-0",
+        domain_op_id: "domain-c05-origin-0",
+        status: "APPLIED",
+        retryable: false,
+        canonical_entity_id: "agenda-c05-origin",
+        canonical_result: { agenda_id: "agenda-c05-origin", revision: 1 },
+      }]);
+      await processGesture(gesture);
+      const obligation = await db.sync_reconcile_obligations.get(`${FAZENDA_ID}:sanitario-v2`);
+      expect(obligation?.diagnostics?.origins).toContainEqual({
+        client_tx_id: "tx-san-v2-c05-origin",
+        client_op_ids: ["op-c05-origin-0"],
+      });
+    } finally {
+      await db.sync_reconcile_obligations.clear();
+    }
+  });
+
   beforeEach(async () => {
     vi.clearAllMocks();
     vi.stubGlobal("fetch", vi.fn());
