@@ -110,6 +110,28 @@ async function loadGesture(clientTxId: string) {
 }
 
 describe("sanitario_v2 canonical worker/reconcile", () => {
+  it.each([
+    { parentStatus: "REJECTED", related: true, terminal: true },
+    { parentStatus: "CONFLICT", related: true, terminal: true },
+    { parentStatus: "RETRYABLE", related: true, terminal: false },
+    { parentStatus: "REJECTED", related: false, terminal: false },
+  ] as const)("dependência de planejamento: $parentStatus related=$related", async ({ parentStatus, related, terminal }) => {
+    const { gesture, ops } = await seedGesture(["create_agenda", "reschedule_agenda"], `dependency-${parentStatus}-${related}`);
+    await db.queue_ops.update(ops[0].client_op_id, { record: { ...ops[0].record, fazenda_id: FAZENDA_ID, payload: { agenda: { id: "parent-agenda" } } } });
+    await db.queue_ops.update(ops[1].client_op_id, { record: { ...ops[1].record, fazenda_id: FAZENDA_ID, expected_revision: 0, payload: { agenda_id: related ? "parent-agenda" : "unrelated-agenda" } } });
+    respondWith([
+      { op_id: ops[0].client_op_id, client_op_id: ops[0].client_op_id, domain_op_id: ops[0].domain_op_id, status: parentStatus, retryable: parentStatus === "RETRYABLE", reason_code: "PARENT_RESULT" },
+      { op_id: ops[1].client_op_id, client_op_id: ops[1].client_op_id, domain_op_id: ops[1].domain_op_id, status: "BLOCKED_DEPENDENCY", retryable: false, reason_code: "SANITARIO_AGENDA_NOT_FOUND" },
+    ]);
+    await processGesture(gesture);
+    if (terminal) {
+      expect(await db.queue_ops.get(ops[1].client_op_id)).toBeUndefined();
+      expect((await loadGesture(gesture.client_tx_id)).status).toBe("REJECTED");
+      expect((await db.queue_rejections.toArray()).find(row => row.client_op_id === ops[1].client_op_id)).toMatchObject({ result_status: "REJECTED" });
+      await recoverBlockedSanitarioV2Operations("reconciliation_drain");
+      expect(await db.queue_ops.get(ops[1].client_op_id)).toBeUndefined();
+    } else expect(await db.queue_ops.get(ops[1].client_op_id)).toMatchObject({ sync_state: "BLOCKED_DEPENDENCY" });
+  });
   it("preserva UUID da operacao na origem da obrigacao sanitaria", async () => {
     await db.sync_reconcile_obligations.clear();
     try {

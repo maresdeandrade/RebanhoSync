@@ -57,9 +57,13 @@ export async function runSanitaryHeterogeneousC06({ db, env, report, a, b, both,
       source:{kind:"sanitary_precheck_preview_v2",protocolId:protocol.id,protocolItemVersionId:item.id,actionType:"vacinacao",generationMode:"manual",
         familyCode:"raiva",itemKey:item.logical_item_key,itemLabel:"C06 manual",protocolName:protocol.nome??"Raiva",precheckStatus:"eligible"}});
     const create=cut.buildCreateAgendaOperation(identity,records.agenda,records.animals.map(row=>row.animal_id));
-    const reschedule=buildRescheduleAgendaV2(farm,options.target??records.agenda.id,options.revision??0,"2026-11-02");
+    const reschedule=buildRescheduleAgendaV2(farm,options.target??records.agenda.id,options.revision??0,options.plannedFor??"2026-11-02");
     reschedule.client_tx_id=identity.clientTxId;
     const operations=options.reverse?[reschedule,create]:[create,reschedule];
+    if(options.chain){
+      const next=buildRescheduleAgendaV2(farm,records.agenda.id,1,"2026-11-03");
+      next.client_tx_id=identity.clientTxId;operations.push(next);
+    }
     await cut.validateSanitarioV2Enqueue({fazendaId:farm,clientId,projectRef:"local",operations});
     try{
       await db.transaction("rw",[db.queue_gestures,db.queue_ops,db.ops_sanitario_agenda_v2,db.ops_sanitario_agenda_animais_v2],async()=>{
@@ -97,6 +101,10 @@ export async function runSanitaryHeterogeneousC06({ db, env, report, a, b, both,
     await context.grantPermissions(["local-network-access"],{origin:"http://127.0.0.1:8181"});await restrictContextToLoopback(context);
     await context.route("http://127.0.0.1:8181/",route=>route.fulfill({contentType:"text/html",body:"<!doctype html><html><body>C06 local owned harness</body></html>"}));
     page=await context.newPage();await page.goto("http://127.0.0.1:8181/");await boot(true);
+    if(process.argv.includes("--c06-cas")) {
+      const {runSanitaryCasCasesC06}=await import("./sanitario-c06-cas.fixture.mjs");
+      await runSanitaryCasCasesC06({report,a,b,outsider,farmA,farmB,animalB,page,context,boot,enqueue,processBatch,drain,replay,receiptCheck,origins,local,remote,snapshot,check});
+    } else {
     let anchor;
     await check("01 integral: create + reschedule no mesmo gesto",async()=>{
       const batch=await enqueue();const persisted=await local();assert.equal(persisted.ops.filter(row=>row.client_tx_id===batch.tx).length,2);
@@ -182,7 +190,13 @@ export async function runSanitaryHeterogeneousC06({ db, env, report, a, b, both,
       const before=await snapshot(),batch=await enqueue({abortLocal:true});assert(batch.aborted);
       assert.deepEqual(await snapshot(),before);return{batch,local_atomicity:"rollback complete before any HTTP send"};
     });
-    const final=await snapshot();assert.equal(final.local.ops.length,0);assert.equal(final.local.obligations.length,0);
+    }
+    const final=await snapshot();
+    if(process.argv.includes("--c06-cas")) {
+      assert.deepEqual(final.local.ops.map(op=>op.client_op_id).sort(),[...report.c06_cas_blocked_ids].sort());
+      assert(final.local.ops.every(op=>op.sync_state==="PENDING"));
+    } else assert.equal(final.local.ops.length,0);
+    assert.equal(final.local.obligations.length,0);
     report.c06_final=final;report.c06_status="READY_FOR_REVIEW";
   }catch(error){
     report.c06_failure_stack=String(error.stack).replace(/https?:\/\/\S+|eyJ[\w.-]+|sb_(?:secret|publishable)_[\w-]+/g,"[REDACTED]").slice(0,3500);
