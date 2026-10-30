@@ -82,6 +82,11 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
   let vite, browser;
   const contexts = [];
   try {
+    if (process.argv.includes("--c05")) {
+      const { runSanitaryAuthCompositionC05 } = await import("./sanitario-c05.fixture.mjs");
+      await runSanitaryAuthCompositionC05({ db, env, report, a, b, both, outsider, farmA, farmB, animalA, animalB, protocol, items });
+      return;
+    }
     await check("Auth real: login de quatro identidades e refresh válido", async () => {
       for (const user of [a,b,both,outsider]) { const r=await user.client.auth.getUser(); assert.ifError(r.error); assert.equal(r.data.user.id,user.id); }
       const refresh=await a.client.auth.refreshSession(); assert.ifError(refresh.error); assert.equal(refresh.data.user.id,a.id);
