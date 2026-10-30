@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-10-25 (pendências Sanitário V2; demais trilhas preservadas)
+Atualizado em: 2026-10-30 (C05 integrado e incremento C06; demais trilhas preservadas)
 
 ## Objetivo
 
@@ -19,7 +19,7 @@ Integração pública F6–F9 encerrada pelo PR #244 em `main@0e7f5137a865f2671d
 | Prioridade | Item aberto e classificação | Fonte / condição de fechamento |
 |---|---|---|
 | P1 para uso operacional dos produtos | **Curadoria/regulatório:** os 39 produtos importados são de revisão (`precisa_validar`); registro vigente, composição, espécie, dose, via e carência não estão certificados. Três candidatos retidos fora do lote. | [Resumo F6–F9](./SANITARIO_V2_F6_F9_PUBLIC_SUMMARY.md). Exige fontes técnicas e decisão curatorial auditável por produto, em tarefa própria; cadastro comercial não libera operação. |
-| P1 antes de certificação completa/rollout | **Cobertura funcional parcial:** VF3 testa provider com Auth sintético; VF4 testa backend real sem montar provider. O #245 já implementou/testou a proteção da seleção pendente, recuperação de settings e papel tardio, além do isolamento de Insumos; isso não é pendência. Falta comprovar a composição sanitária com provider e backend reais, não um novo bug confirmado. | [VF5](./SANITARIO_V2_VF5_INTEGRACAO_20261024.md), [PR #245 integrado](https://github.com/maresdeandrade/RebanhoSync/pull/245) e [proposta delimitada](./CURRENT_PHASE_HANDOFF.md#sanitário-v2--continuidade-pós-f9--25102026). Reutilizar os guards/testes existentes na matriz local integrada antes de generalizar as garantias. F24.7 completa continua pendente. |
+| P1 antes de certificação completa/rollout | **F24.7 completa pendente:** C05 CLOSED / INTEGRATED pelo #259, 7/7 da composição real. Incremento C06 de gesto heterogêneo READY_FOR_REVIEW, 9/9 locais, PARTIAL_PER_OPERATION para planejamento. Restam outras combinações/dependências/conflitos e execução factual; não há novo bug confirmado neste incremento. | [C05 integrado](./SANITARIO_C05_C06_COMPOSICAO_20261029.md) e [C06: evidências e limites](./SANITARIO_C06_GESTO_HETEROGENEO_20261030.md). Revisar o patch local; completa continua NOT_STARTED, sem rollout. |
 | P2, condicionado ao alvo de liberação | **Limite de certificação:** cold start PWA sem shell/assets, crash real de processo e dispositivo físico não certificados pela VF5; nova intenção sem sessão utilizável ficou fora da VF4. | [Limites VF4](./SANITARIO_V2_VF4_VALIDACAO_20261024.md). Definir contrato/critério do alvo antes de testar; não atribuir bug ou prometer escrita sem sessão. |
 | P2 independente | **Dívida TypeScript:** 38 diagnósticos preexistentes no escopo `e2e/tsconfig.json`, triados na VF5; não houve nova contagem nesta atividade. | [Triagem VF5](./evidence/SANITARIO_V2_VF5_TYPESCRIPT_TRIAGE_20261024.json). Correção própria e comparação com baseline; não bloquear artificialmente F9 nem declarar TypeScript global aprovado. |
 
