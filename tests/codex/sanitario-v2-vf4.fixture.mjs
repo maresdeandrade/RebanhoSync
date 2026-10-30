@@ -82,6 +82,11 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
   let vite, browser;
   const contexts = [];
   try {
+    if (process.argv.includes("--c06-final")) {
+      const { runSanitaryFactualFinalC06 } = await import("./sanitario-c06-final.fixture.mjs");
+      await runSanitaryFactualFinalC06({ db, env, report, a, b, both, outsider, farmA, farmB, animalA, protocol, items });
+      return;
+    }
     if (process.argv.includes("--c06") || process.argv.includes("--c06-cas")) {
       const { runSanitaryHeterogeneousC06 } = await import("./sanitario-c06.fixture.mjs");
       await runSanitaryHeterogeneousC06({ db, env, report, a, b, both, outsider, farmA, farmB, animalA, animalB, protocol, items });

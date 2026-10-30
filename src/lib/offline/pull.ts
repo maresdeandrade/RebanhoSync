@@ -742,6 +742,20 @@ function validateRequiredAnimalSnapshot(
   }
 }
 
+type FarmPullQuery = ReturnType<ReturnType<typeof supabase.from>["select"]>;
+
+async function fetchFarmPullRows(query: FarmPullQuery, table: string, reconciliation: boolean) {
+  if (!reconciliation || !["insumo_movimentacoes", "insumo_lotes"].includes(table)) return await query;
+  const rows: unknown[] = [];
+  query = query.order("id");
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await query.range(offset, offset + 999);
+    if (error) return { data: null, error };
+    rows.push(...(data ?? []));
+    if ((data?.length ?? 0) < 1000) return { data: rows, error: null };
+  }
+}
+
 export const pullDataForFarm = async (
   fazenda_id: string,
   remoteTables: readonly string[] = DEFAULT_REMOTE_TABLES,
@@ -765,7 +779,7 @@ export const pullDataForFarm = async (
       .eq("fazenda_id", fazenda_id); // includes tombstones via deleted_at
     const observation = options.observations?.[remoteTable];
     if (observation) query = query.in(observation.key, observation.ids);
-    const { data, error } = await query;
+    const { data, error } = await fetchFarmPullRows(query, remoteTable, Boolean(options.reconciliation));
 
     if (error) {
       console.error(`[pull] Error pulling ${remoteTable}:`, error);

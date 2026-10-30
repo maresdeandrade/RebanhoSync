@@ -3,6 +3,7 @@ import { db } from "./db";
 import { prepareMovementIntents } from "./movement";
 import type {
   Gesture,
+  InsumoLote,
   Operation,
   OperationInput,
   Rejection,
@@ -624,6 +625,34 @@ async function assertRetryAnimalFarm(operation: Operation, farmId: string) {
   }
 }
 
+function isSanitaryStockRetry(op: Operation) {
+  return op.action === "INSERT" && op.table === "state_insumo_movimentacoes" && op.record.tipo === "consumo_sanitario";
+}
+
+function validSanitaryRetryLot(lot: InsumoLote | undefined, farmId: string, quantity: number): lot is InsumoLote {
+  return Boolean(lot && !lot.deleted_at && lot.fazenda_id === farmId && Number.isFinite(quantity) && quantity > 0);
+}
+
+async function reserveSanitaryStockRetry(op: Operation, fazendaId: string) {
+  const existing = await db.state_insumo_movimentacoes.get(String(op.record.id));
+  if (existing) {
+    if (existing.client_op_id !== op.client_op_id || existing.fazenda_id !== fazendaId) throw new Error("REJECTED_OPERATION_IDENTITY_MISMATCH");
+    return;
+  }
+  const lot = await db.state_insumo_lotes.get(String(op.record.insumo_lote_id));
+  const quantity = Number(op.record.quantidade_base);
+  if (!validSanitaryRetryLot(lot, fazendaId, quantity))
+    throw new Error("SANITARIO_INVENTORY_RETRY_INVALID");
+  if (lot.saldo_atual_base < quantity) throw new Error("SANITARIO_INVENTORY_RETRY_INSUFFICIENT_BALANCE");
+  await db.state_insumo_lotes.update(lot.id, { saldo_atual_base: lot.saldo_atual_base - quantity });
+}
+
+async function reapplyExplicitRejectedOperation(op: Operation, farmId: string) {
+  await assertRetryAnimalFarm(op, farmId);
+  if (isSanitaryStockRetry(op)) await reserveSanitaryStockRetry(op, farmId);
+  await reapplyOpLocal(op);
+}
+
 export async function retryRejectedOperation(rejection: Rejection) {
   const operation = await db.queue_ops.get(rejection.client_op_id);
   if (!operation) {
@@ -636,7 +665,8 @@ export async function retryRejectedOperation(rejection: Rejection) {
 
   return db.transaction(
     "rw",
-    [db.queue_gestures, db.queue_ops, ...(factualRetry ? [] : getAffectedStores([operation]))],
+    [db.queue_gestures, db.queue_ops, ...(factualRetry ? [] : getAffectedStores([operation])),
+      ...(!factualRetry && isSanitaryStockRetry(operation) ? [db.state_insumo_lotes] : [])],
     async () => {
       const [currentOperation, gesture] = await Promise.all([
         db.queue_ops.get(operation.client_op_id),
@@ -674,8 +704,7 @@ export async function retryRejectedOperation(rejection: Rejection) {
         (!factualRetry || isFactualCore(op) ||
           (op.table === "state_insumo_movimentacoes" && op.record.tipo === "consumo_sanitario")));
       if (!factualRetry) {
-        await assertRetryAnimalFarm(currentOperation, gesture.fazenda_id);
-        await reapplyOpLocal(currentOperation);
+        await reapplyExplicitRejectedOperation(currentOperation, gesture.fazenda_id);
       }
       for (const retryOp of factualRetry ? retryOps : [currentOperation]) {
         await db.queue_ops.update(retryOp.client_op_id, {
