@@ -82,6 +82,11 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
   let vite, browser;
   const contexts = [];
   try {
+    if (process.argv.includes("--c06")) {
+      const { runSanitaryHeterogeneousC06 } = await import("./sanitario-c06.fixture.mjs");
+      await runSanitaryHeterogeneousC06({ db, env, report, a, b, both, outsider, farmA, farmB, animalA, animalB, protocol, items });
+      return;
+    }
     if (process.argv.includes("--c05")) {
       const { runSanitaryAuthCompositionC05 } = await import("./sanitario-c05.fixture.mjs");
       await runSanitaryAuthCompositionC05({ db, env, report, a, b, both, outsider, farmA, farmB, animalA, animalB, protocol, items });
