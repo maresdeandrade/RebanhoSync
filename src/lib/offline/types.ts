@@ -2003,7 +2003,7 @@ export interface SyncOperationAuditResult extends SyncOperationResult {
   matched: boolean;
   recorded_at: string;
   command?: SanitarioSyncV2Command;
-  local_reason_code?: "SYNC_RESULT_OP_NOT_FOUND" | "SYNC_RESULT_ID_MISMATCH";
+  local_reason_code?: "SYNC_RESULT_OP_NOT_FOUND" | "SYNC_RESULT_ID_MISMATCH" | "SYNC_DEPENDENCY_TERMINAL";
 }
 
 // =========================================================

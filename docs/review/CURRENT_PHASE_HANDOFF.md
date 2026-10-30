@@ -33,15 +33,17 @@ VF1–VF5 já estão integrados pelo PR #242 (`c9155a5`); os commits `4446725` e
 
 ### Atualização C05/C06 — 30/10/2026
 
-Baseline específica desta atualização: `origin/main@20a7b3b673db0fbe16db31e60bc33d72350fa8a8`, confirmada por fetch; demais baselines deste documento mantêm seus recortes históricos.
+Baseline específica desta atualização C06/CAS: `origin/main@8de882dff2923033ec14607e2bc82a1ed69acc18`, confirmada por fetch; demais baselines deste documento mantêm seus recortes históricos.
 
 **C05: CLOSED / INTEGRATED** pelo [PR #259](https://github.com/maresdeandrade/RebanhoSync/pull/259). A composição AuthProvider/UI → domínio → Dexie/fila/worker → Auth/RLS/Edge/PostgreSQL → reconciliação foi comprovada em sete cenários locais. Integra também a correção de IDs de origem de reconciliação e o adaptador Docker com bind loopback/cleanup. [Relatório C05 histórico](./SANITARIO_C05_C06_COMPOSICAO_20261029.md), preservado; não repetir seus sete cenários sem delta relevante.
 
-**C06: incremento de gesto heterogêneo READY_FOR_REVIEW**, patch local na branch `codex/c06-heterogeneous-gesture`, sem commit/push/merge. Nove cenários reais locais comprovaram `PARTIAL_PER_OPERATION` para criação/reagendamento sanitários no mesmo gesto: efeito+recibo atômicos por RPC, resultados por operação, retry/lost ACK, ACK local abortado, obrigação durável após reload, farm-switch/RLS, gate OFF e rollback local. [Matriz, evidências e limites](./SANITARIO_C06_GESTO_HETEROGENEO_20261030.md). Fila/obrigações finais zero; gates OFF e cleanup próprio confirmado. Nenhum defeito de runtime novo; mudanças restritas ao harness e documentação.
+**C06: incremento de gesto heterogêneo CLOSED / INTEGRATED pelo PR #260.** Nove cenários reais locais comprovaram `PARTIAL_PER_OPERATION` para criação/reagendamento sanitários no mesmo gesto: efeito+recibo atômicos por RPC, resultados por operação, retry/lost ACK, ACK local abortado, obrigação durável após reload, farm-switch/RLS, gate OFF e rollback local. [Matriz, evidências e limites](./SANITARIO_C06_GESTO_HETEROGENEO_20261030.md). Fila/obrigações finais zero; gates OFF e cleanup próprio confirmado. Nenhum defeito de runtime novo; mudanças restritas ao harness e documentação.
 
 **F24.7 completa permanece NOT_STARTED.** O blocker stale fechado em 05/10 não é reaberto. PWA sem assets, kill real e dispositivo físico continuam não certificados. O incremento não cobre execução factual/estoque/carência nem todas as combinações de dependências/conflitos; os 38 diagnósticos TypeScript VF5 são dívida histórica, não recontada. Não há rollout, alteração remota ou autorização operacional decorrente desta evidência.
 
-**Próxima unidade recomendada:** revisão deste incremento; depois, delimitar dependências e conflito CAS dentro de um único gesto sanitário, com aceite e autorização próprios. Não reimplementar guards #245, reabrir C05 ou iniciar F24.7 completa. Curadoria e demais trilhas permanecem independentes.
+**C06/CAS — READY_FOR_REVIEW:** oito casos reais locais na baseline #260, 22 operações, 16 recibos únicos, conflitos sem stale writes e uma intenção conservadora sem alvo visível preservada. Patch mínimo impede rearmar dependentes de predecessor terminal conhecido; RED focal e 22 testes locais GREEN. Gates/flag OFF e zero recursos próprios após cleanup. [Matriz e evidências](./SANITARIO_C06_CAS_DEPENDENCIAS_20261030.md). Sem commit, push ou merge.
+
+**Próxima unidade recomendada:** revisar este patch e, em tarefa própria, compor execução factual sanitária com estoque, rejeição e replay. Não reimplementar guards #245, reabrir C05 ou iniciar F24.7 completa. Curadoria e demais trilhas permanecem independentes.
 
 ## F24.6A1-H — registro histórico da preparação (13/10/2026; superado pela integração)
 

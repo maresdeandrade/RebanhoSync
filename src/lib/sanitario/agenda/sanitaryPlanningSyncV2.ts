@@ -4,7 +4,7 @@ import {
   createSanitarioV2Identity,
   type SanitarioV2QueuedOperation,
 } from "@/lib/offline/sanitarioV2Cutover";
-import type { Operation } from "@/lib/offline/types";
+import type { Operation, SyncOperationResult } from "@/lib/offline/types";
 
 export type SanitaryPlanningSyncContextV2 = {
   projectRef: string;
@@ -152,6 +152,24 @@ function dependsOnPlan(
     revision <=
       Number(envelope.payload?.agenda?.metadata?.automationPlanRevision)
   );
+}
+
+export function findTerminalSanitaryPlanningDependencyV2(
+  op: Operation,
+  others: readonly Operation[],
+  results: readonly SyncOperationResult[],
+): string | undefined {
+  const envelope = planningEnvelope(op);
+  if (envelope.domain !== "sanitario_v2" || envelope.command !== "reschedule_agenda") return;
+  return others.find(other => {
+    const pending = planningEnvelope(other);
+    if (other.client_op_id === op.client_op_id || other.client_tx_id !== op.client_tx_id ||
+      pending.domain !== "sanitario_v2" || !envelope.fazenda_id || pending.fazenda_id !== envelope.fazenda_id ||
+      !["create_agenda", "reschedule_agenda"].includes(String(pending.command)) || !dependsOnAgenda(envelope, pending)) return false;
+    return results.some(result => result.op_id === other.client_op_id &&
+      (!result.client_op_id || result.client_op_id === other.client_op_id) &&
+      result.domain_op_id === other.domain_op_id && ["REJECTED", "CONFLICT"].includes(result.status));
+  })?.client_op_id;
 }
 
 // Wait for local predecessors; cross-device conflicts still use server CAS without rebase.

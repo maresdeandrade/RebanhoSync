@@ -25,7 +25,7 @@ import {
   STANDARD_EVENT_DETAIL_REMOTE_TABLES,
 } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
-import { hasPendingSanitaryPlanningDependencyV2, mapQueuedSanitaryPlanV2, queuedSanitaryPlanV2 } from "@/lib/sanitario/agenda/sanitaryPlanningSyncV2";
+import { findTerminalSanitaryPlanningDependencyV2, hasPendingSanitaryPlanningDependencyV2, mapQueuedSanitaryPlanV2, queuedSanitaryPlanV2 } from "@/lib/sanitario/agenda/sanitaryPlanningSyncV2";
 import { getAffectedStores, reapplyOpLocal, rollbackOpLocal } from "./ops";
 import { preservePendingAnimalDeletesAfterRollback } from "./animalDeleteRollback";
 import { sortOpsForSync } from "./syncOrder";
@@ -1037,7 +1037,10 @@ async function processSanitarioCanonicalResults(
       continue;
     }
 
-    if (result.status === "BLOCKED_DEPENDENCY") {
+    const terminalDependency = result.status === "BLOCKED_DEPENDENCY" && result.retryable !== true
+      ? findTerminalSanitaryPlanningDependencyV2(op, sentOps, canonicalResults)
+      : undefined;
+    if (result.status === "BLOCKED_DEPENDENCY" && !terminalDependency) {
       operationUpdates.set(op.client_op_id, {
         domain_op_id: result.domain_op_id ?? op.domain_op_id,
         sync_state: "BLOCKED_DEPENDENCY",
@@ -1049,6 +1052,7 @@ async function processSanitarioCanonicalResults(
     }
 
     terminalRejection = true;
+    if (terminalDependency) audits[audits.length - 1].local_reason_code = "SYNC_DEPENDENCY_TERMINAL";
     if (command === "apply_factual_core") {
       // Keep the immutable envelope for an explicit, identity-preserving retry.
       operationUpdates.set(op.client_op_id, {
@@ -1068,11 +1072,11 @@ async function processSanitarioCanonicalResults(
       reason_message:
         result.reason_message ?? `sanitario_v2 result: ${result.status}`,
       domain_op_id: result.domain_op_id,
-      result_status: result.status,
+      result_status: result.status === "BLOCKED_DEPENDENCY" ? "REJECTED" : result.status,
       current_revision: result.current_revision,
       canonical_status: result.canonical_status,
       canonical_entity_id: result.canonical_entity_id,
-      payload: buildMinimalRejectionPayload(result),
+      payload: { ...buildMinimalRejectionPayload(result), ...(terminalDependency ? { terminal_dependency_client_op_id: terminalDependency } : {}) },
       created_at: recordedAt,
     });
   }
