@@ -28,7 +28,7 @@ const child = (args, env) => new Promise(resolve => {
   task.on("close", code => resolve({ code, stdout, stderr }));
 });
 let db, edge, ownedNetwork;
-const c05 = ["--c05", "--c06", "--c06-cas"].some(flag => process.argv.includes(flag));
+const c05 = ["--c05", "--c06", "--c06-cas", "--c06-final"].some(flag => process.argv.includes(flag));
 const edgeDiagnostics = [];
 try {
   const dockerHost = execFileSync("docker", ["context", "inspect", "--format", "{{.Endpoints.docker.Host}}"], { encoding: "utf8", windowsHide: true }).trim();

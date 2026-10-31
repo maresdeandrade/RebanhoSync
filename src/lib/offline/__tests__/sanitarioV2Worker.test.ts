@@ -38,8 +38,9 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 
 import { db } from "../db";
 import { retryRejectedOperation } from "../ops";
+import { upsertReconciliationObligations } from "../reconciliationObligations";
 import { establishLocalOwnership } from "../ownership";
-import { pullSanitarioV2CutoverState } from "../pull";
+import { pullDataForFarm, pullSanitarioV2CutoverState } from "../pull";
 import {
   mapOperationForSync,
   processGesture,
@@ -158,6 +159,7 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    vi.mocked(pullDataForFarm).mockResolvedValue(undefined);
     vi.stubGlobal("fetch", vi.fn());
     await Promise.all([
       db.queue_gestures.clear(),
@@ -166,6 +168,7 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
       db.event_eventos.clear(),
       db.event_eventos_sanitario.clear(),
       db.state_insumo_movimentacoes.clear(),
+      db.state_insumo_lotes.clear(),
       db.local_ownership.clear(),
     ]);
     await establishLocalOwnership(ownershipSession(USER_ID));
@@ -180,6 +183,7 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
       db.event_eventos.clear(),
       db.event_eventos_sanitario.clear(),
       db.state_insumo_movimentacoes.clear(),
+      db.state_insumo_lotes.clear(),
       db.local_ownership.clear(),
     ]);
   });
@@ -402,6 +406,81 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
     expect(await loadGesture(gesture.client_tx_id)).toMatchObject({status:"DONE",sync_result:"APPLIED"});
     expect(await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).count()).toBe(0);
     expect(await db.event_eventos.get(eventId)).toMatchObject({payload:{dose:2}});
+  });
+
+  it("retém movimento terminal sem projeção falsa após fato confirmado e permite retry explícito só do movimento", async () => {
+    const { gesture, ops } = await seedGesture(["apply_factual_core"], "inventory-terminal-applied");
+    const eventId = "accepted-fact";
+    ops[0].record.payload = { event: { id: eventId } };
+    await db.queue_ops.put(ops[0]);
+    await db.event_eventos.put({ id: eventId, fazenda_id: FAZENDA_ID, dominio: "sanitario" } as never);
+    const movement: Operation = { client_op_id: "terminal-stock-op", client_tx_id: gesture.client_tx_id, op_order: 1,
+      table: "state_insumo_movimentacoes", action: "INSERT", record: { id: "terminal-stock", fazenda_id: FAZENDA_ID,
+        source_evento_id: eventId, tipo: "consumo_sanitario", insumo_lote_id: "stock-lot", quantidade_base: 2 }, created_at: gesture.created_at };
+    await db.queue_ops.add(movement);
+    await db.state_insumo_lotes.put({ id: "stock-lot", fazenda_id: FAZENDA_ID, saldo_atual_base: 100 } as never);
+    await db.state_insumo_movimentacoes.put(movement.record as never);
+    vi.mocked(pullDataForFarm).mockImplementation(async (_farm, tables, options) => {
+      if (!tables?.includes("insumo_lotes") || !options?.reconciliation) return;
+      const rows = { insumo_movimentacoes: [], insumo_lotes: [{ id: "stock-lot", fazenda_id: FAZENDA_ID, saldo_atual_base: 100 }] };
+      await options.reconciliation.select(rows);
+      await db.state_insumo_lotes.bulkPut(rows.insumo_lotes as never);
+    });
+    respondWith([{ op_id: ops[0].client_op_id, status: "APPLIED" },
+      { op_id: movement.client_op_id, status: "REJECTED", reason_code: "DB_57014" }]);
+    await processGesture(gesture);
+    expect(await db.queue_ops.get(ops[0].client_op_id)).toBeUndefined();
+    expect(await db.queue_ops.get(movement.client_op_id)).toMatchObject({ sync_state: "REJECTED", record: movement.record });
+    expect(await db.state_insumo_movimentacoes.get("terminal-stock")).toBeUndefined();
+    expect(await db.event_eventos.get(eventId)).toBeDefined();
+    expect(pullDataForFarm).toHaveBeenCalledWith(FAZENDA_ID, ["insumo_movimentacoes", "insumo_lotes"], expect.any(Object));
+    const rejection = await db.queue_rejections.filter(row => row.client_op_id === movement.client_op_id).first();
+    await retryRejectedOperation(rejection!);
+    expect(await db.state_insumo_movimentacoes.get("terminal-stock")).toBeDefined();
+    expect((await db.state_insumo_lotes.get("stock-lot"))?.saldo_atual_base).toBe(98);
+    respondWith([{ op_id: movement.client_op_id, status: "REJECTED", reason_code: "DB_57014" }]);
+    await processGesture(await loadGesture(gesture.client_tx_id));
+    expect(await db.queue_ops.get(movement.client_op_id)).toMatchObject({ sync_state: "REJECTED" });
+    expect(await db.state_insumo_movimentacoes.get("terminal-stock")).toBeUndefined();
+    expect(pullDataForFarm).toHaveBeenLastCalledWith(FAZENDA_ID, ["insumo_movimentacoes", "insumo_lotes"], expect.any(Object));
+    expect((await db.state_insumo_lotes.get("stock-lot"))?.saldo_atual_base).toBe(100);
+    await retryRejectedOperation(rejection!);
+    expect((await db.state_insumo_lotes.get("stock-lot"))?.saldo_atual_base).toBe(98);
+    respondWith([{ op_id: movement.client_op_id, status: "APPLIED" }]);
+    await processGesture(await loadGesture(gesture.client_tx_id));
+    const retryRequest = JSON.parse(String(vi.mocked(fetch).mock.calls[2][1]?.body));
+    expect(retryRequest.ops).toHaveLength(1);
+    expect(retryRequest.ops[0].client_op_id).toBe(movement.client_op_id);
+    expect((await loadGesture(gesture.client_tx_id)).status).toBe("DONE");
+    expect(await db.event_eventos.get(eventId)).toBeDefined();
+  });
+
+  it.each([{ committed: false, coalesced: false, lateAck: false }, { committed: true, coalesced: false, lateAck: false },
+    { committed: false, coalesced: true, lateAck: false }, { committed: false, coalesced: false, lateAck: true }])(
+    "reconciliação de rejeição preserva reserva: %j", async ({ committed, coalesced, lateAck }) => {
+    const { gesture, ops } = await seedGesture(["apply_factual_core"], `stock-reservation-${committed}`);
+    ops[0].record.payload = { event: { id: "accepted" } };
+    await db.queue_ops.put(ops[0]);
+    const rejected: Operation = { client_op_id: "failed-stock", client_tx_id: gesture.client_tx_id, op_order: 1,
+      table: "state_insumo_movimentacoes", action: "INSERT", record: { id: "failed-stock-row", fazenda_id: FAZENDA_ID,
+        source_evento_id: "accepted", tipo: "consumo_sanitario", insumo_lote_id: "shared-lot" }, created_at: gesture.created_at };
+    const pending: Operation = { ...rejected, client_op_id: "other-pending-stock", client_tx_id: "another-gesture",
+      record: { ...rejected.record, id: "pending-row", source_evento_id: "another-fact", quantidade_base: 2, client_op_id: "other-pending-stock" } };
+    await db.queue_ops.bulkAdd([rejected, pending]);
+    await db.state_insumo_movimentacoes.bulkPut([rejected.record, pending.record] as never);
+    if (coalesced) await upsertReconciliationObligations([{ fazendaId: FAZENDA_ID, scope: "factual", tables: ["animais"] }]);
+    respondWith([{ op_id: ops[0].client_op_id, status: "APPLIED" }, { op_id: rejected.client_op_id, status: "REJECTED" }]);
+    await processGesture(gesture);
+    const pull = vi.mocked(pullDataForFarm).mock.calls.find(([, tables]) => tables?.includes("insumo_lotes"));
+    const results = { insumo_lotes: [{ id: "shared-lot", fazenda_id: FAZENDA_ID, saldo_atual_base: committed ? 98 : 100 }],
+      insumo_movimentacoes: committed ? [pending.record] : [] };
+    if (lateAck) await db.queue_ops.delete(pending.client_op_id);
+    expect(pull?.[2]?.reconciliation).toBeDefined();
+    await pull![2]!.reconciliation!.select(results);
+    expect(results.insumo_lotes[0].saldo_atual_base).toBe(98);
+    if (lateAck) expect(await db.queue_ops.get(pending.client_op_id)).toBeUndefined();
+    else expect(await db.queue_ops.get(pending.client_op_id)).toMatchObject({ record: pending.record });
+    expect(await db.state_insumo_movimentacoes.get("pending-row")).toBeDefined();
   });
 
   it("reenvia somente movimento retryable após fato confirmado", async () => {

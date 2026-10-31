@@ -9,6 +9,7 @@ import { env } from "@/lib/env";
 import { supabase } from "@/lib/supabase";
 import type {
   Gesture,
+  InsumoMovimentacao,
   Operation,
   Rejection,
   SanitarioSyncV2Command,
@@ -41,6 +42,7 @@ import {
   pullSanitarioAgendaV2,
   pullSanitarioV2CutoverState,
   DEFAULT_REMOTE_TABLES,
+  type PullOptions,
 } from "./pull";
 import {
   deleteReconciliationObligationIfGenerationMatches,
@@ -572,6 +574,45 @@ function getReconciliationPullMode(fazendaId: string) {
   return getActiveFarmId() === fazendaId ? "replace" : "merge";
 }
 
+function unconfirmedSanitaryInventoryReservations(movements: InsumoMovimentacao[], confirmed: Set<unknown>) {
+  const reserved = new Map<string, number>();
+  for (const local of movements) {
+    if (local.tipo !== "consumo_sanitario" || local.deleted_at || confirmed.has(local.client_op_id)) continue;
+    if (!Number.isFinite(local.quantidade_base) || local.quantidade_base <= 0)
+      throw new Error("SANITARIO_INVENTORY_PENDING_QUANTITY_INVALID");
+    reserved.set(local.insumo_lote_id, (reserved.get(local.insumo_lote_id) ?? 0) + local.quantidade_base);
+  }
+  return reserved;
+}
+
+function sanitaryInventoryReservationReconciliation(fazendaId: string): NonNullable<PullOptions["reconciliation"]> {
+  return {
+    stores: ["state_insumo_movimentacoes"],
+    select: async (results) => {
+      const confirmed = new Set((results.insumo_movimentacoes ?? []).filter(isRecord).map(row => row.client_op_id));
+      // A concurrent ACK can remove its queue row after the HTTP snapshot.
+      // Persisted local movements survive ACK; use those effects, not queue presence.
+      const reserved = unconfirmedSanitaryInventoryReservations(
+        await db.state_insumo_movimentacoes.where("fazenda_id").equals(fazendaId).toArray(), confirmed);
+      for (const lot of (results.insumo_lotes ?? []).filter(isRecord)) {
+        const quantity = reserved.get(String(lot.id)) ?? 0;
+        lot.saldo_atual_base = Math.max(0, Number(lot.saldo_atual_base) - quantity);
+      }
+      return new Set<string>();
+    },
+    complete: async () => {},
+  };
+}
+
+async function pullFactualReconciliation(obligation: ReconciliationObligation) {
+  const tables = obligation.tables?.length ? obligation.tables : DEFAULT_REMOTE_TABLES;
+  const inventory = tables.includes("insumo_movimentacoes") && tables.includes("insumo_lotes");
+  await pullDataForFarm(obligation.fazenda_id,
+    inventory ? ["insumo_movimentacoes", ...tables.filter(table => table !== "insumo_movimentacoes")] : tables,
+    { mode: getReconciliationPullMode(obligation.fazenda_id),
+      ...(inventory ? { reconciliation: sanitaryInventoryReservationReconciliation(obligation.fazenda_id) } : {}) });
+}
+
 async function executeReconciliationForScope(
   obligation: ReconciliationObligation,
 ) {
@@ -581,13 +622,7 @@ async function executeReconciliationForScope(
       await reconcileMovementForFarm(fazendaId);
       return;
     case "factual":
-      await pullDataForFarm(
-        fazendaId,
-        obligation.tables && obligation.tables.length > 0
-          ? obligation.tables
-          : DEFAULT_REMOTE_TABLES,
-        { mode: getReconciliationPullMode(fazendaId) },
-      );
+      await pullFactualReconciliation(obligation);
       return;
     case "reproduction":
       await pullReproductionDiagnosisState(fazendaId);
@@ -979,6 +1014,7 @@ async function processSanitarioCanonicalResults(
     result: SyncOperationResult & { status: SanitarioSyncV2ResultStatus };
   }> = [];
   const operationUpdates = new Map<string, QueueOperationUpdate>();
+  const rejectedInventoryProjections: Operation[] = [];
   let terminalRejection = false;
 
   for (const result of canonicalResults) {
@@ -1096,7 +1132,13 @@ async function processSanitarioCanonicalResults(
         const rejectedFactualParent = matchedForReconcile.some(({op: parent, result: parentResult}) =>
           readSanitarioCommand(parent, parentResult) === "apply_factual_core" &&
           ["REJECTED", "CONFLICT"].includes(parentResult.status));
-        if (rejectedFactualParent) {
+        const appliedInventoryParent = op.table === "state_insumo_movimentacoes" && op.action === "INSERT" &&
+          op.record.tipo === "consumo_sanitario" && matchedForReconcile.some(({ op: parent, result: parentResult }) =>
+            readSanitarioCommand(parent, parentResult) === "apply_factual_core" && parentResult.status === "APPLIED" &&
+            isRecord(parent.record.payload) && isRecord(parent.record.payload.event) &&
+            parent.record.payload.event.id === op.record.source_evento_id);
+        if (appliedInventoryParent) rejectedInventoryProjections.push(op);
+        if (rejectedFactualParent || appliedInventoryParent) {
           operationUpdates.set(op.client_op_id, {
             sync_state: "REJECTED", next_attempt_at: undefined,
             blocked_reason: result.reason_code ?? `SYNC_MIXED_${result.status}`,
@@ -1149,6 +1191,7 @@ async function processSanitarioCanonicalResults(
       db.queue_ops,
       db.queue_rejections,
       db.sync_reconcile_obligations,
+      ...getAffectedStores(rejectedInventoryProjections),
     ],
     // fallow-ignore-next-line complexity
     async () => {
@@ -1163,6 +1206,13 @@ async function processSanitarioCanonicalResults(
             origins: [{ client_tx_id: gesture.client_tx_id,
               client_op_ids: matchedForReconcile.map(({ op }) => op.client_op_id) }] },
         ]);
+      }
+      if (rejectedInventoryProjections.length) {
+        // Read movements first: a concurrent commit can only reserve too much,
+        // never count a new movement against an older, pre-debit lot snapshot.
+        await upsertReconciliationObligations([{ fazendaId: gesture.fazenda_id, scope: "factual", tables: ["insumo_movimentacoes", "insumo_lotes"],
+          origins: [{ client_tx_id: gesture.client_tx_id, client_op_ids: rejectedInventoryProjections.map(op => op.client_op_id) }] }]);
+        for (const op of rejectedInventoryProjections) await rollbackOpLocal(op);
       }
 
       if (deleteIds.size > 0) {
@@ -1223,6 +1273,7 @@ async function processSanitarioCanonicalResults(
   );
   await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
 
+  if (ackCommitted && rejectedInventoryProjections.length) await drainReconciliationObligations(gesture.fazenda_id);
   await reconcileSanitarioV2Results(gesture.fazenda_id, matchedForReconcile);
   return true;
 }
@@ -1693,6 +1744,18 @@ export function mapOperationForSync(op: Operation, fazendaId: string): Record<st
   };
 }
 
+function genericFactualRefresh(operations: Operation[], rejected: Operation[]) {
+  const tables = new Set(operations.map(op => getRemoteTableName(op.table)));
+  const inventory = rejected.some(op => op.table === "state_insumo_movimentacoes" && op.record.tipo === "consumo_sanitario");
+  if (inventory) tables.add("insumo_lotes");
+  return { tables, inventory };
+}
+
+async function reconcileRejectedGenericTables(farmId: string, tables: string[], inventory: boolean) {
+  if (inventory) await drainReconciliationObligations(farmId);
+  else await pullDataForFarm(farmId, tables, { mode: getReconciliationPullMode(farmId) });
+}
+
 async function reconcileGenericOperationResults(
   gesture: Gesture,
   operations: Operation[],
@@ -1714,11 +1777,7 @@ async function reconcileGenericOperationResults(
     ...plan.retryable.map(({ op }) => op),
     ...plan.missing,
   ];
-  const factualRefreshTables = new Set<string>(
-    [...appliedOps, ...rejectedOps].map((operation) =>
-      getRemoteTableName(operation.table),
-    ),
-  );
+  const { tables: factualRefreshTables, inventory: rejectedSanitaryStock } = genericFactualRefresh([...appliedOps, ...rejectedOps], rejectedOps);
   if (
     plan.rejected.some(
       ({ result }) => result.reason_code === AGENDA_ALREADY_COMPLETED_REASON,
@@ -1841,9 +1900,7 @@ async function reconcileGenericOperationResults(
   );
   if (remoteTables.length > 0) {
     try {
-      await pullDataForFarm(gesture.fazenda_id, remoteTables, {
-        mode: getReconciliationPullMode(gesture.fazenda_id),
-      });
+      await reconcileRejectedGenericTables(gesture.fazenda_id, remoteTables, rejectedSanitaryStock);
     } catch (error) {
       console.warn(
         `[sync-worker] mixed-result pull failed for TX ${gesture.client_tx_id}:`,

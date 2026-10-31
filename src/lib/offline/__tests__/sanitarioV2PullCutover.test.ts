@@ -59,6 +59,26 @@ describe("sanitario v2 ordered pull", () => {
     ]);
   });
 
+  it.each([false, true])("reconciliação de estoque lê além de 1000 e falha antes do merge: erro=%s", async (failPage) => {
+    const rows = Array.from({ length: 1001 }, (_, i) => ({ id: String(i).padStart(4, "0"), fazenda_id: FARM_ID,
+      client_op_id: `stock-op-${i}`, tipo: "consumo_sanitario", quantidade_base: 1, insumo_lote_id: "stock-lot" }));
+    const ranges: number[][] = [];
+    vi.mocked(supabase.from).mockImplementation(() => {
+      let start = 0, end = 999;
+      const query = { select: () => query, eq: () => query, order: () => query,
+        range: (first: number, last: number) => { start = first; end = last; ranges.push([first, last]); return query; },
+        then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: rows.slice(start, end + 1),
+          error: failPage && start > 0 ? { message: "stock page unavailable" } : null }).then(resolve) };
+      return query as never;
+    });
+    const seen = vi.fn(async (data: Record<string, unknown[]>) => { expect(data.insumo_movimentacoes).toHaveLength(1001); return new Set<string>(); });
+    const pending = pullDataForFarm(FARM_ID, ["insumo_movimentacoes"], { mode: "merge",
+      reconciliation: { stores: [], select: seen, complete: async () => {} } });
+    if (failPage) { await expect(pending).rejects.toMatchObject({ message: "stock page unavailable" }); expect(await db.state_insumo_movimentacoes.count()).toBe(0); }
+    else { await pending; expect(await db.state_insumo_movimentacoes.count()).toBe(1001); }
+    expect(ranges).toEqual([[0, 999], [1000, 1999]]);
+  });
+
   it("protege plano e reagendamento pendentes durante reconnect e instala o remoto depois do ACK", async () => {
     const planOp = crypto.randomUUID(), scheduleOp = crypto.randomUUID(), tx = crypto.randomUUID();
     await db.state_fazenda_sanidade_config.put({ fazenda_id: FARM_ID, payload: { sanitary_agenda_automation_v2: { revision: 2 } } } as never);
