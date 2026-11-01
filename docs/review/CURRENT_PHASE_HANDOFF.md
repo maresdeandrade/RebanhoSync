@@ -1,6 +1,6 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-10-25
+Atualizado em: 2026-11-01
 Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED apenas no envelope reconnect 1k; produção não provisionada**
 Próxima fase: **Fase 24 — formalizar escopo e critérios para a proposta de inventário estático F24.6A2; nenhuma medição ou otimização iniciada nesta atualização**
 Baseline integrada consultada: `origin/main@20fd5c6fbd7cfbccf1d3db1446cf8a8e3fd60aaa`
@@ -24,6 +24,10 @@ Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
 ## Sanitário V2 — continuidade pós-F9 — 25/10/2026
+
+**Consolidação V3.1/V3.2 — 01/11/2026:** fundação A/B/C, contrato único 3, execução por subconjuntos e recovery implementados e homologados localmente. Jornada de 30 animais: três Eventos confirmados, 25 atendimentos, cinco pendências e Agenda aberta. Reabertura de aba sem API recupera somente identidade/fazenda previamente validadas; envio após reconexão exige revalidação remota de sessão e membership. Revogação preserva fato e operação pendentes sem consumo remoto. PR autorizado pelo PO; sem implantação, ativação de fazenda real ou autorização de merge. PWA totalmente desconectada, colaboração completa, fechamento gerencial e continuidade não homologados/implementados neste bloco. **BLQ-002/003 ABERTOS; GATE-03 BLOQUEADO.** [Evidência e limites](./evidence/SANITARIO_V31_V32_LOCAL_20261101.json). As notas de autorização de 30/10 abaixo são históricas.
+
+**Atualização exclusivamente documental — 30/10/2026:** [design da Agenda Sanitária V3 aprovado pelo PO](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md), sem implementação ou certificação. A decisão de fechamento offline está resolvida; as extensões técnicas e seus aceites estão nas [pendências existentes](./OPEN_REVIEW_ITEMS.md#agenda-sanitária-v3--pendências-técnicas-do-design-aprovado), com [sequência candidata](./MASTER_BACKLOG_EXECUTION_PLAN.md#incrementos-candidatos-da-agenda-sanitária-v3). Participação não decorre de consulta; irrecuperabilidade não autoriza fechamento forçado automático. **BLQ-002/003 abertos; GATE-03 bloqueado.** Não iniciar writing-plans, Etapa 3, runtime, backend ou rollout. Este vínculo não substitui a F24.6A2 do plano ativo, não reabre P0/I01/I02/I04 nem certifica por associação os recortes V2 descritos abaixo; novas decisões de design não são nova frente executada.
 
 **FATO CONFIRMADO:** F6–F9 pública `CLOSED / INTEGRATED` pelo PR #244 em `0e7f5137`, ancestral do baseline atual acima. Resultado, oito arquivos integrados, checks e limites no [último resultado](./LAST_PHASE_RESULT.md). Publicação histórica e integração Git são operações distintas; nenhuma nova operação de catálogo foi executada. Os relatórios F6–F9 e VF1–VF5 mantêm suas decisões históricas, sem serem reescritos como certificações atuais.
 

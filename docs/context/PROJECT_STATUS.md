@@ -1,6 +1,6 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-10-25
+Atualizado em: 2026-11-01
 Baseline integrada consultada: `origin/main@20fd5c6fbd7cfbccf1d3db1446cf8a8e3fd60aaa`
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no escopo certificado)**.
 Próxima fase de desenvolvimento: **Fase 24 — proposta de inventário F24.6A2; escopo e critérios devem ser formalizados antes do início**.
@@ -204,6 +204,10 @@ Validação final: 2.668 testes em 354 arquivos, lint, build, gates documentais,
 - retry/replay, rollback, atomicidade e isolamento por `fazenda_id` permanecem preservados.
 
 ## Estado sanitário consolidado
+
+**Consolidação V3.1/V3.2 — 01/11/2026:** fundação A/B/C, contrato único 3, execução por subconjuntos e recovery implementados e homologados localmente. Jornada de 30 animais: três Eventos confirmados, 25 atendimentos, cinco pendências e Agenda aberta. Reabertura de aba sem API recupera somente identidade/fazenda previamente validadas; envio após reconexão exige revalidação remota de sessão e membership. Revogação preserva fato e operação pendentes sem consumo remoto. PR autorizado pelo PO; sem implantação, ativação de fazenda real ou autorização de merge. PWA totalmente desconectada, colaboração completa, fechamento gerencial e continuidade não homologados/implementados neste bloco. **BLQ-002/003 ABERTOS; GATE-03 BLOQUEADO.** [Evidência e limites](../review/evidence/SANITARIO_V31_V32_LOCAL_20261101.json). As notas de autorização de 30/10 abaixo são históricas.
+
+**Governança de 30/10/2026:** [DESIGN V3 APROVADO PELO PRODUCT OWNER](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#autoridade-e-proveniência), formalizado no checkout `762226630fb54abbf9303d6e292be85fb28c9df2`. Múltiplos Eventos progressivos, colaboração, fechamento limitado ao estado conhecido e continuidade são decisões de design; não são capacidades V3 implementadas/certificadas. A política de fechamento offline está resolvida; [pendências técnicas](../review/OPEN_REVIEW_ITEMS.md#agenda-sanitária-v3--pendências-técnicas-do-design-aprovado) e [incrementos candidatos](../review/MASTER_BACKLOG_EXECUTION_PLAN.md#incrementos-candidatos-da-agenda-sanitária-v3) permanecem sem autorização de início. Participação operacional difere de visualização; participação irrecuperável exige procedimento excepcional futuro, sem fechamento forçado automático. **BLQ-002/003 abertos; UX-DISCOVERY-02 GATE-03 BLOQUEADO; implementação V3 não autorizada.** Esta atualização é documental: não muda as baselines de certificação, o estado técnico F24 ou rollout dos snapshots abaixo.
 
 - Agenda Sanitária v2 representa intenção/tarefa futura.
 - Evento sanitário representa fato histórico executado.
