@@ -10,6 +10,7 @@ import type {
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import {
   buildSanitaryProtocolWindowV2,
+  loadSanitaryProtocolWindowSourceV2,
   createGroupedManualSanitaryAgendasV2,
   type SanitaryProtocolWindowSourceV2,
 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
@@ -1172,4 +1173,13 @@ describe("sanitaryProtocolWindowsV2", () => {
     expect(result.rows.find((row) => row.animalId === "female")).toMatchObject({ status: "not_yet_eligible", canSelect: false });
   });
 
+
+  it("labels canonical remote Agenda facts and unknown withdrawal without asserting external history or absence",async()=>{
+    await seedPlanningSource();
+    await db.event_eventos.put({id:"v32-remote",fazenda_id:"farm-1",dominio:"sanitario",occurred_at:"2026-10-31T12:00:00Z",source_task_id:null,source_sanitario_agenda_v2_id:"agenda-v32",sanitario_v3_confirmation:"confirmed",payload:{animal_ids:["animal-1"]}} as never);
+    await db.event_eventos_sanitario.put({evento_id:"v32-remote",fazenda_id:"farm-1",tipo:"vacinacao",produto:"Fixture",payload:{withdrawal:{reason:"operational_withdrawal_snapshot",rule_snapshot:{results:[{state:"unknown",reason:"no_applicable_rule"}]}}}} as never);
+    const result=await loadSanitaryProtocolWindowSourceV2("farm-1");
+    const event=result.executedEvents.find(e=>e.eventId==="v32-remote");
+    expect(event?.originLabel).toBe("agenda sanit\u00e1ria");expect(event?.withdrawalLabel).toBe("sem regra");
+  });
 });

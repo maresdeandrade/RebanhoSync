@@ -155,6 +155,10 @@ function readSnapshotString(snapshot: unknown, key: string): string | null {
 
 function formatSanitaryEventDetail(detail: EventoSanitario): string {
   const product = detail.produto_nome_snapshot ?? detail.produto ?? detail.tipo;
+  if (detail.sanitario_v3_confirmation === "pending")
+    return `${product} · Declaração local aguardando reconhecimento; efeitos ainda não confirmados.`;
+  if (detail.sanitario_v3_confirmation === "collision")
+    return `${product} · Declaração em conflito; nenhum segundo atendimento reconhecido.`;
   const stockLot = detail.estoque_lote_codigo_snapshot
     ? `lote ${detail.estoque_lote_codigo_snapshot}`
     : detail.estoque_lote_id

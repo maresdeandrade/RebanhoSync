@@ -104,7 +104,7 @@ export function buildRescheduleAgendaV2(
   const identity = createSanitarioV2Identity();
   return {
     domain: "sanitario_v2",
-    contract_version: 2,
+    contract_version: 3,
     command: "reschedule_agenda",
     fazenda_id: fazendaId,
     client_op_id: identity.clientOpId,

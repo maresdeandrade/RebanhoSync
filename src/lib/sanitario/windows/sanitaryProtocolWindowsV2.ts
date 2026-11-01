@@ -49,9 +49,18 @@ import {
   type SanitaryPlanningKindV2,
 } from "../agenda/sanitaryPlanningPolicyV2";
 import { identifySanitaryMultiProtocolGroupsV2 } from "../preview/sanitaryMultiProtocolPlanningV2";
-import { readSanitaryAutomationPlanV2, resolveSanitaryAutomationRuleV2 } from "../agenda/sanitaryAutomationPlanV2";
-import { sanitaryAutomaticIdentityV2, suppressedSanitaryAutomaticIntentV2 } from "../agenda/sanitaryAutomaticIdentityV2";
-import { sanitaryContextualPlanningBlockersV2, type SanitaryRuleContextDetailsV2 } from "../agenda/sanitaryContextualPlanningV2";
+import {
+  readSanitaryAutomationPlanV2,
+  resolveSanitaryAutomationRuleV2,
+} from "../agenda/sanitaryAutomationPlanV2";
+import {
+  sanitaryAutomaticIdentityV2,
+  suppressedSanitaryAutomaticIntentV2,
+} from "../agenda/sanitaryAutomaticIdentityV2";
+import {
+  sanitaryContextualPlanningBlockersV2,
+  type SanitaryRuleContextDetailsV2,
+} from "../agenda/sanitaryContextualPlanningV2";
 import { isSanitaryClassSchemeV2 } from "../agenda/sanitaryClassSchemeV2";
 import { resolveSanitaryRabiesRegionalContextV2 } from "../agenda/sanitaryRabiesRegionalContextV2";
 
@@ -269,17 +278,25 @@ function buildCentralExecutedEvents(input: {
   catalog: SanitaryProtocolCatalogReadModelV2;
   fazendaId: string;
 }): SanitaryCentralExecutedEventV2[] {
-  const detailsByEventId = new Map(input.details.map((detail) => [detail.evento_id, detail]));
-  const animalsById = new Map(input.animals.map((animal) => [animal.id, animal]));
+  const detailsByEventId = new Map(
+    input.details.map((detail) => [detail.evento_id, detail]),
+  );
+  const animalsById = new Map(
+    input.animals.map((animal) => [animal.id, animal]),
+  );
   const lotsById = new Map(input.lots.map((lot) => [lot.id, lot]));
-  const protocolsById = new Map(input.catalog.protocols.map((protocol) => [protocol.id, protocol]));
+  const protocolsById = new Map(
+    input.catalog.protocols.map((protocol) => [protocol.id, protocol]),
+  );
 
   return input.events
     .filter(
       (event) =>
         event.fazenda_id === input.fazendaId &&
         event.dominio === "sanitario" &&
-        !event.deleted_at,
+        !event.deleted_at &&
+        (event.sanitario_v3_confirmation == null ||
+          event.sanitario_v3_confirmation === "confirmed"),
     )
     .map((event): SanitaryCentralExecutedEventV2 | null => {
       const detail = detailsByEventId.get(event.id);
@@ -287,17 +304,21 @@ function buildCentralExecutedEvents(input: {
       const item = resolveCentralItem({ detail, catalog: input.catalog });
       const protocol = item ? protocolsById.get(item.protocolId) : null;
       const animalIds = resolveEventAnimalIds(event);
-      const firstAnimal = animalIds.length === 1 ? animalsById.get(animalIds[0]) : null;
+      const firstAnimal =
+        animalIds.length === 1 ? animalsById.get(animalIds[0]) : null;
       const lot = event.lote_id ? lotsById.get(event.lote_id) : null;
       const productPayload = readRecord(detail.payload.product);
       const doseLabel =
         detail.dose_quantidade && detail.dose_unidade
           ? `${detail.dose_quantidade} ${detail.dose_unidade}`
           : "Dose não informada";
+      const withdrawalResults=readRecord(readRecord(detail.payload.withdrawal).rule_snapshot).results;
+      const unknownWithdrawal=Array.isArray(withdrawalResults) && withdrawalResults.some(result=>["unknown","ambiguous"].includes(String(readRecord(result).state)));
       const withdrawalLabel =
         detail.carencia_carne_ate || detail.carencia_leite_ate
           ? "gerada"
-          : readString(readRecord(detail.payload.withdrawal), "reason") === "missing_explicit_rule"
+          : unknownWithdrawal || readString(readRecord(detail.payload.withdrawal), "reason") ===
+              "missing_explicit_rule"
             ? "sem regra"
             : "não aplicável";
 
@@ -305,11 +326,15 @@ function buildCentralExecutedEvents(input: {
         eventId: event.id,
         executedAt: event.occurred_at,
         protocolLabel: protocol?.name ?? "Protocolo sanitário",
-        itemLabel: item ? formatSanitaryProtocolItemLabelV2(item.logicalItemKey) : "Item sanitário",
+        itemLabel: item
+          ? formatSanitaryProtocolItemLabelV2(item.logicalItemKey)
+          : "Item sanitário",
         animalLabel:
           animalIds.length > 1
             ? `${animalIds.length} animais`
-            : firstAnimal?.nome?.trim() || firstAnimal?.identificacao || "Animal não informado",
+            : firstAnimal?.nome?.trim() ||
+              firstAnimal?.identificacao ||
+              "Animal não informado",
         animalCount: animalIds.length,
         lotLabel: lot?.nome ?? "Sem lote",
         productLabel:
@@ -319,8 +344,11 @@ function buildCentralExecutedEvents(input: {
           "Produto não informado",
         doseLabel,
         routeLabel: detail.via_aplicacao ?? "Via não informada",
-        responsibleLabel: detail.responsavel_nome ?? "Responsável não informado",
-        originLabel: event.source_task_id ? "agenda sanitária" : "histórico externo",
+        responsibleLabel:
+          detail.responsavel_nome ?? "Responsável não informado",
+        originLabel: event.source_sanitario_agenda_v2_id || event.source_task_id
+          ? "agenda sanitária"
+          : "histórico externo",
         stockLabel: detail.estoque_lote_id ? "com baixa" : "sem baixa",
         withdrawalLabel,
         recordType: "executed_event",
@@ -371,40 +399,112 @@ function buildActiveAgendaIndex(source: SanitaryProtocolWindowSourceV2) {
   return index;
 }
 
-function itemVersionPlanningBlockers(source: SanitaryProtocolWindowSourceV2, item: SanitaryProtocolItemV2ReadModel, animal: Animal, evaluatedAt: string): string[] {
+function itemVersionPlanningBlockers(
+  source: SanitaryProtocolWindowSourceV2,
+  item: SanitaryProtocolItemV2ReadModel,
+  animal: Animal,
+  evaluatedAt: string,
+): string[] {
   const blockers: string[] = [];
-  if (source.catalog.items.some((candidate) => candidate.protocolId === item.protocolId && candidate.logicalItemKey === item.logicalItemKey && candidate.status === "active" && candidate.version > item.version)) {
-    blockers.push("Versão substituída por item ativo mais recente. Atualize a seleção.");
+  if (
+    source.catalog.items.some(
+      (candidate) =>
+        candidate.protocolId === item.protocolId &&
+        candidate.logicalItemKey === item.logicalItemKey &&
+        candidate.status === "active" &&
+        candidate.version > item.version,
+    )
+  ) {
+    blockers.push(
+      "Versão substituída por item ativo mais recente. Atualize a seleção.",
+    );
   }
-  if (sanitaryPlanningKindV2(item) !== "aplicacao_esquema_definido" || isSanitaryClassSchemeV2(item)) return blockers;
-  if (!hasCommercialIdentity(source, item)) blockers.push("Produto comercial/formulação do esquema ainda sem identidade comprovada no catálogo.");
-  if (!hasPlanningSpeciesAuthorization(source, item, animal, evaluatedAt)) blockers.push("Esquema exige autorização explícita do produto para a espécie, sexo e idade do animal.");
+  if (
+    sanitaryPlanningKindV2(item) !== "aplicacao_esquema_definido" ||
+    isSanitaryClassSchemeV2(item)
+  )
+    return blockers;
+  if (!hasCommercialIdentity(source, item))
+    blockers.push(
+      "Produto comercial/formulação do esquema ainda sem identidade comprovada no catálogo.",
+    );
+  if (!hasPlanningSpeciesAuthorization(source, item, animal, evaluatedAt))
+    blockers.push(
+      "Esquema exige autorização explícita do produto para a espécie, sexo e idade do animal.",
+    );
   return blockers;
 }
 
-function hasCommercialIdentity(source: SanitaryProtocolWindowSourceV2, item: SanitaryProtocolItemV2ReadModel) {
-  return source.products?.some((product) => product.id === item.productId && product.status_curatorial === "ativo" && !product.deleted_at && !!product.nome_comercial && !!product.registro_numero && !!product.principio_ativo);
+function hasCommercialIdentity(
+  source: SanitaryProtocolWindowSourceV2,
+  item: SanitaryProtocolItemV2ReadModel,
+) {
+  return source.products?.some(
+    (product) =>
+      product.id === item.productId &&
+      product.status_curatorial === "ativo" &&
+      !product.deleted_at &&
+      !!product.nome_comercial &&
+      !!product.registro_numero &&
+      !!product.principio_ativo,
+  );
 }
 
-function hasPlanningSpeciesAuthorization(source: SanitaryProtocolWindowSourceV2, item: SanitaryProtocolItemV2ReadModel, animal: Animal, evaluatedAt: string) {
-  return source.productSpeciesAuthorizations?.some((entry) => entry.product_id === item.productId && entry.species_code === animal.especie && !entry.deleted_at && ["SIM_BULA", "SIM_NORMA"].includes(entry.authorization_status) && entry.aptitude === "all" && compatiblePlanningSex(entry.sexo, animal.sexo) && compatiblePlanningAge(entry, animal, evaluatedAt));
+function hasPlanningSpeciesAuthorization(
+  source: SanitaryProtocolWindowSourceV2,
+  item: SanitaryProtocolItemV2ReadModel,
+  animal: Animal,
+  evaluatedAt: string,
+) {
+  return source.productSpeciesAuthorizations?.some(
+    (entry) =>
+      entry.product_id === item.productId &&
+      entry.species_code === animal.especie &&
+      !entry.deleted_at &&
+      ["SIM_BULA", "SIM_NORMA"].includes(entry.authorization_status) &&
+      entry.aptitude === "all" &&
+      compatiblePlanningSex(entry.sexo, animal.sexo) &&
+      compatiblePlanningAge(entry, animal, evaluatedAt),
+  );
 }
 
-function compatiblePlanningAge(entry: SanitarioProdutoEspecieAutorizacaoLocalV2, animal: Animal, evaluatedAt: string) {
+function compatiblePlanningAge(
+  entry: SanitarioProdutoEspecieAutorizacaoLocalV2,
+  animal: Animal,
+  evaluatedAt: string,
+) {
   if (entry.idade_min_dias == null && entry.idade_max_dias == null) return true;
   const birth = new Date(animal.data_nascimento ?? "").getTime();
-  const days = Math.floor((new Date(evaluatedAt).getTime() - birth) / 86_400_000);
-  return Number.isFinite(days) && days >= (entry.idade_min_dias ?? 0) && days <= (entry.idade_max_dias ?? Infinity);
+  const days = Math.floor(
+    (new Date(evaluatedAt).getTime() - birth) / 86_400_000,
+  );
+  return (
+    Number.isFinite(days) &&
+    days >= (entry.idade_min_dias ?? 0) &&
+    days <= (entry.idade_max_dias ?? Infinity)
+  );
 }
 
 function compatiblePlanningSex(authorized: string | null, actual: SexoEnum) {
   if (!authorized) return true;
-  return (actual === "F" ? ["F", "femea", "fêmea"] : ["M", "macho"]).includes(authorized);
+  return (actual === "F" ? ["F", "femea", "fêmea"] : ["M", "macho"]).includes(
+    authorized,
+  );
 }
 
-function itemEvaluationCatalog(catalog: SanitaryProtocolCatalogReadModelV2, selected: SanitaryProtocolItemV2ReadModel) {
-  return { ...catalog, items: catalog.items.filter((entry) =>
-    entry.protocolId !== selected.protocolId || entry.logicalItemKey !== selected.logicalItemKey || entry.id === selected.id) };
+function itemEvaluationCatalog(
+  catalog: SanitaryProtocolCatalogReadModelV2,
+  selected: SanitaryProtocolItemV2ReadModel,
+) {
+  return {
+    ...catalog,
+    items: catalog.items.filter(
+      (entry) =>
+        entry.protocolId !== selected.protocolId ||
+        entry.logicalItemKey !== selected.logicalItemKey ||
+        entry.id === selected.id,
+    ),
+  };
 }
 
 export function buildSanitaryProtocolWindowV2(input: {
@@ -467,10 +567,21 @@ export function buildSanitaryProtocolWindowV2(input: {
               ? true
               : null,
           managementContext: operationalContext.management,
-          maternalVaccination: readMaternalVaccinationEvidenceV2({ motherId: animal.mae_id, birthDate: animal.data_nascimento,
-            item, history: input.source.executedHistory }) ?? operationalContext.maternalVaccinationsByAnimalId?.[animal.id],
-          rabiesManualPlanning: (input.generationMode ?? "manual") === "manual" &&
-            (item.snapshotTemplate.metadata as Record<string, unknown> | undefined)?.catalog_review_scope === "manual_planning",
+          maternalVaccination:
+            readMaternalVaccinationEvidenceV2({
+              motherId: animal.mae_id,
+              birthDate: animal.data_nascimento,
+              item,
+              history: input.source.executedHistory,
+            }) ??
+            operationalContext.maternalVaccinationsByAnimalId?.[animal.id],
+          rabiesManualPlanning:
+            (input.generationMode ?? "manual") === "manual" &&
+            (
+              item.snapshotTemplate.metadata as
+                | Record<string, unknown>
+                | undefined
+            )?.catalog_review_scope === "manual_planning",
         },
         catalog: itemEvaluationCatalog(input.source.catalog, item),
         executedHistory: historyByAnimal.has(animal.id)
@@ -493,10 +604,25 @@ export function buildSanitaryProtocolWindowV2(input: {
         input.generationMode,
       );
       const planningKind = sanitaryPlanningKindV2(item);
-      planningBlockers.push(...itemVersionPlanningBlockers(input.source, item, animal, input.evaluatedAt));
-      planningBlockers.push(...sanitaryContextualPlanningBlockersV2({ item, context: operationalContext,
-        farmUf: input.source.farmUf, fazendaId: input.source.fazendaId, animalId: animal.id,
-        animalBirthDate: animal.data_nascimento, evaluatedAt: input.evaluatedAt }));
+      planningBlockers.push(
+        ...itemVersionPlanningBlockers(
+          input.source,
+          item,
+          animal,
+          input.evaluatedAt,
+        ),
+      );
+      planningBlockers.push(
+        ...sanitaryContextualPlanningBlockersV2({
+          item,
+          context: operationalContext,
+          farmUf: input.source.farmUf,
+          fazendaId: input.source.fazendaId,
+          animalId: animal.id,
+          animalBirthDate: animal.data_nascimento,
+          evaluatedAt: input.evaluatedAt,
+        }),
+      );
       const itemBlocked =
         result.blockers.length > 0 ||
         planningBlockers.length > 0 ||
@@ -527,9 +653,19 @@ export function buildSanitaryProtocolWindowV2(input: {
         itemLabel: formatSanitaryProtocolItemLabelV2(item.logicalItemKey),
         status: result.status,
         reason: result.reasons[0] ?? "Sem motivo adicional informado.",
-        warnings: protocol.familyCode === "raiva_herbivoros" ? [...result.warnings,
-          resolveSanitaryRabiesRegionalContextV2({ protocol, config: input.source.farmConfig, fazendaId: input.source.fazendaId,
-            municipality: input.source.farmMunicipality, evaluatedAt: input.evaluatedAt }).explanation] : result.warnings,
+        warnings:
+          protocol.familyCode === "raiva_herbivoros"
+            ? [
+                ...result.warnings,
+                resolveSanitaryRabiesRegionalContextV2({
+                  protocol,
+                  config: input.source.farmConfig,
+                  fazendaId: input.source.fazendaId,
+                  municipality: input.source.farmMunicipality,
+                  evaluatedAt: input.evaluatedAt,
+                }).explanation,
+              ]
+            : result.warnings,
         blockers: [...result.blockers, ...planningBlockers],
         documentaryPending: result.documentaryPending,
         documentaryPendingReasons: result.documentaryPendingReasons,
@@ -777,10 +913,27 @@ function rejectDuplicatePhysicalApplication(
   }
 }
 
-export function sanitaryPlanningApplicationExclusionV2(source: SanitaryProtocolWindowSourceV2, row: SanitaryProtocolWindowRowV2, plannedFor: string, context: SanitaryOperationalContextV2): string | null {
+export function sanitaryPlanningApplicationExclusionV2(
+  source: SanitaryProtocolWindowSourceV2,
+  row: SanitaryProtocolWindowRowV2,
+  plannedFor: string,
+  context: SanitaryOperationalContextV2,
+): string | null {
   const item = source.catalog.items.find((entry) => entry.id === row.itemId)!;
-  try { rejectDuplicatePhysicalApplication(source, item, [row], plannedFor, context); return null; }
-  catch (error) { return error instanceof Error ? error.message : "Revisar cobertura do produto."; }
+  try {
+    rejectDuplicatePhysicalApplication(
+      source,
+      item,
+      [row],
+      plannedFor,
+      context,
+    );
+    return null;
+  } catch (error) {
+    return error instanceof Error
+      ? error.message
+      : "Revisar cobertura do produto.";
+  }
 }
 
 type GroupedSanitaryPlanningInputV2 = {
@@ -794,27 +947,62 @@ type GroupedSanitaryPlanningInputV2 = {
   planRevision?: number;
 };
 
-function authorizeAutomaticPlanInput(input: GroupedSanitaryPlanningInputV2, source: SanitaryProtocolWindowSourceV2) {
+function authorizeAutomaticPlanInput(
+  input: GroupedSanitaryPlanningInputV2,
+  source: SanitaryProtocolWindowSourceV2,
+) {
   if (input.planRevision === undefined) return input;
   const plan = readSanitaryAutomationPlanV2(source.farmConfig);
-  if (!plan?.enabled || plan.revision !== input.planRevision) throw new Error("Plano desativado ou alterado. Reavalie.");
+  if (!plan?.enabled || plan.revision !== input.planRevision)
+    throw new Error("Plano desativado ou alterado. Reavalie.");
   assertAutomaticSelection(input, source, plan.rules);
   const context = plan.ruleContexts?.[input.rows[0].itemId] ?? plan.context;
-  return { ...input, confirmed: true, generationMode: "automatic" as const, operationalContext: context, createdBy: plan.confirmedBy };
+  return {
+    ...input,
+    confirmed: true,
+    generationMode: "automatic" as const,
+    operationalContext: context,
+    createdBy: plan.confirmedBy,
+  };
 }
 
-function assertAutomaticSelection(input: GroupedSanitaryPlanningInputV2, source: SanitaryProtocolWindowSourceV2, rules: ReturnType<typeof readSanitaryAutomationPlanV2>["rules"]) {
-  const itemIds = new Set(input.rows.map((row) => `${row.protocolId}|${row.itemId}`));
-  if (itemIds.size !== 1) throw new Error("Reavalie cada regra automática com seu contexto específico.");
+function assertAutomaticSelection(
+  input: GroupedSanitaryPlanningInputV2,
+  source: SanitaryProtocolWindowSourceV2,
+  rules: ReturnType<typeof readSanitaryAutomationPlanV2>["rules"],
+) {
+  const itemIds = new Set(
+    input.rows.map((row) => `${row.protocolId}|${row.itemId}`),
+  );
+  if (itemIds.size !== 1)
+    throw new Error(
+      "Reavalie cada regra automática com seu contexto específico.",
+    );
   const first = input.rows[0];
-  const rule = rules.find((entry) => entry.itemId === first.itemId && entry.protocolId === first.protocolId);
-  if (!rule || !resolveSanitaryAutomationRuleV2(source.catalog, rule)) throw new Error("Regra fora do plano ou versão alterada.");
+  const rule = rules.find(
+    (entry) =>
+      entry.itemId === first.itemId && entry.protocolId === first.protocolId,
+  );
+  if (!rule || !resolveSanitaryAutomationRuleV2(source.catalog, rule))
+    throw new Error("Regra fora do plano ou versão alterada.");
 }
 
-function suppressedAutomaticRow(input: GroupedSanitaryPlanningInputV2, source: SanitaryProtocolWindowSourceV2, row: SanitaryProtocolWindowRowV2) {
+function suppressedAutomaticRow(
+  input: GroupedSanitaryPlanningInputV2,
+  source: SanitaryProtocolWindowSourceV2,
+  row: SanitaryProtocolWindowRowV2,
+) {
   if (input.planRevision === undefined) return false;
-  const identity = sanitaryAutomaticIdentityV2(source, row, input.plannedFor, input.operationalContext);
-  return identity.completed || suppressedSanitaryAutomaticIntentV2(source, row, identity.key);
+  const identity = sanitaryAutomaticIdentityV2(
+    source,
+    row,
+    input.plannedFor,
+    input.operationalContext,
+  );
+  return (
+    identity.completed ||
+    suppressedSanitaryAutomaticIntentV2(source, row, identity.key)
+  );
 }
 
 function existingAgendaForRow(
@@ -834,18 +1022,21 @@ function existingAgendaForRow(
   );
 }
 
-function assertFreshPlanningRow(row: SanitaryProtocolWindowRowV2, fresh: SanitaryProtocolWindowRowV2 | undefined): asserts fresh is SanitaryProtocolWindowRowV2 {
-    if (!fresh || fresh.lotId !== row.lotId) {
-      throw new Error(
-        "Seleção desatualizada ou fora da fazenda. Atualize as sugestões.",
-      );
-    }
-    if (row.planningKind && fresh.planningKind !== row.planningKind) {
-      throw new Error(
-        "Tipo de Agenda alterado. Selecione e confirme explicitamente o novo esquema.",
-      );
-    }
+function assertFreshPlanningRow(
+  row: SanitaryProtocolWindowRowV2,
+  fresh: SanitaryProtocolWindowRowV2 | undefined,
+): asserts fresh is SanitaryProtocolWindowRowV2 {
+  if (!fresh || fresh.lotId !== row.lotId) {
+    throw new Error(
+      "Seleção desatualizada ou fora da fazenda. Atualize as sugestões.",
+    );
   }
+  if (row.planningKind && fresh.planningKind !== row.planningKind) {
+    throw new Error(
+      "Tipo de Agenda alterado. Selecione e confirme explicitamente o novo esquema.",
+    );
+  }
+}
 
 function revalidatePlanningSelection(
   input: GroupedSanitaryPlanningInputV2,
@@ -888,9 +1079,18 @@ function revalidatePlanningSelection(
   return { selected, reused };
 }
 
-function planningTargets(input: GroupedSanitaryPlanningInputV2, rows: SanitaryProtocolWindowRowV2[], command: SanitaryAgendaMaterializationCommand) {
+function planningTargets(
+  input: GroupedSanitaryPlanningInputV2,
+  rows: SanitaryProtocolWindowRowV2[],
+  command: SanitaryAgendaMaterializationCommand,
+) {
   const first = rows[0];
-  if (input.planRevision !== undefined) return rows.map((row) => ({ scope: "animal" as const, id: row.animalId, fazendaId: input.fazendaId }));
+  if (input.planRevision !== undefined)
+    return rows.map((row) => ({
+      scope: "animal" as const,
+      id: row.animalId,
+      fazendaId: input.fazendaId,
+    }));
   const target = first.lotId
     ? {
         scope: "lote" as const,
@@ -913,12 +1113,30 @@ function planningTargets(input: GroupedSanitaryPlanningInputV2, rows: SanitaryPr
         id: row.animalId,
         fazendaId: input.fazendaId,
       }));
- }
+}
 
-function automaticAgendaIdentity(input: GroupedSanitaryPlanningInputV2, source: SanitaryProtocolWindowSourceV2, row: SanitaryProtocolWindowRowV2) {
-  if (input.planRevision === undefined) return { metadata: {}, clientOpId: clientOperationId() };
-  const identity = sanitaryAutomaticIdentityV2(source, row, input.plannedFor, input.operationalContext);
-  return { metadata: { automationKey: identity.key, automationWindowKey: identity.windowKey, automationPlanRevision: input.planRevision, planningDedupKey: identity.key }, clientOpId: identity.key };
+function automaticAgendaIdentity(
+  input: GroupedSanitaryPlanningInputV2,
+  source: SanitaryProtocolWindowSourceV2,
+  row: SanitaryProtocolWindowRowV2,
+) {
+  if (input.planRevision === undefined)
+    return { metadata: {}, clientOpId: clientOperationId() };
+  const identity = sanitaryAutomaticIdentityV2(
+    source,
+    row,
+    input.plannedFor,
+    input.operationalContext,
+  );
+  return {
+    metadata: {
+      automationKey: identity.key,
+      automationWindowKey: identity.windowKey,
+      automationPlanRevision: input.planRevision,
+      planningDedupKey: identity.key,
+    },
+    clientOpId: identity.key,
+  };
 }
 
 async function persistPlanningCommand(
@@ -945,7 +1163,11 @@ async function persistPlanningCommand(
   );
   const targets = planningTargets(input, rows, command);
   for (const agendaTarget of targets) {
-    const identity = automaticAgendaIdentity(input, source, rows.find((row) => row.animalId === agendaTarget.id) ?? first);
+    const identity = automaticAgendaIdentity(
+      input,
+      source,
+      rows.find((row) => row.animalId === agendaTarget.id) ?? first,
+    );
     results.push(
       await createManualSanitaryAgendaV2(
         {
@@ -960,8 +1182,13 @@ async function persistPlanningCommand(
             generationMode: input.generationMode ?? "manual",
             planningEvidence: {
               itemVersion: item.version,
-              planningScope: (item.snapshotTemplate.metadata as Record<string, unknown> | undefined)?.planning_scope,
-              executionProductPolicy: item.snapshotTemplate.executionProductPolicy,
+              planningScope: (
+                item.snapshotTemplate.metadata as
+                  | Record<string, unknown>
+                  | undefined
+              )?.planning_scope,
+              executionProductPolicy:
+                item.snapshotTemplate.executionProductPolicy,
               sourceRefsByField: item.sourceRefsByField,
               operationalWindowRule: item.operationalWindowRule,
               boosterRule: item.boosterRule,
@@ -1032,7 +1259,10 @@ export async function createGroupedManualSanitaryAgendasV2(
     async () => {
       const source = await readSanitaryProtocolWindowSourceV2(input.fazendaId);
       const authorizedInput = authorizeAutomaticPlanInput(input, source);
-      const { selected, reused } = revalidatePlanningSelection(authorizedInput, source);
+      const { selected, reused } = revalidatePlanningSelection(
+        authorizedInput,
+        source,
+      );
       const materialization = buildSanitaryWindowPlanningPreviewV2({
         rows: selected,
         plannedFor: input.plannedFor,
@@ -1042,7 +1272,12 @@ export async function createGroupedManualSanitaryAgendasV2(
       const results = [...reused.values()];
       for (const command of materialization.commands) {
         results.push(
-          ...(await persistPlanningCommand(authorizedInput, source, selected, command)),
+          ...(await persistPlanningCommand(
+            authorizedInput,
+            source,
+            selected,
+            command,
+          )),
         );
       }
       return results;

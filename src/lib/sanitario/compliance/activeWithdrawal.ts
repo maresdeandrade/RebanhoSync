@@ -8,6 +8,7 @@
 import type { OfficialItemWithdrawal } from "./withdrawalPeriod";
 
 export interface SanitaryEventForWithdrawal {
+  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | null;
   animal_id: string | null;
   fazenda_id: string;
   occurred_at: string;
@@ -55,7 +56,12 @@ export function computeActiveWithdrawals(
   const results: ActiveWithdrawal[] = [];
 
   for (const event of events) {
-    if (!event.animal_id) continue;
+    if (
+      !event.animal_id ||
+      (event.sanitario_v3_confirmation != null &&
+        event.sanitario_v3_confirmation !== "confirmed")
+    )
+      continue;
     if (event.deleted_at) continue;
     if (event.detail_deleted_at) continue;
 

@@ -5,10 +5,12 @@
  */
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+const membershipGate = vi.hoisted(() => ({ role: "manager" as string | null, read: null as null | (() => Promise<unknown>) }));
 
 vi.mock("@/lib/supabase", () => ({
   supabase: {
     auth: {
+      getUser: vi.fn(async () => ({ data: { user: { id: "user-auth" } }, error: null })),
       getSession: vi.fn(async () => ({
         data: {
           session: {
@@ -20,6 +22,11 @@ vi.mock("@/lib/supabase", () => ({
         error: null,
       })),
       refreshSession: vi.fn(),
+    },
+    from: () => {
+      const query = { select: () => query, eq: () => query, is: () => query,
+        maybeSingle: async () => { if (membershipGate.read) await membershipGate.read(); return { data: membershipGate.role ? { role: membershipGate.role } : null, error: null }; } };
+      return query;
     },
   },
 }));
@@ -41,6 +48,8 @@ import { supabase } from "@/lib/supabase";
 import { createGesture } from "../ops";
 import { db } from "../db";
 import { establishLocalOwnership } from "../ownership";
+import { forgetOfflineFarms, rememberVerifiedFarm, recoverOfflineFarm } from "../farmAccess";
+import { deferred } from "@/pages/Insumos/__tests__/fixtures/inventorySnapshotHarness";
 import {
   processGesture,
   recoverErroredGesturesOnce,
@@ -129,6 +138,9 @@ async function loadGesture(txId: string) {
 
 describe("F24.2D1C — auth/session recovery normalization", () => {
   beforeEach(async () => {
+    membershipGate.role = "manager";
+    membershipGate.read = null;
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: { id: "user-auth" } }, error: null } as never);
     vi.stubGlobal("localStorage", {
       getItem: () => null,
       setItem: () => undefined,
@@ -154,6 +166,68 @@ describe("F24.2D1C — auth/session recovery normalization", () => {
       db.sync_reconcile_obligations.clear(),
       db.local_ownership.clear(),
     ]);
+  });
+
+  it("offline recovery revalidates membership before upload and preserves a revoked farm's facts and pending identity", async () => {
+    mockAuth();
+    await rememberVerifiedFarm("user-auth", farmId, "manager");
+    await recoverOfflineFarm("user-auth", farmId);
+    const txId = await createGesture(farmId, [{ table: "lotes", action: "INSERT", record: { id: "revoked-local-lot", fazenda_id: farmId } }]);
+    const before = await db.queue_ops.where("client_tx_id").equals(txId).toArray();
+    membershipGate.role = null;
+    const upload = vi.fn(); vi.stubGlobal("fetch", upload);
+    await processGesture(await loadGesture(txId));
+    expect(upload).not.toHaveBeenCalled();
+    expect(await db.queue_ops.where("client_tx_id").equals(txId).toArray()).toEqual(before);
+    expect((await loadGesture(txId)).status).toBe("ERROR");
+    expect((await loadGesture(txId)).last_error).toContain("HTTP 403");
+    expect(await db.state_lotes.get("revoked-local-lot")).toBeDefined();
+    expect(await recoverOfflineFarm("user-auth", farmId)).toBeNull();
+  });
+
+  it("offline recovery refuses an expired remote identity even with a cached valid token/session", async () => {
+    mockAuth(); await rememberVerifiedFarm("user-auth", farmId, "manager"); await recoverOfflineFarm("user-auth", farmId);
+    const txId = await createGesture(farmId, [{ table: "lotes", action: "INSERT", record: { id: "expired-local-lot", fazenda_id: farmId } }]);
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: { status: 401, message: "expired" } } as never);
+    const upload = vi.fn(); vi.stubGlobal("fetch", upload);
+    await processGesture(await loadGesture(txId));
+    expect(upload).not.toHaveBeenCalled();
+    expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(1);
+    expect((await loadGesture(txId)).status).toBe("ERROR");
+  });
+
+  it("API unavailability during revalidation remains retryable for automatic reconnect", async () => {
+    mockAuth(); await rememberVerifiedFarm("user-auth", farmId, "manager"); await recoverOfflineFarm("user-auth", farmId);
+    const txId = await createGesture(farmId, [{ table: "lotes", action: "INSERT", record: { id: "offline-local-lot", fazenda_id: farmId } }]);
+    vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: null }, error: { status: 0, message: "Failed to fetch" } } as never);
+    const upload = vi.fn(); vi.stubGlobal("fetch", upload);
+    await processGesture(await loadGesture(txId));
+    expect(upload).not.toHaveBeenCalled();
+    expect((await loadGesture(txId)).status).toBe("PENDING");
+    expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(1);
+  });
+
+  it("a late membership response cannot recreate offline access after logout", async () => {
+    mockAuth(); await rememberVerifiedFarm("user-auth", farmId, "manager"); await recoverOfflineFarm("user-auth", farmId);
+    const txId = await createGesture(farmId, [{ table: "lotes", action: "INSERT", record: { id: "logout-race-lot", fazenda_id: farmId } }]);
+    const requested = deferred<void>(), response = deferred<void>();
+    membershipGate.read = async () => { requested.resolve(); await response.promise; };
+    const upload = vi.fn(); vi.stubGlobal("fetch", upload);
+    const sending = processGesture(await loadGesture(txId)); await requested.promise;
+    await forgetOfflineFarms("user-auth"); response.resolve(); await sending;
+    expect(upload).not.toHaveBeenCalled();
+    expect(await recoverOfflineFarm("user-auth", farmId)).toBeNull();
+    expect(await db.queue_ops.where("client_tx_id").equals(txId).count()).toBe(1);
+  });
+
+  it("after remote revalidation the recovered queue ACKs one operation without another upload on replay", async () => {
+    mockAuth(); await rememberVerifiedFarm("user-auth", farmId, "manager"); await recoverOfflineFarm("user-auth", farmId);
+    const txId = await createGesture(farmId, [{ table: "lotes", action: "INSERT", record: { id: "allowed-local-lot", fazenda_id: farmId } }]);
+    const opId = await queueOpId(txId);
+    const upload = vi.fn(async () => appliedResponse(opId)); vi.stubGlobal("fetch", upload);
+    await processGesture(await loadGesture(txId)); await processGesture(await loadGesture(txId));
+    expect((await loadGesture(txId)).status).toBe("DONE");
+    expect(upload).toHaveBeenCalledTimes(1);
   });
 
   it("T1 — sessão ausente bloqueia replay sem tentar refresh", async () => {

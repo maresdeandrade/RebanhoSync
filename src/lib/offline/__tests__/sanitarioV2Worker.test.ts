@@ -54,9 +54,7 @@ import type {
 } from "../types";
 
 const ownershipSession = (userId: string) =>
-  ({ user: { id: userId } }) as Parameters<
-    typeof establishLocalOwnership
-  >[0];
+  ({ user: { id: userId } }) as Parameters<typeof establishLocalOwnership>[0];
 
 const FAZENDA_ID = "farm-san-v2-worker";
 const CLIENT_ID = "client-san-v2-worker";
@@ -126,11 +124,13 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
     ]);
     await processGesture(gesture);
     if (terminal) {
-      expect(await db.queue_ops.get(ops[1].client_op_id)).toBeUndefined();
+      expect(await db.queue_ops.get(ops[1].client_op_id)).toMatchObject({
+        sync_state: "REJECTED", blocked_reason: "SANITARIO_AGENDA_NOT_FOUND",
+      });
       expect((await loadGesture(gesture.client_tx_id)).status).toBe("REJECTED");
       expect((await db.queue_rejections.toArray()).find(row => row.client_op_id === ops[1].client_op_id)).toMatchObject({ result_status: "REJECTED" });
       await recoverBlockedSanitarioV2Operations("reconciliation_drain");
-      expect(await db.queue_ops.get(ops[1].client_op_id)).toBeUndefined();
+      expect(await db.queue_ops.get(ops[1].client_op_id)).toMatchObject({ sync_state: "REJECTED" });
     } else expect(await db.queue_ops.get(ops[1].client_op_id)).toMatchObject({ sync_state: "BLOCKED_DEPENDENCY" });
   });
   it("preserva UUID da operacao na origem da obrigacao sanitaria", async () => {
@@ -255,6 +255,8 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
       .sortBy("op_order");
     expect(remaining.map((op) => op.client_op_id)).toEqual([
       ops[1].client_op_id,
+      ops[2].client_op_id,
+      ops[3].client_op_id,
       ops[4].client_op_id,
     ]);
     expect(remaining[0]).toMatchObject({
@@ -267,7 +269,7 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
     expect(Date.parse(remaining[0].next_attempt_at ?? "")).toBeGreaterThan(
       Date.now(),
     );
-    expect(remaining[1]).toMatchObject({
+    expect(remaining[3]).toMatchObject({
       client_op_id: ops[4].client_op_id,
       domain_op_id: ops[4].domain_op_id,
       sync_state: "BLOCKED_DEPENDENCY",
@@ -376,37 +378,98 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
     expect(await db.state_insumo_movimentacoes.count()).toBe(0);
   });
 
-  it.each(["REJECTED", "CONFLICT"] as const)("preserva o fato e terminaliza companion %s sem retry órfão", async (status) => {
-    const {gesture,ops} = await seedGesture(["apply_factual_core"], `terminal-${status}`);
-    const eventId = `retained-${status}`;
-    await db.event_eventos.put({ id:eventId,fazenda_id:FAZENDA_ID,dominio:"sanitario",payload:{ dose:2 } } as never);
-    await db.event_eventos_sanitario.put({ evento_id:eventId,fazenda_id:FAZENDA_ID,tipo:"vacinacao",dose_quantidade:2 } as never);
-    const companion:Operation = {client_op_id:`companion-${status}`,client_tx_id:gesture.client_tx_id,op_order:1,
-      table:"state_insumo_movimentacoes",action:"INSERT",record:{id:"movement",source_evento_id:eventId,tipo:"consumo_sanitario"},created_at:gesture.created_at};
-    await db.queue_ops.add(companion);
-    respondWith([
-      {op_id:ops[0].client_op_id,status:"REJECTED",reason_code:"SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH"},
-      {op_id:companion.client_op_id,status,reason_code:"SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED"},
-    ]);
-    await processGesture(gesture);
-    expect(await loadGesture(gesture.client_tx_id)).toMatchObject({status:"REJECTED",sync_result:"REJECTED"});
-    expect(await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).count()).toBe(2);
-    expect(await db.queue_rejections.where("client_tx_id").equals(gesture.client_tx_id).count()).toBe(2);
-    expect(await db.event_eventos.get(eventId)).toMatchObject({payload:{dose:2}});
-    expect(await db.event_eventos_sanitario.get(eventId)).toMatchObject({dose_quantidade:2});
-    const rejection = await db.queue_rejections.filter(row => row.client_op_id === ops[0].client_op_id).first();
-    await retryRejectedOperation(rejection!);
-    expect(await loadGesture(gesture.client_tx_id)).toMatchObject({status:"PENDING"});
-    const retained = await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).sortBy("op_order");
-    expect(retained.map(op => op.sync_state)).toEqual(["PENDING", "PENDING"]);
-    expect(retained.map(op => op.record)).toEqual([ops[0].record, companion.record]);
-    await expect(retryRejectedOperation(rejection!)).rejects.toThrow("REJECTED_OPERATION_ALREADY_QUEUED");
-    respondWith(retained.map(op => ({op_id:op.client_op_id,status:"APPLIED"})));
-    await processGesture(await loadGesture(gesture.client_tx_id));
-    expect(await loadGesture(gesture.client_tx_id)).toMatchObject({status:"DONE",sync_result:"APPLIED"});
-    expect(await db.queue_ops.where("client_tx_id").equals(gesture.client_tx_id).count()).toBe(0);
-    expect(await db.event_eventos.get(eventId)).toMatchObject({payload:{dose:2}});
-  });
+  it.each(["REJECTED", "CONFLICT"] as const)(
+    "preserva o fato e terminaliza companion %s sem retry órfão",
+    async (status) => {
+      const { gesture, ops } = await seedGesture(
+        ["apply_factual_core"],
+        `terminal-${status}`,
+      );
+      const eventId = `retained-${status}`;
+      await db.event_eventos.put({
+        id: eventId,
+        fazenda_id: FAZENDA_ID,
+        dominio: "sanitario",
+        payload: { dose: 2 },
+      } as never);
+      await db.event_eventos_sanitario.put({
+        evento_id: eventId,
+        fazenda_id: FAZENDA_ID,
+        tipo: "vacinacao",
+        dose_quantidade: 2,
+      } as never);
+      const companion: Operation = {
+        client_op_id: `companion-${status}`,
+        client_tx_id: gesture.client_tx_id,
+        op_order: 1,
+        table: "state_insumo_movimentacoes",
+        action: "INSERT",
+        record: {
+          id: "movement",
+          source_evento_id: eventId,
+          tipo: "consumo_sanitario",
+        },
+        created_at: gesture.created_at,
+      };
+      await db.queue_ops.add(companion);
+      respondWith([
+        {
+          op_id: ops[0].client_op_id,
+          status: "REJECTED",
+          reason_code: "SANITARIO_PRODUCT_CATALOG_VERSION_MISMATCH",
+        },
+        {
+          op_id: companion.client_op_id,
+          status,
+          reason_code: "SANITARIO_INVENTORY_FACTUAL_OPERATION_REJECTED",
+        },
+      ]);
+      await processGesture(gesture);
+      expect(await loadGesture(gesture.client_tx_id)).toMatchObject({
+        status: "REJECTED",
+        sync_result: "REJECTED",
+      });
+      expect(
+        await db.queue_ops
+          .where("client_tx_id")
+          .equals(gesture.client_tx_id)
+          .count(),
+      ).toBe(2);
+      expect(
+        await db.queue_rejections
+          .where("client_tx_id")
+          .equals(gesture.client_tx_id)
+          .count(),
+      ).toBe(2);
+      expect(await db.event_eventos.get(eventId)).toMatchObject({
+        payload: { dose: 2 },
+      });
+      expect(await db.event_eventos_sanitario.get(eventId)).toMatchObject({
+        dose_quantidade: 2,
+      });
+      const rejection = await db.queue_rejections
+        .filter((row) => row.client_op_id === ops[0].client_op_id)
+        .first();
+      await expect(retryRejectedOperation(rejection!)).rejects.toThrow(
+        "SANITARIO_CLIENT_CONTRACT_OUTDATED",
+      );
+      const retained = await db.queue_ops
+        .where("client_tx_id")
+        .equals(gesture.client_tx_id)
+        .sortBy("op_order");
+      expect(retained.map((op) => op.sync_state)).toEqual([
+        "REJECTED",
+        "REJECTED",
+      ]);
+      expect(retained.map((op) => op.record)).toEqual([
+        ops[0].record,
+        companion.record,
+      ]);
+      expect(await db.event_eventos.get(eventId)).toMatchObject({
+        payload: { dose: 2 },
+      });
+    },
+  );
 
   it("retém movimento terminal sem projeção falsa após fato confirmado e permite retry explícito só do movimento", async () => {
     const { gesture, ops } = await seedGesture(["apply_factual_core"], "inventory-terminal-applied");
@@ -597,7 +660,10 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
 
     await processGesture(gesture);
 
-    expect(await db.queue_ops.get(ops[0].client_op_id)).toBeUndefined();
+    expect(await db.queue_ops.get(ops[0].client_op_id)).toMatchObject({
+      sync_state: "REJECTED",
+      record: ops[0].record,
+    });
     expect(await db.queue_rejections.toArray()).toEqual([
       expect.objectContaining({
         client_op_id: ops[0].client_op_id,
@@ -738,4 +804,214 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
     expect(recoveredGesture.status).toBe("PENDING");
     expect(recoveredGesture.sync_result).toBeUndefined();
   });
+  it("instala ACK recuperado após restart sem reenviar a escrita", async () => {
+    const { gesture, ops } = await seedGesture(
+      ["create_agenda"],
+      "recovered-receipt",
+    );
+    const receipt: SyncOperationResult = {
+      op_id: ops[0].client_op_id,
+      client_op_id: ops[0].client_op_id,
+      domain_op_id: ops[0].domain_op_id,
+      status: "APPLIED",
+      canonical_result: { agenda_id: "recovered-agenda", revision: 0 },
+    };
+    await db.queue_ops.update(ops[0].client_op_id, {
+      sanitary_receipt: receipt,
+      sync_state: "RECONCILE",
+    });
+    await processGesture(gesture);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await db.queue_ops.get(ops[0].client_op_id)).toBeUndefined();
+    expect(await loadGesture(gesture.client_tx_id)).toMatchObject({
+      status: "DONE",
+      operation_results: [
+        expect.objectContaining({
+          canonical_result: receipt.canonical_result,
+          status: "APPLIED",
+        }),
+      ],
+    });
+  });
+  it("bloqueio V3.1 não é rearmado automaticamente no reconnect", async () => {
+    const { gesture, ops } = await seedGesture(
+      ["apply_factual_core"],
+      "phase-blocked",
+    );
+    await db.queue_ops.update(ops[0].client_op_id, {
+      sync_state: "BLOCKED_DEPENDENCY",
+      blocked_reason: "SANITARIO_V3_EXECUTION_NOT_ENABLED",
+    });
+    await db.queue_gestures.update(gesture.client_tx_id, { status: "ERROR" });
+    expect(
+      await recoverBlockedSanitarioV2Operations("remote_dependency_recovered"),
+    ).toBe(0);
+    expect((await db.queue_ops.get(ops[0].client_op_id))?.sync_state).toBe(
+      "BLOCKED_DEPENDENCY",
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("recibo recuperado não rearma nem reaplica companion de estoque", async () => {
+    const { gesture, ops } = await seedGesture(
+      ["apply_factual_core"],
+      "recovered-companion",
+    );
+    const companion: Operation = {
+      client_op_id: "stock-after-crash",
+      client_tx_id: gesture.client_tx_id,
+      table: "state_insumo_movimentacoes",
+      action: "INSERT",
+      record: {
+        id: "retained-stock",
+        tipo: "consumo_sanitario",
+        source_evento_id: "retained-fact",
+      },
+      created_at: gesture.created_at,
+    };
+    await db.queue_ops.add(companion);
+    await db.queue_ops.update(ops[0].client_op_id, {
+      sanitary_receipt: {
+        op_id: ops[0].client_op_id,
+        domain_op_id: ops[0].domain_op_id,
+        status: "APPLIED",
+        canonical_result: { evento_id: "retained-fact" },
+      },
+      sync_state: "RECONCILE",
+    });
+    await processGesture(gesture);
+    expect(fetch).not.toHaveBeenCalled();
+    expect((await db.queue_ops.get(companion.client_op_id))?.sync_state).toBe(
+      "BLOCKED_DEPENDENCY",
+    );
+    expect(
+      await recoverBlockedSanitarioV2Operations("remote_dependency_recovered"),
+    ).toBe(0);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+  });
+  it("recibo recuperado preserva rejeições de irmãos sanitários e reprodutivos", async () => {
+    const { gesture, ops } = await seedGesture(
+      ["create_agenda", "replace_agenda_animals"],
+      "receipt-with-rejections",
+    );
+    const rejected = {
+      ...ops[1],
+      sync_state: "REJECTED" as const,
+      blocked_reason: "ORIGINAL_REJECTION",
+    };
+    const birth: Operation = {
+      client_op_id: "rejected-birth",
+      client_tx_id: gesture.client_tx_id,
+      table: "eventos",
+      action: "INSERT",
+      record: { id: "birth", dominio: "reproducao" },
+      sync_state: "REJECTED",
+      blocked_reason: "ORIGINAL_BIRTH_REJECTION",
+      created_at: gesture.created_at,
+    };
+    await db.queue_ops.bulkPut([rejected, birth]);
+    await db.queue_ops.update(ops[0].client_op_id, {
+      sanitary_receipt: {
+        op_id: ops[0].client_op_id,
+        domain_op_id: ops[0].domain_op_id,
+        status: "APPLIED",
+        canonical_result: { agenda_id: "accepted" },
+      },
+      sync_state: "RECONCILE",
+    });
+    await processGesture(gesture);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await db.queue_ops.get(rejected.client_op_id)).toEqual(rejected);
+    expect(await db.queue_ops.get(birth.client_op_id)).toEqual(birth);
+    expect((await loadGesture(gesture.client_tx_id)).status).toBe("REJECTED");
+  });
+  it("recibo recuperado mantém irmão genérico pendente sem fabricar retry", async () => {
+    const { gesture, ops } = await seedGesture(
+      ["create_agenda"],
+      "receipt-with-pending",
+    );
+    const other: Operation = {
+      client_op_id: "pending-profile",
+      client_tx_id: gesture.client_tx_id,
+      table: "fazendas",
+      action: "UPDATE",
+      record: { id: FAZENDA_ID, nome: "pending" },
+      sync_state: "PENDING",
+      created_at: gesture.created_at,
+    };
+    await db.queue_ops.add(other);
+    await db.queue_ops.update(ops[0].client_op_id, {
+      sanitary_receipt: {
+        op_id: ops[0].client_op_id,
+        domain_op_id: ops[0].domain_op_id,
+        status: "APPLIED",
+        canonical_result: { agenda_id: "accepted" },
+      },
+      sync_state: "RECONCILE",
+    });
+    await processGesture(gesture);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await db.queue_ops.get(other.client_op_id)).toEqual(other);
+    expect((await loadGesture(gesture.client_tx_id)).status).toBe("PENDING");
+  });
+
+  it.each([true, false])(
+    "installs progressive receipt confirmed=%s atomically while preserving collision evidence",
+    async (confirmed) => {
+      const { gesture, ops } = await seedGesture(
+        ["apply_factual_core"],
+        `v32-${confirmed}`,
+      );
+      const eventId = `event-v32-${confirmed}`;
+      const operation = {
+        ...ops[0].record,
+        contract_version: 3,
+        payload: {
+          event: { id: eventId, payload: { sanitario_v3_progressive: true } },
+          detail: { dose_quantidade: 2 },
+        },
+      };
+      await db.queue_ops.update(ops[0].client_op_id, { record: operation });
+      await db.event_eventos.put({
+        id: eventId,
+        fazenda_id: FAZENDA_ID,
+        dominio: "sanitario",
+        sanitario_v3_confirmation: "pending",
+        payload: { sanitario_v3_progressive: true },
+      } as never);
+      await db.event_eventos_sanitario.put({
+        evento_id: eventId,
+        fazenda_id: FAZENDA_ID,
+        sanitario_v3_confirmation: "pending",
+        payload: {},
+      } as never);
+      respondWith([
+        {
+          op_id: ops[0].client_op_id,
+          client_op_id: ops[0].client_op_id,
+          domain_op_id: ops[0].domain_op_id,
+          status: confirmed ? "APPLIED" : "CONFLICT",
+          canonical_entity_id: eventId,
+          reason_code: confirmed ? undefined : "SANITARIO_OBLIGATION_COLLISION",
+          canonical_result: {
+            evento_id: eventId,
+            confirmed,
+            outcome: confirmed ? "confirmed" : "collision",
+          },
+        },
+      ]);
+      await processGesture(gesture);
+      expect(
+        (await db.event_eventos.get(eventId))?.sanitario_v3_confirmation,
+      ).toBe(confirmed ? "confirmed" : "collision");
+      expect(
+        (await db.event_eventos_sanitario.get(eventId))
+          ?.sanitario_v3_confirmation,
+      ).toBe(confirmed ? "confirmed" : "collision");
+      if (!confirmed)
+        expect(await db.queue_ops.get(ops[0].client_op_id)).toMatchObject({
+          sync_state: "REJECTED",
+          record: operation,
+        });
+    },
+  );
 });

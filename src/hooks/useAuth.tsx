@@ -27,8 +27,10 @@ import {
 import { checkIsSuperAdmin } from "@/lib/admin/adminApi";
 import {
   establishLocalOwnership,
+  getLocalOwnership,
   type LocalOwnershipDecision,
 } from "@/lib/offline/ownership";
+import { forgetOfflineFarms, isConnectivityFailure, recoverOfflineFarm, rememberVerifiedFarm } from "@/lib/offline/farmAccess";
 
 
 // Role schema for runtime validation
@@ -55,7 +57,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-async function fetchMembershipRole(userId: string, farmId: string) {
+async function fetchMembershipRole(userId: string, farmId: string, isCurrent: () => boolean) {
   const { data: membership, error } = await supabase
     .from("user_fazendas")
     .select("role")
@@ -64,17 +66,23 @@ async function fetchMembershipRole(userId: string, farmId: string) {
     .is("deleted_at", null)
     .maybeSingle();
 
+  if (!isCurrent()) return null;
+
   if (error) {
     console.warn("[useAuth] Error fetching role:", error);
+    if (isConnectivityFailure(error)) return (await recoverOfflineFarm(userId, farmId))?.role ?? null;
+    await rememberVerifiedFarm(userId, farmId, null, undefined, isCurrent);
     return null;
   }
 
   const roleResult = RoleSchema.safeParse(membership?.role);
   if (!roleResult.success) {
     console.warn("[useAuth] Invalid role from database:", membership?.role);
+    await rememberVerifiedFarm(userId, farmId, null, undefined, isCurrent);
     return null;
   }
 
+  await rememberVerifiedFarm(userId, farmId, roleResult.data, undefined, isCurrent);
   return roleResult.data;
 }
 
@@ -102,6 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Invalidate in-flight settings/role/metadata reads on an explicit farm or session change.
   const farmContextRevision = useRef(0);
   const pendingFarmSelection = useRef<number | null>(null);
+  const currentIdentity = useRef<string | null>(null);
   const [changingFarm, setChangingFarm] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [localOwnership, setLocalOwnership] =
@@ -124,7 +133,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const loadRoleForFarm = useCallback(async (userId: string, farmId: string) => {
     const request = farmContextRevision.current;
-    const nextRole = await fetchMembershipRole(userId, farmId);
+    const nextRole = await fetchMembershipRole(userId, farmId, () => request === farmContextRevision.current);
     if (request !== farmContextRevision.current) return;
     setRole(nextRole);
   }, []);
@@ -158,9 +167,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (request !== farmContextRevision.current) return;
     if (error) {
       console.warn("[useAuth] Error fetching farm metadata:", error);
-      setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
-      setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
-      setFarmMeasurementConfig(DEFAULT_FARM_MEASUREMENT_CONFIG);
+      const access = isConnectivityFailure(error) && currentIdentity.current
+        ? await recoverOfflineFarm(currentIdentity.current, farmId) : null;
+      if (request !== farmContextRevision.current) return;
+      setFarmExperienceMode(resolveFarmExperienceMode(access?.metadata ?? null));
+      setFarmLifecycleConfig(resolveFarmLifecycleConfig(access?.metadata ?? null));
+      setFarmMeasurementConfig(resolveFarmMeasurementConfig(access?.metadata ?? null));
       return;
     }
 
@@ -172,14 +184,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setFarmExperienceMode(resolveFarmExperienceMode(metadata));
     setFarmLifecycleConfig(resolveFarmLifecycleConfig(metadata));
     setFarmMeasurementConfig(resolveFarmMeasurementConfig(metadata));
+    if (currentIdentity.current) {
+      // Metadata belongs to the same verified membership, never another farm.
+      const access = (await getLocalOwnership())?.verified_farms?.[farmId];
+      if (request === farmContextRevision.current && access?.role) {
+        await rememberVerifiedFarm(currentIdentity.current, farmId, access.role, metadata, () => request === farmContextRevision.current);
+      }
+    }
   }, []);
 
   const loadFarmContext = useCallback(
     async (userId: string, farmId: string) => {
-      await Promise.all([
-        loadRoleForFarm(userId, farmId),
-        loadFarmExperienceForFarm(farmId),
-      ]);
+      const request = farmContextRevision.current;
+      await loadRoleForFarm(userId, farmId);
+      if (request !== farmContextRevision.current) return;
+      await loadFarmExperienceForFarm(farmId);
     },
     [loadFarmExperienceForFarm, loadRoleForFarm],
   );
@@ -189,12 +208,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (pendingFarmSelection.current !== null) return;
     const request = farmContextRevision.current;
     const isCurrent = () => request === farmContextRevision.current;
+    const restoreOfflineContext = async () => {
+      const identity = currentIdentity.current;
+      const farmId = getActiveFarmId();
+      const access = identity && farmId ? await recoverOfflineFarm(identity, farmId) : null;
+      if (!isCurrent()) return;
+      setRole(access?.role ?? null);
+      setIsSuperAdmin(false);
+      setFarmExperienceMode(resolveFarmExperienceMode(access?.metadata ?? null));
+      setFarmLifecycleConfig(resolveFarmLifecycleConfig(access?.metadata ?? null));
+      setFarmMeasurementConfig(resolveFarmMeasurementConfig(access?.metadata ?? null));
+    };
     try {
       const {
         data: { user },
+        error: userError,
       } = await supabase.auth.getUser();
       if (!isCurrent()) return;
+      if (isConnectivityFailure(userError) && currentIdentity.current) {
+        await restoreOfflineContext();
+        return;
+      }
       if (!user) {
+        setRole(null);
+        if (currentIdentity.current) await forgetOfflineFarms(currentIdentity.current);
         setIsSuperAdmin(false);
         setFarmExperienceMode(DEFAULT_FARM_EXPERIENCE_MODE);
         setFarmLifecycleConfig(DEFAULT_FARM_LIFECYCLE_CONFIG);
@@ -219,6 +256,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!isCurrent()) return;
       if (error && error.code !== "PGRST116") {
         console.warn("[useAuth] Error fetching user_settings:", error);
+        if (isConnectivityFailure(error)) await restoreOfflineContext();
         return;
       }
 
@@ -230,7 +268,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       let persistLocalFarmId: string | null = null;
 
       if (resolvedFarmId) {
-        const nextRole = await fetchMembershipRole(user.id, resolvedFarmId);
+        const nextRole = await fetchMembershipRole(user.id, resolvedFarmId, isCurrent);
         if (!isCurrent()) return;
 
         if (nextRole) {
@@ -297,6 +335,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (e) {
       console.error("[useAuth] Error in refreshSettings:", e);
+      if (isConnectivityFailure(e)) await restoreOfflineContext();
     }
   }, [loadFarmContext, loadFarmExperienceForFarm, persistActiveFarmToRemote]);
 
@@ -330,16 +369,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const applyAuthenticatedSession = useCallback(
     async (nextSession: Session) => {
+      const request = farmContextRevision.current;
       const ownership = await establishLocalOwnership(nextSession);
+      if (request !== farmContextRevision.current) return;
       setLocalOwnership(ownership);
       if (ownership.status !== "OWNED") {
         ++farmContextRevision.current;
         pendingFarmSelection.current = null;
         setChangingFarm(false);
+        currentIdentity.current = null;
+        setRole(null);
+        setActiveFarmId(null);
         setSession(null);
         return;
       }
 
+      currentIdentity.current = nextSession.user.id;
       setSession(nextSession);
       await refreshSettings();
     },
@@ -375,6 +420,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         void applyAuthenticatedSession(session).finally(() => setLoading(false));
         return;
       } else {
+        const previousIdentity = currentIdentity.current;
+        currentIdentity.current = null;
+        if (previousIdentity) void forgetOfflineFarms(previousIdentity);
         ++farmContextRevision.current;
         pendingFarmSelection.current = null;
         setChangingFarm(false);
@@ -398,9 +446,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [applyAuthenticatedSession]);
 
   const signOut = async () => {
+    const previousIdentity = currentIdentity.current;
+    currentIdentity.current = null;
     ++farmContextRevision.current;
     pendingFarmSelection.current = null;
     setChangingFarm(false);
+    setSession(null);
+    setRole(null);
+    setActiveFarmId(null);
+    removeActiveFarmId();
+    if (previousIdentity) await forgetOfflineFarms(previousIdentity);
     try {
       await supabase.auth.signOut();
       setLocalOwnership(null);

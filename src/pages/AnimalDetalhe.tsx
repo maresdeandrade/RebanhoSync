@@ -119,6 +119,7 @@ import type {
   EventoComercial,
 } from "@/lib/offline/types";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { readAnimalTimelineEvents } from "@/lib/events/readAnimalTimelineEvents";
 import { buildReproductionDashboard } from "@/lib/reproduction/dashboard";
 import { rebuildReproductiveProjection } from "@/lib/reproduction/status";
 import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
@@ -880,12 +881,7 @@ const AnimalDetalhe = () => {
 
   const eventos = useLiveQuery<EnrichedEvent[]>(async () => {
     if (!animal?.id || !fazendaId) return [];
-    const evts = await db.event_eventos
-      .where("animal_id")
-      .equals(animal.id)
-      .filter((event) => event.fazenda_id === fazendaId)
-      .reverse()
-      .sortBy("occurred_at");
+    const evts = await readAnimalTimelineEvents(fazendaId, animal.id);
 
     return Promise.all(
       evts.map(async (evt) => {

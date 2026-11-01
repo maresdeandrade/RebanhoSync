@@ -11,8 +11,8 @@ export type WithdrawalStatus =
 
 export interface WithdrawalItem {
   status: WithdrawalStatus;
-  inicio?: string;          // YYYY-MM-DD
-  fim?: string;             // YYYY-MM-DD
+  inicio?: string; // YYYY-MM-DD
+  fim?: string; // YYYY-MM-DD
   dias?: number;
   produtoNome?: string;
   principioAtivo?: string | null;
@@ -27,16 +27,17 @@ export interface WithdrawalReadModel {
   status: WithdrawalStatus;
   carne?: WithdrawalItem;
   leite?: WithdrawalItem;
-  evaluatedAt: string;     // ISO timestamp
+  evaluatedAt: string; // ISO timestamp
 }
 
 export interface SanitaryEventInputForReadModel {
+  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | null;
   id: string;
   animal_id: string | null;
   lote_id: string | null;
-  occurred_at: string;     // ISO String
+  occurred_at: string; // ISO String
   deleted_at?: string | null;
-  produto: string;         // Nome textual informado
+  produto: string; // Nome textual informado
   carencia_carne_dias?: number | null;
   carencia_leite_dias?: number | null;
   carencia_carne_ate?: string | null;
@@ -108,7 +109,11 @@ function evaluateEventModalidade(
       ? event.carencia_carne_ate
       : event.carencia_leite_ate;
 
-  if (typeof structuredDias === "number" && structuredDias > 0 && structuredFim) {
+  if (
+    typeof structuredDias === "number" &&
+    structuredDias > 0 &&
+    structuredFim
+  ) {
     const fim = structuredFim.split("T")[0];
     const isAtiva = referenceDateStr <= fim;
     return {
@@ -148,11 +153,15 @@ function evaluateEventModalidade(
       : insumoSnapshot.carencia_leite_dias_snapshot;
 
   const productLabel = insumoSnapshot.produto_nome_snapshot || event.produto;
-  const limitations = insumoSnapshot.limitacoes ? [...insumoSnapshot.limitacoes] : [];
+  const limitations = insumoSnapshot.limitacoes
+    ? [...insumoSnapshot.limitacoes]
+    : [];
 
   // Se a rastreabilidade do snapshot for parcial, adiciona às limitações
   if (insumoSnapshot.rastreabilidade === "parcial") {
-    limitations.push("Rastreabilidade parcial (lote ou custo unitario ausente)");
+    limitations.push(
+      "Rastreabilidade parcial (lote ou custo unitario ausente)",
+    );
   }
 
   // 3. Caso produto cadastrado manualmente/livre
@@ -189,7 +198,10 @@ function evaluateEventModalidade(
     principioAtivo: insumoSnapshot.principio_ativo_snapshot ?? null,
     eventId: event.id,
     source: "event_sanitario_snapshot",
-    limitations: insumoSnapshot.rastreabilidade === "parcial" ? ["parcial", ...limitations] : limitations,
+    limitations:
+      insumoSnapshot.rastreabilidade === "parcial"
+        ? ["parcial", ...limitations]
+        : limitations,
   };
 }
 
@@ -197,9 +209,7 @@ function evaluateEventModalidade(
  * Consolida multiplas avaliacoes de carencias de eventos para uma modalidade,
  * prevalecendo a de maior data final estimada para carencia ativa.
  */
-function consolidateModalidade(
-  items: WithdrawalItem[],
-): WithdrawalItem {
+function consolidateModalidade(items: WithdrawalItem[]): WithdrawalItem {
   if (items.length === 0) {
     return {
       status: "sem_evento_sanitario",
@@ -209,13 +219,15 @@ function consolidateModalidade(
   }
 
   // Filtrar ativas
-  const activeItems = items.filter((item) => item.status === "carencia_ativa" && item.fim);
+  const activeItems = items.filter(
+    (item) => item.status === "carencia_ativa" && item.fim,
+  );
 
   if (activeItems.length > 0) {
     // A maior data de expiração (fim) prevalece
     activeItems.sort((a, b) => b.fim!.localeCompare(a.fim!));
     const winner = activeItems[0];
-    
+
     // Junta as limitações dos itens ativos sem duplicar
     const allLimitations = Array.from(
       new Set(activeItems.flatMap((i) => i.limitations)),
@@ -228,18 +240,24 @@ function consolidateModalidade(
   }
 
   // Se não houver ativas, verificar indeterminadas
-  const indeterminate = items.find((item) => item.status === "carencia_indeterminada");
+  const indeterminate = items.find(
+    (item) => item.status === "carencia_indeterminada",
+  );
   if (indeterminate) return indeterminate;
 
   // Se não houver indeterminadas, verificar expiradas
-  const expiredItems = items.filter((item) => item.status === "carencia_expirada" && item.fim);
+  const expiredItems = items.filter(
+    (item) => item.status === "carencia_expirada" && item.fim,
+  );
   if (expiredItems.length > 0) {
     expiredItems.sort((a, b) => b.fim!.localeCompare(a.fim!)); // pega o de maior fim nominal
     return expiredItems[0];
   }
 
   // Verificar sem carencia configurada
-  const noConfig = items.find((item) => item.status === "sem_carencia_configurada");
+  const noConfig = items.find(
+    (item) => item.status === "sem_carencia_configurada",
+  );
   if (noConfig) return noConfig;
 
   // Verificar sem snapshot
@@ -262,7 +280,13 @@ export function computeAnimalWithdrawal(
   referenceDateStr: string,
 ): WithdrawalReadModel {
   // Ignora eventos soft-deletados
-  const activeEvents = events.filter((e) => !e.deleted_at && e.animal_id === animalId);
+  const activeEvents = events.filter(
+    (e) =>
+      !e.deleted_at &&
+      e.animal_id === animalId &&
+      (e.sanitario_v3_confirmation == null ||
+        e.sanitario_v3_confirmation === "confirmed"),
+  );
 
   const carneEvaluations = activeEvents.map((e) =>
     evaluateEventModalidade(e, "carne", referenceDateStr),
@@ -278,13 +302,25 @@ export function computeAnimalWithdrawal(
   let status: WithdrawalStatus = "sem_evento_sanitario";
   if (carne.status === "carencia_ativa" || leite.status === "carencia_ativa") {
     status = "carencia_ativa";
-  } else if (carne.status === "carencia_indeterminada" || leite.status === "carencia_indeterminada") {
+  } else if (
+    carne.status === "carencia_indeterminada" ||
+    leite.status === "carencia_indeterminada"
+  ) {
     status = "carencia_indeterminada";
-  } else if (carne.status === "carencia_expirada" || leite.status === "carencia_expirada") {
+  } else if (
+    carne.status === "carencia_expirada" ||
+    leite.status === "carencia_expirada"
+  ) {
     status = "carencia_expirada";
-  } else if (carne.status === "sem_carencia_configurada" || leite.status === "sem_carencia_configurada") {
+  } else if (
+    carne.status === "sem_carencia_configurada" ||
+    leite.status === "sem_carencia_configurada"
+  ) {
     status = "sem_carencia_configurada";
-  } else if (carne.status === "sem_snapshot" || leite.status === "sem_snapshot") {
+  } else if (
+    carne.status === "sem_snapshot" ||
+    leite.status === "sem_snapshot"
+  ) {
     status = "sem_snapshot";
   }
 
@@ -310,14 +346,26 @@ export function computeLoteWithdrawal(
       targetType: "lote",
       targetId: loteId,
       status: "sem_evento_sanitario",
-      carne: { status: "sem_evento_sanitario", source: "event_sanitario_snapshot", limitations: [] },
-      leite: { status: "sem_evento_sanitario", source: "event_sanitario_snapshot", limitations: [] },
+      carne: {
+        status: "sem_evento_sanitario",
+        source: "event_sanitario_snapshot",
+        limitations: [],
+      },
+      leite: {
+        status: "sem_evento_sanitario",
+        source: "event_sanitario_snapshot",
+        limitations: [],
+      },
       evaluatedAt: new Date().toISOString(),
     };
   }
 
-  const carneItems = animalReadModels.map((arm) => arm.carne).filter((c): c is WithdrawalItem => !!c);
-  const leiteItems = animalReadModels.map((arm) => arm.leite).filter((l): l is WithdrawalItem => !!l);
+  const carneItems = animalReadModels
+    .map((arm) => arm.carne)
+    .filter((c): c is WithdrawalItem => !!c);
+  const leiteItems = animalReadModels
+    .map((arm) => arm.leite)
+    .filter((l): l is WithdrawalItem => !!l);
 
   const carne = consolidateModalidade(carneItems);
   const leite = consolidateModalidade(leiteItems);
@@ -325,13 +373,25 @@ export function computeLoteWithdrawal(
   let status: WithdrawalStatus = "sem_evento_sanitario";
   if (carne.status === "carencia_ativa" || leite.status === "carencia_ativa") {
     status = "carencia_ativa";
-  } else if (carne.status === "carencia_indeterminada" || leite.status === "carencia_indeterminada") {
+  } else if (
+    carne.status === "carencia_indeterminada" ||
+    leite.status === "carencia_indeterminada"
+  ) {
     status = "carencia_indeterminada";
-  } else if (carne.status === "carencia_expirada" || leite.status === "carencia_expirada") {
+  } else if (
+    carne.status === "carencia_expirada" ||
+    leite.status === "carencia_expirada"
+  ) {
     status = "carencia_expirada";
-  } else if (carne.status === "sem_carencia_configurada" || leite.status === "sem_carencia_configurada") {
+  } else if (
+    carne.status === "sem_carencia_configurada" ||
+    leite.status === "sem_carencia_configurada"
+  ) {
     status = "sem_carencia_configurada";
-  } else if (carne.status === "sem_snapshot" || leite.status === "sem_snapshot") {
+  } else if (
+    carne.status === "sem_snapshot" ||
+    leite.status === "sem_snapshot"
+  ) {
     status = "sem_snapshot";
   }
 

@@ -258,13 +258,13 @@ describe("sanitario v2 local cutover", () => {
       0,
       [ANIMAL_ID],
     );
-    const factual = buildApplyFactualCoreOperation(
+    expect(() => buildApplyFactualCoreOperation(
       createSanitarioV2Identity(tx),
       event(),
       detail(),
       [relation()],
       1,
-    );
+    )).toThrow("SANITARIO_V3_EXECUTION_NOT_ENABLED");
     const close = buildCloseAgendaOperation(
       createSanitarioV2Identity(tx),
       closure(),
@@ -273,25 +273,16 @@ describe("sanitario v2 local cutover", () => {
     expect([
       create.command,
       replace.command,
-      factual.command,
       close.command,
     ]).toEqual([
       "create_agenda",
       "replace_agenda_animals",
-      "apply_factual_core",
       "close_agenda",
     ]);
     expect([
       replace.expected_revision,
-      factual.expected_revision,
       close.expected_revision,
-    ]).toEqual([0, 1, 2]);
-    expect(factual.payload).toMatchObject({
-      event: { id: EVENT_ID, source_sanitario_agenda_v2_id: AGENDA_ID },
-      event_animals: [{ id: RELATION_ID, animal_id: ANIMAL_ID }],
-    });
-    expect(factual.payload).not.toHaveProperty("stock_movements");
-    expect(factual.payload).not.toHaveProperty("withdrawals");
+    ]).toEqual([0, 2]);
     expect(() =>
       buildReplaceAgendaAnimalsOperation(
         createSanitarioV2Identity(tx),
@@ -408,7 +399,7 @@ describe("sanitario v2 local cutover", () => {
     ).rejects.toThrow("SANITARIO_V2_IDENTITY_REUSE_DIVERGENT_PAYLOAD");
   });
 
-  it("faz backfill idempotente de histórico externo criado com gate desligado", async () => {
+  it("preserva histórico local sem fabricar fila ao repetir preparação", async () => {
     await applySanitarioV2Cutover(FARM_ID, async () => undefined);
     expect(isSanitarioV2PushEnabled(SANITARIO_V2_STAGING_PROJECT_REF)).toBe(
       false,
@@ -489,48 +480,9 @@ describe("sanitario v2 local cutover", () => {
     await applySanitarioV2Cutover(FARM_ID, async () => undefined, activation);
     await applySanitarioV2Cutover(FARM_ID, async () => undefined, activation);
 
-    expect(await db.queue_gestures.count()).toBe(1);
-    expect(await db.queue_ops.count()).toBe(1);
-    expect(await db.queue_ops.get(LEGACY_OP_ID)).toBeUndefined();
-    expect(await db.event_eventos.get(LEGACY_EVENT_ID)).toMatchObject({
-      deleted_at: null,
-      payload: { evidence_reference: null },
-    });
-    expect(await db.queue_ops.get(EXTERNAL_OP_ID)).toMatchObject({
-      client_tx_id: EXTERNAL_TX_ID,
-      domain_op_id: EXTERNAL_DOMAIN_OP_ID,
-      record: {
-        command: "apply_factual_core",
-        payload: {
-          event: {
-            id: EVENT_ID,
-            natureza: "standalone_fact",
-            payload: {
-              evidence_reference: "documento-externo-1",
-              evidence_covered_fields: ["protocol_item_completion"],
-            },
-          },
-          event_animals: [{ id: RELATION_ID, animal_id: ANIMAL_ID }],
-        },
-      },
-    });
-
-    await db.queue_ops.delete(EXTERNAL_OP_ID);
-    await db.queue_gestures.update(EXTERNAL_TX_ID, {
-      status: "DONE",
-      sync_result: "APPLIED",
-      operation_results: [
-        {
-          op_id: EXTERNAL_OP_ID,
-          client_op_id: EXTERNAL_OP_ID,
-          domain_op_id: EXTERNAL_DOMAIN_OP_ID,
-          status: "APPLIED",
-          recorded_at: NOW,
-        },
-      ],
-    });
-    await applySanitarioV2Cutover(FARM_ID, async () => undefined, activation);
-    expect(await db.queue_ops.get(EXTERNAL_OP_ID)).toBeUndefined();
-    expect(await db.queue_gestures.count()).toBe(1);
+    expect(await db.queue_gestures.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await db.event_eventos.get(LEGACY_EVENT_ID)).toMatchObject({deleted_at:null,payload:{evidence_reference:null}});
+    expect(await db.event_eventos.get(EVENT_ID)).toMatchObject({payload:{evidence_reference:"documento-externo-1"}});
   });
 });

@@ -96,6 +96,7 @@ interface SanitarioSyncV2OperationBase {
   domain_op_id: string;
   domain: typeof SANITARIO_SYNC_V2_DOMAIN;
   contract_version: number;
+  receipt_only?: boolean;
   command: SanitarioSyncV2Command;
   expected_revision?: number | null;
   fazenda_id?: string;
@@ -110,8 +111,7 @@ export interface CreateAgendaOperation extends SanitarioSyncV2OperationBase {
   };
 }
 
-export interface ReplaceAgendaAnimalsOperation
-  extends SanitarioSyncV2OperationBase {
+export interface ReplaceAgendaAnimalsOperation extends SanitarioSyncV2OperationBase {
   command: "replace_agenda_animals";
   expected_revision: number;
   payload: {
@@ -120,8 +120,7 @@ export interface ReplaceAgendaAnimalsOperation
   };
 }
 
-export interface ApplyFactualCoreOperation
-  extends SanitarioSyncV2OperationBase {
+export interface ApplyFactualCoreOperation extends SanitarioSyncV2OperationBase {
   command: "apply_factual_core";
   payload: {
     event: SanitarioEventInput;
@@ -149,7 +148,10 @@ export type SanitarioSyncV2Operation =
 export interface SetAutomationPlanOperation extends SanitarioSyncV2OperationBase {
   command: "set_automation_plan";
   expected_revision: number;
-  payload: { plan: Record<string, unknown>; expected_plan: Record<string, unknown> | null };
+  payload: {
+    plan: Record<string, unknown>;
+    expected_plan: Record<string, unknown> | null;
+  };
 }
 
 export interface RescheduleAgendaOperation extends SanitarioSyncV2OperationBase {
@@ -167,6 +169,7 @@ export interface SanitarioSyncV2Gate {
   rollout_percentage: number;
   valid_from: string | null;
   valid_until: string | null;
+  foundation_state?: "inactive" | "frozen" | "ready";
 }
 
 export interface SanitarioSyncV2Context {
@@ -187,6 +190,7 @@ export interface SanitarioDbError {
 
 export interface SanitarioRpcCall {
   functionName:
+    | "internal_sanitario_admit_v3"
     | "internal_sanitario_sync_v2_create_agenda"
     | "internal_sanitario_sync_v2_replace_agenda_animals"
     | "internal_sanitario_sync_v2_apply_factual_core"
@@ -212,9 +216,10 @@ export interface SanitarioSyncV2Result {
 export interface SanitarioSyncV2Dependencies {
   loadGate: (
     fazendaId: string,
-  ) => Promise<
-    { data: SanitarioSyncV2Gate | null; error: SanitarioDbError | null }
-  >;
+  ) => Promise<{
+    data: SanitarioSyncV2Gate | null;
+    error: SanitarioDbError | null;
+  }>;
   callRpc: (
     call: SanitarioRpcCall,
   ) => Promise<{ data: unknown; error: SanitarioDbError | null }>;
@@ -293,37 +298,36 @@ const SANITARY_SPECIALIZED_CORRECTION_TYPES = new Set([
   "cancelamento_ocorrencia_biosseguranca",
   "encerramento_pendencia_corretiva",
 ]);
-const SANITARY_CORRECTION_ALLOWED_FIELDS: Record<string, ReadonlySet<string>> =
-  {
-    complemento_rastreabilidade: new Set([
-      "executed_at",
-      "produto_sanitario_v2_id",
-      "produto_nome_snapshot",
-      "dose_quantidade",
-      "dose_unidade",
-      "via_aplicacao",
-      "responsavel_nome",
-      "responsavel_tipo",
-      "lote_fabricante",
-      "validade_produto",
-    ]),
-    correcao_custo: new Set([
-      "custo_unitario_snapshot",
-      "custo_total_snapshot",
-    ]),
-    correcao_lote_estoque: new Set([
-      "insumo_id",
-      "estoque_lote_id",
-      "estoque_lote_codigo_snapshot",
-      "lote_fabricante",
-      "validade_produto",
-    ]),
-    estorno_baixa_estoque: new Set(),
-    contra_lancamento_estoque: new Set(),
-    resolucao_ocorrencia_biosseguranca: new Set(),
-    cancelamento_ocorrencia_biosseguranca: new Set(),
-    encerramento_pendencia_corretiva: new Set(),
-  };
+const SANITARY_CORRECTION_ALLOWED_FIELDS: Record<
+  string,
+  ReadonlySet<string>
+> = {
+  complemento_rastreabilidade: new Set([
+    "executed_at",
+    "produto_sanitario_v2_id",
+    "produto_nome_snapshot",
+    "dose_quantidade",
+    "dose_unidade",
+    "via_aplicacao",
+    "responsavel_nome",
+    "responsavel_tipo",
+    "lote_fabricante",
+    "validade_produto",
+  ]),
+  correcao_custo: new Set(["custo_unitario_snapshot", "custo_total_snapshot"]),
+  correcao_lote_estoque: new Set([
+    "insumo_id",
+    "estoque_lote_id",
+    "estoque_lote_codigo_snapshot",
+    "lote_fabricante",
+    "validade_produto",
+  ]),
+  estorno_baixa_estoque: new Set(),
+  contra_lancamento_estoque: new Set(),
+  resolucao_ocorrencia_biosseguranca: new Set(),
+  cancelamento_ocorrencia_biosseguranca: new Set(),
+  encerramento_pendencia_corretiva: new Set(),
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -374,7 +378,8 @@ function findUntrustedContext(
 
 function validateTargets(ids: unknown): string | null {
   if (
-    !Array.isArray(ids) || ids.length === 0 ||
+    !Array.isArray(ids) ||
+    ids.length === 0 ||
     ids.length > SANITARIO_SYNC_V2_MAX_TARGETS
   ) {
     return "SANITARIO_TARGETS_LIMIT_EXCEEDED";
@@ -395,8 +400,8 @@ function hasNonNullField(
   record: Record<string, unknown>,
   fields: readonly string[],
 ) {
-  return fields.some((field) =>
-    record[field] !== null && record[field] !== undefined
+  return fields.some(
+    (field) => record[field] !== null && record[field] !== undefined,
   );
 }
 
@@ -463,13 +468,17 @@ function validateExternalHistoryFactualCore(input: {
   const evidenceReference = readNonEmptyString(
     detailPayload.evidence_reference ?? eventPayload.evidence_reference,
   );
-  const rawCoverage = detailPayload.evidence_covered_fields ??
+  const rawCoverage =
+    detailPayload.evidence_covered_fields ??
     eventPayload.evidence_covered_fields;
   const coverage = Array.isArray(rawCoverage) ? rawCoverage : [];
   if (
-    !coverage.every((field) =>
-      typeof field === "string" && EXTERNAL_HISTORY_EVIDENCE_FIELDS.has(field)
-    ) || new Set(coverage).size !== coverage.length
+    !coverage.every(
+      (field) =>
+        typeof field === "string" &&
+        EXTERNAL_HISTORY_EVIDENCE_FIELDS.has(field),
+    ) ||
+    new Set(coverage).size !== coverage.length
   ) {
     return "SANITARIO_EXTERNAL_HISTORY_EVIDENCE_COVERAGE_INVALID";
   }
@@ -590,22 +599,23 @@ export function validateSanitaryCorrectionSourceConsistency(input: {
     : {};
   const allowed =
     SANITARY_CORRECTION_ALLOWED_FIELDS[String(correction.tipo_correcao)] ??
-      new Set<string>();
+    new Set<string>();
   if (
     sourceEvent.id !== event.corrige_evento_id ||
     sourceEvent.animal_id !== event.animal_id ||
     sourceEvent.lote_id !== event.lote_id
-  ) return "SANITARIO_CORRECTION_SOURCE_FACT_MISMATCH";
+  )
+    return "SANITARIO_CORRECTION_SOURCE_FACT_MISMATCH";
   const sourcePayload = isRecord(sourceEvent.payload)
     ? sourceEvent.payload
     : {};
   const sourceCorrection = isRecord(sourcePayload.sanitary_correction)
     ? sourcePayload.sanitary_correction
     : null;
-  const expectedRootEventId = typeof sourceCorrection?.evento_origem_id ===
-      "string"
-    ? sourceCorrection.evento_origem_id
-    : sourceEvent.id;
+  const expectedRootEventId =
+    typeof sourceCorrection?.evento_origem_id === "string"
+      ? sourceCorrection.evento_origem_id
+      : sourceEvent.id;
   if (correction.evento_origem_id !== expectedRootEventId) {
     return "SANITARIO_CORRECTION_ROOT_MISMATCH";
   }
@@ -615,7 +625,7 @@ export function validateSanitaryCorrectionSourceConsistency(input: {
     .sort();
   if (
     JSON.stringify([...input.sourceAnimalIds].sort()) !==
-      JSON.stringify(targetAnimalIds)
+    JSON.stringify(targetAnimalIds)
   ) {
     return "SANITARIO_CORRECTION_ANIMALS_MISMATCH";
   }
@@ -647,7 +657,7 @@ export function validateSanitaryCorrectionSourceConsistency(input: {
       }
     } else if (
       JSON.stringify(detail[field] ?? null) !==
-        JSON.stringify(sourceDetail[field] ?? null)
+      JSON.stringify(sourceDetail[field] ?? null)
     ) {
       return "SANITARIO_CORRECTION_UNDECLARED_CHANGE";
     }
@@ -669,15 +679,13 @@ function reject(
   status: Exclude<SanitarioSyncV2Status, "APPLIED" | "RETRYABLE"> = "REJECTED",
 ): SanitarioSyncV2Result {
   const record = isRecord(raw) ? raw : {};
-  const clientOpId = typeof record.client_op_id === "string"
-    ? record.client_op_id
-    : "";
+  const clientOpId =
+    typeof record.client_op_id === "string" ? record.client_op_id : "";
   return {
     op_id: clientOpId,
     client_op_id: clientOpId,
-    domain_op_id: typeof record.domain_op_id === "string"
-      ? record.domain_op_id
-      : undefined,
+    domain_op_id:
+      typeof record.domain_op_id === "string" ? record.domain_op_id : undefined,
     status,
     reason_code: reasonCode,
     retryable: false,
@@ -693,10 +701,12 @@ export function isSanitarioSyncV2Operation(
 function validateSanitarioSyncV2Routing(
   raw: unknown,
   context: SanitarioSyncV2Context,
-): { ok: true; operation: SanitarioSyncV2Operation } | {
-  ok: false;
-  result: SanitarioSyncV2Result;
-} {
+):
+  | { ok: true; operation: SanitarioSyncV2Operation }
+  | {
+      ok: false;
+      result: SanitarioSyncV2Result;
+    } {
   if (!isRecord(raw) || raw.domain !== SANITARIO_SYNC_V2_DOMAIN) {
     return { ok: false, result: reject(raw, "SANITARIO_DOMAIN_INVALID") };
   }
@@ -751,10 +761,12 @@ function validateSanitarioSyncV2Routing(
 export function validateSanitarioSyncV2Operation(
   value: unknown,
   context: SanitarioSyncV2Context,
-): { ok: true; operation: SanitarioSyncV2Operation } | {
-  ok: false;
-  result: SanitarioSyncV2Result;
-} {
+):
+  | { ok: true; operation: SanitarioSyncV2Operation }
+  | {
+      ok: false;
+      result: SanitarioSyncV2Result;
+    } {
   const routing = validateSanitarioSyncV2Routing(value, context);
   if (!routing.ok) return routing;
   const raw = routing.operation as unknown as Record<string, unknown>;
@@ -770,20 +782,35 @@ export function validateSanitarioSyncV2Operation(
   const command = raw.command as SanitarioSyncV2Command;
   if (command === "set_automation_plan" || command === "reschedule_agenda") {
     if (!isRevision(raw.expected_revision)) {
-      return { ok: false, result: reject(raw, "SANITARIO_EXPECTED_REVISION_REQUIRED") };
+      return {
+        ok: false,
+        result: reject(raw, "SANITARIO_EXPECTED_REVISION_REQUIRED"),
+      };
     }
     if (command === "set_automation_plan") {
       const plan = payload.plan;
-      if (!isRecord(plan) || ![1, 2].includes(Number(plan.schemaVersion)) ||
+      if (
+        !isRecord(plan) ||
+        ![1, 2].includes(Number(plan.schemaVersion)) ||
         (payload.expected_plan !== null && !isRecord(payload.expected_plan)) ||
-        typeof plan.enabled !== "boolean" || plan.revision !== Number(raw.expected_revision) + 1 ||
-        !Array.isArray(plan.rules) || plan.rules.length > 20 || !isRecord(plan.context)) {
+        typeof plan.enabled !== "boolean" ||
+        plan.revision !== Number(raw.expected_revision) + 1 ||
+        !Array.isArray(plan.rules) ||
+        plan.rules.length > 20 ||
+        !isRecord(plan.context)
+      ) {
         return { ok: false, result: reject(raw, "SANITARIO_PLAN_INVALID") };
       }
-    } else if (!isUuid(payload.agenda_id) || typeof payload.data_programada !== "string" ||
+    } else if (
+      !isUuid(payload.agenda_id) ||
+      typeof payload.data_programada !== "string" ||
       !/^\d{4}-\d{2}-\d{2}$/.test(payload.data_programada) ||
-      Number.isNaN(Date.parse(payload.data_programada))) {
-      return { ok: false, result: reject(raw, "SANITARIO_AGENDA_SCHEDULE_INVALID") };
+      Number.isNaN(Date.parse(payload.data_programada))
+    ) {
+      return {
+        ok: false,
+        result: reject(raw, "SANITARIO_AGENDA_SCHEDULE_INVALID"),
+      };
     }
   }
   if (command === "create_agenda") {
@@ -836,10 +863,10 @@ export function validateSanitarioSyncV2Operation(
     }
     const eventAnimals = payload.event_animals as unknown[];
     const animalIds = eventAnimals.map((item) =>
-      isRecord(item) ? item.animal_id : null
+      isRecord(item) ? item.animal_id : null,
     );
     const relationIds = eventAnimals.map((item) =>
-      isRecord(item) ? item.id : null
+      isRecord(item) ? item.id : null,
     );
     const targetsIssue = validateTargets(animalIds);
     if (
@@ -939,14 +966,25 @@ export function buildSanitarioSyncV2RpcCall(
     case "set_automation_plan":
       return {
         functionName: "internal_sanitario_sync_v2_set_automation_plan",
-        args: { ...common, expected_revision: operation.expected_revision, client_id: context.clientId,
-          client_tx_id: context.clientTxId, plan: operation.payload.plan, expected_plan: operation.payload.expected_plan },
+        args: {
+          ...common,
+          expected_revision: operation.expected_revision,
+          client_id: context.clientId,
+          client_tx_id: context.clientTxId,
+          plan: operation.payload.plan,
+          expected_plan: operation.payload.expected_plan,
+        },
       };
     case "reschedule_agenda":
       return {
         functionName: "internal_sanitario_sync_v2_reschedule_agenda",
-        args: { ...common, expected_revision: operation.expected_revision, client_id: context.clientId,
-          agenda_id: operation.payload.agenda_id, planned_for: operation.payload.data_programada },
+        args: {
+          ...common,
+          expected_revision: operation.expected_revision,
+          client_id: context.clientId,
+          agenda_id: operation.payload.agenda_id,
+          planned_for: operation.payload.data_programada,
+        },
       };
     case "create_agenda":
       return {
@@ -979,12 +1017,12 @@ export function buildSanitarioSyncV2RpcCall(
             context,
           ),
           detail_payload: sanitizeCompositeRecord(operation.payload.detail),
-          event_animals: operation.payload.event_animals.map((
-            { id, animal_id },
-          ) => ({
-            id,
-            animal_id,
-          })),
+          event_animals: operation.payload.event_animals.map(
+            ({ id, animal_id }) => ({
+              id,
+              animal_id,
+            }),
+          ),
         },
       };
     case "close_agenda":
@@ -1000,7 +1038,8 @@ export function buildSanitarioSyncV2RpcCall(
 }
 
 function extractDatabaseReason(error: SanitarioDbError): string | null {
-  const message = [error.message, error.details, error.hint].filter(Boolean)
+  const message = [error.message, error.details, error.hint]
+    .filter(Boolean)
     .join(" ");
   return message.match(/SANITARIO_[A-Z0-9_]+/)?.[0] ?? null;
 }
@@ -1016,9 +1055,23 @@ function isTimeoutError(error: SanitarioDbError): boolean {
   return error.code === "57014" || /timeout|timed out|abort/i.test(message);
 }
 
-function dependencyReason(error: SanitarioDbError, reason: string | null): string | null {
-  if (["42883", "42P01", "42704", "PGRST202", "PGRST205"].includes(error.code ?? "")) return "SANITARIO_SYNC_V2_DEPENDENCY_UNAVAILABLE";
-  if (error.code === "23503" && ["SANITARIO_AGENDA_NOT_FOUND", "SANITARIO_PLAN_CONFIG_NOT_FOUND"].includes(reason ?? "")) return reason;
+function dependencyReason(
+  error: SanitarioDbError,
+  reason: string | null,
+): string | null {
+  if (
+    ["42883", "42P01", "42704", "PGRST202", "PGRST205"].includes(
+      error.code ?? "",
+    )
+  )
+    return "SANITARIO_SYNC_V2_DEPENDENCY_UNAVAILABLE";
+  if (
+    error.code === "23503" &&
+    ["SANITARIO_AGENDA_NOT_FOUND", "SANITARIO_PLAN_CONFIG_NOT_FOUND"].includes(
+      reason ?? "",
+    )
+  )
+    return reason;
   return null;
 }
 
@@ -1033,29 +1086,35 @@ function normalizeCanonicalResult(
       "BLOCKED_DEPENDENCY",
     );
   }
-  const canonicalEntityId = typeof data.agenda_id === "string"
-    ? data.agenda_id
-    : typeof data.evento_id === "string"
-    ? data.evento_id
-    : typeof data.closure_id === "string"
-    ? data.closure_id
-    : typeof data.fazenda_id === "string"
-    ? data.fazenda_id
-    : undefined;
-  const canonicalStatus = typeof data.status === "string"
-    ? data.status
-    : typeof data.agenda_status === "string"
-    ? data.agenda_status
-    : undefined;
+  const entity =
+    operation.command === "apply_factual_core"
+      ? data.evento_id
+      : operation.command === "close_agenda"
+        ? data.closure_id
+        : operation.command === "set_automation_plan"
+          ? data.fazenda_id
+          : data.agenda_id;
+  const canonicalEntityId = typeof entity === "string" ? entity : undefined;
+  const canonicalStatus =
+    typeof data.status === "string"
+      ? data.status
+      : typeof data.agenda_status === "string"
+        ? data.agenda_status
+        : undefined;
   return {
     op_id: operation.client_op_id,
     client_op_id: operation.client_op_id,
     domain_op_id: operation.domain_op_id,
-    status: "APPLIED",
+    status:
+      data.confirmed === false && data.outcome === "collision"
+        ? "CONFLICT"
+        : "APPLIED",
+    ...(data.confirmed === false && data.outcome === "collision"
+      ? { reason_code: "SANITARIO_OBLIGATION_COLLISION" }
+      : {}),
     canonical_entity_id: canonicalEntityId,
-    current_revision: typeof data.revision === "number"
-      ? data.revision
-      : undefined,
+    current_revision:
+      typeof data.revision === "number" ? data.revision : undefined,
     canonical_status: canonicalStatus,
     retryable: false,
     canonical_result: data,
@@ -1066,9 +1125,14 @@ function isSanitarioConflictError(
   error: SanitarioDbError,
   databaseReason: string | null,
 ): boolean {
-  return ["40001", "23505"].includes(error.code ?? "") ||
-    ["SANITARIO_PLAN_REVISION_CONFLICT", "SANITARIO_AGENDA_REVISION_CONFLICT", "SANITARIO_AGENDA_NOT_EXECUTABLE"]
-      .includes(databaseReason ?? "");
+  return (
+    ["40001", "23505"].includes(error.code ?? "") ||
+    [
+      "SANITARIO_PLAN_REVISION_CONFLICT",
+      "SANITARIO_AGENDA_REVISION_CONFLICT",
+      "SANITARIO_AGENDA_NOT_EXECUTABLE",
+    ].includes(databaseReason ?? "")
+  );
 }
 
 export function classifySanitarioSyncV2Error(
@@ -1085,11 +1149,7 @@ export function classifySanitarioSyncV2Error(
   }
   const dependency = dependencyReason(error, databaseReason);
   if (dependency) {
-    return reject(
-      operation,
-      dependency,
-      "BLOCKED_DEPENDENCY",
-    );
+    return reject(operation, dependency, "BLOCKED_DEPENDENCY");
   }
   if (isSanitarioConflictError(error, databaseReason)) {
     return {
@@ -1143,7 +1203,7 @@ export async function executeSanitarioSyncV2Operation(
   dependencies: SanitarioSyncV2Dependencies,
 ): Promise<SanitarioSyncV2Result> {
   const routing = validateSanitarioSyncV2Routing(raw, context);
-  if (!routing.ok) return routing.result;
+  if (routing.ok === false) return routing.result;
   const routedOperation = routing.operation;
 
   if (
@@ -1151,6 +1211,53 @@ export async function executeSanitarioSyncV2Operation(
   ) {
     return reject(routedOperation, "SANITARIO_ROLE_NOT_ALLOWED");
   }
+
+  let admissionCall: SanitarioRpcCall;
+  try {
+    const original = buildSanitarioSyncV2RpcCall(routedOperation, context);
+    admissionCall = {
+      functionName: "internal_sanitario_admit_v3",
+      args: {
+        actor_user_id: context.actorUserId,
+        fazenda_id: context.fazendaId,
+        command: routedOperation.command,
+        operation_args: original.args,
+        receipt_only: true,
+      },
+    };
+    const receipt = await dependencies.callRpc(admissionCall);
+    if (receipt.error)
+      return classifySanitarioSyncV2Error(routedOperation, receipt.error);
+    if (!isRecord(receipt.data))
+      return reject(
+        routedOperation,
+        "SANITARIO_RECEIPT_LOOKUP_UNAVAILABLE",
+        "BLOCKED_DEPENDENCY",
+      );
+    if (receipt.data.outcome === "found")
+      return normalizeCanonicalResult(
+        routedOperation,
+        receipt.data.canonical_result,
+      );
+    if (receipt.data.outcome !== "absent")
+      return reject(
+        routedOperation,
+        "SANITARIO_RECEIPT_LOOKUP_UNAVAILABLE",
+        "BLOCKED_DEPENDENCY",
+      );
+    if (routedOperation.receipt_only)
+      return reject(
+        routedOperation,
+        "SANITARIO_RECEIPT_ABSENT",
+        "BLOCKED_DEPENDENCY",
+      );
+  } catch (error) {
+    return classifySanitarioSyncV2Error(routedOperation, {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+  if (routedOperation.contract_version !== 3)
+    return reject(routedOperation, "SANITARIO_CLIENT_CONTRACT_OUTDATED");
 
   let gateResponse: Awaited<
     ReturnType<SanitarioSyncV2Dependencies["loadGate"]>
@@ -1167,12 +1274,31 @@ export async function executeSanitarioSyncV2Operation(
   }
   const gateResult = evaluateGate(routedOperation, context, gateResponse.data);
   if (gateResult) return gateResult;
+  if (gateResponse.data?.foundation_state !== "ready")
+    return reject(
+      routedOperation,
+      "SANITARIO_FOUNDATION_NOT_READY",
+      "BLOCKED_DEPENDENCY",
+    );
 
   const validation = validateSanitarioSyncV2Operation(raw, context);
-  if (!validation.ok) return validation.result;
+  if (validation.ok === false) return validation.result;
   const operation = validation.operation;
 
   if (operation.command === "apply_factual_core") {
+    if (
+      (operation.payload.event.natureza === "primary_execution" ||
+        operation.payload.event.source_sanitario_agenda_v2_id) &&
+      (operation.payload.event.natureza !== "primary_execution" ||
+        !operation.payload.event.source_sanitario_agenda_v2_id ||
+        operation.payload.event.payload?.sanitario_v3_progressive !== true)
+    ) {
+      return reject(
+        operation,
+        "SANITARIO_V3_EXECUTION_NOT_ENABLED",
+        "BLOCKED_DEPENDENCY",
+      );
+    }
     let evidenceValidation: Awaited<
       ReturnType<SanitarioSyncV2Dependencies["validateProductEvidence"]>
     >;
@@ -1194,7 +1320,10 @@ export async function executeSanitarioSyncV2Operation(
     }
   }
 
-  const rpcCall = buildSanitarioSyncV2RpcCall(operation, context);
+  const rpcCall: SanitarioRpcCall = {
+    ...admissionCall,
+    args: { ...admissionCall.args, receipt_only: false },
+  };
   try {
     const rpcResponse = await dependencies.callRpc(rpcCall);
     if (rpcResponse.error) {

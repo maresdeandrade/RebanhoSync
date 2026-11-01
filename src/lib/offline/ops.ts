@@ -14,6 +14,8 @@ import type {
 import { getLocalStoreName } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
 import { buildCreateAgendaOperation } from "./sanitarioV2Cutover";
+import { prepareSanitaryCommandV3 } from "@/lib/sanitario/execution/sanitaryAdmissionV3";
+import { mapQueuedSanitaryPlanV2 } from "@/lib/sanitario/agenda/sanitaryPlanningSyncV2";
 import {
   assertValidAnimalTaxonomyFactsContract,
   readTaxonomyFactsRecord,
@@ -227,6 +229,22 @@ export const createGesture = async (
 ) => {
   const { validateContext = () => undefined } = options;
   validateContext();
+  // The generic gesture cannot create or indirectly complement a sanitary fact.
+  // Planning drafts below keep their own atomic local materialization.
+  for (const op of ops_input) {
+    const remote = op.table.replace(/^event_/, "");
+    if (op.record.domain === "sanitario_v2") {
+      if (op.record.contract_version !== 3) throw new Error("SANITARIO_CLIENT_CONTRACT_OUTDATED");
+      prepareSanitaryCommandV3(op.record);
+      continue;
+    }
+    if (remote === "eventos_sanitario" || op.record.dominio === "sanitario") throw new Error("SANITARIO_SINGLE_ADMISSION_REQUIRED");
+    const sourceId = op.record.corrige_evento_id ?? op.record.evento_id ?? op.record.source_evento_id;
+    if (typeof sourceId === "string") {
+      const source = await db.event_eventos.get(sourceId);
+      if (source?.fazenda_id === fazenda_id && source.dominio === "sanitario") throw new Error("SANITARIO_SINGLE_ADMISSION_REQUIRED");
+    }
+  }
   assertMovementWriterBoundary(ops_input);
   const movementTx = options.clientTxId ?? crypto.randomUUID();
   const movement = ops_input.some(op => op.table === "movement_v1")
@@ -334,6 +352,7 @@ export const createGesture = async (
       const domain_op_id = crypto.randomUUID();
       const agenda: SanitarioAgendaLocalV2 = {
         ...draft.agenda,
+        obrigacao_origem_agenda_id: draft.agenda.id,
         fazenda_id,
         client_id,
         client_op_id,
@@ -343,11 +362,12 @@ export const createGesture = async (
         created_at: client_recorded_at,
         updated_at: client_recorded_at,
         revision: 0,
-        contract_version: 2,
+        contract_version: 3,
         domain_op_id,
       };
       const animal: SanitarioAgendaAnimalLocalV2 = {
         agenda_id: agenda.id,
+        obrigacao_origem_agenda_id: agenda.id,
         fazenda_id,
         animal_id: draft.animal_id,
         planned_status: "planejado",
@@ -453,6 +473,15 @@ export const createGesture = async (
         for (const [operationIndex, op] of ops.entries()) {
           transactionOperationIndex = operationIndex;
           await applyOpLocal(op);
+          // applyOpLocal captures the authoritative local before snapshot. Only
+          // now can a plan-only mutation be distinguished from a profile edit.
+          // Both its local effect and unique V3 envelope commit atomically.
+          const plan = mapQueuedSanitaryPlanV2(op, fazenda_id);
+          if (plan) {
+            const envelope = prepareSanitaryCommandV3({ ...plan, contract_version: 3 });
+            await db.queue_ops.update(op.client_op_id, {table:"sanitario_v2",action:"INSERT",
+              domain_op_id:envelope.domain_op_id,record:envelope});
+          }
         }
         transactionOperationIndex = undefined;
         if (sanitarioAgendaV2.length > 0) {
@@ -592,6 +621,10 @@ export const reapplyOpLocal = async (op: Operation) => {
 };
 
 export const rollbackOpLocal = async (op: Operation) => {
+  const { isSanitaryEvidenceOperation } = await import("./sanitaryFoundationRecovery");
+  // A rejected stock projection can be rolled back without discarding its
+  // immutable queue envelope or the confirmed sanitary fact (C06 + V3).
+  if (isSanitaryEvidenceOperation(op) && !isSanitaryStockRetry(op)) return;
   if (!op.before_snapshot && op.action !== "INSERT") return;
 
   const localStoreName = getLocalStoreName(op.table);
@@ -658,6 +691,17 @@ export async function retryRejectedOperation(rejection: Rejection) {
   if (!operation) {
     throw new Error("REJECTED_OPERATION_NOT_AVAILABLE");
   }
+  const { isSanitaryEvidenceOperation, recoverSanitaryFoundation } = await import("./sanitaryFoundationRecovery");
+  const sanitaryRetry = isSanitaryEvidenceOperation(operation) && !isSanitaryStockRetry(operation);
+  if (sanitaryRetry) {
+    const ownership = await (await import("./localReadBoundary")).getCurrentLocalReadOwnership();
+    if (ownership.status !== "OWNED") throw new Error("SANITARIO_RECOVERY_OWNERSHIP_REQUIRED");
+    await recoverSanitaryFoundation(rejection.fazenda_id);
+    const recovered = await db.queue_ops.get(operation.client_op_id);
+    if (recovered?.sanitary_receipt) return {clientTxId:operation.client_tx_id,clientOpId:operation.client_op_id};
+    if (operation.record.domain === "sanitario_v2" && operation.record.contract_version !== 3) throw new Error("SANITARIO_CLIENT_CONTRACT_OUTDATED");
+    if (operation.record?.payload?.event?.natureza === "primary_execution" || operation.record?.payload?.event?.source_sanitario_agenda_v2_id) throw new Error("SANITARIO_V3_EXECUTION_NOT_ENABLED");
+  }
   const isFactualCore = (op: Operation) =>
     op.record.domain === "sanitario_v2" && op.record.command === "apply_factual_core";
   const siblings = await db.queue_ops.where("client_tx_id").equals(operation.client_tx_id).toArray();
@@ -665,8 +709,8 @@ export async function retryRejectedOperation(rejection: Rejection) {
 
   return db.transaction(
     "rw",
-    [db.queue_gestures, db.queue_ops, ...(factualRetry ? [] : getAffectedStores([operation])),
-      ...(!factualRetry && isSanitaryStockRetry(operation) ? [db.state_insumo_lotes] : [])],
+    [db.queue_gestures, db.queue_ops, ...(factualRetry || sanitaryRetry ? [] : getAffectedStores([operation])),
+      ...(!factualRetry && !sanitaryRetry && isSanitaryStockRetry(operation) ? [db.state_insumo_lotes] : [])],
     async () => {
       const [currentOperation, gesture] = await Promise.all([
         db.queue_ops.get(operation.client_op_id),
@@ -703,7 +747,7 @@ export async function retryRejectedOperation(rejection: Rejection) {
       const retryOps = currentSiblings.filter(op => op.sync_state === "REJECTED" &&
         (!factualRetry || isFactualCore(op) ||
           (op.table === "state_insumo_movimentacoes" && op.record.tipo === "consumo_sanitario")));
-      if (!factualRetry) {
+      if (!factualRetry && !sanitaryRetry) {
         await reapplyExplicitRejectedOperation(currentOperation, gesture.fazenda_id);
       }
       for (const retryOp of factualRetry ? retryOps : [currentOperation]) {

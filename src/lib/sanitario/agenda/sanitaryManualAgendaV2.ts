@@ -368,7 +368,9 @@ export function buildManualSanitaryAgendaRecordsV2(
     deleted_at: null,
   };
 
+  agenda.obrigacao_origem_agenda_id = agenda.id;
   const animals: SanitarioAgendaAnimalLocalV2[] = animalIds.map((animalId) => ({
+    obrigacao_origem_agenda_id: agenda.id,
     agenda_id: agendaId,
     fazenda_id: input.target.fazendaId,
     animal_id: animalId,
@@ -408,7 +410,7 @@ export async function createManualSanitaryAgendaV2(
   const realDb = db as unknown as typeof import("@/lib/offline/db").db;
   const identity = input.syncContext ? createSanitarioV2Identity() : undefined;
   if (identity) {
-    Object.assign(records.agenda, { client_id: input.syncContext!.clientId, client_tx_id: identity.clientTxId, domain_op_id: identity.domainOpId, revision: 0, contract_version: 2, client_recorded_at: records.agenda.created_at });
+    Object.assign(records.agenda, { client_id: input.syncContext!.clientId, client_tx_id: identity.clientTxId, domain_op_id: identity.domainOpId, revision: 0, contract_version: 3, client_recorded_at: records.agenda.created_at });
   }
   const operations = identity ? [buildCreateAgendaOperation(identity, records.agenda, records.animals.map(row => row.animal_id))] : [];
   if (input.syncContext) await validateSanitarioV2Enqueue({ fazendaId: input.target.fazendaId, ...input.syncContext, operations });

@@ -18,77 +18,14 @@ describe("tryRegistrarSanitaryRpcFinalizeEffect", () => {
     expect(result).toEqual({ status: "skip" });
   });
 
-  it("retorna handled_refresh_failed quando RPC sucesso mas pull falha", async () => {
-    const concluirSpy = vi.fn(async () => "evt-1");
-    const pullError = new Error("pull failed");
-    const pullSpy = vi.fn(async () => {
-      throw pullError;
-    });
-
-    const result = await tryRegistrarSanitaryRpcFinalizeEffect({
-      tipoManejo: "sanitario",
-      sourceTaskId: "agenda-1",
-      fazendaId: "farm-1",
-      occurredAt: nowIso,
-      tipo: "vacinacao",
-      sanitaryProductName: "Vacina X",
-      sanitaryProductMetadata: {},
-      concluirPendenciaSanitariaFn: concluirSpy,
-      pullDataForFarmFn: pullSpy,
-    });
-
-    expect(result).toEqual({ status: "handled_refresh_failed", eventoId: "evt-1", error: pullError });
-    expect(concluirSpy).toHaveBeenCalledTimes(1);
-    expect(pullSpy).toHaveBeenCalledWith("farm-1", [
-      "agenda_itens",
-      "eventos",
-      "eventos_sanitario",
-    ]);
-  });
-
-  it("retorna fallback quando RPC falha", async () => {
-    const error = new Error("rpc down");
-    const concluirSpy = vi.fn(async () => {
-      throw error;
-    });
-    const logSpy = vi.fn();
-
-    const result = await tryRegistrarSanitaryRpcFinalizeEffect({
-      tipoManejo: "sanitario",
-      sourceTaskId: "agenda-1",
-      fazendaId: "farm-1",
-      occurredAt: nowIso,
-      tipo: "vacinacao",
-      sanitaryProductName: "Vacina X",
-      sanitaryProductMetadata: {},
-      concluirPendenciaSanitariaFn: concluirSpy,
-      onFallbackLog: logSpy,
-    });
-
-    expect(result.status).toBe("fallback");
-    expect(logSpy).toHaveBeenCalledWith(error);
-  });
-
-  it("retorna ambiguous quando RPC falha por timeout/network", async () => {
-    const error = new Error("Request timeout");
-    const concluirSpy = vi.fn(async () => {
-      throw error;
-    });
-    const logSpy = vi.fn();
-
-    const result = await tryRegistrarSanitaryRpcFinalizeEffect({
-      tipoManejo: "sanitario",
-      sourceTaskId: "agenda-1",
-      fazendaId: "farm-1",
-      occurredAt: nowIso,
-      tipo: "vacinacao",
-      sanitaryProductName: "Vacina X",
-      sanitaryProductMetadata: {},
-      concluirPendenciaSanitariaFn: concluirSpy,
-      onFallbackLog: logSpy,
-    });
-
-    expect(result).toEqual({ status: "ambiguous", error });
-    expect(logSpy).not.toHaveBeenCalled();
+  it.each(["success", "rpc down", "Request timeout"])("bloqueia antes da RPC e do fallback (%s)", async outcome => {
+    const complete = vi.fn(async () => { if(outcome !== "success") throw new Error(outcome); return "evt-1"; });
+    const pull = vi.fn(); const log = vi.fn();
+    await expect(tryRegistrarSanitaryRpcFinalizeEffect({
+      tipoManejo:"sanitario", sourceTaskId:"agenda-1", fazendaId:"farm-1", occurredAt:nowIso,
+      tipo:"vacinacao",sanitaryProductName:"Vacina X",sanitaryProductMetadata:{},
+      concluirPendenciaSanitariaFn:complete,pullDataForFarmFn:pull,onFallbackLog:log,
+    })).rejects.toThrow("SANITARIO_V3_EXECUTION_NOT_ENABLED");
+    expect(complete).not.toHaveBeenCalled(); expect(pull).not.toHaveBeenCalled(); expect(log).not.toHaveBeenCalled();
   });
 });

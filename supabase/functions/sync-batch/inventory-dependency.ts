@@ -56,6 +56,9 @@ export async function resolveSanitarioInventoryFactualDependency(input: {
     candidate.payload.event.id === input.sourceEventId
   );
   const appliedInCurrentBatch = factualOperations.some((dependency) =>
+    !dependency.receipt_only &&
+    dependency.command === "apply_factual_core" &&
+    dependency.payload.event.natureza === "primary_execution" &&
     input.processedResults.some((entry) =>
       (entry.op_id === dependency.client_op_id ||
         entry.client_op_id === dependency.client_op_id) &&

@@ -21,7 +21,7 @@ function factualOperation(
     client_tx_id: "40000000-0000-4000-8000-000000000001",
     domain_op_id: "50000000-0000-4000-8000-000000000001",
     payload: {
-      event: { id: EVENT_ID },
+      event: { id: EVENT_ID, natureza: "primary_execution" },
       detail: {},
       event_animals: [],
     },
@@ -30,6 +30,15 @@ function factualOperation(
 }
 
 describe("sync-batch: dependência factual do estoque sanitário", () => {
+  it.each(["declaration", "receipt_lookup"])("não promove %s a nova aplicação factual", async kind => {
+    const operation = factualOperation();
+    if (operation.command !== "apply_factual_core") throw new Error("fixture");
+    if (kind === "declaration") operation.payload.event.natureza = "standalone_fact";
+    else operation.receipt_only = true;
+    const result = await resolveSanitarioInventoryFactualDependency({operations:[operation],processedResults:[{op_id:FACTUAL_OP_ID,status:"APPLIED"}],
+      fazendaId:FAZENDA_ID,sourceEventId:EVENT_ID,loadAppliedLedger:async()=>({data:null,error:null})});
+    expect(result.status).toBe("BLOCKED_DEPENDENCY");
+  });
   it.each(["REJECTED", "CONFLICT"])("terminaliza consumo sem escrita quando o fato teve %s no mesmo batch", async (status) => {
     const writeMovement = vi.fn();
     const decision = await resolveSanitarioInventoryFactualDependency({
