@@ -140,27 +140,7 @@ export function buildInventoryActionStepIssues(input: {
   return issues;
 }
 
-type BlockedAnimalLike = {
-  animal: { identificacao: string };
-};
-
-export function buildSanitaryMovementBlockIssues(input: {
-  showsTransitChecklist: boolean;
-  blockedAnimals: BlockedAnimalLike[];
-}) {
-  if (!input.showsTransitChecklist || input.blockedAnimals.length === 0) {
-    return [];
-  }
-
-  const firstBlocked = input.blockedAnimals[0];
-  if (!firstBlocked) return [];
-
-  return [
-    input.blockedAnimals.length === 1
-      ? `${firstBlocked.animal.identificacao} possui restricao sanitaria informada; confira os casos e requisitos aplicaveis.`
-      : `${input.blockedAnimals.length} animal(is) do recorte atual possuem restricoes sanitarias informadas.`,
-  ];
-}
+export { buildSanitaryMovementBlockIssues } from "@/lib/sanitario/compliance/animalRestrictions";
 
 export function buildProtocolEligibilityIssues(input: {
   tipoManejo: EventDomain | null;

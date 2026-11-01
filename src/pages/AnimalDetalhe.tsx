@@ -365,6 +365,14 @@ type AnimalSanitaryCasesPanelProps = {
   onCloseClinicalCase: (caseRecord: SanitarioCaso) => void;
 };
 
+function buildAnimalFactualRegisterUrl(animal: Pick<Animal, "id" | "lote_id">, selector: "quick" | "dominio", value: string) {
+  const params = new URLSearchParams();
+  params.set(selector, value);
+  params.set("animalId", animal.id);
+  if (animal.lote_id) params.set("loteId", animal.lote_id);
+  return `/registrar?${params.toString()}`;
+}
+
 function buildClinicalGuidanceRegisterUrl(input: {
   animalId: string;
   caseId: string;
@@ -1931,13 +1939,7 @@ const AnimalDetalhe = () => {
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               onClick={() => {
-                const params = new URLSearchParams();
-                params.set("quick", "venda");
-                params.set("animalId", animal.id);
-                if (animal.lote_id) {
-                  params.set("loteId", animal.lote_id);
-                }
-                navigate(`/registrar?${params.toString()}`);
+                navigate(buildAnimalFactualRegisterUrl(animal, "quick", "venda"));
               }}
               disabled={
                 animal.status !== "ativo"
@@ -1994,13 +1996,7 @@ const AnimalDetalhe = () => {
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  const params = new URLSearchParams();
-                  params.set("dominio", "sanitario");
-                  params.set("animalId", animal.id);
-                  if (animal.lote_id) {
-                    params.set("loteId", animal.lote_id);
-                  }
-                  navigate(`/registrar?${params.toString()}`);
+                  navigate(buildAnimalFactualRegisterUrl(animal, "dominio", "sanitario"));
                 }}
                 disabled={animal.status !== "ativo"}
               >

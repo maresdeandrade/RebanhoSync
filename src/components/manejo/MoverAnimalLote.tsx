@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { db } from "@/lib/offline/db";
@@ -6,10 +6,10 @@ import { useLotes } from "@/hooks/useLotes";
 import { createGesture } from "@/lib/offline/ops";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
+import { useMovementComplianceWarning } from "@/hooks/useMovementComplianceWarning";
 import { useAnimalSanitaryRestrictions } from "@/hooks/useAnimalSanitaryRestrictions";
 import { SanitaryRestrictionNotice } from "./SanitaryRestrictionNotice";
 import {
-  buildRegulatoryOperationalReadModel,
   loadRegulatorySurfaceSource,
 } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
@@ -68,14 +68,7 @@ export function MoverAnimalLote({
     [animal.fazenda_id],
   );
   const sanitary = useAnimalSanitaryRestrictions(animal.fazenda_id, animalRecord ? [animalRecord] : []);
-  const regulatoryReadModel = useMemo(
-    () =>
-      buildRegulatoryOperationalReadModel(regulatorySurfaceSource ?? undefined),
-    [regulatorySurfaceSource],
-  );
-  const movementComplianceGuards = regulatoryReadModel.flows.movementInternal;
-  const complianceBlockReason =
-    [...new Set([...movementComplianceGuards.blockers, ...(movementComplianceGuards.warnings ?? [])].map(g => g.message ?? g.label))].join(" ") || null;
+  const complianceBlockReason = useMovementComplianceWarning(regulatorySurfaceSource);
 
   const handleConfirm = async () => {
     if (!novoLoteId) {
@@ -153,12 +146,7 @@ export function MoverAnimalLote({
             </Select>
           </div>
 
-          <SanitaryRestrictionNotice {...sanitary} />
-          {complianceBlockReason ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              {complianceBlockReason}
-            </div>
-          ) : null}
+          <SanitaryRestrictionNotice {...sanitary} regulatoryMessage={complianceBlockReason} />
         </FormSection>
 
         <DialogFooter>

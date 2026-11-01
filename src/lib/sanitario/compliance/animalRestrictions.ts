@@ -17,6 +17,18 @@ export const SANITARY_CASE_COVERAGE_WARNINGS = {
   unavailable: "Consulta de casos locais indisponivel; cobertura desconhecida. Sinais ja conhecidos permanecem informativos.",
 } as const;
 
+export function buildSanitaryMovementBlockIssues(input: {
+  showsTransitChecklist: boolean;
+  blockedAnimals: readonly { animal: { identificacao: string } }[];
+}) {
+  if (!input.showsTransitChecklist || input.blockedAnimals.length === 0) return [];
+  const firstBlocked = input.blockedAnimals[0];
+  if (!firstBlocked) return [];
+  return [input.blockedAnimals.length === 1
+    ? `${firstBlocked.animal.identificacao} possui restricao sanitaria informada; confira os casos e requisitos aplicaveis.`
+    : `${input.blockedAnimals.length} animal(is) do recorte atual possuem restricoes sanitarias informadas.`];
+}
+
 // Read model only: never mutates a case, projection, queue or sanitary decision.
 export function listAnimalSanitaryRestrictions<T extends SanitaryRestrictionAnimal>(
   farmId: string | null | undefined,

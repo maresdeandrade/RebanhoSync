@@ -12,7 +12,7 @@ import {
   searchVeterinaryProducts,
   type VeterinaryProductSelection,
 } from "@/lib/sanitario/catalog/products";
-import { listAnimalSanitaryRestrictions, SANITARY_CASE_COVERAGE_WARNINGS, type AnimalSanitaryRestriction, type SanitaryCaseCoverage } from "@/lib/sanitario/compliance/animalRestrictions";
+import { buildSanitaryMovementBlockIssues, listAnimalSanitaryRestrictions, SANITARY_CASE_COVERAGE_WARNINGS, type AnimalSanitaryRestriction, type SanitaryCaseCoverage } from "@/lib/sanitario/compliance/animalRestrictions";
 import {
   EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
   type RegulatoryFlowReadModel,
@@ -174,24 +174,6 @@ function buildProtocolEligibilityIssues(input: {
   }
 
   return ["O item de protocolo escolhido nao atende todos os animais selecionados."];
-}
-
-function buildSanitaryMovementBlockIssues(input: {
-  showsTransitChecklist: boolean;
-  blockedAnimals: Array<{ animal: Pick<Animal, "identificacao"> }>;
-}) {
-  if (!input.showsTransitChecklist || input.blockedAnimals.length === 0) {
-    return [];
-  }
-
-  const firstBlocked = input.blockedAnimals[0];
-  if (!firstBlocked) return [];
-
-  return [
-    input.blockedAnimals.length === 1
-      ? `${firstBlocked.animal.identificacao} possui restricao sanitaria informada; confira os casos e requisitos aplicaveis.`
-      : `${input.blockedAnimals.length} animal(is) do recorte atual possuem restricoes sanitarias informadas.`,
-  ];
 }
 
 function buildComplianceFlowIssues(input: {
