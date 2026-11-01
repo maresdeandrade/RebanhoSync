@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useAnimalSanitaryRestrictions } from "@/hooks/useAnimalSanitaryRestrictions";
+import { SanitaryRestrictionNotice } from "@/components/manejo/SanitaryRestrictionNotice";
 import { loadAnimalAcquisitionHistory } from "@/lib/comercial/animalCommercialHistory";
 import { isCommercialSimulation } from "@/lib/finance/classification";
 import {
@@ -1262,6 +1264,7 @@ const AnimalDetalhe = () => {
     return byCase;
   }, [eventos]);
   const hasMovementBlockedSanitaryAlert = hasOpenSanitaryAlert(animal?.payload);
+  const sanitaryRestrictions = useAnimalSanitaryRestrictions(fazendaId, animal ? [animal] : []);
   const selectedOfficialDisease = useMemo(() => {
     const diseases = officialDiseases ?? [];
     return (
@@ -1690,7 +1693,7 @@ const AnimalDetalhe = () => {
         mortalidadeAlta: false,
       }));
       showSuccess(
-        "Suspeita sanitaria aberta com bloqueio local de movimentacao.",
+        "Suspeita sanitaria aberta; restricao informada para avaliacao.",
       );
     } catch (error) {
       console.error(error);
@@ -1762,7 +1765,7 @@ const AnimalDetalhe = () => {
         closureReason: "descartada",
         closureNotes: "",
       });
-      showSuccess("Suspeita sanitaria encerrada e bloqueio local removido.");
+      showSuccess("Suspeita sanitaria encerrada; confira outros casos e restricoes.");
     } catch (error) {
       console.error(error);
       showError("Nao foi possivel encerrar a suspeita sanitaria.");
@@ -1878,6 +1881,7 @@ const AnimalDetalhe = () => {
 
   return (
     <PageContainer width="standard" className="space-y-6">
+      <SanitaryRestrictionNotice {...sanitaryRestrictions} />
       <AnimalDetailHeader
         identification={animal.identificacao}
         name={animal.nome}
@@ -1900,7 +1904,7 @@ const AnimalDetalhe = () => {
             Encerrar suspeita
           </Button>
         )}
-        {animal.status === "ativo" && !hasMovementBlockedSanitaryAlert ? (
+        {animal.status === "ativo" ? (
           <Button size="default" asChild>
             <Link to={registrarAnimalPath}>
               <ClipboardCheck className="mr-2 h-4 w-4" />
@@ -1936,7 +1940,7 @@ const AnimalDetalhe = () => {
                 navigate(`/registrar?${params.toString()}`);
               }}
               disabled={
-                animal.status !== "ativo" || hasMovementBlockedSanitaryAlert
+                animal.status !== "ativo"
               }
             >
               <Handshake className="mr-2 h-4 w-4" />
@@ -1952,7 +1956,7 @@ const AnimalDetalhe = () => {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => setShowMoverLote(true)}
-              disabled={hasMovementBlockedSanitaryAlert}
+              disabled={animal.status !== "ativo"}
             >
               <ArrowLeftRight className="mr-2 h-4 w-4" />
               Mover lote
@@ -2037,7 +2041,7 @@ const AnimalDetalhe = () => {
                   </Badge>
                 ) : null}
                 <Badge className="bg-warning text-warning-foreground">
-                  Movimentacao bloqueada
+                  Restricao sanitaria informada
                 </Badge>
                 {activeSanitaryAlert.notificationType ? (
                   <Badge variant="outline">
@@ -3817,7 +3821,7 @@ const AnimalDetalhe = () => {
                     Mortalidade alta ou inesperada
                   </span>
                   <p className="text-sm text-muted-foreground">
-                    Mantem o bloqueio local ate avaliacao do caso.
+                    Mantem o alerta local ate avaliacao do caso.
                   </p>
                 </div>
               </label>

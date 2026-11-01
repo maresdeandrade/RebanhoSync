@@ -1,4 +1,5 @@
 import { StatusBadge } from "@/components/ui/status-badge";
+import { FACTUAL_SANITARY_NOTICE } from "@/lib/sanitario/compliance/animalRestrictions";
 
 type GuardLike = {
   key: string;
@@ -21,9 +22,10 @@ export function RegistrarSanitaryMovementBlockSection(input: {
     <div className="space-y-3 rounded-lg border border-rose-200/70 bg-rose-50/60 p-4 dark:border-rose-900/50 dark:bg-rose-950/20">
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">
-          Bloqueio sanitario de movimentacao
+          Alertas sanitarios informados
         </p>
       </div>
+      <p className="text-sm">{FACTUAL_SANITARY_NOTICE}</p>
       <div className="flex flex-wrap gap-2">
         {input.blockedAnimals.map(({ animal, alert }) => (
           <StatusBadge key={animal.id} tone="danger">
@@ -61,16 +63,11 @@ export function RegistrarComplianceBlockSection(input: {
           </StatusBadge>
         ))}
       </div>
-      {input.blockers.length > 0 ? (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
-          {input.blockers[0]?.message}
-        </div>
-      ) : null}
-      {input.blockers.length === 0 && input.warnings.length > 0 ? (
-        <div className="rounded-lg border border-warning/25 bg-warning-muted/60 p-3 text-sm text-amber-800 dark:text-amber-200">
-          {input.warnings[0]?.message}
-        </div>
-      ) : null}
+      <ul className="list-disc pl-5 text-sm">
+        {[...new Set([...input.blockers, ...input.warnings].map(g => g.message).filter(Boolean))]
+          .map(message => <li key={message}>{message}</li>)}
+      </ul>
+      <p className="text-sm">{FACTUAL_SANITARY_NOTICE}</p>
     </div>
   );
 }

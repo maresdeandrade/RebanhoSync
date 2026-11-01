@@ -33,6 +33,7 @@ import {
   loadRegistrarVeterinaryProductsEffect,
 } from "@/pages/Registrar/effects/localQueries";
 import type { FinanceiroNatureza } from "@/pages/Registrar/types";
+import { useAnimalSanitaryRestrictions } from "@/hooks/useAnimalSanitaryRestrictions";
 
 export const TRANSIT_CHECKLIST_UF_OPTIONS: EstadoUFEnum[] = [
   "AC",
@@ -91,6 +92,7 @@ export function useRegistrarSanitarioPackage(input: {
   animaisNoLote: Animal[] | undefined;
   selectedAnimaisDetalhes: Animal[];
 }) {
+  const { cases: sanitaryCases, coverage: sanitaryCaseCoverage } = useAnimalSanitaryRestrictions(input.activeFarmId, []);
   const [sanitarioData, setSanitarioData] = useState({
     tipo: "vacinacao" as SanitarioTipoEnum,
     produto: "",
@@ -248,6 +250,9 @@ export function useRegistrarSanitarioPackage(input: {
   const sanitaryPackage = useMemo(
     () =>
       resolveRegistrarSanitaryPackage({
+        activeFarmId: input.activeFarmId,
+        sanitaryCases,
+        sanitaryCaseCoverage,
         tipoManejo: input.tipoManejo,
         financeiroNatureza: input.financeiroNatureza,
         regulatorySurfaceConfig: input.regulatorySurfaceConfig,
@@ -264,6 +269,9 @@ export function useRegistrarSanitarioPackage(input: {
         asOfDate: new Date().toISOString().slice(0, 10),
       }),
     [
+      input.activeFarmId,
+      sanitaryCases,
+      sanitaryCaseCoverage,
       input.animaisNoLote,
       input.financeiroNatureza,
       input.regulatoryReadModel,
@@ -551,5 +559,6 @@ export function useRegistrarSanitarioPackage(input: {
     movementComplianceGuards: sanitaryPackage.movementComplianceGuards,
     nutritionComplianceGuards: sanitaryPackage.nutritionComplianceGuards,
     complianceFlowIssues: sanitaryPackage.complianceFlowIssues,
+    warnings: sanitaryPackage.warnings,
   };
 }

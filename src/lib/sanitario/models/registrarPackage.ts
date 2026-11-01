@@ -4,6 +4,7 @@ import type {
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
   SanitarioTipoEnum,
+  SanitarioCaso,
 } from "@/lib/offline/types";
 import {
   readVeterinaryProductSelection,
@@ -11,7 +12,7 @@ import {
   searchVeterinaryProducts,
   type VeterinaryProductSelection,
 } from "@/lib/sanitario/catalog/products";
-import { listAnimalsBlockedBySanitaryAlert } from "@/lib/sanitario/compliance/alerts";
+import { listAnimalSanitaryRestrictions, SANITARY_CASE_COVERAGE_WARNINGS, type AnimalSanitaryRestriction, type SanitaryCaseCoverage } from "@/lib/sanitario/compliance/animalRestrictions";
 import {
   EMPTY_REGULATORY_OPERATIONAL_READ_MODEL,
   type RegulatoryFlowReadModel,
@@ -63,9 +64,7 @@ export type RegistrarSanitaryPackage = SanitaryExecutionPayload & {
   sanitatioProductMissing: boolean;
   showsTransitChecklist: boolean;
   officialTransitChecklistEnabled: boolean;
-  animalsBlockedBySanitaryAlert: ReturnType<
-    typeof listAnimalsBlockedBySanitaryAlert<Animal>
-  >;
+  animalsBlockedBySanitaryAlert: AnimalSanitaryRestriction<Animal>[];
   sanitaryMovementBlockIssues: string[];
   movementComplianceGuards: RegulatoryFlowReadModel;
   nutritionComplianceGuards: RegulatoryFlowReadModel;
@@ -75,6 +74,9 @@ export type RegistrarSanitaryPackage = SanitaryExecutionPayload & {
 };
 
 export type ResolveRegistrarSanitaryPackageInput = {
+  activeFarmId?: string | null;
+  sanitaryCases?: readonly SanitarioCaso[];
+  sanitaryCaseCoverage?: SanitaryCaseCoverage;
   tipoManejo: string | null;
   financeiroNatureza: RegistrarPackageFinanceiroNatureza;
   regulatorySurfaceConfig: Record<string, unknown> | null;
@@ -187,8 +189,8 @@ function buildSanitaryMovementBlockIssues(input: {
 
   return [
     input.blockedAnimals.length === 1
-      ? `${firstBlocked.animal.identificacao} esta com suspeita sanitaria aberta e nao pode sair da fazenda.`
-      : `${input.blockedAnimals.length} animal(is) do recorte atual estao com suspeita sanitaria aberta e bloqueio de movimentacao.`,
+      ? `${firstBlocked.animal.identificacao} possui restricao sanitaria informada; confira os casos e requisitos aplicaveis.`
+      : `${input.blockedAnimals.length} animal(is) do recorte atual possuem restricoes sanitarias informadas.`,
   ];
 }
 
@@ -308,13 +310,13 @@ export function resolveRegistrarSanitaryPackage(
   const transitChecklistIssues = showsTransitChecklist
     ? validateTransitChecklist(input.transitChecklist, input.asOfDate)
     : [];
-  const movementSensitiveAnimals = !showsTransitChecklist
-    ? []
-    : input.selectedAnimaisDetalhes.length > 0
+  const movementSensitiveAnimals = input.selectedAnimaisDetalhes.length > 0
       ? input.selectedAnimaisDetalhes
       : input.animaisNoLote ?? [];
-  const animalsBlockedBySanitaryAlert = listAnimalsBlockedBySanitaryAlert(
+  const animalsBlockedBySanitaryAlert = listAnimalSanitaryRestrictions(
+    input.activeFarmId,
     movementSensitiveAnimals,
+    input.sanitaryCases,
   );
   const sanitaryMovementBlockIssues = buildSanitaryMovementBlockIssues({
     showsTransitChecklist,
@@ -369,7 +371,16 @@ export function resolveRegistrarSanitaryPackage(
     nutritionComplianceGuards,
     transitChecklistIssues,
     complianceFlowIssues,
-    warnings: [],
+    warnings: [...new Set([
+      ...(input.sanitaryCaseCoverage && input.sanitaryCaseCoverage !== "local"
+        ? [SANITARY_CASE_COVERAGE_WARNINGS[input.sanitaryCaseCoverage]] : []),
+      ...protocolEligibilityIssues,
+      ...animalsBlockedBySanitaryAlert.map(({ animal, alert }) => `${animal.identificacao}: ${alert.diseaseName}`),
+      ...complianceFlowIssues,
+      ...movementComplianceGuards.warnings.map(guard => guard.message),
+      ...nutritionComplianceGuards.warnings.map(guard => guard.message),
+      ...transitChecklistIssues,
+    ])],
     ...sanitaryProductPayload,
   };
 }

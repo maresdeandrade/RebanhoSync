@@ -192,12 +192,13 @@ export function resolveRegistrarPreflightIssue(
   }
 
   const sanitaryPreflight = validateSanitaryExecutionPreflight({
+    registrationMode: "executed_fact",
     tipoManejo: input.tipoManejo,
-    transitChecklistIssues: input.transitChecklistIssues,
+    // Pendencias do checklist permanecem na UI, sem bloquear a gravacao factual.
     complianceFlowIssues: input.complianceFlowIssues,
     issueScope: "all_flows",
   });
-  if (!sanitaryPreflight.ok) {
+  if (sanitaryPreflight.ok === false) {
     return sanitaryPreflight.message;
   }
 

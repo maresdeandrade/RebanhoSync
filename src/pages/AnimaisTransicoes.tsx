@@ -21,7 +21,8 @@ import {
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
-import { listAnimalsBlockedBySanitaryAlert } from "@/lib/sanitario/compliance/alerts";
+import { useAnimalSanitaryRestrictions } from "@/hooks/useAnimalSanitaryRestrictions";
+import { SanitaryRestrictionNotice } from "@/components/manejo/SanitaryRestrictionNotice";
 import {
   buildRegulatoryOperationalReadModel,
   loadRegulatorySurfaceSource,
@@ -139,10 +140,7 @@ export default function AnimaisTransicoes() {
     () => rows.filter((row) => selectedIds.includes(row.animalId)),
     [rows, selectedIds],
   );
-  const selectedRowsBlockedBySanitaryAlert = useMemo(
-    () => listAnimalsBlockedBySanitaryAlert(selectedRows.map((row) => row.animal)),
-    [selectedRows],
-  );
+  const sanitary = useAnimalSanitaryRestrictions(activeFarmId, selectedRows.map(row => row.animal));
   const regulatoryReadModel = useMemo(
     () =>
       buildRegulatoryOperationalReadModel(
@@ -153,7 +151,7 @@ export default function AnimaisTransicoes() {
   const movementComplianceGuards = regulatoryReadModel.flows.movementInternal;
   const complianceBlockReason =
     batchLoteId !== UNCHANGED
-      ? movementComplianceGuards.blockers[0]?.message ?? null
+      ? [...new Set([...movementComplianceGuards.blockers, ...(movementComplianceGuards.warnings ?? [])].map(g => g.message ?? g.label))].join(" ") || null
       : null;
   const selectedMaleRows = selectedRows.filter((row) => row.animal.sexo === "M");
   const selectedPostWeaningRows = selectedRows.filter(
@@ -212,21 +210,6 @@ export default function AnimaisTransicoes() {
   const handleApplySelected = async () => {
     if (!activeFarmId || selectedRows.length === 0) {
       showError("Selecione pelo menos um animal para aplicar a transicao.");
-      return;
-    }
-
-    if (
-      batchLoteId !== UNCHANGED &&
-      selectedRowsBlockedBySanitaryAlert.length > 0
-    ) {
-      showError(
-        `${selectedRowsBlockedBySanitaryAlert[0]?.animal.identificacao} esta com suspeita sanitaria aberta e nao pode ser movido de lote.`,
-      );
-      return;
-    }
-
-    if (complianceBlockReason) {
-      showError(complianceBlockReason);
       return;
     }
 
@@ -436,6 +419,7 @@ export default function AnimaisTransicoes() {
         </CardContent>
       </Card>
 
+      <SanitaryRestrictionNotice {...sanitary} />
       {complianceBlockReason ? (
         <Card className="border-amber-200 bg-amber-50 shadow-none">
           <CardContent className="p-4 text-sm text-amber-900">
@@ -514,8 +498,7 @@ export default function AnimaisTransicoes() {
                 onClick={handleApplySelected}
                 disabled={
                   selectedRows.length === 0 ||
-                  isSubmitting ||
-                  Boolean(complianceBlockReason)
+                  isSubmitting
                 }
               >
                 {isSubmitting

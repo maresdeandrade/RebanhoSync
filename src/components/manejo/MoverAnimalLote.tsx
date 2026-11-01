@@ -6,7 +6,8 @@ import { useLotes } from "@/hooks/useLotes";
 import { createGesture } from "@/lib/offline/ops";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
-import { getAnimalSanitaryAlertBlockReason } from "@/lib/sanitario/compliance/alerts";
+import { useAnimalSanitaryRestrictions } from "@/hooks/useAnimalSanitaryRestrictions";
+import { SanitaryRestrictionNotice } from "./SanitaryRestrictionNotice";
 import {
   buildRegulatoryOperationalReadModel,
   loadRegulatorySurfaceSource,
@@ -66,9 +67,7 @@ export function MoverAnimalLote({
     () => loadRegulatorySurfaceSource(animal.fazenda_id),
     [animal.fazenda_id],
   );
-  const sanitaryBlockReason = animalRecord
-    ? getAnimalSanitaryAlertBlockReason(animalRecord)
-    : null;
+  const sanitary = useAnimalSanitaryRestrictions(animal.fazenda_id, animalRecord ? [animalRecord] : []);
   const regulatoryReadModel = useMemo(
     () =>
       buildRegulatoryOperationalReadModel(regulatorySurfaceSource ?? undefined),
@@ -76,19 +75,9 @@ export function MoverAnimalLote({
   );
   const movementComplianceGuards = regulatoryReadModel.flows.movementInternal;
   const complianceBlockReason =
-    movementComplianceGuards.blockers[0]?.message ?? null;
+    [...new Set([...movementComplianceGuards.blockers, ...(movementComplianceGuards.warnings ?? [])].map(g => g.message ?? g.label))].join(" ") || null;
 
   const handleConfirm = async () => {
-    if (sanitaryBlockReason) {
-      showError(sanitaryBlockReason);
-      return;
-    }
-
-    if (complianceBlockReason) {
-      showError(complianceBlockReason);
-      return;
-    }
-
     if (!novoLoteId) {
       showError("Selecione o lote de destino.");
       return;
@@ -164,12 +153,8 @@ export function MoverAnimalLote({
             </Select>
           </div>
 
-          {sanitaryBlockReason ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              {sanitaryBlockReason}
-            </div>
-          ) : null}
-          {!sanitaryBlockReason && complianceBlockReason ? (
+          <SanitaryRestrictionNotice {...sanitary} />
+          {complianceBlockReason ? (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               {complianceBlockReason}
             </div>
@@ -189,9 +174,7 @@ export function MoverAnimalLote({
             disabled={
               isSubmitting ||
               !novoLoteId ||
-              novoLoteId === animal.lote_id ||
-              Boolean(sanitaryBlockReason) ||
-              Boolean(complianceBlockReason)
+              novoLoteId === animal.lote_id
             }
           >
             {isSubmitting ? "Movendo..." : "Confirmar movimentacao"}

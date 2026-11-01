@@ -4,6 +4,7 @@ import type {
   ProdutoVeterinarioCatalogEntry,
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
+  SanitarioCaso,
 } from "@/lib/offline/types";
 import { EMPTY_REGULATORY_OPERATIONAL_READ_MODEL } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
@@ -108,6 +109,7 @@ const protocolItem = (
   }) as ProtocoloSanitarioItem;
 
 const baseInput = () => ({
+  activeFarmId: "farm-1",
   tipoManejo: "sanitario",
   financeiroNatureza: "compra" as const,
   regulatorySurfaceConfig: null,
@@ -128,6 +130,34 @@ const baseInput = () => ({
 });
 
 describe("resolveRegistrarSanitaryPackage", () => {
+  it.each(["loading", "unavailable"] as const)("preserva cobertura de casos %s na revisao factual", sanitaryCaseCoverage => {
+    const result = resolveRegistrarSanitaryPackage({ ...baseInput(), tipoManejo: "movimentacao", sanitaryCaseCoverage });
+    expect(result.warnings.some(w => /casos locais.*(andamento|indisponivel)/i.test(w))).toBe(true);
+  });
+
+  it.each(["movimentacao", "nutricao"])("preserva aviso regulatorio sem blockers na confirmacao de %s", tipoManejo => {
+    const guard = { key: "synthetic-warning", label: "Aviso", tone: "warning" as const, message: "AVISO_UNICO" };
+    const result = resolveRegistrarSanitaryPackage({ ...baseInput(), tipoManejo, regulatoryReadModel: {
+      ...EMPTY_REGULATORY_OPERATIONAL_READ_MODEL, flows: { ...EMPTY_REGULATORY_OPERATIONAL_READ_MODEL.flows,
+        movementInternal: { ...EMPTY_REGULATORY_OPERATIONAL_READ_MODEL.flows.movementInternal, warnings: [guard] },
+        nutrition: { ...EMPTY_REGULATORY_OPERATIONAL_READ_MODEL.flows.nutrition, warnings: [guard] },
+      },
+    } });
+    expect(result.warnings).toContain("AVISO_UNICO");
+  });
+
+  it("considera caso aberto bloqueante com payload stale, sem perder proveniencia ou tenant", () => {
+    const caso = { id: "case-1", fazenda_id: "farm-1", animal_id: "animal-1", status: "aberto",
+      closed_at: null, movement_blocked: true, deleted_at: null, disease_name: "Caso confirmado na base local" } as SanitarioCaso;
+    const input = { ...baseInput(), tipoManejo: "movimentacao", activeFarmId: "farm-1", sanitaryCases: [caso] };
+    const result = resolveRegistrarSanitaryPackage(input);
+    expect(result.animalsBlockedBySanitaryAlert).toHaveLength(1);
+    expect(result.animalsBlockedBySanitaryAlert[0]).toMatchObject({ caseIds: ["case-1"] });
+    expect(result.warnings.join(" ")).toContain("Caso confirmado na base local");
+    expect(resolveRegistrarSanitaryPackage({ ...input, activeFarmId: "farm-2" }).animalsBlockedBySanitaryAlert).toEqual([]);
+    expect(resolveRegistrarSanitaryPackage({ ...input, sanitaryCases: [{ ...caso, status: "encerrado", closed_at: "2026-10-30" }] }).animalsBlockedBySanitaryAlert).toEqual([]);
+  });
+
   it("manejo nao sanitario retorna pacote neutro", () => {
     const result = resolveRegistrarSanitaryPackage({
       ...baseInput(),
@@ -260,9 +290,9 @@ describe("resolveRegistrarSanitaryPackage", () => {
     });
 
     expect(result.showsTransitChecklist).toBe(true);
-    expect(result.transitChecklistIssues).toEqual([
-      "Conclua o checklist de GTA/e-GTA antes de liberar o transito externo.",
-    ]);
+    expect(result.transitChecklistIssues).toContain(
+      "Checklist GTA/e-GTA nao confirmado; confira a documentacao oficial antes do transito.",
+    );
   });
 
   it("entrada incompleta nao lanca excecao", () => {

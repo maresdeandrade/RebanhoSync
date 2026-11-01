@@ -22,7 +22,7 @@ vi.mock("@/utils/toast", () => ({
 
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
-import type { Animal, OperationInput } from "@/lib/offline/types";
+import type { Animal, OperationInput, SanitarioCaso } from "@/lib/offline/types";
 import { showError, showSuccess } from "@/utils/toast";
 import { AdicionarAnimaisLote } from "../AdicionarAnimaisLote";
 
@@ -95,11 +95,13 @@ describe("AdicionarAnimaisLote bulk feedback", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await db.state_animais.clear();
+    await db.state_sanitario_casos.clear();
   });
 
   afterEach(async () => {
     cleanup();
     await db.state_animais.clear();
+    await db.state_sanitario_casos.clear();
   });
 
   it("reports all 10 animals when every selected animal remains eligible", async () => {
@@ -122,6 +124,22 @@ describe("AdicionarAnimaisLote bulk feedback", () => {
     expect(showSuccess).toHaveBeenCalledWith(
       "Movimentação de 10 animal(is) para Lote Destino registrada localmente; aguardando confirmação do servidor.",
     );
+  });
+
+  it("registers an occurred movement with a stale animal projection and an open blocking case", async () => {
+    await seedAnimals(1);
+    await db.state_sanitario_casos.put({ id: "synthetic-blocking-case", fazenda_id: farmId, animal_id: "animal-1",
+      status: "aberto", closed_at: null, deleted_at: null, movement_blocked: true, disease_name: "Caso aberto local" } as SanitarioCaso);
+    const user = userEvent.setup();
+    render(<AdicionarAnimaisLote lote={lote} open onOpenChange={vi.fn()} onSuccess={vi.fn()} />);
+    await screen.findByText("Caso aberto local", { exact: false });
+    await selectAllVisibleAnimals(user);
+    await user.click(screen.getByRole("button", { name: "Adicionar 1" }));
+    await waitFor(() => expect(createGesture).toHaveBeenCalledTimes(1));
+    expectMovementComposition(capturedOperations(), 1);
+    expect(await db.state_sanitario_casos.get("synthetic-blocking-case")).toMatchObject({ status: "aberto", movement_blocked: true });
+    expect((await db.state_animais.get("animal-1"))?.payload).toEqual({});
+    expect(showError).not.toHaveBeenCalled();
   });
 
   it("reports 8 and only enqueues 8 when two of 10 selected animals become ineligible", async () => {

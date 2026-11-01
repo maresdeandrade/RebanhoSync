@@ -1,7 +1,7 @@
 ```md
 # Source of Truth — RebanhoSync
 
-Atualizado em: 2026-07-30
+Atualizado em: 2026-10-30
 
 ## Objetivo
 
@@ -56,6 +56,53 @@ Em caso de conflito, confiar nesta ordem:
 | Conformidade Sanitária v2 | read model local derivado/somente leitura | leitura conservadora por animal, lote, protocolo e item | fonte primária, liberação operacional |
 | Status de sync | estado técnico de transporte/reconcile | retry, suporte e auditoria técnica | prova de execução, conformidade ou liberação |
 | Tags/sinais/insights | Auxiliar visual/consulta | alerta, filtro, priorização, painel read-only | decisão crítica, fonte primária |
+
+---
+
+## Política de registro, alertas e elegibilidade
+
+Política de produto consolidada em 30/10/2026. RebanhoSync é plataforma de gestão: registra intenções, fatos e evidências; não emite autorização ou proibição sanitária/fiscal de trânsito. Registrar um fato não o torna regular, documentalmente verificado ou elegível para certificação. Obrigações e decisões de autoridades externas continuam externas ao sistema.
+
+Esta matriz é normativa. O [mapa GTA-03/CAS-02](../review/GTA_03_CAS_02_POLICY_20261030.md) distingue diagnóstico de entrada, adequação funcional local e limites de reconciliação/certificação. Resultados de implementação exigem evidência própria; a matriz sozinha não os comprova.
+
+### Matriz canônica de decisão
+
+As ações podem coexistir. **REGISTRAR** exige identidade, vínculos e estrutura tecnicamente válidos; **ALERTAR** conserva evidência e incerteza; **CONDICIONAR ELEGIBILIDADE** aplica somente ao programa/avaliação ou à recomendação prospectiva explicitamente identificada; **BLOQUEAR POR INTEGRIDADE TÉCNICA** impede escrita insegura, nunca representa fiscalização do fato.
+
+| Situação | REGISTRAR | ALERTAR | CONDICIONAR ELEGIBILIDADE | BLOQUEAR POR INTEGRIDADE TÉCNICA |
+| --- | --- | --- | --- | --- |
+| Fato ocorrido com GTA ausente, checklist incompleto ou documento não verificado | Sim, com declaração/proveniência e lacunas preservadas | Todos os avisos aplicáveis | Somente avaliação específica; não afirmar documento válido | Não pela pendência documental |
+| Fato ocorrido com caso sanitário aberto, restrição ou carência | Sim, sem apagar a inconformidade | Fonte, casos/restrições e possível divergência da projeção | Independente do registro; depende do programa e fonte | Não pela condição sanitária em si |
+| Atualização de estado decorrente de fato já ocorrido | Sim, pelo writer do domínio e revisão válida | Preservar restrições e conflito caso/projeção | Estado atualizado não comprova aptidão | Sim para CAS stale, identidade ou vínculos inválidos; preservar fatos já aplicados |
+| Planejamento manual genérico | Sim como Agenda/intenção, sem simular execução | Limitações, contraindicações e dados faltantes | Não inferir elegibilidade, produto, dose ou liberação | Sim se a própria intenção tiver identidade/estrutura inválida |
+| Sugestão técnica, esquema definido ou automação | Só materializar intenção com o contrato próprio satisfeito | Explicar condições não atendidas | Condicionar recomendação/automação à regra, versão, fontes e contexto; oferecer planejamento genérico quando cabível | Não fabricar regra, dose, Evento ou execução para contornar requisito |
+| Documento declarado/anexado sem verificação da fonte | Registrar declaração ou evidência disponível | Verificação e validade desconhecidas/pendentes | Não classificar como válido/comprovado por mera presença | Sim para vínculo/tenant/identidade inválidos, não por falta de verificação externa |
+| Avaliação de conformidade/certificação | Registrar avaliação somente em escopo definido | Programa, versão, critérios, fonte e lacunas | Elegibilidade específica; desconhecido não equivale a elegível | Sim para integridade/autorização técnica da avaliação; não bloquear o histórico da fazenda |
+| RLS, fazenda divergente, FK inválida, identidade conflitante ou CAS stale | Não aplicar a mutação inválida; conservar trabalho e fatos válidos | Motivo técnico e resultado por operação | Não converter falha de sync em avaliação sanitária | Sim; sem bypass, rebase silencioso ou sucesso fictício |
+
+Fato ocorrido e intenção futura devem ser explicitamente distinguidos pelos callers. Não tornar todos os guards avisos por filtragem de texto nem atribuir a pendência clínica/documental a uma falha técnica. Dados obrigatórios do contrato implementado não são fabricados para registrar informação desconhecida; eventual registro incompleto exige contrato próprio de lacunas, sem dispensar RLS, FKs ou identidade.
+
+### Alertas sanitários e projeções divergentes — CAS-02A
+
+`sanitario_casos` expressa o estado do caso, Eventos preservam os fatos/vínculos e `animal.payload.sanidade_alerta` é projeção/compatibilidade. A leitura deve considerar todos os casos da mesma fazenda/animal, não só o primeiro/mais recente. Caso não excluído em `aberto` ou `em_acompanhamento`, com `closed_at=null` e `movement_blocked=true`, sustenta alerta de restrição, mesmo com payload stale, ausente ou sem bloqueio. O nome legado `movement_blocked` não constitui proibição emitida pelo aplicativo.
+
+Combinar essa evidência com alertas legados ainda presentes no payload e demais restrições independentes, preservando a origem de cada sinal. Caso encerrado/cancelado/excluído não sustenta sozinho alerta de caso aberto; seu encerramento não limpa outro caso nem resolve silenciosamente sinal legado sem vínculo comprovado. Estado incoerente ou cobertura parcial deve ser apresentado como desconhecido/divergente, não como ausência confirmada de restrição.
+
+A leitura compartilhada deve alimentar os fluxos, não ficar restrita a um componente ou cache booleano paralelo. Offline só se conhecem os dados disponíveis; ausência local de caso não comprova ausência remota. Troca de fazenda invalida o recorte anterior. Nenhum desses alertas, isoladamente, impede registro factual. A consulta autoritativa de programa futuro deve validar suas fontes no backend; não introduzir uma barreira sanitária universal no banco para registrar fatos.
+
+### Reconciliação de projeções — CAS-02B
+
+CAS continua autoritativo no PostgreSQL. Uma gesture pode ter fatos aplicados e projeção rejeitada: distinguir resultados por operação, preservar ambos e não apresentar sucesso integral. Pull não repara automaticamente uma intenção perdida nem certifica conformidade. Resolver leitura derivada primeiro; corrigir projeção persistida apenas quando o consumidor realmente exigir e houver contrato de auditoria demonstrado.
+
+Uma correção exclusivamente técnica usa snapshot atual, nova identidade operacional e vínculo auditável à operação rejeitada e aos Eventos/casos existentes. Preserva `client_op_id`, `client_tx_id`, `expected_revision` e `before_snapshot` originais; não recria fatos, encerra casos ou altera decisões sanitárias. Preservar campos não relacionados do payload. Mudança concorrente relevante do animal ou dos casos exige nova reconciliação explícita, sem merge/rebase silencioso.
+
+O contrato deve provar replay, resultado terminal e recuperação após ACK perdido/restart, inclusive depois de outra mutação do animal, sem usar apenas a última identidade da linha como auditoria histórica. Reutilizar mecanismos existentes somente com suficiência demonstrada; se precisar de novo armazenamento/comando transacional, entregar proposta específica antes de implementação. Não criar ledger genérico ou nova fonte clínica antecipadamente.
+
+### Camada futura de conformidade/certificação
+
+Definir por programa: finalidade, responsável pela avaliação, jurisdição, vigência/versão da regra, fonte verificável, identidade/proveniência da evidência e critérios de elegibilidade. Distinguir declarado, evidência disponível, verificação pendente/desconhecida e verificação confirmada pela fonte; anexar documento não o valida. Avaliação negativa ou desconhecida não apaga fato nem impede seu registro. Nenhum estado do aplicativo substitui decisão do emissor/autoridade competente.
+
+Não implementar certificador, motor regulatório universal, integração oficial, PNIB/SISBOV ou infraestrutura genérica por esta política. Catálogos, janelas, curadoria, recomendações e automações existentes mantêm seus contratos específicos; não representam autorização oficial nem devem ser usados como rejeição retrospectiva do fato.
 
 ---
 

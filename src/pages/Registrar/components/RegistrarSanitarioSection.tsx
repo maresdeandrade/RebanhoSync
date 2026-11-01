@@ -337,10 +337,6 @@ export function RegistrarSanitarioSection(
               <option
                 key={item.id}
                 value={item.id}
-                disabled={
-                  !eligibility.compatibleWithAll &&
-                  item.id !== props.protocoloItemId
-                }
               >
                 Dose {item.dose_num} |{" "}
                 {describeRegistrarSanitaryCalendarSchedule({
@@ -349,7 +345,7 @@ export function RegistrarSanitarioSection(
                   payload: item.payload,
                 })}
                 {props.selectedAnimaisDetalhesCount > 0
-                  ? ` | ${eligibility.eligibleCount}/${props.selectedAnimaisDetalhesCount} aptos`
+                  ? ` | ${eligibility.eligibleCount}/${props.selectedAnimaisDetalhesCount} compativeis com o protocolo`
                   : ""}
               </option>
             ))}
@@ -375,6 +371,7 @@ export function RegistrarSanitarioSection(
               Nenhum item atende todos os animais.
             </p>
           ) : null}
+          <p className="text-xs text-muted-foreground">Elegibilidade do protocolo e avaliada separadamente. O fato ocorrido pode ser registrado sem constituir recomendacao de uso futuro.</p>
         </div>
       ) : null}
 

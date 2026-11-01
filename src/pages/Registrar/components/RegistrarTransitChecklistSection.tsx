@@ -43,7 +43,7 @@ export function RegistrarTransitChecklistSection(input: {
         <StatusBadge
           tone={input.officialTransitChecklistEnabled ? "warning" : "neutral"}
         >
-          {input.officialTransitChecklistEnabled ? "Regras oficiais" : "Manual"}
+          {input.officialTransitChecklistEnabled ? "Checklist configurado" : "Manual"}
         </StatusBadge>
       </div>
 
@@ -63,6 +63,12 @@ export function RegistrarTransitChecklistSection(input: {
           </span>
         </div>
       </label>
+
+      <p className="text-xs text-muted-foreground">
+        Pre-checagem declaratoria: o RebanhoSync nao emite, consulta, autentica
+        ou autoriza GTA/e-GTA. Confira as regras aplicaveis e o documento oficial
+        antes do deslocamento.
+      </p>
 
       {input.transitChecklist.enabled ? (
         <div className="grid gap-4 md:grid-cols-2">
@@ -238,8 +244,13 @@ export function RegistrarTransitChecklistSection(input: {
       ) : null}
 
       {input.transitChecklistIssues.length > 0 ? (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
-          {input.transitChecklistIssues[0]}
+        <div className="rounded-lg border border-amber-300/60 bg-amber-50/70 p-3 text-sm text-foreground dark:border-amber-900/60 dark:bg-amber-950/20">
+          <p className="font-medium">Aviso documental (nao bloqueia o registro)</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {[...new Set(input.transitChecklistIssues)].map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
         </div>
       ) : null}
     </div>

@@ -315,6 +315,7 @@ describe("AnimalDetalhe", () => {
         return mockResponses.contraparte ?? null;
       }
       if (str.includes("state_sanitario_casos")) {
+        if (str.includes("farmId")) return { farmId: "farm-1", cases: mockResponses.sanitaryCases ?? [] };
         if (str.includes("status === ")) {
           return mockResponses.activeSanitaryCase ?? null;
         }
@@ -1003,7 +1004,17 @@ describe("AnimalDetalhe", () => {
     expect(screen.getByText("agendado")).toBeVisible();
   });
 
-  it("mantém bloqueio e confirmação de estágio visíveis com detalhes técnicos fechados", () => {
+  it("sinaliza caso aberto mesmo sem projecao e permite acessar o registro factual", () => {
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "SYNTHETIC", sexo: "F", payload: {} }),
+      sanitaryCases: [makeSanitarioCaso({ movement_blocked: true, disease_name: "Caso independente" })],
+    });
+    renderDetail();
+    expect(screen.getByRole("status")).toHaveTextContent("Caso independente");
+    expect(screen.getByRole("link", { name: "Registrar manejo" })).toBeVisible();
+  });
+
+  it("mantem alerta e registro factual acessiveis com detalhes tecnicos fechados", () => {
     setupMockLiveQuery({
       animal: makeAnimal({
         id: "animal-1",
@@ -1019,10 +1030,10 @@ describe("AnimalDetalhe", () => {
       }),
     });
     const { container } = renderDetail();
-    expect(screen.getByText("Movimentacao bloqueada")).toBeVisible();
+    expect(screen.getByText("Restricao sanitaria informada")).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Registrar manejo" }),
-    ).toBeDisabled();
+      screen.getByRole("link", { name: "Registrar manejo" }),
+    ).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Confirmar transicao" }),
     ).toBeVisible();

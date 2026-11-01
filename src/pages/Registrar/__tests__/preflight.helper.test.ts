@@ -109,14 +109,25 @@ describe("resolveRegistrarPreflightIssue", () => {
     expect(issue).toBe("Nao repita identificacoes nos novos animais.");
   });
 
-  it("prioriza erro de checklist de trânsito quando existir", () => {
+  it("permite registrar fato com aviso documental do checklist", () => {
     const issue = resolveRegistrarPreflightIssue(
       buildBaseInput({
         transitChecklistIssues: ["Checklist faltando GTA."],
       }),
     );
 
-    expect(issue).toBe("Checklist faltando GTA.");
+    expect(issue).toBeNull();
+  });
+
+  it("permite fato com restricao regulatoria e aviso GTA sem conferir validade documental", () => {
+    const issue = resolveRegistrarPreflightIssue(
+      buildBaseInput({
+        transitChecklistIssues: ["GTA ainda nao confirmada."],
+        complianceFlowIssues: ["Bloqueio regulatorio independente."],
+      }),
+    );
+
+    expect(issue).toBeNull();
   });
 
   it("retorna null no caminho feliz", () => {

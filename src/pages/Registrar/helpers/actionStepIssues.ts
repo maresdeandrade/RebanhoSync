@@ -29,7 +29,7 @@ export function buildBaseActionStepIssues(
     sanitaryProductName: input.sanitatioProductMissing ? "" : "present",
     requireProduct: true,
   });
-  if (!sanitaryProductPreflight.ok) {
+  if (sanitaryProductPreflight.ok === false) {
     issues.push(sanitaryProductPreflight.message);
   }
 
@@ -82,6 +82,7 @@ export function buildBaseActionStepIssues(
 }
 
 type ComposeRegistrarActionStepIssuesInput = {
+  registrationMode?: "executed_fact";
   baseIssues: string[];
   inventoryIssues?: string[];
   protocolEligibilityIssues: string[];
@@ -93,13 +94,16 @@ type ComposeRegistrarActionStepIssuesInput = {
 export function composeRegistrarActionStepIssues(
   input: ComposeRegistrarActionStepIssuesInput,
 ) {
+  // Factual callers keep sanitary/documentary warnings in their dedicated sections.
+  // Structural errors remain blockers; legacy/prospective callers keep their contract.
   return [
     ...input.baseIssues,
     ...(input.inventoryIssues ?? []),
-    ...input.protocolEligibilityIssues,
-    ...input.sanitaryMovementBlockIssues,
-    ...input.complianceFlowIssues,
-    ...input.transitChecklistIssues,
+    ...(input.registrationMode === "executed_fact" ? [] : [
+      ...input.protocolEligibilityIssues,
+      ...input.sanitaryMovementBlockIssues,
+      ...input.complianceFlowIssues,
+    ]),
   ];
 }
 
@@ -153,8 +157,8 @@ export function buildSanitaryMovementBlockIssues(input: {
 
   return [
     input.blockedAnimals.length === 1
-      ? `${firstBlocked.animal.identificacao} esta com suspeita sanitaria aberta e nao pode sair da fazenda.`
-      : `${input.blockedAnimals.length} animal(is) do recorte atual estao com suspeita sanitaria aberta e bloqueio de movimentacao.`,
+      ? `${firstBlocked.animal.identificacao} possui restricao sanitaria informada; confira os casos e requisitos aplicaveis.`
+      : `${input.blockedAnimals.length} animal(is) do recorte atual possuem restricoes sanitarias informadas.`,
   ];
 }
 
@@ -177,5 +181,5 @@ export function buildProtocolEligibilityIssues(input: {
     ],
   });
 
-  return preflight.ok ? [] : [preflight.message];
+  return preflight.ok === false ? [preflight.message] : [];
 }

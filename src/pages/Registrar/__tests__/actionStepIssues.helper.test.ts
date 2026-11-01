@@ -106,7 +106,15 @@ describe("buildBaseActionStepIssues", () => {
 });
 
 describe("composeRegistrarActionStepIssues", () => {
-  it("concatena issues de todos os blocos na ordem do fluxo", () => {
+  it("mantem somente integridade no registro factual com alertas simultaneos", () => {
+    expect(composeRegistrarActionStepIssues({
+      registrationMode: "executed_fact", baseIssues: ["Destino ausente"], inventoryIssues: ["Lote de estoque ausente"],
+      protocolEligibilityIssues: ["Protocolo incompativel"], sanitaryMovementBlockIssues: ["Caso aberto"],
+      complianceFlowIssues: ["Restricao"], transitChecklistIssues: ["GTA nao confirmada"],
+    })).toEqual(["Destino ausente", "Lote de estoque ausente"]);
+  });
+
+  it("concatena bloqueios sem promover aviso documental a erro", () => {
     const issues = composeRegistrarActionStepIssues({
       baseIssues: ["base"],
       inventoryIssues: ["inventory"],
@@ -122,7 +130,6 @@ describe("composeRegistrarActionStepIssues", () => {
       "protocol",
       "sanitary",
       "compliance",
-      "transit",
     ]);
   });
 
@@ -136,6 +143,16 @@ describe("composeRegistrarActionStepIssues", () => {
     });
 
     expect(issues).toEqual([]);
+  });
+
+  it("não transforma pendencia documental em bloqueio, mas conserva guards independentes", () => {
+    expect(composeRegistrarActionStepIssues({
+      baseIssues: [],
+      protocolEligibilityIssues: [],
+      sanitaryMovementBlockIssues: ["Suspeita sanitaria ativa."],
+      complianceFlowIssues: ["Restricao de movimento."],
+      transitChecklistIssues: ["GTA nao informada."],
+    })).toEqual(["Suspeita sanitaria ativa.", "Restricao de movimento."]);
   });
 });
 
@@ -185,7 +202,7 @@ describe("buildSanitaryMovementBlockIssues", () => {
     });
 
     expect(issues).toEqual([
-      "BR-001 esta com suspeita sanitaria aberta e nao pode sair da fazenda.",
+      "BR-001 possui restricao sanitaria informada; confira os casos e requisitos aplicaveis.",
     ]);
   });
 
@@ -199,7 +216,7 @@ describe("buildSanitaryMovementBlockIssues", () => {
     });
 
     expect(issues).toEqual([
-      "2 animal(is) do recorte atual estao com suspeita sanitaria aberta e bloqueio de movimentacao.",
+      "2 animal(is) do recorte atual possuem restricoes sanitarias informadas.",
     ]);
   });
 });

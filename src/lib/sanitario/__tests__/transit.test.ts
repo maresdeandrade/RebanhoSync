@@ -52,11 +52,42 @@ describe("transit sanitary checklist helpers", () => {
     );
 
     expect(issues).toContain(
-      "Atestado negativo de brucelose expirado para reproducao interestadual (validade de 60 dias).",
+      "Brucelose: data informada supera 60 dias; confira a data de coleta e eventuais dispensas.",
     );
     expect(issues).toContain(
-      "Atestado negativo de tuberculose expirado para reproducao interestadual (validade de 60 dias).",
+      "Tuberculose: data informada supera 60 dias; confira a data de inoculacao e eventuais dispensas.",
     );
+  });
+
+  it("avisa sobre condicoes PNCEBT em reproducao intraestadual", () => {
+    const issues = validateTransitChecklist({
+      ...DEFAULT_TRANSIT_CHECKLIST_DRAFT,
+      enabled: true,
+      purpose: "reproducao",
+      isInterstate: false,
+      gtaChecked: true,
+      gtaNumber: "GTA-321",
+    }, "2026-04-09");
+    expect(issues).toContain(
+      "Reproducao: confira exigencias PNCEBT conforme UF, categoria, idade e certificacao de origem; o checklist nao valida aptidao.",
+    );
+  });
+
+  it("alerta sobre datas PNCEBT invalidas ou futuras", () => {
+    const issues = validateTransitChecklist({
+      ...DEFAULT_TRANSIT_CHECKLIST_DRAFT,
+      enabled: true,
+      purpose: "reproducao",
+      isInterstate: true,
+      destinationUf: "GO",
+      gtaChecked: true,
+      gtaNumber: "GTA-321",
+      reproductionDocsChecked: true,
+      brucellosisExamDate: "invalida",
+      tuberculosisExamDate: "2026-05-09",
+    }, "2026-04-09");
+    expect(issues).toContain("Brucelose: data invalida ou futura; confira a referencia de coleta.");
+    expect(issues).toContain("Tuberculose: data invalida ou futura; confira a referencia de inoculacao.");
   });
 
   it("builds structured payload for compliant external transit", () => {

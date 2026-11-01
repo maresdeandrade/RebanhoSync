@@ -1,6 +1,7 @@
 import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StateBanner } from "@/components/ui/state-banner";
+import { FACTUAL_SANITARY_NOTICE } from "@/lib/sanitario/compliance/animalRestrictions";
 
 interface RegistrarStickyActionBarProps {
   step: number;
@@ -9,6 +10,7 @@ interface RegistrarStickyActionBarProps {
   tipoManejo: string | null;
   sourceTaskId: string | null;
   actionStepIssues: string[];
+  advisoryWarnings?: string[];
   onBack: () => void;
   onNext: () => void;
   onFinalize: () => void;
@@ -21,6 +23,7 @@ export function RegistrarStickyActionBar({
   tipoManejo,
   sourceTaskId,
   actionStepIssues,
+  advisoryWarnings = [],
   onBack,
   onNext,
   onFinalize,
@@ -43,6 +46,15 @@ export function RegistrarStickyActionBar({
           title="Revise antes de continuar"
           description={actionStepIssues[0]}
         />
+      )}
+
+      {isConfirmStep && advisoryWarnings.length > 0 && (
+        <div role="status" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <ul className="list-disc pl-5">
+            {[...new Set(advisoryWarnings)].map(warning => <li key={warning}>{warning}</li>)}
+          </ul>
+          <p>{FACTUAL_SANITARY_NOTICE}</p>
+        </div>
       )}
 
       <div className="flex items-center gap-2 sm:gap-3">
