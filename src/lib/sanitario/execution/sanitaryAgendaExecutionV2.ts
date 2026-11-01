@@ -1,3 +1,4 @@
+import { requireSanitaryAdmissionV3 } from "@/lib/sanitario/execution/sanitaryAdmissionV3";
 import { readWithdrawalEvidenceCatalogV2 } from "./withdrawalEvidenceCatalogV2";
 import { buildInventoryCostSnapshot } from "@/lib/inventory/costing";
 import { env } from "@/lib/env";
@@ -27,7 +28,10 @@ import { buildExecutedProductTechnicalSnapshotV2 } from "./executedProductTechni
 import { projectOperationalWithdrawalLegacyFieldsV2 } from "./operationalWithdrawalSnapshotV2";
 import { sanitaryProtocolExecutionRejectionsV2 } from "./sanitaryProtocolExecutionAuthorizationV2";
 import { classSchemeExecutionEvidenceV2 } from "./sanitaryClassSchemeExecutionV2";
-import { assertBirthNeonatalAgendaOrigin, birthNeonatalAgendaOrigin } from "@/lib/reproduction/neonatalAgendaExecution";
+import {
+  assertBirthNeonatalAgendaOrigin,
+  birthNeonatalAgendaOrigin,
+} from "@/lib/reproduction/neonatalAgendaExecution";
 import { deterministicUuidFromText } from "@/lib/reproduction/deterministicUuid";
 import { LOCAL_OWNERSHIP_KEY } from "@/lib/offline/db";
 
@@ -35,6 +39,7 @@ export type ExecuteSanitaryAgendaInputV2 = {
   assertCurrentContext?: () => void;
   fazendaId: string;
   agendaId: string;
+  animalIds?: string[];
   clientOpId: string;
   executedAt: string;
   // Explicit declaration of an already performed application; never permission to apply.
@@ -70,7 +75,7 @@ export type ExecuteSanitaryAgendaResultV2 = {
   eventId: string;
   agendaId: string;
   clientOpId: string;
-  agendaStatus: "executed";
+  agendaStatus: "executed" | "open";
   createsEvent: true;
   createsStockMovement: boolean;
   createsActiveWithdrawal: boolean;
@@ -149,7 +154,8 @@ const PRODUCT_REQUIRED_KINDS = new Set([
   "product_class",
   "product_class_group",
 ]);
-const CATALOG_REVIEW_NOTICE = "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.";
+const CATALOG_REVIEW_NOTICE =
+  "Aplicação realizada registrada com pendências ou restrições no catálogo. O registro não autoriza nova aplicação nem comprova carência.";
 
 function readRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -193,15 +199,21 @@ function createUuid() {
   return id;
 }
 
-function resolveConfiguredSync(input: ExecuteSanitaryAgendaInputV2) {
-  if (input.sync) return input.sync;
-  if (typeof localStorage === "undefined") return null;
-  let projectRef: string;
+function configuredProjectRef() {
   try {
-    projectRef = new URL(env.supabaseUrl).hostname.split(".")[0] ?? "";
+    const host = new URL(env.supabaseUrl).hostname;
+    return ["localhost", "127.0.0.1", "[::1]"].includes(host)
+      ? "local"
+      : (host.split(".")[0] ?? "");
   } catch {
     return null;
   }
+}
+
+function resolveConfiguredSync(input: ExecuteSanitaryAgendaInputV2) {
+  if (input.sync) return input.sync;
+  if (typeof localStorage === "undefined") return null;
+  const projectRef = configuredProjectRef();
   if (!projectRef || !isSanitarioV2PushEnabled(projectRef)) return null;
   const clientStorageKey = "gestao_agro_client_id";
   const existingClientId = localStorage.getItem(clientStorageKey);
@@ -210,7 +222,9 @@ function resolveConfiguredSync(input: ExecuteSanitaryAgendaInputV2) {
   return { clientId, projectRef };
 }
 
-function productRequirementKind(agenda: SanitarioAgendaLocalV2): ProductRequirementKindV2 {
+function productRequirementKind(
+  agenda: SanitarioAgendaLocalV2,
+): ProductRequirementKindV2 {
   return (
     readString(
       agenda.metadata.productRequirementKind,
@@ -249,10 +263,17 @@ function itemKey(agenda: SanitarioAgendaLocalV2): string | null {
   );
 }
 
-function actionTypeToSanitaryType(actionType: string | null): SanitarioTipoEnum {
-  if (actionType === "cura_umbigo" || actionType === "revisao_neonatal") return "medicamento";
+function actionTypeToSanitaryType(
+  actionType: string | null,
+): SanitarioTipoEnum {
+  if (actionType === "cura_umbigo" || actionType === "revisao_neonatal")
+    return "medicamento";
   if (actionType === "vermifugacao") return "vermifugacao";
-  if (actionType === "medicamento" || actionType === "tratamento" || actionType === "exame") {
+  if (
+    actionType === "medicamento" ||
+    actionType === "tratamento" ||
+    actionType === "exame"
+  ) {
     return "medicamento";
   }
   return "vacinacao";
@@ -266,17 +287,30 @@ function actionType(agenda: SanitarioAgendaLocalV2): string | null {
   );
 }
 
-function targetAnimalIds(entries: SanitarioAgendaAnimalLocalV2[], agenda: SanitarioAgendaLocalV2) {
+function targetAnimalIds(
+  entries: SanitarioAgendaAnimalLocalV2[],
+  agenda: SanitarioAgendaLocalV2,
+) {
   const metadata = readRecord(agenda.metadata);
   const target = readRecord(metadata.target);
   const targetAnimalIds = Array.isArray(metadata.targetAnimalIds)
-    ? metadata.targetAnimalIds.filter((entry): entry is string => typeof entry === "string")
+    ? metadata.targetAnimalIds.filter(
+        (entry): entry is string => typeof entry === "string",
+      )
     : [];
   const directAnimal =
-    target.scope === "animal" && typeof target.id === "string" ? [target.id] : [];
+    target.scope === "animal" && typeof target.id === "string"
+      ? [target.id]
+      : [];
   return Array.from(
-    new Set([...entries.map((entry) => entry.animal_id), ...targetAnimalIds, ...directAnimal]),
-  ).filter(Boolean).sort();
+    new Set([
+      ...entries.map((entry) => entry.animal_id),
+      ...targetAnimalIds,
+      ...directAnimal,
+    ]),
+  )
+    .filter(Boolean)
+    .sort();
 }
 
 // Short ordered validation ledger; splitting it would scatter rejection ordering.
@@ -288,14 +322,16 @@ function validateExecutionInput(input: ExecuteSanitaryAgendaInputV2) {
   if (!input.fazendaId) rejected.push("missing_fazenda_id");
   if (!input.agendaId) rejected.push("missing_agenda_id");
   if (!input.clientOpId) rejected.push("missing_client_op_id");
-  if (!input.confirmation?.userConfirmedExecution) rejected.push("missing_confirmation");
+  if (!input.confirmation?.userConfirmedExecution)
+    rejected.push("missing_confirmation");
   if (!input.executedAt) rejected.push("missing_executed_at");
   if (input.executedAt && !executedAt) rejected.push("invalid_executed_at");
   if (input.registrationMode === "executed_fact" && executedAt) {
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const future = /^\d{4}-\d{2}-\d{2}$/.test(input.executedAt)
-      ? input.executedAt > today : new Date(executedAt).getTime() > now.getTime();
+      ? input.executedAt > today
+      : new Date(executedAt).getTime() > now.getTime();
     if (future) rejected.push("execution_not_yet_occurred");
   }
   return { ok: rejected.length === 0, rejected, executedAt };
@@ -320,7 +356,11 @@ function validateAgainstAgenda(input: {
   if (agenda.fazenda_id !== request.fazendaId || agenda.deleted_at) {
     rejected.push("agenda_not_found");
   }
-  if ((!agenda.protocolo_id || !itemKey(agenda)) && !birthNeonatalAgendaOrigin(agenda)) rejected.push("missing_protocol_item");
+  if (
+    (!agenda.protocolo_id || !itemKey(agenda)) &&
+    !birthNeonatalAgendaOrigin(agenda)
+  )
+    rejected.push("missing_protocol_item");
   if (!agenda.lote_id && animals.length === 0) rejected.push("missing_target");
   if (
     metadata.source === "sanitary_precheck_preview_v2" &&
@@ -333,9 +373,12 @@ function validateAgainstAgenda(input: {
   if (requiresProduct && (!request.product?.productId || !realProductName)) {
     rejected.push("missing_registered_product");
   }
-  if ((requiresProduct || realProductName) && (!dose || dose <= 0)) rejected.push("missing_dose");
-  if ((requiresProduct || realProductName) && !doseUnit) rejected.push("missing_dose_unit");
-  if ((requiresProduct || realProductName) && !route) rejected.push("missing_route");
+  if ((requiresProduct || realProductName) && (!dose || dose <= 0))
+    rejected.push("missing_dose");
+  if ((requiresProduct || realProductName) && !doseUnit)
+    rejected.push("missing_dose_unit");
+  if ((requiresProduct || realProductName) && !route)
+    rejected.push("missing_route");
 
   const plannedProductId = expectedProductId(agenda);
   if (
@@ -365,19 +408,20 @@ async function findExistingExecution(
   input: ExecuteSanitaryAgendaInputV2,
   neonatal = false,
 ) {
-  // Preserve the legacy lookup; sync executions are found by factual origin below.
-  const eventId = eventIdFor(input, false);
+  // Canonical pull preserves the factual UUID, not local legacy source aliases.
+  const eventId = input.animalIds ? input.clientOpId : eventIdFor(input, false);
   const byId = await db.event_eventos.get(eventId);
-  if (byId && byId.fazenda_id === input.fazendaId && !byId.deleted_at) return byId;
+  if (byId && byId.fazenda_id === input.fazendaId && !byId.deleted_at)
+    return byId;
   return db.event_eventos
     .where("fazenda_id")
     .equals(input.fazendaId)
     .filter(
       (event) =>
-        !event.deleted_at && (
-          (neonatal && event.source_sanitario_agenda_v2_id === input.agendaId) ||
-          (event.source_task_id === input.agendaId && event.source_client_op_id === input.clientOpId)
-        ),
+        !event.deleted_at &&
+        ((neonatal && event.source_sanitario_agenda_v2_id === input.agendaId) ||
+          (event.source_task_id === input.agendaId &&
+            event.source_client_op_id === input.clientOpId)),
     )
     .first();
 }
@@ -385,15 +429,25 @@ async function findExistingExecution(
 function withdrawalResolution(
   snapshot: ExecutedProductTechnicalSnapshotV2 | null,
 ): WithdrawalResolutionV2 {
-  return projectOperationalWithdrawalLegacyFieldsV2(snapshot?.withdrawalSnapshot);
+  return projectOperationalWithdrawalLegacyFieldsV2(
+    snapshot?.withdrawalSnapshot,
+  );
 }
 
-function readAgendaProtocol(db: SanitaryAgendaExecutionDbV2, id: string | null) {
+function readAgendaProtocol(
+  db: SanitaryAgendaExecutionDbV2,
+  id: string | null,
+) {
   return id ? db.catalog_sanitario_protocolos_v2.get(id) : undefined;
 }
 
-function readAgendaProtocolItem(db: SanitaryAgendaExecutionDbV2, id: string | null) {
-  return id ? db.catalog_sanitario_protocolo_itens_versions_v2.get(id) : undefined;
+function readAgendaProtocolItem(
+  db: SanitaryAgendaExecutionDbV2,
+  id: string | null,
+) {
+  return id
+    ? db.catalog_sanitario_protocolo_itens_versions_v2.get(id)
+    : undefined;
 }
 
 function syncMeta(
@@ -449,14 +503,18 @@ function buildRecords(input: {
   const meta = syncMeta(request, now, factualIdentity, input.clientId);
   const movementMeta = syncMeta(request, now, movementIdentity, input.clientId);
   const eventId = eventIdFor(request, Boolean(factualIdentity));
-  const productName = request.product?.productName.trim() || "Produto não informado";
+  const productName =
+    request.product?.productName.trim() || "Produto não informado";
   const productSnapshot = {
     productId: request.product?.productId ?? null,
     productName,
     productClass: request.product?.productClass ?? null,
     productClassGroupId:
       request.product?.productClassGroupId ??
-      readString(agenda.metadata.productClassGroupId, agenda.protocol_item_snapshot.productClassGroupId),
+      readString(
+        agenda.metadata.productClassGroupId,
+        agenda.protocol_item_snapshot.productClassGroupId,
+      ),
     dose: request.application?.dose ?? null,
     doseUnit: request.application?.doseUnit ?? null,
     route: request.application?.route ?? null,
@@ -482,9 +540,11 @@ function buildRecords(input: {
     },
     warnings: [
       ...(request.registrationMode === "executed_fact"
-        ? ["Registro retrospectivo: a curadoria pode mudar e não autoriza usos futuros."] : []),
-      ...(input.catalogReviewWarnings?.length
-        ? [CATALOG_REVIEW_NOTICE] : []),
+        ? [
+            "Registro retrospectivo: a curadoria pode mudar e não autoriza usos futuros.",
+          ]
+        : []),
+      ...(input.catalogReviewWarnings?.length ? [CATALOG_REVIEW_NOTICE] : []),
       ...(request.product && !request.product.inventoryLotId
         ? ["Produto informado sem baixa de estoque."]
         : []),
@@ -526,7 +586,8 @@ function buildRecords(input: {
     fazenda_id: request.fazendaId,
     tipo: actionTypeToSanitaryType(actionType(agenda)),
     produto: productName,
-    produto_veterinario_id: request.product?.productId ?? expectedProductId(agenda),
+    produto_veterinario_id:
+      request.product?.productId ?? expectedProductId(agenda),
     produto_sanitario_v2_id: request.product?.productId ?? null,
     produto_snapshot: productTechnicalSnapshot,
     insumo_id: inventory?.insumoId ?? null,
@@ -587,7 +648,8 @@ function buildRecords(input: {
   const eventAnimals: EventoAnimalLocalV2[] = targetAnimalIds.map(
     (animalId) => ({
       id: birthNeonatalAgendaOrigin(agenda)
-        ? deterministicUuidFromText(`${eventId}:animal:${animalId}`) : createUuid(),
+        ? deterministicUuidFromText(`${eventId}:animal:${animalId}`)
+        : createUuid(),
       fazenda_id: request.fazendaId,
       evento_id: eventId,
       animal_id: animalId,
@@ -598,7 +660,10 @@ function buildRecords(input: {
   return { event, detail, movement, eventAnimals, now, payload };
 }
 
-function mergeCatalogReviewNotices(currentWarnings: string[], previousWarnings: string[]) {
+function mergeCatalogReviewNotices(
+  currentWarnings: string[],
+  previousWarnings: string[],
+) {
   return [
     ...(currentWarnings.length ? [CATALOG_REVIEW_NOTICE] : []),
     ...previousWarnings.filter((warning) => warning !== CATALOG_REVIEW_NOTICE),
@@ -615,10 +680,14 @@ async function applyExecutionInventory(
   if (!movement) return;
   const lot = await localDb.state_insumo_lotes.get(movement.insumo_lote_id);
   if (!lot || lot.fazenda_id !== fazendaId || lot.deleted_at) {
-    throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:inventory_lot_not_found");
+    throw new Error(
+      "SANITARY_AGENDA_EXECUTION_REJECTED:inventory_lot_not_found",
+    );
   }
   if (lot.saldo_atual_base < movement.quantidade_base) {
-    throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:insufficient_stock_balance");
+    throw new Error(
+      "SANITARY_AGENDA_EXECUTION_REJECTED:insufficient_stock_balance",
+    );
   }
   await localDb.state_insumo_movimentacoes.put(movement);
   await localDb.state_insumo_lotes.update(lot.id, {
@@ -631,37 +700,92 @@ export async function executeSanitaryAgendaV2(
   input: ExecuteSanitaryAgendaInputV2,
   localDb: SanitaryAgendaExecutionDbV2 = defaultDb,
 ): Promise<ExecuteSanitaryAgendaResultV2> {
+  if (!input.animalIds)
+    requireSanitaryAdmissionV3({
+      intent: "agenda_execution",
+      fazendaId: input.fazendaId,
+      agendaId: input.agendaId,
+      clientOpId: input.clientOpId,
+      clientTxId: input.clientOpId,
+      domainOpId: input.clientOpId,
+      payload: {},
+    });
   const basicValidation = validateExecutionInput(input);
   if (!basicValidation.ok || !basicValidation.executedAt) {
-    throw new Error(`SANITARY_AGENDA_EXECUTION_REJECTED:${basicValidation.rejected.join(",")}`);
+    throw new Error(
+      `SANITARY_AGENDA_EXECUTION_REJECTED:${basicValidation.rejected.join(",")}`,
+    );
   }
 
   const agenda = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
   const neonatal = agenda && birthNeonatalAgendaOrigin(agenda);
+  if (input.animalIds && neonatal)
+    throw new Error("SANITARIO_V3_NEONATAL_REQUIRES_SEPARATE_ACCEPTANCE");
+  const progressive = Boolean(input.animalIds);
+  const requestIdentity = JSON.stringify({
+    fazendaId: input.fazendaId,
+    agendaId: input.agendaId,
+    animalIds: [...(input.animalIds ?? [])].sort(),
+    executedAt: input.executedAt,
+    product: input.product,
+    application: input.application,
+    responsibleName: input.responsibleName,
+    notes: input.notes,
+    confirmation: input.confirmation,
+  });
+  const ownership = progressive
+    ? await (
+        await import("@/lib/offline/localReadBoundary")
+      ).getCurrentLocalReadOwnership()
+    : null;
+  if (progressive && ownership?.status !== "OWNED")
+    throw new Error("SANITARIO_V3_OWNERSHIP_REQUIRED");
   let neonatalOwner: string | null = null;
-  const sync = neonatal ? input.sync ?? (await import("@/lib/sanitario/agenda/sanitaryPlanningSyncV2")).readSanitaryPlanningSyncContextV2() ?? null : resolveConfiguredSync(input);
+  const sync = neonatal
+    ? (input.sync ??
+      (
+        await import("@/lib/sanitario/agenda/sanitaryPlanningSyncV2")
+      ).readSanitaryPlanningSyncContextV2() ??
+      null)
+    : resolveConfiguredSync(input);
   if (neonatal) {
     input.assertCurrentContext?.();
-    if (input.registrationMode !== "executed_fact" || !sync) throw new Error("NEONATAL_EXECUTION_REQUIRES_SYNC_V2");
-    const ownership = await (await import("@/lib/offline/localReadBoundary")).getCurrentLocalReadOwnership();
-    if (ownership.status !== "OWNED") throw new Error("NEONATAL_EXECUTION_OWNERSHIP_CHANGED");
+    if (input.registrationMode !== "executed_fact" || !sync)
+      throw new Error("NEONATAL_EXECUTION_REQUIRES_SYNC_V2");
+    const ownership = await (
+      await import("@/lib/offline/localReadBoundary")
+    ).getCurrentLocalReadOwnership();
+    if (ownership.status !== "OWNED")
+      throw new Error("NEONATAL_EXECUTION_OWNERSHIP_CHANGED");
     neonatalOwner = ownership.currentUserId;
-    input = { ...input, clientOpId: deterministicUuidFromText(`neonatal-primary:${input.fazendaId}:${agenda.id}`) };
+    input = {
+      ...input,
+      clientOpId: deterministicUuidFromText(
+        `neonatal-primary:${input.fazendaId}:${agenda.id}`,
+      ),
+    };
     input.assertCurrentContext?.();
   }
+  if (progressive && !sync) throw new Error("SANITARIO_V3_SYNC_REQUIRED");
   const existing = await findExistingExecution(localDb, input, !!neonatal);
   if (existing) {
-    const existingDetail = await localDb.event_eventos_sanitario.get(existing.id);
+    if (progressive && existing.payload.v3_request_identity !== requestIdentity)
+      throw new Error("SANITARIO_V3_IDENTITY_REUSE_DIVERGENT_PAYLOAD");
+    const existingDetail = await localDb.event_eventos_sanitario.get(
+      existing.id,
+    );
     return {
       eventId: existing.id,
       agendaId: input.agendaId,
       clientOpId: input.clientOpId,
-      agendaStatus: "executed",
+      agendaStatus: progressive ? "open" : "executed",
       createsEvent: true,
       createsStockMovement: false,
-      createsActiveWithdrawal: withdrawalResolution(
-        existingDetail?.produto_snapshot as ExecutedProductTechnicalSnapshotV2 | null,
-      ).createsActiveWithdrawal,
+      createsActiveWithdrawal:
+        !progressive &&
+        withdrawalResolution(
+          existingDetail?.produto_snapshot as ExecutedProductTechnicalSnapshotV2 | null,
+        ).createsActiveWithdrawal,
     };
   }
 
@@ -669,7 +793,9 @@ export async function executeSanitaryAgendaV2(
     throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
   }
   if (agenda.execution_evento_id) {
-    const existingDetail = await localDb.event_eventos_sanitario.get(agenda.execution_evento_id);
+    const existingDetail = await localDb.event_eventos_sanitario.get(
+      agenda.execution_evento_id,
+    );
     return {
       eventId: agenda.execution_evento_id,
       agendaId: agenda.id,
@@ -677,25 +803,65 @@ export async function executeSanitaryAgendaV2(
       agendaStatus: "executed",
       createsEvent: true,
       createsStockMovement: false,
-      createsActiveWithdrawal: withdrawalResolution(
-        existingDetail?.produto_snapshot as ExecutedProductTechnicalSnapshotV2 | null,
-      ).createsActiveWithdrawal,
+      createsActiveWithdrawal:
+        !progressive &&
+        withdrawalResolution(
+          existingDetail?.produto_snapshot as ExecutedProductTechnicalSnapshotV2 | null,
+        ).createsActiveWithdrawal,
     };
   }
 
-  const agendaAnimals = await localDb.ops_sanitario_agenda_animais_v2
+  let agendaAnimals = await localDb.ops_sanitario_agenda_animais_v2
     .where("agenda_id")
     .equals(input.agendaId)
     .toArray();
-  const agendaValidation = validateAgainstAgenda({ agenda, agendaAnimals, request: input });
-  if (!agendaValidation.ok) {
-    throw new Error(`SANITARY_AGENDA_EXECUTION_REJECTED:${agendaValidation.rejected.join(",")}`);
+  if (progressive) {
+    const ids = input.animalIds!;
+    if (
+      !ids.length ||
+      ids.length > 500 ||
+      new Set(ids).size !== ids.length ||
+      !agenda.obrigacao_origem_agenda_id ||
+      ids.some(
+        (id) =>
+          !agendaAnimals.some(
+            (a) => a.animal_id === id && a.fazenda_id === input.fazendaId,
+          ),
+      )
+    )
+      throw new Error("SANITARIO_V3_INVALID_SUBSET");
+    agendaAnimals = agendaAnimals.filter((a) => ids.includes(a.animal_id));
+    const targets = await localDb.state_animais.bulkGet(ids);
+    if (
+      targets.some(
+        (a) => !a || a.deleted_at || a.fazenda_id !== input.fazendaId,
+      )
+    )
+      throw new Error("SANITARIO_V3_ANIMAL_SCOPE_INVALID");
   }
-  if (neonatal && agendaAnimals.some(entry => entry.planned_status !== "planejado" || entry.execution_evento_id)) {
+  const agendaValidation = validateAgainstAgenda({
+    agenda,
+    agendaAnimals,
+    request: input,
+  });
+  if (!agendaValidation.ok) {
+    throw new Error(
+      `SANITARY_AGENDA_EXECUTION_REJECTED:${agendaValidation.rejected.join(",")}`,
+    );
+  }
+  if (
+    neonatal &&
+    agendaAnimals.some(
+      (entry) =>
+        entry.planned_status !== "planejado" || entry.execution_evento_id,
+    )
+  ) {
     throw new Error("NEONATAL_EXECUTION_REQUIRES_FACT_RECONCILIATION");
   }
 
-  const assertProtocolAuthorization = async (current: SanitarioAgendaLocalV2) => {
+  const assertProtocolAuthorization = async (
+    current: SanitarioAgendaLocalV2,
+  ) => {
     if (neonatal && birthNeonatalAgendaOrigin(current)) {
       await assertBirthNeonatalAgendaOrigin(current, agendaAnimals, localDb);
       return [];
@@ -706,12 +872,21 @@ export async function executeSanitaryAgendaV2(
       localDb.state_fazenda_sanidade_config.get(current.fazenda_id),
     ]);
     const uf = farmConfig?.deleted_at ? null : farmConfig?.uf;
-    const rejected = sanitaryProtocolExecutionRejectionsV2(current, protocol, item, uf, input.registrationMode);
+    const rejected = sanitaryProtocolExecutionRejectionsV2(
+      current,
+      protocol,
+      item,
+      uf,
+      input.registrationMode,
+    );
     if (rejected.length) {
-      throw new Error(`SANITARY_AGENDA_EXECUTION_REJECTED:${rejected.join(",")}`);
+      throw new Error(
+        `SANITARY_AGENDA_EXECUTION_REJECTED:${rejected.join(",")}`,
+      );
     }
     return input.registrationMode === "executed_fact"
-      ? sanitaryProtocolExecutionRejectionsV2(current, protocol, item, uf) : [];
+      ? sanitaryProtocolExecutionRejectionsV2(current, protocol, item, uf)
+      : [];
   };
   const catalogReviewWarnings = await assertProtocolAuthorization(agenda);
   // Keep the short availability/identity/class checks together and ordered.
@@ -719,42 +894,92 @@ export async function executeSanitaryAgendaV2(
   // fallow-ignore-next-line complexity
   const assertProductApproval = async (current: SanitarioAgendaLocalV2) => {
     if (!input.product?.productId) return [];
-    const product = await localDb.catalog_sanitario_produtos_v2.get(input.product.productId);
-    if (!product || product.deleted_at || (input.registrationMode !== "executed_fact" && product.status_curatorial !== "ativo")) {
-      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:technical_product_not_approved");
+    const product = await localDb.catalog_sanitario_produtos_v2.get(
+      input.product.productId,
+    );
+    if (
+      !product ||
+      product.deleted_at ||
+      (input.registrationMode !== "executed_fact" &&
+        product.status_curatorial !== "ativo")
+    ) {
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:technical_product_not_approved",
+      );
     }
     if (product.nome_comercial.trim() !== input.product.productName.trim()) {
-      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:product_identity_mismatch");
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:product_identity_mismatch",
+      );
     }
     const requiredClass = expectedProductClass(current);
-    if (productRequirementKind(current) === "product_class" && requiredClass && product.classe !== requiredClass) {
-      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:product_class_mismatch");
+    if (
+      productRequirementKind(current) === "product_class" &&
+      requiredClass &&
+      product.classe !== requiredClass
+    ) {
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:product_class_mismatch",
+      );
     }
-    const warnings = product.status_curatorial !== "ativo" ? [`product_curation_${product.status_curatorial}`] : [];
-    const evidence = current.protocol_item_snapshot.planningEvidence as Record<string, unknown> | undefined;
-    if (evidence?.planningScope === "class_scheme" &&
-      (!product.registro_numero?.trim() || product.metadata.registration_current_validity !== "verified")) {
-      if (input.registrationMode !== "executed_fact") throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:product_registration_unverified");
+    const warnings =
+      product.status_curatorial !== "ativo"
+        ? [`product_curation_${product.status_curatorial}`]
+        : [];
+    const evidence = current.protocol_item_snapshot.planningEvidence as
+      | Record<string, unknown>
+      | undefined;
+    if (
+      evidence?.planningScope === "class_scheme" &&
+      (!product.registro_numero?.trim() ||
+        product.metadata.registration_current_validity !== "verified")
+    ) {
+      if (input.registrationMode !== "executed_fact")
+        throw new Error(
+          "SANITARY_AGENDA_EXECUTION_REJECTED:product_registration_unverified",
+        );
       warnings.push("product_registration_unverified");
     }
     return warnings;
   };
-  catalogReviewWarnings.push(...await assertProductApproval(agenda));
+  catalogReviewWarnings.push(...(await assertProductApproval(agenda)));
 
   const factualIdentity = sync
     ? {
-        clientTxId: neonatal ? deterministicUuidFromText(`${input.clientOpId}:tx`) : createUuid(),
+        clientTxId: progressive
+          ? deterministicUuidFromText(`${input.clientOpId}:tx`)
+          : neonatal
+            ? deterministicUuidFromText(`${input.clientOpId}:tx`)
+            : createUuid(),
         clientOpId: input.clientOpId,
-        domainOpId: neonatal ? deterministicUuidFromText(`${input.clientOpId}:domain`) : createUuid(),
+        domainOpId: progressive
+          ? deterministicUuidFromText(`${input.clientOpId}:domain`)
+          : neonatal
+            ? deterministicUuidFromText(`${input.clientOpId}:domain`)
+            : createUuid(),
       }
     : undefined;
   const movementIdentity = factualIdentity
     ? createSanitarioV2Identity(factualIdentity.clientTxId)
     : undefined;
 
-  let productTechnicalSnapshot: ExecutedProductTechnicalSnapshotV2 | null = null;
-  if (input.product?.productId && input.application?.dose && input.application.doseUnit && input.application.route) {
-    const [product, productSources, doseRules, withdrawalRules, speciesAuthorizations, animals, farmConfig] = await Promise.all([
+  let productTechnicalSnapshot: ExecutedProductTechnicalSnapshotV2 | null =
+    null;
+  if (
+    input.product?.productId &&
+    input.application?.dose &&
+    input.application.doseUnit &&
+    input.application.route
+  ) {
+    const [
+      product,
+      productSources,
+      doseRules,
+      withdrawalRules,
+      speciesAuthorizations,
+      animals,
+      farmConfig,
+    ] = await Promise.all([
       localDb.catalog_sanitario_produtos_v2.get(input.product.productId),
       localDb.catalog_sanitario_produto_fontes_v2
         .where("product_id")
@@ -775,7 +1000,12 @@ export async function executeSanitaryAgendaV2(
       localDb.state_animais.bulkGet(agendaValidation.targetAnimalIds),
       localDb.state_fazenda_sanidade_config.get(input.fazendaId),
     ]);
-    const { withdrawalSources, sources, coverages } = await readWithdrawalEvidenceCatalogV2(localDb, withdrawalRules, productSources);
+    const { withdrawalSources, sources, coverages } =
+      await readWithdrawalEvidenceCatalogV2(
+        localDb,
+        withdrawalRules,
+        productSources,
+      );
     productTechnicalSnapshot = buildExecutedProductTechnicalSnapshotV2({
       eventId: eventIdFor(input, Boolean(factualIdentity)),
       fazendaId: input.fazendaId,
@@ -789,18 +1019,22 @@ export async function executeSanitaryAgendaV2(
       executedRoute: input.application.route,
       animals: agendaValidation.targetAnimalIds.map((animalId, index) => ({
         animalId,
-        speciesCode: animals[index]?.fazenda_id === input.fazendaId
-          ? animals[index]?.especie ?? null
-          : null,
-        aptitude: farmConfig?.aptidao === "misto"
-          ? "mista"
-          : farmConfig?.aptidao === "corte" || farmConfig?.aptidao === "leite"
-          ? farmConfig.aptidao
-          : null,
+        speciesCode:
+          animals[index]?.fazenda_id === input.fazendaId
+            ? (animals[index]?.especie ?? null)
+            : null,
+        aptitude:
+          farmConfig?.aptidao === "misto"
+            ? "mista"
+            : farmConfig?.aptidao === "corte" || farmConfig?.aptidao === "leite"
+              ? farmConfig.aptidao
+              : null,
       })),
       product: product ?? null,
       productSources,
-      sources: sources.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)),
+      sources: sources.filter((entry): entry is NonNullable<typeof entry> =>
+        Boolean(entry),
+      ),
       coverages,
       doseRules,
       speciesAuthorizations,
@@ -808,20 +1042,34 @@ export async function executeSanitaryAgendaV2(
       withdrawalRules,
       withdrawalSources,
     });
-    const planningEvidence = agenda.protocol_item_snapshot.planningEvidence as Record<string, unknown> | undefined;
+    const planningEvidence = agenda.protocol_item_snapshot.planningEvidence as
+      | Record<string, unknown>
+      | undefined;
     if (planningEvidence?.planningScope === "class_scheme") {
       const compatibility = classSchemeExecutionEvidenceV2({
-        agenda, snapshot: productTechnicalSnapshot, productSources, coverages,
-        sources: sources.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)),
+        agenda,
+        snapshot: productTechnicalSnapshot,
+        productSources,
+        coverages,
+        sources: sources.filter((entry): entry is NonNullable<typeof entry> =>
+          Boolean(entry),
+        ),
       });
       if (!compatibility) {
         if (input.registrationMode !== "executed_fact") {
-          throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:class_scheme_product_incompatible");
+          throw new Error(
+            "SANITARY_AGENDA_EXECUTION_REJECTED:class_scheme_product_incompatible",
+          );
         }
         catalogReviewWarnings.push("class_scheme_product_incompatible");
       } else {
         productTechnicalSnapshot.fieldEvidence.push(compatibility);
-        if (compatibility.sourceRef && !productTechnicalSnapshot.sourceRefs.some((ref) => ref.id === compatibility.sourceRef!.id)) {
+        if (
+          compatibility.sourceRef &&
+          !productTechnicalSnapshot.sourceRefs.some(
+            (ref) => ref.id === compatibility.sourceRef!.id,
+          )
+        ) {
           productTechnicalSnapshot.sourceRefs.push(compatibility.sourceRef);
         }
       }
@@ -829,26 +1077,56 @@ export async function executeSanitaryAgendaV2(
   }
   const withdrawal = withdrawalResolution(productTechnicalSnapshot);
 
-  const recheckClassScheme = async (current: SanitarioAgendaLocalV2): Promise<string[]> => {
-    const evidence = current.protocol_item_snapshot.planningEvidence as Record<string, unknown> | undefined;
-    if (evidence?.planningScope !== "class_scheme" || !productTechnicalSnapshot) return [];
-    if (JSON.stringify(current.protocol_item_snapshot) !== JSON.stringify(agenda.protocol_item_snapshot)) {
-      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:class_scheme_planning_changed");
+  const recheckClassScheme = async (
+    current: SanitarioAgendaLocalV2,
+  ): Promise<string[]> => {
+    const evidence = current.protocol_item_snapshot.planningEvidence as
+      | Record<string, unknown>
+      | undefined;
+    if (evidence?.planningScope !== "class_scheme" || !productTechnicalSnapshot)
+      return [];
+    if (
+      JSON.stringify(current.protocol_item_snapshot) !==
+      JSON.stringify(agenda.protocol_item_snapshot)
+    ) {
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:class_scheme_planning_changed",
+      );
     }
-    const links = await localDb.catalog_sanitario_produto_fontes_v2.where("product_id").equals(productTechnicalSnapshot.executedProductId).toArray();
-    const ids = Array.from(new Set(links.map(link => link.source_id)));
+    const links = await localDb.catalog_sanitario_produto_fontes_v2
+      .where("product_id")
+      .equals(productTechnicalSnapshot.executedProductId)
+      .toArray();
+    const ids = Array.from(new Set(links.map((link) => link.source_id)));
     const [sources, coverages] = await Promise.all([
       localDb.catalog_sanitario_fontes_tecnicas_v2.bulkGet(ids),
-      ids.length ? localDb.catalog_sanitario_fonte_cobertura_campos_v2.where("source_id").anyOf(ids).toArray() : Promise.resolve([]),
+      ids.length
+        ? localDb.catalog_sanitario_fonte_cobertura_campos_v2
+            .where("source_id")
+            .anyOf(ids)
+            .toArray()
+        : Promise.resolve([]),
     ]);
-    const compatibility = classSchemeExecutionEvidenceV2({ agenda: current, snapshot: productTechnicalSnapshot,
-      productSources: links, coverages, sources: sources.filter((s): s is NonNullable<typeof s> => Boolean(s)) });
-    productTechnicalSnapshot.fieldEvidence = productTechnicalSnapshot.fieldEvidence.filter(field => field.reason !== "class_scheme_product_compatibility_verified");
+    const compatibility = classSchemeExecutionEvidenceV2({
+      agenda: current,
+      snapshot: productTechnicalSnapshot,
+      productSources: links,
+      coverages,
+      sources: sources.filter((s): s is NonNullable<typeof s> => Boolean(s)),
+    });
+    productTechnicalSnapshot.fieldEvidence =
+      productTechnicalSnapshot.fieldEvidence.filter(
+        (field) =>
+          field.reason !== "class_scheme_product_compatibility_verified",
+      );
     if (compatibility) {
       productTechnicalSnapshot.fieldEvidence.push(compatibility);
       return [];
     }
-    if (input.registrationMode !== "executed_fact") throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:class_scheme_product_incompatible");
+    if (input.registrationMode !== "executed_fact")
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:class_scheme_product_incompatible",
+      );
     return ["class_scheme_product_incompatible"];
   };
 
@@ -867,23 +1145,38 @@ export async function executeSanitaryAgendaV2(
   }
   if (input.product?.inventoryLotId) {
     if (!input.product.productId?.trim()) {
-      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_product");
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_product",
+      );
     }
     if (!input.confirmation.userConfirmedStockMovement) {
-      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_confirmation");
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_confirmation",
+      );
     }
-    if (!input.product.quantityConsumed || input.product.quantityConsumed <= 0) {
-      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_quantity");
+    if (
+      !input.product.quantityConsumed ||
+      input.product.quantityConsumed <= 0
+    ) {
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_quantity",
+      );
     }
     if (!input.product.unit?.trim()) {
       throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:missing_stock_unit");
     }
-    const lot = await localDb.state_insumo_lotes.get(input.product.inventoryLotId);
+    const lot = await localDb.state_insumo_lotes.get(
+      input.product.inventoryLotId,
+    );
     if (!lot || lot.fazenda_id !== input.fazendaId || lot.deleted_at) {
-      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:inventory_lot_not_found");
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:inventory_lot_not_found",
+      );
     }
     if (input.product.unit !== lot.unidade_base) {
-      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:inventory_unit_mismatch");
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:inventory_unit_mismatch",
+      );
     }
     const cost = buildInventoryCostSnapshot({
       lot,
@@ -913,6 +1206,27 @@ export async function executeSanitaryAgendaV2(
     catalogReviewWarnings,
   });
 
+  if (progressive) {
+    Object.assign(records.payload, {
+      sanitario_v3_progressive: true,
+      v3_request_identity: requestIdentity,
+      ...(records.movement
+        ? {
+            inventory_movement: {
+              id: records.movement.id,
+              insumo_id: records.movement.insumo_id,
+              insumo_lote_id: records.movement.insumo_lote_id,
+              quantidade_base: records.movement.quantidade_base,
+              unidade_base: records.movement.unidade_base,
+              client_op_id: records.movement.client_op_id,
+              domain_op_id: records.movement.domain_op_id,
+            },
+          }
+        : {}),
+    });
+    records.event.sanitario_v3_confirmation = "pending";
+    records.detail.sanitario_v3_confirmation = "pending";
+  }
   const factualOperation = factualIdentity
     ? buildApplyFactualCoreOperation(
         factualIdentity,
@@ -945,24 +1259,111 @@ export async function executeSanitaryAgendaV2(
   const assertNeonatalContext = async () => {
     if (!neonatal) return;
     input.assertCurrentContext?.();
-    if ((await localDb.local_ownership.get(LOCAL_OWNERSHIP_KEY))?.owner_user_id !== neonatalOwner)
+    if (
+      (await localDb.local_ownership.get(LOCAL_OWNERSHIP_KEY))
+        ?.owner_user_id !== neonatalOwner
+    )
       throw new Error("NEONATAL_EXECUTION_OWNERSHIP_CHANGED");
-    await validateSanitarioV2Enqueue({ fazendaId: input.fazendaId, projectRef: sync!.projectRef, operations: [factualOperation!] });
+    await validateSanitarioV2Enqueue({
+      fazendaId: input.fazendaId,
+      projectRef: sync!.projectRef,
+      operations: [factualOperation!],
+    });
   };
   const assertNeonatalSnapshot = async (current: SanitarioAgendaLocalV2) => {
     if (!neonatal) return;
     await assertNeonatalContext();
     if (JSON.stringify(current) !== JSON.stringify(agenda)) {
-      if (!current.execution_evento_id) throw new Error("NEONATAL_AGENDA_CHANGED");
+      if (!current.execution_evento_id)
+        throw new Error("NEONATAL_AGENDA_CHANGED");
     }
-    const currentAnimals = await localDb.ops_sanitario_agenda_animais_v2.where("agenda_id").equals(current.id).toArray();
+    const currentAnimals = await localDb.ops_sanitario_agenda_animais_v2
+      .where("agenda_id")
+      .equals(current.id)
+      .toArray();
     await assertBirthNeonatalAgendaOrigin(current, currentAnimals, localDb);
-    if (!current.execution_evento_id && currentAnimals.some(entry => entry.planned_status !== "planejado" || entry.execution_evento_id))
+    if (
+      !current.execution_evento_id &&
+      currentAnimals.some(
+        (entry) =>
+          entry.planned_status !== "planejado" || entry.execution_evento_id,
+      )
+    )
       throw new Error("NEONATAL_EXECUTION_REQUIRES_FACT_RECONCILIATION");
-    if (JSON.stringify(targetAnimalIds(currentAnimals, current)) !== JSON.stringify(agendaValidation.targetAnimalIds))
+    if (
+      JSON.stringify(targetAnimalIds(currentAnimals, current)) !==
+      JSON.stringify(agendaValidation.targetAnimalIds)
+    )
       throw new Error("NEONATAL_AGENDA_CHANGED");
   };
 
+  const persistExecutionEffects = async () => {
+    if (!progressive)
+      await applyExecutionInventory(localDb, records, input.fazendaId);
+    if (sync && factualOperation) {
+      await writeSanitarioV2Queue({
+        fazendaId: input.fazendaId,
+        clientId: sync.clientId,
+        operations: [factualOperation],
+        companionOperations:
+          !progressive && movementOperation ? [movementOperation] : [],
+      });
+    }
+  };
+  const persistLegacyCompletion = async () => {
+    if (!progressive)
+      await localDb.ops_sanitario_agenda_v2.update(input.agendaId, {
+        status: "executada",
+        execution_evento_id: records.event.id,
+        updated_at: records.now,
+        metadata: {
+          ...agenda.metadata,
+          execution: {
+            status: "executed",
+            eventId: records.event.id,
+            executedAt: basicValidation.executedAt,
+            clientOpId: input.clientOpId,
+          },
+        },
+      });
+    if (!progressive)
+      await localDb.ops_sanitario_agenda_animais_v2.bulkPut(
+        agendaAnimals.map((entry) => ({
+          ...entry,
+          planned_status: "executado",
+          execution_evento_id: records.event.id,
+          updated_at: records.now,
+        })),
+      );
+  };
+  const assertProgressiveOwnership = async () => {
+    input.assertCurrentContext?.();
+    if (
+      progressive &&
+      (await localDb.local_ownership.get(LOCAL_OWNERSHIP_KEY))
+        ?.owner_user_id !== ownership?.currentUserId
+    )
+      throw new Error("SANITARIO_V3_OWNERSHIP_CHANGED");
+  };
+  const readExecutableAgenda = async () => {
+    await assertProgressiveOwnership();
+    const current = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
+    if (
+      !current ||
+      current.deleted_at ||
+      current.fazenda_id !== input.fazendaId
+    ) {
+      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
+    }
+    await assertNeonatalSnapshot(current);
+    if (current.execution_evento_id) return current;
+    if (current.status !== "programada") {
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_executable",
+      );
+    }
+    return current;
+  };
   const committed = await localDb.transaction(
     "rw",
     [
@@ -988,58 +1389,36 @@ export async function executeSanitaryAgendaV2(
       localDb.catalog_sanitario_fonte_cobertura_campos_v2,
     ],
     async () => {
-      const current = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
-      if (!current || current.deleted_at || current.fazenda_id !== input.fazendaId) {
-        throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
-      }
-      await assertNeonatalSnapshot(current);
-      if (current.execution_evento_id) return { eventId: current.execution_evento_id, created: false };
-      if (current.status !== "programada") {
-        throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_executable");
-      }
+      const current = await readExecutableAgenda();
+      if (current.execution_evento_id)
+        return { eventId: current.execution_evento_id, created: false };
       const currentWarnings = [
-        ...await assertProtocolAuthorization(current),
-        ...await assertProductApproval(current),
-        ...await recheckClassScheme(current),
+        ...(await assertProtocolAuthorization(current)),
+        ...(await assertProductApproval(current)),
+        ...(await recheckClassScheme(current)),
       ];
       // Event, detail and queued operation share this payload until persistence.
       records.payload.catalog_review_warnings = currentWarnings;
-      records.payload.warnings = mergeCatalogReviewNotices(currentWarnings, records.payload.warnings);
+      records.payload.warnings = mergeCatalogReviewNotices(
+        currentWarnings,
+        records.payload.warnings,
+      );
 
       await localDb.event_eventos.add(records.event);
-      await localDb.event_eventos_sanitario.add(records.detail);
-      await localDb.event_eventos_animais.bulkAdd(records.eventAnimals);
-      await applyExecutionInventory(localDb, records, input.fazendaId);
-      if (sync && factualOperation) {
-        await writeSanitarioV2Queue({
-          fazendaId: input.fazendaId,
-          clientId: sync.clientId,
-          operations: [factualOperation],
-          companionOperations: movementOperation ? [movementOperation] : [],
-        });
-      }
-      await localDb.ops_sanitario_agenda_v2.update(input.agendaId, {
-        status: "executada",
-        execution_evento_id: records.event.id,
-        updated_at: records.now,
-        metadata: {
-          ...agenda.metadata,
-          execution: {
-            status: "executed",
-            eventId: records.event.id,
-            executedAt: basicValidation.executedAt,
-            clientOpId: input.clientOpId,
-          },
-        },
-      });
-      await localDb.ops_sanitario_agenda_animais_v2.bulkPut(
-        agendaAnimals.map((entry) => ({
-          ...entry,
-          planned_status: "executado",
-          execution_evento_id: records.event.id,
-          updated_at: records.now,
-        })),
+      await localDb.event_eventos_sanitario.add(
+        progressive
+          ? {
+              ...records.detail,
+              carencia_carne_dias: null,
+              carencia_leite_dias: null,
+              carencia_carne_ate: null,
+              carencia_leite_ate: null,
+            }
+          : records.detail,
       );
+      await localDb.event_eventos_animais.bulkAdd(records.eventAnimals);
+      await persistExecutionEffects();
+      await persistLegacyCompletion();
       await assertNeonatalContext();
       return { eventId: records.event.id, created: true };
     },
@@ -1049,13 +1428,18 @@ export async function executeSanitaryAgendaV2(
     eventId: committed.eventId,
     agendaId: agenda.id,
     clientOpId: input.clientOpId,
-    agendaStatus: "executed",
+    agendaStatus: progressive ? "open" : "executed",
     createsEvent: true,
-    createsStockMovement: committed.created && Boolean(records.movement),
-    createsActiveWithdrawal: committed.created
-      ? withdrawal.createsActiveWithdrawal
-      : withdrawalResolution((await localDb.event_eventos_sanitario.get(committed.eventId))
-        ?.produto_snapshot as ExecutedProductTechnicalSnapshotV2 | null).createsActiveWithdrawal,
+    createsStockMovement:
+      !progressive && committed.created && Boolean(records.movement),
+    createsActiveWithdrawal:
+      !progressive &&
+      (committed.created
+        ? withdrawal.createsActiveWithdrawal
+        : withdrawalResolution(
+            (await localDb.event_eventos_sanitario.get(committed.eventId))
+              ?.produto_snapshot as ExecutedProductTechnicalSnapshotV2 | null,
+          ).createsActiveWithdrawal),
   };
 }
 

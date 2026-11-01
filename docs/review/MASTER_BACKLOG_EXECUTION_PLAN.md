@@ -116,6 +116,25 @@ A reconciliação detalhada de **BLQ-001..004**, **DEC-001..007**, **AUD-001..01
 
 Para reconsiderar o gate, produto deve registrar responsável, data, baseline, escopo incluído/excluído, atores concretos e evidências aceitas em DEC-001..004, resolver as condições adicionais aplicáveis e emitir novo parecer com aprovação explícita. JOR-027 só adiciona condição específica de rastreabilidade se entrar no escopo; DEC-005 pode aguardar se a navegação implementada for a referência. DEC-007 depende do nível de afirmação exigido por store. Não promover PND a impedimento global nem inferir autorização para Etapa 3 por este documento.
 
+### Incrementos candidatos da Agenda Sanitária V3
+
+Sequência existente do design aprovado, preservada para rastreabilidade. V3.1 e V3.2 estão executadas no recorte local de proteções, writer, leitores afetados e recuperação; resolução gerencial, participação, fechamento e continuidade continuam futuras. A autorização atual limita-se ao PR, sem implantação, merge ou início das linhas posteriores.
+
+**Premissa ratificada pelo PO em 30/10/2026**, na solicitação “V3.1 | Simplificação de compatibilidade e preparação técnica”: nenhum cliente antigo em operação e nenhum suporte a versões antigas. A [matriz manter/substituir/retirar/verificar e sequência V3.1](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#v31-simplificado--transição-para-contrato-único) prevalecem sobre a recomendação anterior de preservar dois fluxos. Dependências internas: verificar dados/recibos/pendências; instalar proteções com execução progressiva OFF; migrar consumidores atuais para contrato único; somente então substituir unicidade e propor retirada de caminhos sem uso. Histórico não é suporte a cliente antigo; pendências só geram trabalho específico se comprovadas. Proteções, contrato único e writer progressivo já estão implementados no recorte V3.1/V3.2, com histórico e pendências preservados.
+
+| Ordem candidata / IDs existentes | Dependências reais | Resultado e aceite do candidato |
+| --- | --- | --- |
+| 1. Proteções canônicas, identidade e transição interna (V3.1 local implementada) — F02/C07/D04/I03/D06 | Design aprovado e premissa de aplicativo único; verificar fatos/recibos/pendências e consumidores atuais | Proteção por operação e obrigação/animal; contrato operacional único; sem bypass por caminho não migrado. Índice atual mantido até substituto instalado, sem ramo V2 permanente; execução progressiva desabilitada |
+| 2. Registro factual progressivo (V3.2 local implementada) — F02/C07/D04 | Proteções/identidade, admissão única e consumidores internos migrados; transação local/remota e fontes por Evento | Três Eventos no 30/15/5/5/5, durabilidade por grupo, retomada e efeitos locais coerentes; nenhuma closure global pelo cowboy. Habilitação depende de aceites e autorização própria |
+| 3. Concorrência e reconciliação — F02/D04/C05/C06 | Writer progressivo e recepção durável dos envelopes | Distintos admitidos sem CAS global isolado; sobreposição, duplicidade, repetição legítima, falha parcial e tardios preservados; resolução Owner/Manager auditável |
+| 4. Participação e fechamento — F02/C05/C06/D04 | Reconciliação e todas as admissões sujeitas à mesma barreira | Consulta não cria participação; sequência final/lacunas verificadas; conhecidos incompletos bloqueiam; snapshot transacional, fechamento idempotente e tardios sem reabertura automática |
+| 5. Continuidade administrativa — F02/C07/D06 | Resultado multievento consolidado e revisão da barreira; autorização gerencial | Solicitação própria; duas decisões incompatíveis não duplicam Agenda; aprovação cria no máximo uma continuidade; rejeição justificada não cria; tardios revalidam o vínculo |
+| 6. Composição de leitores, efeitos e UX — F02/C07/D04/C05/C06 | Contratos anteriores; migração dos leitores atuais e preservação histórica desde a primeira linha | Histórico/métricas/estoque/carência/custo consistentes por Evento; resíduos anteriores tratados somente se encontrados; sessão/farm-switch/restart e gestos coerentes no aplicativo único, sem certificação global |
+
+O procedimento excepcional de participação irrecuperável é extensão futura condicionada, não sétimo incremento iniciado nem autorização para forçar o fechamento normal. Proteções de fonte, estoque e leitores são requisitos desde a definição dos contratos, não correções deixadas somente para a última linha. Não se reabrem I01/I02/I04 ou P0 encerrados.
+
+Evidências de execução e limites atuais: [consolidação local](./evidence/SANITARIO_V31_V32_LOCAL_20261101.json). BLQ-002/003 ABERTOS; GATE-03 BLOQUEADO.
+
 ## Matriz de paralelismo
 
 | Trilhas candidatas simultâneas | Compartilhamento proibido / coordenação | Condição |

@@ -5,6 +5,7 @@ vi.mock("@/lib/supabase", () => ({ supabase: { auth: { getSession: vi.fn() } } }
 import { db } from "@/lib/offline/db";
 import { establishLocalOwnership } from "@/lib/offline/ownership";
 import { supabase } from "@/lib/supabase";
+import { applySanitarioV2Cutover, setSanitarioV2PushEnabled } from "@/lib/offline/sanitarioV2Cutover";
 import type { Animal, Lote, SanitarioAgendaLocalV2 } from "@/lib/offline/types";
 import {
   cancelLocalSanitaryAgendaV2,
@@ -80,6 +81,27 @@ async function clearScope() {
 }
 
 describe("sanitaryLocalAgendaManagementV2", () => {
+  it("reagenda dado persistido V2 com comando V3 preservando identidade e metadados históricos",async()=>{
+    const storage=new Map<string,string>();
+    vi.stubGlobal("localStorage",{getItem:(key:string)=>storage.get(key)??null,setItem:(key:string,value:string)=>storage.set(key,value),removeItem:(key:string)=>storage.delete(key)});
+    vi.stubEnv("VITE_SUPABASE_URL","http://127.0.0.1:54321");
+    try {
+      const id=crypto.randomUUID(), farm=crypto.randomUUID();const row=agenda({id,fazenda_id:farm,contract_version:2,revision:0});
+      await db.ops_sanitario_agenda_v2.put(row);
+      await applySanitarioV2Cutover(farm,async()=>undefined);
+      setSanitarioV2PushEnabled(true,"local");
+      await rescheduleLocalSanitaryAgendaV2({agendaId:id,fazendaId:farm,plannedFor:"2026-11-01"},db);
+      expect(await db.ops_sanitario_agenda_v2.get(id)).toMatchObject({id,contract_version:2,data_programada:"2026-11-01"});
+      expect(await db.queue_ops.toArray()).toEqual([expect.objectContaining({record:expect.objectContaining({contract_version:3,command:"reschedule_agenda",fazenda_id:farm,payload:{agenda_id:id,data_programada:"2026-11-01"}})})]);
+    } finally {setSanitarioV2PushEnabled(false,"local");vi.unstubAllEnvs();vi.unstubAllGlobals();}
+  });
+  it.each([2,3])("Agenda persistida com formato %s não ganha mutação local sem transporte",async version=>{
+    const id=crypto.randomUUID();const row=agenda({id,contract_version:version});
+    await db.ops_sanitario_agenda_v2.put(row);
+    await expect(rescheduleLocalSanitaryAgendaV2({agendaId:id,fazendaId:row.fazenda_id,plannedFor:"2026-11-01"},db)).rejects.toThrow("SANITARIO_V2_SYNC_NOT_READY");
+    await expect(cancelLocalSanitaryAgendaV2({agendaId:id,fazendaId:row.fazenda_id},db)).rejects.toThrow("SANITARIO_V2_SYNC_NOT_READY");
+    expect(await db.ops_sanitario_agenda_v2.get(id)).toEqual(row);expect(await db.queue_ops.count()).toBe(0);
+  });
   beforeEach(async () => {
     await db.open();
     vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
@@ -124,7 +146,7 @@ describe("sanitaryLocalAgendaManagementV2", () => {
       itemLabel: "Dose anual",
       target: { label: "Novilhas", href: "/lotes/lot-1" },
       canManage: true,
-      canExecute: true,
+      canExecute: false,
     });
   });
 

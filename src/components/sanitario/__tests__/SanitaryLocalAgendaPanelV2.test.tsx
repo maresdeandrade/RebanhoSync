@@ -59,7 +59,11 @@ const items = [
     suggestedDoseUnit: null,
     suggestedRoute: null,
     animalCount: 1,
-    target: { kind: "animal" as const, label: "Estrela", href: "/animais/animal-1" },
+    target: {
+      kind: "animal" as const,
+      label: "Estrela",
+      href: "/animais/animal-1",
+    },
     canManage: false,
     canExecute: false,
   },
@@ -90,7 +94,14 @@ function renderPanel(
   render(
     <MemoryRouter>
       <SanitaryLocalAgendaPanelV2
-        items={panelItems}
+        items={panelItems.map((entry) => ({
+          ...entry,
+          animalOptions: Array.from({ length: entry.animalCount }, (_, i) => ({
+            id: `${entry.id}-animal-${i}`,
+            label: `Animal do grupo ${i + 1}`,
+            recognized: false,
+          })),
+        }))}
         executionProductOptions={[
           {
             id: "product-1",
@@ -210,68 +221,157 @@ describe("SanitaryLocalAgendaPanelV2", () => {
 
   it("oferece produto com revisão pendente para registrar fato, preservando aviso", async () => {
     await db.catalog_sanitario_produtos_v2.put({
-      id: "product-pending", nome_comercial: "Vacina já utilizada", classe: "vacina_raiva",
-      tipo_produto: "vacina", status_curatorial: "precisa_validar", metadata: {},
+      id: "product-pending",
+      nome_comercial: "Vacina já utilizada",
+      classe: "vacina_raiva",
+      tipo_produto: "vacina",
+      status_curatorial: "precisa_validar",
+      metadata: {},
       deleted_at: null,
     } as never);
     const result = await loadSanitaryAgendaExecutionOptionsV2([
-      { ...items[0], productRequirementKind: "product_class", productClass: "vacina_raiva" },
+      {
+        ...items[0],
+        productRequirementKind: "product_class",
+        productClass: "vacina_raiva",
+      },
     ]);
-    expect(result.productOptions).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: "product-pending", name: "Vacina já utilizada", warning: expect.stringContaining("aplicação já realizada") }),
-    ]));
+    expect(result.productOptions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "product-pending",
+          name: "Vacina já utilizada",
+          warning: expect.stringContaining("aplicação já realizada"),
+        }),
+      ]),
+    );
   });
 
-  it.each([true, false])("resolve UUID de member para class_key sem ocultar produto no cache parcial: %s", async (classCached) => {
-    const classId = "40000000-0000-4000-8000-000000000001";
-    await db.catalog_sanitario_produtos_v2.put({
-      id: "product-class-key", nome_comercial: "Produto aplicado", classe: "lactonas_macrociclicas",
-      tipo_produto: "antiparasitario", status_curatorial: "ativo", metadata: {}, deleted_at: null,
-    } as never);
-    await db.catalog_sanitario_product_class_group_members_v2.put({
-      id: "member-1", group_id: "group-1", class_id: classId, is_allowed: true,
-      scope: "global", fazenda_id: null, deleted_at: null,
-    } as never);
-    if (classCached) await db.catalog_sanitario_product_classes_v2.put({
-      id: classId, class_key: "lactonas_macrociclicas", scope: "global", fazenda_id: null, deleted_at: null,
-    } as never);
-    const result = await loadSanitaryAgendaExecutionOptionsV2([
-      { ...items[0], productRequirementKind: "product_class_group", productClassGroupId: "group-1" },
-    ]);
-    expect(result.productOptions).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: "product-class-key" }),
-    ]));
-  });
+  it.each([true, false])(
+    "resolve UUID de member para class_key sem ocultar produto no cache parcial: %s",
+    async (classCached) => {
+      const classId = "40000000-0000-4000-8000-000000000001";
+      await db.catalog_sanitario_produtos_v2.put({
+        id: "product-class-key",
+        nome_comercial: "Produto aplicado",
+        classe: "lactonas_macrociclicas",
+        tipo_produto: "antiparasitario",
+        status_curatorial: "ativo",
+        metadata: {},
+        deleted_at: null,
+      } as never);
+      await db.catalog_sanitario_product_class_group_members_v2.put({
+        id: "member-1",
+        group_id: "group-1",
+        class_id: classId,
+        is_allowed: true,
+        scope: "global",
+        fazenda_id: null,
+        deleted_at: null,
+      } as never);
+      if (classCached)
+        await db.catalog_sanitario_product_classes_v2.put({
+          id: classId,
+          class_key: "lactonas_macrociclicas",
+          scope: "global",
+          fazenda_id: null,
+          deleted_at: null,
+        } as never);
+      const result = await loadSanitaryAgendaExecutionOptionsV2([
+        {
+          ...items[0],
+          productRequirementKind: "product_class_group",
+          productClassGroupId: "group-1",
+        },
+      ]);
+      expect(result.productOptions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "product-class-key" }),
+        ]),
+      );
+    },
+  );
 
   it("ignora members de outra fazenda ao resolver classes do grupo", async () => {
     await db.catalog_sanitario_produtos_v2.bulkPut([
-      { id: "product-allowed", nome_comercial: "Antiparasitário", classe: "lactonas_macrociclicas", status_curatorial: "ativo", metadata: {}, deleted_at: null },
-      { id: "product-foreign-member", nome_comercial: "Vacina", classe: "vacina_raiva", status_curatorial: "ativo", metadata: {}, deleted_at: null },
+      {
+        id: "product-allowed",
+        nome_comercial: "Antiparasitário",
+        classe: "lactonas_macrociclicas",
+        status_curatorial: "ativo",
+        metadata: {},
+        deleted_at: null,
+      },
+      {
+        id: "product-foreign-member",
+        nome_comercial: "Vacina",
+        classe: "vacina_raiva",
+        status_curatorial: "ativo",
+        metadata: {},
+        deleted_at: null,
+      },
     ] as never);
     await db.catalog_sanitario_product_classes_v2.bulkPut([
-      { id: "class-allowed", class_key: "lactonas_macrociclicas", scope: "global", fazenda_id: null, deleted_at: null },
-      { id: "class-foreign-member", class_key: "vacina_raiva", scope: "global", fazenda_id: null, deleted_at: null },
+      {
+        id: "class-allowed",
+        class_key: "lactonas_macrociclicas",
+        scope: "global",
+        fazenda_id: null,
+        deleted_at: null,
+      },
+      {
+        id: "class-foreign-member",
+        class_key: "vacina_raiva",
+        scope: "global",
+        fazenda_id: null,
+        deleted_at: null,
+      },
     ] as never);
     await db.catalog_sanitario_product_class_group_members_v2.bulkPut([
-      { id: "member-allowed", group_id: "group-1", class_id: "class-allowed", is_allowed: true, scope: "tenant", fazenda_id: "farm-1", deleted_at: null },
-      { id: "member-foreign", group_id: "group-1", class_id: "class-foreign-member", is_allowed: true, scope: "tenant", fazenda_id: "farm-2", deleted_at: null },
+      {
+        id: "member-allowed",
+        group_id: "group-1",
+        class_id: "class-allowed",
+        is_allowed: true,
+        scope: "tenant",
+        fazenda_id: "farm-1",
+        deleted_at: null,
+      },
+      {
+        id: "member-foreign",
+        group_id: "group-1",
+        class_id: "class-foreign-member",
+        is_allowed: true,
+        scope: "tenant",
+        fazenda_id: "farm-2",
+        deleted_at: null,
+      },
     ] as never);
     const result = await loadSanitaryAgendaExecutionOptionsV2([items[0]]);
-    expect(result.productOptions.map((entry) => entry.id)).toEqual(["product-allowed"]);
+    expect(result.productOptions.map((entry) => entry.id)).toEqual([
+      "product-allowed",
+    ]);
   });
 
   it("lista registros sem expor identificadores técnicos e abre a origem", () => {
     renderPanel();
     expect(screen.getByText("Brucelose B19")).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: /Ver agendas/ })[0]);
-    expect(screen.getByRole("link", { name: /Novilhas/ })).toHaveAttribute("href", "/lotes/lot-1");
+    expect(screen.getByRole("link", { name: /Novilhas/ })).toHaveAttribute(
+      "href",
+      "/lotes/lot-1",
+    );
     expect(screen.queryByText("agenda-1")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Executar grupo/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Executar grupo/ }),
+    ).toBeInTheDocument();
   });
 
   it("filtra pelo conteúdo apresentado", () => {
     renderPanel();
-    fireEvent.change(screen.getByLabelText("Buscar agenda sanitária"), { target: { value: "Estrela" } });
+    fireEvent.change(screen.getByLabelText("Buscar agenda sanitária"), {
+      target: { value: "Estrela" },
+    });
     expect(screen.getByText("Raiva")).toBeInTheDocument();
     expect(screen.queryByText("Brucelose B19")).not.toBeInTheDocument();
   });
@@ -283,15 +383,25 @@ describe("SanitaryLocalAgendaPanelV2", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: /Ver agendas/ })[0]);
     fireEvent.click(screen.getAllByRole("button", { name: "Reagendar" })[0]);
-    fireEvent.change(screen.getByLabelText("Nova data planejada"), { target: { value: "2026-07-15" } });
+    fireEvent.change(screen.getByLabelText("Nova data planejada"), {
+      target: { value: "2026-07-15" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Salvar nova data" }));
-    await waitFor(() => expect(onReschedule).toHaveBeenCalledWith("agenda-1", "2026-07-15"));
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(onReschedule).toHaveBeenCalledWith("agenda-1", "2026-07-15"),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Cancelar agenda" })[0]);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Cancelar agenda" })[0],
+    );
     await waitFor(() => expect(onCancel).toHaveBeenCalledWith("agenda-1"));
     fireEvent.click(screen.getAllByRole("button", { name: /Ver agendas/ })[0]);
-    expect(screen.getAllByRole("button", { name: "Cancelar agenda" })[1]).toBeDisabled();
+    expect(
+      screen.getAllByRole("button", { name: "Cancelar agenda" })[1],
+    ).toBeDisabled();
   });
 
   it("abre modal de execução, exige confirmação explícita e não mostra executar para agenda cancelada", async () => {
@@ -307,53 +417,93 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     );
     renderPanel(vi.fn(), vi.fn(), onExecute);
 
-    expect(screen.getAllByRole("button", { name: /Executar grupo/ })).toHaveLength(1);
+    expect(
+      screen.getAllByRole("button", { name: /Executar grupo/ }),
+    ).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: /Executar grupo/ }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText("Esta ação registra um evento sanitário executado.")).toBeInTheDocument();
-    expect(screen.getByText("Registre somente uma aplicação já realizada, com produto real, dose e via.")).toBeInTheDocument();
-    expect(screen.getByText(/Grupo técnico não define dose nem carência/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Confirmar execução" })).toBeDisabled();
+    expect(
+      screen.getByText("Esta ação registra um evento sanitário executado."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Registre somente uma aplicação já realizada, com produto real, dose e via.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Grupo técnico não define dose nem carência/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Confirmar execução" }),
+    ).toBeDisabled();
 
     fireEvent.click(screen.getByLabelText("Produto real"));
     fireEvent.click(screen.getByRole("option", { name: "Vermífugo A · Lab" }));
     expect(screen.getByText("Doses previstas")).toBeInTheDocument();
     expect(screen.getAllByText("3 doses").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByLabelText("Doses extras/perda")).toHaveValue(0);
-    fireEvent.change(screen.getByLabelText("Doses extras/perda"), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText("Doses extras/perda"), {
+      target: { value: "2" },
+    });
     expect(screen.getByText("5 doses")).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText("Saldo disponível: 100 doses")).toBeInTheDocument());
-    fireEvent.change(screen.getByLabelText("Via"), { target: { value: "subcutanea" } });
-    fireEvent.click(screen.getByLabelText("Confirmo que este manejo sanitário foi executado."));
+    await waitFor(() =>
+      expect(
+        screen.getByText("Saldo disponível: 100 doses"),
+      ).toBeInTheDocument(),
+    );
+    fireEvent.change(screen.getByLabelText("Via"), {
+      target: { value: "subcutanea" },
+    });
+    fireEvent.click(
+      screen.getByLabelText(
+        "Confirmo que este manejo sanitário foi executado.",
+      ),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Confirmar execução" }));
 
     await waitFor(() =>
-      expect(onExecute).toHaveBeenCalledWith(
-        [
-          expect.objectContaining({
-            agendaId: "agenda-1",
-            product: expect.objectContaining({
-              productId: "product-1",
-              productName: "Vermífugo A",
-              inventoryLotId: "stock-lot-1",
-              quantityConsumed: 5,
-              unit: "dose",
-            }),
-            application: expect.objectContaining({ dose: 1, doseUnit: "dose", route: "subcutanea" }),
-            registrationMode: "executed_fact",
-            confirmation: expect.objectContaining({ userConfirmedExecution: true }),
+      expect(onExecute).toHaveBeenCalledWith([
+        expect.objectContaining({
+          agendaId: "agenda-1",
+          product: expect.objectContaining({
+            productId: "product-1",
+            productName: "Vermífugo A",
+            inventoryLotId: "stock-lot-1",
+            quantityConsumed: 5,
+            unit: "dose",
           }),
-        ],
-      ),
+          application: expect.objectContaining({
+            dose: 1,
+            doseUnit: "dose",
+            route: "subcutanea",
+          }),
+          registrationMode: "executed_fact",
+          confirmation: expect.objectContaining({
+            userConfirmedExecution: true,
+          }),
+        }),
+      ]),
     );
   });
 
   it("mostra sucesso parcial e reenvia somente agendas falhas ou não executadas", async () => {
     const groupedItems = [
-      { ...items[0], id: "agenda-a", target: { ...items[0].target, label: "Animal A" } },
-      { ...items[0], id: "agenda-b", target: { ...items[0].target, label: "Animal B" } },
-      { ...items[0], id: "agenda-c", target: { ...items[0].target, label: "Animal C" } },
+      {
+        ...items[0],
+        id: "agenda-a",
+        target: { ...items[0].target, label: "Animal A" },
+      },
+      {
+        ...items[0],
+        id: "agenda-b",
+        target: { ...items[0].target, label: "Animal B" },
+      },
+      {
+        ...items[0],
+        id: "agenda-c",
+        target: { ...items[0].target, label: "Animal C" },
+      },
     ];
     const onExecute = vi
       .fn()
@@ -369,6 +519,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
             agendaId: "agenda-b",
             clientOpId: payloads[1].clientOpId,
             status: "FALHOU",
+            errorMessage: "Saldo insuficiente para este grupo",
             retryAvailable: true,
           },
           {
@@ -397,13 +548,20 @@ describe("SanitaryLocalAgendaPanelV2", () => {
       target: { value: "subcutanea" },
     });
     fireEvent.click(
-      screen.getByLabelText("Confirmo que este manejo sanitário foi executado."),
+      screen.getByLabelText(
+        "Confirmo que este manejo sanitário foi executado.",
+      ),
     );
     fireEvent.click(screen.getByRole("button", { name: "Confirmar execução" }));
 
     await screen.findByText("Resultado por agenda");
+    expect(screen.getByRole("alert")).toHaveTextContent("Saldo insuficiente para este grupo");
     expect(screen.getByText("Animal A")).toBeInTheDocument();
-    expect(screen.getByText("Executado")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Salvo localmente \u00b7 aguarda sincroniza\u00e7\u00e3o",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Animal B")).toBeInTheDocument();
     expect(screen.getByText("Falhou")).toBeInTheDocument();
     expect(screen.getByText("Animal C")).toBeInTheDocument();
@@ -416,13 +574,41 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     );
     await waitFor(() => expect(onExecute).toHaveBeenCalledTimes(2));
     const retryPayloads = onExecute.mock.calls[1][0];
-    expect(retryPayloads.map((payload: { agendaId: string }) => payload.agendaId)).toEqual([
-      "agenda-b",
-      "agenda-c",
+    expect(
+      retryPayloads.map((payload: { agendaId: string }) => payload.agendaId),
+    ).toEqual(["agenda-b", "agenda-c"]);
+    expect(
+      retryPayloads.map(
+        (payload: { clientOpId: string }) => payload.clientOpId,
+      ),
+    ).toEqual([firstPayloads[1].clientOpId, firstPayloads[2].clientOpId]);
+  });
+
+  it("envia somente os animais escolhidos e conserva uma identidade UUID no retry", async () => {
+    const onExecute = vi.fn().mockResolvedValue(batchResult([]));
+    renderPanel(vi.fn(), vi.fn(), onExecute);
+    fireEvent.click(screen.getByRole("button", { name: /Executar grupo/ }));
+    fireEvent.click(screen.getByLabelText("Animal do grupo 2"));
+    fireEvent.click(screen.getByLabelText("Produto real"));
+    fireEvent.click(screen.getByRole("option", { name: "Vermífugo A · Lab" }));
+    fireEvent.change(screen.getByLabelText("Via"), {
+      target: { value: "subcutanea" },
+    });
+    fireEvent.click(
+      screen.getByLabelText(
+        "Confirmo que este manejo sanitário foi executado.",
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar execução" }));
+    await waitFor(() => expect(onExecute).toHaveBeenCalledTimes(1));
+    const payload = onExecute.mock.calls[0][0][0];
+    expect(payload.animalIds).toEqual([
+      "agenda-1-animal-0",
+      "agenda-1-animal-2",
     ]);
-    expect(retryPayloads.map((payload: { clientOpId: string }) => payload.clientOpId)).toEqual([
-      firstPayloads[1].clientOpId,
-      firstPayloads[2].clientOpId,
-    ]);
+    expect(payload.clientOpId).toMatch(
+      /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/,
+    );
+    expect(payload.product.quantityConsumed).toBe(2);
   });
 });

@@ -68,6 +68,13 @@ export interface LocalOwnership {
   key: string;
   owner_user_id: string | null;
   updated_at: string;
+  verified_farms?: Record<string, {
+    role: "owner" | "manager" | "cowboy" | null;
+    verified_at: string;
+    metadata?: Record<string, unknown> | null;
+  }>;
+  offline_revalidation_required?: boolean;
+  farm_access_revision?: number;
 }
 
 function belongsToLegacyMovementBundle(op: Operation, event: Operation) {

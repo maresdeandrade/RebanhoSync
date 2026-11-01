@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-10-30 (C05 integrado e incremento C06; demais trilhas preservadas)
+Atualizado em: 2026-11-01 (V3.1/V3.2 local; C05/C06 e demais trilhas preservados)
 
 ## Objetivo
 
@@ -11,6 +11,31 @@ F24.1 foi fechada após a reconstrução remota, convergência ACL, `sync-batch`
 F24.1D.1 do `sanitario-reconcile`. O fechamento inclui matriz negativa, consumidor
 `service_role`, E2E 1/1, replay e limpeza. A F24.2 também está fechada no
 [closeout autoritativo](./F24_2_CLOSEOUT_AND_REBASELINE.md). Não existe produção operacional.
+
+**Consolidação V3.1/V3.2 — 01/11/2026:** fundação A/B/C, contrato único 3, execução por subconjuntos e recovery implementados e homologados localmente. Jornada de 30 animais: três Eventos confirmados, 25 atendimentos, cinco pendências e Agenda aberta. Reabertura de aba sem API recupera somente identidade/fazenda previamente validadas; envio após reconexão exige revalidação remota de sessão e membership. Revogação preserva fato e operação pendentes sem consumo remoto. PR autorizado pelo PO; sem implantação, ativação de fazenda real ou autorização de merge. PWA totalmente desconectada, colaboração completa, fechamento gerencial e continuidade não homologados/implementados neste bloco. **BLQ-002/003 ABERTOS; GATE-03 BLOQUEADO.** [Evidência e limites](./evidence/SANITARIO_V31_V32_LOCAL_20261101.json). As notas de autorização de 30/10 abaixo são históricas.
+
+## Agenda Sanitária V3 — pendências técnicas do design aprovado
+
+**DESIGN V3 APROVADO PELO PO em 30/10/2026**, conforme [especificação canônica](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#autoridade-e-proveniência). A deliberação sobre fechamento offline está resolvida: estado conhecido/verificável, participantes conhecidos incompletos bloqueiam, barreira/snapshot e reconciliação tardia sem reabertura automática. Participação operacional não decorre de mera visualização. A autorização de execução local posterior está registrada acima; BLQ-002/003 abertos; GATE-03 bloqueado.
+
+As linhas abaixo são extensões futuras nos IDs existentes, não dez novas iniciativas nem reabertura de entregas. Esta matriz conserva os critérios do design integral; o progresso local da fundação e do writer progressivo consta na atualização acima. Dependências e ordem candidatas ficam no [plano](./MASTER_BACKLOG_EXECUTION_PLAN.md#incrementos-candidatos-da-agenda-sanitária-v3); a certificação V2 existente não comprova V3.
+
+**Premissa posterior do PO — 30/10/2026:** na solicitação “V3.1 | Simplificação de compatibilidade e preparação técnica”, declarou inexistência de clientes antigos em operação e ausência de suporte futuro a versões antigas. Coexistência operacional e versionamento duplo de execução são dispensados. A [classificação canônica](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#v31-simplificado--transição-para-contrato-único) separa migração interna temporária, integridade histórica obrigatória e tratamento de pendências condicionado à existência comprovada. Banco/stores não foram consultados; não se presume ausência de fatos ou filas.
+
+| Pendência técnica | Vínculo A–I / dependência | Critério objetivo de aceite futuro / contrato V3 |
+| --- | --- | --- |
+| Unicidade de execução por Agenda | F02/C07; transição interna I03 | Manter índice atual até instalar substituto por operação/obrigação; depois admitir três Eventos sem bypass, com integridade histórica e sem manter writer V2 paralelo. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#implementação-observada-e-fronteira-de-evolução) |
+| Identidade idempotente e atendimento por animal/obrigação | F02/D04; proteção canônica anterior | Replay sem efeitos; identidade divergente conflita; grupos distintos não conflitam por CAS global isolado; continuidade não reinicia obrigação. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#identidade-reconhecimento-e-obrigação) |
+| Writer local progressivo multievento | F02/C07; identidade e admissão única | 30/15/5/5/5 durável por grupo; restart/falha posterior preserva confirmados; sem fechamento factual automático; habilitar somente após proteções e consumidores migrados. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#execução-progressiva-e-resultado-individual) |
+| RPC/comandos do contrato operacional único V3 | F02/C07/D04; transição I03 e autorização D06 | Substituir semântica/callers atuais sem fallback de escrita; recibo/erro por operação; rejeitar formato não suportado, sem manter API V2 por obrigação de retrocompatibilidade. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#segurança-efeitos-e-compatibilidade) |
+| Concorrência, participação e barreira | F02/C05/C06/D04; writer progressivo e recepção durável | Sobreposição preservada; fluxos/limites sem lacunas; participante conhecido incompleto bloqueia; snapshot stale rejeitado; fechamento gerencial atômico. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#participação-e-fechamento-compartilhado) |
+| Preservação remota de conflitos/registros tardios | F02/D04; comandos e resolução gerencial | Envelope/evidências disponíveis após rejeição/reconnect; primeira chegada não prova verdade; tardio não desaparece nem reabre; resolução auditável. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#conflitos-e-aplicações-repetidas) |
+| Reconciliação de estoque, carência e custo | C07/D04; fatos por Evento e fonte técnica | Sem baixa para não manejados/replay; consumo real por Evento; falha parcial rastreável; carência por contexto e custo ausente desconhecido. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#segurança-efeitos-e-compatibilidade) |
+| Transição interna, histórico e resíduos comprovados | I03/F02/D04; condição antes de habilitar multievento | Migrar readers atuais; preservar fatos/snapshots/recibos; verificar existência de pendências e, se encontradas, dar destino auditável sem replay duplicado. Retirar caminhos só após ausência comprovada de consumidores/pendências; nenhum suporte a apps antigos. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#v31-simplificado--transição-para-contrato-único) |
+| Autorização efetiva Edge/RPC/RLS | D06/C05/F02; cada novo comando e ator delimitados | Negativa cross-tenant e de decisão gerencial por cowboy; autoria da sessão; expiração/farm-switch preservam escopo; nenhuma inferência por UI. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#segurança-efeitos-e-compatibilidade) |
+| Procedimento excepcional para participação irrecuperável | F02/C05; condicional à delimitação futura autorizada | Comportamento normal nunca força fechamento por timeout/presença/membership; procedimento futuro explicita critério, autoridade, auditoria e efeito no resultado/continuidade. Não bloqueia a formalização do design normal. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#participação-e-fechamento-compartilhado) |
+
+Solicitação e decisão de continuidade integram F02/C07, dependentes de resultado consolidado e barreira: duas decisões incompatíveis têm um resultado canônico; aprovação cria no máximo uma Agenda, rejeição motivada não cria; registro tardio revalida a continuidade. [Contrato](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#registros-tardios-e-continuidade-administrativa). Não foi criado novo ID.
 
 ## Sanitário V2 — pendências pós-F9
 

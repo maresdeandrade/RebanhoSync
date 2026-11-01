@@ -37,7 +37,9 @@ function event(overrides: Partial<Evento> = {}): Evento {
     observacoes: "Aplicação original",
     payload: { schema: "sanitary_agenda_execution_v2" },
     source_sanitario_agenda_v2_id: null,
-    sanitario_sync_v2_nature: "primary_execution",
+    // These characterization cases correct a factual record without Agenda.
+    // Agenda execution/correction is blocked separately by the V3.1 admission tests.
+    sanitario_sync_v2_nature: "standalone_fact",
     sanitario_contract_version: 2,
     domain_op_id: null,
     client_id: "client-1",
@@ -544,9 +546,9 @@ describe("sanitary correction v2", () => {
     await seed();
     setSanitarioV2PushEnabled(true, "local");
     await db.sync_sanitario_v2_cutovers.put({
-      key: `${FARM}:2`,
+      key: `${FARM}:3`,
       fazenda_id: FARM,
-      contract_version: 2,
+      contract_version: 3,
       status: "APPLIED",
       prepared_at: NOW,
       applying_at: NOW,

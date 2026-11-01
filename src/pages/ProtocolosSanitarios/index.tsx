@@ -277,19 +277,10 @@ const ProtocolosSanitarios = () => {
       })),
     );
     if (result.retryAvailableCount === 0) {
-      const stockMovements = result.items.filter(
-        (item) => item.result?.createsStockMovement,
-      ).length;
-      toast.success(
-        result.executedCount === 1
-          ? stockMovements > 0
-            ? "Evento sanitário registrado com baixa de estoque."
-            : "Evento sanitário registrado."
-          : `${result.executedCount} eventos sanitários registrados.`,
-      );
+      toast.success(`${result.executedCount} grupo(s) salvo(s) localmente. Aguardam reconhecimento na sincroniza\u00e7\u00e3o; a Agenda permanece aberta.`);
     } else if (result.executedCount > 0) {
       toast.warning(
-        `${result.executedCount} executado(s); ${result.retryAvailableCount} item(ns) pode(m) ser reenviado(s).`,
+        `${result.executedCount} grupo(s) salvo(s) localmente; ${result.retryAvailableCount} item(ns) pode(m) ser reenviado(s).`,
       );
     } else {
       toast.error(

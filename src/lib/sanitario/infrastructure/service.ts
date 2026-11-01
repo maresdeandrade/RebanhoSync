@@ -1,23 +1,7 @@
+import { requireSanitaryAdmissionV3 } from "@/lib/sanitario/execution/sanitaryAdmissionV3";
 import type { PostgrestError } from "@supabase/supabase-js";
 import type { SanitarioTipoEnum } from "@/lib/offline/types";
 import { supabase } from "@/lib/supabase";
-
-const CLIENT_ID_STORAGE_KEY = "gestao_agro_client_id";
-const FALLBACK_CLIENT_ID_PREFIX = "browser";
-
-const getClientId = (): string => {
-  const storage = globalThis.localStorage;
-  if (!storage) {
-    return `${FALLBACK_CLIENT_ID_PREFIX}:${crypto.randomUUID()}`;
-  }
-
-  const existing = storage.getItem(CLIENT_ID_STORAGE_KEY);
-  if (existing) return existing;
-
-  const next = `${FALLBACK_CLIENT_ID_PREFIX}:${crypto.randomUUID()}`;
-  storage.setItem(CLIENT_ID_STORAGE_KEY, next);
-  return next;
-};
 
 const throwIfError = (error: PostgrestError | null) => {
   if (!error) return;
@@ -88,33 +72,9 @@ export interface SanitarioUpcomingRow {
 export const concluirPendenciaSanitaria = async (
   input: ConcluirPendenciaSanitariaInput,
 ): Promise<string> => {
-  const clientRecordedAt = input.clientRecordedAt ?? new Date().toISOString();
-  const occurredAt = input.occurredAt ?? clientRecordedAt;
-  const clientOpId = input.clientOpId ?? crypto.randomUUID();
-
-  const { data, error } = await supabase.rpc(
-    "sanitario_complete_agenda_with_event",
-    {
-      _agenda_item_id: input.agendaItemId,
-      _occurred_at: occurredAt,
-      _tipo: input.tipo ?? null,
-      _produto: input.produto?.trim() || null,
-      _observacoes: input.observacoes ?? null,
-      _sanitario_payload: input.payload ?? {},
-      _client_id: input.clientId ?? getClientId(),
-      _client_op_id: clientOpId,
-      _client_tx_id: input.clientTxId ?? null,
-      _client_recorded_at: clientRecordedAt,
-    },
-  );
-
-  throwIfError(error);
-
-  if (!data || typeof data !== "string") {
-    throw new Error("RPC sanitario_complete_agenda_with_event retornou vazio.");
-  }
-
-  return data;
+  requireSanitaryAdmissionV3({ intent: "agenda_execution", fazendaId: "", agendaId: input.agendaItemId,
+    clientOpId: input.clientOpId ?? "", clientTxId: input.clientTxId ?? "", domainOpId: "", payload: {} });
+  throw new Error("SANITARIO_V3_EXECUTION_NOT_ENABLED");
 };
 
 export const fetchSanitarioPendencias = async (

@@ -8,6 +8,92 @@ import {
   type SanitaryEventInputForReadModel,
 } from "../compliance/withdrawalReadModel";
 
+function snapshotString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+function snapshotNumber(value: unknown): number | null {
+  return typeof value === "number" ? value : null;
+}
+function snapshotProductType(
+  value: unknown,
+): value is "sanitario" | "nutricional" | "outro" | null {
+  return (
+    value === null ||
+    value === "sanitario" ||
+    value === "nutricional" ||
+    value === "outro"
+  );
+}
+function snapshotTrace(
+  value: unknown,
+): value is "manual" | "parcial" | "completo" {
+  return value === "manual" || value === "parcial" || value === "completo";
+}
+
+function inventorySnapshot(
+  value: unknown,
+): NonNullable<SanitaryEventInputForReadModel["payload"]>["insumo_snapshot"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const type = v.produto_tipo_snapshot,
+    trace = v.rastreabilidade;
+  if (
+    typeof v.produto_nome_snapshot !== "string" ||
+    !snapshotProductType(type) ||
+    !snapshotTrace(trace)
+  )
+    return null;
+  return {
+    produto_nome_snapshot: v.produto_nome_snapshot,
+    produto_tipo_snapshot: type,
+    rastreabilidade: trace,
+    principio_ativo_snapshot: snapshotString(v.principio_ativo_snapshot),
+    carencia_carne_dias_snapshot: snapshotNumber(
+      v.carencia_carne_dias_snapshot,
+    ),
+    carencia_leite_dias_snapshot: snapshotNumber(
+      v.carencia_leite_dias_snapshot,
+    ),
+    limitacoes: Array.isArray(v.limitacoes)
+      ? v.limitacoes.filter((x): x is string => typeof x === "string")
+      : [],
+  };
+}
+
+// Canonical relations define group membership; legacy single-animal facts keep
+// their original fallback. Copies only adapt the read model, never persisted.
+async function readAnimalSanitaryEvents(farmId: string, animalIds: string[]) {
+  const relations = await db.event_eventos_animais
+    .where("[fazenda_id+animal_id]")
+    .anyOf(animalIds.map((id) => [farmId, id]))
+    .toArray();
+  const [legacy, related] = await Promise.all([
+    db.event_eventos.where("animal_id").anyOf(animalIds).toArray(),
+    db.event_eventos.bulkGet([...new Set(relations.map((r) => r.evento_id))]),
+  ]);
+  const events = new Map(
+    [...legacy, ...related]
+      .filter(
+        (e) =>
+          e &&
+          e.fazenda_id === farmId &&
+          e.dominio === "sanitario" &&
+          !e.deleted_at &&
+          (e.sanitario_v3_confirmation == null ||
+            e.sanitario_v3_confirmation === "confirmed"),
+      )
+      .map((e) => [e!.id, e!]),
+  );
+  return [...events.values()].flatMap((event) => {
+    const ids = relations
+      .filter((r) => r.evento_id === event.id)
+      .map((r) => r.animal_id);
+    return [
+      ...new Set(ids.length ? ids : event.animal_id ? [event.animal_id] : []),
+    ].map((animal_id) => ({ ...event, animal_id }));
+  });
+}
+
 /**
  * Hook reativa offline para ler a carencia sanitaria assistiva de um Animal.
  */
@@ -20,10 +106,7 @@ export function useAnimalWithdrawal(
     await requireTenantSensitiveRead();
 
     // 1. Busca todos os eventos do animal no Dexie
-    const baseEvents = await db.event_eventos
-      .where("animal_id")
-      .equals(animalId)
-      .toArray();
+    const baseEvents = await readAnimalSanitaryEvents(activeFarmId, [animalId]);
 
     // Filtra apenas eventos sanitarios nao deletados da fazenda ativa
     const activeSanitarioEvents = baseEvents.filter(
@@ -47,11 +130,12 @@ export function useAnimalWithdrawal(
     const detailMap = new Map(details.map((d) => [d.evento_id, d]));
 
     // 3. Mescla em objetos SanitaryEventInputForReadModel
-    const eventsCombined: SanitaryEventInputForReadModel[] = activeSanitarioEvents.map(
-      (e) => {
+    const eventsCombined: SanitaryEventInputForReadModel[] =
+      activeSanitarioEvents.map((e) => {
         const d = detailMap.get(e.id);
         return {
           id: e.id,
+          sanitario_v3_confirmation: e.sanitario_v3_confirmation,
           animal_id: e.animal_id,
           lote_id: e.lote_id,
           occurred_at: e.occurred_at,
@@ -63,15 +147,18 @@ export function useAnimalWithdrawal(
           carencia_leite_ate: d?.carencia_leite_ate ?? null,
           payload: d
             ? {
-                insumo_snapshot: d.payload?.insumo_snapshot,
+                insumo_snapshot: inventorySnapshot(d.payload?.insumo_snapshot),
                 carencia_regra_json: d.payload?.carencia_regra_json,
               }
             : null,
         };
-      },
-    );
+      });
 
-    return computeAnimalWithdrawal(animalId, eventsCombined, getTodayNominalStr());
+    return computeAnimalWithdrawal(
+      animalId,
+      eventsCombined,
+      getTodayNominalStr(),
+    );
   }, [animalId, activeFarmId]);
 }
 
@@ -94,7 +181,8 @@ export function useLoteWithdrawal(
       .toArray();
 
     const activeAnimais = animais.filter(
-      (a) => !a.deleted_at && a.status === "ativo" && a.fazenda_id === activeFarmId,
+      (a) =>
+        !a.deleted_at && a.status === "ativo" && a.fazenda_id === activeFarmId,
     );
 
     if (activeAnimais.length === 0) {
@@ -105,10 +193,7 @@ export function useLoteWithdrawal(
 
     // 2. Busca todos os eventos sanitarios associados a esses animais ativos
     // Fazemos uma busca indexada por animal_id
-    const baseEvents = await db.event_eventos
-      .where("animal_id")
-      .anyOf(animalIds)
-      .toArray();
+    const baseEvents = await readAnimalSanitaryEvents(activeFarmId, animalIds);
 
     const activeSanSanEvents = baseEvents.filter(
       (e) =>
@@ -133,6 +218,7 @@ export function useLoteWithdrawal(
       const d = detailMap.get(e.id);
       const combined: SanitaryEventInputForReadModel = {
         id: e.id,
+        sanitario_v3_confirmation: e.sanitario_v3_confirmation,
         animal_id: e.animal_id,
         lote_id: e.lote_id,
         occurred_at: e.occurred_at,
@@ -144,7 +230,7 @@ export function useLoteWithdrawal(
         carencia_leite_ate: d?.carencia_leite_ate ?? null,
         payload: d
           ? {
-              insumo_snapshot: d.payload?.insumo_snapshot,
+              insumo_snapshot: inventorySnapshot(d.payload?.insumo_snapshot),
               carencia_regra_json: d.payload?.carencia_regra_json,
             }
           : null,
@@ -179,6 +265,15 @@ export function useLoteWithdrawal(
     );
 
     if (activeLoteSanEvents.length > 0) {
+      const scopedRelations = await db.event_eventos_animais
+        .where("evento_id")
+        .anyOf(activeLoteSanEvents.map((e) => e.id))
+        .toArray();
+      const groupedIds = new Set(
+        scopedRelations
+          .filter((r) => r.fazenda_id === activeFarmId)
+          .map((r) => r.evento_id),
+      );
       const loteEventIds = activeLoteSanEvents.map((e) => e.id);
       const loteDetails = await db.event_eventos_sanitario
         .where("evento_id")
@@ -189,9 +284,16 @@ export function useLoteWithdrawal(
 
       // Para cada evento direto no lote, criamos um "animal virtual" para agregar no lote
       for (const e of activeLoteSanEvents) {
+        if (
+          groupedIds.has(e.id) ||
+          (e.sanitario_v3_confirmation != null &&
+            e.sanitario_v3_confirmation !== "confirmed")
+        )
+          continue;
         const d = loteDetailMap.get(e.id);
         const combined: SanitaryEventInputForReadModel = {
           id: e.id,
+          sanitario_v3_confirmation: e.sanitario_v3_confirmation,
           animal_id: "lote-direct",
           lote_id: loteId,
           occurred_at: e.occurred_at,
@@ -203,7 +305,7 @@ export function useLoteWithdrawal(
           carencia_leite_ate: d?.carencia_leite_ate ?? null,
           payload: d
             ? {
-                insumo_snapshot: d.payload?.insumo_snapshot,
+                insumo_snapshot: inventorySnapshot(d.payload?.insumo_snapshot),
                 carencia_regra_json: d.payload?.carencia_regra_json,
               }
             : null,
@@ -252,7 +354,9 @@ export function usePastoWithdrawal(
       .equals(pastoId)
       .toArray();
 
-    const activeLotes = lotes.filter((l) => !l.deleted_at && l.fazenda_id === activeFarmId);
+    const activeLotes = lotes.filter(
+      (l) => !l.deleted_at && l.fazenda_id === activeFarmId,
+    );
 
     if (activeLotes.length === 0) {
       return computeLoteWithdrawal(pastoId, []);
@@ -268,7 +372,8 @@ export function usePastoWithdrawal(
       .toArray();
 
     const activeAnimais = animais.filter(
-      (a) => !a.deleted_at && a.status === "ativo" && a.fazenda_id === activeFarmId,
+      (a) =>
+        !a.deleted_at && a.status === "ativo" && a.fazenda_id === activeFarmId,
     );
 
     if (activeAnimais.length === 0) {
@@ -278,10 +383,7 @@ export function usePastoWithdrawal(
     const animalIds = activeAnimais.map((a) => a.id);
 
     // 3. Busca todos os eventos sanitarios associados a esses animais
-    const baseEvents = await db.event_eventos
-      .where("animal_id")
-      .anyOf(animalIds)
-      .toArray();
+    const baseEvents = await readAnimalSanitaryEvents(activeFarmId, animalIds);
 
     const activeSanSanEvents = baseEvents.filter(
       (e) =>
@@ -306,6 +408,7 @@ export function usePastoWithdrawal(
       const d = detailMap.get(e.id);
       const combined: SanitaryEventInputForReadModel = {
         id: e.id,
+        sanitario_v3_confirmation: e.sanitario_v3_confirmation,
         animal_id: e.animal_id,
         lote_id: e.lote_id,
         occurred_at: e.occurred_at,
@@ -317,7 +420,7 @@ export function usePastoWithdrawal(
         carencia_leite_ate: d?.carencia_leite_ate ?? null,
         payload: d
           ? {
-              insumo_snapshot: d.payload?.insumo_snapshot,
+              insumo_snapshot: inventorySnapshot(d.payload?.insumo_snapshot),
               carencia_regra_json: d.payload?.carencia_regra_json,
             }
           : null,

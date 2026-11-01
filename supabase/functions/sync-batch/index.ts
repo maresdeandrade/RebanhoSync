@@ -433,7 +433,7 @@ Deno.serve(async (req: Request) => {
                 const { data, error } = await serviceSupabase
                   .from("sanitario_sync_v2_gates")
                   .select(
-                    "enabled, minimum_contract_version, maximum_contract_version, allowed_user_ids, allowed_client_ids, rollout_percentage, valid_from, valid_until",
+                    "enabled, minimum_contract_version, maximum_contract_version, allowed_user_ids, allowed_client_ids, rollout_percentage, valid_from, valid_until, foundation_state",
                   )
                   .eq("fazenda_id", trustedFazendaId)
                   .maybeSingle();
@@ -749,7 +749,10 @@ Deno.serve(async (req: Request) => {
                         unknown
                       >[],
                     },
-                    operation.payload.event as unknown as Record<string, unknown>,
+                    operation.payload.event as unknown as Record<
+                      string,
+                      unknown
+                    >,
                   ),
                   error: null,
                 };
@@ -791,21 +794,34 @@ Deno.serve(async (req: Request) => {
 
         // Classify by factual subject, not lot endpoints (also used by Lote→Pasto).
         // Scan the complete batch so a rejected or later parent cannot hide its detail.
-        let genericAnimalMovement = isGenericAnimalMovementEvent({ ...op, record });
+        let genericAnimalMovement = isGenericAnimalMovementEvent({
+          ...op,
+          record,
+        });
         if (op.action === "INSERT" && op.table === "eventos_movimentacao") {
-          genericAnimalMovement = legacyOps.filter(isGenericAnimalMovementEvent)
+          genericAnimalMovement = legacyOps
+            .filter(isGenericAnimalMovementEvent)
             .some((parent) => parent.record.id === record.evento_id);
           if (!genericAnimalMovement) {
-            const parent = await supabase.from("eventos").select("dominio,animal_id")
-              .eq("id", record.evento_id).eq("fazenda_id", fazenda_id).maybeSingle();
+            const parent = await supabase
+              .from("eventos")
+              .select("dominio,animal_id")
+              .eq("id", record.evento_id)
+              .eq("fazenda_id", fazenda_id)
+              .maybeSingle();
             if (parent.error) throw parent.error;
-            genericAnimalMovement = parent.data?.dominio === "movimentacao" &&
+            genericAnimalMovement =
+              parent.data?.dominio === "movimentacao" &&
               parent.data?.animal_id != null;
           }
         }
         if (genericAnimalMovement) {
-          results.push({ op_id: op.client_op_id, status: "REJECTED",
-            reason_code: "GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED", retryable: false });
+          results.push({
+            op_id: op.client_op_id,
+            status: "REJECTED",
+            reason_code: "GENERIC_ANIMAL_MOVEMENT_WRITER_DISABLED",
+            retryable: false,
+          });
           continue;
         }
 
@@ -821,7 +837,10 @@ Deno.serve(async (req: Request) => {
           }
           const { data: existingOperation, error: replayLookupError } =
             await replayQuery.maybeSingle();
-          persistedOperation = existingOperation as Record<string, unknown> | null;
+          persistedOperation = existingOperation as Record<
+            string,
+            unknown
+          > | null;
 
           if (replayLookupError) {
             results.push({
@@ -922,7 +941,11 @@ Deno.serve(async (req: Request) => {
 
             // Se o slug já existe, validamos a colisão.
             // Se for a mesma categoria canônica default (mesmo ID e is_default=true)
-            if (existingCat.id === incomingId && existingCat.is_default === true && incomingIsDefault === true) {
+            if (
+              existingCat.id === incomingId &&
+              existingCat.is_default === true &&
+              incomingIsDefault === true
+            ) {
               results.push({
                 op_id: op.client_op_id,
                 status: "APPLIED_ALTERED",
@@ -936,7 +959,8 @@ Deno.serve(async (req: Request) => {
               op_id: op.client_op_id,
               status: "CONFLICT",
               reason_code: "finance_category_slug_already_exists",
-              reason_message: "Categoria com o mesmo slug já existe com identidade ou contrato divergente.",
+              reason_message:
+                "Categoria com o mesmo slug já existe com identidade ou contrato divergente.",
             });
             continue;
           }
@@ -1001,7 +1025,20 @@ Deno.serve(async (req: Request) => {
                   .eq("operation_kind", "factual_core")
                   .eq("entity_id", trustedEventId)
                   .maybeSingle();
-                return { data, error };
+                if (error || !data) return { data, error };
+                const factual = await serviceSupabase
+                  .from("eventos")
+                  .select("id")
+                  .eq("id", trustedEventId)
+                  .eq("fazenda_id", trustedFazendaId)
+                  .eq("sanitario_sync_v2_nature", "primary_execution")
+                  .eq("sanitario_v3_confirmation", "confirmed")
+                  .not("source_sanitario_agenda_v2_id", "is", null)
+                  .maybeSingle();
+                return {
+                  data: factual.data ? data : null,
+                  error: factual.error,
+                };
               },
             });
           if (dependencyDecision.status === "RETRYABLE") {
@@ -1023,7 +1060,8 @@ Deno.serve(async (req: Request) => {
               domain_op_id: String(record.domain_op_id),
               status: "REJECTED",
               reason_code: dependencyDecision.reason_code,
-              reason_message: "Inventory movement cannot retry a terminally rejected factual operation",
+              reason_message:
+                "Inventory movement cannot retry a terminally rejected factual operation",
             });
             continue;
           }
@@ -1657,11 +1695,7 @@ Deno.serve(async (req: Request) => {
             });
             continue;
           }
-          query = supabase
-            .from(op.table)
-            .update(record)
-            .match(match)
-            .select(); // Request representation to avoid PGRST204
+          query = supabase.from(op.table).update(record).match(match).select(); // Request representation to avoid PGRST204
         } else if (op.action === "DELETE") {
           const match = buildMutationMatch(op, fazenda_id);
           if (!match) {

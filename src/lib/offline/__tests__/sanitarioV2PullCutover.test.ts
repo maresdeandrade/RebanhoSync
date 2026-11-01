@@ -80,47 +80,152 @@ describe("sanitario v2 ordered pull", () => {
   });
 
   it("protege plano e reagendamento pendentes durante reconnect e instala o remoto depois do ACK", async () => {
-    const planOp = crypto.randomUUID(), scheduleOp = crypto.randomUUID(), tx = crypto.randomUUID();
-    await db.state_fazenda_sanidade_config.put({ fazenda_id: FARM_ID, payload: { sanitary_agenda_automation_v2: { revision: 2 } } } as never);
-    await db.ops_sanitario_agenda_v2.put({ id: EVENT_ID, fazenda_id: FARM_ID, data_programada: "2026-11-01", status: "programada" } as never);
+    const planOp = crypto.randomUUID(),
+      scheduleOp = crypto.randomUUID(),
+      tx = crypto.randomUUID();
+    await db.state_fazenda_sanidade_config.put({
+      fazenda_id: FARM_ID,
+      payload: { sanitary_agenda_automation_v2: { revision: 2 } },
+    } as never);
+    await db.ops_sanitario_agenda_v2.put({
+      id: EVENT_ID,
+      fazenda_id: FARM_ID,
+      data_programada: "2026-11-01",
+      status: "programada",
+    } as never);
     await db.queue_ops.bulkPut([
-      { client_op_id: planOp, client_tx_id: tx, table: "fazenda_sanidade_config", action: "UPDATE", created_at: CREATED_AT, record: { fazenda_id: FARM_ID, payload: { sanitary_agenda_automation_v2: { revision: 2 } } } },
-      { client_op_id: scheduleOp, client_tx_id: tx, table: "sanitario_v2", action: "INSERT", created_at: CREATED_AT,
-        record: { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: FARM_ID, expected_revision: 0, payload: { agenda_id: EVENT_ID, data_programada: "2026-11-01" } } },
+      {
+        client_op_id: planOp,
+        client_tx_id: tx,
+        table: "fazenda_sanidade_config",
+        action: "UPDATE",
+        created_at: CREATED_AT,
+        record: {
+          fazenda_id: FARM_ID,
+          payload: { sanitary_agenda_automation_v2: { revision: 2 } },
+        },
+      },
+      {
+        client_op_id: scheduleOp,
+        client_tx_id: tx,
+        table: "sanitario_v2",
+        action: "INSERT",
+        created_at: CREATED_AT,
+        record: {
+          domain: "sanitario_v2",
+          command: "reschedule_agenda",
+          fazenda_id: FARM_ID,
+          expected_revision: 0,
+          payload: { agenda_id: EVENT_ID, data_programada: "2026-11-01" },
+        },
+      },
     ]);
-    vi.mocked(supabase.from).mockImplementation((table: string) => ({
-      select: () => ({ eq: async () => ({ error: null, data: table === "fazenda_sanidade_config"
-        ? [{ fazenda_id: FARM_ID, payload: { sanitary_agenda_automation_v2: { revision: 1 } }, updated_at: CREATED_AT }]
-        : [{ id: EVENT_ID, fazenda_id: FARM_ID, data_programada: "2026-10-01", status: "programada", updated_at: CREATED_AT }] }) }),
-    }) as never);
+    vi.mocked(supabase.from).mockImplementation(
+      (table: string) =>
+        ({
+          select: () => ({
+            eq: async () => ({
+              error: null,
+              data:
+                table === "fazenda_sanidade_config"
+                  ? [
+                      {
+                        fazenda_id: FARM_ID,
+                        payload: {
+                          sanitary_agenda_automation_v2: { revision: 1 },
+                        },
+                        updated_at: CREATED_AT,
+                      },
+                    ]
+                  : [
+                      {
+                        id: EVENT_ID,
+                        fazenda_id: FARM_ID,
+                        data_programada: "2026-10-01",
+                        status: "programada",
+                        updated_at: CREATED_AT,
+                      },
+                    ],
+            }),
+          }),
+        }) as never,
+    );
     const tables = ["fazenda_sanidade_config", "sanitario_agenda_v2"];
     await pullDataForFarm(FARM_ID, tables, { mode: "merge" });
-    expect((await db.state_fazenda_sanidade_config.get(FARM_ID))?.payload.sanitary_agenda_automation_v2).toEqual({ revision: 2 });
-    expect((await db.ops_sanitario_agenda_v2.get(EVENT_ID))?.data_programada).toBe("2026-11-01");
-    expect(await db.sync_pull_cursors.get(`fazenda_sanidade_config:fazenda:${FARM_ID}`)).toBeUndefined();
+    expect(
+      (await db.state_fazenda_sanidade_config.get(FARM_ID))?.payload
+        .sanitary_agenda_automation_v2,
+    ).toEqual({ revision: 2 });
+    expect(
+      (await db.ops_sanitario_agenda_v2.get(EVENT_ID))?.data_programada,
+    ).toBe("2026-11-01");
+    expect(
+      await db.sync_pull_cursors.get(
+        `fazenda_sanidade_config:fazenda:${FARM_ID}`,
+      ),
+    ).toBeUndefined();
     await db.queue_ops.clear();
     await pullDataForFarm(FARM_ID, tables, { mode: "merge" });
-    expect((await db.state_fazenda_sanidade_config.get(FARM_ID))?.payload.sanitary_agenda_automation_v2).toEqual({ revision: 1 });
-    expect((await db.ops_sanitario_agenda_v2.get(EVENT_ID))?.data_programada).toBe("2026-10-01");
+    expect(
+      (await db.state_fazenda_sanidade_config.get(FARM_ID))?.payload
+        .sanitary_agenda_automation_v2,
+    ).toEqual({ revision: 1 });
+    expect(
+      (await db.ops_sanitario_agenda_v2.get(EVENT_ID))?.data_programada,
+    ).toBe("2026-10-01");
   });
 
-  it.each(["cutover", "standard"])("%s preserva referências legadas e materializa IDs do catálogo V2", async (mode) => {
-    const legacyId = crypto.randomUUID();
-    const canonicalId = crypto.randomUUID();
-    const protocol = crypto.randomUUID();
-    const item = crypto.randomUUID();
-    const rows = [
-      { id: legacyId, fazenda_id: FARM_ID, protocolo_id: "legacy-protocol", protocol_item_version_id: "legacy-item", catalog_protocolo_v2_id: null, catalog_protocol_item_version_v2_id: null },
-      { id: canonicalId, fazenda_id: FARM_ID, protocolo_id: null, protocol_item_version_id: null, catalog_protocolo_v2_id: protocol, catalog_protocol_item_version_v2_id: item },
-    ];
-    vi.mocked(supabase.from).mockImplementation((table: string) => ({
-      select: () => ({ eq: async () => ({ data: table === "sanitario_agenda_v2" ? rows : [], error: null }) }),
-    }) as never);
-    if (mode === "cutover") await pullSanitarioV2CutoverState(FARM_ID);
-    else await pullDataForFarm(FARM_ID, ["sanitario_agenda_v2"], { mode: "merge" });
-    expect(await db.ops_sanitario_agenda_v2.get(legacyId)).toMatchObject({ protocolo_id: "legacy-protocol", protocol_item_version_id: "legacy-item" });
-    expect(await db.ops_sanitario_agenda_v2.get(canonicalId)).toMatchObject({ protocolo_id: protocol, protocol_item_version_id: item });
-  });
+  it.each(["cutover", "standard"])(
+    "%s preserva referências legadas e materializa IDs do catálogo V2",
+    async (mode) => {
+      const legacyId = crypto.randomUUID();
+      const canonicalId = crypto.randomUUID();
+      const protocol = crypto.randomUUID();
+      const item = crypto.randomUUID();
+      const rows = [
+        {
+          id: legacyId,
+          fazenda_id: FARM_ID,
+          protocolo_id: "legacy-protocol",
+          protocol_item_version_id: "legacy-item",
+          catalog_protocolo_v2_id: null,
+          catalog_protocol_item_version_v2_id: null,
+        },
+        {
+          id: canonicalId,
+          fazenda_id: FARM_ID,
+          protocolo_id: null,
+          protocol_item_version_id: null,
+          catalog_protocolo_v2_id: protocol,
+          catalog_protocol_item_version_v2_id: item,
+        },
+      ];
+      vi.mocked(supabase.from).mockImplementation(
+        (table: string) =>
+          ({
+            select: () => ({
+              eq: async () => ({
+                data: table === "sanitario_agenda_v2" ? rows : [],
+                error: null,
+              }),
+            }),
+          }) as never,
+      );
+      if (mode === "cutover") await pullSanitarioV2CutoverState(FARM_ID);
+      else
+        await pullDataForFarm(FARM_ID, ["sanitario_agenda_v2"], {
+          mode: "merge",
+        });
+      expect(await db.ops_sanitario_agenda_v2.get(legacyId)).toMatchObject({
+        protocolo_id: "legacy-protocol",
+        protocol_item_version_id: "legacy-item",
+      });
+      expect(await db.ops_sanitario_agenda_v2.get(canonicalId)).toMatchObject({
+        protocolo_id: protocol,
+        protocol_item_version_id: item,
+      });
+    },
+  );
 
   it("faz merge append-only idempotente e rejeita colisao divergente", async () => {
     vi.mocked(supabase.from).mockImplementation(
@@ -175,7 +280,10 @@ describe("sanitario v2 ordered pull", () => {
       eventId: EVENT_ID,
       executedProductId: "60000000-0000-4000-8000-000000000001",
       executedProductName: "Vacina",
-      executedProductSnapshot: { productId: "60000000-0000-4000-8000-000000000001", catalogUpdatedAt: CREATED_AT },
+      executedProductSnapshot: {
+        productId: "60000000-0000-4000-8000-000000000001",
+        catalogUpdatedAt: CREATED_AT,
+      },
       executedDose: { quantity: 2, unit: "mL", basis: "animal" },
       executedRoute: "subcutanea",
       fieldEvidence: [],
@@ -188,16 +296,21 @@ describe("sanitario v2 ordered pull", () => {
         productCatalogUpdatedAt: CREATED_AT,
         factualReferenceAt: CREATED_AT,
         timezone: "America/Sao_Paulo",
-        results: [{
-          purpose: "meat",
-          state: "calculated",
-          ruleId: "70000000-0000-4000-8000-000000000001",
-          sourceRef: { id: "80000000-0000-4000-8000-000000000001", version: "v1" },
-          sourceCoverageId: "90000000-0000-4000-8000-000000000004",
-          period: { value: 10, unit: "days" },
-          endsOn: "2026-08-09",
-          endsAt: "2026-08-10T02:59:59.999Z",
-        }],
+        results: [
+          {
+            purpose: "meat",
+            state: "calculated",
+            ruleId: "70000000-0000-4000-8000-000000000001",
+            sourceRef: {
+              id: "80000000-0000-4000-8000-000000000001",
+              version: "v1",
+            },
+            sourceCoverageId: "90000000-0000-4000-8000-000000000004",
+            period: { value: 10, unit: "days" },
+            endsOn: "2026-08-09",
+            endsAt: "2026-08-10T02:59:59.999Z",
+          },
+        ],
         limitations: [],
       },
     };
@@ -210,12 +323,19 @@ describe("sanitario v2 ordered pull", () => {
       deleted_at: null,
     };
     vi.mocked(supabase.from).mockImplementation(
-      () => ({ select: () => ({ eq: async () => ({ data: [remoteDetail], error: null }) }) }) as never,
+      () =>
+        ({
+          select: () => ({
+            eq: async () => ({ data: [remoteDetail], error: null }),
+          }),
+        }) as never,
     );
 
     await pullDataForFarm(FARM_ID, ["eventos_sanitario"], { mode: "merge" });
     await pullDataForFarm(FARM_ID, ["eventos_sanitario"], { mode: "merge" });
-    expect((await db.event_eventos_sanitario.get(EVENT_ID))?.produto_snapshot).toEqual(technicalSnapshot);
+    expect(
+      (await db.event_eventos_sanitario.get(EVENT_ID))?.produto_snapshot,
+    ).toEqual(technicalSnapshot);
 
     await db.queue_ops.add({
       client_op_id: "90000000-0000-4000-8000-000000000001",
@@ -223,21 +343,36 @@ describe("sanitario v2 ordered pull", () => {
       domain_op_id: "90000000-0000-4000-8000-000000000003",
       table: "sanitario_v2",
       action: "INSERT",
-      record: { command: "apply_factual_core", payload: { event: { id: EVENT_ID } } },
+      record: {
+        command: "apply_factual_core",
+        payload: { event: { id: EVENT_ID } },
+      },
       sync_state: "PENDING",
       created_at: CREATED_AT,
     });
-    const divergent = { ...remoteDetail, produto_snapshot: { ...technicalSnapshot, executedRoute: "intramuscular" } };
+    const divergent = {
+      ...remoteDetail,
+      produto_snapshot: {
+        ...technicalSnapshot,
+        executedRoute: "intramuscular",
+      },
+    };
     vi.mocked(supabase.from).mockImplementation(
-      (table: string) => ({
-        select: () => ({
-          eq: async () => ({ data: table === "eventos_sanitario" ? [divergent] : [], error: null }),
-        }),
-      }) as never,
+      (table: string) =>
+        ({
+          select: () => ({
+            eq: async () => ({
+              data: table === "eventos_sanitario" ? [divergent] : [],
+              error: null,
+            }),
+          }),
+        }) as never,
     );
 
     await pullSanitarioV2CutoverState(FARM_ID);
-    expect((await db.event_eventos_sanitario.get(EVENT_ID))?.produto_snapshot).toEqual(technicalSnapshot);
+    expect(
+      (await db.event_eventos_sanitario.get(EVENT_ID))?.produto_snapshot,
+    ).toEqual(technicalSnapshot);
   });
 
   it("reconcilia na ordem agenda, alvos, fato, detalhe, animais e closure", async () => {
@@ -266,6 +401,7 @@ describe("sanitario v2 ordered pull", () => {
       "eventos_sanitario",
       "eventos_animais",
       "insumo_movimentacoes",
+      "insumo_lotes",
       "sanitario_agenda_closures_v2",
     ]);
     expect(await db.queue_gestures.get("tx-pending-before-pull")).toMatchObject(
@@ -285,29 +421,30 @@ describe("sanitario v2 ordered pull", () => {
   });
 
   it("não grava estado parcial nem recalcula conformidade quando uma fonte factual falha", async () => {
-    vi.mocked(supabase.from).mockImplementation((table: string) =>
-      ({
-        select: () => ({
-          eq: async () =>
-            table === "eventos_sanitario"
-              ? { data: null, error: { message: "detail pull failed" } }
-              : {
-                  data:
-                    table === "eventos"
-                      ? [
-                          {
-                            id: EVENT_ID,
-                            fazenda_id: FARM_ID,
-                            dominio: "sanitario",
-                            updated_at: CREATED_AT,
-                            deleted_at: null,
-                          },
-                        ]
-                      : [],
-                  error: null,
-                },
-        }),
-      }) as never
+    vi.mocked(supabase.from).mockImplementation(
+      (table: string) =>
+        ({
+          select: () => ({
+            eq: async () =>
+              table === "eventos_sanitario"
+                ? { data: null, error: { message: "detail pull failed" } }
+                : {
+                    data:
+                      table === "eventos"
+                        ? [
+                            {
+                              id: EVENT_ID,
+                              fazenda_id: FARM_ID,
+                              dominio: "sanitario",
+                              updated_at: CREATED_AT,
+                              deleted_at: null,
+                            },
+                          ]
+                        : [],
+                    error: null,
+                  },
+          }),
+        }) as never,
     );
 
     await expect(pullSanitarioV2CutoverState(FARM_ID)).rejects.toMatchObject({
@@ -377,149 +514,152 @@ describe("sanitario v2 ordered pull", () => {
     expect(recomputeSanitaryComplianceAfterPullV2).toHaveBeenCalledTimes(2);
   });
 
-  it("protege evento, detalhe, relação e movimento pendentes contra tombstone remoto parcial", async () => {
-    await db.event_eventos.put({
-      id: EVENT_ID,
-      fazenda_id: FARM_ID,
-      dominio: "sanitario",
-      deleted_at: null,
-      updated_at: CREATED_AT,
-    } as never);
-    await db.event_eventos_sanitario.put({
-      evento_id: EVENT_ID,
-      fazenda_id: FARM_ID,
-      tipo: "vacinacao",
-      produto: "Histórico externo",
-      payload: {},
-      client_id: "client-local",
-      client_op_id: "90000000-0000-4000-8000-000000000004",
-      client_tx_id: "90000000-0000-4000-8000-000000000002",
-      client_recorded_at: CREATED_AT,
-      server_received_at: CREATED_AT,
-      created_at: CREATED_AT,
-      updated_at: CREATED_AT,
-      deleted_at: null,
-    } as never);
-    await db.event_eventos_animais.put(relation());
-    await db.state_insumo_movimentacoes.put({
-      id: EVENT_ID,
-      fazenda_id: FARM_ID,
-      insumo_id: "60000000-0000-4000-8000-000000000001",
-      insumo_lote_id: "70000000-0000-4000-8000-000000000001",
-      tipo: "consumo_sanitario",
-      quantidade_base: 2,
-      unidade_base: "ml",
-      occurred_at: CREATED_AT,
-      source_evento_id: EVENT_ID,
-      source_evento_dominio: "sanitario",
-      animal_id: ANIMAL_ID,
-      rebanho_lote_id: null,
-      pasto_id: null,
-      observacoes: null,
-      payload: {},
-      client_id: "client-local",
-      client_op_id: "90000000-0000-4000-8000-000000000005",
-      client_tx_id: "90000000-0000-4000-8000-000000000002",
-      client_recorded_at: CREATED_AT,
-      server_received_at: CREATED_AT,
-      created_at: CREATED_AT,
-      updated_at: CREATED_AT,
-      deleted_at: null,
-    });
-    await db.queue_ops.add({
-      client_op_id: "90000000-0000-4000-8000-000000000001",
-      client_tx_id: "90000000-0000-4000-8000-000000000002",
-      domain_op_id: "90000000-0000-4000-8000-000000000003",
-      table: "sanitario_v2",
-      action: "INSERT",
-      record: {
-        command: "apply_factual_core",
-        payload: { event: { id: EVENT_ID } },
-      },
-      sync_state: "PENDING",
-      created_at: CREATED_AT,
-    });
-    await db.queue_ops.add({
-      client_op_id: "90000000-0000-4000-8000-000000000005",
-      client_tx_id: "90000000-0000-4000-8000-000000000002",
-      domain_op_id: "90000000-0000-4000-8000-000000000006",
-      table: "state_insumo_movimentacoes",
-      action: "INSERT",
-      record: { source_evento_id: EVENT_ID },
-      sync_state: "PENDING",
-      created_at: CREATED_AT,
-    });
-    vi.mocked(supabase.from).mockImplementation(
-      (table: string) =>
-        ({
-          select: () => ({
-            eq: async () => ({
-              data:
-                table === "eventos"
-                  ? [
-                      {
-                        id: EVENT_ID,
-                        fazenda_id: FARM_ID,
-                        dominio: "sanitario",
-                        deleted_at: "2026-07-31T12:00:00.000Z",
-                        updated_at: "2026-07-31T12:00:00.000Z",
-                      },
-                    ]
-                  : table === "eventos_sanitario"
+  it.each(["PENDING", "REJECTED"] as const)(
+    "preserva fato, detalhe, relação e companion contra pull (%s)",
+    async (state) => {
+      await db.event_eventos.put({
+        id: EVENT_ID,
+        fazenda_id: FARM_ID,
+        dominio: "sanitario",
+        deleted_at: null,
+        updated_at: CREATED_AT,
+      } as never);
+      await db.event_eventos_sanitario.put({
+        evento_id: EVENT_ID,
+        fazenda_id: FARM_ID,
+        tipo: "vacinacao",
+        produto: "Histórico externo",
+        payload: {},
+        client_id: "client-local",
+        client_op_id: "90000000-0000-4000-8000-000000000004",
+        client_tx_id: "90000000-0000-4000-8000-000000000002",
+        client_recorded_at: CREATED_AT,
+        server_received_at: CREATED_AT,
+        created_at: CREATED_AT,
+        updated_at: CREATED_AT,
+        deleted_at: null,
+      } as never);
+      await db.event_eventos_animais.put(relation());
+      await db.state_insumo_movimentacoes.put({
+        id: EVENT_ID,
+        fazenda_id: FARM_ID,
+        insumo_id: "60000000-0000-4000-8000-000000000001",
+        insumo_lote_id: "70000000-0000-4000-8000-000000000001",
+        tipo: "consumo_sanitario",
+        quantidade_base: 2,
+        unidade_base: "ml",
+        occurred_at: CREATED_AT,
+        source_evento_id: EVENT_ID,
+        source_evento_dominio: "sanitario",
+        animal_id: ANIMAL_ID,
+        rebanho_lote_id: null,
+        pasto_id: null,
+        observacoes: null,
+        payload: {},
+        client_id: "client-local",
+        client_op_id: "90000000-0000-4000-8000-000000000005",
+        client_tx_id: "90000000-0000-4000-8000-000000000002",
+        client_recorded_at: CREATED_AT,
+        server_received_at: CREATED_AT,
+        created_at: CREATED_AT,
+        updated_at: CREATED_AT,
+        deleted_at: null,
+      });
+      await db.queue_ops.add({
+        client_op_id: "90000000-0000-4000-8000-000000000001",
+        client_tx_id: "90000000-0000-4000-8000-000000000002",
+        domain_op_id: "90000000-0000-4000-8000-000000000003",
+        table: "sanitario_v2",
+        action: "INSERT",
+        record: {
+          command: "apply_factual_core",
+          payload: { event: { id: EVENT_ID } },
+        },
+        sync_state: state,
+        created_at: CREATED_AT,
+      });
+      await db.queue_ops.add({
+        client_op_id: "90000000-0000-4000-8000-000000000005",
+        client_tx_id: "90000000-0000-4000-8000-000000000002",
+        domain_op_id: "90000000-0000-4000-8000-000000000006",
+        table: "state_insumo_movimentacoes",
+        action: "INSERT",
+        record: { source_evento_id: EVENT_ID },
+        sync_state: state,
+        created_at: CREATED_AT,
+      });
+      vi.mocked(supabase.from).mockImplementation(
+        (table: string) =>
+          ({
+            select: () => ({
+              eq: async () => ({
+                data:
+                  table === "eventos"
                     ? [
                         {
-                          evento_id: EVENT_ID,
+                          id: EVENT_ID,
                           fazenda_id: FARM_ID,
+                          dominio: "sanitario",
                           deleted_at: "2026-07-31T12:00:00.000Z",
                           updated_at: "2026-07-31T12:00:00.000Z",
                         },
                       ]
-                    : table === "eventos_animais"
-                      ? [relation({ animal_id: crypto.randomUUID() })]
-                      : table === "insumo_movimentacoes"
-                        ? [
-                            {
-                              id: EVENT_ID,
-                              fazenda_id: FARM_ID,
-                              source_evento_id: EVENT_ID,
-                              deleted_at: "2026-07-31T12:00:00.000Z",
-                              updated_at: "2026-07-31T12:00:00.000Z",
-                            },
-                          ]
-                      : [],
-              error: null,
+                    : table === "eventos_sanitario"
+                      ? [
+                          {
+                            evento_id: EVENT_ID,
+                            fazenda_id: FARM_ID,
+                            deleted_at: "2026-07-31T12:00:00.000Z",
+                            updated_at: "2026-07-31T12:00:00.000Z",
+                          },
+                        ]
+                      : table === "eventos_animais"
+                        ? [relation({ animal_id: crypto.randomUUID() })]
+                        : table === "insumo_movimentacoes"
+                          ? [
+                              {
+                                id: EVENT_ID,
+                                fazenda_id: FARM_ID,
+                                source_evento_id: EVENT_ID,
+                                deleted_at: "2026-07-31T12:00:00.000Z",
+                                updated_at: "2026-07-31T12:00:00.000Z",
+                              },
+                            ]
+                          : [],
+                error: null,
+              }),
             }),
-          }),
-        }) as never,
-    );
+          }) as never,
+      );
 
-    await pullSanitarioV2CutoverState(FARM_ID);
+      await pullSanitarioV2CutoverState(FARM_ID);
 
-    expect(await db.event_eventos.get(EVENT_ID)).toMatchObject({
-      deleted_at: null,
-    });
-    expect(await db.event_eventos_sanitario.get(EVENT_ID)).toMatchObject({
-      deleted_at: null,
-    });
-    expect(await db.event_eventos_animais.get(RELATION_ID)).toMatchObject({
-      animal_id: ANIMAL_ID,
-    });
-    expect(await db.state_insumo_movimentacoes.get(EVENT_ID)).toMatchObject({
-      deleted_at: null,
-      quantidade_base: 2,
-    });
-    expect(
-      await db.sync_pull_cursors.get(`eventos:fazenda:${FARM_ID}`),
-    ).toBeUndefined();
-    expect(
-      await db.sync_pull_cursors.get(`eventos_sanitario:fazenda:${FARM_ID}`),
-    ).toBeUndefined();
-    expect(
-      await db.sync_pull_cursors.get(
-        `insumo_movimentacoes:fazenda:${FARM_ID}`,
-      ),
-    ).toBeUndefined();
-  });
+      expect(await db.event_eventos.get(EVENT_ID)).toMatchObject({
+        deleted_at: null,
+      });
+      expect(await db.event_eventos_sanitario.get(EVENT_ID)).toMatchObject({
+        deleted_at: null,
+      });
+      expect(await db.event_eventos_animais.get(RELATION_ID)).toMatchObject({
+        animal_id: ANIMAL_ID,
+      });
+      expect(await db.state_insumo_movimentacoes.get(EVENT_ID)).toMatchObject({
+        deleted_at: null,
+        quantidade_base: 2,
+      });
+      expect(
+        await db.sync_pull_cursors.get(`eventos:fazenda:${FARM_ID}`),
+      ).toBeUndefined();
+      expect(
+        await db.sync_pull_cursors.get(`eventos_sanitario:fazenda:${FARM_ID}`),
+      ).toBeUndefined();
+      expect(
+        await db.sync_pull_cursors.get(
+          `insumo_movimentacoes:fazenda:${FARM_ID}`,
+        ),
+      ).toBeUndefined();
+    },
+  );
 
   it("aplica tombstone remoto conservador quando não há operação pendente", async () => {
     await db.event_eventos.put({

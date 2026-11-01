@@ -1,0 +1,267 @@
+{
+  "date": "2026-11-01",
+  "scope": "Fundação V3.1-A/B/C, execução funcional V3.2, recovery e bootstrap offline; PR sem merge, deploy, ativação real ou colaboração/fechamento/continuidade posteriores",
+  "sourceBaseline": "762226630fb54abbf9303d6e292be85fb28c9df2",
+  "compositionBase": "290206f7f7aa5d4130e7af0cfa86269137447ef0",
+  "migrationsInApplicationOrder": [
+    {
+      "path": "supabase/migrations/20261030120000_sanitario_v3_foundation.sql",
+      "sha256": "f3e6aff4debdae9735f7a0310d42a04fa40509554afe88279e7ba37b075624e3"
+    },
+    {
+      "path": "supabase/migrations/20261030121000_sanitario_v3_admission.sql",
+      "sha256": "37c8dc8cf0e43486e6635939cb2359b86a0c6e8c1a7e799cbe3a40d2840609fb"
+    },
+    {
+      "path": "supabase/migrations/20261031130000_sanitario_v3_progressive.sql",
+      "sha256": "f4689dccd936c2ec99a69344d70b2d72919354e5114ef6c541ab542a5d839081"
+    },
+    {
+      "path": "supabase/migrations/20261031131000_sanitario_v3_progressive_effects.sql",
+      "sha256": "0906c007005f93c540c08613a48a1591ec1e567b004e9cd604f55ec3cf444984"
+    },
+    {
+      "path": "supabase/migrations/20261031132000_sanitario_v3_effects_readers.sql",
+      "sha256": "4733bbeb71854678d5717f4e638851a1511b82f5fe73762a1d25627af43d1047"
+    },
+    {
+      "path": "supabase/migrations/20261031133000_sanitario_v3_inventory_privileges.sql",
+      "sha256": "068ac1b642d7ef32addeb86852dc7b1bfb0afcded324ad9d3f878352ddd829c8"
+    }
+  ],
+  "executedOnComposedCandidate": {
+    "vitest": {
+      "passed": 507,
+      "files": 36,
+      "command": "node node_modules/vitest/vitest.mjs run <focusedTestFiles>",
+      "focusedTestFiles": [
+        "src/lib/sanitario/execution/__tests__/sanitaryAdmissionV3.test.ts",
+        "supabase/functions/sync-batch/sanitario-v2.test.ts",
+        "supabase/functions/sync-batch/inventory-dependency.test.ts",
+        "src/lib/events/__tests__/buildEventGesture.test.ts",
+        "src/pages/Registrar/__tests__/sanitaryRpc.effect.test.ts",
+        "src/pages/Registrar/__tests__/nonFinancialFinalize.effect.test.ts",
+        "src/pages/Agenda/__tests__/createAgendaActionController.helper.test.ts",
+        "src/lib/sanitario/history/__tests__/sanitaryEntryHistoryV2.test.ts",
+        "src/lib/sanitario/agenda/__tests__/sanitaryPlanningSyncV2.test.ts",
+        "src/lib/sanitario/agenda/__tests__/sanitaryLocalAgendaManagementV2.test.ts",
+        "src/lib/offline/__tests__/sanitaryFoundationRecovery.test.ts",
+        "src/lib/offline/__tests__/sanitarioV2Worker.test.ts",
+        "src/lib/offline/__tests__/sanitarioV2PullCutover.test.ts",
+        "src/lib/offline/__tests__/sanitarioV2Cutover.test.ts",
+        "src/lib/sanitario/execution/__tests__/sanitaryAgendaExecutionV2.test.ts",
+        "src/lib/sanitario/history/__tests__/sanitaryExecutedHistoryV2.test.ts",
+        "src/lib/sanitario/reconciliation/__tests__/sanitaryCorrectionV2.test.ts",
+        "src/lib/reproduction/__tests__/neonatalExecutionV2.test.ts",
+        "src/pages/__tests__/Eventos.test.tsx",
+        "src/pages/__tests__/AnimalDetalhe.test.tsx",
+        "src/lib/sanitario/execution/__tests__/sanitaryProgressiveV3.test.ts",
+        "src/lib/sanitario/windows/__tests__/sanitaryProtocolWindowsV2.test.ts",
+        "src/lib/sanitario/__tests__/activeWithdrawal.test.ts",
+        "src/lib/sanitario/__tests__/withdrawalReadModel.test.ts",
+        "src/lib/sanitario/hooks/__tests__/useWithdrawalV3.test.ts",
+        "src/components/sanitario/__tests__/SanitaryLocalAgendaPanelV2.test.tsx",
+        "src/hooks/__tests__/useAuth.offlineFarm.test.tsx",
+        "src/hooks/__tests__/useAuth.farmContext.test.tsx",
+        "src/hooks/__tests__/useAuth.ownershipRecovery.test.tsx",
+        "src/lib/offline/__tests__/syncWorkerAuth.test.ts",
+        "src/lib/offline/__tests__/syncWorkerReconnectRace.test.ts",
+        "src/lib/offline/__tests__/ownership.test.ts",
+        "src/components/auth/__tests__/LocalOwnershipBoundary.test.tsx",
+        "src/lib/events/__tests__/readAnimalTimelineEvents.test.ts",
+        "src/lib/offline/__tests__/syncWorkerGenericRetry.test.ts",
+        "src/lib/offline/__tests__/sanitarioIncrementalPullCursor.test.ts"
+      ],
+      "proofType": "testes focados; mocks de transporte não comprovam SQL/RLS"
+    },
+    "eslint": {
+      "files": 44,
+      "exitCode": 0,
+      "command": "node node_modules/eslint/bin/eslint.js <arquivos TS/TSX do escopo>"
+    },
+    "typescript": {
+      "base": "290206f7f7aa5d4130e7af0cfa86269137447ef0",
+      "baseline": 232,
+      "current": 227,
+      "newDiagnostics": 0,
+      "resolved": 5,
+      "novel": []
+    },
+    "docs": {
+      "exitCode": 0,
+      "command": "node scripts/antigravity/run_bash.mjs scripts/antigravity/docs_gates.sh"
+    },
+    "diffCheck": {
+      "exitCode": 0,
+      "command": "git diff --check"
+    }
+  },
+  "reusedLocalEvidence": {
+    "origin": "rodadas anteriores desta entrega; não reexecutadas na preparação do PR",
+    "vitestV31": 334,
+    "vitestV32": 253,
+    "sql": {
+      "V31A": 9,
+      "V31B": 16,
+      "V32": 10,
+      "realPostgres": true,
+      "rlsAndConcurrency": true,
+      "database": "base descartável V3.1/V3.2 local autorizada",
+      "migrationContentsUnchanged": true
+    },
+    "http": {
+      "realAuthRestEdgePostgres": true,
+      "isolatedStack": "v32-http-a0f47d39",
+      "api": "http://127.0.0.1:56421",
+      "databasePort": 56422,
+      "cases": [
+        {
+          "name": "real_auth_three_roles",
+          "http": 200
+        },
+        {
+          "name": "disjoint_groups_concurrent_HTTP",
+          "statuses": [
+            "APPLIED",
+            "APPLIED"
+          ]
+        },
+        {
+          "name": "overlap_preserved_no_second_attendance_or_stock",
+          "status": "CONFLICT",
+          "attendances": 2,
+          "stock": 96
+        },
+        {
+          "name": "same_identity_concurrent_HTTP_one_effect",
+          "events": 1,
+          "stock": 94
+        },
+        {
+          "name": "insufficient_stock_rolls_back_group",
+          "status": "REJECTED",
+          "reason": "SANITARIO_INVENTORY_INVALID_OR_INSUFFICIENT",
+          "event": 0,
+          "receipt": 0
+        },
+        {
+          "name": "cross_farm_and_switched_context_HTTP_denied",
+          "outsider": 403,
+          "farmSwitch": 403
+        },
+        {
+          "name": "cowboy_cannot_close",
+          "status": "REJECTED",
+          "reason": "SANITARIO_ROLE_NOT_ALLOWED"
+        },
+        {
+          "name": "real_REST_RLS_other_farm_hidden",
+          "http": 200,
+          "rows": 0
+        },
+        {
+          "name": "expired_session_HTTP_denied",
+          "http": 401
+        }
+      ],
+      "lostAckExactEnvelopeReplay": {
+        "events": 1,
+        "receipts": 1
+      }
+    },
+    "ui": {
+      "animals": 30,
+      "groups": [
+        {
+          "animals": 15,
+          "product": "A",
+          "doseMl": 2
+        },
+        {
+          "animals": 5,
+          "product": "A",
+          "doseMl": 5
+        },
+        {
+          "animals": 5,
+          "product": "B",
+          "doseMl": 2
+        }
+      ],
+      "confirmedEvents": 3,
+      "recognizedAttendances": 25,
+      "pendingAnimals": 5,
+      "agendaRemainsOpen": true
+    },
+    "offline": {
+      "apiUnavailableWithFrontendServedLocally": true,
+      "reopenedTab": true,
+      "localFarmAccessible": true,
+      "newEventConfirmedAfterReconnect": 1,
+      "receipts": 1,
+      "stockBeforeMl": 88,
+      "stockAfterMl": 86,
+      "logoutRestartWithoutIdentityDenied": true,
+      "otherIdentityDidNotReadPreviousFarm": true,
+      "revokedMembership": {
+        "remoteEvents": 0,
+        "remoteReceipts": 0,
+        "stockUnchanged": true,
+        "localFactAndOriginalOperationRetained": true
+      }
+    },
+    "captureHashes": [
+      {
+        "name": "reopen-final-green.jpg",
+        "sha256": "6f8a3f1e4c58d39e2f07a1d14970fb18c8a18ccc84e4ab50cfd629c65edcafbb"
+      },
+      {
+        "name": "restart-pending-green.jpg",
+        "sha256": "3feda1912fecb9ee4717bef2018d9e6dc8a6111eabab9fffbd45ab50bc9636b7"
+      },
+      {
+        "name": "reconnect-confirmed.jpg",
+        "sha256": "065e368e47d40cbc6a07a17c8e8373aeb3db0b71bc82fcb5efd166d695f82672"
+      },
+      {
+        "name": "logout-restart-denied.jpg",
+        "sha256": "5af780264addd0fced75b7da0542a41cdd28561d00ff80d79923c4b0e32ebd6a"
+      },
+      {
+        "name": "other-identity-blocked.jpg",
+        "sha256": "41cc852e75e82d0719d8831dba922a05d06b59149452f7fe84a9e1dd68b6eff3"
+      }
+    ]
+  },
+  "compositionCorrections": [
+    "Preservar reservas, dependências terminais e seleção de origens C06 ao compor guards/recibos V3.",
+    "Rollback de projeção de estoque rejeitada sem remover o fato confirmado ou seu envelope; retry explícito reserva uma única vez.",
+    "Expectativas de C06 adaptadas ao contrato V3: operações rejeitadas permanecem auditáveis, sem retry automático."
+  ],
+  "exclusions": [
+    "src/lib/reproduction/calfJourney.ts",
+    "src/lib/reproduction/__tests__/calfJourney.test.ts",
+    "src/lib/testFarm/service.ts",
+    "docs/ux/UX-DISCOVERY-02.md",
+    "fixtures e credenciais de homologação",
+    "capturas, logs e auxiliares temporários locais",
+    "alterações UX preexistentes nos backlogs"
+  ],
+  "limitations": [
+    "PWA cold start totalmente desconectado, kill de processo e dispositivo físico não homologados.",
+    "Duas fazendas verificadas no Provider/Dexie; jornada correspondente não reexecutada no navegador.",
+    "Nome da fazenda indisponível durante falha da API. Uma operação fictícia revogada permanece ERROR para reconciliação, sem descarte.",
+    "HTTP/UI anteriores pertencem ao checkout de origem; composição C06 neste candidato revalidada pelos testes focados, sem reaplicar migrations ou repetir SQL inalterado."
+  ],
+  "deploymentConditions": [
+    "Autorização separada para merge, deploy, migrations remotas e rollout.",
+    "Aplicar as seis migrations forward-only na ordem listada e verificar contratos/RLS no alvo autorizado.",
+    "Manter gates reais OFF até autorização; transição inactive -> frozen -> ready controlada e consumidores de frontend/Edge coerentes.",
+    "Não inferir carência sem regra técnica explícita; colisões não confirmadas não produzem consumo."
+  ],
+  "unchangedGovernance": {
+    "BLQ_002": "ABERTO",
+    "BLQ_003": "ABERTO",
+    "GATE_03": "BLOQUEADO"
+  }
+}

@@ -1,3 +1,4 @@
+import { deterministicUuidFromText } from "@/lib/reproduction/deterministicUuid";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,8 +22,11 @@ import {
 } from "@/components/ui/select";
 import { db } from "@/lib/offline/db";
 import type {
-  Insumo, InsumoLote, SanitarioProdutoLocalV2,
-  SanitarioProductClassLocalV2, SanitarioProductClassGroupMemberLocalV2,
+  Insumo,
+  InsumoLote,
+  SanitarioProdutoLocalV2,
+  SanitarioProductClassLocalV2,
+  SanitarioProductClassGroupMemberLocalV2,
 } from "@/lib/offline/types";
 import {
   formatSanitaryProductClassLabelV2,
@@ -34,6 +38,15 @@ import type {
 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
 
 type ExecutionPayload = Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">;
+
+function executionApplication(dosesPerAnimal: string, route: string, executionUnit: string): ExecutionPayload["application"] {
+  if (!dosesPerAnimal && !route.trim()) return undefined;
+  return {
+    dose: dosesPerAnimal ? Number(dosesPerAnimal) : null,
+    doseUnit: executionUnit,
+    route: route.trim() || null,
+  };
+}
 
 export type SanitaryExecutionInventoryLotOptionV2 = {
   id: string;
@@ -73,7 +86,9 @@ function operationId() {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 }
 
-function requiresProduct(item: SanitaryLocalAgendaListItemV2 | null | undefined) {
+function requiresProduct(
+  item: SanitaryLocalAgendaListItemV2 | null | undefined,
+) {
   return item
     ? ["specific_product", "product_class", "product_class_group"].includes(
         item.productRequirementKind,
@@ -81,12 +96,18 @@ function requiresProduct(item: SanitaryLocalAgendaListItemV2 | null | undefined)
     : false;
 }
 
-function sameValue<T>(items: T[], read: (item: T) => string | number | null | undefined) {
+function sameValue<T>(
+  items: T[],
+  read: (item: T) => string | number | null | undefined,
+) {
   const values = Array.from(
     new Set(
       items
         .map(read)
-        .filter((value): value is string | number => value !== null && value !== undefined && value !== ""),
+        .filter(
+          (value): value is string | number =>
+            value !== null && value !== undefined && value !== "",
+        ),
     ),
   );
   return values.length === 1 ? values[0] : null;
@@ -95,7 +116,9 @@ function sameValue<T>(items: T[], read: (item: T) => string | number | null | un
 function formatDate(value: string | undefined) {
   if (!value) return "Data não informada";
   const [year, month, day] = value.split("-");
-  return year && month && day ? `${day}/${month}/${year}` : "Data não informada";
+  return year && month && day
+    ? `${day}/${month}/${year}`
+    : "Data não informada";
 }
 
 function normalizeForMatch(value: string | null | undefined) {
@@ -108,7 +131,9 @@ function normalizeForMatch(value: string | null | undefined) {
 }
 
 function productLabel(product: SanitarioProdutoLocalV2) {
-  return [product.nome_comercial, product.fabricante].filter(Boolean).join(" · ");
+  return [product.nome_comercial, product.fabricante]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function formatUnit(value: string, quantity: number) {
@@ -131,31 +156,48 @@ function compatibleProduct(
   item: SanitaryLocalAgendaListItemV2,
   classesByGroup: Map<string, Set<string>>,
 ) {
-  if (item.productRequirementKind === "specific_product" && item.plannedProductId) {
+  if (
+    item.productRequirementKind === "specific_product" &&
+    item.plannedProductId
+  ) {
     return product.id === item.plannedProductId;
   }
   if (item.productRequirementKind === "product_class" && item.productClass) {
     return product.classe === item.productClass;
   }
-  if (item.productRequirementKind === "product_class_group" && item.productClassGroupId) {
+  if (
+    item.productRequirementKind === "product_class_group" &&
+    item.productClassGroupId
+  ) {
     const classIds = classesByGroup.get(item.productClassGroupId);
     return classIds && classIds.size > 0 ? classIds.has(product.classe) : true;
   }
   return true;
 }
 
-function compatibleSupplyByFallback(supply: Insumo, item: SanitaryLocalAgendaListItemV2) {
-  if (supply.tipo !== "sanitario" || !supply.ativo || supply.deleted_at) return false;
+function compatibleSupplyByFallback(
+  supply: Insumo,
+  item: SanitaryLocalAgendaListItemV2,
+) {
+  if (supply.tipo !== "sanitario" || !supply.ativo || supply.deleted_at)
+    return false;
   if (item.productRequirementKind === "none") return true;
   const text = normalizeForMatch(
-    [supply.nome, supply.categoria, JSON.stringify(supply.payload ?? {})].join(" "),
+    [supply.nome, supply.categoria, JSON.stringify(supply.payload ?? {})].join(
+      " ",
+    ),
   );
   if (item.productClass) {
     const classLabel = normalizeForMatch(
       formatSanitaryProductClassLabelV2(item.productClass) ?? item.productClass,
     );
-    const classTokens = classLabel.split(" ").filter((token) => token.length > 2);
-    if (classTokens.length > 0 && classTokens.every((token) => text.includes(token))) {
+    const classTokens = classLabel
+      .split(" ")
+      .filter((token) => token.length > 2);
+    if (
+      classTokens.length > 0 &&
+      classTokens.every((token) => text.includes(token))
+    ) {
       return true;
     }
     if (item.productClass.startsWith("vacina") && text.includes("vacina")) {
@@ -166,12 +208,20 @@ function compatibleSupplyByFallback(supply: Insumo, item: SanitaryLocalAgendaLis
     const group = normalizeForMatch(item.productClassGroupName);
     if (group && text.includes(group)) return true;
   }
-  return item.productRequirementKind === "product_class_group" && text.includes("sanitario");
+  return (
+    item.productRequirementKind === "product_class_group" &&
+    text.includes("sanitario")
+  );
 }
 
-function classScopeAvailable(entry: { scope: string; fazenda_id: string | null }, fazendaId: string | null) {
-  return (entry.scope === "global" && entry.fazenda_id === null) ||
-    (entry.scope === "tenant" && entry.fazenda_id === fazendaId);
+function classScopeAvailable(
+  entry: { scope: string; fazenda_id: string | null },
+  fazendaId: string | null,
+) {
+  return (
+    (entry.scope === "global" && entry.fazenda_id === null) ||
+    (entry.scope === "tenant" && entry.fazenda_id === fazendaId)
+  );
 }
 
 function resolveClassKeysByGroup(
@@ -180,9 +230,13 @@ function resolveClassKeysByGroup(
   fazendaId: string | null,
 ) {
   const classesByGroup = new Map<string, Set<string>>();
-  const classKeysById = new Map(productClasses
-    .filter((entry) => !entry.deleted_at && classScopeAvailable(entry, fazendaId))
-    .map((entry) => [entry.id, entry.class_key]));
+  const classKeysById = new Map(
+    productClasses
+      .filter(
+        (entry) => !entry.deleted_at && classScopeAvailable(entry, fazendaId),
+      )
+      .map((entry) => [entry.id, entry.class_key]),
+  );
   const unresolvedGroups = new Set<string>();
   for (const member of groupMembers) {
     if (member.deleted_at || !member.is_allowed) continue;
@@ -206,17 +260,28 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
   items: SanitaryLocalAgendaListItemV2[],
 ) {
   const fazendaId = items[0]?.fazendaId ?? null;
-  const [products, groupMembers, supplies, lots, productClasses] = await Promise.all([
-    db.catalog_sanitario_produtos_v2.toArray(),
-    db.catalog_sanitario_product_class_group_members_v2.toArray(),
-    fazendaId ? db.state_insumos.where("fazenda_id").equals(fazendaId).toArray() : [],
-    fazendaId ? db.state_insumo_lotes.where("fazenda_id").equals(fazendaId).toArray() : [],
-    db.catalog_sanitario_product_classes_v2.toArray(),
-  ]);
-  const classesByGroup = resolveClassKeysByGroup(productClasses, groupMembers, fazendaId);
+  const [products, groupMembers, supplies, lots, productClasses] =
+    await Promise.all([
+      db.catalog_sanitario_produtos_v2.toArray(),
+      db.catalog_sanitario_product_class_group_members_v2.toArray(),
+      fazendaId
+        ? db.state_insumos.where("fazenda_id").equals(fazendaId).toArray()
+        : [],
+      fazendaId
+        ? db.state_insumo_lotes.where("fazenda_id").equals(fazendaId).toArray()
+        : [],
+      db.catalog_sanitario_product_classes_v2.toArray(),
+    ]);
+  const classesByGroup = resolveClassKeysByGroup(
+    productClasses,
+    groupMembers,
+    fazendaId,
+  );
   const catalogProductOptions = products
     .filter((product) => !product.deleted_at)
-    .filter((product) => items.every((item) => compatibleProduct(product, item, classesByGroup)))
+    .filter((product) =>
+      items.every((item) => compatibleProduct(product, item, classesByGroup)),
+    )
     .map((product) => ({
       id: product.id,
       label: productLabel(product),
@@ -224,18 +289,28 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
       productClass: product.classe ?? null,
       source: "catalog_product" as const,
       weakTechnicalLink: false,
-      warning: product.status_curatorial === "ativo" ? null
-        : "Produto com conferência técnica pendente ou restrição no catálogo. Registre somente uma aplicação já realizada; este registro não autoriza nova aplicação nem comprova carência.",
+      warning:
+        product.status_curatorial === "ativo"
+          ? null
+          : "Produto com conferência técnica pendente ou restrição no catálogo. Registre somente uma aplicação já realizada; este registro não autoriza nova aplicação nem comprova carência.",
     }));
-  const existingOptionIds = new Set(catalogProductOptions.map((product) => product.id));
+  const existingOptionIds = new Set(
+    catalogProductOptions.map((product) => product.id),
+  );
   const supplyOptions = supplies
-    .filter((supply) => !supply.deleted_at && supply.tipo === "sanitario" && supply.ativo)
-    .filter((supply) => items.every((item) => compatibleSupplyByFallback(supply, item)))
+    .filter(
+      (supply) =>
+        !supply.deleted_at && supply.tipo === "sanitario" && supply.ativo,
+    )
+    .filter((supply) =>
+      items.every((item) => compatibleSupplyByFallback(supply, item)),
+    )
     .map((supply) => {
       const linkedProductId = supply.produto_veterinario_id;
-      const id = linkedProductId && existingOptionIds.has(linkedProductId)
-        ? linkedProductId
-        : `insumo:${supply.id}`;
+      const id =
+        linkedProductId && existingOptionIds.has(linkedProductId)
+          ? linkedProductId
+          : `insumo:${supply.id}`;
       return {
         id,
         label: supplyLabel(supply),
@@ -249,13 +324,17 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
         supplyId: supply.id,
       };
     })
-    .filter((option, index, all) => all.findIndex((entry) => entry.id === option.id) === index)
+    .filter(
+      (option, index, all) =>
+        all.findIndex((entry) => entry.id === option.id) === index,
+    )
     .filter((option) => !existingOptionIds.has(option.id));
   const productOptions = [...catalogProductOptions, ...supplyOptions];
   const productIdBySupply = new Map<string, string>();
   for (const supply of supplies) {
     const linkedOptionId =
-      supply.produto_veterinario_id && existingOptionIds.has(supply.produto_veterinario_id)
+      supply.produto_veterinario_id &&
+      existingOptionIds.has(supply.produto_veterinario_id)
         ? supply.produto_veterinario_id
         : `insumo:${supply.id}`;
     if (productOptions.some((option) => option.id === linkedOptionId)) {
@@ -290,13 +369,16 @@ export function SanitaryAgendaExecutionConfirmV2({
   onConfirm,
 }: Props) {
   const item = items[0] ?? null;
-  const totalAnimals = Math.max(
-    items.reduce((sum, entry) => sum + Math.max(entry.animalCount, 1), 0),
-    items.length,
-  );
+  const [selectedAnimals, setSelectedAnimals] = useState<string[]>([]);
+  const [doseUnit, setDoseUnit] = useState("ml");
+  const totalAnimals = selectedAnimals.length;
   const [executedAt, setExecutedAt] = useState(todayKey());
-  const [productOptions, setProductOptions] = useState<SanitaryExecutionProductOptionV2[]>([]);
-  const [inventoryLotOptions, setInventoryLotOptions] = useState<SanitaryExecutionInventoryLotOptionV2[]>([]);
+  const [productOptions, setProductOptions] = useState<
+    SanitaryExecutionProductOptionV2[]
+  >([]);
+  const [inventoryLotOptions, setInventoryLotOptions] = useState<
+    SanitaryExecutionInventoryLotOptionV2[]
+  >([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [inventoryLotId, setInventoryLotId] = useState("");
   const [dosesPerAnimal, setDosesPerAnimal] = useState("1");
@@ -322,7 +404,9 @@ export function SanitaryAgendaExecutionConfirmV2({
     [items],
   );
   const commonProductClassLabel =
-    formatSanitaryProductClassLabelV2(typeof commonProductClass === "string" ? commonProductClass : null) ??
+    formatSanitaryProductClassLabelV2(
+      typeof commonProductClass === "string" ? commonProductClass : null,
+    ) ??
     item?.productClassLabel ??
     "Classe não informada";
   const hasDivergentSuggestions =
@@ -330,11 +414,13 @@ export function SanitaryAgendaExecutionConfirmV2({
     (sameValue(items, (entry) => entry.suggestedDose) === null ||
       sameValue(items, (entry) => entry.suggestedDoseUnit) === null ||
       sameValue(items, (entry) => entry.suggestedRoute) === null);
-  const selectedProduct = productOptions.find((option) => option.id === selectedProductId) ?? null;
+  const selectedProduct =
+    productOptions.find((option) => option.id === selectedProductId) ?? null;
   const compatibleLots = inventoryLotOptions.filter(
     (option) => !selectedProductId || option.productId === selectedProductId,
   );
-  const selectedLot = compatibleLots.find((option) => option.id === inventoryLotId) ?? null;
+  const selectedLot =
+    compatibleLots.find((option) => option.id === inventoryLotId) ?? null;
   const dosesPerAnimalNumber = Number(dosesPerAnimal);
   const extraDosesNumber = Number(extraDoses);
   const plannedDoses =
@@ -343,13 +429,23 @@ export function SanitaryAgendaExecutionConfirmV2({
       : 0;
   const totalDoses =
     plannedDoses +
-    (Number.isFinite(extraDosesNumber) && extraDosesNumber > 0 ? extraDosesNumber : 0);
-  const executionUnit = selectedLot?.unit ?? "dose";
+    (Number.isFinite(extraDosesNumber) && extraDosesNumber > 0
+      ? extraDosesNumber
+      : 0);
+  const executionUnit = selectedLot?.unit ?? doseUnit;
 
   useEffect(() => {
     if (!open) return;
     const initialDose = sameValue(items, (entry) => entry.suggestedDose);
     const initialRoute = sameValue(items, (entry) => entry.suggestedRoute);
+    setSelectedAnimals(
+      items.flatMap((entry) =>
+        (entry.animalOptions ?? [])
+          .filter((a) => !a.recognized)
+          .map((a) => `${entry.id}:${a.id}`),
+      ),
+    );
+    setDoseUnit((items[0]?.suggestedDoseUnit ?? "ml").toLowerCase());
     setExecutedAt(todayKey());
     setSelectedProductId("");
     setInventoryLotId("");
@@ -394,8 +490,14 @@ export function SanitaryAgendaExecutionConfirmV2({
 
   useEffect(() => {
     if (!open || selectedProductId) return;
-    const plannedProductId = sameValue(items, (entry) => entry.plannedProductId);
-    if (typeof plannedProductId === "string" && productOptions.some((option) => option.id === plannedProductId)) {
+    const plannedProductId = sameValue(
+      items,
+      (entry) => entry.plannedProductId,
+    );
+    if (
+      typeof plannedProductId === "string" &&
+      productOptions.some((option) => option.id === plannedProductId)
+    ) {
       setSelectedProductId(plannedProductId);
       return;
     }
@@ -409,7 +511,9 @@ export function SanitaryAgendaExecutionConfirmV2({
       setInventoryLotId("");
       return;
     }
-    const lots = inventoryLotOptions.filter((option) => option.productId === selectedProductId);
+    const lots = inventoryLotOptions.filter(
+      (option) => option.productId === selectedProductId,
+    );
     if (lots.length === 1) {
       setInventoryLotId(lots[0].id);
     } else if (!lots.some((option) => option.id === inventoryLotId)) {
@@ -418,14 +522,19 @@ export function SanitaryAgendaExecutionConfirmV2({
   }, [inventoryLotId, inventoryLotOptions, selectedProductId]);
 
   const canSubmit = useMemo(() => {
-    if (items.length === 0 || !confirmed || !executedAt) return false;
+    if (items.length === 0 || !confirmed || !executedAt || !totalAnimals)
+      return false;
     if (productRequired && !selectedProductId) return false;
-    if ((productRequired || selectedProductId) && (!dosesPerAnimal || totalDoses <= 0 || !route.trim())) {
+    if (
+      (productRequired || selectedProductId) &&
+      (!dosesPerAnimal || totalDoses <= 0 || !route.trim())
+    ) {
       return false;
     }
     return true;
   }, [
     items.length,
+    totalAnimals,
     confirmed,
     executedAt,
     productRequired,
@@ -448,44 +557,55 @@ export function SanitaryAgendaExecutionConfirmV2({
     try {
       const payloads =
         retryPayloads ??
-        items.map((entry, index): ExecutionPayload => {
-        const quantityForAgenda =
-          inventoryLotId.trim() && totalDoses && totalAnimals > 0
-            ? Number(((totalDoses * Math.max(entry.animalCount, 1)) / totalAnimals).toFixed(4))
-            : null;
-        return {
-        agendaId: entry.id,
-        clientOpId: `${batchClientOpId}:${index + 1}:${entry.id}`,
-        executedAt,
-        registrationMode: "executed_fact" as const,
-        responsibleName: responsibleName.trim() || undefined,
-        notes: notes.trim() || undefined,
-        product: selectedProduct
-          ? {
-              productId: selectedProduct.id,
-              productName: selectedProduct.name,
-              productClass: selectedProduct.productClass ?? entry.productClass,
-              productClassGroupId: entry.productClassGroupId,
-              inventoryLotId: inventoryLotId.trim() || undefined,
-              quantityConsumed: quantityForAgenda,
-              unit: executionUnit,
-            }
-          : undefined,
-        application:
-          dosesPerAnimal || route.trim()
-            ? {
-                dose: dosesPerAnimal ? Number(dosesPerAnimal) : null,
-                doseUnit: executionUnit,
-                route: route.trim() || null,
-              }
-            : undefined,
-        confirmation: {
-          userConfirmedExecution: true,
-          userConfirmedStockMovement: Boolean(inventoryLotId.trim()),
-          userConfirmedWithdrawal: Boolean(selectedProduct),
-        },
-      };
-        });
+        items
+          .filter((entry) =>
+            selectedAnimals.some((id) => id.startsWith(`${entry.id}:`)),
+          )
+          .map((entry, index): ExecutionPayload => {
+            const quantityForAgenda =
+              inventoryLotId.trim() && totalDoses && totalAnimals > 0
+                ? Number(
+                    (
+                      (totalDoses *
+                        selectedAnimals.filter((id) =>
+                          id.startsWith(`${entry.id}:`),
+                        ).length) /
+                      totalAnimals
+                    ).toFixed(4),
+                  )
+                : null;
+            return {
+              agendaId: entry.id,
+              animalIds: selectedAnimals
+                .filter((id) => id.startsWith(`${entry.id}:`))
+                .map((id) => id.slice(entry.id.length + 1)),
+              clientOpId: deterministicUuidFromText(
+                `${batchClientOpId}:${index + 1}:${entry.id}`,
+              ),
+              executedAt,
+              registrationMode: "executed_fact" as const,
+              responsibleName: responsibleName.trim() || undefined,
+              notes: notes.trim() || undefined,
+              product: selectedProduct
+                ? {
+                    productId: selectedProduct.id,
+                    productName: selectedProduct.name,
+                    productClass:
+                      selectedProduct.productClass ?? entry.productClass,
+                    productClassGroupId: entry.productClassGroupId,
+                    inventoryLotId: inventoryLotId.trim() || undefined,
+                    quantityConsumed: quantityForAgenda,
+                    unit: executionUnit,
+                  }
+                : undefined,
+              application: executionApplication(dosesPerAnimal, route, executionUnit),
+              confirmation: {
+                userConfirmedExecution: true,
+                userConfirmedStockMovement: Boolean(inventoryLotId.trim()),
+                userConfirmedWithdrawal: Boolean(selectedProduct),
+              },
+            };
+          });
       const result = await onConfirm(payloads);
       const retryableIds = new Set(
         result.items
@@ -516,7 +636,10 @@ export function SanitaryAgendaExecutionConfirmV2({
 
         {item ? (
           <div className="space-y-4">
-            <section className="rounded-lg border border-border bg-muted/30 p-3 text-sm" aria-label="Resumo">
+            <section
+              className="rounded-lg border border-border bg-muted/30 p-3 text-sm"
+              aria-label="Resumo"
+            >
               <p className="font-medium">{item.protocolLabel}</p>
               <p className="text-muted-foreground">{item.itemLabel}</p>
               <p className="text-muted-foreground">
@@ -527,25 +650,82 @@ export function SanitaryAgendaExecutionConfirmV2({
               </p>
             </section>
 
+            <fieldset className="max-h-48 overflow-auto rounded-lg border p-3">
+              <legend>Animais deste grupo ({totalAnimals})</legend>
+              {items.flatMap((entry) =>
+                (entry.animalOptions ?? []).map((animal) => {
+                  const key = `${entry.id}:${animal.id}`;
+                  return (
+                    <label
+                      key={key}
+                      className="flex items-center gap-2 py-1 text-sm"
+                    >
+                      <Checkbox
+                        checked={selectedAnimals.includes(key)}
+                        onCheckedChange={(checked) =>
+                          setSelectedAnimals((current) =>
+                            checked
+                              ? [...current, key]
+                              : current.filter((id) => id !== key),
+                          )
+                        }
+                      />
+                      {animal.label}
+                      {animal.recognized ? " ?? já possui atendimento" : ""}
+                    </label>
+                  );
+                }),
+              )}
+            </fieldset>
+            <label className="block text-sm">
+              Unidade da dose
+              <select
+                aria-label="Unidade da dose"
+                value={doseUnit}
+                disabled={Boolean(selectedLot)}
+                onChange={(event) => setDoseUnit(event.target.value)}
+              >
+                {["ml", "l", "g", "kg", "un", "dose"].map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="grid gap-3 rounded-lg border border-border p-3 text-sm text-muted-foreground">
-              <p>Registre somente uma aplicação já realizada, com produto real, dose e via.</p>
-              <p>Registrar o fato não autoriza nova aplicação nem comprova regularidade ou carência.</p>
+              <p>
+                Registre somente uma aplicação já realizada, com produto real,
+                dose e via.
+              </p>
+              <p>
+                Registrar o fato não autoriza nova aplicação nem comprova
+                regularidade ou carência.
+              </p>
               <p>Agenda deixará de ser apenas intenção futura.</p>
-              <p>Estoque e carência só serão gerados quando houver dados e regra explícita.</p>
+              <p>
+                Estoque e carência só serão gerados quando houver dados e regra
+                explícita.
+              </p>
               {productClassGroupWarning ? (
                 <p className="text-amber-700">
-                  Grupo técnico não define dose nem carência. A carência só será calculada se houver regra explícita para o produto executado.
+                  Grupo técnico não define dose nem carência. A carência só será
+                  calculada se houver regra explícita para o produto executado.
                 </p>
-                ) : null}
+              ) : null}
               {selectedProductId && !inventoryLotId.trim() ? (
-                <p className="text-amber-700">Produto selecionado sem baixa de estoque.</p>
+                <p className="text-amber-700">
+                  Produto selecionado sem baixa de estoque.
+                </p>
               ) : null}
               {selectedProduct?.warning ? (
                 <p className="text-amber-700">{selectedProduct.warning}</p>
               ) : null}
             </div>
 
-            <section className="grid gap-3 md:grid-cols-2" aria-label="Produto e aplicação">
+            <section
+              className="grid gap-3 md:grid-cols-2"
+              aria-label="Produto e aplicação"
+            >
               <label className="space-y-1 text-sm">
                 <span className="font-medium">Data de execução</span>
                 <Input
@@ -567,7 +747,10 @@ export function SanitaryAgendaExecutionConfirmV2({
                 <span className="font-medium">
                   Produto real{productRequired ? " obrigatório" : ""}
                 </span>
-                <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+                <Select
+                  value={selectedProductId}
+                  onValueChange={setSelectedProductId}
+                >
                   <SelectTrigger aria-label="Produto real">
                     <SelectValue placeholder="Selecionar produto cadastrado" />
                   </SelectTrigger>
@@ -610,7 +793,9 @@ export function SanitaryAgendaExecutionConfirmV2({
               </label>
               <div className="rounded-lg border border-border p-3 text-sm">
                 <div className="text-muted-foreground">Doses previstas</div>
-                <div className="font-medium">{plannedDoses} {formatUnit(executionUnit, plannedDoses)}</div>
+                <div className="font-medium">
+                  {plannedDoses} {formatUnit(executionUnit, plannedDoses)}
+                </div>
               </div>
               <label className="space-y-1 text-sm">
                 <span className="font-medium">Doses extras/perda</span>
@@ -624,22 +809,40 @@ export function SanitaryAgendaExecutionConfirmV2({
                 />
               </label>
               <div className="rounded-lg border border-border p-3 text-sm">
-                <div className="text-muted-foreground">Total de doses usadas</div>
-                <div className="font-medium">{totalDoses} {formatUnit(executionUnit, totalDoses)}</div>
+                <div className="text-muted-foreground">
+                  Total de doses usadas
+                </div>
+                <div className="font-medium">
+                  {totalDoses} {formatUnit(executionUnit, totalDoses)}
+                </div>
               </div>
               {hasDivergentSuggestions ? (
                 <p className="text-sm text-amber-700 md:col-span-2">
-                  Quantidade não preenchida automaticamente porque há divergência entre animais, produto ou unidade.
+                  Quantidade não preenchida automaticamente porque há
+                  divergência entre animais, produto ou unidade.
                 </p>
               ) : null}
             </section>
 
-            <section className="grid gap-3 md:grid-cols-2" aria-label="Estoque opcional">
+            <section
+              className="grid gap-3 md:grid-cols-2"
+              aria-label="Estoque opcional"
+            >
               <label className="space-y-1 text-sm">
                 <span className="font-medium">Lote de estoque</span>
-                <Select value={inventoryLotId} onValueChange={setInventoryLotId} disabled={compatibleLots.length === 0}>
+                <Select
+                  value={inventoryLotId}
+                  onValueChange={setInventoryLotId}
+                  disabled={compatibleLots.length === 0}
+                >
                   <SelectTrigger aria-label="Lote de estoque">
-                    <SelectValue placeholder={compatibleLots.length ? "Selecionar lote" : "Sem lote compatível"} />
+                    <SelectValue
+                      placeholder={
+                        compatibleLots.length
+                          ? "Selecionar lote"
+                          : "Sem lote compatível"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {compatibleLots.map((option) => (
@@ -650,13 +853,17 @@ export function SanitaryAgendaExecutionConfirmV2({
                   </SelectContent>
                 </Select>
                 {selectedLot ? (
-                  <p className="text-xs text-muted-foreground">Saldo disponível: {selectedLot.balanceLabel}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Saldo disponível: {selectedLot.balanceLabel}
+                  </p>
                 ) : null}
               </label>
             </section>
 
             <details className="rounded-lg border border-border p-3">
-              <summary className="cursor-pointer text-sm font-medium">Observação</summary>
+              <summary className="cursor-pointer text-sm font-medium">
+                Observação
+              </summary>
               <Textarea
                 className="mt-3"
                 aria-label="Observação"
@@ -688,7 +895,7 @@ export function SanitaryAgendaExecutionConfirmV2({
               );
               const statusLabel =
                 resultItem.status === "EXECUTADO"
-                  ? "Executado"
+                  ? "Salvo localmente · aguarda sincronização"
                   : resultItem.status === "FALHOU"
                     ? "Falhou"
                     : "Não executado";
@@ -699,6 +906,11 @@ export function SanitaryAgendaExecutionConfirmV2({
                 >
                   <span>{agendaItem?.target.label ?? "Agenda sanitária"}</span>
                   <span className="font-medium">{statusLabel}</span>
+                  {resultItem.errorMessage ? (
+                    <p role="alert" className="basis-full text-sm text-destructive">
+                      {resultItem.errorMessage}
+                    </p>
+                  ) : null}
                   {resultItem.retryAvailable ? (
                     <span className="basis-full text-xs text-amber-700">
                       Retry disponível
@@ -711,10 +923,18 @@ export function SanitaryAgendaExecutionConfirmV2({
         ) : null}
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             Voltar
           </Button>
-          <Button type="button" disabled={!canSubmit || submitting} onClick={submit}>
+          <Button
+            type="button"
+            disabled={!canSubmit || submitting}
+            onClick={submit}
+          >
             {submitting
               ? "Executando..."
               : retryPayloads

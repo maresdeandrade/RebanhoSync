@@ -1,3 +1,4 @@
+import { prepareSanitaryCommandV3 } from "@/lib/sanitario/execution/sanitaryAdmissionV3";
 import { db } from "./db";
 import backendTargets from "../../../config/backend-targets.json";
 import type {
@@ -11,7 +12,7 @@ import type {
   SanitarioV2CutoverManifest,
 } from "./types";
 
-export const SANITARIO_V2_CONTRACT_VERSION = 2;
+export const SANITARIO_V2_CONTRACT_VERSION = 3;
 // Legacy export retained; controlled preview also requires an explicit, default-OFF rollout decision.
 export const SANITARIO_V2_STAGING_PROJECT_REF = "zqloazqzhwauamcejmuz";
 const FEATURE_FLAG_KEY = "rebanhosync:sanitario-v2-push";
@@ -225,8 +226,9 @@ export function buildApplyFactualCoreOperation(
       throw new Error("SANITARIO_V2_EVENT_ANIMAL_SCOPE_MISMATCH");
     }
   });
-  return {
+  return prepareSanitaryCommandV3({
     ...baseOperation(identity, "apply_factual_core"),
+    fazenda_id: event.fazenda_id,
     ...(expectedRevision === undefined
       ? {}
       : { expected_revision: requireRevision(expectedRevision) }),
@@ -275,7 +277,7 @@ export function buildApplyFactualCoreOperation(
         animal_id,
       })),
     },
-  };
+  });
 }
 
 export function buildCloseAgendaOperation(
@@ -427,13 +429,17 @@ export async function validateSanitarioV2Enqueue(input: {
   if (clientTxIds.size !== 1) {
     throw new Error("SANITARIO_V2_SINGLE_GESTURE_REQUIRED");
   }
-  input.operations.forEach((op) =>
+  for (const op of input.operations) {
+    const existing = await db.queue_ops.get(op.client_op_id);
+    if (existing && !sameQueuedEnvelope(existing, op)) throw new Error("SANITARIO_V2_IDENTITY_REUSE_DIVERGENT_PAYLOAD");
+    if (op.contract_version !== 3) throw new Error("SANITARIO_CLIENT_CONTRACT_OUTDATED");
+    prepareSanitaryCommandV3({ ...op, fazenda_id: input.fazendaId });
     requireIdentity({
       clientTxId: op.client_tx_id,
       clientOpId: op.client_op_id,
       domainOpId: op.domain_op_id,
-    }),
-  );
+    });
+  }
 }
 
 function sameQueuedOperation(existing: Operation, incoming: Operation) {
@@ -510,6 +516,10 @@ export async function writeSanitarioV2Queue(input: {
   companionOperations?: readonly Operation[];
 }) {
   if (input.operations.length === 0) return;
+  for (const op of input.operations) {
+    if (op.contract_version !== 3) throw new Error("SANITARIO_CLIENT_CONTRACT_OUTDATED");
+    prepareSanitaryCommandV3({ ...op, fazenda_id: input.fazendaId });
+  }
   const clientTxId = input.operations[0].client_tx_id;
   const createdAt = new Date().toISOString();
   const existingGesture = await db.queue_gestures.get(clientTxId);
@@ -596,58 +606,6 @@ function readExternalHistorySource(event: Evento) {
     : null;
 }
 
-function isPushableExternalHistory(event: Evento, detail: EventoSanitario) {
-  const source = readExternalHistorySource(event);
-  if (
-    !source ||
-    event.payload.schema !== "sanitary_entry_history_v2" ||
-    event.sanitario_sync_v2_nature !== "standalone_fact" ||
-    !event.client_tx_id ||
-    !event.domain_op_id ||
-    detail.domain_op_id !== event.domain_op_id
-  ) {
-    return false;
-  }
-  const reference =
-    detail.payload.evidence_reference ?? event.payload.evidence_reference;
-  const coverage =
-    detail.payload.evidence_covered_fields ??
-    event.payload.evidence_covered_fields;
-  if (source === "external_documented") {
-    return (
-      typeof reference === "string" &&
-      reference.trim().length > 0 &&
-      Array.isArray(coverage) &&
-      coverage.length > 0
-    );
-  }
-  return Array.isArray(coverage) && coverage.length === 0;
-}
-
-function gestureAlreadyApplied(
-  gesture: Gesture | undefined,
-  clientOpId: string,
-  domainOpId: string,
-) {
-  if (
-    !gesture ||
-    gesture.status !== "DONE" ||
-    gesture.sync_result !== "APPLIED"
-  ) {
-    return false;
-  }
-  const results = gesture.operation_results ?? [];
-  return (
-    results.length === 0 ||
-    results.some(
-      (result) =>
-        result.status === "APPLIED" &&
-        result.op_id === clientOpId &&
-        (!result.domain_op_id || result.domain_op_id === domainOpId),
-    )
-  );
-}
-
 export async function backfillSanitarioV2ExternalHistory(input: {
   fazendaId: string;
   clientId: string;
@@ -674,81 +632,9 @@ export async function backfillSanitarioV2ExternalHistory(input: {
     };
   }
 
-  const eventIds = candidates.map((event) => event.id);
-  const [details, relations] = await Promise.all([
-    db.event_eventos_sanitario.where("evento_id").anyOf(eventIds).toArray(),
-    db.event_eventos_animais.where("evento_id").anyOf(eventIds).toArray(),
-  ]);
-  const detailsByEvent = new Map(
-    details
-      .filter(
-        (detail) => detail.fazenda_id === input.fazendaId && !detail.deleted_at,
-      )
-      .map((detail) => [detail.evento_id, detail]),
-  );
-  const relationsByEvent = new Map<string, EventoAnimalLocalV2[]>();
-  for (const relation of relations) {
-    if (relation.fazenda_id !== input.fazendaId) continue;
-    const current = relationsByEvent.get(relation.evento_id) ?? [];
-    current.push(relation);
-    relationsByEvent.set(relation.evento_id, current);
-  }
-
-  let enqueued = 0;
-  let replayed = 0;
-  let skippedLegacyIncomplete = 0;
-  for (const event of candidates) {
-    const detail = detailsByEvent.get(event.id);
-    const eventAnimals = relationsByEvent.get(event.id) ?? [];
-    if (
-      !detail ||
-      eventAnimals.length === 0 ||
-      !isPushableExternalHistory(event, detail)
-    ) {
-      skippedLegacyIncomplete += 1;
-      continue;
-    }
-    const identity = {
-      clientTxId: event.client_tx_id as string,
-      clientOpId: event.client_op_id,
-      domainOpId: event.domain_op_id as string,
-    };
-    const operation = buildApplyFactualCoreOperation(
-      identity,
-      event,
-      detail,
-      eventAnimals,
-    );
-    const [existingOperation, existingGesture] = await Promise.all([
-      db.queue_ops.get(operation.client_op_id),
-      db.queue_gestures.get(operation.client_tx_id),
-    ]);
-    if (
-      !existingOperation &&
-      gestureAlreadyApplied(
-        existingGesture,
-        operation.client_op_id,
-        operation.domain_op_id,
-      )
-    ) {
-      replayed += 1;
-      continue;
-    }
-    await enqueueSanitarioV2Operations({
-      fazendaId: input.fazendaId,
-      clientId: input.clientId,
-      projectRef: input.projectRef,
-      operations: [operation],
-    });
-    if (existingOperation) replayed += 1;
-    else enqueued += 1;
-  }
-  return {
-    candidates: candidates.length,
-    enqueued,
-    replayed,
-    skippedLegacyIncomplete,
-  };
+  // Without the original persisted envelope there is no authoritative replay.
+  // Preserve local-only history; recovery never manufactures a send from a fact.
+  return { candidates: candidates.length, enqueued: 0, replayed: 0, skippedLegacyIncomplete: candidates.length };
 }
 
 export async function persistSanitarioV2FactualCore(input: {

@@ -630,6 +630,8 @@ export interface CategoriaZootecnica {
 }
 
 export interface Operation {
+  /** Original canonical receipt, installed atomically with a reconciliation obligation. */
+  sanitary_receipt?: SyncOperationResult;
   client_op_id: string;
   client_tx_id: string;
   op_order?: number;
@@ -1275,6 +1277,7 @@ export type SanitarioAgendaClosureV2Type =
   | "dismissed";
 
 export interface SanitarioAgendaLocalV2 {
+  obrigacao_origem_agenda_id?: string | null;
   id: string;
   fazenda_id: string;
   status: SanitarioAgendaV2Status;
@@ -1308,6 +1311,7 @@ export interface SanitarioAgendaLocalV2 {
 }
 
 export interface SanitarioAgendaAnimalLocalV2 {
+  obrigacao_origem_agenda_id?: string | null;
   agenda_id: string;
   fazenda_id: string;
   animal_id: string;
@@ -1595,6 +1599,7 @@ export interface SanitarioCaso {
 }
 
 export interface Evento {
+  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | null;
   id: string;
   fazenda_id: string;
   dominio: DominioEnum;
@@ -1630,6 +1635,7 @@ export interface Evento {
 }
 
 export interface EventoSanitario {
+  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | null;
   evento_id: string;
   fazenda_id: string;
   tipo: SanitarioTipoEnum;

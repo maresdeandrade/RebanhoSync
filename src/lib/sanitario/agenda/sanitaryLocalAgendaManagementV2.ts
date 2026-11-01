@@ -47,6 +47,7 @@ export type SanitaryLocalAgendaListItemV2 = {
   suggestedDoseUnit: string | null;
   suggestedRoute: string | null;
   animalCount: number;
+  animalOptions?: { id: string; label: string; recognized: boolean }[];
   target: SanitaryAgendaTargetV2;
   canManage: boolean;
   canExecute: boolean;
@@ -81,7 +82,9 @@ function readNumber(source: Record<string, unknown>, key: string) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-export function formatSanitaryProductClassLabelV2(value: string | null | undefined) {
+export function formatSanitaryProductClassLabelV2(
+  value: string | null | undefined,
+) {
   if (!value) return null;
   const known: Record<string, string> = {
     vacina_ibr_bvd: "Vacina IBR/BVD",
@@ -111,7 +114,11 @@ function metadataTarget(agenda: SanitarioAgendaLocalV2) {
 
 function animalLabel(animal: Animal | undefined) {
   if (!animal) return "Animal não encontrado";
-  return animal.nome?.trim() || animal.identificacao.trim() || "Animal sem identificação";
+  return (
+    animal.nome?.trim() ||
+    animal.identificacao.trim() ||
+    "Animal sem identificação"
+  );
 }
 
 function targetForAgenda(
@@ -124,7 +131,9 @@ function targetForAgenda(
   const lotId = agenda.lote_id ?? (target?.scope === "lote" ? target.id : null);
 
   if (lotId) {
-    const animalIds = Array.from(new Set(agendaAnimals.map((entry) => entry.animal_id)));
+    const animalIds = Array.from(
+      new Set(agendaAnimals.map((entry) => entry.animal_id)),
+    );
     if (animalIds.length === 1) {
       return {
         kind: "animal",
@@ -143,7 +152,8 @@ function targetForAgenda(
     return {
       kind: "lote",
       label:
-        readText(agenda.metadata, "targetAnimalScope") === "lote_sem_animais_explicitos"
+        readText(agenda.metadata, "targetAnimalScope") ===
+        "lote_sem_animais_explicitos"
           ? "Lote inteiro"
           : lot?.nome.trim() || "Lote não encontrado",
       href: `/lotes/${lotId}`,
@@ -173,7 +183,11 @@ function targetForAgenda(
     };
   }
 
-  return { kind: "nao_identificado", label: "Origem não identificada", href: null };
+  return {
+    kind: "nao_identificado",
+    label: "Origem não identificada",
+    href: null,
+  };
 }
 
 async function getDefaultDb(): Promise<LocalAgendaDbV2> {
@@ -189,20 +203,47 @@ export async function listLocalSanitaryAgendasV2(
   const db = localDb ?? (await getDefaultDb());
   const [agendas, agendaAnimals, animals, lots] = await Promise.all([
     db.ops_sanitario_agenda_v2.where("fazenda_id").equals(fazendaId).toArray(),
-    db.ops_sanitario_agenda_animais_v2.where("fazenda_id").equals(fazendaId).toArray(),
+    db.ops_sanitario_agenda_animais_v2
+      .where("fazenda_id")
+      .equals(fazendaId)
+      .toArray(),
     db.state_animais.where("fazenda_id").equals(fazendaId).toArray(),
     db.state_lotes.where("fazenda_id").equals(fazendaId).toArray(),
   ]);
   const activeAgendas = agendas.filter((agenda) => !agenda.deleted_at);
   const [protocols, protocolItems, farmConfig] = await Promise.all([
-    db.catalog_sanitario_protocolos_v2.bulkGet([...new Set(activeAgendas.flatMap((agenda) => agenda.protocolo_id ? [agenda.protocolo_id] : []))]),
-    db.catalog_sanitario_protocolo_itens_versions_v2.bulkGet([...new Set(activeAgendas.flatMap((agenda) => agenda.protocol_item_version_id ? [agenda.protocol_item_version_id] : []))]),
+    db.catalog_sanitario_protocolos_v2.bulkGet([
+      ...new Set(
+        activeAgendas.flatMap((agenda) =>
+          agenda.protocolo_id ? [agenda.protocolo_id] : [],
+        ),
+      ),
+    ]),
+    db.catalog_sanitario_protocolo_itens_versions_v2.bulkGet([
+      ...new Set(
+        activeAgendas.flatMap((agenda) =>
+          agenda.protocol_item_version_id
+            ? [agenda.protocol_item_version_id]
+            : [],
+        ),
+      ),
+    ]),
     db.state_fazenda_sanidade_config.get(fazendaId),
   ]);
-  const protocolsById = new Map(protocols.filter((entry) => !!entry).map((entry) => [entry.id, entry]));
-  const protocolItemsById = new Map(protocolItems.filter((entry) => !!entry).map((entry) => [entry.id, entry]));
-  const animalsById = new Map(animals.filter((animal) => !animal.deleted_at).map((animal) => [animal.id, animal]));
-  const lotsById = new Map(lots.filter((lot) => !lot.deleted_at).map((lot) => [lot.id, lot]));
+  const protocolsById = new Map(
+    protocols.filter((entry) => !!entry).map((entry) => [entry.id, entry]),
+  );
+  const protocolItemsById = new Map(
+    protocolItems.filter((entry) => !!entry).map((entry) => [entry.id, entry]),
+  );
+  const animalsById = new Map(
+    animals
+      .filter((animal) => !animal.deleted_at)
+      .map((animal) => [animal.id, animal]),
+  );
+  const lotsById = new Map(
+    lots.filter((lot) => !lot.deleted_at).map((lot) => [lot.id, lot]),
+  );
   const agendaAnimalsById = new Map<string, SanitarioAgendaAnimalLocalV2[]>();
 
   for (const entry of agendaAnimals) {
@@ -215,9 +256,11 @@ export async function listLocalSanitaryAgendasV2(
     .map((agenda) => {
       const entries = agendaAnimalsById.get(agenda.id) ?? [];
       const neonatal = birthNeonatalAgendaOrigin(agenda);
-      const neonatalLabel = !neonatal ? null : neonatal.milestone === "revisao_neonatal"
-        ? "Revisão neonatal"
-        : `Cura do umbigo · D${agenda.metadata.schedule_day_offset}${agenda.metadata.schedule_slot === "manha" ? " · Manhã" : agenda.metadata.schedule_slot === "tarde" ? " · Tarde" : ""}`;
+      const neonatalLabel = !neonatal
+        ? null
+        : neonatal.milestone === "revisao_neonatal"
+          ? "Revisão neonatal"
+          : `Cura do umbigo · D${agenda.metadata.schedule_day_offset}${agenda.metadata.schedule_slot === "manha" ? " · Manhã" : agenda.metadata.schedule_slot === "tarde" ? " · Tarde" : ""}`;
       const protocolLabel =
         readText(agenda.metadata, "protocolName") ??
         readText(agenda.protocol_item_snapshot, "protocolName") ??
@@ -225,12 +268,14 @@ export async function listLocalSanitaryAgendasV2(
       const itemLabel =
         readText(agenda.metadata, "itemLabel") ??
         readText(agenda.protocol_item_snapshot, "itemLabel") ??
-        neonatalLabel ?? "Item sanitário";
+        neonatalLabel ??
+        "Item sanitário";
       const hasExecution =
         Boolean(agenda.execution_evento_id) ||
         entries.some(
           (entry) =>
-            entry.planned_status === "executado" || Boolean(entry.execution_evento_id),
+            entry.planned_status === "executado" ||
+            Boolean(entry.execution_evento_id),
         );
       const productRequirementKind =
         readText(agenda.metadata, "productRequirementKind") ??
@@ -296,9 +341,19 @@ export async function listLocalSanitaryAgendasV2(
         suggestedDoseUnit,
         suggestedRoute,
         animalCount: Math.max(entries.length, 1),
+        animalOptions: entries.map((entry) => ({
+          id: entry.animal_id,
+          label: animalLabel(animalsById.get(entry.animal_id)),
+          recognized: Boolean(entry.execution_evento_id),
+        })),
         target: targetForAgenda(agenda, entries, animalsById, lotsById),
         canManage: agenda.status === "programada" && !hasExecution,
-        canExecute: agenda.status === "programada" && !hasExecution &&
+        canExecute:
+          SANITARIO_V3_EXECUTION_ENABLED &&
+          agenda.status === "programada" &&
+          Boolean(agenda.obrigacao_origem_agenda_id) &&
+          !birthNeonatalAgendaOrigin(agenda) &&
+          entries.length > 0 &&
           sanitaryProtocolExecutionRejectionsV2(
             agenda,
             protocolsById.get(agenda.protocolo_id ?? ""),
@@ -318,7 +373,8 @@ export function filterLocalSanitaryAgendasV2(
   const search = filters.search.trim().toLocaleLowerCase("pt-BR");
 
   return items.filter((item) => {
-    if (filters.status !== "todas" && item.status !== filters.status) return false;
+    if (filters.status !== "todas" && item.status !== filters.status)
+      return false;
     if (filters.startDate && item.plannedFor < filters.startDate) return false;
     if (filters.endDate && item.plannedFor > filters.endDate) return false;
     if (!search) return true;
@@ -364,8 +420,12 @@ async function planningMutationContext(
 ) {
   const context = readSanitaryPlanningSyncContextV2();
   const canonical =
-    /^[0-9a-f-]{36}$/i.test(agenda.id) && agenda.contract_version === 2;
+    /^[0-9a-f-]{36}$/i.test(agenda.id) && agenda.contract_version != null;
   if (!canonical) return null; // Historic text IDs remain local; never rewrite references.
+  // Stored V2 data is not an old client: management emits a new V3 command,
+  // preserving the Agenda identity and original contract metadata.
+  if (![2, 3].includes(agenda.contract_version))
+    throw new Error("SANITARIO_CLIENT_CONTRACT_OUTDATED");
   if (!context) throw new Error("SANITARIO_V2_SYNC_NOT_READY");
   const realDb = db as OfflineDB;
   const queued = await realDb.queue_ops.toArray();
@@ -517,3 +577,4 @@ export async function cancelLocalSanitaryAgendaV2(
     });
   });
 }
+import { SANITARIO_V3_EXECUTION_ENABLED } from "../execution/sanitaryAdmissionV3";

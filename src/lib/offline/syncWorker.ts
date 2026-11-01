@@ -1,10 +1,21 @@
 import type { Session } from "@supabase/supabase-js";
 import type { Transaction } from "dexie";
 import { db } from "./db";
-import { recordGestureDiagnostic, recordAcknowledgementIfCommitted, recordDrainAttempt,
-  recordDrainFailure, recordDrainCompletion, sanitizeDiagnosticError, backlogByFarm } from "./syncDiagnostics";
+import {
+  recordGestureDiagnostic,
+  recordAcknowledgementIfCommitted,
+  recordDrainAttempt,
+  recordDrainFailure,
+  recordDrainCompletion,
+  sanitizeDiagnosticError,
+  backlogByFarm,
+} from "./syncDiagnostics";
 import { isMovementOperation } from "./movement";
-import { recordMovementResults, reconcileMovementForFarm, hasRejectedMovement } from "./movementReconciliation";
+import {
+  recordMovementResults,
+  reconcileMovementForFarm,
+  hasRejectedMovement,
+} from "./movementReconciliation";
 import { env } from "@/lib/env";
 import { supabase } from "@/lib/supabase";
 import type {
@@ -26,7 +37,16 @@ import {
   STANDARD_EVENT_DETAIL_REMOTE_TABLES,
 } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
-import { findTerminalSanitaryPlanningDependencyV2, hasPendingSanitaryPlanningDependencyV2, mapQueuedSanitaryPlanV2, queuedSanitaryPlanV2 } from "@/lib/sanitario/agenda/sanitaryPlanningSyncV2";
+import {
+  findTerminalSanitaryPlanningDependencyV2,
+  hasPendingSanitaryPlanningDependencyV2,
+  mapQueuedSanitaryPlanV2,
+  queuedSanitaryPlanV2,
+} from "@/lib/sanitario/agenda/sanitaryPlanningSyncV2";
+import {
+  isSanitaryEvidenceOperation,
+  recoverSanitaryFoundation,
+} from "./sanitaryFoundationRecovery";
 import { getAffectedStores, reapplyOpLocal, rollbackOpLocal } from "./ops";
 import { preservePendingAnimalDeletesAfterRollback } from "./animalDeleteRollback";
 import { sortOpsForSync } from "./syncOrder";
@@ -57,6 +77,7 @@ import {
 import { getActiveFarmId } from "@/lib/storage";
 import { getCurrentLocalReadOwnership } from "./localReadBoundary";
 import { evaluateLocalOwnership } from "./ownership";
+import { revalidateRecoveredFarmForSync } from "./farmAccess";
 import { pullReproductionDiagnosisState } from "@/lib/reproduction/remoteSync";
 import {
   buildCommercialPurchaseEnvelope,
@@ -78,41 +99,86 @@ let activeRequestController: AbortController | null = null;
 const localActiveGestureLocks = new Set<string>();
 export const REQUEST_TIMEOUT_MS = 5_000;
 
-const isPostAckUuid = (value: unknown): value is string => typeof value === "string" &&
+const isPostAckUuid = (value: unknown): value is string =>
+  typeof value === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-function hasAppliedObservationReceipt(op: Operation, result: SyncOperationResult) {
-  return result.status === "APPLIED" && result.op_id === op.client_op_id &&
-    (result.client_op_id === undefined || result.client_op_id === op.client_op_id) &&
-    !result.operation_identity && !result.domain_op_id && !result.altered;
+function hasAppliedObservationReceipt(
+  op: Operation,
+  result: SyncOperationResult,
+) {
+  return (
+    result.status === "APPLIED" &&
+    result.op_id === op.client_op_id &&
+    (result.client_op_id === undefined ||
+      result.client_op_id === op.client_op_id) &&
+    !result.operation_identity &&
+    !result.domain_op_id &&
+    !result.altered
+  );
 }
 
-function isObservationUpdateApplied(op: Operation, result: SyncOperationResult) {
-  return op.table === "animais" && op.action === "UPDATE" &&
+function isObservationUpdateApplied(
+  op: Operation,
+  result: SyncOperationResult,
+) {
+  return (
+    op.table === "animais" &&
+    op.action === "UPDATE" &&
     hasAppliedObservationReceipt(op, result) &&
-    !op.movement_group && !op.command_digest && !op.domain_op_id;
+    !op.movement_group &&
+    !op.command_digest &&
+    !op.domain_op_id
+  );
 }
 
 function hasObservationOnlyFields(record: Operation["record"]) {
-  if (!record || typeof record !== "object" || Array.isArray(record)) return false;
-  const keys = new Set(["id", "observacoes", "fazenda_id", "client_id", "client_tx_id", "client_op_id", "client_recorded_at"]);
-  return !Object.keys(record).some(key => !keys.has(key)) &&
+  if (!record || typeof record !== "object" || Array.isArray(record))
+    return false;
+  const keys = new Set([
+    "id",
+    "observacoes",
+    "fazenda_id",
+    "client_id",
+    "client_tx_id",
+    "client_op_id",
+    "client_recorded_at",
+  ]);
+  return (
+    !Object.keys(record).some((key) => !keys.has(key)) &&
     Object.prototype.hasOwnProperty.call(record, "observacoes") &&
-    (record.observacoes === null || typeof record.observacoes === "string");
+    (record.observacoes === null || typeof record.observacoes === "string")
+  );
 }
 
-function hasObservationIdentity(gesture: Gesture, op: Operation, record: Operation["record"]) {
-  return isPostAckUuid(record.id) && isPostAckUuid(gesture.fazenda_id) &&
-    isPostAckUuid(gesture.client_tx_id) && isPostAckUuid(op.client_op_id) &&
+function hasObservationIdentity(
+  gesture: Gesture,
+  op: Operation,
+  record: Operation["record"],
+) {
+  return (
+    isPostAckUuid(record.id) &&
+    isPostAckUuid(gesture.fazenda_id) &&
+    isPostAckUuid(gesture.client_tx_id) &&
+    isPostAckUuid(op.client_op_id) &&
     op.client_tx_id === gesture.client_tx_id &&
-    record.fazenda_id === gesture.fazenda_id && record.client_tx_id === gesture.client_tx_id &&
-    record.client_op_id === op.client_op_id && record.client_id === gesture.client_id;
+    record.fazenda_id === gesture.fazenda_id &&
+    record.client_tx_id === gesture.client_tx_id &&
+    record.client_op_id === op.client_op_id &&
+    record.client_id === gesture.client_id
+  );
 }
 
-function hasObservationClientMetadata(gesture: Gesture, record: Operation["record"]) {
-  return typeof gesture.client_id === "string" && Boolean(gesture.client_id) &&
+function hasObservationClientMetadata(
+  gesture: Gesture,
+  record: Operation["record"],
+) {
+  return (
+    typeof gesture.client_id === "string" &&
+    Boolean(gesture.client_id) &&
     typeof record.client_recorded_at === "string" &&
-    Number.isFinite(Date.parse(record.client_recorded_at));
+    Number.isFinite(Date.parse(record.client_recorded_at))
+  );
 }
 
 // Closed class: a receipt confirms execution, never supplies the state snapshot.
@@ -125,10 +191,15 @@ export function selectPostAckAnimalObservation(
   const op = ops[0];
   const result = results[0];
   const record = op.record;
-  if (!isObservationUpdateApplied(op, result) ||
-    !Number.isSafeInteger(op.expected_revision) || op.expected_revision! < 1 ||
-    !hasObservationOnlyFields(record) || !hasObservationIdentity(gesture, op, record) ||
-    !hasObservationClientMetadata(gesture, record)) return null;
+  if (
+    !isObservationUpdateApplied(op, result) ||
+    !Number.isSafeInteger(op.expected_revision) ||
+    op.expected_revision! < 1 ||
+    !hasObservationOnlyFields(record) ||
+    !hasObservationIdentity(gesture, op, record) ||
+    !hasObservationClientMetadata(gesture, record)
+  )
+    return null;
   return record.id;
 }
 
@@ -318,9 +389,12 @@ async function loadSyncingGestureAndPersistRequirements(
     return undefined;
   }
   if (requirements.length > 0) {
-    await upsertReconciliationObligations(requirements.map(entry => ({ ...entry,
-      origins: [{ client_tx_id: clientTxId, client_op_ids: clientOpIds }],
-    })));
+    await upsertReconciliationObligations(
+      requirements.map((entry) => ({
+        ...entry,
+        origins: [{ client_tx_id: clientTxId, client_op_ids: clientOpIds }],
+      })),
+    );
   }
   return current;
 }
@@ -525,6 +599,7 @@ export async function runInitialOfflinePullForActiveFarmOnce() {
 
   isInitialPullRunning = true;
   try {
+    await recoverSanitaryFoundation(activeFarmId);
     await pullInitialData(activeFarmId);
     await pullReproductionDiagnosisState(activeFarmId);
     initialPullFarmId = activeFarmId;
@@ -549,21 +624,25 @@ async function withReconciliationDrainLock<T>(
   if (typeof navigator !== "undefined" && navigator?.locks?.request) {
     return new Promise<T>((resolve, reject) => {
       navigator.locks
-        .request(RECONCILIATION_DRAIN_LOCK_NAME, { ifAvailable: true }, async (lock) => {
-          if (lock === null) {
+        .request(
+          RECONCILIATION_DRAIN_LOCK_NAME,
+          { ifAvailable: true },
+          async (lock) => {
+            if (lock === null) {
+              try {
+                resolve(await fn(false));
+              } catch (err) {
+                reject(err);
+              }
+              return;
+            }
             try {
-              resolve(await fn(false));
+              resolve(await fn(true));
             } catch (err) {
               reject(err);
             }
-            return;
-          }
-          try {
-            resolve(await fn(true));
-          } catch (err) {
-            reject(err);
-          }
-        })
+          },
+        )
         .catch(reject);
     });
   }
@@ -637,9 +716,7 @@ async function executeReconciliationForScope(
   }
 }
 
-export async function drainReconciliationObligations(
-  fazendaId: string | null,
-) {
+export async function drainReconciliationObligations(fazendaId: string | null) {
   if (!fazendaId || isReconciliationDrainRunning) return;
   const ownership = await getCurrentLocalReadOwnership();
   if (ownership.status !== "OWNED") return;
@@ -665,7 +742,8 @@ export async function drainReconciliationObligations(
           const error = sanitizeDiagnosticError(e);
           console.warn(
             `[sync-worker] reconciliation drain failed for ${obligation.key}:`,
-            error.code, error.message,
+            error.code,
+            error.message,
           );
         }
       }
@@ -896,8 +974,17 @@ function readSanitarioCommand(
 
   if (queuedSanitaryPlanV2(op)) return "set_automation_plan";
 
-  const commands: readonly string[] = ["create_agenda", "replace_agenda_animals", "apply_factual_core", "close_agenda", "set_automation_plan", "reschedule_agenda"];
-  return commands.includes(candidate as string) ? candidate as SanitarioSyncV2Command : undefined;
+  const commands: readonly string[] = [
+    "create_agenda",
+    "replace_agenda_animals",
+    "apply_factual_core",
+    "close_agenda",
+    "set_automation_plan",
+    "reschedule_agenda",
+  ];
+  return commands.includes(candidate as string)
+    ? (candidate as SanitarioSyncV2Command)
+    : undefined;
 }
 
 type QueueOperationUpdate = Partial<
@@ -994,12 +1081,14 @@ async function processSanitarioCanonicalResults(
   const sanitarioOpIds = new Set(
     sentOps
       .filter(
-        (op) => (isRecord(op.record) && op.record.domain === "sanitario_v2") || Boolean(queuedSanitaryPlanV2(op)),
+        (op) =>
+          (isRecord(op.record) && op.record.domain === "sanitario_v2") ||
+          Boolean(queuedSanitaryPlanV2(op)),
       )
       .map((op) => op.client_op_id),
   );
-  const canonicalResults = results.filter(
-    (result) => isSanitarioCanonicalResult(result, sanitarioOpIds),
+  const canonicalResults = results.filter((result) =>
+    isSanitarioCanonicalResult(result, sanitarioOpIds),
   );
   if (canonicalResults.length === 0) return false;
 
@@ -1089,11 +1178,13 @@ async function processSanitarioCanonicalResults(
 
     terminalRejection = true;
     if (terminalDependency) audits[audits.length - 1].local_reason_code = "SYNC_DEPENDENCY_TERMINAL";
-    if (command === "apply_factual_core") {
+    if (isSanitaryEvidenceOperation(op)) {
       // Keep the immutable envelope for an explicit, identity-preserving retry.
       operationUpdates.set(op.client_op_id, {
-        sync_state: "REJECTED", next_attempt_at: undefined,
-        blocked_reason: result.reason_code ?? `SANITARIO_SYNC_V2_${result.status}`,
+        sync_state: "REJECTED",
+        next_attempt_at: undefined,
+        blocked_reason:
+          result.reason_code ?? `SANITARIO_SYNC_V2_${result.status}`,
       });
     } else {
       deleteIds.add(op.client_op_id);
@@ -1125,7 +1216,10 @@ async function processSanitarioCanonicalResults(
         result?.status === "APPLIED_ALTERED"
       ) {
         deleteIds.add(op.client_op_id);
-      } else if (result?.status === "REJECTED" || result?.status === "CONFLICT") {
+      } else if (
+        result?.status === "REJECTED" ||
+        result?.status === "CONFLICT"
+      ) {
         // A terminal companion result cannot become an endless retry after
         // its factual parent is rejected. Keep the local fact and audit both.
         terminalRejection = true;
@@ -1140,7 +1234,8 @@ async function processSanitarioCanonicalResults(
         if (appliedInventoryParent) rejectedInventoryProjections.push(op);
         if (rejectedFactualParent || appliedInventoryParent) {
           operationUpdates.set(op.client_op_id, {
-            sync_state: "REJECTED", next_attempt_at: undefined,
+            sync_state: "REJECTED",
+            next_attempt_at: undefined,
             blocked_reason: result.reason_code ?? `SYNC_MIXED_${result.status}`,
           });
         } else {
@@ -1154,11 +1249,20 @@ async function processSanitarioCanonicalResults(
           table: op.table,
           action: op.action,
           reason_code: result.reason_code ?? `SYNC_MIXED_${result.status}`,
-          reason_message: result.reason_message ?? "Companion operation rejected",
+          reason_message:
+            result.reason_message ?? "Companion operation rejected",
           domain_op_id: result.domain_op_id ?? op.domain_op_id,
           result_status: result.status,
           payload: buildMinimalRejectionPayload(result),
           created_at: recordedAt,
+        });
+      } else if (result?.status === "BLOCKED_DEPENDENCY") {
+        operationUpdates.set(op.client_op_id, {
+          sync_state: "BLOCKED_DEPENDENCY",
+          next_attempt_at: undefined,
+          blocked_reason:
+            result.reason_code ??
+            "SANITARIO_FOUNDATION_COMPANION_REQUIRES_RECONCILIATION",
         });
       } else {
         operationUpdates.set(
@@ -1192,6 +1296,8 @@ async function processSanitarioCanonicalResults(
       db.queue_rejections,
       db.sync_reconcile_obligations,
       ...getAffectedStores(rejectedInventoryProjections),
+      db.event_eventos,
+      db.event_eventos_sanitario,
     ],
     // fallow-ignore-next-line complexity
     async () => {
@@ -1200,6 +1306,34 @@ async function processSanitarioCanonicalResults(
         return;
       }
 
+      for (const { op, result } of matchedForReconcile) {
+        const envelope = isRecord(op.record) ? op.record : {};
+        const payload = isRecord(envelope.payload) ? envelope.payload : {};
+        const event = isRecord(payload.event) ? payload.event : {};
+        const canonical = isRecord(result.canonical_result)
+          ? result.canonical_result
+          : {};
+        const local =
+          typeof event.id === "string"
+            ? await db.event_eventos.get(event.id)
+            : undefined;
+        if (
+          local?.fazenda_id === gesture.fazenda_id &&
+          event.id === canonical.evento_id &&
+          typeof canonical.confirmed === "boolean" &&
+          ["APPLIED", "CONFLICT"].includes(result.status)
+        ) {
+          const confirmation = canonical.confirmed
+            ? ("confirmed" as const)
+            : ("collision" as const);
+          await db.event_eventos.update(local.id, {
+            sanitario_v3_confirmation: confirmation,
+          });
+          await db.event_eventos_sanitario.update(local.id, {
+            sanitario_v3_confirmation: confirmation,
+          });
+        }
+      }
       if (sanitarioV2CutoverRequired) {
         await upsertReconciliationObligations([
           { fazendaId: gesture.fazenda_id, scope: "sanitario-v2",
@@ -1235,17 +1369,23 @@ async function processSanitarioCanonicalResults(
       const hasBlocked = remaining.some(
         (op) => op.sync_state === "BLOCKED_DEPENDENCY",
       );
+      const hasRejected =
+        terminalRejection ||
+        remaining.some((op) => op.sync_state === "REJECTED");
       const operationResults = mergeOperationAudit(
         current.operation_results ?? gesture.operation_results,
         audits,
       );
 
-      if (remaining.length === 0 || remaining.every(op => op.sync_state === "REJECTED")) {
+      if (
+        remaining.length === 0 ||
+        remaining.every((op) => op.sync_state === "REJECTED")
+      ) {
         await db.queue_gestures.update(gesture.client_tx_id, {
-          status: terminalRejection ? "REJECTED" : "DONE",
-          sync_result: terminalRejection ? "REJECTED" : "APPLIED",
+          status: hasRejected ? "REJECTED" : "DONE",
+          sync_result: hasRejected ? "REJECTED" : "APPLIED",
           completed_at: recordedAt,
-          last_error: terminalRejection
+          last_error: hasRejected
             ? "sanitario_v2 completed with rejection or conflict"
             : undefined,
           operation_results: operationResults,
@@ -1267,11 +1407,22 @@ async function processSanitarioCanonicalResults(
           last_error: "sanitario_v2 blocked by unavailable dependency",
           operation_results: operationResults,
         });
+      } else {
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: "PENDING",
+          sync_result: undefined,
+          completed_at: undefined,
+          operation_results: operationResults,
+        });
       }
       ackCommitted = true;
     },
   );
-  await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
+  await recordAcknowledgementIfCommitted(
+    ackCommitted,
+    gesture.client_tx_id,
+    gesture.fazenda_id,
+  );
 
   if (ackCommitted && rejectedInventoryProjections.length) await drainReconciliationObligations(gesture.fazenda_id);
   await reconcileSanitarioV2Results(gesture.fazenda_id, matchedForReconcile);
@@ -1562,6 +1713,12 @@ export async function recoverBlockedSanitarioV2Operations(
     .filter(
       (op) =>
         op.sync_state === "BLOCKED_DEPENDENCY" &&
+        ![
+          "SANITARIO_V3_EXECUTION_NOT_ENABLED",
+          "SANITARIO_FOUNDATION_COMPANION_REQUIRES_RECONCILIATION",
+          "SANITARIO_RECEIPT_ABSENT",
+          "SANITARIO_CLIENT_CONTRACT_OUTDATED",
+        ].includes(op.blocked_reason ?? "") &&
         !excludedOpIds.has(op.client_op_id),
     )
     .toArray();
@@ -1705,16 +1862,27 @@ function mapMovementForSync(op: Operation, fazendaId: string) {
 
 function queuedSanitaryEnvelope(op: Operation): Record<string, unknown> | null {
   if (!isRecord(op.record) || op.record.domain !== "sanitario_v2") return null;
-  if (op.record.client_op_id !== op.client_op_id || op.record.client_tx_id !== op.client_tx_id || op.record.domain_op_id !== op.domain_op_id) {
+  if (
+    op.record.client_op_id !== op.client_op_id ||
+    op.record.client_tx_id !== op.client_tx_id ||
+    op.record.domain_op_id !== op.domain_op_id
+  ) {
     throw new Error("SANITARIO_V2_QUEUED_IDENTITY_MISMATCH");
   }
   return { ...op.record };
 }
 
-export function mapOperationForSync(op: Operation, fazendaId: string): Record<string, unknown> {
+export function mapOperationForSync(
+  op: Operation,
+  fazendaId: string,
+): Record<string, unknown> {
   if (isMovementOperation(op)) return mapMovementForSync(op, fazendaId);
-  const sanitary = mapQueuedSanitaryPlanV2(op, fazendaId) ?? queuedSanitaryEnvelope(op);
-  if (sanitary) return sanitary;
+  const sanitary =
+    mapQueuedSanitaryPlanV2(op, fazendaId) ?? queuedSanitaryEnvelope(op);
+  if (sanitary)
+    return sanitary.contract_version === 3
+      ? { ...sanitary }
+      : { ...sanitary, receipt_only: true };
   if (isCommercialPurchaseEnvelope(op.record)) {
     if (
       op.record.client_op_id !== op.client_op_id ||
@@ -1811,7 +1979,7 @@ async function reconcileGenericOperationResults(
     const current = await loadSyncingGestureAndPersistRequirements(
       gesture.client_tx_id,
       reconciliationRequirements,
-      [...appliedOps, ...rejectedOps].map(op => op.client_op_id),
+      [...appliedOps, ...rejectedOps].map((op) => op.client_op_id),
     );
     if (!current) {
       return;
@@ -1823,7 +1991,10 @@ async function reconcileGenericOperationResults(
     for (const op of sortOpsForSync(appliedOps)) {
       await reapplyOpLocal(op);
     }
-    await preservePendingAnimalDeletesAfterRollback(gesture.fazenda_id, rejectedOps);
+    await preservePendingAnimalDeletesAfterRollback(
+      gesture.fazenda_id,
+      rejectedOps,
+    );
 
     if (appliedOps.length > 0) {
       await db.queue_ops.bulkDelete(
@@ -1889,7 +2060,11 @@ async function reconcileGenericOperationResults(
     });
     ackCommitted = true;
   });
-  await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
+  await recordAcknowledgementIfCommitted(
+    ackCommitted,
+    gesture.client_tx_id,
+    gesture.fazenda_id,
+  );
 
   const remoteTables = Array.from(
     new Set(
@@ -2028,7 +2203,9 @@ export async function processGesture(gesture: Gesture) {
     }
     await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
       last_attempt_started_at: new Date().toISOString(),
-      result_received_at: undefined, ack_installed_at: undefined, blocked: undefined,
+      result_received_at: undefined,
+      ack_installed_at: undefined,
+      blocked: undefined,
     });
 
     // PATCH 2: Revalidate work AFTER successful claim
@@ -2036,11 +2213,38 @@ export async function processGesture(gesture: Gesture) {
       .where("client_tx_id")
       .equals(gesture.client_tx_id)
       .toArray();
+    if (queuedOps.some((op) => op.sanitary_receipt)) {
+      // Restart after receipt installation does not need another remote write.
+      // Other domains and terminal siblings retain their exact queued state.
+      const recovered = queuedOps.filter(
+        (op) =>
+          op.sanitary_receipt ||
+          (op.record.tipo === "consumo_sanitario" &&
+            op.sync_state !== "REJECTED"),
+      );
+      await processSanitarioCanonicalResults(
+        gesture,
+        recovered,
+        recovered.map(
+          (op) =>
+            op.sanitary_receipt ?? {
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: op.domain_op_id,
+              status: "BLOCKED_DEPENDENCY",
+              retryable: false,
+              reason_code:
+                "SANITARIO_FOUNDATION_COMPANION_REQUIRES_RECONCILIATION",
+            },
+        ),
+      );
+      return;
+    }
     const readyOps = queuedOps.filter(
       (op) => op.sync_state !== "REJECTED" && isOperationReadyForSync(op),
     );
     await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
-      client_op_ids: readyOps.map(op => op.client_op_id),
+      client_op_ids: readyOps.map((op) => op.client_op_id),
     });
 
     if (readyOps.length === 0) {
@@ -2051,8 +2255,12 @@ export async function processGesture(gesture: Gesture) {
         (op) => op.sync_state === "BLOCKED_DEPENDENCY",
       );
       if (queuedOps.some(isMovementOperation)) {
-        await db.queue_gestures.update(gesture.client_tx_id, { status: "PENDING", completed_at: undefined,
-          last_error: "Movimentação aguarda retry ou resultado efetivo/reconciliação" });
+        await db.queue_gestures.update(gesture.client_tx_id, {
+          status: "PENDING",
+          completed_at: undefined,
+          last_error:
+            "Movimentação aguarda retry ou resultado efetivo/reconciliação",
+        });
         return;
       }
       const hasRejectedOperation = queuedOps.some(
@@ -2108,521 +2316,664 @@ export async function processGesture(gesture: Gesture) {
     }
 
     let ops = sortOpsForSync(readyOps);
-    if (ops.some(op => op.record?.domain === "sanitario_v2" || queuedSanitaryPlanV2(op))) {
+    if (
+      ops.some(
+        (op) =>
+          op.record?.domain === "sanitario_v2" || queuedSanitaryPlanV2(op),
+      )
+    ) {
       const pendingPlanning = await db.queue_ops.toArray();
-      if (ops.some(op => hasPendingSanitaryPlanningDependencyV2(op, pendingPlanning))) {
+      if (
+        ops.some((op) =>
+          hasPendingSanitaryPlanningDependencyV2(op, pendingPlanning),
+        )
+      ) {
         await db.queue_gestures.update(gesture.client_tx_id, {
-          status: "PENDING", last_error: "SANITARIO_LOCAL_PREDECESSOR_PENDING",
+          status: "PENDING",
+          last_error: "SANITARIO_LOCAL_PREDECESSOR_PENDING",
         });
         return;
       }
     }
 
     try {
-    const { supabase, session } = await getValidSession();
-    const commercialOperation = buildCommercialOperationEnvelope(
-      ops,
-      gesture.fazenda_id,
-    );
-    const commercialPurchase = commercialOperation
-      ? null
-      : buildCommercialPurchaseEnvelope(ops, gesture.fazenda_id);
-    const commercialCommand = commercialOperation ?? commercialPurchase;
-    const mappedOps = commercialCommand
-      ? [{ ...commercialCommand }]
-      : ops.map((op) => mapOperationForSync(op, gesture.fazenda_id));
-
-    if (import.meta.env.DEV) {
-      console.debug(
-        "[sync-worker] Tentando sync do TX:",
-        gesture.client_tx_id.substring(0, 8),
+      const { supabase, session } = await getValidSession();
+      await revalidateRecoveredFarmForSync(session, gesture.fazenda_id);
+      const commercialOperation = buildCommercialOperationEnvelope(
+        ops,
+        gesture.fazenda_id,
       );
-    }
-    logTokenExpiry(session);
-
-    let response = await sendBatchRequest(
-      session.access_token,
-      gesture,
-      mappedOps,
-    );
-
-    if (response.status === 401) {
-      await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
-        last_failure: { code: "HTTP_401", cause_code: "HTTP_401",
-          observed_at: new Date().toISOString(), retry_count: gesture.retry_count ?? 0 },
-      });
-      console.warn(
-        "[sync-worker] HTTP 401 on sync-batch, attempting refresh + single retry",
-      );
-
-      const {
-        data: { session: refreshedSession },
-        error: refreshError,
-      } = await supabase.auth.refreshSession();
-
-      if (refreshError || !refreshedSession) {
-        throw new Error(
-          `HTTP 401 - refresh failed: ${refreshError?.message ?? "no session"}`,
-        );
-      }
-
-      logTokenExpiry(refreshedSession);
-      response = await sendBatchRequest(
-        refreshedSession.access_token,
-        gesture,
-        mappedOps,
-      );
-    }
-
-    if (!response.ok) {
-      const retryAfterAt =
-        response.status === 429
-          ? parseRetryAfter(response.headers.get("Retry-After"))
-          : undefined;
-      let errorBody: string | null = null;
-      try {
-        errorBody = await response.text();
-      } catch {
-        errorBody = null;
-      }
-
-      console.error(
-        "[sync-worker] HTTP Error:",
-        response.status,
-        response.statusText,
-        errorBody ? `- ${errorBody}` : "",
-      );
-      throw new HttpSyncError(
-        response.status,
-        `HTTP ${response.status}${errorBody ? ` - ${errorBody}` : ""}`,
-        retryAfterAt,
-      );
-    }
-
-    const result = (await response.json()) as SyncBatchResponse;
-    if (!Array.isArray(result.results)) {
-      throw new Error("Invalid sync-batch response: results missing");
-    }
-    if (result.results.every(row => isRecord(row) && typeof row.op_id === "string" &&
-      ["APPLIED", "APPLIED_ALTERED", "RETRYABLE", "REJECTED", "CONFLICT", "BLOCKED_DEPENDENCY"].includes(String(row.status)))) {
-      await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
-        result_received_at: new Date().toISOString(),
-      });
-    }
-    const movementOps = ops.filter(isMovementOperation);
-    if (movementOps.length) {
-      await recordMovementResults(gesture, movementOps, result.results, ops.length !== movementOps.length);
-      await drainReconciliationObligations(gesture.fazenda_id);
-      ops = ops.filter(op => !isMovementOperation(op));
-      result.results = result.results.filter(row => !movementOps.some(op => op.client_op_id === row.op_id));
-      if (!ops.length) return;
-    }
-    const handledSanitarioV2 = await processSanitarioCanonicalResults(
-      gesture,
-      ops,
-      result.results,
-    );
-    if (handledSanitarioV2) return;
-
-    const genericRecordedAt = new Date().toISOString();
-    const isTerminalBlockedDependency =
-      buildTerminalBlockedDependencyClassifier(ops, result.results);
-    const genericPlan = planOperationReconciliation(
-      ops,
-      result.results,
-      genericRecordedAt,
-      isTerminalBlockedDependency,
-    );
-    const hasCommercialPurchase = commercialCommand !== null;
-    const allApplied = hasCommercialPurchase
-      ? result.results.every(
-          (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
-        )
-      : genericPlan.applied.length === ops.length &&
-        genericPlan.rejected.length === 0 &&
-        genericPlan.retryable.length === 0 &&
-        genericPlan.missing.length === 0;
-    const hasReproductionOperation = ops.some(
-      (op) =>
-        getRemoteTableName(op.table) === "eventos_reproducao" &&
-        SYNCED_REPRODUCTION_TYPES.has(String(op.record?.tipo)),
-    );
-    const isTerminalReproductionResult = (entry: SyncOperationResult) =>
-      entry.status === "REJECTED" ||
-      (hasReproductionOperation &&
-        entry.status === "CONFLICT") ||
-      genericPlan.rejected.some(
-        ({ result: rejectedResult }) =>
-          rejectedResult.op_id === entry.op_id &&
-          rejectedResult.status === "BLOCKED_DEPENDENCY",
-      );
-    const isTerminalResult = (entry: SyncOperationResult) =>
-      isTerminalReproductionResult(entry) ||
-      (hasCommercialPurchase &&
-        (entry.status === "REJECTED" || entry.status === "CONFLICT"));
-    const hasRejected = hasCommercialPurchase
-      ? result.results.some(isTerminalResult)
-      : genericPlan.rejected.length > 0;
-
-    if (allApplied) {
-      const completedAt = new Date().toISOString();
-      const syncResult = result.results.some(
-        (entry) => entry.status === "APPLIED_ALTERED",
-      )
-        ? "APPLIED_ALTERED"
-        : "APPLIED";
-      const remoteTablesTouched = new Set(
-        ops.map((op) => getRemoteTableName(op.table)),
-      );
-      const refreshTables = new Set<string>();
-
-      // UPDATE advances the server CAS revision. Reconcile that snapshot even
-      // for APPLIED, so a drained obligation cannot leave the next intent stale.
-      if (ops.some((op) => getRemoteTableName(op.table) === "animais" && op.action === "UPDATE")) {
-        refreshTables.add("animais");
-      }
-
-      if (hasCommercialPurchase) {
-        refreshTables.add("animais");
-        refreshTables.add("eventos");
-        refreshTables.add("eventos_comercial");
-      }
-
-      // Agenda pode ser gerada automaticamente por trigger ao inserir/atualizar animais.
-      if (remoteTablesTouched.has("animais")) {
-        refreshTables.add("agenda_itens");
-      }
-      // Conclusao de pendencia sanitária altera evento e agenda no servidor.
-      if (
-        remoteTablesTouched.has("eventos") ||
-        remoteTablesTouched.has("eventos_sanitario") ||
-        remoteTablesTouched.has("agenda_itens")
-      ) {
-        refreshTables.add("agenda_itens");
-        refreshTables.add("eventos");
-        refreshTables.add("eventos_sanitario");
-      }
-      if (
-        remoteTablesTouched.has("protocolos_sanitarios") ||
-        remoteTablesTouched.has("protocolos_sanitarios_itens") ||
-        remoteTablesTouched.has("fazenda_sanidade_config")
-      ) {
-        refreshTables.add("protocolos_sanitarios");
-        refreshTables.add("protocolos_sanitarios_itens");
-        refreshTables.add("agenda_itens");
-        refreshTables.add("fazenda_sanidade_config");
-      }
-      if (remoteTablesTouched.has("insumo_movimentacoes")) {
-        refreshTables.add("insumo_lotes");
-        refreshTables.add("insumo_movimentacoes");
-      }
-      for (const detailTable of STANDARD_EVENT_DETAIL_REMOTE_TABLES) {
-        if (remoteTablesTouched.has(detailTable)) {
-          refreshTables.add(detailTable);
-        }
-      }
-
-      const hasReproductionDetail = ops.some(
-        (op) =>
-          getRemoteTableName(op.table) === "eventos_reproducao" &&
-          op.action === "INSERT" &&
-          SYNCED_REPRODUCTION_TYPES.has(String(op.record?.tipo)),
-      );
-      const agendaV2Touched = Array.from(remoteTablesTouched).some((table) =>
-        SANITARIO_AGENDA_V2_REMOTE_TABLES.has(table),
-      );
-      const reconciliationRequirements = deriveReconciliationRequirements({
-        fazendaId: gesture.fazenda_id,
-        factualTables: Array.from(refreshTables),
-        reproduction: hasReproductionDetail,
-        agendaV2: agendaV2Touched,
-      });
-
-      let ackCommitted = false;
-      await db.transaction(
-        "rw",
-        [db.queue_gestures, db.queue_ops, db.sync_reconcile_obligations],
-        async () => {
-          const current = await loadSyncingGestureAndPersistRequirements(
-            gesture.client_tx_id,
-            reconciliationRequirements,
-            ops.map(op => op.client_op_id),
-          );
-          if (!current) {
-            return;
-          }
-
-          await db.queue_ops.bulkDelete(
-            ops.map((operation) => operation.client_op_id),
-          );
-          const remaining = await db.queue_ops
-            .where("client_tx_id")
-            .equals(gesture.client_tx_id)
-            .toArray();
-          const hasRemainingRejected = remaining.some(
-            (operation) => operation.sync_state === "REJECTED",
-          );
-          const movementRejected = hasRejectedMovement(current);
-          await db.queue_gestures.update(gesture.client_tx_id, {
-            status:
-              remaining.length === 0
-                ? movementRejected ? "REJECTED" : "DONE"
-                : hasRemainingRejected
-                  ? "REJECTED"
-                  : "PENDING",
-            sync_result:
-              remaining.length === 0
-                ? movementRejected ? "REJECTED" : syncResult
-                : hasRemainingRejected
-                  ? "REJECTED"
-                  : undefined,
-            completed_at:
-              remaining.length === 0 || hasRemainingRejected
-                ? completedAt
-                : undefined,
-            last_error: hasRemainingRejected
-              ? "Gesture ainda possui operações rejeitadas"
-              : undefined,
-            operation_results: mergeOperationAudit(
-              current.operation_results ?? gesture.operation_results,
-              genericPlan.audits,
-            ),
-          });
-          ackCommitted = true;
-        },
-      );
-      await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
-
-      if (refreshTables.size > 0) {
-        try {
-          const animalId = ackCommitted
-            ? selectPostAckAnimalObservation(gesture, queuedOps, result.results)
-            : null;
-          await pullDataForFarm(
-            gesture.fazenda_id,
-            Array.from(refreshTables),
-            {
-              mode: getReconciliationPullMode(gesture.fazenda_id),
-              ...(animalId ? {
-                tableModes: { animais: "merge" as const },
-                observations: { animais: { key: "id", ids: [animalId] } },
-                requiredAnimalIds: [animalId],
-              } : {}),
-            },
-          );
-        } catch (refreshError) {
-          console.warn(
-            `[sync-worker] post-sync pull failed for TX ${gesture.client_tx_id}:`,
-            refreshError,
-          );
-        }
-      }
-      if (hasReproductionDetail) {
-        try {
-          await pullReproductionDiagnosisState(gesture.fazenda_id, {
-            ignorePendingClientTxId: gesture.client_tx_id,
-          });
-        } catch (refreshError) {
-          console.warn(
-            `[sync-worker] post-sync reproduction pull failed for TX ${gesture.client_tx_id}:`,
-            refreshError,
-          );
-        }
-      }
-      if (agendaV2Touched) {
-        try {
-          await pullSanitarioAgendaV2(gesture.fazenda_id);
-        } catch (refreshError) {
-          console.warn(
-            `[sync-worker] post-sync agenda v2 pull failed for TX ${gesture.client_tx_id}:`,
-            refreshError,
-          );
-        }
-      }
-
-      await trackPilotMetric({
-        fazendaId: gesture.fazenda_id,
-        eventName: "sync_success",
-        status: "success",
-        entity: "sync-batch",
-        quantity: ops.length,
-        payload: {
-          tables: Array.from(remoteTablesTouched),
-          op_count: ops.length,
-        },
-      });
+      const commercialPurchase = commercialOperation
+        ? null
+        : buildCommercialPurchaseEnvelope(ops, gesture.fazenda_id);
+      const commercialCommand = commercialOperation ?? commercialPurchase;
+      const mappedOps = commercialCommand
+        ? [{ ...commercialCommand }]
+        : ops.map((op) => mapOperationForSync(op, gesture.fazenda_id));
 
       if (import.meta.env.DEV) {
         console.debug(
-          `[sync-worker] TX ${gesture.client_tx_id} synced successfully`,
+          "[sync-worker] Tentando sync do TX:",
+          gesture.client_tx_id.substring(0, 8),
         );
       }
-      return;
-    }
+      logTokenExpiry(session);
 
-    if (
-      hasRejected &&
-      !hasCommercialPurchase &&
-      (await reconcileGenericOperationResults(
+      let response = await sendBatchRequest(
+        session.access_token,
+        gesture,
+        mappedOps,
+      );
+
+      if (response.status === 401) {
+        await recordGestureDiagnostic(
+          gesture.client_tx_id,
+          gesture.fazenda_id,
+          {
+            last_failure: {
+              code: "HTTP_401",
+              cause_code: "HTTP_401",
+              observed_at: new Date().toISOString(),
+              retry_count: gesture.retry_count ?? 0,
+            },
+          },
+        );
+        console.warn(
+          "[sync-worker] HTTP 401 on sync-batch, attempting refresh + single retry",
+        );
+
+        const {
+          data: { session: refreshedSession },
+          error: refreshError,
+        } = await supabase.auth.refreshSession();
+
+        if (refreshError || !refreshedSession) {
+          throw new Error(
+            `HTTP 401 - refresh failed: ${refreshError?.message ?? "no session"}`,
+          );
+        }
+
+        logTokenExpiry(refreshedSession);
+        await revalidateRecoveredFarmForSync(refreshedSession, gesture.fazenda_id);
+        response = await sendBatchRequest(
+          refreshedSession.access_token,
+          gesture,
+          mappedOps,
+        );
+      }
+
+      if (!response.ok) {
+        const retryAfterAt =
+          response.status === 429
+            ? parseRetryAfter(response.headers.get("Retry-After"))
+            : undefined;
+        let errorBody: string | null = null;
+        try {
+          errorBody = await response.text();
+        } catch {
+          errorBody = null;
+        }
+
+        console.error(
+          "[sync-worker] HTTP Error:",
+          response.status,
+          response.statusText,
+          errorBody ? `- ${errorBody}` : "",
+        );
+        throw new HttpSyncError(
+          response.status,
+          `HTTP ${response.status}${errorBody ? ` - ${errorBody}` : ""}`,
+          retryAfterAt,
+        );
+      }
+
+      const result = (await response.json()) as SyncBatchResponse;
+      if (!Array.isArray(result.results)) {
+        throw new Error("Invalid sync-batch response: results missing");
+      }
+      if (
+        result.results.every(
+          (row) =>
+            isRecord(row) &&
+            typeof row.op_id === "string" &&
+            [
+              "APPLIED",
+              "APPLIED_ALTERED",
+              "RETRYABLE",
+              "REJECTED",
+              "CONFLICT",
+              "BLOCKED_DEPENDENCY",
+            ].includes(String(row.status)),
+        )
+      ) {
+        await recordGestureDiagnostic(
+          gesture.client_tx_id,
+          gesture.fazenda_id,
+          {
+            result_received_at: new Date().toISOString(),
+          },
+        );
+      }
+      const movementOps = ops.filter(isMovementOperation);
+      if (movementOps.length) {
+        await recordMovementResults(
+          gesture,
+          movementOps,
+          result.results,
+          ops.length !== movementOps.length,
+        );
+        await drainReconciliationObligations(gesture.fazenda_id);
+        ops = ops.filter((op) => !isMovementOperation(op));
+        result.results = result.results.filter(
+          (row) => !movementOps.some((op) => op.client_op_id === row.op_id),
+        );
+        if (!ops.length) return;
+      }
+      const handledSanitarioV2 = await processSanitarioCanonicalResults(
         gesture,
         ops,
         result.results,
+      );
+      if (handledSanitarioV2) return;
+
+      const genericRecordedAt = new Date().toISOString();
+      const isTerminalBlockedDependency =
+        buildTerminalBlockedDependencyClassifier(ops, result.results);
+      const genericPlan = planOperationReconciliation(
+        ops,
+        result.results,
+        genericRecordedAt,
         isTerminalBlockedDependency,
-      ))
-    ) {
-      await trackPilotMetric({
-        fazendaId: gesture.fazenda_id,
-        eventName: "sync_rejected",
-        status: "error",
-        entity: "sync-batch",
-        quantity: genericPlan.rejected.length,
-        reasonCode: genericPlan.rejected[0]?.result.reason_code,
-        payload: {
-          op_count: ops.length,
-          applied_count: genericPlan.applied.length,
-          rejected_count: genericPlan.rejected.length,
-          retryable_count:
-            genericPlan.retryable.length + genericPlan.missing.length,
-        },
-      });
-      return;
-    }
-
-    if (hasRejected) {
-      const completedAt = new Date().toISOString();
-      const rejectedResults = result.results.filter(isTerminalResult);
-      const rejectionSummary = rejectedResults
-        .map((r) => `${r.reason_code ?? "UNKNOWN"}: ${r.reason_message ?? "-"}`)
-        .join(" | ");
-
-      const hasAgendaAlreadyCompletedRejection = rejectedResults.some(
-        (r) => r.reason_code === AGENDA_ALREADY_COMPLETED_REASON,
       );
-      const hasAgendaClosureConflictRejection = rejectedResults.some(
-        (r) => r.reason_code === SANITARIO_AGENDA_CLOSURE_CONFLICT_REASON,
+      const hasCommercialPurchase = commercialCommand !== null;
+      const allApplied = hasCommercialPurchase
+        ? result.results.every(
+            (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
+          )
+        : genericPlan.applied.length === ops.length &&
+          genericPlan.rejected.length === 0 &&
+          genericPlan.retryable.length === 0 &&
+          genericPlan.missing.length === 0;
+      const hasReproductionOperation = ops.some(
+        (op) =>
+          getRemoteTableName(op.table) === "eventos_reproducao" &&
+          SYNCED_REPRODUCTION_TYPES.has(String(op.record?.tipo)),
       );
-      const isAgendaClosureOnlyGesture =
-        mappedOps.length > 0 &&
-        ops.every(
-          (op) =>
-            getRemoteTableName(op.table) === "sanitario_agenda_closures_v2",
+      const isTerminalReproductionResult = (entry: SyncOperationResult) =>
+        entry.status === "REJECTED" ||
+        (hasReproductionOperation && entry.status === "CONFLICT") ||
+        genericPlan.rejected.some(
+          ({ result: rejectedResult }) =>
+            rejectedResult.op_id === entry.op_id &&
+            rejectedResult.status === "BLOCKED_DEPENDENCY",
         );
-      const hasAppliedResults = result.results.some(
-        (entry) => entry.status === "APPLIED" || entry.status === "APPLIED_ALTERED",
-      );
-      const rejectionReconciliationRequirements =
-        deriveReconciliationRequirements({
+      const isTerminalResult = (entry: SyncOperationResult) =>
+        isTerminalReproductionResult(entry) ||
+        (hasCommercialPurchase &&
+          (entry.status === "REJECTED" || entry.status === "CONFLICT"));
+      const hasRejected = hasCommercialPurchase
+        ? result.results.some(isTerminalResult)
+        : genericPlan.rejected.length > 0;
+
+      if (allApplied) {
+        const completedAt = new Date().toISOString();
+        const syncResult = result.results.some(
+          (entry) => entry.status === "APPLIED_ALTERED",
+        )
+          ? "APPLIED_ALTERED"
+          : "APPLIED";
+        const remoteTablesTouched = new Set(
+          ops.map((op) => getRemoteTableName(op.table)),
+        );
+        const refreshTables = new Set<string>();
+
+        // UPDATE advances the server CAS revision. Reconcile that snapshot even
+        // for APPLIED, so a drained obligation cannot leave the next intent stale.
+        if (
+          ops.some(
+            (op) =>
+              getRemoteTableName(op.table) === "animais" &&
+              op.action === "UPDATE",
+          )
+        ) {
+          refreshTables.add("animais");
+        }
+
+        if (hasCommercialPurchase) {
+          refreshTables.add("animais");
+          refreshTables.add("eventos");
+          refreshTables.add("eventos_comercial");
+        }
+
+        // Agenda pode ser gerada automaticamente por trigger ao inserir/atualizar animais.
+        if (remoteTablesTouched.has("animais")) {
+          refreshTables.add("agenda_itens");
+        }
+        // Conclusao de pendencia sanitária altera evento e agenda no servidor.
+        if (
+          remoteTablesTouched.has("eventos") ||
+          remoteTablesTouched.has("eventos_sanitario") ||
+          remoteTablesTouched.has("agenda_itens")
+        ) {
+          refreshTables.add("agenda_itens");
+          refreshTables.add("eventos");
+          refreshTables.add("eventos_sanitario");
+        }
+        if (
+          remoteTablesTouched.has("protocolos_sanitarios") ||
+          remoteTablesTouched.has("protocolos_sanitarios_itens") ||
+          remoteTablesTouched.has("fazenda_sanidade_config")
+        ) {
+          refreshTables.add("protocolos_sanitarios");
+          refreshTables.add("protocolos_sanitarios_itens");
+          refreshTables.add("agenda_itens");
+          refreshTables.add("fazenda_sanidade_config");
+        }
+        if (remoteTablesTouched.has("insumo_movimentacoes")) {
+          refreshTables.add("insumo_lotes");
+          refreshTables.add("insumo_movimentacoes");
+        }
+        for (const detailTable of STANDARD_EVENT_DETAIL_REMOTE_TABLES) {
+          if (remoteTablesTouched.has(detailTable)) {
+            refreshTables.add(detailTable);
+          }
+        }
+
+        const hasReproductionDetail = ops.some(
+          (op) =>
+            getRemoteTableName(op.table) === "eventos_reproducao" &&
+            op.action === "INSERT" &&
+            SYNCED_REPRODUCTION_TYPES.has(String(op.record?.tipo)),
+        );
+        const agendaV2Touched = Array.from(remoteTablesTouched).some((table) =>
+          SANITARIO_AGENDA_V2_REMOTE_TABLES.has(table),
+        );
+        const reconciliationRequirements = deriveReconciliationRequirements({
           fazendaId: gesture.fazenda_id,
-          factualTables: hasAgendaAlreadyCompletedRejection
-            ? ["agenda_itens", "eventos", "eventos_sanitario"]
-            : undefined,
-          agendaV2:
-            hasAgendaClosureConflictRejection ||
-            (isAgendaClosureOnlyGesture && hasAppliedResults),
+          factualTables: Array.from(refreshTables),
+          reproduction: hasReproductionDetail,
+          agendaV2: agendaV2Touched,
         });
 
-      let ackCommitted = false;
-      await db.transaction(
-        "rw",
-        [db.queue_gestures, db.sync_reconcile_obligations],
-        async () => {
-          const current = await db.queue_gestures.get(gesture.client_tx_id);
-          if (!current || current.status !== "SYNCING") {
-            return;
-          }
-          if (rejectionReconciliationRequirements.length > 0) {
-            await upsertReconciliationObligations(
-              rejectionReconciliationRequirements.map(entry => ({ ...entry,
-                origins: [{ client_tx_id: gesture.client_tx_id,
-                  client_op_ids: rejectedResults.map(result => result.op_id) }],
-              })),
+        let ackCommitted = false;
+        await db.transaction(
+          "rw",
+          [db.queue_gestures, db.queue_ops, db.sync_reconcile_obligations],
+          async () => {
+            const current = await loadSyncingGestureAndPersistRequirements(
+              gesture.client_tx_id,
+              reconciliationRequirements,
+              ops.map((op) => op.client_op_id),
+            );
+            if (!current) {
+              return;
+            }
+
+            await db.queue_ops.bulkDelete(
+              ops.map((operation) => operation.client_op_id),
+            );
+            const remaining = await db.queue_ops
+              .where("client_tx_id")
+              .equals(gesture.client_tx_id)
+              .toArray();
+            const hasRemainingRejected = remaining.some(
+              (operation) => operation.sync_state === "REJECTED",
+            );
+            const movementRejected = hasRejectedMovement(current);
+            await db.queue_gestures.update(gesture.client_tx_id, {
+              status:
+                remaining.length === 0
+                  ? movementRejected
+                    ? "REJECTED"
+                    : "DONE"
+                  : hasRemainingRejected
+                    ? "REJECTED"
+                    : "PENDING",
+              sync_result:
+                remaining.length === 0
+                  ? movementRejected
+                    ? "REJECTED"
+                    : syncResult
+                  : hasRemainingRejected
+                    ? "REJECTED"
+                    : undefined,
+              completed_at:
+                remaining.length === 0 || hasRemainingRejected
+                  ? completedAt
+                  : undefined,
+              last_error: hasRemainingRejected
+                ? "Gesture ainda possui operações rejeitadas"
+                : undefined,
+              operation_results: mergeOperationAudit(
+                current.operation_results ?? gesture.operation_results,
+                genericPlan.audits,
+              ),
+            });
+            ackCommitted = true;
+          },
+        );
+        await recordAcknowledgementIfCommitted(
+          ackCommitted,
+          gesture.client_tx_id,
+          gesture.fazenda_id,
+        );
+
+        if (refreshTables.size > 0) {
+          try {
+            const animalId = ackCommitted
+              ? selectPostAckAnimalObservation(
+                  gesture,
+                  queuedOps,
+                  result.results,
+                )
+              : null;
+            await pullDataForFarm(
+              gesture.fazenda_id,
+              Array.from(refreshTables),
+              {
+                mode: getReconciliationPullMode(gesture.fazenda_id),
+                ...(animalId
+                  ? {
+                      tableModes: { animais: "merge" as const },
+                      observations: { animais: { key: "id", ids: [animalId] } },
+                      requiredAnimalIds: [animalId],
+                    }
+                  : {}),
+              },
+            );
+          } catch (refreshError) {
+            console.warn(
+              `[sync-worker] post-sync pull failed for TX ${gesture.client_tx_id}:`,
+              refreshError,
             );
           }
-        await db.queue_gestures.update(gesture.client_tx_id, {
-          status: "REJECTED",
-          sync_result: "REJECTED",
-          completed_at: completedAt,
-          last_error: rejectionSummary || "TX rejected by sync-batch",
-        });
-        ackCommitted = true;
-      });
-      await recordAcknowledgementIfCommitted(ackCommitted, gesture.client_tx_id, gesture.fazenda_id);
-      console.warn(
-        `[sync-worker] TX ${gesture.client_tx_id} rejected:`,
-        rejectedResults.map((r) => ({
-          op_id: r.op_id,
-          reason_code: r.reason_code,
-          reason_message: r.reason_message,
-        })),
-      );
-      console.warn(
-        `[sync-worker] TX ${gesture.client_tx_id} rejected (json): ${JSON.stringify(
-          rejectedResults,
-        )}`,
-      );
+        }
+        if (hasReproductionDetail) {
+          try {
+            await pullReproductionDiagnosisState(gesture.fazenda_id, {
+              ignorePendingClientTxId: gesture.client_tx_id,
+            });
+          } catch (refreshError) {
+            console.warn(
+              `[sync-worker] post-sync reproduction pull failed for TX ${gesture.client_tx_id}:`,
+              refreshError,
+            );
+          }
+        }
+        if (agendaV2Touched) {
+          try {
+            await pullSanitarioAgendaV2(gesture.fazenda_id);
+          } catch (refreshError) {
+            console.warn(
+              `[sync-worker] post-sync agenda v2 pull failed for TX ${gesture.client_tx_id}:`,
+              refreshError,
+            );
+          }
+        }
 
-      for (const res of rejectedResults) {
-        const originalOp = ops.find((o) => o.client_op_id === res.op_id);
-        if (!originalOp) continue;
-
-        await db.queue_rejections.add({
-          client_tx_id: gesture.client_tx_id,
-          client_op_id: res.op_id,
-          fazenda_id: gesture.fazenda_id,
-          table: originalOp.table,
-          action: originalOp.action,
-          reason_code: res.reason_code,
-          reason_message: res.reason_message,
-          created_at: new Date().toISOString(),
+        await trackPilotMetric({
+          fazendaId: gesture.fazenda_id,
+          eventName: "sync_success",
+          status: "success",
+          entity: "sync-batch",
+          quantity: ops.length,
+          payload: {
+            tables: Array.from(remoteTablesTouched),
+            op_count: ops.length,
+          },
         });
+
+        if (import.meta.env.DEV) {
+          console.debug(
+            `[sync-worker] TX ${gesture.client_tx_id} synced successfully`,
+          );
+        }
+        return;
       }
 
-      const appliedResults = result.results.filter(
-        (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
-      );
+      if (
+        hasRejected &&
+        !hasCommercialPurchase &&
+        (await reconcileGenericOperationResults(
+          gesture,
+          ops,
+          result.results,
+          isTerminalBlockedDependency,
+        ))
+      ) {
+        await trackPilotMetric({
+          fazendaId: gesture.fazenda_id,
+          eventName: "sync_rejected",
+          status: "error",
+          entity: "sync-batch",
+          quantity: genericPlan.rejected.length,
+          reasonCode: genericPlan.rejected[0]?.result.reason_code,
+          payload: {
+            op_count: ops.length,
+            applied_count: genericPlan.applied.length,
+            rejected_count: genericPlan.rejected.length,
+            retryable_count:
+              genericPlan.retryable.length + genericPlan.missing.length,
+          },
+        });
+        return;
+      }
 
-      if (isAgendaClosureOnlyGesture && appliedResults.length > 0) {
-        const appliedOpIds = new Set(
-          appliedResults
-            .map((entry) => entry.op_id)
-            .filter((opId): opId is string => typeof opId === "string"),
-        );
-        const rejectedOpIds = new Set(
-          rejectedResults
-            .map((entry) => entry.op_id)
-            .filter((opId): opId is string => typeof opId === "string"),
-        );
-        const rejectedOps = ops.filter((op) =>
-          rejectedOpIds.has(op.client_op_id),
-        );
+      if (hasRejected) {
+        const completedAt = new Date().toISOString();
+        const rejectedResults = result.results.filter(isTerminalResult);
+        const rejectionSummary = rejectedResults
+          .map(
+            (r) => `${r.reason_code ?? "UNKNOWN"}: ${r.reason_message ?? "-"}`,
+          )
+          .join(" | ");
 
-        if (rejectedOps.length > 0) {
-          await db.transaction(
-            "rw",
-            [...getAffectedStores(rejectedOps)],
-            async () => {
-              for (const op of [...rejectedOps].reverse()) {
-                await rollbackOpLocal(op);
-              }
-            },
+        const hasAgendaAlreadyCompletedRejection = rejectedResults.some(
+          (r) => r.reason_code === AGENDA_ALREADY_COMPLETED_REASON,
+        );
+        const hasAgendaClosureConflictRejection = rejectedResults.some(
+          (r) => r.reason_code === SANITARIO_AGENDA_CLOSURE_CONFLICT_REASON,
+        );
+        const isAgendaClosureOnlyGesture =
+          mappedOps.length > 0 &&
+          ops.every(
+            (op) =>
+              getRemoteTableName(op.table) === "sanitario_agenda_closures_v2",
           );
+        const hasAppliedResults = result.results.some(
+          (entry) =>
+            entry.status === "APPLIED" || entry.status === "APPLIED_ALTERED",
+        );
+        const rejectionReconciliationRequirements =
+          deriveReconciliationRequirements({
+            fazendaId: gesture.fazenda_id,
+            factualTables: hasAgendaAlreadyCompletedRejection
+              ? ["agenda_itens", "eventos", "eventos_sanitario"]
+              : undefined,
+            agendaV2:
+              hasAgendaClosureConflictRejection ||
+              (isAgendaClosureOnlyGesture && hasAppliedResults),
+          });
+
+        let ackCommitted = false;
+        await db.transaction(
+          "rw",
+          [db.queue_gestures, db.sync_reconcile_obligations],
+          async () => {
+            const current = await db.queue_gestures.get(gesture.client_tx_id);
+            if (!current || current.status !== "SYNCING") {
+              return;
+            }
+            if (rejectionReconciliationRequirements.length > 0) {
+              await upsertReconciliationObligations(
+                rejectionReconciliationRequirements.map((entry) => ({
+                  ...entry,
+                  origins: [
+                    {
+                      client_tx_id: gesture.client_tx_id,
+                      client_op_ids: rejectedResults.map(
+                        (result) => result.op_id,
+                      ),
+                    },
+                  ],
+                })),
+              );
+            }
+            await db.queue_gestures.update(gesture.client_tx_id, {
+              status: "REJECTED",
+              sync_result: "REJECTED",
+              completed_at: completedAt,
+              last_error: rejectionSummary || "TX rejected by sync-batch",
+            });
+            ackCommitted = true;
+          },
+        );
+        await recordAcknowledgementIfCommitted(
+          ackCommitted,
+          gesture.client_tx_id,
+          gesture.fazenda_id,
+        );
+        console.warn(
+          `[sync-worker] TX ${gesture.client_tx_id} rejected:`,
+          rejectedResults.map((r) => ({
+            op_id: r.op_id,
+            reason_code: r.reason_code,
+            reason_message: r.reason_message,
+          })),
+        );
+        console.warn(
+          `[sync-worker] TX ${gesture.client_tx_id} rejected (json): ${JSON.stringify(
+            rejectedResults,
+          )}`,
+        );
+
+        for (const res of rejectedResults) {
+          const originalOp = ops.find((o) => o.client_op_id === res.op_id);
+          if (!originalOp) continue;
+
+          await db.queue_rejections.add({
+            client_tx_id: gesture.client_tx_id,
+            client_op_id: res.op_id,
+            fazenda_id: gesture.fazenda_id,
+            table: originalOp.table,
+            action: originalOp.action,
+            reason_code: res.reason_code,
+            reason_message: res.reason_message,
+            created_at: new Date().toISOString(),
+          });
         }
 
-        if (appliedOpIds.size > 0) {
-          await db.queue_ops.bulkDelete(Array.from(appliedOpIds));
-        }
+        const appliedResults = result.results.filter(
+          (r) => r.status === "APPLIED" || r.status === "APPLIED_ALTERED",
+        );
 
-        try {
-          await pullSanitarioAgendaV2(gesture.fazenda_id);
-        } catch (refreshError) {
+        if (isAgendaClosureOnlyGesture && appliedResults.length > 0) {
+          const appliedOpIds = new Set(
+            appliedResults
+              .map((entry) => entry.op_id)
+              .filter((opId): opId is string => typeof opId === "string"),
+          );
+          const rejectedOpIds = new Set(
+            rejectedResults
+              .map((entry) => entry.op_id)
+              .filter((opId): opId is string => typeof opId === "string"),
+          );
+          const rejectedOps = ops.filter((op) =>
+            rejectedOpIds.has(op.client_op_id),
+          );
+
+          if (rejectedOps.length > 0) {
+            await db.transaction(
+              "rw",
+              [...getAffectedStores(rejectedOps)],
+              async () => {
+                for (const op of [...rejectedOps].reverse()) {
+                  await rollbackOpLocal(op);
+                }
+              },
+            );
+          }
+
+          if (appliedOpIds.size > 0) {
+            await db.queue_ops.bulkDelete(Array.from(appliedOpIds));
+          }
+
+          try {
+            await pullSanitarioAgendaV2(gesture.fazenda_id);
+          } catch (refreshError) {
+            console.warn(
+              `[sync-worker] partial agenda v2 reconciliation pull failed for TX ${gesture.client_tx_id}:`,
+              refreshError,
+            );
+          }
+
           console.warn(
-            `[sync-worker] partial agenda v2 reconciliation pull failed for TX ${gesture.client_tx_id}:`,
-            refreshError,
+            `[sync-worker] TX ${gesture.client_tx_id} had agenda closure partial success`,
           );
+          await trackPilotMetric({
+            fazendaId: gesture.fazenda_id,
+            eventName: "sync_rejected",
+            status: "error",
+            entity: "sync-batch",
+            quantity: rejectedResults.length,
+            reasonCode: rejectedResults[0]?.reason_code,
+            payload: {
+              op_count: ops.length,
+              applied_count: appliedOpIds.size,
+              rejected_count: rejectedResults.length,
+              tables: ["sanitario_agenda_closures_v2"],
+              reasons: rejectedResults.map(
+                (result) => result.reason_code ?? "UNKNOWN",
+              ),
+            },
+          });
+          return;
+        }
+
+        if (!hasCommercialPurchase) {
+          await db.transaction("rw", [...getAffectedStores(ops)], async () => {
+            for (const op of [...ops].reverse()) {
+              await rollbackOpLocal(op);
+            }
+          });
+        }
+
+        if (
+          rejectedResults.some(
+            (result) => result.reason_code === AGENDA_ALREADY_COMPLETED_REASON,
+          )
+        ) {
+          try {
+            await pullDataForFarm(
+              gesture.fazenda_id,
+              ["agenda_itens", "eventos", "eventos_sanitario"],
+              { mode: getReconciliationPullMode(gesture.fazenda_id) },
+            );
+          } catch (refreshError) {
+            console.warn(
+              `[sync-worker] reconciliation pull failed for TX ${gesture.client_tx_id}:`,
+              refreshError,
+            );
+          }
+        }
+        if (
+          rejectedResults.some(
+            (result) =>
+              result.reason_code === SANITARIO_AGENDA_CLOSURE_CONFLICT_REASON,
+          )
+        ) {
+          try {
+            await pullSanitarioAgendaV2(gesture.fazenda_id);
+          } catch (refreshError) {
+            console.warn(
+              `[sync-worker] agenda v2 conflict reconciliation pull failed for TX ${gesture.client_tx_id}:`,
+              refreshError,
+            );
+          }
         }
 
         console.warn(
-          `[sync-worker] TX ${gesture.client_tx_id} had agenda closure partial success`,
+          `[sync-worker] TX ${gesture.client_tx_id} had rejections (${hasCommercialPurchase ? "local purchase preserved for conflict resolution" : "rolled back locally"})`,
         );
         await trackPilotMetric({
           fazendaId: gesture.fazenda_id,
@@ -2633,9 +2984,6 @@ export async function processGesture(gesture: Gesture) {
           reasonCode: rejectedResults[0]?.reason_code,
           payload: {
             op_count: ops.length,
-            applied_count: appliedOpIds.size,
-            rejected_count: rejectedResults.length,
-            tables: ["sanitario_agenda_closures_v2"],
             reasons: rejectedResults.map(
               (result) => result.reason_code ?? "UNKNOWN",
             ),
@@ -2644,193 +2992,142 @@ export async function processGesture(gesture: Gesture) {
         return;
       }
 
-      if (!hasCommercialPurchase) {
-        await db.transaction("rw", [...getAffectedStores(ops)], async () => {
-          for (const op of [...ops].reverse()) {
-            await rollbackOpLocal(op);
-          }
-        });
-      }
-
-      if (
-        rejectedResults.some(
-          (result) => result.reason_code === AGENDA_ALREADY_COMPLETED_REASON,
-        )
-      ) {
-        try {
-          await pullDataForFarm(
-            gesture.fazenda_id,
-            ["agenda_itens", "eventos", "eventos_sanitario"],
-            { mode: getReconciliationPullMode(gesture.fazenda_id) },
-          );
-        } catch (refreshError) {
-          console.warn(
-            `[sync-worker] reconciliation pull failed for TX ${gesture.client_tx_id}:`,
-            refreshError,
-          );
-        }
-      }
-      if (
-        rejectedResults.some(
-          (result) =>
-            result.reason_code === SANITARIO_AGENDA_CLOSURE_CONFLICT_REASON,
-        )
-      ) {
-        try {
-          await pullSanitarioAgendaV2(gesture.fazenda_id);
-        } catch (refreshError) {
-          console.warn(
-            `[sync-worker] agenda v2 conflict reconciliation pull failed for TX ${gesture.client_tx_id}:`,
-            refreshError,
-          );
-        }
-      }
-
-      console.warn(
-        `[sync-worker] TX ${gesture.client_tx_id} had rejections (${hasCommercialPurchase ? "local purchase preserved for conflict resolution" : "rolled back locally"})`,
+      throw new Error(
+        "Invalid sync-batch response: no APPLIED or REJECTED statuses",
       );
-      await trackPilotMetric({
-        fazendaId: gesture.fazenda_id,
-        eventName: "sync_rejected",
-        status: "error",
-        entity: "sync-batch",
-        quantity: rejectedResults.length,
-        reasonCode: rejectedResults[0]?.reason_code,
-        payload: {
-          op_count: ops.length,
-          reasons: rejectedResults.map(
-            (result) => result.reason_code ?? "UNKNOWN",
-          ),
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e : new Error(String(e));
+
+      let retryExhausted = false;
+      let observedRetryCount = gesture.retry_count ?? 0;
+      const isStale = await db.transaction(
+        "rw",
+        [db.queue_gestures],
+        // fallow-ignore-next-line complexity
+        async () => {
+          const current = await db.queue_gestures.get(gesture.client_tx_id);
+          if (
+            !current ||
+            current.status === "DONE" ||
+            current.status === "REJECTED" ||
+            current.status !== "SYNCING"
+          ) {
+            return true;
+          }
+
+          const retryCount = current.retry_count ?? gesture.retry_count ?? 0;
+          observedRetryCount = retryCount;
+
+          if (isNonRetryableSyncError(error.message)) {
+            await db.queue_gestures.update(gesture.client_tx_id, {
+              status: "ERROR",
+              sync_result: "ERROR",
+              completed_at: new Date().toISOString(),
+              last_error: error.message,
+            });
+            return false;
+          }
+
+          if (isAuthSyncError(error.message)) {
+            // Terminal until a valid session exists: local work is preserved and
+            // recovery replays the same persisted identities after re-auth.
+            await db.queue_gestures.update(gesture.client_tx_id, {
+              status: "ERROR",
+              sync_result: "ERROR",
+              completed_at: new Date().toISOString(),
+              last_error: error.message,
+            });
+            return false;
+          }
+
+          const isTransient = isTransientSyncError(error);
+          const isRateLimited =
+            error instanceof HttpSyncError && error.status === 429;
+
+          if (isTransient && (retryCount < MAX_RETRIES || isRateLimited)) {
+            const nextRetryCount = retryCount + 1;
+            observedRetryCount = nextRetryCount;
+            const nextAttemptAt = calculateGenericRetryAt({
+              retryCount: nextRetryCount,
+              retryAfterAt:
+                error instanceof HttpSyncError ? error.retryAfterAt : undefined,
+            });
+            await db.queue_gestures.update(gesture.client_tx_id, {
+              status: "PENDING",
+              sync_result: undefined,
+              completed_at: undefined,
+              retry_count: nextRetryCount,
+              next_attempt_at: new Date(nextAttemptAt).toISOString(),
+              last_error: error.message,
+            });
+            return false;
+          }
+
+          if (!isTransient && retryCount < MAX_RETRIES) {
+            observedRetryCount = retryCount + 1;
+            await db.queue_gestures.update(gesture.client_tx_id, {
+              status: "PENDING",
+              sync_result: undefined,
+              completed_at: undefined,
+              retry_count: retryCount + 1,
+              last_error: error.message,
+            });
+            return false;
+          }
+
+          retryExhausted = true;
+          await db.queue_gestures.update(gesture.client_tx_id, {
+            status: "ERROR",
+            sync_result: "ERROR",
+            completed_at: new Date().toISOString(),
+            last_error: `Max retries: ${error.message}`,
+          });
+          return false;
+        },
+      );
+
+      if (isStale) {
+        return;
+      }
+      const failure = sanitizeDiagnosticError(e, "SYNC_FAILURE");
+      const failureCode = retryExhausted ? "RETRY_EXHAUSTED" : failure.code;
+      await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
+        last_failure: {
+          code: failureCode,
+          cause_code: failure.code,
+          observed_at: new Date().toISOString(),
+          retry_count: observedRetryCount,
         },
       });
-      return;
-    }
+      if (isAuthSyncError(error.message)) {
+        await recordGestureDiagnostic(
+          gesture.client_tx_id,
+          gesture.fazenda_id,
+          {
+            blocked: {
+              code: "AUTH_UNAVAILABLE",
+              observed_at: new Date().toISOString(),
+            },
+          },
+        );
+      }
 
-    throw new Error(
-      "Invalid sync-batch response: no APPLIED or REJECTED statuses",
-    );
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e : new Error(String(e));
-
-    let retryExhausted = false;
-    let observedRetryCount = gesture.retry_count ?? 0;
-    const isStale = await db.transaction("rw", [db.queue_gestures],
-      // fallow-ignore-next-line complexity
-      async () => {
-        const current = await db.queue_gestures.get(gesture.client_tx_id);
-        if (
-          !current ||
-          current.status === "DONE" ||
-          current.status === "REJECTED" ||
-          current.status !== "SYNCING"
-        ) {
-          return true;
-        }
-
-        const retryCount = current.retry_count ?? gesture.retry_count ?? 0;
-        observedRetryCount = retryCount;
-
-        if (isNonRetryableSyncError(error.message)) {
-          await db.queue_gestures.update(gesture.client_tx_id, {
-            status: "ERROR",
-            sync_result: "ERROR",
-            completed_at: new Date().toISOString(),
-            last_error: error.message,
-          });
-          return false;
-        }
-
-        if (isAuthSyncError(error.message)) {
-          // Terminal until a valid session exists: local work is preserved and
-          // recovery replays the same persisted identities after re-auth.
-          await db.queue_gestures.update(gesture.client_tx_id, {
-            status: "ERROR",
-            sync_result: "ERROR",
-            completed_at: new Date().toISOString(),
-            last_error: error.message,
-          });
-          return false;
-        }
-
-        const isTransient = isTransientSyncError(error);
-        const isRateLimited =
-          error instanceof HttpSyncError && error.status === 429;
-
-        if (isTransient && (retryCount < MAX_RETRIES || isRateLimited)) {
-          const nextRetryCount = retryCount + 1;
-          observedRetryCount = nextRetryCount;
-          const nextAttemptAt = calculateGenericRetryAt({
-            retryCount: nextRetryCount,
-            retryAfterAt:
-              error instanceof HttpSyncError
-                ? error.retryAfterAt
-                : undefined,
-          });
-          await db.queue_gestures.update(gesture.client_tx_id, {
-            status: "PENDING",
-            sync_result: undefined,
-            completed_at: undefined,
-            retry_count: nextRetryCount,
-            next_attempt_at: new Date(nextAttemptAt).toISOString(),
-            last_error: error.message,
-          });
-          return false;
-        }
-
-        if (!isTransient && retryCount < MAX_RETRIES) {
-          observedRetryCount = retryCount + 1;
-          await db.queue_gestures.update(gesture.client_tx_id, {
-            status: "PENDING",
-            sync_result: undefined,
-            completed_at: undefined,
-            retry_count: retryCount + 1,
-            last_error: error.message,
-          });
-          return false;
-        }
-
-        retryExhausted = true;
-        await db.queue_gestures.update(gesture.client_tx_id, {
-          status: "ERROR",
-          sync_result: "ERROR",
-          completed_at: new Date().toISOString(),
-          last_error: `Max retries: ${error.message}`,
-        });
-        return false;
-      },
-    );
-
-    if (isStale) {
-      return;
-    }
-    const failure = sanitizeDiagnosticError(e, "SYNC_FAILURE");
-    const failureCode = retryExhausted ? "RETRY_EXHAUSTED" : failure.code;
-    await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
-      last_failure: { code: failureCode, cause_code: failure.code,
-        observed_at: new Date().toISOString(), retry_count: observedRetryCount },
-    });
-    if (isAuthSyncError(error.message)) {
-      await recordGestureDiagnostic(gesture.client_tx_id, gesture.fazenda_id, {
-        blocked: { code: "AUTH_UNAVAILABLE", observed_at: new Date().toISOString() },
+      await trackPilotMetric({
+        fazendaId: gesture.fazenda_id,
+        eventName: "sync_error",
+        status: "error",
+        entity: "sync-batch",
+        quantity: ops.length,
+        reasonCode: failureCode,
+        payload: {
+          op_count: ops.length,
+          client_tx_id: gesture.client_tx_id,
+          client_op_ids: ops.map((op) => op.client_op_id),
+          cause_code: failure.code,
+          retry_count: observedRetryCount,
+        },
       });
     }
-
-    await trackPilotMetric({
-      fazendaId: gesture.fazenda_id,
-      eventName: "sync_error",
-      status: "error",
-      entity: "sync-batch",
-      quantity: ops.length,
-      reasonCode: failureCode,
-      payload: {
-        op_count: ops.length,
-        client_tx_id: gesture.client_tx_id,
-        client_op_ids: ops.map(op => op.client_op_id),
-        cause_code: failure.code,
-        retry_count: observedRetryCount,
-      },
-    });
-  }
   });
 }
 

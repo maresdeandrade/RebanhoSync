@@ -9,7 +9,10 @@ import type {
   SanitaryExecutedHistoryEventV2,
   SanitaryExecutedHistoryV2,
 } from "@/lib/sanitario/checks/sanitaryProtocolPrecheckV2";
-import { isSanitaryClassSchemeV2, sanitaryClassFieldSourcesV2 } from "../agenda/sanitaryClassSchemeV2";
+import {
+  isSanitaryClassSchemeV2,
+  sanitaryClassFieldSourcesV2,
+} from "../agenda/sanitaryClassSchemeV2";
 
 type BuildSanitaryExecutedHistoryV2Input = {
   events: Evento[];
@@ -85,20 +88,29 @@ function resolveWithdrawalStatus(detail: EventoSanitario) {
   if (detail.carencia_carne_ate || detail.carencia_leite_ate)
     return "generated";
   const withdrawal = readRecord(detail.payload.withdrawal);
-  return readString(withdrawal.reason) === "missing_explicit_rule"
+  const results=readRecord(withdrawal.rule_snapshot).results;
+  return (Array.isArray(results) && results.some(result=>["unknown","ambiguous"].includes(String(readRecord(result).state)))) || readString(withdrawal.reason) === "missing_explicit_rule"
     ? "without_rule"
     : "not_applicable";
 }
 
 function classSchemeCoverage(detail: EventoSanitario): string | null {
   const snapshot = readRecord(detail.produto_snapshot);
-  if (snapshot.executedProductId !== detail.produto_veterinario_id || !Array.isArray(snapshot.fieldEvidence)) return null;
+  if (
+    snapshot.executedProductId !== detail.produto_veterinario_id ||
+    !Array.isArray(snapshot.fieldEvidence)
+  )
+    return null;
   const evidence = snapshot.fieldEvidence.map(readRecord).find((field) => {
     const link = readRecord(field.productSource);
-    return field.fieldKey === "operational_window" && field.coverageStatus === "covers" &&
+    return (
+      field.fieldKey === "operational_window" &&
+      field.coverageStatus === "covers" &&
       field.reason === "class_scheme_product_compatibility_verified" &&
       link.productId === detail.produto_veterinario_id &&
-      sanitaryClassFieldSourcesV2([field.sourceRef], "operational_window").length === 1;
+      sanitaryClassFieldSourcesV2([field.sourceRef], "operational_window")
+        .length === 1
+    );
   });
   return readString(evidence?.sourceCoverageId);
 }
@@ -190,7 +202,9 @@ export function buildSanitaryExecutedHistoryV2(
     if (
       event.fazenda_id !== input.fazendaId ||
       event.dominio !== "sanitario" ||
-      event.deleted_at
+      event.deleted_at ||
+      (event.sanitario_v3_confirmation != null &&
+        event.sanitario_v3_confirmation !== "confirmed")
     ) {
       continue;
     }
@@ -219,7 +233,10 @@ export function buildSanitaryExecutedHistoryV2(
             readRecord(detail.produto_snapshot).product_class,
             event.payload.product_class,
             isSanitaryClassSchemeV2(item)
-              ? readRecord(readRecord(detail.produto_snapshot).executedProductSnapshot).classe : null,
+              ? readRecord(
+                  readRecord(detail.produto_snapshot).executedProductSnapshot,
+                ).classe
+              : null,
           ) ?? (isSanitaryClassSchemeV2(item) ? null : item.productClass),
         productId: detail.produto_veterinario_id ?? null,
         classSchemeCoverageId: classSchemeCoverage(detail),
@@ -239,7 +256,7 @@ export function buildSanitaryExecutedHistoryV2(
           readString(
             detail.payload.external_origin,
             event.payload.external_origin,
-          ) ?? (event.source_task_id ? "agenda sanitária" : null),
+          ) ?? (event.source_sanitario_agenda_v2_id || event.source_task_id ? "agenda sanitária" : null),
         executedAt: event.occurred_at,
         source:
           readString(

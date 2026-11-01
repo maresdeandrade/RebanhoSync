@@ -52,13 +52,20 @@ describe("Sync Sanitario v2 expand foundation", () => {
     ).toBe("");
   });
 
-  it("mantém PT409 nas três definições finais autoritativas sem 40001", () => {
+  it("mantém PT409 na edição/fechamento e reconhece execução V3 por obrigação sem CAS global", () => {
     const authoritative = readAuthoritativeFunctions();
     expect(authoritative.size).toBe(3);
-    for (const definition of authoritative.values()) {
-      expect(definition).toContain(
-        "'SANITARIO_AGENDA_REVISION_CONFLICT current_revision=%', v_agenda.revision using errcode = 'PT409'",
-      );
+    for (const [name, definition] of authoritative) {
+      if (name === "internal_sanitario_sync_v2_apply_factual_core") {
+        expect(definition).not.toContain("SANITARIO_AGENDA_REVISION_CONFLICT");
+        expect(definition).not.toMatch(/v_agenda\.revision\s*(?:<>|!=|=)\s*expected_revision/);
+        expect(definition).toContain("public.internal_sanitario_claim_atendimento");
+        expect(definition).toContain("SANITARIO_CLAIM_ATOMICITY_FAILED");
+      } else {
+        expect(definition).toContain(
+          "'SANITARIO_AGENDA_REVISION_CONFLICT current_revision=%', v_agenda.revision using errcode = 'PT409'",
+        );
+      }
       expect(definition).not.toContain("errcode = '40001'");
     }
   });

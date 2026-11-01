@@ -38,8 +38,9 @@ const context: SanitarioSyncV2Context = {
 
 const enabledGate: SanitarioSyncV2Gate = {
   enabled: true,
-  minimum_contract_version: 2,
-  maximum_contract_version: 2,
+  foundation_state: "ready",
+  minimum_contract_version: 3,
+  maximum_contract_version: 3,
   allowed_user_ids: [],
   allowed_client_ids: [],
   rollout_percentage: 100,
@@ -51,7 +52,7 @@ function createAgendaOperation(overrides: Record<string, unknown> = {}) {
   return {
     domain: "sanitario_v2",
     command: "create_agenda",
-    contract_version: 2,
+    contract_version: 3,
     client_tx_id: ids.tx,
     client_op_id: ids.op,
     domain_op_id: ids.domainOp,
@@ -66,18 +67,20 @@ function createAgendaOperation(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function externalHistoryOperation(input: {
-  source?: "external_declared" | "external_documented";
-  evidenceReference?: string | null;
-  evidenceCoveredFields?: string[];
-  event?: Record<string, unknown>;
-  detail?: Record<string, unknown>;
-} = {}) {
+function externalHistoryOperation(
+  input: {
+    source?: "external_declared" | "external_documented";
+    evidenceReference?: string | null;
+    evidenceCoveredFields?: string[];
+    event?: Record<string, unknown>;
+    detail?: Record<string, unknown>;
+  } = {},
+) {
   const source = input.source ?? "external_documented";
   return {
     domain: "sanitario_v2",
     command: "apply_factual_core",
-    contract_version: 2,
+    contract_version: 3,
     client_tx_id: ids.tx,
     client_op_id: ids.op,
     domain_op_id: ids.domainOp,
@@ -91,12 +94,13 @@ function externalHistoryOperation(input: {
         corrige_evento_id: null,
         payload: {
           entry_history_source: source,
-          evidence_class: source === "external_documented"
-            ? "documented"
-            : "declared",
-          evidence_reference: input.evidenceReference ??
+          evidence_class:
+            source === "external_documented" ? "documented" : "declared",
+          evidence_reference:
+            input.evidenceReference ??
             (source === "external_documented" ? "certificado-b19-2024" : null),
-          evidence_covered_fields: input.evidenceCoveredFields ??
+          evidence_covered_fields:
+            input.evidenceCoveredFields ??
             (source === "external_documented"
               ? ["protocol_item_completion"]
               : []),
@@ -124,15 +128,17 @@ function externalHistoryOperation(input: {
   };
 }
 
-function correctionOperation(overrides: {
-  event?: Record<string, unknown>;
-  detail?: Record<string, unknown>;
-  correction?: Record<string, unknown>;
-} = {}) {
+function correctionOperation(
+  overrides: {
+    event?: Record<string, unknown>;
+    detail?: Record<string, unknown>;
+    correction?: Record<string, unknown>;
+  } = {},
+) {
   return {
     domain: "sanitario_v2",
     command: "apply_factual_core",
-    contract_version: 2,
+    contract_version: 3,
     client_tx_id: ids.tx,
     client_op_id: ids.op,
     domain_op_id: ids.domainOp,
@@ -208,7 +214,8 @@ function dependencies(options?: {
     loadGate: vi.fn(async () => {
       options?.order?.push("gate");
       return {
-        data: options && "gate" in options ? options.gate ?? null : enabledGate,
+        data:
+          options && "gate" in options ? (options.gate ?? null) : enabledGate,
         error: options?.gateError ?? null,
       };
     }),
@@ -216,37 +223,177 @@ function dependencies(options?: {
       reasonCode: options?.evidenceReason ?? null,
       error: options?.evidenceError ?? null,
     })),
-    callRpc: vi.fn(async () => {
+    callRpc: vi.fn(async (call) => {
+      if (call.args.receipt_only) {
+        options?.order?.push("receipt");
+        return {
+          data: { outcome: "absent" },
+          error: options?.rpcError ?? null,
+        };
+      }
       options?.order?.push("rpc");
       return {
-        data: options && "rpcData" in options ? options.rpcData : {
-          agenda_id: ids.agenda,
-          status: "programada",
-          revision: 0,
-          replayed: false,
-        },
+        data:
+          options && "rpcData" in options
+            ? options.rpcData
+            : {
+                agenda_id: ids.agenda,
+                status: "programada",
+                revision: 0,
+                replayed: false,
+              },
         error: options?.rpcError ?? null,
       };
     }),
   };
 }
 
+describe("V3 admission and receipt recovery", () => {
+  it.each([
+    ["create_agenda", ids.agenda],
+    ["replace_agenda_animals", ids.agenda],
+    ["apply_factual_core", ids.event],
+    ["close_agenda", ids.closure],
+    ["set_automation_plan", ids.farm],
+    ["reschedule_agenda", ids.agenda],
+  ] as const)(
+    "receipt keeps the canonical entity of %s",
+    async (command, entity) => {
+      const deps = dependencies();
+      deps.callRpc = vi.fn(async () => ({
+        data: {
+          outcome: "found",
+          canonical_result: {
+            agenda_id: ids.agenda,
+            evento_id: ids.event,
+            closure_id: ids.closure,
+            fazenda_id: ids.farm,
+          },
+        },
+        error: null,
+      }));
+      const factual = externalHistoryOperation();
+      const op =
+        command === "apply_factual_core"
+          ? factual
+          : command === "create_agenda"
+            ? createAgendaOperation()
+            : {
+                ...createAgendaOperation(),
+                command,
+                expected_revision: 0,
+                payload:
+                  command === "close_agenda"
+                    ? {
+                        closure: {
+                          id: ids.closure,
+                          agenda_id: ids.agenda,
+                          closure_type: "cancelled",
+                        },
+                      }
+                    : command === "set_automation_plan"
+                      ? {
+                          plan: {
+                            schemaVersion: 2,
+                            revision: 1,
+                            enabled: false,
+                            rules: [],
+                            context: {},
+                          },
+                          expected_plan: null,
+                        }
+                      : command === "reschedule_agenda"
+                        ? {
+                            agenda_id: ids.agenda,
+                            data_programada: "2026-11-01",
+                          }
+                        : { agenda_id: ids.agenda, animal_ids: [ids.animal] },
+              };
+      expect(
+        (await executeSanitarioSyncV2Operation(op, context, deps))
+          .canonical_entity_id,
+      ).toBe(entity);
+    },
+  );
+  it("format3_rejected_by_enabled_gate_2_2", async () => {
+    const deps = dependencies({
+      gate: {
+        ...enabledGate,
+        minimum_contract_version: 2,
+        maximum_contract_version: 2,
+      },
+    });
+    const result = await executeSanitarioSyncV2Operation(
+      createAgendaOperation(),
+      context,
+      deps,
+    );
+    expect(result).toMatchObject({
+      status: "REJECTED",
+      reason_code: "SANITARIO_CLIENT_CONTRACT_OUTDATED",
+    });
+    expect(deps.callRpc).toHaveBeenCalledTimes(1);
+    expect(deps.callRpc).toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: expect.objectContaining({ receipt_only: true }),
+      }),
+    );
+  });
+  it("receipt_lookup_precedes_new_product_validation", async () => {
+    const deps = dependencies({
+      gate: null,
+      evidenceReason: "INVALID_NEW_PRODUCT",
+    });
+    deps.callRpc = vi.fn(async () => ({
+      data: { outcome: "found", canonical_result: { evento_id: ids.event } },
+      error: null,
+    }));
+    const result = await executeSanitarioSyncV2Operation(
+      externalHistoryOperation(),
+      context,
+      deps,
+    );
+    expect(result.status).toBe("APPLIED");
+    expect(deps.loadGate).not.toHaveBeenCalled();
+    expect(deps.validateProductEvidence).not.toHaveBeenCalled();
+    expect(deps.callRpc).toHaveBeenCalledWith(
+      expect.objectContaining({
+        functionName: "internal_sanitario_admit_v3",
+        args: expect.objectContaining({ receipt_only: true }),
+      }),
+    );
+  });
+  it("old_format_never_falls_back", async () => {
+    const deps = dependencies();
+    deps.callRpc = vi.fn(async () => ({
+      data: { outcome: "absent" },
+      error: null,
+    }));
+    expect(
+      (
+        await executeSanitarioSyncV2Operation(
+          createAgendaOperation({ contract_version: 2 }),
+          context,
+          deps,
+        )
+      ).reason_code,
+    ).toBe("SANITARIO_CLIENT_CONTRACT_OUTDATED");
+    expect(deps.callRpc).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("sync-batch sanitario v2: envelope e autorização", () => {
   it("valida fazenda, client e transação do envelope confiável", () => {
     expect(validateSanitarioSyncV2Envelope(context)).toBeNull();
     expect(
       validateSanitarioSyncV2Envelope({ ...context, fazendaId: "invalid" }),
-    ).toBe(
-      "SANITARIO_FAZENDA_CONTEXT_INVALID",
-    );
+    ).toBe("SANITARIO_FAZENDA_CONTEXT_INVALID");
     expect(validateSanitarioSyncV2Envelope({ ...context, clientId: "" })).toBe(
       "SANITARIO_CLIENT_CONTEXT_INVALID",
     );
     expect(
       validateSanitarioSyncV2Envelope({ ...context, clientTxId: "invalid" }),
-    ).toBe(
-      "SANITARIO_CLIENT_TX_CONTEXT_INVALID",
-    );
+    ).toBe("SANITARIO_CLIENT_TX_CONTEXT_INVALID");
   });
 
   it("rejeita comando desconhecido antes de consultar gate ou RPC", async () => {
@@ -262,7 +409,11 @@ describe("sync-batch sanitario v2: envelope e autorização", () => {
       reason_code: "SANITARIO_COMMAND_NOT_ALLOWLISTED",
     });
     expect(deps.loadGate).not.toHaveBeenCalled();
-    expect(deps.callRpc).not.toHaveBeenCalled();
+    expect(deps.callRpc).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: expect.objectContaining({ receipt_only: false }),
+      }),
+    );
   });
 
   it("rejeita ator informado e divergência de fazenda no payload", () => {
@@ -322,15 +473,19 @@ describe("sync-batch sanitario v2: envelope e autorização", () => {
         status: "REJECTED",
         reason_code: "SANITARIO_SYNC_DISABLED",
       });
-      expect(deps.callRpc).not.toHaveBeenCalled();
+      expect(deps.callRpc).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          args: expect.objectContaining({ receipt_only: false }),
+        }),
+      );
     }
   });
 
-  it("consulta gate antes de validar a faixa contratual e antes da RPC", async () => {
+  it("rejeita formato não suportado após lookup e antes de nova escrita", async () => {
     const order: string[] = [];
     const deps = dependencies({ order });
     const result = await executeSanitarioSyncV2Operation(
-      createAgendaOperation({ contract_version: 3 }),
+      createAgendaOperation({ contract_version: 4 }),
       context,
       deps,
     );
@@ -339,7 +494,7 @@ describe("sync-batch sanitario v2: envelope e autorização", () => {
       status: "REJECTED",
       reason_code: "SANITARIO_CLIENT_CONTRACT_OUTDATED",
     });
-    expect(order).toEqual(["gate"]);
+    expect(order).toEqual(["receipt"]);
   });
 
   it("exige expected_revision nos comandos que alteram agenda existente", async () => {
@@ -359,7 +514,11 @@ describe("sync-batch sanitario v2: envelope e autorização", () => {
       reason_code: "SANITARIO_EXPECTED_REVISION_REQUIRED",
     });
     expect(deps.loadGate).toHaveBeenCalledOnce();
-    expect(deps.callRpc).not.toHaveBeenCalled();
+    expect(deps.callRpc).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: expect.objectContaining({ receipt_only: false }),
+      }),
+    );
   });
 
   it("mantém gate fail-closed antes dos limites do payload", async () => {
@@ -376,7 +535,11 @@ describe("sync-batch sanitario v2: envelope e autorização", () => {
       status: "REJECTED",
       reason_code: "SANITARIO_SYNC_DISABLED",
     });
-    expect(deps.callRpc).not.toHaveBeenCalled();
+    expect(deps.callRpc).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: expect.objectContaining({ receipt_only: false }),
+      }),
+    );
   });
 });
 
@@ -395,7 +558,7 @@ describe("sync-batch sanitario v2: RPC e resultado canônico", () => {
       args: expect.objectContaining({
         actor_user_id: ids.actor,
         fazenda_id: ids.farm,
-        contract_version: 2,
+        contract_version: 3,
         client_op_id: ids.op,
         domain_op_id: ids.domainOp,
         payload: expect.objectContaining({
@@ -613,18 +776,19 @@ describe("sync-batch sanitario v2: histórico externo/documental", () => {
     expect(documented.ok).toBe(true);
     expect(declared.ok).toBe(true);
     if (documented.ok) {
-      expect(buildSanitarioSyncV2RpcCall(documented.operation, context))
-        .toMatchObject({
-          functionName: "internal_sanitario_sync_v2_apply_factual_core",
-          args: {
-            expected_revision: null,
-            event_payload: {
-              natureza: "standalone_fact",
-              animal_id: ids.animal,
-            },
-            event_animals: [{ id: ids.relation, animal_id: ids.animal }],
+      expect(
+        buildSanitarioSyncV2RpcCall(documented.operation, context),
+      ).toMatchObject({
+        functionName: "internal_sanitario_sync_v2_apply_factual_core",
+        args: {
+          expected_revision: null,
+          event_payload: {
+            natureza: "standalone_fact",
+            animal_id: ids.animal,
           },
-        });
+          event_animals: [{ id: ids.relation, animal_id: ids.animal }],
+        },
+      });
     }
   });
 
@@ -657,25 +821,26 @@ describe("sync-batch sanitario v2: histórico externo/documental", () => {
 
     expect(validation.ok).toBe(true);
     if (!validation.ok) return;
-    expect(buildSanitarioSyncV2RpcCall(validation.operation, context).args)
-      .toMatchObject({
-        event_payload: {
-          payload: {
-            evidence_reference: "certificado-b19-revisao-2",
-            evidence_covered_fields: [
-              "protocol_item_completion",
-              "product_class",
-            ],
-            protocol_snapshot: { id: "protocol-b19", version: 3 },
-          },
+    expect(
+      buildSanitarioSyncV2RpcCall(validation.operation, context).args,
+    ).toMatchObject({
+      event_payload: {
+        payload: {
+          evidence_reference: "certificado-b19-revisao-2",
+          evidence_covered_fields: [
+            "protocol_item_completion",
+            "product_class",
+          ],
+          protocol_snapshot: { id: "protocol-b19", version: 3 },
         },
-        detail_payload: {
-          produto_snapshot: {
-            product_class: "vacina_b19",
-            evidence_covered_fields: ["product_class"],
-          },
+      },
+      detail_payload: {
+        produto_snapshot: {
+          product_class: "vacina_b19",
+          evidence_covered_fields: ["product_class"],
         },
-      });
+      },
+    });
   });
 
   it("rejeita documentado sem referência antes da RPC", async () => {
@@ -690,7 +855,11 @@ describe("sync-batch sanitario v2: histórico externo/documental", () => {
       status: "REJECTED",
       reason_code: "SANITARIO_EXTERNAL_DOCUMENT_REFERENCE_REQUIRED",
     });
-    expect(deps.callRpc).not.toHaveBeenCalled();
+    expect(deps.callRpc).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: expect.objectContaining({ receipt_only: false }),
+      }),
+    );
   });
 
   it("rejeita evidência técnica inválida antes da RPC sem promover falha parcial a sucesso", async () => {
@@ -708,7 +877,11 @@ describe("sync-batch sanitario v2: histórico externo/documental", () => {
       retryable: false,
       reason_code: "SANITARIO_PRODUCT_FIELD_COVERAGE_MISMATCH",
     });
-    expect(deps.callRpc).not.toHaveBeenCalled();
+    expect(deps.callRpc).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: expect.objectContaining({ receipt_only: false }),
+      }),
+    );
   });
 
   it("rejeita Agenda, execução primária, estoque e carência no histórico externo", () => {
@@ -796,17 +969,18 @@ describe("sync-batch sanitario v2: correção append-only", () => {
     );
     expect(validation.ok).toBe(true);
     if (!validation.ok) return;
-    expect(buildSanitarioSyncV2RpcCall(validation.operation, context))
-      .toMatchObject({
-        functionName: "internal_sanitario_sync_v2_apply_factual_core",
-        args: {
-          event_payload: {
-            natureza: "correction",
-            corrige_evento_id: ids.agenda,
-            observacoes: "Custo conferido.",
-          },
+    expect(
+      buildSanitarioSyncV2RpcCall(validation.operation, context),
+    ).toMatchObject({
+      functionName: "internal_sanitario_sync_v2_apply_factual_core",
+      args: {
+        event_payload: {
+          natureza: "correction",
+          corrige_evento_id: ids.agenda,
+          observacoes: "Custo conferido.",
         },
-      });
+      },
+    });
   });
 
   it("rejeita motivo ausente, autorreferência, Agenda e campo fora da taxonomia", () => {
@@ -840,12 +1014,10 @@ describe("sync-batch sanitario v2: correção append-only", () => {
   });
 
   it("rejeita carência e mudança técnica disfarçada de correção de custo", () => {
-    for (
-      const operation of [
-        correctionOperation({ detail: { carencia_carne_dias: 30 } }),
-        correctionOperation({ correction: { technical_correction: true } }),
-      ]
-    ) {
+    for (const operation of [
+      correctionOperation({ detail: { carencia_carne_dias: 30 } }),
+      correctionOperation({ correction: { technical_correction: true } }),
+    ]) {
       const result = validateSanitarioSyncV2Operation(operation, context);
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.result.status).toBe("REJECTED");
@@ -858,9 +1030,8 @@ describe("sync-batch sanitario v2: correção append-only", () => {
       context,
     );
     expect(validation.ok).toBe(true);
-    if (
-      !validation.ok || validation.operation.command !== "apply_factual_core"
-    ) return;
+    if (!validation.ok || validation.operation.command !== "apply_factual_core")
+      return;
     const sourceDetail = {
       tipo: "vacinacao",
       produto_sanitario_v2_id: ids.closure,
@@ -886,10 +1057,12 @@ describe("sync-batch sanitario v2: correção append-only", () => {
       sourceAnimalIds: [ids.animal],
     };
     expect(validateSanitaryCorrectionSourceConsistency(base)).toBeNull();
-    expect(validateSanitaryCorrectionSourceConsistency({
-      ...base,
-      sourceAnimalIds: [ids.actor],
-    })).toBe("SANITARIO_CORRECTION_ANIMALS_MISMATCH");
+    expect(
+      validateSanitaryCorrectionSourceConsistency({
+        ...base,
+        sourceAnimalIds: [ids.actor],
+      }),
+    ).toBe("SANITARIO_CORRECTION_ANIMALS_MISMATCH");
 
     const divergent = validateSanitarioSyncV2Operation(
       correctionOperation({ detail: { via_aplicacao: "oral" } }),
@@ -899,10 +1072,12 @@ describe("sync-batch sanitario v2: correção append-only", () => {
     if (!divergent.ok || divergent.operation.command !== "apply_factual_core") {
       return;
     }
-    expect(validateSanitaryCorrectionSourceConsistency({
-      ...base,
-      operation: divergent.operation,
-    })).toBe("SANITARIO_CORRECTION_UNDECLARED_CHANGE");
+    expect(
+      validateSanitaryCorrectionSourceConsistency({
+        ...base,
+        operation: divergent.operation,
+      }),
+    ).toBe("SANITARIO_CORRECTION_UNDECLARED_CHANGE");
 
     const technical = validateSanitarioSyncV2Operation(
       correctionOperation({
@@ -924,10 +1099,12 @@ describe("sync-batch sanitario v2: correção append-only", () => {
     if (!technical.ok || technical.operation.command !== "apply_factual_core") {
       return;
     }
-    expect(validateSanitaryCorrectionSourceConsistency({
-      ...base,
-      operation: technical.operation,
-    })).toBeNull();
+    expect(
+      validateSanitaryCorrectionSourceConsistency({
+        ...base,
+        operation: technical.operation,
+      }),
+    ).toBeNull();
   });
 });
 
@@ -935,7 +1112,7 @@ describe("sync-batch sanitario v2: serialização estrita", () => {
   it("serializa os quatro comandos removendo contexto não confiável", () => {
     const operationBase = {
       domain: "sanitario_v2" as const,
-      contract_version: 2,
+      contract_version: 3,
       client_tx_id: ids.tx,
       client_op_id: ids.op,
       domain_op_id: ids.domainOp,
@@ -1034,14 +1211,12 @@ describe("sync-batch sanitario v2: serialização estrita", () => {
       },
     });
 
-    for (
-      const payload of [
-        createCall.args.payload,
-        factualCall.args.event_payload,
-        factualCall.args.detail_payload,
-        closeCall.args.payload,
-      ]
-    ) {
+    for (const payload of [
+      createCall.args.payload,
+      factualCall.args.event_payload,
+      factualCall.args.detail_payload,
+      closeCall.args.payload,
+    ]) {
       expect(payload).not.toHaveProperty("actor_user_id");
       expect(payload).not.toHaveProperty("fazenda_id");
     }
@@ -1051,39 +1226,177 @@ describe("sync-batch sanitario v2: serialização estrita", () => {
 });
 
 describe("sanitary planning convergence commands", () => {
-  const planCommand = () => ({ ...createAgendaOperation(), command: "set_automation_plan", expected_revision: 0,
-    payload: { expected_plan: null, plan: { schemaVersion: 2, revision: 1, enabled: true, rules: [], context: {} } } });
+  const planCommand = () => ({
+    ...createAgendaOperation(),
+    command: "set_automation_plan",
+    expected_revision: 0,
+    payload: {
+      expected_plan: null,
+      plan: {
+        schemaVersion: 2,
+        revision: 1,
+        enabled: true,
+        rules: [],
+        context: {},
+      },
+    },
+  });
   it("maps authenticated actor, transaction and plan CAS to the existing service boundary", async () => {
-    const deps = dependencies({ rpcData: { command: "set_automation_plan", fazenda_id: ids.farm, status: "saved", revision: 1 } });
-    const result = await executeSanitarioSyncV2Operation(planCommand(), context, deps);
-    expect(result).toMatchObject({ status: "APPLIED", canonical_entity_id: ids.farm, current_revision: 1 });
-    expect(deps.callRpc).toHaveBeenCalledWith(expect.objectContaining({ functionName: "internal_sanitario_sync_v2_set_automation_plan",
-      args: expect.objectContaining({ actor_user_id: ids.actor, fazenda_id: ids.farm, client_id: context.clientId, client_tx_id: ids.tx, expected_revision: 0 }) }));
+    const deps = dependencies({
+      rpcData: {
+        command: "set_automation_plan",
+        fazenda_id: ids.farm,
+        status: "saved",
+        revision: 1,
+      },
+    });
+    const result = await executeSanitarioSyncV2Operation(
+      planCommand(),
+      context,
+      deps,
+    );
+    expect(result).toMatchObject({
+      status: "APPLIED",
+      canonical_entity_id: ids.farm,
+      current_revision: 1,
+    });
+    expect(deps.callRpc).toHaveBeenCalledWith(
+      expect.objectContaining({
+        functionName: "internal_sanitario_admit_v3",
+        args: expect.objectContaining({
+          actor_user_id: ids.actor,
+          fazenda_id: ids.farm,
+          receipt_only: false,
+          operation_args: expect.objectContaining({
+            client_id: context.clientId,
+            client_tx_id: ids.tx,
+            expected_revision: 0,
+          }),
+        }),
+      }),
+    );
   });
   it("rejects a cowboy, untrusted actor and mismatching farm before calling the RPC", async () => {
-    for (const [raw, ctx] of [[planCommand(), { ...context, membershipRole: "cowboy" }],
-      [{ ...planCommand(), actor_user_id: ids.actor }, context], [{ ...planCommand(), fazenda_id: ids.animal }, context]] as const) {
+    for (const [raw, ctx] of [
+      [planCommand(), { ...context, membershipRole: "cowboy" }],
+      [{ ...planCommand(), actor_user_id: ids.actor }, context],
+      [{ ...planCommand(), fazenda_id: ids.animal }, context],
+    ] as const) {
       const deps = dependencies();
-      expect((await executeSanitarioSyncV2Operation(raw, ctx, deps)).status).toBe("REJECTED");
-      expect(deps.callRpc).not.toHaveBeenCalled();
+      expect(
+        (await executeSanitarioSyncV2Operation(raw, ctx, deps)).status,
+      ).toBe("REJECTED");
+      expect(deps.callRpc).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          args: expect.objectContaining({ receipt_only: false }),
+        }),
+      );
     }
   });
-  it.each([undefined, -1, 1.5])("requires an immutable expected plan revision (%s)", async expected => {
-    const deps = dependencies();
-    expect((await executeSanitarioSyncV2Operation({ ...planCommand(), expected_revision: expected }, context, deps)).status).toBe("REJECTED");
-    expect(deps.callRpc).not.toHaveBeenCalled();
-  });
+  it.each([undefined, -1, 1.5])(
+    "requires an immutable expected plan revision (%s)",
+    async (expected) => {
+      const deps = dependencies();
+      expect(
+        (
+          await executeSanitarioSyncV2Operation(
+            { ...planCommand(), expected_revision: expected },
+            context,
+            deps,
+          )
+        ).status,
+      ).toBe("REJECTED");
+      expect(deps.callRpc).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          args: expect.objectContaining({ receipt_only: false }),
+        }),
+      );
+    },
+  );
   it("classifies an explicit plan PT409 as conflict without retry or automatic overwrite", async () => {
-    const result = await executeSanitarioSyncV2Operation(planCommand(), context,
-      dependencies({ rpcError: { code: "PT409", message: "SANITARIO_PLAN_REVISION_CONFLICT current_revision=4" } }));
-    expect(result).toMatchObject({ status: "CONFLICT", reason_code: "SANITARIO_PLAN_REVISION_CONFLICT", current_revision: 4, retryable: false });
+    const result = await executeSanitarioSyncV2Operation(
+      planCommand(),
+      context,
+      dependencies({
+        rpcError: {
+          code: "PT409",
+          message: "SANITARIO_PLAN_REVISION_CONFLICT current_revision=4",
+        },
+      }),
+    );
+    expect(result).toMatchObject({
+      status: "CONFLICT",
+      reason_code: "SANITARIO_PLAN_REVISION_CONFLICT",
+      current_revision: 4,
+      retryable: false,
+    });
   });
   it("maps schedule changes without generating any factual command", async () => {
     const deps = dependencies();
-    await executeSanitarioSyncV2Operation({ ...createAgendaOperation(), command: "reschedule_agenda", expected_revision: 2,
-      payload: { agenda_id: ids.agenda, data_programada: "2026-11-01" } }, context, deps);
-    expect(deps.callRpc).toHaveBeenCalledWith({ functionName: "internal_sanitario_sync_v2_reschedule_agenda", args: {
-      actor_user_id: ids.actor, fazenda_id: ids.farm, contract_version: 2, client_op_id: ids.op, domain_op_id: ids.domainOp,
-      client_id: context.clientId, expected_revision: 2, agenda_id: ids.agenda, planned_for: "2026-11-01" } });
+    await executeSanitarioSyncV2Operation(
+      {
+        ...createAgendaOperation(),
+        command: "reschedule_agenda",
+        expected_revision: 2,
+        payload: { agenda_id: ids.agenda, data_programada: "2026-11-01" },
+      },
+      context,
+      deps,
+    );
+    expect(deps.callRpc).toHaveBeenCalledWith({
+      functionName: "internal_sanitario_admit_v3",
+      args: {
+        actor_user_id: ids.actor,
+        fazenda_id: ids.farm,
+        command: "reschedule_agenda",
+        receipt_only: false,
+        operation_args: {
+          actor_user_id: ids.actor,
+          fazenda_id: ids.farm,
+          contract_version: 3,
+          client_op_id: ids.op,
+          domain_op_id: ids.domainOp,
+          client_id: context.clientId,
+          expected_revision: 2,
+          agenda_id: ids.agenda,
+          planned_for: "2026-11-01",
+        },
+      },
+    });
   });
+});
+
+describe("V3.2 progressive admission", () => {
+  it.each([true, false])(
+    "maps durable confirmation=%s without false factual ACK",
+    async (confirmed) => {
+      const op = externalHistoryOperation({
+        event: {
+          natureza: "primary_execution",
+          source_sanitario_agenda_v2_id: ids.agenda,
+          payload: { sanitario_v3_progressive: true },
+        },
+      });
+      const deps = dependencies({
+        rpcData: {
+          evento_id: ids.event,
+          agenda_id: ids.agenda,
+          agenda_status: "programada",
+          confirmed,
+          outcome: confirmed ? "confirmed" : "collision",
+          collision_animal_ids: confirmed ? [] : [ids.animal],
+        },
+      });
+      const result = await executeSanitarioSyncV2Operation(
+        { ...op, expected_revision: 0 },
+        context,
+        deps,
+      );
+      expect(result.status).toBe(confirmed ? "APPLIED" : "CONFLICT");
+      expect(result.canonical_entity_id).toBe(ids.event);
+      expect(result.canonical_result).toMatchObject({ confirmed });
+      if (!confirmed)
+        expect(result.reason_code).toBe("SANITARIO_OBLIGATION_COLLISION");
+    },
+  );
 });

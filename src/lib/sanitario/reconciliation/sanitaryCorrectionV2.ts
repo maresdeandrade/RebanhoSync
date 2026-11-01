@@ -1,3 +1,4 @@
+import { requireSanitaryAdmissionV3 } from "@/lib/sanitario/execution/sanitaryAdmissionV3";
 import { readWithdrawalEvidenceCatalogV2 } from "../execution/withdrawalEvidenceCatalogV2";
 import { db as defaultDb, type OfflineDB } from "@/lib/offline/db";
 import {
@@ -536,6 +537,22 @@ export async function createSanitaryCorrectionV2(
     throw new Error("SANITARY_CORRECTION_SOURCE_NOT_SANITARY");
   if (corrected.id === input.correctionEventId)
     throw new Error("SANITARY_CORRECTION_CYCLE");
+  let source = corrected;
+  const seen = new Set<string>();
+  while (source) {
+    if (seen.has(source.id)) throw new Error("SANITARY_CORRECTION_CYCLE");
+    seen.add(source.id);
+    if (source.fazenda_id !== input.fazendaId) throw new Error("SANITARY_CORRECTION_TENANT_MISMATCH");
+    if (source.source_sanitario_agenda_v2_id || source.sanitario_sync_v2_nature === "primary_execution") {
+      requireSanitaryAdmissionV3({ intent: "agenda_execution", fazendaId: input.fazendaId,
+        agendaId: source.source_sanitario_agenda_v2_id ?? undefined, clientOpId: input.correctionEventId,
+        clientTxId: input.correctionEventId, domainOpId: input.correctionEventId, payload: {} });
+    }
+    if (!source.corrige_evento_id) break;
+    const parent = await localDb.event_eventos.get(source.corrige_evento_id);
+    if (!parent) throw new Error("SANITARY_CORRECTION_SOURCE_NOT_FOUND");
+    source = parent;
+  }
   const child = await localDb.event_eventos
     .filter(
       (event) => event.corrige_evento_id === corrected.id && !event.deleted_at,

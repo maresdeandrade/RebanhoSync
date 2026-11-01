@@ -153,8 +153,7 @@ function readSnapshotString(snapshot: unknown, key: string): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function formatSanitaryEventDetail(detail: EventoSanitario): string {
-  const product = detail.produto_nome_snapshot ?? detail.produto ?? detail.tipo;
+function sanitaryApplicationDetail(detail: EventoSanitario) {
   const stockLot = detail.estoque_lote_codigo_snapshot
     ? `lote ${detail.estoque_lote_codigo_snapshot}`
     : detail.estoque_lote_id
@@ -165,6 +164,16 @@ function formatSanitaryEventDetail(detail: EventoSanitario): string {
     detail.dose_quantidade != null
       ? `${detail.dose_quantidade} ${detail.dose_unidade ?? ""}`.trim()
       : null;
+  return [
+    stockLot,
+    validity ? `validade ${validity}` : null,
+    dose ? `dose ${dose}` : null,
+    detail.via_aplicacao ? `via ${detail.via_aplicacao}` : null,
+    detail.responsavel_nome ? `responsavel ${detail.responsavel_nome}` : null,
+  ];
+}
+
+function sanitaryWithdrawalDetail(detail: EventoSanitario) {
   const withdrawal = [
     detail.carencia_carne_ate
       ? `carne ate ${formatDateOnly(detail.carencia_carne_ate)}`
@@ -173,6 +182,12 @@ function formatSanitaryEventDetail(detail: EventoSanitario): string {
       ? `leite ate ${formatDateOnly(detail.carencia_leite_ate)}`
       : null,
   ].filter(Boolean);
+  return withdrawal.length > 0
+    ? `carencia ${withdrawal.join(" / ")}`
+    : "sem carencia";
+}
+
+function sanitaryProtocolDetail(detail: EventoSanitario) {
   const protocolCode =
     readSnapshotString(detail.protocol_item_snapshot, "item_code") ??
     readSnapshotString(detail.protocol_item_snapshot, "itemCode");
@@ -183,20 +198,23 @@ function formatSanitaryEventDetail(detail: EventoSanitario): string {
         ? `item sanitario v${detail.protocol_item_version}`
         : null;
 
+  return protocol ? `protocolo ${protocol}` : null;
+}
+
+function formatSanitaryEventDetail(detail: EventoSanitario): string {
+  const product = detail.produto_nome_snapshot ?? detail.produto ?? detail.tipo;
+  if (detail.sanitario_v3_confirmation === "pending")
+    return `${product} · Declaração local aguardando reconhecimento; efeitos ainda não confirmados.`;
+  if (detail.sanitario_v3_confirmation === "collision")
+    return `${product} · Declaração em conflito; nenhum segundo atendimento reconhecido.`;
   return [
     product,
-    stockLot,
-    validity ? `validade ${validity}` : null,
-    dose ? `dose ${dose}` : null,
-    detail.via_aplicacao ? `via ${detail.via_aplicacao}` : null,
-    detail.responsavel_nome ? `responsavel ${detail.responsavel_nome}` : null,
-    withdrawal.length > 0
-      ? `carencia ${withdrawal.join(" / ")}`
-      : "sem carencia",
+    ...sanitaryApplicationDetail(detail),
+    sanitaryWithdrawalDetail(detail),
     detail.custo_total_snapshot != null
       ? `custo ${toCurrency(detail.custo_total_snapshot)}`
       : "custo ausente",
-    protocol ? `protocolo ${protocol}` : null,
+    sanitaryProtocolDetail(detail),
   ]
     .filter(Boolean)
     .join(" | ");

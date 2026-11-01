@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { recomputeSanitaryComplianceAfterPullV2 } from "@/lib/sanitario/compliance/sanitaryComplianceV2";
+import { isSanitaryEvidenceOperation } from "./sanitaryFoundationRecovery";
 import { db } from "./db";
 import {
   getLocalStoreName,
@@ -262,7 +263,8 @@ async function getPendingFactualEventIds(
     operations
       .filter(
         (operation) =>
-          operation.sync_state !== "REJECTED" &&
+          (operation.sync_state !== "REJECTED" ||
+            isSanitaryEvidenceOperation(operation)) &&
           !reconciled.has(operation.client_op_id),
       )
       .flatMap((operation) => {
@@ -332,21 +334,36 @@ async function getPendingRecordIds(
   if (protectedTables.size === 0) return pendingIds;
 
   const operations = await db.queue_ops.toArray();
-  const farmByTransaction = new Map((await db.queue_gestures.toArray()).map(gesture => [gesture.client_tx_id, gesture.fazenda_id]));
+  const farmByTransaction = new Map(
+    (await db.queue_gestures.toArray()).map((gesture) => [
+      gesture.client_tx_id,
+      gesture.fazenda_id,
+    ]),
+  );
+  const sanitaryTransactions = new Set(
+    operations.filter(isSanitaryEvidenceOperation).map((op) => op.client_tx_id),
+  );
   for (const operation of operations) {
     if (
-      operation.sync_state === "REJECTED" ||
+      (operation.sync_state === "REJECTED" &&
+        !sanitaryTransactions.has(operation.client_tx_id)) ||
       reconciled.has(operation.client_op_id)
     )
       continue;
-    const candidates = getOperationCandidates(operation, farmByTransaction.get(operation.client_tx_id));
+    const candidates = getOperationCandidates(
+      operation,
+      farmByTransaction.get(operation.client_tx_id),
+    );
     for (const candidate of candidates) {
       const remoteTable = getRemoteTableName(candidate.table);
       if (!protectedTables.has(remoteTable)) continue;
       if (candidate.record?.fazenda_id !== fazendaId) continue;
-      const id = remoteTable === "fazenda_sanidade_config" ? candidate.record.fazenda_id : PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
-        ? getFactualEventId(remoteTable, candidate.record)
-        : candidate.record?.id;
+      const id =
+        remoteTable === "fazenda_sanidade_config"
+          ? candidate.record.fazenda_id
+          : PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
+            ? getFactualEventId(remoteTable, candidate.record)
+            : candidate.record?.id;
       if (typeof id !== "string") continue;
       const ids = pendingIds.get(remoteTable) ?? new Set<string>();
       ids.add(id);
@@ -373,7 +390,10 @@ function getSanitarioPendingEventId(
   return typeof event?.id === "string" ? event.id : null;
 }
 
-function getPendingPlanningRecords(operation: Operation, legacyFarmId?: string) {
+function getPendingPlanningRecords(
+  operation: Operation,
+  legacyFarmId?: string,
+) {
   const envelope = operation.record;
   if (envelope.domain !== "sanitario_v2") return [];
   const payload = remoteRecord(envelope.payload);
@@ -381,18 +401,39 @@ function getPendingPlanningRecords(operation: Operation, legacyFarmId?: string) 
   const closure = remoteRecord(payload.closure);
   const farm = envelope.fazenda_id ?? legacyFarmId;
   const agendaId = agenda.id ?? payload.agenda_id ?? closure.agenda_id;
-  const candidates: Array<{table: string; record: RemoteRow}> = [];
+  const candidates: Array<{ table: string; record: RemoteRow }> = [];
+  if (envelope.command === "set_automation_plan")
+    candidates.push({
+      table: "fazenda_sanidade_config",
+      record: { fazenda_id: farm },
+    });
   if (typeof agendaId === "string") {
-    candidates.push({table: "sanitario_agenda_v2", record: {id: agendaId, fazenda_id: farm}});
+    candidates.push({
+      table: "sanitario_agenda_v2",
+      record: { id: agendaId, fazenda_id: farm },
+    });
     candidates.push(...pendingAgendaAnimals(payload, agendaId, farm));
   }
-  if (typeof closure.id === "string") candidates.push({table: "sanitario_agenda_closures_v2", record: {...closure, fazenda_id: farm}});
+  if (typeof closure.id === "string")
+    candidates.push({
+      table: "sanitario_agenda_closures_v2",
+      record: { ...closure, fazenda_id: farm },
+    });
   return candidates;
 }
-function remoteRecord(value: unknown) { return asRemoteRow(value) ?? {}; }
-function pendingAgendaAnimals(payload: RemoteRow, agendaId: string, farm: unknown) {
+function remoteRecord(value: unknown) {
+  return asRemoteRow(value) ?? {};
+}
+function pendingAgendaAnimals(
+  payload: RemoteRow,
+  agendaId: string,
+  farm: unknown,
+) {
   if (!Array.isArray(payload.animal_ids)) return [];
-  return payload.animal_ids.map(animalId => ({table: "sanitario_agenda_animais_v2", record: {agenda_id: agendaId, animal_id: animalId, fazenda_id: farm}}));
+  return payload.animal_ids.map((animalId) => ({
+    table: "sanitario_agenda_animais_v2",
+    record: { agenda_id: agendaId, animal_id: animalId, fazenda_id: farm },
+  }));
 }
 
 function getOperationCandidates(
@@ -442,8 +483,15 @@ async function getPendingLocalRecordKeys(storesToUpdate: StoreUpdate[]) {
   const keys = new Map<string, Map<string, IndexableType>>();
   const operations = await db.queue_ops.toArray();
 
+  const sanitaryTransactions = new Set(
+    operations.filter(isSanitaryEvidenceOperation).map((op) => op.client_tx_id),
+  );
   for (const operation of operations) {
-    if (operation.sync_state === "REJECTED") continue;
+    if (
+      operation.sync_state === "REJECTED" &&
+      !sanitaryTransactions.has(operation.client_tx_id)
+    )
+      continue;
     for (const candidate of getOperationCandidates(operation)) {
       const remoteTable = getRemoteTableName(candidate.table);
       const localStore = storesByRemote.get(remoteTable);
@@ -470,7 +518,9 @@ async function getPendingLocalRows(
   modes: ReadonlyMap<string, PullMode>,
 ) {
   const pendingRows = new Map<string, RemoteRow[]>();
-  const replacementStores = storesToUpdate.filter(({ remote }) => modes.get(remote) === "replace");
+  const replacementStores = storesToUpdate.filter(
+    ({ remote }) => modes.get(remote) === "replace",
+  );
   if (replacementStores.length === 0) return pendingRows;
   const pendingKeys = await getPendingLocalRecordKeys(replacementStores);
   for (const { remote, local } of replacementStores) {
@@ -493,9 +543,12 @@ function protectPendingRecordRows(
   const ids = pendingRecordIds.get(remoteTable);
   if (!ids || ids.size === 0) return { rows, skipped: false };
   const safeRows = rows.filter((row) => {
-    const id = remoteTable === "fazenda_sanidade_config" ? row.fazenda_id : PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
-      ? getFactualEventId(remoteTable, row)
-      : row.id;
+    const id =
+      remoteTable === "fazenda_sanidade_config"
+        ? row.fazenda_id
+        : PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
+          ? getFactualEventId(remoteTable, row)
+          : row.id;
     return typeof id !== "string" || !ids.has(id);
   });
   return { rows: safeRows, skipped: safeRows.length !== rows.length };
@@ -546,7 +599,8 @@ function normalizeCatalogAgendaRows(remote: string, rows: RemoteRow[]) {
   return rows.map((row) => ({
     ...row,
     protocolo_id: row.catalog_protocolo_v2_id ?? row.protocolo_id,
-    protocol_item_version_id: row.catalog_protocol_item_version_v2_id ?? row.protocol_item_version_id,
+    protocol_item_version_id:
+      row.catalog_protocol_item_version_v2_id ?? row.protocol_item_version_id,
   }));
 }
 
@@ -667,7 +721,8 @@ async function writeMergeResults(
 
       // This composite link has no updated_at/deleted_at. Install only a complete
       // RLS-visible snapshot, in the same transaction as its catalog parents.
-      if (remote === "sanitario_produto_carencia_fontes_v2") await store.clear();
+      if (remote === "sanitario_produto_carencia_fontes_v2")
+        await store.clear();
 
       if (rows.length > 0) {
         if (remote === "eventos_animais") {
@@ -694,34 +749,60 @@ function validateTablePullMode(
   options: PullOptions,
   table: string,
 ) {
-  if (mode !== "merge" && mode !== "replace") throw new Error("INVALID_PULL_MODE");
-  if (options.observations?.[table] && mode !== "merge") throw new Error("PARTIAL_PULL_REPLACE_FORBIDDEN");
+  if (mode !== "merge" && mode !== "replace")
+    throw new Error("INVALID_PULL_MODE");
+  if (options.observations?.[table] && mode !== "merge")
+    throw new Error("PARTIAL_PULL_REPLACE_FORBIDDEN");
 }
 
-function resolvePullModes(remoteTables: readonly string[], options: PullOptions, mode: PullMode) {
+function resolvePullModes(
+  remoteTables: readonly string[],
+  options: PullOptions,
+  mode: PullMode,
+) {
   const modes = new Map<string, PullMode>();
   for (const table of remoteTables) {
     const resolved = options.tableModes?.[table] ?? mode;
     validateTablePullMode(resolved, options, table);
     modes.set(table, resolved);
   }
-  if (Object.keys(options.tableModes ?? {}).some(table => !modes.has(table))) {
+  if (
+    Object.keys(options.tableModes ?? {}).some((table) => !modes.has(table))
+  ) {
     throw new Error("UNKNOWN_PULL_TABLE_MODE");
   }
   return modes;
 }
 
-function hasRequiredAnimalIdObservation(requiredIds: readonly string[], observedIds: readonly string[]) {
-  return requiredIds.length === 1 && observedIds.length === 1 &&
+function hasRequiredAnimalIdObservation(
+  requiredIds: readonly string[],
+  observedIds: readonly string[],
+) {
+  return (
+    requiredIds.length === 1 &&
+    observedIds.length === 1 &&
     requiredIds[0] === observedIds[0] &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requiredIds[0]);
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      requiredIds[0],
+    )
+  );
 }
 
-function validateRequiredAnimalObservation(modes: ReadonlyMap<string, PullMode>, options: PullOptions) {
+function validateRequiredAnimalObservation(
+  modes: ReadonlyMap<string, PullMode>,
+  options: PullOptions,
+) {
   if (options.requiredAnimalIds) {
     const observation = options.observations?.animais;
-    if (!modes.has("animais") || !observation || observation.key !== "id" ||
-      !hasRequiredAnimalIdObservation(options.requiredAnimalIds, observation.ids)) {
+    if (
+      !modes.has("animais") ||
+      !observation ||
+      observation.key !== "id" ||
+      !hasRequiredAnimalIdObservation(
+        options.requiredAnimalIds,
+        observation.ids,
+      )
+    ) {
       throw new Error("INVALID_REQUIRED_ANIMAL_OBSERVATION");
     }
   }
@@ -734,9 +815,13 @@ function validateRequiredAnimalSnapshot(
 ) {
   if (options.requiredAnimalIds) {
     const rows = results.animais as RemoteRow[];
-    if (rows.length !== 1 || rows[0].id !== options.requiredAnimalIds[0] ||
-      rows[0].fazenda_id !== fazenda_id || !Number.isSafeInteger(rows[0].revision) ||
-      (rows[0].revision as number) < 1) {
+    if (
+      rows.length !== 1 ||
+      rows[0].id !== options.requiredAnimalIds[0] ||
+      rows[0].fazenda_id !== fazenda_id ||
+      !Number.isSafeInteger(rows[0].revision) ||
+      (rows[0].revision as number) < 1
+    ) {
       throw new Error("REQUIRED_ANIMAL_SNAPSHOT_NOT_COVERED");
     }
   }
@@ -794,7 +879,10 @@ export const pullDataForFarm = async (
   // 2. Determine valid local stores involved
   // We filter out invalid stores to prevent transaction failure, but log warning
   const validTableNames = new Set(db.tables.map((t) => t.name));
-  if (options.requiredAnimalIds && remoteTables.some(table => !validTableNames.has(getLocalStoreName(table)))) {
+  if (
+    options.requiredAnimalIds &&
+    remoteTables.some((table) => !validTableNames.has(getLocalStoreName(table)))
+  ) {
     throw new Error("REQUIRED_PULL_STORE_MISSING");
   }
   const storesToUpdate = remoteTables
@@ -953,8 +1041,12 @@ export const pullSanitarioTechnicalCatalogV2 = async (fazenda_id: string) => {
     if (remoteTable === "sanitario_produto_carencia_fontes_v2") {
       const rows: RemoteRow[] = [];
       for (let offset = 0; ; offset += 1000) {
-        const { data, error } = await supabase.from(remoteTable).select("*")
-          .order("withdrawal_rule_id").order("source_id").order("field_key")
+        const { data, error } = await supabase
+          .from(remoteTable)
+          .select("*")
+          .order("withdrawal_rule_id")
+          .order("source_id")
+          .order("field_key")
           .range(offset, offset + 999);
         if (error) throw error;
         rows.push(...(data ?? []));
@@ -1276,6 +1368,7 @@ export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
     "eventos_sanitario",
     "eventos_animais",
     "insumo_movimentacoes",
+    "insumo_lotes",
     "sanitario_agenda_closures_v2",
   ] as const;
 
