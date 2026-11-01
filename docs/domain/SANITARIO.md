@@ -7,7 +7,7 @@
 ```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-10-15
+Atualizado em: 2026-10-30
 
 ## Objetivo
 
@@ -69,6 +69,14 @@ Fora do escopo deste documento:
 - Evidência, testes e restrições: [entrega local A–E](../review/evidence/SANITARIO_V2_A_E_IMPLEMENTACAO_LOCAL_20261016.md).
 
 ## Contrato central
+
+### Registro factual, alertas e elegibilidade — política de 30/10/2026
+
+Aplicar a [matriz canônica REGISTRAR / ALERTAR / CONDICIONAR ELEGIBILIDADE / BLOQUEAR POR INTEGRIDADE TÉCNICA](../context/SOURCE_OF_TRUTH.md#política-de-registro-alertas-e-elegibilidade). Inconformidade sanitária/documental não deve impedir registrar fato ocorrido ou sua atualização factual de estado tecnicamente válida. Alertas preservam evidências, sem autorização/proibição emitida pelo RebanhoSync. Planejamento, recomendação automática e elegibilidade específica não são execução factual.
+
+CAS-02A trata consistência de alertas derivados de casos e payload; CAS-02B, reconciliação técnica auditável quando necessária. O [mapa GTA-03/CAS-02](../review/GTA_03_CAS_02_POLICY_20261030.md) registra o diagnóstico de entrada, a implementação funcional local e seus limites. A norma não substitui evidência de runtime. As propostas anteriores de bloqueio sanitário universal de saída não são a direção de implementação vigente.
+
+Registro incompleto não autoriza inventar produto, dose, vínculo ou carência. Preservar integridade do contrato factual existente; evolução para registrar lacunas exige escopo próprio. Condicionar recomendação/automação à evidência não equivale a impedir lançamento retrospectivo nem a certificar um produto/programa.
 
 | Conceito | Fonte primária |
 |---|---|
@@ -332,7 +340,7 @@ Regras registradas:
 - dose, via, apresentação, autorização por espécie, carência e obrigatoriedade legal exigem fonte forte;
 - carência `zero` exige fonte explícita;
 - carência `unknown` bloqueia leitura de livre de carência;
-- `not_permitted` bloqueia o uso declarado;
+- `not_permitted` impede apresentar o uso como recomendado/elegível no escopo técnico avaliado; não impede, por si, registrar uso já ocorrido com a restrição evidenciada;
 - `NAO_AUTORIZADO` bloqueia agenda automática futura;
 - `PRECISA_VALIDAR` preserva limitação;
 - `EXTRAPOLADO` exige MV responsável para execução futura;
@@ -699,7 +707,7 @@ Itens do catálogo oficial/regulatório podem ficar disponíveis como orientaç�
 - `contextual`: contexto regulatório disponível.
 - `actionable`: pendência/ação real acionável.
 - `resolvido`: ação já tratada.
-- `bloqueado_por_regra`: bloqueio técnico explícito.
+- `bloqueado_por_regra`: estado legado a interpretar no contexto de regra/recomendação/avaliação; não é proibição oficial nem bloqueio universal de registro factual. Integridade técnica continua obrigatória.
 
 Regras:
 

@@ -164,6 +164,19 @@ describe("createRegistrarFinalizeController", () => {
     expect(deps.sanitary.loadSanitaryFinalizeContext).not.toHaveBeenCalled();
   });
 
+  it("finaliza fato com restricoes e GTA pendente sem alterar o envelope persistido", async () => {
+    const deps = buildControllerDeps();
+    const input = buildFinalizeInput();
+    input.sanitary.complianceFlowIssues = ["Restricao sanitaria"];
+    input.sanitary.transit.transitChecklistIssues = ["GTA nao verificada"];
+    await createRegistrarFinalizeController(deps)(input);
+    expect(deps.feedback.showError).not.toHaveBeenCalled();
+    expect(deps.commit.runFinalizeGesture).toHaveBeenCalledTimes(1);
+    expect(deps.commit.runFinalizeGesture.mock.calls[0][0].ops).toEqual([
+      { table: "eventos", action: "INSERT", record: { id: "evt-1" } },
+    ]);
+  });
+
   it("encerra no caminho de RPC sanitário quando já tratado no servidor", async () => {
     const deps = buildControllerDeps();
     deps.sanitary.trySanitaryRpcFinalize.mockResolvedValue({

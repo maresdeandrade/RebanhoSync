@@ -1007,6 +1007,7 @@ const Registrar = () => {
     officialTransitChecklistEnabled,
     animalsBlockedBySanitaryAlert,
     sanitaryMovementBlockIssues,
+    warnings: sanitaryRegistrationWarnings,
     movementComplianceGuards,
     nutritionComplianceGuards,
     complianceFlowIssues,
@@ -1059,7 +1060,7 @@ const Registrar = () => {
     " ",
   );
   const transitChecklistGtaLabel =
-    transitChecklist.gtaNumber || "Checklist concluido";
+    transitChecklist.gtaNumber || "Numero nao informado (declaracao)";
   const confirmacaoManejoLabel =
     quickActionConfig?.label ??
     (tipoManejo === "ecc"
@@ -1265,6 +1266,7 @@ const Registrar = () => {
   const actionStepIssues = useMemo(
     () =>
       composeRegistrarActionStepIssues({
+        registrationMode: "executed_fact",
         baseIssues:
           tipoManejo === "comercial"
             ? [...baseActionStepIssues, ...comercialBlockingIssues]
@@ -2093,6 +2095,7 @@ const Registrar = () => {
               tipoManejo={tipoManejo}
               sourceTaskId={sourceTaskId}
               actionStepIssues={actionStepIssues}
+              advisoryWarnings={sanitaryRegistrationWarnings}
               onBack={goToSelectAnimals}
               onNext={goToConfirm}
               onFinalize={handleFinalize}
@@ -2335,6 +2338,7 @@ const Registrar = () => {
               tipoManejo={tipoManejo}
               sourceTaskId={sourceTaskId}
               actionStepIssues={actionStepIssues}
+              advisoryWarnings={sanitaryRegistrationWarnings}
               onBack={goToChooseAction}
               onNext={goToConfirm}
               onFinalize={handleFinalize}

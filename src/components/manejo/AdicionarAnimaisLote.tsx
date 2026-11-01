@@ -1,15 +1,16 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Search } from "lucide-react";
 
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
-import type { OperationInput } from "@/lib/offline/types";
+import type { Animal, OperationInput } from "@/lib/offline/types";
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
-import { listAnimalsBlockedBySanitaryAlert } from "@/lib/sanitario/compliance/alerts";
+import { useMovementComplianceWarning } from "@/hooks/useMovementComplianceWarning";
+import { useAnimalSanitaryRestrictions } from "@/hooks/useAnimalSanitaryRestrictions";
+import { SanitaryRestrictionNotice } from "./SanitaryRestrictionNotice";
 import {
-  buildRegulatoryOperationalReadModel,
   loadRegulatorySurfaceSource,
 } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
@@ -36,6 +37,40 @@ interface AdicionarAnimaisLoteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+}
+
+function isEligibleForLotMovement(animal: Animal | undefined, lote: AdicionarAnimaisLoteProps["lote"]): animal is Animal {
+  return Boolean(animal && animal.fazenda_id === lote.fazenda_id && !animal.deleted_at && animal.lote_id !== lote.id);
+}
+
+async function prepareSelectedLotMovements(selectedAnimais: Set<string>, animais: Animal[], lote: AdicionarAnimaisLoteProps["lote"], now: string) {
+  const animaisPorId = new Map(
+    animais.map((animal) => [animal.id, animal]),
+  );
+  const ops: OperationInput[] = [];
+  const processedAnimalIds: string[] = [];
+
+  for (const animalId of selectedAnimais) {
+    const animal =
+      animaisPorId.get(animalId) ?? (await db.state_animais.get(animalId));
+    if (!isEligibleForLotMovement(animal, lote)) continue;
+
+    const built = buildEventGesture({
+      dominio: "movimentacao",
+      fazendaId: lote.fazenda_id,
+      occurredAt: now,
+      animalId,
+      loteId: animal.lote_id ?? null,
+      fromLoteId: animal.lote_id ?? null,
+      toLoteId: lote.id,
+      observacoes: "Movimentacao de lote em massa",
+    });
+
+    ops.push(...built.ops);
+    processedAnimalIds.push(animal.id);
+  }
+
+  return { ops, processedAnimalIds };
 }
 
 export function AdicionarAnimaisLote({
@@ -71,23 +106,11 @@ export function AdicionarAnimaisLote({
     animais?.filter((animal) =>
       animal.identificacao?.toLowerCase().includes(search.toLowerCase()),
     ) || [];
-  const regulatoryReadModel = useMemo(
-    () =>
-      buildRegulatoryOperationalReadModel(regulatorySurfaceSource ?? undefined),
-    [regulatorySurfaceSource],
-  );
-  const movementComplianceGuards = regulatoryReadModel.flows.movementInternal;
-  const complianceBlockReason =
-    movementComplianceGuards.blockers[0]?.message ?? null;
-  const blockedAnimals = listAnimalsBlockedBySanitaryAlert(animais ?? []);
+  const complianceBlockReason = useMovementComplianceWarning(regulatorySurfaceSource);
+  const sanitary = useAnimalSanitaryRestrictions(lote.fazenda_id, animais ?? []);
+  const blockedAnimals = sanitary.restrictions;
   const blockedAnimalIds = new Set(
     blockedAnimals.map(({ animal }) => animal.id),
-  );
-  const blockedAnimalReasonById = new Map(
-    blockedAnimals.map(({ animal, alert }) => [
-      animal.id,
-      alert.diseaseName ?? "suspeita sanitaria",
-    ]),
   );
 
   const toggleAnimal = (animalId: string) => {
@@ -106,46 +129,14 @@ export function AdicionarAnimaisLote({
       return;
     }
 
-    if (complianceBlockReason) {
-      showError(complianceBlockReason);
-      return;
-    }
-
     setIsSubmitting(true);
     const now = new Date().toISOString();
 
-    const animaisPorId = new Map(
-      (animais ?? []).map((animal) => [animal.id, animal]),
-    );
-    const ops: OperationInput[] = [];
-    const processedAnimalIds: string[] = [];
-
-    for (const animalId of selectedAnimais) {
-      const animal =
-        animaisPorId.get(animalId) ?? (await db.state_animais.get(animalId));
-      if (!animal || animal.lote_id === lote.id) continue;
-      if (blockedAnimalIds.has(animal.id)) continue;
-
-      const built = buildEventGesture({
-        dominio: "movimentacao",
-        fazendaId: lote.fazenda_id,
-        occurredAt: now,
-        animalId,
-        loteId: animal.lote_id ?? null,
-        fromLoteId: animal.lote_id ?? null,
-        toLoteId: lote.id,
-        observacoes: "Movimentacao de lote em massa",
-      });
-
-      ops.push(...built.ops);
-      processedAnimalIds.push(animal.id);
-    }
+    const { ops, processedAnimalIds } = await prepareSelectedLotMovements(selectedAnimais, animais ?? [], lote, now);
 
     if (ops.length === 0) {
       showError(
-        selectedAnimais.size > 0 && blockedAnimals.length > 0
-          ? "Os animais selecionados estao bloqueados por suspeita sanitaria aberta."
-          : "Nenhum animal elegivel para movimentacao.",
+        "Nenhum animal elegivel para movimentacao.",
       );
       setIsSubmitting(false);
       return;
@@ -219,7 +210,6 @@ export function AdicionarAnimaisLote({
                     <Checkbox
                       checked={selectedAnimais.has(animal.id)}
                       onCheckedChange={() => toggleAnimal(animal.id)}
-                      disabled={blockedAnimalIds.has(animal.id)}
                     />
                     <div className="min-w-0 flex-1 space-y-1">
                       <p className="font-medium text-foreground">
@@ -234,16 +224,14 @@ export function AdicionarAnimaisLote({
                         </StatusBadge>
                         {blockedAnimalIds.has(animal.id) ? (
                           <StatusBadge tone="danger">
-                            Bloqueado:{" "}
-                            {blockedAnimalReasonById.get(animal.id) ??
-                              "suspeita"}
+                            Alerta sanitario
                           </StatusBadge>
                         ) : null}
                       </div>
                     </div>
                     {blockedAnimalIds.has(animal.id) ? (
                       <span className="text-xs text-amber-700">
-                        Encerrar a suspeita sanitaria antes da movimentacao.
+                        Restricao informada; registro nao e autorizacao de transito.
                       </span>
                     ) : null}
                   </label>
@@ -265,11 +253,7 @@ export function AdicionarAnimaisLote({
             </div>
           ) : null}
 
-          {complianceBlockReason ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              {complianceBlockReason}
-            </div>
-          ) : null}
+          <SanitaryRestrictionNotice {...sanitary} regulatoryMessage={complianceBlockReason} />
         </FormSection>
 
         <DialogFooter>
@@ -284,8 +268,7 @@ export function AdicionarAnimaisLote({
             onClick={handleConfirm}
             disabled={
               isSubmitting ||
-              selectedAnimais.size === 0 ||
-              Boolean(complianceBlockReason)
+              selectedAnimais.size === 0
             }
           >
             {isSubmitting

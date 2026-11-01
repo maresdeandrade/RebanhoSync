@@ -73,46 +73,52 @@ export function validateTransitChecklist(
   if (!draft.enabled) return issues;
 
   if (!draft.gtaChecked) {
-    issues.push("Conclua o checklist de GTA/e-GTA antes de liberar o transito externo.");
+    issues.push("Checklist GTA/e-GTA nao confirmado; confira a documentacao oficial antes do transito.");
   }
 
   if (draft.gtaChecked && !trimOrNull(draft.gtaNumber)) {
-    issues.push("Informe o numero ou protocolo da GTA/e-GTA.");
+    issues.push("Numero/protocolo GTA/e-GTA nao informado; confira a guia oficial.");
   }
 
   if (draft.isInterstate && !draft.destinationUf) {
-    issues.push("Selecione a UF de destino do transito externo.");
+    issues.push("UF de destino nao informada; confira os requisitos interestaduais.");
+  }
+
+  if (draft.purpose === "reproducao") {
+    issues.push(
+      "Reproducao: confira exigencias PNCEBT conforme UF, categoria, idade e certificacao de origem; o checklist nao valida aptidao.",
+    );
   }
 
   if (draft.purpose === "reproducao" && draft.isInterstate) {
     if (!draft.reproductionDocsChecked) {
       issues.push(
-        "Reproducao interestadual exige confirmacao dos atestados negativos de brucelose e tuberculose.",
+        "Reproducao interestadual: verifique os atestados PNCEBT aplicaveis e eventuais dispensas.",
       );
     }
 
     if (!draft.brucellosisExamDate || !draft.tuberculosisExamDate) {
       issues.push(
-        "Informe as datas dos atestados negativos para reproducao interestadual.",
+        "Datas dos atestados PNCEBT nao informadas; verifique sua aplicabilidade no caso concreto.",
       );
       return issues;
     }
 
-    if (
-      daysBetween(draft.brucellosisExamDate, asOfDate) >
-      REPRODUCTION_INTERSTATE_VALIDITY_DAYS
-    ) {
+    const brucellosisAgeDays = daysBetween(draft.brucellosisExamDate, asOfDate);
+    if (!Number.isFinite(brucellosisAgeDays) || brucellosisAgeDays < 0) {
+      issues.push("Brucelose: data invalida ou futura; confira a referencia de coleta.");
+    } else if (brucellosisAgeDays > REPRODUCTION_INTERSTATE_VALIDITY_DAYS) {
       issues.push(
-        "Atestado negativo de brucelose expirado para reproducao interestadual (validade de 60 dias).",
+        "Brucelose: data informada supera 60 dias; confira a data de coleta e eventuais dispensas.",
       );
     }
 
-    if (
-      daysBetween(draft.tuberculosisExamDate, asOfDate) >
-      REPRODUCTION_INTERSTATE_VALIDITY_DAYS
-    ) {
+    const tuberculosisAgeDays = daysBetween(draft.tuberculosisExamDate, asOfDate);
+    if (!Number.isFinite(tuberculosisAgeDays) || tuberculosisAgeDays < 0) {
+      issues.push("Tuberculose: data invalida ou futura; confira a referencia de inoculacao.");
+    } else if (tuberculosisAgeDays > REPRODUCTION_INTERSTATE_VALIDITY_DAYS) {
       issues.push(
-        "Atestado negativo de tuberculose expirado para reproducao interestadual (validade de 60 dias).",
+        "Tuberculose: data informada supera 60 dias; confira a data de inoculacao e eventuais dispensas.",
       );
     }
   }

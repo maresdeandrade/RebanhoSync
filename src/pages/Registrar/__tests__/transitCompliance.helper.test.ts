@@ -46,7 +46,7 @@ describe("transitCompliance helpers", () => {
     expect(issues).toEqual([]);
   });
 
-  it("propaga validações do checklist quando exigido", () => {
+  it("propaga aviso documental quando GTA/e-GTA nao foi confirmada", () => {
     const issues = buildTransitChecklistIssues({
       showsTransitChecklist: true,
       transitChecklist: {
@@ -57,7 +57,9 @@ describe("transitCompliance helpers", () => {
       asOfDate: "2026-04-16",
     });
 
-    expect(issues[0]).toMatch(/checklist de GTA\/e-GTA/i);
+    expect(issues).toEqual([
+      "Checklist GTA/e-GTA nao confirmado; confira a documentacao oficial antes do transito.",
+    ]);
   });
 
   it("prioriza blockers de nutricao no fluxo correspondente", () => {

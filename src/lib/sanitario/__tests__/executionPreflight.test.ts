@@ -2,6 +2,23 @@ import { describe, expect, it } from "vitest";
 import { validateSanitaryExecutionPreflight } from "@/lib/sanitario/models/executionPreflight";
 
 describe("validateSanitaryExecutionPreflight", () => {
+  it("registra fato com todos os avisos sem dispensar integridade do produto", () => {
+    const input = {
+      tipoManejo: "sanitario", registrationMode: "executed_fact" as const,
+      requireProduct: true, sanitaryProductName: "Produto real",
+      protocolEligibilityIssues: ["Protocolo incompativel"],
+      sanitaryMovementBlockIssues: ["Caso aberto"],
+      transitChecklistIssues: ["GTA nao verificada"],
+      complianceFlowIssues: ["Restricao independente", "Caso aberto"],
+    };
+    expect(validateSanitaryExecutionPreflight(input)).toEqual({
+      ok: true, status: "ready",
+      warnings: ["Protocolo incompativel", "Caso aberto", "GTA nao verificada", "Restricao independente"],
+    });
+    expect(validateSanitaryExecutionPreflight({ ...input, sanitaryProductName: "" }))
+      .toMatchObject({ ok: false, reason: "missing_product" });
+  });
+
   it("retorna skip para manejo nao sanitario por padrao", () => {
     const result = validateSanitaryExecutionPreflight({
       tipoManejo: "pesagem",

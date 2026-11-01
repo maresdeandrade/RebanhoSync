@@ -11,7 +11,7 @@ export type SanitaryExecutionPreflightReason =
   | "compliance_block";
 
 export type SanitaryExecutionPreflightResult =
-  | { ok: true; status: "ready" | "skip" }
+  | { ok: true; status: "ready" | "skip"; warnings?: string[] }
   | {
       ok: false;
       reason: SanitaryExecutionPreflightReason;
@@ -20,6 +20,7 @@ export type SanitaryExecutionPreflightResult =
     };
 
 export type SanitaryExecutionPreflightInput = {
+  registrationMode?: "executed_fact";
   tipoManejo: string | null | undefined;
   sourceTaskId?: string | null;
   sanitaryType?: string | null;
@@ -40,16 +41,8 @@ const firstIssue = (
   fallback: string,
 ) => issues?.[0] ?? fallback;
 
-export function validateSanitaryExecutionPreflight(
-  input: SanitaryExecutionPreflightInput,
-): SanitaryExecutionPreflightResult {
-  const isSanitary = input.tipoManejo === "sanitario";
-
-  if (!isSanitary && input.issueScope !== "all_flows") {
-    return { ok: true, status: "skip" };
-  }
-
-  if (isSanitary && input.requireAgendaTask && !input.sourceTaskId) {
+function validateRequiredSanitaryStructure(input: SanitaryExecutionPreflightInput): SanitaryExecutionPreflightResult | undefined {
+  if (input.requireAgendaTask && !input.sourceTaskId) {
     return {
       ok: false,
       reason: "missing_agenda_task",
@@ -58,7 +51,7 @@ export function validateSanitaryExecutionPreflight(
     };
   }
 
-  if (isSanitary && input.requireSanitaryType && !input.sanitaryType) {
+  if (input.requireSanitaryType && !input.sanitaryType) {
     return {
       ok: false,
       reason: "missing_type",
@@ -68,7 +61,6 @@ export function validateSanitaryExecutionPreflight(
   }
 
   if (
-    isSanitary &&
     input.requireProduct &&
     !input.sanitaryProductName?.trim()
   ) {
@@ -78,6 +70,35 @@ export function validateSanitaryExecutionPreflight(
       message: "Informe o produto sanitario antes de confirmar.",
       severity: "block",
     };
+  }
+
+  return undefined;
+}
+
+export function validateSanitaryExecutionPreflight(
+  input: SanitaryExecutionPreflightInput,
+): SanitaryExecutionPreflightResult {
+  const isSanitary = input.tipoManejo === "sanitario";
+
+  if (!isSanitary && input.issueScope !== "all_flows" && input.registrationMode !== "executed_fact") {
+    return { ok: true, status: "skip" };
+  }
+
+  if (isSanitary) {
+    const structuralIssue = validateRequiredSanitaryStructure(input);
+    if (structuralIssue) return structuralIssue;
+  }
+
+  // This is an explicit factual caller, not approval for a future execution.
+  // Required structure above remains mandatory; eligibility is assessed separately.
+  if (input.registrationMode === "executed_fact") {
+    const warnings = [...new Set([
+      ...(input.protocolEligibilityIssues ?? []),
+      ...(input.sanitaryMovementBlockIssues ?? []),
+      ...(input.transitChecklistIssues ?? []),
+      ...(input.complianceFlowIssues ?? []),
+    ])];
+    return { ok: true, status: isSanitary ? "ready" : "skip", ...(warnings.length ? { warnings } : {}) };
   }
 
   if (isSanitary && (input.protocolEligibilityIssues?.length ?? 0) > 0) {
