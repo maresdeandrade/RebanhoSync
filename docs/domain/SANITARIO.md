@@ -9,6 +9,12 @@
 
 Atualizado em: 2026-10-30
 
+## Estado integrado até #265 — 01/11/2026
+
+[GTA/CAS #264](https://github.com/maresdeandrade/RebanhoSync/pull/264), merge `56dbe1b1`, encerra o recorte factual/avisos: pendência documental ou sanitária não bloqueia o registro de fato ocorrido; guards técnicos permanecem e casos abertos continuam sinalizados com projeção stale. Não emite autorização oficial nem encerra I05/I06/G02 integralmente.
+
+[V3.1/V3.2 #265](https://github.com/maresdeandrade/RebanhoSync/pull/265), merge `23893a97`, integra fundação A/B/C, contrato único 3, execução por subconjuntos, recibos e recuperação offline; leitores de histórico, estoque e carência passam a considerar múltiplos Eventos conforme a [fonte de verdade](../context/SOURCE_OF_TRUTH.md#execução-sanitária-progressiva--contrato-integrado-265). A prova local 30/15/5/5/5 conserva cinco pendências e Agenda aberta; não implementa fechamento gerencial/continuidade do design integral. As seis migrations de #265 estão versionadas; aplicação em ambiente existente depende de autorização própria. [Evidências e limites](../review/CURRENT_PHASE_HANDOFF.md#entregas-integradas-até-os-prs-264-e-265--01112026). As descrições V2 e baselines de homologação abaixo conservam seus recortes históricos; não implicam liberação de produção.
+
 ## Objetivo
 
 Definir o contrato canônico do domínio sanitário do RebanhoSync.
@@ -74,7 +80,7 @@ Fora do escopo deste documento:
 
 Aplicar a [matriz canônica REGISTRAR / ALERTAR / CONDICIONAR ELEGIBILIDADE / BLOQUEAR POR INTEGRIDADE TÉCNICA](../context/SOURCE_OF_TRUTH.md#política-de-registro-alertas-e-elegibilidade). Inconformidade sanitária/documental não deve impedir registrar fato ocorrido ou sua atualização factual de estado tecnicamente válida. Alertas preservam evidências, sem autorização/proibição emitida pelo RebanhoSync. Planejamento, recomendação automática e elegibilidade específica não são execução factual.
 
-CAS-02A trata consistência de alertas derivados de casos e payload; CAS-02B, reconciliação técnica auditável quando necessária. O [mapa GTA-03/CAS-02](../review/GTA_03_CAS_02_POLICY_20261030.md) registra o diagnóstico de entrada, a implementação funcional local e seus limites. A norma não substitui evidência de runtime. As propostas anteriores de bloqueio sanitário universal de saída não são a direção de implementação vigente.
+CAS-02A trata consistência de alertas derivados de casos e payload; CAS-02B, reconciliação técnica auditável quando necessária. O [mapa GTA-03/CAS-02](../review/GTA_03_CAS_02_POLICY_20261030.md) registra o diagnóstico de entrada, a implementação funcional integrada por #264 e seus limites. A norma não substitui evidência de runtime. As propostas anteriores de bloqueio sanitário universal de saída não são a direção de implementação vigente.
 
 Registro incompleto não autoriza inventar produto, dose, vínculo ou carência. Preservar integridade do contrato factual existente; evolução para registrar lacunas exige escopo próprio. Condicionar recomendação/automação à evidência não equivale a impedir lançamento retrospectivo nem a certificar um produto/programa.
 

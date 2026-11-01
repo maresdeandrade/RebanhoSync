@@ -1,7 +1,7 @@
 ```md
 # Source of Truth — RebanhoSync
 
-Atualizado em: 2026-10-30
+Atualizado em: 2026-11-01
 
 ## Objetivo
 
@@ -59,11 +59,17 @@ Em caso de conflito, confiar nesta ordem:
 
 ---
 
+## Execução sanitária progressiva — contrato integrado #265
+
+A fundação V3.1 e a execução V3.2 estão integradas em `main@23893a97`. A obrigação/atendimento por animal identifica o que foi atendido e referencia o Evento confirmado; não substitui o Evento como fato. Subconjuntos podem produzir múltiplos Eventos para a mesma Agenda, sem converter execução parcial em fechamento administrativo global. Recibos e admissão preservam identidade/idempotência; o consumo é efeito transacional do Evento confirmado, e carência exige regra técnica explícita. [Contrato de domínio aprovado](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md) e [provas/limites da integração](../review/CURRENT_PHASE_HANDOFF.md#entregas-integradas-até-os-prs-264-e-265--01112026).
+
+O contexto offline guardado em `local_ownership` permite continuidade local somente para identidade/fazenda antes verificadas; não concede autorização remota. Envio após recuperação exige revalidação remota de sessão e membership; logout invalida esse contexto. Colaboração completa, barreira/fechamento gerencial e continuidade do design não são declarados implementados pelo recorte V3.1/V3.2. Integração de código/migrations não comprova aplicação em ambiente existente ou ativação de produção.
+
 ## Política de registro, alertas e elegibilidade
 
 Política de produto consolidada em 30/10/2026. RebanhoSync é plataforma de gestão: registra intenções, fatos e evidências; não emite autorização ou proibição sanitária/fiscal de trânsito. Registrar um fato não o torna regular, documentalmente verificado ou elegível para certificação. Obrigações e decisões de autoridades externas continuam externas ao sistema.
 
-Esta matriz é normativa. O [mapa GTA-03/CAS-02](../review/GTA_03_CAS_02_POLICY_20261030.md) distingue diagnóstico de entrada, adequação funcional local e limites de reconciliação/certificação. Resultados de implementação exigem evidência própria; a matriz sozinha não os comprova.
+Esta matriz é normativa. O [mapa GTA-03/CAS-02](../review/GTA_03_CAS_02_POLICY_20261030.md) distingue diagnóstico de entrada, adequação funcional integrada por #264 e limites de reconciliação/certificação. Resultados de implementação exigem evidência própria; a matriz sozinha não os comprova.
 
 ### Matriz canônica de decisão
 
