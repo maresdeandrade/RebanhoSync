@@ -18,6 +18,7 @@ import { createGesture } from "@/lib/offline/ops";
 import { establishLocalOwnership } from "@/lib/offline/ownership";
 import { buildCalfJourneyAgendaOps } from "../calfJourney";
 import { executeSanitaryAgendaV2 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
+import { assertBirthNeonatalAgendaOrigin } from "../neonatalAgendaExecution";
 import {
   registerPostPartumGesture,
   type PostPartumContext,
@@ -198,6 +199,10 @@ describe("registro prospectivo pós-parto", () => {
     const agendas = await db.ops_sanitario_agenda_v2.toArray();
     const first = agendas.find(row => row.acao_sanitaria === "cura_umbigo")!;
     const queueBefore = await db.queue_ops.toArray();
+    const entries = await db.ops_sanitario_agenda_animais_v2.where("agenda_id").equals(first.id).toArray();
+    await expect(assertBirthNeonatalAgendaOrigin(first, entries, db))
+      .rejects.toThrow("NEONATAL_AGENDA_BIRTH_EVIDENCE_MISSING");
+    // V3 rejects the retired whole-agenda writer before factual validation.
     await expect(executeSanitaryAgendaV2({
       fazendaId: farm,
       agendaId: first.id,
@@ -205,7 +210,7 @@ describe("registro prospectivo pós-parto", () => {
       executedAt: now,
       registrationMode: "executed_fact",
       confirmation: { userConfirmedExecution: true },
-    })).rejects.toThrow("NEONATAL_AGENDA_BIRTH_EVIDENCE_MISSING");
+    })).rejects.toThrow("SANITARIO_V3_EXECUTION_NOT_ENABLED");
     expect(await db.event_eventos_sanitario.count()).toBe(0);
     expect(await db.ops_sanitario_agenda_v2.toArray()).toEqual(agendas);
     expect(await db.queue_ops.toArray()).toEqual(queueBefore);
