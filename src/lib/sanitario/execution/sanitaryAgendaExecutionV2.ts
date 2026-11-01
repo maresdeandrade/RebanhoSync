@@ -199,18 +199,21 @@ function createUuid() {
   return id;
 }
 
-function resolveConfiguredSync(input: ExecuteSanitaryAgendaInputV2) {
-  if (input.sync) return input.sync;
-  if (typeof localStorage === "undefined") return null;
-  let projectRef: string;
+function configuredProjectRef() {
   try {
     const host = new URL(env.supabaseUrl).hostname;
-    projectRef = ["localhost", "127.0.0.1", "[::1]"].includes(host)
+    return ["localhost", "127.0.0.1", "[::1]"].includes(host)
       ? "local"
-      : host.split(".")[0] ?? "";
+      : (host.split(".")[0] ?? "");
   } catch {
     return null;
   }
+}
+
+function resolveConfiguredSync(input: ExecuteSanitaryAgendaInputV2) {
+  if (input.sync) return input.sync;
+  if (typeof localStorage === "undefined") return null;
+  const projectRef = configuredProjectRef();
   if (!projectRef || !isSanitarioV2PushEnabled(projectRef)) return null;
   const clientStorageKey = "gestao_agro_client_id";
   const existingClientId = localStorage.getItem(clientStorageKey);
@@ -1207,15 +1210,19 @@ export async function executeSanitaryAgendaV2(
     Object.assign(records.payload, {
       sanitario_v3_progressive: true,
       v3_request_identity: requestIdentity,
-      ...(records.movement ? { inventory_movement: {
-        id: records.movement.id,
-        insumo_id: records.movement.insumo_id,
-        insumo_lote_id: records.movement.insumo_lote_id,
-        quantidade_base: records.movement.quantidade_base,
-        unidade_base: records.movement.unidade_base,
-        client_op_id: records.movement.client_op_id,
-        domain_op_id: records.movement.domain_op_id,
-      } } : {}),
+      ...(records.movement
+        ? {
+            inventory_movement: {
+              id: records.movement.id,
+              insumo_id: records.movement.insumo_id,
+              insumo_lote_id: records.movement.insumo_lote_id,
+              quantidade_base: records.movement.quantidade_base,
+              unidade_base: records.movement.unidade_base,
+              client_op_id: records.movement.client_op_id,
+              domain_op_id: records.movement.domain_op_id,
+            },
+          }
+        : {}),
     });
     records.event.sanitario_v3_confirmation = "pending";
     records.detail.sanitario_v3_confirmation = "pending";
@@ -1290,6 +1297,73 @@ export async function executeSanitaryAgendaV2(
       throw new Error("NEONATAL_AGENDA_CHANGED");
   };
 
+  const persistExecutionEffects = async () => {
+    if (!progressive)
+      await applyExecutionInventory(localDb, records, input.fazendaId);
+    if (sync && factualOperation) {
+      await writeSanitarioV2Queue({
+        fazendaId: input.fazendaId,
+        clientId: sync.clientId,
+        operations: [factualOperation],
+        companionOperations:
+          !progressive && movementOperation ? [movementOperation] : [],
+      });
+    }
+  };
+  const persistLegacyCompletion = async () => {
+    if (!progressive)
+      await localDb.ops_sanitario_agenda_v2.update(input.agendaId, {
+        status: "executada",
+        execution_evento_id: records.event.id,
+        updated_at: records.now,
+        metadata: {
+          ...agenda.metadata,
+          execution: {
+            status: "executed",
+            eventId: records.event.id,
+            executedAt: basicValidation.executedAt,
+            clientOpId: input.clientOpId,
+          },
+        },
+      });
+    if (!progressive)
+      await localDb.ops_sanitario_agenda_animais_v2.bulkPut(
+        agendaAnimals.map((entry) => ({
+          ...entry,
+          planned_status: "executado",
+          execution_evento_id: records.event.id,
+          updated_at: records.now,
+        })),
+      );
+  };
+  const assertProgressiveOwnership = async () => {
+    input.assertCurrentContext?.();
+    if (
+      progressive &&
+      (await localDb.local_ownership.get(LOCAL_OWNERSHIP_KEY))
+        ?.owner_user_id !== ownership?.currentUserId
+    )
+      throw new Error("SANITARIO_V3_OWNERSHIP_CHANGED");
+  };
+  const readExecutableAgenda = async () => {
+    await assertProgressiveOwnership();
+    const current = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
+    if (
+      !current ||
+      current.deleted_at ||
+      current.fazenda_id !== input.fazendaId
+    ) {
+      throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
+    }
+    await assertNeonatalSnapshot(current);
+    if (current.execution_evento_id) return current;
+    if (current.status !== "programada") {
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_executable",
+      );
+    }
+    return current;
+  };
   const committed = await localDb.transaction(
     "rw",
     [
@@ -1315,29 +1389,9 @@ export async function executeSanitaryAgendaV2(
       localDb.catalog_sanitario_fonte_cobertura_campos_v2,
     ],
     async () => {
-      input.assertCurrentContext?.();
-      if (
-        progressive &&
-        (await localDb.local_ownership.get(LOCAL_OWNERSHIP_KEY))
-          ?.owner_user_id !== ownership?.currentUserId
-      )
-        throw new Error("SANITARIO_V3_OWNERSHIP_CHANGED");
-      const current = await localDb.ops_sanitario_agenda_v2.get(input.agendaId);
-      if (
-        !current ||
-        current.deleted_at ||
-        current.fazenda_id !== input.fazendaId
-      ) {
-        throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_found");
-      }
-      await assertNeonatalSnapshot(current);
+      const current = await readExecutableAgenda();
       if (current.execution_evento_id)
         return { eventId: current.execution_evento_id, created: false };
-      if (current.status !== "programada") {
-        throw new Error(
-          "SANITARY_AGENDA_EXECUTION_REJECTED:agenda_not_executable",
-        );
-      }
       const currentWarnings = [
         ...(await assertProtocolAuthorization(current)),
         ...(await assertProductApproval(current)),
@@ -1363,41 +1417,8 @@ export async function executeSanitaryAgendaV2(
           : records.detail,
       );
       await localDb.event_eventos_animais.bulkAdd(records.eventAnimals);
-      if (!progressive)
-        await applyExecutionInventory(localDb, records, input.fazendaId);
-      if (sync && factualOperation) {
-        await writeSanitarioV2Queue({
-          fazendaId: input.fazendaId,
-          clientId: sync.clientId,
-          operations: [factualOperation],
-          companionOperations:
-            !progressive && movementOperation ? [movementOperation] : [],
-        });
-      }
-      if (!progressive)
-        await localDb.ops_sanitario_agenda_v2.update(input.agendaId, {
-          status: "executada",
-          execution_evento_id: records.event.id,
-          updated_at: records.now,
-          metadata: {
-            ...agenda.metadata,
-            execution: {
-              status: "executed",
-              eventId: records.event.id,
-              executedAt: basicValidation.executedAt,
-              clientOpId: input.clientOpId,
-            },
-          },
-        });
-      if (!progressive)
-        await localDb.ops_sanitario_agenda_animais_v2.bulkPut(
-          agendaAnimals.map((entry) => ({
-            ...entry,
-            planned_status: "executado",
-            execution_evento_id: records.event.id,
-            updated_at: records.now,
-          })),
-        );
+      await persistExecutionEffects();
+      await persistLegacyCompletion();
       await assertNeonatalContext();
       return { eventId: records.event.id, created: true };
     },

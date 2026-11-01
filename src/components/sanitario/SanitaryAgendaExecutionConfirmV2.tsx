@@ -39,6 +39,15 @@ import type {
 
 type ExecutionPayload = Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">;
 
+function executionApplication(dosesPerAnimal: string, route: string, executionUnit: string): ExecutionPayload["application"] {
+  if (!dosesPerAnimal && !route.trim()) return undefined;
+  return {
+    dose: dosesPerAnimal ? Number(dosesPerAnimal) : null,
+    doseUnit: executionUnit,
+    route: route.trim() || null,
+  };
+}
+
 export type SanitaryExecutionInventoryLotOptionV2 = {
   id: string;
   label: string;
@@ -589,14 +598,7 @@ export function SanitaryAgendaExecutionConfirmV2({
                     unit: executionUnit,
                   }
                 : undefined,
-              application:
-                dosesPerAnimal || route.trim()
-                  ? {
-                      dose: dosesPerAnimal ? Number(dosesPerAnimal) : null,
-                      doseUnit: executionUnit,
-                      route: route.trim() || null,
-                    }
-                  : undefined,
+              application: executionApplication(dosesPerAnimal, route, executionUnit),
               confirmation: {
                 userConfirmedExecution: true,
                 userConfirmedStockMovement: Boolean(inventoryLotId.trim()),

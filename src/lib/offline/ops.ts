@@ -1,5 +1,7 @@
 import { assertInventoryFarmContext, getInventoryFarmContextStores } from "@/lib/inventory/inventoryFarmContext";
 import { db } from "./db";
+import { getClientId } from "./clientIdentity";
+export { getClientId } from "./clientIdentity";
 import { prepareMovementIntents } from "./movement";
 import type {
   Gesture,
@@ -109,15 +111,6 @@ function getRecordKey(record: Record<string, unknown>): string | null {
   return null;
 }
 
-export const getClientId = () => {
-  const key = "gestao_agro_client_id";
-  const existing = localStorage.getItem(key);
-  if (existing) return existing;
-  const next = `browser:${crypto.randomUUID()}`;
-  localStorage.setItem(key, next);
-  return next;
-};
-
 function assertAllowedOfflinePushSurface(op: OperationInput) {
   const localStoreName = getLocalStoreName(op.table);
 
@@ -222,13 +215,7 @@ function assertMovementWriterBoundary(ops_input: OperationInput[]) {
   }
 }
 
-export const createGesture = async (
-  fazenda_id: string,
-  ops_input: OperationInput[],
-  options: CreateGestureOptions = {},
-) => {
-  const { validateContext = () => undefined } = options;
-  validateContext();
+async function assertSanitaryWriterBoundary(fazenda_id: string, ops_input: OperationInput[]) {
   // The generic gesture cannot create or indirectly complement a sanitary fact.
   // Planning drafts below keep their own atomic local materialization.
   for (const op of ops_input) {
@@ -239,12 +226,25 @@ export const createGesture = async (
       continue;
     }
     if (remote === "eventos_sanitario" || op.record.dominio === "sanitario") throw new Error("SANITARIO_SINGLE_ADMISSION_REQUIRED");
-    const sourceId = op.record.corrige_evento_id ?? op.record.evento_id ?? op.record.source_evento_id;
-    if (typeof sourceId === "string") {
-      const source = await db.event_eventos.get(sourceId);
-      if (source?.fazenda_id === fazenda_id && source.dominio === "sanitario") throw new Error("SANITARIO_SINGLE_ADMISSION_REQUIRED");
-    }
+    await assertNonSanitarySource(fazenda_id, op);
   }
+}
+
+async function assertNonSanitarySource(fazendaId: string, op: OperationInput) {
+  const sourceId = op.record.corrige_evento_id ?? op.record.evento_id ?? op.record.source_evento_id;
+  if (typeof sourceId !== "string") return;
+  const source = await db.event_eventos.get(sourceId);
+  if (source?.fazenda_id === fazendaId && source.dominio === "sanitario") throw new Error("SANITARIO_SINGLE_ADMISSION_REQUIRED");
+}
+
+export const createGesture = async (
+  fazenda_id: string,
+  ops_input: OperationInput[],
+  options: CreateGestureOptions = {},
+) => {
+  const { validateContext = () => undefined } = options;
+  validateContext();
+  await assertSanitaryWriterBoundary(fazenda_id, ops_input);
   assertMovementWriterBoundary(ops_input);
   const movementTx = options.clientTxId ?? crypto.randomUUID();
   const movement = ops_input.some(op => op.table === "movement_v1")
@@ -686,11 +686,7 @@ async function reapplyExplicitRejectedOperation(op: Operation, farmId: string) {
   await reapplyOpLocal(op);
 }
 
-export async function retryRejectedOperation(rejection: Rejection) {
-  const operation = await db.queue_ops.get(rejection.client_op_id);
-  if (!operation) {
-    throw new Error("REJECTED_OPERATION_NOT_AVAILABLE");
-  }
+async function recoverRejectedSanitaryOperation(operation: Operation, rejection: Rejection) {
   const { isSanitaryEvidenceOperation, recoverSanitaryFoundation } = await import("./sanitaryFoundationRecovery");
   const sanitaryRetry = isSanitaryEvidenceOperation(operation) && !isSanitaryStockRetry(operation);
   if (sanitaryRetry) {
@@ -698,10 +694,23 @@ export async function retryRejectedOperation(rejection: Rejection) {
     if (ownership.status !== "OWNED") throw new Error("SANITARIO_RECOVERY_OWNERSHIP_REQUIRED");
     await recoverSanitaryFoundation(rejection.fazenda_id);
     const recovered = await db.queue_ops.get(operation.client_op_id);
-    if (recovered?.sanitary_receipt) return {clientTxId:operation.client_tx_id,clientOpId:operation.client_op_id};
-    if (operation.record.domain === "sanitario_v2" && operation.record.contract_version !== 3) throw new Error("SANITARIO_CLIENT_CONTRACT_OUTDATED");
-    if (operation.record?.payload?.event?.natureza === "primary_execution" || operation.record?.payload?.event?.source_sanitario_agenda_v2_id) throw new Error("SANITARIO_V3_EXECUTION_NOT_ENABLED");
+    if (recovered?.sanitary_receipt) return {sanitaryRetry, recovered: true};
+    assertSanitaryRetryContract(operation);
   }
+  return {sanitaryRetry, recovered: false};
+}
+
+function assertSanitaryRetryContract(operation: Operation) {
+  if (operation.record.domain === "sanitario_v2" && operation.record.contract_version !== 3) throw new Error("SANITARIO_CLIENT_CONTRACT_OUTDATED");
+  const event = operation.record?.payload?.event;
+  if (event?.natureza === "primary_execution" || event?.source_sanitario_agenda_v2_id) throw new Error("SANITARIO_V3_EXECUTION_NOT_ENABLED");
+}
+
+export async function retryRejectedOperation(rejection: Rejection) {
+  const operation = await db.queue_ops.get(rejection.client_op_id);
+  if (!operation) throw new Error("REJECTED_OPERATION_NOT_AVAILABLE");
+  const {sanitaryRetry, recovered} = await recoverRejectedSanitaryOperation(operation, rejection);
+  if (recovered) return {clientTxId:operation.client_tx_id,clientOpId:operation.client_op_id};
   const isFactualCore = (op: Operation) =>
     op.record.domain === "sanitario_v2" && op.record.command === "apply_factual_core";
   const siblings = await db.queue_ops.where("client_tx_id").equals(operation.client_tx_id).toArray();

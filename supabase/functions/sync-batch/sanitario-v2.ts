@@ -214,9 +214,7 @@ export interface SanitarioSyncV2Result {
 }
 
 export interface SanitarioSyncV2Dependencies {
-  loadGate: (
-    fazendaId: string,
-  ) => Promise<{
+  loadGate: (fazendaId: string) => Promise<{
     data: SanitarioSyncV2Gate | null;
     error: SanitarioDbError | null;
   }>;
@@ -1075,6 +1073,28 @@ function dependencyReason(
   return null;
 }
 
+function canonicalEntityIdFor(
+  operation: SanitarioSyncV2Operation,
+  data: Record<string, unknown>,
+) {
+  const entity =
+    operation.command === "apply_factual_core"
+      ? data.evento_id
+      : operation.command === "close_agenda"
+        ? data.closure_id
+        : operation.command === "set_automation_plan"
+          ? data.fazenda_id
+          : data.agenda_id;
+  return typeof entity === "string" ? entity : undefined;
+}
+
+function canonicalStatusFor(data: Record<string, unknown>) {
+  if (typeof data.status === "string") return data.status;
+  return typeof data.agenda_status === "string"
+    ? data.agenda_status
+    : undefined;
+}
+
 function normalizeCanonicalResult(
   operation: SanitarioSyncV2Operation,
   data: unknown,
@@ -1086,36 +1106,17 @@ function normalizeCanonicalResult(
       "BLOCKED_DEPENDENCY",
     );
   }
-  const entity =
-    operation.command === "apply_factual_core"
-      ? data.evento_id
-      : operation.command === "close_agenda"
-        ? data.closure_id
-        : operation.command === "set_automation_plan"
-          ? data.fazenda_id
-          : data.agenda_id;
-  const canonicalEntityId = typeof entity === "string" ? entity : undefined;
-  const canonicalStatus =
-    typeof data.status === "string"
-      ? data.status
-      : typeof data.agenda_status === "string"
-        ? data.agenda_status
-        : undefined;
+  const collision = data.confirmed === false && data.outcome === "collision";
   return {
     op_id: operation.client_op_id,
     client_op_id: operation.client_op_id,
     domain_op_id: operation.domain_op_id,
-    status:
-      data.confirmed === false && data.outcome === "collision"
-        ? "CONFLICT"
-        : "APPLIED",
-    ...(data.confirmed === false && data.outcome === "collision"
-      ? { reason_code: "SANITARIO_OBLIGATION_COLLISION" }
-      : {}),
-    canonical_entity_id: canonicalEntityId,
+    status: collision ? "CONFLICT" : "APPLIED",
+    ...(collision ? { reason_code: "SANITARIO_OBLIGATION_COLLISION" } : {}),
+    canonical_entity_id: canonicalEntityIdFor(operation, data),
     current_revision:
       typeof data.revision === "number" ? data.revision : undefined,
-    canonical_status: canonicalStatus,
+    canonical_status: canonicalStatusFor(data),
     retryable: false,
     canonical_result: data,
   };
@@ -1197,6 +1198,76 @@ function evaluateGate(
   return null;
 }
 
+function validateProgressiveAdmission(
+  operation: SanitarioSyncV2Operation,
+): SanitarioSyncV2Result | null {
+  if (operation.command !== "apply_factual_core") return null;
+  const event = operation.payload.event;
+  if (
+    (event.natureza === "primary_execution" ||
+      event.source_sanitario_agenda_v2_id) &&
+    (event.natureza !== "primary_execution" ||
+      !event.source_sanitario_agenda_v2_id ||
+      event.payload?.sanitario_v3_progressive !== true)
+  ) {
+    return reject(
+      operation,
+      "SANITARIO_V3_EXECUTION_NOT_ENABLED",
+      "BLOCKED_DEPENDENCY",
+    );
+  }
+  return null;
+}
+
+async function validateAdmissionEvidence(
+  operation: SanitarioSyncV2Operation,
+  context: SanitarioSyncV2Context,
+  dependencies: SanitarioSyncV2Dependencies,
+): Promise<SanitarioSyncV2Result | null> {
+  if (operation.command !== "apply_factual_core") return null;
+  const progressive = validateProgressiveAdmission(operation);
+  if (progressive) return progressive;
+  try {
+    const evidence = await dependencies.validateProductEvidence(
+      operation,
+      context.fazendaId,
+    );
+    if (evidence.error)
+      return classifySanitarioSyncV2Error(operation, evidence.error);
+    if (evidence.reasonCode) return reject(operation, evidence.reasonCode);
+    return null;
+  } catch (error) {
+    return classifySanitarioSyncV2Error(operation, {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+function admissionReceiptResult(
+  operation: SanitarioSyncV2Operation,
+  receipt: { data: unknown; error: SanitarioDbError | null },
+): SanitarioSyncV2Result | null {
+  if (receipt.error)
+    return classifySanitarioSyncV2Error(operation, receipt.error);
+  if (!isRecord(receipt.data))
+    return reject(
+      operation,
+      "SANITARIO_RECEIPT_LOOKUP_UNAVAILABLE",
+      "BLOCKED_DEPENDENCY",
+    );
+  if (receipt.data.outcome === "found")
+    return normalizeCanonicalResult(operation, receipt.data.canonical_result);
+  if (receipt.data.outcome !== "absent")
+    return reject(
+      operation,
+      "SANITARIO_RECEIPT_LOOKUP_UNAVAILABLE",
+      "BLOCKED_DEPENDENCY",
+    );
+  if (operation.receipt_only)
+    return reject(operation, "SANITARIO_RECEIPT_ABSENT", "BLOCKED_DEPENDENCY");
+  return null;
+}
+
 export async function executeSanitarioSyncV2Operation(
   raw: unknown,
   context: SanitarioSyncV2Context,
@@ -1226,31 +1297,8 @@ export async function executeSanitarioSyncV2Operation(
       },
     };
     const receipt = await dependencies.callRpc(admissionCall);
-    if (receipt.error)
-      return classifySanitarioSyncV2Error(routedOperation, receipt.error);
-    if (!isRecord(receipt.data))
-      return reject(
-        routedOperation,
-        "SANITARIO_RECEIPT_LOOKUP_UNAVAILABLE",
-        "BLOCKED_DEPENDENCY",
-      );
-    if (receipt.data.outcome === "found")
-      return normalizeCanonicalResult(
-        routedOperation,
-        receipt.data.canonical_result,
-      );
-    if (receipt.data.outcome !== "absent")
-      return reject(
-        routedOperation,
-        "SANITARIO_RECEIPT_LOOKUP_UNAVAILABLE",
-        "BLOCKED_DEPENDENCY",
-      );
-    if (routedOperation.receipt_only)
-      return reject(
-        routedOperation,
-        "SANITARIO_RECEIPT_ABSENT",
-        "BLOCKED_DEPENDENCY",
-      );
+    const receiptResult = admissionReceiptResult(routedOperation, receipt);
+    if (receiptResult) return receiptResult;
   } catch (error) {
     return classifySanitarioSyncV2Error(routedOperation, {
       message: error instanceof Error ? error.message : String(error),
@@ -1285,40 +1333,12 @@ export async function executeSanitarioSyncV2Operation(
   if (validation.ok === false) return validation.result;
   const operation = validation.operation;
 
-  if (operation.command === "apply_factual_core") {
-    if (
-      (operation.payload.event.natureza === "primary_execution" ||
-        operation.payload.event.source_sanitario_agenda_v2_id) &&
-      (operation.payload.event.natureza !== "primary_execution" ||
-        !operation.payload.event.source_sanitario_agenda_v2_id ||
-        operation.payload.event.payload?.sanitario_v3_progressive !== true)
-    ) {
-      return reject(
-        operation,
-        "SANITARIO_V3_EXECUTION_NOT_ENABLED",
-        "BLOCKED_DEPENDENCY",
-      );
-    }
-    let evidenceValidation: Awaited<
-      ReturnType<SanitarioSyncV2Dependencies["validateProductEvidence"]>
-    >;
-    try {
-      evidenceValidation = await dependencies.validateProductEvidence(
-        operation,
-        context.fazendaId,
-      );
-    } catch (error) {
-      return classifySanitarioSyncV2Error(operation, {
-        message: error instanceof Error ? error.message : String(error),
-      });
-    }
-    if (evidenceValidation.error) {
-      return classifySanitarioSyncV2Error(operation, evidenceValidation.error);
-    }
-    if (evidenceValidation.reasonCode) {
-      return reject(operation, evidenceValidation.reasonCode);
-    }
-  }
+  const evidenceResult = await validateAdmissionEvidence(
+    operation,
+    context,
+    dependencies,
+  );
+  if (evidenceResult) return evidenceResult;
 
   const rpcCall: SanitarioRpcCall = {
     ...admissionCall,

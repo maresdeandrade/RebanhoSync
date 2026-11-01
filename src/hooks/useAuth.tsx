@@ -57,6 +57,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function farmMetadata(data: { metadata?: unknown } | null) {
+  return data?.metadata && typeof data.metadata === "object"
+    ? data.metadata as Record<string, unknown> : null;
+}
+
+async function recoverFarmMetadata(error: unknown, identity: string | null, farmId: string) {
+  if (!isConnectivityFailure(error) || !identity) return null;
+  return (await recoverOfflineFarm(identity, farmId))?.metadata ?? null;
+}
+
+async function rememberFarmMetadata(identity: string | null, farmId: string, metadata: Record<string, unknown> | null, isCurrent: () => boolean) {
+  if (!identity) return;
+  const access = (await getLocalOwnership())?.verified_farms?.[farmId];
+  if (isCurrent() && access?.role) {
+    await rememberVerifiedFarm(identity, farmId, access.role, metadata, isCurrent);
+  }
+}
+
 async function fetchMembershipRole(userId: string, farmId: string, isCurrent: () => boolean) {
   const { data: membership, error } = await supabase
     .from("user_fazendas")
@@ -167,30 +185,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (request !== farmContextRevision.current) return;
     if (error) {
       console.warn("[useAuth] Error fetching farm metadata:", error);
-      const access = isConnectivityFailure(error) && currentIdentity.current
-        ? await recoverOfflineFarm(currentIdentity.current, farmId) : null;
+      const metadata = await recoverFarmMetadata(error, currentIdentity.current, farmId);
       if (request !== farmContextRevision.current) return;
-      setFarmExperienceMode(resolveFarmExperienceMode(access?.metadata ?? null));
-      setFarmLifecycleConfig(resolveFarmLifecycleConfig(access?.metadata ?? null));
-      setFarmMeasurementConfig(resolveFarmMeasurementConfig(access?.metadata ?? null));
+      setFarmExperienceMode(resolveFarmExperienceMode(metadata));
+      setFarmLifecycleConfig(resolveFarmLifecycleConfig(metadata));
+      setFarmMeasurementConfig(resolveFarmMeasurementConfig(metadata));
       return;
     }
 
-    const metadata =
-      data?.metadata && typeof data.metadata === "object"
-        ? (data.metadata as Record<string, unknown>)
-        : null;
+    const metadata = farmMetadata(data);
 
     setFarmExperienceMode(resolveFarmExperienceMode(metadata));
     setFarmLifecycleConfig(resolveFarmLifecycleConfig(metadata));
     setFarmMeasurementConfig(resolveFarmMeasurementConfig(metadata));
-    if (currentIdentity.current) {
-      // Metadata belongs to the same verified membership, never another farm.
-      const access = (await getLocalOwnership())?.verified_farms?.[farmId];
-      if (request === farmContextRevision.current && access?.role) {
-        await rememberVerifiedFarm(currentIdentity.current, farmId, access.role, metadata, () => request === farmContextRevision.current);
-      }
-    }
+    // Metadata belongs to the same verified membership, never another farm.
+    await rememberFarmMetadata(currentIdentity.current, farmId, metadata, () => request === farmContextRevision.current);
   }, []);
 
   const loadFarmContext = useCallback(
@@ -215,9 +224,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!isCurrent()) return;
       setRole(access?.role ?? null);
       setIsSuperAdmin(false);
-      setFarmExperienceMode(resolveFarmExperienceMode(access?.metadata ?? null));
-      setFarmLifecycleConfig(resolveFarmLifecycleConfig(access?.metadata ?? null));
-      setFarmMeasurementConfig(resolveFarmMeasurementConfig(access?.metadata ?? null));
+      const metadata = access?.metadata ?? null;
+      setFarmExperienceMode(resolveFarmExperienceMode(metadata));
+      setFarmLifecycleConfig(resolveFarmLifecycleConfig(metadata));
+      setFarmMeasurementConfig(resolveFarmMeasurementConfig(metadata));
     };
     try {
       const {

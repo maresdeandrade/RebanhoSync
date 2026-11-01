@@ -1,4 +1,4 @@
-import { getClientId } from "@/lib/offline/ops";
+import { getClientId } from "@/lib/offline/clientIdentity";
 import {
   isSanitarioV2PushEnabled,
   createSanitarioV2Identity,

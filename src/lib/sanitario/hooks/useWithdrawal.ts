@@ -8,6 +8,28 @@ import {
   type SanitaryEventInputForReadModel,
 } from "../compliance/withdrawalReadModel";
 
+function snapshotString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+function snapshotNumber(value: unknown): number | null {
+  return typeof value === "number" ? value : null;
+}
+function snapshotProductType(
+  value: unknown,
+): value is "sanitario" | "nutricional" | "outro" | null {
+  return (
+    value === null ||
+    value === "sanitario" ||
+    value === "nutricional" ||
+    value === "outro"
+  );
+}
+function snapshotTrace(
+  value: unknown,
+): value is "manual" | "parcial" | "completo" {
+  return value === "manual" || value === "parcial" || value === "completo";
+}
+
 function inventorySnapshot(
   value: unknown,
 ): NonNullable<SanitaryEventInputForReadModel["payload"]>["insumo_snapshot"] {
@@ -17,29 +39,21 @@ function inventorySnapshot(
     trace = v.rastreabilidade;
   if (
     typeof v.produto_nome_snapshot !== "string" ||
-    (type !== null &&
-      type !== "sanitario" &&
-      type !== "nutricional" &&
-      type !== "outro") ||
-    (trace !== "manual" && trace !== "parcial" && trace !== "completo")
+    !snapshotProductType(type) ||
+    !snapshotTrace(trace)
   )
     return null;
   return {
     produto_nome_snapshot: v.produto_nome_snapshot,
-    produto_tipo_snapshot: type === "sanitario" ? type : type === "nutricional" ? type : type === "outro" ? type : null,
+    produto_tipo_snapshot: type,
     rastreabilidade: trace,
-    principio_ativo_snapshot:
-      typeof v.principio_ativo_snapshot === "string"
-        ? v.principio_ativo_snapshot
-        : null,
-    carencia_carne_dias_snapshot:
-      typeof v.carencia_carne_dias_snapshot === "number"
-        ? v.carencia_carne_dias_snapshot
-        : null,
-    carencia_leite_dias_snapshot:
-      typeof v.carencia_leite_dias_snapshot === "number"
-        ? v.carencia_leite_dias_snapshot
-        : null,
+    principio_ativo_snapshot: snapshotString(v.principio_ativo_snapshot),
+    carencia_carne_dias_snapshot: snapshotNumber(
+      v.carencia_carne_dias_snapshot,
+    ),
+    carencia_leite_dias_snapshot: snapshotNumber(
+      v.carencia_leite_dias_snapshot,
+    ),
     limitacoes: Array.isArray(v.limitacoes)
       ? v.limitacoes.filter((x): x is string => typeof x === "string")
       : [],

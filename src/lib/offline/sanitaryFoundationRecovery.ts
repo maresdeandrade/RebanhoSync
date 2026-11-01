@@ -55,18 +55,15 @@ function entityId(envelope: Record<string, unknown>): string | undefined {
   const payload = envelope.payload as
     | Record<string, Record<string, unknown> | string>
     | undefined;
-  switch (envelope.command) {
-    case "set_automation_plan":
-      return envelope.fazenda_id as string;
-    case "create_agenda":
-      return (payload?.agenda as Record<string, unknown>)?.id as string;
-    case "apply_factual_core":
-      return (payload?.event as Record<string, unknown>)?.id as string;
-    case "close_agenda":
-      return (payload?.closure as Record<string, unknown>)?.id as string;
-    default:
-      return payload?.agenda_id as string;
-  }
+  if (envelope.command === "set_automation_plan")
+    return envelope.fazenda_id as string;
+  const entityKey = new Map<unknown, string>([
+    ["create_agenda", "agenda"],
+    ["apply_factual_core", "event"],
+    ["close_agenda", "closure"],
+  ]).get(envelope.command);
+  if (!entityKey) return payload?.agenda_id as string;
+  return (payload?.[entityKey] as Record<string, unknown>)?.id as string;
 }
 function canonicalEntity(command: unknown, result: Record<string, unknown>) {
   if (command === "apply_factual_core") return result.evento_id;
@@ -81,15 +78,20 @@ function originalEnvelope(
   const mapped = mapQueuedSanitaryPlanV2(op, gesture.fazenda_id);
   const envelope =
     mapped ?? (op.record?.domain === "sanitario_v2" ? op.record : null);
-  if (
-    !envelope ||
-    envelope.client_op_id !== op.client_op_id ||
-    envelope.client_tx_id !== op.client_tx_id ||
-    (envelope.fazenda_id && envelope.fazenda_id !== gesture.fazenda_id) ||
-    (op.domain_op_id && envelope.domain_op_id !== op.domain_op_id)
-  )
-    return null;
+  if (!envelope || !matchesOriginalEnvelope(envelope, op, gesture)) return null;
   return { ...envelope, fazenda_id: gesture.fazenda_id };
+}
+function matchesOriginalEnvelope(
+  envelope: Record<string, unknown>,
+  op: Operation,
+  gesture: Gesture,
+) {
+  return (
+    envelope.client_op_id === op.client_op_id &&
+    envelope.client_tx_id === op.client_tx_id &&
+    (!envelope.fazenda_id || envelope.fazenda_id === gesture.fazenda_id) &&
+    (!op.domain_op_id || envelope.domain_op_id === op.domain_op_id)
+  );
 }
 async function lookupReceipt(
   op: Operation,
@@ -108,7 +110,17 @@ async function lookupReceipt(
   });
   if (error || !Array.isArray(data?.results) || data.results.length !== 1)
     return { status: "unavailable" };
-  const result = data.results[0] as SyncOperationResult;
+  return receiptLookupResult(
+    data.results[0] as SyncOperationResult,
+    op,
+    envelope,
+  );
+}
+function receiptLookupResult(
+  result: SyncOperationResult,
+  op: Operation,
+  envelope: Record<string, unknown>,
+): ReceiptLookupV3 {
   if (
     result.op_id !== op.client_op_id ||
     result.client_op_id !== op.client_op_id ||
@@ -125,6 +137,26 @@ async function lookupReceipt(
   if (result.reason_code === "SANITARIO_RECEIPT_ABSENT")
     return { status: "absent" };
   return { status: "unavailable" };
+}
+
+function installedReceiptFor(
+  op: Operation,
+  envelope: Record<string, unknown>,
+  receipt: ReceiptLookupV3,
+): SyncOperationResult {
+  const collision =
+    receipt.canonicalResult?.confirmed === false &&
+    receipt.canonicalResult?.outcome === "collision";
+  return {
+    op_id: op.client_op_id,
+    client_op_id: op.client_op_id,
+    domain_op_id: String(envelope.domain_op_id),
+    status: collision ? "CONFLICT" : "APPLIED",
+    ...(collision ? { reason_code: "SANITARIO_OBLIGATION_COLLISION" } : {}),
+    retryable: false,
+    canonical_entity_id: entityId(envelope),
+    canonical_result: receipt.canonicalResult,
+  };
 }
 
 /** Read-only classification plus receipt installation; never converts or sends a new write. */
@@ -183,118 +215,122 @@ export async function recoverSanitaryFoundation(
     (e) => !queuedEvents.has(e.id) && !acknowledged.has(e.id),
   ).length;
   for (const op of operations) {
-    const gesture = byTx.get(op.client_tx_id);
-    if (!gesture) {
-      result.preserved++;
-      continue;
-    }
-    const envelope = originalEnvelope(op, gesture);
-    const ownerMatches =
-      ownership.status === "OWNED" && !!ownership.ownerUserId;
-    if (!ownerMatches || !envelope) {
-      result.preserved++;
-      continue;
-    }
-    let receipt: ReceiptLookupV3;
-    try {
-      receipt = op.sanitary_receipt?.canonical_result
-        ? {
-            status: "found",
-            canonicalResult: op.sanitary_receipt.canonical_result,
-          }
-        : await dependencies.lookup(op, gesture);
-    } catch {
-      receipt = { status: "unavailable" };
-    }
-    const correspondence =
-      receipt.status === "found" &&
-      canonicalEntity(envelope.command, receipt.canonicalResult ?? {}) !==
-        entityId(envelope)
-        ? "ambiguous"
-        : "exact";
-    const disposition = classifySanitaryRecovery({
-      ownerMatches,
-      originalEnvelope: op,
-      receiptLookup: receipt,
-      correspondence,
-      incompatiblePendingProven: false,
-    });
-    if (disposition !== "install_receipt") {
-      result.preserved++;
-      continue;
-    }
-    const currentOwnership = await dependencies.ownership();
     if (
-      currentOwnership.status !== "OWNED" ||
-      currentOwnership.ownerUserId !== ownership.ownerUserId
-    ) {
-      result.preserved++;
-      continue;
-    }
-    const installed = await db.transaction(
-      "rw",
-      [
-        db.queue_ops,
-        db.queue_gestures,
-        db.local_ownership,
-        db.sync_reconcile_obligations,
-      ],
-      async () => {
-        const current = await db.queue_ops.get(op.client_op_id);
-        const currentGesture = await db.queue_gestures.get(op.client_tx_id);
-        const owner = await db.local_ownership.get(LOCAL_OWNERSHIP_KEY);
-        if (
-          owner?.owner_user_id !== ownership.ownerUserId ||
-          currentGesture?.fazenda_id !== fazendaId ||
-          currentGesture.status === "SYNCING" ||
-          !current ||
-          JSON.stringify(current) !== JSON.stringify(op)
-        )
-          return false;
-        const installedReceipt: SyncOperationResult = {
-          op_id: op.client_op_id,
-          client_op_id: op.client_op_id,
-          domain_op_id: String(envelope.domain_op_id),
-          status:
-            receipt.canonicalResult?.confirmed === false &&
-            receipt.canonicalResult?.outcome === "collision"
-              ? "CONFLICT"
-              : "APPLIED",
-          ...(receipt.canonicalResult?.confirmed === false &&
-          receipt.canonicalResult?.outcome === "collision"
-            ? { reason_code: "SANITARIO_OBLIGATION_COLLISION" }
-            : {}),
-          retryable: false,
-          canonical_entity_id: entityId(envelope),
-          canonical_result: receipt.canonicalResult,
-        };
-        await db.queue_ops.update(op.client_op_id, {
-          sanitary_receipt: installedReceipt,
-          sync_state: "RECONCILE",
-          next_attempt_at: undefined,
-        });
-        await db.queue_gestures.update(op.client_tx_id, {
-          status: "PENDING",
-          completed_at: undefined,
-          next_attempt_at: undefined,
-        });
-        await upsertReconciliationObligations([
-          {
-            fazendaId,
-            scope: "sanitario-v2",
-            origins: [
-              {
-                client_tx_id: op.client_tx_id,
-                client_op_ids: [op.client_op_id],
-              },
-            ],
-          },
-        ]);
-        return true;
-      },
-    );
-    if (installed) result.reconciled++;
+      await recoverQueuedReceipt(op, byTx, ownership, fazendaId, dependencies)
+    )
+      result.reconciled++;
     else result.preserved++;
   }
   return result;
+}
+
+async function recoverQueuedReceipt(
+  op: Operation,
+  byTx: Map<string, Gesture>,
+  ownership: LocalOwnershipDecision,
+  fazendaId: string,
+  dependencies: RecoveryDependenciesV3,
+): Promise<boolean> {
+  const gesture = byTx.get(op.client_tx_id);
+  if (!gesture) {
+    return false;
+  }
+  const envelope = originalEnvelope(op, gesture);
+  const ownerMatches = ownership.status === "OWNED" && !!ownership.ownerUserId;
+  if (!ownerMatches || !envelope) {
+    return false;
+  }
+  const receipt = await readRecoveryReceipt(op, gesture, dependencies);
+  const correspondence = receiptCorrespondence(envelope, receipt);
+  const disposition = classifySanitaryRecovery({
+    ownerMatches,
+    originalEnvelope: op,
+    receiptLookup: receipt,
+    correspondence,
+    incompatiblePendingProven: false,
+  });
+  if (disposition !== "install_receipt") {
+    return false;
+  }
+  const currentOwnership = await dependencies.ownership();
+  if (
+    currentOwnership.status !== "OWNED" ||
+    currentOwnership.ownerUserId !== ownership.ownerUserId
+  ) {
+    return false;
+  }
+  const installed = await db.transaction(
+    "rw",
+    [
+      db.queue_ops,
+      db.queue_gestures,
+      db.local_ownership,
+      db.sync_reconcile_obligations,
+    ],
+    async () => {
+      const current = await db.queue_ops.get(op.client_op_id);
+      const currentGesture = await db.queue_gestures.get(op.client_tx_id);
+      const owner = await db.local_ownership.get(LOCAL_OWNERSHIP_KEY);
+      if (
+        owner?.owner_user_id !== ownership.ownerUserId ||
+        currentGesture?.fazenda_id !== fazendaId ||
+        currentGesture.status === "SYNCING" ||
+        !current ||
+        JSON.stringify(current) !== JSON.stringify(op)
+      )
+        return false;
+      const installedReceipt = installedReceiptFor(op, envelope, receipt);
+      await db.queue_ops.update(op.client_op_id, {
+        sanitary_receipt: installedReceipt,
+        sync_state: "RECONCILE",
+        next_attempt_at: undefined,
+      });
+      await db.queue_gestures.update(op.client_tx_id, {
+        status: "PENDING",
+        completed_at: undefined,
+        next_attempt_at: undefined,
+      });
+      await upsertReconciliationObligations([
+        {
+          fazendaId,
+          scope: "sanitario-v2",
+          origins: [
+            {
+              client_tx_id: op.client_tx_id,
+              client_op_ids: [op.client_op_id],
+            },
+          ],
+        },
+      ]);
+      return true;
+    },
+  );
+  return installed;
+}
+
+async function readRecoveryReceipt(
+  op: Operation,
+  gesture: Gesture,
+  dependencies: RecoveryDependenciesV3,
+): Promise<ReceiptLookupV3> {
+  try {
+    return op.sanitary_receipt?.canonical_result
+      ? {
+          status: "found",
+          canonicalResult: op.sanitary_receipt.canonical_result,
+        }
+      : await dependencies.lookup(op, gesture);
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+function receiptCorrespondence(
+  envelope: Record<string, unknown>,
+  receipt: ReceiptLookupV3,
+) {
+  return receipt.status === "found" &&
+    canonicalEntity(envelope.command, receipt.canonicalResult ?? {}) !==
+      entityId(envelope)
+    ? "ambiguous"
+    : "exact";
 }
