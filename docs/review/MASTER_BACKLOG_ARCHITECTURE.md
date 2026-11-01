@@ -1,10 +1,10 @@
 # MASTER-BACKLOG-01/02 — Frente I: contratos e ownership preliminar
 
-Atualizado em: 2026-10-30 (vínculo do design V3; inventário histórico preservado)
+Atualizado em: 2026-11-01 (integrações #264/#265; inventário histórico preservado)
 Design status: **PRELIMINAR / ALTERNATIVA B CANDIDATA / DECISÃO HUMANA PENDENTE**.
 Baseline estático: `origin/main@2f4e218c33b40b48524db721019186ddb2f3a70b`.
 
-**Design de domínio aprovado em 30/10/2026:** a [especificação canônica da Agenda Sanitária V3](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md) define múltiplos Eventos, execução compartilhada, conflitos, fechamento por estado conhecido e continuidade. Sua aprovação não aprova a reestruturação geral da Frente I chamada Alternativa B neste inventário; a separação de responsabilidades diagnosticada permanece referência, sem reabrir I01/I02/I04. O [backlog](./MASTER_BACKLOG.md#reconciliação-dos-bloqueadores-e-decisões) e as [pendências técnicas](./OPEN_REVIEW_ITEMS.md#agenda-sanitária-v3--pendências-técnicas-do-design-aprovado) registram as extensões nos IDs existentes. A fundação V3.1 e a execução V3.2 foram implementadas e homologadas localmente; os demais contratos do design seguem futuros. A autorização de PR não aprova a reestruturação geral da Frente I, implantação ou merge. BLQ-002/003 abertos e GATE-03 bloqueado.
+**Design de domínio aprovado em 30/10/2026:** a [especificação canônica da Agenda Sanitária V3](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md) define múltiplos Eventos, execução compartilhada, conflitos, fechamento por estado conhecido e continuidade. Sua aprovação não aprova a reestruturação geral da Frente I chamada Alternativa B neste inventário; a separação de responsabilidades diagnosticada permanece referência, sem reabrir I01/I02/I04. O [backlog](./MASTER_BACKLOG.md#reconciliação-dos-bloqueadores-e-decisões) e as [pendências técnicas](./OPEN_REVIEW_ITEMS.md#agenda-sanitária-v3--pendências-técnicas-do-design-aprovado) registram as extensões nos IDs existentes. A fundação V3.1 e a execução V3.2 foram integradas pelo PR #265 em `23893a97`, após homologação local; os demais contratos do design seguem futuros. GTA/CAS foi integrado pelo PR #264 em `56dbe1b1`. Esses merges não aprovam a reestruturação geral da Frente I ou implantação; [evidências e limites](./CURRENT_PHASE_HANDOFF.md#entregas-integradas-até-os-prs-264-e-265--01112026). BLQ-002/003 abertos e GATE-03 bloqueado.
 
 ## Fontes, alcance e limites
 
