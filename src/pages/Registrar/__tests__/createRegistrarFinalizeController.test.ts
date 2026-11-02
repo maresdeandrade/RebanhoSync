@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
 import { createRegistrarFinalizeController } from "@/pages/Registrar/createRegistrarFinalizeController";
+import { tryRegistrarSanitaryRpcFinalizeEffect } from "@/pages/Registrar/effects/sanitaryRpc";
 
 function buildControllerDeps() {
   return {
@@ -130,6 +131,32 @@ function buildFinalizeInput() {
 }
 
 describe("createRegistrarFinalizeController", () => {
+  it("encaminha o bloqueio V3 real ao feedback sem fallback, conclusão ou persistência", async () => {
+    const deps = buildControllerDeps();
+    const base = buildFinalizeInput();
+    const onFinalizeHandled = vi.fn();
+    const controller = createRegistrarFinalizeController({
+      ...deps,
+      sanitary: { ...deps.sanitary, trySanitaryRpcFinalize: tryRegistrarSanitaryRpcFinalizeEffect },
+    });
+
+    await controller({
+      ...base,
+      context: { ...base.context, tipoManejo: "sanitario", sourceTaskId: "agenda-1" },
+      onFinalizeHandled,
+    });
+
+    expect(deps.feedback.resolveFinalizeCatchIssue).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining("SANITARIO_V3_EXECUTION_NOT_ENABLED") }),
+    );
+    expect(deps.feedback.showError).toHaveBeenCalledWith("erro");
+    expect(deps.tracks.resolveNonFinancialFinalizePlan).not.toHaveBeenCalled();
+    expect(deps.commit.buildAgendaCompletionOp).not.toHaveBeenCalled();
+    expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
+    expect(deps.feedback.showSuccess).not.toHaveBeenCalled();
+    expect(deps.feedback.navigate).not.toHaveBeenCalled();
+    expect(onFinalizeHandled).not.toHaveBeenCalled();
+  });
   it("bloqueia simulação antes de planejar ou persistir fatos", async () => {
     const deps = buildControllerDeps();
     const input = {
