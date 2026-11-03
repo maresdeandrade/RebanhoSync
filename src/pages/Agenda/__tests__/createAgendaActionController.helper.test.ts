@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createAgendaActionController } from "@/pages/Agenda/createAgendaActionController";
+import { concluirPendenciaSanitaria } from "@/lib/sanitario/infrastructure/service";
 import type { AgendaItem, ProtocoloSanitarioItem } from "@/lib/offline/types";
 
 function createAgendaItem(overrides: Partial<AgendaItem> = {}): AgendaItem {
@@ -51,6 +52,22 @@ function createDeps(overrides: Partial<Parameters<typeof createAgendaActionContr
 }
 
 describe("createAgendaActionController", () => {
+  it("exibe erro e não persiste nem anuncia sucesso quando o serviço real bloqueia a conclusão V3", async () => {
+    const deps = createDeps({ concludePendingSanitary: concluirPendenciaSanitaria });
+    const item = createAgendaItem();
+    const before = structuredClone(item);
+
+    await createAgendaActionController(deps).updateStatus(item, "concluido");
+
+    expect(deps.showError).toHaveBeenCalledWith("Falha ao concluir pendência sanitária com evento.");
+    expect(deps.logError).toHaveBeenCalledWith(
+      expect.any(String), expect.objectContaining({ message: expect.stringContaining("SANITARIO_V3_EXECUTION_NOT_ENABLED") }),
+    );
+    expect(deps.showSuccess).not.toHaveBeenCalled();
+    expect(deps.createGesture).not.toHaveBeenCalled();
+    expect(deps.pullDataForFarm).not.toHaveBeenCalled();
+    expect(item).toEqual(before);
+  });
   it("navigates calf journey items to cria-inicial", () => {
     const deps = createDeps();
     const controller = createAgendaActionController(deps);
