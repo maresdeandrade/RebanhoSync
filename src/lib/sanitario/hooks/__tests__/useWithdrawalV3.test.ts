@@ -29,6 +29,7 @@ it("reads confirmed group relations for animal and lot without assigning group w
     ["yes", "confirmed", "a"],
     ["wait", "pending", "pending-animal"],
     ["dispute", "collision", "pending-animal"],
+    ["late", "late", "pending-animal"],
   ] as const) {
     await db.event_eventos.put({
       id,

@@ -8,7 +8,7 @@
 import type { OfficialItemWithdrawal } from "./withdrawalPeriod";
 
 export interface SanitaryEventForWithdrawal {
-  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | null;
+  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | "late" | null;
   animal_id: string | null;
   fazenda_id: string;
   occurred_at: string;

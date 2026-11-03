@@ -975,6 +975,7 @@ function readSanitarioCommand(
   if (queuedSanitaryPlanV2(op)) return "set_automation_plan";
 
   const commands: readonly string[] = [
+    "manage_agenda",
     "create_agenda",
     "replace_agenda_animals",
     "apply_factual_core",
@@ -1323,7 +1324,7 @@ async function processSanitarioCanonicalResults(
           typeof canonical.confirmed === "boolean" &&
           ["APPLIED", "CONFLICT"].includes(result.status)
         ) {
-          const confirmation = canonical.confirmed
+          const confirmation = canonical.outcome === "late" ? ("late" as const) : canonical.confirmed
             ? ("confirmed" as const)
             : ("collision" as const);
           await db.event_eventos.update(local.id, {

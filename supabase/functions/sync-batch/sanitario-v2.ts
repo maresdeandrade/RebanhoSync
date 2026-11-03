@@ -3,6 +3,7 @@ export const SANITARIO_SYNC_V2_MAX_TARGETS = 500;
 export const SANITARIO_SYNC_V2_MAX_PAYLOAD_BYTES = 1024 * 1024;
 
 export type SanitarioSyncV2Command =
+  | "manage_agenda"
   | "create_agenda"
   | "replace_agenda_animals"
   | "apply_factual_core"
@@ -137,7 +138,19 @@ export interface CloseAgendaOperation extends SanitarioSyncV2OperationBase {
   };
 }
 
+export interface ManageAgendaOperation extends SanitarioSyncV2OperationBase {
+  command: "manage_agenda";
+  payload: {
+    agenda_id: string;
+    action: "participate" | "complete" | "prepare_close" | "confirm_close" | "cancel_preparation" | "cancel_continuation" | "resolve" | "reconcile_late" | "request_continuation" | "decide_continuation";
+    participation_id?: string;
+    final_sequence?: number;
+    [key: string]: unknown;
+  };
+}
+
 export type SanitarioSyncV2Operation =
+  | ManageAgendaOperation
   | CreateAgendaOperation
   | ReplaceAgendaAnimalsOperation
   | ApplyFactualCoreOperation
@@ -249,6 +262,7 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const COMMANDS = new Set<SanitarioSyncV2Command>([
+  "manage_agenda",
   "create_agenda",
   "replace_agenda_animals",
   "apply_factual_core",
@@ -261,6 +275,7 @@ const COMMAND_ALLOWED_ROLES: Record<
   SanitarioSyncV2Command,
   ReadonlySet<string>
 > = {
+  manage_agenda: new Set(["owner", "manager", "cowboy"]),
   create_agenda: new Set(["owner", "manager"]),
   replace_agenda_animals: new Set(["owner", "manager"]),
   apply_factual_core: new Set(["owner", "manager", "cowboy"]),
@@ -811,6 +826,12 @@ export function validateSanitarioSyncV2Operation(
       };
     }
   }
+  if (command === "manage_agenda") {
+    const actions = ["participate", "complete", "prepare_close", "confirm_close", "cancel_preparation", "cancel_continuation", "resolve", "reconcile_late", "request_continuation", "decide_continuation"];
+    if (!isUuid(payload.agenda_id) || !actions.includes(String(payload.action))) return { ok: false, result: reject(raw, "SANITARIO_COLLABORATION_PAYLOAD_INVALID") };
+    if (["participate", "complete"].includes(String(payload.action)) && !isUuid(payload.participation_id)) return { ok: false, result: reject(raw, "SANITARIO_PARTICIPATION_REQUIRED") };
+    if (payload.action === "complete" && !isRevision(payload.final_sequence)) return { ok: false, result: reject(raw, "SANITARIO_FINAL_SEQUENCE_INVALID") };
+  }
   if (command === "create_agenda") {
     if (!isRecord(payload.agenda) || !isUuid(payload.agenda.id)) {
       return {
@@ -961,6 +982,8 @@ export function buildSanitarioSyncV2RpcCall(
   };
 
   switch (operation.command) {
+    case "manage_agenda":
+      return { functionName: "internal_sanitario_admit_v3", args: { ...common, client_id: context.clientId, client_tx_id: context.clientTxId, payload: operation.payload } };
     case "set_automation_plan":
       return {
         functionName: "internal_sanitario_sync_v2_set_automation_plan",
@@ -1106,13 +1129,15 @@ function normalizeCanonicalResult(
       "BLOCKED_DEPENDENCY",
     );
   }
-  const collision = data.confirmed === false && data.outcome === "collision";
+  const collision = data.confirmed === false && ["collision", "dependency"].includes(String(data.outcome));
+  const late = data.outcome === "late";
   return {
     op_id: operation.client_op_id,
     client_op_id: operation.client_op_id,
     domain_op_id: operation.domain_op_id,
-    status: collision ? "CONFLICT" : "APPLIED",
-    ...(collision ? { reason_code: "SANITARIO_OBLIGATION_COLLISION" } : {}),
+    status: collision || late ? "CONFLICT" : "APPLIED",
+    ...(late ? { reason_code: "SANITARIO_LATE_RECORD" } : {}),
+    ...(collision ? { reason_code: data.outcome === "dependency" ? "SANITARIO_CONTINUATION_DEPENDENCY" : "SANITARIO_OBLIGATION_COLLISION" } : {}),
     canonical_entity_id: canonicalEntityIdFor(operation, data),
     current_revision:
       typeof data.revision === "number" ? data.revision : undefined,
@@ -1268,6 +1293,11 @@ function admissionReceiptResult(
   return null;
 }
 
+function isCowboyManagementDenied(operation: SanitarioSyncV2Operation, role: string): boolean {
+  if (role !== "cowboy" || operation.command !== "manage_agenda") return false;
+  return !["participate", "complete", "request_continuation"].includes(operation.payload.action);
+}
+
 export async function executeSanitarioSyncV2Operation(
   raw: unknown,
   context: SanitarioSyncV2Context,
@@ -1276,6 +1306,7 @@ export async function executeSanitarioSyncV2Operation(
   const routing = validateSanitarioSyncV2Routing(raw, context);
   if (routing.ok === false) return routing.result;
   const routedOperation = routing.operation;
+  if (isCowboyManagementDenied(routedOperation, context.membershipRole)) return reject(routedOperation, "SANITARIO_ROLE_NOT_ALLOWED");
 
   if (
     !COMMAND_ALLOWED_ROLES[routedOperation.command].has(context.membershipRole)

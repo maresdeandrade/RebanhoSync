@@ -31,7 +31,7 @@ export interface WithdrawalReadModel {
 }
 
 export interface SanitaryEventInputForReadModel {
-  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | null;
+  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | "late" | null;
   id: string;
   animal_id: string | null;
   lote_id: string | null;

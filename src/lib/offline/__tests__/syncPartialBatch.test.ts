@@ -541,8 +541,8 @@ describe("sync partial batch: reconciliação por operação", () => {
     expect(await db.queue_rejections.count()).toBe(1);
   });
 
-  it("em duplicidade de agenda sanitaria, faz rollback local e puxa agenda/eventos do servidor", async () => {
-    const txId = await createGesture("farm-partial", [
+  it("bloqueia fato sanitário genérico antes de persistir ou sincronizar", async () => {
+    const attempt = createGesture("farm-partial", [
       {
         table: "eventos",
         action: "INSERT",
@@ -566,37 +566,12 @@ describe("sync partial batch: reconciliação por operação", () => {
       },
     ]);
 
-    const [eventOp] = await db.queue_ops.where("client_tx_id").equals(txId).toArray();
-    expect(await db.event_eventos.get("evt-dup-local")).toBeDefined();
-
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          results: [
-            {
-              op_id: eventOp.client_op_id,
-              status: "REJECTED",
-              reason_code: "agenda_already_completed_by_event",
-              reason_message: "Agenda item already completed by event evt-server",
-            },
-          ],
-        }),
-        { status: 200 },
-      ),
-    );
-
-    await processGesture(await getGesture(txId));
-
+    await expect(attempt).rejects.toThrow("SANITARIO_SINGLE_ADMISSION_REQUIRED");
     expect(await db.event_eventos.get("evt-dup-local")).toBeUndefined();
-    expect(pullDataForFarm).toHaveBeenCalledWith(
-      "farm-partial",
-      ["agenda_itens", "eventos", "eventos_sanitario"],
-      { mode: "replace" },
-    );
-
-    const rejections = await db.queue_rejections.toArray();
-    expect(rejections[0]).toMatchObject({
-      reason_code: "agenda_already_completed_by_event",
-    });
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await db.queue_gestures.count()).toBe(0);
+    expect(await db.queue_rejections.count()).toBe(0);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(pullDataForFarm).not.toHaveBeenCalled();
   });
 });

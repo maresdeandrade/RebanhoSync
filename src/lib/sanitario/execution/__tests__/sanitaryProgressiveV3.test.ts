@@ -39,6 +39,7 @@ const input = (
   sync: { clientId: "v32-test", projectRef: "local" },
 });
 const tables = [
+  db.local_sanitario_participacoes,
   db.ops_sanitario_agenda_v2,
   db.ops_sanitario_agenda_animais_v2,
   db.event_eventos,
@@ -132,6 +133,10 @@ it("persists three independent subsets, keeps Agenda open and recovers immutable
     "programada",
   );
   const envelopes = await db.queue_ops.toArray();
+  const sequences = envelopes.map(op => op.record.payload.event.payload.participation_sequence).sort();
+  expect(sequences).toEqual([1, 2, 3]);
+  expect(new Set(envelopes.map(op => op.record.payload.event.payload.participation_id)).size).toBe(1);
+
   db.close();
   await db.open();
   await executeSanitaryAgendaV2(groups[0]);

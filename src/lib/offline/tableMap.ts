@@ -71,6 +71,10 @@ export const TABLE_MAP: Record<string, string> = {
     "catalog_sanitario_protocolo_itens_versions_v2",
 
   // Operational Rails - Agenda Sanitaria v2
+  sanitario_participacoes: "ops_sanitario_participacoes",
+  sanitario_participacao_operacoes: "ops_sanitario_participacao_operacoes",
+  sanitario_agenda_resultados: "ops_sanitario_agenda_resultados",
+  sanitario_continuidade_solicitacoes: "ops_sanitario_continuidade_solicitacoes",
   sanitario_agenda_v2: "ops_sanitario_agenda_v2",
   sanitario_agenda_animais_v2: "ops_sanitario_agenda_animais_v2",
   sanitario_agenda_closures_v2: "ops_sanitario_agenda_closures_v2",

@@ -116,6 +116,27 @@ async function lookupReceipt(
     envelope,
   );
 }
+function hasCanonicalReceipt(result: SyncOperationResult): boolean {
+  if (!result.canonical_result) return false;
+  if (result.status === "APPLIED") return true;
+  return (
+    result.status === "CONFLICT" &&
+    [
+      "SANITARIO_OBLIGATION_COLLISION",
+      "SANITARIO_LATE_RECORD",
+      "SANITARIO_CONTINUATION_DEPENDENCY",
+    ].includes(result.reason_code ?? "")
+  );
+}
+
+function conflictReceiptReason(outcome: unknown): string {
+  const reasons: Record<string, string> = {
+    late: "SANITARIO_LATE_RECORD",
+    dependency: "SANITARIO_CONTINUATION_DEPENDENCY",
+  };
+  return reasons[String(outcome)] ?? "SANITARIO_OBLIGATION_COLLISION";
+}
+
 function receiptLookupResult(
   result: SyncOperationResult,
   op: Operation,
@@ -127,12 +148,7 @@ function receiptLookupResult(
     result.domain_op_id !== envelope.domain_op_id
   )
     return { status: "unavailable" };
-  if (
-    (result.status === "APPLIED" ||
-      (result.status === "CONFLICT" &&
-        result.reason_code === "SANITARIO_OBLIGATION_COLLISION")) &&
-    result.canonical_result
-  )
+  if (hasCanonicalReceipt(result))
     return { status: "found", canonicalResult: result.canonical_result };
   if (result.reason_code === "SANITARIO_RECEIPT_ABSENT")
     return { status: "absent" };
@@ -146,13 +162,17 @@ function installedReceiptFor(
 ): SyncOperationResult {
   const collision =
     receipt.canonicalResult?.confirmed === false &&
-    receipt.canonicalResult?.outcome === "collision";
+    ["collision", "late", "dependency"].includes(
+      String(receipt.canonicalResult?.outcome),
+    );
   return {
     op_id: op.client_op_id,
     client_op_id: op.client_op_id,
     domain_op_id: String(envelope.domain_op_id),
     status: collision ? "CONFLICT" : "APPLIED",
-    ...(collision ? { reason_code: "SANITARIO_OBLIGATION_COLLISION" } : {}),
+    ...(collision
+      ? { reason_code: conflictReceiptReason(receipt.canonicalResult?.outcome) }
+      : {}),
     retryable: false,
     canonical_entity_id: entityId(envelope),
     canonical_result: receipt.canonicalResult,

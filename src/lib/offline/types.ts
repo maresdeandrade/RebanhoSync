@@ -30,6 +30,7 @@ export type GestureSyncResult =
   | "ERROR";
 export type OpAction = "INSERT" | "UPDATE" | "DELETE";
 export type SanitarioSyncV2Command =
+  | "manage_agenda"
   | "create_agenda"
   | "replace_agenda_animals"
   | "apply_factual_core"
@@ -1277,6 +1278,9 @@ export type SanitarioAgendaClosureV2Type =
   | "dismissed";
 
 export interface SanitarioAgendaLocalV2 {
+  closing_barrier?: { barrier_id: string; snapshot: Record<string, unknown>; not_executed: { animal_id: string; reason: string }[] } | null;
+  result_revision?: number;
+  operational_revision?: number;
   obrigacao_origem_agenda_id?: string | null;
   id: string;
   fazenda_id: string;
@@ -1598,8 +1602,10 @@ export interface SanitarioCaso {
   deleted_at: string | null;
 }
 
+type SanitaryConfirmationV3 = "pending" | "confirmed" | "collision" | "late" | null;
+
 export interface Evento {
-  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | null;
+  sanitario_v3_confirmation?: SanitaryConfirmationV3;
   id: string;
   fazenda_id: string;
   dominio: DominioEnum;
@@ -1635,7 +1641,7 @@ export interface Evento {
 }
 
 export interface EventoSanitario {
-  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | null;
+  sanitario_v3_confirmation?: SanitaryConfirmationV3;
   evento_id: string;
   fazenda_id: string;
   tipo: SanitarioTipoEnum;

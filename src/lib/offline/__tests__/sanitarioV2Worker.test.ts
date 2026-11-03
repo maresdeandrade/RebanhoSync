@@ -954,9 +954,11 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
     expect((await loadGesture(gesture.client_tx_id)).status).toBe("PENDING");
   });
 
-  it.each([true, false])(
-    "installs progressive receipt confirmed=%s atomically while preserving collision evidence",
-    async (confirmed) => {
+  it.each(["confirmed", "collision", "late", "dependency"])(
+    "installs progressive receipt outcome=%s atomically while preserving declared evidence",
+    async (outcome) => {
+      const confirmed = outcome === "confirmed";
+      const projectedOutcome = { confirmed: "confirmed", collision: "collision", late: "late", dependency: "collision" }[outcome];
       const { gesture, ops } = await seedGesture(
         ["apply_factual_core"],
         `v32-${confirmed}`,
@@ -995,18 +997,18 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
           canonical_result: {
             evento_id: eventId,
             confirmed,
-            outcome: confirmed ? "confirmed" : "collision",
+            outcome,
           },
         },
       ]);
       await processGesture(gesture);
       expect(
         (await db.event_eventos.get(eventId))?.sanitario_v3_confirmation,
-      ).toBe(confirmed ? "confirmed" : "collision");
+      ).toBe(projectedOutcome);
       expect(
         (await db.event_eventos_sanitario.get(eventId))
           ?.sanitario_v3_confirmation,
-      ).toBe(confirmed ? "confirmed" : "collision");
+      ).toBe(projectedOutcome);
       if (!confirmed)
         expect(await db.queue_ops.get(ops[0].client_op_id)).toMatchObject({
           sync_state: "REJECTED",

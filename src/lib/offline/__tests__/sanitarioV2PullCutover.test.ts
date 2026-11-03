@@ -51,12 +51,28 @@ describe("sanitario v2 ordered pull", () => {
       db.ops_sanitario_agenda_v2.clear(),
       db.ops_sanitario_agenda_animais_v2.clear(),
       db.ops_sanitario_agenda_closures_v2.clear(),
+      db.ops_sanitario_participacoes.clear(),
+      db.ops_sanitario_participacao_operacoes.clear(),
+      db.ops_sanitario_agenda_resultados.clear(),
+      db.ops_sanitario_continuidade_solicitacoes.clear(),
+      db.local_sanitario_participacoes.clear(),
       db.state_insumo_movimentacoes.clear(),
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
       db.state_fazenda_sanidade_config.clear(),
       db.sync_pull_cursors.clear(),
     ]);
+  });
+
+  it("instala fechamento confirmado por outro operador sem apagar comando gerencial rejeitado", async () => {
+    await db.ops_sanitario_agenda_v2.put({ id: EVENT_ID, fazenda_id: FARM_ID, status: "programada" } as never);
+    const pending = { client_op_id: crypto.randomUUID(), client_tx_id: crypto.randomUUID(), domain_op_id: crypto.randomUUID(), table: "sanitario_v2", action: "INSERT" as const, sync_state: "REJECTED" as const, created_at: CREATED_AT,
+      record: { domain: "sanitario_v2", command: "manage_agenda", fazenda_id: FARM_ID, payload: { agenda_id: EVENT_ID, action: "prepare_close" } } };
+    await db.queue_ops.put(pending);
+    vi.mocked(supabase.from).mockImplementation(() => ({ select: () => ({ eq: async () => ({ error: null, data: [{ id: EVENT_ID, fazenda_id: FARM_ID, status: "fechada", result_revision: 1, updated_at: CREATED_AT }] }) }) }) as never);
+    await pullDataForFarm(FARM_ID, ["sanitario_agenda_v2"], { mode: "merge" });
+    expect((await db.ops_sanitario_agenda_v2.get(EVENT_ID))?.status).toBe("fechada");
+    expect(await db.queue_ops.get(pending.client_op_id)).toEqual(pending);
   });
 
   it.each([false, true])("reconciliação de estoque lê além de 1000 e falha antes do merge: erro=%s", async (failPage) => {
@@ -403,6 +419,10 @@ describe("sanitario v2 ordered pull", () => {
       "insumo_movimentacoes",
       "insumo_lotes",
       "sanitario_agenda_closures_v2",
+      "sanitario_participacoes",
+      "sanitario_participacao_operacoes",
+      "sanitario_agenda_resultados",
+      "sanitario_continuidade_solicitacoes",
     ]);
     expect(await db.queue_gestures.get("tx-pending-before-pull")).toMatchObject(
       { status: "PENDING" },
