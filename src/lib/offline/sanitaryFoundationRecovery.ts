@@ -130,7 +130,7 @@ function receiptLookupResult(
   if (
     (result.status === "APPLIED" ||
       (result.status === "CONFLICT" &&
-        result.reason_code === "SANITARIO_OBLIGATION_COLLISION")) &&
+        ["SANITARIO_OBLIGATION_COLLISION", "SANITARIO_LATE_RECORD", "SANITARIO_CONTINUATION_DEPENDENCY"].includes(result.reason_code ?? ""))) &&
     result.canonical_result
   )
     return { status: "found", canonicalResult: result.canonical_result };
@@ -146,13 +146,13 @@ function installedReceiptFor(
 ): SyncOperationResult {
   const collision =
     receipt.canonicalResult?.confirmed === false &&
-    receipt.canonicalResult?.outcome === "collision";
+    ["collision", "late", "dependency"].includes(String(receipt.canonicalResult?.outcome));
   return {
     op_id: op.client_op_id,
     client_op_id: op.client_op_id,
     domain_op_id: String(envelope.domain_op_id),
     status: collision ? "CONFLICT" : "APPLIED",
-    ...(collision ? { reason_code: "SANITARIO_OBLIGATION_COLLISION" } : {}),
+    ...(collision ? { reason_code: receipt.canonicalResult?.outcome === "late" ? "SANITARIO_LATE_RECORD" : receipt.canonicalResult?.outcome === "dependency" ? "SANITARIO_CONTINUATION_DEPENDENCY" : "SANITARIO_OBLIGATION_COLLISION" } : {}),
     retryable: false,
     canonical_entity_id: entityId(envelope),
     canonical_result: receipt.canonicalResult,

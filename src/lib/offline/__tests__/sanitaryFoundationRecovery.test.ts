@@ -211,7 +211,7 @@ describe("sanitary foundation recovery", () => {
     expect(await db.event_eventos.count()).toBe(1);
   });
 
-  it("keeps a durable collision receipt as CONFLICT after restart, never APPLIED", async () => {
+  it.each(["collision", "late", "dependency"])("keeps a durable %s receipt as CONFLICT after restart, never APPLIED", async (outcome) => {
     const op = operation();
     const eventId = crypto.randomUUID();
     op.record = {
@@ -228,7 +228,7 @@ describe("sanitary foundation recovery", () => {
         canonicalResult: {
           evento_id: eventId,
           confirmed: false,
-          outcome: "collision",
+          outcome,
         },
       }),
     });
@@ -236,7 +236,7 @@ describe("sanitary foundation recovery", () => {
       (await db.queue_ops.get(op.client_op_id))?.sanitary_receipt,
     ).toMatchObject({
       status: "CONFLICT",
-      reason_code: "SANITARIO_OBLIGATION_COLLISION",
+      reason_code: outcome === "late" ? "SANITARIO_LATE_RECORD" : outcome === "dependency" ? "SANITARIO_CONTINUATION_DEPENDENCY" : "SANITARIO_OBLIGATION_COLLISION",
     });
   });
 });

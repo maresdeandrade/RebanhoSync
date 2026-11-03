@@ -46,6 +46,7 @@ export interface SanitarioV2QueuedOperation {
   domain: "sanitario_v2";
   contract_version: number;
   command:
+    | "manage_agenda"
     | "create_agenda"
     | "replace_agenda_animals"
     | "apply_factual_core"

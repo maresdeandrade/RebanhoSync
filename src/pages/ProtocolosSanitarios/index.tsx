@@ -1,3 +1,4 @@
+import { SanitaryAgendaCollaborationV3 } from "@/components/sanitario/SanitaryAgendaCollaborationV3";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BookOpenCheck, CalendarClock, History, ShieldCheck } from "lucide-react";
@@ -324,6 +325,7 @@ const ProtocolosSanitarios = () => {
 
         <TabsContent value="agenda">
           <SanitaryLocalAgendaPanelV2
+            renderCollaboration={item => <SanitaryAgendaCollaborationV3 agendaId={item.id} fazendaId={item.fazendaId} />}
             key={activeFarmId}
             items={localAgenda?.filter((item) => item.fazendaId === activeFarmId)}
             defaultResponsibleName={responsibleName(user)}

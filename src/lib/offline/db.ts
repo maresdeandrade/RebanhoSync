@@ -1,3 +1,4 @@
+import type { SanitaryParticipationV3, SanitaryDeclarationV3, SanitaryResultV3, SanitaryContinuationV3, SanitaryParticipationDraftV3 } from "@/lib/sanitario/execution/sanitaryCollaborationTypesV3";
 import Dexie, { type Table } from "dexie";
 import type { TelemetryFlushCursor } from "./types";
 import {
@@ -198,6 +199,11 @@ export class OfflineDB extends Dexie {
     SanitarioProtocoloItemVersionLocalV2,
     string
   >;
+  ops_sanitario_participacoes!: Table<SanitaryParticipationV3, string>;
+  ops_sanitario_participacao_operacoes!: Table<SanitaryDeclarationV3, string>;
+  ops_sanitario_agenda_resultados!: Table<SanitaryResultV3, string>;
+  ops_sanitario_continuidade_solicitacoes!: Table<SanitaryContinuationV3, string>;
+  local_sanitario_participacoes!: Table<SanitaryParticipationDraftV3, string>;
   ops_sanitario_agenda_v2!: Table<SanitarioAgendaLocalV2, string>;
   ops_sanitario_agenda_animais_v2!: Table<
     SanitarioAgendaAnimalLocalV2,
@@ -875,6 +881,14 @@ export class OfflineDB extends Dexie {
     });
     // F24.5E1: additive delivery checkpoint; never backfill or infer historical ACKs.
     this.version(33).stores({ telemetry_flush_cursors: "fazenda_id" });
+    // Additive V3 collaboration caches; local segments never imply a server ACK.
+    this.version(35).stores({
+      ops_sanitario_participacoes: "id, fazenda_id, agenda_id, updated_at",
+      ops_sanitario_participacao_operacoes: "id, fazenda_id, agenda_id, participation_id, updated_at",
+      ops_sanitario_agenda_resultados: "id, fazenda_id, agenda_id, revision, updated_at",
+      ops_sanitario_continuidade_solicitacoes: "id, fazenda_id, agenda_id, updated_at",
+      local_sanitario_participacoes: "id, fazenda_id, agenda_id, actor_user_id, [fazenda_id+agenda_id+actor_user_id+client_id]",
+    });
     // Additive pull-only provenance; no inferred links or changes to pending work.
     this.version(34).stores({
       catalog_sanitario_produto_carencia_fontes_v2:

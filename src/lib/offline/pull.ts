@@ -66,6 +66,10 @@ export const SANITARIO_AGENDA_V2_REMOTE_TABLES = [
   "sanitario_agenda_v2",
   "sanitario_agenda_animais_v2",
   "sanitario_agenda_closures_v2",
+  "sanitario_participacoes",
+  "sanitario_participacao_operacoes",
+  "sanitario_agenda_resultados",
+  "sanitario_continuidade_solicitacoes",
 ] as const;
 
 export interface PullOptions {
@@ -396,6 +400,10 @@ function getPendingPlanningRecords(
 ) {
   const envelope = operation.record;
   if (envelope.domain !== "sanitario_v2") return [];
+  // Management commands preserve their queue/draft but do not optimistically
+  // mutate Agenda rows. A pending/rejected decision must not hide another
+  // operator's confirmed barrier, closure or revised result from pull.
+  if (envelope.command === "manage_agenda") return [];
   const payload = remoteRecord(envelope.payload);
   const agenda = remoteRecord(payload.agenda);
   const closure = remoteRecord(payload.closure);
@@ -1370,6 +1378,10 @@ export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
     "insumo_movimentacoes",
     "insumo_lotes",
     "sanitario_agenda_closures_v2",
+  "sanitario_participacoes",
+  "sanitario_participacao_operacoes",
+  "sanitario_agenda_resultados",
+  "sanitario_continuidade_solicitacoes",
   ] as const;
 
   const results: Record<string, RemoteRow[]> = {};

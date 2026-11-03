@@ -1,3 +1,4 @@
+import { allocateSanitarySequenceV3 } from "./sanitaryCollaborationV3";
 import { requireSanitaryAdmissionV3 } from "@/lib/sanitario/execution/sanitaryAdmissionV3";
 import { readWithdrawalEvidenceCatalogV2 } from "./withdrawalEvidenceCatalogV2";
 import { buildInventoryCostSnapshot } from "@/lib/inventory/costing";
@@ -105,6 +106,7 @@ export type SanitaryAgendaBatchResultV2 = {
 
 export type SanitaryAgendaExecutionDbV2 = Pick<
   OfflineDB,
+  | "local_sanitario_participacoes"
   | "ops_sanitario_agenda_v2"
   | "ops_sanitario_agenda_animais_v2"
   | "event_eventos"
@@ -1367,6 +1369,7 @@ export async function executeSanitaryAgendaV2(
   const committed = await localDb.transaction(
     "rw",
     [
+      localDb.local_sanitario_participacoes,
       localDb.ops_sanitario_agenda_v2,
       localDb.ops_sanitario_agenda_animais_v2,
       localDb.event_eventos,
@@ -1404,6 +1407,10 @@ export async function executeSanitaryAgendaV2(
         records.payload.warnings,
       );
 
+      if (progressive && localDb === defaultDb) {
+        input.assertCurrentContext?.();
+        Object.assign(records.payload, await allocateSanitarySequenceV3(input.fazendaId, input.agendaId, sync?.clientId ?? "local"));
+      }
       await localDb.event_eventos.add(records.event);
       await localDb.event_eventos_sanitario.add(
         progressive

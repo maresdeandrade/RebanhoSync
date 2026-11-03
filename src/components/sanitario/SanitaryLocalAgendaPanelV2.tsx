@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   CalendarClock,
   ChevronDown,
@@ -65,6 +65,7 @@ const initialFilters: SanitaryLocalAgendaFiltersV2 = {
 type ExecutionPayload = Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">;
 
 type Props = {
+  renderCollaboration?: (item: SanitaryLocalAgendaListItemV2) => ReactNode;
   items: SanitaryLocalAgendaListItemV2[] | undefined;
   defaultResponsibleName?: string | null;
   executionProductOptions?: SanitaryExecutionProductOptionV2[];
@@ -148,6 +149,7 @@ function selectedCompatibilityMessage(items: SanitaryLocalAgendaListItemV2[]) {
 }
 
 export function SanitaryLocalAgendaPanelV2({
+  renderCollaboration,
   items,
   defaultResponsibleName,
   executionProductOptions,
@@ -407,6 +409,7 @@ export function SanitaryLocalAgendaPanelV2({
                                 </Button>
                               ) : null}
                             </div>
+                            {renderCollaboration?.(item)}
                           </div>
                         ))}
                       </div>
