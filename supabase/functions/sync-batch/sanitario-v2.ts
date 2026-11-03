@@ -1293,6 +1293,11 @@ function admissionReceiptResult(
   return null;
 }
 
+function isCowboyManagementDenied(operation: SanitarioSyncV2Operation, role: string): boolean {
+  if (role !== "cowboy" || operation.command !== "manage_agenda") return false;
+  return !["participate", "complete", "request_continuation"].includes(operation.payload.action);
+}
+
 export async function executeSanitarioSyncV2Operation(
   raw: unknown,
   context: SanitarioSyncV2Context,
@@ -1301,7 +1306,7 @@ export async function executeSanitarioSyncV2Operation(
   const routing = validateSanitarioSyncV2Routing(raw, context);
   if (routing.ok === false) return routing.result;
   const routedOperation = routing.operation;
-  if (routedOperation.command === "manage_agenda" && context.membershipRole === "cowboy" && !["participate", "complete", "request_continuation"].includes(routedOperation.payload.action)) return reject(routedOperation, "SANITARIO_ROLE_NOT_ALLOWED");
+  if (isCowboyManagementDenied(routedOperation, context.membershipRole)) return reject(routedOperation, "SANITARIO_ROLE_NOT_ALLOWED");
 
   if (
     !COMMAND_ALLOWED_ROLES[routedOperation.command].has(context.membershipRole)

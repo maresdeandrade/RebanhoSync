@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useAuth } from "@/hooks/useAuth";
 import { getCurrentLocalReadOwnership } from "@/lib/offline/localReadBoundary";
@@ -44,29 +44,17 @@ function operationalMessage(error: unknown) {
   );
 }
 
-export function SanitaryAgendaCollaborationV3({
-  agendaId,
-  fazendaId,
-}: {
-  agendaId: string;
-  fazendaId: string;
-}) {
-  const { user, activeFarmId, role } = useAuth();
-  const current = useRef({ userId: user?.id, farm: activeFarmId });
-  current.current = { userId: user?.id, farm: activeFarmId };
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [reason, setReason] = useState("");
-  const [date, setDate] = useState("");
-  const [finalSequences, setFinalSequences] = useState<Record<string, string>>(
-    {},
-  );
-  const [reasons, setReasons] = useState<Record<string, string>>({});
-  const sync = readSanitaryPlanningSyncContextV2();
-  const data = useLiveQuery(async () => {
-    if (!user || activeFarmId !== fazendaId) return;
+function useCollaborationDataV3(
+  agendaId: string,
+  fazendaId: string,
+  userId: string | undefined,
+  activeFarmId: string | null | undefined,
+  clientId: string | undefined,
+) {
+  return useLiveQuery(async () => {
+    if (!userId || activeFarmId !== fazendaId) return;
     const ownership = await getCurrentLocalReadOwnership();
-    if (ownership.status !== "OWNED" || ownership.currentUserId !== user.id)
+    if (ownership.status !== "OWNED" || ownership.currentUserId !== userId)
       return;
     const [
       agenda,
@@ -119,12 +107,12 @@ export function SanitaryAgendaCollaborationV3({
                 agendaId),
         )
         .toArray(),
-      sync
+      clientId
         ? currentParticipationV3({
             fazendaId,
             agendaId,
-            actorUserId: user.id,
-            clientId: sync.clientId,
+            actorUserId: userId,
+            clientId: clientId,
           })
         : undefined,
     ]);
@@ -142,7 +130,7 @@ export function SanitaryAgendaCollaborationV3({
     );
     return {
       animalNames,
-      actorUserId: user.id,
+      actorUserId: userId,
       agenda,
       participants,
       declarations,
@@ -153,17 +141,65 @@ export function SanitaryAgendaCollaborationV3({
       queue,
       draft,
     };
-  }, [agendaId, fazendaId, user?.id, activeFarmId, sync?.clientId]);
-  if (
-    !data ||
-    !user ||
-    data.actorUserId !== user.id ||
-    activeFarmId !== fazendaId
-  )
+  }, [agendaId, fazendaId, userId, activeFarmId, clientId]);
+}
+
+type CollaborationViewDataV3 = NonNullable<
+  ReturnType<typeof useCollaborationDataV3>
+>;
+type CollaborationSendV3 = (
+  action: SanitaryActionV3,
+  fields?: Record<string, unknown>,
+) => Promise<void>;
+
+function sameContext(
+  actorUserId: string | undefined,
+  activeFarmId: string | null | undefined,
+  userId: string,
+  farmId: string,
+) {
+  return actorUserId === userId && activeFarmId === farmId;
+}
+
+function isManagerialRoleV3(role: string | null | undefined) {
+  return role === "owner" || role === "manager";
+}
+function hasClosedResultV3(data: CollaborationViewDataV3) {
+  return data.agenda.status === "fechada" && Boolean(data.result);
+}
+
+export function SanitaryAgendaCollaborationV3({
+  agendaId,
+  fazendaId,
+}: {
+  agendaId: string;
+  fazendaId: string;
+}) {
+  const { user, activeFarmId, role } = useAuth();
+  const current = useRef({ userId: user?.id, farm: activeFarmId });
+  current.current = { userId: user?.id, farm: activeFarmId };
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [reason, setReason] = useState("");
+  const [date, setDate] = useState("");
+  const [finalSequences, setFinalSequences] = useState<Record<string, string>>(
+    {},
+  );
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const sync = readSanitaryPlanningSyncContextV2();
+  const data = useCollaborationDataV3(
+    agendaId,
+    fazendaId,
+    user?.id,
+    activeFarmId,
+    sync?.clientId,
+  );
+  if (!data || !user) return null;
+  if (!sameContext(data.actorUserId, activeFarmId, user.id, fazendaId))
     return null;
   const animalLabel = (id: string) =>
     `Animal ${data.animalNames.get(id) ?? id.slice(0, 8)}`;
-  const managerial = role === "owner" || role === "manager";
+  const managerial = isManagerialRoleV3(role);
   const open = data.agenda.status === "programada";
   const outstanding = data.animals.filter(
     (x) => x.planned_status !== "executado",
@@ -172,46 +208,20 @@ export function SanitaryAgendaCollaborationV3({
     animal_id: x.animal_id,
     reason: reasons[x.animal_id] ?? x.not_executed_reason ?? "",
   }));
-  const send = async (
-    action: SanitaryActionV3,
-    fields: Record<string, unknown> = {},
-  ) => {
-    if (!sync) {
-      setNotice("Sincronização sanitária indisponível neste ambiente.");
-      return;
-    }
-    const userId = user.id;
-    setBusy(true);
-    setNotice("");
-    try {
-      await manageSanitaryAgendaV3(
-        {
-          fazendaId,
-          agendaId,
-          actorUserId: userId,
-          ...sync,
-          assertCurrentContext: () => {
-            if (
-              current.current.farm !== fazendaId ||
-              current.current.userId !== userId
-            )
-              throw Error("Contexto de fazenda ou usuário alterado.");
-          },
-        },
-        action,
-        fields,
-      );
-      if (
-        current.current.farm === fazendaId &&
-        current.current.userId === userId
-      )
-        setNotice("Salvo localmente · pendente de confirmação do servidor.");
-    } catch (error) {
-      setNotice(operationalMessage(error));
-    } finally {
-      setBusy(false);
-    }
-  };
+  const send: CollaborationSendV3 = (action, fields = {}) =>
+    sendCollaborationV3(
+      {
+        sync,
+        fazendaId,
+        agendaId,
+        userId: user.id,
+        current,
+        setNotice,
+        setBusy,
+      },
+      action,
+      fields,
+    );
   return (
     <section
       className="col-span-full space-y-3 rounded border p-3"
@@ -222,201 +232,36 @@ export function SanitaryAgendaCollaborationV3({
         Concluir sua atuação mantém a Agenda aberta. Somente o fechamento
         gerencial confirmado consolida o resultado.
       </p>
-      <div className="flex flex-wrap gap-2">
-        {open && (!data.draft || data.draft.completed) && (
-          <Button
-            size="sm"
-            disabled={busy || !sync}
-            onClick={() => send("participate")}
-          >
-            Iniciar participação
-          </Button>
-        )}
-        {open && data.draft && !data.draft.completed && (
-          <Button
-            size="sm"
-            disabled={busy || !sync}
-            onClick={() => send("complete")}
-          >
-            Concluir minha atuação
-          </Button>
-        )}
-      </div>
-      <ul className="text-xs">
-        {data.participants.map((p) => (
-          <li key={p.id}>
-            Participante {p.actor_user_id} · dispositivo {p.client_id} ·{" "}
-            {p.final_sequence === null
-              ? "atuação em andamento"
-              : `sequência final ${p.final_sequence}`}{" "}
-            ·{" "}
-            {
-              data.declarations.filter((o) => o.participation_id === p.id)
-                .length
-            }{" "}
-            operação(ões) recebida(s)
-          </li>
-        ))}
-      </ul>
-      {open &&
-        data.participants
-          .filter(
-            (p) =>
-              p.actor_user_id === user.id &&
-              p.client_id === sync?.clientId &&
-              p.final_sequence === null &&
-              p.id !== data.draft?.id,
-          )
-          .map((p) => (
-            <div key={p.id} className="space-y-2 text-xs">
-              <label>
-                Sequência final da participação anterior {p.id}
-                <Input
-                  aria-label={`Sequência final ${p.id}`}
-                  type="number"
-                  min="0"
-                  max="100000"
-                  value={finalSequences[p.id] ?? ""}
-                  onChange={(e) =>
-                    setFinalSequences((x) => ({ ...x, [p.id]: e.target.value }))
-                  }
-                />
-              </label>
-              <Button
-                size="sm"
-                disabled={busy || !sync || !finalSequences[p.id]}
-                onClick={() =>
-                  send("complete", {
-                    participation_id: p.id,
-                    final_sequence: Number(finalSequences[p.id]),
-                  })
-                }
-              >
-                Concluir participação anterior
-              </Button>
-            </div>
-          ))}
+      <ParticipationControlsV3
+        data={data}
+        open={open}
+        busy={busy}
+        sync={sync}
+        userId={user.id}
+        finalSequences={finalSequences}
+        setFinalSequences={setFinalSequences}
+        send={send}
+      />
       {data.queue.map((op) => (
-        <p key={op.client_op_id} className="text-xs">
-          {op.record.payload?.action ?? "Execução"}:{" "}
-          {data.declarations.some(
-            (d) => d.id === op.client_op_id && d.resolution,
-          )
-            ? "Reconciliado · declaração original preservada"
-            : op.sync_state === "REJECTED"
-              ? `Conflitante/rejeitado · ${operationalMessage(op.blocked_reason ?? "Verifique a sincronização")}`
-              : "Pendente de confirmação"}
-        </p>
+        <QueueRecordV3 key={op.client_op_id} op={op} data={data} />
       ))}
       {data.events.map((event) => (
-        <p key={event.id} className="text-xs">
-          Evento {event.id}:{" "}
-          {data.declarations.some(
-            (d) =>
-              (d.evento_id === event.id || d.id === event.client_op_id) &&
-              d.resolution,
-          )
-            ? "Reconciliado · evidência original preservada"
-            : event.sanitario_v3_confirmation === "confirmed"
-              ? "Confirmado"
-              : event.sanitario_v3_confirmation === "collision"
-                ? "Conflitante"
-                : event.sanitario_v3_confirmation === "late"
-                  ? "Registro tardio · requer reconciliação"
-                  : data.queue.some(
-                        (op) => op.record.payload?.event?.id === event.id,
-                      )
-                    ? "Pendente"
-                    : "Salvo localmente"}
-        </p>
+        <EventRecordV3 key={event.id} event={event} data={data} />
       ))}
-      <details>
-        <summary>Resultados por animal e por Evento</summary>
-        <ul className="text-xs">
-          {data.animals.map((animal) => (
-            <li key={animal.animal_id}>
-              {animalLabel(animal.animal_id)}: {animal.planned_status}{" "}
-              {animal.not_executed_reason}{" "}
-              {animal.execution_evento_id &&
-                `· Evento ${animal.execution_evento_id}`}
-            </li>
-          ))}
-        </ul>
-        {data.result && (
-          <p className="text-xs">
-            Resultado confirmado · revisão {data.result.revision} ·{" "}
-            {data.result.snapshot.events.length} Evento(s) e evidência(s) ·{" "}
-            {
-              data.result.snapshot.animals.filter(
-                (x) => x.planned_status === "executado",
-              ).length
-            }{" "}
-            animais atendidos ·{" "}
-            {
-              data.result.snapshot.animals.filter(
-                (x) => x.planned_status === "nao_executado",
-              ).length
-            }{" "}
-            não executados. Snapshot {data.result.id}.
-          </p>
-        )}
-      </details>
-      {managerial && (
-        <label className="block text-xs">
-          Justificativa da decisão
-          <Input
-            aria-label="Justificativa da decisão"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-        </label>
-      )}
-      {data.events
-        .filter(
-          (e) =>
-            e.sanitario_v3_confirmation === "collision" &&
-            !data.declarations.some((d) => d.evento_id === e.id),
-        )
-        .map((event) => (
-          <div key={event.id} className="space-y-2 border-l-2 pl-2 text-xs">
-            <p>
-              Evidência conflitante anterior · Evento {event.id} · aguardando
-              classificação explícita. Para reconhecer outra aplicação, registre
-              evidência factual completa; a projeção histórica não preserva
-              todos os parâmetros de efeitos.
-            </p>
-            {managerial && (
-              <div className="flex flex-wrap gap-2">
-                {["duplicate", "rejected"].map((decision) => (
-                  <Button
-                    key={decision}
-                    size="sm"
-                    variant="outline"
-                    disabled={busy || !reason.trim() || !sync}
-                    onClick={() =>
-                      send("resolve", {
-                        declaration_id: event.client_op_id,
-                        event_id: event.id,
-                        decision,
-                        reason,
-                      })
-                    }
-                  >
-                    {
-                      (
-                        {
-                          additional: "Reconhecer aplicação adicional",
-                          duplicate: "Classificar duplicidade",
-                          rejected: "Rejeitar evidência",
-                        } as Record<string, string>
-                      )[decision]
-                    }
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+      <AnimalResultsV3 data={data} animalLabel={animalLabel} />
+      <DecisionReasonV3
+        managerial={managerial}
+        reason={reason}
+        setReason={setReason}
+      />
+      <HistoricalEvidenceV3
+        data={data}
+        managerial={managerial}
+        busy={busy}
+        sync={sync}
+        reason={reason}
+        send={send}
+      />
       {data.declarations
         .filter((x) => x.outcome !== "confirmed")
         .map((declaration) => (
@@ -476,151 +321,40 @@ export function SanitaryAgendaCollaborationV3({
         ))}
       {managerial && open && (
         <>
-          {outstanding.map((animal) => (
-            <label key={animal.animal_id} className="block text-xs">
-              Motivo da não execução · {animalLabel(animal.animal_id)}
-              <Input
-                aria-label={`Motivo da não execução ${animal.animal_id}`}
-                value={
-                  reasons[animal.animal_id] ?? animal.not_executed_reason ?? ""
-                }
-                onChange={(e) =>
-                  setReasons((x) => ({
-                    ...x,
-                    [animal.animal_id]: e.target.value,
-                  }))
-                }
-              />
-            </label>
-          ))}
-          <Button
-            size="sm"
-            disabled={
-              busy || !sync || animalsWithReasons.some((x) => !x.reason.trim())
-            }
-            onClick={() =>
-              send("prepare_close", { not_executed: animalsWithReasons })
-            }
-          >
-            Preparar fechamento gerencial
-          </Button>
-          {data.agenda.closing_barrier && (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                disabled={busy || !sync}
-                onClick={() =>
-                  send("confirm_close", {
-                    barrier_id: data.agenda.closing_barrier!.barrier_id,
-                  })
-                }
-              >
-                Confirmar fechamento revisado
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={busy || !sync}
-                onClick={() => send("cancel_preparation")}
-              >
-                Cancelar preparação
-              </Button>
-            </div>
-          )}
+          <ClosureControlsV3
+            data={data}
+            outstanding={outstanding}
+            animalLabel={animalLabel}
+            busy={busy}
+            sync={sync}
+            reasons={reasons}
+            setReasons={setReasons}
+            animalsWithReasons={animalsWithReasons}
+            send={send}
+          />
+          <CancelContinuationV3
+            data={data}
+            busy={busy}
+            sync={sync}
+            reason={reason}
+            send={send}
+          />
         </>
       )}
-      {managerial &&
-        open &&
-        Boolean(data.agenda.metadata?.continuation_request_id) && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy || !sync || !reason.trim()}
-            onClick={() => send("cancel_continuation", { reason })}
-          >
-            Cancelar continuidade sem execução
-          </Button>
-        )}
-      {data.agenda.status === "fechada" && data.result && (
-        <>
-          {!managerial && (
-            <label className="block text-xs">
-              Justificativa da solicitação
-              <Input
-                aria-label="Justificativa da solicitação"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              />
-            </label>
-          )}
-          <Button
-            size="sm"
-            disabled={busy || !sync || !reason.trim() || !outstanding.length}
-            onClick={() =>
-              send("request_continuation", {
-                result_id: data.result!.id,
-                reason,
-                animals: animalsWithReasons,
-              })
-            }
-          >
-            Solicitar continuidade dos não executados
-          </Button>
-          {managerial && (
-            <label className="block text-xs">
-              Data da continuidade
-              <Input
-                type="date"
-                aria-label="Data da continuidade"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </label>
-          )}
-          {data.requests.map((request) => (
-            <div key={request.id} className="text-xs">
-              <p>
-                Solicitação {request.id} · {request.reason} ·{" "}
-                {request.decision ?? "aguardando decisão"}{" "}
-                {request.decision_reason}{" "}
-                {request.continuation_id &&
-                  `· Agenda de continuidade ${request.continuation_id}`}
-              </p>
-              {managerial && !request.decision && (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    disabled={busy || !sync || !reason.trim() || !date}
-                    onClick={() =>
-                      send("decide_continuation", {
-                        request_id: request.id,
-                        decision: "approved",
-                        reason,
-                        planned_for: date,
-                      })
-                    }
-                  >
-                    Aprovar continuidade
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busy || !sync || !reason.trim()}
-                    onClick={() =>
-                      send("decide_continuation", {
-                        request_id: request.id,
-                        decision: "rejected",
-                        reason,
-                      })
-                    }
-                  >
-                    Rejeitar continuidade
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
-        </>
+      {hasClosedResultV3(data) && (
+        <ContinuationControlsV3
+          data={data}
+          managerial={managerial}
+          busy={busy}
+          sync={sync}
+          reason={reason}
+          date={date}
+          setReason={setReason}
+          setDate={setDate}
+          outstanding={outstanding}
+          animalsWithReasons={animalsWithReasons}
+          send={send}
+        />
       )}
       {notice && (
         <p role="status" className="text-xs">
@@ -628,5 +362,577 @@ export function SanitaryAgendaCollaborationV3({
         </p>
       )}
     </section>
+  );
+}
+
+interface ContinuationControlsV3 {
+  data: CollaborationViewDataV3;
+  managerial: boolean;
+  busy: boolean;
+  sync: ReturnType<typeof readSanitaryPlanningSyncContextV2>;
+  reason: string;
+  date: string;
+  setReason: (value: string) => void;
+  setDate: (value: string) => void;
+  outstanding: CollaborationViewDataV3["animals"];
+  animalsWithReasons: { animal_id: string; reason: string }[];
+  send: CollaborationSendV3;
+}
+function ContinuationRequestV3({
+  request,
+  managerial,
+  busy,
+  sync,
+  reason,
+  date,
+  send,
+}: Pick<
+  ContinuationControlsV3,
+  "managerial" | "busy" | "sync" | "reason" | "date" | "send"
+> & { request: CollaborationViewDataV3["requests"][number] }) {
+  const disabled = busy || !sync || !reason.trim();
+  return (
+    <div className="text-xs">
+      <p>
+        Solicitação {request.id} · {request.reason} ·{" "}
+        {request.decision ?? "aguardando decisão"} {request.decision_reason}{" "}
+        {request.continuation_id &&
+          `· Agenda de continuidade ${request.continuation_id}`}
+      </p>
+      {managerial && !request.decision && (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            disabled={disabled || !date}
+            onClick={() =>
+              send("decide_continuation", {
+                request_id: request.id,
+                decision: "approved",
+                reason,
+                planned_for: date,
+              })
+            }
+          >
+            Aprovar continuidade
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={disabled}
+            onClick={() =>
+              send("decide_continuation", {
+                request_id: request.id,
+                decision: "rejected",
+                reason,
+              })
+            }
+          >
+            Rejeitar continuidade
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+function ContinuationControlsV3({
+  data,
+  managerial,
+  busy,
+  sync,
+  reason,
+  date,
+  setReason,
+  setDate,
+  outstanding,
+  animalsWithReasons,
+  send,
+}: ContinuationControlsV3) {
+  return (
+    <>
+      {!managerial && (
+        <label className="block text-xs">
+          Justificativa da solicitação
+          <Input
+            aria-label="Justificativa da solicitação"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </label>
+      )}
+      <Button
+        size="sm"
+        disabled={busy || !sync || !reason.trim() || !outstanding.length}
+        onClick={() =>
+          send("request_continuation", {
+            result_id: data.result!.id,
+            reason,
+            animals: animalsWithReasons,
+          })
+        }
+      >
+        Solicitar continuidade dos não executados
+      </Button>
+      {managerial && (
+        <label className="block text-xs">
+          Data da continuidade
+          <Input
+            type="date"
+            aria-label="Data da continuidade"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </label>
+      )}
+      {data.requests.map((request) => (
+        <ContinuationRequestV3
+          key={request.id}
+          request={request}
+          managerial={managerial}
+          busy={busy}
+          sync={sync}
+          reason={reason}
+          date={date}
+          send={send}
+        />
+      ))}
+    </>
+  );
+}
+
+function QueueRecordV3({
+  op,
+  data,
+}: {
+  op: CollaborationViewDataV3["queue"][number];
+  data: CollaborationViewDataV3;
+}) {
+  return (
+    <p className="text-xs">
+      {op.record.payload?.action ?? "Execução"}:{" "}
+      {data.declarations.some((d) => d.id === op.client_op_id && d.resolution)
+        ? "Reconciliado · declaração original preservada"
+        : op.sync_state === "REJECTED"
+          ? `Conflitante/rejeitado · ${operationalMessage(op.blocked_reason ?? "Verifique a sincronização")}`
+          : "Pendente de confirmação"}
+    </p>
+  );
+}
+function EventRecordV3({
+  event,
+  data,
+}: {
+  event: CollaborationViewDataV3["events"][number];
+  data: CollaborationViewDataV3;
+}) {
+  return (
+    <p className="text-xs">
+      Evento {event.id}:{" "}
+      {data.declarations.some(
+        (d) =>
+          (d.evento_id === event.id || d.id === event.client_op_id) &&
+          d.resolution,
+      )
+        ? "Reconciliado · evidência original preservada"
+        : event.sanitario_v3_confirmation === "confirmed"
+          ? "Confirmado"
+          : event.sanitario_v3_confirmation === "collision"
+            ? "Conflitante"
+            : event.sanitario_v3_confirmation === "late"
+              ? "Registro tardio · requer reconciliação"
+              : data.queue.some(
+                    (op) => op.record.payload?.event?.id === event.id,
+                  )
+                ? "Pendente"
+                : "Salvo localmente"}
+    </p>
+  );
+}
+
+function ParticipationControlsV3({
+  data,
+  open,
+  busy,
+  sync,
+  userId,
+  finalSequences,
+  setFinalSequences,
+  send,
+}: {
+  data: CollaborationViewDataV3;
+  open: boolean;
+  busy: boolean;
+  sync: ReturnType<typeof readSanitaryPlanningSyncContextV2>;
+  userId: string;
+  finalSequences: Record<string, string>;
+  setFinalSequences: Dispatch<SetStateAction<Record<string, string>>>;
+  send: CollaborationSendV3;
+}) {
+  const disabled = busy || !sync;
+  return (
+    <>
+      {" "}
+      <div className="flex flex-wrap gap-2">
+        {open && (!data.draft || data.draft.completed) && (
+          <Button
+            size="sm"
+            disabled={disabled}
+            onClick={() => send("participate")}
+          >
+            Iniciar participação
+          </Button>
+        )}
+        {open && data.draft && !data.draft.completed && (
+          <Button
+            size="sm"
+            disabled={disabled}
+            onClick={() => send("complete")}
+          >
+            Concluir minha atuação
+          </Button>
+        )}
+      </div>
+      <ul className="text-xs">
+        {data.participants.map((p) => (
+          <li key={p.id}>
+            Participante {p.actor_user_id} · dispositivo {p.client_id} ·{" "}
+            {p.final_sequence === null
+              ? "atuação em andamento"
+              : `sequência final ${p.final_sequence}`}{" "}
+            ·{" "}
+            {
+              data.declarations.filter((o) => o.participation_id === p.id)
+                .length
+            }{" "}
+            operação(ões) recebida(s)
+          </li>
+        ))}
+      </ul>
+      {open &&
+        data.participants
+          .filter(
+            (p) =>
+              p.actor_user_id === userId &&
+              p.client_id === sync?.clientId &&
+              p.final_sequence === null &&
+              p.id !== data.draft?.id,
+          )
+          .map((p) => (
+            <div key={p.id} className="space-y-2 text-xs">
+              <label>
+                Sequência final da participação anterior {p.id}
+                <Input
+                  aria-label={`Sequência final ${p.id}`}
+                  type="number"
+                  min="0"
+                  max="100000"
+                  value={finalSequences[p.id] ?? ""}
+                  onChange={(e) =>
+                    setFinalSequences((x) => ({ ...x, [p.id]: e.target.value }))
+                  }
+                />
+              </label>
+              <Button
+                size="sm"
+                disabled={disabled || !finalSequences[p.id]}
+                onClick={() =>
+                  send("complete", {
+                    participation_id: p.id,
+                    final_sequence: Number(finalSequences[p.id]),
+                  })
+                }
+              >
+                Concluir participação anterior
+              </Button>
+            </div>
+          ))}
+    </>
+  );
+}
+
+function AnimalResultsV3({
+  data,
+  animalLabel,
+}: {
+  data: CollaborationViewDataV3;
+  animalLabel: (id: string) => string;
+}) {
+  return (
+    <details>
+      <summary>Resultados por animal e por Evento</summary>
+      <ul className="text-xs">
+        {data.animals.map((animal) => (
+          <li key={animal.animal_id}>
+            {animalLabel(animal.animal_id)}: {animal.planned_status}{" "}
+            {animal.not_executed_reason}{" "}
+            {animal.execution_evento_id &&
+              `· Evento ${animal.execution_evento_id}`}
+          </li>
+        ))}
+      </ul>
+      {data.result && (
+        <p className="text-xs">
+          Resultado confirmado · revisão {data.result.revision} ·{" "}
+          {data.result.snapshot.events.length} Evento(s) e evidência(s) ·{" "}
+          {
+            data.result.snapshot.animals.filter(
+              (x) => x.planned_status === "executado",
+            ).length
+          }{" "}
+          animais atendidos ·{" "}
+          {
+            data.result.snapshot.animals.filter(
+              (x) => x.planned_status === "nao_executado",
+            ).length
+          }{" "}
+          não executados. Snapshot {data.result.id}.
+        </p>
+      )}
+    </details>
+  );
+}
+
+function ClosureControlsV3({
+  data,
+  outstanding,
+  animalLabel,
+  busy,
+  sync,
+  reasons,
+  setReasons,
+  animalsWithReasons,
+  send,
+}: {
+  data: CollaborationViewDataV3;
+  outstanding: CollaborationViewDataV3["animals"];
+  animalLabel: (id: string) => string;
+  busy: boolean;
+  sync: ReturnType<typeof readSanitaryPlanningSyncContextV2>;
+  reasons: Record<string, string>;
+  setReasons: Dispatch<SetStateAction<Record<string, string>>>;
+  animalsWithReasons: { animal_id: string; reason: string }[];
+  send: CollaborationSendV3;
+}) {
+  const disabled = busy || !sync;
+  return (
+    <>
+      {outstanding.map((animal) => (
+        <label key={animal.animal_id} className="block text-xs">
+          Motivo da não execução · {animalLabel(animal.animal_id)}
+          <Input
+            aria-label={`Motivo da não execução ${animal.animal_id}`}
+            value={
+              reasons[animal.animal_id] ?? animal.not_executed_reason ?? ""
+            }
+            onChange={(e) =>
+              setReasons((x) => ({
+                ...x,
+                [animal.animal_id]: e.target.value,
+              }))
+            }
+          />
+        </label>
+      ))}
+      <Button
+        size="sm"
+        disabled={disabled || animalsWithReasons.some((x) => !x.reason.trim())}
+        onClick={() =>
+          send("prepare_close", { not_executed: animalsWithReasons })
+        }
+      >
+        Preparar fechamento gerencial
+      </Button>
+      {data.agenda.closing_barrier && (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            disabled={disabled}
+            onClick={() =>
+              send("confirm_close", {
+                barrier_id: data.agenda.closing_barrier!.barrier_id,
+              })
+            }
+          >
+            Confirmar fechamento revisado
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={disabled}
+            onClick={() => send("cancel_preparation")}
+          >
+            Cancelar preparação
+          </Button>
+        </div>
+      )}
+    </>
+  );
+}
+
+function CancelContinuationV3({
+  data,
+  busy,
+  sync,
+  reason,
+  send,
+}: Pick<ContinuationControlsV3, "data" | "busy" | "sync" | "reason" | "send">) {
+  if (!data.agenda.metadata?.continuation_request_id) return null;
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={busy || !sync || !reason.trim()}
+      onClick={() => send("cancel_continuation", { reason })}
+    >
+      Cancelar continuidade sem execução
+    </Button>
+  );
+}
+
+function HistoricalEvidenceV3({
+  data,
+  managerial,
+  busy,
+  sync,
+  reason,
+  send,
+}: Pick<
+  ContinuationControlsV3,
+  "data" | "managerial" | "busy" | "sync" | "reason" | "send"
+>) {
+  return (
+    <>
+      {" "}
+      {data.events
+        .filter(
+          (e) =>
+            e.sanitario_v3_confirmation === "collision" &&
+            !data.declarations.some((d) => d.evento_id === e.id),
+        )
+        .map((event) => (
+          <div key={event.id} className="space-y-2 border-l-2 pl-2 text-xs">
+            <p>
+              Evidência conflitante anterior · Evento {event.id} · aguardando
+              classificação explícita. Para reconhecer outra aplicação, registre
+              evidência factual completa; a projeção histórica não preserva
+              todos os parâmetros de efeitos.
+            </p>
+            {managerial && (
+              <div className="flex flex-wrap gap-2">
+                {["duplicate", "rejected"].map((decision) => (
+                  <Button
+                    key={decision}
+                    size="sm"
+                    variant="outline"
+                    disabled={busy || !reason.trim() || !sync}
+                    onClick={() =>
+                      send("resolve", {
+                        declaration_id: event.client_op_id,
+                        event_id: event.id,
+                        decision,
+                        reason,
+                      })
+                    }
+                  >
+                    {
+                      (
+                        {
+                          additional: "Reconhecer aplicação adicional",
+                          duplicate: "Classificar duplicidade",
+                          rejected: "Rejeitar evidência",
+                        } as Record<string, string>
+                      )[decision]
+                    }
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+    </>
+  );
+}
+
+async function sendCollaborationV3(
+  {
+    sync,
+    fazendaId,
+    agendaId,
+    userId,
+    current,
+    setNotice,
+    setBusy,
+  }: {
+    sync: ReturnType<typeof readSanitaryPlanningSyncContextV2>;
+    fazendaId: string;
+    agendaId: string;
+    userId: string;
+    current: {
+      current: { userId: string | undefined; farm: string | null | undefined };
+    };
+    setNotice: (value: string) => void;
+    setBusy: (value: boolean) => void;
+  },
+  action: SanitaryActionV3,
+  fields: Record<string, unknown>,
+) {
+  if (!sync) {
+    setNotice("Sincronização sanitária indisponível neste ambiente.");
+    return;
+  }
+  setBusy(true);
+  setNotice("");
+  try {
+    await manageSanitaryAgendaV3(
+      {
+        fazendaId,
+        agendaId,
+        actorUserId: userId,
+        ...sync,
+        assertCurrentContext: () => {
+          if (
+            !sameContext(
+              current.current.userId,
+              current.current.farm,
+              userId,
+              fazendaId,
+            )
+          )
+            throw Error("Contexto de fazenda ou usuário alterado.");
+        },
+      },
+      action,
+      fields,
+    );
+    if (
+      sameContext(
+        current.current.userId,
+        current.current.farm,
+        userId,
+        fazendaId,
+      )
+    )
+      setNotice("Salvo localmente · pendente de confirmação do servidor.");
+  } catch (error) {
+    setNotice(operationalMessage(error));
+  } finally {
+    setBusy(false);
+  }
+}
+
+function DecisionReasonV3({
+  managerial,
+  reason,
+  setReason,
+}: Pick<ContinuationControlsV3, "managerial" | "reason" | "setReason">) {
+  if (!managerial) return null;
+  return (
+    <label className="block text-xs">
+      Justificativa da decisão
+      <Input
+        aria-label="Justificativa da decisão"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+      />
+    </label>
   );
 }

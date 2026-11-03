@@ -1,3 +1,4 @@
+// fallow-ignore-file unused-file -- Manual disposable integration entry; run with node --test.
 // Explicit task-owned, network-disabled PostgreSQL only. Never connects to an existing target.
 import { execFileSync, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";

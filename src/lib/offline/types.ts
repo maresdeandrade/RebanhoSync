@@ -1602,8 +1602,10 @@ export interface SanitarioCaso {
   deleted_at: string | null;
 }
 
+type SanitaryConfirmationV3 = "pending" | "confirmed" | "collision" | "late" | null;
+
 export interface Evento {
-  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | "late" | null;
+  sanitario_v3_confirmation?: SanitaryConfirmationV3;
   id: string;
   fazenda_id: string;
   dominio: DominioEnum;
@@ -1639,7 +1641,7 @@ export interface Evento {
 }
 
 export interface EventoSanitario {
-  sanitario_v3_confirmation?: "pending" | "confirmed" | "collision" | "late" | null;
+  sanitario_v3_confirmation?: SanitaryConfirmationV3;
   evento_id: string;
   fazenda_id: string;
   tipo: SanitarioTipoEnum;

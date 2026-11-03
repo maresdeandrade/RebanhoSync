@@ -1,3 +1,4 @@
+// fallow-ignore-file unused-file -- Manual disposable integration entry; run with node --test.
 // New, task-owned HTTP stack only. No existing container, network or credential is adopted.
 // Run: node --test tests/codex/sanitario-v3-collaboration.http.mjs
 import assert from 'node:assert/strict';

@@ -4,10 +4,7 @@ import {
   writeSanitarioV2Queue,
 } from "@/lib/offline/sanitarioV2Cutover";
 import { prepareSanitaryCommandV3 } from "./sanitaryAdmissionV3";
-import type {
-  SanitaryActionV3,
-  SanitaryParticipationDraftV3,
-} from "./sanitaryCollaborationTypesV3";
+import type { SanitaryActionV3 } from "./sanitaryCollaborationTypesV3";
 
 export interface CollaborationContextV3 {
   fazendaId: string;
@@ -72,6 +69,109 @@ export async function allocateSanitarySequenceV3(
   draft.sequence += 1;
   await db.local_sanitario_participacoes.put(draft);
   return { participation_id: draft.id, participation_sequence: draft.sequence };
+}
+
+function assertCommandReplay(
+  context: CollaborationContextV3,
+  action: SanitaryActionV3,
+  fields: Record<string, unknown>,
+  record: Record<string, unknown>,
+) {
+  const payload = record.payload as Record<string, unknown>;
+  if (
+    record.fazenda_id !== context.fazendaId ||
+    payload.agenda_id !== context.agendaId ||
+    payload.action !== action
+  )
+    throw Error("SANITARIO_IDENTITY_REUSE");
+  if (
+    Object.entries(fields).some(
+      ([key, value]) => JSON.stringify(payload[key]) !== JSON.stringify(value),
+    )
+  )
+    throw Error("SANITARIO_IDENTITY_REUSE_DIVERGENT_PAYLOAD");
+}
+
+async function originalParticipationPayload(
+  context: CollaborationContextV3,
+  fields: Record<string, unknown>,
+) {
+  const remote = await db.ops_sanitario_participacoes.get(
+    String(fields.participation_id),
+  );
+  if (
+    !remote ||
+    remote.fazenda_id !== context.fazendaId ||
+    remote.agenda_id !== context.agendaId ||
+    remote.actor_user_id !== context.actorUserId ||
+    remote.client_id !== context.clientId
+  )
+    throw Error("SANITARIO_PARTICIPATION_SCOPE_MISMATCH");
+  if (
+    !Number.isSafeInteger(fields.final_sequence) ||
+    Number(fields.final_sequence) < 0
+  )
+    throw Error("SANITARIO_FINAL_SEQUENCE_INVALID");
+  // Explicit declaration for an original durable segment, not a guessed final limit.
+  return { participation_id: remote.id, final_sequence: fields.final_sequence };
+}
+
+async function draftParticipationPayload(
+  context: CollaborationContextV3,
+  action: "participate" | "complete",
+  operationId: string,
+) {
+  let draft = await currentParticipationV3(context);
+  if (action === "participate") {
+    if (draft && !draft.completed)
+      throw Error("Já existe participação em andamento neste dispositivo.");
+    if (draft)
+      await db.local_sanitario_participacoes.update(draft.id, {
+        superseded: true,
+      });
+    draft = {
+      id: operationId,
+      fazenda_id: context.fazendaId,
+      agenda_id: context.agendaId,
+      actor_user_id: context.actorUserId,
+      client_id: context.clientId,
+      sequence: 0,
+      completed: false,
+    };
+  } else {
+    if (!draft || draft.completed)
+      throw Error("Nenhuma participação em andamento.");
+    draft.completed = true;
+  }
+  await db.local_sanitario_participacoes.put(draft);
+  return {
+    participation_id: draft.id,
+    ...(action === "complete" ? { final_sequence: draft.sequence } : {}),
+  };
+}
+
+async function participationPayload(
+  context: CollaborationContextV3,
+  action: SanitaryActionV3,
+  fields: Record<string, unknown>,
+  operationId: string,
+) {
+  const payload: Record<string, unknown> = {
+    ...fields,
+    agenda_id: context.agendaId,
+    action,
+  };
+  if (action === "complete" && typeof fields.participation_id === "string")
+    return {
+      ...payload,
+      ...(await originalParticipationPayload(context, fields)),
+    };
+  if (action === "participate" || action === "complete")
+    return {
+      ...payload,
+      ...(await draftParticipationPayload(context, action, operationId)),
+    };
+  return payload;
 }
 
 /** Local command is an intention. Only a server receipt/pull confirms the transition. */
@@ -144,85 +244,15 @@ export async function manageSanitaryAgendaV3(
       // An already durable envelope is replayed verbatim; never allocate a new segment/sequence.
       const existing = await db.queue_ops.get(operationId);
       if (existing) {
-        const p = existing.record.payload;
-        if (
-          existing.record.fazenda_id !== context.fazendaId ||
-          p.agenda_id !== context.agendaId ||
-          p.action !== action
-        )
-          throw Error("SANITARIO_IDENTITY_REUSE");
-        if (
-          Object.entries(fields).some(
-            ([key, value]) => JSON.stringify(p[key]) !== JSON.stringify(value),
-          )
-        )
-          throw Error("SANITARIO_IDENTITY_REUSE_DIVERGENT_PAYLOAD");
+        assertCommandReplay(context, action, fields, existing.record);
         return;
       }
-      let draft: SanitaryParticipationDraftV3 | undefined;
-      let payload: Record<string, unknown> = {
-        ...fields,
-        agenda_id: context.agendaId,
+      const payload = await participationPayload(
+        context,
         action,
-      };
-      if (
-        action === "complete" &&
-        typeof fields.participation_id === "string"
-      ) {
-        const remote = await db.ops_sanitario_participacoes.get(
-          fields.participation_id,
-        );
-        if (
-          !remote ||
-          remote.fazenda_id !== context.fazendaId ||
-          remote.agenda_id !== context.agendaId ||
-          remote.actor_user_id !== context.actorUserId ||
-          remote.client_id !== context.clientId
-        )
-          throw Error("SANITARIO_PARTICIPATION_SCOPE_MISMATCH");
-        if (
-          !Number.isSafeInteger(fields.final_sequence) ||
-          Number(fields.final_sequence) < 0
-        )
-          throw Error("SANITARIO_FINAL_SEQUENCE_INVALID");
-        // Explicit declaration for an original durable segment, not a guessed final limit.
-        payload = {
-          ...payload,
-          participation_id: remote.id,
-          final_sequence: fields.final_sequence,
-        };
-      } else if (action === "participate" || action === "complete") {
-        draft = await currentParticipationV3(context);
-        if (action === "participate") {
-          if (draft && !draft.completed)
-            throw Error(
-              "Já existe participação em andamento neste dispositivo.",
-            );
-          if (draft)
-            await db.local_sanitario_participacoes.update(draft.id, {
-              superseded: true,
-            });
-          draft = {
-            id: operationId,
-            fazenda_id: context.fazendaId,
-            agenda_id: context.agendaId,
-            actor_user_id: context.actorUserId,
-            client_id: context.clientId,
-            sequence: 0,
-            completed: false,
-          };
-        } else {
-          if (!draft || draft.completed)
-            throw Error("Nenhuma participação em andamento.");
-          draft.completed = true;
-        }
-        payload = {
-          ...payload,
-          participation_id: draft.id,
-          ...(action === "complete" ? { final_sequence: draft.sequence } : {}),
-        };
-        await db.local_sanitario_participacoes.put(draft);
-      }
+        fields,
+        operationId,
+      );
       const operation = prepareSanitaryCommandV3({ ...base, payload });
       await writeSanitarioV2Queue({
         fazendaId: context.fazendaId,
