@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { isLegacyOperation } from "./operation-routing";
 
 function readHandler() {
   return readFileSync(
@@ -29,7 +30,14 @@ describe("sync-batch handler initialization order", () => {
         handler.indexOf("const legacyOps"),
         handler.indexOf("if (featureFlags.strictAntiTeleport)"),
       ),
-    ).toContain("!isMovementV1Operation(op)");
+    ).toContain("ops.filter(isLegacyOperation)");
+    for (const movement of [
+      { domain: "movement_v1" },
+      { domain: "movement_future" },
+      { command: "apply_animal_lot" },
+    ]) {
+      expect(isLegacyOperation(movement as Parameters<typeof isLegacyOperation>[0])).toBe(false);
+    }
   });
   it("inicializa op e record antes do tratamento de finance_categories", () => {
     const handler = readHandler();

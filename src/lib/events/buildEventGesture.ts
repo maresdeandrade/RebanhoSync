@@ -483,6 +483,7 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
       ops.push({
         table: "animais",
         action: "UPDATE",
+        death_state: { animal_id: input.animalId, event_id: eventId },
         record: {
           id: input.animalId,
           status: "morto",
@@ -495,8 +496,9 @@ export const buildEventGesture = (input: EventInput): EventGestureBuildResult =>
       if (input.cancelAgendaIds && input.cancelAgendaIds.length > 0) {
         input.cancelAgendaIds.forEach((taskId) => {
           ops.push({
-            table: "state_agenda_itens",
+            table: "agenda_itens",
             action: "UPDATE",
+            death_cancel: { animal_id: input.animalId!, event_id: eventId },
             record: {
               id: taskId,
               status: "cancelado",

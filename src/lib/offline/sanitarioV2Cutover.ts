@@ -47,6 +47,7 @@ export interface SanitarioV2QueuedOperation {
   contract_version: number;
   command:
     | "manage_agenda"
+    | "death_participant"
     | "create_agenda"
     | "replace_agenda_animals"
     | "apply_factual_core"

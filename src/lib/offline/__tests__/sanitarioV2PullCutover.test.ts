@@ -42,6 +42,27 @@ function relation(overrides: Record<string, unknown> = {}) {
 }
 
 describe("sanitario v2 ordered pull", () => {
+  it.each(["merge", "replace"] as const)("protege dispensa pendente por chave composta e reconcilia após rejeição (%s)", async (mode) => {
+    const otherAnimal = crypto.randomUUID();
+    const local = { agenda_id: EVENT_ID, animal_id: ANIMAL_ID, fazenda_id: FARM_ID,
+      planned_status: "nao_executado", not_executed_reason: "obito:death", updated_at: CREATED_AT };
+    await db.ops_sanitario_agenda_animais_v2.put(local as never);
+    const pending = { client_op_id: crypto.randomUUID(), client_tx_id: crypto.randomUUID(), table: "sanitario_v2",
+      action: "INSERT" as const, sync_state: "PENDING" as const, created_at: CREATED_AT,
+      record: { domain: "sanitario_v2", command: "death_participant", fazenda_id: FARM_ID,
+        payload: { agenda_id: EVENT_ID, animal_id: ANIMAL_ID, death_event_id: "death" } } };
+    await db.queue_ops.put(pending);
+    const remote = [{ ...local, planned_status: "planejado", not_executed_reason: null },
+      { ...local, animal_id: otherAnimal, planned_status: "executado", not_executed_reason: null }];
+    vi.mocked(supabase.from).mockImplementation(() => ({ select: () => ({ eq: async () => ({ data: remote, error: null }) }) }) as never);
+    await pullDataForFarm(FARM_ID, ["sanitario_agenda_animais_v2"], { mode });
+    expect(await db.ops_sanitario_agenda_animais_v2.get([EVENT_ID, ANIMAL_ID])).toMatchObject({ planned_status: "nao_executado", not_executed_reason: "obito:death" });
+    expect(await db.ops_sanitario_agenda_animais_v2.get([EVENT_ID, otherAnimal])).toMatchObject({ planned_status: "executado" });
+    expect(await db.queue_ops.get(pending.client_op_id)).toEqual(pending);
+    await db.queue_ops.update(pending.client_op_id, { sync_state: "REJECTED" });
+    await pullDataForFarm(FARM_ID, ["sanitario_agenda_animais_v2"], { mode });
+    expect(await db.ops_sanitario_agenda_animais_v2.get([EVENT_ID, ANIMAL_ID])).toMatchObject({ planned_status: "planejado", not_executed_reason: null });
+  });
   beforeEach(async () => {
     vi.clearAllMocks();
     await Promise.all([

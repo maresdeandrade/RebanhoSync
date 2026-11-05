@@ -2,6 +2,28 @@ import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import { EventValidationError } from "@/lib/events/validators";
 
 describe("buildEventGesture", () => {
+  it("não usa a superfície state bloqueada para cancelar agenda no óbito", () => {
+    const result = buildEventGesture({
+      dominio: "obito",
+      fazendaId: "farm-1",
+      animalId: "animal-1",
+      causa: "doenca",
+      cancelAgendaIds: ["agenda-1"],
+    });
+
+    expect(result.ops).toHaveLength(3);
+    expect(result.ops[0]).toMatchObject({
+      table: "eventos",
+      record: { dominio: "obito", animal_id: "animal-1" },
+    });
+    expect(result.ops[1]).toMatchObject({
+      table: "animais",
+      death_state: { animal_id: "animal-1", event_id: result.eventId },
+      record: { id: "animal-1", status: "morto" },
+    });
+    expect(result.ops[2].table).not.toBe("state_agenda_itens");
+  });
+
   it("builds base + detail for pesagem", () => {
     const result = buildEventGesture({
       dominio: "pesagem",

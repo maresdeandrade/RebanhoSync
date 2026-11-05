@@ -1163,6 +1163,48 @@ describe("AnimalDetalhe", () => {
     ).toHaveAttribute("href", "/registrar?animalId=animal-1&loteId=lote-1");
   });
 
+  it("conta marcos abertos da jornada da cria lendo o AgendaItem interno", () => {
+    const wrap = (item: AgendaItem) => ({
+      item,
+      scheduleLabel: null,
+      scheduleModeLabel: null,
+      scheduleAnchorLabel: null,
+    });
+    setupMockLiveQuery({
+      animal: makeAnimal({ id: "animal-1", identificacao: "BR-001", sexo: "F" }),
+      agenda: [
+        wrap(
+          makeAgendaItem({
+            id: "agenda-d7",
+            tipo: "pesagem_d7",
+            data_prevista: "2026-04-15",
+          }),
+        ),
+        wrap(
+          makeAgendaItem({
+            id: "agenda-d30-done",
+            tipo: "pesagem_d30",
+            data_prevista: "2026-04-15",
+            status: "concluido",
+          }),
+        ),
+        wrap(
+          makeAgendaItem({
+            id: "agenda-vacina",
+            tipo: "vacina_brucelose",
+            data_prevista: "2026-04-15",
+          }),
+        ),
+      ],
+    });
+
+    renderDetail();
+
+    expect(
+      screen.getByText(/1 marco\(s\) da jornada da cria em aberto/i),
+    ).toBeInTheDocument();
+  });
+
   it("lista casos sanitarios persistidos do animal", () => {
     const clinicalCase = makeSanitarioCaso();
     const sanitaryEvent = makeEvento();

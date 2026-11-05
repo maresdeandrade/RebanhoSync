@@ -362,12 +362,7 @@ async function getPendingRecordIds(
       const remoteTable = getRemoteTableName(candidate.table);
       if (!protectedTables.has(remoteTable)) continue;
       if (candidate.record?.fazenda_id !== fazendaId) continue;
-      const id =
-        remoteTable === "fazenda_sanidade_config"
-          ? candidate.record.fazenda_id
-          : PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
-            ? getFactualEventId(remoteTable, candidate.record)
-            : candidate.record?.id;
+      const id = pendingRecordId(remoteTable, candidate.record);
       if (typeof id !== "string") continue;
       const ids = pendingIds.get(remoteTable) ?? new Set<string>();
       ids.add(id);
@@ -394,20 +389,31 @@ function getSanitarioPendingEventId(
   return typeof event?.id === "string" ? event.id : null;
 }
 
+function isPlanningEnvelope(envelope: Operation["record"]) {
+  return envelope.domain === "sanitario_v2" && envelope.command !== "manage_agenda";
+}
+
+function pendingDeathParticipant(operation: Operation, payload: RemoteRow, farm: unknown) {
+  return operation.sync_state === "REJECTED" ? [] : [{
+    table: "sanitario_agenda_animais_v2",
+    record: { agenda_id: payload.agenda_id, animal_id: payload.animal_id, fazenda_id: farm },
+  }];
+}
+
 function getPendingPlanningRecords(
   operation: Operation,
   legacyFarmId?: string,
 ) {
   const envelope = operation.record;
-  if (envelope.domain !== "sanitario_v2") return [];
   // Management commands preserve their queue/draft but do not optimistically
   // mutate Agenda rows. A pending/rejected decision must not hide another
   // operator's confirmed barrier, closure or revised result from pull.
-  if (envelope.command === "manage_agenda") return [];
+  if (!isPlanningEnvelope(envelope)) return [];
   const payload = remoteRecord(envelope.payload);
   const agenda = remoteRecord(payload.agenda);
   const closure = remoteRecord(payload.closure);
   const farm = envelope.fazenda_id ?? legacyFarmId;
+  if (envelope.command === "death_participant") return pendingDeathParticipant(operation, payload, farm);
   const agendaId = agenda.id ?? payload.agenda_id ?? closure.agenda_id;
   const candidates: Array<{ table: string; record: RemoteRow }> = [];
   if (envelope.command === "set_automation_plan")
@@ -543,6 +549,15 @@ async function getPendingLocalRows(
   return pendingRows;
 }
 
+function pendingRecordId(remoteTable: string, record: RemoteRow) {
+  if (remoteTable === "sanitario_agenda_animais_v2") {
+    return typeof record.agenda_id === "string" && typeof record.animal_id === "string"
+      ? JSON.stringify([record.agenda_id, record.animal_id]) : null;
+  }
+  return remoteTable === "fazenda_sanidade_config" ? record.fazenda_id
+    : PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable) ? getFactualEventId(remoteTable, record) : record.id;
+}
+
 function protectPendingRecordRows(
   remoteTable: string,
   rows: RemoteRow[],
@@ -551,12 +566,7 @@ function protectPendingRecordRows(
   const ids = pendingRecordIds.get(remoteTable);
   if (!ids || ids.size === 0) return { rows, skipped: false };
   const safeRows = rows.filter((row) => {
-    const id =
-      remoteTable === "fazenda_sanidade_config"
-        ? row.fazenda_id
-        : PENDING_FACTUAL_REMOTE_TABLES.has(remoteTable)
-          ? getFactualEventId(remoteTable, row)
-          : row.id;
+    const id = pendingRecordId(remoteTable, row);
     return typeof id !== "string" || !ids.has(id);
   });
   return { rows: safeRows, skipped: safeRows.length !== rows.length };

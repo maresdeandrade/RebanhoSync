@@ -368,6 +368,52 @@ async function callSyncBatch({ functionsUrl, anonKey, token, body }) {
   };
 }
 
+async function recordBaselineSanitaryV3({ env, anonClient, owner, farmId, productive, stock, agendaId, eventId }) {
+  const functionsServe = await startFunctionsServeNoVerify(env.FUNCTIONS_URL);
+  try {
+    const token = await signInUser(anonClient, owner);
+    const recordedAt = new Date().toISOString();
+    const send = async (operation) => {
+      const response = await callSyncBatch({
+        functionsUrl: env.FUNCTIONS_URL,
+        anonKey: env.ANON_KEY,
+        token,
+        body: { client_id: CLIENT_ID, fazenda_id: farmId, client_tx_id: operation.client_tx_id, ops: [operation] },
+      });
+      assert(response.status === 200 && response.payload.results?.length === 1,
+        `admissao sanitaria V3 deve retornar um resultado: ${JSON.stringify(response.payload)}`);
+      const result = response.payload.results[0];
+      assert(result.status === "APPLIED", `admissao sanitaria V3 deve aplicar: ${JSON.stringify(result)}`);
+      return result.canonical_result;
+    };
+    const operation = (command, payload) => ({
+      domain: "sanitario_v2", contract_version: 3, command,
+      client_op_id: randomUUID(), client_tx_id: randomUUID(), domain_op_id: randomUUID(), payload,
+    });
+    await send(operation("create_agenda", {
+      agenda: { id: agendaId, dedup_key: agendaId, janela_inicio: recordedAt.slice(0, 10),
+        data_programada: recordedAt.slice(0, 10), acao_sanitaria: "vacinacao", client_recorded_at: recordedAt },
+      animal_ids: [productive.animalId],
+    }));
+    const factual = { ...operation("apply_factual_core", {
+      event: { id: eventId, natureza: "primary_execution", source_sanitario_agenda_v2_id: agendaId,
+        animal_id: productive.animalId, lote_id: productive.loteId, occurred_at: recordedAt, client_recorded_at: recordedAt,
+        payload: { origem: "functional_baseline", sanitario_v3_progressive: true,
+          inventory_movement: { id: eventId, insumo_id: stock.insumoId, insumo_lote_id: stock.insumoLoteId,
+            quantidade_base: 1, unidade_base: "ml", client_op_id: randomUUID(), domain_op_id: randomUUID() } } },
+      detail: { tipo: "vacinacao", produto_nome_snapshot: "Produto baseline", dose_quantidade: 1,
+        dose_unidade: "mL", via_aplicacao: "SC", insumo_id: stock.insumoId, estoque_lote_id: stock.insumoLoteId },
+      event_animals: [{ id: randomUUID(), animal_id: productive.animalId }],
+    }), expected_revision: 0 };
+    const first = await send(factual);
+    assert(first.evento_id === eventId && first.confirmed === true, "execucao V3 deve confirmar o Evento esperado");
+    const replay = await send(factual);
+    assert(replay.evento_id === eventId && replay.confirmed === true, "replay V3 deve recuperar a mesma execucao");
+  } finally {
+    stopChild(functionsServe);
+  }
+}
+
 async function main() {
   const env = readSupabaseStatusEnv();
   assertLocalTarget(env);
@@ -699,61 +745,19 @@ async function main() {
       );
     });
 
-    console.log("4/5 evento sanitario direto sem agenda legada");
+    console.log("4/5 admissao sanitaria V3 sem agenda legada e rejeicao de escrita direta");
 
-    const agendaResult = await withAuthenticatedUser(client, owner.id, async () => {
-      const eventMeta = syncMeta("sanitary-event-direct");
-      const event = await client.query(
-        `
-        insert into public.eventos(
-          fazenda_id, dominio, occurred_at, animal_id, lote_id, observacoes, payload,
-          client_id, client_op_id, client_tx_id, client_recorded_at
-        )
-        values (
-          $1, 'sanitario', now(), $2, $3, 'execucao funcional baseline sem agenda legada',
-          '{"origem":"functional_baseline","phase":"12E2","legacy_agenda_itens_sanitario":"disabled"}'::jsonb,
-          $4, $5, $6, $7
-        )
-        returning id
-        `,
-        [
-          farmId,
-          productive.animalId,
-          productive.loteId,
-          eventMeta.client_id,
-          eventMeta.client_op_id,
-          eventMeta.client_tx_id,
-          eventMeta.client_recorded_at,
-        ],
-      );
-      const detailMeta = syncMeta("sanitary-detail-direct");
-      await client.query(
-        `
-        insert into public.eventos_sanitario(
-          evento_id, fazenda_id, tipo, produto, payload, protocol_item_version_id,
-          client_id, client_op_id, client_tx_id, client_recorded_at
-        )
-        values (
-          $1, $2, 'vacinacao', 'Produto baseline',
-          '{"origem":"functional_baseline","phase":"12E2","legacy_agenda_itens_sanitario":"disabled"}'::jsonb,
-          $3, $4, $5, $6, $7
-        )
-        `,
-        [
-          event.rows[0].id,
-          farmId,
-          productive.protocoloItemId,
-          detailMeta.client_id,
-          detailMeta.client_op_id,
-          detailMeta.client_tx_id,
-          detailMeta.client_recorded_at,
-        ],
-      );
-      return { agendaId: null, eventId: event.rows[0].id };
-    });
-
-    await expectCount(client, "select count(*) from public.eventos where id = $1 and source_task_id is null and dominio = 'sanitario' and fazenda_id = $2", [agendaResult.eventId, farmId], 1, "evento sanitario base criado sem agenda legada");
-    await expectCount(client, "select count(*) from public.eventos_sanitario where evento_id = $1 and tipo = 'vacinacao' and produto = 'Produto baseline' and fazenda_id = $2", [agendaResult.eventId, farmId], 1, "detalhe sanitario criado");
+    const directEventId = randomUUID();
+    const directError = await expectError(
+      () => withAuthenticatedUser(client, owner.id, () => client.query(
+        "insert into public.eventos(id, fazenda_id, dominio, occurred_at, animal_id) values ($1, $2, 'sanitario', now(), $3)",
+        [directEventId, farmId, productive.animalId],
+      )),
+      "Evento sanitario direto deve exigir admissao V3", ["42501"],
+    );
+    assert(directError.message.includes("SANITARIO_SINGLE_ADMISSION_REQUIRED"), "guard V3 deve recusar a escrita direta");
+    await expectCount(client, "select count(*) from public.eventos where id = $1", [directEventId], 0, "Evento recusado nao persiste");
+    const agendaResult = { agendaId: randomUUID(), eventId: randomUUID() };
 
     const stagingFixtures = await withAuthenticatedUser(client, owner.id, async () => {
       const insumo = await client.query(
@@ -770,25 +774,6 @@ async function main() {
         returning id
         `,
         [farmId, insumo.rows[0].id, `LOT-${runId}`],
-      );
-      const movement = await client.query(
-        `
-        insert into public.insumo_movimentacoes(
-          fazenda_id, insumo_id, insumo_lote_id, tipo,
-          quantidade_base, unidade_base, source_evento_id, source_evento_dominio,
-          animal_id, rebanho_lote_id, payload
-        )
-        values ($1, $2, $3, 'consumo_sanitario', 1, 'ml', $4, 'sanitario', $5, $6, '{"origem":"baseline_fase_6"}'::jsonb)
-        returning id
-        `,
-        [
-          farmId,
-          insumo.rows[0].id,
-          insumoLote.rows[0].id,
-          agendaResult.eventId,
-          productive.animalId,
-          productive.loteId,
-        ],
       );
       const sociedade = await client.query(
         `
@@ -814,12 +799,38 @@ async function main() {
       return {
         insumoId: insumo.rows[0].id,
         insumoLoteId: insumoLote.rows[0].id,
-        movementId: movement.rows[0].id,
+        movementId: agendaResult.eventId,
         sociedadeId: sociedade.rows[0].id,
         sociedadeAnimalId: sociedadeAnimal.rows[0].id,
       };
     });
 
+    // Authorization fixture for this new disposable farm only. The sanitary
+    // Event, detail and consumption still enter through JWT-authenticated Edge.
+    await client.query(
+      "insert into public.sanitario_sync_v2_gates(fazenda_id, enabled, minimum_contract_version, maximum_contract_version, foundation_state) values ($1, true, 3, 3, 'ready')",
+      [farmId],
+    );
+    await recordBaselineSanitaryV3({ env, anonClient, owner, farmId, productive, stock: stagingFixtures, ...agendaResult });
+    await expectCount(client, "select count(*) from public.eventos where id = $1 and source_task_id is null and source_sanitario_agenda_v2_id = $3 and dominio = 'sanitario' and fazenda_id = $2 and sanitario_contract_version = 3 and sanitario_v3_confirmation = 'confirmed'", [agendaResult.eventId, farmId, agendaResult.agendaId], 1, "Evento V3 criado sem agenda legada");
+    await expectCount(client, "select count(*) from public.eventos_sanitario where evento_id = $1 and tipo = 'vacinacao' and produto = 'Produto baseline' and fazenda_id = $2", [agendaResult.eventId, farmId], 1, "detalhe sanitario criado");
+    await expectCount(client, "select count(*) from public.eventos_animais where evento_id = $1 and animal_id = $2 and fazenda_id = $3", [agendaResult.eventId, productive.animalId, farmId], 1, "relacao factual preserva animal e fazenda");
+    const directDetailError = await expectError(
+      () => withAuthenticatedUser(client, owner.id, () => client.query(
+        "insert into public.eventos_sanitario(evento_id, fazenda_id, tipo, produto) values ($1, $2, 'vacinacao', 'Escrita recusada')",
+        [agendaResult.eventId, farmId],
+      )), "detalhe sanitario direto deve exigir admissao V3", ["42501"],
+    );
+    assert(directDetailError.message.includes("SANITARIO_SINGLE_ADMISSION_REQUIRED"), "guard V3 deve recusar detalhe direto");
+    const directMovementError = await expectError(
+      () => withAuthenticatedUser(client, owner.id, () => client.query(
+        "insert into public.insumo_movimentacoes(fazenda_id, insumo_id, insumo_lote_id, tipo, quantidade_base, unidade_base, source_evento_id, source_evento_dominio) values ($1, $2, $3, 'consumo_sanitario', 1, 'ml', $4, 'sanitario')",
+        [farmId, stagingFixtures.insumoId, stagingFixtures.insumoLoteId, agendaResult.eventId],
+      )), "consumo sanitario direto deve exigir admissao V3", ["42501"],
+    );
+    assert(directMovementError.message.includes("SANITARIO_SINGLE_ADMISSION_REQUIRED"), "guard V3 deve recusar consumo direto");
+    await expectCount(client, "select count(*) from public.insumo_movimentacoes where source_evento_id = $1 and fazenda_id = $2", [agendaResult.eventId, farmId], 1, "replay e escrita recusada nao duplicam consumo");
+    await expectCount(client, "select count(*) from public.insumo_lotes where id = $1 and fazenda_id = $2 and saldo_atual_base = 99", [stagingFixtures.insumoLoteId, farmId], 1, "admissao V3 debita estoque uma unica vez");
     await expectCount(client, "select count(*) from public.insumo_movimentacoes where id = $1 and fazenda_id = $2 and source_evento_id = $3", [stagingFixtures.movementId, farmId, agendaResult.eventId], 1, "movimentacao sanitaria vinculada respeita tenant");
     await expectCount(client, "select count(*) from public.sociedades_pecuarias where id = $1 and fazenda_id = $2", [stagingFixtures.sociedadeId, farmId], 1, "sociedade tenant-scoped criada");
     await expectCount(client, "select count(*) from public.sociedade_animais where id = $1 and fazenda_id = $2 and animal_id = $3", [stagingFixtures.sociedadeAnimalId, farmId, productive.animalId], 1, "vinculo sociedade-animal tenant-scoped criado");
@@ -988,7 +999,9 @@ async function main() {
       },
       productive_structure: "passou",
       composite_fk_cross_tenant: "passou",
-      sanitary_direct_event_without_legacy_agenda: "passou",
+      sanitary_v3_admission_without_legacy_agenda: "passou",
+      sanitary_direct_writes_rejected: "passou",
+      sanitary_v3_replay_and_inventory: "passou",
       sanitary_inventory_sociedade_rls: "passou",
       sync_batch_real_edge_function: "passou",
       sync_batch_partial_success: "passou",

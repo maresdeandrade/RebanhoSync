@@ -2,6 +2,8 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { db, LOCAL_OWNERSHIP_KEY } from "@/lib/offline/db";
+import { createGesture } from "@/lib/offline/ops";
+import { buildEventGesture } from "@/lib/events/buildEventGesture";
 import {
   executeSanitaryAgendaV2,
   type ExecuteSanitaryAgendaInputV2,
@@ -15,6 +17,7 @@ vi.mock("@/lib/offline/localReadBoundary", () => ({
   })),
 }));
 vi.mock("@/lib/env",()=>({env:{supabaseUrl:"http://127.0.0.1:56421"}}));
+vi.mock("@/lib/supabase", () => ({ supabase: {} }));
 const farm = crypto.randomUUID(),
   agendaId = crypto.randomUUID();
 const products = [crypto.randomUUID(), crypto.randomUUID()];
@@ -53,6 +56,8 @@ const tables = [
   db.catalog_sanitario_produtos_v2,
 ];
 beforeEach(async () => {
+  vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:56421");
+  vi.stubEnv("VITE_BACKEND_ENV", "development");
   await db.open();
   for (const table of tables) await table.clear();
   setSanitarioV2PushEnabled(true, "local");
@@ -106,10 +111,24 @@ beforeEach(async () => {
   }
 });
 afterEach(async () => {
-  for (const table of tables) await table.clear();
-  setSanitarioV2PushEnabled(false, "local");
-  vi.clearAllMocks();
+  try {
+    for (const table of tables) await table.clear();
+    setSanitarioV2PushEnabled(false, "local");
+  } finally {
+    vi.unstubAllEnvs();
+    vi.clearAllMocks();
+  }
 });
+it.each(["https://unauthorized.invalid", "https://localhost:56421"])(
+  "rejects an unauthorized backend %s without weakening the production guard",
+  async url => {
+    vi.stubEnv("VITE_SUPABASE_URL", url);
+    expect(() => setSanitarioV2PushEnabled(true, "local")).toThrow("SANITARIO_V2_STAGING_ONLY");
+    await expect(executeSanitaryAgendaV2(input([animals[0]]))).rejects.toThrow("PUSH_DISABLED");
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(0);
+  },
+);
 it("persists three independent subsets, keeps Agenda open and recovers immutable queue after restart", async () => {
   const groups = [
     input(animals.slice(0, 15)),
@@ -155,6 +174,27 @@ it("persists three independent subsets, keeps Agenda open and recovers immutable
     ),
   ).toBe(true);
 });
+it("integra óbito local com bloqueio da execução posterior", async () => {
+  const deathEventId = crypto.randomUUID();
+  const death = buildEventGesture({ dominio: "obito", fazendaId: farm, animalId: animals[0], eventId: deathEventId, causa: "doenca" });
+  await createGesture(farm, death.ops, { deathConsequences: { animalId: animals[0], eventId: deathEventId } });
+  await expect(executeSanitaryAgendaV2(input([animals[0]]))).rejects.toThrow("SANITARIO_PARTICIPANT_DECEASED");
+  expect(await db.event_eventos.get(deathEventId)).toMatchObject({ dominio: "obito" });
+  expect(await db.queue_ops.filter((operation) => operation.record.command === "death_participant").count()).toBe(1);
+  expect((await executeSanitaryAgendaV2(input([animals[1]]))).agendaStatus).toBe("open");
+});
+
+it("não executa participante dispensado por óbito nem afeta os demais", async () => {
+  const deathEventId = crypto.randomUUID();
+  await db.ops_sanitario_agenda_animais_v2.update([agendaId, animals[0]], {
+    planned_status: "nao_executado", not_executed_reason: `obito:${deathEventId}`,
+  });
+  await expect(executeSanitaryAgendaV2(input([animals[0]]))).rejects.toThrow("SANITARIO_PARTICIPANT_DECEASED");
+  expect(await db.event_eventos.count()).toBe(0);
+  expect(await db.queue_ops.count()).toBe(0);
+  expect((await executeSanitaryAgendaV2(input([animals[1]]))).agendaStatus).toBe("open");
+});
+
 it("rejects empty, duplicate, cross farm and outside obligation subsets without any persistence", async () => {
   for (const ids of [[], [animals[0], animals[0]], [crypto.randomUUID()]])
     await expect(executeSanitaryAgendaV2(input(ids))).rejects.toThrow();

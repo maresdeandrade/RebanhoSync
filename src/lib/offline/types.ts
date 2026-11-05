@@ -34,6 +34,7 @@ export type SanitarioSyncV2Command =
   | "create_agenda"
   | "replace_agenda_animals"
   | "apply_factual_core"
+  | "death_participant"
   | "close_agenda"
   | "set_automation_plan"
   | "reschedule_agenda";
@@ -653,6 +654,8 @@ export interface Operation {
   /** Revisão remota capturada quando uma mutação state protegida foi criada. */
   expected_revision?: number;
   movement_group?: string;
+  death_cancel?: { animal_id: string; event_id: string };
+  death_state?: { animal_id: string; event_id: string };
   command_digest?: string;
   movement_result?: SyncOperationResult;
   movement_effective_result?: string;

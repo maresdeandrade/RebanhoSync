@@ -37,6 +37,8 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { db } from "../db";
+import { supabase } from "@/lib/supabase";
+import { setActiveFarmId } from "@/lib/storage";
 import { retryRejectedOperation } from "../ops";
 import { upsertReconciliationObligations } from "../reconciliationObligations";
 import { establishLocalOwnership } from "../ownership";
@@ -45,6 +47,7 @@ import {
   mapOperationForSync,
   processGesture,
   recoverBlockedSanitarioV2Operations,
+  recoverStaleSyncingGesturesOnce,
 } from "../syncWorker";
 import type {
   Gesture,
@@ -109,6 +112,104 @@ async function loadGesture(clientTxId: string) {
 }
 
 describe("sanitario_v2 canonical worker/reconcile", () => {
+  it.each([true, false])("preserva consequência animal no retry após ACK do Evento (sanitário=%s)", async (withSanitary) => {
+    const { gesture, ops } = await seedGesture(withSanitary ? ["death_participant"] : [], "death-state-retry");
+    const eventId = "death-state-event", animalId = "death-state-animal";
+    const state: Operation = { client_op_id: "death-state-op", client_tx_id: gesture.client_tx_id, op_order: 1,
+      table: "animais", action: "UPDATE", created_at: gesture.created_at, sync_state: "PENDING",
+      death_state: { animal_id: animalId, event_id: eventId },
+      record: { id: animalId, fazenda_id: FAZENDA_ID, status: "morto", client_op_id: "death-state-op" },
+      before_snapshot: { id: animalId, fazenda_id: FAZENDA_ID, status: "ativo" },
+    };
+    // Event ACK was already committed before restart; its operation is gone.
+    await db.event_eventos.put({ id: eventId, fazenda_id: FAZENDA_ID, animal_id: animalId, dominio: "obito" } as never);
+    await db.state_animais.put({ ...state.record, observacoes: "edicao posterior" } as never);
+    await db.queue_ops.add(state);
+    vi.mocked(pullDataForFarm).mockRejectedValue(new Error("remote unavailable after ACK"));
+    respondWith([
+      { op_id: state.client_op_id, status: "CONFLICT", reason_code: "STATE_REVISION_CONFLICT" },
+      ...ops.map(op => ({ op_id: op.client_op_id, client_op_id: op.client_op_id, domain_op_id: op.domain_op_id, status: "APPLIED" as const })),
+    ]);
+    await processGesture(gesture);
+    expect(await db.event_eventos.get(eventId)).toMatchObject({ dominio: "obito" });
+    expect(await db.state_animais.get(animalId)).toMatchObject({ observacoes: "edicao posterior" });
+    expect(await db.queue_ops.get(state.client_op_id)).toMatchObject({ sync_state: "REJECTED", death_state: state.death_state });
+    expect(await db.sync_reconcile_obligations.get(`${FAZENDA_ID}:factual`)).toMatchObject({ tables: expect.arrayContaining(["animais"]) });
+  });
+  it("retoma dispensa após interrupção e reabertura Dexie na fazenda original", async () => {
+    const { gesture, ops } = await seedGesture(["death_participant"], "death-restart");
+    const operation = { ...ops[0], record: { ...ops[0].record, contract_version: 3, fazenda_id: FAZENDA_ID,
+      payload: { agenda_id: "agenda-restart", animal_id: "animal-restart", death_event_id: "death-restart" } } };
+    await db.queue_ops.put(operation);
+    await db.queue_gestures.update(gesture.client_tx_id, { status: "SYNCING" });
+    db.close(); await db.open();
+    setActiveFarmId("other-farm-after-restart");
+    try {
+      expect(await recoverStaleSyncingGesturesOnce()).toBe(1);
+      expect(await db.queue_ops.get(operation.client_op_id)).toEqual(operation);
+      respondWith([{ op_id: operation.client_op_id, client_op_id: operation.client_op_id, domain_op_id: operation.domain_op_id,
+        status: "APPLIED", canonical_result: { agenda_id: "agenda-restart", outcome: "applied", replayed: true } }]);
+      await processGesture(await loadGesture(gesture.client_tx_id));
+      const body = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
+      expect(body.fazenda_id).toBe(FAZENDA_ID);
+      expect(body.ops[0]).toMatchObject({ client_op_id: operation.client_op_id, domain_op_id: operation.domain_op_id, fazenda_id: FAZENDA_ID });
+      expect(await db.queue_ops.get(operation.client_op_id)).toBeUndefined();
+      expect((await loadGesture(gesture.client_tx_id)).status).toBe("DONE");
+    } finally { localStorage.clear(); }
+  });
+
+  it("auth expirada preserva comando de dispensa para retomar sem nova identidade", async () => {
+    const { gesture, ops } = await seedGesture(["death_participant"], "death-expired");
+    vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({ data: { session: null }, error: null });
+    await processGesture(gesture);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await db.queue_ops.get(ops[0].client_op_id)).toMatchObject({ client_op_id: ops[0].client_op_id, domain_op_id: ops[0].domain_op_id });
+    expect((await loadGesture(gesture.client_tx_id)).status).not.toBe("DONE");
+  });
+  it.each([true, false])("preserva operação factual rejeitada enquanto consequência de óbito aguarda dependência (sanitário=%s)", async (withSanitary) => {
+    const { gesture, ops } = await seedGesture(withSanitary ? ["death_participant"] : [], "death-fact-rejected");
+    const eventId = "event-death-fact-rejected";
+    const deathFact: Operation = {
+      client_op_id: "op-death-fact-rejected", client_tx_id: gesture.client_tx_id, op_order: 1,
+      table: "eventos", action: "INSERT", created_at: gesture.created_at,
+      record: { id: eventId, fazenda_id: FAZENDA_ID, dominio: "obito", animal_id: "animal-death-fact-rejected" },
+    };
+    await db.event_eventos.put(deathFact.record as never);
+    await db.queue_ops.add(deathFact);
+    respondWith([
+      { op_id: deathFact.client_op_id, status: "REJECTED", reason_code: "EVENT_REJECTED" },
+      ...ops.map((op) => ({ op_id: op.client_op_id, client_op_id: op.client_op_id, domain_op_id: op.domain_op_id, status: "RETRYABLE" as const, reason_code: "OBITO_EVENT_DEPENDENCY" })),
+    ]);
+    await processGesture(gesture);
+    expect(await db.event_eventos.get(eventId)).toMatchObject({ dominio: "obito" });
+    expect(await db.queue_ops.get(deathFact.client_op_id)).toMatchObject({ sync_state: "REJECTED" });
+    expect(await db.queue_rejections.filter(row => row.client_op_id === deathFact.client_op_id).count()).toBe(1);
+  });
+  it.each([true, false])("reconcilia conflito da agenda comum sem desfazer o óbito (sanitário=%s)", async (withSanitary) => {
+    const { gesture, ops } = await seedGesture(withSanitary ? ["create_agenda"] : [], "death-mixed");
+    const agendaId = "agenda-death-mixed";
+    const eventId = "event-death-mixed";
+    const animalId = "animal-death-mixed";
+    const before = { id: agendaId, fazenda_id: FAZENDA_ID, animal_id: animalId, dominio: "pesagem", status: "agendado" };
+    const cancellation: Operation = {
+      client_op_id: "op-death-cancel", client_tx_id: gesture.client_tx_id, op_order: 1,
+      table: "agenda_itens", action: "UPDATE", created_at: gesture.created_at,
+      record: { ...before, status: "cancelado", client_op_id: "op-death-cancel" },
+      before_snapshot: before, death_cancel: { animal_id: animalId, event_id: eventId },
+    };
+    await db.state_agenda_itens.put(cancellation.record as never);
+    await db.event_eventos.put({ id: eventId, fazenda_id: FAZENDA_ID, animal_id: animalId, dominio: "obito" } as never);
+    await db.queue_ops.add(cancellation);
+    respondWith([
+      ...ops.map((op) => ({ op_id: op.client_op_id, client_op_id: op.client_op_id, domain_op_id: op.domain_op_id, status: "APPLIED" as const, retryable: false })),
+      { op_id: cancellation.client_op_id, status: "CONFLICT", reason_code: "OBITO_AGENDA_CONFLICT" },
+    ]);
+    await processGesture(gesture);
+    expect(await db.event_eventos.get(eventId)).toMatchObject({ dominio: "obito" });
+    expect(await db.state_agenda_itens.get(agendaId)).toMatchObject({ status: "agendado" });
+    expect(await db.queue_ops.get(cancellation.client_op_id)).toMatchObject({ sync_state: "REJECTED" });
+    expect(await db.queue_rejections.filter((row) => row.client_op_id === cancellation.client_op_id).count()).toBe(1);
+  });
   it.each([
     { parentStatus: "REJECTED", related: true, terminal: true },
     { parentStatus: "CONFLICT", related: true, terminal: true },
