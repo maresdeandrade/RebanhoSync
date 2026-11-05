@@ -113,6 +113,26 @@ describe("sanitario v2 incremental pull cursors", () => {
     expect(await db.sync_pull_cursors.get(`${table}:unscoped:null`)).toBeUndefined();
   });
   const fazendaId = "farm-cursor-12e5";
+  it("não avança cursor de participante dispensado antes do ACK e instala o remoto depois", async () => {
+    const table = "sanitario_agenda_animais_v2", agendaId = crypto.randomUUID(), animalId = crypto.randomUUID();
+    const opId = crypto.randomUUID();
+    const local = { agenda_id: agendaId, animal_id: animalId, fazenda_id: fazendaId, planned_status: "nao_executado",
+      not_executed_reason: "obito:death", updated_at: "2026-11-04T12:00:00Z" };
+    await db.ops_sanitario_agenda_animais_v2.put(local as never);
+    await db.queue_ops.put({ client_op_id: opId, client_tx_id: crypto.randomUUID(), table: "sanitario_v2", action: "INSERT",
+      sync_state: "RETRYABLE", created_at: local.updated_at, record: { domain: "sanitario_v2", command: "death_participant",
+        fazenda_id: fazendaId, payload: { agenda_id: agendaId, animal_id: animalId, death_event_id: "death" } } });
+    remoteRows[table] = [{ ...local, planned_status: "planejado", not_executed_reason: null }];
+    try {
+      await pullSanitarioAgendaV2(fazendaId);
+      expect((await db.ops_sanitario_agenda_animais_v2.get([agendaId, animalId]))?.not_executed_reason).toBe("obito:death");
+      expect(await db.sync_pull_cursors.get(`${table}:fazenda:${fazendaId}`)).toBeUndefined();
+      await db.queue_ops.delete(opId);
+      await pullSanitarioAgendaV2(fazendaId);
+      expect((await db.ops_sanitario_agenda_animais_v2.get([agendaId, animalId]))?.planned_status).toBe("planejado");
+      expect(await db.sync_pull_cursors.get(`${table}:fazenda:${fazendaId}`)).toMatchObject({ last_updated_at: local.updated_at });
+    } finally { await db.queue_ops.delete(opId); }
+  });
 
   beforeEach(async () => {
     vi.clearAllMocks();

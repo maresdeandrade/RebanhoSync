@@ -251,7 +251,7 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
   });
 
   it(
-    "fecha o pos-parto sem fato sanitário paralelo e executa somente D0 pelo comando da Central",
+    "fecha o pos-parto sem fato sanitário paralelo e preserva a restrição de execução neonatal",
     { retry: 2 },
     async () => {
     const user = userEvent.setup();
@@ -416,22 +416,15 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
       registrationMode: "executed_fact" as const,
       confirmation: { userConfirmedExecution: true as const },
     };
-    const executed = await executeSanitaryAgendaV2(execution);
-    await settleUi();
-    expect(await db.ops_sanitario_agenda_v2.get(d0.id)).toMatchObject({ status: "executada", execution_evento_id: executed.eventId });
-    for (const pending of sanitaryAgenda.slice(1))
-      expect((await db.ops_sanitario_agenda_v2.get(pending.id))?.status).toBe("programada");
-    expect(await db.event_eventos.get(executed.eventId)).toMatchObject({ animal_id: calfId, source_sanitario_agenda_v2_id: d0.id });
-    expect(await db.event_eventos_sanitario.count()).toBe(1);
-    expect(await db.event_eventos_sanitario.get(executed.eventId)).toMatchObject({
-      produto_sanitario_v2_id: null, dose_quantidade: null, via_aplicacao: null,
-    });
-    expect(await db.queue_gestures.count()).toBe(3);
-    const operations = await db.queue_ops.toArray();
-    expect(operations.filter(op => op.record.command === "apply_factual_core")).toHaveLength(1);
-    expect((await executeSanitaryAgendaV2(execution)).eventId).toBe(executed.eventId);
-    expect(await db.queue_ops.toArray()).toEqual(operations);
-    expect(await db.event_eventos_sanitario.count()).toBe(1);
+    const protectedStores = [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2,
+      db.event_eventos, db.event_eventos_sanitario, db.event_eventos_animais,
+      db.state_insumo_movimentacoes, db.queue_gestures, db.queue_ops, db.local_sanitario_participacoes];
+    const before = await Promise.all(protectedStores.map(store => store.toArray()));
+    await expect(executeSanitaryAgendaV2(execution)).rejects.toThrow("SANITARIO_V3_EXECUTION_NOT_ENABLED");
+    await expect(executeSanitaryAgendaV2(execution)).rejects.toThrow("SANITARIO_V3_EXECUTION_NOT_ENABLED");
+    expect(await Promise.all(protectedStores.map(store => store.toArray()))).toEqual(before);
+    expect(await db.queue_gestures.count()).toBe(2);
+    expect(await db.event_eventos_sanitario.count()).toBe(0);
     await settleUi();
     },
   );

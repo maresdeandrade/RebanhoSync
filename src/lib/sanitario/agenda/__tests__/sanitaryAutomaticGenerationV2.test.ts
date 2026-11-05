@@ -87,7 +87,18 @@ describe("plano sanitário automático persistente", () => {
     expect(config?.payload.unrelated).toBe("preserved");
     expect(plan).toMatchObject({ enabled: true, revision: 1, confirmedBy: "producer" });
     expect(plan.schemaVersion).toBe(1);
-    expect((await db.queue_ops.toArray()).map((op) => op.table)).toEqual(["fazenda_sanidade_config"]);
+    expect(await db.queue_ops.toArray()).toMatchObject([{
+      table: "sanitario_v2",
+      action: "INSERT",
+      record: {
+        domain: "sanitario_v2",
+        contract_version: 3,
+        command: "set_automation_plan",
+        fazenda_id: "farm",
+        expected_revision: 0,
+        payload: { plan, expected_plan: null },
+      },
+    }]);
     db.close(); await db.open();
     expect(readSanitaryAutomationPlanV2(await db.state_fazenda_sanidade_config.get("farm"))?.enabled).toBe(true);
   });

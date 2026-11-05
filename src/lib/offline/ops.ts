@@ -159,6 +159,7 @@ type CreateGestureOptions = {
   validateContext?: () => void;
   sanitarioAgendaV2?: readonly SanitarioAgendaCreateDraftV2[];
   enqueueSanitarioAgendaV2?: boolean;
+  deathConsequences?: { animalId: string; eventId: string };
   clientTxId?: string;
   clientOpIds?: readonly string[];
 };
@@ -215,6 +216,19 @@ function assertMovementWriterBoundary(ops_input: OperationInput[]) {
   }
 }
 
+function assertDeathCancellationBoundary(operations: OperationInput[]) {
+  for (const operation of operations) {
+    if (!operation.death_cancel) continue;
+    const { animal_id, event_id } = operation.death_cancel;
+    if (
+      operation.table !== "agenda_itens" || operation.action !== "UPDATE" ||
+      typeof operation.record.id !== "string" || operation.record.status !== "cancelado" ||
+      !operations.some((event) => event.table === "eventos" && event.action === "INSERT" &&
+        event.record.id === event_id && event.record.dominio === "obito" && event.record.animal_id === animal_id)
+    ) throw new Error("OBITO_AGENDA_INVALID_COMMAND");
+  }
+}
+
 async function assertSanitaryWriterBoundary(fazenda_id: string, ops_input: OperationInput[]) {
   // The generic gesture cannot create or indirectly complement a sanitary fact.
   // Planning drafts below keep their own atomic local materialization.
@@ -237,6 +251,22 @@ async function assertNonSanitarySource(fazendaId: string, op: OperationInput) {
   if (source?.fazenda_id === fazendaId && source.dominio === "sanitario") throw new Error("SANITARIO_SINGLE_ADMISSION_REQUIRED");
 }
 
+function assertDeathConsequencesEvent(operations: OperationInput[], options: CreateGestureOptions) {
+  if (options.deathConsequences && !operations.some((op) => op.table === "eventos" && op.action === "INSERT" &&
+      op.record.id === options.deathConsequences?.eventId && op.record.animal_id === options.deathConsequences.animalId &&
+      op.record.dominio === "obito")) throw new Error("OBITO_CONSEQUENCES_EVENT_REQUIRED");
+}
+
+function deathRejectionStores(operations: Operation[]) {
+  return operations.some((op) => op.death_cancel) ? [db.queue_rejections] : [];
+}
+
+function sanitaryGestureStores(hasAgendas: boolean, hasDeathConsequences: boolean) {
+  return hasAgendas || hasDeathConsequences
+    ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
+    : [];
+}
+
 export const createGesture = async (
   fazenda_id: string,
   ops_input: OperationInput[],
@@ -246,6 +276,8 @@ export const createGesture = async (
   validateContext();
   await assertSanitaryWriterBoundary(fazenda_id, ops_input);
   assertMovementWriterBoundary(ops_input);
+  assertDeathCancellationBoundary(ops_input);
+  assertDeathConsequencesEvent(ops_input, options);
   const movementTx = options.clientTxId ?? crypto.randomUUID();
   const movement = ops_input.some(op => op.table === "movement_v1")
     ? await prepareMovementIntents(fazenda_id, ops_input, movementTx, options.clientOpIds) : null;
@@ -453,12 +485,11 @@ export const createGesture = async (
       [
         db.queue_gestures,
         db.queue_ops,
+        ...deathRejectionStores(ops),
         ...getAffectedStores(ops),
         ...getInventoryFarmContextStores(ops_input),
         ...(movement ? [db.state_animais] : []),
-        ...(sanitarioAgendaV2.length > 0
-          ? [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2]
-          : []),
+        ...sanitaryGestureStores(sanitarioAgendaV2.length > 0, Boolean(options.deathConsequences)),
       ],
       async () => {
         transactionStage = "write-gesture";
@@ -484,6 +515,28 @@ export const createGesture = async (
           }
         }
         transactionOperationIndex = undefined;
+        if (options.deathConsequences) {
+          const { animalId, eventId } = options.deathConsequences;
+          const participants = await db.ops_sanitario_agenda_animais_v2.where("animal_id").equals(animalId).toArray();
+          let nextOrder = queueOps.length;
+          for (const participant of participants) {
+            if (participant.fazenda_id !== fazenda_id || participant.planned_status !== "planejado" || participant.execution_evento_id) continue;
+            const agenda = await db.ops_sanitario_agenda_v2.get(participant.agenda_id);
+            if (!agenda || agenda.fazenda_id !== fazenda_id || agenda.deleted_at || agenda.status !== "programada") continue;
+            const clientOpId = crypto.randomUUID();
+            const domainOpId = crypto.randomUUID();
+            const envelope = prepareSanitaryCommandV3({
+              domain: "sanitario_v2", contract_version: 3, command: "death_participant", fazenda_id,
+              client_op_id: clientOpId, client_tx_id, domain_op_id: domainOpId,
+              payload: { agenda_id: agenda.id, animal_id: animalId, death_event_id: eventId },
+            });
+            await db.queue_ops.add({
+              client_op_id: clientOpId, client_tx_id, op_order: nextOrder++, table: "sanitario_v2",
+              action: "INSERT", record: envelope, domain_op_id: domainOpId, sync_state: "PENDING", created_at: client_recorded_at,
+            });
+            await db.ops_sanitario_agenda_animais_v2.put({ ...participant, planned_status: "nao_executado", not_executed_reason: `obito:${eventId}`, updated_at: client_recorded_at });
+          }
+        }
         if (sanitarioAgendaV2.length > 0) {
           await db.ops_sanitario_agenda_v2.bulkPut(
             sanitarioAgendaV2.map(({ agenda }) => agenda),
@@ -548,6 +601,25 @@ async function persistExpectedAnimalRevision(
   });
 }
 
+function isOrdinaryDeathAgenda(item: { dominio?: string }) {
+  return typeof item.dominio === "string" && item.dominio !== "sanitario";
+}
+
+function validLocalDeathAgenda(op: Operation, item: { fazenda_id?: string; animal_id?: string | null; status?: string; deleted_at?: string | null; dominio?: string } | undefined) {
+  return Boolean(op.death_cancel && item && !item.deleted_at && isOrdinaryDeathAgenda(item) &&
+    item.fazenda_id === op.record.fazenda_id && item.animal_id === op.death_cancel.animal_id &&
+    item.status === "agendado");
+}
+
+function unavailableDeathAgenda(op: Operation, existing: Parameters<typeof validLocalDeathAgenda>[1]): { reason: string; resultStatus: "CONFLICT" | "REJECTED" } {
+  const sameContext = existing && existing.fazenda_id === op.record.fazenda_id &&
+    existing.animal_id === op.death_cancel!.animal_id && !existing.deleted_at && isOrdinaryDeathAgenda(existing);
+  return {
+    reason: sameContext ? "OBITO_AGENDA_LOCAL_CONFLICT" : "OBITO_AGENDA_LOCAL_NOT_FOUND",
+    resultStatus: sameContext ? "CONFLICT" : "REJECTED",
+  };
+}
+
 export const applyOpLocal = async (op: Operation) => {
   const localStoreName = getLocalStoreName(op.table);
   const store = db.table(localStoreName);
@@ -571,6 +643,17 @@ export const applyOpLocal = async (op: Operation) => {
   }
 
   const existing = await store.get(recordKey);
+  if (op.death_cancel && !validLocalDeathAgenda(op, existing)) {
+    const { reason, resultStatus } = unavailableDeathAgenda(op, existing);
+    await db.queue_ops.update(op.client_op_id, { sync_state: "REJECTED", blocked_reason: reason });
+    await db.queue_rejections.add({
+      client_tx_id: op.client_tx_id, client_op_id: op.client_op_id,
+      fazenda_id: op.record.fazenda_id, table: op.table, action: op.action,
+      reason_code: reason, reason_message: "Agenda não está disponível para cancelamento por óbito.",
+      result_status: resultStatus, created_at: op.created_at,
+    });
+    return;
+  }
   await persistExpectedAnimalRevision(op, existing);
 
   if (op.action === "UPDATE") {
@@ -605,6 +688,7 @@ export const reapplyOpLocal = async (op: Operation) => {
 
   if (op.action === "UPDATE") {
     const existing = await store.get(recordKey);
+    if (op.death_cancel && !validLocalDeathAgenda(op, existing)) return;
     await persistExpectedAnimalRevision(op, existing);
     await store.put(existing ? { ...existing, ...op.record } : op.record);
     return;
@@ -619,6 +703,14 @@ export const reapplyOpLocal = async (op: Operation) => {
     });
   }
 };
+
+async function ownsDeathCancellationSnapshot(op: Operation, store: ReturnType<typeof db.table>) {
+  const recordKey = getRecordKey(op.record);
+  if (!recordKey) return false;
+  const current = await store.get(recordKey) as Record<string, unknown> | undefined;
+  return Boolean(current && current.client_op_id === op.client_op_id &&
+    current.fazenda_id === op.record.fazenda_id && current.animal_id === op.death_cancel!.animal_id);
+}
 
 export const rollbackOpLocal = async (op: Operation) => {
   const { isSanitaryEvidenceOperation } = await import("./sanitaryFoundationRecovery");
@@ -636,6 +728,7 @@ export const rollbackOpLocal = async (op: Operation) => {
     if (!recordKey) return;
     await store.delete(recordKey);
   } else if (op.action === "UPDATE" || op.action === "DELETE") {
+    if (op.death_cancel && !(await ownsDeathCancellationSnapshot(op, store))) return;
     if (op.before_snapshot) {
       await store.put(op.before_snapshot);
     }
@@ -682,6 +775,9 @@ async function reserveSanitaryStockRetry(op: Operation, fazendaId: string) {
 
 async function reapplyExplicitRejectedOperation(op: Operation, farmId: string) {
   await assertRetryAnimalFarm(op, farmId);
+  if (op.death_cancel && !validLocalDeathAgenda(op, await db.state_agenda_itens.get(String(op.record.id)))) {
+    throw new Error("OBITO_AGENDA_RETRY_LOCAL_CONFLICT");
+  }
   if (isSanitaryStockRetry(op)) await reserveSanitaryStockRetry(op, farmId);
   await reapplyOpLocal(op);
 }

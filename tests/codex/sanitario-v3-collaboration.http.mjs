@@ -53,7 +53,7 @@ test('Agenda V3 through real Auth, Edge, RPC, PostgreSQL and authenticated pull'
   let base;
   try {
     docker(['network','create','--label',`${label}=${run}`,prefix]);
-    create(db,'public.ecr.aws/supabase/postgres:17.6.1.167',{POSTGRES_HOST_AUTH_METHOD:'trust'});
+    create(db,'public.ecr.aws/supabase/postgres:17.6.1.167',{POSTGRES_HOST_AUTH_METHOD:'trust'},['--publish','127.0.0.1::5432']);
     await ready('postgres',()=>{docker(['exec',db,'pg_isready','-h','127.0.0.1','-U','postgres']);return true;});
     for(const f of readdirSync('supabase/migrations').filter(x=>x.endsWith('.sql')).sort()) sql(readFileSync(`supabase/migrations/${f}`,'utf8'));
     sql(`alter role authenticator password '${password}'; alter role supabase_auth_admin password '${password}';`,'supabase_admin');
@@ -113,6 +113,38 @@ test('Agenda V3 through real Auth, Edge, RPC, PostgreSQL and authenticated pull'
     const pull=async(table,filter='',user=owner)=>{
       const r=await api(`/rest/v1/${table}?select=*&${filter}`,user.token); assert.equal(r.status,200); assert(Array.isArray(r.data));return r.data;
     };
+    await t.test('óbito: lote factual, cancelamento condicional, dispensa coletiva, ACK perdido e isolamento HTTP',async()=>{
+      const a=randomUUID(), ordinary=randomUUID(), death=randomUUID(), tx=randomUUID();
+      await applied(op('create_agenda',{agenda:{id:a,dedup_key:a,janela_inicio:'2026-11-04',data_programada:'2026-11-04',acao_sanitaria:'vacinacao',client_recorded_at:'2026-11-04T12:00:00Z'},animal_ids:animals.slice(0,2)}));
+      sql(`insert into public.agenda_itens(id,fazenda_id,animal_id,dominio,tipo,status,data_prevista) values('${ordinary}','${farm}','${animals[0]}','ecc','ecc','agendado',current_date)`);
+      const fact={table:'eventos',action:'INSERT',client_op_id:randomUUID(),record:{id:death,fazenda_id:farm,animal_id:animals[0],dominio:'obito',occurred_at:'2026-11-04T12:00:00Z'}};
+      const cancel={domain:'obito_agenda_v1',client_op_id:randomUUID(),agenda_id:ordinary,animal_id:animals[0],death_event_id:death,fazenda_id:farm};
+      const dispense={...op('death_participant',{agenda_id:a,animal_id:animals[0],death_event_id:death}),client_tx_id:tx};
+      const body={client_id:'http-fixture-device',fazenda_id:farm,client_tx_id:tx,ops:[fact,cancel,dispense]};
+      const result=await api('/functions/v1/sync-batch',owner.token,'POST',body);
+      assert.equal(result.status,200); assert.equal(result.data.results.length,3);
+      assert(result.data.results.every(r=>r.status==='APPLIED'),JSON.stringify(result.data.results.map(r=>({status:r.status,reason:r.reason_code}))));
+      const replay=await api('/functions/v1/sync-batch',owner.token,'POST',body);
+      assert.equal(replay.status,200); assert(replay.data.results.every(r=>r.status==='APPLIED'));
+      assert.equal((await pull('agenda_itens',`id=eq.${ordinary}`))[0].status,'cancelado');
+      const participants=await pull('sanitario_agenda_animais_v2',`agenda_id=eq.${a}`);
+      assert.equal(participants.find(p=>p.animal_id===animals[0]).not_executed_reason,`obito:${death}`);
+      assert.equal(participants.find(p=>p.animal_id===animals[1]).planned_status,'planejado');
+      assert.equal((await pull('sanitario_agenda_v2',`id=eq.${a}`))[0].status,'programada');
+      assert.equal((await api('/functions/v1/sync-batch',jwt({sub:owner.id,role:'authenticated',aud:'authenticated',exp:1}),'POST',body)).status,401);
+      assert.equal((await api('/functions/v1/sync-batch',owner.token,'POST',{...body,fazenda_id:other})).status,403);
+      assert.equal((await api('/functions/v1/sync-batch',outsider.token,'POST',body)).status,403);
+      assert.equal((await api('/rest/v1/obito_agenda_receipts',owner.token)).status,403);
+      const directCancel=await api('/rest/v1/rpc/internal_obito_agenda_cancel',owner.token,'POST',{
+        actor_user_id:owner.id,fazenda_id:farm,agenda_id:ordinary,animal_id:animals[0],death_event_id:death,
+        client_op_id:cancel.client_op_id,client_tx_id:tx,client_id:'http-fixture-device',
+      });
+      assert.equal(directCancel.status,403);
+      const directSanitary=await api('/rest/v1/rpc/internal_sanitario_admit_v3',owner.token,'POST',{
+        actor_user_id:owner.id,fazenda_id:farm,command:'death_participant',operation_args:{},receipt_only:false,
+      });
+      assert.equal(directSanitary.status,403);
+    });
     await t.test('real Auth tokens, expired JWT and farm-switch are enforced',async()=>{
       const operation=manage('prepare_close');
       for(const token of [null,'invalid',jwt({sub:owner.id,role:'authenticated',aud:'authenticated',exp:1})])
@@ -204,6 +236,22 @@ test('Agenda V3 through real Auth, Edge, RPC, PostgreSQL and authenticated pull'
       const results=await pull('sanitario_agenda_resultados',`agenda_id=eq.${agenda}&order=revision.asc`);
       assert.equal(results.length,2); assert.deepEqual(results[0].snapshot,closed.snapshot);
       assert.equal((await pull('sanitario_agenda_v2',`id=eq.${agenda}`))[0].status,'fechada');
+    });
+    if(process.env.A05_B04_BASELINE==='1') await t.test('baseline funcional no mesmo stack novo e descartável',()=>{
+      sql(`alter role postgres password '${password}'`,'supabase_admin');
+      try {
+        const output=execFileSync(process.execPath,['scripts/codex/validate-supabase-baseline-functional.mjs'],{
+          encoding:'utf8',timeout:120000,env:{...process.env,
+            DB_URL:port(db).replace('http://','postgresql://postgres@')+'/postgres',API_URL:base,FUNCTIONS_URL:base+'/functions/v1',
+            PGPASSWORD:password,ANON_KEY:anon,SERVICE_ROLE_KEY:service,REBANHOSYNC_SKIP_FUNCTIONS_SERVE:'1',REBANHOSYNC_DISPOSABLE_LOCAL_DB:'1',
+          },stdio:['ignore','pipe','pipe'],
+        });
+        console.log(output);
+      } catch(error) {
+        // Only test labels/errors, never environment or credentials.
+        const diagnostic=String(error.stdout??'')+'\n'+String(error.stderr??'');
+        throw new Error(diagnostic.replaceAll(secret,'[redacted]').replaceAll(service,'[redacted]').replaceAll(anon,'[redacted]').replaceAll(password,'[redacted]'));
+      }
     });
     console.log('Task-owned HTTP stack verified; all published ports loopback; real Auth/Edge/PostgREST; no existing stack used.');
   } finally {

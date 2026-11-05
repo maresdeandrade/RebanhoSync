@@ -32,6 +32,7 @@ vi.mock("@/lib/sanitario/catalog/products", () => ({
 vi.mock("@/utils/toast", () => ({ showError: vi.fn(), showSuccess: vi.fn() }));
 import Insumos from "../../Insumos";
 import { db } from "@/lib/offline/db";
+import * as offlineOps from "@/lib/offline/ops";
 import { fixture } from "./fixtures/inventoryProjection.inputs";
 import { deferred } from "./fixtures/inventorySnapshotHarness";
 
@@ -245,13 +246,18 @@ it("keeps a correct farm form through role loading, offline and reconnect", asyn
 });
 
 it("saves an actual lot edit under StrictMode and discards its selection on farm switch", async () => {
+  const saveGesture = vi.spyOn(offlineOps, "createGesture");
   const { rerender } = render(<StrictMode>{view()}</StrictMode>);
   await screen.findAllByText("Sal-A");
   fireEvent.click(
     screen.getAllByRole("button", { name: "Editar cadastro do lote" })[0],
   );
-  fireEvent.click(screen.getByRole("button", { name: "Salvar cadastro" }));
-  await waitFor(async () => expect(await db.queue_gestures.count()).toBe(1));
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Salvar cadastro" }));
+    expect(saveGesture).toHaveBeenCalledTimes(1);
+    await saveGesture.mock.results[0].value;
+  });
+  expect(await db.queue_gestures.count()).toBe(1);
   await waitFor(() =>
     expect(
       screen.queryByRole("button", { name: "Salvar cadastro" }),
@@ -265,6 +271,7 @@ it("saves an actual lot edit under StrictMode and discards its selection on farm
   expect(screen.queryByRole("button", { name: "Salvar cadastro" })).toBeNull();
   await screen.findAllByText("Sal-B");
   expect(await db.queue_gestures.count()).toBe(1);
+  expect(await db.queue_gestures.toArray()).toMatchObject([{ fazenda_id: "A" }]);
 });
 it("rejects the actual page command if the farm changes during its asynchronous lookup", async () => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);

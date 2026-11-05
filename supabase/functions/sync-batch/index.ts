@@ -67,6 +67,12 @@ import {
   isMovementV1Operation,
   type MovementV1,
 } from "./movement-v1.ts";
+import {
+  executeObitoAgenda,
+  isObitoAgendaOperation,
+  type ObitoAgendaOperation,
+} from "./obito-agenda.ts";
+import { isGenericSanitaryInventoryMovement, isLegacyOperation } from "./operation-routing.ts";
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -213,6 +219,7 @@ Deno.serve(async (req: Request) => {
       | CommercialPurchaseOperation
       | CommercialOperationV2
       | MovementV1
+      | ObitoAgendaOperation
     > = Array.isArray(rawOps) ? rawOps : [];
     console.log(
       `[sync-batch] Processing TX ${client_tx_id} for farm ${fazenda_id}`,
@@ -271,15 +278,9 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[sync-batch] User has role: ${membership.role}`);
 
-    const hasSanitarioInventoryMovements = ops.some(
-      (op) =>
-        !isMovementV1Operation(op) &&
-        !isCommercialPurchaseOperation(op) &&
-        !isCommercialOperationV2(op) &&
-        isSanitarioInventoryMovementOperation(op),
-    );
+    const hasSanitarioInventoryMovements = ops.some(isGenericSanitaryInventoryMovement);
     const serviceRoleKey =
-      hasSanitarioSyncV2Operations || hasSanitarioInventoryMovements
+      hasSanitarioSyncV2Operations || hasSanitarioInventoryMovements || ops.some(isObitoAgendaOperation)
         ? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
         : null;
     const serviceSupabase = serviceRoleKey
@@ -309,13 +310,7 @@ Deno.serve(async (req: Request) => {
       `[sync-batch] Feature flags strict_rules_enabled=${featureFlags.strictRulesEnabled} strict_anti_teleporte=${featureFlags.strictAntiTeleport}`,
     );
 
-    const legacyOps = ops.filter(
-      (op): op is Operation =>
-        !isMovementV1Operation(op) &&
-        !isSanitarioSyncV2Operation(op) &&
-        !isCommercialPurchaseOperation(op) &&
-        !isCommercialOperationV2(op),
-    );
+    const legacyOps = ops.filter(isLegacyOperation);
     if (featureFlags.strictAntiTeleport) {
       const anti = prevalidateAntiTeleport(legacyOps);
       if (!anti.ok) {
@@ -386,6 +381,14 @@ Deno.serve(async (req: Request) => {
 
     for (const rawOp of ops) {
       try {
+        if (isObitoAgendaOperation(rawOp)) {
+          results.push(serviceSupabase
+            ? await executeObitoAgenda(serviceSupabase, rawOp, {
+                actorUserId: user_id, fazendaId: fazenda_id, clientId: client_id, clientTxId: client_tx_id,
+              })
+            : { op_id: rawOp.client_op_id, status: "RETRYABLE", retryable: true, reason_code: "OBITO_AGENDA_SERVICE_UNAVAILABLE" });
+          continue;
+        }
         if (isMovementV1Operation(rawOp)) {
           results.push(
             await executeMovementV1(supabase, rawOp, {
@@ -1011,6 +1014,7 @@ Deno.serve(async (req: Request) => {
                 (
                   candidate,
                 ): candidate is Operation | SanitarioSyncV2Operation =>
+                  !isObitoAgendaOperation(candidate) &&
                   !isCommercialPurchaseOperation(candidate) &&
                   !isCommercialOperationV2(candidate),
               ),

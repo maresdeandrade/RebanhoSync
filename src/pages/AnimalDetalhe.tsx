@@ -87,6 +87,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnimalWeightPresentation } from "@/hooks/useAnimalWeightPresentation";
 import { readAnimalInActiveFarm } from "@/pages/detailFarmIsolation";
+import { getActiveFarmId } from "@/lib/storage";
 import { getAnimalBreedLabel } from "@/lib/animals/catalogs";
 import {
   buildAnimalLifecyclePayload,
@@ -1400,7 +1401,8 @@ const AnimalDetalhe = () => {
   const calfJourneyPendingCount = useMemo(() => {
     if (!agenda || agenda.length === 0) return 0;
     return agenda.filter(
-      (item) => item.status === "agendado" && isCalfJourneyAgendaItem(item),
+      ({ item }) =>
+        item.status === "agendado" && isCalfJourneyAgendaItem(item),
     ).length;
   }, [agenda]);
   const isNeonatalCalf = animal
@@ -1584,13 +1586,12 @@ const AnimalDetalhe = () => {
 
     setIsRegisteringObito(true);
     try {
-      // Find pending agenda items for this animal to cancel them
       const pendingTasks =
         agenda
-          ?.filter((item) => item.status === "agendado")
-          .map((item) => item.id) || [];
+          ?.filter((entry) => entry.item.status === "agendado" && entry.item.dominio !== "sanitario")
+          .map((entry) => entry.item.id) || [];
 
-      const { ops } = buildEventGesture({
+      const { ops, eventId } = buildEventGesture({
         dominio: "obito",
         fazendaId: animal.fazenda_id,
         animalId: animal.id,
@@ -1601,7 +1602,12 @@ const AnimalDetalhe = () => {
         cancelAgendaIds: pendingTasks,
       });
 
-      await createGesture(animal.fazenda_id, ops);
+      await createGesture(animal.fazenda_id, ops, {
+        deathConsequences: { animalId: animal.id, eventId },
+        validateContext: () => {
+          if (getActiveFarmId() !== animal.fazenda_id) throw new Error("OBITO_ACTIVE_FARM_CHANGED");
+        },
+      });
       setShowObitoDialog(false);
       showSuccess("Óbito registrado com sucesso.");
       // Redirect or let the UI reflect status (animal detail will show 'morto' and hide buttons)

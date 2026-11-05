@@ -9,6 +9,9 @@ describe("validate-supabase-baseline-functional contract", () => {
 
     expect(script).not.toContain("insert into public.agenda_itens(");
     expect(script).not.toContain("'sanitario', 'vacinacao', 'agendado'");
-    expect(script).toContain("evento sanitario direto sem agenda legada");
+    expect(script).toContain('operation("apply_factual_core"');
+    expect(script).toContain("SANITARIO_SINGLE_ADMISSION_REQUIRED");
+    expect(script).toContain("sanitario_v3_confirmation = 'confirmed'");
+    expect(script).toContain("Evento sanitario direto deve exigir admissao V3");
   });
 });

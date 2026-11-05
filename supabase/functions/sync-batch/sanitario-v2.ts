@@ -4,6 +4,7 @@ export const SANITARIO_SYNC_V2_MAX_PAYLOAD_BYTES = 1024 * 1024;
 
 export type SanitarioSyncV2Command =
   | "manage_agenda"
+  | "death_participant"
   | "create_agenda"
   | "replace_agenda_animals"
   | "apply_factual_core"
@@ -149,7 +150,13 @@ export interface ManageAgendaOperation extends SanitarioSyncV2OperationBase {
   };
 }
 
+export interface DeathParticipantOperation extends SanitarioSyncV2OperationBase {
+  command: "death_participant";
+  payload: { agenda_id: string; animal_id: string; death_event_id: string };
+}
+
 export type SanitarioSyncV2Operation =
+  | DeathParticipantOperation
   | ManageAgendaOperation
   | CreateAgendaOperation
   | ReplaceAgendaAnimalsOperation
@@ -263,6 +270,7 @@ const UUID_PATTERN =
 
 const COMMANDS = new Set<SanitarioSyncV2Command>([
   "manage_agenda",
+  "death_participant",
   "create_agenda",
   "replace_agenda_animals",
   "apply_factual_core",
@@ -276,6 +284,7 @@ const COMMAND_ALLOWED_ROLES: Record<
   ReadonlySet<string>
 > = {
   manage_agenda: new Set(["owner", "manager", "cowboy"]),
+  death_participant: new Set(["owner", "manager", "cowboy"]),
   create_agenda: new Set(["owner", "manager"]),
   replace_agenda_animals: new Set(["owner", "manager"]),
   apply_factual_core: new Set(["owner", "manager", "cowboy"]),
@@ -793,6 +802,10 @@ export function validateSanitarioSyncV2Operation(
   }
 
   const command = raw.command as SanitarioSyncV2Command;
+  if (command === "death_participant" &&
+    (!isUuid(payload.agenda_id) || !isUuid(payload.animal_id) || !isUuid(payload.death_event_id))) {
+    return { ok: false, result: reject(raw, "SANITARIO_DEATH_PARTICIPANT_INVALID") };
+  }
   if (command === "set_automation_plan" || command === "reschedule_agenda") {
     if (!isRevision(raw.expected_revision)) {
       return {
@@ -983,6 +996,7 @@ export function buildSanitarioSyncV2RpcCall(
 
   switch (operation.command) {
     case "manage_agenda":
+    case "death_participant":
       return { functionName: "internal_sanitario_admit_v3", args: { ...common, client_id: context.clientId, client_tx_id: context.clientTxId, payload: operation.payload } };
     case "set_automation_plan":
       return {
@@ -1118,6 +1132,22 @@ function canonicalStatusFor(data: Record<string, unknown>) {
     : undefined;
 }
 
+function normalizeDeathCanonicalResult(operation: SanitarioSyncV2Operation, data: Record<string, unknown>): SanitarioSyncV2Result {
+  const statuses = {
+    applied: "APPLIED", conflict: "CONFLICT", not_found: "REJECTED", dependency: "RETRYABLE",
+  } as const;
+  const outcome = String(data.outcome) as keyof typeof statuses;
+  if (!Object.prototype.hasOwnProperty.call(statuses, outcome)) {
+    return reject(operation, "SANITARIO_DEATH_RESULT_INVALID", "BLOCKED_DEPENDENCY");
+  }
+  return {
+    op_id: operation.client_op_id, client_op_id: operation.client_op_id, domain_op_id: operation.domain_op_id,
+    status: statuses[outcome],
+    reason_code: outcome === "applied" ? undefined : `SANITARIO_DEATH_${outcome.toUpperCase()}`,
+    retryable: outcome === "dependency", canonical_entity_id: canonicalEntityIdFor(operation, data), canonical_result: data,
+  };
+}
+
 function normalizeCanonicalResult(
   operation: SanitarioSyncV2Operation,
   data: unknown,
@@ -1129,6 +1159,11 @@ function normalizeCanonicalResult(
       "BLOCKED_DEPENDENCY",
     );
   }
+  if (operation.command === "death_participant") return normalizeDeathCanonicalResult(operation, data);
+  return normalizeStandardCanonicalResult(operation, data);
+}
+
+function normalizeStandardCanonicalResult(operation: SanitarioSyncV2Operation, data: Record<string, unknown>): SanitarioSyncV2Result {
   const collision = data.confirmed === false && ["collision", "dependency"].includes(String(data.outcome));
   const late = data.outcome === "late";
   return {

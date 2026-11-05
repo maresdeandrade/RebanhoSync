@@ -409,6 +409,7 @@ function isSanitarioAgendaCutoverRequired(
   return (
     command === "create_agenda" ||
     command === "replace_agenda_animals" ||
+    command === "death_participant" ||
     command === "close_agenda" ||
     command === "reschedule_agenda" ||
     command === "set_automation_plan" ||
@@ -447,10 +448,11 @@ function deriveSanitarioV2CutoverRequired(
   }>,
 ): boolean {
   return matched.some(({ op, result }) => {
-    if (result.status !== "APPLIED" && result.status !== "CONFLICT") {
+    const command = readSanitarioCommand(op, result);
+    if (result.status !== "APPLIED" && result.status !== "CONFLICT" &&
+        !(command === "death_participant" && result.status === "REJECTED")) {
       return false;
     }
-    const command = readSanitarioCommand(op, result);
     const canonical = isRecord(result.canonical_result)
       ? result.canonical_result
       : {};
@@ -979,6 +981,7 @@ function readSanitarioCommand(
     "create_agenda",
     "replace_agenda_animals",
     "apply_factual_core",
+    "death_participant",
     "close_agenda",
     "set_automation_plan",
     "reschedule_agenda",
@@ -1091,7 +1094,11 @@ async function processSanitarioCanonicalResults(
   const canonicalResults = results.filter((result) =>
     isSanitarioCanonicalResult(result, sanitarioOpIds),
   );
-  if (canonicalResults.length === 0) return false;
+  const deathFact = sentOps.find((op) => op.table === "eventos" && op.action === "INSERT" && op.record.dominio === "obito");
+  const deathStateOps = new Set(sentOps.filter((op) => op.table === "animais" && op.action === "UPDATE" &&
+    op.record.status === "morto" && (op.death_state?.animal_id === op.record.id ||
+      (deathFact && op.record.id === deathFact.record.animal_id))).map(op => op.client_op_id));
+  if (canonicalResults.length === 0 && !deathFact && !sentOps.some((op) => op.death_cancel) && !deathStateOps.size) return false;
 
   const nowMs = Date.now();
   const recordedAt = new Date(nowMs).toISOString();
@@ -1105,6 +1112,11 @@ async function processSanitarioCanonicalResults(
   }> = [];
   const operationUpdates = new Map<string, QueueOperationUpdate>();
   const rejectedInventoryProjections: Operation[] = [];
+  const rejectedDeathCancellations: Operation[] = [];
+  const deathReconcileOps = sentOps.filter((op) =>
+    (op.death_cancel || deathStateOps.has(op.client_op_id)) &&
+    results.some((result) => result.op_id === op.client_op_id && ["APPLIED", "APPLIED_ALTERED", "REJECTED", "CONFLICT"].includes(result.status)),
+  );
   let terminalRejection = false;
 
   for (const result of canonicalResults) {
@@ -1233,7 +1245,9 @@ async function processSanitarioCanonicalResults(
             isRecord(parent.record.payload) && isRecord(parent.record.payload.event) &&
             parent.record.payload.event.id === op.record.source_evento_id);
         if (appliedInventoryParent) rejectedInventoryProjections.push(op);
-        if (rejectedFactualParent || appliedInventoryParent) {
+        if (op.death_cancel) rejectedDeathCancellations.push(op);
+        const deathFactualOperation = op.client_op_id === deathFact?.client_op_id || deathStateOps.has(op.client_op_id);
+        if (rejectedFactualParent || appliedInventoryParent || op.death_cancel || deathFactualOperation) {
           operationUpdates.set(op.client_op_id, {
             sync_state: "REJECTED",
             next_attempt_at: undefined,
@@ -1296,7 +1310,7 @@ async function processSanitarioCanonicalResults(
       db.queue_ops,
       db.queue_rejections,
       db.sync_reconcile_obligations,
-      ...getAffectedStores(rejectedInventoryProjections),
+      ...getAffectedStores([...rejectedInventoryProjections, ...rejectedDeathCancellations]),
       db.event_eventos,
       db.event_eventos_sanitario,
     ],
@@ -1341,6 +1355,14 @@ async function processSanitarioCanonicalResults(
             origins: [{ client_tx_id: gesture.client_tx_id,
               client_op_ids: matchedForReconcile.map(({ op }) => op.client_op_id) }] },
         ]);
+      }
+      if (deathReconcileOps.length) {
+        await upsertReconciliationObligations([{ fazendaId: gesture.fazenda_id, scope: "factual",
+          tables: [...new Set(deathReconcileOps.map((op) => op.death_cancel ? "agenda_itens" : "animais"))],
+          origins: [{ client_tx_id: gesture.client_tx_id, client_op_ids: deathReconcileOps.map(op => op.client_op_id) }] }]);
+      }
+      if (rejectedDeathCancellations.length) {
+        for (const op of rejectedDeathCancellations) await rollbackOpLocal(op);
       }
       if (rejectedInventoryProjections.length) {
         // Read movements first: a concurrent commit can only reserve too much,
@@ -1425,7 +1447,7 @@ async function processSanitarioCanonicalResults(
     gesture.fazenda_id,
   );
 
-  if (ackCommitted && rejectedInventoryProjections.length) await drainReconciliationObligations(gesture.fazenda_id);
+  if (ackCommitted && (rejectedInventoryProjections.length || deathReconcileOps.length)) await drainReconciliationObligations(gesture.fazenda_id);
   await reconcileSanitarioV2Results(gesture.fazenda_id, matchedForReconcile);
   return true;
 }
@@ -1873,10 +1895,22 @@ function queuedSanitaryEnvelope(op: Operation): Record<string, unknown> | null {
   return { ...op.record };
 }
 
+function mapDeathCancellationForSync(op: Operation, fazendaId: string): Record<string, unknown> {
+  if (op.table !== "agenda_itens" || op.action !== "UPDATE" ||
+    op.record?.fazenda_id !== fazendaId || typeof op.record?.id !== "string" ||
+    op.record?.status !== "cancelado") throw new Error("OBITO_AGENDA_INVALID_COMMAND");
+  return {
+    domain: "obito_agenda_v1", client_op_id: op.client_op_id,
+    agenda_id: op.record.id, animal_id: op.death_cancel!.animal_id,
+    death_event_id: op.death_cancel!.event_id, fazenda_id: fazendaId,
+  };
+}
+
 export function mapOperationForSync(
   op: Operation,
   fazendaId: string,
 ): Record<string, unknown> {
+  if (op.death_cancel) return mapDeathCancellationForSync(op, fazendaId);
   if (isMovementOperation(op)) return mapMovementForSync(op, fazendaId);
   const sanitary =
     mapQueuedSanitaryPlanV2(op, fazendaId) ?? queuedSanitaryEnvelope(op);

@@ -250,6 +250,24 @@ function dependencies(options?: {
 
 describe("V3 admission and receipt recovery", () => {
   it.each([
+    ["applied", "APPLIED"],
+    ["conflict", "CONFLICT"],
+    ["not_found", "REJECTED"],
+    ["dependency", "RETRYABLE"],
+  ] as const)("classifica desfecho de óbito %s como %s", async (outcome, status) => {
+    const operation = {
+      domain: "sanitario_v2",
+      command: "death_participant",
+      contract_version: 3,
+      client_tx_id: ids.tx,
+      client_op_id: ids.op,
+      domain_op_id: ids.domainOp,
+      payload: { agenda_id: ids.agenda, animal_id: ids.animal, death_event_id: ids.event },
+    };
+    const result = await executeSanitarioSyncV2Operation(operation, context, dependencies({ rpcData: { outcome, agenda_id: ids.agenda } }));
+    expect(result.status).toBe(status);
+  });
+  it.each([
     ["create_agenda", ids.agenda],
     ["replace_agenda_animals", ids.agenda],
     ["apply_factual_core", ids.event],

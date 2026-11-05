@@ -1366,6 +1366,17 @@ export async function executeSanitaryAgendaV2(
     }
     return current;
   };
+  const assertParticipantsAvailableForExecution = async () => {
+    const selectedAnimalIds = progressive ? input.animalIds! : agendaAnimals.map((entry) => entry.animal_id);
+    const currentParticipants = await localDb.ops_sanitario_agenda_animais_v2.bulkGet(
+      selectedAnimalIds.map((animalId) => [input.agendaId, animalId]),
+    );
+    if (currentParticipants.some((entry) => entry?.fazenda_id === input.fazendaId &&
+      entry.planned_status === "nao_executado" && entry.not_executed_reason?.startsWith("obito:"))) {
+      throw new Error("SANITARIO_PARTICIPANT_DECEASED");
+    }
+  };
+
   const committed = await localDb.transaction(
     "rw",
     [
@@ -1395,6 +1406,7 @@ export async function executeSanitaryAgendaV2(
       const current = await readExecutableAgenda();
       if (current.execution_evento_id)
         return { eventId: current.execution_evento_id, created: false };
+      await assertParticipantsAvailableForExecution();
       const currentWarnings = [
         ...(await assertProtocolAuthorization(current)),
         ...(await assertProductApproval(current)),

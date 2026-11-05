@@ -7,6 +7,7 @@ import {
 } from "../pull";
 import { supabase } from "@/lib/supabase";
 import { db } from "../db";
+import { isSanitarioV2PushEnabled, setSanitarioV2PushEnabled } from "../sanitarioV2Cutover";
 
 vi.mock("@/lib/supabase", () => ({
   supabase: {
@@ -19,6 +20,10 @@ const { localStores } = vi.hoisted(() => ({
     "ops_sanitario_agenda_v2",
     "ops_sanitario_agenda_animais_v2",
     "ops_sanitario_agenda_closures_v2",
+    "ops_sanitario_participacoes",
+    "ops_sanitario_participacao_operacoes",
+    "ops_sanitario_agenda_resultados",
+    "ops_sanitario_continuidade_solicitacoes",
   ] as const,
 }));
 
@@ -35,6 +40,7 @@ vi.mock("../db", () => ({
 }));
 
 const rowsByTable: Record<string, unknown[]> = {};
+const errorsByTable: Record<string, { code: string; message: string }> = {};
 const queryLog: Array<{
   table: string;
   op: "eq" | "select";
@@ -52,7 +58,7 @@ const makeQuery = (table: string) => {
     }),
     eq: vi.fn((column: string, value: unknown) => {
       queryLog.push({ table, op: "eq", column, value });
-      return Promise.resolve({ data: rowsByTable[table] ?? [], error: null });
+      return Promise.resolve({ data: errorsByTable[table] ? null : rowsByTable[table] ?? [], error: errorsByTable[table] ?? null });
     }),
   };
 
@@ -68,6 +74,8 @@ describe("pullSanitarioAgendaV2", () => {
     queryLog.length = 0;
     writeLog.length = 0;
     storesByName.clear();
+    for (const table of Object.keys(errorsByTable)) delete errorsByTable[table];
+    setSanitarioV2PushEnabled(false, "local");
 
     rowsByTable.sanitario_agenda_v2 = [
       {
@@ -102,6 +110,9 @@ describe("pullSanitarioAgendaV2", () => {
         deleted_at: null,
       },
     ];
+    for (const table of ["sanitario_participacoes", "sanitario_participacao_operacoes", "sanitario_agenda_resultados", "sanitario_continuidade_solicitacoes"]) {
+      rowsByTable[table] = [{ id: `${table}-1`, fazenda_id: fazendaId, agenda_id: "agenda-1", updated_at: "2026-11-02T10:00:00Z" }];
+    }
 
     (supabase.from as unknown as Mock).mockImplementation((table: string) =>
       makeQuery(table),
@@ -124,17 +135,21 @@ describe("pullSanitarioAgendaV2", () => {
     });
   });
 
-  it("puxa Agenda v2 por fazenda na ordem agenda -> animais -> closures e faz merge local", async () => {
+  it("puxa as sete tabelas sanitárias em ordem por fazenda e faz merge local no backend V3", async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
 
     await pullSanitarioAgendaV2(fazendaId);
 
-    expect(supabase.from).toHaveBeenCalledTimes(3);
+    expect(supabase.from).toHaveBeenCalledTimes(7);
     expect((supabase.from as unknown as Mock).mock.calls.map(([table]) => table)).toEqual([
       "sanitario_agenda_v2",
       "sanitario_agenda_animais_v2",
       "sanitario_agenda_closures_v2",
+      "sanitario_participacoes",
+      "sanitario_participacao_operacoes",
+      "sanitario_agenda_resultados",
+      "sanitario_continuidade_solicitacoes",
     ]);
 
     for (const table of SANITARIO_AGENDA_V2_REMOTE_TABLES) {
@@ -156,6 +171,7 @@ describe("pullSanitarioAgendaV2", () => {
       expect.any(Function),
     );
     expect(writeLog.map((entry) => entry.store)).toEqual(localStores);
+    expect(writeLog.map((entry) => entry.rows)).toEqual(SANITARIO_AGENDA_V2_REMOTE_TABLES.map(table => rowsByTable[table]));
     expect(writeLog[0].rows).toEqual([
       expect.objectContaining({
         id: "agenda-1",
@@ -186,6 +202,22 @@ describe("pullSanitarioAgendaV2", () => {
     expect(db.table).not.toHaveBeenCalledWith("queue_ops");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
+
+  it.each(["sanitario_participacoes", "sanitario_participacao_operacoes", "sanitario_agenda_resultados", "sanitario_continuidade_solicitacoes"])(
+    "expõe incompatibilidade pré-migration em %s, mesmo com push OFF, sem escrita local parcial",
+    async table => {
+      const error = { code: "PGRST205", message: `Could not find the table public.${table} in the schema cache` };
+      errorsByTable[table] = error;
+      expect(isSanitarioV2PushEnabled("local")).toBe(false);
+      await expect(pullSanitarioAgendaV2(fazendaId)).rejects.toEqual(error);
+      const attempted = SANITARIO_AGENDA_V2_REMOTE_TABLES.slice(0, SANITARIO_AGENDA_V2_REMOTE_TABLES.indexOf(table as typeof SANITARIO_AGENDA_V2_REMOTE_TABLES[number]) + 1);
+      expect((supabase.from as unknown as Mock).mock.calls.map(([name]) => name)).toEqual(attempted);
+      for (const name of attempted) expect(queryLog).toContainEqual({ table: name, op: "eq", column: "fazenda_id", value: fazendaId });
+      expect(db.transaction).not.toHaveBeenCalled();
+      expect(db.table).not.toHaveBeenCalled();
+      expect(writeLog).toEqual([]);
+    },
+  );
 
   it("mantem Agenda v2 fora do pull tenant generico legado", () => {
     expect(DEFAULT_REMOTE_TABLES).not.toEqual(
