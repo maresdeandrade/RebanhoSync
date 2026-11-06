@@ -112,6 +112,8 @@ export interface BuildCalfJourneyCompletionOpsInput {
     "id" | "tipo" | "dominio" | "payload" | "source_ref" | "animal_id" | "lote_id"
   >;
   occurredAt?: string;
+  /** Reuse for the same factual command; a correction/new measurement needs a new identity. */
+  eventId?: string;
   pesoKg?: number | null;
   destinationLoteId?: string | null;
 }
@@ -470,6 +472,7 @@ export function buildCalfJourneyCompletionOps({
   mother,
   agendaItem,
   occurredAt = new Date().toISOString(),
+  eventId,
   pesoKg = null,
   destinationLoteId = null,
 }: BuildCalfJourneyCompletionOpsInput) {
@@ -501,6 +504,7 @@ export function buildCalfJourneyCompletionOps({
       dominio: "pesagem",
       fazendaId,
       animalId: calf.id,
+      eventId,
       loteId: calf.lote_id ?? null,
       sourceTaskId: agendaItem.id,
       occurredAt,
@@ -517,6 +521,7 @@ export function buildCalfJourneyCompletionOps({
       dominio: "nutricao",
       fazendaId,
       animalId: calf.id,
+      eventId,
       loteId: destinationLoteId ?? calf.lote_id ?? null,
       sourceTaskId: agendaItem.id,
       occurredAt,
@@ -533,8 +538,10 @@ export function buildCalfJourneyCompletionOps({
     ops.push(...built.ops);
 
     const currentPayload = getAnimalPayloadRecord(calf.payload);
+    const movementEventId = eventId ? deterministicUuidFromText(`${eventId}:movement`) : undefined;
     if (destinationLoteId && destinationLoteId !== calf.lote_id) {
       ops.push(...buildEventGesture({ dominio: "movimentacao", fazendaId, animalId: calf.id,
+        eventId: movementEventId,
         fromLoteId: calf.lote_id, toLoteId: destinationLoteId, occurredAt, sourceTaskId: agendaItem.id,
         observacoes: `Movimentação no desmame da cria ${calf.identificacao}` }).ops);
     }

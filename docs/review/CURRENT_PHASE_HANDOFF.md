@@ -1,9 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-11-01
+Atualizado em: 2026-11-05
 Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED apenas no envelope reconnect 1k; produção não provisionada**
-Próxima fase: **Fase 24 — formalizar escopo e critérios para a proposta de inventário estático F24.6A2; nenhuma medição ou otimização iniciada nesta atualização**
-Baseline integrada consultada: `origin/main@23893a9761b863bc08acd8414184d5d94009ae71`
+Próxima fase: **Fase 24 — continuidade pós-#270, sem nova fase iniciada. Incremento autorizado B02/A05 de identidade neonatal; revisão B01/F07 do delta testFarm permanece separada. F24.6A2 não iniciada.**
+Baseline integrada consultada: `origin/main@0206d64a5c8fe8d46700a4e9312862b417e13ba0`
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -22,6 +22,33 @@ Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
+
+## F24 integrada — PR #270
+
+O [PR #270](https://github.com/maresdeandrade/RebanhoSync/pull/270) foi integrado em `0206d64a5c8fe8d46700a4e9312862b417e13ba0`. Head validado `02d738cb94089736ac4709209c895c8516b3de87`, árvore `0fd36d4be4e68133104e6b508181843ef2c10186`, candidato `sha256:eaa4423961cc086141ca494caa574a2f80578a9e8893fc00f223c7805cc6232a`; 44 arquivos. A + A05 + correções Fallow integrados; esta consolidação documental não altera esses contratos.
+
+| Evidência encerrada | Resultado observado e limite |
+| --- | --- |
+| FULL local final, Node 22 / Vitest 4.0.18 | 5.332 PASS, 92 skipped, zero falhas/erros de workers; exit 0, 432,05 s. Proteção externa contra Modern Standby adquirida/liberada; corrida de observação do teste da fila corrigida aguardando a Promise real. |
+| [CI remoto do PR](https://github.com/maresdeandrade/RebanhoSync/actions/runs/42126989582) | `Required validation` success: FULL Ubuntu com 5.350 PASS, 74 skipped, 181,04 s; lint, Fallow 3.17.0, build, diff, gates documentais e checkout limpo aprovados. Descrição [aprovada](https://github.com/maresdeandrade/RebanhoSync/actions/runs/42126989537). Skips não são PASS. |
+| B2 PostgreSQL 17, exclusivamente descartável | Rotas 0→74, 65→74 com fixtures V2/backup/restore e 72→74 validadas; histórico, fingerprints, fatos/recibos, RLS, replay, concorrência e recuperação observados nos respectivos recortes. Não repetir por esta atualização. Migration 14 usa exceção não transacional validada; SQL + histórico não possuem atomicidade estrita nesse arquivo. |
+| Migrations A05 73/74 | `20261103180000_obito_sanitario_participant.sql` e `20261103181000_obito_agenda_cancel.sql`; [manifest de 74 versões](./evidence/F24_CONSOLIDATED_MIGRATIONS_20261104.json). Nenhuma migration histórica alterada. |
+
+Óbito é Evento factual. A05 cancela condicionalmente a intenção comum e dispensa somente participante sanitário pendente; preserva atendimentos, demais animais, fato e recibos. Worker/pull mantêm proteção de pendências, resultado por operação e recuperação após sucesso parcial/replay; mudança de fazenda não autoriza escrever em outro contexto. Fontes: `src/lib/offline/ops.ts`, `syncWorker.ts`, `pull.ts` e `supabase/functions/sync-batch/obito-agenda.ts`.
+
+**Código integrado ≠ schema aplicado ≠ operação habilitada.** Rollout exige **schema V3 completo → Edge compatível da mesma baseline → frontend**, com autorização própria. Em backend de 65 migrations, pull pode gerar PGRST205 mesmo com push OFF; obrigação permanece pendente. Gates OFF não resolvem essa incompatibilidade. Não se declara implantação, F24.7/F24.8, GATE-03 ou dispositivos físicos certificados.
+
+Diagnósticos herdados: 220 TypeScript e três Deno no comparativo registrado, sem novos naquele recorte; não certificados limpos. Evidências finais externas: `C:/Users/mares/.codex/artifacts/f24-final-20261104-1ae3cd0815b9/queue-full-final-20261105/` (`outcome.json`, `full-final/tests.json`) e `pr-publication-20261105/outcome.json` no mesmo pacote pai. Handoffs anteriores e seus números permanecem snapshots; não substituem este fechamento.
+
+### Pendências locais após F24
+
+Auditoria dos 75 arquivos do checkout antigo: **34 integrados** (33 idênticos e um com linha vazia adicional), **36 divergentes/superados**, **três deltas funcionais exclusivos** e **dois artefatos/evidências**. Não reaplicar o conjunto. Snapshot verificável dos três deltas e de `docs/ux/UX-DISCOVERY-02.md`: `C:/Users/mares/.codex/artifacts/post-f24-preserved-1793933077154/`; manifest com hashes dos 75 arquivos e cópias dos quatro exclusivos. Checkout antigo e demais worktrees preservados; limpeza depende de autorização específica e conferência dos hashes antes de qualquer descarte.
+
+- B02/A05: `calfJourney.ts` e teste — incremento atual de identidade fornecida ao builder de conclusão; resultado focado registrado no backlog, sem reabrir pesagem inicial #257 ou parto P0.
+- B01/F07: `testFarm/service.ts` — **próxima prioridade concreta: revisar separadamente restrição nominal de usuário e recuperação pull/retry**. Preservado, não integrado nem autorizado para executar operações.
+- F02/H02/D06/C07: evidência UX exclusiva preservada; decisões registradas em 29/10 distinguem cenário OFF, atores e fontes. GATE-03 continua bloqueado; não confundir capacidade V3 integrada com homologação UX ou ACL universal. Procedimento excepcional para participação irrecuperável permanece condicional.
+
+Os fechamentos históricos abaixo continuam válidos nos respectivos escopos; itens chamados futuros em snapshots antigos não reabrem colaboração, fechamento ou continuidade já integrados por #268.
 
 ## Entregas integradas até os PRs #264 e #265 — 01/11/2026
 

@@ -1,9 +1,9 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-11-01
-Baseline integrada consultada: `origin/main@23893a9761b863bc08acd8414184d5d94009ae71`
+Atualizado em: 2026-11-05
+Baseline integrada consultada: `origin/main@0206d64a5c8fe8d46700a4e9312862b417e13ba0`
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no escopo certificado)**.
-Próxima fase de desenvolvimento: **Fase 24 — proposta de inventário F24.6A2; escopo e critérios devem ser formalizados antes do início**.
+Próxima fase de desenvolvimento: **Fase 24 — continuidade pós-#270. Incremento B02/A05 de identidade neonatal; depois, revisão isolada B01/F07 de testFarm. F24.6A2 permanece proposta, sem início.**
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.
@@ -29,6 +29,10 @@ com fila heterogênea foram certificados. Kill real de processo/browser permanec
 O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é a referência arquitetural canônica dos fluxos operacionais. Código e migrations ativas mantêm precedência factual; os resumos deste `PROJECT_STATUS.md` registram estado e contexto, mas não redefinem contratos do mapa.
 
 ## Estado atual
+
+**F24 integrada — #270, merge `0206d64a`:** A + A05 + correções Fallow; óbito factual com consequências condicionais nas Agendas e preservação de recibos. FULL local 5.332 PASS/92 skipped; CI remoto 5.350 PASS/74 skipped, lint/Fallow/build/gates aprovados. B2 0→74, 65→74 e 72→74 encerrado no ambiente descartável, incluindo migrations 73/74. [Evidências, pendências e limites](../review/CURRENT_PHASE_HANDOFF.md#f24-integrada--pr-270). Três deltas funcionais locais e uma evidência UX preservados; versões antigas não serão transportadas. Rollout exige schema V3 → Edge compatível → frontend, autorização própria e gates OFF até decisão específica. TypeScript/Deno herdados e skips explícitos; não se certificam F24.7/F24.8, implantação ou operação habilitada.
+
+**Snapshots anteriores:**
 
 **Entregas integradas até #265 — 01/11/2026:** [GTA/CAS #264](https://github.com/maresdeandrade/RebanhoSync/pull/264), merge `56dbe1b1`, encerra funcionalmente o recorte de registro factual/avisos (`ACCEPTED_INTEGRATED`). [Sanitário V3.1/V3.2 #265](https://github.com/maresdeandrade/RebanhoSync/pull/265), merge `23893a97`, integra fundação, execução por subconjuntos, efeitos/leitores e recuperação offline. `Required validation` e descrição aprovados nos dois heads integrados. [Consolidação e fronteiras](../review/CURRENT_PHASE_HANDOFF.md#entregas-integradas-até-os-prs-264-e-265--01112026). O incidente das gestures originais é independente; não há autorização de recuperação, nova certificação F24.7 ou ativação de produção derivada desses merges.
 
@@ -209,7 +213,7 @@ Validação final: 2.668 testes em 354 arquivos, lint, build, gates documentais,
 
 ## Estado sanitário consolidado
 
-**V3.1/V3.2 integrada — PR [#265](https://github.com/maresdeandrade/RebanhoSync/pull/265), merge `23893a97` em 01/11/2026.** Fundação, execução progressiva e recovery offline integrados; [evidências e limites](../review/CURRENT_PHASE_HANDOFF.md#entregas-integradas-até-os-prs-264-e-265--01112026). A homologação local não comprova implantação/ativação real, PWA totalmente desconectada, colaboração completa, fechamento gerencial ou continuidade. **BLQ-002/003 ABERTOS; GATE-03 BLOQUEADO.** As notas de autorização de 30/10 abaixo são snapshots históricos anteriores à integração.
+**V3.1/V3.2 integrada — PR [#265](https://github.com/maresdeandrade/RebanhoSync/pull/265), merge `23893a97` em 01/11/2026.** Fundação, execução progressiva e recovery offline integrados; [evidências e limites](../review/CURRENT_PHASE_HANDOFF.md#entregas-integradas-até-os-prs-264-e-265--01112026). A homologação local não comprova implantação/ativação real, PWA totalmente desconectada, colaboração completa, fechamento gerencial ou continuidade naquele recorte; esses contratos foram posteriormente integrados por #268. **BLQ-002/003 ABERTOS; GATE-03 BLOQUEADO.** As notas de autorização de 30/10 abaixo são snapshots históricos anteriores à integração.
 
 **Snapshot histórico de governança — 30/10/2026, anterior à execução e integração V3.1/V3.2:** [DESIGN V3 APROVADO PELO PRODUCT OWNER](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md#autoridade-e-proveniência), formalizado no checkout `762226630fb54abbf9303d6e292be85fb28c9df2`. Múltiplos Eventos progressivos, colaboração, fechamento limitado ao estado conhecido e continuidade são decisões de design; não são capacidades V3 implementadas/certificadas. A política de fechamento offline está resolvida; [pendências técnicas](../review/OPEN_REVIEW_ITEMS.md#agenda-sanitária-v3--pendências-técnicas-do-design-aprovado) e [incrementos candidatos](../review/MASTER_BACKLOG_EXECUTION_PLAN.md#incrementos-candidatos-da-agenda-sanitária-v3) permanecem sem autorização de início. Participação operacional difere de visualização; participação irrecuperável exige procedimento excepcional futuro, sem fechamento forçado automático. **BLQ-002/003 abertos; UX-DISCOVERY-02 GATE-03 BLOQUEADO; implementação V3 não autorizada.** Esta atualização é documental: não muda as baselines de certificação, o estado técnico F24 ou rollout dos snapshots abaixo.
 

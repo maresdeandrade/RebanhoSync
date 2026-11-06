@@ -168,6 +168,48 @@ describe("calfJourney", () => {
     expect(stage.key).toBe("desmamado");
   });
 
+  it.each(["pesagem_d7", "pesagem_d30"])("preserves the supplied %s event and links when rebuilding the same command", (tipo) => {
+    const input = {
+      fazendaId: "farm-1",
+      calf: createCalf(),
+      mother: { id: "matriz-1", identificacao: "MAT-001" },
+      agendaItem: createAgendaItem({ tipo, payload: { milestone_key: tipo } }),
+      occurredAt: "2026-04-08T10:00:00.000Z",
+      eventId: "e11aa222-3333-4444-8555-666666666666",
+      pesoKg: 52.4,
+    };
+    const first = buildCalfJourneyCompletionOps(input);
+    expect(first.linkedEventId).toBe(input.eventId);
+    expect(first.ops[0].record).toMatchObject({ id: input.eventId, source_task_id: input.agendaItem.id,
+      animal_id: input.calf.id, payload: { birth_event_id: "evento-1", mother_id: "matriz-1" } });
+    expect(first.ops[1].record).toMatchObject({ evento_id: input.eventId, peso_kg: 52.4 });
+    expect(first.ops[2].record).toMatchObject({ id: input.agendaItem.id, source_evento_id: input.eventId });
+    expect(buildCalfJourneyCompletionOps(input)).toEqual(first);
+  });
+
+  it("rebuilds weaning with a distinct stable UUID for movement and preserves factual links", () => {
+    const input = {
+      fazendaId: "farm-1",
+      calf: createCalf(),
+      mother: null,
+      agendaItem: createAgendaItem({ tipo: "desmame", dominio: "nutricao", payload: { milestone_key: "desmame" } }),
+      occurredAt: "2026-10-28T10:00:00.000Z",
+      eventId: "e11aa222-3333-4444-8555-666666666666",
+      destinationLoteId: "e11aa222-3333-4444-8555-777777777777",
+    };
+    const first = buildCalfJourneyCompletionOps(input);
+    expect(first.linkedEventId).toBe(input.eventId);
+    expect(first.ops.find(op => op.table === "eventos_nutricao")?.record.evento_id).toBe(input.eventId);
+    const movement = first.ops.find(op => op.table === "movement_v1")!;
+    expect(movement.record.event_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    expect(movement.record.event_id).not.toBe(input.eventId);
+    expect(first.ops.find(op => op.table === "animais")?.record.payload.weaning.event_id).toBe(input.eventId);
+    expect(first.ops.at(-1)?.record.source_evento_id).toBe(input.eventId);
+    expect(buildCalfJourneyCompletionOps(input)).toEqual(first);
+    const other = buildCalfJourneyCompletionOps({ ...input, eventId: "e11aa222-3333-4444-8555-888888888888" });
+    expect(other.ops.find(op => op.table === "movement_v1")?.record.event_id).not.toBe(movement.record.event_id);
+  });
+
   it("allows deterministic agenda ids", () => {
     const createAgendaId = (dedupKey: string) => `agenda:${dedupKey}`;
     const firstPlan = buildCalfJourneyAgendaOps({
