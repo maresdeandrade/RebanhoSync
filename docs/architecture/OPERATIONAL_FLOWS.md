@@ -199,6 +199,33 @@ Reprodução factual usa Evento e `eventos_reproducao`. O estado derivado não s
 
 `eventos_reproducao` possui caminho especializado por `pullReproductionDiagnosisState`, incluindo cursor, proteção de pendência e refresh pós-sync para os tipos sincronizados. Não deve ser presumido equivalente ao pull genérico.
 
+### Conclusão D7/D30/desmame — B02/A05
+
+`AnimalCriaInicial.handleJourneyMilestone` chama `registerCalfJourneyGesture`. Uma
+intenção existente (`fazenda_id` + ID da Agenda) admite um único comando local,
+com UUID estável de transação e Evento. A transação Dexie externa serializa a
+consulta e envolve o `createGesture` real: fila, fatos, detalhes, projeções e
+`queue_gestures.calf_journey_command` são confirmados ou abortados juntos.
+O marcador guarda apenas identidade/horário; payload e revisões permanecem nas
+operações existentes e os fatos nas tabelas de Eventos. Não há nova store/writer.
+No desmame, “manter lote” resolve o destino efetivo do estado atual da cria dentro
+da transação, antes do builder, sem gerar movimento nem alterar comandos persistidos.
+
+Repetição consulta a gesture antes de reconstruir qualquer operação; horário,
+payload, IDs de operação, CAS e base/digest do movimento permanecem os persistidos.
+ACK não causa recriação de operações removidas. Rejeição/conflito/erro exige a
+recuperação explícita da Sincronização, sem rebase ou retry implícito pela ficha.
+Execuções legadas por `source_task_id` são reconhecidas sem tradução; intenção
+encerrada ou vínculo factual incompleto não autoriza outro Evento. Nova medição
+ou correção usa o fluxo existente de novo Evento/intenção, preservando o anterior.
+
+Auth termina antes da transação; contexto e ownership são conferidos durante a
+materialização. A UI informa persistência local/resultado pendente, sem prometer
+confirmação remota. Testes locais cobrem UI, concorrência, aborto transacional,
+reabertura Dexie, lost ACK e resposta parcial pelo worker real com transporte
+simulado. Não comprovam kill real, múltiplos dispositivos ou convergência remota;
+receipt de movimento e obrigação pendente continuam distintos de reconciliação.
+
 ## 14. Sociedade pecuária
 
 Writers atuais usam `sociedades_pecuarias` e `sociedade_animais`. `animais_sociedade` é superfície legada somente para compatibilidade de replay/rollback.

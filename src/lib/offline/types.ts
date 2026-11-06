@@ -1909,6 +1909,14 @@ export interface EventoComercial {
 }
 
 export interface Gesture {
+  /** Local command identity only; queue_ops and factual tables retain the payload/receipts. */
+  calf_journey_command?: {
+    version: 1;
+    agenda_id: string;
+    animal_id: string;
+    event_id: string;
+    occurred_at: string;
+  };
   diagnostics?: import("./reconciliationTypes").GestureDiagnostics;
   client_tx_id: string;
   fazenda_id: string;
