@@ -12,11 +12,8 @@ Eliminar drift documental com diffs mínimos, preservando a hierarquia de fontes
 
 ## Leitura inicial
 
-1. `AGENTS.md`;
-2. `.agents/rules/CORE_RULES.md`;
-3. `.agents/rules/CONTEXT_LOADING.md`;
-4. `.agents/rules/no-broad-context.md`;
-5. `.agents/rules/rtk.md`.
+1. Reutilize o bootstrap único de `AGENTS.md` e as rules já carregadas nesta sessão.
+2. Não releia instruções ou reinicie o bootstrap por causa desta skill. Em uma sessão sem bootstrap aplicado, siga `AGENTS.md` uma vez antes de continuar.
 
 Depois, ler somente os arquivos necessários ao delta.
 
@@ -27,7 +24,7 @@ Depois, ler somente os arquivos necessários ao delta.
 | Estado atual | `docs/context/PROJECT_STATUS.md`, `docs/context/KNOWN_GAPS.md` |
 | Fonte de verdade | `docs/context/SOURCE_OF_TRUTH.md`, documento de domínio específico |
 | Arquitetura/sync/RLS/eventos/testes | documento correspondente em `docs/technical/` |
-| Fase/continuidade | `docs/review/CURRENT_PHASE_HANDOFF.md`, `docs/review/ACTIVE_PHASE_PLAN.md`, `docs/review/LAST_PHASE_RESULT.md` |
+| Fase/continuidade | Selecionar entre `docs/review/CURRENT_PHASE_HANDOFF.md`, `docs/review/ACTIVE_PHASE_PLAN.md`, `docs/review/LAST_PHASE_RESULT.md` somente quando a tarefa depender de continuidade ou estado de fase |
 | Produto/roadmap | `docs/product/ROADMAP.md` |
 | Documento derivado | arquivo derivado diretamente afetado, se existir |
 | Manual/suporte | somente a página da tela ou fluxo alterado |
@@ -50,23 +47,25 @@ Aplicar as precedências factual e procedimental definidas em `.agents/rules/COR
 
 ## Procedimento
 
-### 1. Registrar baseline e escopo
+### 1. Delimitar baseline e escopo
 
 Identificar:
 
-- capability ou trilha de infraestrutura afetada, quando esse identificador existir no plano ativo;
+- capability ou trilha de infraestrutura afetada, se já estiver identificada em contexto/plano pertinente; não abrir plano somente para obter identificador;
 - módulos e arquivos alterados;
 - migrations/RPC/RLS envolvidos;
 - evidências de teste;
 - mudanças preexistentes no worktree que não pertencem à tarefa.
 
+Consultar handoff/plano de fase somente se a tarefa exigir continuidade, fechamento ou confirmação do estado da fase.
+
 ### 2. Validar o estado real
 
-Inspecionar somente código, migrations ativas, testes e documentos diretamente ligados ao delta. Se houver conflito, registrar a divergência e seguir a hierarquia de fontes.
+Inspecionar somente as fontes diretamente ligadas ao delta e necessárias para confirmar o fato normativo. Se houver conflito, seguir a hierarquia de fontes; registrar a divergência somente quando afetar a decisão ou entrega.
 
 ### 3. Classificar o impacto documental
 
-Para cada candidato, classificar como:
+Classificar os documentos efetivamente pertinentes como:
 
 - `snapshot`;
 - `normative`;
@@ -77,13 +76,15 @@ Para cada candidato, classificar como:
 
 ### 4. Medir o delta
 
-Registrar por documento:
+Determinar por documento:
 
 - o que mudou;
 - o que permanece válido;
 - o trecho em drift;
 - o que não deve ser tocado;
-- ação: atualizar, dividir, arquivar ou manter.
+- ação: atualizar ou manter. Dividir, arquivar ou mover somente quando necessário e autorizado.
+
+Não criar relatórios, handoffs, ADRs ou arquivos auxiliares para documentar a reconciliação.
 
 ### 5. Atualizar na camada correta
 
@@ -95,7 +96,7 @@ Aplicar somente os níveis necessários:
 4. manual, se o comportamento visível mudou;
 5. prompt/skill, se o comportamento dos agentes mudou.
 
-Usar diff mínimo por arquivo.
+Usar diff mínimo por arquivo. Alterar somente documentos canônicos autorizados que tenham mudança factual/normativa durável; não atualizar `LAST_PHASE_RESULT.md` ou outro registro de continuidade por rotina.
 
 ### 6. Preservar histórico
 
@@ -106,9 +107,9 @@ Se um documento tiver sido realmente substituído e a tarefa incluir arquivament
 - não apagar histórico silenciosamente;
 - não criar novo padrão de diretório sem necessidade.
 
-### 7. Avaliar ADR
+### 7. Avaliar necessidade de ADR
 
-Sugerir ADR somente se houver alteração durável em:
+Não criar ADR por rotina. Considerar sua necessidade somente se houver alteração durável em:
 
 - contrato de sync, ordenação, deduplicação ou status;
 - modelo canônico;
@@ -117,6 +118,8 @@ Sugerir ADR somente se houver alteração durável em:
 - Two Rails;
 - fonte de verdade;
 - regra normativa que orientará decisões futuras.
+
+Qualquer criação continua sujeita a autorização explícita e escopo para o documento.
 
 ## Validação
 
@@ -128,18 +131,18 @@ git diff --check
 ```
 
 Inspecionar o diff dos documentos alterados. Validar links, invariantes duplicados ou arquivos extensos apenas quando o delta exigir e com busca direcionada.
+Para alterações em `.agents/`, executar `pnpm run gates:docs` quando disponível; esse gate já inclui a auditoria de agentes.
 
 ## Saída obrigatória
 
-Separar `snapshot`, `normative`, `derived`, `manual/support`, `prompt/skill` e `archive`, informando:
+Entregar de forma concisa, distinguindo fato confirmado, inferência e recomendação quando relevante:
 
-1. resumo da reconciliação;
-2. documentos atualizados e motivo;
-3. documentos deliberadamente mantidos;
-4. documentos movidos e conteúdo preservado;
-5. fase atual, somente se solicitada;
-6. validações e evidências;
-7. riscos, dívidas ou divergências, até três;
-8. ADR sugerido, se aplicável.
+1. resumo e documentos efetivamente atualizados, se houver;
+2. documentos deliberadamente mantidos somente quando isso esclarecer o escopo;
+3. arquivos movidos somente se houver movimentação autorizada;
+4. fase atual somente se solicitada;
+5. validações e evidências;
+6. riscos, dívidas ou divergências relevantes, até três;
+7. ADR somente se necessário e autorizado.
 
-Não afirmar reconciliação sem verificar os arquivos reais.
+Não afirmar reconciliação sem verificar os arquivos reais. Se não houver mudança documental durável, não crie artefato e relate a decisão sem alteração de arquivo.

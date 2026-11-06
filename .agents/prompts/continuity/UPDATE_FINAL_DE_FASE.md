@@ -1,17 +1,17 @@
 # Update Final de Fase — RebanhoSync
 
-Atualizado em: 2026-08-03  
-Versão: 1.2.0
+Atualizado em: 2026-11-06
+Versão: 1.3.0
 
-Use somente após a fase ou subfase estar validada. Atualiza documentação permanente de continuidade; não inicia nova implementação.
+Use quando uma fase/subfase validada exigir atualização documental autorizada. O fechamento não exige, por si só, alteração de arquivo; não inicie outra implementação.
 
 ## Modo
 
-`MUTACAO_AUTORIZADA` somente para os documentos explicitamente permitidos abaixo.
+`MUTACAO_AUTORIZADA` somente para os documentos explicitamente permitidos abaixo. Se não houver mudança durável a registrar em documento canônico autorizado, não altere arquivos.
 
 ## Prompt
 
-Atualize a documentação ativa para registrar o fechamento validado da fase/subfase:
+Registre o fechamento validado da fase/subfase somente nos documentos canônicos afetados e autorizados:
 
 ```txt
 [IDENTIFICAR_FASE_OU_SUBFASE]
@@ -31,11 +31,10 @@ Atualize a documentação ativa para registrar o fechamento validado da fase/sub
 
 ## Contexto e skill
 
-1. Leia `AGENTS.md`.
-2. Aplique `.agents/rules/CORE_RULES.md`, `CONTEXT_LOADING.md` e `no-broad-context.md`.
-3. Use `reconcile-docs` como skill principal.
-4. Leia apenas os documentos ativos necessários ao fechamento.
-5. Para comandos e validações, siga `.agents/rules/rtk.md`.
+1. Aplique o bootstrap único definido em `AGENTS.md`; não releia rules já carregadas nesta sessão por referência neste prompt ou na skill.
+2. Use `reconcile-docs` como skill principal, sem reiniciar o bootstrap.
+3. Consulte somente as fontes necessárias para confirmar os critérios e o estado que o documento autorizado precisa registrar. Handoff e plano ativo são condicionais, não leituras padrão.
+4. Para comandos e validações, siga `.agents/rules/rtk.md`.
 
 ## Restrições
 
@@ -47,40 +46,32 @@ Atualize a documentação ativa para registrar o fechamento validado da fase/sub
 - Não arquivar documentos ativos de continuidade.
 - Não usar archive como fonte operacional.
 - Não mover nem arquivar qualquer arquivo quando o campo de autorização estiver `NAO`, vazio ou sem alvo exato.
+- Não atualizar automaticamente `LAST_PHASE_RESULT.md`, handoff, plano, status ou roadmap.
+- Não criar relatório, ADR, handoff ou outro documento para satisfazer um rito de fechamento; só propor ADR quando houver decisão normativa durável, sem criá-lo sem autorização explícita.
 
 ## Diagnóstico antes de editar
 
-Confirme:
+Confirme apenas os itens necessários para a decisão documental autorizada:
 
 1. fase/subfase e critério de conclusão;
 2. evidências de validação;
-3. estado do worktree antes da edição documental, inclusive staged e untracked;
-4. `HEAD` atual e data local;
-5. arquivos efetivamente alterados na fase;
-6. pendências abertas e fechadas;
-7. documentos que exigem atualização;
-8. relatórios históricos elegíveis para arquivamento e explicitamente autorizados;
-9. documentos que devem permanecer ativos.
+3. documentos canônicos existentes que de fato precisam de atualização;
+4. estado do worktree e `HEAD`, somente se forem relevantes ao conteúdo autorizado;
+5. pendências ou arquivos alterados apenas quando o documento autorizado precisar registrá-los.
 
-Se a conclusão ou as validações não estiverem comprovadas, não fechar a fase.
+Se a conclusão ou validações necessárias não estiverem comprovadas, não registrar o fechamento como validado. Se não houver delta documental durável, mantenha os arquivos intactos e relate o fechamento sem criar um artefato.
 
 ## Baseline e data
 
-- Capture `HEAD` e data; não invente valores.
-- Se houver alterações funcionais não commitadas, registre “baseline pendente de commit”.
-- Se o worktree estiver limpo antes da edição documental, o `HEAD` pode ser registrado como baseline da implementação concluída.
-- A sujeira criada apenas pela atualização documental posterior não invalida esse baseline, mas deve ser relatada.
+- Registre `HEAD` e data somente se forem necessários ao conteúdo autorizado e houver fonte verificável.
+- Se houver alterações funcionais não commitadas e o documento autorizado exigir baseline, registre “baseline pendente de commit”.
 - Não gravar `Baseline Commit` em `.agents/prompts/**`, `.agents/rules/**` ou `.agents/skills/**`.
 
 ## Atualizar somente quando aplicável
 
-- `docs/review/LAST_PHASE_RESULT.md`: sempre no fechamento validado; permanece ativo.
-- `docs/review/CURRENT_PHASE_HANDOFF.md`: apontar de forma curta para a próxima etapa e para o plano ativo.
-- `docs/review/ACTIVE_PHASE_PLAN.md`: atualizar somente se a fase/subfase ativa mudar.
-- `docs/review/OPEN_REVIEW_ITEMS.md`: manter apenas pendências abertas reais.
-- `docs/context/PROJECT_STATUS.md`: somente para mudança consolidada.
-- `docs/product/ROADMAP.md`: somente se a sequência macro de fases mudar.
-- `docs/archive/review/**`: somente relatórios históricos fechados, já resumidos, sem função ativa e explicitamente autorizados pelo alvo exato.
+- Alterar apenas documentos canônicos listados no escopo autorizado e cujo conteúdo precise mudar em razão do fechamento validado.
+- `docs/review/LAST_PHASE_RESULT.md`, handoff, plano, itens de revisão, status e roadmap não são atualizações automáticas: tocar somente se o arquivo estiver autorizado e houver mudança factual pertinente.
+- Não criar relatório de fase, ADR, handoff ou arquivo de archive. Arquivamento ou movimentação exige autorização para o alvo exato.
 
 Não arquivar:
 
@@ -90,9 +81,9 @@ Não arquivar:
 - `OPEN_REVIEW_ITEMS.md`;
 - plano específico da fase ativa.
 
-## Conteúdo mínimo do resultado de fase
+## Conteúdo do registro autorizado
 
-Registrar:
+Quando um documento autorizado precisar de atualização, registrar somente os dados relevantes e confirmados, por exemplo:
 
 - objetivo e resultado técnico;
 - arquivos alterados;
@@ -100,14 +91,14 @@ Registrar:
 - comandos e resultados reais;
 - restrições preservadas;
 - pendências e riscos;
-- próximo passo recomendado;
-- baseline/data ou motivo objetivo para não os registrar.
+- próximo passo recomendado, se necessário ao documento;
+- baseline/data somente quando exigidos e verificáveis.
 
 ## Validação
 
 Para alteração exclusivamente documental, execute a validação proporcional definida em `.agents/rules/rtk.md` e confirme:
 
-- somente arquivos documentais esperados foram alterados;
+- somente arquivos autorizados e documentalmente afetados foram alterados;
 - diffs unstaged e staged foram inspecionados;
 - arquivos untracked relevantes foram revisados;
 - links/referências e cercas Markdown estão válidos;
@@ -117,11 +108,4 @@ Não execute testes, lint ou build de produto sem justificativa funcional.
 
 ## Entrega
 
-1. **Fase/subfase registrada**
-2. **Arquivos criados/alterados/arquivados**
-3. **Baseline e data**
-4. **Pendências abertas finais**
-5. **Próxima etapa**
-6. **Validações executadas**
-7. **Validações não executadas e motivo**
-8. **Confirmação de ausência de implementação funcional**
+Relate de forma concisa os documentos efetivamente alterados (ou a ausência de delta), evidências e validações executadas, limitações e riscos relevantes, distinguindo fato confirmado, inferência e recomendação quando pertinente. Não crie arquivo para registrar esta resposta.

@@ -21,18 +21,13 @@ Durante implementação, esta é a skill principal quando identidade/estado cada
 - `migrations-rls-contracts`: schema, RLS, constraint ou RPC;
 - `rebanhosync-verification-gate`: usar depois do patch, como fase lifecycle separada, não como apoio simultâneo.
 
-Não carregar toda a lista. Se mais de uma skill de apoio parecer indispensável, parar e redelimitar a tarefa.
+Quando competências adicionais forem necessárias, alternar sequencialmente as skills dentro da mesma entrega autorizada, mantendo uma principal e no máximo uma skill de apoio por subetapa e preservando decisões e evidências entre elas. Interromper somente se houver ampliação real de escopo, autorização insuficiente ou risco crítico não resolvido.
 
 Compra ou venda pode exigir também o contrato comercial; usar esta skill para identidade/estado do animal e a skill de movimento quando houver deslocamento físico.
 
 ## Leitura inicial
 
-1. `AGENTS.md`;
-2. `.agents/rules/CORE_RULES.md`;
-3. `.agents/rules/CONTEXT_LOADING.md`;
-4. `.agents/rules/no-broad-context.md`;
-5. `AGENTS.md` local, se existir;
-6. arquivos-alvo e testes diretamente relacionados.
+Reutilize o bootstrap único de `AGENTS.md`; não releia rules já carregadas por referência nesta skill. Leia o `AGENTS.md` local da área afetada, arquivos-alvo e testes diretamente relacionados.
 
 Carregar conforme o caso:
 
@@ -137,21 +132,12 @@ git status --short --untracked-files=all
 git diff --check
 ```
 
-Executar testes focados do fluxo animal. Para mudança de domínio crítico, usar lint e build; para entrega ampla, executar a suíte completa. Se tocar Supabase, RLS, RPC, migration ou sync-batch, executar também a validação funcional de baseline indicada nas regras.
+Selecionar testes focados e lint/build conforme o delta, risco e `.agents/rules/rtk.md`; domínio crítico, por si só, não torna build obrigatório. Suíte ampla/E2E somente quando o escopo e o risco justificarem e houver autorização pertinente. Se o contrato remoto Supabase/RLS/RPC/migration/sync-batch for efetivamente afetado, executar a validação funcional de baseline indicada em `rtk.md`.
 
 Não executar reset, deploy, push ou habilitação de gate sem autorização explícita.
 
 ## Saída obrigatória
 
-Informar:
-
-1. fatos confirmados;
-2. operação animal afetada;
-3. identidade, proveniência e risco de duplicação;
-4. Evento e estado atual envolvidos;
-5. isolamento, idempotência e rollback;
-6. impacto em lote/pasto, Agenda e fluxos relacionados;
-7. testes e resultados;
-8. riscos residuais, até três.
+Resumir a operação e os arquivos afetados, fatos confirmados e contratos pertinentes (identidade, proveniência, Evento/estado, isolamento, idempotência e rollback), distinguindo inferências e recomendações. Registrar comandos/testes executados e resultados, verificações não executadas com motivo e até três riscos residuais. Omitir categorias não afetadas.
 
 Separar fato, inferência e recomendação. Não inferir peso, aptidão comercial, origem, destino ou estado a partir de Agenda, tags, sinais ou defaults.

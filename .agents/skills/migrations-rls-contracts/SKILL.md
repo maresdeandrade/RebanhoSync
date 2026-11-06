@@ -12,13 +12,7 @@ Preservar evolução segura do schema, isolamento por tenant, autorização por 
 
 ## Leitura inicial
 
-1. `AGENTS.md`;
-2. `.agents/rules/CORE_RULES.md`;
-3. `.agents/rules/CONTEXT_LOADING.md`;
-4. `.agents/rules/no-broad-context.md`;
-5. `.agents/rules/rtk.md`;
-6. `AGENTS.md` local em `supabase/**`, se existir;
-7. migrations ativas, código consumidor e testes diretamente relacionados.
+Reutilize o bootstrap único de `AGENTS.md`; não releia rules já carregadas por referência nesta skill. Leia o `AGENTS.md` local em `supabase/**`, migrations ativas, código consumidor e testes diretamente relacionados.
 
 Carregar somente quando necessário:
 
@@ -125,27 +119,23 @@ Cobrir quando aplicável:
 
 ## Validação
 
-Seguir `.agents/rules/rtk.md`. Executar no mínimo:
+Seguir `.agents/rules/rtk.md` e selecionar as verificações pelos contratos realmente afetados:
 
 ```bash
 git status --short --untracked-files=all
 git diff --check
-rtk node scripts/codex/validate-supabase-baseline-functional.mjs
 ```
 
-Executar testes focados de RLS/RPC/schema. Usar lint e build se o contrato TypeScript/cliente mudar; executar a suíte completa quando o escopo for amplo. Se um comando não puder rodar, registrar o motivo e não declarar o contrato validado.
+Quando a alteração afetar contrato remoto Supabase/RLS/RPC/migration/sync-batch, executar a validação funcional de baseline indicada em `rtk.md`, se o script estiver disponível:
+
+```bash
+node scripts/codex/validate-supabase-baseline-functional.mjs
+```
+
+Executar testes focados dos objetos RLS/RPC/schema e cenários tenant/papel efetivamente afetados. Usar lint/build quando o contrato TypeScript/cliente mudar; suíte ampla/E2E somente quando escopo e risco justificarem e houver autorização pertinente. Se uma verificação aplicável não puder rodar, registrar o motivo e não declarar o contrato validado.
 
 ## Saída obrigatória
 
-Informar:
-
-1. fatos confirmados;
-2. contratos, tabelas e funções afetados;
-3. isolamento tenant e matriz de acesso;
-4. segurança de RLS, grants, RPCs e triggers;
-5. segurança da migration, backfill e compatibilidade;
-6. arquivos alterados;
-7. comandos executados e resultados;
-8. bloqueadores e até três riscos residuais.
+Resumir arquivos e contratos efetivamente afetados, fatos confirmados sobre isolamento tenant, papéis/matriz de acesso, RLS/grants/RPC e migration/compatibilidade conforme aplicável, distinguindo inferências e recomendações. Registrar comandos/resultados, verificações aplicáveis não executadas com motivo, bloqueadores e até três riscos residuais.
 
 Não aprovar RLS sem avaliar outsider/papéis, RPC sem autenticação/tenant/privilégios ou baseline sem executar a validação correspondente.

@@ -55,13 +55,7 @@ Use `sanitario-registro-operacional` for those cases.
 
 ## Leitura inicial
 
-1. `AGENTS.md`;
-2. `.agents/rules/CORE_RULES.md`;
-3. `.agents/rules/CONTEXT_LOADING.md`;
-4. `.agents/rules/no-broad-context.md`;
-5. `docs/domain/SANITARIO.md`;
-6. arquivos-alvo e testes diretamente relacionados;
-7. `.agents/rules/rtk.md`, se houver comandos ou validação.
+Reutilize o bootstrap único de `AGENTS.md`; não releia rules já carregadas por referência nesta skill. Leia `docs/domain/SANITARIO.md`, arquivos-alvo e testes diretamente relacionados conforme o delta.
 
 Carregar `docs/context/SOURCE_OF_TRUTH.md` para decisões críticas, carência, elegibilidade ou conflito entre fato e read model. Fontes legais ou técnicas específicas devem ser explícitas; guideline isolada não autoriza regra crítica.
 
@@ -110,7 +104,7 @@ Regulatory/compliance objects are not the same as operational facts.
 - Agenda is future intention, not historical proof.
 - Demand, preview and agenda do not calculate active withdrawal.
 - `agenda_closure_intent` is administrative closure, not sanitary history.
-- Sale/slaughter/operational eligibility remains blocked without explicit technical source.
+- Absence of verifiable technical evidence prevents declaring compliance, completed withdrawal/carência, or commercial eligibility, but does not by itself create an automatic operational block. Apply a block only when an applicable legal/technical rule and the specific contract/guard define it; preserve implemented guards.
 - Tags/signals are not primary truth.
 
 ---
@@ -274,14 +268,6 @@ Para patch funcional de compliance, executar testes focados e adicionar lint/bui
 
 Operações destrutivas exigem autorização explícita, necessidade técnica demonstrada e compatibilidade simultânea com `rtk.md` e `migrations-rls-contracts`. Graphify só pode ser atualizado quando `.agents/rules/GRAPHIFY_USAGE.md` classificar a mudança como estrutural relevante.
 
-## Output expected
+## Saída obrigatória
 
-Report:
-
-* Files changed.
-* Regulatory/compliance rule changed.
-* Whether entry is contextual or actionable.
-* Whether agenda/event/protocol contract was affected.
-* Tests added/updated.
-* Validation commands and results.
-* Risks remaining.
+Resumir arquivos e regras regulatórias efetivamente afetados, fatos confirmados e distinção contextual/acionável ou impacto Agenda/Evento/Protocolo quando pertinente, separando inferências e recomendações. Registrar comandos/testes executados e resultados, verificações não executadas com motivo e até três riscos residuais. Omitir categorias não afetadas.

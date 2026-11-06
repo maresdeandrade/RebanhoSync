@@ -47,12 +47,7 @@ Do not use when:
 
 ## Read first
 
-1. `AGENTS.md`
-2. `.agents/rules/CORE_RULES.md`
-3. `.agents/rules/CONTEXT_LOADING.md`
-4. `.agents/rules/no-broad-context.md`
-
-> ⚙️ **Execution Rule:** For commands and validation, follow `.agents/rules/rtk.md`.
+Reutilize o bootstrap único de `AGENTS.md`; não releia rules já carregadas por referência nesta skill. Para comandos e validação, siga `.agents/rules/rtk.md`.
 
 ### Read as needed:
 * `docs/domain/REPRODUCAO.md`
@@ -110,7 +105,7 @@ Check if mother exists and belongs to farm, calf belongs to same farm, event lin
 Check if historical fact is event, current state is `state_*`, future task is agenda, and protocol/config is not execution.
 
 ### 4. Verify sync/offline
-Check that one user action creates exactly one idempotent gesture, rollback can undo partial creation, retry does not duplicate event/cria/agenda, and failure leaves system reconcilable.
+Do not assume one gesture per user action: inspect the actual contract and verify stable identity and idempotency across every gesture/effect in the operation. Choose recovery according to that contract (local rollback, compensation, or reconciliation); do not destructively undo confirmed remote facts. Retry must not duplicate event/cria/agenda, and failure must leave the operation reconcilable.
 
 ### 5. Verify tests
 Cover scenarios: happy path parto + cria, duplicate retry, missing mother, calf already linked, rollback/partial failure, agenda creation after birth, and ensure no agenda-as-history behavior.
@@ -131,7 +126,7 @@ git diff --check
 |---|---|
 | Mudança localizada, sem alteração de contrato compartilhado | Testes focados do fluxo reprodutivo e verificações locais pertinentes. |
 | Mudança em writers, vínculos ou interfaces compartilhadas | Testes das áreas e consumidores impactados; lint/build conforme o risco e `rtk.md`. |
-| Mudança ampla ou crítica | Ampliar a validação com justificativa pelo contrato afetado; domínio crítico exige testes focados, lint e build conforme `rtk.md`. Suíte global/E2E somente quando escopo, risco e autorização justificarem. |
+| Mudança ampla ou crítica | Testes focados dos comportamentos/modos de falha afetados; lint/build conforme o impacto real e `rtk.md`. Ampliar a validação somente com justificativa pelo contrato; suíte global/E2E somente quando escopo, risco e autorização justificarem. |
 
 Preservar cobertura pertinente de vínculo mãe–parto–cria, isolamento, idempotência, retry, rollback e falha parcial. Tocar criação de Evento ou sync não exige suíte completa automaticamente.
 
@@ -145,17 +140,9 @@ Registrar comandos, resultados observados e validações não executadas com mot
 
 ---
 
-## Expected output
+## Saída obrigatória
 
-Return:
-
-1. **Reproduction flow affected:** [Flow identifier]
-2. **Source-of-truth assessment:** [Invariants status]
-3. **Linking assessment:** [Mother-calf deterministic mapping check]
-4. **Duplicate / idempotency risk:** [Retry safety status]
-5. **Agenda / event separation check:** [Contracts separation verification]
-6. **Tests required/executed:** [Scenarios covered]
-7. **Riscos/pendências:** [Up to 3 points]
+Resumir o fluxo e arquivos afetados, fatos confirmados e contratos pertinentes (fonte factual, vínculo mãe–parto–cria, isolamento, idempotência e separação Agenda/Evento), distinguindo inferências e recomendações. Registrar comandos/testes executados e resultados, verificações não executadas com motivo e até três riscos residuais. Omitir categorias não afetadas.
 
 ---
 
