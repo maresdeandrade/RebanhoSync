@@ -1,9 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-11-05
+Atualizado em: 2026-11-06
 Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED apenas no envelope reconnect 1k; produção não provisionada**
-Próxima fase: **Fase 24 — continuidade pós-#270, sem nova fase iniciada. Incremento autorizado B02/A05 de identidade neonatal; revisão B01/F07 do delta testFarm permanece separada. F24.6A2 não iniciada.**
-Baseline integrada consultada: `origin/main@0206d64a5c8fe8d46700a4e9312862b417e13ba0`
+Próxima fase: **Fase 24 — continuidade pós-#271, sem nova fase. B01/F07 corrigido localmente em `codex/b01-f07-post-merge`, sem commit; lacuna residual do caller neonatal delimitada; [UX reconciliada](../ux/UX-DISCOVERY-02.md). F24.6A2 não iniciada.**
+Baseline integrada consultada: `origin/main@3a247292d4c3327b1ef8bb2904ecc5263716dbf6`
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -44,9 +44,9 @@ Diagnósticos herdados: 220 TypeScript e três Deno no comparativo registrado, s
 
 Auditoria dos 75 arquivos do checkout antigo: **34 integrados** (33 idênticos e um com linha vazia adicional), **36 divergentes/superados**, **três deltas funcionais exclusivos** e **dois artefatos/evidências**. Não reaplicar o conjunto. Snapshot verificável dos três deltas e de `docs/ux/UX-DISCOVERY-02.md`: `C:/Users/mares/.codex/artifacts/post-f24-preserved-1793933077154/`; manifest com hashes dos 75 arquivos e cópias dos quatro exclusivos. Checkout antigo e demais worktrees preservados; limpeza depende de autorização específica e conferência dos hashes antes de qualquer descarte.
 
-- B02/A05: `calfJourney.ts` e teste — incremento atual de identidade fornecida ao builder de conclusão; resultado focado registrado no backlog, sem reabrir pesagem inicial #257 ou parto P0.
-- B01/F07: `testFarm/service.ts` — **próxima prioridade concreta: revisar separadamente restrição nominal de usuário e recuperação pull/retry**. Preservado, não integrado nem autorizado para executar operações.
-- F02/H02/D06/C07: evidência UX exclusiva preservada; decisões registradas em 29/10 distinguem cenário OFF, atores e fontes. GATE-03 continua bloqueado; não confundir capacidade V3 integrada com homologação UX ou ACL universal. Procedimento excepcional para participação irrecuperável permanece condicional.
+- B02/A05: builder de identidade integrado por #271; `AnimalCriaInicial.handleJourneyMilestone` não fornece `eventId` nem persiste comando/horário. Replay/deduplicação da UI não comprovados; correção exige retomada atômica, não UUID isolado. Pesagem inicial #257 e parto P0 preservados.
+- B01/F07: correção local em `service.ts`/`progress.ts`: retomada exclusiva de uma UPDATE animais rejeitada por revisão ausente, com evidência da mesma farm, pull dirigido e validação DEV/auth/owner/ownership/contexto. IDs e rejeições preservados; CAS capturado/conflito e gestos mistos não reabertos. Restrição por e-mail descartada: autorização efetiva continua ownership + RLS. Sem execução operacional do seed ou backend.
+- F02/H02/D06/C07: [UX-DISCOVERY-02 reconciliada](../ux/UX-DISCOVERY-02.md) com #265/#268/#271. Decisões de 29/10 preservadas; GATE-03 bloqueado, sem homologação UX ou ACL universal presumida. Participação irrecuperável excepcional permanece condicional.
 
 Os fechamentos históricos abaixo continuam válidos nos respectivos escopos; itens chamados futuros em snapshots antigos não reabrem colaboração, fechamento ou continuidade já integrados por #268.
 
