@@ -69,13 +69,19 @@ describe("test farm missing-revision recovery", () => {
     expect(await db.queue_rejections.count()).toBe(1);
   });
 
-  it.each(["offline", "auth", "switch", "missing_revision", "foreign_snapshot", "deleted"])("preserves the rejection after %s and can resume after reconnect", async reason => {
-    if (reason === "offline") vi.mocked(pull.pullDataForFarm).mockRejectedValueOnce(new Error("OFFLINE"));
-    if (reason === "auth") validateContext.mockRejectedValueOnce(new Error("TEST_FARM_AUTH_REQUIRED"));
-    if (reason === "switch") validateContext.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("TEST_FARM_ACTIVE_FARM_CHANGED"));
-    if (reason === "missing_revision") vi.mocked(pull.pullDataForFarm).mockResolvedValueOnce(undefined);
-    if (reason === "foreign_snapshot") vi.mocked(pull.pullDataForFarm).mockImplementationOnce(async () => { await db.state_animais.update(animalId, { revision: 3, fazenda_id: "other" }); });
-    if (reason === "deleted") vi.mocked(pull.pullDataForFarm).mockImplementationOnce(async () => { await db.state_animais.update(animalId, { revision: 3, deleted_at: "2026-11-06" }); });
+  it.each([
+    { reason: "offline", prepare: () => vi.mocked(pull.pullDataForFarm).mockRejectedValueOnce(new Error("OFFLINE")) },
+    { reason: "auth", prepare: () => validateContext.mockRejectedValueOnce(new Error("TEST_FARM_AUTH_REQUIRED")) },
+    { reason: "switch", prepare: () => validateContext.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("TEST_FARM_ACTIVE_FARM_CHANGED")) },
+    { reason: "missing_revision", prepare: () => vi.mocked(pull.pullDataForFarm).mockResolvedValueOnce(undefined) },
+    { reason: "foreign_snapshot", prepare: () => vi.mocked(pull.pullDataForFarm).mockImplementationOnce(async () => {
+      await db.state_animais.update(animalId, { revision: 3, fazenda_id: "other" });
+    }) },
+    { reason: "deleted", prepare: () => vi.mocked(pull.pullDataForFarm).mockImplementationOnce(async () => {
+      await db.state_animais.update(animalId, { revision: 3, deleted_at: "2026-11-06" });
+    }) },
+  ])("preserves the rejection after $reason and can resume after reconnect", async ({ prepare }) => {
+    prepare();
     await expect(resumeTestFarmMissingRevision(farmId, txId, validateContext)).rejects.toThrow();
     expect((await db.queue_gestures.get(txId))?.status).toBe("REJECTED");
     expect((await db.queue_ops.get("op"))?.expected_revision).toBeUndefined();
