@@ -32,6 +32,7 @@ import {
   formatSanitaryItemStatusV2,
   formatSanitaryProtocolItemLabelV2,
   type JsonRecord,
+  type SanitaryProtocolCatalogReadModelV2,
   type SanitaryProtocolV2ReadModel,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 
@@ -48,14 +49,19 @@ const GLOBAL_PRODUCT_EXECUTION_WARNINGS = new Set([
   "Carência deve seguir o produto executado.",
 ]);
 
-const readMetadataString = (metadata: JsonRecord, key: string): string | null => {
+const readMetadataString = (
+  metadata: JsonRecord,
+  key: string,
+): string | null => {
   const value = metadata[key];
   return typeof value === "string" && value.trim().length > 0 ? value : null;
 };
 
 const hasPreviewAllowed = (protocol: SanitaryProtocolV2ReadModel) =>
-  readMetadataString(protocol.metadata, "automationStatus") === "preview_allowed" ||
-  readMetadataString(protocol.metadata, "automation_status") === "preview_allowed";
+  readMetadataString(protocol.metadata, "automationStatus") ===
+    "preview_allowed" ||
+  readMetadataString(protocol.metadata, "automation_status") ===
+    "preview_allowed";
 
 const hasManualOnly = (protocol: SanitaryProtocolV2ReadModel) =>
   readMetadataString(protocol.metadata, "automationStatus") === "manual_only" ||
@@ -75,7 +81,10 @@ const selectPrimaryItemWarnings = (warnings: string[]): string[] => {
   const contextualWarnings = warnings.filter(
     (warning) => !GLOBAL_PRODUCT_EXECUTION_WARNINGS.has(warning),
   );
-  return (contextualWarnings.length > 0 ? contextualWarnings : warnings).slice(0, 2);
+  return (contextualWarnings.length > 0 ? contextualWarnings : warnings).slice(
+    0,
+    2,
+  );
 };
 
 export default function SanitarioCatalogoV2() {
@@ -109,20 +118,7 @@ export default function SanitarioCatalogoV2() {
     [catalog],
   );
   const isCatalogEmpty = summary !== null && summary.protocolCount === 0;
-  const hasPartialData =
-    catalog !== null &&
-    ((isCatalogEmpty && catalog.productClassGroups.length > 0) ||
-      catalog.protocols.some(
-        (protocol) =>
-          !catalog.items.some((item) => item.protocolId === protocol.id),
-      ) ||
-      catalog.items.some(
-        (item) =>
-          item.productClassGroupId &&
-          !catalog.productClassGroups.some(
-            (group) => group.id === item.productClassGroupId,
-          ),
-      ));
+  const hasPartialData = hasPartialCatalogData(catalog);
 
   const filteredProtocols = useMemo(() => {
     if (!catalog) return [];
@@ -164,25 +160,9 @@ export default function SanitarioCatalogoV2() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-3" aria-live="polite">
-        <Button onClick={() => void refresh()} disabled={refreshing}>
-          {refreshing ? "Atualizando catálogo…" : "Atualizar catálogo"}
-        </Button>
-        <span className="text-sm text-muted-foreground">
-          {!online
-            ? "Offline — consultando dados disponíveis neste dispositivo."
-            : refreshing
-              ? "Atualização pendente. O cache local continua disponível."
-              : confirmed
-                ? "Consulta remota concluída."
-                : "Atualização ainda não confirmada."}
-        </span>
-      </div>
-      {refreshError ? (
-        <p role="alert" className="text-sm text-muted-foreground">
-          {refreshError}
-        </p>
-      ) : null}
+      <CatalogRefreshStatus
+        {...{ refresh, refreshing, confirmed, online, refreshError }}
+      />
       <section>
         {fixedReadOnlyAlerts.map((alert) => (
           <div
@@ -252,37 +232,10 @@ export default function SanitarioCatalogoV2() {
             </p>
           ) : null}
           {isCatalogEmpty ? (
-            <>
-              <EmptyState
-                icon={ShieldCheck}
-                title={
-                  emptyConfirmed
-                    ? "Nenhum protocolo disponível no catálogo global."
-                    : "Nenhum protocolo disponível neste dispositivo."
-                }
-                description={
-                  emptyConfirmed
-                    ? "A consulta completa não retornou protocolos globais visíveis para sua sessão."
-                    : "Atualize o catálogo com conexão para verificar os dados disponíveis. A ausência de dados neste dispositivo ainda não confirma ausência no catálogo remoto."
-                }
-              />
-              {catalog.productClassGroups.length > 0 ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      Grupos técnicos disponíveis neste dispositivo
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul>
-                      {catalog.productClassGroups.map((group) => (
-                        <li key={group.id}>{group.name}</li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              ) : null}
-            </>
+            <CatalogEmptyState
+              groups={catalog.productClassGroups}
+              emptyConfirmed={emptyConfirmed}
+            />
           ) : (
             <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
               <Card>
@@ -509,29 +462,79 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 
 function TechnicalSources({ sources }: { sources: JsonRecord }) {
   const labels: Record<string, string> = {
-    eligibility_rule: "Elegibilidade", operational_window: "Janela operacional",
-    product_requirement: "Requisito de produto", species_authorization: "Autorização por espécie",
-    dose: "Dose", route: "Via",
+    eligibility_rule: "Elegibilidade",
+    operational_window: "Janela operacional",
+    product_requirement: "Requisito de produto",
+    species_authorization: "Autorização por espécie",
+    dose: "Dose",
+    route: "Via",
   };
   const fields = Object.entries(sources).flatMap(([field, value]) =>
-    Array.isArray(value) ? value.filter((ref): ref is JsonRecord =>
-      !!ref && typeof ref === "object" && !Array.isArray(ref) && typeof ref.title === "string",
-    ).map((ref) => ({ field, ref })) : [],
+    Array.isArray(value)
+      ? value
+          .filter(
+            (ref): ref is JsonRecord =>
+              !!ref &&
+              typeof ref === "object" &&
+              !Array.isArray(ref) &&
+              typeof ref.title === "string",
+          )
+          .map((ref) => ({ field, ref }))
+      : [],
   );
-  return <section className="space-y-2 text-sm" aria-label="Fontes técnicas por campo">
-    <p className="font-medium">Fontes técnicas por campo</p>
-    {fields.length ? <ul className="space-y-2">{fields.map(({ field, ref }, index) => {
-      const metadata = ref.metadata && typeof ref.metadata === "object" && !Array.isArray(ref.metadata)
-        ? ref.metadata as JsonRecord : {};
-      const coverage = Array.isArray(metadata.coverage_ids) ? metadata.coverage_ids.filter((id): id is string => typeof id === "string") : [];
-      return <li key={`${field}:${index}`} className="break-words rounded border border-border p-2">
-        <p>{String(ref.title)}</p>
-        <p className="text-xs text-muted-foreground">{labels[field] ?? field} · {typeof ref.evidenceStatus === "string" ? ref.evidenceStatus : "Evidência não informada"}</p>
-        {typeof ref.source_ref === "string" ? <p className="text-xs text-muted-foreground">Referência: {ref.source_ref}</p> : null}
-        {coverage.length ? <p className="text-xs text-muted-foreground">Coberturas: {coverage.join(", ")}</p> : null}
-      </li>;
-    })}</ul> : <p className="text-muted-foreground">Sem fontes por campo informadas nesta versão.</p>}
-  </section>;
+  return (
+    <section
+      className="space-y-2 text-sm"
+      aria-label="Fontes técnicas por campo"
+    >
+      <p className="font-medium">Fontes técnicas por campo</p>
+      {fields.length ? (
+        <ul className="space-y-2">
+          {fields.map(({ field, ref }, index) => {
+            const metadata =
+              ref.metadata &&
+              typeof ref.metadata === "object" &&
+              !Array.isArray(ref.metadata)
+                ? (ref.metadata as JsonRecord)
+                : {};
+            const coverage = Array.isArray(metadata.coverage_ids)
+              ? metadata.coverage_ids.filter(
+                  (id): id is string => typeof id === "string",
+                )
+              : [];
+            return (
+              <li
+                key={`${field}:${index}`}
+                className="break-words rounded border border-border p-2"
+              >
+                <p>{String(ref.title)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {labels[field] ?? field} ·{" "}
+                  {typeof ref.evidenceStatus === "string"
+                    ? ref.evidenceStatus
+                    : "Evidência não informada"}
+                </p>
+                {typeof ref.source_ref === "string" ? (
+                  <p className="text-xs text-muted-foreground">
+                    Referência: {ref.source_ref}
+                  </p>
+                ) : null}
+                {coverage.length ? (
+                  <p className="text-xs text-muted-foreground">
+                    Coberturas: {coverage.join(", ")}
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="text-muted-foreground">
+          Sem fontes por campo informadas nesta versão.
+        </p>
+      )}
+    </section>
+  );
 }
 
 function Detail({
@@ -553,5 +556,101 @@ function Detail({
         </dd>
       ) : null}
     </div>
+  );
+}
+
+function hasPartialCatalogData(
+  catalog: SanitaryProtocolCatalogReadModelV2 | null,
+): boolean {
+  return (
+    catalog !== null &&
+    ((catalog.protocols.length === 0 &&
+      catalog.productClassGroups.length > 0) ||
+      catalog.protocols.some(
+        (protocol) =>
+          !catalog.items.some((item) => item.protocolId === protocol.id),
+      ) ||
+      catalog.items.some(
+        (item) =>
+          item.productClassGroupId &&
+          !catalog.productClassGroups.some(
+            (group) => group.id === item.productClassGroupId,
+          ),
+      ))
+  );
+}
+
+function CatalogRefreshStatus({
+  refresh,
+  refreshing,
+  confirmed,
+  online,
+  refreshError,
+}: Pick<
+  ReturnType<typeof useSanitaryCatalogQueryV2>,
+  "refresh" | "refreshing" | "confirmed" | "online" | "refreshError"
+>) {
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-3" aria-live="polite">
+        <Button onClick={() => void refresh()} disabled={refreshing}>
+          {refreshing ? "Atualizando catálogo…" : "Atualizar catálogo"}
+        </Button>
+        <span className="text-sm text-muted-foreground">
+          {!online
+            ? "Offline — consultando dados disponíveis neste dispositivo."
+            : refreshing
+              ? "Atualização pendente. O cache local continua disponível."
+              : confirmed
+                ? "Consulta remota concluída."
+                : "Atualização ainda não confirmada."}
+        </span>
+      </div>
+      {refreshError ? (
+        <p role="alert" className="text-sm text-muted-foreground">
+          {refreshError}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+function CatalogEmptyState({
+  groups,
+  emptyConfirmed,
+}: {
+  groups: SanitaryProtocolCatalogReadModelV2["productClassGroups"];
+  emptyConfirmed: boolean;
+}) {
+  return (
+    <>
+      <EmptyState
+        icon={ShieldCheck}
+        title={
+          emptyConfirmed
+            ? "Nenhum protocolo disponível no catálogo global."
+            : "Nenhum protocolo disponível neste dispositivo."
+        }
+        description={
+          emptyConfirmed
+            ? "A consulta completa não retornou protocolos globais visíveis para sua sessão."
+            : "Atualize o catálogo com conexão para verificar os dados disponíveis. A ausência de dados neste dispositivo ainda não confirma ausência no catálogo remoto."
+        }
+      />
+      {groups.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Grupos técnicos disponíveis neste dispositivo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul>
+              {groups.map((group) => (
+                <li key={group.id}>{group.name}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+    </>
   );
 }
