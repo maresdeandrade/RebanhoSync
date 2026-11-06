@@ -90,6 +90,157 @@ function filterRows(table: string, filters: Array<{ op: FilterOp; column: string
 }
 
 describe("sanitario v2 incremental pull cursors", () => {
+  it("recupera cache vazio com cursor antigo sem perder registros remotos anteriores ao cursor", async () => {
+    remoteRows.sanitario_protocolos_v2 = [
+      {
+        id: "older-protocol",
+        scope: "global",
+        fazenda_id: null,
+        updated_at: "2026-06-01",
+        deleted_at: null,
+      },
+    ];
+    remoteRows.sanitario_protocolo_itens_versions_v2 = [
+      {
+        id: "older-item",
+        protocol_id: "older-protocol",
+        updated_at: "2026-06-01",
+        deleted_at: null,
+      },
+    ];
+    remoteRows.sanitario_product_class_groups_v2 = [
+      {
+        id: "older-group",
+        scope: "global",
+        fazenda_id: null,
+        updated_at: "2026-06-01",
+        deleted_at: null,
+      },
+    ];
+    for (const [remote, local] of [
+      ["sanitario_protocolos_v2", "catalog_sanitario_protocolos_v2"],
+      [
+        "sanitario_protocolo_itens_versions_v2",
+        "catalog_sanitario_protocolo_itens_versions_v2",
+      ],
+      [
+        "sanitario_product_class_groups_v2",
+        "catalog_sanitario_product_class_groups_v2",
+      ],
+    ]) {
+      await db.sync_pull_cursors.put({
+        key: `${remote}:global:null`,
+        remote_table: remote,
+        local_store: local,
+        scope: "global",
+        fazenda_id: null,
+        last_updated_at: "2026-07-01",
+        last_id: null,
+        updated_at: "2026-07-01",
+      });
+    }
+    const result = await pullSanitarioProtocolCatalogV2();
+    expect(
+      await db.catalog_sanitario_protocolos_v2.get("older-protocol"),
+    ).toBeDefined();
+    expect(
+      await db.catalog_sanitario_protocolo_itens_versions_v2.get("older-item"),
+    ).toBeDefined();
+    expect(
+      await db.catalog_sanitario_product_class_groups_v2.get("older-group"),
+    ).toBeDefined();
+    expect(result).toMatchObject({
+      protocolsFullFetch: true,
+      remoteEmpty: false,
+    });
+  });
+
+  it("consulta incremental sem delta não comprova vazio remoto e pulls concorrentes compartilham a instalação", async () => {
+    remoteRows.sanitario_protocolos_v2 = [
+      {
+        id: "global",
+        scope: "global",
+        fazenda_id: null,
+        updated_at: "2026-06-01",
+        deleted_at: null,
+      },
+    ];
+    await pullSanitarioProtocolCatalogV2();
+    remoteRows.sanitario_protocolos_v2 = [];
+    queryLog.length = 0;
+    const [first, second] = await Promise.all([
+      pullSanitarioProtocolCatalogV2(),
+      pullSanitarioProtocolCatalogV2(),
+    ]);
+    expect(
+      queryLog.filter(
+        (q) => q.table === "sanitario_protocolos_v2" && q.op === "select",
+      ),
+    ).toHaveLength(1);
+    expect(first).toMatchObject({
+      protocolsFullFetch: false,
+      remoteEmpty: false,
+    });
+    expect(second).toEqual(first);
+    expect(await db.catalog_sanitario_protocolos_v2.count()).toBe(1);
+  });
+
+  it("somente consulta completa sem protocolos comprova vazio visível à sessão", async () => {
+    expect(await pullSanitarioProtocolCatalogV2()).toEqual({
+      protocolsFullFetch: true,
+      remoteEmpty: true,
+    });
+  });
+
+  it("falha na última tabela preserva cache e cursor, libera pull compartilhado e permite retry", async () => {
+    const row = {
+      id: "global",
+      scope: "global",
+      fazenda_id: null,
+      name: "Anterior",
+      updated_at: "2026-06-01",
+      deleted_at: null,
+    };
+    remoteRows.sanitario_protocolos_v2 = [row];
+    await pullSanitarioProtocolCatalogV2();
+    const cursor = await db.sync_pull_cursors.get(
+      "sanitario_protocolos_v2:global:null",
+    );
+    remoteRows.sanitario_protocolos_v2 = [
+      { ...row, name: "Atualizado", updated_at: "2026-07-01" },
+    ];
+    vi.mocked(supabase.from).mockImplementation((table: string) => {
+      const query = makeQuery(table);
+      if (table === "sanitario_product_class_groups_v2") {
+        query.then = (resolve, reject) =>
+          Promise.reject(new Error("network failure")).then(resolve, reject);
+      }
+      return query as never;
+    });
+    const failed = await Promise.allSettled([
+      pullSanitarioProtocolCatalogV2(),
+      pullSanitarioProtocolCatalogV2(),
+    ]);
+    expect(failed.map((result) => result.status)).toEqual([
+      "rejected",
+      "rejected",
+    ]);
+    expect(
+      await db.catalog_sanitario_protocolos_v2.get("global"),
+    ).toMatchObject({ name: "Anterior" });
+    expect(
+      await db.sync_pull_cursors.get("sanitario_protocolos_v2:global:null"),
+    ).toEqual(cursor);
+    vi.mocked(supabase.from).mockImplementation(
+      (table: string) => makeQuery(table) as never,
+    );
+    await pullSanitarioProtocolCatalogV2();
+    expect(
+      await db.catalog_sanitario_protocolos_v2.get("global"),
+    ).toMatchObject({ name: "Atualizado" });
+    expect(await db.catalog_sanitario_protocolos_v2.count()).toBe(1);
+  });
+
   it("paginação/reconnect substitui vínculos completos e falha de rede preserva cache", async () => {
     const table = "sanitario_produto_carencia_fontes_v2";
     const store = db.catalog_sanitario_produto_carencia_fontes_v2;

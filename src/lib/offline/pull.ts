@@ -1188,7 +1188,27 @@ export const pullSanitarioTechnicalCatalogV2 = async (fazenda_id: string) => {
   await writeMergeResults(storesToUpdate, results, cursorUpdates);
 };
 
-export const pullSanitarioProtocolCatalogV2 = async () => {
+export interface SanitarioProtocolCatalogPullResultV2 {
+  protocolsFullFetch: boolean;
+  remoteEmpty: boolean;
+}
+
+let protocolCatalogPullV2: Promise<SanitarioProtocolCatalogPullResultV2> | null =
+  null;
+
+// Only this global catalog shares in-flight requests. Other sync flows are unchanged.
+export const pullSanitarioProtocolCatalogV2 = () => {
+  if (!protocolCatalogPullV2) {
+    protocolCatalogPullV2 = pullSanitarioProtocolCatalogSnapshotV2().finally(
+      () => {
+        protocolCatalogPullV2 = null;
+      },
+    );
+  }
+  return protocolCatalogPullV2;
+};
+
+async function pullSanitarioProtocolCatalogSnapshotV2(): Promise<SanitarioProtocolCatalogPullResultV2> {
   console.log("[pull] Starting sanitario protocol catalog v2 pull");
 
   const results: Record<string, RemoteRow[]> = {};
@@ -1196,15 +1216,32 @@ export const pullSanitarioProtocolCatalogV2 = async () => {
 
   const protocolsTable = "sanitario_protocolos_v2";
   const protocolLocalStore = getLocalStoreName(protocolsTable);
-  const protocolCursorKey = buildPullCursorKey(protocolsTable, "global", null);
-  const protocolQuery = await applyUpdatedAtCursor(
-    supabase
-      .from(protocolsTable)
-      .select("*")
-      .eq("scope", "global")
-      .is("fazenda_id", null),
-    protocolCursorKey,
+  const protocolCursorKey = buildPullCursorKey(
+    protocolsTable,
+    "global",
+    null,
   );
+  const cachedProtocols = (await db
+    .table(protocolLocalStore)
+    .toArray()) as RemoteRow[];
+  const protocolCursor = await getPullCursor(protocolCursorKey);
+  // A cursor without its cache cannot bootstrap a catalog from incremental deltas.
+  const protocolsFullFetch =
+    !protocolCursor?.last_updated_at ||
+    !cachedProtocols.some(
+      (row) =>
+        row.scope === "global" &&
+        row.fazenda_id === null &&
+        row.deleted_at == null,
+    );
+  const protocolQueryBase = supabase
+    .from(protocolsTable)
+    .select("*")
+    .eq("scope", "global")
+    .is("fazenda_id", null);
+  const protocolQuery = protocolsFullFetch
+    ? protocolQueryBase
+    : await applyUpdatedAtCursor(protocolQueryBase, protocolCursorKey);
   const protocolResult = await protocolQuery;
 
   if (protocolResult.error) {
@@ -1247,10 +1284,19 @@ export const pullSanitarioProtocolCatalogV2 = async () => {
         in: (column: string, values: string[]) => typeof itemQueryBase;
       }
     ).in("protocol_id", protocolIds);
-    const itemQuery = await applyUpdatedAtCursor(
-      itemQueryWithProtocols,
-      itemCursorKey,
-    );
+    const cachedItems = (await db
+      .table(itemLocalStore)
+      .toArray()) as RemoteRow[];
+    const itemsFullFetch =
+      protocolsFullFetch ||
+      !cachedItems.some(
+        (row) =>
+          row.deleted_at == null &&
+          protocolIds.includes(String(row.protocol_id)),
+      );
+    const itemQuery = itemsFullFetch
+      ? itemQueryWithProtocols
+      : await applyUpdatedAtCursor(itemQueryWithProtocols, itemCursorKey);
     const itemResult = await itemQuery;
 
     if (itemResult.error) {
@@ -1274,14 +1320,23 @@ export const pullSanitarioProtocolCatalogV2 = async () => {
   const groupsTable = "sanitario_product_class_groups_v2";
   const groupLocalStore = getLocalStoreName(groupsTable);
   const groupCursorKey = buildPullCursorKey(groupsTable, "global", null);
-  const groupQuery = await applyUpdatedAtCursor(
-    supabase
-      .from(groupsTable)
-      .select("*")
-      .eq("scope", "global")
-      .is("fazenda_id", null),
-    groupCursorKey,
+  const cachedGroups = (await db
+    .table(groupLocalStore)
+    .toArray()) as RemoteRow[];
+  const groupsFullFetch = !cachedGroups.some(
+    (row) =>
+      row.scope === "global" &&
+      row.fazenda_id === null &&
+      row.deleted_at == null,
   );
+  const groupQueryBase = supabase
+    .from(groupsTable)
+    .select("*")
+    .eq("scope", "global")
+    .is("fazenda_id", null);
+  const groupQuery = groupsFullFetch
+    ? groupQueryBase
+    : await applyUpdatedAtCursor(groupQueryBase, groupCursorKey);
   const groupResult = await groupQuery;
 
   if (groupResult.error) {
@@ -1315,11 +1370,19 @@ export const pullSanitarioProtocolCatalogV2 = async () => {
 
   if (storesToUpdate.length === 0) {
     console.warn("[pull] No valid protocol catalog v2 stores to update.");
-    return;
+    return { protocolsFullFetch: false, remoteEmpty: false };
   }
 
   await writeMergeResults(storesToUpdate, results, cursorUpdates);
-};
+  return {
+    protocolsFullFetch,
+    remoteEmpty:
+      storesToUpdate.length ===
+        SANITARIO_PROTOCOL_CATALOG_V2_REMOTE_TABLES.length &&
+      protocolsFullFetch &&
+      !protocolRows.some((row) => row.deleted_at == null),
+  };
+}
 
 export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
   console.log(

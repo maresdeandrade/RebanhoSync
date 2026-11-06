@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
+import { useSanitaryCatalogQueryV2 } from "./ProtocolosSanitarios/helpers/useSanitaryCatalogQueryV2";
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
@@ -29,9 +31,7 @@ import {
   formatSanitaryBooleanPtBrV2,
   formatSanitaryItemStatusV2,
   formatSanitaryProtocolItemLabelV2,
-  readLocalSanitaryProtocolCatalogV2,
   type JsonRecord,
-  type SanitaryProtocolCatalogReadModelV2,
   type SanitaryProtocolV2ReadModel,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 
@@ -79,38 +79,21 @@ const selectPrimaryItemWarnings = (warnings: string[]): string[] => {
 };
 
 export default function SanitarioCatalogoV2() {
-  const [catalog, setCatalog] =
-    useState<SanitaryProtocolCatalogReadModelV2 | null>(null);
-  const [selectedFamilyCode, setSelectedFamilyCode] = useState<string | null>(null);
+  const {
+    catalog,
+    error,
+    refreshError,
+    refreshing,
+    confirmed,
+    emptyConfirmed,
+    online,
+    refresh,
+    isLoading,
+  } = useSanitaryCatalogQueryV2();
+  const [selectedFamilyCode, setSelectedFamilyCode] = useState<string | null>(
+    null,
+  );
   const [filter, setFilter] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-
-    readLocalSanitaryProtocolCatalogV2()
-      .then((readModel) => {
-        if (!active) return;
-        setCatalog(readModel);
-        setSelectedFamilyCode(readModel.protocols[0]?.familyCode ?? null);
-      })
-      .catch((currentError: unknown) => {
-        if (!active) return;
-        setError(
-          currentError instanceof Error
-            ? currentError.message
-            : "Falha ao ler catalogo sanitario local.",
-        );
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const summary = useMemo(
     () => (catalog ? buildSanitaryProtocolCatalogSummaryV2(catalog) : null),
@@ -125,11 +108,21 @@ export default function SanitarioCatalogoV2() {
         : 0,
     [catalog],
   );
-  const isCatalogEmpty =
-    summary !== null &&
-    summary.protocolCount === 0 &&
-    summary.itemCount === 0 &&
-    summary.productClassGroupCount === 0;
+  const isCatalogEmpty = summary !== null && summary.protocolCount === 0;
+  const hasPartialData =
+    catalog !== null &&
+    ((isCatalogEmpty && catalog.productClassGroups.length > 0) ||
+      catalog.protocols.some(
+        (protocol) =>
+          !catalog.items.some((item) => item.protocolId === protocol.id),
+      ) ||
+      catalog.items.some(
+        (item) =>
+          item.productClassGroupId &&
+          !catalog.productClassGroups.some(
+            (group) => group.id === item.productClassGroupId,
+          ),
+      ));
 
   const filteredProtocols = useMemo(() => {
     if (!catalog) return [];
@@ -144,21 +137,25 @@ export default function SanitarioCatalogoV2() {
   }, [catalog, filter]);
 
   const selectedProtocol =
-    filteredProtocols.find((protocol) => protocol.familyCode === selectedFamilyCode) ??
+    filteredProtocols.find(
+      (protocol) => protocol.familyCode === selectedFamilyCode,
+    ) ??
     filteredProtocols[0] ??
     null;
 
   const selectedItems = useMemo(() => {
     if (!catalog || !selectedProtocol) return [];
-    return catalog.items.filter((item) => item.protocolId === selectedProtocol.id);
+    return catalog.items.filter(
+      (item) => item.protocolId === selectedProtocol.id,
+    );
   }, [catalog, selectedProtocol]);
 
   return (
     <PageContainer width="standard" className="space-y-6 pb-12">
       <PageHeader
         eyebrow="Sanitário"
-        title="Catálogo sanitário v2"
-        description="Consulta local/offline dos Protocolos Sanitários v2 importados. Esta superfície é somente leitura."
+        title="Catálogo de Protocolos Sanitários"
+        description="Consulta dos protocolos disponíveis neste dispositivo, inclusive offline. Esta superfície é somente leitura."
         meta={
           <>
             <StatusBadge tone="neutral">Somente leitura</StatusBadge>
@@ -167,6 +164,25 @@ export default function SanitarioCatalogoV2() {
         }
       />
 
+      <div className="flex flex-wrap items-center gap-3" aria-live="polite">
+        <Button onClick={() => void refresh()} disabled={refreshing}>
+          {refreshing ? "Atualizando catálogo…" : "Atualizar catálogo"}
+        </Button>
+        <span className="text-sm text-muted-foreground">
+          {!online
+            ? "Offline — consultando dados disponíveis neste dispositivo."
+            : refreshing
+              ? "Atualização pendente. O cache local continua disponível."
+              : confirmed
+                ? "Consulta remota concluída."
+                : "Atualização ainda não confirmada."}
+        </span>
+      </div>
+      {refreshError ? (
+        <p role="alert" className="text-sm text-muted-foreground">
+          {refreshError}
+        </p>
+      ) : null}
       <section>
         {fixedReadOnlyAlerts.map((alert) => (
           <div
@@ -191,7 +207,7 @@ export default function SanitarioCatalogoV2() {
         </Card>
       ) : null}
 
-      {!isLoading && !error && catalog && summary ? (
+      {!isLoading && catalog && summary ? (
         <>
           <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Metric label="Protocolos" value={summary.protocolCount} />
@@ -228,17 +244,50 @@ export default function SanitarioCatalogoV2() {
             />
           </section>
 
+          {hasPartialData ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              Dados locais parciais: há protocolos, itens ou grupos técnicos
+              indisponíveis. Atualize o catálogo; os dados disponíveis continuam
+              consultáveis.
+            </p>
+          ) : null}
           {isCatalogEmpty ? (
-            <EmptyState
-              icon={ShieldCheck}
-              title="Catálogo local ainda não sincronizado."
-              description="Execute a sincronização para baixar os protocolos sanitários v2."
-            />
+            <>
+              <EmptyState
+                icon={ShieldCheck}
+                title={
+                  emptyConfirmed
+                    ? "Nenhum protocolo disponível no catálogo global."
+                    : "Nenhum protocolo disponível neste dispositivo."
+                }
+                description={
+                  emptyConfirmed
+                    ? "A consulta completa não retornou protocolos globais visíveis para sua sessão."
+                    : "Atualize o catálogo com conexão para verificar os dados disponíveis. A ausência de dados neste dispositivo ainda não confirma ausência no catálogo remoto."
+                }
+              />
+              {catalog.productClassGroups.length > 0 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      Grupos técnicos disponíveis neste dispositivo
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul>
+                      {catalog.productClassGroups.map((group) => (
+                        <li key={group.id}>{group.name}</li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              ) : null}
+            </>
           ) : (
             <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
               <Card>
                 <CardHeader>
-                  <CardTitle>Protocolos v2</CardTitle>
+                  <CardTitle>Protocolos</CardTitle>
                   <CardDescription>
                     Lista local filtrável. Nenhuma ação operacional é exposta.
                   </CardDescription>
@@ -256,7 +305,9 @@ export default function SanitarioCatalogoV2() {
                         key={protocol.id}
                         type="button"
                         className="w-full rounded-lg border border-border bg-background p-3 text-left transition-colors hover:bg-muted/40"
-                        onClick={() => setSelectedFamilyCode(protocol.familyCode)}
+                        onClick={() =>
+                          setSelectedFamilyCode(protocol.familyCode)
+                        }
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-semibold text-foreground">
@@ -267,13 +318,17 @@ export default function SanitarioCatalogoV2() {
                             {formatSanitaryItemStatusV2(protocol.status)}
                           </Badge>
                           <Badge variant="secondary">
-                            {formatSanitaryItemStatusV2(protocol.approvalStatus)}
+                            {formatSanitaryItemStatusV2(
+                              protocol.approvalStatus,
+                            )}
                           </Badge>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
                           <span>
                             Curadoria:{" "}
-                            {formatSanitaryItemStatusV2(getCurationStatus(protocol))}
+                            {formatSanitaryItemStatusV2(
+                              getCurationStatus(protocol),
+                            )}
                           </span>
                           <span>
                             Automação:{" "}
@@ -310,7 +365,9 @@ export default function SanitarioCatalogoV2() {
                       : "Selecione um protocolo"}
                   </CardTitle>
                   {selectedProtocol ? (
-                    <CardDescription>{selectedProtocol.familyCode}</CardDescription>
+                    <CardDescription>
+                      {selectedProtocol.familyCode}
+                    </CardDescription>
                   ) : null}
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -374,8 +431,14 @@ export default function SanitarioCatalogoV2() {
                             </AccordionTrigger>
                             <AccordionContent className="space-y-3 pb-1">
                               <dl className="grid gap-2 text-sm sm:grid-cols-2">
-                                <Detail label="Versão do protocolo" value={`v${selectedProtocol?.version ?? "—"}`} />
-                                <Detail label="Versão do item" value={`v${item.version}`} />
+                                <Detail
+                                  label="Versão do protocolo"
+                                  value={`v${selectedProtocol?.version ?? "—"}`}
+                                />
+                                <Detail
+                                  label="Versão do item"
+                                  value={`v${item.version}`}
+                                />
                                 <Detail
                                   label="Chave técnica"
                                   value={item.logicalItemKey}
@@ -395,7 +458,9 @@ export default function SanitarioCatalogoV2() {
                                   )}
                                 />
                               </dl>
-                              <TechnicalSources sources={item.sourceRefsByField} />
+                              <TechnicalSources
+                                sources={item.sourceRefsByField}
+                              />
                               <div className="space-y-1 text-sm">
                                 <div className="text-xs font-medium text-muted-foreground">
                                   Limitações operacionais
