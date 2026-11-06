@@ -59,9 +59,7 @@ import {
 } from "@/lib/format/weight";
 import { db } from "@/lib/offline/db";
 import type { Animal, AgendaItem } from "@/lib/offline/types";
-import { createGesture } from "@/lib/offline/ops";
 import {
-  buildCalfJourneyCompletionOps,
   getCalfJourneyMilestoneKey,
   getCalfJourneyStage,
   isCalfJourneyAgendaItem,
@@ -73,6 +71,7 @@ import {
   wasGeneratedFromBirthEvent,
 } from "@/lib/reproduction/neonatal";
 import { registerPostPartumGesture } from "@/lib/reproduction/registerPostPartum";
+import { registerCalfJourneyGesture } from "@/lib/reproduction/registerCalfJourney";
 import { showError, showSuccess } from "@/utils/toast";
 import {
   buildAnimalWeightHistory,
@@ -439,28 +438,22 @@ export default function AnimalCriaInicial() {
     });
 
     try {
-      const built = buildCalfJourneyCompletionOps({
+      const result = await registerCalfJourneyGesture({
         fazendaId: calf.fazenda_id,
-        calf,
-        mother: mother
-          ? {
-              id: mother.id,
-              identificacao: mother.identificacao,
-            }
-          : null,
-        agendaItem: item,
+        calfId: calf.id,
+        agendaId: item.id,
         pesoKg: parseWeightInput(
           itemDraft.pesoKg,
           farmMeasurementConfig.weight_unit,
         ),
         destinationLoteId:
           itemDraft.loteId === KEEP_CURRENT_LOTE
-            ? calf.lote_id
+            ? null
             : itemDraft.loteId,
-      });
-
-      await createGesture(calf.fazenda_id, built.ops);
-      showSuccess(`Evento registrado com sucesso. ${built.milestone.title}.`);
+      }, () => context.current);
+      showSuccess(result.replayed
+        ? "Este comando já está registrado. Acompanhe o resultado na Sincronização."
+        : "Registro salvo neste dispositivo. Sincronização pendente.");
     } catch (error) {
       if (error instanceof Error) {
         showError(error.message);

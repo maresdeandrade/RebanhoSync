@@ -35,7 +35,7 @@ import { db } from "@/lib/offline/db";
 import { establishLocalOwnership } from "@/lib/offline/ownership";
 import * as localReadBoundary from "@/lib/offline/localReadBoundary";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
 import AnimalPosParto from "../AnimalPosParto";
 import AnimalCriaInicial from "../AnimalCriaInicial";
 import type { Animal, SanitarioAgendaLocalV2 } from "@/lib/offline/types";
@@ -89,6 +89,35 @@ afterEach(async () => {
   vi.restoreAllMocks();
   expect(actWarnings).toEqual([]);
 });
+it("persists one durable D7 command through the actual milestone caller, including a double click", async () => {
+  const agendaId = "77777777-7777-4777-8777-777777777777";
+  const recordedAt = "2026-04-01T12:00:00.000Z";
+  await db.state_agenda_itens.put({ id: agendaId, fazenda_id: farm, animal_id: calf, status: "agendado",
+    lote_id: null, dedup_key: null, source_kind: "automatico", source_ref: null, source_client_op_id: null,
+    source_tx_id: null, source_evento_id: null, protocol_item_version_id: null, interval_days_applied: null,
+    client_id: "test", client_op_id: "fixture", client_tx_id: null, client_recorded_at: recordedAt,
+    server_received_at: recordedAt, created_at: recordedAt, updated_at: recordedAt,
+    tipo: "pesagem_d7", dominio: "pesagem", data_prevista: "2026-04-08", payload: { milestone_key: "pesagem_d7", journey: "cria" }, deleted_at: null });
+  open("calf");
+  const button = await screen.findByRole("button", { name: "Executar etapa" });
+  const weight = document.getElementById(`journey-weight-${agendaId}`)!;
+  await act(async () => {
+    fireEvent.change(weight, { target: { value: "52" } });
+  });
+  await act(async () => {
+    fireEvent.click(button);
+    fireEvent.click(button);
+    await vi.waitFor(async () => {
+      expect(await db.queue_gestures.count()).toBe(1);
+      expect((await db.queue_gestures.toArray())[0].calf_journey_command).toMatchObject({ agenda_id: agendaId, animal_id: calf });
+      expect(showSuccess).toHaveBeenCalledTimes(2);
+    });
+    expect(await db.event_eventos.count()).toBe(1);
+    expect(await db.event_eventos_pesagem.count()).toBe(1);
+    cleanup();
+  });
+});
+
 function open(kind: "postpartum" | "calf") {
   render(
     <MemoryRouter
