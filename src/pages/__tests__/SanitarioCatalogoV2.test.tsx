@@ -1,10 +1,12 @@
 /** @vitest-environment jsdom */
+import "fake-indexeddb/auto";
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import SanitarioCatalogoV2 from "@/pages/SanitarioCatalogoV2";
 import { supabase } from "@/lib/supabase";
+import { pullSanitarioProtocolCatalogV2 } from "@/lib/offline/pull";
 import {
   readLocalSanitaryProtocolCatalogV2,
   type SanitaryProtocolCatalogReadModelV2,
@@ -23,9 +25,12 @@ vi.mock("@/lib/sanitario/catalog/sanitaryProtocolCatalogV2", async () => {
   };
 });
 
+vi.mock("@/lib/offline/pull", () => ({ pullSanitarioProtocolCatalogV2: vi.fn(async () => ({ protocolsFullFetch: false, remoteEmpty: false })) }));
+
 vi.mock("@/lib/supabase", () => ({
   supabase: {
     from: vi.fn(),
+    auth: { getSession: vi.fn(async () => ({ data: { session: {} }, error: null })) },
   },
 }));
 
@@ -347,12 +352,21 @@ describe("SanitarioCatalogoV2", () => {
     mockedReadLocal.mockResolvedValue(catalogFixture);
   });
 
+  it("permite reler o cache depois de falha local", async () => {
+    mockedReadLocal.mockRejectedValueOnce(new Error("IndexedDB indisponível"));
+    render(<SanitarioCatalogoV2 />);
+    expect(await screen.findByText("Falha ao carregar catalogo")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Atualizar catálogo" }));
+    expect((await screen.findAllByText("Brucelose B19")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Falha ao carregar catalogo")).not.toBeInTheDocument();
+  });
+
   it("renderiza resumo local com 10 protocolos, 20 itens e 4 grupos", async () => {
     render(<SanitarioCatalogoV2 />);
 
-    expect(await screen.findByText("Catálogo sanitário v2")).toBeInTheDocument();
-    expect(mockedReadLocal).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Protocolos")).toBeInTheDocument();
+    expect(await screen.findByText("Catálogo de Protocolos Sanitários")).toBeInTheDocument();
+    await waitFor(() => expect(mockedReadLocal).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("heading", { name: "Protocolos", exact: true })).toBeInTheDocument();
     expect(screen.getByText("Itens")).toBeInTheDocument();
     expect(screen.getByText("Grupos técnicos")).toBeInTheDocument();
     expect(screen.getByText("Members bloqueados")).toBeInTheDocument();
@@ -363,20 +377,21 @@ describe("SanitarioCatalogoV2", () => {
     expect(screen.getByText("6")).toBeInTheDocument();
   });
 
-  it("mostra estado vazio quando a Dexie local ainda nao foi sincronizada", async () => {
-    mockedReadLocal.mockResolvedValueOnce(emptyCatalogFixture);
+  it("mostra vazio confirmado após consultar o remoto sem dados", async () => {
+    mockedReadLocal.mockResolvedValue(emptyCatalogFixture);
+    vi.mocked(pullSanitarioProtocolCatalogV2).mockResolvedValueOnce({ protocolsFullFetch: true, remoteEmpty: true });
 
     render(<SanitarioCatalogoV2 />);
 
     expect(
-      await screen.findByText("Catálogo local ainda não sincronizado."),
+      await screen.findByText("Nenhum protocolo disponível no catálogo global."),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Execute a sincronização para baixar os protocolos sanitários v2.",
+        "A consulta completa não retornou protocolos globais visíveis para sua sessão.",
       ),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Protocolos v2")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Protocolos", exact: true })).not.toBeInTheDocument();
   });
 
   it("exibe B19 nacional/manual e aftosa bloqueada/retirada", async () => {
