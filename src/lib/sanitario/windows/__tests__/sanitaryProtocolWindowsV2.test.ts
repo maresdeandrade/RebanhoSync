@@ -154,6 +154,27 @@ const catalog: SanitaryProtocolCatalogReadModelV2 = {
   productClassGroups: [],
 };
 
+it("resolve pré-parto individual por Eventos e janela técnica sem seletor global", () => {
+  const technicalItem = { ...catalog.items.find((entry) => entry.id === "item-prepartum")!,
+    operationalWindowRule: { anchor: "parturition", min_offset_days: -60, max_offset_days: -20 },
+    sourceRefsByField: { operational_window: [{ id: "mv-window", kind: "mv_responsavel", title: "Janela avaliada", strength: "forte", evidenceStatus: "SIM_BULA", fieldKeys: ["operational_window"] }] },
+  };
+  const matrix = animal("matrix", "F", "2022-01-01");
+  const calf = animal("calf", "F", "2026-03-01");
+  const rows = buildSanitaryProtocolWindowV2({
+    source: source({ fazendaId: "farm-1", animals: [matrix, calf],
+      catalog: { ...catalog, items: catalog.items.map((entry) => entry.id === technicalItem.id ? technicalItem : entry) },
+      reproductiveEvents: [
+        { id: "service", animal_id: "matrix", fazenda_id: "farm-1", occurred_at: "2026-01-01", deleted_at: null, details: { tipo: "IA", payload: { schema_version: 1 } } },
+        { id: "diagnosis", animal_id: "matrix", fazenda_id: "farm-1", occurred_at: "2026-02-01", deleted_at: null, details: { tipo: "diagnostico", payload: { schema_version: 1, resultado: "positivo", episode_evento_id: "service", data_prevista_parto: "2026-08-10" } } },
+      ],
+    } as Partial<SanitaryProtocolWindowSourceV2>),
+    protocolId: "protocol-prepartum", itemId: technicalItem.id, evaluatedAt: "2026-07-04",
+  })!.rows;
+  expect(rows.find((row) => row.animalId === "matrix")).toMatchObject({ canSelect: true, contextResolution: { reproduction: { status: "known", value: "prepartum" } } });
+  expect(rows.find((row) => row.animalId === "calf")).toMatchObject({ canSelect: false, contextResolution: { reproduction: { status: "unknown" } } });
+});
+
 const animal = (id: string, sexo: "M" | "F", birth: string): Animal => ({
   id,
   fazenda_id: "farm-1",
@@ -700,6 +721,7 @@ describe("sanitaryProtocolWindowsV2", () => {
           sanitaryCadence: null,
           reproductiveContext: null,
           management: "pre_feedlot",
+          scheduledContext: { date: "2026-07-04", animalIds: ["female"], reference: "Entrada programada confirmada" },
         },
       }).rows[0],
     ).toMatchObject({ status: "in_action_window", canSelect: true });
@@ -777,7 +799,7 @@ describe("sanitaryProtocolWindowsV2", () => {
       createsActiveWithdrawal: false,
     });
     expect(stored?.protocol_item_snapshot).toMatchObject({
-      operationalContext,
+      operationalContext: { ...operationalContext, reproductiveContext: null, management: null },
     });
     expect(stored?.metadata.operationalContext).toBeUndefined();
     expect(stored?.produto_snapshot.operationalContext).toBeUndefined();

@@ -6,6 +6,7 @@ import {
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sanitaryEligibility";
 import { isSanitaryClassSchemeV2, sanitaryClassHistoryMatchesV2 } from "../agenda/sanitaryClassSchemeV2";
+import { sanitaryPlanningKindV2 } from "../agenda/sanitaryPlanningPolicyV2";
 
 export type SanitaryProtocolPrecheckScopeV2 = "animal" | "lote";
 
@@ -23,6 +24,7 @@ export type SanitaryPrecheckAnimalResumoV2 = {
   regionalRiskArea?: boolean | null;
   riskContext?: boolean | null;
   pregnancyOrPeripartumContext?: boolean | null;
+  scheduledGenericAssessment?: boolean;
   sanitaryCadence?: "annual" | "semiannual" | null;
   managementContext?:
     | "pre_weaning"
@@ -951,7 +953,7 @@ function evaluateAntiparasitic(input: SanitaryItemEvaluationInputV2): SanitaryPr
   if (
     readBoolean(item.eligibilityRule.requires_pregnancy_or_peripartum_context)
   ) {
-    if (animal.pregnancyOrPeripartumContext !== true) {
+    if (animal.pregnancyOrPeripartumContext !== true && !(animal.scheduledGenericAssessment && sanitaryPlanningKindV2(item) === "avaliacao_manejo_generica")) {
       return baseResult({
         protocol,
         item,
@@ -1017,7 +1019,9 @@ function evaluateAntiparasitic(input: SanitaryItemEvaluationInputV2): SanitaryPr
     item,
     status: "in_action_window",
     reasons: [
-      "Item antiparasitário avaliável tecnicamente com os dados informados.",
+      animal.scheduledGenericAssessment && animal.pregnancyOrPeripartumContext !== true
+        ? "Avaliação genérica programada; gestação e janela técnica ainda não comprovadas. Não é recomendação de aplicação."
+        : "Item antiparasitário avaliável tecnicamente com os dados informados.",
     ],
     warnings: [
       "Grupo técnico de produtos não valida execução, dose nem carência.",

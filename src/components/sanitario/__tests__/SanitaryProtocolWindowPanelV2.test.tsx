@@ -111,6 +111,8 @@ describe("SanitaryProtocolWindowPanelV2", () => {
 
   it("recalcula a janela quando o contexto operacional muda", () => {
     render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={vi.fn()} /></MemoryRouter>);
+    expect(screen.queryByRole("combobox", { name: "Contexto reprodutivo" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Recria" })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Selecionar protocolo"), { target: { value: "protocol-raiva" } });
     fireEvent.change(screen.getByLabelText("Selecionar item do protocolo"), { target: { value: "item-raiva" } });

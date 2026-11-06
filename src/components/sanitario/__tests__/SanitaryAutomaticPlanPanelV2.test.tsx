@@ -99,13 +99,14 @@ describe("formulário de plano automático", () => {
     source.catalog.items[2] = { ...source.catalog.items[2], status: "draft", itemStatus: "draft" };
     source.catalog.protocols.push({ ...protocol, id: "foreign-protocol", fazendaId: "other-farm", scope: "fazenda" });
     source.catalog.items[3] = { ...source.catalog.items[3], protocolId: "foreign-protocol" };
-    const view = renderPanel(source);
+    renderPanel(source);
     await openForm(user);
     expect(screen.getAllByRole("checkbox", { name: /^Automatizar / })).toHaveLength(1);
-    expect(view.container.querySelectorAll("select")).toHaveLength(5);
+    expect(screen.queryByRole("combobox", { name: "Contexto reprodutivo do plano" })).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Cadência do plano" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Consultar catálogo sanitário" })).toHaveAttribute("href", "/protocolos-sanitarios/catalogo-v2");
     await user.click(screen.getByRole("checkbox", { name: /^Automatizar / }));
-    expect(view.container.querySelectorAll("select")).toHaveLength(5);
+    expect(screen.queryByRole("combobox", { name: "Contexto reprodutivo do plano" })).not.toBeInTheDocument();
     expect(screen.getByText("Usando contexto geral · ajustar esta regra")).toBeInTheDocument();
   });
 
