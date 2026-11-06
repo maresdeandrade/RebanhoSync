@@ -4,8 +4,8 @@ Atualizado em: 2026-11-06
 
 ## Autoridade e proveniência
 
-Reconciliação documental sobre `origin/main@3a247292d4c3327b1ef8bb2904ecc5263716dbf6`
-(#271), após #265/#268/#270. **GATE-03 = BLOQUEADO; Etapa 3 não autorizada.**
+Reconciliação documental sobre `origin/main@1de7d220b368086367efb6db326bae660ff5acc1`
+(#272), com incremento B02/A05 local pendente de integração. **GATE-03 = BLOQUEADO; Etapa 3 não autorizada.**
 Este registro complementa o [backlog canônico](../review/MASTER_BACKLOG.md#reconciliação-dos-bloqueadores-e-decisões),
 sem criar backlog, homologação UX ou autorização operacional.
 
@@ -57,13 +57,14 @@ nem à certificação universal ação×role×Edge/RPC/RLS. Dados de ambiente, s
 recuperação e convergência só sustentam afirmações no recorte efetivamente observado.
 Os AUD/PND e suas restrições permanecem no backlog canônico, sem novos IDs.
 
-O #271 preserva `eventId` explícito no builder D7/D30/desmame, inclusive movimento
-distinto estável. O caller real `handleJourneyMilestone` em
-[AnimalCriaInicial](../../src/pages/AnimalCriaInicial.tsx) ainda omite esse ID e chama
-`createGesture` sem identidade persistida do comando. A ficha não recebe um ID
-de execução já preparado. Dois comandos podem produzir fatos distintos; testes do
-builder não certificam deduplicação da UI ou replay remoto. Resolver exige identidade,
-horário/payload persistidos e retomada atômica, não apenas passar um UUID.
+O #271 preserva `eventId` no builder D7/D30/desmame e movimento distinto estável.
+No incremento B02/A05 local sobre #272, o caller
+[AnimalCriaInicial](../../src/pages/AnimalCriaInicial.tsx) passa pela transação de
+`registerCalfJourneyGesture`: identidade por farm/Agenda, marcador técnico na gesture
+e payload/horário nas operações/fatos existentes. Dois cliques e retomada não criam
+outra execução; rejeição exige revisão explícita na Sincronização. A UI distingue
+registro local de confirmação remota. [Contrato e evidência local](../architecture/OPERATIONAL_FLOWS.md#conclusão-d7d30desmame--b02a05);
+transporte simulado e reabertura Dexie não certificam kill real ou convergência remota.
 Cura de umbigo/revisão neonatal seguem a Central e o bloqueio V3 vigente;
 nenhum Evento fictício ou novo writer foi criado nesta tarefa.
 

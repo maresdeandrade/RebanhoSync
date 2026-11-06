@@ -2,8 +2,8 @@
 
 > Fechamento C02/F6 — 29/10/2026: cadastro e curadoria documental encerrados; 288 campos confirmados, 283 representados, cinco sem representação estruturada. Integração C07 e exceções específicas constam de [integração definitiva](./SANITARIO_V2_C02_F6_INTEGRACAO_DEFINITIVA_20261029.md). Baseline sanitária bc310735/main remota c752c9a, com árvores idênticas; commit de segurança 3f3c960. Notas anteriores conservam seus recortes históricos; não reabrem a curadoria dos 39.
 
-Atualizado em: 2026-11-05
-Estado vigente: main pós-#270 em `0206d64a5c8fe8d46700a4e9312862b417e13ba0`; [fechamento F24](./CURRENT_PHASE_HANDOFF.md#f24-integrada--pr-270). Incremento neonatal autorizado nesta tarefa; nenhuma nova fase, rollout ou reestruturação iniciada.
+Atualizado em: 2026-11-06
+Estado vigente: main pós-#272 em `1de7d220b368086367efb6db326bae660ff5acc1`; [fechamento F24](./CURRENT_PHASE_HANDOFF.md#f24-integrada--pr-270) preservado. Comando neonatal B02/A05 implementado localmente, integração pendente; nenhuma nova fase, rollout ou reestruturação iniciada.
 
 ## Decisão de desenho proposta
 
@@ -89,13 +89,13 @@ A coluna **Dep.** do índice mestre continua a única matriz de dependências. A
 
 | Ordem vigente / IDs existentes | Trabalho real | Evidência / aceite | Limite |
 | --- | --- | --- | --- |
-| B02/A05 — builder integrado #271; caller delimitado | eventId explícito e movimento estável integrados; handleJourneyMilestone ainda omite ID e não persiste comando/horário | Evidência histórica do builder preservada; caller localizado em AnimalCriaInicial.tsx | Dedup/replay end-to-end não certificados; requer retomada atômica, além de fornecer UUID. #257 e parto P0 preservados |
-| B01/F07 — patch local para revisão | Recuperação restrita de revisão ausente com pull dirigido e retry canônico; sem restrição nominal por e-mail | Testes focados de falha, identidade e composição pelo seed; auth/owner/ownership/farm revalidados | codex/b01-f07-post-merge sem commit; sem seed operacional, backend ou alteração de RLS |
+| B02/A05 — builder #271; caller durável local | registerCalfJourneyGesture persiste comando e operações atomicamente; identidade por farm/Agenda, sem reconstrução em replay | 59 testes focados locais, incluindo UI, reabertura Dexie, lost ACK e resposta parcial pelo worker com transporte simulado | Integração pendente; kill real, dispositivos físicos e convergência remota não certificados. #257 e parto P0 preservados |
+| B01/F07 — integrado #272 | Recuperação restrita de revisão ausente com pull dirigido e retry canônico; sem restrição nominal por e-mail | Testes focados e CI aprovados na entrega anterior; auth/owner/ownership/farm revalidados | main@1de7d220; seed operacional/remoto não comprovado, RLS preservada |
 | F02/H02/D06/C07 — reconciliação realizada | [UX-DISCOVERY-02](../ux/UX-DISCOVERY-02.md) preserva decisões e retira afirmações técnicas superadas por #265/#268/#271 | DEC-001/002/003/004/007 preservadas; capacidades integradas não homologam jornadas/atores | GATE-03 bloqueado; sem Etapa 3 automática ou ACL universal presumida |
 | Condicional — C07/H01/C06 | Rollout do código integrado | Schema V3 completo → Edge compatível → frontend; ambiente/SHA/autorizações próprios | Gates OFF; B2/FULL/CI não certificam F24.7/F24.8 ou produção |
 | Somente por defeito/escopo concreto — A04/E02/D04/D05/F04–F06/I03/D06 | Diagnósticos herdados, inventário F24.6A2, kill/dispositivo, coexistência e segurança universal | Delimitar contrato e menor prova somente quando existir objetivo autorizado | Nenhuma nova frente iniciada; não transformar ausência de certificação ampla em bug novo |
 
-Próxima ação deste recorte: revisar o patch local B01/F07 e a delimitação neonatal. Snapshot original preservado; 34 integrados e 36 divergentes/superados não devem ser reaplicados. Checkout antigo limpo na entrada observada de 06/11; demais worktrees preservadas. Nenhum commit, rollout ou nova fase autorizado por este registro.
+Próxima ação deste recorte: revisar o incremento local B02/A05 durável sobre #272, preservando B01/F07 integrado. Snapshot original e worktrees concorrentes preservados; deltas históricos não devem ser reaplicados. Nenhum commit, rollout, certificação remota ou nova fase autorizado por este registro.
 
 ### Incrementos candidatos da Agenda Sanitária V3
 
