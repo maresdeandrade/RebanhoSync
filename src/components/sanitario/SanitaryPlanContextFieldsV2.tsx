@@ -18,19 +18,9 @@ const contextFields = [
     ],
   },
   {
-    key: "reproductiveContext",
-    label: "Contexto reprodutivo do plano",
-    options: [
-      ["prepartum", "Pré-parto"],
-      ["peripartum", "Periparto"],
-    ],
-  },
-  {
     key: "management",
     label: "Manejo do plano",
     options: [
-      ["pre_weaning", "Pré-desmama"],
-      ["rearing", "Recria"],
       ["pre_feedlot", "Pré-confinamento"],
       ["deferred_pasture", "Pasto vedado"],
     ],
@@ -48,13 +38,14 @@ export function PlanContextFields({
 }) {
   return (
     <div className="grid gap-3 md:grid-cols-2">
+      <p className="text-sm text-muted-foreground md:col-span-2">Idade, sexo, lote, reprodução e estágio de manejo são resolvidos por animal nos registros disponíveis. Dados ausentes ou divergentes continuam explícitos. Pré-confinamento e pasto vedado exigem programação referenciada por regra.</p>
       {contextFields.map((field) => (
         <label key={field.key} className="space-y-1 text-sm">
           <span>{field.label}</span>
           <select
             aria-label={`${prefix}${field.label}`}
             className="h-11 w-full rounded-xl border border-border bg-background px-3"
-            value={String(context[field.key] ?? "")}
+            value={field.key === "management" && !["pre_feedlot", "deferred_pasture"].includes(context.management ?? "") ? "" : String(context[field.key] ?? "")}
             onChange={(event) => {
               const value = event.target.value;
               onChange({

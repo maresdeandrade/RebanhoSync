@@ -17,8 +17,6 @@ type Props = {
 
 export function SanitaryRuleContextEditorV2({ item, source, context, onChange, hasOverride, onReset }: Props) {
   const [open, setOpen] = useState(false);
-  const months = item.operationalWindowRule.calendar_months;
-  const dated = sanitaryRequiresScheduledContextV2(item);
   const label = formatSanitaryProtocolItemLabelV2(item.logicalItemKey);
   return <details className="pl-6" onToggle={(event) => setOpen(event.currentTarget.open)}>
     <summary>{hasOverride ? "Contexto específico desta regra" : "Usando contexto geral · ajustar esta regra"}</summary>
@@ -26,11 +24,18 @@ export function SanitaryRuleContextEditorV2({ item, source, context, onChange, h
       <p className="text-muted-foreground">{hasOverride ? "Esta regra possui contexto próprio e não acompanha alterações no contexto geral." : "O contexto geral é herdado até você alterar um campo desta regra."}</p>
       {hasOverride ? <Button type="button" variant="outline" size="sm" onClick={onReset}>Usar contexto geral</Button> : null}
       <PlanContextFields prefix={`${label}: `} context={context} onChange={onChange} />
-      {item.eligibilityRule.requires_mv_or_management_context ? <PreWeaningBasisFields context={context} onChange={onChange} /> : null}
-      {Array.isArray(months) ? <RegionalCalendarField source={source} context={context} onChange={onChange} months={months} label={label} /> : null}
-      {dated ? <ScheduledContextFields source={source} context={context} onChange={onChange} /> : null}
+      <SanitaryContextRequirementsV2 item={item} source={source} context={context} onChange={onChange} />
     </div> : null}
   </details>;
+}
+
+export function SanitaryContextRequirementsV2({ item, source, context, onChange, hideScheduled = false }: Pick<Props, "item" | "source" | "context" | "onChange"> & { hideScheduled?: boolean }) {
+  const months = item.operationalWindowRule.calendar_months;
+  return <>
+    {item.eligibilityRule.requires_mv_or_management_context ? <PreWeaningBasisFields context={context} onChange={onChange} /> : null}
+    {Array.isArray(months) ? <RegionalCalendarField source={source} context={context} onChange={onChange} months={months} label={formatSanitaryProtocolItemLabelV2(item.logicalItemKey)} /> : null}
+    {!hideScheduled && sanitaryRequiresScheduledContextV2(item) ? <ScheduledContextFields source={source} context={context} onChange={onChange} /> : null}
+  </>;
 }
 
 function RegionalCalendarField({ source, context, onChange, months, label }:

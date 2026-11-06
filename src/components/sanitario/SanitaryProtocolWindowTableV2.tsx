@@ -171,6 +171,7 @@ export function SanitaryProtocolWindowTableV2({
                 {row.blockers[0] ? <div className="mt-1 text-xs text-destructive">{row.blockers[0]}</div> : null}
                 {row.documentaryPendingReasons[0] ? <div className="mt-1 text-xs text-amber-700">{row.documentaryPendingReasons[0]}</div> : null}
                 {row.warnings[0] ? <div className="mt-1 text-xs text-muted-foreground">{row.warnings[0]}</div> : null}
+                <ContextResolutionDetailsV2 row={row} />
               </td>
               <td className="px-3 py-4 text-muted-foreground">
                 {row.plannedFor ? row.plannedFor.split("-").reverse().join("/") : "Sem agenda aberta"}
@@ -182,4 +183,17 @@ export function SanitaryProtocolWindowTableV2({
       </table>
     </div>
   );
+}
+
+function ContextResolutionDetailsV2({ row }: { row: SanitaryProtocolWindowRowV2 }) {
+  const resolution = row.contextResolution;
+  if (!resolution) return null;
+  const facts = [["Idade em dias", resolution.ageDays], ["Sexo", resolution.sex], ["Lote", resolution.lotId],
+    ["Gestação", resolution.pregnancy], ["Previsão de parto", resolution.expectedBirth], ["Peso observado (kg)", resolution.weight],
+    ["Histórico sanitário", resolution.history], ["Desmama", resolution.weaning], ["Reprodução", resolution.reproduction], ["Manejo", resolution.management],
+    ["Risco", resolution.risk], ["Cadência", resolution.cadence]] as const;
+  return <details className="mt-2 text-xs"><summary>Contexto individual e fontes</summary><dl className="space-y-2 py-2">
+    {facts.map(([label, fact]) => <div key={label}><dt className="font-medium">{label}: {fact.status === "known" ? "Conhecido" : fact.status === "contradictory" ? "Contraditório" : "Desconhecido"}</dt>
+      <dd>{fact.reason} {fact.sources.length ? `Fontes: ${fact.sources.join(", ")}` : ""}</dd></div>)}
+  </dl></details>;
 }
