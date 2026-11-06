@@ -19,6 +19,7 @@ import { getActiveFarmId } from "@/lib/storage";
 import {
   matchesPersistedSeedCalf,
   matchesPersistedSeedReproduction,
+  resumeTestFarmMissingRevision,
   waitForTestFarmGesture,
 } from "./progress";
 import {
@@ -62,6 +63,15 @@ function expectedReproductionFacts(data: Parameters<typeof registerReproductionG
 async function confirmGesture(farmId: string, txId: string) {
   assertFarmContext(farmId);
   const { processGesture, drainReconciliationObligations } = await import("@/lib/offline/syncWorker");
+  await resumeTestFarmMissingRevision(farmId, txId, async () => {
+    assertFarmContext(farmId);
+    const user = await getAuthorizedUser();
+    await requireSelectedOwner(farmId, user.id);
+    if ((await findOwnedTestFarm(user.id))?.id !== farmId)
+      throw new Error("TEST_FARM_NOT_PROVISIONED_FOR_USER");
+    await requireTenantSensitiveAccess();
+    assertFarmContext(farmId);
+  });
   const gesture = await db.queue_gestures.get(txId);
   if (!gesture || gesture.fazenda_id !== farmId) throw new Error("TEST_FARM_TX_FARM_MISMATCH");
   assertFarmContext(farmId);

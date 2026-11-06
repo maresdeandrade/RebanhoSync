@@ -1,6 +1,6 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-11-05 (main pós-#270; fechamentos preservados)
+Atualizado em: 2026-11-06 (main pós-#271; fechamentos preservados)
 
 ## Objetivo
 
@@ -16,7 +16,7 @@ F24.1D.1 do `sanitario-reconcile`. O fechamento inclui matriz negativa, consumid
 
 ## Pendências vigentes pós-F24
 
-[fechamento F24](./CURRENT_PHASE_HANDOFF.md#f24-integrada--pr-270) registra #270, FULL local/CI remoto aprovados, B2 e limites. Restam o incremento localizado B02/A05 de identidade neonatal, revisão isolada B01/F07 do delta testFarm e reconciliação da evidência UX preservada. Os 34 arquivos já integrados e 36 divergentes não são novas implementações; limpeza do checkout antigo exige autorização específica. Diagnósticos TypeScript/Deno herdados, skips e rollout schema V3 → Edge → frontend permanecem explícitos.
+[fechamento F24](./CURRENT_PHASE_HANDOFF.md#f24-integrada--pr-270) preserva #270, FULL/CI e B2, sem repetição. #271 integrou a identidade explícita no builder neonatal; resta o caller D7/D30/desmame sem identidade persistida de comando (não corrigido neste patch). B01/F07 tem recuperação restrita implementada e testada localmente em `codex/b01-f07-post-merge`, sem commit; [UX reconciliada](../ux/UX-DISCOVERY-02.md), com GATE-03 bloqueado. O seed operacional e o remoto não foram exercitados. Os 34 integrados e 36 divergentes não são novas implementações; checkout antigo preservado. Diagnósticos herdados, skips e rollout schema V3 → Edge → frontend permanecem nos seus recortes.
 
 ## GTA/CAS — incidente independente do encerramento funcional
 
