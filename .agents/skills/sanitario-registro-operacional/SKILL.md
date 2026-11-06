@@ -55,13 +55,7 @@ Use `sanitario-catalogo-regulatorio-compliance` for those cases.
 
 ## Leitura inicial
 
-1. `AGENTS.md`;
-2. `.agents/rules/CORE_RULES.md`;
-3. `.agents/rules/CONTEXT_LOADING.md`;
-4. `.agents/rules/no-broad-context.md`;
-5. `docs/domain/SANITARIO.md`;
-6. arquivos-alvo e testes diretamente relacionados;
-7. `.agents/rules/rtk.md`, se houver comandos ou validação.
+Reutilize o bootstrap único de `AGENTS.md`; não releia rules já carregadas por referência nesta skill. Leia `docs/domain/SANITARIO.md`, arquivos-alvo e testes diretamente relacionados conforme o delta.
 
 Carregar `docs/context/SOURCE_OF_TRUTH.md` quando houver conflito entre fato, estado, intenção ou métrica crítica. Carregar `docs/technical/EVENTS_AGENDA_CONTRACT.md` quando a tarefa tocar `agenda_intent`, `event_execution_intent` ou `agenda_closure_intent`.
 
@@ -227,14 +221,6 @@ Para patch funcional sanitário, executar testes focados e adicionar lint/build 
 
 Operações destrutivas exigem autorização explícita, necessidade técnica demonstrada e compatibilidade simultânea com `rtk.md` e `migrations-rls-contracts`. Graphify só pode ser atualizado quando `.agents/rules/GRAPHIFY_USAGE.md` classificar a mudança como estrutural relevante.
 
-## Output expected
+## Saída obrigatória
 
-Report:
-
-* Files changed.
-* Operational rule changed.
-* Primary source used.
-* Tests added/updated.
-* Validation commands and results.
-* Risks remaining.
-* Whether agenda/event/protocol/compliance contracts were affected.
+Resumir o fluxo e arquivos afetados, fatos confirmados e contratos pertinentes (Agenda/Evento/fechamento, produto/dose/estoque/carência e idempotência/retry/rollback/reconcile), distinguindo inferências e recomendações. Registrar comandos/testes executados e resultados, verificações não executadas com motivo e até três riscos residuais. Omitir categorias não afetadas.

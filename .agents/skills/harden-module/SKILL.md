@@ -12,20 +12,16 @@ Reduzir risco arquitetural e operacional com alterações pequenas, reversíveis
 
 ## Coordenação
 
-- Se o hotspot ainda não estiver localizado, executar primeiro a fase de descoberta com `repository-context-retrieval` e encerrá-la antes do hardening.
+- Se o hotspot não estiver claro, fazer descoberta dirigida; recorrer a `repository-context-retrieval` somente se a busca delimitada não resolver a lacuna.
 - Durante implementação, usar `harden-module` como principal e no máximo uma skill de apoio quando houver interseção concreta de domínio, sync ou banco.
-- Se duas ou mais interseções adicionais forem indispensáveis, parar e redelimitar o escopo em vez de carregar múltiplas skills simultaneamente.
-- Executar `rebanhosync-verification-gate` somente depois do patch, como fase lifecycle separada.
+- Quando competências adicionais forem necessárias, alternar sequencialmente as skills na mesma entrega autorizada, mantendo uma principal e no máximo uma skill de apoio por subetapa e preservando decisões e evidências entre elas.
+- Interromper somente diante de ampliação real de escopo, autorização insuficiente ou risco crítico não resolvido.
+- Descoberta dirigida não implica delegação, plano formal ou gate intermediário; usar `repository-context-retrieval` somente se persistir uma lacuna de localização.
+- Após o patch, `rebanhosync-verification-gate` permanece a autoridade única de classificação; não executar gates concorrentes.
 
 ## Leitura inicial
 
-1. `AGENTS.md`;
-2. `.agents/rules/CORE_RULES.md`;
-3. `.agents/rules/CONTEXT_LOADING.md`;
-4. `.agents/rules/no-broad-context.md`;
-5. `AGENTS.md` local, se existir;
-6. hotspot, chamadores diretos e testes relacionados;
-7. `.agents/rules/rtk.md`, se houver comandos.
+Reutilize o bootstrap único de `AGENTS.md`; não releia rules já carregadas por referência nesta skill. Leia o `AGENTS.md` local, hotspot, chamadores diretos e testes relacionados; siga `.agents/rules/rtk.md` para comandos e validação.
 
 Não abrir documentação ampla. Carregar somente o contrato de domínio ou técnico necessário para definir o limite correto.
 
@@ -124,26 +120,15 @@ Se a menor contenção exigir novo schema, mudança transversal de contrato, mig
 
 ## Validação
 
-Seguir `.agents/rules/rtk.md`. Executar:
+Seguir `.agents/rules/rtk.md` e selecionar as verificações pelo delta e risco. Para alteração comportamental, executar testes focados nas fronteiras afetadas; mudanças de documentação sem delta comportamental não exigem testes artificiais. Usar lint/build quando o impacto real os justificar. Suíte ampla/E2E somente para escopo e risco que a justifiquem, com autorização pertinente. Se o contrato remoto Supabase/RLS/RPC/migration/sync-batch for efetivamente alterado, executar a validação de baseline indicada nas regras.
 
 ```bash
 git status --short --untracked-files=all
 git diff --check
 ```
 
-Adicionar testes focados do hotspot. Para domínio crítico, usar lint e build; para entrega ampla, executar a suíte completa. Se tocar Supabase/RLS/RPC/migration/sync-batch, executar também a validação de baseline indicada nas regras.
-
 ## Saída obrigatória
 
-Informar:
-
-1. decisão de hardening;
-2. fatos confirmados e comportamento preservado;
-3. vazamento ou risco atual;
-4. extração/limite mínimo aplicado;
-5. arquivos afetados;
-6. contratos de domínio, sync ou banco impactados;
-7. testes e resultados;
-8. bloqueadores e até três riscos residuais.
+Resumir a decisão, fatos confirmados e comportamento preservado, limite aplicado e arquivos/contratos afetados. Registrar testes/comandos e resultados, verificações não executadas com motivo, bloqueadores e até três riscos residuais, distinguindo fato, inferência e recomendação. Não repetir categorias sem impacto.
 
 Separar fato, inferência e recomendação. Não propor reescrita ampla como primeira intervenção.

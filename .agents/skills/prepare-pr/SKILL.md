@@ -1,6 +1,6 @@
 ---
 name: prepare-pr
-description: Usar para preparar título e corpo de PR do RebanhoSync quando o patch estiver concluído, houver verification gate READY vigente para o mesmo conteúdo e escopo e o template atual de PR estiver disponível. Não usar com READY WITH CAVEAT, NOT READY, evidência obsoleta, escopo incerto ou patch alterado após a verificação.
+description: Usar para redigir título e corpo de PR do RebanhoSync após patch concluído, verification gate READY vigente para o mesmo conteúdo/escopo e template atual disponível. A redação não autoriza criar ou integrar PR, fazer push, merge ou deploy.
 role: lifecycle
 ---
 
@@ -8,30 +8,25 @@ role: lifecycle
 
 ## Missão
 
-Converter o resultado do `rebanhosync-verification-gate` em uma narrativa final de PR curta, auditável e aderente ao template atual do repositório.
+Converter o resultado do `rebanhosync-verification-gate` em uma narrativa final de PR curta, auditável e aderente ao template atual do repositório. A autorização READY se aplica à preparação do texto, não à criação, publicação ou integração do PR. Ressalvas e riscos confirmados pelo gate devem permanecer explícitos na narrativa.
 
 Dentro de `PR_PREPARATION`, esta skill é a autoridade interna para gerar título e descrição do PR. O workflow de CI pode validar a estrutura da descrição, mas não substitui esta etapa nem fornece evidência semântica adicional.
 
 ## Entradas obrigatórias
 
-Exigir:
+Usar somente após a classificação `READY`, conforme `AGENTS.md`, e com:
 
-- classificação `READY` do verification gate;
 - resumo do diff e arquivos alterados;
 - contratos afetados;
 - comandos realmente executados e resultados;
 - ressalvas e riscos;
 - `.github/pull_request_template.md` atual.
 
-Se essas informações não estiverem disponíveis, o resultado for `READY WITH CAVEAT`/`NOT READY` ou o patch tiver mudado depois do gate, interromper a preparação e executar novamente o `rebanhosync-verification-gate` após resolver a ressalva ou bloqueador.
+Se as informações estiverem incompletas, a classificação for `READY WITH CAVEAT`/`NOT READY` ou o patch tiver mudado após o gate, não apresentar a narrativa como pronta para PR; apontar a lacuna ou ressalva sem convertê-la em autorização para integrar. Reexecutar o verification gate somente quando patch ou evidência precisarem de reclassificação.
 
 ## Leitura inicial
 
-1. `AGENTS.md`;
-2. `.agents/rules/CORE_RULES.md`;
-3. `.agents/rules/RESPONSE_FORMATS.md`;
-4. `.github/pull_request_template.md`;
-5. resultado atual do verification gate.
+Reutilize o bootstrap único de `AGENTS.md`; não releia rules já carregadas por referência nesta skill. Leia `.agents/rules/RESPONSE_FORMATS.md`, o template atual `.github/pull_request_template.md` e o resultado vigente do verification gate.
 
 Ler contexto adicional somente se uma ressalva do gate exigir precisão de domínio. Não reabrir documentação ampla por rotina.
 
@@ -45,6 +40,7 @@ Ler contexto adicional somente se uma ressalva do gate exigir precisão de domí
 - Não declarar impacto ausente sem confirmação do diff.
 - Não tratar CI verde como substituto do verification gate.
 - Não editar o PR remoto, criar PR, fazer merge ou push sem autorização explícita para a operação correspondente.
+- Preparar o texto não autoriza integração, publicação, push, merge ou deploy; cada operação exige autorização explícita separada.
 
 ## Título
 
@@ -75,18 +71,13 @@ Regras de preenchimento:
   - `PM` para path/trecho verificável;
   - `P` para comando/resultado realmente executado;
   - `N/A` quando a seção permitir e não houver evidência aplicável;
-- registrar riscos/caveats apenas quando o template oferecer campo apropriado ou quando forem necessários para não ocultar ressalva real;
+- registrar riscos e caveats confirmados em campo apropriado do template; se não houver campo, incluí-los de forma concisa sem alterar as seções ou a ordem do template;
 - não criar seções alternativas em inglês ou um segundo formato concorrente.
 
 Se o template mudar, prevalece o arquivo atual do repositório.
 
 ## Saída obrigatória
 
-Retornar:
-
-1. título do PR;
-2. corpo em Markdown pronto para copiar, conforme o template atual;
-3. notas de revisão somente se úteis;
-4. checklist pós-merge somente se houver ação imediata real.
+Retornar somente o título e o corpo solicitados, usando as seções/ordem do template e incluindo ressalvas confirmadas. Notas de revisão são opcionais quando necessárias; a saída não inicia nem autoriza operação remota.
 
 Ser conciso e não superestimar o impacto.

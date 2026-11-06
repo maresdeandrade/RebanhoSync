@@ -50,11 +50,7 @@ Do not use when:
 
 ## Read first
 
-1. `AGENTS.md`
-2. `.agents/rules/CORE_RULES.md`
-3. `.agents/rules/CONTEXT_LOADING.md`
-4. `.agents/rules/no-broad-context.md`
-5. `.agents/rules/rtk.md`
+Reutilize o bootstrap único de `AGENTS.md`; não releia rules já carregadas por referência nesta skill. Siga `.agents/rules/rtk.md` para comandos e validação.
 
 ### Then read as needed:
 * `docs/technical/OFFLINE_SYNC.md`
@@ -79,6 +75,7 @@ Aplicar as precedências factual e procedimental definidas em `.agents/rules/COR
 * Preserve `fazenda_id` isolation.
 * Preserve sync metadata.
 * Do not create duplicate local/remote truth.
+* In partial failures, distinguish pending local effects from remotely confirmed facts. Do not destructively roll back confirmed remote facts; restore consistency through auditable compensation or reconciliation, according to the implemented contract.
 * Do not treat agenda as historical fact.
 * Do not silently drop failed operations.
 * Do not mask partial success.
@@ -179,7 +176,7 @@ git diff --check
 |---|---|
 | Operação local delimitada, sem mudança de contrato compartilhado | Testes focados da operação e de seus caminhos de falha; verificações locais pertinentes. |
 | Fila, mapeamento, payload, retry ou reconcile compartilhado entre fluxos | Testes das áreas e consumidores impactados; lint/build conforme risco e `rtk.md`. |
-| Contrato crítico ou alteração ampla entre camadas local/remota | Validação ampliada justificada pelos contratos afetados; domínio crítico exige testes focados, lint e build conforme `rtk.md`. Suíte global/E2E somente quando escopo, risco e autorização justificarem. |
+| Contrato crítico ou alteração ampla entre camadas local/remota | Testes focados dos comportamentos/modos de falha afetados; lint/build conforme o impacto real e `rtk.md`. Ampliar a validação somente com justificativa pelos contratos; suíte global/E2E somente quando escopo, risco e autorização justificarem. |
 
 Nos caminhos afetados, preservar testes de idempotência, concorrência, duplicidade/replay, crash/restart, reconnect, farm-switch com operações pendentes, falha parcial, auth expirada e compatibilidade local-remota. Registrar o motivo quando um cenário não se aplicar; a redução de escopo não permite omitir risco pertinente.
 
@@ -193,18 +190,9 @@ Registrar comandos, resultados observados e validações não executadas com mot
 
 ---
 
-## Expected output
+## Saída obrigatória
 
-Return:
-
-1. **Operation type:** [Classification]
-2. **Affected local and remote layers:** [Layers map]
-3. **Idempotency assessment:** [Safety status]
-4. **Rollback assessment:** [Determinism status]
-5. **Source-of-truth assessment:** [Invariants status]
-6. **Edge cases:** [List of critical pathways]
-7. **Tests required/executed:** [Scenarios and results]
-8. **Riscos/pendências:** [Up to 3 points]
+Resumir a operação e camadas afetadas, fatos confirmados e contratos pertinentes (idempotência, rollback, fonte de verdade e caminhos aplicáveis de offline/reconnect, retry/duplicidade, conflito e sucesso parcial), distinguindo inferências e recomendações. Registrar comandos/testes executados e resultados, verificações não executadas com motivo e até três riscos residuais. Omitir categorias não afetadas.
 
 ---
 
