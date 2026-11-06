@@ -1,6 +1,7 @@
 import { readSanitaryPlanningHistoryV2 } from "../checks/sanitaryProtocolPrecheckV2";
 import { sanitaryRequiresScheduledContextV2 } from "./sanitaryContextualPlanningV2";
 import { resolveSanitaryAnimalContextV2 } from "../windows/sanitaryAnimalContextV2";
+import type { SanitaryProtocolItemV2ReadModel } from "../catalog/sanitaryProtocolCatalogV2";
 import type { SanitarioAgendaLocalV2 } from "@/lib/offline/types";
 import type {
   SanitaryProtocolWindowSourceV2,
@@ -18,17 +19,7 @@ export function sanitaryAutomaticIdentityV2(
   const protocol = source.catalog.protocols.find(
     (entry) => entry.id === row.protocolId,
   )!;
-  const animal = source.animals.find((entry) => entry.id === row.animalId);
-  const resolution =
-    animal && context
-      ? resolveSanitaryAnimalContextV2({
-          animal,
-          source,
-          item,
-          evaluatedAt: date,
-          declared: context,
-        })
-      : null;
+  const resolution = resolveIdentityContext(source, row, item, date, context);
   if (resolution) context = resolution.context;
   const history = readSanitaryPlanningHistoryV2({
     catalog: source.catalog,
@@ -56,33 +47,20 @@ export function sanitaryAutomaticIdentityV2(
   ];
   const legacyWindowKey = windowKey;
   const legacyKey = [...keyParts, legacyWindowKey].join("|");
-  const episodeId =
-    sanitaryRequiresScheduledContextV2(item) &&
-    (item.eligibilityRule.requires_pregnancy_or_peripartum_context ||
-      item.operationalWindowRule.anchor === "parturition")
-      ? resolution?.reproductiveEpisodeId
-      : null;
+  const episodeId = identityEpisodeId(item, resolution);
   if (episodeId) windowKey = `episode:${episodeId}`;
   let key = [...keyParts, windowKey].join("|");
   // Keep the exact persisted identity (and its pending ops) when the old intent
   // belongs to this cycle or cannot be safely distinguished from it.
-  const legacyPrefix = `${keyParts.join("|")}|context:`;
-  const legacy =
-    episodeId &&
-    source.agendas.find(
-      (agenda) =>
-        agenda.fazenda_id === source.fazendaId &&
-        !sanitaryAgendaFromOtherEpisodeV2(source, row, agenda) &&
-        typeof agenda.metadata.automationKey === "string" &&
-        (agenda.metadata.automationKey === legacyKey ||
-          agenda.metadata.automationKey.startsWith(legacyPrefix)) &&
-        (!resolution.reproductiveEpisodeDate ||
-          agenda.data_programada >= resolution.reproductiveEpisodeDate) &&
-        source.agendaAnimals.some(
-          (link) =>
-            link.agenda_id === agenda.id && link.animal_id === row.animalId,
-        ),
-    );
+  const legacy = episodeId
+    ? findLegacyEpisodeIntent(
+        source,
+        row,
+        keyParts,
+        legacyKey,
+        resolution.reproductiveEpisodeDate,
+      )
+    : null;
   if (legacy) {
     key = legacy.metadata.automationKey as string;
     windowKey =
@@ -104,6 +82,59 @@ export function sanitaryAutomaticIdentityV2(
       completedWindow(history, legacyWindowKey, date, context),
     ),
   };
+}
+
+function resolveIdentityContext(
+  source: SanitaryProtocolWindowSourceV2,
+  row: SanitaryProtocolWindowRowV2,
+  item: SanitaryProtocolItemV2ReadModel,
+  date: string,
+  context?: SanitaryOperationalContextV2,
+) {
+  const animal = source.animals.find((entry) => entry.id === row.animalId);
+  return animal && context
+    ? resolveSanitaryAnimalContextV2({
+        animal,
+        source,
+        item,
+        evaluatedAt: date,
+        declared: context,
+      })
+    : null;
+}
+
+function identityEpisodeId(
+  item: SanitaryProtocolItemV2ReadModel,
+  resolution: ReturnType<typeof resolveSanitaryAnimalContextV2> | null,
+) {
+  return sanitaryRequiresScheduledContextV2(item) &&
+    (item.eligibilityRule.requires_pregnancy_or_peripartum_context ||
+      item.operationalWindowRule.anchor === "parturition")
+    ? resolution?.reproductiveEpisodeId
+    : null;
+}
+
+function findLegacyEpisodeIntent(
+  source: SanitaryProtocolWindowSourceV2,
+  row: SanitaryProtocolWindowRowV2,
+  keyParts: (string | number)[],
+  legacyKey: string,
+  episodeDate: string | null,
+) {
+  const legacyPrefix = `${keyParts.join("|")}|context:`;
+  return source.agendas.find(
+    (agenda) =>
+      agenda.fazenda_id === source.fazendaId &&
+      !sanitaryAgendaFromOtherEpisodeV2(source, row, agenda) &&
+      typeof agenda.metadata.automationKey === "string" &&
+      (agenda.metadata.automationKey === legacyKey ||
+        agenda.metadata.automationKey.startsWith(legacyPrefix)) &&
+      (!episodeDate || agenda.data_programada >= episodeDate) &&
+      source.agendaAnimals.some(
+        (link) =>
+          link.agenda_id === agenda.id && link.animal_id === row.animalId,
+      ),
+  );
 }
 
 function completedWindow(
@@ -132,23 +163,47 @@ function completedWindow(
 // keeps the existing conservative deduplication and never rewrites old intents.
 export function sanitaryAgendaFromOtherEpisodeV2(
   source: SanitaryProtocolWindowSourceV2,
-  row: Pick<SanitaryProtocolWindowRowV2, "animalId" | "itemId" | "contextResolution">,
+  row: Pick<
+    SanitaryProtocolWindowRowV2,
+    "animalId" | "itemId" | "contextResolution"
+  >,
   agenda: SanitarioAgendaLocalV2,
 ) {
   const current = row.contextResolution?.reproductiveEpisodeId;
   const item = source.catalog.items.find((entry) => entry.id === row.itemId);
   const animal = source.animals.find((entry) => entry.id === row.animalId);
-  if (!current || !item || !animal || agenda.fazenda_id !== animal.fazenda_id ||
+  if (
+    !current ||
+    !item ||
+    !animal ||
+    agenda.fazenda_id !== animal.fazenda_id ||
     !sanitaryRequiresScheduledContextV2(item) ||
-    !(item.eligibilityRule.requires_pregnancy_or_peripartum_context || item.operationalWindowRule.anchor === "parturition")) return false;
+    !(
+      item.eligibilityRule.requires_pregnancy_or_peripartum_context ||
+      item.operationalWindowRule.anchor === "parturition"
+    )
+  )
+    return false;
   const key = agenda.metadata.automationKey;
-  const storedEpisode = typeof key === "string" ? key.split("|episode:")[1] : undefined;
-  if (storedEpisode && source.reproductiveEvents?.some((event) =>
-    event.id === storedEpisode && event.animal_id === animal.id && event.fazenda_id === animal.fazenda_id && !event.deleted_at)) {
+  const storedEpisode =
+    typeof key === "string" ? key.split("|episode:")[1] : undefined;
+  if (
+    storedEpisode &&
+    source.reproductiveEvents?.some(
+      (event) =>
+        event.id === storedEpisode &&
+        event.animal_id === animal.id &&
+        event.fazenda_id === animal.fazenda_id &&
+        !event.deleted_at,
+    )
+  ) {
     return storedEpisode !== current;
   }
   const previous = resolveSanitaryAnimalContextV2({
-    animal, source, item, evaluatedAt: agenda.data_programada,
+    animal,
+    source,
+    item,
+    evaluatedAt: agenda.data_programada,
     declared: row.contextResolution!.context,
   }).reproductiveEpisodeId;
   return Boolean(previous && previous !== current);
@@ -160,7 +215,11 @@ export function suppressedSanitaryAutomaticIntentV2(
   key: string,
 ) {
   return source.agendas.some((agenda) => {
-    if ((source.fazendaId && agenda.fazenda_id !== source.fazendaId) || sanitaryAgendaFromOtherEpisodeV2(source, row, agenda)) return false;
+    if (
+      (source.fazendaId && agenda.fazenda_id !== source.fazendaId) ||
+      sanitaryAgendaFromOtherEpisodeV2(source, row, agenda)
+    )
+      return false;
     if (typeof agenda.metadata.automationKey === "string")
       return agenda.metadata.automationKey === key;
     if (agenda.status !== "cancelada" || agenda.protocolo_id !== row.protocolId)

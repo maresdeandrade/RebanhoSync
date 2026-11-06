@@ -54,20 +54,21 @@ const daysBetween = (from: string, to: string) =>
       86400000,
   );
 
-// A projection for this evaluation only. It never writes facts, configuration or Agenda.
-export function resolveSanitaryAnimalContextV2(input: {
+type ContextInput = {
   animal: Animal;
   source: SanitaryProtocolWindowSourceV2;
   item: SanitaryProtocolItemV2ReadModel;
   evaluatedAt: string;
   declared: SanitaryOperationalContextV2;
-}) {
-  const { animal, source, item, declared } = input;
-  const at = day(input.evaluatedAt);
-  const farmId = source.fazendaId ?? animal.fazenda_id;
-  const scoped =
-    animal.fazenda_id === farmId && !animal.deleted_at && Boolean(at);
-  const animalRef = `animais:${animal.id}`;
+};
+type FactScope = ContextInput & {
+  at: string | null;
+  farmId: string;
+  scoped: boolean;
+  animalRef: string;
+};
+function resolveAnimalFacts(scope: FactScope) {
+  const { animal, source, at, farmId, scoped, animalRef } = scope;
   const birth = day(animal.data_nascimento);
   const ageDays =
     scoped && birth && birth <= at
@@ -99,22 +100,19 @@ export function resolveSanitaryAnimalContextV2(input: {
         "Lote atual da mesma fazenda.",
       )
     : unknown<string>("Lote atual não comprovado nos dados locais.");
-  const events = scoped
-    ? (source.reproductiveEvents ?? []).filter(
-        (event) =>
-          event.animal_id === animal.id &&
-          event.fazenda_id === farmId &&
-          !event.deleted_at &&
-          day(event.occurred_at) &&
-          day(event.occurred_at) <= at,
-      )
-    : [];
-  const projection = rebuildReproductiveProjection(events);
-  const eventRefs = events.map((event) => `eventos:${event.id}`);
+
+  return { ageDays, sex, lotId };
+}
+
+function resolvePregnancyStatus(
+  events: NonNullable<SanitaryProtocolWindowSourceV2["reproductiveEvents"]>,
+  projection: ReturnType<typeof rebuildReproductiveProjection>,
+  eventRefs: string[],
+) {
   const incomplete = events.some(
     (event) => !event.details || event.details.deleted_at,
   );
-  let pregnancy: SanitaryContextFactV2<boolean> =
+  const pregnancy: SanitaryContextFactV2<boolean> =
     !events.length || incomplete
       ? unknown("Histórico reprodutivo local ausente ou incompleto.", eventRefs)
       : projection.inconsistency
@@ -135,8 +133,17 @@ export function resolveSanitaryAnimalContextV2(input: {
                 eventRefs,
                 "Ciclo factual sem gestação confirmada vigente.",
               );
+
+  return pregnancy;
+}
+
+function pregnancyConflictsWithAnimal(
+  animal: Animal,
+  pregnancy: SanitaryContextFactV2<boolean>,
+  projection: ReturnType<typeof rebuildReproductiveProjection>,
+) {
   const cachedFacts = readTaxonomyFactsRecord(animal.payload) ?? {};
-  if (
+  return (
     pregnancy.status === "known" &&
     ((pregnancy.value && animal.sexo !== "F") ||
       (typeof cachedFacts.prenhez_confirmada === "boolean" &&
@@ -144,12 +151,30 @@ export function resolveSanitaryAnimalContextV2(input: {
       (pregnancy.value &&
         typeof cachedFacts.data_prevista_parto === "string" &&
         cachedFacts.data_prevista_parto !== projection.dpp))
-  ) {
+  );
+}
+
+function resolveReproductiveFacts(scope: FactScope) {
+  const { animal, source, at, farmId, scoped, animalRef } = scope;
+  const events = scoped
+    ? (source.reproductiveEvents ?? []).filter(
+        (event) =>
+          event.animal_id === animal.id &&
+          event.fazenda_id === farmId &&
+          !event.deleted_at &&
+          day(event.occurred_at) &&
+          day(event.occurred_at) <= at,
+      )
+    : [];
+  const projection = rebuildReproductiveProjection(events);
+  const eventRefs = events.map((event) => `eventos:${event.id}`);
+
+  let pregnancy = resolvePregnancyStatus(events, projection, eventRefs);
+  if (pregnancyConflictsWithAnimal(animal, pregnancy, projection))
     pregnancy = conflict(
       "Cadastro/projeção atual diverge do histórico reprodutivo. Revise as fontes.",
       [...eventRefs, animalRef],
     );
-  }
   const expectedBirth =
     pregnancy.status === "known" && pregnancy.value && day(projection.dpp)
       ? known(
@@ -161,6 +186,12 @@ export function resolveSanitaryAnimalContextV2(input: {
           "Previsão de parto canônica válida não comprovada.",
           eventRefs,
         );
+
+  return { events, projection, eventRefs, pregnancy, expectedBirth };
+}
+
+function selectWeightForContext(scope: FactScope) {
+  const { animal, source, at, farmId, scoped } = scope;
   const observed =
     at && farmId && animal.id
       ? selectLatestObservedWeight({
@@ -172,6 +203,11 @@ export function resolveSanitaryAnimalContextV2(input: {
           referenceDate: `${at}T23:59:59.999Z`,
         })
       : null;
+  return observed;
+}
+
+function resolveWeightFact(scope: FactScope) {
+  const observed = selectWeightForContext(scope);
   const weight =
     observed?.status === "available"
       ? known(
@@ -187,19 +223,36 @@ export function resolveSanitaryAnimalContextV2(input: {
         : unknown<number>(
             "Peso observado válido indisponível; não estimado por idade ou categoria.",
           );
-  const classification = resolveAnimalClassificationSnapshot(animal, {
-    referenceDate: input.evaluatedAt,
-  });
+
+  return weight;
+}
+
+function observedForAnimal(
+  event: {
+    animal_id?: string | null;
+    fazenda_id?: string | null;
+    deleted_at?: string | null;
+    occurred_at: string;
+  },
+  scope: FactScope,
+) {
+  return (
+    event.fazenda_id === scope.farmId &&
+    event.animal_id === scope.animal.id &&
+    !event.deleted_at &&
+    day(event.occurred_at) &&
+    day(event.occurred_at) <= scope.at
+  );
+}
+
+function resolveWeaningFact(scope: FactScope) {
+  const { animal, source, farmId, scoped } = scope;
   const completedWeaning = scoped
     ? (source.contextEvents ?? [])
         .filter(
           (event) =>
-            event.fazenda_id === farmId &&
-            event.animal_id === animal.id &&
+            observedForAnimal(event, scope) &&
             event.dominio === "nutricao" &&
-            !event.deleted_at &&
-            day(event.occurred_at) &&
-            day(event.occurred_at) <= at &&
             (event.payload?.procedimento === "desmame" ||
               event.payload?.milestone_key === "desmame"),
         )
@@ -245,13 +298,64 @@ export function resolveSanitaryAnimalContextV2(input: {
         : unknown<{ kind: "planned" | "completed"; date: string }>(
             "Desmama não comprovada no histórico ou na programação individual disponível.",
           );
+
+  return weaning;
+}
+
+function scheduledForTarget(scope: FactScope) {
+  const { scoped, declared, animal } = scope;
   const scheduled = declared.scheduledContext;
-  const scheduledForAnimal =
+  return (
     scoped &&
     scheduled &&
     day(scheduled.date) &&
     scheduled.reference.trim() &&
-    scheduled.animalIds.includes(animal.id);
+    scheduled.animalIds.includes(animal.id)
+  );
+}
+
+function hasPreWeaningBasis(
+  scope: FactScope,
+  ageDays: SanitaryContextFactV2<number>,
+  weaning: ReturnType<typeof resolveWeaningFact>,
+  lifeStage: string,
+) {
+  const { item, declared } = scope;
+  return (
+    ageDays.status === "known" &&
+    ["cria_neonatal", "cria_aleitamento"].includes(lifeStage) &&
+    item.eligibilityRule.requires_mv_or_management_context &&
+    declared.preWeaningBasis?.reference?.trim() &&
+    ["intensive_dairy", "veterinarian"].includes(
+      declared.preWeaningBasis.kind,
+    ) &&
+    weaning.status !== "contradictory"
+  );
+}
+
+function isRearing(
+  scope: FactScope,
+  weaning: ReturnType<typeof resolveWeaningFact>,
+  lifeStage: string,
+) {
+  return (
+    scope.scoped &&
+    (weaning.value?.kind === "completed" ||
+      ["recria", "garrote", "novilha", "desmamado"].includes(lifeStage))
+  );
+}
+
+function resolveManagementFact(
+  scope: FactScope,
+  ageDays: SanitaryContextFactV2<number>,
+  weaning: ReturnType<typeof resolveWeaningFact>,
+) {
+  const { animal, scoped, declared, animalRef } = scope;
+  const classification = resolveAnimalClassificationSnapshot(animal, {
+    referenceDate: scope.evaluatedAt,
+  });
+  const scheduled = declared.scheduledContext!;
+  const scheduledForAnimal = scheduledForTarget(scope);
   let management = unknown<SanitaryOperationalContextV2["management"]>(
     "Manejo não confirmado para este animal.",
   );
@@ -265,13 +369,7 @@ export function resolveSanitaryAnimalContextV2(input: {
       ["contexto_programado", scheduled.reference],
       "Intenção de manejo referenciada e dirigida ao animal; não é execução.",
     );
-  } else if (
-    scoped &&
-    (weaning.value?.kind === "completed" ||
-      ["recria", "garrote", "novilha", "desmamado"].includes(
-        classification.estagioVida,
-      ))
-  ) {
+  } else if (isRearing(scope, weaning, classification.estagioVida)) {
     management = known(
       "rearing",
       [animalRef],
@@ -279,16 +377,7 @@ export function resolveSanitaryAnimalContextV2(input: {
     );
   } else if (
     scoped &&
-    ageDays.status === "known" &&
-    ["cria_neonatal", "cria_aleitamento"].includes(
-      classification.estagioVida,
-    ) &&
-    item.eligibilityRule.requires_mv_or_management_context &&
-    declared.preWeaningBasis?.reference?.trim() &&
-    ["intensive_dairy", "veterinarian"].includes(
-      declared.preWeaningBasis.kind,
-    ) &&
-    weaning.status !== "contradictory"
+    hasPreWeaningBasis(scope, ageDays, weaning, classification.estagioVida)
   ) {
     management = known(
       "pre_weaning",
@@ -296,6 +385,27 @@ export function resolveSanitaryAnimalContextV2(input: {
       "Cria e indicação pré-desmama referenciada; critérios do protocolo continuam na pré-checagem.",
     );
   }
+
+  return management;
+}
+
+function validPrepartumOffsets(min: unknown, max: unknown) {
+  return (
+    typeof min === "number" &&
+    Number.isInteger(min) &&
+    typeof max === "number" &&
+    Number.isInteger(max) &&
+    min <= max &&
+    max <= 0
+  );
+}
+
+function resolveReproductiveWindow(
+  scope: FactScope,
+  facts: ReturnType<typeof resolveReproductiveFacts>,
+) {
+  const { animal, item, scoped, at } = scope;
+  const { pregnancy, expectedBirth, eventRefs, projection } = facts;
   let reproduction =
     pregnancy.status === "contradictory"
       ? conflict<SanitaryOperationalContextV2["reproductiveContext"]>(
@@ -313,23 +423,18 @@ export function resolveSanitaryAnimalContextV2(input: {
     scoped &&
     expectedBirth.status === "known" &&
     item.operationalWindowRule.anchor === "parturition" &&
-    typeof min === "number" &&
-    Number.isInteger(min) &&
-    typeof max === "number" &&
-    Number.isInteger(max) &&
-    min <= max &&
-    max <= 0 &&
+    validPrepartumOffsets(min, max) &&
     sanitaryPlanningHasFieldSourceV2(item, "operational_window")
   ) {
     const offset = daysBetween(expectedBirth.value!, at!);
-    if (offset >= min && offset <= max) {
+    if (offset >= (min as number) && offset <= (max as number)) {
       reproduction = known(
         "prepartum",
         [...eventRefs, `item:${item.id}:v${item.version}`],
         "Gestação e DPP dentro da janela versionada e fundamentada.",
       );
       const date = new Date(`${expectedBirth.value}T00:00:00Z`);
-      date.setUTCDate(date.getUTCDate() + min);
+      date.setUTCDate(date.getUTCDate() + (min as number));
       derivedSchedule = {
         date: date.toISOString().slice(0, 10),
         animalIds: [animal.id],
@@ -337,22 +442,22 @@ export function resolveSanitaryAnimalContextV2(input: {
       };
     }
   }
+
+  return { reproduction, derivedSchedule };
+}
+
+function resolveCadenceFact(scope: FactScope) {
+  const { scoped, declared, item } = scope;
   const recurrence = item.boosterRule.recurrenceRule as
     | { kind?: string }
     | undefined;
-  const risk =
-    scoped && typeof declared.riskContext === "boolean"
-      ? known(
-          declared.riskContext,
-          ["contexto_declarado"],
-          "Risco explicitamente informado; não inferido por endereço ou ausência de histórico.",
-        )
-      : unknown<boolean>("Risco não comprovado.");
-  const cadence =
+
+  const annual =
     scoped &&
     recurrence?.kind === "annual" &&
-    sanitaryPlanningHasFieldSourceV2(item, "operational_window") &&
-    declared.sanitaryCadence === "semiannual"
+    sanitaryPlanningHasFieldSourceV2(item, "operational_window");
+  const cadence =
+    annual && declared.sanitaryCadence === "semiannual"
       ? conflict<"annual" | "semiannual">(
           "Cadência declarada diverge da regra anual versionada.",
           ["contexto_declarado", `item:${item.id}:v${item.version}`],
@@ -363,9 +468,7 @@ export function resolveSanitaryAnimalContextV2(input: {
             ["contexto_declarado"],
             "Cadência explicitamente configurada para a avaliação.",
           )
-        : scoped &&
-            recurrence?.kind === "annual" &&
-            sanitaryPlanningHasFieldSourceV2(item, "operational_window")
+        : annual
           ? known(
               "annual" as const,
               [`item:${item.id}:v${item.version}`],
@@ -374,16 +477,26 @@ export function resolveSanitaryAnimalContextV2(input: {
           : unknown<"annual" | "semiannual">(
               "Regra/evidência insuficiente para escolher cadência.",
             );
-  const context: SanitaryOperationalContextV2 = {
-    ...declared,
-    management: management.value,
-    reproductiveContext: reproduction.value,
-    sanitaryCadence: cadence.value,
-    riskContext: risk.value,
-    rabiesRiskArea: scoped ? declared.rabiesRiskArea : null,
-    scheduledContext:
-      derivedSchedule ?? (scheduledForAnimal ? scheduled : undefined),
-  };
+
+  return cadence;
+}
+
+function resolveRiskFact(scope: FactScope) {
+  const { scoped, declared } = scope;
+  const risk =
+    scoped && typeof declared.riskContext === "boolean"
+      ? known(
+          declared.riskContext,
+          ["contexto_declarado"],
+          "Risco explicitamente informado; não inferido por endereço ou ausência de histórico.",
+        )
+      : unknown<boolean>("Risco não comprovado.");
+
+  return risk;
+}
+
+function resolveHistoryFact(scope: FactScope) {
+  const { scoped, source, animal, at } = scope;
   const historyEvents = scoped
     ? (source.executedHistory
         .find((entry) => entry.animalId === animal.id)
@@ -400,6 +513,50 @@ export function resolveSanitaryAnimalContextV2(input: {
     : unknown<number>(
         "Sem histórico sanitário disponível localmente; não comprova ausência de execução.",
       );
+
+  return history;
+}
+
+// A projection for this evaluation only. It never writes facts, configuration or Agenda.
+export function resolveSanitaryAnimalContextV2(input: ContextInput) {
+  const { animal, source, item, declared } = input;
+  const at = day(input.evaluatedAt);
+  const farmId = source.fazendaId ?? animal.fazenda_id;
+  const scoped =
+    animal.fazenda_id === farmId && !animal.deleted_at && Boolean(at);
+  const scope: FactScope = {
+    ...input,
+    at,
+    farmId,
+    scoped,
+    animalRef: `animais:${animal.id}`,
+  };
+  const { ageDays, sex, lotId } = resolveAnimalFacts(scope);
+  const facts = resolveReproductiveFacts(scope);
+  const { events, projection, pregnancy, expectedBirth } = facts;
+  const weight = resolveWeightFact(scope);
+  const weaning = resolveWeaningFact(scope);
+  const scheduled = declared.scheduledContext;
+  const scheduledForAnimal = scheduledForTarget(scope);
+  const management = resolveManagementFact(scope, ageDays, weaning);
+  const { reproduction, derivedSchedule } = resolveReproductiveWindow(
+    scope,
+    facts,
+  );
+  const risk = resolveRiskFact(scope);
+  const cadence = resolveCadenceFact(scope);
+  const context: SanitaryOperationalContextV2 = {
+    ...declared,
+    management: management.value,
+    reproductiveContext: reproduction.value,
+    sanitaryCadence: cadence.value,
+    riskContext: risk.value,
+    rabiesRiskArea: scoped ? declared.rabiesRiskArea : null,
+    scheduledContext:
+      derivedSchedule ?? (scheduledForAnimal ? scheduled : undefined),
+  };
+
+  const history = resolveHistoryFact(scope);
   // Preserve the existing scheduled generic assessment. It is not a resolved pregnancy,
   // technical recommendation or authorization to apply a product.
   const genericAssessment = Boolean(
@@ -410,8 +567,17 @@ export function resolveSanitaryAnimalContextV2(input: {
     sanitaryPlanningKindV2(item) === "avaliacao_manejo_generica",
   );
   return {
-    reproductiveEpisodeId: pregnancy.status === "known" && pregnancy.value ? projection.currentEpisodeId : null,
-    reproductiveEpisodeDate: pregnancy.status === "known" && pregnancy.value ? day(events.find((event) => event.id === projection.currentEpisodeId)?.occurred_at) : null,
+    reproductiveEpisodeId:
+      pregnancy.status === "known" && pregnancy.value
+        ? projection.currentEpisodeId
+        : null,
+    reproductiveEpisodeDate:
+      pregnancy.status === "known" && pregnancy.value
+        ? day(
+            events.find((event) => event.id === projection.currentEpisodeId)
+              ?.occurred_at,
+          )
+        : null,
     ageDays,
     sex,
     lotId,
