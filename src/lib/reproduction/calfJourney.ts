@@ -538,9 +538,10 @@ export function buildCalfJourneyCompletionOps({
     ops.push(...built.ops);
 
     const currentPayload = getAnimalPayloadRecord(calf.payload);
+    const movementEventId = eventId ? deterministicUuidFromText(`${eventId}:movement`) : undefined;
     if (destinationLoteId && destinationLoteId !== calf.lote_id) {
       ops.push(...buildEventGesture({ dominio: "movimentacao", fazendaId, animalId: calf.id,
-        eventId: eventId ? deterministicUuidFromText(`${eventId}:movement`) : undefined,
+        eventId: movementEventId,
         fromLoteId: calf.lote_id, toLoteId: destinationLoteId, occurredAt, sourceTaskId: agendaItem.id,
         observacoes: `Movimentação no desmame da cria ${calf.identificacao}` }).ops);
     }
