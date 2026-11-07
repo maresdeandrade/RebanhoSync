@@ -793,3 +793,27 @@ test("plano integral exclui itens restritos e automatiza vários protocolos com 
   expect(await snapshot()).toEqual(before);
   expect(unexpected).toEqual([]);
 });
+
+test("catálogo observa o primeiro download após leitura vazia sem recarregar", async ({ page }) => {
+  let delivered = false;
+  const unexpected = await prepare(page, async (route, requests) => {
+    if (new URL(route.request().url()).pathname.endsWith("/sanitario_protocolos_v2")) {
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(delivered ? [{
+        id: protocol, family_code: "synthetic_reactive", name: "Download sintético reativo",
+        scope: "global", fazenda_id: null, version: 1, status: "active", approval_status: "approved",
+        metadata: { synthetic: true }, updated_at: "2026-07-04T12:00:00Z", deleted_at: null,
+      }] : []) });
+    }
+    return fulfillSyntheticApi(route, requests);
+  });
+  await page.goto("/select-fazenda?empty");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await page.goto("/protocolos-sanitarios/catalogo-v2?empty");
+  await expect(page.getByRole("button", { name: "Atualizar catálogo", exact: true })).toBeEnabled();
+  await expect(page.getByText("Nenhum protocolo disponível no catálogo global.")).toBeVisible();
+  delivered = true;
+  await page.getByRole("button", { name: "Atualizar catálogo", exact: true }).click();
+  await expect(page.getByText("Consulta remota concluída.")).toBeVisible();
+  await expect(page.getByText("Download sintético reativo").first()).toBeVisible();
+  expect(unexpected).toEqual([]);
+});
