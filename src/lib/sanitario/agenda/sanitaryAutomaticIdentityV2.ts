@@ -1,6 +1,8 @@
 import { readSanitaryPlanningHistoryV2 } from "../checks/sanitaryProtocolPrecheckV2";
 import { sanitaryRequiresScheduledContextV2 } from "./sanitaryContextualPlanningV2";
 import { resolveSanitaryAnimalContextV2 } from "../windows/sanitaryAnimalContextV2";
+import { rebuildReproductiveProjection } from "@/lib/reproduction/status";
+import { sanitaryScheduledDateValidV2 } from "./sanitaryContextualPlanningV2";
 import type { SanitaryProtocolItemV2ReadModel } from "../catalog/sanitaryProtocolCatalogV2";
 import type { SanitarioAgendaLocalV2 } from "@/lib/offline/types";
 import type {
@@ -199,13 +201,18 @@ export function sanitaryAgendaFromOtherEpisodeV2(
   ) {
     return storedEpisode !== current;
   }
-  const previous = resolveSanitaryAnimalContextV2({
-    animal,
-    source,
-    item,
-    evaluatedAt: agenda.data_programada,
-    declared: row.contextResolution!.context,
-  }).reproductiveEpisodeId;
+  // The current cadastral DPP cannot invalidate a different, historical cycle.
+  // Rebuild only the facts available at the old intention's date.
+  if (!sanitaryScheduledDateValidV2(agenda.data_programada)) return false;
+  const events = (source.reproductiveEvents ?? []).filter((event) =>
+    event.animal_id === animal.id && event.fazenda_id === animal.fazenda_id &&
+    !event.deleted_at && sanitaryScheduledDateValidV2(event.occurred_at.slice(0, 10)) &&
+    event.occurred_at.slice(0, 10) <= agenda.data_programada,
+  );
+  if (events.some((event) => !event.details || event.details.deleted_at)) return false;
+  const projection = rebuildReproductiveProjection(events);
+  const previous = !projection.inconsistency && projection.status === "PRENHA"
+    ? projection.diagnosedEpisodeId : null;
   return Boolean(previous && previous !== current);
 }
 

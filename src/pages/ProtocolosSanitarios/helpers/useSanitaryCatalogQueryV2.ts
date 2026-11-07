@@ -5,6 +5,7 @@ import {
   type SanitarioProtocolCatalogPullResultV2,
 } from "@/lib/offline/pull";
 import { supabase } from "@/lib/supabase";
+import { db } from "@/lib/offline/db";
 import {
   readLocalSanitaryProtocolCatalogV2,
   type SanitaryProtocolCatalogReadModelV2,
@@ -87,7 +88,8 @@ export function useSanitaryCatalogQueryV2() {
 }
 
 async function readGlobalCatalog() {
-  const local = await readLocalSanitaryProtocolCatalogV2();
+  // Keep the reads in Dexie's observation zone; native import() loses it in Chromium.
+  const local = await readLocalSanitaryProtocolCatalogV2(db);
   // This surface is the global catalog, never a projection of another farm.
   const protocols = local.protocols.filter(
     (p) => p.scope === "global" && p.fazendaId === null,

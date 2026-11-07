@@ -1207,3 +1207,27 @@ describe("resolução contextual sanitária por animal", () => {
     }
   });
 });
+
+it("separa Agenda manual antiga pelos Eventos sem confrontar a DPP cadastral do ciclo atual", async () => {
+  const { sanitaryAgendaFromOtherEpisodeV2 } = await import("../../agenda/sanitaryAutomaticIdentityV2");
+  const nextEvents = reproduction().map((event) => ({
+    ...event,
+    id: `${event.id}-next`,
+    occurred_at: event.occurred_at.replace("2026", "2027"),
+    details: {
+      ...event.details!,
+      payload: event.details!.tipo === "diagnostico"
+        ? { schema_version: 1, resultado: "positivo", episode_evento_id: "service-next", data_prevista_parto: "2027-08-10" }
+        : event.details!.payload,
+    },
+  }));
+  const current = source({
+    animals: [animal("matrix", { payload: { taxonomy_facts: { schema_version: 1, prenhez_confirmada: true, data_prevista_parto: "2027-08-10" } } })],
+    reproductiveEvents: [...reproduction(), ...nextEvents],
+  });
+  const row = buildSanitaryProtocolWindowV2({ source: current, protocolId: protocol.id, itemId: item.id, evaluatedAt: "2027-07-04" })!.rows[0];
+  const previous = { id: "manual-old", fazenda_id: "farm", data_programada: "2026-07-04", metadata: {} } as never;
+  expect(row.contextResolution!.reproductiveEpisodeId).toBe("service-next");
+  expect(sanitaryAgendaFromOtherEpisodeV2(current, row, previous)).toBe(true);
+  expect(sanitaryAgendaFromOtherEpisodeV2({ ...current, reproductiveEvents: nextEvents }, row, previous)).toBe(false);
+});
