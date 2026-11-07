@@ -1,10 +1,11 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
+import { SanitaryContextualNeedsPanelV2 } from "@/components/sanitario/SanitaryContextualNeedsPanelV2";
 import type { Animal, Lote } from "@/lib/offline/types";
 import type { SanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 
@@ -64,6 +65,93 @@ const source: SanitaryProtocolWindowSourceV2 = {
 };
 
 describe("SanitaryProtocolWindowPanelV2", () => {
+  it("descobre necessidades sem protocolo e abre revisão apenas para planejáveis", async () => {
+    const onPlan = vi.fn().mockResolvedValue(undefined);
+    render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={source} onPlan={onPlan} initialAnimalId="female" /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
+    expect(screen.queryByLabelText("Selecionar protocolo")).not.toBeInTheDocument();
+    expect(screen.getByRole("article", { name: /Brucelose B19/ })).toHaveTextContent("Necessidade identificada");
+    expect(screen.getByRole("article", { name: /Raiva dos herbívoros/ })).toHaveTextContent("Informação insuficiente");
+    expect(screen.getAllByRole("button", { name: "Planejar manejo" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Planejar manejo" }));
+    expect(screen.queryByLabelText("Filtrar por lote")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Limpar filtro", exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Área de risco para raiva")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Cadência sanitária")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeEnabled();
+    fireEvent.click(screen.getByLabelText("Selecionar Fêmea 101"));
+    fireEvent.click(screen.getByRole("button", { name: "Planejar agenda para selecionados" }));
+    expect(onPlan).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar e gerar Agenda" }));
+    await waitFor(() => expect(onPlan).toHaveBeenCalledTimes(1));
+    expect(onPlan.mock.calls[0][0].map((row: { animalId: string }) => row.animalId)).toEqual(["female"]);
+  });
+
+  it("invalida alvo, contexto e revisão ao trocar fazenda", () => {
+    const props = { onPlan: vi.fn(), initialAnimalId: "female" };
+    const { rerender } = render(<MemoryRouter><SanitaryContextualNeedsPanelV2 {...props} source={{ ...source, fazendaId: "farm-1" }} /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
+    fireEvent.click(screen.getByRole("button", { name: "Planejar manejo" }));
+    fireEvent.click(screen.getByLabelText("Selecionar Fêmea 101"));
+    fireEvent.click(screen.getByRole("button", { name: "Planejar agenda para selecionados" }));
+    rerender(<MemoryRouter><SanitaryContextualNeedsPanelV2 {...props} initialAnimalId={null} source={{ ...source, fazendaId: "farm-2", animals: [], lots: [] }} /></MemoryRouter>);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("article")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Animal das necessidades")).toHaveValue("");
+  });
+
+  it("mantém consulta do lote offline e não promove regra sem aprovação", () => {
+    const unapproved = { ...source, catalog: { ...source.catalog, protocols: source.catalog.protocols.map(protocol => ({ ...protocol, approvalStatus: "draft" })) } };
+    const onPlan = vi.fn();
+    render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={unapproved} onPlan={onPlan} initialLotId="lot-1" /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
+    const b19 = screen.getByRole("article", { name: /Brucelose B19/ });
+    expect(b19).toHaveTextContent("Fêmea 101");
+    expect(b19).toHaveTextContent("Macho 202");
+    expect(screen.queryByRole("button", { name: "Planejar manejo" })).not.toBeInTheDocument();
+    Object.defineProperty(navigator, "onLine", { configurable: true, value: false });
+    fireEvent(window, new Event("offline"));
+    expect(screen.getByText(/Offline: consulta local disponível/)).toBeInTheDocument();
+    expect(screen.getByRole("article", { name: /Brucelose B19/ })).toBeInTheDocument();
+    Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
+    fireEvent(window, new Event("online"));
+    expect(screen.queryByText(/Offline: consulta/)).not.toBeInTheDocument();
+    fireEvent.click(within(b19).getByRole("button", { name: "Consultar limitações e complementos" }));
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Planejar agenda para selecionados" })).toBeDisabled();
+    expect(onPlan).not.toHaveBeenCalled();
+  });
+
+  it("não solicita programação pré-parto já resolvida por Eventos e fonte técnica", () => {
+    const known: SanitaryProtocolWindowSourceV2 = {
+      ...source, fazendaId: "farm-1", animals: [animal("female", "F", "2022-01-01")],
+      catalog: { ...source.catalog, protocols: [{ ...source.catalog.protocols[0], id: "prepartum", familyCode: "matrizes_pre_parto", name: "Avaliação pré-parto" }], items: [{
+        ...source.catalog.items[0], id: "prepartum-item", protocolId: "prepartum", logicalItemKey: "matrizes_pre_parto_antiparasitario",
+        actionType: "manejo_sanitario", productRequirementKind: "none", productClass: null,
+        eligibilityRule: { species: ["bovino"], sex: "femea", requires_pregnancy_or_peripartum_context: true },
+        operationalWindowRule: { anchor: "parturition", min_offset_days: -60, max_offset_days: -20 },
+        sourceRefsByField: { operational_window: [{ kind: "mv_responsavel", strength: "forte", evidenceStatus: "SIM_BULA", fieldKeys: ["operational_window"], title: "Fonte técnica sintética" }] },
+      }] },
+      reproductiveEvents: [
+        { id: "service", animal_id: "female", fazenda_id: "farm-1", occurred_at: "2026-01-01", deleted_at: null, details: { tipo: "IA", payload: { schema_version: 1 } } },
+        { id: "diagnosis", animal_id: "female", fazenda_id: "farm-1", occurred_at: "2026-02-01", deleted_at: null, details: { tipo: "diagnostico", payload: { schema_version: 1, resultado: "positivo", episode_evento_id: "service", data_prevista_parto: "2026-08-10" } } },
+      ],
+    };
+    const { rerender } = render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={known} onPlan={vi.fn()} initialAnimalId="female" /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
+    fireEvent.click(screen.getByRole("button", { name: "Planejar manejo" }));
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeEnabled();
+    expect(screen.queryByLabelText("Data do contexto programado")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Referência do contexto programado")).not.toBeInTheDocument();
+    expect(screen.getByText(/Gestação e DPP dentro da janela versionada/)).toBeInTheDocument();
+    rerender(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={{ ...known, reproductiveEvents: [] }} onPlan={vi.fn()} initialAnimalId="female" /></MemoryRouter>);
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeDisabled();
+    expect(screen.queryByLabelText("Animais do contexto programado")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Data do contexto programado"), { target: { value: "2026-07-04" } });
+    fireEvent.change(screen.getByLabelText("Referência do contexto programado"), { target: { value: "Avaliação técnica referenciada" } });
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeEnabled();
+    expect(screen.getByText(/Avaliação genérica programada; gestação e janela técnica ainda não comprovadas/)).toBeInTheDocument();
+  });
   it("seleção de geração condicional exige autorização individual sem promover catálogo", () => {
     render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={vi.fn()} /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText("Selecionar protocolo"), { target: { value: "protocol-b19" } });

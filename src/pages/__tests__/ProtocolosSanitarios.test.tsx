@@ -65,6 +65,16 @@ describe("Central Sanitária", () => {
     vi.mocked(listLocalSanitaryAgendasV2).mockReturnValue(Promise.resolve([]));
   });
 
+  it("mostra falha da consulta local e permite tentar novamente sem exibir dados antigos", async () => {
+    let call = 0;
+    vi.mocked(useLiveQuery).mockImplementation(() => (++call % 2 ? [] : { fazendaId: "farm-1", readError: "local_read_failed" }));
+    renderPage();
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível consultar os dados sanitários locais");
+    expect(screen.queryByLabelText("Animal das necessidades")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Tentar consulta novamente" }));
+    expect(call).toBeGreaterThan(2);
+  });
+
   it("calcula pendências apenas no Histórico e reutiliza o resultado ao filtrar", async () => {
     const user = userEvent.setup();
     renderPage();
@@ -240,6 +250,7 @@ describe("Central Sanitária", () => {
     expect(screen.getByText("Lote usado apenas como contexto auxiliar: Lote recria.")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/animal-1|lote-1|protocol-b19|item-b19/);
 
+    await user.click(screen.getByRole("button", { name: "Consultar por protocolo" }));
     await user.selectOptions(screen.getByLabelText("Selecionar protocolo"), "protocol-b19");
     await screen.findByRole("option", { name: "B19 — fêmeas de 3 a 8 meses" });
     await user.selectOptions(screen.getByLabelText("Selecionar item do protocolo"), "item-b19");
@@ -415,6 +426,7 @@ describe("Central Sanitária", () => {
     expect(screen.getByText("Filtro ativo: lote Lote recria")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/animal-1|lote-1|protocol-b19|item-b19/);
 
+    await user.click(screen.getByRole("button", { name: "Consultar por protocolo" }));
     await user.selectOptions(screen.getByLabelText("Selecionar protocolo"), "protocol-b19");
     await screen.findByRole("option", { name: "B19 — fêmeas de 3 a 8 meses" });
     await user.selectOptions(screen.getByLabelText("Selecionar item do protocolo"), "item-b19");

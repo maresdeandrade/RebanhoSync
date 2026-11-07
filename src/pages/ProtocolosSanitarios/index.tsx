@@ -1,5 +1,5 @@
 import { SanitaryAgendaCollaborationV3 } from "@/components/sanitario/SanitaryAgendaCollaborationV3";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BookOpenCheck, CalendarClock, History, ShieldCheck } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
 import { SanitaryCompliancePanelV2 } from "@/components/sanitario/SanitaryCompliancePanelV2";
-import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
+import { SanitaryContextualNeedsPanelV2 } from "@/components/sanitario/SanitaryContextualNeedsPanelV2";
 import { SanitaryAutomaticPlanPanelV2 } from "@/components/sanitario/SanitaryAutomaticPlanPanelV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,7 +59,7 @@ function readCentralSanitaryTab(value: string | null): CentralSanitaryTab {
 
 function planningResultMessage(results: Array<{ created: boolean }>) {
   if (!results.some((result) => result.created)) return "Seleção já planejada. Agendas existentes preservadas.";
-  return results.length === 1 ? "Agenda sanitária criada." : `${results.length} agendas sanitárias agrupadas foram criadas.`;
+  return results.length === 1 ? "Agenda sanitária salva localmente. Sem confirmação remota." : `${results.length} agendas sanitárias salvas localmente. Sem confirmação remota.`;
 }
 
 function currentFarmSource(source: SanitaryProtocolWindowSourceV2 | undefined, farmId: string) {
@@ -84,10 +84,21 @@ function sourceWithFarmLocation(source: SanitaryProtocolWindowSourceV2 | undefin
 function useFarmWindowSource(activeFarmId: string | null, planningRevision: number) {
   const farmLocation = useSanitaryFarmLocationV2(activeFarmId);
   const localWindowSource = useLiveQuery(
-    () => (activeFarmId ? loadSanitaryProtocolWindowSourceV2(activeFarmId) : undefined),
+    async () => {
+      if (!activeFarmId) return undefined;
+      try {
+        return await loadSanitaryProtocolWindowSourceV2(activeFarmId);
+      } catch {
+        return { fazendaId: activeFarmId, readError: "local_read_failed" };
+      }
+    },
     [activeFarmId, planningRevision],
   );
-  return useMemo(() => sourceWithFarmLocation(localWindowSource, farmLocation), [localWindowSource, farmLocation]);
+  return useMemo(() => {
+    if (!localWindowSource) return { source: undefined, error: false };
+    if ("catalog" in localWindowSource) return { source: sourceWithFarmLocation(localWindowSource, farmLocation), error: false };
+    return { source: undefined, error: localWindowSource.fazendaId === activeFarmId };
+  }, [localWindowSource, farmLocation, activeFarmId]);
 }
 
 function CentralExecutedEvents({ events: executedEvents, onOpen }: { events: SanitaryCentralExecutedEventV2[]; onOpen: () => void }) {
@@ -137,6 +148,19 @@ const ProtocolosSanitarios = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { activeFarmId, user } = useAuth();
+  const filterFarm = useRef(activeFarmId);
+  if (!filterFarm.current && activeFarmId) filterFarm.current = activeFarmId;
+  const sameFilterFarm = filterFarm.current === activeFarmId;
+  useEffect(() => {
+    if (filterFarm.current && activeFarmId && filterFarm.current !== activeFarmId) {
+      setSearchParams(current => {
+        const next = new URLSearchParams(current);
+        next.delete("animalId"); next.delete("loteId");
+        return next;
+      }, { replace: true });
+    }
+    if (activeFarmId) filterFarm.current = activeFarmId;
+  }, [activeFarmId, setSearchParams]);
   const currentFarm = useRef(activeFarmId);
   currentFarm.current = activeFarmId;
   const currentUser = useRef(user?.id);
@@ -145,8 +169,8 @@ const ProtocolosSanitarios = () => {
   const refreshPlanning = useCallback(() => setPlanningRevision((value) => value + 1), []);
   const { refresh, refreshing, refreshError } = useSanitaryPlanningRefreshV2(activeFarmId, refreshPlanning);
   const initialTab = readCentralSanitaryTab(searchParams.get("tab"));
-  const initialAnimalId = searchParams.get("animalId");
-  const initialLotId = searchParams.get("loteId");
+  const initialAnimalId = sameFilterFarm ? searchParams.get("animalId") : null;
+  const initialLotId = sameFilterFarm ? searchParams.get("loteId") : null;
   const initialLotContextId = initialAnimalId ? initialLotId : null;
   const [activeTab, setActiveTab] = useState(initialTab);
   const [historyFilters, setHistoryFilters] = useState({
@@ -165,7 +189,7 @@ const ProtocolosSanitarios = () => {
     () => (activeFarmId ? listLocalSanitaryAgendasV2(activeFarmId, db) : []),
     [activeFarmId, planningRevision],
   );
-  const windowSource = useFarmWindowSource(activeFarmId, planningRevision);
+  const { source: windowSource, error: windowReadError } = useFarmWindowSource(activeFarmId, planningRevision);
   const documentaryDate = new Date().toISOString().slice(0, 10);
   const documentaryPendencies = useMemo(() => activeTab === "historico" ? listSanitaryDocumentaryPendenciesV2({
     source: windowSource,
@@ -312,15 +336,24 @@ const ProtocolosSanitarios = () => {
         </TabsList>
 
         <TabsContent value="janelas">
-          <SanitaryProtocolWindowPanelV2
+          {windowReadError ? <div role="alert" className="space-y-3 rounded-lg border border-border p-4">
+            <p>Não foi possível consultar os dados sanitários locais. Tente novamente neste dispositivo.</p>
+            <Button type="button" variant="outline" onClick={refreshPlanning}>Tentar consulta novamente</Button>
+          </div> : <SanitaryContextualNeedsPanelV2
             key={activeFarmId}
             source={currentFarmSource(windowSource, activeFarmId)}
             initialAnimalId={initialAnimalId}
             initialLotId={initialLotId}
             initialLotContextId={initialLotContextId}
             onClearInitialFilter={clearInitialFilter}
+            onTargetChange={(animalId, lotId) => {
+              const next = new URLSearchParams(searchParams);
+              if (animalId) next.set("animalId", animalId); else next.delete("animalId");
+              if (lotId) next.set("loteId", lotId); else next.delete("loteId");
+              setSearchParams(next, { replace: true });
+            }}
             onPlan={planSelected}
-          />
+          />}
         </TabsContent>
 
         <TabsContent value="agenda">

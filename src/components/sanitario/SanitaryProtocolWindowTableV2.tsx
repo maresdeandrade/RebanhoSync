@@ -16,6 +16,10 @@ const SANITARY_WINDOW_STATUS_LABELS = {
   completed: "Já executado",
 } as const;
 
+export function SanitaryWindowStatusLabelV2({ status }: Pick<SanitaryProtocolWindowRowV2, "status">) {
+  return <>{SANITARY_WINDOW_STATUS_LABELS[status]}</>;
+}
+
 type Props = {
   rows: SanitaryProtocolWindowRowV2[];
   selectedIds: Set<string>;
@@ -108,8 +112,8 @@ export function SanitaryProtocolWindowTableV2({
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="w-full min-w-[1080px] text-left text-sm">
-        <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+      <table className="block w-full text-left text-sm md:table md:min-w-[1080px]">
+        <thead className="hidden bg-muted/50 text-xs uppercase text-muted-foreground md:table-header-group">
           <tr>
             <th className="w-12 px-3 py-3">
               <Checkbox
@@ -130,15 +134,15 @@ export function SanitaryProtocolWindowTableV2({
           </tr>
         </thead>
         {groups.map((group) => (
-          <tbody key={group.label} className="divide-y divide-border">
-              <tr className="bg-muted/30">
-                <th colSpan={9} className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <tbody key={group.label} className="block divide-y divide-border md:table-row-group">
+              <tr className="block bg-muted/30 md:table-row">
+                <th colSpan={9} className="block px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">
                   {group.label} ({group.rows.length})
                 </th>
               </tr>
               {group.rows.map((row) => (
-              <tr key={row.animalId} className="align-top">
-              <td className="px-3 py-4">
+              <tr key={row.animalId} className="block align-top md:table-row">
+              <td className="block px-3 py-2 md:table-cell md:py-4">
                 <Checkbox
                   aria-label={`Selecionar ${row.identification}`}
                   checked={selectedIds.has(row.animalId)}
@@ -148,32 +152,32 @@ export function SanitaryProtocolWindowTableV2({
                   }
                 />
               </td>
-              <td className="px-3 py-4 font-medium">
+              <td className="block px-3 py-2 md:table-cell md:py-4 font-medium">
                 <Link className="inline-flex items-center gap-1 text-primary hover:underline" to={row.animalHref}>
                   {row.identification}<ExternalLink className="h-3.5 w-3.5" />
                 </Link>
               </td>
-              <td className="px-3 py-4">
+              <td className="block px-3 py-2 md:table-cell md:py-4">
                 {row.lotHref ? (
                   <Link className="inline-flex items-center gap-1 text-primary hover:underline" to={row.lotHref}>
                     {row.lotLabel}<ExternalLink className="h-3.5 w-3.5" />
                   </Link>
                 ) : row.lotLabel}
               </td>
-              <td className="px-3 py-4"><div>{row.sexLabel}</div><div className="text-muted-foreground">{row.ageLabel}</div></td>
-              <td className="px-3 py-4">{row.categoryLabel}</td>
-              <td className="px-3 py-4"><div>{row.protocolLabel}</div><div className="text-muted-foreground">{row.itemLabel}</div></td>
-              <td className="px-3 py-4">
+              <td className="block px-3 py-2 md:table-cell md:py-4"><div>{row.sexLabel}</div><div className="text-muted-foreground">{row.ageLabel}</div></td>
+              <td className="block px-3 py-2 md:table-cell md:py-4">{row.categoryLabel}</td>
+              <td className="block px-3 py-2 md:table-cell md:py-4"><div>{row.protocolLabel}</div><div className="text-muted-foreground">{row.itemLabel}</div></td>
+              <td className="block px-3 py-2 md:table-cell md:py-4">
                 <Badge variant={row.canSelect ? "default" : "secondary"}>{statusLabel(row)}</Badge>
               </td>
-              <td className="max-w-sm px-3 py-4">
+              <td className="block px-3 py-2 md:table-cell md:max-w-sm md:py-4">
                 <div>{row.reason}</div>
                 {row.blockers[0] ? <div className="mt-1 text-xs text-destructive">{row.blockers[0]}</div> : null}
                 {row.documentaryPendingReasons[0] ? <div className="mt-1 text-xs text-amber-700">{row.documentaryPendingReasons[0]}</div> : null}
                 {row.warnings[0] ? <div className="mt-1 text-xs text-muted-foreground">{row.warnings[0]}</div> : null}
                 <ContextResolutionDetailsV2 row={row} />
               </td>
-              <td className="px-3 py-4 text-muted-foreground">
+              <td className="block px-3 py-2 md:table-cell md:py-4 text-muted-foreground">
                 {row.plannedFor ? row.plannedFor.split("-").reverse().join("/") : "Sem agenda aberta"}
               </td>
               </tr>
@@ -185,7 +189,7 @@ export function SanitaryProtocolWindowTableV2({
   );
 }
 
-function ContextResolutionDetailsV2({ row }: { row: SanitaryProtocolWindowRowV2 }) {
+export function ContextResolutionDetailsV2({ row }: { row: SanitaryProtocolWindowRowV2 }) {
   const resolution = row.contextResolution;
   if (!resolution) return null;
   const facts = [["Idade em dias", resolution.ageDays], ["Sexo", resolution.sex], ["Lote", resolution.lotId],
@@ -194,6 +198,16 @@ function ContextResolutionDetailsV2({ row }: { row: SanitaryProtocolWindowRowV2 
     ["Risco", resolution.risk], ["Cadência", resolution.cadence]] as const;
   return <details className="mt-2 text-xs"><summary>Contexto individual e fontes</summary><dl className="space-y-2 py-2">
     {facts.map(([label, fact]) => <div key={label}><dt className="font-medium">{label}: {fact.status === "known" ? "Conhecido" : fact.status === "contradictory" ? "Contraditório" : "Desconhecido"}</dt>
-      <dd>{fact.reason} {fact.sources.length ? `Fontes: ${fact.sources.join(", ")}` : ""}</dd></div>)}
+      <dd>{fact.reason} {fact.sources.length ? `Fontes: ${[...new Set(fact.sources.map(contextSourceLabel))].join(", ")}` : ""}</dd></div>)}
   </dl></details>;
+}
+
+function contextSourceLabel(reference: string) {
+  const kind = reference.split(":")[0];
+  const labels: Record<string, string> = {
+    animais: "Cadastro do animal", lotes: "Cadastro do lote", eventos: "Histórico de eventos",
+    event: "Evento documentado", item: "Versão técnica do item", agenda: "Agenda de manejo",
+    contexto_declarado: "Contexto declarado", contexto_programado: "Manejo programado",
+  };
+  return labels[kind] ?? "Registro local referenciado";
 }

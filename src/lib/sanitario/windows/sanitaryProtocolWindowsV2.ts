@@ -552,6 +552,9 @@ export function buildSanitaryProtocolWindowV2(input: {
 
   const rows = input.source.animals
     .filter((animal) => !animal.deleted_at && (!input.source.fazendaId || animal.fazenda_id === input.source.fazendaId))
+    .filter(animal => (filters.animalId === "todos" || animal.id === filters.animalId) &&
+      (filters.lotId === "todos" || animal.lote_id === filters.lotId) &&
+      (filters.animalStatus === "todos" || animal.status === filters.animalStatus))
     .map((animal): SanitaryProtocolWindowRowV2 | null => {
       const contextResolution = resolveSanitaryAnimalContextV2({ animal, source: input.source, item, evaluatedAt: input.evaluatedAt, declared: operationalContext });
       const animalContext = contextResolution.context;
@@ -731,6 +734,27 @@ export function buildSanitaryProtocolWindowV2(input: {
     );
 
   return { protocol, item, evaluatedAt: input.evaluatedAt, rows };
+}
+
+// Discovery only aggregates the existing window/precheck contract. Keep the full
+// history (including maternal evidence), but evaluate animals of one target only.
+export function buildSanitaryContextualNeedsV2(input: {
+  source: SanitaryProtocolWindowSourceV2;
+  evaluatedAt: string;
+  animalId?: string | null;
+  lotId?: string | null;
+}): SanitaryProtocolWindowRowV2[] {
+  if (!input.animalId && !input.lotId) return [];
+  const animals = input.source.animals.filter(animal =>
+    !animal.deleted_at && animal.status === "ativo" &&
+    (!input.source.fazendaId || animal.fazenda_id === input.source.fazendaId) &&
+    (input.animalId ? animal.id === input.animalId : animal.lote_id === input.lotId));
+  if (!animals.length) return [];
+  const source = { ...input.source, animals };
+  return source.catalog.items.flatMap(item => buildSanitaryProtocolWindowV2({
+    source, protocolId: item.protocolId, itemId: item.id,
+    evaluatedAt: input.evaluatedAt,
+  })?.rows ?? []);
 }
 
 export type SanitaryDocumentaryPendencyV2 = {

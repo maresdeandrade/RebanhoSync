@@ -10,6 +10,7 @@ import type {
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import {
   buildSanitaryProtocolWindowV2,
+  buildSanitaryContextualNeedsV2,
   loadSanitaryProtocolWindowSourceV2,
   createGroupedManualSanitaryAgendasV2,
   type SanitaryProtocolWindowSourceV2,
@@ -389,6 +390,21 @@ const technicalProduct = {
 } as import("@/lib/offline/types").SanitarioProdutoLocalV2;
 
 describe("sanitaryProtocolWindowsV2", () => {
+  it("descobre itens entre protocolos apenas para o alvo sem promover bloqueios", () => {
+    const rows = buildSanitaryContextualNeedsV2({ source: source(), evaluatedAt: "2026-07-04", animalId: "female" });
+    expect(new Set(rows.map(row => row.animalId))).toEqual(new Set(["female"]));
+    expect(rows.find(row => row.itemId === "item-b19")?.canSelect).toBe(true);
+    expect(rows.find(row => row.itemId === "item-raiva")).toMatchObject({ status: "insufficient_data", canSelect: false });
+    expect(rows.find(row => row.itemId === "item-aftosa")?.canSelect).toBe(false);
+  });
+
+  it("não avalia rebanho inteiro sem alvo e isola animal/lote por fazenda", () => {
+    const scoped = source({ fazendaId: "farm-1", animals: [animal("female", "F", "2026-03-01"), { ...animal("foreign", "F", "2026-03-01"), fazenda_id: "farm-2" }] });
+    expect(buildSanitaryContextualNeedsV2({ source: scoped, evaluatedAt: "2026-07-04" })).toEqual([]);
+    expect(buildSanitaryContextualNeedsV2({ source: scoped, evaluatedAt: "2026-07-04", animalId: "foreign" })).toEqual([]);
+    const rows = buildSanitaryContextualNeedsV2({ source: scoped, evaluatedAt: "2026-07-04", lotId: lot.id });
+    expect(new Set(rows.map(row => row.animalId))).toEqual(new Set(["female"]));
+  });
   beforeEach(async () => {
     await db.open();
     await clearOperationalTables();
