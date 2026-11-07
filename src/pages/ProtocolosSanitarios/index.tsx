@@ -1,8 +1,8 @@
 import { SanitaryAgendaCollaborationV3 } from "@/components/sanitario/SanitaryAgendaCollaborationV3";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BookOpenCheck, CalendarClock, History, ShieldCheck } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, type SetURLSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/ui/empty-state";
@@ -144,23 +144,33 @@ function CentralDocumentaryPendencies({ rows: filteredPendencies }: { rows: Sani
                 )}</>;
 }
 
-const ProtocolosSanitarios = () => {
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { activeFarmId, user } = useAuth();
+function sanitaryTargetSearchParams(current: URLSearchParams, animalId: string | null, lotId: string | null) {
+  const next = new URLSearchParams(current);
+  if (animalId) next.set("animalId", animalId); else next.delete("animalId");
+  if (lotId) next.set("loteId", lotId); else next.delete("loteId");
+  return next;
+}
+
+function useFarmSanitaryFilters(activeFarmId: string | null, searchParams: URLSearchParams, setSearchParams: SetURLSearchParams) {
   const filterFarm = useRef(activeFarmId);
   if (!filterFarm.current && activeFarmId) filterFarm.current = activeFarmId;
   const sameFilterFarm = filterFarm.current === activeFarmId;
   useEffect(() => {
     if (filterFarm.current && activeFarmId && filterFarm.current !== activeFarmId) {
-      setSearchParams(current => {
-        const next = new URLSearchParams(current);
-        next.delete("animalId"); next.delete("loteId");
-        return next;
-      }, { replace: true });
+      setSearchParams(current => sanitaryTargetSearchParams(current, null, null), { replace: true });
     }
     if (activeFarmId) filterFarm.current = activeFarmId;
   }, [activeFarmId, setSearchParams]);
+  const animalId = sameFilterFarm ? searchParams.get("animalId") : null;
+  const lotId = sameFilterFarm ? searchParams.get("loteId") : null;
+  return { animalId, lotId, lotContextId: animalId ? lotId : null };
+}
+
+const ProtocolosSanitarios = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { activeFarmId, user } = useAuth();
+  const { animalId: initialAnimalId, lotId: initialLotId, lotContextId: initialLotContextId } = useFarmSanitaryFilters(activeFarmId, searchParams, setSearchParams);
   const currentFarm = useRef(activeFarmId);
   currentFarm.current = activeFarmId;
   const currentUser = useRef(user?.id);
@@ -169,9 +179,6 @@ const ProtocolosSanitarios = () => {
   const refreshPlanning = useCallback(() => setPlanningRevision((value) => value + 1), []);
   const { refresh, refreshing, refreshError } = useSanitaryPlanningRefreshV2(activeFarmId, refreshPlanning);
   const initialTab = readCentralSanitaryTab(searchParams.get("tab"));
-  const initialAnimalId = sameFilterFarm ? searchParams.get("animalId") : null;
-  const initialLotId = sameFilterFarm ? searchParams.get("loteId") : null;
-  const initialLotContextId = initialAnimalId ? initialLotId : null;
   const [activeTab, setActiveTab] = useState(initialTab);
   const [historyFilters, setHistoryFilters] = useState({
     text: "",
@@ -234,10 +241,7 @@ const ProtocolosSanitarios = () => {
   });
 
   const clearInitialFilter = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete("animalId");
-    next.delete("loteId");
-    setSearchParams(next, { replace: true });
+    setSearchParams(sanitaryTargetSearchParams(searchParams, null, null), { replace: true });
   };
 
   if (!activeFarmId) {
@@ -336,10 +340,8 @@ const ProtocolosSanitarios = () => {
         </TabsList>
 
         <TabsContent value="janelas">
-          {windowReadError ? <div role="alert" className="space-y-3 rounded-lg border border-border p-4">
-            <p>Não foi possível consultar os dados sanitários locais. Tente novamente neste dispositivo.</p>
-            <Button type="button" variant="outline" onClick={refreshPlanning}>Tentar consulta novamente</Button>
-          </div> : <SanitaryContextualNeedsPanelV2
+          <WindowReadState failed={windowReadError} onRetry={refreshPlanning}>
+          <SanitaryContextualNeedsPanelV2
             key={activeFarmId}
             source={currentFarmSource(windowSource, activeFarmId)}
             initialAnimalId={initialAnimalId}
@@ -347,13 +349,11 @@ const ProtocolosSanitarios = () => {
             initialLotContextId={initialLotContextId}
             onClearInitialFilter={clearInitialFilter}
             onTargetChange={(animalId, lotId) => {
-              const next = new URLSearchParams(searchParams);
-              if (animalId) next.set("animalId", animalId); else next.delete("animalId");
-              if (lotId) next.set("loteId", lotId); else next.delete("loteId");
-              setSearchParams(next, { replace: true });
+              setSearchParams(sanitaryTargetSearchParams(searchParams, animalId, lotId), { replace: true });
             }}
             onPlan={planSelected}
-          />}
+          />
+          </WindowReadState>
         </TabsContent>
 
         <TabsContent value="agenda">
@@ -441,6 +441,14 @@ const ProtocolosSanitarios = () => {
     </PageContainer>
   );
 };
+
+function WindowReadState({ failed, onRetry, children }: { failed: boolean; onRetry: () => void; children: ReactNode }) {
+  if (!failed) return children;
+  return <div role="alert" className="space-y-3 rounded-lg border border-border p-4">
+    <p>Não foi possível consultar os dados sanitários locais. Tente novamente neste dispositivo.</p>
+    <Button type="button" variant="outline" onClick={onRetry}>Tentar consulta novamente</Button>
+  </div>;
+}
 
 function CatalogRefreshControls({ refreshing, refresh, refreshError }: {
   refreshing: boolean; refresh: () => void; refreshError: string | null;

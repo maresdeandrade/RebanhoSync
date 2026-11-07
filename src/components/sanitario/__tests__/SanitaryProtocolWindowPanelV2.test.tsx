@@ -65,6 +65,24 @@ const source: SanitaryProtocolWindowSourceV2 = {
 };
 
 describe("SanitaryProtocolWindowPanelV2", () => {
+  it("isola seleção e complemento técnico ao alternar necessidades de protocolos diferentes", async () => {
+    const onPlan = vi.fn().mockResolvedValue(undefined);
+    render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={source} onPlan={onPlan} initialAnimalId="female" /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
+    fireEvent.click(within(screen.getByRole("article", { name: /Raiva dos herbívoros/ })).getByRole("button", { name: "Consultar limitações e complementos" }));
+    fireEvent.change(screen.getByLabelText("Área de risco para raiva"), { target: { value: "yes" } });
+    fireEvent.click(screen.getByLabelText("Selecionar Fêmea 101"));
+    fireEvent.click(screen.getByRole("button", { name: "Voltar às necessidades" }));
+    fireEvent.click(within(screen.getByRole("article", { name: /Brucelose B19/ })).getByRole("button", { name: "Planejar manejo" }));
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).not.toBeChecked();
+    expect(screen.queryByLabelText("Área de risco para raiva")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Selecionar Fêmea 101"));
+    fireEvent.click(screen.getByRole("button", { name: "Planejar agenda para selecionados" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar e gerar Agenda" }));
+    await waitFor(() => expect(onPlan).toHaveBeenCalledTimes(1));
+    expect(onPlan.mock.calls[0][0]).toEqual([expect.objectContaining({ animalId: "female", protocolId: "protocol-b19", itemId: "item-b19" })]);
+    expect(onPlan.mock.calls[0][2].rabiesRiskArea).toBeNull();
+  });
   it("descobre necessidades sem protocolo e abre revisão apenas para planejáveis", async () => {
     const onPlan = vi.fn().mockResolvedValue(undefined);
     render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={source} onPlan={onPlan} initialAnimalId="female" /></MemoryRouter>);
