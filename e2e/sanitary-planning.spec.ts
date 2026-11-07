@@ -57,6 +57,7 @@ async function prepare(page: Page, api?: (route: Route, unexpected: string[]) =>
 }
 
 async function selectProtocol(page: Page) {
+  await page.getByRole("button", { name: "Consultar por protocolo", exact: true }).click();
   await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(protocol);
   await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(item);
 }
@@ -66,6 +67,7 @@ async function openHomologated(page: Page) {
   await page.goto("/select-fazenda?homologado");
   await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
   await expect(page.getByRole("heading", { name: "Central Sanitária", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Consultar por protocolo", exact: true }).click();
   return unexpected;
 }
 
@@ -258,6 +260,53 @@ async function counts(page: Page) {
     return { agendas: await db.ops_sanitario_agenda_v2.count(), events: await db.event_eventos.count(),
       movements: await db.state_insumo_movimentacoes.count(), queue: await db.queue_ops.count(), products: await db.catalog_sanitario_produtos_v2.count() };
   });
+}
+
+for (const width of [390, 1280]) {
+test(`necessidades contextuais → revisão → Agenda local em ${width}px, offline e sem duplicação`, async ({ page, context }) => {
+  const unexpected = await prepare(page);
+  await page.setViewportSize({ width, height: 844 });
+  await page.goto("/select-fazenda");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await expect(page.getByRole("button", { name: "Ver necessidades", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByLabel("Lote das necessidades", { exact: true }).selectOption("lot-test");
+  await expect(page).toHaveURL(/loteId=lot-test/);
+  const need = page.getByRole("article", { name: /Brucelose B19/ });
+  await expect(need).toContainText("Bezerra teste 101");
+  await expect(need).toContainText("Bezerro teste 201");
+  await context.setOffline(true);
+  await expect(page.getByText(/Offline: consulta local disponível/)).toBeVisible();
+  await need.getByRole("button", { name: "Planejar manejo", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByLabel("Área de risco para raiva", { exact: true })).toHaveCount(0);
+  const layout = await page.evaluate(() => ({ viewport: window.innerWidth, documentWidth: document.documentElement.scrollWidth,
+    overflowing: Array.from(document.querySelectorAll("button, input, select, table")).filter(element => element.getBoundingClientRect().right > window.innerWidth + 1).map(element => ({ tag: element.tagName, label: element.textContent?.slice(0, 80), right: element.getBoundingClientRect().right })) }));
+  expect(layout.documentWidth, JSON.stringify(layout)).toBeLessThanOrEqual(layout.viewport);
+  await page.screenshot({ path: `scratch/sanitary-contextual-${width}.png`, fullPage: true });
+  await page.getByLabel("Selecionar Bezerra teste 101", { exact: true }).check();
+  await expect(page.getByLabel("Selecionar Bezerro teste 201", { exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Planejar agenda para selecionados", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("Bezerra teste 101");
+  expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0 });
+  await page.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("Agenda sanitária salva localmente. Sem confirmação remota.", { exact: true })).toBeVisible();
+  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0, queue: 0 });
+  await page.getByRole("tab", { name: "Janelas sanitárias", exact: true }).click();
+  await expect(page.getByRole("article", { name: /Brucelose B19/ })).toContainText("Agenda existente");
+  await page.getByRole("article", { name: /Brucelose B19/ }).getByRole("button", { name: "Planejar manejo", exact: true }).click();
+  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeDisabled();
+  await context.setOffline(false);
+  await page.reload();
+  await expect(page.getByRole("article", { name: /Brucelose B19/ })).toContainText("Agenda existente");
+  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole("link", { name: "Trocar fazenda", exact: true }).click();
+  await page.getByRole("button").filter({ hasText: "Outra fazenda" }).click();
+  await expect(page.getByLabel("Lote das necessidades", { exact: true })).toHaveValue("");
+  await expect(page.getByRole("article")).toHaveCount(0);
+  expect(unexpected).toEqual([]);
+});
 }
 
 type RecoveryWindow = Window & {

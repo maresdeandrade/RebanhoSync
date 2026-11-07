@@ -8,6 +8,7 @@ import {
 } from "../../catalog/sanitaryProtocolCatalogV2";
 import {
   buildSanitaryProtocolWindowV2,
+  buildSanitaryContextualNeedsV2,
   createGroupedManualSanitaryAgendasV2,
   loadSanitaryProtocolWindowSourceV2,
   EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2,
@@ -154,6 +155,17 @@ const resolve = (
   });
 
 describe("resolução contextual sanitária por animal", () => {
+  it("descoberta do lote preserva resolução conhecida, desconhecida e contraditória por animal", () => {
+    const events = [...reproduction(), ...reproduction("conflict").map(event => ({ ...event, id: `conflict-${event.id}`, details: event.details?.tipo === "diagnostico" ? { ...event.details, payload: { ...event.details.payload, episode_evento_id: "conflict-service" } } : event.details }))];
+    const local = source({
+      animals: [animal(), animal("unknown"), animal("conflict", { payload: { taxonomy_facts: { schema_version: 1, prenhez_confirmada: false } } })],
+      reproductiveEvents: events,
+    });
+    const rows = buildSanitaryContextualNeedsV2({ source: local, evaluatedAt: "2026-07-04", lotId: "lot" });
+    expect(rows.find(row => row.animalId === "matrix")).toMatchObject({ canSelect: true, contextResolution: { reproduction: { status: "known" } } });
+    expect(rows.find(row => row.animalId === "unknown")).toMatchObject({ canSelect: false, contextResolution: { reproduction: { status: "unknown" } } });
+    expect(rows.find(row => row.animalId === "conflict")).toMatchObject({ canSelect: false, contextResolution: { reproduction: { status: "contradictory" } } });
+  });
   async function seedContextTargets(
     targets: Animal[],
     events: ReproductiveProjectionEvent[],

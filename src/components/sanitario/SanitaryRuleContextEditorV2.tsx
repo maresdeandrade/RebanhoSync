@@ -29,12 +29,12 @@ export function SanitaryRuleContextEditorV2({ item, source, context, onChange, h
   </details>;
 }
 
-export function SanitaryContextRequirementsV2({ item, source, context, onChange, hideScheduled = false }: Pick<Props, "item" | "source" | "context" | "onChange"> & { hideScheduled?: boolean }) {
+export function SanitaryContextRequirementsV2({ item, source, context, onChange, hideScheduled = false, targetAnimalIds }: Pick<Props, "item" | "source" | "context" | "onChange"> & { hideScheduled?: boolean; targetAnimalIds?: string[] }) {
   const months = item.operationalWindowRule.calendar_months;
   return <>
     {item.eligibilityRule.requires_mv_or_management_context ? <PreWeaningBasisFields context={context} onChange={onChange} /> : null}
     {Array.isArray(months) ? <RegionalCalendarField source={source} context={context} onChange={onChange} months={months} label={formatSanitaryProtocolItemLabelV2(item.logicalItemKey)} /> : null}
-    {!hideScheduled && sanitaryRequiresScheduledContextV2(item) ? <ScheduledContextFields source={source} context={context} onChange={onChange} /> : null}
+    {!hideScheduled && sanitaryRequiresScheduledContextV2(item) ? <ScheduledContextFields source={source} context={context} onChange={onChange} targetAnimalIds={targetAnimalIds} /> : null}
   </>;
 }
 
@@ -64,8 +64,8 @@ function PreWeaningBasisFields({ context, onChange }: Pick<Props, "context" | "o
   </fieldset>;
 }
 
-function ScheduledContextFields({ source, context, onChange }: Pick<Props, "source" | "context" | "onChange">) {
-  const scheduled = context.scheduledContext ?? { date: "", reference: "", animalIds: [] };
+function ScheduledContextFields({ source, context, onChange, targetAnimalIds }: Pick<Props, "source" | "context" | "onChange"> & { targetAnimalIds?: string[] }) {
+  const scheduled = context.scheduledContext ?? { date: "", reference: "", animalIds: targetAnimalIds ?? [] };
   const update = (value: Partial<typeof scheduled>) => onChange({ ...context, scheduledContext: { ...scheduled, ...value } });
   return <fieldset className="space-y-2 py-2">
     <legend>Entrada/manejo ou avaliação pré-parto programada</legend>
@@ -74,11 +74,11 @@ function ScheduledContextFields({ source, context, onChange }: Pick<Props, "sour
       onChange={(event) => update({ date: event.target.value })} className="ml-2 rounded border border-border bg-background p-2" /></label>
     <label className="block">Referência do contexto<input aria-label="Referência do contexto programado" value={scheduled.reference}
       onChange={(event) => update({ reference: event.target.value })} className="ml-2 rounded border border-border bg-background p-2" /></label>
-    <label className="block">Animais deste contexto<select multiple aria-label="Animais do contexto programado" value={scheduled.animalIds}
+    {targetAnimalIds ? <p>Animais deste contexto: {source?.animals.filter(animal => targetAnimalIds.includes(animal.id)).map(animal => animal.nome || animal.identificacao).join(", ")}</p> : <label className="block">Animais deste contexto<select multiple aria-label="Animais do contexto programado" value={scheduled.animalIds}
       onChange={(event) => update({ animalIds: Array.from(event.target.selectedOptions, (option) => option.value) })}
       className="block min-h-24 w-full rounded border border-border bg-background p-2">
       {source?.animals.filter((animal) => animal.status === "ativo" && !animal.deleted_at).map((animal) =>
         <option key={animal.id} value={animal.id}>{animal.nome || animal.identificacao}</option>)}
-    </select></label>
+    </select></label>}
   </fieldset>;
 }

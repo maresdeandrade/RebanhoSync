@@ -45,7 +45,7 @@ function rabiesTechnicalBlockers(input: Parameters<typeof sanitaryContextualPlan
   const birth = input.animalBirthDate;
   if (!birth || !validRabiesBirth(birth, input.evaluatedAt))
     return ["Nascimento válido necessário para identificar avaliação específica em menores de três meses."];
-  if (requiresRabiesAssessment(input.item, birth, input.evaluatedAt) && !confirmedRabiesAssessment(input.context))
+  if (sanitaryRequiresRabiesAssessmentV2(input.item, birth, input.evaluatedAt) && !confirmedRabiesAssessment(input.context))
     return ["Esta indicação exige confirmação técnica e identificação do responsável; menores de três meses exigem avaliação específica."];
   return [];
 }
@@ -59,7 +59,7 @@ function confirmedRabiesAssessment(context: SanitaryRuleContextDetailsV2) {
   return assessment?.confirmed && Boolean(assessment.responsibleReference.trim());
 }
 
-function requiresRabiesAssessment(item: SanitaryProtocolItemV2ReadModel, birth: string, evaluatedAt: string) {
+export function sanitaryRequiresRabiesAssessmentV2(item: SanitaryProtocolItemV2ReadModel, birth: string, evaluatedAt: string) {
   const at = new Date(`${evaluatedAt}T00:00:00Z`);
   const birthDate = new Date(`${birth}T00:00:00Z`);
   const ageMonths = (at.getUTCFullYear() - birthDate.getUTCFullYear()) * 12 + at.getUTCMonth() - birthDate.getUTCMonth()
