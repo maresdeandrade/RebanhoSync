@@ -40,11 +40,25 @@ export function reviewSanitaryPlanningDateV2(input: {
     const key = JSON.stringify([original.protocolId, original.itemId, original.generationMode]);
     if (!evaluations.has(key)) evaluations.set(key, buildSanitaryProtocolWindowV2({ source: input.source, protocolId: original.protocolId, itemId: original.itemId, evaluatedAt: input.plannedFor, operationalContext: input.context, generationMode: original.generationMode })?.rows ?? []);
     const fresh = evaluations.get(key)!.find(row => row.animalId === original.animalId);
-    if (!fresh || fresh.lotId !== original.lotId || (original.planningKind && fresh.planningKind !== original.planningKind)) return { original, fresh, situation: "reevaluate", label: "Necessita de nova avaliação", reason: "Alvo, lote ou tipo de planejamento alterado. Retorne à seleção." };
-    if (fresh.alreadyPlanned) return { original, fresh, situation: "existing", label: "Agenda equivalente existente", reason: fresh.plannedFor ? `Agenda prevista: ${fresh.plannedFor}` : fresh.reason };
-    if (fresh.blockers.length) return { original, fresh, situation: "incompatible", label: "Incompatível com a data", reason: fresh.blockers[0] };
-    if (fresh.status === "insufficient_data" || fresh.documentaryPending || fresh.precheck.missingExecutedHistory) return { original, fresh, situation: "reevaluate", label: "Necessita de nova avaliação", reason: fresh.documentaryPendingReasons[0] ?? fresh.reason };
-    if (!fresh.canSelect || fresh.status === "eligible_soon") return { original, fresh, situation: "incompatible", label: "Incompatível com a data", reason: fresh.reason };
-    return { original, fresh, situation: "compatible", label: "Compatível com a data", reason: fresh.reason };
+    return reviewPlanningSelection(original, fresh);
   });
+}
+
+function reviewPlanningSelection(original: SanitaryProtocolWindowRowV2, fresh?: SanitaryProtocolWindowRowV2): SanitaryDateReviewV2 {
+  if (!fresh || fresh.lotId !== original.lotId || (original.planningKind && fresh.planningKind !== original.planningKind)) {
+    return { original, fresh, situation: "reevaluate", label: "Necessita de nova avaliação", reason: "Alvo, lote ou tipo de planejamento alterado. Retorne à seleção." };
+  }
+  return reviewFreshPlanningRow(original, fresh);
+}
+
+function reviewFreshPlanningRow(original: SanitaryProtocolWindowRowV2, fresh: SanitaryProtocolWindowRowV2): SanitaryDateReviewV2 {
+  if (fresh.alreadyPlanned) return { original, fresh, situation: "existing", label: "Agenda equivalente existente", reason: fresh.plannedFor ? `Agenda prevista: ${fresh.plannedFor}` : fresh.reason };
+  if (fresh.blockers.length) return { original, fresh, situation: "incompatible", label: "Incompatível com a data", reason: fresh.blockers[0] };
+  if (hasInsufficientPlanningEvidence(fresh)) return { original, fresh, situation: "reevaluate", label: "Necessita de nova avaliação", reason: fresh.documentaryPendingReasons[0] ?? fresh.reason };
+  if (!fresh.canSelect || fresh.status === "eligible_soon") return { original, fresh, situation: "incompatible", label: "Incompatível com a data", reason: fresh.reason };
+  return { original, fresh, situation: "compatible", label: "Compatível com a data", reason: fresh.reason };
+}
+
+function hasInsufficientPlanningEvidence(row: SanitaryProtocolWindowRowV2) {
+  return row.status === "insufficient_data" || row.documentaryPending || row.precheck.missingExecutedHistory;
 }
