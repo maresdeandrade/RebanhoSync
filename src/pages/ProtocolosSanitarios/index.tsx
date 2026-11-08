@@ -4,6 +4,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { BookOpenCheck, CalendarClock, History, ShieldCheck } from "lucide-react";
 import { Link, useNavigate, useSearchParams, type SetURLSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
@@ -197,7 +198,7 @@ const ProtocolosSanitarios = () => {
     [activeFarmId, planningRevision],
   );
   const { source: windowSource, error: windowReadError } = useFarmWindowSource(activeFarmId, planningRevision);
-  const documentaryDate = new Date().toISOString().slice(0, 10);
+  const documentaryDate = format(new Date(), "yyyy-MM-dd");
   const documentaryPendencies = useMemo(() => activeTab === "historico" ? listSanitaryDocumentaryPendenciesV2({
     source: windowSource,
     evaluatedAt: documentaryDate,
@@ -328,11 +329,14 @@ const ProtocolosSanitarios = () => {
         meta={<><StatusBadge tone="info">Local e offline</StatusBadge><StatusBadge tone="neutral">Execução explícita</StatusBadge></>}
       />
 
-      <CatalogRefreshControls refreshing={refreshing} refresh={refresh} refreshError={refreshError} />
-      <SanitaryAutomaticPlanPanelV2 key={activeFarmId} fazendaId={activeFarmId} actorId={automationActor(user)} source={currentFarmSource(windowSource, activeFarmId)} />
+      <details className="space-y-3 rounded-lg border border-border p-3">
+        <summary className="cursor-pointer text-sm font-medium">Catálogo e configuração automática</summary>
+        <CatalogRefreshControls refreshing={refreshing} refresh={refresh} refreshError={refreshError} />
+        <SanitaryAutomaticPlanPanelV2 key={activeFarmId} fazendaId={activeFarmId} actorId={automationActor(user)} source={currentFarmSource(windowSource, activeFarmId)} />
+      </details>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="h-auto flex-wrap justify-start">
-          <TabsTrigger value="janelas"><CalendarClock className="mr-2 h-4 w-4" />Janelas sanitárias</TabsTrigger>
+          <TabsTrigger value="janelas"><CalendarClock className="mr-2 h-4 w-4" />Avaliação sanitária</TabsTrigger>
           <TabsTrigger value="agenda"><CalendarClock className="mr-2 h-4 w-4" />Agenda sanitária</TabsTrigger>
           <TabsTrigger value="historico"><History className="mr-2 h-4 w-4" />Histórico sanitário</TabsTrigger>
           <TabsTrigger value="catalogo"><BookOpenCheck className="mr-2 h-4 w-4" />Catálogo sanitário</TabsTrigger>

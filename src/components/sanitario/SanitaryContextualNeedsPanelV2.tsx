@@ -4,12 +4,13 @@ import { buildSanitaryContextualNeedsV2 } from "@/lib/sanitario/windows/sanitary
 import { SanitaryProtocolWindowPanelV2 } from "./SanitaryProtocolWindowPanelV2";
 import { SanitaryNeedsDiscoveryV2, type SanitaryNeedsTargetV2 } from "./SanitaryNeedsDiscoveryV2";
 import type { SanitaryNeedGroupV2 } from "./SanitaryNeedCardV2";
+import { format } from "date-fns";
 
 type Props = ComponentProps<typeof SanitaryProtocolWindowPanelV2> & {
   onTargetChange?: (animalId: string | null, lotId: string | null) => void;
 };
 type Mode = "needs" | "technical";
-const modes = [{ value: "needs", label: "Ver necessidades" }, { value: "technical", label: "Consultar por protocolo" }] as const;
+const modes = [{ value: "needs", label: "Por animal" }, { value: "technical", label: "Por protocolo" }] as const;
 
 export function SanitaryContextualNeedsPanelV2(props: Props) {
   return <ContextualNeeds key={props.source?.fazendaId ?? "loading"} {...props} />;
@@ -23,7 +24,7 @@ function ContextualNeeds(props: Props) {
   const { source, initialAnimalId, initialLotId, onTargetChange } = props;
   const [mode, setMode] = useState<Mode>("needs");
   const [target, setTarget] = useState(() => initialTarget(initialAnimalId, initialLotId));
-  const [evaluatedAt, setEvaluatedAt] = useState(() => new Date().toISOString().slice(0, 10));
+  const [evaluatedAt, setEvaluatedAt] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   useEffect(() => {
     setTarget(initialTarget(initialAnimalId, initialLotId));
@@ -44,6 +45,7 @@ function ContextualNeeds(props: Props) {
       {modes.map(entry => <Button key={entry.value} type="button" variant={mode === entry.value ? "default" : "outline"} aria-pressed={mode === entry.value} onClick={() => changeMode(entry.value)}>{entry.label}</Button>)}
     </div>
     <ConnectionStatus />
+    <p className="text-sm text-muted-foreground">A data consulta os registros disponíveis hoje. Consultas retrospectivas não reconstroem integralmente o estado histórico do rebanho.</p>
     <NeedsJourney props={props} mode={mode} target={target} evaluatedAt={evaluatedAt} selected={groups.find(group => group.itemId === selectedItem)} onBack={() => setSelectedItem(null)}>
       <SanitaryNeedsDiscoveryV2 source={source} target={target} evaluatedAt={evaluatedAt} groups={groups} initialLotContextId={props.initialLotContextId}
         onTargetChange={changeTarget} onDateChange={setEvaluatedAt} onChooseItem={setSelectedItem} onClearInitialFilter={props.onClearInitialFilter} />
@@ -56,7 +58,7 @@ function NeedsJourney({ props, mode, target, evaluatedAt, selected, onBack, chil
   selected?: SanitaryNeedGroupV2; onBack: () => void; children: ReactNode;
 }) {
   const panelProps = { ...props, initialAnimalId: target.animalId || null, initialLotId: target.lotId || null };
-  if (mode === "technical") return <SanitaryProtocolWindowPanelV2 {...panelProps} />;
+  if (mode === "technical") return <SanitaryProtocolWindowPanelV2 {...panelProps} initialEvaluatedAt={evaluatedAt} />;
   if (!selected) return children;
   return <>
     <Button type="button" variant="outline" onClick={onBack}>Voltar às necessidades</Button>

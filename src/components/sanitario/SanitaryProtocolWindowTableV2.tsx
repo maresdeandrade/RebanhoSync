@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { SanitaryProtocolWindowRowV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
+import type { SanitaryProtocolCatalogReadModelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
+import { sanitaryOperationalGroupV2, sanitaryOperationalGroupsV2 } from "@/lib/sanitario/windows/sanitaryOperationalProjectionV2";
 
 const SANITARY_WINDOW_STATUS_LABELS = {
   not_applicable: "Não aplicável",
@@ -21,6 +23,7 @@ export function SanitaryWindowStatusLabelV2({ status }: Pick<SanitaryProtocolWin
 }
 
 type Props = {
+  catalog?: SanitaryProtocolCatalogReadModelV2;
   rows: SanitaryProtocolWindowRowV2[];
   selectedIds: Set<string>;
   sortKey: SanitaryWindowSortKeyV2;
@@ -76,6 +79,7 @@ function groupLabel(row: SanitaryProtocolWindowRowV2) {
 }
 
 export function SanitaryProtocolWindowTableV2({
+  catalog,
   rows,
   selectedIds,
   sortKey,
@@ -94,8 +98,8 @@ export function SanitaryProtocolWindowTableV2({
     );
   }
 
-  const groups = groupOrder
-    .map((label) => ({ label, rows: rows.filter((row) => groupLabel(row) === label) }))
+  const groups = (catalog ? sanitaryOperationalGroupsV2 : groupOrder)
+    .map((label) => ({ label, rows: rows.filter((row) => (catalog ? sanitaryOperationalGroupV2(row, catalog) : groupLabel(row)) === label) }))
     .filter((group) => group.rows.length > 0);
   const sortGlyph = (key: SanitaryWindowSortKeyV2) =>
     sortKey === key ? (sortDirection === "asc" ? " ↑" : " ↓") : "";
@@ -171,11 +175,12 @@ export function SanitaryProtocolWindowTableV2({
                 <Badge variant={row.canSelect ? "default" : "secondary"}>{statusLabel(row)}</Badge>
               </td>
               <td className="block px-3 py-2 md:table-cell md:max-w-sm md:py-4">
-                <div>{row.reason}</div>
-                {row.blockers[0] ? <div className="mt-1 text-xs text-destructive">{row.blockers[0]}</div> : null}
-                {row.documentaryPendingReasons[0] ? <div className="mt-1 text-xs text-amber-700">{row.documentaryPendingReasons[0]}</div> : null}
-                {row.warnings[0] ? <div className="mt-1 text-xs text-muted-foreground">{row.warnings[0]}</div> : null}
-                <ContextResolutionDetailsV2 row={row} />
+                <div>{row.blockers[0] ?? row.reason}</div>
+                <div className="text-xs text-muted-foreground">Janela técnica: intervalo indeterminado nesta consulta.</div>
+                <details><summary className="cursor-pointer text-xs">Justificativas e contexto</summary>
+                  {[...new Set([row.reason, ...row.precheck.reasons, ...row.blockers, ...row.documentaryPendingReasons, ...row.warnings])].filter(reason => reason !== (row.blockers[0] ?? row.reason)).map(reason => <p key={reason}>{reason}</p>)}
+                  <ContextResolutionDetailsV2 row={row} />
+                </details>
               </td>
               <td className="block px-3 py-2 md:table-cell md:py-4 text-muted-foreground">
                 {row.plannedFor ? row.plannedFor.split("-").reverse().join("/") : "Sem agenda aberta"}
