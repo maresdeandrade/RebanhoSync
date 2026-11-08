@@ -119,8 +119,12 @@ export function SanitaryAutomaticPlanPanelV2({
         <summary className="cursor-pointer font-medium">Configurar plano automático</summary>
         {open ? <fieldset disabled={saving} className="space-y-4 pt-4">
             <legend className="sr-only">Configuração do plano automático</legend>
-            <p className="text-sm text-muted-foreground">O contexto geral vale para todas as regras selecionadas. Ajuste uma regra somente quando necessário.</p>
+            <p className="text-sm text-muted-foreground">O contexto geral é herdado pelas regras sem ajuste próprio. Apenas os campos pertinentes às regras selecionadas aparecem; os demais valores são preservados.</p>
+            <details className="text-sm"><summary className="min-h-11 cursor-pointer py-3">Como o contexto é resolvido</summary>
+              <p>Idade, sexo, lote, reprodução e estágio de manejo são resolvidos por animal nos registros disponíveis. Dados ausentes ou divergentes continuam explícitos. Pré-confinamento e pasto vedado exigem programação referenciada por regra.</p>
+            </details>
             <PlanContextFields
+              items={draft.rules.flatMap(rule => source ? resolveSanitaryAutomationRuleV2(source.catalog, rule)?.item ?? [] : [])}
               context={draft.context}
               onChange={(context) =>
                 updateDraft((previous) => ({ ...previous, context }))
@@ -135,7 +139,7 @@ export function SanitaryAutomaticPlanPanelV2({
             />
             <UnavailablePlanRules source={source} unavailable={unavailable} updateDraft={updateDraft} />
             <p className="text-sm text-muted-foreground">Regras pendentes, restrições e justificativas técnicas: <Link className="underline" to="/protocolos-sanitarios/catalogo-v2">Consultar catálogo sanitário</Link>.</p>
-            <PlanPreview preview={preview} />
+            <PlanPreview preview={preview} rules={draft.rules} source={source} />
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
                 aria-label="Confirmar ativação do plano"
@@ -203,19 +207,40 @@ function PlanFeedback({ message, error }: { message: string | null; error: strin
   </>;
 }
 
-function PlanPreview({ preview }: {
+function PlanPreview({ preview, rules, source }: {
   preview: ReturnType<typeof previewSanitaryAutomaticPlanV2>;
+  rules: SanitaryAutomationDraftV2["rules"];
+  source: Props["source"];
 }) {
+  const groups = new Map<string, typeof preview.entries>();
+  for (const entry of preview.entries) {
+    // itemId is the physical version identity; retain selected versions even when unavailable.
+    const rule = rules.find(rule => rule.itemId === entry.itemId);
+    const key = JSON.stringify([entry.itemId, rule?.protocolId, rule?.protocolVersion, rule?.itemVersion, entry.eligible, entry.reason]);
+    const group = groups.get(key) ?? [];
+    group.push(entry);
+    groups.set(key, group);
+  }
   return <>
-    <p><strong>{preview.toCreate}</strong> Agenda(s) serão criadas com as condições atuais.</p>
-    <details>
-      <summary className="cursor-pointer text-sm font-medium">Revisar animais e exclusões</summary>
-      <ul className="space-y-2 pt-2 text-sm">
-        {preview.entries.map((entry) => <li key={`${entry.itemId}:${entry.animalId}`}>
-          {entry.animalLabel}: {entry.eligible ? "Será agendado" : "Não será agendado"} — {entry.reason}
-        </li>)}
-      </ul>
-    </details>
+    <p>{preview.toCreate} intenção(ões) potencialmente gerável(is). Prévia; criação depende da ativação e da reavaliação do plano.</p>
+    <p>{preview.entries.filter(entry => !entry.eligible).length} avaliações não planejáveis · {new Set(preview.entries.map(entry => entry.animalId)).size} animais distintos avaliados.</p>
+    <ul className="space-y-3 text-sm">{Array.from(groups, ([key, entries]) => {
+      const entry = entries[0];
+      const rule = rules.find(rule => rule.itemId === entry.itemId);
+      const item = source?.catalog.items.find(item => item.id === entry.itemId);
+      const protocol = source?.catalog.protocols.find(protocol => protocol.id === (rule?.protocolId ?? item?.protocolId));
+      return <li key={key} className="min-w-0 rounded-lg border border-border p-3 break-words">
+        <p className="font-medium">{protocol?.name ?? rule?.protocolId} — {item ? formatSanitaryProtocolItemLabelV2(item.logicalItemKey) : entry.itemId}</p>
+        <p>{entries.length} avaliações {entry.eligible ? "potencialmente geráveis" : "não planejáveis"}.</p>
+        <p>Motivo: {entry.reason}</p>
+        <details><summary className="min-h-11 cursor-pointer py-3">Ver animais e justificativas</summary>
+          <p>Regra {entry.itemId} · versão {rule?.itemVersion ?? item?.version} · protocolo {rule?.protocolId ?? item?.protocolId} · versão {rule?.protocolVersion ?? protocol?.version}</p>
+          <ul>{entries.map(entry => <li key={`${entry.itemId}:${entry.animalId}`} data-preview-evaluation={`${entry.itemId}:${entry.animalId}`}>
+            {entry.animalLabel}: {entry.eligible ? "Potencialmente gerável" : "Não planejável"} — {entry.reason}
+          </li>)}</ul>
+        </details>
+      </li>;
+    })}</ul>
   </>;
 }
 

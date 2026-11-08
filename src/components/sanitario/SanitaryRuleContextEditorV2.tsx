@@ -23,7 +23,7 @@ export function SanitaryRuleContextEditorV2({ item, source, context, onChange, h
     {open ? <div className="space-y-2 py-2">
       <p className="text-muted-foreground">{hasOverride ? "Esta regra possui contexto próprio e não acompanha alterações no contexto geral." : "O contexto geral é herdado até você alterar um campo desta regra."}</p>
       {hasOverride ? <Button type="button" variant="outline" size="sm" onClick={onReset}>Usar contexto geral</Button> : null}
-      <PlanContextFields prefix={`${label}: `} context={context} onChange={onChange} />
+      <PlanContextFields items={[item]} prefix={`${label}: `} context={context} onChange={onChange} />
       <SanitaryContextRequirementsV2 item={item} source={source} context={context} onChange={onChange} />
     </div> : null}
   </details>;

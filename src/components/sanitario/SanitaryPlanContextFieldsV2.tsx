@@ -1,4 +1,5 @@
 import type { SanitaryAutomationDraftV2 } from "@/lib/sanitario/agenda/sanitaryAutomationPlanV2";
+import type { SanitaryProtocolItemV2ReadModel } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 const contextFields = [
   { key: "riskContext", label: "Contexto de risco sanitário", options: [["true", "Confirmado"], ["false", "Não confirmado"]] },
   {
@@ -28,18 +29,19 @@ const contextFields = [
 ] as const;
 
 export function PlanContextFields({
+  items,
   context,
   onChange,
   prefix = "",
 }: {
+  items: SanitaryProtocolItemV2ReadModel[];
   prefix?: string;
   context: SanitaryAutomationDraftV2["context"];
   onChange: (value: SanitaryAutomationDraftV2["context"]) => void;
 }) {
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <p className="text-sm text-muted-foreground md:col-span-2">Idade, sexo, lote, reprodução e estágio de manejo são resolvidos por animal nos registros disponíveis. Dados ausentes ou divergentes continuam explícitos. Pré-confinamento e pasto vedado exigem programação referenciada por regra.</p>
-      {contextFields.map((field) => (
+      {contextFields.filter(field => items.some(item => pertinentField(field.key, item))).map((field) => (
         <label key={field.key} className="space-y-1 text-sm">
           <span>{field.label}</span>
           <select
@@ -65,6 +67,17 @@ export function PlanContextFields({
       ))}
     </div>
   );
+}
+
+// Presentation only: never project/filter the context value passed to onChange.
+function pertinentField(key: typeof contextFields[number]["key"], item: SanitaryProtocolItemV2ReadModel) {
+  const recurrence = item.boosterRule.recurrenceRule as { kind?: string } | undefined;
+  switch (key) {
+    case "riskContext": return item.eligibilityRule.requires_risk_context === true;
+    case "rabiesRiskArea": return item.eligibilityRule.requires_risk_area_overlay === true;
+    case "sanitaryCadence": return ["annual", "annual_if_risk_area", "annual_or_semester_by_risk"].includes(recurrence?.kind ?? "");
+    case "management": return item.eligibilityRule.requires_destination_context === true;
+  }
 }
 
 function contextFieldValue(key: string, value: string) {

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
 import { SanitaryContextualNeedsPanelV2 } from "@/components/sanitario/SanitaryContextualNeedsPanelV2";
 import { SanitaryNeedsDiscoveryV2 } from "@/components/sanitario/SanitaryNeedsDiscoveryV2";
+import { SanitaryNeedCardV2 } from "@/components/sanitario/SanitaryNeedCardV2";
 import { buildSanitaryProtocolWindowV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 import type { Animal, Lote } from "@/lib/offline/types";
 import type { SanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
@@ -67,6 +68,20 @@ const source: SanitaryProtocolWindowSourceV2 = {
 };
 
 describe("SanitaryProtocolWindowPanelV2", () => {
+  it("consolida detalhes sem repetir o motivo decisivo nem perder justificativas ou versão", () => {
+    const row = buildSanitaryProtocolWindowV2({ source, protocolId: "protocol-b19", itemId: "item-b19", evaluatedAt: "2026-07-04" })!.rows[0];
+    render(<MemoryRouter><SanitaryNeedCardV2 group={{ itemId: row.itemId, itemLabel: row.itemLabel, protocolId: row.protocolId, protocolLabel: row.protocolLabel, version: 7,
+      rows: [{ ...row, reason: "Motivo original", blockers: ["Restrição decisiva"], warnings: ["Aviso complementar"], documentaryPendingReasons: ["Documento pendente"] }] }} onChoose={vi.fn()} /></MemoryRouter>);
+    const card = screen.getByRole("article");
+    expect(card.querySelectorAll(":scope > details")).toHaveLength(1);
+    expect(within(card).getAllByText("Restrição decisiva")).toHaveLength(1);
+    expect(card).toHaveTextContent("Motivo original");
+    expect(card).toHaveTextContent("Aviso complementar");
+    expect(card).toHaveTextContent("Documento pendente");
+    expect(card).toHaveTextContent("Versão 7");
+    expect(card.querySelector("[data-evaluation-key]")).toHaveAttribute("data-evaluation-key", `${row.protocolId}:${row.itemId}:${row.animalId}`);
+    expect(within(card).getByRole("link", { name: /Consultar fontes/ })).toHaveAttribute("href", "/protocolos-sanitarios/catalogo-v2");
+  });
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 6, 4, 12));
