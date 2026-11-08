@@ -20,6 +20,8 @@ import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sani
 import { formatSanitaryProtocolItemLabelV2 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import type { SanitaryGenerationModeV2 } from "@/lib/sanitario/agenda/sanitaryPlanningPolicyV2";
 import { sanitaryRequiresRabiesAssessmentV2 } from "@/lib/sanitario/agenda/sanitaryContextualPlanningV2";
+import { reviewSanitaryPlanningDateV2 } from "@/lib/sanitario/windows/sanitaryOperationalProjectionV2";
+import { format } from "date-fns";
 
 const initialFilters: SanitaryProtocolWindowFiltersV2 = {
   lotId: "todos",
@@ -84,7 +86,7 @@ type Props = {
 };
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  return format(new Date(), "yyyy-MM-dd");
 }
 
 function matchesStatusCardFilter(
@@ -144,6 +146,7 @@ export function SanitaryProtocolWindowPanelV2({
   const [protocolId, setProtocolId] = useState(initialProtocolId);
   const [generationMode, setGenerationMode] = useState<SanitaryGenerationModeV2>("manual");
   const [itemId, setItemId] = useState(initialItemId);
+  const [showTechnicalVersions, setShowTechnicalVersions] = useState(Boolean(initialItemId));
   const [evaluatedAt, setEvaluatedAt] = useState(initialEvaluatedAt ?? todayKey);
   const [plannedFor, setPlannedFor] = useState(todayKey);
   const [filters, setFilters] = useState(() => ({
@@ -165,10 +168,13 @@ export function SanitaryProtocolWindowPanelV2({
   const [review, setReview] = useState<{ rows: SanitaryProtocolWindowRowV2[]; plannedFor: string; context: SanitaryOperationalContextV2 } | null>(null);
   const [planningError, setPlanningError] = useState<string | null>(null);
   const reviewPreview = useMemo(() => review ? buildSanitaryWindowPlanningPreviewV2(review) : null, [review]);
+  const dateReview = useMemo(() => review && source ? reviewSanitaryPlanningDateV2({ ...review, source }) : [], [review, source]);
+  const reviewBlocked = !dateReview.length || dateReview.some(entry => entry.situation !== "compatible");
   const reviewWarnings = [...new Set(review?.rows.flatMap((row) => row.warnings) ?? [])];
   const protocols = source?.catalog.protocols ?? [];
   const rabiesSelected = protocols.some(protocol => protocol.id === protocolId && protocol.familyCode === "raiva_herbivoros");
   const items = source?.catalog.items.filter((item) => item.protocolId === protocolId) ?? [];
+  const displayedItems = showTechnicalVersions ? items : items.filter(item => item.status === "active" && !items.some(candidate => candidate.logicalItemKey === item.logicalItemKey && candidate.status === "active" && candidate.version > item.version));
   const filteredAnimal = source?.animals.find((entry) => entry.id === filters.animalId);
   const filteredLot = source?.lots.find((entry) => entry.id === filters.lotId);
   const lotContext = source?.lots.find((entry) => entry.id === initialLotContextId);
@@ -255,10 +261,10 @@ export function SanitaryProtocolWindowPanelV2({
     ).entries(),
   );
   const selectedItem = items.find(item => item.id === itemId);
-  const requiresRisk = !contextual || !!selectedItem?.eligibilityRule.requires_risk_area_overlay;
-  const requiresRiskContext = contextual && !!selectedItem?.eligibilityRule.requires_risk_context;
-  const requiresCadence = !contextual || ((selectedItem?.boosterRule.recurrenceRule as { kind?: string } | undefined)?.kind === "annual_or_semester_by_risk" && !result?.rows.every(row => row.contextResolution?.cadence.status === "known"));
-  const requiresManagement = !contextual || !!selectedItem?.eligibilityRule.requires_destination_context;
+  const requiresRisk = !!selectedItem?.eligibilityRule.requires_risk_area_overlay;
+  const requiresRiskContext = !!selectedItem?.eligibilityRule.requires_risk_context;
+  const requiresCadence = (selectedItem?.boosterRule.recurrenceRule as { kind?: string } | undefined)?.kind === "annual_or_semester_by_risk" && !result?.rows.every(row => row.contextResolution?.cadence.status === "known");
+  const requiresManagement = !!selectedItem?.eligibilityRule.requires_destination_context;
   const requiresRabiesAssessment = rabiesSelected && (!contextual || (
     (selectedItem?.snapshotTemplate.metadata as Record<string, unknown> | undefined)?.catalog_review_scope === "manual_planning" &&
     result?.rows.some(row => {
@@ -268,15 +274,15 @@ export function SanitaryProtocolWindowPanelV2({
   ));
 
   const planSelected = async () => {
-    if (!review || submitting.current) return;
+    if (!review || reviewBlocked || submitting.current) return;
     submitting.current = true;
     setPlanningError(null);
     setPlanning(true);
     try {
       if (review.rows[0]?.generationMode === "automatic") {
-        await onPlan(review.rows, review.plannedFor, review.context, "automatic");
+        await onPlan(dateReview.map(entry => entry.fresh!), review.plannedFor, review.context, "automatic");
       } else {
-        await onPlan(review.rows, review.plannedFor, review.context);
+        await onPlan(dateReview.map(entry => entry.fresh!), review.plannedFor, review.context);
       }
       setReview(null);
       setSelectedIds(new Set());
@@ -387,7 +393,8 @@ export function SanitaryProtocolWindowPanelV2({
       </section>}
       {!contextual ? <section className="grid gap-3 rounded-lg border border-border p-4 md:grid-cols-3 lg:grid-cols-6" aria-label="Filtros das janelas sanitárias">
         {!contextual ? <label className="space-y-1 text-sm lg:col-span-2"><span className="font-medium">Protocolo</span><select aria-label="Selecionar protocolo" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={protocolId} onChange={(event) => setProtocolId(event.target.value)}><option value="">Selecione</option>{protocols.map((protocol) => <option key={protocol.id} value={protocol.id}>{protocol.name}</option>)}</select></label> : null}
-        {!contextual ? <label className="space-y-1 text-sm lg:col-span-2"><span className="font-medium">Item do protocolo</span><select aria-label="Selecionar item do protocolo" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={itemId} disabled={!protocolId} onChange={(event) => setItemId(event.target.value)}><option value="">Selecione</option>{items.map((item) => <option key={item.id} value={item.id}>{formatSanitaryProtocolItemLabelV2(item.logicalItemKey)}</option>)}</select></label> : null}
+        {!contextual ? <label className="space-y-1 text-sm lg:col-span-2"><span className="font-medium">Item do protocolo</span><select aria-label="Selecionar item do protocolo" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={itemId} disabled={!protocolId} onChange={(event) => setItemId(event.target.value)}><option value="">Selecione</option>{displayedItems.map((item) => <option key={item.id} value={item.id}>{formatSanitaryProtocolItemLabelV2(item.logicalItemKey)} · versão {item.version}</option>)}</select></label> : null}
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showTechnicalVersions} onChange={event => { setShowTechnicalVersions(event.target.checked); setItemId(""); }} />Consultar versões históricas e técnicas</label>
         <label className="space-y-1 text-sm"><span className="font-medium">Data de avaliação</span><Input aria-label="Data de avaliação" type="date" value={evaluatedAt} onChange={(event) => setEvaluatedAt(event.target.value)} /></label>
         <label className="space-y-1 text-sm"><span className="font-medium">Lote</span><select aria-label="Filtrar por lote" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={filters.lotId} onChange={(event) => setFilters((current) => ({ ...current, lotId: event.target.value }))}><option value="todos">Todos</option>{source.lots.filter((lot) => !lot.deleted_at).map((lot) => <option key={lot.id} value={lot.id}>{lot.nome}</option>)}</select></label>
         <label className="space-y-1 text-sm"><span className="font-medium">Categoria</span><select aria-label="Filtrar por categoria" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={filters.category} onChange={(event) => setFilters((current) => ({ ...current, category: event.target.value }))}><option value="todas">Todas</option>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
@@ -400,7 +407,7 @@ export function SanitaryProtocolWindowPanelV2({
         <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Selecione um protocolo e um item para calcular as janelas do rebanho.</div>
       ) : result ? (
         <>
-          {!contextual ? <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-7" aria-label="Resumo das janelas sanitárias">
+          {!contextual ? <details><summary className="cursor-pointer text-sm font-medium">Filtros técnicos da avaliação</summary><section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-7" aria-label="Resumo das janelas sanitárias">
             {summaryStatuses.map((summary) => {
               const active = statusCardFilter === summary.key;
               return (
@@ -415,7 +422,7 @@ export function SanitaryProtocolWindowPanelV2({
                 </button>
               );
             })}
-          </section> : null}
+          </section></details> : null}
           {statusCardFilter !== "todos" ? (
             <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
               <span>Filtro ativo: {summaryStatuses.find((summary) => summary.key === statusCardFilter)?.label}</span>
@@ -438,6 +445,7 @@ export function SanitaryProtocolWindowPanelV2({
             </div>
           </div>
           <SanitaryProtocolWindowTableV2
+            catalog={source.catalog}
             rows={visibleRows}
             selectedIds={selectedIds}
             sortKey={sortKey}
@@ -464,7 +472,13 @@ export function SanitaryProtocolWindowPanelV2({
             <p><strong>Data planejada:</strong> {review.plannedFor.split("-").reverse().join("/")}</p>
             <p>{reviewPreview?.summary.totalAnimals} animal(is) selecionado(s).</p>
             <p>{review.rows[0]?.planningKind === "avaliacao_manejo_generica" ? "Avaliação/manejo genérico: sem produto, dose, via ou esquema de aplicação." : "Esquema definido: produto e histórico revalidados ao salvar."}</p>
-            <ul className="space-y-2">{review.rows.map((row) => <li key={`${row.itemId}:${row.animalId}`}><strong>{row.identification}</strong> · {row.lotLabel}<br />{row.protocolLabel} · {row.itemLabel}<br /><span className="text-muted-foreground">{row.reason}</span></li>)}</ul>
+            <ul className="space-y-2">{dateReview.map(entry => <li key={`${entry.original.itemId}:${entry.original.animalId}`}><strong>{entry.original.identification}</strong> · {entry.original.lotLabel}<br />{entry.original.protocolLabel} · {entry.original.itemLabel}<br /><strong>{entry.label}</strong><br /><span className="text-muted-foreground">{entry.reason}</span></li>)}</ul>
+            <p>A confirmação revalida novamente os dados locais na transação de gravação.</p>
+            {dateReview.some(entry => entry.situation === "incompatible" || entry.situation === "existing") ? <Button type="button" variant="outline" disabled={planning} onClick={() => {
+              const remaining = dateReview.filter(entry => entry.situation !== "incompatible" && entry.situation !== "existing").map(entry => entry.original);
+              setSelectedIds(new Set(remaining.map(row => row.animalId)));
+              setReview({ ...review, rows: remaining });
+            }}>Excluir incompatíveis e revisar novamente</Button> : null}
             {reviewWarnings.length ? <details>
               <summary className="cursor-pointer">Cuidados técnicos do planejamento ({reviewWarnings.length})</summary>
               <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
@@ -476,7 +490,7 @@ export function SanitaryProtocolWindowPanelV2({
           {planningError ? <p role="alert" className="text-sm text-destructive">{planningError}</p> : null}
           <DialogFooter>
             <Button type="button" variant="outline" disabled={planning} onClick={() => setReview(null)}>Voltar à seleção</Button>
-            <Button type="button" disabled={planning || !reviewPreview?.commands.length || !!reviewPreview?.rejected.length} onClick={planSelected}>{planning ? "Salvando..." : "Confirmar e gerar Agenda"}</Button>
+            <Button type="button" disabled={planning || reviewBlocked || !reviewPreview?.commands.length || !!reviewPreview?.rejected.length} onClick={planSelected}>{planning ? "Salvando..." : "Confirmar e gerar Agenda"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

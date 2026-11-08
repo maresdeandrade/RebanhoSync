@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
 import { SanitaryContextualNeedsPanelV2 } from "@/components/sanitario/SanitaryContextualNeedsPanelV2";
@@ -65,6 +65,50 @@ const source: SanitaryProtocolWindowSourceV2 = {
 };
 
 describe("SanitaryProtocolWindowPanelV2", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 6, 4, 12));
+  });
+  afterEach(() => vi.useRealTimers());
+  it("inicializa avaliação e planejamento pelo dia civil local no fim da noite", () => {
+    vi.setSystemTime(new Date(2026, 6, 4, 23, 30));
+    render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={vi.fn()} initialProtocolId="protocol-b19" initialItemId="item-b19" /></MemoryRouter>);
+    expect(screen.getByLabelText("Data de avaliação")).toHaveValue("2026-07-04");
+    expect(screen.getByLabelText("Data planejada da agenda agrupada")).toHaveValue("2026-07-04");
+  });
+  it("oferece duas perspectivas e recolhe versões substituídas na consulta técnica", () => {
+    const versioned = { ...source, catalog: { ...source.catalog, items: [
+      ...source.catalog.items,
+      { ...source.catalog.items[0], id: "item-b19-v2", version: 2 },
+    ] } };
+    render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={versioned} onPlan={vi.fn()} initialAnimalId="female" /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
+    expect(screen.getByRole("button", { name: "Por animal", exact: true })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Por protocolo", exact: true })).toBeInTheDocument();
+    const historical = screen.getByText(/Restrições e consulta técnica/).closest("details")!;
+    expect(historical).not.toHaveAttribute("open");
+    expect(within(historical).getByRole("article", { name: /Brucelose B19/, hidden: true })).toHaveTextContent("Versão 1");
+    expect(within(screen.getByRole("region", { name: "Planejamento disponível" })).getByRole("article", { name: /Brucelose B19/ })).toHaveTextContent("Versão 2");
+    expect(screen.queryByText("Necessidade identificada")).not.toBeInTheDocument();
+  });
+
+  it("explica incompatibilidade da data coletiva e exige exclusão explícita antes de confirmar", async () => {
+    const onPlan = vi.fn().mockResolvedValue(undefined);
+    const herd = { ...source, animals: [animal("female", "F", "2026-03-01"), animal("overdue", "F", "2026-06-01")] };
+    render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={herd} onPlan={onPlan} initialProtocolId="protocol-b19" initialItemId="item-b19" initialEvaluatedAt="2026-09-04" /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "Selecionar todos os elegíveis visíveis" }));
+    fireEvent.change(screen.getByLabelText("Data planejada da agenda agrupada"), { target: { value: "2026-07-04" } });
+    fireEvent.click(screen.getByRole("button", { name: "Planejar agenda para selecionados" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Incompatível com a data");
+    expect(dialog).toHaveTextContent("Compatível com a data");
+    expect(within(dialog).getByRole("button", { name: "Confirmar e gerar Agenda" })).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Excluir incompatíveis e revisar novamente" }));
+    expect(dialog).not.toHaveTextContent("Fêmea 303");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Confirmar e gerar Agenda" }));
+    await waitFor(() => expect(onPlan).toHaveBeenCalledTimes(1));
+    expect(onPlan.mock.calls[0][0]).toEqual([expect.objectContaining({ animalId: "female" })]);
+  });
   it("isola seleção e complemento técnico ao alternar necessidades de protocolos diferentes", async () => {
     const onPlan = vi.fn().mockResolvedValue(undefined);
     render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={source} onPlan={onPlan} initialAnimalId="female" /></MemoryRouter>);
@@ -88,7 +132,7 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={source} onPlan={onPlan} initialAnimalId="female" /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
     expect(screen.queryByLabelText("Selecionar protocolo")).not.toBeInTheDocument();
-    expect(screen.getByRole("article", { name: /Brucelose B19/ })).toHaveTextContent("Necessidade identificada");
+    expect(screen.getByRole("article", { name: /Brucelose B19/ })).toHaveTextContent("Planejamento disponível");
     expect(screen.getByRole("article", { name: /Raiva dos herbívoros/ })).toHaveTextContent("Informação insuficiente");
     expect(screen.getAllByRole("button", { name: "Planejar manejo" })).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Planejar manejo" }));
@@ -185,9 +229,12 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={onPlan} /></MemoryRouter>);
 
     fireEvent.change(screen.getByLabelText("Selecionar protocolo"), { target: { value: "protocol-b19" } });
-    expect(screen.getByRole("option", { name: "B19 — fêmeas de 3 a 8 meses" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "B19 — fêmeas de 3 a 8 meses · versão 1" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Selecionar item do protocolo"), { target: { value: "item-b19" } });
     fireEvent.change(screen.getByLabelText("Data de avaliação"), { target: { value: "2026-07-04" } });
+
+    expect(screen.queryByLabelText("Área de risco para raiva")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Cadência sanitária")).not.toBeInTheDocument();
 
     expect(screen.getByText("Fêmea 101")).toBeInTheDocument();
     expect(screen.getByText("Macho 202")).toBeInTheDocument();

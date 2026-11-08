@@ -57,7 +57,7 @@ async function prepare(page: Page, api?: (route: Route, unexpected: string[]) =>
 }
 
 async function selectProtocol(page: Page) {
-  await page.getByRole("button", { name: "Consultar por protocolo", exact: true }).click();
+  await page.getByRole("button", { name: "Por protocolo", exact: true }).click();
   await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(protocol);
   await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(item);
 }
@@ -67,7 +67,7 @@ async function openHomologated(page: Page) {
   await page.goto("/select-fazenda?homologado");
   await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
   await expect(page.getByRole("heading", { name: "Central Sanitária", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Consultar por protocolo", exact: true }).click();
+  await page.getByRole("button", { name: "Por protocolo", exact: true }).click();
   return unexpected;
 }
 
@@ -262,18 +262,47 @@ async function counts(page: Page) {
   });
 }
 
+test("revisão coletiva explica a data por animal antes de gravar em mobile", async ({ page }) => {
+  const unexpected = await prepare(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/select-fazenda");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await page.evaluate(async () => {
+    const { db } = await import("/src/lib/offline/db.ts");
+    await db.state_animais.update("female-test-2", { data_nascimento: "2026-06-01" });
+  });
+  await selectProtocol(page);
+  await page.getByLabel("Data de avaliação", { exact: true }).fill("2026-09-04");
+  await page.getByRole("button", { name: "Selecionar todos os elegíveis visíveis", exact: true }).click();
+  await expect(page.getByLabel("Selecionar Bezerra teste 102", { exact: true })).toBeChecked();
+  await page.getByLabel("Data planejada da agenda agrupada").fill("2026-07-04");
+  await page.getByRole("button", { name: "Planejar agenda para selecionados", exact: true }).click();
+  const review = page.getByRole("dialog");
+  await expect(review).toContainText("Compatível com a data");
+  await expect(review).toContainText("Incompatível com a data");
+  await expect(review.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true })).toBeDisabled();
+  expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0 });
+  await page.screenshot({ path: "scratch/sanitary-collective-review-390.png", fullPage: true });
+  await review.getByRole("button", { name: "Excluir incompatíveis e revisar novamente", exact: true }).click();
+  await expect(review).not.toContainText("Bezerra teste 102");
+  await review.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
+  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0 });
+  expect(unexpected).toEqual([]);
+});
+
 for (const width of [390, 1280]) {
 test(`necessidades contextuais → revisão → Agenda local em ${width}px, offline e sem duplicação`, async ({ page, context }) => {
   const unexpected = await prepare(page);
   await page.setViewportSize({ width, height: 844 });
   await page.goto("/select-fazenda");
   await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await expect(page.getByRole("button", { name: "Ver necessidades", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Por animal", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.getByLabel("Lote das necessidades", { exact: true }).selectOption("lot-test");
   await expect(page).toHaveURL(/loteId=lot-test/);
-  const need = page.getByRole("article", { name: /Brucelose B19/ });
+  const need = page.getByRole("region", { name: "Planejamento disponível", exact: true }).getByRole("article", { name: /Brucelose B19/ });
   await expect(need).toContainText("Bezerra teste 101");
-  await expect(need).toContainText("Bezerro teste 201");
+  await expect(need).not.toContainText("Bezerro teste 201");
   await context.setOffline(true);
   await expect(page.getByText(/Offline: consulta local disponível/)).toBeVisible();
   await need.getByRole("button", { name: "Planejar manejo", exact: true }).focus();
@@ -292,13 +321,13 @@ test(`necessidades contextuais → revisão → Agenda local em ${width}px, offl
   await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByText("Agenda sanitária salva localmente. Sem confirmação remota.", { exact: true })).toBeVisible();
   expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0, queue: 0 });
-  await page.getByRole("tab", { name: "Janelas sanitárias", exact: true }).click();
-  await expect(page.getByRole("article", { name: /Brucelose B19/ })).toContainText("Agenda existente");
-  await page.getByRole("article", { name: /Brucelose B19/ }).getByRole("button", { name: "Planejar manejo", exact: true }).click();
+  await page.getByRole("tab", { name: "Avaliação sanitária", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Agendas existentes", exact: true })).toContainText("Agenda existente");
+  await page.getByRole("region", { name: "Planejamento disponível", exact: true }).getByRole("button", { name: "Planejar manejo", exact: true }).click();
   await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeDisabled();
   await context.setOffline(false);
   await page.reload();
-  await expect(page.getByRole("article", { name: /Brucelose B19/ })).toContainText("Agenda existente");
+  await expect(page.getByRole("region", { name: "Agendas existentes", exact: true })).toContainText("Agenda existente");
   expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole("link", { name: "Trocar fazenda", exact: true }).click();

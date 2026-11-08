@@ -95,6 +95,7 @@ describe("Central Sanitária", () => {
     const user = userEvent.setup();
     renderPage();
     expect(pullSanitarioProtocolCatalogV2).not.toHaveBeenCalled();
+    await user.click(screen.getByText("Catálogo e configuração automática"));
     await user.click(screen.getByRole("button", { name: "Atualizar catálogo" }));
     expect(pullSanitarioProductClassV2Catalog).toHaveBeenCalledExactlyOnceWith("farm-1");
     expect(pullSanitarioTechnicalCatalogV2).toHaveBeenCalledExactlyOnceWith("farm-1");
@@ -105,7 +106,7 @@ describe("Central Sanitária", () => {
     const user = userEvent.setup();
     renderPage();
     expect(screen.getByText("Central Sanitária")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Janelas sanitárias/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Avaliação sanitária/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Agenda sanitária/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Catálogo sanitário/ })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Histórico sanitário/ })).toBeInTheDocument();
@@ -121,7 +122,7 @@ describe("Central Sanitária", () => {
     expect(screen.getByText(/carência permanecem exclusivos do registro executado/)).toBeInTheDocument();
   });
 
-  it("abre Janelas sanitárias com filtro inicial por animal e permite limpar", async () => {
+  it("abre Avaliação sanitária com filtro inicial por animal e permite limpar", async () => {
     const user = userEvent.setup();
     vi.mocked(useLiveQuery).mockReset();
     mockLiveQueries({
@@ -242,7 +243,7 @@ describe("Central Sanitária", () => {
 
     renderPage("/protocolos-sanitarios?tab=janelas&animalId=animal-1&loteId=lote-1");
 
-    expect(screen.getByRole("tab", { name: /Janelas sanitárias/ })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: /Avaliação sanitária/ })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -250,9 +251,10 @@ describe("Central Sanitária", () => {
     expect(screen.getByText("Lote usado apenas como contexto auxiliar: Lote recria.")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/animal-1|lote-1|protocol-b19|item-b19/);
 
-    await user.click(screen.getByRole("button", { name: "Consultar por protocolo" }));
+    await user.click(screen.getByRole("button", { name: "Por protocolo" }));
     await user.selectOptions(screen.getByLabelText("Selecionar protocolo"), "protocol-b19");
-    await screen.findByRole("option", { name: "B19 — fêmeas de 3 a 8 meses" });
+    await user.click(screen.getByLabelText("Consultar versões históricas e técnicas"));
+    await screen.findByRole("option", { name: "B19 — fêmeas de 3 a 8 meses · versão 1" });
     await user.selectOptions(screen.getByLabelText("Selecionar item do protocolo"), "item-b19");
 
     expect(screen.getByText("Vaca 10")).toBeInTheDocument();
@@ -265,7 +267,7 @@ describe("Central Sanitária", () => {
     expect(screen.getByText("Vaca 20")).toBeInTheDocument();
   });
 
-  it("abre Janelas sanitárias com filtro inicial por lote e permite limpar", async () => {
+  it("abre Avaliação sanitária com filtro inicial por lote e permite limpar", async () => {
     const user = userEvent.setup();
     vi.mocked(useLiveQuery).mockReset();
     mockLiveQueries({
@@ -419,16 +421,17 @@ describe("Central Sanitária", () => {
 
     renderPage("/protocolos-sanitarios?tab=janelas&loteId=lote-1");
 
-    expect(screen.getByRole("tab", { name: /Janelas sanitárias/ })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: /Avaliação sanitária/ })).toHaveAttribute(
       "aria-selected",
       "true",
     );
     expect(screen.getByText("Filtro ativo: lote Lote recria")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/animal-1|lote-1|protocol-b19|item-b19/);
 
-    await user.click(screen.getByRole("button", { name: "Consultar por protocolo" }));
+    await user.click(screen.getByRole("button", { name: "Por protocolo" }));
     await user.selectOptions(screen.getByLabelText("Selecionar protocolo"), "protocol-b19");
-    await screen.findByRole("option", { name: "B19 — fêmeas de 3 a 8 meses" });
+    await user.click(screen.getByLabelText("Consultar versões históricas e técnicas"));
+    await screen.findByRole("option", { name: "B19 — fêmeas de 3 a 8 meses · versão 1" });
     await user.selectOptions(screen.getByLabelText("Selecionar item do protocolo"), "item-b19");
 
     expect(screen.getByText("Vaca 10")).toBeInTheDocument();

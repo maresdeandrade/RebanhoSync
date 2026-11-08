@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import type { Animal, Lote } from "@/lib/offline/types";
 import type { SanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 import { SanitaryNeedCardV2, type SanitaryNeedGroupV2 } from "./SanitaryNeedCardV2";
+import { sanitaryOperationalGroupsV2, sanitaryOperationalGroupV2 } from "@/lib/sanitario/windows/sanitaryOperationalProjectionV2";
 
 export type SanitaryNeedsTargetV2 = { animalId: string; lotId: string };
 
@@ -38,7 +39,20 @@ export function SanitaryNeedsDiscoveryV2({ source, target, evaluatedAt, groups, 
     </section>
     <TargetSummary animal={animal} lot={lot} auxiliaryLot={auxiliaryLot} onClear={clearTarget} />
     <EmptyNeedsState hasCatalog={source.catalog.protocols.length > 0} target={target} hasRows={groups.length > 0} />
-    <div className="grid gap-4 lg:grid-cols-2">{groups.map(group => <SanitaryNeedCardV2 key={group.itemId} group={group} onChoose={onChooseItem} />)}</div>
+    <p className="text-sm text-muted-foreground">{new Set(groups.flatMap(group => group.rows.map(row => row.animalId))).size} animal(is) com linhas retornadas · {groups.reduce((count, group) => count + group.rows.length, 0)} avaliações individuais. Ausência de linha não comprova avaliação ou conformidade.</p>
+    {sanitaryOperationalGroupsV2.map(label => {
+      const projected = groups.map(group => ({ ...group,
+        version: source.catalog.items.find(item => item.id === group.itemId)?.version,
+        technical: label === "Restrições e consulta técnica",
+        rows: group.rows.filter(row => sanitaryOperationalGroupV2(row, source.catalog) === label),
+      })).filter(group => group.rows.length);
+      if (!projected.length) return null;
+      const count = projected.reduce((count, group) => count + group.rows.length, 0);
+      const cards = <div className="grid gap-4 lg:grid-cols-2">{projected.map(group => <SanitaryNeedCardV2 key={group.itemId} group={group} onChoose={onChooseItem} />)}</div>;
+      return label === "Restrições e consulta técnica"
+        ? <details key={label} className="space-y-3"><summary className="cursor-pointer font-semibold">{label} · {count} avaliações</summary>{cards}</details>
+        : <section key={label} aria-label={label} className="space-y-3"><h3 className="font-semibold">{label} · {count} avaliações</h3>{cards}</section>;
+    })}
   </>;
 }
 

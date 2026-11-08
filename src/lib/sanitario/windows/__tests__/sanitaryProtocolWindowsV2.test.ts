@@ -2,6 +2,8 @@ import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/lib/offline/db";
+import { reviewSanitaryPlanningDateV2, sanitaryOperationalGroupV2 } from "../sanitaryOperationalProjectionV2";
+import { EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 } from "../sanitaryProtocolWindowsV2";
 import type { Animal, Lote, SanitarioAgendaLocalV2 } from "@/lib/offline/types";
 import type {
   SanitaryProtocolCatalogReadModelV2,
@@ -390,6 +392,53 @@ const technicalProduct = {
 } as import("@/lib/offline/types").SanitarioProdutoLocalV2;
 
 describe("sanitaryProtocolWindowsV2", () => {
+  it("preserva a avaliação técnica entre descoberta individual e consulta por protocolo", () => {
+    const input = source();
+    const discovered = buildSanitaryContextualNeedsV2({ source: input, animalId: "female", evaluatedAt: "2026-07-04" });
+    for (const row of discovered) {
+      const byProtocol = windowFor({ source: input, protocolId: row.protocolId, itemId: row.itemId }).rows.find(entry => entry.animalId === "female");
+      expect(row).toEqual(byProtocol);
+    }
+    expect(discovered.length).toBeGreaterThan(0);
+  });
+
+  it("prioriza bloqueio independente sobre falta de informação sem alterar dimensões técnicas", () => {
+    const input = source();
+    const row = windowFor({ protocolId: "protocol-b19", itemId: "item-b19" }).rows.find(row => row.animalId === "female")!;
+    const blocked = { ...row, status: "insufficient_data" as const, blockers: ["Curadoria pendente"], canSelect: false };
+    expect(sanitaryOperationalGroupV2(blocked, input.catalog)).toBe("Restrições e consulta técnica");
+    expect(blocked.status).toBe("insufficient_data");
+    expect(sanitaryOperationalGroupV2({ ...blocked, alreadyPlanned: true }, input.catalog)).toBe("Agendas existentes");
+  });
+
+  it("não multiplica Agenda existente entre versão substituída e versão operacional", () => {
+    const input = source();
+    const row = windowFor({ protocolId: "protocol-b19", itemId: "item-b19" }).rows.find(row => row.animalId === "female")!;
+    const previous = input.catalog.items.find(item => item.id === row.itemId)!;
+    const catalog = { ...input.catalog, items: [...input.catalog.items, { ...previous, id: "item-b19-v2", version: previous.version + 1, status: "active" }] };
+    expect(sanitaryOperationalGroupV2({ ...row, alreadyPlanned: true }, catalog)).toBe("Restrições e consulta técnica");
+    expect(sanitaryOperationalGroupV2({ ...row, itemId: "item-b19-v2", alreadyPlanned: true }, catalog)).toBe("Agendas existentes");
+  });
+
+  it("revisão detecta Agenda equivalente e mudança de lote sem excluir animais silenciosamente", () => {
+    const input = source();
+    const rows = windowFor({ source: input, protocolId: "protocol-b19", itemId: "item-b19" }).rows.filter(row => row.canSelect);
+    const agenda = { ...activeAgenda(), protocolo_id: "protocol-b19", lote_id: lot.id, protocol_item_snapshot: { itemKey: "b19_femeas_3_8_meses" } };
+    const reviewInput = { rows, plannedFor: "2026-07-04", context: EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 };
+    const existing = reviewSanitaryPlanningDateV2({ ...reviewInput, source: { ...input, agendas: [agenda] } });
+    expect(existing).toHaveLength(rows.length);
+    expect(existing[0].situation).toBe("existing");
+    const changed = reviewSanitaryPlanningDateV2({ ...reviewInput, source: { ...input, animals: input.animals.map(animal => ({ ...animal, lote_id: null })) } });
+    expect(changed[0].situation).toBe("reevaluate");
+    expect(changed).toHaveLength(rows.length);
+  });
+
+  it("revisão não interpreta histórico insuficiente como ausência de vacinação", () => {
+    const input = source();
+    const rows = windowFor({ source: input, protocolId: "protocol-b19", itemId: "item-b19" }).rows.filter(row => row.canSelect);
+    const reviewed = reviewSanitaryPlanningDateV2({ source: input, rows, plannedFor: "2026-12-04", context: EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 });
+    expect(reviewed[0]).toMatchObject({ situation: "reevaluate", fresh: { documentaryPending: true, canSelect: false } });
+  });
   it("descobre itens entre protocolos apenas para o alvo sem promover bloqueios", () => {
     const rows = buildSanitaryContextualNeedsV2({ source: source(), evaluatedAt: "2026-07-04", animalId: "female" });
     expect(new Set(rows.map(row => row.animalId))).toEqual(new Set(["female"]));
