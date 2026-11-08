@@ -227,14 +227,13 @@ function PlanPreview({ preview, rules, source }: {
     <ul className="space-y-3 text-sm">{Array.from(groups, ([key, entries]) => {
       const entry = entries[0];
       const rule = rules.find(rule => rule.itemId === entry.itemId);
-      const item = source?.catalog.items.find(item => item.id === entry.itemId);
-      const protocol = source?.catalog.protocols.find(protocol => protocol.id === (rule?.protocolId ?? item?.protocolId));
+      const identity = previewGroupIdentity(entry.itemId, rule ?? {}, source?.catalog ?? { items: [], protocols: [], productClassGroups: [] });
       return <li key={key} className="min-w-0 rounded-lg border border-border p-3 break-words">
-        <p className="font-medium">{protocol?.name ?? rule?.protocolId} — {item ? formatSanitaryProtocolItemLabelV2(item.logicalItemKey) : entry.itemId}</p>
+        <p className="font-medium">{identity.protocolLabel} — {identity.itemLabel}</p>
         <p>{entries.length} avaliações {entry.eligible ? "potencialmente geráveis" : "não planejáveis"}.</p>
         <p>Motivo: {entry.reason}</p>
         <details><summary className="min-h-11 cursor-pointer py-3">Ver animais e justificativas</summary>
-          <p>Regra {entry.itemId} · versão {rule?.itemVersion ?? item?.version} · protocolo {rule?.protocolId ?? item?.protocolId} · versão {rule?.protocolVersion ?? protocol?.version}</p>
+          <p>Regra {entry.itemId} · versão {identity.itemVersion} · protocolo {identity.protocolId} · versão {identity.protocolVersion}</p>
           <ul>{entries.map(entry => <li key={`${entry.itemId}:${entry.animalId}`} data-preview-evaluation={`${entry.itemId}:${entry.animalId}`}>
             {entry.animalLabel}: {entry.eligible ? "Potencialmente gerável" : "Não planejável"} — {entry.reason}
           </li>)}</ul>
@@ -242,6 +241,25 @@ function PlanPreview({ preview, rules, source }: {
       </li>;
     })}</ul>
   </>;
+}
+
+function previewGroupIdentity(itemId: string, rule: Partial<SanitaryAutomationDraftV2["rules"][number]>, catalog: NonNullable<Props["source"]>["catalog"]) {
+  const item = catalog.items.find(item => item.id === itemId);
+  const protocolId = rule.protocolId ?? item?.protocolId;
+  const protocol = catalog.protocols.find(protocol => protocol.id === protocolId);
+  return {
+    protocolId,
+    protocolLabel: protocol?.name ?? rule.protocolId,
+    itemLabel: item ? formatSanitaryProtocolItemLabelV2(item.logicalItemKey) : itemId,
+    ...previewGroupVersions(rule, item?.version, protocol?.version),
+  };
+}
+
+function previewGroupVersions(rule: Partial<SanitaryAutomationDraftV2["rules"][number]>, itemVersion: number | undefined, protocolVersion: number | undefined) {
+  return {
+    itemVersion: rule.itemVersion ?? itemVersion,
+    protocolVersion: rule.protocolVersion ?? protocolVersion,
+  };
 }
 
 function GeneratedPlanAgendas({ source }: { source: Props["source"] }) {
