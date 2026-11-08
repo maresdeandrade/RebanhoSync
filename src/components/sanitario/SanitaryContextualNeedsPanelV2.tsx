@@ -46,18 +46,19 @@ function ContextualNeeds(props: Props) {
     </div>
     <ConnectionStatus />
     <p className="text-sm text-muted-foreground">A data consulta os registros disponíveis hoje. Consultas retrospectivas não reconstroem integralmente o estado histórico do rebanho.</p>
-    <NeedsJourney props={props} mode={mode} target={target} evaluatedAt={evaluatedAt} selected={groups.find(group => group.itemId === selectedItem)} onBack={() => setSelectedItem(null)}>
+    <NeedsJourney props={props} mode={mode} target={target} evaluatedAt={evaluatedAt} onDateChange={setEvaluatedAt} onScopeChange={changeTarget} selected={groups.find(group => group.itemId === selectedItem)} onBack={() => setSelectedItem(null)}>
       <SanitaryNeedsDiscoveryV2 source={source} target={target} evaluatedAt={evaluatedAt} groups={groups} initialLotContextId={props.initialLotContextId}
-        onTargetChange={changeTarget} onDateChange={setEvaluatedAt} onChooseItem={setSelectedItem} onClearInitialFilter={props.onClearInitialFilter} />
+        onTargetChange={changeTarget} onDateChange={setEvaluatedAt} onChooseItem={setSelectedItem} onOpenSection={props.onOpenSection} onClearInitialFilter={props.onClearInitialFilter} />
     </NeedsJourney>
   </div>;
 }
 
-function NeedsJourney({ props, mode, target, evaluatedAt, selected, onBack, children }: {
+function NeedsJourney({ props, mode, target, evaluatedAt, onDateChange, onScopeChange, selected, onBack, children }: {
   props: Props; mode: Mode; target: SanitaryNeedsTargetV2; evaluatedAt: string;
   selected?: SanitaryNeedGroupV2; onBack: () => void; children: ReactNode;
+  onDateChange: (date: string) => void; onScopeChange: (animalId: string, lotId: string) => void;
 }) {
-  const panelProps = { ...props, initialAnimalId: target.animalId || null, initialLotId: target.lotId || null };
+  const panelProps = { ...props, initialAnimalId: target.animalId || null, initialLotId: target.lotId || null, onEvaluatedAtChange: onDateChange, onConsultationScopeChange: onScopeChange };
   if (mode === "technical") return <SanitaryProtocolWindowPanelV2 {...panelProps} initialEvaluatedAt={evaluatedAt} />;
   if (!selected) return children;
   return <>

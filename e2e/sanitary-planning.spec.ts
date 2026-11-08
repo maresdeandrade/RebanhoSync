@@ -262,6 +262,62 @@ async function counts(page: Page) {
   });
 }
 
+for (const layout of [{ width: 390 }, { width: 768 }, { width: 1280, container: 800 }, { width: 1920 }, { width: 1600, container: 480 }]) {
+test(`refinamento responsivo ${layout.width}px contêiner ${layout.container ?? "livre"}`, async ({ page }) => {
+  const unexpected = await prepare(page);
+  await page.setViewportSize({ width: layout.width, height: 900 });
+  await page.goto("/select-fazenda");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await selectProtocol(page);
+  const table = page.getByRole("table");
+  if (layout.container) await table.evaluate((element, width) => { element.parentElement!.style.maxWidth = `${width}px`; }, layout.container);
+  expect(await table.evaluate(element => element.parentElement!.scrollWidth <= element.parentElement!.clientWidth + 1)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(page.getByLabel("Ordenar resultados por")).toBeVisible();
+  await page.getByLabel("Selecionar Bezerra teste 101", { exact: true }).check();
+  await page.getByLabel("Ordenar resultados por").selectOption("lote");
+  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeChecked();
+  await page.getByRole("button", { name: "Inverter ordem" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeChecked();
+  const display = await table.evaluate(element => getComputedStyle(element).display);
+  expect(display).toBe(layout.width === 1920 ? "table" : "block");
+  await page.getByLabel("Selecionar todos os elegíveis visíveis", { exact: true }).check();
+  await expect(page.getByLabel("Selecionar Bezerra teste 102", { exact: true })).toBeChecked();
+  await expect(page.getByLabel("Selecionar Bezerro teste 201", { exact: true })).toBeDisabled();
+  await page.setViewportSize({ width: 1920, height: 900 });
+  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeChecked();
+  await page.setViewportSize({ width: layout.width, height: 900 });
+  await expect(page.getByLabel("Selecionar Bezerra teste 102", { exact: true })).toBeChecked();
+  await page.screenshot({ path: `scratch/sanitary-refinement-${layout.width}-${layout.container ?? "full"}.png`, fullPage: true });
+  expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0 });
+  expect(unexpected).toEqual([]);
+});
+}
+
+test("refinamento encaminha para histórico e Agenda sem materialização por navegação", async ({ page }) => {
+  const unexpected = await prepare(page);
+  await page.goto("/select-fazenda");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await page.getByLabel("Animal das necessidades").selectOption("female-test");
+  await page.getByLabel("Data de avaliação das necessidades").fill("2026-12-04");
+  await page.getByText(/^Informações insuficientes ·/).click();
+  await page.getByRole("button", { name: "Consultar histórico", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Histórico sanitário", exact: true })).toHaveAttribute("aria-selected", "true");
+  expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0 });
+  await page.getByRole("tab", { name: "Avaliação sanitária", exact: true }).click();
+  await page.getByRole("button", { name: "Planejar manejo", exact: true }).click();
+  await page.getByLabel("Selecionar Bezerra teste 101", { exact: true }).check();
+  await page.getByRole("button", { name: "Planejar agenda para selecionados", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: "Avaliação sanitária", exact: true }).click();
+  await page.getByRole("button", { name: "Abrir Agenda sanitária", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
+  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0 });
+  expect(unexpected).toEqual([]);
+});
+
 test("revisão coletiva explica a data por animal antes de gravar em mobile", async ({ page }) => {
   const unexpected = await prepare(page);
   await page.setViewportSize({ width: 390, height: 844 });

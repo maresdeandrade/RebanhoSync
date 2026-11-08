@@ -1,3 +1,4 @@
+import "./SanitaryProtocolWindowTableV2.css";
 import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -78,120 +79,46 @@ function groupLabel(row: SanitaryProtocolWindowRowV2) {
   return "Não aplicáveis";
 }
 
-export function SanitaryProtocolWindowTableV2({
-  catalog,
-  rows,
-  selectedIds,
-  sortKey,
-  sortDirection,
-  visibleEligibleCount,
-  allVisibleEligibleSelected,
-  onSelectionChange,
-  onSelectAllVisible,
-  onSortChange,
-}: Props) {
-  if (rows.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-        Nenhum animal corresponde aos filtros selecionados.
-      </div>
-    );
-  }
+const sortOptions: Array<[SanitaryWindowSortKeyV2, string]> = [
+  ["animal", "Animal"], ["lote", "Lote"], ["sexo", "Sexo / idade"], ["idade", "Idade"],
+  ["categoria", "Categoria"], ["status", "Situação"], ["motivo", "Motivo"], ["agenda", "Agenda existente"],
+];
 
+export function SanitaryProtocolWindowTableV2(props: Props) {
+  const { catalog, rows, selectedIds, sortKey, sortDirection, visibleEligibleCount,
+    allVisibleEligibleSelected, onSelectionChange, onSelectAllVisible, onSortChange } = props;
+  if (!rows.length) return <p role="status" className="rounded-lg border border-dashed border-border p-4 text-sm">Nenhum animal corresponde aos filtros selecionados. Isso não comprova ausência de necessidade sanitária.</p>;
   const groups = (catalog ? sanitaryOperationalGroupsV2 : groupOrder)
-    .map((label) => ({ label, rows: rows.filter((row) => (catalog ? sanitaryOperationalGroupV2(row, catalog) : groupLabel(row)) === label) }))
-    .filter((group) => group.rows.length > 0);
-  const sortGlyph = (key: SanitaryWindowSortKeyV2) =>
-    sortKey === key ? (sortDirection === "asc" ? " ↑" : " ↓") : "";
-  const headerButton = (key: SanitaryWindowSortKeyV2, label: string) => (
-    <button
-      type="button"
-      className="text-left font-semibold hover:text-foreground"
-      onClick={() => onSortChange(key)}
-    >
-      {label}
-      {sortGlyph(key)}
-    </button>
-  );
-
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="block w-full text-left text-sm md:table md:min-w-[1080px]">
-        <thead className="hidden bg-muted/50 text-xs uppercase text-muted-foreground md:table-header-group">
-          <tr>
-            <th className="w-12 px-3 py-3">
-              <Checkbox
-                aria-label="Selecionar todos os elegíveis visíveis"
-                checked={visibleEligibleCount > 0 && allVisibleEligibleSelected}
-                disabled={visibleEligibleCount === 0}
-                onCheckedChange={(checked) => onSelectAllVisible(checked === true)}
-              />
-            </th>
-            <th className="px-3 py-3">{headerButton("animal", "Animal")}</th>
-            <th className="px-3 py-3">{headerButton("lote", "Lote")}</th>
-            <th className="px-3 py-3">{headerButton("sexo", "Sexo / idade")}</th>
-            <th className="px-3 py-3">{headerButton("categoria", "Categoria")}</th>
-            <th className="px-3 py-3">Protocolo / item</th>
-            <th className="px-3 py-3">{headerButton("status", "Status")}</th>
-            <th className="px-3 py-3">{headerButton("motivo", "Motivo")}</th>
-            <th className="px-3 py-3">{headerButton("agenda", "Agenda existente")}</th>
-          </tr>
-        </thead>
-        {groups.map((group) => (
-          <tbody key={group.label} className="block divide-y divide-border md:table-row-group">
-              <tr className="block bg-muted/30 md:table-row">
-                <th colSpan={9} className="block px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">
-                  {group.label} ({group.rows.length})
-                </th>
-              </tr>
-              {group.rows.map((row) => (
-              <tr key={row.animalId} className="block align-top md:table-row">
-              <td className="block px-3 py-2 md:table-cell md:py-4">
-                <Checkbox
-                  aria-label={`Selecionar ${row.identification}`}
-                  checked={selectedIds.has(row.animalId)}
-                  disabled={!row.canSelect}
-                  onCheckedChange={(checked) =>
-                    onSelectionChange(row.animalId, checked === true)
-                  }
-                />
-              </td>
-              <td className="block px-3 py-2 md:table-cell md:py-4 font-medium">
-                <Link className="inline-flex items-center gap-1 text-primary hover:underline" to={row.animalHref}>
-                  {row.identification}<ExternalLink className="h-3.5 w-3.5" />
-                </Link>
-              </td>
-              <td className="block px-3 py-2 md:table-cell md:py-4">
-                {row.lotHref ? (
-                  <Link className="inline-flex items-center gap-1 text-primary hover:underline" to={row.lotHref}>
-                    {row.lotLabel}<ExternalLink className="h-3.5 w-3.5" />
-                  </Link>
-                ) : row.lotLabel}
-              </td>
-              <td className="block px-3 py-2 md:table-cell md:py-4"><div>{row.sexLabel}</div><div className="text-muted-foreground">{row.ageLabel}</div></td>
-              <td className="block px-3 py-2 md:table-cell md:py-4">{row.categoryLabel}</td>
-              <td className="block px-3 py-2 md:table-cell md:py-4"><div>{row.protocolLabel}</div><div className="text-muted-foreground">{row.itemLabel}</div></td>
-              <td className="block px-3 py-2 md:table-cell md:py-4">
-                <Badge variant={row.canSelect ? "default" : "secondary"}>{statusLabel(row)}</Badge>
-              </td>
-              <td className="block px-3 py-2 md:table-cell md:max-w-sm md:py-4">
-                <div>{row.blockers[0] ?? row.reason}</div>
-                <div className="text-xs text-muted-foreground">Janela técnica: intervalo indeterminado nesta consulta.</div>
-                <details><summary className="cursor-pointer text-xs">Justificativas e contexto</summary>
-                  {[...new Set([row.reason, ...row.precheck.reasons, ...row.blockers, ...row.documentaryPendingReasons, ...row.warnings])].filter(reason => reason !== (row.blockers[0] ?? row.reason)).map(reason => <p key={reason}>{reason}</p>)}
-                  <ContextResolutionDetailsV2 row={row} />
-                </details>
-              </td>
-              <td className="block px-3 py-2 md:table-cell md:py-4 text-muted-foreground">
-                {row.plannedFor ? row.plannedFor.split("-").reverse().join("/") : "Sem agenda aberta"}
-              </td>
-              </tr>
-              ))}
-          </tbody>
-        ))}
-      </table>
+    .map(label => ({ label, rows: rows.filter(row => (catalog ? sanitaryOperationalGroupV2(row, catalog) : groupLabel(row)) === label) }))
+    .filter(group => group.rows.length);
+  const heading = (key: SanitaryWindowSortKeyV2, label: string) => <button type="button" className="min-h-11 text-left font-semibold" onClick={() => onSortChange(key)}>{label}{sortKey === key ? (sortDirection === "asc" ? " ↑" : " ↓") : ""}</button>;
+  return <div className="sanitary-window-results space-y-3" aria-label="Resultados por animal">
+    <p className="text-sm font-semibold">{rows[0].protocolLabel} · {rows[0].itemLabel}</p>
+    <div className="flex flex-wrap items-end gap-3 text-sm">
+      <label className="min-w-0 space-y-1"><span className="block">Ordenar resultados por</span><select aria-label="Ordenar resultados por" className="h-11 max-w-full rounded-lg border border-border bg-background px-3" value={sortKey} onChange={event => onSortChange(event.target.value as SanitaryWindowSortKeyV2)}>{sortOptions.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+      <button type="button" className="min-h-11 rounded-lg border border-border px-3" onClick={() => onSortChange(sortKey)} aria-label="Inverter ordem">{sortDirection === "asc" ? "Crescente ↑" : "Decrescente ↓"}</button>
+      <label className="flex min-h-11 items-center gap-2"><Checkbox aria-label="Selecionar todos os elegíveis visíveis" className="h-6 w-6" checked={visibleEligibleCount > 0 && allVisibleEligibleSelected} disabled={!visibleEligibleCount} onCheckedChange={checked => onSelectAllVisible(checked === true)} />Elegíveis visíveis</label>
     </div>
-  );
+    <table className="sanitary-window-table text-left text-sm">
+      <caption className="sr-only">Avaliações individuais, seleção e Agendas existentes</caption>
+      <thead className="bg-muted/50"><tr><th scope="col" className="sanitary-column-select">Seleção</th><th scope="col" className="sanitary-column-animal" aria-sort={sortKey === "animal" ? (sortDirection === "asc" ? "ascending" : "descending") : undefined}><div className="flex flex-wrap gap-x-3">{heading("animal", "Animal")}{heading("lote", "Lote")}</div></th><th scope="col" className="sanitary-column-status">{heading("status", "Situação")}</th><th scope="col" className="sanitary-column-reason">{heading("motivo", "Impedimento ou motivo")}</th><th scope="col" className="sanitary-column-agenda">{heading("agenda", "Agenda existente")}</th></tr></thead>
+      {groups.map(group => <tbody key={group.label}>
+        <tr className="sanitary-group-heading bg-muted/30"><th scope="colgroup" colSpan={5} className="sanitary-group-title text-xs font-semibold uppercase text-muted-foreground">{group.label} ({group.rows.length})</th></tr>
+        {group.rows.map(row => <tr key={row.animalId} className="sanitary-animal-row border-t border-border">
+          <td className="sanitary-selection"><Checkbox aria-label={`Selecionar ${row.identification}`} className="h-11 w-11" checked={selectedIds.has(row.animalId)} disabled={!row.canSelect} onCheckedChange={checked => onSelectionChange(row.animalId, checked === true)} /></td>
+          <td><Link className="inline-flex min-h-11 items-center gap-1 font-semibold text-primary hover:underline" to={row.animalHref}>{row.identification}<ExternalLink className="h-3.5 w-3.5" /></Link><p className="text-muted-foreground">{row.lotHref ? <Link className="inline-flex min-h-11 items-center text-primary hover:underline" to={row.lotHref}>{row.lotLabel}</Link> : row.lotLabel}</p></td>
+          <td><Badge variant={row.canSelect ? "default" : "secondary"}>{statusLabel(row)}</Badge></td>
+          <td><p>{row.blockers[0] ?? row.reason}</p><details><summary className="min-h-11 cursor-pointer py-3">Justificativas e contexto</summary>
+            <p>{row.sexLabel} · {row.ageLabel} · {row.categoryLabel}</p>
+            <p>Janela técnica: intervalo indeterminado nesta consulta.</p>
+            {[...new Set([row.reason, ...row.precheck.reasons, ...row.blockers, ...row.documentaryPendingReasons, ...row.warnings])].filter(reason => reason !== (row.blockers[0] ?? row.reason)).map(reason => <p key={reason}>{reason}</p>)}
+            <ContextResolutionDetailsV2 row={row} />
+          </details></td>
+          <td>{row.plannedFor ? <span>Agenda: {row.plannedFor.split("-").reverse().join("/")}</span> : <span className="sanitary-no-agenda">Sem Agenda aberta</span>}</td>
+        </tr>)}
+      </tbody>)}
+    </table>
+  </div>;
 }
 
 export function ContextResolutionDetailsV2({ row }: { row: SanitaryProtocolWindowRowV2 }) {

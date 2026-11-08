@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SanitaryProtocolWindowPanelV2 } from "@/components/sanitario/SanitaryProtocolWindowPanelV2";
 import { SanitaryContextualNeedsPanelV2 } from "@/components/sanitario/SanitaryContextualNeedsPanelV2";
+import { SanitaryNeedsDiscoveryV2 } from "@/components/sanitario/SanitaryNeedsDiscoveryV2";
+import { buildSanitaryProtocolWindowV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 import type { Animal, Lote } from "@/lib/offline/types";
 import type { SanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 
@@ -70,6 +72,80 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     vi.setSystemTime(new Date(2026, 6, 4, 12));
   });
   afterEach(() => vi.useRealTimers());
+  it.each([1, 3])("compacta 32 avaliações por animal sem perder identidades numa consulta de %i animal(is)", count => {
+    const base = buildSanitaryProtocolWindowV2({ source, protocolId: "protocol-b19", itemId: "item-b19", evaluatedAt: "2026-07-04" })!.rows[0];
+    const items = Array.from({ length: 32 }, (_, index) => ({ ...source.catalog.items[0], id: `item-${index}`, logicalItemKey: `variant-${index}` }));
+    const groups = items.map((item, index) => ({ itemId: item.id, itemLabel: `Etapa ${index}`, protocolId: item.protocolId, protocolLabel: "Protocolo", rows: Array.from({ length: count }, (_, animalIndex) => ({
+      ...base, animalId: `animal-${animalIndex}`, identification: animalIndex === 0 ? "V01" : `V0${animalIndex + 1}`, itemId: item.id, itemKey: item.logicalItemKey,
+      status: index >= 3 && index < 13 ? "insufficient_data" as const : base.status,
+      alreadyPlanned: index === 1 || index === 2, plannedFor: index === 1 || index === 2 ? "2026-07-06" : null,
+      canSelect: index === 0, blockers: index >= 13 ? ["Restrição curatorial"] : [],
+      documentaryPending: false, precheck: { ...base.precheck, missingExecutedHistory: index >= 3 && index < 13 },
+    })) }));
+    const onOpenSection = vi.fn();
+    const animals = groups[0].rows.map(row => ({ ...source.animals[0], id: row.animalId, identificacao: row.identification }));
+    render(<MemoryRouter><SanitaryNeedsDiscoveryV2 source={{ ...source, animals, catalog: { ...source.catalog, items } }} target={{ animalId: count === 1 ? "animal-0" : "", lotId: count === 1 ? "" : "lot-1" }} evaluatedAt="2026-07-04" groups={groups}
+      onTargetChange={vi.fn()} onDateChange={vi.fn()} onChooseItem={vi.fn()} onOpenSection={onOpenSection} /></MemoryRouter>);
+    const insufficient = screen.getByText(`Informações insuficientes · ${10 * count} avaliações`).closest("details");
+    expect(insufficient).not.toHaveAttribute("open");
+    expect(screen.getByText(`Restrições e consulta técnica · ${19 * count} avaliações`).closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByRole("region", { name: "Planejamento disponível" })).toHaveTextContent(`${count} avaliações`);
+    expect(document.querySelectorAll("[data-evaluation-key]")).toHaveLength(32 * count);
+    expect(new Set(Array.from(document.querySelectorAll("[data-evaluation-key]"), element => element.getAttribute("data-evaluation-key"))).size).toBe(32 * count);
+    fireEvent.click(screen.getAllByRole("button", { name: "Abrir Agenda sanitária" })[0]);
+    expect(onOpenSection).toHaveBeenCalledWith("agenda");
+  });
+
+  it("preserva data e escopo compatível ao alternar perspectivas sem transportar seleção", () => {
+    render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={source} onPlan={vi.fn()} initialAnimalId="female" /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
+    fireEvent.click(screen.getByRole("button", { name: "Por protocolo", exact: true }));
+    fireEvent.change(screen.getByLabelText("Selecionar protocolo"), { target: { value: "protocol-b19" } });
+    fireEvent.change(screen.getByLabelText("Selecionar item do protocolo"), { target: { value: "item-b19" } });
+    fireEvent.click(screen.getByLabelText("Selecionar Fêmea 101"));
+    fireEvent.change(screen.getByLabelText("Data de avaliação"), { target: { value: "2026-07-05" } });
+    fireEvent.click(screen.getByRole("button", { name: "Por animal", exact: true }));
+    expect(screen.getByLabelText("Data de avaliação das necessidades")).toHaveValue("2026-07-05");
+    expect(screen.getByLabelText("Animal das necessidades")).toHaveValue("female");
+    fireEvent.click(screen.getByRole("button", { name: "Por protocolo", exact: true }));
+    expect(screen.getByLabelText("Selecionar protocolo")).toHaveValue("");
+  });
+
+  it("explica seleção oculta e inclui somente os selecionados visíveis na revisão", () => {
+    render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={vi.fn()} initialProtocolId="protocol-b19" initialItemId="item-b19" initialEvaluatedAt="2026-07-04" /></MemoryRouter>);
+    fireEvent.click(screen.getByLabelText("Selecionar Fêmea 101"));
+    fireEvent.click(screen.getByText("Filtros técnicos da avaliação"));
+    fireEvent.click(screen.getByRole("button", { name: /Não aplicáveis/ }));
+    expect(screen.getByText(/1 selecionado\(s\) fora da visualização/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Planejar agenda para selecionados" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Limpar filtro", exact: true }));
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeChecked();
+    expect(screen.getByText(/Data da avaliação: 04\/07\/2026/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Data planejada da agenda agrupada"), { target: { value: "2026-07-10" } });
+    expect(screen.getByText(/A revisão reavalia cada animal na data planejada/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Planejar agenda para selecionados" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Fêmea 101");
+    expect(screen.getByRole("dialog")).not.toHaveTextContent("Macho 202");
+    fireEvent.click(screen.getByRole("button", { name: "Voltar à seleção" }));
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeChecked();
+    expect(screen.getByLabelText("Data planejada da agenda agrupada")).toHaveValue("2026-07-10");
+  });
+
+  it("distingue ausência de animais de três animais com Agenda e zero nova seleção", () => {
+    const onOpenSection = vi.fn();
+    const agendas = source.animals.map(animal => ({ id: `agenda-${animal.id}`, fazenda_id: "farm-1", protocolo_id: "protocol-clost", status: "programada", data_programada: "2026-07-06", metadata: { itemKey: "clostridial_primovac_dose1" } }));
+    const agendaAnimals = source.animals.map(animal => ({ agenda_id: `agenda-${animal.id}`, animal_id: animal.id, fazenda_id: "farm-1" }));
+    const plannedSource = { ...source, agendas, agendaAnimals, catalog: { ...source.catalog, protocols: [{ ...source.catalog.protocols[0], id: "protocol-clost", familyCode: "clostridioses", name: "Clostridioses" }], items: [{ ...source.catalog.items[0], id: "item-clost", protocolId: "protocol-clost", logicalItemKey: "clostridial_primovac_dose1" }] } } as SanitaryProtocolWindowSourceV2;
+    const { rerender } = render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={plannedSource} onPlan={vi.fn()} onOpenSection={onOpenSection} initialProtocolId="protocol-clost" initialItemId="item-clost" initialEvaluatedAt="2026-07-04" /></MemoryRouter>);
+    expect(screen.getByText("3 animal(is) com Agenda existente.")).toBeInTheDocument();
+    expect(screen.getByText(/Nenhum animal selecionável/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Data planejada da agenda agrupada")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Abrir Agenda sanitária" }));
+    expect(onOpenSection).toHaveBeenCalledWith("agenda");
+    rerender(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={{ ...plannedSource, animals: [] }} onPlan={vi.fn()} initialProtocolId="protocol-clost" initialItemId="item-clost" /></MemoryRouter>);
+    expect(screen.getByText(/Nenhum animal corresponde aos filtros/)).toBeInTheDocument();
+    expect(screen.queryByText(/Nenhum animal selecionável/)).not.toBeInTheDocument();
+  });
   it("inicializa avaliação e planejamento pelo dia civil local no fim da noite", () => {
     vi.setSystemTime(new Date(2026, 6, 4, 23, 30));
     render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={vi.fn()} initialProtocolId="protocol-b19" initialItemId="item-b19" /></MemoryRouter>);
@@ -77,11 +153,12 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     expect(screen.getByLabelText("Data planejada da agenda agrupada")).toHaveValue("2026-07-04");
   });
   it("oferece duas perspectivas e recolhe versões substituídas na consulta técnica", () => {
+    const onPlan = vi.fn();
     const versioned = { ...source, catalog: { ...source.catalog, items: [
       ...source.catalog.items,
       { ...source.catalog.items[0], id: "item-b19-v2", version: 2 },
     ] } };
-    render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={versioned} onPlan={vi.fn()} initialAnimalId="female" /></MemoryRouter>);
+    render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={versioned} onPlan={onPlan} initialAnimalId="female" /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
     expect(screen.getByRole("button", { name: "Por animal", exact: true })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Por protocolo", exact: true })).toBeInTheDocument();
@@ -90,6 +167,10 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     expect(within(historical).getByRole("article", { name: /Brucelose B19/, hidden: true })).toHaveTextContent("Versão 1");
     expect(within(screen.getByRole("region", { name: "Planejamento disponível" })).getByRole("article", { name: /Brucelose B19/ })).toHaveTextContent("Versão 2");
     expect(screen.queryByText("Necessidade identificada")).not.toBeInTheDocument();
+    fireEvent.click(within(historical).getByRole("button", { name: "Consultar versão vigente" }));
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeEnabled();
+    expect(screen.getByLabelText("Selecionar Fêmea 101")).not.toBeChecked();
+    expect(onPlan).not.toHaveBeenCalled();
   });
 
   it("explica incompatibilidade da data coletiva e exige exclusão explícita antes de confirmar", async () => {
@@ -113,7 +194,7 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     const onPlan = vi.fn().mockResolvedValue(undefined);
     render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={source} onPlan={onPlan} initialAnimalId="female" /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
-    fireEvent.click(within(screen.getByRole("article", { name: /Raiva dos herbívoros/ })).getByRole("button", { name: "Consultar limitações e complementos" }));
+    fireEvent.click(within(screen.getByRole("article", { name: /Raiva dos herbívoros/ })).getByRole("button", { name: "Ver detalhes técnicos" }));
     fireEvent.change(screen.getByLabelText("Área de risco para raiva"), { target: { value: "yes" } });
     fireEvent.click(screen.getByLabelText("Selecionar Fêmea 101"));
     fireEvent.click(screen.getByRole("button", { name: "Voltar às necessidades" }));
@@ -132,8 +213,8 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     render(<MemoryRouter><SanitaryContextualNeedsPanelV2 source={source} onPlan={onPlan} initialAnimalId="female" /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText("Data de avaliação das necessidades"), { target: { value: "2026-07-04" } });
     expect(screen.queryByLabelText("Selecionar protocolo")).not.toBeInTheDocument();
-    expect(screen.getByRole("article", { name: /Brucelose B19/ })).toHaveTextContent("Planejamento disponível");
-    expect(screen.getByRole("article", { name: /Raiva dos herbívoros/ })).toHaveTextContent("Informação insuficiente");
+    expect(screen.getByRole("article", { name: /Brucelose B19/ })).toHaveTextContent("Planejar manejo");
+    expect(screen.getByRole("article", { name: /Raiva dos herbívoros/ })).toHaveTextContent("Dados insuficientes");
     expect(screen.getAllByRole("button", { name: "Planejar manejo" })).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Planejar manejo" }));
     expect(screen.queryByLabelText("Filtrar por lote")).not.toBeInTheDocument();
@@ -178,9 +259,9 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
     fireEvent(window, new Event("online"));
     expect(screen.queryByText(/Offline: consulta/)).not.toBeInTheDocument();
-    fireEvent.click(within(b19).getByRole("button", { name: "Consultar limitações e complementos" }));
+    fireEvent.click(within(b19).getByRole("button", { name: "Ver restrição técnica" }));
     expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Planejar agenda para selecionados" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Planejar agenda para selecionados" })).not.toBeInTheDocument();
     expect(onPlan).not.toHaveBeenCalled();
   });
 
