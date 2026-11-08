@@ -1,9 +1,9 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-11-06
-Baseline integrada consultada: `origin/main@1de7d220b368086367efb6db326bae660ff5acc1` (#272)
+Atualizado em: 2026-11-08
+Baseline integrada consultada: `origin/main@db4c2f21291d8ce8e87af2d0f2de4b1063693620` (#281)
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no escopo certificado)**.
-Próxima fase de desenvolvimento: **Fase 24 — continuidade pós-#272, sem nova fase. B01/F07 integrado; B02/A05 implementado localmente em `codex/b02-a05-durable-neonatal`, integração pendente: identidade durável por intenção, transação atômica e replay da fila existente. [Contrato e limites](../architecture/OPERATIONAL_FLOWS.md). GATE-03 bloqueado; F24.6A2 sem início; nenhum novo ciclo F24 aberto.**
+Próxima fase de desenvolvimento: **Fase 24 — continuidade pós-#281, sem nova fase. B01/F07 #272 e B02/A05 #274 integrados; [contrato e limites](../architecture/OPERATIONAL_FLOWS.md) preservados. Central Sanitária contextual e incremento UX #278–#281 integrados; convergência com os protótipos e homologação dirigida com V01 real continuam separadas. GATE-03 bloqueado; F24.6A2 sem início; nenhum novo ciclo F24 aberto.**
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.
@@ -29,6 +29,12 @@ com fila heterogênea foram certificados. Kill real de processo/browser permanec
 O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é a referência arquitetural canônica dos fluxos operacionais. Código e migrations ativas mantêm precedência factual; os resumos deste `PROJECT_STATUS.md` registram estado e contexto, mas não redefinem contratos do mapa.
 
 ## Estado atual
+
+**Central Sanitária — #273/#275/#277–#281 CLOSED / INTEGRATED (08/11/2026):** catálogo reativo, contexto por animal e refinamentos de avaliação/planejamento integrados. Menu `Sanitário` → `Avaliação sanitária`, `Agenda sanitária`, `Histórico sanitário`, `Catálogo sanitário` e `Conformidade`; avaliação com perspectivas Por animal/Por protocolo, cinco grupos operacionais, revisão de data, contextos pertinentes e prévia automática agrupada. O [manual atualizado](../manuals/screens/SANITARIO.md#central-sanitária-e-filtros) descreve o comportamento implementado; [merges e evidências](../review/CURRENT_PHASE_HANDOFF.md#central-sanitária--integrações-até-281). Nenhuma mudança de elegibilidade/autorização ou homologação V01 real é inferida da compactação visual. F24.7/F24.8, GATE-03 e rollout não são encerrados.
+
+**B02/A05 — CLOSED / INTEGRATED pelo [PR #274](https://github.com/maresdeandrade/RebanhoSync/pull/274):** merge `0673a9747cf6e45bd6da4c368f4722c4572cd49d`; comando neonatal durável e destino efetivo de desmame integrados. As 59 provas locais registradas mantêm transporte simulado; integração não certifica kill real, dispositivos físicos ou convergência remota. As referências anteriores a integração pendente foram superadas.
+
+**C06 — gesto heterogêneo CLOSED / INTEGRATED:** [relatório atualizado](../review/SANITARIO_C06_GESTO_HETEROGENEO_20261030.md#estado-integrado--atualização-de-08112026), PR #260, merge `8de882df`. Os 9/9 cenários de planejamento permanecem evidência histórica, sem reexecução; o fechamento técnico consolidado #259–#262 não equivale à certificação completa F24.7.
 
 **F24 integrada — #270, merge `0206d64a`:** A + A05 + correções Fallow; óbito factual com consequências condicionais nas Agendas e preservação de recibos. FULL local 5.332 PASS/92 skipped; CI remoto 5.350 PASS/74 skipped, lint/Fallow/build/gates aprovados. B2 0→74, 65→74 e 72→74 encerrado no ambiente descartável, incluindo migrations 73/74. [Evidências, pendências e limites](../review/CURRENT_PHASE_HANDOFF.md#f24-integrada--pr-270). Três deltas funcionais locais e uma evidência UX preservados; versões antigas não serão transportadas. Rollout exige schema V3 → Edge compatível → frontend, autorização própria e gates OFF até decisão específica. TypeScript/Deno herdados e skips explícitos; não se certificam F24.7/F24.8, implantação ou operação habilitada.
 
