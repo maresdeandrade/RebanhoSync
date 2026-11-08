@@ -30,10 +30,14 @@ function cardAction(group: SanitaryNeedGroupV2, canNavigate: boolean): { label: 
 
 export function SanitaryNeedCardV2({ group, hideAnimalIdentity, onChoose, onOpenSection }: Props) {
   const action = cardAction(group, Boolean(onOpenSection));
-  return <article aria-label={`${group.protocolLabel} · ${group.itemLabel}`} className="min-w-0 space-y-2 rounded-lg border border-border p-3">
+  return <article aria-label={`${group.protocolLabel} · ${group.itemLabel}`} className="min-w-0 space-y-2 break-words rounded-lg border border-border p-3">
     <h4 className="font-semibold">{group.protocolLabel} · {group.itemLabel}</h4>
     <ul className="space-y-2 text-sm">{group.rows.map(row => <NeedAnimal key={row.animalId} row={row} hideIdentity={hideAnimalIdentity} />)}</ul>
-    <details className="text-sm"><summary className="min-h-11 cursor-pointer py-3">Versão, fontes e documentos</summary><p>Versão {group.version}</p><Link className="text-primary underline" to="/protocolos-sanitarios/catalogo-v2">Consultar fontes, versões e documentos no Catálogo</Link></details>
+    <details className="space-y-2 text-sm"><summary className="min-h-11 cursor-pointer py-3">Detalhes técnicos, versão e documentos</summary>
+      <p>Versão {group.version}</p>
+      {group.rows.map(row => <NeedAnimalDetails key={row.animalId} row={row} hideIdentity={hideAnimalIdentity} />)}
+      <Link className="text-primary underline" to="/protocolos-sanitarios/catalogo-v2">Consultar fontes, versões e documentos no Catálogo</Link>
+    </details>
     <Button type="button" variant={action.label === "Planejar manejo" ? "default" : "outline"} onClick={() => {
       if (action.section && onOpenSection) onOpenSection(action.section);
       else onChoose(action.itemId ?? group.itemId);
@@ -42,16 +46,20 @@ export function SanitaryNeedCardV2({ group, hideAnimalIdentity, onChoose, onOpen
 }
 
 function NeedAnimal({ row, hideIdentity }: { row: SanitaryProtocolWindowRowV2; hideIdentity?: boolean }) {
-  const reasons = [...new Set([...row.precheck.reasons, ...row.blockers, ...row.documentaryPendingReasons, ...row.warnings])];
   return <li className="space-y-1" data-evaluation-key={`${row.protocolId}:${row.itemId}:${row.animalId}`}>
     {!hideIdentity ? <p className="font-medium">{row.identification} · {row.lotLabel}</p> : null}
     {!row.alreadyPlanned ? <><p><SanitaryWindowStatusLabelV2 status={row.status} /></p><p>{row.blockers[0] ?? row.reason}</p></> : null}
     {row.plannedFor ? <p>Agenda existente · {row.plannedFor.split("-").reverse().join("/")}</p> : null}
-    <details><summary className="min-h-11 cursor-pointer py-3">Detalhes técnicos e contexto</summary>
-      <p>{row.reason}</p>
-      {reasons.filter(reason => reason !== row.reason).map(reason => <p key={reason} className="text-muted-foreground">{reason}</p>)}
+  </li>;
+}
+
+function NeedAnimalDetails({ row, hideIdentity }: { row: SanitaryProtocolWindowRowV2; hideIdentity?: boolean }) {
+  const decisiveReason = !row.alreadyPlanned ? row.blockers[0] ?? row.reason : null;
+  const reasons = [...new Set([row.reason, ...row.precheck.reasons, ...row.blockers, ...row.documentaryPendingReasons, ...row.warnings])];
+  return <div className="space-y-1">
+      {!hideIdentity ? <p className="font-medium">{row.identification}</p> : null}
+      {reasons.filter(reason => reason !== decisiveReason).map(reason => <p key={reason} className="text-muted-foreground">{reason}</p>)}
       <p>Janela técnica: intervalo indeterminado nesta consulta.</p>
       <ContextResolutionDetailsV2 row={row} />
-    </details>
-  </li>;
+  </div>;
 }

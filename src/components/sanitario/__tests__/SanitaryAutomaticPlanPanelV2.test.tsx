@@ -36,9 +36,9 @@ const sources = Object.fromEntries(["eligibility_rule", "operational_window", "p
 const item = {
   id: "b19-item", protocolId: "b19", logicalItemKey: "b19_femeas_3_8_meses", version: 1,
   status: "active", itemStatus: "obrigatorio", actionType: "vacinacao", productRequirementKind: "product_class",
-  productId: null, productClass: "vacina_brucelose_b19", productClassGroupId: null,
+  productId: "fixture-product", productClass: "vacina_brucelose_b19", productClassGroupId: null,
   eligibilityRule: { species: ["bovino", "bubalino"], sex: "femea" }, operationalWindowRule: {},
-  doseRule: {}, routeRule: {}, boosterRule: {}, speciesAuthorization: {}, sourceRefsByField: sources,
+  doseRule: { quantity: 2, unit: "mL" }, routeRule: { route: "SC" }, boosterRule: { recurrenceRule: { kind: "annual" } }, speciesAuthorization: {}, sourceRefsByField: sources,
   limitations: [], snapshotTemplate: {}, allowsAgendaAuto: true, requiresMvResponsavel: true,
 };
 function sourceFor(count = 20): SanitaryProtocolWindowSourceV2 {
@@ -76,6 +76,88 @@ async function openForm(user: ReturnType<typeof userEvent.setup>) {
 describe("formulário de plano automático", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("oculta campos sem dependência e preserva o contexto completo ao editar, salvar e reabrir", async () => {
+    const user = userEvent.setup();
+    const context = { ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2, riskContext: true, rabiesRiskArea: false, sanitaryCadence: "annual" as const, management: "rearing" as const,
+      regionalCalendar: { uf: "MG", months: [5] }, scheduledContext: { date: "2026-10-20", reference: "Programação anterior", animalIds: ["a"] } };
+    const source = withSavedPlan(sourceFor(1), { schemaVersion: 2, context, ruleContexts: { "item-0": context } });
+    const view = renderPanel(source);
+    await openForm(user);
+    expect(screen.queryByLabelText("Contexto de risco sanitário")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Área de risco do plano")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Manejo do plano")).not.toBeInTheDocument();
+    await user.click(screen.getByText("Contexto específico desta regra"));
+    await user.selectOptions(await screen.findByLabelText(/B19.*Cadência do plano/), "semiannual");
+    await user.click(screen.getByRole("checkbox", { name: "Confirmar ativação do plano" }));
+    await user.click(screen.getByRole("button", { name: "Salvar revisão do plano" }));
+    await waitFor(() => expect(saveSanitaryAutomationPlanV2).toHaveBeenCalledTimes(1));
+    const saved = vi.mocked(saveSanitaryAutomationPlanV2).mock.calls[0][0].draft;
+    expect(saved.context).toEqual(context);
+    expect(saved.ruleContexts?.["item-0"]).toEqual({ ...context, sanitaryCadence: "semiannual" });
+    view.rerenderPanel(withSavedPlan(sourceFor(1), { schemaVersion: 2, revision: 3, ...saved }), "farm");
+    await openForm(user);
+    await user.click(screen.getByText("Contexto específico desta regra"));
+    expect(await screen.findByLabelText(/B19.*Cadência do plano/)).toHaveValue("semiannual");
+    await user.click(screen.getByRole("button", { name: "Usar contexto geral" }));
+    expect(screen.getByLabelText(/B19.*Cadência do plano/)).toHaveValue("annual");
+  });
+
+  it("usa a união dos metadados selecionados, sem inferir dependências pelo rótulo", async () => {
+    const user = userEvent.setup();
+    const source = sourceFor(2);
+    source.catalog.items[0].boosterRule = {};
+    source.catalog.items[0].eligibilityRule = { requires_risk_context: true };
+    source.catalog.items[1].eligibilityRule = { requires_risk_area_overlay: true, requires_destination_context: true };
+    renderPanel(source);
+    await openForm(user);
+    expect(screen.queryAllByRole("combobox")).toHaveLength(0);
+    await user.click(screen.getAllByRole("checkbox", { name: /^Automatizar / })[0]);
+    expect(screen.getAllByRole("combobox")).toHaveLength(1);
+    expect(screen.getByLabelText("Contexto de risco sanitário")).toBeInTheDocument();
+    await user.click(screen.getAllByRole("checkbox", { name: /^Automatizar / })[1]);
+    expect(screen.getAllByRole("combobox")).toHaveLength(4);
+    await user.click(screen.getAllByText("Usando contexto geral · ajustar esta regra")[0]);
+    expect(await screen.findByLabelText(/B19.*Contexto de risco sanitário/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/B19.*Manejo do plano/)).not.toBeInTheDocument();
+  });
+
+  it("resume avaliações por identidade e motivo exato, mantendo animais e justificativas", async () => {
+    const user = userEvent.setup();
+    const entries = [
+      { itemId: "item-0", animalId: "a", animalLabel: "V01", eligible: false, reason: "Histórico insuficiente." },
+      { itemId: "item-0", animalId: "b", animalLabel: "V02", eligible: false, reason: "Histórico insuficiente." },
+      { itemId: "item-0", animalId: "c", animalLabel: "V03", eligible: false, reason: "Contexto ausente." },
+      { itemId: "item-1", animalId: "a", animalLabel: "V01", eligible: false, reason: "Histórico insuficiente." },
+      { itemId: "item-1", animalId: "b", animalLabel: "V02", eligible: true, reason: "Em janela." },
+    ];
+    vi.mocked(previewSanitaryAutomaticPlanV2).mockReturnValueOnce({ entries, toCreate: 1 });
+    const source = sourceFor(2);
+    const before = JSON.stringify(entries);
+    renderPanel(withSavedPlan(source, { rules: source.catalog.items.map(item => selectSanitaryAutomationRuleV2(protocol, item)) }));
+    await openForm(user);
+    expect(screen.getByText(/1 intenção.*potencialmente gerável/)).toBeInTheDocument();
+    expect(screen.getByText(/4 avaliações não planejáveis.*3 animais distintos/)).toBeInTheDocument();
+    expect(screen.getAllByText("Ver animais e justificativas")).toHaveLength(4);
+    expect(document.querySelectorAll("[data-preview-evaluation]")).toHaveLength(5);
+    expect(screen.getAllByText(/V01: Não planejável — Histórico insuficiente/)).toHaveLength(2);
+    expect(entries).toHaveLength(5);
+    expect(JSON.stringify(entries)).toBe(before);
+    expect(screen.getAllByText(/Regra item-1 · versão 1/)).toHaveLength(2);
+  });
+
+  it.each([false, true])("mantém contagens com zero intenções, com avaliações excluídas: %s", async excluded => {
+    const user = userEvent.setup();
+    vi.mocked(previewSanitaryAutomaticPlanV2).mockReturnValueOnce({ toCreate: 0, entries: excluded ? [
+      { itemId: "item-0", animalId: "a", animalLabel: "V01", eligible: false, reason: "Agenda existente preservada." },
+      { itemId: "item-0", animalId: "b", animalLabel: "V02", eligible: false, reason: "Agenda existente preservada." },
+    ] : [] });
+    renderPanel(withSavedPlan());
+    await openForm(user);
+    expect(screen.getByText(/0 intenção.*potencialmente gerável/)).toBeInTheDocument();
+    expect(screen.getByText(`${excluded ? 2 : 0} avaliações não planejáveis · ${excluded ? 2 : 0} animais distintos avaliados.`)).toBeInTheDocument();
+    expect(screen.queryAllByText("Ver animais e justificativas")).toHaveLength(excluded ? 1 : 0);
+  });
+
   it("não monta campos nem calcula preview enquanto recolhido, mantendo o motor existente montado", () => {
     const view = renderPanel();
     console.info("SANITARY_PLAN_RENDER", JSON.stringify({
@@ -103,7 +185,7 @@ describe("formulário de plano automático", () => {
     await openForm(user);
     expect(screen.getAllByRole("checkbox", { name: /^Automatizar / })).toHaveLength(1);
     expect(screen.queryByRole("combobox", { name: "Contexto reprodutivo do plano" })).not.toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Cadência do plano" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Cadência do plano" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Consultar catálogo sanitário" })).toHaveAttribute("href", "/protocolos-sanitarios/catalogo-v2");
     await user.click(screen.getByRole("checkbox", { name: /^Automatizar / }));
     expect(screen.queryByRole("combobox", { name: "Contexto reprodutivo do plano" })).not.toBeInTheDocument();
@@ -188,7 +270,7 @@ describe("formulário de plano automático", () => {
     expect(screen.queryByLabelText("Cadência do plano")).not.toBeInTheDocument();
     await openForm(user);
     expect(screen.getByRole("checkbox", { name: /^Automatizar / })).not.toBeChecked();
-    expect(screen.getByLabelText("Cadência do plano")).toHaveValue("");
+    expect(screen.queryByLabelText("Cadência do plano")).not.toBeInTheDocument();
     expect(saveSanitaryAutomationPlanV2).not.toHaveBeenCalled();
   });
 
