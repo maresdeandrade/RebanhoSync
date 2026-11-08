@@ -1,7 +1,7 @@
 # Manual da Tela — Sanitário
 
-Atualizado em: 2026-07-12
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-08
+**Baseline Commit:** `db4c2f21291d8ce8e87af2d0f2de4b1063693620`
 
 ## Para que serve
 
@@ -121,17 +121,34 @@ Quando existir o fluxo, a suspeita clínica ou ocorrência sanitária deve ser r
 
 A rota `/protocolos-sanitarios` concentra a operação sanitária completa.
 
-Abas/superfícies esperadas:
+No menu principal, `Sanitário` abre a Central. As abas disponíveis são:
 
-* `Janelas sanitárias`;
+* `Avaliação sanitária`;
 * `Agenda sanitária`;
-* `Catálogo sanitário`;
 * `Histórico sanitário`;
-* `Conformidade futura/desabilitada`.
+* `Catálogo sanitário`;
+* `Conformidade`.
+
+### Avaliação sanitária
+
+* **Por animal:** escolha um animal ou lote para consultar as avaliações sem selecionar previamente um protocolo. Os cinco grupos são `Planejamento disponível`, `Janelas para acompanhamento`, `Agendas existentes`, `Informações insuficientes` e `Restrições e consulta técnica`.
+* **Por protocolo:** selecione protocolo e item para a consulta técnica e a seleção de animais. A troca de perspectiva preserva data e alvo compatíveis, sem transportar a seleção de planejamento.
+* Cada cartão prioriza intervenção/etapa, situação, motivo e ação contextual. Justificativas complementares, contexto, versão e documentos ficam por expansão; avaliações inconclusivas e versões substituídas continuam consultáveis.
+* `Planejar manejo` abre a revisão. **Data de avaliação** e **data planejada** são distintas; a revisão pode apontar incompatibilidade, Agenda equivalente existente ou necessidade de nova avaliação. As condições são revalidadas ao salvar o planejamento.
+
+### Plano de geração automática
+
+A configuração fica recolhida até abrir `Configurar plano automático`. O contexto geral mostra campos pertinentes às regras selecionadas; cada regra permite um contexto específico. Esse ajuste é completo e deixa de acompanhar o geral até a ação explícita `Usar contexto geral`. Ocultar campos não apaga valores, e uma edição parcial preserva as demais propriedades.
+
+A prévia informa intenções potencialmente geráveis, avaliações não planejáveis e animais distintos. Agrupa pela identidade/versionamento da regra e motivo exato; `Ver animais e justificativas` mantém acesso a cada avaliação original. A prévia não confirma criação: ativação exige revisão/autorização e a geração reavalia as condições.
+
+`Conformidade` consulta os dados locais e as pendências documentais disponíveis; não é uma aba futura/desabilitada nem uma liberação comercial universal. O catálogo permanece consulta de regras, fontes, versões e documentos.
+
+Na consulta offline, os dados podem estar desatualizados. Uma data retrospectiva não recompõe integralmente o estado histórico do rebanho. Janelas técnicas completas e a convergência com os protótipos mobile/desktop não foram entregues por estes incrementos.
 
 Atalhos vindos do detalhe do animal ou do lote podem abrir a Central com filtro inicial aplicado.
 
-* Filtro por animal mostra apenas/destaca o animal de origem.
+* Filtro por animal direciona a consulta ao animal de origem.
 * Filtro por lote lista apenas animais daquele lote.
 * Se animal e lote vierem juntos, o animal tem prioridade e o lote fica como contexto auxiliar.
 * `Limpar filtro` volta à visão geral.

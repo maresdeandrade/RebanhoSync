@@ -1,11 +1,11 @@
 # UX-DISCOVERY-02 — Decisões preservadas e reconciliação pós-merge
 
-Atualizado em: 2026-11-06
+Atualizado em: 2026-11-08
 
 ## Autoridade e proveniência
 
-Reconciliação documental sobre `origin/main@1de7d220b368086367efb6db326bae660ff5acc1`
-(#272), com incremento B02/A05 local pendente de integração. **GATE-03 = BLOQUEADO; Etapa 3 não autorizada.**
+Reconciliação documental sobre `origin/main@db4c2f21291d8ce8e87af2d0f2de4b1063693620`
+(#281), com B02/A05 integrado #274 e os incrementos contextuais da Central Sanitária integrados. **GATE-03 = BLOQUEADO; Etapa 3 não autorizada.**
 Este registro complementa o [backlog canônico](../review/MASTER_BACKLOG.md#reconciliação-dos-bloqueadores-e-decisões),
 sem criar backlog, homologação UX ou autorização operacional.
 
@@ -58,7 +58,7 @@ recuperação e convergência só sustentam afirmações no recorte efetivamente
 Os AUD/PND e suas restrições permanecem no backlog canônico, sem novos IDs.
 
 O #271 preserva `eventId` no builder D7/D30/desmame e movimento distinto estável.
-No incremento B02/A05 local sobre #272, o caller
+No incremento B02/A05 integrado pelo #274 sobre #272, o caller
 [AnimalCriaInicial](../../src/pages/AnimalCriaInicial.tsx) passa pela transação de
 `registerCalfJourneyGesture`: identidade por farm/Agenda, marcador técnico na gesture
 e payload/horário nas operações/fatos existentes. Dois cliques e retomada não criam
@@ -67,6 +67,12 @@ registro local de confirmação remota. [Contrato e evidência local](../archite
 transporte simulado e reabertura Dexie não certificam kill real ou convergência remota.
 Cura de umbigo/revisão neonatal seguem a Central e o bloqueio V3 vigente;
 nenhum Evento fictício ou novo writer foi criado nesta tarefa.
+
+### Central Sanitária — implementação integrada até #281
+
+Os PRs #273/#275/#277–#281 integram catálogo reativo, contexto por animal e reorganização da Central: avaliação Por animal/Por protocolo, cinco grupos operacionais, revisão da data planejada, contextos pertinentes e prévia automática agrupada. O [manual](../manuals/screens/SANITARIO.md#central-sanitária-e-filtros) registra as abas e o comportamento vigente; [merges e evidências](../review/CURRENT_PHASE_HANDOFF.md#central-sanitária--integrações-até-281) mantêm a proveniência. C06 heterogêneo está CLOSED / INTEGRATED pelo #260; o snapshot READY anterior não representa trabalho ainda aguardando integração.
+
+Isso não implementa os protótipos finais mobile/desktop, não homologa V01 real nem entrega janelas técnicas completas. As decisões de produto acima e os limites do GATE-03 permanecem; uma nova baseline de UI não é homologação universal de jornadas, atores ou permissões.
 
 ## Limites e reconsideração do GATE-03
 

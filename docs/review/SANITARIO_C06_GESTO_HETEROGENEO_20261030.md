@@ -1,6 +1,10 @@
 # C06 — gesto heterogêneo, atomicidade e recuperação — 30/10/2026
 
-## Decisão e baseline
+## Estado integrado — atualização de 08/11/2026
+
+**Incremento C06 — gesto heterogêneo: `CLOSED / INTEGRATED`.** Integrado pelo [PR #260](https://github.com/maresdeandrade/RebanhoSync/pull/260), merge `8de882dff2923033ec14607e2bc82a1ed69acc18`, ancestral da baseline consultada `main@db4c2f21291d8ce8e87af2d0f2de4b1063693620`. Contrato comprovado: `PARTIAL_PER_OPERATION` no planejamento sanitário. A [consolidação C06 #259–#262](./CURRENT_PHASE_HANDOFF.md#fechamento-técnico-c06--259262-integrados) registra o fechamento técnico; `F24.7_FULL_CERTIFICATION = NOT_CERTIFIED` e rollout permanecem separados. Esta atualização é documental, sem reexecução dos nove cenários.
+
+## Decisão e baseline — snapshot pré-integração de 30/10/2026
 
 **Incremento C06: `READY_FOR_REVIEW`. Contrato comprovado: `PARTIAL_PER_OPERATION`, no escopo sanitário planejado. Gate técnico: `READY`. F24.7 completa: `NOT_STARTED`.**
 
@@ -55,4 +59,4 @@ Flags locais OFF, gates das duas fazendas OFF, browser/Vite fechados, conexão D
 
 1. Certificação delimitada a comandos sanitários de **planejamento**; não estende parcialidade a todos os domínios ou a comandos factuais/estoque.
 2. Restart lógico por reload preservando IndexedDB; não certifica SIGKILL, cold start PWA sem assets, aparelho físico ou background móvel. O farm-switch é do contexto persistido usado pelo worker; composição do provider real pertence à evidência C05 integrada.
-3. Não exercitou todas as combinações/conflitos/dependências/limites de tamanho de F24.7. Próxima unidade recomendada: dependências e conflito CAS dentro de um único gesto sanitário, com critérios próprios e autorização; F24.7 completa e rollout continuam separados.
+3. Não exercitou todas as combinações/conflitos/dependências/limites de tamanho de F24.7. A unidade de dependências e conflito CAS recomendada neste snapshot foi posteriormente integrada pelo [PR #261](https://github.com/maresdeandrade/RebanhoSync/pull/261); não é pendência de implementação deste gesto. F24.7 completa e rollout continuam separados.
