@@ -34,7 +34,7 @@ export function SanitaryNeedCardV2({ group, hideAnimalIdentity, onChoose, onOpen
     <h4 className="font-semibold">{group.protocolLabel} · {group.itemLabel}</h4>
     <ul className="space-y-2 text-sm">{group.rows.map(row => <NeedAnimal key={row.animalId} row={row} hideIdentity={hideAnimalIdentity} />)}</ul>
     <details className="space-y-2 text-sm"><summary className="min-h-11 cursor-pointer py-3">Detalhes técnicos, versão e documentos</summary>
-      <p>Versão {group.version} · item {group.itemId} · protocolo {group.protocolId}</p>
+      <p>Versão {group.version}</p>
       {group.rows.map(row => <NeedAnimalDetails key={row.animalId} row={row} hideIdentity={hideAnimalIdentity} />)}
       <Link className="text-primary underline" to="/protocolos-sanitarios/catalogo-v2">Consultar fontes, versões e documentos no Catálogo</Link>
     </details>

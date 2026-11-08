@@ -79,6 +79,8 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     expect(card).toHaveTextContent("Aviso complementar");
     expect(card).toHaveTextContent("Documento pendente");
     expect(card).toHaveTextContent("Versão 7");
+    expect(card.textContent).not.toContain(row.itemId);
+    expect(card.textContent).not.toContain(row.protocolId);
     expect(card.querySelector("[data-evaluation-key]")).toHaveAttribute("data-evaluation-key", `${row.protocolId}:${row.itemId}:${row.animalId}`);
     expect(within(card).getByRole("link", { name: /Consultar fontes/ })).toHaveAttribute("href", "/protocolos-sanitarios/catalogo-v2");
   });
