@@ -346,6 +346,7 @@ const ProtocolosSanitarios = () => {
         <TabsContent value="janelas">
           <WindowReadState failed={windowReadError} onRetry={refreshPlanning}>
           <SanitaryContextualNeedsPanelV2
+            onOpenSection={setActiveTab}
             key={activeFarmId}
             source={currentFarmSource(windowSource, activeFarmId)}
             initialAnimalId={initialAnimalId}

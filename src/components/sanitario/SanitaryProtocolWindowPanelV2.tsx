@@ -22,6 +22,7 @@ import type { SanitaryGenerationModeV2 } from "@/lib/sanitario/agenda/sanitaryPl
 import { sanitaryRequiresRabiesAssessmentV2 } from "@/lib/sanitario/agenda/sanitaryContextualPlanningV2";
 import { reviewSanitaryPlanningDateV2 } from "@/lib/sanitario/windows/sanitaryOperationalProjectionV2";
 import { format } from "date-fns";
+import type { SanitaryNeedsSectionV2 } from "./SanitaryNeedCardV2";
 
 const initialFilters: SanitaryProtocolWindowFiltersV2 = {
   lotId: "todos",
@@ -77,6 +78,9 @@ type Props = {
   initialEvaluatedAt?: string;
   contextual?: boolean;
   onClearInitialFilter?: () => void;
+  onEvaluatedAtChange?: (date: string) => void;
+  onConsultationScopeChange?: (animalId: string, lotId: string) => void;
+  onOpenSection?: (section: SanitaryNeedsSectionV2) => void;
   onPlan: (
     rows: SanitaryProtocolWindowRowV2[],
     plannedFor: string,
@@ -141,6 +145,9 @@ export function SanitaryProtocolWindowPanelV2({
   initialEvaluatedAt,
   contextual = false,
   onClearInitialFilter,
+  onEvaluatedAtChange,
+  onConsultationScopeChange,
+  onOpenSection,
   onPlan,
 }: Props) {
   const [protocolId, setProtocolId] = useState(initialProtocolId);
@@ -252,6 +259,7 @@ export function SanitaryProtocolWindowPanelV2({
   const visibleSelectedRows = visibleRows.filter(
     (row) => row.canSelect && selectedIds.has(row.animalId),
   );
+  const hiddenSelectionCount = selectedRows.length - visibleSelectedRows.length;
   const allVisibleEligibleSelected =
     visibleEligibleRows.length > 0 &&
     visibleEligibleRows.every((row) => selectedIds.has(row.animalId));
@@ -297,6 +305,7 @@ export function SanitaryProtocolWindowPanelV2({
   const clearInitialFilter = () => {
     setFilters((current) => ({ ...current, animalId: "todos", lotId: "todos" }));
     onClearInitialFilter?.();
+    onConsultationScopeChange?.("", "");
   };
 
   const toggleSort = (key: SanitaryWindowSortKeyV2) => {
@@ -395,14 +404,17 @@ export function SanitaryProtocolWindowPanelV2({
         {!contextual ? <label className="space-y-1 text-sm lg:col-span-2"><span className="font-medium">Protocolo</span><select aria-label="Selecionar protocolo" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={protocolId} onChange={(event) => setProtocolId(event.target.value)}><option value="">Selecione</option>{protocols.map((protocol) => <option key={protocol.id} value={protocol.id}>{protocol.name}</option>)}</select></label> : null}
         {!contextual ? <label className="space-y-1 text-sm lg:col-span-2"><span className="font-medium">Item do protocolo</span><select aria-label="Selecionar item do protocolo" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={itemId} disabled={!protocolId} onChange={(event) => setItemId(event.target.value)}><option value="">Selecione</option>{displayedItems.map((item) => <option key={item.id} value={item.id}>{formatSanitaryProtocolItemLabelV2(item.logicalItemKey)} · versão {item.version}</option>)}</select></label> : null}
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showTechnicalVersions} onChange={event => { setShowTechnicalVersions(event.target.checked); setItemId(""); }} />Consultar versões históricas e técnicas</label>
-        <label className="space-y-1 text-sm"><span className="font-medium">Data de avaliação</span><Input aria-label="Data de avaliação" type="date" value={evaluatedAt} onChange={(event) => setEvaluatedAt(event.target.value)} /></label>
-        <label className="space-y-1 text-sm"><span className="font-medium">Lote</span><select aria-label="Filtrar por lote" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={filters.lotId} onChange={(event) => setFilters((current) => ({ ...current, lotId: event.target.value }))}><option value="todos">Todos</option>{source.lots.filter((lot) => !lot.deleted_at).map((lot) => <option key={lot.id} value={lot.id}>{lot.nome}</option>)}</select></label>
+        <label className="space-y-1 text-sm"><span className="font-medium">Data de avaliação</span><Input aria-label="Data de avaliação" type="date" value={evaluatedAt} onChange={(event) => { setEvaluatedAt(event.target.value); onEvaluatedAtChange?.(event.target.value); }} /></label>
+        <label className="space-y-1 text-sm"><span className="font-medium">Lote</span><select aria-label="Filtrar por lote" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={filters.lotId} onChange={(event) => { const lotId = event.target.value; setFilters(current => ({ ...current, animalId: "todos", lotId })); onConsultationScopeChange?.("", lotId === "todos" ? "" : lotId); }}><option value="todos">Todos</option>{source.lots.filter((lot) => !lot.deleted_at).map((lot) => <option key={lot.id} value={lot.id}>{lot.nome}</option>)}</select></label>
+        <details className="md:col-span-3 lg:col-span-6"><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Filtros de categoria, sexo e situação</summary><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="space-y-1 text-sm"><span className="font-medium">Categoria</span><select aria-label="Filtrar por categoria" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={filters.category} onChange={(event) => setFilters((current) => ({ ...current, category: event.target.value }))}><option value="todas">Todas</option>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label className="space-y-1 text-sm"><span className="font-medium">Sexo</span><select aria-label="Filtrar por sexo" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={filters.sex} onChange={(event) => setFilters((current) => ({ ...current, sex: event.target.value as SanitaryProtocolWindowFiltersV2["sex"] }))}><option value="todos">Todos</option><option value="F">Fêmeas</option><option value="M">Machos</option></select></label>
         <label className="space-y-1 text-sm"><span className="font-medium">Situação do animal</span><select aria-label="Filtrar por situação do animal" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={filters.animalStatus} onChange={(event) => setFilters((current) => ({ ...current, animalStatus: event.target.value as SanitaryProtocolWindowFiltersV2["animalStatus"] }))}><option value="ativo">Ativos</option><option value="todos">Todos</option><option value="vendido">Vendidos</option><option value="morto">Mortos</option><option value="retirado">Retirados</option></select></label>
         <label className="space-y-1 text-sm"><span className="font-medium">Elegibilidade</span><select aria-label="Filtrar por elegibilidade" className="h-11 w-full rounded-xl border border-border bg-background px-3" value={filters.eligibilityStatus} onChange={(event) => setFilters((current) => ({ ...current, eligibilityStatus: event.target.value as SanitaryEligibilityStatus | "todos" }))}><option value="todos">Todas</option>{eligibilityOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        </div></details>
       </section> : null}
 
+      {result ? <p className="text-sm">{filters.animalId === "todos" ? "Consulta coletiva" : `Consulta individual: ${filteredAnimalLabel}`} · {result.rows.length} animal(is) com avaliações retornadas. Data da avaliação: {evaluatedAt.split("-").reverse().join("/")}.</p> : null}
       {!protocolId || !itemId ? (
         <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">Selecione um protocolo e um item para calcular as janelas do rebanho.</div>
       ) : result ? (
@@ -433,7 +445,7 @@ export function SanitaryProtocolWindowPanelV2({
           ) : null}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
             <span className="text-muted-foreground">
-              {visibleSelectedRows.length} selecionado(s) de {visibleEligibleRows.length} elegível(is) visível(is)
+              {visibleSelectedRows.length} selecionado(s) de {visibleEligibleRows.length} elegível(is) visível(is) · {selectedRows.length} selecionado(s) no resultado
             </span>
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" size="sm" disabled={visibleEligibleRows.length === 0} onClick={() => selectAllVisible(true)}>
@@ -444,6 +456,12 @@ export function SanitaryProtocolWindowPanelV2({
               </Button>
             </div>
           </div>
+          {hiddenSelectionCount > 0 ? <p role="status" className="text-sm">{hiddenSelectionCount} selecionado(s) fora da visualização; não será(ão) incluído(s) nesta revisão.</p> : null}
+          {visibleRows.length > 0 && visibleEligibleRows.length === 0 ? <div role="status" className="space-y-2 rounded-lg border border-border p-3 text-sm">
+            <p>{visibleRows.length} avaliações visíveis. Nenhum animal selecionável para novo planejamento neste filtro.</p>
+            {visibleRows.some(row => row.alreadyPlanned) ? <><p>{visibleRows.filter(row => row.alreadyPlanned).length} animal(is) com Agenda existente.</p>{onOpenSection ? <Button type="button" variant="outline" onClick={() => onOpenSection("agenda")}>Abrir Agenda sanitária</Button> : null}</> : null}
+            <p>Consulte abaixo os motivos, restrições e Agendas existentes.</p>
+          </div> : null}
           <SanitaryProtocolWindowTableV2
             catalog={source.catalog}
             rows={visibleRows}
@@ -456,10 +474,10 @@ export function SanitaryProtocolWindowPanelV2({
             onSortChange={toggleSort}
             onSelectionChange={(animalId, checked) => setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(animalId); else next.delete(animalId); return next; })}
           />
-          <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-border p-4">
-            <div className="space-y-3"><label className="block space-y-1 text-sm"><span className="font-medium">Data planejada</span><Input aria-label="Data planejada da agenda agrupada" type="date" value={plannedFor} onChange={(event) => setPlannedFor(event.target.value)} /></label><div className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">Contexto usado neste planejamento:</span> raiva {operationalContext.rabiesRiskArea === null ? "não informada" : operationalContext.rabiesRiskArea ? "em área de risco" : "fora de área de risco"}; cadência {operationalContext.sanitaryCadence === "annual" ? "anual" : operationalContext.sanitaryCadence === "semiannual" ? "semestral" : "não informada"}; reprodução e estágio de manejo resolvidos individualmente; manejo programado {operationalContext.management === "pre_weaning" ? "pré-desmama" : operationalContext.management === "rearing" ? "recria" : operationalContext.management === "pre_feedlot" ? "pré-confinamento" : operationalContext.management === "deferred_pasture" ? "pasto vedado" : "não informado"}.</div></div>
+          {visibleEligibleRows.length > 0 ? <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-border p-4">
+            <div className="min-w-0 space-y-3">{evaluatedAt !== plannedFor ? <p className="text-sm text-muted-foreground">Os resultados usam a data da avaliação. A revisão reavalia cada animal na data planejada, e a gravação valida novamente.</p> : null}<label className="block space-y-1 text-sm"><span className="font-medium">Data planejada</span><Input aria-label="Data planejada da agenda agrupada" type="date" value={plannedFor} onChange={(event) => setPlannedFor(event.target.value)} /></label><div className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">Contexto usado neste planejamento:</span> raiva {operationalContext.rabiesRiskArea === null ? "não informada" : operationalContext.rabiesRiskArea ? "em área de risco" : "fora de área de risco"}; cadência {operationalContext.sanitaryCadence === "annual" ? "anual" : operationalContext.sanitaryCadence === "semiannual" ? "semestral" : "não informada"}; reprodução e estágio de manejo resolvidos individualmente; manejo programado {operationalContext.management === "pre_weaning" ? "pré-desmama" : operationalContext.management === "rearing" ? "recria" : operationalContext.management === "pre_feedlot" ? "pré-confinamento" : operationalContext.management === "deferred_pasture" ? "pasto vedado" : "não informado"}.</div></div>
             <div className="flex flex-wrap items-center gap-3"><span className="text-sm text-muted-foreground">{visibleSelectedRows.length} selecionado(s)</span><Button type="button" disabled={visibleSelectedRows.length === 0 || !plannedFor || planning} onClick={() => { setPlanningError(null); setReview({ rows: visibleSelectedRows, plannedFor, context: { ...operationalContext } }); }}><CalendarPlus className="h-4 w-4" />Planejar agenda para selecionados</Button></div>
-          </div>
+          </div> : null}
         </>
       ) : null}
       <Dialog open={!!review} onOpenChange={(open) => { if (!open && !submitting.current) setReview(null); }}>
