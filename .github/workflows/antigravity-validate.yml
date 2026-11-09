@@ -162,9 +162,37 @@ jobs:
         if: steps.scope.outputs.needs_app == 'true'
         run: pnpm run lint
 
-      - name: Fallow audit
+      - name: Prepare Fallow diff
         if: steps.scope.outputs.needs_app == 'true'
-        run: pnpm exec fallow audit --gate new-only
+        shell: bash
+        env:
+          FALLOW_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          FALLOW_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          fallow_diff="$RUNNER_TEMP/fallow-pr.diff"
+          git diff --no-ext-diff --unified=0 \
+            "$FALLOW_BASE_SHA...$FALLOW_HEAD_SHA" > "$fallow_diff"
+          test -s "$fallow_diff"
+          echo "FALLOW_AUDIT_BASE=$FALLOW_BASE_SHA" >> "$GITHUB_ENV"
+          echo "FALLOW_AUDIT_DIFF=$fallow_diff" >> "$GITHUB_ENV"
+
+      - name: Fallow regression gate
+        if: steps.scope.outputs.needs_app == 'true'
+        run: >-
+          pnpm exec fallow dupes
+          --diff-file "$FALLOW_AUDIT_DIFF"
+          --fail-on-issues
+
+      - name: Fallow structural report
+        if: steps.scope.outputs.needs_app == 'true'
+        continue-on-error: true
+        run: >-
+          pnpm exec fallow audit
+          --gate new-only
+          --diff-file "$FALLOW_AUDIT_DIFF"
+          --format github-summary
+          >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build
         if: steps.scope.outputs.needs_build == 'true'
