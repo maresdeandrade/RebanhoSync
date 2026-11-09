@@ -29,14 +29,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Toolbar } from "@/components/ui/toolbar";
 import { useAuth } from "@/hooks/useAuth";
-import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
+import {
+  deriveAnimalTaxonomy,
+  isFemaleCanonicalReproductionEligible,
+} from "@/lib/animals/taxonomy";
 import {
   getAnimalLifeStageLabel,
   getPendingAnimalLifecycleKindLabel,
   getPendingAnimalLifecycleTransitions,
   summarizePendingAnimalLifecycleTransitions,
 } from "@/lib/animals/lifecycle";
-import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
 import { db } from "@/lib/offline/db";
 import {
   buildReproductionDashboard,
@@ -194,10 +196,13 @@ export default function ReproductionDashboard() {
     ]);
 
     const eligibleAnimals = animals.filter((animal) => {
-      const categoriaLabel = deriveAnimalTaxonomy(animal, {
+      const taxonomySnapshot = deriveAnimalTaxonomy(animal, {
         config: farmLifecycleConfig,
-      }).display.categoria;
-      return isFemaleReproductionEligible(animal, categoriaLabel);
+      });
+      return (
+        animal.sexo === "F" &&
+        isFemaleCanonicalReproductionEligible(taxonomySnapshot)
+      );
     });
 
     return {
@@ -920,6 +925,5 @@ export default function ReproductionDashboard() {
     </div>
   );
 }
-
 
 

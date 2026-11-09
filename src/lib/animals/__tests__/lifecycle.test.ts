@@ -99,6 +99,25 @@ describe("animal lifecycle", () => {
     expect(snapshot.canAutoApply).toBe(false);
   });
 
+  it.each(["candidato", "suspenso"] as const)(
+    "keeps an adult reproductive male as touro when status is %s",
+    (status) => {
+      const animal = createAnimal({
+        data_nascimento: "2023-01-01",
+        payload: {
+          lifecycle: {
+            destino_produtivo: "reprodutor",
+            modo_transicao: "manual",
+          },
+          male_profile: { status_reprodutivo: status },
+          weaning: { completed_at: "2023-09-01T12:00:00.000Z" },
+        },
+      });
+
+      expect(inferAnimalLifeStage(animal)).toBe("touro");
+    },
+  );
+
   it("allows hybrid auto-apply for age-only transitions", () => {
     const animal = createAnimal({
       sexo: "F",
@@ -245,6 +264,23 @@ describe("animal lifecycle", () => {
     });
     const snapshot = resolveAnimalLifecycleSnapshot(animalSemData);
     expect(snapshot.shouldSuggestTransition).toBe(false);
+    expect(inferAnimalLifeStage(animalSemData)).not.toBe("cria_neonatal");
+  });
+
+  it("does not auto-apply a speculative stage when stored stage exists without evidence", () => {
+    const animalSemEvidencia = createAnimal({
+      data_nascimento: null,
+      payload: {
+        lifecycle: {
+          estagio_vida: "desmamado",
+          modo_transicao: "automatico",
+        },
+      },
+    });
+
+    const snapshot = resolveAnimalLifecycleSnapshot(animalSemEvidencia);
+    expect(snapshot.shouldSuggestTransition).toBe(false);
+    expect(snapshot.canAutoApply).toBe(false);
   });
 
   it("preserves real transitions (Bezerra -> Novilha)", () => {

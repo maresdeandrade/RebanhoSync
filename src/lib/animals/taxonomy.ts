@@ -262,7 +262,6 @@ function resolveMaleCategory(
 
   if (
     facts.destino_produtivo === "reprodutor" &&
-    facts.status_reprodutivo_macho === "apto" &&
     hasAdultMaleThreshold(animal, config, now)
   ) {
     return "touro";

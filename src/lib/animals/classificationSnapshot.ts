@@ -145,7 +145,7 @@ function inferCategoria(
       ? (weight !== null && weight >= cfg.male_adult_weight_kg)
       : (ageInDays !== null && ageInDays >= cfg.male_adult_days);
 
-    if (isReprodutor && isAdult) {
+    if (isReprodutor && isAdult && !castrado) {
       return "touro";
     }
 
@@ -158,6 +158,37 @@ function inferCategoria(
   }
 
   return "desconhecida";
+}
+
+function isStoredCategoryCompatible(
+  category: CategoriaZootecnicaCanonicaEnum,
+  sexo: string | null | undefined,
+  castrado: boolean,
+  hasGivenBirth: boolean,
+  ageInDays: number | null,
+  weight: number | null,
+  destinoProdutivo: string | null | undefined,
+  papelMacho: string | null | undefined,
+  cfg: FarmLifecycleConfig,
+  useWeightBasis: boolean,
+) {
+  if (sexo === "F") {
+    return category === "bezerra" || category === "novilha" ||
+      (category === "vaca" && hasGivenBirth);
+  }
+  if (sexo !== "M") return false;
+  if (category === "bezerra" || category === "novilha" || category === "vaca") {
+    return false;
+  }
+  if (category === "touro") {
+    const isAdult = useWeightBasis
+      ? weight !== null && weight >= cfg.male_adult_weight_kg
+      : ageInDays !== null && ageInDays >= cfg.male_adult_days;
+    const isReproductiveDestination =
+      destinoProdutivo === "reprodutor" || papelMacho === "reprodutor";
+    return isAdult && isReproductiveDestination && !castrado;
+  }
+  return true;
 }
 
 function inferLifeStage(
@@ -310,16 +341,45 @@ export function resolveAnimalClassificationSnapshot(
 
   // Level 1: explicit facts in taxonomy_facts
   const explCat = normalizeCategory(input.categoria_zootecnica || storedFacts.categoria || storedFacts.categoria_zootecnica);
-  if (explCat) {
+  const storedCategoryIsCompatible = explCat
+    ? isStoredCategoryCompatible(
+        explCat,
+        input.sexo,
+        !!castrado,
+        hasGivenBirth,
+        ageInDays,
+        weight,
+        input.destino_produtivo,
+        input.papel_macho,
+        cfg,
+        useWeightBasis,
+      )
+    : false;
+  if (explCat && storedCategoryIsCompatible && !(hasGivenBirth && input.sexo === "F" && explCat !== "vaca")) {
     categoria = explCat;
     srcCategoria = "stored";
   } else if (hasGivenBirth && input.sexo === "F") {
     categoria = "vaca";
     srcCategoria = "stored";
+    if (explCat && explCat !== "vaca") {
+      limitations.push("categoria armazenada divergente do histórico de parto");
+    }
   } else {
+    if (explCat && !storedCategoryIsCompatible) {
+      limitations.push("categoria armazenada incompatível com os fatos disponíveis");
+    }
     // Level 2: Stored Stage of life
     const storedStage = input.payload?.lifecycle?.estagio_vida;
-    if (typeof storedStage === "string" && input.sexo) {
+    const hasAdultEvidence = useWeightBasis
+      ? weight !== null && weight >= cfg.male_adult_weight_kg
+      : ageInDays !== null && ageInDays >= cfg.male_adult_days;
+    const storedStageCompatible =
+      typeof storedStage === "string" &&
+      input.sexo &&
+      !(hasGivenBirth && input.sexo === "F" && storedStage !== "vaca_adulta") &&
+      !(input.sexo === "M" && storedStage === "touro" &&
+        (!hasAdultEvidence || castrado));
+    if (storedStageCompatible) {
       if (storedStage === "cria_neonatal" || storedStage === "cria_aleitamento" || storedStage === "desmamado") {
         categoria = input.sexo === "F" ? "bezerra" : "bezerro";
         srcCategoria = "stored";
