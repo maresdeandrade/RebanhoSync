@@ -93,8 +93,13 @@ export function inferAnimalLifeStage(
   const useWeightBasis =
     config.stage_classification_basis === "peso" && latestWeightKg !== null;
 
+  if (ageInDays === null && latestWeightKg === null && !weaned) {
+    const storedStage = getStoredLifeStage(animal.payload);
+    if (storedStage) return storedStage;
+  }
+
   if (!weaned) {
-    if (ageInDays === null || ageInDays <= config.neonatal_days) {
+    if (ageInDays !== null && ageInDays <= config.neonatal_days) {
       return "cria_neonatal";
     }
 
@@ -119,7 +124,7 @@ export function inferAnimalLifeStage(
         : "novilha";
     }
 
-    if (destination === "reprodutor" && reproductiveStatus === "apto") {
+    if (destination === "reprodutor") {
       return (useWeightBasis
         ? latestWeightKg >= config.male_adult_weight_kg
         : ageInDays !== null && ageInDays >= config.male_adult_days)
@@ -270,6 +275,10 @@ export function resolveAnimalLifecycleSnapshot(
 ): AnimalLifecycleSnapshot {
   const storedStage = getStoredLifeStage(animal.payload);
   const targetStage = inferAnimalLifeStage(animal, config);
+  const hasInferenceEvidence =
+    getAgeInDays(animal.data_nascimento) !== null ||
+    getLatestWeightKg(animal.payload) !== null ||
+    hasRecordedWeaning(animal.payload);
   const transitionMode =
     getAnimalTransitionMode(animal) ?? config.default_transition_mode;
   const currentStage = storedStage ?? targetStage;
@@ -279,7 +288,12 @@ export function resolveAnimalLifecycleSnapshot(
   const normalizedTarget = normalizeStageCode(targetStage);
   const isNoOp = normalizedCurrent === normalizedTarget || !normalizedCurrent || !normalizedTarget;
 
-  const shouldSuggestTransition = isNoOp ? false : (storedStage === null ? true : storedStage !== targetStage);
+  const shouldSuggestTransition =
+    !hasInferenceEvidence || isNoOp
+      ? false
+      : storedStage === null
+        ? true
+        : storedStage !== targetStage;
   const suggestionKind =
     shouldSuggestTransition && storedStage === null
       ? "initialize"
@@ -287,6 +301,7 @@ export function resolveAnimalLifecycleSnapshot(
         ? "transition"
         : null;
   const canAutoApply =
+    hasInferenceEvidence &&
     shouldSuggestTransition &&
     (transitionMode === "automatico" ||
       (transitionMode === "hibrido" &&

@@ -22,7 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { isAnimalBreedingEligible } from "@/lib/animals/maleProfile";
+import {
+  isAnimalEligibleForLotBull,
+} from "@/lib/animals/maleProfile";
 import { showSuccess, showError } from "@/utils/toast";
 
 interface TrocarTouroLoteProps {
@@ -55,7 +57,7 @@ export function TrocarTouroLote({
             animal.lote_id === lote.id &&
             animal.sexo === "M" &&
             (!animal.deleted_at || animal.deleted_at === null) &&
-            isAnimalBreedingEligible(animal),
+            isAnimalEligibleForLotBull(animal, lote),
         )
         .toArray(),
     [lote.fazenda_id, lote.id],
@@ -69,6 +71,15 @@ export function TrocarTouroLote({
   const handleConfirm = async () => {
     setIsSubmitting(true);
     const now = new Date().toISOString();
+
+    if (novoTouroId !== "null") {
+      const selected = await db.state_animais.get(novoTouroId);
+      if (!selected || !isAnimalEligibleForLotBull(selected, lote)) {
+        showError("O touro selecionado não está mais elegível para este lote.");
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     const op = {
       table: "lotes",

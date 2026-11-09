@@ -20,8 +20,10 @@ import { PageIntro } from "@/components/ui/page-intro";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useAuth } from "@/hooks/useAuth";
-import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
-import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
+import {
+  deriveAnimalTaxonomy,
+  isFemaleCanonicalReproductionEligible,
+} from "@/lib/animals/taxonomy";
 import { EventValidationError } from "@/lib/events/validators";
 import { db } from "@/lib/offline/db";
 import type {
@@ -169,13 +171,17 @@ export default function AnimalReproducao() {
     );
   }, [id]);
 
-  const categoriaLabel = animal
+  const taxonomySnapshot = animal
     ? deriveAnimalTaxonomy(animal, {
         config: farmLifecycleConfig,
-      }).display.categoria
+      })
     : null;
+  const categoriaLabel = taxonomySnapshot?.display.categoria ?? null;
   const isReproductionEligible =
-    animal && isFemaleReproductionEligible(animal, categoriaLabel);
+    animal &&
+    taxonomySnapshot &&
+    animal.sexo === "F" &&
+    isFemaleCanonicalReproductionEligible(taxonomySnapshot);
   const reproResumo = useMemo(() => {
     if (!animal || !isReproductionEligible) return null;
 
@@ -458,5 +464,4 @@ export default function AnimalReproducao() {
     </div>
   );
 }
-
 

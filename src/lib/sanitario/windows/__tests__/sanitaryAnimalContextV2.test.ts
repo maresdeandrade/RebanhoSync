@@ -765,6 +765,15 @@ describe("resolução contextual sanitária por animal", () => {
     );
   });
 
+  it("não trata ciclo vazio sem Evento definidor como ausência gestacional comprovada", () => {
+    const serviceOnly = reproduction().slice(0, 1);
+    const result = resolve({
+      source: source({ reproductiveEvents: serviceOnly }),
+    });
+
+    expect(result.pregnancy).toMatchObject({ status: "unknown", value: null });
+  });
+
   it("cadência anual pode vir da regra fundamentada; risco e cadência por risco não são inferidos", () => {
     expect(
       resolve({

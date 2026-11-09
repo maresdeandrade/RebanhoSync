@@ -5,6 +5,7 @@ import type {
   PapelMachoEnum,
   StatusReprodutivoMachoEnum,
 } from "@/lib/offline/types";
+import { readTaxonomyFactsRecord } from "@/lib/animals/taxonomyFactsContract";
 
 type AnimalPayloadRecord = Record<string, unknown>;
 
@@ -111,9 +112,25 @@ export function isAnimalBreedingEligible(
 ) {
   if (animal.sexo !== "M") return false;
 
+  const taxonomyFacts = readTaxonomyFactsRecord(animal.payload);
+  if (taxonomyFacts?.castrado === true) return false;
+
   return (
     getAnimalProductiveDestination(animal) === "reprodutor" &&
     getMaleReproductiveStatus(animal) === "apto"
+  );
+}
+
+export function isAnimalEligibleForLotBull(
+  animal: Animal,
+  lote: Pick<{ id: string; fazenda_id: string }, "id" | "fazenda_id">,
+) {
+  return Boolean(
+    animal.fazenda_id === lote.fazenda_id &&
+      animal.lote_id === lote.id &&
+      animal.status === "ativo" &&
+      !animal.deleted_at &&
+      isAnimalBreedingEligible(animal),
   );
 }
 

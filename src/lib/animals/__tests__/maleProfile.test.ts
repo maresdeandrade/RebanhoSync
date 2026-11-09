@@ -74,6 +74,18 @@ describe("maleProfile helpers", () => {
     expect(isAnimalBreedingEligible(animal)).toBe(false);
   });
 
+  it("blocks breeding when castration conflicts with an apt reproductive profile", () => {
+    const animal = createAnimal({
+      payload: {
+        taxonomy_facts: { schema_version: 1, castrado: true },
+        lifecycle: { destino_produtivo: "reprodutor" },
+        male_profile: { status_reprodutivo: "apto" },
+      },
+    });
+
+    expect(isAnimalBreedingEligible(animal)).toBe(false);
+  });
+
   it("maps the new profile back to legacy fields for compatibility", () => {
     expect(
       getLegacyMaleFields({

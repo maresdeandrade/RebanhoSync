@@ -1,6 +1,8 @@
 import type { ReproductionEventData } from "@/components/events/ReproductionForm";
-import { deriveAnimalTaxonomy } from "@/lib/animals/taxonomy";
-import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
+import {
+  deriveAnimalTaxonomy,
+  isFemaleCanonicalReproductionEligible,
+} from "@/lib/animals/taxonomy";
 import type { Animal, OperationInput } from "@/lib/offline/types";
 import type { FarmLifecycleConfig } from "@/lib/farms/lifecycleConfig";
 import { prepareReproductionGesture } from "@/lib/reproduction/register";
@@ -38,11 +40,15 @@ export async function runRegistrarReproductionFinalizeEffect(input: {
       postPartoRedirect: RegistrarPostPartoRedirect | null;
     }
 > {
-  const categoriaLabel = deriveAnimalTaxonomy(input.animal, {
+  const taxonomySnapshot = deriveAnimalTaxonomy(input.animal, {
     config: input.farmLifecycleConfig,
-  }).display.categoria;
+  });
+  const categoriaLabel = taxonomySnapshot.display.categoria;
 
-  if (!isFemaleReproductionEligible(input.animal, categoriaLabel)) {
+  if (
+    input.animal.sexo !== "F" ||
+    !isFemaleCanonicalReproductionEligible(taxonomySnapshot)
+  ) {
     return {
       issue: buildRegistrarReproducaoIneligibleIssue({
         animalIdentificacao: input.animal.identificacao,

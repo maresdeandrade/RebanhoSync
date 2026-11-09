@@ -107,8 +107,8 @@ import {
   buildAnimalTaxonomyReproContextMap,
   deriveAnimalTaxonomy,
   getCategoriaZootecnicaAliases,
+  isFemaleCanonicalReproductionEligible,
 } from "@/lib/animals/taxonomy";
-import { isFemaleReproductionEligible } from "@/lib/animals/presentation";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import { cn } from "@/lib/utils";
@@ -1315,7 +1315,10 @@ const AnimalDetalhe = () => {
     };
   }, [animal, taxonomySnapshot?.categoria_zootecnica]);
   const isReproductionEligible =
-    animal && isFemaleReproductionEligible(animal, categoriaLabel);
+    animal &&
+    taxonomySnapshot &&
+    animal.sexo === "F" &&
+    isFemaleCanonicalReproductionEligible(taxonomySnapshot);
   const lifecycleSnapshot = animal
     ? resolveAnimalLifecycleSnapshot(animal, farmLifecycleConfig)
     : null;

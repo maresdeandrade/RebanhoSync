@@ -436,6 +436,56 @@ describe("resolveAnimalClassificationSnapshot", () => {
     expect(snap.estagioVida).toBe("desconhecido"); // Cannot be inferred without age (or weight)
   });
 
+  it("prioritizes factual birth over a stale stored novilha category", () => {
+    const snap = resolveAnimalClassificationSnapshot(
+      {
+        sexo: "F",
+        categoria_zootecnica: "novilha",
+        data_nascimento: "2020-01-01",
+        payload: {
+          taxonomy_facts: { data_ultimo_parto: "2026-04-01" },
+        },
+      },
+      { referenceDate: REFERENCE_DATE },
+    );
+
+    expect(snap.categoriaZootecnica).toBe("vaca");
+    expect(snap.limitations).toContain(
+      "categoria armazenada divergente do histórico de parto",
+    );
+  });
+
+  it("does not trust stored touro without maturity evidence", () => {
+    const snap = resolveAnimalClassificationSnapshot({
+      sexo: "M",
+      data_nascimento: null,
+      destino_produtivo: "reprodutor",
+      payload: { lifecycle: { estagio_vida: "touro" } },
+    });
+
+    expect(snap.categoriaZootecnica).toBe("desconhecida");
+    expect(snap.limitations).toContain(
+      "sem data de nascimento",
+    );
+  });
+
+  it("does not preserve stored touro when castration is confirmed", () => {
+    const snap = resolveAnimalClassificationSnapshot(
+      {
+        sexo: "M",
+        data_nascimento: "2020-01-01",
+        destino_produtivo: "reprodutor",
+        payload: {
+          taxonomy_facts: { castrado: true },
+          lifecycle: { estagio_vida: "touro" },
+        },
+      },
+      { referenceDate: REFERENCE_DATE },
+    );
+
+    expect(snap.categoriaZootecnica).toBe("boi_terminacao");
+  });
+
   // Test case 24: estado reprodutivo não é inferido sem fato confiável
   it("returns desconhecido for reproductive status when no trusted reproductive fact is available", () => {
     const snap = resolveAnimalClassificationSnapshot(

@@ -112,6 +112,10 @@ function resolvePregnancyStatus(
   const incomplete = events.some(
     (event) => !event.details || event.details.deleted_at,
   );
+  const hasConclusiveNegativeDefiner =
+    projection.definingEventType === "diagnostico" ||
+    projection.definingEventType === "parto" ||
+    projection.definingEventType === "aborto";
   const pregnancy: SanitaryContextFactV2<boolean> =
     !events.length || incomplete
       ? unknown("Histórico reprodutivo local ausente ou incompleto.", eventRefs)
@@ -128,11 +132,16 @@ function resolvePregnancyStatus(
             )
           : projection.status === "SERVIDA"
             ? unknown("Serviço reprodutivo não comprova gestação.", eventRefs)
-            : known(
-                false,
-                eventRefs,
-                "Ciclo factual sem gestação confirmada vigente.",
-              );
+            : hasConclusiveNegativeDefiner
+              ? known(
+                  false,
+                  eventRefs,
+                  "Ausência gestacional sustentada pelo Evento definidor do episódio vigente.",
+                )
+              : unknown(
+                  "Ausência de gestação confirmada não possui Evento negativo conclusivo.",
+                  eventRefs,
+                );
 
   return pregnancy;
 }
