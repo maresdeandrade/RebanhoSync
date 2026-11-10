@@ -220,6 +220,20 @@ Cria é animal. A categoria/estágio inicial deve seguir o arquivo `docs/domain/
 
 > ⚠️ Não inferir estágio futuro sem regra validada.
 
+### Classificação, estados e episódios
+
+Categoria zootécnica, fase veterinária/estágio de vida e estado produtivo-reprodutivo são camadas distintas. `vaca` exige histórico factual de parto; `touro` depende de maturidade e destino reprodutivo, enquanto aptidão funcional, castração e elegibilidade são guards separados.
+
+Na projeção reprodutiva factual:
+
+* `VAZIA` é estado operacional aberto da projeção; não significa que a ausência de evento prove ausência gestacional;
+* ausência de evidência suficiente para classificar o estado deve permanecer `desconhecido` no snapshot de classificação;
+* `SERVIDA` deriva de evento de cobertura ou IA e indica episódio aguardando diagnóstico, não prenhez confirmada;
+* `PRENHA` exige diagnóstico/evento factual compatível;
+* parto, aborto e diagnóstico são episódios/eventos datados e corrigidos por novos fatos, não por edição destrutiva do passado.
+
+O histórico vem de Eventos; a projeção atual vem de `state_*`/read model; Agenda representa intenção. Apresentação visual, categoria ou estado projetado não autorizam manejo clínico nem substituem a fonte factual. A derivação deve respeitar a data de referência e declarar limitações quando o contexto estiver incompleto.
+
 ---
 
 ## Validação

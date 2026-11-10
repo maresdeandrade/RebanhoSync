@@ -283,6 +283,30 @@ describe("animal lifecycle", () => {
     expect(snapshot.canAutoApply).toBe(false);
   });
 
+  it("does not infer by weight when age is the configured basis", () => {
+    const animal = createAnimal({
+      sexo: "F",
+      data_nascimento: null,
+      payload: {
+        metrics: { last_weight_kg: 80 },
+        lifecycle: {
+          estagio_vida: "vaca_adulta",
+          modo_transicao: "automatico",
+        },
+      },
+    });
+
+    const snapshot = resolveAnimalLifecycleSnapshot(animal, {
+      ...DEFAULT_FARM_LIFECYCLE_CONFIG,
+      stage_classification_basis: "idade",
+    });
+
+    expect(snapshot.currentStage).toBe("vaca_adulta");
+    expect(snapshot.targetStage).toBe("vaca_adulta");
+    expect(snapshot.shouldSuggestTransition).toBe(false);
+    expect(snapshot.canAutoApply).toBe(false);
+  });
+
   it("preserves real transitions (Bezerra -> Novilha)", () => {
     const animal = createAnimal({
       sexo: "F",

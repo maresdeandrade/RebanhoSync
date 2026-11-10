@@ -69,6 +69,20 @@ Regra de conflito:
 - a leitura continua reutilizando `sexo`, `data_nascimento`, `payload.weaning.*`, `payload.lifecycle.*`, `payload.male_profile.*` e eventos reprodutivos
 - compatibilidade com `papel_macho` e `habilitado_monta` foi mantida
 
+### Regras validadas apos o PR #283
+
+- a categoria zootecnica `vaca` exige historico factual de parto; maturidade, peso, prenhez, lactacao, secagem ou `lifecycle.estagio_vida = "vaca_adulta"` nao substituem esse fato;
+- ausencia de idade nao e evidencia suficiente para inferir estagio por idade, e a base configurada (`idade` ou `peso`) deve ser respeitada;
+- sugestoes e autoaplicacoes de transicao de lifecycle exigem evidencia suficiente e compativel com a base configurada.
+
+Os testes focados de lifecycle e classificacao foram executados apos a correcao: 44 testes aprovados em 2 arquivos.
+
+### Camadas e limites de consumo
+
+Os tres eixos canônicos permanecem distintos: categoria zootécnica, fase veterinária/estágio de vida e estado produtivo-reprodutivo. O snapshot é projeção de leitura e apresentação; não é fonte de fato nem autorização operacional. Reprodução, Sanitário e Comercial devem consultar seus próprios eventos, estados, protocolos e guards.
+
+Fatos event-driven e contexto reprodutivo efetivo prevalecem sobre labels legados. A ausência, conflito ou defasagem temporal de evidência deve ser exposta como limitação, sem conversão automática de legado em fato persistido. As fronteiras entre Agenda, Evento, `state_*` e regra permanecem as definidas em `docs/domain/ANIMAIS_TAXONOMIA.md` e nos contratos de cada domínio.
+
 ## Consequencias
 
 Positivas:
