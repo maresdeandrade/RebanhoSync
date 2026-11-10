@@ -124,8 +124,8 @@ describe("resolveAnimalClassificationSnapshot", () => {
     expect(snap.limitations).toHaveLength(0);
   });
 
-  // Test case 7: vaca prenhe com fato explícito
-  it("resolves vaca prenhe with explicit fact", () => {
+  // Test case 7: novilha prenhe com fato explícito
+  it("does not promote a pregnant heifer to vaca without birth history", () => {
     const snap = resolveAnimalClassificationSnapshot(
       {
         sexo: "F",
@@ -142,13 +142,13 @@ describe("resolveAnimalClassificationSnapshot", () => {
       }
     );
 
-    expect(snap.categoriaZootecnica).toBe("vaca");
+    expect(snap.categoriaZootecnica).toBe("novilha");
     expect(snap.faseVeterinaria).toBe("gestante");
     expect(snap.estadoProdutivoReprodutivo).toBe("prenhe");
   });
 
-  // Test case 8: vaca seca com fato explícito
-  it("resolves vaca seca with explicit fact", () => {
+  // Test case 8: novilha seca com fato explícito
+  it("does not promote a dry heifer to vaca without birth history", () => {
     const snap = resolveAnimalClassificationSnapshot(
       {
         sexo: "F",
@@ -165,12 +165,12 @@ describe("resolveAnimalClassificationSnapshot", () => {
       }
     );
 
-    expect(snap.categoriaZootecnica).toBe("vaca");
+    expect(snap.categoriaZootecnica).toBe("novilha");
     expect(snap.estadoProdutivoReprodutivo).toBe("seca");
   });
 
-  // Test case 9: vaca em lactação com fato explícito
-  it("resolves vaca em lactacao with explicit fact", () => {
+  // Test case 9: novilha em lactação com fato explícito
+  it("does not promote a lactating heifer to vaca without birth history", () => {
     const snap = resolveAnimalClassificationSnapshot(
       {
         sexo: "F",
@@ -186,7 +186,7 @@ describe("resolveAnimalClassificationSnapshot", () => {
       }
     );
 
-    expect(snap.categoriaZootecnica).toBe("vaca");
+    expect(snap.categoriaZootecnica).toBe("novilha");
     expect(snap.estadoProdutivoReprodutivo).toBe("lactacao");
   });
 
@@ -484,6 +484,48 @@ describe("resolveAnimalClassificationSnapshot", () => {
     );
 
     expect(snap.categoriaZootecnica).toBe("boi_terminacao");
+  });
+
+  it("keeps an adult female without birth history as novilha", () => {
+    const snap = resolveAnimalClassificationSnapshot(
+      {
+        sexo: "F",
+        data_nascimento: "2020-01-01",
+      },
+      { referenceDate: REFERENCE_DATE },
+    );
+
+    expect(snap.categoriaZootecnica).toBe("novilha");
+  });
+
+  it("does not use stored vaca_adulta stage as proof of birth", () => {
+    const snap = resolveAnimalClassificationSnapshot(
+      {
+        sexo: "F",
+        categoria_zootecnica: "vaca",
+        data_nascimento: "2020-01-01",
+        payload: { lifecycle: { estagio_vida: "vaca_adulta" } },
+      },
+      { referenceDate: REFERENCE_DATE },
+    );
+
+    expect(snap.categoriaZootecnica).toBe("novilha");
+    expect(snap.limitations).toContain(
+      "categoria armazenada incompatível com os fatos disponíveis",
+    );
+  });
+
+  it("preserves vaca when a factual birth history exists", () => {
+    const snap = resolveAnimalClassificationSnapshot(
+      {
+        sexo: "F",
+        data_nascimento: "2020-01-01",
+        payload: { taxonomy_facts: { data_ultimo_parto: "2025-05-01" } },
+      },
+      { referenceDate: REFERENCE_DATE },
+    );
+
+    expect(snap.categoriaZootecnica).toBe("vaca");
   });
 
   // Test case 24: estado reprodutivo não é inferido sem fato confiável

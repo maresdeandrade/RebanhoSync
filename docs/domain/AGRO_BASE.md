@@ -105,6 +105,12 @@ Pode ter: identificação, sexo, raça, categoria, estágio, status, origem, des
 
 * `docs/domain/ANIMAIS_TAXONOMIA.md`
 
+### Camadas de classificação
+
+O animal possui camadas distintas: categoria zootécnica; fase veterinária/estágio de vida; e estado produtivo-reprodutivo. Elas são leituras derivadas para o domínio e para a apresentação, não substituem fatos históricos nem autorizam operação. Eventos preservam fatos, `state_*`/read models representam estado atual e Agenda representa intenção.
+
+As regras canônicas, precedência entre fatos e dados legados, suficiência de evidência e limites de temporalidade estão em `docs/domain/ANIMAIS_TAXONOMIA.md` e `docs/technical/adrs/ADR-0001-taxonomia-canonica-bovina.md`. Reprodução, Sanitário e Comercial mantêm seus próprios contratos de elegibilidade e autorização.
+
 ---
 
 ## Lote e pasto

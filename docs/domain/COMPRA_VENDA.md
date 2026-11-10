@@ -183,6 +183,12 @@ Pode exigir: carência, sanidade, peso, idade, documentação, legislação, reg
 
 > ⚠️ **Regra:** Não automatizar aptidão para abate no MVP sem fonte consolidada.
 
+### Relação com classificação animal
+
+Categoria zootécnica, fase veterinária/estágio de vida e estado produtivo-reprodutivo podem apoiar segmentação e análise comercial, mas não provam “pronto para venda”, “apto para abate”, peso atual confiável, carência ou liberação sanitária. Essas decisões exigem fonte comercial/técnica própria e validação operacional.
+
+O estado patrimonial e a saída continuam sendo fatos rastreáveis em Evento/operação e sua projeção em `state_*`; uma label de classificação ou uma apresentação visual não altera histórico, não cria autorização e não substitui os contratos de Sanitário, Reprodução ou Movimentação.
+
 ---
 
 ## Relação com sanitário

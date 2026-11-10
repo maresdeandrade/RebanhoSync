@@ -125,11 +125,6 @@ function inferCategoria(
     
     if (isYoung) return "bezerra";
 
-    const isAdult = useWeightBasis
-      ? (weight !== null && weight >= cfg.female_adult_weight_kg)
-      : (ageInDays !== null && ageInDays >= cfg.female_adult_days);
-
-    if (isAdult) return "vaca";
     return "novilha";
   }
 
@@ -377,6 +372,7 @@ export function resolveAnimalClassificationSnapshot(
       typeof storedStage === "string" &&
       input.sexo &&
       !(hasGivenBirth && input.sexo === "F" && storedStage !== "vaca_adulta") &&
+      !(input.sexo === "F" && storedStage === "vaca_adulta" && !hasGivenBirth) &&
       !(input.sexo === "M" && storedStage === "touro" &&
         (!hasAdultEvidence || castrado));
     if (storedStageCompatible) {

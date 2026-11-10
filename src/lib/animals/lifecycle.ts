@@ -63,6 +63,20 @@ function hasRecordedWeaning(payload: Animal["payload"]) {
   return typeof weaning.completed_at === "string";
 }
 
+function hasConfiguredStageEvidence(
+  ageInDays: number | null,
+  latestWeightKg: number | null,
+  weaned: boolean,
+  config: FarmLifecycleConfig,
+) {
+  return (
+    weaned ||
+    (config.stage_classification_basis === "peso"
+      ? latestWeightKg !== null
+      : ageInDays !== null)
+  );
+}
+
 function isAnimalLifeStage(value: unknown): value is AnimalLifeStageEnum {
   return (
     value === "cria_neonatal" ||
@@ -90,12 +104,18 @@ export function inferAnimalLifeStage(
   const destination = getAnimalProductiveDestination(animal);
   const reproductiveStatus = getMaleReproductiveStatus(animal);
   const weaned = hasRecordedWeaning(animal.payload);
+  const hasStageEvidence = hasConfiguredStageEvidence(
+    ageInDays,
+    latestWeightKg,
+    weaned,
+    config,
+  );
   const useWeightBasis =
     config.stage_classification_basis === "peso" && latestWeightKg !== null;
 
-  if (ageInDays === null && latestWeightKg === null && !weaned) {
+  if (!hasStageEvidence) {
     const storedStage = getStoredLifeStage(animal.payload);
-    if (storedStage) return storedStage;
+    return storedStage ?? "desmamado";
   }
 
   if (!weaned) {
@@ -275,10 +295,12 @@ export function resolveAnimalLifecycleSnapshot(
 ): AnimalLifecycleSnapshot {
   const storedStage = getStoredLifeStage(animal.payload);
   const targetStage = inferAnimalLifeStage(animal, config);
-  const hasInferenceEvidence =
-    getAgeInDays(animal.data_nascimento) !== null ||
-    getLatestWeightKg(animal.payload) !== null ||
-    hasRecordedWeaning(animal.payload);
+  const hasInferenceEvidence = hasConfiguredStageEvidence(
+    getAgeInDays(animal.data_nascimento),
+    getLatestWeightKg(animal.payload),
+    hasRecordedWeaning(animal.payload),
+    config,
+  );
   const transitionMode =
     getAnimalTransitionMode(animal) ?? config.default_transition_mode;
   const currentStage = storedStage ?? targetStage;

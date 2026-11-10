@@ -54,6 +54,8 @@ Classificações auxiliam leitura, mas não autorizam decisão crítica isoladam
 | **Taxonomia canônica** | Classificação padronizada para consistência do app. |
 | **Categoria zootécnica** | Classificação operacional/produtiva. |
 | **Estágio de vida** | Leitura atual de fase biológica/operacional. |
+| **Fase veterinária** | Leitura clínica/reprodutiva atual, como neonatal, pré-desmama, púbere, gestante ou puerpério. |
+| **Estado produtivo-reprodutivo** | Estado corrente derivado de fatos produtivos/reprodutivos, como prenhe, vazia, lactação, seca, inteiro ou castrado. |
 | **Status atual** | Situação corrente do animal. |
 | **Eventos** | Histórico factual do animal. |
 | **Agenda** | Tarefas futuras relacionadas ao animal. |
@@ -135,6 +137,10 @@ Taxonomia canônica é a padronização interna usada pelo app para evitar nomes
 
 > ⚠️ **Regra:** Taxonomia canônica deve ser usada como vocabulário controlado, não como prova operacional.
 
+### Fontes e precedência
+
+`src/lib/animals/taxonomy.ts` é a fonte operacional da derivação. Fatos persistidos em `payload.taxonomy_facts` e fatos event-driven reconstruídos a partir de eventos reprodutivos têm precedência sobre labels legados de categoria ou lifecycle. Dado legado incompatível é limitação de leitura, não autorização para sobrescrever o fato canônico. O ADR-0001 detalha ownership, compatibilidade e o contrato Two Rails.
+
 ---
 
 ## Categoria zootécnica
@@ -152,6 +158,12 @@ Categoria zootécnica é classificação produtiva/operacional.
 * boi
 * matriz
 * reprodutor
+
+### Regra de parto para `vaca`
+
+`vaca` exige historico factual de parto, sustentado por `data_ultimo_parto` ou contexto reprodutivo equivalente derivado de evento. Idade, peso, maturidade, prenhez, lactacao, secagem e o estagio armazenado `vaca_adulta` nao comprovam parto isoladamente. Femea adulta sem esse fato permanece `novilha` quando houver evidencia suficiente para classifica-la.
+
+`touro` é categoria de macho adulto com destino reprodutivo; não depende de aptidão reprodutiva já confirmada. Castração e elegibilidade funcional são regras separadas: a primeira é fato produtivo-reprodutivo, e a segunda é autorização/guard operacional. Nenhuma delas deve ser substituída por label visual de categoria.
 
 ### Pode responder
 
@@ -186,6 +198,8 @@ Estágio de vida representa fase biológica/operacional atual.
 
 > ⚠️ **Regra:** Estágio pode ser: explicitamente informado, derivado por regra validada (se existir), ou marcado como desconhecido quando a fonte for insuficiente. Não inferir estágio por idade/peso sem regra técnica definida e documentada.
 
+Ausencia de idade nao equivale a evidencia de estagio jovem. A inferencia deve respeitar a base configurada para a fazenda (`idade` ou `peso`); sem evidencia suficiente, nao deve sugerir nem aplicar automaticamente uma transicao.
+
 ---
 
 ## Categoria zootécnica vs estágio de vida
@@ -206,6 +220,12 @@ Estágio de vida representa fase biológica/operacional atual.
 * estágio pode mudar com o ciclo produtivo;
 * status é outra dimensão;
 * sexo/raça não substituem nenhum dos dois.
+
+### Classificação, apresentação e autorização
+
+O snapshot de classificação é uma leitura derivada para apresentação, filtros e consumidores de domínio. Labels e cores não persistem fatos nem autorizam reprodução, venda, abate, trânsito ou operação sanitária. Elegibilidade funcional deve consultar sua própria regra e seus fatos; uma classificação ausente, conflitante ou temporalmente desatualizada deve permanecer explicitamente limitada.
+
+Categoria, fase veterinária, estágio e estado são reconstruídos no momento de leitura a partir de fatos e do contexto temporal disponível. No contrato Two Rails, Eventos preservam o histórico factual e `state_*`/read models representam o estado atual; Agenda permanece intenção. Nenhuma projeção substitui o fato original, e nenhum label derivado deve ser persistido como nova fonte paralela.
 
 ---
 

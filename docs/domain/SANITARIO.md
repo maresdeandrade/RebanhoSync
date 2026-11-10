@@ -133,6 +133,12 @@ Registro incompleto não autoriza inventar produto, dose, vínculo ou carência.
 - Correção sanitária deve gerar novo fato vinculado, não editar destrutivamente o passado.
 - Doença notificável exige vínculo clínico com animal, animais, lote ou evento.
 
+### Relação com classificação animal
+
+Categoria zootécnica, fase veterinária/estágio de vida e estado produtivo-reprodutivo são contexto derivado do animal; não são status sanitário, prova de aplicação, carência ou autorização. A elegibilidade sanitária deve combinar animal, protocolo versionado, janela, eventos sanitários e contexto operacional explícito, conforme a fonte técnica do campo.
+
+Classificação, tags, sinais e apresentação visual podem apoiar consulta e filtros, mas não selecionam produto, dose, via, esquema, carência nem liberam venda/abate. Agenda sanitária continua sendo intenção e Evento sanitário continua sendo execução factual; projeções temporais não substituem esses registros.
+
 ---
 
 ## Snapshots técnicos sanitários v2
