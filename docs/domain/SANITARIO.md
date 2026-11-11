@@ -353,10 +353,10 @@ Regras registradas:
 - carência `zero` exige fonte explícita;
 - carência `unknown` bloqueia leitura de livre de carência;
 - `not_permitted` impede apresentar o uso como recomendado/elegível no escopo técnico avaliado; não impede, por si, registrar uso já ocorrido com a restrição evidenciada;
-- `NAO_AUTORIZADO` bloqueia agenda automática futura;
+- `NAO_AUTORIZADO` é restrição de evidência: não autoriza apresentar um uso como recomendado/elegível fora do escopo comprovado; não existe geração automática de Agenda;
 - `PRECISA_VALIDAR` preserva limitação;
 - `EXTRAPOLADO` exige MV responsável para execução futura;
-- `somente_alerta` e `bloqueado` não podem gerar agenda automática;
+- `somente_alerta` e `bloqueado` não conferem autorização para planejamento manual; a materialização depende da validação canônica de cada item e contexto;
 - snapshot de agenda não carrega carência ativa;
 - snapshot de evento exige produto executado real e snapshot de carência.
 
@@ -366,7 +366,7 @@ Legados `produtos_veterinarios`, `protocolos_sanitarios`, `protocolos_sanitarios
 
 ## Agenda Sanitária v2
 
-A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas. A Fase 12E4 adicionou base Dexie/offline e sync controlado para Agenda v2. A Fase 12E5 adicionou hardening de cursor incremental, retry/replay de closures, sucesso parcial e bloqueios de superficie. A Fase 12F0 estruturou Protocolos Sanitarios v2 como catalogo curatorial candidato documental, sem seed e sem ativacao. A Fase 12F1 normalizou protocolos, itens, ProductClassGroups, rotationRule, sourceRefs por campo e sourceGaps em artefatos tecnicos candidatos para futura seed/importacao. A Fase 12F2 converteu esses artefatos em payloads candidatos de seed/import, sem executar importacao. Avanços locais posteriores conectaram a Central Sanitária v2 em `/protocolos-sanitarios` para consulta, janelas, agenda local, histórico e planejamento manual, mantendo seed funcional, execução automática, estoque e carência ativa fora do escopo.
+A Fase 11.5 consolidou contratos puros para redesenhar a agenda sanitária. A Fase 12C criou a fundação SQL/RLS da persistência v2 em tabelas dedicadas. A Fase 12E4 adicionou base Dexie/offline e sync controlado para Agenda v2. A Fase 12E5 adicionou hardening de cursor incremental, retry/replay de closures, sucesso parcial e bloqueios de superficie. A Fase 12F0 estruturou Protocolos Sanitarios v2 como catalogo curatorial candidato documental, sem seed e sem ativacao. A Fase 12F1 normalizou protocolos, itens, ProductClassGroups, rotationRule, sourceRefs por campo e sourceGaps em artefatos tecnicos candidatos para futura seed/importacao. A Fase 12F2 converteu esses artefatos em payloads candidatos de seed/import, sem executar importacao. Avanços locais posteriores conectaram a Central Sanitária v2 em `/protocolos-sanitarios` para consulta, janelas, agenda local, histórico e planejamento manual, mantendo seed funcional, execução automática, estoque e carência ativa fora do escopo. Os PRs #285–#287 integraram a remoção da geração automática, a execução factual V3, a triagem proativa e o planejamento manual coletivo; a seleção/planejamento continuam prospectivos e não criam Evento, estoque ou carência.
 
 Pipeline conceitual:
 
