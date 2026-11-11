@@ -31,7 +31,7 @@ const input = (
   agendaId,
   animalIds: ids,
   clientOpId: crypto.randomUUID(),
-  executedAt: "2026-10-30",
+  executedAt: "2026-10-30T14:37",
   registrationMode: "executed_fact",
   product: {
     productId: products[productIndex],
@@ -152,6 +152,7 @@ it("persists three independent subsets, keeps Agenda open and recovers immutable
     "programada",
   );
   const envelopes = await db.queue_ops.toArray();
+  const originalEvents = await db.event_eventos.toArray();
   const sequences = envelopes.map(op => op.record.payload.event.payload.participation_sequence).sort();
   expect(sequences).toEqual([1, 2, 3]);
   expect(new Set(envelopes.map(op => op.record.payload.event.payload.participation_id)).size).toBe(1);
@@ -160,6 +161,7 @@ it("persists three independent subsets, keeps Agenda open and recovers immutable
   await db.open();
   await executeSanitaryAgendaV2(groups[0]);
   expect(await db.queue_ops.toArray()).toEqual(envelopes);
+  expect(await db.event_eventos.toArray()).toEqual(originalEvents);
   await expect(
     executeSanitaryAgendaV2({ ...groups[0], application: { dose: 9 } }),
   ).rejects.toThrow("IDENTITY_REUSE");
@@ -174,6 +176,16 @@ it("persists three independent subsets, keeps Agenda open and recovers immutable
     ),
   ).toBe(true);
 });
+it("preserves the selected instant and canonical São Paulo civil date", async () => {
+  const request = input([animals[0]]);
+  request.executedAt = "2026-10-30T23:37:00-03:00";
+  const result = await executeSanitaryAgendaV2(request);
+  expect(await db.event_eventos.get(result.eventId)).toMatchObject({
+    occurred_at: "2026-10-31T02:37:00.000Z",
+    occurred_on: "2026-10-30",
+  });
+});
+
 it("integra óbito local com bloqueio da execução posterior", async () => {
   const deathEventId = crypto.randomUUID();
   const death = buildEventGesture({ dominio: "obito", fazendaId: farm, animalId: animals[0], eventId: deathEventId, causa: "doenca" });

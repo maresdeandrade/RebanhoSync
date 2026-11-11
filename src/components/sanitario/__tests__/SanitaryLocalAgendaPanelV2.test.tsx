@@ -455,6 +455,10 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     fireEvent.change(screen.getByLabelText("Via"), {
       target: { value: "subcutanea" },
     });
+    fireEvent.change(
+      screen.getByLabelText("Data e hora da execução (horário local)"),
+      { target: { value: "2026-10-30T14:37" } },
+    );
     fireEvent.click(
       screen.getByLabelText(
         "Confirmo que este manejo sanitário foi executado.",
@@ -466,6 +470,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
       expect(onExecute).toHaveBeenCalledWith([
         expect.objectContaining({
           agendaId: "agenda-1",
+          executedAt: "2026-10-30T14:37",
           product: expect.objectContaining({
             productId: "product-1",
             productName: "Vermífugo A",
@@ -542,6 +547,10 @@ describe("SanitaryLocalAgendaPanelV2", () => {
       );
     renderPanel(vi.fn(), vi.fn(), onExecute, groupedItems);
     fireEvent.click(screen.getByRole("button", { name: /Executar grupo/i }));
+    fireEvent.change(
+      screen.getByLabelText("Data e hora da execução (horário local)"),
+      { target: { value: "2026-10-30T14:37" } },
+    );
     fireEvent.click(screen.getByLabelText("Produto real"));
     fireEvent.click(screen.getByRole("option", { name: "Vermífugo A · Lab" }));
     fireEvent.change(screen.getByLabelText("Via"), {
@@ -569,9 +578,32 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     expect(screen.getAllByText("Retry disponível")).toHaveLength(2);
 
     const firstPayloads = onExecute.mock.calls[0][0];
-    fireEvent.click(
-      screen.getByRole("button", { name: "Reenviar 2 pendente(s)" }),
+    expect(
+      firstPayloads.every(
+        (payload: { executedAt: string }) =>
+          payload.executedAt === "2026-10-30T14:37",
+      ),
+    ).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
+    fireEvent.click(screen.getByRole("button", { name: /Executar grupo/i }));
+    const reopenedDate = screen.getByLabelText(
+      "Data e hora da execução (horário local)",
+    );
+    expect(reopenedDate).toHaveValue("2026-10-30T14:37");
+    expect(reopenedDate).toBeDisabled();
+    const reopenedConfirmation = screen.getByLabelText(
+      "Confirmo que este manejo sanitário foi executado.",
+    );
+    const retryButton = screen.getByRole("button", {
+      name: "Reenviar 2 pendente(s)",
+    });
+    expect(retryButton).toBeDisabled();
+    fireEvent.click(reopenedConfirmation);
+    expect(retryButton).toBeEnabled();
+    fireEvent.click(retryButton);
     await waitFor(() => expect(onExecute).toHaveBeenCalledTimes(2));
     const retryPayloads = onExecute.mock.calls[1][0];
     expect(
@@ -582,6 +614,11 @@ describe("SanitaryLocalAgendaPanelV2", () => {
         (payload: { clientOpId: string }) => payload.clientOpId,
       ),
     ).toEqual([firstPayloads[1].clientOpId, firstPayloads[2].clientOpId]);
+    expect(
+      retryPayloads.map(
+        (payload: { executedAt: string }) => payload.executedAt,
+      ),
+    ).toEqual([firstPayloads[1].executedAt, firstPayloads[2].executedAt]);
   });
 
   it("envia somente os animais escolhidos e conserva uma identidade UUID no retry", async () => {

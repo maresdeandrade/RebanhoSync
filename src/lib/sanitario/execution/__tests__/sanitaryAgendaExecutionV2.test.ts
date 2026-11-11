@@ -76,7 +76,7 @@ describe("executeSanitaryAgendaBatchV2", () => {
       fazendaId: "farm-batch",
       agendaId,
       clientOpId: `batch-op-${index + 1}`,
-      executedAt: "2026-08-23",
+      executedAt: "2026-08-23T10:15",
       confirmation: { userConfirmedExecution: true },
     }),
   );
@@ -389,7 +389,7 @@ const baseInput = {
   fazendaId: "farm-1",
   agendaId: "agenda-1",
   clientOpId: "exec-op-1",
-  executedAt: "2026-07-02",
+  executedAt: "2026-07-02T10:30",
   product: {
     productId: "product-1",
     productName: "Vacina Raiva",
@@ -735,6 +735,20 @@ describe("executeSanitaryAgendaV2", () => {
     expect(await db.event_eventos.count()).toBe(0);
   });
 
+  it("exige data e hora válida em novas gravações factuais", async () => {
+    await seedAgenda();
+    await expect(
+      executeSanitaryAgendaV2({ ...baseInput, executedAt: "2026-07-02" }, db),
+    ).rejects.toThrow("missing_execution_time");
+    await expect(
+      executeSanitaryAgendaV2(
+        { ...baseInput, executedAt: "2026-02-30T09:15" },
+        db,
+      ),
+    ).rejects.toThrow("invalid_executed_at");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
   it("revalida autorização na transação se o catálogo mudar durante o preflight", async () => {
     await seedAgenda();
     const originalTransaction = db.transaction.bind(db);
@@ -976,13 +990,20 @@ describe("executeSanitaryAgendaV2", () => {
     await seedAgenda();
 
     const first = await executeSanitaryAgendaV2(baseInput, db);
+    const originalEvent = await db.event_eventos.get(first.eventId);
     const repeated = await executeSanitaryAgendaV2(baseInput, db);
+    const historicalReplay = await executeSanitaryAgendaV2(
+      { ...baseInput, executedAt: "2026-07-02" },
+      db,
+    );
     const alreadyExecuted = await executeSanitaryAgendaV2(
       { ...baseInput, clientOpId: "exec-op-2" },
       db,
     );
 
     expect(repeated.eventId).toBe(first.eventId);
+    expect(historicalReplay.eventId).toBe(first.eventId);
+    expect(await db.event_eventos.get(first.eventId)).toEqual(originalEvent);
     expect(alreadyExecuted.eventId).toBe(first.eventId);
     expect(await db.event_eventos.count()).toBe(1);
     expect(await db.event_eventos_sanitario.count()).toBe(1);

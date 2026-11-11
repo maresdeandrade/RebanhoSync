@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   Animal,
   SanitarioAgendaAnimalLocalV2,
@@ -11,12 +11,56 @@ import type {
   SanitaryProtocolV2ReadModel,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import { buildSanitaryProtocolWindowV2, type SanitaryProtocolWindowSourceV2 } from "../../windows/sanitaryProtocolWindowsV2";
-import { db } from "@/lib/offline/db";
+import { db, LOCAL_OWNERSHIP_KEY } from "@/lib/offline/db";
 import { createManualSanitaryAgendaV2 } from "@/lib/sanitario/agenda/sanitaryManualAgendaV2";
+import { setSanitarioV2PushEnabled } from "@/lib/offline/sanitarioV2Cutover";
+import { executeSanitaryAgendaV2 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
+import { getAnimalSanitaryExecutedHistoryV2 } from "@/lib/sanitario/history/sanitaryExecutedHistoryV2";
 import {
   resolveSanitaryTriagePlanningRowsV2,
   triageSanitaryProtocolIntervalV2,
 } from "../sanitaryTriageV2";
+
+vi.mock("@/lib/offline/localReadBoundary", () => ({
+  getCurrentLocalReadOwnership: vi.fn(async () => ({
+    status: "OWNED",
+    currentUserId: "triage-owner",
+  })),
+}));
+vi.mock("@/lib/env", () => ({
+  env: { supabaseUrl: "http://127.0.0.1:56421" },
+}));
+vi.mock("@/lib/supabase", () => ({ supabase: {} }));
+
+let integratedFixtureActive = false;
+let sanitaryPushEnabled = false;
+
+afterEach(async () => {
+  if (!integratedFixtureActive) return;
+  try {
+    if (sanitaryPushEnabled) setSanitarioV2PushEnabled(false, "local");
+  } finally {
+    integratedFixtureActive = false;
+    sanitaryPushEnabled = false;
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    await db.open();
+    await Promise.all([
+      db.ops_sanitario_agenda_v2.clear(),
+      db.ops_sanitario_agenda_animais_v2.clear(),
+      db.queue_ops.clear(),
+      db.queue_gestures.clear(),
+      db.event_eventos.clear(),
+      db.event_eventos_sanitario.clear(),
+      db.event_eventos_animais.clear(),
+      db.state_insumo_movimentacoes.clear(),
+      db.state_animais.clear(),
+      db.local_sanitario_participacoes.clear(),
+      db.local_ownership.clear(),
+      db.sync_sanitario_v2_cutovers.clear(),
+    ]);
+  }
+});
 
 const protocol = (familyCode = "clostridioses"): SanitaryProtocolV2ReadModel => ({
   id: "protocol-1",
@@ -443,24 +487,62 @@ describe("triageSanitaryProtocolIntervalV2", () => {
     expect(result.source.createsAgenda).toBe(false);
   });
 
-  it("percorre triagem, resolução canônica e writer manual até a Agenda no Dexie, sem criar fato operacional", async () => {
+  it("percorre triagem, writer manual, fato V3 e leitura local mantendo a identidade da Agenda", async () => {
+    integratedFixtureActive = true;
+    vi.stubEnv("VITE_SUPABASE_URL", "http://127.0.0.1:56421");
+    vi.stubEnv("VITE_BACKEND_ENV", "development");
+    const storage = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    });
     await db.open();
     await Promise.all([
       db.ops_sanitario_agenda_v2.clear(),
       db.ops_sanitario_agenda_animais_v2.clear(),
       db.queue_ops.clear(),
+      db.queue_gestures.clear(),
       db.event_eventos.clear(),
       db.event_eventos_sanitario.clear(),
+      db.event_eventos_animais.clear(),
       db.state_insumo_movimentacoes.clear(),
+      db.state_animais.clear(),
+      db.local_sanitario_participacoes.clear(),
+      db.local_ownership.clear(),
+      db.sync_sanitario_v2_cutovers.clear(),
     ]);
+    const cutoverAt = new Date().toISOString();
+    await db.local_ownership.put({
+      key: LOCAL_OWNERSHIP_KEY,
+      owner_user_id: "triage-owner",
+      updated_at: cutoverAt,
+    });
+    await db.sync_sanitario_v2_cutovers.put({
+      key: "farm-1:3",
+      fazenda_id: "farm-1",
+      contract_version: 3,
+      status: "APPLIED",
+      prepared_at: cutoverAt,
+      applying_at: null,
+      applied_at: cutoverAt,
+      failed_at: null,
+      last_error: null,
+      updated_at: cutoverAt,
+    });
+    sanitaryPushEnabled = true;
+    setSanitarioV2PushEnabled(true, "local");
 
-    const currentSource = source();
+    const animalId = "11111111-1111-4111-8111-111111111111";
+    const currentSource = source({
+      animals: [animal(animalId, "2025-09-01")],
+    });
     const result = triageSanitaryProtocolIntervalV2({
       source: currentSource,
       startDate: "2026-05-01",
       endDate: "2026-05-31",
     });
-    const evaluation = findEvaluation(result)!;
+    const evaluation = findEvaluation(result, animalId)!;
     const row = resolveSanitaryTriagePlanningRowsV2({
       source: currentSource,
       evaluatedAt: result.evaluatedAt,
@@ -492,14 +574,109 @@ describe("triageSanitaryProtocolIntervalV2", () => {
       plannedFor: "2026-05-10",
       clientOpId: "77777777-7777-4777-8777-777777777777",
       confirmed: true,
+      syncContext: { clientId: "triage-integrated", projectRef: "local" },
     });
 
     expect(created).toMatchObject({ status: "scheduled", created: true, createsEvent: false, createsStockMovement: false, createsActiveWithdrawal: false });
     expect(await db.ops_sanitario_agenda_v2.count()).toBe(1);
     expect(await db.ops_sanitario_agenda_animais_v2.count()).toBe(1);
-    expect(await db.queue_ops.count()).toBe(0);
+    expect(await db.queue_ops.count()).toBe(1);
     expect(await db.event_eventos.count()).toBe(0);
     expect(await db.event_eventos_sanitario.count()).toBe(0);
     expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+
+    const selectedAnimal = currentSource.animals.find(
+      (entry) => entry.id === row.animalId,
+    );
+    expect(selectedAnimal).toBeDefined();
+    await db.state_animais.put(selectedAnimal!);
+    const agendaId = created.agendaId;
+    const request = {
+      fazendaId: currentSource.fazendaId,
+      agendaId,
+      animalIds: [row.animalId],
+      clientOpId: "88888888-8888-4888-8888-888888888888",
+      executedAt: "2026-10-30T23:37:00-03:00",
+      registrationMode: "executed_fact" as const,
+      confirmation: { userConfirmedExecution: true as const },
+      sync: { clientId: "triage-integrated", projectRef: "local" },
+    };
+    const execution = await executeSanitaryAgendaV2(request);
+    const replay = await executeSanitaryAgendaV2(request);
+    const factualEvent = await db.event_eventos.get(execution.eventId);
+    const factualDetail = await db.event_eventos_sanitario.get(
+      execution.eventId,
+    );
+    const queueOperation = (await db.queue_ops.toArray()).find(
+      (operation) =>
+        operation.record.payload.event?.id === execution.eventId,
+    );
+
+    expect(execution).toMatchObject({
+      agendaId,
+      agendaStatus: "open",
+      createsEvent: true,
+      createsStockMovement: false,
+      createsActiveWithdrawal: false,
+    });
+    expect(replay.eventId).toBe(execution.eventId);
+    expect(await db.event_eventos.count()).toBe(1);
+    expect(await db.queue_ops.count()).toBe(2);
+    expect(factualEvent).toMatchObject({
+      id: execution.eventId,
+      source_sanitario_agenda_v2_id: agendaId,
+      occurred_at: "2026-10-31T02:37:00.000Z",
+      occurred_on: "2026-10-30",
+    });
+    expect(factualEvent?.payload.agenda_id).toBe(agendaId);
+    expect(queueOperation?.record.payload.event).toMatchObject({
+      id: execution.eventId,
+      source_sanitario_agenda_v2_id: agendaId,
+    });
+    expect(
+      await db.event_eventos_animais
+        .where("evento_id")
+        .equals(execution.eventId)
+        .toArray(),
+    ).toMatchObject([
+      { evento_id: execution.eventId, animal_id: row.animalId },
+    ]);
+    expect(factualDetail?.carencia_carne_ate).toBeNull();
+    expect(factualDetail?.carencia_leite_ate).toBeNull();
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+    expect((await db.ops_sanitario_agenda_v2.get(agendaId))?.status).toBe(
+      "programada",
+    );
+    expect(
+      await getAnimalSanitaryExecutedHistoryV2({
+        fazendaId: currentSource.fazendaId,
+        animalId: row.animalId,
+        catalog: currentSource.catalog,
+      }),
+    ).toEqual([]);
+
+    // O harness HTTP/PostgreSQL comprova o transporte e o pull; este ACK isolado testa a projeção local.
+    await db.event_eventos.update(execution.eventId, {
+      sanitario_v3_confirmation: "confirmed",
+    });
+    await db.event_eventos_sanitario.update(execution.eventId, {
+      sanitario_v3_confirmation: "confirmed",
+    });
+    const localHistory = await getAnimalSanitaryExecutedHistoryV2({
+      fazendaId: currentSource.fazendaId,
+      animalId: row.animalId,
+      catalog: currentSource.catalog,
+    });
+    expect(localHistory[0]?.events[0]).toMatchObject({
+      eventId: execution.eventId,
+      executedAt: "2026-10-31T02:37:00.000Z",
+      originLabel: "agenda sanitária",
+      stockStatus: "without_movement",
+    });
+    expect(localHistory[0]?.events[0].withdrawalStatus).not.toBe("generated");
+    expect((await db.ops_sanitario_agenda_v2.get(agendaId))?.status).toBe(
+      "programada",
+    );
+
   });
 });

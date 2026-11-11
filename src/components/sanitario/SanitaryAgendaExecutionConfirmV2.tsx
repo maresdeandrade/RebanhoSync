@@ -78,8 +78,10 @@ type Props = {
   ) => Promise<SanitaryAgendaBatchResultV2>;
 };
 
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+function localDateTimeKey() {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 }
 
 function operationId() {
@@ -372,7 +374,7 @@ export function SanitaryAgendaExecutionConfirmV2({
   const [selectedAnimals, setSelectedAnimals] = useState<string[]>([]);
   const [doseUnit, setDoseUnit] = useState("ml");
   const totalAnimals = selectedAnimals.length;
-  const [executedAt, setExecutedAt] = useState(todayKey());
+  const [executedAt, setExecutedAt] = useState(localDateTimeKey());
   const [productOptions, setProductOptions] = useState<
     SanitaryExecutionProductOptionV2[]
   >([]);
@@ -395,6 +397,10 @@ export function SanitaryAgendaExecutionConfirmV2({
   const [retryPayloads, setRetryPayloads] = useState<ExecutionPayload[] | null>(
     null,
   );
+  const retryPayloadsRef = useRef(retryPayloads);
+  retryPayloadsRef.current = retryPayloads;
+  const openedItemsKey = useRef<string | null>(null);
+  const itemsKey = JSON.stringify(items.map((entry) => entry.id));
   const productRequired = items.some(requiresProduct);
   const productClassGroupWarning = items.some(
     (entry) => entry.productRequirementKind === "product_class_group",
@@ -436,6 +442,12 @@ export function SanitaryAgendaExecutionConfirmV2({
 
   useEffect(() => {
     if (!open) return;
+    const sameItems = openedItemsKey.current === itemsKey;
+    openedItemsKey.current = itemsKey;
+    if (sameItems && retryPayloadsRef.current?.length) {
+      setConfirmed(false);
+      return;
+    }
     const initialDose = sameValue(items, (entry) => entry.suggestedDose);
     const initialRoute = sameValue(items, (entry) => entry.suggestedRoute);
     setSelectedAnimals(
@@ -446,7 +458,7 @@ export function SanitaryAgendaExecutionConfirmV2({
       ),
     );
     setDoseUnit((items[0]?.suggestedDoseUnit ?? "ml").toLowerCase());
-    setExecutedAt(todayKey());
+    setExecutedAt(localDateTimeKey());
     setSelectedProductId("");
     setInventoryLotId("");
     setDosesPerAnimal(
@@ -462,7 +474,7 @@ export function SanitaryAgendaExecutionConfirmV2({
     setBatchResult(null);
     setRetryPayloads(null);
     setBatchClientOpId(`sanitary-agenda-batch-v2:${operationId()}`);
-  }, [defaultResponsibleName, items, open]);
+  }, [defaultResponsibleName, items, itemsKey, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -727,13 +739,19 @@ export function SanitaryAgendaExecutionConfirmV2({
               aria-label="Produto e aplicação"
             >
               <label className="space-y-1 text-sm">
-                <span className="font-medium">Data de execução</span>
+                <span className="font-medium">Data e hora da execução (horário local)</span>
                 <Input
-                  aria-label="Data de execução"
-                  type="date"
+                  aria-label="Data e hora da execução (horário local)"
+                  type="datetime-local"
                   value={executedAt}
+                  disabled={Boolean(retryPayloads?.length)}
                   onChange={(event) => setExecutedAt(event.target.value)}
                 />
+                {retryPayloads?.length ? (
+                  <p className="text-xs text-muted-foreground">
+                    O retry mantém a data, hora e identidade originais.
+                  </p>
+                ) : null}
               </label>
               <label className="space-y-1 text-sm">
                 <span className="font-medium">Responsável</span>
