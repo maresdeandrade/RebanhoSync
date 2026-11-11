@@ -1,10 +1,25 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import type { SanitaryProtocolWindowSourceV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
+import type {
+  SanitaryOperationalContextV2,
+  SanitaryProtocolWindowRowV2,
+  SanitaryProtocolWindowSourceV2,
+} from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 import {
+  createGroupedManualSanitaryAgendasV2,
+  EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2,
+} from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
+import {
+  buildSanitaryWindowPlanningPreviewV2,
+} from "@/lib/sanitario/preview/sanitaryWindowPlanningPreviewV2";
+import { reviewSanitaryPlanningDateV2 } from "@/lib/sanitario/windows/sanitaryOperationalProjectionV2";
+import {
+  resolveSanitaryTriagePlanningRowsV2,
   triageSanitaryProtocolIntervalV2,
   type SanitaryTriageDispositionV2,
   type SanitaryTriageEvaluationV2,
@@ -68,6 +83,10 @@ function groupKey(evaluation: SanitaryTriageEvaluationV2) {
   return `${evaluation.protocolId}:${evaluation.itemId}`;
 }
 
+function selectionKey(evaluation: SanitaryTriageEvaluationV2) {
+  return `${evaluation.animalId}:${evaluation.protocolId}:${evaluation.itemId}`;
+}
+
 function groupEvaluations(evaluations: SanitaryTriageEvaluationV2[]) {
   const groups = new Map<string, SanitaryTriageEvaluationV2[]>();
   for (const evaluation of evaluations) {
@@ -118,12 +137,18 @@ function SummaryCard({ label, value, description }: { label: string; value: numb
   </Card>;
 }
 
-function EvaluationDetails({ evaluation, onOpenSection }: { evaluation: SanitaryTriageEvaluationV2; onOpenSection?: Props["onOpenSection"] }) {
+function EvaluationDetails({ evaluation, selected, onToggle, onOpenSection }: { evaluation: SanitaryTriageEvaluationV2; selected: boolean; onToggle: (evaluation: SanitaryTriageEvaluationV2) => void; onOpenSection?: Props["onOpenSection"] }) {
+  const selectable = evaluation.disposition === "opportunity_in_window" && !evaluation.alreadyPlanned && evaluation.blockers.length === 0;
   return <li className="rounded-md border border-border/70 bg-background p-3 text-sm">
     <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
       <div className="space-y-1">
-        <p className="font-medium">{evaluation.identification} · {evaluation.lotLabel}</p>
-        <p>{dispositionLabels[evaluation.disposition]} · {evaluation.reason}</p>
+        <div className="flex items-start gap-2">
+          {selectable ? <input type="checkbox" aria-label={`Selecionar ${evaluation.identification} para Agenda`} checked={selected} onChange={() => onToggle(evaluation)} /> : null}
+          <div>
+            <p className="font-medium">{evaluation.identification} · {evaluation.lotLabel}</p>
+            <p>{dispositionLabels[evaluation.disposition]} · {evaluation.reason}</p>
+          </div>
+        </div>
         <p className="text-muted-foreground">Janela técnica: {displayDate(evaluation.intervalStart)} a {displayDate(evaluation.intervalEnd)}</p>
         {evaluation.warnings.map(warning => <p key={warning} className="text-amber-700">{warning}</p>)}
         {evaluation.blockers.map(blocker => <p key={blocker} className="text-red-700">{blocker}</p>)}
@@ -139,21 +164,52 @@ function EvaluationDetails({ evaluation, onOpenSection }: { evaluation: Sanitary
   </li>;
 }
 
-function EvaluationGroup({ group, onOpenSection }: { group: SanitaryTriageEvaluationV2[]; onOpenSection?: Props["onOpenSection"] }) {
+function EvaluationGroup({ group, selectedKeys, onToggle, onSelectGroup, onOpenSection }: { group: SanitaryTriageEvaluationV2[]; selectedKeys: Set<string>; onToggle: (evaluation: SanitaryTriageEvaluationV2) => void; onSelectGroup: (group: SanitaryTriageEvaluationV2[]) => void; onOpenSection?: Props["onOpenSection"] }) {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
   const visible = open ? group.slice(0, page * PAGE_SIZE) : [];
   const first = group[0];
   return <section className="rounded-lg border border-border p-3">
-    <button type="button" className="flex w-full items-center justify-between gap-3 text-left font-medium" aria-expanded={open} onClick={() => setOpen(current => !current)}>
-      <span>{first.protocolLabel} · {first.itemLabel}</span>
-      <span className="text-sm text-muted-foreground">{group.length} avaliações {open ? "−" : "+"}</span>
-    </button>
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <button type="button" className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left font-medium" aria-expanded={open} onClick={() => setOpen(current => !current)}>
+        <span>{first.protocolLabel} · {first.itemLabel}</span>
+        <span className="text-sm text-muted-foreground">{group.length} avaliações {open ? "−" : "+"}</span>
+      </button>
+      <Button type="button" variant="outline" size="sm" onClick={() => onSelectGroup(group)} aria-label={`Selecionar todo o grupo ${first.protocolLabel} ${first.itemLabel}`}>
+        Selecionar grupo ({group.length})
+      </Button>
+    </div>
     {open ? <>
-      <ul className="mt-3 space-y-2">{visible.map((evaluation, index) => <EvaluationDetails key={`${evaluation.animalId}:${evaluation.itemId}:${index}`} evaluation={evaluation} onOpenSection={onOpenSection} />)}</ul>
+      <ul className="mt-3 space-y-2">{visible.map((evaluation, index) => <EvaluationDetails key={`${selectionKey(evaluation)}:${index}`} evaluation={evaluation} selected={selectedKeys.has(selectionKey(evaluation))} onToggle={onToggle} onOpenSection={onOpenSection} />)}</ul>
       {visible.length < group.length ? <button type="button" className="mt-3 text-sm text-primary underline" onClick={() => setPage(current => current + 1)}>Mostrar mais ({group.length - visible.length} restantes)</button> : null}
     </> : null}
   </section>;
+}
+
+function PlanningDialog({ review, dateReview, preview, planning, error, onDateChange, onClose, onConfirm, onRemoveRejected }: { review: { rows: SanitaryProtocolWindowRowV2[]; plannedFor: string; context: SanitaryOperationalContextV2 }; dateReview: ReturnType<typeof reviewSanitaryPlanningDateV2>; preview: ReturnType<typeof buildSanitaryWindowPlanningPreviewV2> | null; planning: boolean; error: string | null; onDateChange: (date: string) => void; onClose: () => void; onConfirm: () => void; onRemoveRejected: () => void }) {
+  const blocked = !dateReview.length || dateReview.some(entry => entry.situation !== "compatible") || !preview?.commands.length || !!preview?.rejected.length;
+  const rejected = dateReview.filter(entry => entry.situation !== "compatible");
+  return <Dialog open onOpenChange={open => { if (!open && !planning) onClose(); }}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Revisar planejamento sanitário</DialogTitle>
+        <DialogDescription>Confirme os animais e a data. Isto cria somente Agenda futura, sem Evento, baixa de estoque ou carência ativa.</DialogDescription>
+      </DialogHeader>
+      <div className="max-h-96 space-y-3 overflow-auto text-sm">
+        <label className="block space-y-1"><span className="font-medium">Data planejada</span><Input aria-label="Data planejada da Agenda" type="date" value={review.plannedFor} onChange={event => onDateChange(event.target.value)} /></label>
+        <p>{review.rows.length} avaliação(ões) selecionada(s). Prévia: {preview?.commands.length ?? 0} Agenda(s) elegível(is), {rejected.length + (preview?.rejected.length ?? 0)} excluída(s) ou bloqueada(s).</p>
+        <ul className="space-y-2">{dateReview.map(entry => <li key={`${entry.original.itemId}:${entry.original.animalId}`}><strong>{entry.original.identification}</strong> · {entry.original.lotLabel}<br />{entry.original.protocolLabel} · {entry.original.itemLabel}<br /><strong>{entry.label}</strong><br /><span className="text-muted-foreground">{entry.reason}</span></li>)}</ul>
+        {preview?.rejected.length ? <p className="text-amber-700">A prévia também rejeitou {preview.rejected.length} comando(s) por equivalência ou restrição operacional.</p> : null}
+        {rejected.length ? <Button type="button" variant="outline" disabled={planning} onClick={onRemoveRejected}>Remover excluídos e continuar</Button> : null}
+        <p className="text-muted-foreground">A confirmação revalida novamente os dados locais na transação de gravação.</p>
+        {error ? <p role="alert" className="text-destructive">{error}</p> : null}
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" disabled={planning} onClick={onClose}>Voltar à seleção</Button>
+        <Button type="button" disabled={planning || blocked} onClick={onConfirm}>{planning ? "Salvando..." : "Confirmar e gerar Agenda"}</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>;
 }
 
 export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initialLotId, onTargetChange, onOpenSection }: Props) {
@@ -167,6 +223,11 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
   const [animalFilter, setAnimalFilter] = useState(initialAnimalId ?? "todos");
   const [situationFilter, setSituationFilter] = useState<SituationFilter>("todos");
   const [text, setText] = useState("");
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [review, setReview] = useState<{ rows: SanitaryProtocolWindowRowV2[]; plannedFor: string; context: SanitaryOperationalContextV2 } | null>(null);
+  const [planning, setPlanning] = useState(false);
+  const [planningError, setPlanningError] = useState<string | null>(null);
+  const [planningNotice, setPlanningNotice] = useState<string | null>(null);
 
   const period = periodForMode(periodMode, startDate) ?? { startDate, endDate };
   const periodStartDate = period.startDate;
@@ -205,6 +266,67 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
   const farmEvaluations = result?.evaluations.filter(row => row.disposition !== "outside_period") ?? [];
   const farmDistinctAnimals = new Set(farmEvaluations.map(row => row.animalId)).size;
   const filteredDistinctAnimals = new Set(filtered.map(row => row.animalId)).size;
+  const dateReview = useMemo(() => review && source ? reviewSanitaryPlanningDateV2({ source, ...review }) : [], [review, source]);
+  const preview = useMemo(() => review ? buildSanitaryWindowPlanningPreviewV2(review) : null, [review]);
+
+  const toggleSelection = (evaluation: SanitaryTriageEvaluationV2) => {
+    const key = selectionKey(evaluation);
+    setSelectedKeys(current => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    setPlanningNotice(null);
+  };
+
+  const selectEvaluations = (evaluations: SanitaryTriageEvaluationV2[]) => {
+    setSelectedKeys(current => new Set([...current, ...evaluations.map(selectionKey)]));
+    setPlanningNotice(null);
+    setPlanningError(null);
+  };
+
+  const openPlanningReview = () => {
+    if (!source || !result) return;
+    const evaluations = result.evaluations.filter(evaluation => selectedKeys.has(selectionKey(evaluation)));
+    const rows = resolveSanitaryTriagePlanningRowsV2({ source, evaluatedAt: result.evaluatedAt, evaluations });
+    if (!rows.length) {
+      setPlanningError("Selecione ao menos uma oportunidade elegível na janela.");
+      return;
+    }
+    setPlanningError(null);
+    setReview({ rows, plannedFor: period.startDate, context: { ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 } });
+  };
+
+  const removeRejectedFromReview = () => {
+    const rejectedKeys = new Set(dateReview.filter(entry => entry.situation !== "compatible").map(entry => selectionKey(entry.original as SanitaryTriageEvaluationV2)));
+    setSelectedKeys(current => new Set([...current].filter(key => !rejectedKeys.has(key))));
+    setReview(current => current ? { ...current, rows: current.rows.filter(row => !rejectedKeys.has(selectionKey(row as SanitaryTriageEvaluationV2))) } : current);
+    setPlanningError(null);
+  };
+
+  const confirmPlanning = async () => {
+    if (!review || !source?.fazendaId || planning) return;
+    setPlanning(true);
+    setPlanningError(null);
+    try {
+      const freshRows = dateReview.filter(entry => entry.situation === "compatible").map(entry => entry.fresh!).filter(Boolean);
+      const results = await createGroupedManualSanitaryAgendasV2({
+        rows: freshRows,
+        fazendaId: source.fazendaId,
+        plannedFor: review.plannedFor,
+        confirmed: true,
+        operationalContext: review.context,
+      });
+      setPlanningNotice(`${results.length} Agenda(s) criada(s) como intenção futura.`);
+      setSelectedKeys(new Set());
+      setReview(null);
+    } catch (error) {
+      setPlanningError(error instanceof Error ? error.message : "Não foi possível salvar o planejamento. Tente novamente.");
+    } finally {
+      setPlanning(false);
+    }
+  };
 
   if (!source) return <p className="text-sm text-muted-foreground">Carregando catálogo, rebanho e histórico sanitário local...</p>;
   if (source.animals.length === 0) return <div role="status" className="rounded-lg border border-dashed border-border p-4 text-sm">Nenhum animal ativo disponível nesta fazenda para triagem sanitária. Isso não comprova conformidade sanitária.</div>;
@@ -245,9 +367,13 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle>Oportunidades e condições por protocolo</CardTitle><CardDescription>Grupos recolhidos não montam detalhes até serem abertos. Cada grupo aberto mostra no máximo {PAGE_SIZE} avaliações por página.</CardDescription></CardHeader>
-        <CardContent>{groups.length === 0 ? <p role="status" className="text-sm text-muted-foreground">Nenhuma oportunidade ou condição encontrada com os filtros atuais. Isso não constitui comprovação de conformidade.</p> : <div className="space-y-3">{groups.map(group => <EvaluationGroup key={groupKey(group[0])} group={group} onOpenSection={onOpenSection} />)}</div>}</CardContent>
+        <CardHeader><CardTitle>Oportunidades e condições por protocolo</CardTitle><CardDescription>Selecione somente oportunidades elegíveis na janela. A confirmação cria Agenda futura, nunca Evento factual.</CardDescription></CardHeader>
+        <CardContent>
+          <div className="mb-3 flex flex-wrap items-center gap-3"><span className="text-sm text-muted-foreground">{selectedKeys.size} avaliação(ões) selecionada(s)</span><Button type="button" variant="outline" disabled={!filtered.length} onClick={() => selectEvaluations(filtered)}>Selecionar todo o recorte ({filtered.length})</Button><Button type="button" variant="outline" disabled={!selectedKeys.size} onClick={() => setSelectedKeys(new Set())}>Limpar seleção</Button><Button type="button" disabled={!selectedKeys.size || !source.fazendaId} onClick={openPlanningReview}>Planejar selecionados</Button>{planningNotice ? <span role="status" className="text-sm text-green-700">{planningNotice}</span> : null}{planningError && !review ? <span role="alert" className="text-sm text-destructive">{planningError}</span> : null}</div>
+          {groups.length === 0 ? <p role="status" className="text-sm text-muted-foreground">Nenhuma oportunidade ou condição encontrada com os filtros atuais. Isso não constitui comprovação de conformidade.</p> : <div className="space-y-3">{groups.map(group => <EvaluationGroup key={groupKey(group[0])} group={group} selectedKeys={selectedKeys} onToggle={toggleSelection} onSelectGroup={selectEvaluations} onOpenSection={onOpenSection} />)}</div>}
+        </CardContent>
       </Card>
+      {review ? <PlanningDialog review={review} dateReview={dateReview} preview={preview} planning={planning} error={planningError} onDateChange={date => setReview(current => current ? { ...current, plannedFor: date } : current)} onClose={() => { if (!planning) { setReview(null); setPlanningError(null); } }} onConfirm={confirmPlanning} onRemoveRejected={removeRejectedFromReview} /> : null}
     </> : null}
   </div>;
 }

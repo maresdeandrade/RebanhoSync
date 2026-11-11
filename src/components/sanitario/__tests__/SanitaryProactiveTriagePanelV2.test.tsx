@@ -72,7 +72,7 @@ describe("SanitaryProactiveTriagePanelV2", () => {
     render(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={source} /></MemoryRouter>);
     expect(screen.getByRole("button", { name: /100 avaliações/ })).toBeInTheDocument();
     expect(screen.queryByText("Animal 0")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Protocolo 1.*Manejo 1/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Protocolo 1.*Manejo 1.*100 avaliações/ }));
     expect(screen.getAllByText(/Animal 0 · Lote 1/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Mostrar mais \(50 restantes\)/)).toBeInTheDocument();
     expect(screen.queryByText(/Animal 99 · Lote 1/)).not.toBeInTheDocument();
@@ -85,5 +85,26 @@ describe("SanitaryProactiveTriagePanelV2", () => {
     fireEvent.change(screen.getByLabelText("Filtrar por situação"), { target: { value: "restricted" } });
     expect(screen.getByText(/50 avaliações em 1 animais distintos/)).toBeInTheDocument();
     expect(screen.getByText(/Total da fazenda no período: 100 avaliações/)).toBeInTheDocument();
+  });
+
+  it("seleciona coletivamente todo o grupo, inclusive avaliações após a primeira página", () => {
+    const collectiveResult = {
+      ...result,
+      evaluations: Array.from({ length: 60 }, (_, index) => ({
+        ...evaluation(index),
+        animalId: `animal-${index}`,
+        identification: `Animal ${index}`,
+        disposition: "opportunity_in_window" as const,
+        blockers: [],
+      })),
+      summary: { ...result.summary, opportunity_in_window: 60, restricted: 0 },
+    } as typeof result;
+    vi.mocked(triageSanitaryProtocolIntervalV2).mockReturnValue(collectiveResult);
+
+    render(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={source} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Selecionar todo o grupo Protocolo 1 Manejo 1/ }));
+
+    expect(screen.getByText("60 avaliação(ões) selecionada(s)")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Planejar selecionados/ })).toBeEnabled();
   });
 });

@@ -56,6 +56,36 @@ export type SanitaryTriageResultV2 = {
   };
 };
 
+export function resolveSanitaryTriagePlanningRowsV2(input: {
+  source: SanitaryProtocolWindowSourceV2;
+  evaluatedAt: string;
+  evaluations: SanitaryTriageEvaluationV2[];
+}): SanitaryProtocolWindowRowV2[] {
+  const rowsByProtocolItem = new Map<string, SanitaryProtocolWindowRowV2[]>();
+
+  for (const evaluation of input.evaluations) {
+    const key = `${evaluation.protocolId}:${evaluation.itemId}`;
+    if (!rowsByProtocolItem.has(key)) {
+      rowsByProtocolItem.set(
+        key,
+        buildSanitaryProtocolWindowV2({
+          source: input.source,
+          protocolId: evaluation.protocolId,
+          itemId: evaluation.itemId,
+          evaluatedAt: input.evaluatedAt,
+        })?.rows ?? [],
+      );
+    }
+  }
+
+  return input.evaluations.flatMap((evaluation) => {
+    const row = rowsByProtocolItem
+      .get(`${evaluation.protocolId}:${evaluation.itemId}`)
+      ?.find((candidate) => candidate.animalId === evaluation.animalId);
+    return row ? [row] : [];
+  });
+}
+
 function dateKey(value: string): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const parsed = new Date(`${value}T00:00:00.000Z`);

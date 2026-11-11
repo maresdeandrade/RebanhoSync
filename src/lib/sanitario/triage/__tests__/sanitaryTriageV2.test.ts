@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
 import type {
   Animal,
@@ -10,7 +11,12 @@ import type {
   SanitaryProtocolV2ReadModel,
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import { buildSanitaryProtocolWindowV2, type SanitaryProtocolWindowSourceV2 } from "../../windows/sanitaryProtocolWindowsV2";
-import { triageSanitaryProtocolIntervalV2 } from "../sanitaryTriageV2";
+import { db } from "@/lib/offline/db";
+import { createManualSanitaryAgendaV2 } from "@/lib/sanitario/agenda/sanitaryManualAgendaV2";
+import {
+  resolveSanitaryTriagePlanningRowsV2,
+  triageSanitaryProtocolIntervalV2,
+} from "../sanitaryTriageV2";
 
 const protocol = (familyCode = "clostridioses"): SanitaryProtocolV2ReadModel => ({
   id: "protocol-1",
@@ -412,5 +418,88 @@ describe("triageSanitaryProtocolIntervalV2", () => {
         endDate: "2026-05-31",
       }),
     ).toThrow("Período sanitário inválido.");
+  });
+
+  it("resolve seleção de triagem para linhas canônicas sem habilitar escrita no resultado derivado", () => {
+    const currentSource = source();
+    const result = triageSanitaryProtocolIntervalV2({
+      source: currentSource,
+      startDate: "2026-05-01",
+      endDate: "2026-05-31",
+    });
+    const evaluation = findEvaluation(result)!;
+    const rows = resolveSanitaryTriagePlanningRowsV2({
+      source: currentSource,
+      evaluatedAt: result.evaluatedAt,
+      evaluations: [evaluation],
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      animalId: evaluation.animalId,
+      protocolId: evaluation.protocolId,
+      itemId: evaluation.itemId,
+    });
+    expect(result.source.createsAgenda).toBe(false);
+  });
+
+  it("percorre triagem, resolução canônica e writer manual até a Agenda no Dexie, sem criar fato operacional", async () => {
+    await db.open();
+    await Promise.all([
+      db.ops_sanitario_agenda_v2.clear(),
+      db.ops_sanitario_agenda_animais_v2.clear(),
+      db.queue_ops.clear(),
+      db.event_eventos.clear(),
+      db.event_eventos_sanitario.clear(),
+      db.state_insumo_movimentacoes.clear(),
+    ]);
+
+    const currentSource = source();
+    const result = triageSanitaryProtocolIntervalV2({
+      source: currentSource,
+      startDate: "2026-05-01",
+      endDate: "2026-05-31",
+    });
+    const evaluation = findEvaluation(result)!;
+    const row = resolveSanitaryTriagePlanningRowsV2({
+      source: currentSource,
+      evaluatedAt: result.evaluatedAt,
+      evaluations: [evaluation],
+    })[0];
+
+    expect(evaluation.disposition).toBe("opportunity_in_window");
+    expect(row.canSelect).toBe(true);
+    const created = await createManualSanitaryAgendaV2({
+      target: { scope: "animal", id: row.animalId, fazendaId: currentSource.fazendaId },
+      source: {
+        kind: "sanitary_precheck_preview_v2",
+        protocolId: row.protocolId,
+        protocolItemVersionId: undefined,
+        actionType: "manejo_sanitario",
+        familyCode: currentSource.catalog.protocols[0].familyCode,
+        itemKey: row.itemKey,
+        itemLabel: row.itemLabel,
+        protocolName: row.protocolLabel,
+        precheckStatus: row.status,
+        reasons: row.precheck.reasons,
+        blockers: row.blockers,
+        warnings: row.warnings,
+        productRequirementKind: row.precheck.productRequirementKind,
+        productClass: row.precheck.productClass,
+        productClassGroupId: row.precheck.productClassGroupId,
+        productClassGroupName: row.precheck.productClassGroupName,
+      },
+      plannedFor: "2026-05-10",
+      clientOpId: "77777777-7777-4777-8777-777777777777",
+      confirmed: true,
+    });
+
+    expect(created).toMatchObject({ status: "scheduled", created: true, createsEvent: false, createsStockMovement: false, createsActiveWithdrawal: false });
+    expect(await db.ops_sanitario_agenda_v2.count()).toBe(1);
+    expect(await db.ops_sanitario_agenda_animais_v2.count()).toBe(1);
+    expect(await db.queue_ops.count()).toBe(0);
+    expect(await db.event_eventos.count()).toBe(0);
+    expect(await db.event_eventos_sanitario.count()).toBe(0);
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
   });
 });
