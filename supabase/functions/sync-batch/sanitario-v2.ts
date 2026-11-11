@@ -9,7 +9,6 @@ export type SanitarioSyncV2Command =
   | "replace_agenda_animals"
   | "apply_factual_core"
   | "close_agenda"
-  | "set_automation_plan"
   | "reschedule_agenda";
 
 export type SanitarioSyncV2Status =
@@ -162,17 +161,7 @@ export type SanitarioSyncV2Operation =
   | ReplaceAgendaAnimalsOperation
   | ApplyFactualCoreOperation
   | CloseAgendaOperation
-  | SetAutomationPlanOperation
   | RescheduleAgendaOperation;
-
-export interface SetAutomationPlanOperation extends SanitarioSyncV2OperationBase {
-  command: "set_automation_plan";
-  expected_revision: number;
-  payload: {
-    plan: Record<string, unknown>;
-    expected_plan: Record<string, unknown> | null;
-  };
-}
 
 export interface RescheduleAgendaOperation extends SanitarioSyncV2OperationBase {
   command: "reschedule_agenda";
@@ -215,7 +204,6 @@ export interface SanitarioRpcCall {
     | "internal_sanitario_sync_v2_replace_agenda_animals"
     | "internal_sanitario_sync_v2_apply_factual_core"
     | "internal_sanitario_sync_v2_close_agenda"
-    | "internal_sanitario_sync_v2_set_automation_plan"
     | "internal_sanitario_sync_v2_reschedule_agenda";
   args: Record<string, unknown>;
 }
@@ -275,7 +263,6 @@ const COMMANDS = new Set<SanitarioSyncV2Command>([
   "replace_agenda_animals",
   "apply_factual_core",
   "close_agenda",
-  "set_automation_plan",
   "reschedule_agenda",
 ]);
 
@@ -289,7 +276,6 @@ const COMMAND_ALLOWED_ROLES: Record<
   replace_agenda_animals: new Set(["owner", "manager"]),
   apply_factual_core: new Set(["owner", "manager", "cowboy"]),
   close_agenda: new Set(["owner", "manager"]),
-  set_automation_plan: new Set(["owner", "manager"]),
   reschedule_agenda: new Set(["owner", "manager"]),
 };
 
@@ -806,28 +792,14 @@ export function validateSanitarioSyncV2Operation(
     (!isUuid(payload.agenda_id) || !isUuid(payload.animal_id) || !isUuid(payload.death_event_id))) {
     return { ok: false, result: reject(raw, "SANITARIO_DEATH_PARTICIPANT_INVALID") };
   }
-  if (command === "set_automation_plan" || command === "reschedule_agenda") {
+  if (command === "reschedule_agenda") {
     if (!isRevision(raw.expected_revision)) {
       return {
         ok: false,
         result: reject(raw, "SANITARIO_EXPECTED_REVISION_REQUIRED"),
       };
     }
-    if (command === "set_automation_plan") {
-      const plan = payload.plan;
-      if (
-        !isRecord(plan) ||
-        ![1, 2].includes(Number(plan.schemaVersion)) ||
-        (payload.expected_plan !== null && !isRecord(payload.expected_plan)) ||
-        typeof plan.enabled !== "boolean" ||
-        plan.revision !== Number(raw.expected_revision) + 1 ||
-        !Array.isArray(plan.rules) ||
-        plan.rules.length > 20 ||
-        !isRecord(plan.context)
-      ) {
-        return { ok: false, result: reject(raw, "SANITARIO_PLAN_INVALID") };
-      }
-    } else if (
+    if (
       !isUuid(payload.agenda_id) ||
       typeof payload.data_programada !== "string" ||
       !/^\d{4}-\d{2}-\d{2}$/.test(payload.data_programada) ||
@@ -998,18 +970,6 @@ export function buildSanitarioSyncV2RpcCall(
     case "manage_agenda":
     case "death_participant":
       return { functionName: "internal_sanitario_admit_v3", args: { ...common, client_id: context.clientId, client_tx_id: context.clientTxId, payload: operation.payload } };
-    case "set_automation_plan":
-      return {
-        functionName: "internal_sanitario_sync_v2_set_automation_plan",
-        args: {
-          ...common,
-          expected_revision: operation.expected_revision,
-          client_id: context.clientId,
-          client_tx_id: context.clientTxId,
-          plan: operation.payload.plan,
-          expected_plan: operation.payload.expected_plan,
-        },
-      };
     case "reschedule_agenda":
       return {
         functionName: "internal_sanitario_sync_v2_reschedule_agenda",
@@ -1119,9 +1079,7 @@ function canonicalEntityIdFor(
       ? data.evento_id
       : operation.command === "close_agenda"
         ? data.closure_id
-        : operation.command === "set_automation_plan"
-          ? data.fazenda_id
-          : data.agenda_id;
+        : data.agenda_id;
   return typeof entity === "string" ? entity : undefined;
 }
 
@@ -1264,11 +1222,10 @@ function validateProgressiveAdmission(
   if (operation.command !== "apply_factual_core") return null;
   const event = operation.payload.event;
   if (
-    (event.natureza === "primary_execution" ||
-      event.source_sanitario_agenda_v2_id) &&
-    (event.natureza !== "primary_execution" ||
-      !event.source_sanitario_agenda_v2_id ||
-      event.payload?.sanitario_v3_progressive !== true)
+    (event.natureza === "primary_execution" &&
+      !event.source_sanitario_agenda_v2_id) ||
+    (event.source_sanitario_agenda_v2_id &&
+      event.natureza !== "primary_execution")
   ) {
     return reject(
       operation,

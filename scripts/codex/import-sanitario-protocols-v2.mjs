@@ -62,10 +62,7 @@ const DEPRECATED_ACTIVE_ITEMS = [
 ];
 
 const FORBIDDEN_TRUE_FLAGS = [
-  "agenda_allowed",
   "approved_for_catalog",
-  "allows_agenda_auto",
-  "allowsAgendaAuto",
   "creates_agenda",
   "creates_event",
   "creates_stock_movement",
@@ -177,13 +174,7 @@ function protocolUpdateBlockReason(existing) {
 
 function groupUpdateBlockReason(existing) {
   if (!existing) return null;
-  if (
-    existing.curation_status !== "needs_review" ||
-    ["agenda_allowed", "blocked"].includes(existing.automation_status)
-  ) {
-    return "group_already_curated_or_operational";
-  }
-  return null;
+  return existing.curation_status !== "needs_review" ? "group_already_curated" : null;
 }
 
 function itemUpdateBlockReason(existing) {
@@ -243,7 +234,6 @@ function validateCanonicalPayload(payload) {
   assert(b19Item, "Item B19 ausente");
   assert(b19.jurisdiction_scope?.country === "BR", "B19 deve manter pais BR");
   assert(b19.jurisdiction_scope?.legal_scope === "nacional", "B19 deve manter escopo nacional");
-  assert(b19.metadata?.automationStatus === "manual_only", "B19 deve permanecer manual_only");
   assert(b19.species_scope?.includes("bovino"), "B19 deve incluir bovino");
   assert(b19.species_scope?.includes("bubalino"), "B19 deve incluir bubalino");
   assert(b19Item.eligibility_rule?.sex === "femea", "B19 deve ser para femeas");
@@ -255,7 +245,6 @@ function validateCanonicalPayload(payload) {
   assert(aftosa, "Aftosa ausente");
   assert(aftosa.legal_status === "bloqueado", "Aftosa deve manter legal_status bloqueado");
   assert(aftosa.status === "retired", "Aftosa deve manter status retired");
-  assert(aftosa.metadata?.automationStatus === "blocked", "Aftosa deve manter automationStatus blocked");
   for (const item of aftosaItems) {
     assert(item.product_requirement_kind === "none", `${item.logical_item_key}: aftosa nao pode ter produto`);
     assert(!item.product_key, `${item.logical_item_key}: aftosa product_id deve ser null`);
@@ -265,7 +254,6 @@ function validateCanonicalPayload(payload) {
 
   const groupKeys = new Set(data.groups.map((row) => row.group_key));
   for (const item of data.items) {
-    assert(item.allows_agenda_auto === false, `${item.logical_item_key}: allows_agenda_auto deve ser false`);
     assert(item.status === "draft", `${item.logical_item_key}: status deve ser draft`);
     assert(["specific_product", "product_class", "product_class_group", "none"].includes(item.product_requirement_kind), `${item.logical_item_key}: product_requirement_kind invalido`);
     if (item.product_requirement_kind === "product_class_group") {
@@ -299,12 +287,7 @@ function validateCanonicalPayload(payload) {
     assert(item.product_requirement_kind === "product_class", `${item.logical_item_key}: raiva deve usar product_class`);
     assert(item.class_key === "vacina_raiva_herbivoros", `${item.logical_item_key}: product_class de raiva invalida`);
     assert(!item.group_key, `${item.logical_item_key}: raiva nao deve usar ProductClassGroup`);
-    assert(item.allows_agenda_auto === false, `${item.logical_item_key}: raiva nao pode agenda_auto`);
     assert(item.status === "draft", `${item.logical_item_key}: raiva deve permanecer draft`);
-    assert(
-      item.snapshot_template?.metadata?.automationStatus === "manual_only",
-      `${item.logical_item_key}: raiva deve permanecer manual_only`,
-    );
     assert(
       item.snapshot_template?.sourcePolicy?.withdrawal === "by_executed_product_snapshot",
       `${item.logical_item_key}: raiva exige carencia por produto executado`,
@@ -331,7 +314,6 @@ function validateCanonicalPayload(payload) {
 
   for (const protocol of data.protocols) {
     assert(protocol.approval_status === "draft", `${protocol.family_code}: approval_status deve ser draft`);
-    assert(protocol.metadata?.agenda_allowed === false, `${protocol.family_code}: metadata agenda_allowed deve ser false`);
     assert(protocol.metadata?.approved_for_catalog === false, `${protocol.family_code}: metadata approved_for_catalog deve ser false`);
     validateSourceRefs(protocol.source_refs_snapshot, protocol.family_code);
   }
@@ -340,8 +322,6 @@ function validateCanonicalPayload(payload) {
     assert(group.scope === "global", `${group.group_key}: grupo deve ser global`);
     assert(group.fazenda_id === null, `${group.group_key}: grupo global deve ter fazenda_id null`);
     assert(group.curation_status === "needs_review", `${group.group_key}: curation_status deve ser needs_review`);
-    assert(group.automation_status !== "agenda_allowed", `${group.group_key}: automation_status nao pode liberar agenda`);
-    assert(group.metadata?.agenda_allowed === false, `${group.group_key}: metadata agenda_allowed deve ser false`);
     assert(group.metadata?.approved_for_catalog === false, `${group.group_key}: metadata approved_for_catalog deve ser false`);
     assert(Array.isArray(group.metadata?.principios_ativos_candidatos), `${group.group_key}: principios ativos devem ficar em metadata`);
   }
@@ -423,7 +403,6 @@ function validateCommercialProductReviewPayload(payload) {
     assert(metadata?.review_only === true && metadata.registration_current_validity === "unknown",
       `${pathLabel}:REGULATORY_REVIEW_METADATA_REQUIRED`);
     assert(metadata.approved_for_catalog === false && metadata.operational_authorization === false &&
-      metadata.allows_agenda_auto === false && metadata.automatic_product_selection_authorized === false,
     `${pathLabel}:OPERATIONAL_FLAGS_MUST_REMAIN_DISABLED`);
     assert(typeof metadata.source_url === "string" && /^https?:\/\//.test(metadata.source_url),
       `${pathLabel}:RESEARCH_SOURCE_REQUIRED`);
@@ -593,7 +572,7 @@ export function classInsertRow(cls) {
     class_key: cls.class_key, name: cls.name, product_type: cls.product_type,
     product_subtype: cls.product_subtype ?? null, target_condition: cls.target_condition ?? null,
     species_scope: cls.species_scope, curation_status: cls.curation_status,
-    automation_status: cls.automation_status, limitations: cls.limitations ?? [], metadata: cls.metadata ?? {},
+    limitations: cls.limitations ?? [], metadata: cls.metadata ?? {},
   };
 }
 
@@ -618,8 +597,9 @@ function assertCompatibleScope(parent, reference, label) {
 }
 
 function classUpdateBlockReason(existing) {
-  return !["candidate", "needs_review"].includes(existing.curation_status) ||
-    ["agenda_allowed", "blocked"].includes(existing.automation_status) ? "class_already_curated_or_operational" : null;
+  return !["candidate", "needs_review"].includes(existing.curation_status)
+    ? "class_already_curated"
+    : null;
 }
 
 function protocolInsertRow(protocol) {
@@ -629,7 +609,7 @@ function protocolInsertRow(protocol) {
     species_scope: protocol.species_scope ?? [], jurisdiction_scope: protocol.jurisdiction_scope ?? {},
     legal_status: protocol.legal_status, version: protocol.version, status: protocol.status,
     source_refs_snapshot: protocol.source_refs_snapshot ?? [], approval_status: "draft",
-    metadata: { ...protocol.metadata, agenda_allowed: false, approved_for_catalog: false },
+    metadata: { ...protocol.metadata, approved_for_catalog: false },
   };
 }
 
@@ -637,9 +617,9 @@ function groupInsertRow(group) {
   return {
     id: group.id, fazenda_id: group.fazenda_id ?? null, scope: scopeForGroup(group.scope),
     group_key: group.group_key, name: group.name, requires_mv_for_other_class: group.requires_mv_for_other_class ?? true,
-    curation_status: group.curation_status, automation_status: group.automation_status,
+    curation_status: group.curation_status,
     limitations: group.limitations ?? [],
-    metadata: { ...group.metadata, agenda_allowed: false, approved_for_catalog: false },
+    metadata: { ...group.metadata, approved_for_catalog: false },
   };
 }
 
@@ -657,9 +637,9 @@ export function itemInsertRow(item, protocolId, groupId, productId = null) {
     limitations: item.limitations ?? [],
     snapshot_template: {
       ...(item.snapshot_template ?? {}),
-      metadata: { ...(item.snapshot_template?.metadata ?? {}), agenda_allowed: false, approved_for_catalog: false },
+      metadata: { ...(item.snapshot_template?.metadata ?? {}), approved_for_catalog: false },
     },
-    allows_agenda_auto: false, requires_mv_responsavel: item.requires_mv_responsavel ?? false, status: "draft",
+    requires_mv_responsavel: item.requires_mv_responsavel ?? false, status: "draft",
   };
 }
 
@@ -1109,7 +1089,7 @@ async function writeOperation(client, operation) {
   if (operation.classification === "DEPRECATED_ITEM") {
     const result = await client.query(
       `update public.sanitario_protocolo_itens_versions_v2
-       set deleted_at = now(), status = 'retired', allows_agenda_auto = false
+       set deleted_at = now(), status = 'retired'
        where id = $1 and deleted_at is null and status = 'draft'`, [operation.existing.id],
     );
     assert(result.rowCount === 1, "deprecated_item_concurrent_change");
@@ -1235,7 +1215,7 @@ async function preserveC02Baseline(client, data, context, lockRows = true) {
     assert(metadata && typeof metadata === "object" && !Array.isArray(metadata) && metadata.review_only === true,
       `${prefix}_REVIEW_METADATA_REQUIRED`);
     assert(metadata.approved_for_catalog === Boolean(approved), `${prefix}_CATALOG_APPROVAL_FLAG`);
-    for (const flag of ["operational_authorization", "allows_agenda_auto", "automatic_product_selection_authorized"]) {
+    for (const flag of ["operational_authorization"]) {
       assert(metadata[flag] === false, `${prefix}_OPERATIONAL_FLAG:${flag}`);
     }
     assert(FORBIDDEN_TRUE_FLAGS.every(flag => (flag === "approved_for_catalog" && approved) || metadata[flag] !== true),
@@ -1600,7 +1580,6 @@ async function bootstrapInitialCatalog(client, plan, authorizationReference) {
     assert(!group.expected_content_digest || group.expected_content_digest === digest, "BOOTSTRAP_CONTENT_DIGEST_CONFLICT");
     const mappings = (await client.query("select public.internal_sanitario_review_fields_v2($1,$2,$3,$4) as fields", [content, principal, at, reference])).rows[0].fields;
     for (const item of content.items) {
-      const auto = item.snapshot_template.metadata.catalog_review_scope !== "manual_planning";
       const refs = mappings[item.id];
       for (const [field, entries] of Object.entries(refs)) for (const ref of entries) {
         // Do not claim that a person reviewed this field. Preserve technical coverage
@@ -1609,19 +1588,18 @@ async function bootstrapInitialCatalog(client, plan, authorizationReference) {
         ref.metadata = { ...ref.metadata, catalogBootstrap: { version: plan.version, reference, executedAt: at,
           administratorPrincipalId: principal, protocolId: group.protocol_id, itemId: item.id, itemVersion: item.version, field } };
       }
-      const metadata = { ...item.snapshot_template.metadata, proposal_only: false, agenda_allowed: auto, approved_for_catalog: true,
-        curationStatus: "approved_for_catalog", automationStatus: auto ? "agenda_allowed" : "manual_only",
+      const metadata = { ...item.snapshot_template.metadata, proposal_only: false, approved_for_catalog: true,
+        curationStatus: "approved_for_catalog",
         approval_basis: "administrative_initial_bootstrap", catalog_bootstrap_reference: reference,
         catalog_bootstrap_version: plan.version, bootstrap_content_digest: digest };
-      const result = await client.query(`update public.sanitario_protocolo_itens_versions_v2 set status='active',allows_agenda_auto=$2,
-        source_refs_by_field=$3,snapshot_template=jsonb_set(snapshot_template,'{metadata}',$4::jsonb)
-        where id=$1 and version=$5 and status='draft' and deleted_at is null`, [item.id, auto, JSON.stringify(refs), JSON.stringify(metadata), item.version]);
+      const result = await client.query(`update public.sanitario_protocolo_itens_versions_v2 set status='active',
+        source_refs_by_field=$2,snapshot_template=jsonb_set(snapshot_template,'{metadata}',$3::jsonb)
+        where id=$1 and version=$4 and status='draft' and deleted_at is null`, [item.id, JSON.stringify(refs), JSON.stringify(metadata), item.version]);
       assert(result.rowCount === 1, "BOOTSTRAP_ITEM_CAS_CONFLICT");
     }
-    const auto = content.items.some(i => i.snapshot_template.metadata.catalog_review_scope !== "manual_planning");
     await client.query(`update public.sanitario_protocolos_v2 set status='active',approval_status='approved',approved_by=null,approved_at=$2,
-      metadata=metadata||$3::jsonb where id=$1`, [group.protocol_id, at, JSON.stringify({ agenda_allowed: auto, approved_for_catalog: true,
-      curationStatus: "approved_for_catalog", automationStatus: auto ? "agenda_allowed" : "manual_only",
+      metadata=metadata||$3::jsonb where id=$1`, [group.protocol_id, at, JSON.stringify({ approved_for_catalog: true,
+      curationStatus: "approved_for_catalog",
       approval_basis: "administrative_initial_bootstrap", catalog_bootstrap_reference: reference, catalog_bootstrap_version: plan.version })]);
     groups.push({ family: group.family, protocol_id: group.protocol_id, content_digest: digest, item_versions: group.item_versions });
   }
@@ -1664,19 +1642,19 @@ function validateIncrementalPayload(payload) {
   assert(!isDifferent(data.source_rows.map(s => s.source_key).sort(), ["SRC_BULA_FORTRESS7", "SRC_BULA_LEPTOFERM5"]), "INCREMENTAL_SOURCE_SCOPE");
   assert(!isDifferent(data.product_class_rows.map(c => c.class_key).sort(), ["vacina_clostridial", "vacina_leptospirose"]), "INCREMENTAL_CLASS_SCOPE");
   for (const i of data.protocol_item_rows) {
-    assert(i.status === "draft" && i.allows_agenda_auto === false && i.action_type === "vacinacao" &&
+    assert(i.status === "draft" && i.action_type === "vacinacao" &&
       i.product_requirement_kind === "product_class" && !i.product_id && !i.product_key && !i.dose_rule && !i.route_rule &&
       i.snapshot_template?.metadata?.planning_scope === "class_scheme" && i.snapshot_template.metadata.proposal_only === true,
     "INCREMENTAL_DRAFT_CLASS_REQUIRED");
-    for (const flag of ["agenda_allowed", "approved_for_catalog"]) assert(i.snapshot_template.metadata[flag] === false, "INCREMENTAL_PREAPPROVAL_FORBIDDEN");
+    assert(i.snapshot_template.metadata.approved_for_catalog === false, "INCREMENTAL_PREAPPROVAL_FORBIDDEN");
     const prior = payload.baseline.predecessors.find(p => p.id === i.snapshot_template.metadata.supersedes?.id);
     assert(prior && prior.protocol_id === i.protocol_id && prior.logical_item_key === i.logical_item_key &&
-      prior.version + 1 === i.version && prior.status === "draft" && !prior.allows_agenda_auto, "INCREMENTAL_PREDECESSOR_REQUIRED");
+      prior.version + 1 === i.version && prior.status === "draft", "INCREMENTAL_PREDECESSOR_REQUIRED");
   }
   for (const c of data.product_class_rows) {
     const before = payload.baseline.product_class_rows.find(r => r.id === c.id);
     assert(before && before.curation_status === "needs_review" && c.curation_status === "approved_for_catalog" &&
-      c.automation_status === "manual_only" && c.metadata.can_validate_execution === false &&
+      c.metadata.can_validate_execution === false &&
       !isDifferent(classInsertRow(before), classInsertRow({ ...c, curation_status: before.curation_status })), "INCREMENTAL_CLASS_REVIEW_SCOPE");
   }
   assert(payload.protected.approved_item_ids.length === 7 && payload.protected.r05_agenda_ids.length === 7, "INCREMENTAL_PRESERVATION_SCOPE");
@@ -1684,8 +1662,7 @@ function validateIncrementalPayload(payload) {
 }
 
 async function reviewedDeltaReplay(client, publisher, existing, row) {
-  const auto = row.snapshot_template?.metadata?.catalog_review_scope !== "manual_planning";
-  if (existing.status !== "active" || existing.allows_agenda_auto !== auto) return false;
+  if (existing.status !== "active") return false;
   const meta = existing.snapshot_template?.metadata ?? {};
   const bootstrapId = /^sanitary-bootstrap-v2:([a-f0-9-]{36})$/.exec(meta.catalog_bootstrap_reference ?? "")?.[1];
   if (bootstrapId) {
@@ -1703,9 +1680,9 @@ async function reviewedDeltaReplay(client, publisher, existing, row) {
   if (!before || compareRow(publisher, before, row) || receipt?.result !== "approved" || receipt.actor_id !== audit.actor_user_id ||
     receipt.reviewed_content_digest !== meta.reviewed_content_digest) return false;
   const expected = structuredClone(row);
-  expected.status = "active"; expected.allows_agenda_auto = auto;
-  expected.snapshot_template.metadata = { ...row.snapshot_template.metadata, proposal_only: false, agenda_allowed: auto,
-    approved_for_catalog: true, curationStatus: "approved_for_catalog", automationStatus: auto ? "agenda_allowed" : "manual_only",
+  expected.status = "active";
+  expected.snapshot_template.metadata = { ...row.snapshot_template.metadata, proposal_only: false,
+    approved_for_catalog: true, curationStatus: "approved_for_catalog",
     catalog_decision_reference: meta.catalog_decision_reference, reviewed_content_digest: meta.reviewed_content_digest };
   expected.source_refs_by_field = Object.fromEntries(Object.entries(row.source_refs_by_field).map(([field, refs]) => [field, refs.map(r => ({
     source_ref: r.source_ref, id: r.id, kind: r.kind, scope: "global", title: r.title, strength: r.strength,
@@ -1727,10 +1704,9 @@ async function assertIncrementalBaseline(client, packet, operations, lockRows) {
       if (collection === "product_class_rows" && !compareRow(publisher, op.existing, op.row)) continue;
       if (noWrites && collection === "protocol_rows" && op.existing.status === "active" &&
         op.existing.approval_status === "approved" && operations.some(o => o.collection === "protocol_item_rows" && o.existing?.protocol_id === before.id && o.existing.status === "active")) {
-        const auto = operations.some(o => o.collection === "protocol_item_rows" && o.existing?.protocol_id === before.id && o.existing.allows_agenda_auto);
         expected.status = "active"; expected.approval_status = "approved";
-        expected.metadata = { ...expected.metadata, agenda_allowed: auto, approved_for_catalog: true,
-          curationStatus: "approved_for_catalog", automationStatus: auto ? "agenda_allowed" : "manual_only" };
+        expected.metadata = { ...expected.metadata, approved_for_catalog: true,
+          curationStatus: "approved_for_catalog" };
         const reference = op.existing.metadata?.catalog_bootstrap_reference;
         if (reference) {
           const audit = (await client.query("select state_after from public.app_admin_audit_events where id=$1 and action='SANITARY_CATALOG_BOOTSTRAP_V2'", [reference.replace("sanitary-bootstrap-v2:", "")])).rows[0];
@@ -1752,7 +1728,7 @@ async function assertIncrementalBaseline(client, packet, operations, lockRows) {
     const actual = (await client.query(`select to_jsonb(t) as row from public.sanitario_protocolo_itens_versions_v2 t where id=$1${lockRows ? " for update" : ""}`, [before.id])).rows[0]?.row;
     assert(actual, "INCREMENTAL_PREDECESSOR_MISSING");
     const expected = { ...before };
-    if (actual.status === "retired" && actual.deleted_at && !actual.allows_agenda_auto) {
+    if (actual.status === "retired" && actual.deleted_at) {
       expected.status = "retired"; expected.deleted_at = actual.deleted_at;
     }
     for (const key of ["created_at", "updated_at"]) { delete actual[key]; delete expected[key]; }
@@ -1766,7 +1742,7 @@ async function assertIncrementalBaseline(client, packet, operations, lockRows) {
 async function captureIncrementalProtectedState(client, packet) {
   const items = (await client.query("select to_jsonb(t) as row from public.sanitario_protocolo_itens_versions_v2 t where id=any($1::uuid[]) order by id", [packet.protected.approved_item_ids])).rows;
   const agendas = (await client.query("select to_jsonb(t) as row from public.sanitario_agenda_v2 t where id=any($1::uuid[]) and fazenda_id=$2 order by id", [packet.protected.r05_agenda_ids, packet.protected.r05_farm_id])).rows;
-  assert(items.length === 7 && items.every(i => i.row.status === "active" && i.row.allows_agenda_auto) && agendas.length === 7, "INCREMENTAL_PROTECTED_BASELINE_REQUIRED");
+  assert(items.length === 7 && items.every(i => i.row.status === "active") && agendas.length === 7, "INCREMENTAL_PROTECTED_BASELINE_REQUIRED");
   const gates = (await client.query("select to_jsonb(t) as row from public.sanitario_sync_v2_gates t order by fazenda_id")).rows;
   assert(gates.every(g => !g.row.enabled), "INCREMENTAL_REQUIRES_GATES_OFF");
   return { items, agendas, gates };

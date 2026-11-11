@@ -53,8 +53,6 @@ const protocol = (
   sourceRefsSnapshot: [],
   metadata: {
     curationStatus: "needs_review",
-    automationStatus: "manual_only",
-    agenda_allowed: false,
     approved_for_catalog: false,
   },
   ...overrides,
@@ -84,7 +82,6 @@ const item = (
   sourceRefsByField: {},
   limitations: {},
   snapshotTemplate: {},
-  allowsAgendaAuto: false,
   requiresMvResponsavel: false,
   status: "draft",
   ...overrides,
@@ -109,10 +106,8 @@ const group = (groupKey: string) => ({
   name: GROUP_NAMES[groupKey] ?? groupKey,
   requiresMvForOtherClass: true,
   curationStatus: "needs_review",
-  automationStatus: "blocked",
   limitations: ["members_sem_class_id_bloqueados"],
   metadata: {
-    agenda_allowed: false,
     approved_for_catalog: false,
   },
 });
@@ -144,8 +139,6 @@ const catalogFixture: SanitaryProtocolCatalogReadModelV2 = {
       legalStatus: "obrigatorio_norma",
       metadata: {
         curationStatus: "needs_review",
-        automationStatus: "manual_only",
-        agenda_allowed: false,
         approved_for_catalog: false,
         sourceGaps: [
           "requires_mv_habilitado",
@@ -163,8 +156,6 @@ const catalogFixture: SanitaryProtocolCatalogReadModelV2 = {
     protocol("controle_parasitario_recria_5_7_9", "Controle parasitario recria", {
       metadata: {
         curationStatus: "needs_review",
-        automationStatus: "preview_allowed",
-        agenda_allowed: false,
         approved_for_catalog: false,
       },
     }),
@@ -178,8 +169,6 @@ const catalogFixture: SanitaryProtocolCatalogReadModelV2 = {
     protocol("ibr_bvd", "IBR/BVD", {
       metadata: {
         curationStatus: "needs_review",
-        automationStatus: "preview_allowed",
-        agenda_allowed: false,
         approved_for_catalog: false,
       },
     }),
@@ -188,16 +177,12 @@ const catalogFixture: SanitaryProtocolCatalogReadModelV2 = {
       status: "retired",
       metadata: {
         curationStatus: "needs_review",
-        automationStatus: "blocked",
-        agenda_allowed: false,
         approved_for_catalog: false,
       },
     }),
     protocol("clostridioses", "Clostridioses", {
       metadata: {
         curationStatus: "needs_review",
-        automationStatus: "preview_allowed",
-        agenda_allowed: false,
         approved_for_catalog: false,
         sourceGaps: ["source_gap_age_product", "source_gap_bubalino"],
         restrictions: [
@@ -300,7 +285,7 @@ const catalogFixture: SanitaryProtocolCatalogReadModelV2 = {
       snapshotTemplate: {
         sourceGaps: ["requires_risk_area_overlay"],
         sourcePolicy: { withdrawal: "by_executed_product_snapshot" },
-        metadata: { automationStatus: "manual_only" },
+        metadata: {},
       },
     }),
     item("raiva_herbivoros", "raiva_primovac_reforco_30d", {
@@ -315,7 +300,7 @@ const catalogFixture: SanitaryProtocolCatalogReadModelV2 = {
       snapshotTemplate: {
         sourceGaps: ["requires_risk_area_overlay"],
         sourcePolicy: { withdrawal: "by_executed_product_snapshot" },
-        metadata: { automationStatus: "manual_only" },
+        metadata: {},
       },
     }),
     item("raiva_herbivoros", "raiva_reforco_anual_area_risco", {
@@ -326,7 +311,7 @@ const catalogFixture: SanitaryProtocolCatalogReadModelV2 = {
       snapshotTemplate: {
         sourceGaps: ["requires_risk_area_overlay"],
         sourcePolicy: { withdrawal: "by_executed_product_snapshot" },
-        metadata: { automationStatus: "manual_only" },
+        metadata: {},
       },
     }),
   ],
@@ -394,14 +379,13 @@ describe("SanitarioCatalogoV2", () => {
     expect(screen.queryByRole("heading", { name: "Protocolos", exact: true })).not.toBeInTheDocument();
   });
 
-  it("exibe B19 nacional/manual e aftosa bloqueada/retirada", async () => {
+  it("exibe B19 nacional e aftosa bloqueada/retirada", async () => {
     render(<SanitarioCatalogoV2 />);
 
     expect((await screen.findAllByText("Brucelose B19")).length).toBeGreaterThan(
       0,
     );
     expect(screen.getByText("B19 nacional presente")).toBeInTheDocument();
-    expect(screen.getByText("Manual")).toBeInTheDocument();
     expect(screen.getByText("Febre aftosa")).toBeInTheDocument();
     expect(screen.getByText("Bloqueado/retirado")).toBeInTheDocument();
     expect(screen.getByText("Aftosa bloqueada presente")).toBeInTheDocument();
@@ -490,7 +474,7 @@ describe("SanitarioCatalogoV2", () => {
     expect(screen.queryByText("vacina_raiva_herbivoros")).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        "Catálogo somente leitura. Produto real, dose e carência são definidos somente na execução.",
+        "Catálogo somente leitura. A consulta não cria Agendas; o planejamento exige aprovação, elegibilidade e confirmação manual. Produto real, dose e carência são definidos somente na execução.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -702,7 +686,7 @@ describe("SanitarioCatalogoV2", () => {
     render(<SanitarioCatalogoV2 />);
 
     await screen.findByText(
-      "Catálogo somente leitura. Produto real, dose e carência são definidos somente na execução.",
+      "Catálogo somente leitura. A consulta não cria Agendas; o planejamento exige aprovação, elegibilidade e confirmação manual. Produto real, dose e carência são definidos somente na execução.",
     );
 
     const forbiddenButtons = [

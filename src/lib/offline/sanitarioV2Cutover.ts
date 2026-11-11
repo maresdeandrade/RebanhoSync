@@ -52,7 +52,6 @@ export interface SanitarioV2QueuedOperation {
     | "replace_agenda_animals"
     | "apply_factual_core"
     | "close_agenda"
-    | "set_automation_plan"
     | "reschedule_agenda";
   expected_revision?: number;
   payload: Record<string, unknown>;

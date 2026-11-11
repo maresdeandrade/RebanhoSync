@@ -41,7 +41,6 @@ export type SanitaryProtocolItemV2ReadModel = {
   sourceRefsByField: JsonRecord;
   limitations: JsonRecord | string[];
   snapshotTemplate: JsonRecord;
-  allowsAgendaAuto: boolean;
   requiresMvResponsavel: boolean;
   status: string;
 };
@@ -54,7 +53,6 @@ export type SanitaryProductClassGroupV2ReadModel = {
   name: string;
   requiresMvForOtherClass: boolean;
   curationStatus: string;
-  automationStatus: string;
   limitations: string[];
   metadata: JsonRecord;
 };
@@ -72,7 +70,6 @@ export type SanitaryProtocolCatalogSummaryV2 = {
   hasB19NationalRule: boolean;
   hasAftosaBlockedRule: boolean;
   antiparasiticItemsUseProductClassGroup: boolean;
-  hasAgendaAutoEnabled: boolean;
   hasApprovedCatalogProtocol: boolean;
   createsAgenda: false;
   createsEvent: false;
@@ -157,8 +154,6 @@ const STATUS_LABELS_PT_BR: Record<string, string> = {
   bloqueado: "Bloqueado",
   draft: "Rascunho",
   retired: "Retirado",
-  manual_only: "Manual",
-  preview_allowed: "Prévia permitida",
   blocked: "Bloqueado",
   needs_review: "Requer revisão",
   archived: "Arquivado",
@@ -235,7 +230,6 @@ const ITEM_COLUMNS = [
   "source_refs_by_field",
   "limitations",
   "snapshot_template",
-  "allows_agenda_auto",
   "requires_mv_responsavel",
   "status",
 ].join(", ");
@@ -248,7 +242,6 @@ const GROUP_COLUMNS = [
   "name",
   "requires_mv_for_other_class",
   "curation_status",
-  "automation_status",
   "limitations",
   "metadata",
 ].join(", ");
@@ -927,7 +920,6 @@ export function adaptSanitaryProtocolItemV2Row(
       ? readStringArray(row.limitations)
       : readRecord(row.limitations),
     snapshotTemplate: readRecord(row.snapshot_template),
-    allowsAgendaAuto: row.allows_agenda_auto === true,
     requiresMvResponsavel: row.requires_mv_responsavel === true,
     status: readString(row, "status") ?? "",
   };
@@ -944,7 +936,6 @@ export function adaptSanitaryProductClassGroupV2Row(
     name: readString(row, "name") ?? "",
     requiresMvForOtherClass: row.requires_mv_for_other_class === true,
     curationStatus: readString(row, "curation_status") ?? "",
-    automationStatus: readString(row, "automation_status") ?? "",
     limitations: readStringArray(row.limitations),
     metadata: readRecord(row.metadata),
   };
@@ -1251,7 +1242,6 @@ export function buildSanitaryProtocolCatalogSummaryV2(
           entry.productRequirementKind === "product_class_group" &&
           Boolean(entry.productClassGroupId),
       ),
-    hasAgendaAutoEnabled: readModel.items.some((entry) => entry.allowsAgendaAuto),
     hasApprovedCatalogProtocol: readModel.protocols.some(
       (entry) =>
         entry.approvalStatus === "approved" ||
@@ -1308,15 +1298,8 @@ export function validateSanitaryProtocolCatalogReadOnlyInvariantsV2(
     if (item.productClassGroupId) {
       issues.push(`raiva_product_class_group_forbidden:${item.logicalItemKey}`);
     }
-    if (item.allowsAgendaAuto) {
-      issues.push(`raiva_agenda_auto_enabled:${item.logicalItemKey}`);
-    }
     if (item.status !== "draft") {
       issues.push(`raiva_item_not_draft:${item.logicalItemKey}`);
-    }
-    const snapshotMetadata = readRecord(item.snapshotTemplate.metadata);
-    if (snapshotMetadata.automationStatus !== "manual_only") {
-      issues.push(`raiva_not_manual_only:${item.logicalItemKey}`);
     }
   }
   if (raivaItems.length !== RAIVA_ITEM_KEYS.size) {
@@ -1350,15 +1333,11 @@ export function validateSanitaryProtocolCatalogReadOnlyInvariantsV2(
   ) {
     issues.push("matrizes_pre_parto_leptospirose_product_class_active");
   }
-  if (summary.hasAgendaAutoEnabled) issues.push("agenda_auto_enabled");
   if (summary.hasApprovedCatalogProtocol) issues.push("approved_catalog_protocol");
 
   for (const protocol of readModel.protocols) {
     if (protocol.approvalStatus !== "draft") {
       issues.push(`protocol_not_draft:${protocol.familyCode}`);
-    }
-    if (metadataFlag(protocol, "agenda_allowed")) {
-      issues.push(`protocol_agenda_allowed:${protocol.familyCode}`);
     }
   }
 
@@ -1366,9 +1345,6 @@ export function validateSanitaryProtocolCatalogReadOnlyInvariantsV2(
     if (group.scope !== "global") issues.push(`group_not_global:${group.groupKey}`);
     if (group.curationStatus !== "needs_review") {
       issues.push(`group_not_needs_review:${group.groupKey}`);
-    }
-    if (metadataFlag(group, "agenda_allowed")) {
-      issues.push(`group_agenda_allowed:${group.groupKey}`);
     }
     if (metadataFlag(group, "approved_for_catalog")) {
       issues.push(`group_approved_for_catalog:${group.groupKey}`);

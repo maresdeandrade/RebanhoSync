@@ -8,6 +8,7 @@ import {
   type SanitaryEligibilityThresholds,
   type SanitaryExecutedEvent,
 } from "../eligibility/sanitaryEligibility";
+import type { SanitaryTemporalWindowV2 } from "../checks/sanitaryProtocolPrecheckV2";
 
 export type SanitaryDemandAnimal = SanitaryEligibilityAnimal & {
   loteName?: string | null;
@@ -26,6 +27,7 @@ export type SanitaryDemandEligibilityEntry = {
   protocolRule: SanitaryEligibilityProtocolRule;
   eligibility: SanitaryEligibilityResult;
   metadata?: SanitaryDemandRuleMetadata;
+  temporalWindow?: SanitaryTemporalWindowV2;
 };
 
 export type SanitaryDemandStatusSummary = {
@@ -55,6 +57,7 @@ export type SanitaryDemandGroup = {
 
   windowStart?: string;
   windowEnd?: string;
+  temporalWindow?: SanitaryTemporalWindowV2;
 
   statusSummary: SanitaryDemandStatusSummary;
 
@@ -169,6 +172,7 @@ function groupKey(input: {
   loteId: string | null;
   windowStart: string | undefined;
   windowEnd: string | undefined;
+  temporalWindow?: SanitaryTemporalWindowV2;
 }): string {
   return [
     input.protocolRuleId,
@@ -179,6 +183,7 @@ function groupKey(input: {
     input.loteId,
     input.windowStart ?? null,
     input.windowEnd ?? null,
+    JSON.stringify(input.temporalWindow ?? null),
   ].join("\u0001");
 }
 
@@ -245,6 +250,7 @@ export function createSanitaryDemandGroupsFromEligibilityResults(
       loteId,
       windowStart,
       windowEnd,
+      temporalWindow: entry.temporalWindow,
     });
 
     let group = groups.get(key);
@@ -256,6 +262,7 @@ export function createSanitaryDemandGroupsFromEligibilityResults(
         loteName,
         windowStart,
         windowEnd,
+        temporalWindow: entry.temporalWindow,
         statusSummary: emptyStatusSummary(),
         animalIdsByStatus: emptyAnimalIdsByStatus(),
         actionableAnimalIds: [],
@@ -298,6 +305,7 @@ export function computeSanitaryDemandGroups(
       animal,
       protocolRule,
       metadata: input.metadataByProtocolRuleId?.[protocolRule.id],
+      temporalWindow: undefined,
       eligibility: computeSanitaryEligibility({
         animal,
         protocolRule,

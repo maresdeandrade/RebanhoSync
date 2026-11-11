@@ -416,11 +416,6 @@ function getPendingPlanningRecords(
   if (envelope.command === "death_participant") return pendingDeathParticipant(operation, payload, farm);
   const agendaId = agenda.id ?? payload.agenda_id ?? closure.agenda_id;
   const candidates: Array<{ table: string; record: RemoteRow }> = [];
-  if (envelope.command === "set_automation_plan")
-    candidates.push({
-      table: "fazenda_sanidade_config",
-      record: { fazenda_id: farm },
-    });
   if (typeof agendaId === "string") {
     candidates.push({
       table: "sanitario_agenda_v2",

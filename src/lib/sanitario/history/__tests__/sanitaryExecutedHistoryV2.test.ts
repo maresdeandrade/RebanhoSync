@@ -53,7 +53,6 @@ const item = (id: string, protocolId: string, itemKey: string): JsonRecord => ({
   source_refs_by_field: {},
   limitations: [],
   snapshot_template: {},
-  allows_agenda_auto: false,
   requires_mv_responsavel: false,
   status: "draft",
 });

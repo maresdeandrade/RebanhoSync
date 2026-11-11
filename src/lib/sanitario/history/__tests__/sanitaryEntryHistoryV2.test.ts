@@ -56,7 +56,6 @@ const item: SanitaryProtocolItemV2ReadModel = {
   sourceRefsByField: {},
   limitations: [],
   snapshotTemplate: {},
-  allowsAgendaAuto: false,
   requiresMvResponsavel: false,
   status: "draft",
 };

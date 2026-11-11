@@ -113,10 +113,20 @@ export type SanitaryProtocolPrecheckResultV2 = {
   missingExecutedHistory: boolean;
   documentaryPending: boolean;
   documentaryPendingReasons: string[];
+  temporalWindow?: SanitaryTemporalWindowV2;
   createsAgenda: false;
   createsEvent: false;
   createsStockMovement: false;
   createsActiveWithdrawal: false;
+};
+
+export type SanitaryTemporalWindowV2 = {
+  resolution: "determined" | "insufficient" | "no_eligible_period";
+  evidence: "grounded" | "conditional";
+  structure: "bounded" | "open" | "multiple" | "empty";
+  intervals: Array<{ startDate?: string; endDate?: string }>;
+  provenance: string[];
+  limitations: string[];
 };
 
 export type SanitaryProtocolPrecheckV2 = {
@@ -196,6 +206,70 @@ function daysBetween(fromDate: string, toDate: string): number | null {
   const to = parseDateKey(toDate);
   if (!from || !to) return null;
   return Math.round((to.getTime() - from.getTime()) / MS_PER_DAY);
+}
+
+function addDays(dateKey: string, days: number): string | null {
+  const date = parseDateKey(dateKey);
+  if (!date || !Number.isInteger(days)) return null;
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function addMonths(dateKey: string, months: number): string | null {
+  const date = parseDateKey(dateKey);
+  if (!date || !Number.isInteger(months)) return null;
+  const day = date.getUTCDate();
+  date.setUTCDate(1);
+  date.setUTCMonth(date.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+  date.setUTCDate(Math.min(day, lastDay));
+  return date.toISOString().slice(0, 10);
+}
+
+function ageTemporalWindow(item: SanitaryProtocolItemV2ReadModel, animal: SanitaryPrecheckAnimalResumoV2) {
+  const min = readNumber(item.eligibilityRule.age_min_months);
+  const max = readNumber(item.eligibilityRule.age_max_months);
+  const birth = toDateKey(animal.nascimento);
+  if (min === null && max === null) return undefined;
+  if (!birth) return temporalWindow({ provenance: ["eligibility_rule.age"], limitations: ["Nascimento válido necessário para derivar limites de idade."] });
+  const startDate = addMonths(birth, min ?? 0);
+  const exclusiveEnd = max === null ? null : addMonths(birth, max + 1);
+  if (!startDate || (max !== null && !exclusiveEnd)) return temporalWindow({ provenance: ["eligibility_rule.age"], limitations: ["Regra de idade inválida."] });
+  return temporalWindow({
+    resolution: "determined",
+    evidence: "grounded",
+    structure: exclusiveEnd ? "bounded" : "open",
+    intervals: [{ startDate, endDate: exclusiveEnd ? addDays(exclusiveEnd, -1) ?? undefined : undefined }],
+    provenance: ["eligibility_rule.age", "animal.nascimento"],
+  });
+}
+
+function temporalWindow(input: Partial<SanitaryTemporalWindowV2>): SanitaryTemporalWindowV2 {
+  return {
+    resolution: input.resolution ?? "insufficient",
+    evidence: input.evidence ?? "conditional",
+    structure: input.structure ?? "empty",
+    intervals: input.intervals ?? [],
+    provenance: input.provenance ?? [],
+    limitations: input.limitations ?? [],
+  };
+}
+
+function b19TemporalWindow(birthDate: string) {
+  const startDate = addMonths(birthDate, 3);
+  const exclusiveEnd = addMonths(birthDate, 9);
+  return startDate && exclusiveEnd
+    ? temporalWindow({
+        resolution: "determined",
+        evidence: "grounded",
+        structure: "bounded",
+        intervals: [{ startDate, endDate: addDays(exclusiveEnd, -1) ?? undefined }],
+        provenance: ["brucelose_b19", "animal.nascimento", "official_age_window"],
+      })
+    : temporalWindow({
+        provenance: ["brucelose_b19", "animal.nascimento"],
+        limitations: ["Nascimento válido necessário para derivar a janela B19."],
+      });
 }
 
 function normalizeSex(
@@ -441,6 +515,7 @@ function baseResult(input: {
   missingExecutedHistory?: boolean;
   documentaryPending?: boolean;
   documentaryPendingReasons?: string[];
+  temporalWindow?: SanitaryTemporalWindowV2;
 }): SanitaryProtocolPrecheckResultV2 {
   return {
     protocolId: input.protocol.id,
@@ -455,16 +530,12 @@ function baseResult(input: {
     status: input.status,
     reasons: input.reasons ?? [],
     blockers: input.blockers ?? [],
-    warnings: [
-      ...(input.warnings ?? []),
-      ...(input.item.allowsAgendaAuto
-        ? ["Catálogo sanitário v2 não cria agenda nesta pré-checagem."]
-        : []),
-    ],
+    warnings: input.warnings ?? [],
     historyRequirementKind: input.historyRequirementKind ?? null,
     missingExecutedHistory: input.missingExecutedHistory ?? false,
     documentaryPending: input.documentaryPending ?? false,
     documentaryPendingReasons: input.documentaryPendingReasons ?? [],
+    temporalWindow: input.temporalWindow,
     ...OPERATIONAL_FALSE_FLAGS,
   };
 }
@@ -573,6 +644,10 @@ function evaluateHistoryRequirement(input: {
       warnings: ["Dados insuficientes para planejar esta etapa."],
       historyRequirementKind: input.requirement.kind,
       missingExecutedHistory: true,
+      temporalWindow: temporalWindow({
+        provenance: ["executed_history", "operational_window_rule"],
+        limitations: ["Histórico factual documentado ausente."],
+      }),
     });
   }
 
@@ -594,6 +669,10 @@ function evaluateHistoryRequirement(input: {
       warnings: ["Dados insuficientes para planejar esta etapa."],
       historyRequirementKind: input.requirement.kind,
       missingExecutedHistory: false,
+      temporalWindow: temporalWindow({
+        provenance: ["executed_history", "operational_window_rule"],
+        limitations: ["Janela temporal do catálogo incompleta."],
+      }),
     });
   }
 
@@ -625,6 +704,16 @@ function evaluateHistoryRequirement(input: {
     warnings: ["Produto real continua obrigatório somente na execução."],
     historyRequirementKind: input.requirement.kind,
     missingExecutedHistory: false,
+    temporalWindow: temporalWindow({
+      resolution: "determined",
+      evidence: "grounded",
+      structure: "bounded",
+      intervals: [{
+        startDate: addDays(historyEvent.executedAt.slice(0, 10), window.minDays) ?? undefined,
+        endDate: addDays(historyEvent.executedAt.slice(0, 10), window.maxDays) ?? undefined,
+      }],
+      provenance: ["executed_history", "operational_window_rule", "booster_rule"],
+    }),
   });
 }
 
@@ -813,6 +902,7 @@ function evaluateB19(input: B19PrecheckInput): SanitaryProtocolPrecheckResultV2 
       warnings: [
         "Exige MV cadastrado no SVE, registro oficial e produto real na execução.",
       ],
+      temporalWindow: b19TemporalWindow(birthDate),
     });
   }
   if (ageMonths > 8) return evaluateAdultB19History(input, jurisdictionBlock);
@@ -828,6 +918,7 @@ function evaluateB19(input: B19PrecheckInput): SanitaryProtocolPrecheckResultV2 
     warnings: [
       "Exige MV cadastrado no SVE, registro oficial e produto real na execução.",
     ],
+    temporalWindow: b19TemporalWindow(birthDate),
   });
 }
 
@@ -1042,7 +1133,9 @@ function evaluateItemPrerequisites(input: {
   const status = failure?.status ?? evaluateSpecies(input.animal, input.item);
   if (!status) return null;
   return baseResult({ protocol: input.protocol, item: input.item, status,
-    reasons: failure?.reasons ?? genericSpeciesReasons(status) });
+    reasons: failure?.reasons ?? genericSpeciesReasons(status),
+    temporalWindow: ageTemporalWindow(input.item, input.animal),
+  });
 }
 
 function evaluateGenericItem(input: SanitaryItemEvaluationInputV2): SanitaryProtocolPrecheckResultV2 {
@@ -1074,7 +1167,14 @@ function evaluateGenericItem(input: SanitaryItemEvaluationInputV2): SanitaryProt
           ]
         : item.productRequirementKind === "none"
           ? ["Item sem produto executável."]
-          : ["Produto específico deve ser confirmado na execução."];
+        : ["Produto específico deve ser confirmado na execução."];
+
+  const hasOtherTemporalConstraint =
+    Boolean(readString(item.operationalWindowRule.anchor)) ||
+    (Array.isArray(item.operationalWindowRule.calendar_months) &&
+      item.operationalWindowRule.calendar_months.length > 0) ||
+    historyRequirement !== null ||
+    readBoolean(item.eligibilityRule.requires_pregnancy_or_peripartum_context);
 
   return baseResult({
     protocol,
@@ -1085,6 +1185,9 @@ function evaluateGenericItem(input: SanitaryItemEvaluationInputV2): SanitaryProt
       ...productWarnings,
       "Pré-checagem não cria agenda nem autoriza execução.",
     ],
+    temporalWindow: hasOtherTemporalConstraint
+      ? undefined
+      : ageTemporalWindow(item, animal),
   });
 }
 

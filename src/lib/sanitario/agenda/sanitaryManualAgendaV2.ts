@@ -8,7 +8,6 @@ import { buildCreateAgendaOperation, createSanitarioV2Identity, validateSanitari
 import type { SanitaryPlanningSyncContextV2 } from "./sanitaryPlanningSyncV2";
 import type {
   SanitaryPlanningKindV2,
-  SanitaryGenerationModeV2,
 } from "./sanitaryPlanningPolicyV2";
 
 type ManualAgendaTargetV2 = {
@@ -35,11 +34,7 @@ export type CreateManualSanitaryAgendaInputV2 = {
     actionType?: string;
     plannedProductId?: string | null;
     planningKind?: SanitaryPlanningKindV2;
-    generationMode?: SanitaryGenerationModeV2;
     planningEvidence?: Record<string, unknown>;
-    automationKey?: string;
-    automationWindowKey?: string;
-    automationPlanRevision?: number;
     planningDedupKey?: string;
     familyCode: string;
     itemKey: string;
@@ -272,9 +267,6 @@ function manualAgendaMetadata(
     warnings: input.source.warnings ?? [],
     notes: normalizeOptionalText(input.notes),
     createdBy: normalizeOptionalText(input.createdBy),
-    automationKey: input.source.automationKey ?? null,
-    automationWindowKey: input.source.automationWindowKey ?? null,
-    automationPlanRevision: input.source.automationPlanRevision ?? null,
 
     ...manualProductRequirementSnapshot(input.source),
     createsEvent: false,
@@ -286,7 +278,6 @@ function manualAgendaMetadata(
 function manualProtocolSnapshot(input: CreateManualSanitaryAgendaInputV2) {
   return {
     planningKind: manualPlanningKind(input),
-    generationMode: input.source.generationMode ?? "manual",
     planningEvidence: input.source.planningEvidence ?? null,
     sourceKind: input.source.kind,
     actionType: manualPlanningAction(input),

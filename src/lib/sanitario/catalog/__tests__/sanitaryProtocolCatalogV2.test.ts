@@ -112,7 +112,6 @@ const protocol = (familyCode: string, overrides: JsonRecord = {}): JsonRecord =>
   source_refs_snapshot: [{ source_id: "fonte", locator: familyCode }],
   approval_status: "draft",
   metadata: {
-    agenda_allowed: false,
     approved_for_catalog: false,
   },
   deleted_at: null,
@@ -143,7 +142,6 @@ const item = (
   source_refs_by_field: {},
   limitations: {},
   snapshot_template: {},
-  allows_agenda_auto: false,
   requires_mv_responsavel: false,
   status: "draft",
   deleted_at: null,
@@ -158,10 +156,8 @@ const group = (groupKey: string): JsonRecord => ({
   name: groupKey,
   requires_mv_for_other_class: true,
   curation_status: "needs_review",
-  automation_status: "blocked",
   limitations: ["members_sem_class_id_bloqueados"],
   metadata: {
-    agenda_allowed: false,
     approved_for_catalog: false,
     active_ingredients_text_only: true,
   },
@@ -174,19 +170,15 @@ const protocols = [
     jurisdiction_scope: { country: "BR", legal_scope: "nacional" },
     legal_status: "obrigatorio_norma",
     metadata: {
-      agenda_allowed: false,
       approved_for_catalog: false,
       curationStatus: "needs_review",
-      automationStatus: "manual_only",
     },
   }),
   protocol("febre_aftosa", {
     legal_status: "bloqueado",
     status: "retired",
     metadata: {
-      agenda_allowed: false,
       approved_for_catalog: false,
-      automation_status: "blocked",
     },
   }),
   protocol("controle_parasitario_recria_5_7_9"),
@@ -251,7 +243,7 @@ const items = [
     action_type: "vacinacao",
     product_requirement_kind: "product_class",
     product_class: "vacina_raiva_herbivoros",
-    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+    snapshot_template: { metadata: {} },
   }),
   item(protocolId("raiva_herbivoros"), "raiva_primovac_reforco_30d", {
     item_status: "condicional",
@@ -263,7 +255,7 @@ const items = [
       min_offset_days: 30,
       max_offset_days: 30,
     },
-    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+    snapshot_template: { metadata: {} },
   }),
   item(protocolId("raiva_herbivoros"), "raiva_reforco_anual_area_risco", {
     item_status: "condicional",
@@ -271,7 +263,7 @@ const items = [
     product_requirement_kind: "product_class",
     product_class: "vacina_raiva_herbivoros",
     booster_rule: { recurrenceRule: { kind: "annual_if_risk_area" } },
-    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+    snapshot_template: { metadata: {} },
   }),
   item(protocolId("clostridioses"), "clostridial_primovac_dose1"),
   item(protocolId("clostridioses"), "clostridial_primovac_dose2"),
@@ -321,7 +313,6 @@ describe("sanitaryProtocolCatalogV2", () => {
       "Vacina contra raiva dos herbívoros",
     );
     expect(formatSanitaryActionTypeV2("vacinacao")).toBe("Vacinação");
-    expect(formatSanitaryItemStatusV2("manual_only")).toBe("Manual");
     expect(formatSanitaryItemStatusV2("needs_review")).toBe("Requer revisão");
     expect(formatSanitaryBooleanPtBrV2(true)).toBe("Sim");
     expect(formatSanitaryBooleanPtBrV2(false)).toBe("Não");
@@ -475,7 +466,6 @@ describe("sanitaryProtocolCatalogV2", () => {
       hasB19NationalRule: true,
       hasAftosaBlockedRule: true,
       antiparasiticItemsUseProductClassGroup: true,
-      hasAgendaAutoEnabled: false,
       hasApprovedCatalogProtocol: false,
     });
   });
@@ -532,9 +522,7 @@ describe("sanitaryProtocolCatalogV2", () => {
           entry.productRequirementKind === "product_class" &&
           entry.productClass === "vacina_raiva_herbivoros" &&
           entry.productClassGroupId === null &&
-          entry.allowsAgendaAuto === false &&
-          entry.status === "draft" &&
-          entry.snapshotTemplate.metadata?.automationStatus === "manual_only",
+          entry.status === "draft",
       ),
     ).toBe(true);
     expect(

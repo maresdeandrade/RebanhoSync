@@ -17,7 +17,6 @@ import { getLocalStoreName } from "./tableMap";
 import { normalizeTableMutationRecord } from "./mutationRecord";
 import { buildCreateAgendaOperation } from "./sanitarioV2Cutover";
 import { prepareSanitaryCommandV3 } from "@/lib/sanitario/execution/sanitaryAdmissionV3";
-import { mapQueuedSanitaryPlanV2 } from "@/lib/sanitario/agenda/sanitaryPlanningSyncV2";
 import {
   assertValidAnimalTaxonomyFactsContract,
   readTaxonomyFactsRecord,
@@ -504,15 +503,6 @@ export const createGesture = async (
         for (const [operationIndex, op] of ops.entries()) {
           transactionOperationIndex = operationIndex;
           await applyOpLocal(op);
-          // applyOpLocal captures the authoritative local before snapshot. Only
-          // now can a plan-only mutation be distinguished from a profile edit.
-          // Both its local effect and unique V3 envelope commit atomically.
-          const plan = mapQueuedSanitaryPlanV2(op, fazenda_id);
-          if (plan) {
-            const envelope = prepareSanitaryCommandV3({ ...plan, contract_version: 3 });
-            await db.queue_ops.update(op.client_op_id, {table:"sanitario_v2",action:"INSERT",
-              domain_op_id:envelope.domain_op_id,record:envelope});
-          }
         }
         transactionOperationIndex = undefined;
         if (options.deathConsequences) {
@@ -799,7 +789,8 @@ async function recoverRejectedSanitaryOperation(operation: Operation, rejection:
 function assertSanitaryRetryContract(operation: Operation) {
   if (operation.record.domain === "sanitario_v2" && operation.record.contract_version !== 3) throw new Error("SANITARIO_CLIENT_CONTRACT_OUTDATED");
   const event = operation.record?.payload?.event;
-  if (event?.natureza === "primary_execution" || event?.source_sanitario_agenda_v2_id) throw new Error("SANITARIO_V3_EXECUTION_NOT_ENABLED");
+  if (event?.natureza === "primary_execution" && !event?.source_sanitario_agenda_v2_id)
+    throw new Error("SANITARIO_V3_EXECUTION_NOT_ENABLED");
 }
 
 export async function retryRejectedOperation(rejection: Rejection) {

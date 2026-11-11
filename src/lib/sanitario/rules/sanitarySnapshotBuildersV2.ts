@@ -370,18 +370,9 @@ function validateAgendaBuildContext(
   if (input.protocolItem.itemStatus === "somente_alerta" || input.protocolItem.itemStatus === "bloqueado") {
     issues.push({
       code: "protocol_item_not_schedulable",
-      message: "Item somente_alerta ou bloqueado não pode montar snapshot para agenda automática.",
+      message: "Item somente_alerta ou bloqueado não pode montar snapshot para planejamento manual.",
       severity: "block",
       field: "itemStatus",
-    });
-  }
-
-  if (input.protocolItem.allowsAgendaAuto === false) {
-    issues.push({
-      code: "protocol_item_disallows_auto_agenda",
-      severity: "block",
-      field: "allowsAgendaAuto",
-      message: "Item versionado não permite agenda automática.",
     });
   }
 
@@ -418,7 +409,7 @@ function validateAgendaBuildContext(
   if (matchingProtocolAuthorization?.authorizationStatus === "NAO_AUTORIZADO") {
     issues.push({
       code: "species_authorization_blocks_agenda",
-      message: "NAO_AUTORIZADO bloqueia agenda automática.",
+      message: "NAO_AUTORIZADO bloqueia o planejamento manual da Agenda.",
       severity: "block",
       field: "speciesAuthorization",
     });
@@ -427,7 +418,7 @@ function validateAgendaBuildContext(
   if (input.plannedProductSpeciesAuthorization?.authorizationStatus === "NAO_AUTORIZADO") {
     issues.push({
       code: "planned_product_authorization_blocks_agenda",
-      message: "Produto planejado NAO_AUTORIZADO para espécie/contexto bloqueia agenda automática.",
+      message: "Produto planejado NAO_AUTORIZADO para espécie/contexto bloqueia o planejamento manual da Agenda.",
       severity: "block",
       field: "plannedProductSpeciesAuthorization",
     });

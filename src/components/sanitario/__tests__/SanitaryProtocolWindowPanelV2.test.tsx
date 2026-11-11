@@ -51,8 +51,8 @@ const source: SanitaryProtocolWindowSourceV2 = {
       { id: "protocol-raiva", familyCode: "raiva_herbivoros", name: "Raiva dos herbívoros", scope: "global", fazendaId: null, speciesScope: {}, jurisdictionScope: {}, legalStatus: "manual_only", version: 1, status: "active", approvalStatus: "approved", sourceRefsSnapshot: [], metadata: {} },
     ],
     items: [
-      { id: "item-b19", protocolId: "protocol-b19", logicalItemKey: "b19_femeas_3_8_meses", version: 1, itemStatus: "recomendado", actionType: "vacinacao", productRequirementKind: "product_class", productId: null, productClass: "vacina_brucelose_b19", productClassGroupId: null, eligibilityRule: { species: ["bovino", "bubalino"], sex: "femea" }, operationalWindowRule: {}, doseRule: {}, routeRule: {}, boosterRule: {}, speciesAuthorization: {}, sourceRefsByField: {}, limitations: [], snapshotTemplate: {}, allowsAgendaAuto: false, requiresMvResponsavel: false, status: "active" },
-      { id: "item-raiva", protocolId: "protocol-raiva", logicalItemKey: "raiva_primovac_dose1", version: 1, itemStatus: "recomendado", actionType: "vacinacao", productRequirementKind: "product_class", productId: null, productClass: "vacina_raiva_herbivoros", productClassGroupId: null, eligibilityRule: { species: ["bovino", "bubalino"], requires_risk_area_overlay: true }, operationalWindowRule: {}, doseRule: {}, routeRule: {}, boosterRule: {}, speciesAuthorization: {}, sourceRefsByField: {}, limitations: [], snapshotTemplate: {}, allowsAgendaAuto: false, requiresMvResponsavel: false, status: "active" },
+      { id: "item-b19", protocolId: "protocol-b19", logicalItemKey: "b19_femeas_3_8_meses", version: 1, itemStatus: "recomendado", actionType: "vacinacao", productRequirementKind: "product_class", productId: null, productClass: "vacina_brucelose_b19", productClassGroupId: null, eligibilityRule: { species: ["bovino", "bubalino"], sex: "femea" }, operationalWindowRule: {}, doseRule: {}, routeRule: {}, boosterRule: {}, speciesAuthorization: {}, sourceRefsByField: {}, limitations: [], snapshotTemplate: {}, requiresMvResponsavel: false, status: "active" },
+      { id: "item-raiva", protocolId: "protocol-raiva", logicalItemKey: "raiva_primovac_dose1", version: 1, itemStatus: "recomendado", actionType: "vacinacao", productRequirementKind: "product_class", productId: null, productClass: "vacina_raiva_herbivoros", productClassGroupId: null, eligibilityRule: { species: ["bovino", "bubalino"], requires_risk_area_overlay: true }, operationalWindowRule: {}, doseRule: {}, routeRule: {}, boosterRule: {}, speciesAuthorization: {}, sourceRefsByField: {}, limitations: [], snapshotTemplate: {}, requiresMvResponsavel: false, status: "active" },
     ],
     productClassGroups: [],
   },
@@ -312,15 +312,9 @@ describe("SanitaryProtocolWindowPanelV2", () => {
     expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeEnabled();
     expect(screen.getByText(/Avaliação genérica programada; gestação e janela técnica ainda não comprovadas/)).toBeInTheDocument();
   });
-  it("seleção de geração condicional exige autorização individual sem promover catálogo", () => {
+  it("não expõe seleção de geração automática", () => {
     render(<MemoryRouter><SanitaryProtocolWindowPanelV2 source={source} onPlan={vi.fn()} /></MemoryRouter>);
-    fireEvent.change(screen.getByLabelText("Selecionar protocolo"), { target: { value: "protocol-b19" } });
-    fireEvent.change(screen.getByLabelText("Selecionar item do protocolo"), { target: { value: "item-b19" } });
-    fireEvent.change(screen.getByLabelText("Data de avaliação"), { target: { value: "2026-07-04" } });
-    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeEnabled();
-    fireEvent.change(screen.getByLabelText("Geração de Agenda"), { target: { value: "automatic" } });
-    expect(screen.getByLabelText("Selecionar Fêmea 101")).toBeDisabled();
-    expect(source.catalog.items[0].allowsAgendaAuto).toBe(false);
+    expect(screen.queryByLabelText("Geração de Agenda")).not.toBeInTheDocument();
   });
   it("seleciona protocolo/item, calcula animais e planeja seleção múltipla", async () => {
     const onPlan = vi.fn().mockResolvedValue(undefined);

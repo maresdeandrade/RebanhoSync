@@ -75,7 +75,6 @@ const item = (
   sourceRefsByField: {},
   limitations: [],
   snapshotTemplate: {},
-  allowsAgendaAuto: false,
   requiresMvResponsavel: false,
   status: "active",
   ...overrides,
@@ -357,13 +356,6 @@ function approvedSources() {
     ]),
   );
 }
-async function allowAutomaticB19Fixture() {
-  await seedPlanningSource();
-  await db.catalog_sanitario_protocolo_itens_versions_v2.update("item-b19", {
-    allows_agenda_auto: true,
-    source_refs_by_field: approvedSources(),
-  });
-}
 function specificCatalog() {
   return {
     ...catalog,
@@ -400,6 +392,19 @@ describe("sanitaryProtocolWindowsV2", () => {
       expect(row).toEqual(byProtocol);
     }
     expect(discovered.length).toBeGreaterThan(0);
+  });
+
+  it("expõe a janela técnica B19 derivada do nascimento no resultado V2", () => {
+    const row = windowFor({ protocolId: "protocol-b19", itemId: "item-b19" }).rows.find(
+      (entry) => entry.animalId === "female",
+    );
+
+    expect(row?.temporalWindow).toMatchObject({
+      resolution: "determined",
+      evidence: "grounded",
+      structure: "bounded",
+      intervals: [{ startDate: "2026-06-01", endDate: "2026-11-30" }],
+    });
   });
 
   it("prioriza bloqueio independente sobre falta de informação sem alterar dimensões técnicas", () => {
@@ -468,9 +473,9 @@ describe("sanitaryProtocolWindowsV2", () => {
     const template = { metadata: { planning_scope: "class_scheme" }, executionProductPolicy: "required_at_execution",
       sourcePolicy: { operational_window: "compatible_product_required_at_execution" } };
     const next = { ...catalog.items.find(i => i.id === "item-clost-1")!,
-      eligibilityRule: { species: ["bovino"] }, sourceRefsByField: refs, snapshotTemplate: template, allowsAgendaAuto: true };
+      eligibilityRule: { species: ["bovino"] }, sourceRefsByField: refs, snapshotTemplate: template };
     await db.catalog_sanitario_protocolo_itens_versions_v2.update(next.id, {
-      eligibility_rule: next.eligibilityRule, source_refs_by_field: refs, snapshot_template: template, allows_agenda_auto: true,
+      eligibility_rule: next.eligibilityRule, source_refs_by_field: refs, snapshot_template: template,
     });
     const localCatalog = { ...catalog, items: catalog.items.map(i => i.id === next.id ? next : i) };
     const rows = windowFor({ protocolId: next.protocolId, itemId: next.id, source: source({ catalog: localCatalog }) }).rows;
@@ -1060,77 +1065,6 @@ describe("sanitaryProtocolWindowsV2", () => {
     });
   });
 
-  it("gera B19 condicional offline, serializa concorrência e preserva retry após reabertura", async () => {
-    await allowAutomaticB19Fixture();
-    const rows = windowFor({
-      protocolId: "protocol-b19",
-      itemId: "item-b19",
-    }).rows.filter((row) => row.canSelect);
-    const request = {
-      rows,
-      fazendaId: "farm-1",
-      plannedFor: "2026-07-10",
-      confirmed: true,
-      generationMode: "automatic" as const,
-    };
-    const results = await Promise.all([
-      createGroupedManualSanitaryAgendasV2(request),
-      createGroupedManualSanitaryAgendasV2(request),
-    ]);
-    expect(results.flat().filter((result) => result.created)).toHaveLength(1);
-    db.close();
-    await db.open();
-    expect(
-      (await createGroupedManualSanitaryAgendasV2(request))[0].created,
-    ).toBe(false);
-    const stored = await db.ops_sanitario_agenda_v2.toCollection().first();
-    expect(stored?.protocol_item_snapshot).toMatchObject({
-      planningKind: "avaliacao_manejo_generica",
-      generationMode: "automatic",
-    });
-    expect(stored?.produto_veterinario_id).toBeNull();
-    expect(stored?.protocol_item_snapshot.dose).toBeUndefined();
-    expect(await db.event_eventos.count()).toBe(0);
-    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
-    expect(await db.queue_ops.count()).toBe(0);
-  });
-
-  it("não promove allows_agenda_auto falso nem confia em rows forjadas", async () => {
-    await seedPlanningSource();
-    const rows = windowFor({
-      protocolId: "protocol-b19",
-      itemId: "item-b19",
-    }).rows.filter((row) => row.canSelect);
-    await expect(
-      createGroupedManualSanitaryAgendasV2({
-        rows,
-        fazendaId: "farm-1",
-        plannedFor: "2026-07-10",
-        confirmed: true,
-        generationMode: "automatic",
-      }),
-    ).rejects.toThrow(/elegibilidade/);
-    expect(await db.ops_sanitario_agenda_v2.count()).toBe(0);
-  });
-
-  it("revalida revogação da autorização automática e UF antes da persistência", async () => {
-    await allowAutomaticB19Fixture();
-    const rows = windowFor({
-      protocolId: "protocol-b19",
-      itemId: "item-b19",
-    }).rows.filter((row) => row.canSelect);
-    await db.state_fazenda_sanidade_config.update("farm-1", { uf: "SC" });
-    await expect(
-      createGroupedManualSanitaryAgendasV2({
-        rows,
-        fazendaId: "farm-1",
-        plannedFor: "2026-07-10",
-        confirmed: true,
-        generationMode: "automatic",
-      }),
-    ).rejects.toThrow();
-    expect(await db.ops_sanitario_agenda_v2.count()).toBe(0);
-  });
 
   it("agenda genérica persiste sem produto e não é promovida ao atualizar catálogo", async () => {
     await seedPlanningSource();
@@ -1230,17 +1164,6 @@ describe("sanitaryProtocolWindowsV2", () => {
     expect(await db.event_eventos.count()).toBe(0);
   });
 
-  it.each(["raiva_primovac_dose1", "raiva_primovac_reforco_30d", "raiva_reforco_anual_area_risco"])("writer bloqueia %s com no_agenda_auto mesmo com contexto e aprovação", async (logicalItemKey) => {
-    await seedPlanningSource();
-    await db.catalog_sanitario_protocolo_itens_versions_v2.update("item-raiva", {
-      logical_item_key: logicalItemKey, limitations: ["no_agenda_auto"], allows_agenda_auto: true, source_refs_by_field: approvedSources(),
-    });
-    const context = { rabiesRiskArea: true, sanitaryCadence: "annual" as const, reproductiveContext: null, management: null };
-    const localCatalog = { ...catalog, items: catalog.items.map((entry) => entry.id === "item-raiva" ? { ...entry, logicalItemKey } : entry) };
-    const rows = windowFor({ protocolId: "protocol-raiva", itemId: "item-raiva", source: source({ catalog: localCatalog }), operationalContext: context }).rows.filter((row) => row.canSelect);
-    await expect(createGroupedManualSanitaryAgendasV2({ rows, fazendaId: "farm-1", plannedFor: "2026-07-10", confirmed: true, generationMode: "automatic", operationalContext: context })).rejects.toThrow(/elegibilidade/);
-    expect(await db.ops_sanitario_agenda_v2.count()).toBe(0);
-  });
 
   it("bubalinos não herdam autorização comercial bovina para esquema definido", () => {
     const local = source({ catalog: specificCatalog(), products: [technicalProduct], productSpeciesAuthorizations: [technicalSpecies], animals: [{ ...animal("female", "F", "2026-03-01"), especie: "bubalino" }] });

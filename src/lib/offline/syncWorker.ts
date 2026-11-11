@@ -40,8 +40,6 @@ import { normalizeTableMutationRecord } from "./mutationRecord";
 import {
   findTerminalSanitaryPlanningDependencyV2,
   hasPendingSanitaryPlanningDependencyV2,
-  mapQueuedSanitaryPlanV2,
-  queuedSanitaryPlanV2,
 } from "@/lib/sanitario/agenda/sanitaryPlanningSyncV2";
 import {
   isSanitaryEvidenceOperation,
@@ -412,7 +410,6 @@ function isSanitarioAgendaCutoverRequired(
     command === "death_participant" ||
     command === "close_agenda" ||
     command === "reschedule_agenda" ||
-    command === "set_automation_plan" ||
     typeof canonical.agenda_id === "string" ||
     typeof canonical.closure_id === "string"
   );
@@ -974,8 +971,6 @@ function readSanitarioCommand(
     : {};
   const candidate = record.command ?? canonical.command;
 
-  if (queuedSanitaryPlanV2(op)) return "set_automation_plan";
-
   const commands: readonly string[] = [
     "manage_agenda",
     "create_agenda",
@@ -983,7 +978,6 @@ function readSanitarioCommand(
     "apply_factual_core",
     "death_participant",
     "close_agenda",
-    "set_automation_plan",
     "reschedule_agenda",
   ];
   return commands.includes(candidate as string)
@@ -1086,8 +1080,7 @@ async function processSanitarioCanonicalResults(
     sentOps
       .filter(
         (op) =>
-          (isRecord(op.record) && op.record.domain === "sanitario_v2") ||
-          Boolean(queuedSanitaryPlanV2(op)),
+          isRecord(op.record) && op.record.domain === "sanitario_v2",
       )
       .map((op) => op.client_op_id),
   );
@@ -1912,8 +1905,7 @@ export function mapOperationForSync(
 ): Record<string, unknown> {
   if (op.death_cancel) return mapDeathCancellationForSync(op, fazendaId);
   if (isMovementOperation(op)) return mapMovementForSync(op, fazendaId);
-  const sanitary =
-    mapQueuedSanitaryPlanV2(op, fazendaId) ?? queuedSanitaryEnvelope(op);
+  const sanitary = queuedSanitaryEnvelope(op);
   if (sanitary)
     return sanitary.contract_version === 3
       ? { ...sanitary }
@@ -2354,7 +2346,7 @@ export async function processGesture(gesture: Gesture) {
     if (
       ops.some(
         (op) =>
-          op.record?.domain === "sanitario_v2" || queuedSanitaryPlanV2(op),
+          op.record?.domain === "sanitario_v2",
       )
     ) {
       const pendingPlanning = await db.queue_ops.toArray();

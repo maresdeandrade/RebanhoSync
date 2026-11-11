@@ -1,5 +1,5 @@
-import type { SanitaryAutomationDraftV2 } from "@/lib/sanitario/agenda/sanitaryAutomationPlanV2";
 import type { SanitaryProtocolItemV2ReadModel } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
+import type { SanitaryOperationalContextV2 } from "@/lib/sanitario/windows/sanitaryProtocolWindowsV2";
 const contextFields = [
   { key: "riskContext", label: "Contexto de risco sanitário", options: [["true", "Confirmado"], ["false", "Não confirmado"]] },
   {
@@ -36,8 +36,8 @@ export function PlanContextFields({
 }: {
   items: SanitaryProtocolItemV2ReadModel[];
   prefix?: string;
-  context: SanitaryAutomationDraftV2["context"];
-  onChange: (value: SanitaryAutomationDraftV2["context"]) => void;
+  context: SanitaryOperationalContextV2;
+  onChange: (value: SanitaryOperationalContextV2) => void;
 }) {
   return (
     <div className="grid gap-3 md:grid-cols-2">

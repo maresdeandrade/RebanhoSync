@@ -11,7 +11,6 @@ import { isSanitaryClassSchemeV2, sanitaryClassSchemeBlockersV2, SANITARY_CLASS_
 export type SanitaryPlanningKindV2 =
   | "avaliacao_manejo_generica"
   | "aplicacao_esquema_definido";
-export type SanitaryGenerationModeV2 = "manual" | "automatic";
 
 export function sanitaryPlanningKindV2(
   item: SanitaryProtocolItemV2ReadModel,
@@ -37,31 +36,6 @@ export function sanitaryPlanningKindV2(
     : "avaliacao_manejo_generica";
 }
 
-function hasRestriction(value: unknown, code: string): boolean {
-  if (value === code) return true;
-  if (Array.isArray(value))
-    return value.some((entry) => hasRestriction(entry, code));
-  if (value && typeof value === "object") {
-    return Object.entries(value).some(
-      ([key, entry]) =>
-        (key === code && entry === true) || hasRestriction(entry, code),
-    );
-  }
-  return false;
-}
-
-export function sanitaryHasNoAgendaAutoV2(
-  item: Pick<
-    SanitaryProtocolItemV2ReadModel,
-    "limitations" | "snapshotTemplate"
-  >,
-): boolean {
-  return (
-    hasRestriction(item.limitations, "no_agenda_auto") ||
-    hasRestriction(item.snapshotTemplate, "no_agenda_auto")
-  );
-}
-
 export function sanitaryPlanningHasFieldSourceV2(
   item: SanitaryProtocolItemV2ReadModel,
   field: string,
@@ -75,34 +49,6 @@ export function sanitaryPlanningHasFieldSourceV2(
     ),
     field,
   );
-}
-
-export function sanitaryAutomaticPlanningBlockersV2(
-  protocol: SanitaryProtocolV2ReadModel,
-  item: SanitaryProtocolItemV2ReadModel,
-): string[] {
-  const blockers: string[] = [];
-  if (!item.allowsAgendaAuto || sanitaryHasNoAgendaAutoV2(item)) {
-    blockers.push(
-      "Item sem autorização versionada para Agenda automática (allows_agenda_auto/no_agenda_auto).",
-    );
-  }
-  if (
-    protocol.metadata.agenda_allowed === false ||
-    protocol.metadata.approved_for_catalog === false
-  ) {
-    blockers.push("Aprovação prospectiva do protocolo não liberada.");
-  }
-  if (
-    !["eligibility_rule", "operational_window", "product_requirement"].every(
-      (field) => sanitaryPlanningHasFieldSourceV2(item, field) || hasReviewedAssessmentField(item, field),
-    )
-  ) {
-    blockers.push(
-      "Automação exige fontes técnicas por campo na versão aprovada.",
-    );
-  }
-  return blockers;
 }
 
 // A server-audited field decision supports a bounded assessment, never a drug scheme.

@@ -894,6 +894,15 @@ export class OfflineDB extends Dexie {
       catalog_sanitario_produto_carencia_fontes_v2:
         "[withdrawal_rule_id+source_id+field_key], withdrawal_rule_id, source_id, field_key",
     });
+    // Version 36: remove índices exclusivos da geração automática sanitária.
+    this.version(36).stores({
+      catalog_sanitario_product_classes_v2:
+        "id, scope, fazenda_id, deleted_at, updated_at, class_key, curation_status, [scope+class_key], [fazenda_id+class_key]",
+      catalog_sanitario_product_class_groups_v2:
+        "id, group_key, scope, fazenda_id, curation_status, deleted_at, updated_at, [scope+group_key], [fazenda_id+group_key]",
+      catalog_sanitario_protocolo_itens_versions_v2:
+        "id, protocol_id, logical_item_key, [protocol_id+logical_item_key+version], product_requirement_kind, deleted_at, updated_at",
+    });
   }
 }
 

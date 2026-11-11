@@ -16,15 +16,6 @@ import {
   type SanitaryProtocolWindowSourceV2,
 } from "../sanitaryProtocolWindowsV2";
 import { resolveSanitaryAnimalContextV2 } from "../sanitaryAnimalContextV2";
-import {
-  previewSanitaryAutomaticPlanV2,
-  generateSanitaryAutomaticAgendasV2,
-} from "../../agenda/sanitaryAutomaticGenerationV2";
-import { sanitaryAutomaticIdentityV2 } from "../../agenda/sanitaryAutomaticIdentityV2";
-import {
-  selectSanitaryAutomationRuleV2,
-  saveSanitaryAutomationPlanV2,
-} from "../../agenda/sanitaryAutomationPlanV2";
 import { db } from "@/lib/offline/db";
 import { cancelLocalSanitaryAgendaV2 } from "../../agenda/sanitaryLocalAgendaManagementV2";
 
@@ -75,7 +66,6 @@ const item = adaptSanitaryProtocolItemV2Row({
   item_status: "condicional",
   action_type: "manejo_sanitario",
   product_requirement_kind: "none",
-  allows_agenda_auto: true,
   eligibility_rule: {
     species: ["bovino"],
     sex: "femea",
@@ -210,7 +200,6 @@ describe("resolução contextual sanitária por animal", () => {
       eligibility_rule: selectedItem.eligibilityRule,
       operational_window_rule: selectedItem.operationalWindowRule,
       source_refs_by_field: sources,
-      allows_agenda_auto: true,
       deleted_at: null,
     } as never);
     for (const event of events) {
@@ -229,441 +218,6 @@ describe("resolução contextual sanitária por animal", () => {
     }
   }
 
-  it("snapshot de lote heterogêneo registra contextos por animal, sem herdar o contexto do primeiro", async () => {
-    vi.stubGlobal("localStorage", {
-      getItem: () => "provenance-client",
-      setItem: vi.fn(),
-    });
-    await Promise.all(db.tables.map((table) => table.clear()));
-    try {
-      const otherEvents = reproduction("other").map((event) => ({
-        ...event,
-        id: `${event.id}-other`,
-        details: {
-          ...event.details!,
-          payload:
-            event.details!.tipo === "diagnostico"
-              ? {
-                  schema_version: 1,
-                  resultado: "positivo",
-                  episode_evento_id: "service-other",
-                  data_prevista_parto: "2026-08-20",
-                }
-              : event.details!.payload,
-        },
-      }));
-      await seedContextTargets(
-        [animal(), animal("other")],
-        [...reproduction(), ...otherEvents],
-      );
-      const local = await loadSanitaryProtocolWindowSourceV2("farm");
-      const rows = buildSanitaryProtocolWindowV2({
-        source: local,
-        protocolId: protocol.id,
-        itemId: item.id,
-        evaluatedAt: "2026-07-04",
-      })!.rows;
-      expect(rows.every((row) => row.canSelect)).toBe(true);
-      await saveSanitaryAutomationPlanV2({
-        fazendaId: "farm",
-        actorId: "actor",
-        expectedRevision: 0,
-        enabled: true,
-        confirmed: true,
-        draft: {
-          context: { ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 },
-          rules: [selectSanitaryAutomationRuleV2(protocol, item)],
-        },
-      });
-      expect(
-        (
-          await generateSanitaryAutomaticAgendasV2({
-            fazendaId: "farm",
-            referenceDate: "2026-07-04",
-          })
-        ).created,
-      ).toBe(2);
-      const automatic = (await db.ops_sanitario_agenda_v2.toArray()).filter(
-        (agenda) => typeof agenda.metadata.automationKey === "string",
-      );
-      for (const agenda of automatic) {
-        const link = (await db.ops_sanitario_agenda_animais_v2.toArray()).find(
-          (entry) => entry.agenda_id === agenda.id,
-        )!;
-        expect(agenda.protocol_item_snapshot.operationalContext).toEqual(
-          rows.find((row) => row.animalId === link.animal_id)!
-            .contextResolution!.context,
-        );
-      }
-      for (const agenda of automatic) await cancelLocalSanitaryAgendaV2({ agendaId: agenda.id, fazendaId: "farm" });
-      await createGroupedManualSanitaryAgendasV2({
-        rows,
-        fazendaId: "farm",
-        plannedFor: "2026-07-04",
-        confirmed: true,
-      });
-      const saved = (await db.ops_sanitario_agenda_v2.toArray()).find((agenda) => agenda.lote_id === "lot" && agenda.status === "programada")!;
-      expect(saved.protocol_item_snapshot.operationalContext).toBeNull();
-      expect(
-        saved.protocol_item_snapshot.planningEvidence
-          .operationalContextsByAnimalId,
-      ).toEqual(
-        Object.fromEntries(
-          rows.map((row) => [row.animalId, row.contextResolution!.context]),
-        ),
-      );
-    } finally {
-      await Promise.all(db.tables.map((table) => table.clear()));
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it("separa ciclos gestacionais sob a mesma programação genérica e preserva retry do ciclo", () => {
-    const genericItem = {
-      ...item,
-      operationalWindowRule: { anchor: "parturition" },
-    };
-    const declared = {
-      ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2,
-      scheduledContext: {
-        date: "2026-07-04",
-        animalIds: ["matrix"],
-        reference: "Avaliação programada",
-      },
-    };
-    const firstSource = source({
-      catalog: { ...source().catalog, items: [genericItem] },
-    });
-    const firstRow = buildSanitaryProtocolWindowV2({
-      source: firstSource,
-      protocolId: protocol.id,
-      itemId: item.id,
-      evaluatedAt: "2026-07-04",
-      operationalContext: declared,
-      generationMode: "automatic",
-    })!.rows[0];
-    const first = sanitaryAutomaticIdentityV2(
-      firstSource,
-      firstRow,
-      "2026-07-04",
-      declared,
-    );
-    const secondCycle = reproduction().map((event) => ({
-      ...event,
-      id: `${event.id}-2`,
-      occurred_at: event.occurred_at.replace("2026", "2027"),
-      details: {
-        ...event.details!,
-        payload:
-          event.details!.tipo === "diagnostico"
-            ? {
-                schema_version: 1,
-                resultado: "positivo",
-                episode_evento_id: "service-2",
-                data_prevista_parto: "2027-08-10",
-              }
-            : event.details!.payload,
-      },
-    }));
-    const secondSource = source({
-      catalog: firstSource.catalog,
-      reproductiveEvents: [...reproduction(), ...secondCycle],
-      executedHistory: [{ animalId: "matrix", events: [{ eventId: "prior-cycle-assessment", protocolId: protocol.id, familyCode: protocol.familyCode, itemKey: item.logicalItemKey, executedAt: "2026-07-04", source: "event" }] }],
-    });
-    const secondRow = buildSanitaryProtocolWindowV2({
-      source: secondSource,
-      protocolId: protocol.id,
-      itemId: item.id,
-      evaluatedAt: "2027-07-04",
-      operationalContext: declared,
-      generationMode: "automatic",
-    })!.rows[0];
-    const second = sanitaryAutomaticIdentityV2(
-      secondSource,
-      secondRow,
-      "2027-07-04",
-      declared,
-    );
-    expect(firstRow.canSelect && secondRow.canSelect).toBe(true);
-    expect(second.key).not.toBe(first.key);
-    expect(second.completed).toBe(false);
-    expect(
-      sanitaryAutomaticIdentityV2(
-        secondSource,
-        secondRow,
-        "2027-07-05",
-        declared,
-      ).key,
-    ).toBe(second.key);
-  });
-
-  it("mantém chave legada do mesmo ciclo sem reescrever intenção ou operações pendentes", () => {
-    const declared = {
-      ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2,
-      scheduledContext: {
-        date: "2026-07-04",
-        animalIds: ["matrix"],
-        reference: "Avaliação programada",
-      },
-    };
-    const genericItem = {
-      ...item,
-      operationalWindowRule: { anchor: "parturition" },
-    };
-    const legacyKey =
-      "sanitary-auto-v2|farm|matrix|protocol|1|item|1|context:2026-07-04";
-    const local = source({
-      catalog: { ...source().catalog, items: [genericItem] },
-      agendas: [
-        {
-          id: "legacy",
-          fazenda_id: "farm",
-          protocolo_id: protocol.id,
-          data_programada: "2026-07-04",
-          status: "cancelada",
-          metadata: {
-            automationKey: legacyKey,
-            automationWindowKey: "context:2026-07-04",
-          },
-          protocol_item_snapshot: { itemKey: item.logicalItemKey },
-        } as never,
-      ],
-      agendaAnimals: [{ agenda_id: "legacy", animal_id: "matrix" } as never],
-    });
-    const before = JSON.stringify(local);
-    const row = buildSanitaryProtocolWindowV2({
-      source: local,
-      protocolId: protocol.id,
-      itemId: item.id,
-      evaluatedAt: "2026-07-04",
-      operationalContext: declared,
-      generationMode: "automatic",
-    })!.rows[0];
-    expect(
-      sanitaryAutomaticIdentityV2(local, row, "2026-07-04", declared),
-    ).toMatchObject({ key: legacyKey, windowKey: "context:2026-07-04" });
-    expect(
-      previewSanitaryAutomaticPlanV2(
-        local,
-        {
-          context: declared,
-          rules: [selectSanitaryAutomationRuleV2(protocol, genericItem)],
-        },
-        "2026-07-04",
-      ).toCreate,
-    ).toBe(0);
-    expect(JSON.stringify(local)).toBe(before);
-  });
-
-  it.each(["programada", "cancelada"])("preserva bloqueio legado %s quando histórico offline não comprova outro episódio", (status) => {
-    const declared = { ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 };
-    const local = source({
-      agendas: [{ id: "unknown-cycle", fazenda_id: "farm", protocolo_id: protocol.id, data_programada: "2025-07-04", status, metadata: {}, protocol_item_snapshot: { itemKey: item.logicalItemKey } } as never],
-      agendaAnimals: [{ agenda_id: "unknown-cycle", animal_id: "matrix" } as never],
-    });
-    const before = JSON.stringify(local);
-    expect(previewSanitaryAutomaticPlanV2(local, { context: declared, rules: [selectSanitaryAutomationRuleV2(protocol, item)] }, "2026-07-04").toCreate).toBe(0);
-    expect(JSON.stringify(local)).toBe(before);
-  });
-
-  it("nova DPP no mesmo episódio não renumera a intenção automática", () => {
-    const declared = { ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 };
-    const local = source();
-    const row = buildSanitaryProtocolWindowV2({
-      source: local,
-      protocolId: protocol.id,
-      itemId: item.id,
-      evaluatedAt: "2026-07-04",
-      operationalContext: declared,
-    })!.rows[0];
-    const original = sanitaryAutomaticIdentityV2(
-      local,
-      row,
-      "2026-07-04",
-      declared,
-    );
-    const changed = source({
-      reproductiveEvents: [
-        ...reproduction(),
-        {
-          ...reproduction()[1],
-          id: "updated-diagnosis",
-          occurred_at: "2026-07-01",
-          details: {
-            tipo: "diagnostico",
-            payload: {
-              schema_version: 1,
-              resultado: "positivo",
-              episode_evento_id: "service",
-              data_prevista_parto: "2026-08-20",
-            },
-          },
-        },
-      ],
-    });
-    const updatedRow = buildSanitaryProtocolWindowV2({
-      source: changed,
-      protocolId: protocol.id,
-      itemId: item.id,
-      evaluatedAt: "2026-07-04",
-      operationalContext: declared,
-    })!.rows[0];
-    expect(updatedRow.canSelect).toBe(true);
-    expect(
-      updatedRow.contextResolution!.context.scheduledContext!.date,
-    ).not.toBe(row.contextResolution!.context.scheduledContext!.date);
-    expect(
-      sanitaryAutomaticIdentityV2(changed, updatedRow, "2026-07-04", declared)
-        .key,
-    ).toBe(original.key);
-  });
-
-  it.each([
-    ["programada", "episode"], ["cancelada", "episode"],
-    ["programada", "legacy-auto"], ["cancelada", "legacy-auto"],
-    ["programada", "legacy-manual"], ["cancelada", "legacy-manual"],
-  ])("gera uma intenção por ciclo com anterior %s / %s, concorrência, restart e retry", async (status, identityKind) => {
-    vi.stubGlobal("localStorage", {
-      getItem: () => "cycles-client",
-      setItem: vi.fn(),
-    });
-    await Promise.all(db.tables.map((table) => table.clear()));
-    try {
-      const genericItem = {
-        ...item,
-        operationalWindowRule: { anchor: "parturition" },
-      };
-      await seedContextTargets([animal()], reproduction(), genericItem);
-      const declared = {
-        ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2,
-        scheduledContext: {
-          date: "2026-07-04",
-          animalIds: ["matrix"],
-          reference: "Avaliação programada",
-        },
-      };
-      await saveSanitaryAutomationPlanV2({
-        fazendaId: "farm",
-        actorId: "actor",
-        expectedRevision: 0,
-        enabled: true,
-        confirmed: true,
-        draft: {
-          context: declared,
-          rules: [selectSanitaryAutomationRuleV2(protocol, genericItem)],
-        },
-      });
-      const firstRuns = await Promise.all([
-        generateSanitaryAutomaticAgendasV2({
-          fazendaId: "farm",
-          referenceDate: "2026-07-04",
-        }),
-        generateSanitaryAutomaticAgendasV2({
-          fazendaId: "farm",
-          referenceDate: "2026-07-04",
-        }),
-      ]);
-      expect(
-        firstRuns.reduce((count, result) => count + result.created, 0),
-      ).toBe(1);
-      const first = (await db.ops_sanitario_agenda_v2.toArray())[0];
-      if (status === "cancelada") await cancelLocalSanitaryAgendaV2({
-        agendaId: first.id,
-        fazendaId: "farm",
-      });
-      if (identityKind !== "episode") {
-        const metadata = { ...first.metadata };
-        delete metadata.automationKey;
-        delete metadata.automationWindowKey;
-        if (identityKind === "legacy-auto") {
-          metadata.automationKey = "sanitary-auto-v2|farm|matrix|protocol|1|item|1|context:2026-07-04";
-          metadata.automationWindowKey = "context:2026-07-04";
-        }
-        await db.ops_sanitario_agenda_v2.update(first.id, { metadata });
-      }
-      expect((await generateSanitaryAutomaticAgendasV2({ fazendaId: "farm", referenceDate: "2026-07-05" })).created).toBe(0);
-      const oldQueue = await db.queue_ops.toArray();
-      const oldAgenda = await db.ops_sanitario_agenda_v2.get(first.id);
-      const nextCycle = reproduction().map((event) => ({
-        ...event,
-        id: `${event.id}-2`,
-        occurred_at: event.occurred_at.replace("2026", "2027"),
-        details: {
-          ...event.details!,
-          payload:
-            event.details!.tipo === "diagnostico"
-              ? {
-                  schema_version: 1,
-                  resultado: "positivo",
-                  episode_evento_id: "service-2",
-                  data_prevista_parto: "2027-08-10",
-                }
-              : event.details!.payload,
-        },
-      }));
-      for (const event of nextCycle) {
-        await db.event_eventos.put({
-          ...event,
-          dominio: "reproducao",
-          payload: {},
-        } as never);
-        await db.event_eventos_reproducao.put({
-          evento_id: event.id,
-          fazenda_id: "farm",
-          tipo: event.details.tipo,
-          payload: event.details.payload,
-          deleted_at: null,
-        } as never);
-      }
-      const secondRuns = await Promise.all([
-        generateSanitaryAutomaticAgendasV2({
-          fazendaId: "farm",
-          referenceDate: "2027-07-04",
-        }),
-        generateSanitaryAutomaticAgendasV2({
-          fazendaId: "farm",
-          referenceDate: "2027-07-04",
-        }),
-      ]);
-      expect(
-        secondRuns.reduce((count, result) => count + result.created, 0),
-      ).toBe(1);
-      const currentSource = await loadSanitaryProtocolWindowSourceV2("farm");
-      const currentRows = buildSanitaryProtocolWindowV2({ source: currentSource, protocolId: protocol.id, itemId: item.id, evaluatedAt: "2027-07-04", operationalContext: declared })!.rows;
-      const secondAgenda = currentSource.agendas.find((agenda) => agenda.id !== first.id)!;
-      expect(currentRows[0].alreadyPlanned).toBe(true);
-      const beforeRevalidation = await db.queue_ops.toArray();
-      const reused = await createGroupedManualSanitaryAgendasV2({ rows: currentRows, fazendaId: "farm", plannedFor: "2027-07-04", confirmed: true, operationalContext: declared });
-      expect(reused).toHaveLength(1);
-      expect(reused[0]).toMatchObject({ agendaId: secondAgenda.id, created: false });
-      expect(await db.queue_ops.toArray()).toEqual(beforeRevalidation);
-      expect(
-        new Set(
-          (await db.ops_sanitario_agenda_v2.toArray()).map(
-            (agenda) => agenda.metadata.automationKey,
-          ),
-        ).size,
-      ).toBe(2);
-      expect(await db.ops_sanitario_agenda_v2.get(first.id)).toEqual(oldAgenda);
-      for (const op of oldQueue)
-        expect(await db.queue_ops.get(op.client_op_id)).toEqual(op);
-      db.close();
-      await db.open();
-      const queueBeforeRetry = await db.queue_ops.toArray();
-      expect(
-        (
-          await generateSanitaryAutomaticAgendasV2({
-            fazendaId: "farm",
-            referenceDate: "2027-07-05",
-          })
-        ).created,
-      ).toBe(0);
-      expect(await db.queue_ops.toArray()).toEqual(queueBeforeRetry);
-    } finally {
-      await Promise.all(db.tables.map((table) => table.clear()));
-      vi.unstubAllGlobals();
-    }
-  });
   it("resolve idade, sexo, lote, gestação e janela com proveniência sem declaração global", () => {
     const result = resolve();
     expect(result.sex).toMatchObject({ status: "known", value: "F" });
@@ -980,65 +534,6 @@ describe("resolução contextual sanitária por animal", () => {
     expect(result.management.value).toBe("rearing");
   });
 
-  it("lote heterogêneo usa a mesma resolução no manual e automático e identidade estável na janela", async () => {
-    const heterogeneous = source({
-      animals: [animal(), animal("calf", { data_nascimento: "2026-03-01" })],
-    });
-    const declared = { ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 };
-    const input = {
-      source: heterogeneous,
-      protocolId: protocol.id,
-      itemId: item.id,
-      evaluatedAt: "2026-07-04",
-      operationalContext: declared,
-    };
-    const counts = await Promise.all([
-      db.event_eventos.count(),
-      db.ops_sanitario_agenda_v2.count(),
-      db.queue_ops.count(),
-    ]);
-    const manual = buildSanitaryProtocolWindowV2({
-      ...input,
-      generationMode: "manual",
-    })!;
-    const automatic = buildSanitaryProtocolWindowV2({
-      ...input,
-      generationMode: "automatic",
-    })!;
-    expect(manual.rows.map((row) => row.contextResolution)).toEqual(
-      automatic.rows.map((row) => row.contextResolution),
-    );
-    expect(
-      automatic.rows.filter((row) => row.canSelect).map((row) => row.animalId),
-    ).toEqual(["matrix"]);
-    const preview = previewSanitaryAutomaticPlanV2(
-      heterogeneous,
-      {
-        context: declared,
-        rules: [selectSanitaryAutomationRuleV2(protocol, item)],
-      },
-      "2026-07-04",
-    );
-    expect(
-      preview.entries.filter((row) => row.eligible).map((row) => row.animalId),
-    ).toEqual(["matrix"]);
-    const row = automatic.rows.find((entry) => entry.animalId === "matrix")!;
-    expect(
-      sanitaryAutomaticIdentityV2(heterogeneous, row, "2026-07-04", declared)
-        .key,
-    ).toBe(
-      sanitaryAutomaticIdentityV2(heterogeneous, row, "2026-07-05", declared)
-        .key,
-    );
-    expect(
-      await Promise.all([
-        db.event_eventos.count(),
-        db.ops_sanitario_agenda_v2.count(),
-        db.queue_ops.count(),
-      ]),
-    ).toEqual(counts);
-  });
-
   it("avaliação genérica referenciada continua possível sem transformar intenção em gestação comprovada", () => {
     const declared: SanitaryOperationalContextV2 = {
       ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2,
@@ -1116,7 +611,6 @@ describe("resolução contextual sanitária por animal", () => {
         eligibility_rule: item.eligibilityRule,
         operational_window_rule: item.operationalWindowRule,
         source_refs_by_field: sources,
-        allows_agenda_auto: true,
         deleted_at: null,
       } as never);
       for (const event of reproduction()) {
@@ -1143,34 +637,15 @@ describe("resolução contextual sanitária por animal", () => {
         evaluatedAt: "2026-07-04",
       })!.rows;
       expect(rows[0].canSelect).toBe(true);
-      await saveSanitaryAutomationPlanV2({
-        fazendaId: "farm",
-        actorId: "actor",
-        expectedRevision: 0,
-        enabled: true,
-        confirmed: true,
-        draft: {
-          context: { ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 },
-          rules: [selectSanitaryAutomationRuleV2(protocol, item)],
-        },
-      });
       const facts = await db.event_eventos.count();
-      expect(
-        (
-          await generateSanitaryAutomaticAgendasV2({
-            fazendaId: "farm",
-            referenceDate: "2026-07-04",
-          })
-        ).created,
-      ).toBe(1);
-      expect(
-        (
-          await generateSanitaryAutomaticAgendasV2({
-            fazendaId: "farm",
-            referenceDate: "2026-07-05",
-          })
-        ).created,
-      ).toBe(0);
+      const created = await createGroupedManualSanitaryAgendasV2({
+        rows,
+        fazendaId: "farm",
+        plannedFor: "2026-07-04",
+        confirmed: true,
+      });
+      expect(created).toHaveLength(1);
+      expect(created[0]).toMatchObject({ status: "scheduled", created: true });
       expect(await db.ops_sanitario_agenda_v2.count()).toBe(1);
       expect(await db.event_eventos.count()).toBe(facts);
       const saved = (await db.ops_sanitario_agenda_v2.toArray())[0];
@@ -1227,10 +702,79 @@ describe("resolução contextual sanitária por animal", () => {
       vi.unstubAllGlobals();
     }
   });
+  it("preserva contexto por animal ao agrupar planejamento manual em lote heterogêneo", async () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => "provenance-client",
+      setItem: vi.fn(),
+    });
+    await Promise.all(db.tables.map((table) => table.clear()));
+    try {
+      const otherEvents = reproduction("other").map((event) => ({
+        ...event,
+        id: `${event.id}-other`,
+        details: {
+          ...event.details!,
+          payload:
+            event.details!.tipo === "diagnostico"
+              ? {
+                  schema_version: 1,
+                  resultado: "positivo",
+                  episode_evento_id: "service-other",
+                  data_prevista_parto: "2026-08-20",
+                }
+              : event.details!.payload,
+        },
+      }));
+      await seedContextTargets(
+        [animal(), animal("other")],
+        [...reproduction(), ...otherEvents],
+      );
+      const local = await loadSanitaryProtocolWindowSourceV2("farm");
+      const rows = buildSanitaryProtocolWindowV2({
+        source: local,
+        protocolId: protocol.id,
+        itemId: item.id,
+        evaluatedAt: "2026-07-04",
+      })!.rows;
+      expect(rows.every((row) => row.canSelect)).toBe(true);
+      const contextsByAnimal = Object.fromEntries(
+        rows.map((row) => [row.animalId, row.contextResolution!.context]),
+      );
+      expect(contextsByAnimal.matrix).not.toEqual(contextsByAnimal.other);
+      const eventCountBefore = await db.event_eventos.count();
+
+      await createGroupedManualSanitaryAgendasV2({
+        rows,
+        fazendaId: "farm",
+        plannedFor: "2026-07-04",
+        confirmed: true,
+      });
+
+      const saved = (await db.ops_sanitario_agenda_v2.toArray()).find(
+        (agenda) => agenda.lote_id === "lot" && agenda.status === "programada",
+      );
+      expect(saved).toBeDefined();
+      expect(saved!.protocol_item_snapshot.operationalContext).toBeNull();
+      expect(
+        saved!.protocol_item_snapshot.planningEvidence
+          .operationalContextsByAnimalId,
+      ).toEqual(contextsByAnimal);
+      expect(
+        (await db.ops_sanitario_agenda_animais_v2.toArray())
+          .filter((link) => link.agenda_id === saved!.id)
+          .map((link) => link.animal_id)
+          .sort(),
+      ).toEqual(["matrix", "other"]);
+      expect(await db.event_eventos.count()).toBe(eventCountBefore);
+    } finally {
+      await Promise.all(db.tables.map((table) => table.clear()));
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 it("separa Agenda manual antiga pelos Eventos sem confrontar a DPP cadastral do ciclo atual", async () => {
-  const { sanitaryAgendaFromOtherEpisodeV2 } = await import("../../agenda/sanitaryAutomaticIdentityV2");
+  const { sanitaryAgendaFromOtherEpisodeV2 } = await import("../../agenda/sanitaryAgendaEpisodeV2");
   const nextEvents = reproduction().map((event) => ({
     ...event,
     id: `${event.id}-next`,

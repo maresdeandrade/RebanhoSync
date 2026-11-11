@@ -44,7 +44,6 @@ const protocol = (familyCode: string, overrides: JsonRecord = {}): JsonRecord =>
   approval_status: "draft",
   source_refs_snapshot: [],
   metadata: {
-    agenda_allowed: false,
     approved_for_catalog: false,
   },
   ...overrides,
@@ -74,7 +73,6 @@ const item = (
   source_refs_by_field: {},
   limitations: [],
   snapshot_template: {},
-  allows_agenda_auto: false,
   requires_mv_responsavel: false,
   status: "draft",
   ...overrides,

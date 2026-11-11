@@ -65,7 +65,7 @@ describe("offline sanitario protocol catalog v2 stores", () => {
       status: "draft",
       source_refs_snapshot: [{ source_ref: "SRC_B19" }],
       approval_status: "draft",
-      metadata: { agenda_allowed: false, approved_for_catalog: false },
+      metadata: {approved_for_catalog: false },
       created_at: now,
       updated_at: now,
       deleted_at: null,
@@ -90,7 +90,6 @@ describe("offline sanitario protocol catalog v2 stores", () => {
       source_refs_by_field: {},
       limitations: ["read-only"],
       snapshot_template: {},
-      allows_agenda_auto: false,
       requires_mv_responsavel: true,
       status: "draft",
       created_at: now,
@@ -105,9 +104,8 @@ describe("offline sanitario protocol catalog v2 stores", () => {
       name: "Antiparasitarios recria",
       requires_mv_for_other_class: true,
       curation_status: "needs_review",
-      automation_status: "blocked",
       limitations: ["members_sem_class_id_bloqueados"],
-      metadata: { agenda_allowed: false, approved_for_catalog: false },
+      metadata: {approved_for_catalog: false },
       created_at: now,
       updated_at: now,
       deleted_at: null,
@@ -125,14 +123,12 @@ describe("offline sanitario protocol catalog v2 stores", () => {
     expect(await db.catalog_sanitario_protocolo_itens_versions_v2.get(item.id))
       .toMatchObject({
         logical_item_key: "b19_femeas_3_8_meses",
-        allows_agenda_auto: false,
         deleted_at: "2026-06-15T13:00:00.000Z",
       });
     expect(await db.catalog_sanitario_product_class_groups_v2.get(group.id))
       .toMatchObject({
         group_key: "pcg_antiparasitarios_recria_estrategicos",
         curation_status: "needs_review",
-        automation_status: "blocked",
       });
     expect(await db.queue_ops.count()).toBe(0);
   });

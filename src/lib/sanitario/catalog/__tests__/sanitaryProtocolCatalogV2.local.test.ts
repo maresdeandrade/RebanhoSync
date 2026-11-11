@@ -24,7 +24,7 @@ const protocol = (familyCode: string, overrides: Record<string, unknown> = {}) =
   status: "draft",
   source_refs_snapshot: [{ source_ref: `SRC_${familyCode}` }],
   approval_status: "draft",
-  metadata: { agenda_allowed: false, approved_for_catalog: false },
+  metadata: {approved_for_catalog: false },
   created_at: now,
   updated_at: now,
   deleted_at: null,
@@ -55,7 +55,6 @@ const item = (
   source_refs_by_field: {},
   limitations: [],
   snapshot_template: {},
-  allows_agenda_auto: false,
   requires_mv_responsavel: false,
   status: "draft",
   created_at: now,
@@ -72,9 +71,8 @@ const group = (groupKey: string) => ({
   name: groupKey,
   requires_mv_for_other_class: true,
   curation_status: "needs_review",
-  automation_status: "blocked",
   limitations: ["members_sem_class_id_bloqueados"],
-  metadata: { agenda_allowed: false, approved_for_catalog: false },
+  metadata: {approved_for_catalog: false },
   created_at: now,
   updated_at: now,
   deleted_at: null,
@@ -143,7 +141,7 @@ const itemRows = [
     item_status: "condicional",
     product_requirement_kind: "product_class",
     product_class: "vacina_raiva_herbivoros",
-    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+    snapshot_template: { metadata: {} },
   }),
   item(familyId("raiva_herbivoros"), "raiva_primovac_reforco_30d", {
     item_status: "condicional",
@@ -154,14 +152,14 @@ const itemRows = [
       min_offset_days: 30,
       max_offset_days: 30,
     },
-    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+    snapshot_template: { metadata: {} },
   }),
   item(familyId("raiva_herbivoros"), "raiva_reforco_anual_area_risco", {
     item_status: "condicional",
     product_requirement_kind: "product_class",
     product_class: "vacina_raiva_herbivoros",
     booster_rule: { recurrenceRule: { kind: "annual_if_risk_area" } },
-    snapshot_template: { metadata: { automationStatus: "manual_only" } },
+    snapshot_template: { metadata: {} },
   }),
   item(familyId("clostridioses"), "clostridioses_primovacinacao"),
   item(familyId("clostridioses"), "clostridioses_reforco"),
@@ -215,7 +213,6 @@ describe("local sanitary protocol catalog v2", () => {
       hasB19NationalRule: true,
       hasAftosaBlockedRule: true,
       antiparasiticItemsUseProductClassGroup: true,
-      hasAgendaAutoEnabled: false,
       hasApprovedCatalogProtocol: false,
       createsAgenda: false,
       createsEvent: false,
@@ -240,7 +237,6 @@ describe("local sanitary protocol catalog v2", () => {
     expect(b19?.items).toHaveLength(1);
     expect(b19?.items[0]).toMatchObject({
       logicalItemKey: "b19_femeas_3_8_meses",
-      allowsAgendaAuto: false,
     });
   });
 
@@ -259,7 +255,6 @@ describe("local sanitary protocol catalog v2", () => {
         (entry) =>
           entry.productRequirementKind === "product_class" &&
           entry.productClass === "vacina_raiva_herbivoros" &&
-          entry.allowsAgendaAuto === false &&
           entry.status === "draft",
       ),
     ).toBe(true);

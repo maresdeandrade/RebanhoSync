@@ -47,6 +47,7 @@ functions.forEach(name => visit(`supabase/functions/${name}/index.ts`));
 const payloadFiles = [CANONICAL_PATH, DECISION_PATH,
   "docs/review/evidence/SANITARIO_V2_APROVACAO_PENDENTE_20261017.json"];
 const tooling = ["scripts/codex/import-sanitario-protocols-v2.mjs", "scripts/codex/sanitario-v2-contract.mjs",
+  "scripts/codex/prepare-sanitario-class-delta-v2.mjs", "scripts/codex/prepare-sanitario-closure-v2.mjs",
   "scripts/codex/prepare-sanitario-approval-v2.mjs", "scripts/codex/prepare-sanitario-homologation.mjs",
   "scripts/codex/verify-sanitario-homologation-target.mjs", "scripts/codex/backend-environment.mjs",
   "config/backend-targets.json"];
@@ -88,7 +89,6 @@ const manifest = {
     decisions: form.decisions },
   item_inventory: candidate.payload.protocol_item_rows.map(item => ({ id: item.id, protocol_id: item.protocol_id,
     logical_item_key: item.logical_item_key, version: item.version, status: item.status,
-    allows_agenda_auto: item.allows_agenda_auto,
     decision_set: packet.decision_sets.find(group => group.item_keys.includes(item.logical_item_key))?.id })),
   permissions: { catalog_review: "authenticated + public.is_app_admin(), server auth.uid() and transaction_timestamp()",
     private_sync_rpcs: "service_role only; server revalidates actor membership, owner/manager, farm gate and revision",

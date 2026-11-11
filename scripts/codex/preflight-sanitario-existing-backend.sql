@@ -11,7 +11,9 @@ select jsonb_build_object(
   'counts', jsonb_build_object(
     'protocols',(select count(*) from public.sanitario_protocolos_v2),
     'items',(select count(*) from public.sanitario_protocolo_itens_versions_v2),
-    'automatic_items',(select count(*) from public.sanitario_protocolo_itens_versions_v2 where allows_agenda_auto),
+    'legacy_automation_columns',(select count(*) from information_schema.columns
+      where table_schema='public' and table_name in ('sanitario_protocolo_itens_versions_v2','sanitario_product_classes_v2','sanitario_product_class_groups_v2')
+      and column_name in ('allows_agenda_auto','automation_status')),
     'sources',(select count(*) from public.sanitario_fontes_tecnicas_v2),
     'coverage',(select count(*) from public.sanitario_fonte_cobertura_campos_v2),
     'products',(select count(*) from public.sanitario_produtos_v2),
@@ -27,7 +29,7 @@ select jsonb_build_object(
     'agenda_v2',(select count(*) from public.sanitario_agenda_v2),
     'ledger',(select count(*) from public.sanitario_sync_v2_operations),
     'configs',(select count(*) from public.fazenda_sanidade_config),
-    'automation_plans',(select count(*) from public.fazenda_sanidade_config where payload ? 'sanitary_agenda_automation_v2'),
+    'legacy_automation_plan_payloads',(select count(*) from public.fazenda_sanidade_config where payload ? 'sanitary_agenda_automation_v2'),
     'users',(select count(*) from auth.users),
     'users_signed_in_30d',(select count(*) from auth.users where last_sign_in_at > now()-interval '30 days'),
     'auth_sessions',(select count(*) from auth.sessions),

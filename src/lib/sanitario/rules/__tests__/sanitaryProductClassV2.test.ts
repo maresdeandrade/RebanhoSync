@@ -7,8 +7,6 @@ import {
   validateProductRequirementRuleV2,
   validateProductClassGroupV2,
   validateProductClassV2,
-  automationAllowsAgenda,
-  curationApprovedImpliesAgenda,
   type SanitaryProductRequirementRuleV2,
   type SanitaryProductClassGroupV2,
   type SanitaryProductClassV2,
@@ -194,7 +192,6 @@ describe("sanitaryProductClassV2", () => {
         productType: "vacina",
         speciesScope: ["bovino"],
         curationStatus: "approved_for_catalog",
-        automationStatus: "agenda_allowed",
         limitations: [],
       };
       expect(validateProductClassV2(valid)).toEqual({ ok: true });
@@ -207,7 +204,6 @@ describe("sanitaryProductClassV2", () => {
         productType: "vacina",
         speciesScope: ["bovino"],
         curationStatus: "candidate",
-        automationStatus: "manual_only",
         limitations: [],
       });
 
@@ -221,7 +217,6 @@ describe("sanitaryProductClassV2", () => {
         productType: "vacina",
         speciesScope: ["bovino"],
         curationStatus: "approved_for_catalog",
-        automationStatus: "agenda_allowed",
         limitations: [],
       };
       expect(validateProductClassV2(invalidName).ok).toBe(false);
@@ -232,7 +227,6 @@ describe("sanitaryProductClassV2", () => {
         productType: "vacina",
         speciesScope: [],
         curationStatus: "approved_for_catalog",
-        automationStatus: "agenda_allowed",
         limitations: [],
       };
       expect(validateProductClassV2(invalidScope).ok).toBe(false);
@@ -247,7 +241,6 @@ describe("sanitaryProductClassV2", () => {
         allowedProductClasses: ["class-1"],
         requiresMvForOtherClass: false,
         curationStatus: "approved_for_catalog",
-        automationStatus: "agenda_allowed",
         limitations: [],
       };
       expect(validateProductClassGroupV2(valid)).toEqual({ ok: true });
@@ -260,7 +253,6 @@ describe("sanitaryProductClassV2", () => {
         allowedProductClasses: ["class-1"],
         requiresMvForOtherClass: false,
         curationStatus: "approved_for_catalog",
-        automationStatus: "agenda_allowed",
         limitations: [],
       };
       expect(validateProductClassGroupV2(group).ok).toBe(false);
@@ -273,7 +265,6 @@ describe("sanitaryProductClassV2", () => {
         allowedProductClasses: [],
         requiresMvForOtherClass: false,
         curationStatus: "approved_for_catalog",
-        automationStatus: "agenda_allowed",
         limitations: [],
       };
       expect(validateProductClassGroupV2(group).ok).toBe(false);
@@ -286,24 +277,11 @@ describe("sanitaryProductClassV2", () => {
         allowedProductClasses: ["class-1", " "],
         requiresMvForOtherClass: false,
         curationStatus: "approved_for_catalog",
-        automationStatus: "agenda_allowed",
         limitations: [],
       };
       expect(validateProductClassGroupV2(group).ok).toBe(false);
     });
   });
 
-  describe("Automation & Curation Helpers", () => {
-    it("automationAllowsAgenda resolves correctly", () => {
-      expect(automationAllowsAgenda("agenda_allowed")).toBe(true);
-      expect(automationAllowsAgenda("preview_allowed")).toBe(false);
-      expect(automationAllowsAgenda("manual_only")).toBe(false);
-      expect(automationAllowsAgenda("blocked")).toBe(false);
-    });
 
-    it("curationApprovedImpliesAgenda resolves to false", () => {
-      expect(curationApprovedImpliesAgenda("approved_for_catalog")).toBe(false);
-      expect(curationApprovedImpliesAgenda("candidate")).toBe(false);
-    });
-  });
 });

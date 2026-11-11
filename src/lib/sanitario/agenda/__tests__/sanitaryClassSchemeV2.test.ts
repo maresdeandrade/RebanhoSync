@@ -21,7 +21,7 @@ function item(key = "dose2") {
     product_class: "vacina_sintetica", product_id: null, eligibility_rule: { species: ["bovino"] },
     operational_window_rule: key === "dose1" ? { type: "hybrid", anchor: "manual_context" } : { type: "relative", anchor: "previous_dose", min_offset_days: 28, max_offset_days: 42 },
     booster_rule: { recurrenceRule: { kind: key === "dose1" ? "primovaccination_dose_1" : "primovaccination_dose_2" } },
-    dose_rule: null, route_rule: null, limitations: [], species_authorization: [], allows_agenda_auto: true,
+    dose_rule: null, route_rule: null, limitations: [], species_authorization: [],
     source_refs_by_field: Object.fromEntries(SANITARY_CLASS_SCHEME_FIELDS_V2.map(field => [field, [ref(field)]])),
     snapshot_template: { metadata: { planning_scope: "class_scheme" }, executionProductPolicy: "required_at_execution", sourcePolicy: { operational_window: "compatible_product_required_at_execution" } } });
 }
@@ -56,7 +56,7 @@ describe("planejamento por classe com esquema versionado", () => {
   it("planeja vacinação sem marca/dose/via antecipadas, sem apresentá-la como avaliação", () => {
     expect(sanitaryPlanningKindV2(item("dose1"))).toBe("aplicacao_esquema_definido");
     expect(sanitaryDefinedSchemeBlockersV2(item())).toEqual([]);
-    expect(sanitaryPlanningBlockersV2(protocol, item(), "automatic")).toEqual([]);
+    expect(sanitaryPlanningBlockersV2(protocol, item())).toEqual([]);
   });
   it("não promove número de registro a fonte de esquema nem dispensa compatibilidade posterior", () => {
     const i = item(); i.sourceRefsByField.operational_window = [{ ...ref("operational_window"), kind: "registro_produto" }] as never;
@@ -94,9 +94,8 @@ describe("planejamento por classe com esquema versionado", () => {
     const other = execution(); other.snapshot.fieldEvidence[0].coverageStatus = "does_not_cover";
     expect(classSchemeExecutionEvidenceV2(other)).toBeNull();
   });
-  it("continua recusando aftosa e no_agenda_auto da raiva", () => {
-    expect(sanitaryPlanningBlockersV2({ ...protocol, familyCode: "febre_aftosa" }, item(), "automatic").length).toBeGreaterThan(0);
-    expect(sanitaryPlanningBlockersV2(protocol, { ...item(), limitations: ["no_agenda_auto"] }, "automatic").length).toBeGreaterThan(0);
+  it("continua recusando vacina de febre aftosa por restrição regulatória", () => {
+    expect(sanitaryPlanningBlockersV2({ ...protocol, familyCode: "febre_aftosa" }, item()).length).toBeGreaterThan(0);
   });
   it("reforço anual exige série inicial completa e depois acompanha o próprio reforço factual", () => {
     const annual = { ...item(), id: "annual", logicalItemKey: "annual",

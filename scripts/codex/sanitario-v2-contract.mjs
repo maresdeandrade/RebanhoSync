@@ -15,7 +15,7 @@ const CANONICAL_ENTITY_KEYS = {
   protocolItems: "protocol_item_rows",
 };
 
-export const CANONICAL_ARTIFACT_VERSION = "13.0.0-canonical-contract";
+export const CANONICAL_ARTIFACT_VERSION = "14.0.0-canonical-contract";
 
 const ENTITY_KEYS = Object.values(CANONICAL_ENTITY_KEYS);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -325,12 +325,11 @@ function validateTechnicalRows(data, indexes, issues) {
 
   const PRODUCT_CLASS_TYPES = ["vacina", "antiparasitario", "antibiotico", "anti_inflamatorio", "hormonio", "diagnostico", "outro"];
   const CURATION_STATUSES = ["candidate", "needs_review", "approved_for_catalog", "blocked", "archived"];
-  const AUTOMATION_STATUSES = ["manual_only", "preview_allowed", "agenda_allowed", "blocked"];
 
   data.product_class_rows.forEach((row, index) => {
     const path = `product_class_rows[${index}]`;
     requireField(issues, row, "id", path);
-    for (const field of ["class_key", "scope", "name", "product_type", "curation_status", "automation_status"]) {
+    for (const field of ["class_key", "scope", "name", "product_type", "curation_status"]) {
       requireField(issues, row, field, path);
     }
     if (typeof row.class_key === "string" && !CLASS_KEY_PATTERN.test(row.class_key)) {
@@ -343,8 +342,7 @@ function validateTechnicalRows(data, indexes, issues) {
     }
     enumValue(issues, row, "product_type", PRODUCT_CLASS_TYPES, path);
     enumValue(issues, row, "curation_status", CURATION_STATUSES, path);
-    enumValue(issues, row, "automation_status", AUTOMATION_STATUSES, path);
-    if (!(["global", "tenant"].includes(row.scope))) fail(issues, `${path}.scope`, "scope invalido");
+        if (!(["global", "tenant"].includes(row.scope))) fail(issues, `${path}.scope`, "scope invalido");
     if (row.scope === "global" && row.fazenda_id != null) fail(issues, `${path}.fazenda_id`, "global nao pode possuir fazenda_id");
     if (row.scope === "tenant") {
       if (!row.fazenda_id) fail(issues, `${path}.fazenda_id`, "tenant exige fazenda_id");
@@ -355,12 +353,11 @@ function validateTechnicalRows(data, indexes, issues) {
   data.product_class_group_rows.forEach((row, index) => {
     const path = `product_class_group_rows[${index}]`;
     requireField(issues, row, "id", path);
-    for (const field of ["group_key", "scope", "name", "curation_status", "automation_status"]) {
+    for (const field of ["group_key", "scope", "name", "curation_status"]) {
       requireField(issues, row, field, path);
     }
     enumValue(issues, row, "curation_status", CURATION_STATUSES, path);
-    enumValue(issues, row, "automation_status", AUTOMATION_STATUSES, path);
-    if (!(["global", "tenant"].includes(row.scope))) fail(issues, `${path}.scope`, "scope invalido");
+        if (!(["global", "tenant"].includes(row.scope))) fail(issues, `${path}.scope`, "scope invalido");
     if (row.scope === "global" && row.fazenda_id != null) fail(issues, `${path}.fazenda_id`, "global nao pode possuir fazenda_id");
     if (row.scope === "tenant") {
       if (!row.fazenda_id) fail(issues, `${path}.fazenda_id`, "tenant exige fazenda_id");
@@ -438,7 +435,6 @@ function validateProtocolRows(data, indexes, issues) {
     objectField(issues, row, "operational_window_rule", path, true);
     objectField(issues, row, "source_refs_by_field", path, true);
     if (!Array.isArray(row.species_authorization)) fail(issues, `${path}.species_authorization`, "array obrigatorio ausente");
-    if (["somente_alerta", "bloqueado"].includes(row.item_status) && row.allows_agenda_auto === true) fail(issues, path, "item de alerta/bloqueado nao pode permitir agenda");
     if (row.product_requirement_kind === "specific_product") reference(row.product_key, indexes.products.keys, issues, `${path}.product_key`, "product_key");
     if (row.product_requirement_kind === "product_class") reference(row.class_key, indexes.classes.keys, issues, `${path}.class_key`, "class_key");
     if (row.product_requirement_kind === "product_class_group") reference(row.group_key, indexes.groups.keys, issues, `${path}.group_key`, "group_key");
@@ -448,6 +444,23 @@ function validateProtocolRows(data, indexes, issues) {
 
 export function validateCanonicalTechnicalContract(payload) {
   const issues = [];
+  const removedAutomationFields = new Set(["allows_agenda_auto", "allowsAgendaAuto", "automation_status", "automationStatus", "agenda_allowed"]);
+  const inspectRemovedFields = (entry, pathParts = []) => {
+    if (entry === "no_agenda_auto") {
+      fail(issues, pathParts.join("."), "limitação exclusiva de automação removida");
+      return;
+    }
+    if (!entry || typeof entry !== "object") return;
+    if (Array.isArray(entry)) {
+      entry.forEach((child, index) => inspectRemovedFields(child, [...pathParts, String(index)]));
+      return;
+    }
+    for (const key of removedAutomationFields) {
+      if (Object.hasOwn(entry, key)) fail(issues, [...pathParts, key].join("."), "campo removido do contrato sanitário");
+    }
+    for (const [key, child] of Object.entries(entry)) inspectRemovedFields(child, [...pathParts, key]);
+  };
+  inspectRemovedFields(payload);
   const data = normalizeCanonicalData(payload);
   if (payload.identity_model !== undefined) {
     if (payload.identity_model !== "VERSIONED_EXPLICIT_UUID") {

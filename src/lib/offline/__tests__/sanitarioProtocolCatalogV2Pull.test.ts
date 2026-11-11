@@ -113,7 +113,7 @@ describe("pullSanitarioProtocolCatalogV2", () => {
       approval_status: "draft",
       updated_at: `2026-06-15T10:${String(index).padStart(2, "0")}:00.000Z`,
       deleted_at: index === 9 ? "2026-06-15T11:00:00.000Z" : null,
-      metadata: { agenda_allowed: false, approved_for_catalog: false },
+      metadata: {approved_for_catalog: false },
     }));
     rowsByTable.sanitario_protocolo_itens_versions_v2 = Array.from(
       { length: 20 },
@@ -125,7 +125,6 @@ describe("pullSanitarioProtocolCatalogV2", () => {
         version: 1,
         product_requirement_kind: index >= 3 && index <= 8 ? "product_class_group" : "none",
         product_class_group_id: index >= 3 && index <= 8 ? "group-0" : null,
-        allows_agenda_auto: false,
         updated_at: `2026-06-15T12:${String(index).padStart(2, "0")}:00.000Z`,
         deleted_at: index === 19 ? "2026-06-15T13:00:00.000Z" : null,
       }),
@@ -138,10 +137,9 @@ describe("pullSanitarioProtocolCatalogV2", () => {
         scope: "global",
         fazenda_id: null,
         curation_status: "needs_review",
-        automation_status: "blocked",
         updated_at: `2026-06-15T14:${String(index).padStart(2, "0")}:00.000Z`,
         deleted_at: null,
-        metadata: { agenda_allowed: false, approved_for_catalog: false },
+        metadata: {approved_for_catalog: false },
       }),
     );
 

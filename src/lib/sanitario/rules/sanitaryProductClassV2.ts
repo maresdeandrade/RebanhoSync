@@ -48,13 +48,10 @@ export type SanitaryProductTypeV2 =
  * Estado do processo de curadoria de um registro sanitário
  * (protocolo, item, produto, classe técnica, fonte).
  *
- * NÃO confundir com SanitaryAutomationStatusV2, que controla o que o
- * sistema pode fazer automaticamente com o registro.
- *
  * candidate          — candidato, ainda não validado por curador técnico.
  * needs_review       — exige revisão técnica/regulatória antes de uso.
  * approved_for_catalog — curador aprovou: dados consistentes e fontes verificadas.
- *                      NÃO implica agenda_allowed.
+ *                      Aprovação curatorial não substitui elegibilidade nem autorização de execução.
  * blocked            — não usar operacionalmente (norma veda, produto retirado,
  *                      erro crítico detectado).
  * archived           — histórico preservado, sem uso operacional ativo.
@@ -65,31 +62,6 @@ export type SanitaryCurationStatusV2 =
   | "approved_for_catalog"
   | "blocked"
   | "archived";
-
-// ---------------------------------------------------------------------------
-// Status de automação (o que o sistema pode fazer no fluxo operacional)
-// ---------------------------------------------------------------------------
-
-/**
- * Controla o que o sistema pode fazer automaticamente com este registro
- * em fluxo operacional.
- *
- * manual_only     — apenas registro manual retroativo; sem preview, sem agenda.
- * preview_allowed — pode aparecer em SanitaryPreviewGroup como sugestão.
- *                   NÃO cria agenda, evento, baixa de estoque, carência ou
- *                   autorização operacional.
- * agenda_allowed  — pode materializar SanitaryAgendaMaterializationCommand
- *                   (intenção de agenda). NÃO prova execução.
- * blocked         — não pode aparecer em nenhum fluxo operacional padrão.
- *
- * Decisão por item (SanitaryProtocolItemVersionV2.allowsAgendaAuto),
- * não pelo protocolo inteiro.
- */
-export type SanitaryAutomationStatusV2 =
-  | "manual_only"
-  | "preview_allowed"
-  | "agenda_allowed"
-  | "blocked";
 
 // ---------------------------------------------------------------------------
 // Política de execução (quando e como o produto é exigido)
@@ -147,11 +119,6 @@ export type SanitaryProductClassV2 = {
   speciesScope: Array<"bovino" | "bubalino">;
   /** Estado de curadoria do dado desta classe. */
   curationStatus: SanitaryCurationStatusV2;
-  /**
-   * O que o sistema pode fazer automaticamente com esta classe.
-   * Definido por item (SanitaryProtocolItemVersionV2), não pelo protocolo.
-   */
-  automationStatus: SanitaryAutomationStatusV2;
   /** Limitações técnicas/regulatórias conhecidas. */
   limitations: string[];
   /** Metadados adicionais livres. */
@@ -187,8 +154,6 @@ export type SanitaryProductClassGroupV2 = {
   requiresMvForOtherClass: boolean;
   /** Estado de curadoria do dado deste grupo. */
   curationStatus: SanitaryCurationStatusV2;
-  /** O que o sistema pode fazer automaticamente com este grupo. */
-  automationStatus: SanitaryAutomationStatusV2;
   /** Limitações técnicas/regulatórias conhecidas. */
   limitations: string[];
   /** Metadados adicionais livres. */
@@ -452,28 +417,4 @@ export function validateProductClassGroupV2(
     };
   }
   return { ok: true };
-}
-
-/**
- * Verifica se um automationStatus implica permissão de agenda automática.
- *
- * Apenas "agenda_allowed" implica agenda.
- * "preview_allowed" NÃO implica agenda_allowed.
- * "approved_for_catalog" NÃO implica agenda_allowed.
- */
-export function automationAllowsAgenda(status: SanitaryAutomationStatusV2): boolean {
-  return status === "agenda_allowed";
-}
-
-/**
- * Verifica se um curationStatus aprovado para catálogo implica agenda automática.
- *
- * approved_for_catalog NÃO implica agenda_allowed.
- * A decisão de agenda fica em SanitaryAutomationStatusV2.
- */
-export function curationApprovedImpliesAgenda(
-  _curationStatus: SanitaryCurationStatusV2,
-): false {
-  // Por design: status curatorial nunca implica automação de agenda.
-  return false;
 }
