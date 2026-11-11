@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
 import { SanitaryCompliancePanelV2 } from "@/components/sanitario/SanitaryCompliancePanelV2";
-import { SanitaryContextualNeedsPanelV2 } from "@/components/sanitario/SanitaryContextualNeedsPanelV2";
+import { SanitaryProactiveTriagePanelV2 } from "@/components/sanitario/SanitaryProactiveTriagePanelV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,11 +38,8 @@ import {
   type ExecuteSanitaryAgendaInputV2,
 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
 import {
-  createGroupedManualSanitaryAgendasV2,
   listSanitaryDocumentaryPendenciesV2,
   loadSanitaryProtocolWindowSourceV2,
-  type SanitaryOperationalContextV2,
-  type SanitaryProtocolWindowRowV2,
   type SanitaryProtocolWindowSourceV2,
   type SanitaryCentralExecutedEventV2,
   type SanitaryDocumentaryPendencyV2,
@@ -55,11 +52,6 @@ function readCentralSanitaryTab(value: string | null): CentralSanitaryTab {
   return value === "agenda" || value === "historico" || value === "catalogo" || value === "conformidade"
     ? value
     : "janelas";
-}
-
-function planningResultMessage(results: Array<{ created: boolean }>) {
-  if (!results.some((result) => result.created)) return "Seleção já planejada. Agendas existentes preservadas.";
-  return results.length === 1 ? "Agenda sanitária salva localmente. Sem confirmação remota." : `${results.length} agendas sanitárias salvas localmente. Sem confirmação remota.`;
 }
 
 function currentFarmSource(source: SanitaryProtocolWindowSourceV2 | undefined, farmId: string) {
@@ -168,7 +160,7 @@ const ProtocolosSanitarios = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { activeFarmId, user } = useAuth();
-  const { animalId: initialAnimalId, lotId: initialLotId, lotContextId: initialLotContextId } = useFarmSanitaryFilters(activeFarmId, searchParams, setSearchParams);
+  const { animalId: initialAnimalId, lotId: initialLotId } = useFarmSanitaryFilters(activeFarmId, searchParams, setSearchParams);
   const currentFarm = useRef(activeFarmId);
   currentFarm.current = activeFarmId;
   const currentUser = useRef(user?.id);
@@ -238,10 +230,6 @@ const ProtocolosSanitarios = () => {
       .includes(text);
   });
 
-  const clearInitialFilter = () => {
-    setSearchParams(sanitaryTargetSearchParams(searchParams, null, null), { replace: true });
-  };
-
   if (!activeFarmId) {
     return (
       <div className="container mx-auto space-y-5 pb-10">
@@ -272,25 +260,6 @@ const ProtocolosSanitarios = () => {
     } catch {
       toast.error("Não foi possível cancelar esta agenda.");
     }
-  };
-
-  const planSelected = async (
-    rows: SanitaryProtocolWindowRowV2[],
-    plannedFor: string,
-    operationalContext: SanitaryOperationalContextV2,
-  ) => {
-    const results = await createGroupedManualSanitaryAgendasV2({
-      rows,
-      fazendaId: activeFarmId,
-      plannedFor,
-      operationalContext,
-      confirmed: true,
-      createdBy: user?.id,
-    });
-    if (currentFarm.current !== activeFarmId) return;
-    refreshPlanning();
-    setActiveTab("agenda");
-    toast.success(planningResultMessage(results));
   };
 
   const executeAgenda = async (payloads: Array<Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">>) => {
@@ -330,7 +299,7 @@ const ProtocolosSanitarios = () => {
       </details>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="h-auto flex-wrap justify-start">
-          <TabsTrigger value="janelas"><CalendarClock className="mr-2 h-4 w-4" />Avaliação sanitária</TabsTrigger>
+          <TabsTrigger value="janelas"><CalendarClock className="mr-2 h-4 w-4" />Triagem sanitária</TabsTrigger>
           <TabsTrigger value="agenda"><CalendarClock className="mr-2 h-4 w-4" />Agenda sanitária</TabsTrigger>
           <TabsTrigger value="historico"><History className="mr-2 h-4 w-4" />Histórico sanitário</TabsTrigger>
           <TabsTrigger value="catalogo"><BookOpenCheck className="mr-2 h-4 w-4" />Catálogo sanitário</TabsTrigger>
@@ -339,18 +308,15 @@ const ProtocolosSanitarios = () => {
 
         <TabsContent value="janelas">
           <WindowReadState failed={windowReadError} onRetry={refreshPlanning}>
-          <SanitaryContextualNeedsPanelV2
-            onOpenSection={setActiveTab}
+          <SanitaryProactiveTriagePanelV2
             key={activeFarmId}
             source={currentFarmSource(windowSource, activeFarmId)}
             initialAnimalId={initialAnimalId}
             initialLotId={initialLotId}
-            initialLotContextId={initialLotContextId}
-            onClearInitialFilter={clearInitialFilter}
             onTargetChange={(animalId, lotId) => {
-              setSearchParams(sanitaryTargetSearchParams(searchParams, animalId, lotId), { replace: true });
+              setSearchParams(sanitaryTargetSearchParams(searchParams, animalId || null, lotId || null), { replace: true });
             }}
-            onPlan={planSelected}
+            onOpenSection={setActiveTab}
           />
           </WindowReadState>
         </TabsContent>

@@ -18,6 +18,7 @@ export type SanitaryTriageDispositionV2 =
 export type SanitaryTriageEvaluationV2 = {
   animalId: string;
   identification: string;
+  animalHref: string;
   lotId: string | null;
   lotLabel: string;
   protocolId: string;
@@ -79,6 +80,18 @@ function intervalStartsAfterPeriod(
   return Boolean(interval.startDate && interval.startDate > period.endDate);
 }
 
+function scheduledDateInPeriod(
+  plannedFor: string | null,
+  period: { startDate: string; endDate: string },
+): boolean {
+  const scheduledDate = plannedFor?.slice(0, 10);
+  return Boolean(
+    scheduledDate &&
+      scheduledDate >= period.startDate &&
+      scheduledDate <= period.endDate,
+  );
+}
+
 function dispositionForRow(
   row: SanitaryProtocolWindowRowV2,
   period: { startDate: string; endDate: string },
@@ -86,7 +99,7 @@ function dispositionForRow(
   startsAfterPeriod: boolean,
 ): SanitaryTriageDispositionV2 {
   if (row.status === "completed") return "factual_completed";
-  if (row.alreadyPlanned && intersectsPeriod) return "scheduled";
+  if (row.alreadyPlanned && scheduledDateInPeriod(row.plannedFor, period)) return "scheduled";
   if (
     row.documentaryPending ||
     row.status === "insufficient_data" ||
@@ -123,6 +136,7 @@ function evaluateRow(
   return {
     animalId: row.animalId,
     identification: row.identification,
+    animalHref: row.animalHref,
     lotId: row.lotId,
     lotLabel: row.lotLabel,
     protocolId: row.protocolId,

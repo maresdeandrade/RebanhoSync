@@ -281,6 +281,36 @@ describe("triageSanitaryProtocolIntervalV2", () => {
     });
   });
 
+  it("preserva Agenda fora do período sem classificá-la como programada no intervalo", () => {
+    const agenda = {
+      id: "agenda-outside-period",
+      fazenda_id: "farm-1",
+      status: "programada",
+      protocolo_id: "protocol-1",
+      protocol_item_snapshot: { itemKey: "age-window-8-months" },
+      data_programada: "2026-05-15",
+      execution_evento_id: null,
+      deleted_at: null,
+      metadata: {},
+    } as unknown as SanitarioAgendaLocalV2;
+    const target = {
+      agenda_id: "agenda-outside-period",
+      animal_id: "animal-1",
+      fazenda_id: "farm-1",
+    } as SanitarioAgendaAnimalLocalV2;
+    const result = triageSanitaryProtocolIntervalV2({
+      source: source({ agendas: [agenda], agendaAnimals: [target] }),
+      startDate: "2026-06-01",
+      endDate: "2026-06-30",
+    });
+    expect(findEvaluation(result)).toMatchObject({
+      alreadyPlanned: true,
+      plannedFor: "2026-05-15",
+      planningAllowed: false,
+    });
+    expect(findEvaluation(result)?.disposition).not.toBe("scheduled");
+  });
+
   it("preserva Evento factual concluído como evidência histórica", () => {
     const b19Protocol = { ...protocol("brucelose_b19"), id: "protocol-b19" };
     const b19Item = item({
