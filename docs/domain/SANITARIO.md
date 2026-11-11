@@ -353,10 +353,10 @@ Regras registradas:
 - carência `zero` exige fonte explícita;
 - carência `unknown` bloqueia leitura de livre de carência;
 - `not_permitted` impede apresentar o uso como recomendado/elegível no escopo técnico avaliado; não impede, por si, registrar uso já ocorrido com a restrição evidenciada;
-- `NAO_AUTORIZADO` bloqueia agenda automática futura;
+- `NAO_AUTORIZADO` é restrição de evidência: não autoriza apresentar um uso como recomendado/elegível fora do escopo comprovado; não existe geração automática de Agenda;
 - `PRECISA_VALIDAR` preserva limitação;
 - `EXTRAPOLADO` exige MV responsável para execução futura;
-- `somente_alerta` e `bloqueado` não podem gerar agenda automática;
+- `somente_alerta` e `bloqueado` não conferem autorização para planejamento manual; a materialização depende da validação canônica de cada item e contexto;
 - snapshot de agenda não carrega carência ativa;
 - snapshot de evento exige produto executado real e snapshot de carência.
 

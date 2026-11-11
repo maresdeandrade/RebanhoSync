@@ -119,43 +119,35 @@ Quando existir o fluxo, a suspeita clínica ou ocorrência sanitária deve ser r
 
 ## Central Sanitária e filtros
 
-A rota `/protocolos-sanitarios` concentra a operação sanitária completa.
+A rota `/protocolos-sanitarios`, acessível pelo menu `Sanitário`, contém as abas **Triagem sanitária**, **Agenda sanitária**, **Histórico sanitário**, **Catálogo sanitário** e **Conformidade**. A aba inicial é **Triagem sanitária**.
 
-No menu principal, `Sanitário` abre a Central. As abas disponíveis são:
+### Triagem sanitária proativa
 
-* `Avaliação sanitária`;
-* `Agenda sanitária`;
-* `Histórico sanitário`;
-* `Catálogo sanitário`;
-* `Conformidade`.
+* A consulta considera os animais ativos da **fazenda selecionada** e os protocolos disponíveis nas fontes locais. **Não é necessário escolher previamente animal, lote ou protocolo**.
+* O período padrão corresponde aos próximos **30 dias**, com opções de **60 dias**, **90 dias** e **Personalizado**. Datas civis possuem limites inclusivos; o intervalo personalizado permite consultar janelas futuras além de 90 dias.
+* Os filtros permitem delimitar **protocolo, manejo/item, lote, animal, situação e texto**. Indicadores do conjunto filtrado são distinguidos dos totais da fazenda; **avaliações** e **animais distintos** são contados separadamente.
+* Os resultados são agrupados por **protocolo/item**. Os detalhes são abertos sob demanda e exibidos em blocos de **50 avaliações**, sem limitar a consulta ou a seleção aos registros já renderizados.
+* As situações informativas incluem oportunidade na janela, oportunidade futura, Agenda existente, execução factual comprovada, restrição técnica, dados insuficientes e fora do período (esta última não aparece entre as oportunidades exibidas).
+* Ao expandir um registro, são apresentadas as justificativas, a janela técnica disponível, as restrições, pendências documentais e a referência a uma Agenda existente, quando aplicável. Há navegação contextual para o animal, a Agenda e o Histórico.
+* A triagem é **derivada e somente leitura**: não cria Agenda, Evento, baixa de estoque, carência ou operação de sincronização. Ausência de oportunidade **não comprova conformidade**. Dados locais podem estar desatualizados; consultas retrospectivas não reconstituem integralmente o estado histórico.
 
-### Avaliação sanitária
+### Planejamento manual a partir da triagem
 
-* **Por animal:** escolha um animal ou lote para consultar as avaliações sem selecionar previamente um protocolo. Os cinco grupos são `Planejamento disponível`, `Janelas para acompanhamento`, `Agendas existentes`, `Informações insuficientes` e `Restrições e consulta técnica`.
-* **Por protocolo:** selecione protocolo e item para a consulta técnica e a seleção de animais. A troca de perspectiva preserva data e alvo compatíveis, sem transportar a seleção de planejamento.
-* Cada cartão prioriza intervenção/etapa, situação, motivo e ação contextual. Justificativas complementares, contexto, versão e documentos ficam por expansão; avaliações inconclusivas e versões substituídas continuam consultáveis.
-* `Planejar manejo` abre a revisão. A seleção pode ser individual ou coletiva por grupo/lote; `Selecionar todos` considera todo o conjunto filtrado, não apenas a página atualmente renderizada.
-* A revisão separa linhas elegíveis, excluídas por janela incompatível e rejeitadas por duplicidade/restrição operacional. **Data de avaliação** e **data planejada** são distintas; as condições são revalidadas ao salvar o planejamento.
-* A confirmação exige remover explicitamente as linhas rejeitadas quando houver alguma. Antes da confirmação não há escrita de Agenda; após a confirmação, o writer manual persiste somente a intenção local. O planejamento não cria Evento, baixa de estoque nem carência ativa.
+* O usuário pode selecionar avaliações individualmente, por grupo ou por recorte filtrado, inclusive com **Selecionar todo o recorte**. A seleção pode abranger registros além dos 50 detalhes mostrados por página.
+* **Seleção não equivale a autorização**: antes da criação de Agenda, o fluxo resolve as avaliações em linhas canônicas, verifica data, janela, contexto, elegibilidade, duplicidade e restrições técnicas pertinentes.
+* **Planejar selecionados** abre a revisão da data e dos resultados: itens compatíveis, excluídos por janela e rejeitados por restrições ou equivalência. A confirmação permanece impedida enquanto houver incompatibilidades não resolvidas; a interface permite remover exclusões identificadas na revisão.
+* Somente **Confirmar e gerar Agenda** inicia o writer manual canônico, com revalidação na persistência. Agendas equivalentes são preservadas conforme as regras de episódio/idempotência. O resultado inicial é **local/offline**, não uma confirmação remota.
+* O planejamento cria **somente intenção futura**: não registra aplicação executada, Evento factual, movimento de estoque ou carência ativa. A execução V3 ocorre em fluxo próprio, com evidência factual e as validações correspondentes.
 
-### Plano de geração automática
+### Outras abas e navegação contextual
 
-A configuração fica recolhida até abrir `Configurar plano automático`. O contexto geral mostra campos pertinentes às regras selecionadas; cada regra permite um contexto específico. Esse ajuste é completo e deixa de acompanhar o geral até a ação explícita `Usar contexto geral`. Ocultar campos não apaga valores, e uma edição parcial preserva as demais propriedades.
+* **Agenda sanitária:** consultar, gerenciar e executar Agendas pelos comandos próprios; Agenda aberta não é histórico executado.
+* **Histórico sanitário:** consultar Eventos factuais e pendências documentais, sem inferir execução a partir de planejamento.
+* **Catálogo sanitário:** consultar regras, fontes e versões; a atualização do catálogo é ação explícita.
+* **Conformidade:** consultar os dados locais e as limitações da evidência; não constitui liberação comercial ou regulatória universal.
+* Atalhos por URL podem abrir a Central com filtros iniciais de animal (`animalId`) ou lote (`loteId`). A troca de fazenda deve preservar o isolamento do contexto. Limpar filtros retorna ao recorte geral.
 
-A prévia informa intenções potencialmente geráveis, avaliações não planejáveis e animais distintos. Agrupa pela identidade/versionamento da regra e motivo exato; `Ver animais e justificativas` mantém acesso a cada avaliação original. A prévia não confirma criação: ativação exige revisão/autorização e a geração reavalia as condições.
-
-`Conformidade` consulta os dados locais e as pendências documentais disponíveis; não é uma aba futura/desabilitada nem uma liberação comercial universal. O catálogo permanece consulta de regras, fontes, versões e documentos.
-
-Na consulta offline, os dados podem estar desatualizados. Uma data retrospectiva não recompõe integralmente o estado histórico do rebanho. Janelas técnicas completas e a convergência com os protótipos mobile/desktop não foram entregues por estes incrementos.
-
-Atalhos vindos do detalhe do animal ou do lote podem abrir a Central com filtro inicial aplicado.
-
-* Filtro por animal direciona a consulta ao animal de origem.
-* Filtro por lote lista apenas animais daquele lote.
-* Se animal e lote vierem juntos, o animal tem prioridade e o lote fica como contexto auxiliar.
-* `Limpar filtro` volta à visão geral.
-
-> ⚠️ **Regra:** Filtro não cria agenda, evento, estoque, carência ativa ou fila de sincronização.
+A antiga função de **plano de geração automática** foi retirada na PR #285; ela **não** faz parte da interface vigente. A integração das PRs #285–#287 não comprova, por si, homologação com o caso V01 real, convergência remota integral ou autorização de rollout.
 
 ---
 
