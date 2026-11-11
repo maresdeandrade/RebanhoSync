@@ -1,9 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-11-08
+Atualizado em: 2026-11-11
 Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED apenas no envelope reconnect 1k; produção não provisionada**
-Próxima fase: **Fase 24 — continuidade pós-#281, sem nova fase. B01/F07 #272 e comando durável B02/A05 #274 integrados; Central Sanitária contextual e UX #278–#281 integradas. Convergência com os protótipos e homologação V01 real continuam separadas. Evidência local não certifica kill real ou convergência remota. F24.6A2 não iniciada.**
-Baseline integrada consultada: `origin/main@db4c2f21291d8ce8e87af2d0f2de4b1063693620`
+Próxima fase: **Fase 24 — continuidade pós-#287, sem nova fase. B01/F07 #272 e comando durável B02/A05 #274 integrados; Sanitário #285–#287 integrado no recorte de execução V3, triagem proativa e planejamento manual coletivo. Convergência com os protótipos e homologação V01 real continuam separadas. Evidência local não certifica kill real ou convergência remota. F24.6A2 não iniciada.**
+Baseline integrada consultada: `main@2f5d74a36666b14893ae904089f19b2cf86c8ef7` (PR #287)
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -23,17 +23,20 @@ Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
-## Central Sanitária — integrações até #281
+## Central Sanitária — integrações até #287
 
-Baseline remota confirmada em 08/11/2026: `main@db4c2f21291d8ce8e87af2d0f2de4b1063693620`. **CLOSED / INTEGRATED** para os incrementos abaixo; não para certificação sanitária completa ou rollout.
+Baseline remota confirmada em 11/11/2026: `main@2f5d74a36666b14893ae904089f19b2cf86c8ef7`. **CLOSED / INTEGRATED** para os incrementos abaixo; não para certificação sanitária completa ou rollout.
 
 | Entrega | Merge confirmado | Recorte integrado |
 | --- | --- | --- |
 | [#273](https://github.com/maresdeandrade/RebanhoSync/pull/273), [#275](https://github.com/maresdeandrade/RebanhoSync/pull/275) e [#277](https://github.com/maresdeandrade/RebanhoSync/pull/277) | `cf544d30`, `7a8de861`, `10814cc1` | Catálogo reativo/offline, contexto operacional por animal e correção do episódio histórico da Agenda. |
 | [#278](https://github.com/maresdeandrade/RebanhoSync/pull/278) e [#279](https://github.com/maresdeandrade/RebanhoSync/pull/279) | `7824a0b8`, `9bb7877d` | Descoberta contextual, perspectivas Por animal/Por protocolo, cinco grupos operacionais e revisão da data planejada. |
 | [#280](https://github.com/maresdeandrade/RebanhoSync/pull/280) e [#281](https://github.com/maresdeandrade/RebanhoSync/pull/281) | `df6503d3`, `db4c2f21` | Navegação responsiva, ações contextuais, campos pertinentes por regra, prévia agrupada por identidade/versões/motivo exato e detalhes dos cartões consolidados. |
+| [#285](https://github.com/maresdeandrade/RebanhoSync/pull/285) | `9500ef1b` | Remove geração automática de Agenda Sanitária, preserva planejamento manual e integra a admissão/execução factual V3 com os respectivos limites de sync e backend. |
+| [#286](https://github.com/maresdeandrade/RebanhoSync/pull/286) | `cd41ce22` | Endurece a triagem proativa com datas civis locais, classificação por data planejada, agrupamento incremental e expansão paginada. |
+| [#287](https://github.com/maresdeandrade/RebanhoSync/pull/287) | `2f5d74a3` | Adiciona seleção coletiva além dos registros renderizados, prévia explícita e integração triagem → resolução → writer manual → Dexie; o planejamento não cria Evento, estoque ou carência. |
 
-O [manual da Central](../manuals/screens/SANITARIO.md#central-sanitária-e-filtros) reflete as abas reais e os limites offline. O #281 preserva contextos completos, propriedades ocultas, herança/reset, avaliações individuais, versões e critérios de autorização/materialização. [CI do head `e541a5fe`](https://github.com/maresdeandrade/RebanhoSync/actions/runs/42517666556): 530 arquivos aprovados/7 ignorados, 5.459 testes aprovados/92 ignorados; lint, Fallow, build e gates documentais aprovados. Evidência focada anterior: 99 testes, seguida de 28 testes de página/cartões após correção; contagens sobrepostas, não somáveis. Chromium 390/1280 px com fixture sintética, sem overflow/erro de página. Não houve homologação de V01 real/amostra 1.pdf, entrega dos protótipos finais ou de janelas técnicas completas. Não repetir essas provas nesta reconciliação documental.
+O [manual da Central](../manuals/screens/SANITARIO.md#central-sanitária-e-filtros) reflete as abas reais e os limites offline. O #287 preserva a separação entre triagem derivada, Agenda-intenção e Evento factual; a seleção coletiva opera sobre o conjunto filtrado, e a confirmação é o limite da escrita local. As validações focadas registradas nos PRs passaram; a integração do PR #287 foi confirmada no merge `2f5d74a3`. Isso não equivale a homologação de V01 real, entrega dos protótipos finais, convergência remota geral ou rollout. Não repetir provas históricas nesta reconciliação documental.
 
 B02/A05 também está **CLOSED / INTEGRATED** pelo [PR #274](https://github.com/maresdeandrade/RebanhoSync/pull/274), merge `0673a9747cf6e45bd6da4c368f4722c4572cd49d`: caller durável, transação do comando/fila e destino efetivo do desmame. As 59 provas locais já registradas conservam seus limites; sem certificação de kill real, dispositivos físicos ou convergência remota. C06 heterogêneo permanece [CLOSED / INTEGRATED #260](./SANITARIO_C06_GESTO_HETEROGENEO_20261030.md#estado-integrado--atualização-de-08112026); F24.7 completa não certificada. GATE-03, BLQ-002/003 e rollout mantêm os critérios próprios.
 

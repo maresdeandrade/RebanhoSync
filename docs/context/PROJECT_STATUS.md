@@ -1,9 +1,9 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-11-08
-Baseline integrada consultada: `origin/main@db4c2f21291d8ce8e87af2d0f2de4b1063693620` (#281)
+Atualizado em: 2026-11-11
+Baseline integrada consultada: `main@2f5d74a36666b14893ae904089f19b2cf86c8ef7` (#287)
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no escopo certificado)**.
-Próxima fase de desenvolvimento: **Fase 24 — continuidade pós-#281, sem nova fase. B01/F07 #272 e B02/A05 #274 integrados; [contrato e limites](../architecture/OPERATIONAL_FLOWS.md) preservados. Central Sanitária contextual e incremento UX #278–#281 integrados; convergência com os protótipos e homologação dirigida com V01 real continuam separadas. GATE-03 bloqueado; F24.6A2 sem início; nenhum novo ciclo F24 aberto.**
+Próxima fase de desenvolvimento: **Fase 24 — continuidade pós-#287, sem nova fase. B01/F07 #272 e B02/A05 #274 integrados; [contrato e limites](../architecture/OPERATIONAL_FLOWS.md) preservados. Sanitário #285–#287 integrou a remoção da automação, a execução V3, a triagem proativa e o planejamento manual coletivo; convergência com os protótipos e homologação dirigida com V01 real continuam separadas. GATE-03 bloqueado; F24.6A2 sem início; nenhum novo ciclo F24 aberto.**
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.
@@ -30,7 +30,7 @@ O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é 
 
 ## Estado atual
 
-**Central Sanitária — #273/#275/#277–#281 CLOSED / INTEGRATED (08/11/2026):** catálogo reativo, contexto por animal e refinamentos de avaliação/planejamento integrados. Menu `Sanitário` → `Avaliação sanitária`, `Agenda sanitária`, `Histórico sanitário`, `Catálogo sanitário` e `Conformidade`; avaliação com perspectivas Por animal/Por protocolo, cinco grupos operacionais, revisão de data, contextos pertinentes e prévia automática agrupada. O [manual atualizado](../manuals/screens/SANITARIO.md#central-sanitária-e-filtros) descreve o comportamento implementado; [merges e evidências](../review/CURRENT_PHASE_HANDOFF.md#central-sanitária--integrações-até-281). Nenhuma mudança de elegibilidade/autorização ou homologação V01 real é inferida da compactação visual. F24.7/F24.8, GATE-03 e rollout não são encerrados.
+**Central Sanitária — #273/#275/#277–#287 CLOSED / INTEGRATED (11/11/2026):** catálogo reativo, contexto por animal, triagem proativa e planejamento manual integrados. O #285 removeu as superfícies de geração automática e habilitou a execução factual V3 nos contratos correspondentes; o #286 corrigiu datas civis, agrupamento e expansão paginada da triagem; o #287 adicionou seleção coletiva além dos registros renderizados, prévia explícita e prova triagem → resolução → writer manual → Dexie sem Evento, estoque ou carência. Menu `Sanitário` → `Avaliação sanitária`, `Agenda sanitária`, `Histórico sanitário`, `Catálogo sanitário` e `Conformidade`; avaliação com perspectivas Por animal/Por protocolo, cinco grupos operacionais, revisão de data e contextos pertinentes. O [manual atualizado](../manuals/screens/SANITARIO.md#central-sanitária-e-filtros) descreve o comportamento implementado; [merges e evidências](../review/CURRENT_PHASE_HANDOFF.md#central-sanitária--integrações-até-287). Nenhuma mudança de elegibilidade regulatória, homologação V01 real ou rollout é inferida desses incrementos. F24.7/F24.8, GATE-03 e rollout não são encerrados.
 
 **B02/A05 — CLOSED / INTEGRATED pelo [PR #274](https://github.com/maresdeandrade/RebanhoSync/pull/274):** merge `0673a9747cf6e45bd6da4c368f4722c4572cd49d`; comando neonatal durável e destino efetivo de desmame integrados. As 59 provas locais registradas mantêm transporte simulado; integração não certifica kill real, dispositivos físicos ou convergência remota. As referências anteriores a integração pendente foram superadas.
 

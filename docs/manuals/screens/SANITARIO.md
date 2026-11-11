@@ -1,7 +1,7 @@
 # Manual da Tela — Sanitário
 
-Atualizado em: 2026-11-08
-**Baseline Commit:** `db4c2f21291d8ce8e87af2d0f2de4b1063693620`
+Atualizado em: 2026-11-11
+**Baseline Commit:** `2f5d74a36666b14893ae904089f19b2cf86c8ef7`
 
 ## Para que serve
 
@@ -134,7 +134,9 @@ No menu principal, `Sanitário` abre a Central. As abas disponíveis são:
 * **Por animal:** escolha um animal ou lote para consultar as avaliações sem selecionar previamente um protocolo. Os cinco grupos são `Planejamento disponível`, `Janelas para acompanhamento`, `Agendas existentes`, `Informações insuficientes` e `Restrições e consulta técnica`.
 * **Por protocolo:** selecione protocolo e item para a consulta técnica e a seleção de animais. A troca de perspectiva preserva data e alvo compatíveis, sem transportar a seleção de planejamento.
 * Cada cartão prioriza intervenção/etapa, situação, motivo e ação contextual. Justificativas complementares, contexto, versão e documentos ficam por expansão; avaliações inconclusivas e versões substituídas continuam consultáveis.
-* `Planejar manejo` abre a revisão. **Data de avaliação** e **data planejada** são distintas; a revisão pode apontar incompatibilidade, Agenda equivalente existente ou necessidade de nova avaliação. As condições são revalidadas ao salvar o planejamento.
+* `Planejar manejo` abre a revisão. A seleção pode ser individual ou coletiva por grupo/lote; `Selecionar todos` considera todo o conjunto filtrado, não apenas a página atualmente renderizada.
+* A revisão separa linhas elegíveis, excluídas por janela incompatível e rejeitadas por duplicidade/restrição operacional. **Data de avaliação** e **data planejada** são distintas; as condições são revalidadas ao salvar o planejamento.
+* A confirmação exige remover explicitamente as linhas rejeitadas quando houver alguma. Antes da confirmação não há escrita de Agenda; após a confirmação, o writer manual persiste somente a intenção local. O planejamento não cria Evento, baixa de estoque nem carência ativa.
 
 ### Plano de geração automática
 
