@@ -346,7 +346,7 @@ class MemoryClient {
     const tombstone = text.includes("deleted_at = now()");
     const row = rows.find((r) => r.id === (tombstone ? values[0] : values.at(-1)) && !r.deleted_at);
     if (!row || (tombstone && row.status !== "draft")) return { rows: [], rowCount: 0 };
-    if (tombstone) Object.assign(row, { deleted_at: "2026-09-30", status: "retired", allows_agenda_auto: false });
+    if (tombstone) Object.assign(row, { deleted_at: "2026-09-30", status: "retired" });
     else for (const [, field, position] of text.matchAll(/(\w+) = \$(\d+)/g)) {
       row[field] = decodeJson(values[Number(position) - 1], field);
     }
@@ -996,23 +996,22 @@ describe("sanitario v2 publisher P1", () => {
     expect(findOperation(plan, "product_class_rows", data.product_class_rows[1]).reason).toBe("NOT_A_CLASS_CONFIRMED");
   });
 
-  it.each(["approved_for_catalog", "blocked", "archived"])("protects class curatorial state %s", async (status) => {
-    const data = fixture();
-    const client = await seeded(data);
-    client.rows[tables.product_class_rows][0].curation_status = status;
-    const plan = await buildPlan(client, data);
-    expect(plan.some((op) => op.collection === "product_class_rows" && op.reason === "class_already_curated_or_operational")).toBe(true);
-  });
+	  it.each(["approved_for_catalog", "blocked", "archived"])("protects class curatorial state %s", async (status) => {
+	    const data = fixture();
+	    const client = await seeded(data);
+	    client.rows[tables.product_class_rows][0].curation_status = status;
+	    const plan = await buildPlan(client, data);
+	    expect(plan.some((op) => op.collection === "product_class_rows" && op.reason === "class_already_curated")).toBe(true);
+	  });
 
   it("protects operational classes and existing approved groups/protocols/items", async () => {
     const data = fixture();
     const client = await seeded(data);
-    client.rows[tables.product_class_rows][0].automation_status = "agenda_allowed";
-    client.rows[tables.product_class_group_rows][0].curation_status = "approved_for_catalog";
+	    client.rows[tables.product_class_group_rows][0].curation_status = "approved_for_catalog";
     client.rows[tables.protocol_rows][0].approval_status = "approved";
     client.rows[tables.protocol_item_rows][0].status = "active";
     const plan = await buildPlan(client, data);
-    for (const collection of ["product_class_rows", "product_class_group_rows", "protocol_rows", "protocol_item_rows"]) {
+	    for (const collection of ["product_class_group_rows", "protocol_rows", "protocol_item_rows"]) {
       expect(plan.some((op) => op.collection === collection && op.action === "reject")).toBe(true);
     }
   });
@@ -1093,14 +1092,13 @@ describe("sanitario v2 publisher P1", () => {
     expect(() => assertPublishablePlan([expected[0], expected[0]])).toThrow("UNEXPECTED_CONFLICT");
   });
 
-  it("does not downgrade blocked automation or update a non-draft protocol", async () => {
+	  it("does not update a curated group or a non-draft protocol", async () => {
     const data = fixture();
     const client = await seeded(data);
-    client.rows[tables.product_class_rows][0].automation_status = "blocked";
-    client.rows[tables.product_class_group_rows][0].automation_status = "blocked";
+	    client.rows[tables.product_class_group_rows][0].curation_status = "approved_for_catalog";
     client.rows[tables.protocol_rows][0].status = "active";
     const plan = await buildPlan(client, data);
-    for (const collection of ["product_class_rows", "product_class_group_rows", "protocol_rows"]) {
+	    for (const collection of ["product_class_group_rows", "protocol_rows"]) {
       expect(plan.some((op) => op.collection === collection && op.action === "reject")).toBe(true);
     }
   });
@@ -1269,7 +1267,7 @@ describe("sanitario v2 publisher P1", () => {
       id: otherId, protocol_id: protocol.id, logical_item_key: "raiva_area_risco_anual", version: 1, status: "draft",
     });
     expect(await applyTransactionForTest(client, data)).toEqual({ create: 0, update: 1, skip: 141, reject: 4 });
-    expect(client.rows[tables.protocol_item_rows].find((r) => r.id === otherId)).toMatchObject({ status: "retired", allows_agenda_auto: false });
+    expect(client.rows[tables.protocol_item_rows].find((r) => r.id === otherId)).toMatchObject({ status: "retired" });
     expect(await applyTransactionForTest(client, data)).toEqual({ create: 0, update: 0, skip: 141, reject: 4 });
   });
 
@@ -1333,7 +1331,7 @@ describe("R03 promoted canonical input", () => {
     const client = new MemoryClient();
     expect(await applyTransactionForTest(client, data)).toEqual({ create: 144, update: 0, skip: 0, reject: 4 });
     expect(client.rows.sanitario_protocolo_itens_versions_v2).toHaveLength(20);
-    expect(client.rows.sanitario_protocolo_itens_versions_v2.every((row) => row.status === "draft" && !row.allows_agenda_auto)).toBe(true);
+    expect(client.rows.sanitario_protocolo_itens_versions_v2.every((row) => row.status === "draft")).toBe(true);
     expect(await applyTransactionForTest(client, data)).toEqual({ create: 0, update: 0, skip: 144, reject: 4 });
   });
 });
