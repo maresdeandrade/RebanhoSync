@@ -258,13 +258,17 @@ describe("sanitario v2 local cutover", () => {
       0,
       [ANIMAL_ID],
     );
-    expect(() => buildApplyFactualCoreOperation(
+    const factual = buildApplyFactualCoreOperation(
       createSanitarioV2Identity(tx),
       event(),
       detail(),
       [relation()],
       1,
-    )).toThrow("SANITARIO_V3_EXECUTION_NOT_ENABLED");
+    );
+    expect(factual).toMatchObject({
+      command: "apply_factual_core",
+      expected_revision: 1,
+    });
     const close = buildCloseAgendaOperation(
       createSanitarioV2Identity(tx),
       closure(),
