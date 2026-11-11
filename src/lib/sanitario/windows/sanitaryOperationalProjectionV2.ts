@@ -37,8 +37,8 @@ export function reviewSanitaryPlanningDateV2(input: {
 }): SanitaryDateReviewV2[] {
   const evaluations = new Map<string, SanitaryProtocolWindowRowV2[]>();
   return input.rows.map<SanitaryDateReviewV2>(original => {
-    const key = JSON.stringify([original.protocolId, original.itemId, original.generationMode]);
-    if (!evaluations.has(key)) evaluations.set(key, buildSanitaryProtocolWindowV2({ source: input.source, protocolId: original.protocolId, itemId: original.itemId, evaluatedAt: input.plannedFor, operationalContext: input.context, generationMode: original.generationMode })?.rows ?? []);
+    const key = JSON.stringify([original.protocolId, original.itemId]);
+    if (!evaluations.has(key)) evaluations.set(key, buildSanitaryProtocolWindowV2({ source: input.source, protocolId: original.protocolId, itemId: original.itemId, evaluatedAt: input.plannedFor, operationalContext: input.context })?.rows ?? []);
     const fresh = evaluations.get(key)!.find(row => row.animalId === original.animalId);
     return reviewPlanningSelection(original, fresh);
   });

@@ -1,6 +1,6 @@
 {
   "artifact": "sanitario_protocols_v2_canonical_payload",
-  "artifact_version": "13.0.0-canonical-contract",
+  "artifact_version": "14.0.0-canonical-contract",
   "canonical_representation": "payload.sanitario_*_v2.rows",
   "source_artifacts": [
     "docs/review/evidence/PAYLOAD_JSON_PROTOCOLOS_V2_12F9.json",
@@ -1073,8 +1073,6 @@
           ],
           "metadata": {
             "curationStatus": "needs_review",
-            "automationStatus": "manual_only",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "target_sex": "femea",
             "target_aptitudes": [
@@ -1148,8 +1146,6 @@
           ],
           "metadata": {
             "curationStatus": "needs_review",
-            "automationStatus": "preview_allowed",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "sourceGaps": [
               "source_gap_age_product",
@@ -1211,8 +1207,6 @@
           ],
           "metadata": {
             "curationStatus": "needs_review",
-            "automationStatus": "manual_only",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "original_legal_status": "condicional_regional",
             "sourceGaps": [
@@ -1222,7 +1216,6 @@
             ],
             "restrictions": [
               "regional_risk_context_required",
-              "no_agenda_auto",
               "product_real_required_for_execution",
               "withdrawal_requires_product_label"
             ],
@@ -1303,8 +1296,6 @@
           ],
           "metadata": {
             "curationStatus": "needs_review",
-            "automationStatus": "manual_only",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "sourceGaps": [
               "source_gap_risk_product",
@@ -1352,8 +1343,6 @@
           ],
           "metadata": {
             "curationStatus": "needs_review",
-            "automationStatus": "preview_allowed",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "sourceGaps": [
               "source_gap_product_withdrawal_snapshot",
@@ -1394,8 +1383,6 @@
           ],
           "metadata": {
             "curationStatus": "needs_review",
-            "automationStatus": "preview_allowed",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "original_legal_status": "recomendado_tecnico_regional",
             "sourceGaps": [
@@ -1445,8 +1432,6 @@
           ],
           "metadata": {
             "curationStatus": "needs_review",
-            "automationStatus": "manual_only",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "original_legal_status": "situacional_tecnico",
             "sourceGaps": [
@@ -1485,8 +1470,6 @@
           ],
           "metadata": {
             "curationStatus": "needs_review",
-            "automationStatus": "manual_only",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "sourceGaps": [
               "source_gap_executed_product_label",
@@ -1523,8 +1506,6 @@
           ],
           "metadata": {
             "curationStatus": "needs_review",
-            "automationStatus": "manual_only",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "original_legal_status": "situacional_tecnico",
             "target_sex": "femea",
@@ -1568,8 +1549,6 @@
           ],
           "metadata": {
             "curationStatus": "archived",
-            "automationStatus": "blocked",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "archived": true,
             "sourceGaps": [
@@ -1591,8 +1570,7 @@
       "target_table": "sanitario_protocolo_itens_versions_v2",
       "defaults": {
         "version": 1,
-        "status": "draft",
-        "allows_agenda_auto": false
+        "status": "draft"
       },
       "rows": [
         {
@@ -1722,8 +1700,6 @@
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "manual_only",
-              "agenda_allowed": false,
               "approved_for_catalog": false,
               "supersedes": {
                 "id": "ce2995b6-098e-4c67-aee2-8e3325c9ce53",
@@ -1732,7 +1708,6 @@
               }
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": true,
           "status": "draft",
           "id": "22508d25-1b95-44b2-b2a3-50d57cb8ba7d",
@@ -1814,12 +1789,9 @@
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "preview_allowed",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "b846a0ae-481e-47b3-a9ce-a3f43afb0484",
@@ -1905,8 +1877,6 @@
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "preview_allowed",
-              "agenda_allowed": false,
               "approved_for_catalog": false,
               "supersedes": {
                 "id": "13340ea6-bc82-434a-a2a1-45548a9f4528",
@@ -1915,7 +1885,6 @@
               }
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "c0aaa4e1-458c-4121-a34b-a9a7a996eec1",
@@ -1999,12 +1968,9 @@
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "preview_allowed",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "136af00d-eeeb-44b9-87c4-c153cc1fc28b",
@@ -2080,8 +2046,7 @@
             "requires_focus_or_perifocus_context",
             "requires_regional_overlay",
             "source_gap_product_withdrawal_snapshot",
-            "requires_executed_product_snapshot",
-            "no_agenda_auto"
+            "requires_executed_product_snapshot"
           ],
           "snapshot_template": {
             "executionProductPolicy": "required_at_execution",
@@ -2095,17 +2060,13 @@
               "withdrawal": "by_executed_product_snapshot"
             },
             "restrictions": [
-              "regional_risk_context_required",
-              "no_agenda_auto"
+              "regional_risk_context_required"
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "manual_only",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "34b2ac38-25cb-4cef-9885-7b8bd027495d",
@@ -2192,8 +2153,7 @@
             "requires_focus_or_perifocus_context",
             "target_30_days_conservative_no_grace_window",
             "source_gap_product_withdrawal_snapshot",
-            "requires_executed_product_snapshot",
-            "no_agenda_auto"
+            "requires_executed_product_snapshot"
           ],
           "snapshot_template": {
             "executionProductPolicy": "required_at_execution",
@@ -2207,17 +2167,13 @@
             },
             "restrictions": [
               "regional_risk_context_required",
-              "previous_dose_required",
-              "no_agenda_auto"
+              "previous_dose_required"
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "manual_only",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "f62a7a12-0604-4539-8245-5564e4e3592e",
@@ -2295,8 +2251,7 @@
             "requires_focus_or_perifocus_context",
             "annual_if_risk_area",
             "source_gap_product_withdrawal_snapshot",
-            "requires_executed_product_snapshot",
-            "no_agenda_auto"
+            "requires_executed_product_snapshot"
           ],
           "snapshot_template": {
             "executionProductPolicy": "required_at_execution",
@@ -2309,17 +2264,13 @@
               "withdrawal": "by_executed_product_snapshot"
             },
             "restrictions": [
-              "regional_risk_context_required",
-              "no_agenda_auto"
+              "regional_risk_context_required"
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "manual_only",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "e5430f23-2f84-4812-9caa-85bb6596304d",
@@ -2396,12 +2347,9 @@
             },
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "manual_only",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "017e2c3e-fac6-45f0-ad63-e1795fb40730",
@@ -2481,12 +2429,9 @@
             },
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "blocked",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "77c52cb2-069e-4d84-89d4-1cb26236ab5a",
@@ -2567,12 +2512,9 @@
             },
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "manual_only",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "9791a745-6d5d-4a72-9a14-d7e0b9a99626",
@@ -2651,12 +2593,9 @@
             },
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "preview_allowed",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "2a35a390-7e3a-4fa1-944c-9118ddeaaebe",
@@ -2739,8 +2678,6 @@
             },
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "preview_allowed",
-              "agenda_allowed": false,
               "approved_for_catalog": false,
               "supersedes": {
                 "id": "943f74f0-7a82-4dfc-b3f5-8cd35d5bca01",
@@ -2749,7 +2686,6 @@
               }
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "26b7e5bb-8f0d-4ef7-a757-a76e621df0e4",
@@ -2816,13 +2752,10 @@
             ],
             "metadata": {
               "curationStatus": "archived",
-              "automationStatus": "blocked",
-              "agenda_allowed": false,
               "approved_for_catalog": false,
               "archived": true
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "dd09c61e-6686-4b1c-99b7-ef9c3f15dc6b",
@@ -2889,13 +2822,10 @@
             ],
             "metadata": {
               "curationStatus": "archived",
-              "automationStatus": "blocked",
-              "agenda_allowed": false,
               "approved_for_catalog": false,
               "archived": true
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "fa867ec0-acdf-4b8c-a12e-2620faca4e08",
@@ -2973,12 +2903,9 @@
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "preview_allowed",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "38c59c96-d854-4583-8283-02e4bd3065a2",
@@ -3056,12 +2983,9 @@
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "preview_allowed",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "5501697e-d3de-499a-9bdb-405b277675c9",
@@ -3139,12 +3063,9 @@
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "preview_allowed",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "f8d9ae48-213d-44b0-919e-14cc12e828c5",
@@ -3215,12 +3136,9 @@
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "manual_only",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": true,
           "status": "draft",
           "id": "296b0b88-3105-471b-89b3-e4796bd74d47",
@@ -3290,13 +3208,10 @@
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "manual_only",
-              "agenda_allowed": false,
               "approved_for_catalog": false,
               "item_status_decision": "estrategico por ser dose unica pre-confinamento/pasto vedado; continua sem agenda automatica"
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": false,
           "status": "draft",
           "id": "abf01867-fe1c-4638-8d4c-80929bbe0e00",
@@ -3370,12 +3285,9 @@
             ],
             "metadata": {
               "curationStatus": "needs_review",
-              "automationStatus": "manual_only",
-              "agenda_allowed": false,
               "approved_for_catalog": false
             }
           },
-          "allows_agenda_auto": false,
           "requires_mv_responsavel": true,
           "status": "draft",
           "id": "53006754-98ea-4ad0-8cf1-a20b8898f84b",
@@ -3400,7 +3312,6 @@
             "bubalino"
           ],
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "product_specific_composition",
@@ -3429,7 +3340,6 @@
             "bovino"
           ],
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "product_specific_composition",
@@ -3459,7 +3369,6 @@
             "bubalino"
           ],
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "requires_regional_risk_context",
@@ -3488,7 +3397,6 @@
             "bovino"
           ],
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "product_specific_composition",
@@ -3517,7 +3425,6 @@
             "bovino"
           ],
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "product_specific_dose",
@@ -3546,7 +3453,6 @@
             "bovino"
           ],
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "product_specific_dose",
@@ -3575,7 +3481,6 @@
             "bovino"
           ],
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "product_specific_dose",
@@ -3604,7 +3509,6 @@
             "bovino"
           ],
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "product_specific_composition",
@@ -3635,7 +3539,6 @@
           "fazenda_id": null,
           "requires_mv_for_other_class": true,
           "curation_status": "needs_review",
-          "automation_status": "preview_allowed",
           "limitations": [
             "requires_real_product",
             "requires_weight",
@@ -3644,7 +3547,6 @@
           ],
           "metadata": {
             "usage": "recria maio/julho/setembro",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "principios_ativos_candidatos": [
               "lactonas_macrociclicas",
@@ -3671,7 +3573,6 @@
           "fazenda_id": null,
           "requires_mv_for_other_class": true,
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "requires_weight_or_label",
@@ -3680,7 +3581,6 @@
           ],
           "metadata": {
             "usage": "pre-desmama situacional",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "principios_ativos_candidatos": [
               "lactonas_macrociclicas",
@@ -3707,7 +3607,6 @@
           "fazenda_id": null,
           "requires_mv_for_other_class": true,
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "requires_weight",
@@ -3716,7 +3615,6 @@
           ],
           "metadata": {
             "usage": "pre-confinamento/pasto vedado",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "principios_ativos_candidatos": [
               "lactonas_macrociclicas",
@@ -3743,7 +3641,6 @@
           "fazenda_id": null,
           "requires_mv_for_other_class": true,
           "curation_status": "needs_review",
-          "automation_status": "manual_only",
           "limitations": [
             "requires_real_product",
             "milk_requires_label",
@@ -3752,7 +3649,6 @@
           ],
           "metadata": {
             "usage": "matrizes pre-parto/periparto",
-            "agenda_allowed": false,
             "approved_for_catalog": false,
             "principios_ativos_candidatos": [
               "lactonas_macrociclicas",

@@ -163,7 +163,6 @@ function protocolItem(
       species_authorization: [labelSource],
     },
     limitations: [],
-    allowsAgendaAuto: true,
     status: "active",
     ...overrides,
   };
@@ -275,23 +274,11 @@ describe("sanitarySnapshotBuildersV2", () => {
     expectIssue(result, "planned_product_mismatch");
   });
 
-  it("allowsAgendaAuto=false bloqueia snapshot de agenda", () => {
-    const result = buildAgendaTechnicalSnapshotV2(
-      agendaInput({
-        protocolItem: protocolItem({ allowsAgendaAuto: false }),
-      }),
-    );
-
-    expect(result.ok).toBe(false);
-    expectIssue(result, "protocol_item_disallows_auto_agenda");
-  });
-
-  it("item somente_alerta bloqueia agenda automatica", () => {
+  it("item somente_alerta bloqueia snapshot de planejamento", () => {
     const result = buildAgendaTechnicalSnapshotV2(
       agendaInput({
         protocolItem: protocolItem({
           itemStatus: "somente_alerta",
-          allowsAgendaAuto: false,
         }),
       }),
     );
@@ -300,12 +287,11 @@ describe("sanitarySnapshotBuildersV2", () => {
     expectIssue(result, "protocol_item_not_schedulable");
   });
 
-  it("item bloqueado bloqueia agenda automatica", () => {
+  it("item bloqueado bloqueia snapshot de planejamento", () => {
     const result = buildAgendaTechnicalSnapshotV2(
       agendaInput({
         protocolItem: protocolItem({
           itemStatus: "bloqueado",
-          allowsAgendaAuto: false,
         }),
       }),
     );
@@ -314,7 +300,7 @@ describe("sanitarySnapshotBuildersV2", () => {
     expectIssue(result, "protocol_item_not_schedulable");
   });
 
-  it("NAO_AUTORIZADO bloqueia agenda automatica", () => {
+  it("NAO_AUTORIZADO bloqueia snapshot por autorização técnica", () => {
     const notAuthorized = authorization({ authorizationStatus: "NAO_AUTORIZADO" });
 
     const result = buildAgendaTechnicalSnapshotV2(

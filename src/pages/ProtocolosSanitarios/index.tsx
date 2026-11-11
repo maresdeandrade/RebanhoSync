@@ -10,7 +10,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
 import { SanitaryCompliancePanelV2 } from "@/components/sanitario/SanitaryCompliancePanelV2";
 import { SanitaryContextualNeedsPanelV2 } from "@/components/sanitario/SanitaryContextualNeedsPanelV2";
-import { SanitaryAutomaticPlanPanelV2 } from "@/components/sanitario/SanitaryAutomaticPlanPanelV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -70,8 +69,6 @@ function currentFarmSource(source: SanitaryProtocolWindowSourceV2 | undefined, f
 function responsibleName(user: { email?: string; id: string } | null) {
   return user?.email ?? user?.id ?? null;
 }
-
-function automationActor(user: { id: string } | null) { return user?.id ?? ""; }
 
 function sourceExecutedEvents(source: SanitaryProtocolWindowSourceV2 | undefined) {
   return source?.executedEvents ?? [];
@@ -281,14 +278,12 @@ const ProtocolosSanitarios = () => {
     rows: SanitaryProtocolWindowRowV2[],
     plannedFor: string,
     operationalContext: SanitaryOperationalContextV2,
-    generationMode: "manual" | "automatic" = "manual",
   ) => {
     const results = await createGroupedManualSanitaryAgendasV2({
       rows,
       fazendaId: activeFarmId,
       plannedFor,
       operationalContext,
-      generationMode,
       confirmed: true,
       createdBy: user?.id,
     });
@@ -330,9 +325,8 @@ const ProtocolosSanitarios = () => {
       />
 
       <details className="space-y-3 rounded-lg border border-border p-3">
-        <summary className="cursor-pointer text-sm font-medium">Catálogo e configuração automática</summary>
+        <summary className="cursor-pointer text-sm font-medium">Catálogo sanitário</summary>
         <CatalogRefreshControls refreshing={refreshing} refresh={refresh} refreshError={refreshError} />
-        <SanitaryAutomaticPlanPanelV2 key={activeFarmId} fazendaId={activeFarmId} actorId={automationActor(user)} source={currentFarmSource(windowSource, activeFarmId)} />
       </details>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="h-auto flex-wrap justify-start">

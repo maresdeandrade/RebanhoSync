@@ -34,6 +34,7 @@ import {
   readMaternalVaccinationEvidenceV2,
   type SanitaryExecutedHistoryV2,
   type SanitaryProtocolPrecheckResultV2,
+  type SanitaryTemporalWindowV2,
 } from "@/lib/sanitario/checks/sanitaryProtocolPrecheckV2";
 import type { SanitaryEligibilityStatus } from "@/lib/sanitario/eligibility/sanitaryEligibility";
 import { getLotSanitaryExecutedHistoryV2 } from "@/lib/sanitario/history/sanitaryExecutedHistoryV2";
@@ -49,19 +50,10 @@ import {
 } from "@/lib/sanitario/preview/sanitaryWindowPlanningPreviewV2";
 import {
   sanitaryPlanningKindV2,
-  type SanitaryGenerationModeV2,
   type SanitaryPlanningKindV2,
 } from "../agenda/sanitaryPlanningPolicyV2";
 import { identifySanitaryMultiProtocolGroupsV2 } from "../preview/sanitaryMultiProtocolPlanningV2";
-import {
-  readSanitaryAutomationPlanV2,
-  resolveSanitaryAutomationRuleV2,
-} from "../agenda/sanitaryAutomationPlanV2";
-import {
-  sanitaryAutomaticIdentityV2,
-  suppressedSanitaryAutomaticIntentV2,
-  sanitaryAgendaFromOtherEpisodeV2,
-} from "../agenda/sanitaryAutomaticIdentityV2";
+import { sanitaryAgendaFromOtherEpisodeV2 } from "../agenda/sanitaryAgendaEpisodeV2";
 import {
   sanitaryContextualPlanningBlockersV2,
   type SanitaryRuleContextDetailsV2,
@@ -160,12 +152,12 @@ export type SanitaryProtocolWindowRowV2 = {
   blockers: string[];
   documentaryPending: boolean;
   documentaryPendingReasons: string[];
+  temporalWindow?: SanitaryTemporalWindowV2;
   alreadyPlanned: boolean;
   plannedFor: string | null;
   canSelect: boolean;
   precheck: SanitaryProtocolPrecheckResultV2;
   planningKind?: SanitaryPlanningKindV2;
-  generationMode?: SanitaryGenerationModeV2;
   contextResolution?: SanitaryAnimalContextResolutionV2;
 };
 
@@ -522,7 +514,6 @@ export function buildSanitaryProtocolWindowV2(input: {
   itemId: string;
   evaluatedAt: string;
   operationalContext?: SanitaryOperationalContextV2;
-  generationMode?: SanitaryGenerationModeV2;
   filters?: Partial<SanitaryProtocolWindowFiltersV2>;
 }): SanitaryProtocolWindowResultV2 | null {
   const protocol = input.source.catalog.protocols.find(
@@ -591,7 +582,6 @@ export function buildSanitaryProtocolWindowV2(input: {
             }) ??
             operationalContext.maternalVaccinationsByAnimalId?.[animal.id],
           rabiesManualPlanning:
-            (input.generationMode ?? "manual") === "manual" &&
             (
               item.snapshotTemplate.metadata as
                 | Record<string, unknown>
@@ -616,7 +606,6 @@ export function buildSanitaryProtocolWindowV2(input: {
       const planningBlockers = sanitaryPlanningBlockersV2(
         protocol,
         item,
-        input.generationMode,
       );
       const planningKind = sanitaryPlanningKindV2(item);
       if (item.eligibilityRule.requires_pregnancy_or_peripartum_context && contextResolution.reproduction.status !== "known" && !contextResolution.genericAssessment) {
@@ -689,6 +678,7 @@ export function buildSanitaryProtocolWindowV2(input: {
         blockers: [...result.blockers, ...planningBlockers],
         documentaryPending: result.documentaryPending,
         documentaryPendingReasons: result.documentaryPendingReasons,
+        temporalWindow: result.temporalWindow,
         alreadyPlanned: Boolean(plannedFor),
         plannedFor: plannedFor ?? null,
         canSelect:
@@ -699,7 +689,6 @@ export function buildSanitaryProtocolWindowV2(input: {
           !plannedFor,
         precheck: result,
         planningKind,
-        generationMode: input.generationMode ?? "manual",
         contextResolution,
       };
       return row;
@@ -995,67 +984,7 @@ type GroupedSanitaryPlanningInputV2 = {
   confirmed?: boolean;
   operationalContext?: SanitaryOperationalContextV2;
   createdBy?: string;
-  generationMode?: SanitaryGenerationModeV2;
-  planRevision?: number;
 };
-
-function authorizeAutomaticPlanInput(
-  input: GroupedSanitaryPlanningInputV2,
-  source: SanitaryProtocolWindowSourceV2,
-) {
-  if (input.planRevision === undefined) return input;
-  const plan = readSanitaryAutomationPlanV2(source.farmConfig);
-  if (!plan?.enabled || plan.revision !== input.planRevision)
-    throw new Error("Plano desativado ou alterado. Reavalie.");
-  assertAutomaticSelection(input, source, plan.rules);
-  const context = plan.ruleContexts?.[input.rows[0].itemId] ?? plan.context;
-  return {
-    ...input,
-    confirmed: true,
-    generationMode: "automatic" as const,
-    operationalContext: context,
-    createdBy: plan.confirmedBy,
-  };
-}
-
-function assertAutomaticSelection(
-  input: GroupedSanitaryPlanningInputV2,
-  source: SanitaryProtocolWindowSourceV2,
-  rules: ReturnType<typeof readSanitaryAutomationPlanV2>["rules"],
-) {
-  const itemIds = new Set(
-    input.rows.map((row) => `${row.protocolId}|${row.itemId}`),
-  );
-  if (itemIds.size !== 1)
-    throw new Error(
-      "Reavalie cada regra automática com seu contexto específico.",
-    );
-  const first = input.rows[0];
-  const rule = rules.find(
-    (entry) =>
-      entry.itemId === first.itemId && entry.protocolId === first.protocolId,
-  );
-  if (!rule || !resolveSanitaryAutomationRuleV2(source.catalog, rule))
-    throw new Error("Regra fora do plano ou versão alterada.");
-}
-
-function suppressedAutomaticRow(
-  input: GroupedSanitaryPlanningInputV2,
-  source: SanitaryProtocolWindowSourceV2,
-  row: SanitaryProtocolWindowRowV2,
-) {
-  if (input.planRevision === undefined) return false;
-  const identity = sanitaryAutomaticIdentityV2(
-    source,
-    row,
-    input.plannedFor,
-    input.operationalContext,
-  );
-  return (
-    identity.completed ||
-    suppressedSanitaryAutomaticIntentV2(source, row, identity.key)
-  );
-}
 
 function existingAgendaForRow(
   source: SanitaryProtocolWindowSourceV2,
@@ -1105,10 +1034,8 @@ function revalidatePlanningSelection(
       itemId: row.itemId,
       evaluatedAt: input.plannedFor,
       operationalContext: input.operationalContext,
-      generationMode: input.generationMode,
     })?.rows.find((entry) => entry.animalId === row.animalId);
     assertFreshPlanningRow(row, fresh);
-    if (suppressedAutomaticRow(input, source, fresh)) continue;
     if (fresh.alreadyPlanned) {
       const agenda = existingAgendaForRow(source, fresh);
       if (agenda)
@@ -1139,12 +1066,6 @@ function planningTargets(
   command: SanitaryAgendaMaterializationCommand,
 ) {
   const first = rows[0];
-  if (input.planRevision !== undefined)
-    return rows.map((row) => ({
-      scope: "animal" as const,
-      id: row.animalId,
-      fazendaId: input.fazendaId,
-    }));
   const target = first.lotId
     ? {
         scope: "lote" as const,
@@ -1167,30 +1088,6 @@ function planningTargets(
         id: row.animalId,
         fazendaId: input.fazendaId,
       }));
-}
-
-function automaticAgendaIdentity(
-  input: GroupedSanitaryPlanningInputV2,
-  source: SanitaryProtocolWindowSourceV2,
-  row: SanitaryProtocolWindowRowV2,
-) {
-  if (input.planRevision === undefined)
-    return { metadata: {}, clientOpId: clientOperationId() };
-  const identity = sanitaryAutomaticIdentityV2(
-    source,
-    row,
-    input.plannedFor,
-    input.operationalContext,
-  );
-  return {
-    metadata: {
-      automationKey: identity.key,
-      automationWindowKey: identity.windowKey,
-      automationPlanRevision: input.planRevision,
-      planningDedupKey: identity.key,
-    },
-    clientOpId: identity.key,
-  };
 }
 
 async function persistPlanningCommand(
@@ -1220,11 +1117,7 @@ async function persistPlanningCommand(
     const targetRows = agendaTarget.scope === "animal" ? rows.filter((row) => row.animalId === agendaTarget.id) : rows;
     const contexts = targetRows.map((row) => [row.animalId, row.contextResolution?.context ?? input.operationalContext ?? EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2] as const);
     const sharedContext = contexts.every(([, context]) => JSON.stringify(context) === JSON.stringify(contexts[0][1])) ? contexts[0][1] : undefined;
-    const identity = automaticAgendaIdentity(
-      input,
-      source,
-      rows.find((row) => row.animalId === agendaTarget.id) ?? first,
-    );
+    const clientOpId = clientOperationId();
     results.push(
       await createManualSanitaryAgendaV2(
         {
@@ -1236,7 +1129,6 @@ async function persistPlanningCommand(
             actionType: item.actionType,
             plannedProductId: item.productId,
             planningKind: first.planningKind,
-            generationMode: input.generationMode ?? "manual",
             planningEvidence: {
               itemVersion: item.version,
               planningScope: (
@@ -1252,7 +1144,6 @@ async function persistPlanningCommand(
               ...(!sharedContext ? { operationalContextsByAnimalId: Object.fromEntries(contexts) } : {}),
             },
             planningDedupKey: `${input.fazendaId}|${command.dedupKey}|target:${agendaTarget.id}`,
-            ...identity.metadata,
             familyCode: first.precheck.familyCode,
             itemKey: first.itemKey,
             itemLabel:
@@ -1272,7 +1163,7 @@ async function persistPlanningCommand(
           },
           plannedFor: command.scheduledDate,
           createdBy: input.createdBy,
-          clientOpId: identity.clientOpId,
+          clientOpId,
           confirmed: input.confirmed,
           syncContext: readSanitaryPlanningSyncContextV2(),
         },
@@ -1286,7 +1177,7 @@ async function persistPlanningCommand(
 export async function createGroupedManualSanitaryAgendasV2(
   input: GroupedSanitaryPlanningInputV2,
 ): Promise<ManualSanitaryAgendaResultV2[]> {
-  if (!input.confirmed && input.planRevision === undefined)
+  if (!input.confirmed)
     throw new Error("Revise e confirme o planejamento antes de salvar.");
   if (!input.fazendaId || !input.rows.length)
     throw new Error("Selecione fazenda e animais.");
@@ -1318,9 +1209,8 @@ export async function createGroupedManualSanitaryAgendasV2(
     ],
     async () => {
       const source = await readSanitaryProtocolWindowSourceV2(input.fazendaId);
-      const authorizedInput = authorizeAutomaticPlanInput(input, source);
       const { selected, reused } = revalidatePlanningSelection(
-        authorizedInput,
+        input,
         source,
       );
       const materialization = buildSanitaryWindowPlanningPreviewV2({
@@ -1333,7 +1223,7 @@ export async function createGroupedManualSanitaryAgendasV2(
       for (const command of materialization.commands) {
         results.push(
           ...(await persistPlanningCommand(
-            authorizedInput,
+            input,
             source,
             selected,
             command,

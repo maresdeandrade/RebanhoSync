@@ -1,22 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  sanitaryAutomaticPlanningBlockersV2,
-  sanitaryHasNoAgendaAutoV2,
   sanitaryPlanningKindV2,
 } from "../sanitaryPlanningPolicyV2";
 import { identifySanitaryMultiProtocolGroupsV2 } from "../../preview/sanitaryMultiProtocolPlanningV2";
 import type {
   SanitaryProtocolItemV2ReadModel,
-  SanitaryProtocolV2ReadModel,
 } from "../../catalog/sanitaryProtocolCatalogV2";
 import type { SanitarioProdutoLocalV2 } from "@/lib/offline/types";
 import { sanitaryProtocolExecutionRejectionsV2 } from "../../execution/sanitaryProtocolExecutionAuthorizationV2";
 
-const approvedProtocol = {
-  status: "active",
-  approvalStatus: "approved",
-  metadata: {},
-} as SanitaryProtocolV2ReadModel;
 const fieldSource = (field: string) => [
   {
     kind: "bula",
@@ -49,7 +41,6 @@ function fixtureItem(protocolId: string): SanitaryProtocolItemV2ReadModel {
     ),
     limitations: [],
     snapshotTemplate: {},
-    allowsAgendaAuto: true,
   } as SanitaryProtocolItemV2ReadModel;
 }
 const product = {
@@ -66,33 +57,6 @@ describe("política A–E", () => {
     const agenda = { protocol_item_snapshot: { planningKind: "avaliacao_manejo_generica" }, metadata: {} } as import("@/lib/offline/types").SanitarioAgendaLocalV2;
     expect(sanitaryProtocolExecutionRejectionsV2(agenda, undefined, undefined)).toContain("generic_agenda_requires_explicit_scheme_revalidation");
     expect(sanitaryProtocolExecutionRejectionsV2(agenda, undefined, undefined, "MG", "executed_fact")).not.toContain("generic_agenda_requires_explicit_scheme_revalidation");
-  });
-  it.each([
-    "raiva_primovac_dose1",
-    "raiva_primovac_reforco_30d",
-    "raiva_reforco_anual_area_risco",
-  ])(
-    "%s mantém no_agenda_auto mesmo com allowsAgendaAuto verdadeiro",
-    (logicalItemKey) => {
-      const item = {
-        ...fixtureItem("raiva"),
-        logicalItemKey,
-        limitations: ["no_agenda_auto"],
-      };
-      expect(sanitaryHasNoAgendaAutoV2(item)).toBe(true);
-      expect(
-        sanitaryAutomaticPlanningBlockersV2(approvedProtocol, item).join(" "),
-      ).toMatch(/no_agenda_auto/);
-    },
-  );
-  it("restrição no snapshot tem precedência e não é substituída por contexto", () => {
-    const item = {
-      ...fixtureItem("raiva"),
-      snapshotTemplate: { restrictions: ["no_agenda_auto"] },
-    };
-    expect(
-      sanitaryAutomaticPlanningBlockersV2(approvedProtocol, item),
-    ).not.toEqual([]);
   });
   it("classifica avaliação genérica sem inferir um produto/esquema", () => {
     const item = {

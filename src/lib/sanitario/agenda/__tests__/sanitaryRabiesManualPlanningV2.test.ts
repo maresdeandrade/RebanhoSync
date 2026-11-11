@@ -23,8 +23,8 @@ describe("consulta e planejamento manual nacional de raiva", () => {
     const config = { fazenda_id: "farm-a", uf: "XY", payload: { activated_template_slugs: ["raiva-herbivoros"] } } as unknown as FazendaSanidadeConfig;
     const resolve = (fazendaId = "farm-a", municipality = "Cidade cadastrada", evaluatedAt = "2026-10-22") =>
       resolveSanitaryRabiesRegionalContextV2({ protocol, config, fazendaId, municipality, evaluatedAt });
-    expect(resolve()).toMatchObject({ adopted: true, coverage: "contextual_rule_available", mandatory: null, allowsAgendaAuto: false });
-    expect(resolve("farm-b")).toMatchObject({ adopted: false, coverage: "unresolved", allowsAgendaAuto: false });
+    expect(resolve()).toMatchObject({ adopted: true, coverage: "contextual_rule_available", mandatory: null });
+    expect(resolve("farm-b")).toMatchObject({ adopted: false, coverage: "unresolved" });
     expect(resolve("farm-a", "Outro município").coverage).toBe("unresolved");
     expect(resolve("farm-a", "Cidade cadastrada", "2027-01-01").coverage).toBe("unresolved");
   });

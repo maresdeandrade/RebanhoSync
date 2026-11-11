@@ -1,5 +1,4 @@
 import { allocateSanitarySequenceV3 } from "./sanitaryCollaborationV3";
-import { requireSanitaryAdmissionV3 } from "@/lib/sanitario/execution/sanitaryAdmissionV3";
 import { readWithdrawalEvidenceCatalogV2 } from "./withdrawalEvidenceCatalogV2";
 import { buildInventoryCostSnapshot } from "@/lib/inventory/costing";
 import { env } from "@/lib/env";
@@ -702,16 +701,6 @@ export async function executeSanitaryAgendaV2(
   input: ExecuteSanitaryAgendaInputV2,
   localDb: SanitaryAgendaExecutionDbV2 = defaultDb,
 ): Promise<ExecuteSanitaryAgendaResultV2> {
-  if (!input.animalIds)
-    requireSanitaryAdmissionV3({
-      intent: "agenda_execution",
-      fazendaId: input.fazendaId,
-      agendaId: input.agendaId,
-      clientOpId: input.clientOpId,
-      clientTxId: input.clientOpId,
-      domainOpId: input.clientOpId,
-      payload: {},
-    });
   const basicValidation = validateExecutionInput(input);
   if (!basicValidation.ok || !basicValidation.executedAt) {
     throw new Error(

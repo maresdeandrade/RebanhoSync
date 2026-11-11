@@ -19,6 +19,16 @@ const paths = {
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const stable = (value) => Array.isArray(value) ? `[${value.map(stable).join(",")}]` :
   value && typeof value === "object" ? `{${Object.keys(value).sort().map(k => `${JSON.stringify(k)}:${stable(value[k])}`).join(",")}}` : JSON.stringify(value);
+const removedAgendaAutomationFields = new Set(["allows_agenda_auto", "allowsAgendaAuto", "automation_status", "automationStatus", "agenda_allowed"]);
+function withoutAgendaAutomation(value) {
+  if (Array.isArray(value)) return value.map(withoutAgendaAutomation);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => !removedAgendaAutomationFields.has(key))
+    .map(([key, child]) => [key, ["limitations", "restrictions"].includes(key) && Array.isArray(child)
+      ? child.filter(item => item !== "no_agenda_auto").map(withoutAgendaAutomation)
+      : withoutAgendaAutomation(child)]));
+}
 export const classDeltaDigest = (packet) => sha(stable({ payload: packet.payload, baseline: packet.baseline,
   protected: packet.protected, inputs: packet.inputs }));
 
@@ -33,9 +43,9 @@ export function prepareClassDelta(canonical, previews, baseline, technical, inpu
     return { ...row, curation_status: proposal.proposed_curation_status };
   });
   const sourceIds = new Set(previews.source_rows_reused.map(s => s.id));
-  const products = original.product_rows.filter(p => previews.product_source_rows_proposed.some(l => l.product_id === p.id));
+  const products = original.product_rows.filter(p => previews.product_source_rows_proposed.some(l => l.product_id === p.id)).map(withoutAgendaAutomation);
   const protocols = baseline.protocols.filter(p => candidates.some(d => d.protocol_id === p.id))
-    .map(p => ({ ...p, protocol_key: p.family_code }));
+    .map(p => ({ ...withoutAgendaAutomation(p), protocol_key: p.family_code }));
   const payload = Object.fromEntries(Object.keys(original).filter(k => k !== "memberRejections").map(k => [k, []]));
   Object.assign(payload, {
     source_rows: technical.technical_sources.sources.filter(s => sourceIds.has(s.id)),
@@ -48,10 +58,11 @@ export function prepareClassDelta(canonical, previews, baseline, technical, inpu
       product_key: products.find(p => p.id === link.product_id).product_key,
       source_key: previews.source_rows_reused.find(s => s.id === link.source_id).source_key,
     })),
-    protocol_item_rows: candidates.map(d => ({ ...d.proposed_item,
-      protocol_key: protocols.find(p => p.id === d.protocol_id).protocol_key,
-      class_key: d.proposed_item.product_class,
-    })),
+    protocol_item_rows: candidates.map(d => {
+      const item = withoutAgendaAutomation(d.proposed_item);
+      return { ...item, protocol_key: protocols.find(p => p.id === d.protocol_id).protocol_key,
+        class_key: d.proposed_item.product_class };
+    }),
   });
   const packet = {
     artifact: "sanitario_protocols_v2_incremental_delta", artifact_version: CANONICAL_ARTIFACT_VERSION,
@@ -63,11 +74,11 @@ export function prepareClassDelta(canonical, previews, baseline, technical, inpu
       source_rows: payload.source_rows,
       product_rows: products,
       protocol_rows: protocols,
-      product_class_rows: classes.map(c => original.product_class_rows.find(r => r.id === c.id)),
-      predecessors: candidates.map(d => baseline.items.find(i => i.id === d.current_item_id)),
+      product_class_rows: classes.map(c => withoutAgendaAutomation(original.product_class_rows.find(r => r.id === c.id))),
+      predecessors: candidates.map(d => withoutAgendaAutomation(baseline.items.find(i => i.id === d.current_item_id))),
     },
     protected: {
-      approved_item_ids: baseline.items.filter(i => i.status === "active" && i.allows_agenda_auto).map(i => i.id).sort(),
+      approved_item_ids: baseline.items.filter(i => i.status === "active" && !i.deleted_at).map(i => i.id).sort(),
       r05_farm_id: "2d8a30d9-bd9c-41b4-a71d-93d2d293058f",
       r05_agenda_ids: baseline.agendas.map(a => a.id).sort(),
     },

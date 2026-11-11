@@ -215,7 +215,7 @@ begin
  end if;
  if pg_column_size(a)>1048576 then raise exception 'SANITARIO_PAYLOAD_LIMIT_EXCEEDED' using errcode='54000'; end if;
  if command='apply_factual_core' then
-  if a->'event_payload'->>'natureza' is distinct from 'primary_execution' or a->'event_payload'->'payload'->>'sanitario_v3_progressive' is distinct from 'true'
+  if a->'event_payload'->>'natureza' is distinct from 'primary_execution' or a->'event_payload'->>'source_sanitario_agenda_v2_id' is null
    or jsonb_typeof(a->'event_animals') is distinct from 'array' or jsonb_array_length(a->'event_animals') not between 1 and 500
    or (select count(distinct x->>'animal_id') from jsonb_array_elements(a->'event_animals') x)<>jsonb_array_length(a->'event_animals')
    or (select count(distinct x->>'id') from jsonb_array_elements(a->'event_animals') x)<>jsonb_array_length(a->'event_animals')

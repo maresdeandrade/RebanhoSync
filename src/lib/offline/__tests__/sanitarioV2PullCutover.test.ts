@@ -116,103 +116,35 @@ describe("sanitario v2 ordered pull", () => {
     expect(ranges).toEqual([[0, 999], [1000, 1999]]);
   });
 
-  it("protege plano e reagendamento pendentes durante reconnect e instala o remoto depois do ACK", async () => {
-    const planOp = crypto.randomUUID(),
-      scheduleOp = crypto.randomUUID(),
-      tx = crypto.randomUUID();
-    await db.state_fazenda_sanidade_config.put({
-      fazenda_id: FARM_ID,
-      payload: { sanitary_agenda_automation_v2: { revision: 2 } },
-    } as never);
+  it("protege atualização genérica de perfil e reagendamento pendentes durante reconnect", async () => {
+    const configOp = crypto.randomUUID(), scheduleOp = crypto.randomUUID(), tx = crypto.randomUUID();
+    await db.state_fazenda_sanidade_config.put({ fazenda_id: FARM_ID, payload: { profile: "local" } } as never);
     await db.ops_sanitario_agenda_v2.put({
-      id: EVENT_ID,
-      fazenda_id: FARM_ID,
-      data_programada: "2026-11-01",
-      status: "programada",
+      id: EVENT_ID, fazenda_id: FARM_ID, data_programada: "2026-11-01", status: "programada",
     } as never);
     await db.queue_ops.bulkPut([
-      {
-        client_op_id: planOp,
-        client_tx_id: tx,
-        table: "fazenda_sanidade_config",
-        action: "UPDATE",
-        created_at: CREATED_AT,
-        record: {
-          fazenda_id: FARM_ID,
-          payload: { sanitary_agenda_automation_v2: { revision: 2 } },
-        },
-      },
-      {
-        client_op_id: scheduleOp,
-        client_tx_id: tx,
-        table: "sanitario_v2",
-        action: "INSERT",
-        created_at: CREATED_AT,
-        record: {
-          domain: "sanitario_v2",
-          command: "reschedule_agenda",
-          fazenda_id: FARM_ID,
-          expected_revision: 0,
-          payload: { agenda_id: EVENT_ID, data_programada: "2026-11-01" },
-        },
-      },
+      { client_op_id: configOp, client_tx_id: tx, table: "fazenda_sanidade_config", action: "UPDATE", created_at: CREATED_AT,
+        record: { fazenda_id: FARM_ID, payload: { profile: "local" } } },
+      { client_op_id: scheduleOp, client_tx_id: tx, table: "sanitario_v2", action: "INSERT", created_at: CREATED_AT,
+        record: { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: FARM_ID, expected_revision: 0,
+          payload: { agenda_id: EVENT_ID, data_programada: "2026-11-01" } } },
     ]);
-    vi.mocked(supabase.from).mockImplementation(
-      (table: string) =>
-        ({
-          select: () => ({
-            eq: async () => ({
-              error: null,
-              data:
-                table === "fazenda_sanidade_config"
-                  ? [
-                      {
-                        fazenda_id: FARM_ID,
-                        payload: {
-                          sanitary_agenda_automation_v2: { revision: 1 },
-                        },
-                        updated_at: CREATED_AT,
-                      },
-                    ]
-                  : [
-                      {
-                        id: EVENT_ID,
-                        fazenda_id: FARM_ID,
-                        data_programada: "2026-10-01",
-                        status: "programada",
-                        updated_at: CREATED_AT,
-                      },
-                    ],
-            }),
-          }),
-        }) as never,
-    );
+    vi.mocked(supabase.from).mockImplementation((table: string) => ({
+      select: () => ({ eq: async () => ({ error: null, data: table === "fazenda_sanidade_config"
+        ? [{ fazenda_id: FARM_ID, payload: { profile: "remote" }, updated_at: CREATED_AT }]
+        : [{ id: EVENT_ID, fazenda_id: FARM_ID, data_programada: "2026-10-01", status: "programada", updated_at: CREATED_AT }] }) }),
+    }) as never);
     const tables = ["fazenda_sanidade_config", "sanitario_agenda_v2"];
     await pullDataForFarm(FARM_ID, tables, { mode: "merge" });
-    expect(
-      (await db.state_fazenda_sanidade_config.get(FARM_ID))?.payload
-        .sanitary_agenda_automation_v2,
-    ).toEqual({ revision: 2 });
-    expect(
-      (await db.ops_sanitario_agenda_v2.get(EVENT_ID))?.data_programada,
-    ).toBe("2026-11-01");
-    expect(
-      await db.sync_pull_cursors.get(
-        `fazenda_sanidade_config:fazenda:${FARM_ID}`,
-      ),
-    ).toBeUndefined();
+    expect((await db.state_fazenda_sanidade_config.get(FARM_ID))?.payload.profile).toBe("local");
+    expect((await db.ops_sanitario_agenda_v2.get(EVENT_ID))?.data_programada).toBe("2026-11-01");
+    expect(await db.sync_pull_cursors.get(`fazenda_sanidade_config:fazenda:${FARM_ID}`)).toBeUndefined();
     await db.queue_ops.clear();
     await pullDataForFarm(FARM_ID, tables, { mode: "merge" });
-    expect(
-      (await db.state_fazenda_sanidade_config.get(FARM_ID))?.payload
-        .sanitary_agenda_automation_v2,
-    ).toEqual({ revision: 1 });
-    expect(
-      (await db.ops_sanitario_agenda_v2.get(EVENT_ID))?.data_programada,
-    ).toBe("2026-10-01");
+    expect((await db.state_fazenda_sanidade_config.get(FARM_ID))?.payload.profile).toBe("remote");
+    expect((await db.ops_sanitario_agenda_v2.get(EVENT_ID))?.data_programada).toBe("2026-10-01");
   });
-
-  it.each(["cutover", "standard"])(
+    it.each(["cutover", "standard"])(
     "%s preserva referências legadas e materializa IDs do catálogo V2",
     async (mode) => {
       const legacyId = crypto.randomUUID();

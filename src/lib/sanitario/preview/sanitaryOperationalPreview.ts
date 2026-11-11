@@ -1,4 +1,5 @@
 import type { SanitaryDemandGroup } from "../demand/sanitaryDemand";
+import type { SanitaryTemporalWindowV2 } from "../checks/sanitaryProtocolPrecheckV2";
 
 export type SanitaryOperationalPreview = {
   referenceDate: string;
@@ -31,6 +32,7 @@ export type SanitaryPreviewGroup = {
   loteName?: string | null;
   windowStart?: string;
   windowEnd?: string;
+  temporalWindow?: SanitaryTemporalWindowV2;
   suggestedExecutionDate?: string;
   actionableAnimalIds: string[];
   editableFields: {
@@ -53,6 +55,7 @@ export type SanitaryPreviewBlockedItem = {
   loteName?: string | null;
   windowStart?: string;
   windowEnd?: string;
+  temporalWindow?: SanitaryTemporalWindowV2;
   reason: "insufficient_data";
   animalIds: string[];
   limitations: string[];
@@ -92,6 +95,7 @@ function sourceDemandKey(group: SanitaryDemandGroup): string {
     group.loteId ?? null,
     group.windowStart ?? null,
     group.windowEnd ?? null,
+    ...(group.temporalWindow ? [JSON.stringify(group.temporalWindow)] : []),
   ].join("\u0001");
 }
 
@@ -106,6 +110,7 @@ function previewGroupId(group: SanitaryDemandGroup): string {
     `lote:${group.loteId ?? "none"}`,
     `start:${group.windowStart ?? "none"}`,
     `end:${group.windowEnd ?? "none"}`,
+    ...(group.temporalWindow ? [`temporal:${JSON.stringify(group.temporalWindow)}`] : []),
   ].join("|");
 }
 
@@ -166,6 +171,7 @@ function copyNullableFields(group: SanitaryDemandGroup): Omit<
     loteName: group.loteName,
     windowStart: group.windowStart,
     windowEnd: group.windowEnd,
+    ...(group.temporalWindow ? { temporalWindow: group.temporalWindow } : {}),
   };
 }
 
@@ -205,6 +211,7 @@ function blockedPreviewItem(group: SanitaryDemandGroup): SanitaryPreviewBlockedI
     loteName: group.loteName,
     windowStart: group.windowStart,
     windowEnd: group.windowEnd,
+    ...(group.temporalWindow ? { temporalWindow: group.temporalWindow } : {}),
     reason: "insufficient_data",
     animalIds: [...animalIds].sort(),
     limitations: [...group.limitations].sort(),

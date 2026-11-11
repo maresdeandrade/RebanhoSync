@@ -37,7 +37,7 @@ import {
 } from "@/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 
 const fixedReadOnlyAlerts = [
-  "Catálogo somente leitura. Produto real, dose e carência são definidos somente na execução.",
+  "Catálogo somente leitura. A consulta não cria Agendas; o planejamento exige aprovação, elegibilidade e confirmação manual. Produto real, dose e carência são definidos somente na execução.",
 ];
 
 const GLOBAL_PRODUCT_EXECUTION_WARNINGS = new Set([
@@ -57,24 +57,9 @@ const readMetadataString = (
   return typeof value === "string" && value.trim().length > 0 ? value : null;
 };
 
-const hasPreviewAllowed = (protocol: SanitaryProtocolV2ReadModel) =>
-  readMetadataString(protocol.metadata, "automationStatus") ===
-    "preview_allowed" ||
-  readMetadataString(protocol.metadata, "automation_status") ===
-    "preview_allowed";
-
-const hasManualOnly = (protocol: SanitaryProtocolV2ReadModel) =>
-  readMetadataString(protocol.metadata, "automationStatus") === "manual_only" ||
-  readMetadataString(protocol.metadata, "automation_status") === "manual_only";
-
 const getCurationStatus = (protocol: SanitaryProtocolV2ReadModel) =>
   readMetadataString(protocol.metadata, "curationStatus") ??
   readMetadataString(protocol.metadata, "curation_status") ??
-  "Não informado";
-
-const getAutomationStatus = (protocol: SanitaryProtocolV2ReadModel) =>
-  readMetadataString(protocol.metadata, "automationStatus") ??
-  readMetadataString(protocol.metadata, "automation_status") ??
   "Não informado";
 
 const selectPrimaryItemWarnings = (warnings: string[]): string[] => {
@@ -209,10 +194,6 @@ export default function SanitarioCatalogoV2() {
               value={formatSanitaryBooleanPtBrV2(summary.hasAftosaBlockedRule)}
             />
             <Metric
-              label="Agenda automática habilitada"
-              value={formatSanitaryBooleanPtBrV2(summary.hasAgendaAutoEnabled)}
-            />
-            <Metric
               label="Itens com grupo técnico"
               value={productClassGroupItemCount}
             />
@@ -283,25 +264,12 @@ export default function SanitarioCatalogoV2() {
                               getCurationStatus(protocol),
                             )}
                           </span>
-                          <span>
-                            Automação:{" "}
-                            {formatSanitaryItemStatusV2(
-                              getAutomationStatus(protocol),
-                            )}
-                          </span>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {protocol.familyCode === "febre_aftosa" ? (
                             <Badge variant="destructive">
                               Bloqueado/retirado
                             </Badge>
-                          ) : null}
-                          {protocol.familyCode === "brucelose_b19" &&
-                          hasManualOnly(protocol) ? (
-                            <Badge variant="outline">Manual</Badge>
-                          ) : null}
-                          {hasPreviewAllowed(protocol) ? (
-                            <Badge variant="outline">Prévia permitida</Badge>
                           ) : null}
                         </div>
                       </button>
@@ -403,12 +371,6 @@ export default function SanitarioCatalogoV2() {
                                 <Detail
                                   label="Classe técnica interna"
                                   value={item.productClass ?? "Não se aplica"}
-                                />
-                                <Detail
-                                  label="Agenda automática"
-                                  value={formatSanitaryBooleanPtBrV2(
-                                    item.allowsAgendaAuto,
-                                  )}
                                 />
                               </dl>
                               <TechnicalSources

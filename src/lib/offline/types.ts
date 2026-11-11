@@ -36,7 +36,6 @@ export type SanitarioSyncV2Command =
   | "apply_factual_core"
   | "death_participant"
   | "close_agenda"
-  | "set_automation_plan"
   | "reschedule_agenda";
 export type SanitarioSyncV2ResultStatus =
   | "APPLIED"
@@ -963,11 +962,6 @@ export type SanitarioProductClassCurationStatusV2 =
   | "approved_for_catalog"
   | "blocked"
   | "archived";
-export type SanitarioProductClassAutomationStatusV2 =
-  | "manual_only"
-  | "preview_allowed"
-  | "agenda_allowed"
-  | "blocked";
 export type SanitarioProductClassProductTypeV2 =
   | "vacina"
   | "antiparasitario"
@@ -992,7 +986,6 @@ export interface SanitarioProductClassLocalV2 {
   target_condition: string | null;
   species_scope: SanitarioProductClassSpeciesV2[];
   curation_status: SanitarioProductClassCurationStatusV2;
-  automation_status: SanitarioProductClassAutomationStatusV2;
   limitations: string[];
   metadata: Record<string, unknown>;
   created_at: string;
@@ -1008,7 +1001,6 @@ export interface SanitarioProductClassGroupLocalV2 {
   name: string;
   requires_mv_for_other_class: boolean;
   curation_status: SanitarioProductClassCurationStatusV2;
-  automation_status: SanitarioProductClassAutomationStatusV2;
   limitations: string[];
   metadata: Record<string, unknown>;
   created_at: string;
@@ -1095,7 +1087,6 @@ export interface SanitarioProtocoloItemVersionLocalV2 {
   source_refs_by_field: Record<string, unknown>;
   limitations: Array<Record<string, unknown> | string>;
   snapshot_template: Record<string, unknown>;
-  allows_agenda_auto: boolean;
   requires_mv_responsavel: boolean;
   status: string;
   created_at: string;

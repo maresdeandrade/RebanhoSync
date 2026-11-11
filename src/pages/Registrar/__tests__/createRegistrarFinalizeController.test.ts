@@ -131,32 +131,6 @@ function buildFinalizeInput() {
 }
 
 describe("createRegistrarFinalizeController", () => {
-  it("encaminha o bloqueio V3 real ao feedback sem fallback, conclusão ou persistência", async () => {
-    const deps = buildControllerDeps();
-    const base = buildFinalizeInput();
-    const onFinalizeHandled = vi.fn();
-    const controller = createRegistrarFinalizeController({
-      ...deps,
-      sanitary: { ...deps.sanitary, trySanitaryRpcFinalize: tryRegistrarSanitaryRpcFinalizeEffect },
-    });
-
-    await controller({
-      ...base,
-      context: { ...base.context, tipoManejo: "sanitario", sourceTaskId: "agenda-1" },
-      onFinalizeHandled,
-    });
-
-    expect(deps.feedback.resolveFinalizeCatchIssue).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining("SANITARIO_V3_EXECUTION_NOT_ENABLED") }),
-    );
-    expect(deps.feedback.showError).toHaveBeenCalledWith("erro");
-    expect(deps.tracks.resolveNonFinancialFinalizePlan).not.toHaveBeenCalled();
-    expect(deps.commit.buildAgendaCompletionOp).not.toHaveBeenCalled();
-    expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
-    expect(deps.feedback.showSuccess).not.toHaveBeenCalled();
-    expect(deps.feedback.navigate).not.toHaveBeenCalled();
-    expect(onFinalizeHandled).not.toHaveBeenCalled();
-  });
   it("bloqueia simulação antes de planejar ou persistir fatos", async () => {
     const deps = buildControllerDeps();
     const input = {
@@ -225,58 +199,35 @@ describe("createRegistrarFinalizeController", () => {
     expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
   });
 
-  it("retorna para agenda quando RPC sanitário é tratado e o fluxo veio da agenda", async () => {
+  it("retorna para agenda quando RPC sanitario e tratado e o fluxo veio da agenda", async () => {
     const deps = buildControllerDeps();
-    deps.sanitary.trySanitaryRpcFinalize.mockResolvedValue({
-      status: "handled",
-      eventoId: "evt-server-1234",
-    });
+    deps.sanitary.trySanitaryRpcFinalize.mockResolvedValue({ status: "handled", eventoId: "evt-server-1234" });
     deps.feedback.buildPostFinalizeNavigationPath.mockReturnValue("/agenda");
     const finalize = createRegistrarFinalizeController(deps);
     const input = buildFinalizeInput();
     input.context.tipoManejo = "sanitario";
     input.context.sourceTaskId = "agenda-1";
-
     await finalize(input);
-
-    expect(deps.feedback.buildPostFinalizeNavigationPath).toHaveBeenCalledWith(
-      null,
-      "agenda-1",
-    );
-    expect(deps.feedback.navigate).toHaveBeenCalledTimes(1);
+    expect(deps.feedback.buildPostFinalizeNavigationPath).toHaveBeenCalledWith(null, "agenda-1");
     expect(deps.feedback.navigate).toHaveBeenCalledWith("/agenda");
     expect(deps.commit.runFinalizeGesture).toHaveBeenCalledTimes(1);
-    expect(deps.commit.buildAgendaCompletionOp).toHaveBeenCalledWith({
-      sourceTaskId: "agenda-1",
-      linkedEventId: "evt-server-1234",
-    });
+    expect(deps.commit.buildAgendaCompletionOp).toHaveBeenCalledWith({ sourceTaskId: "agenda-1", linkedEventId: "evt-server-1234" });
   });
 
   it("faz um retry idempotente quando o RPC sanitario retorna ambiguous", async () => {
     const deps = buildControllerDeps();
     deps.sanitary.trySanitaryRpcFinalize
-      .mockResolvedValueOnce({
-        status: "ambiguous",
-        error: new Error("Request timeout"),
-      })
-      .mockResolvedValueOnce({
-        status: "handled",
-        eventoId: "evt-server-1234",
-      });
+      .mockResolvedValueOnce({ status: "ambiguous", error: new Error("Request timeout") })
+      .mockResolvedValueOnce({ status: "handled", eventoId: "evt-server-1234" });
     deps.feedback.buildPostFinalizeNavigationPath.mockReturnValue("/agenda");
     const finalize = createRegistrarFinalizeController(deps);
     const input = buildFinalizeInput();
     input.context.tipoManejo = "sanitario";
     input.context.sourceTaskId = "agenda-1";
-
     await finalize(input);
-
     expect(deps.sanitary.trySanitaryRpcFinalize).toHaveBeenCalledTimes(2);
     expect(deps.commit.runFinalizeGesture).toHaveBeenCalledTimes(1);
-    expect(deps.commit.buildAgendaCompletionOp).toHaveBeenCalledWith({
-      sourceTaskId: "agenda-1",
-      linkedEventId: "evt-server-1234",
-    });
+    expect(deps.commit.buildAgendaCompletionOp).toHaveBeenCalledWith({ sourceTaskId: "agenda-1", linkedEventId: "evt-server-1234" });
     expect(deps.feedback.navigate).toHaveBeenCalledWith("/agenda");
   });
 
@@ -310,39 +261,22 @@ describe("createRegistrarFinalizeController", () => {
     expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
   });
 
-  it("encerra no caminho de RPC sanitário com sourceTaskId quando refresh falha apos registro no servidor", async () => {
+  it("encerra no caminho de RPC sanitario com sourceTaskId quando refresh falha apos registro no servidor", async () => {
     const deps = buildControllerDeps();
-    deps.sanitary.trySanitaryRpcFinalize.mockResolvedValue({
-      status: "handled_refresh_failed",
-      eventoId: "evt-server-1234",
-      error: new Error("pull failed"),
-    });
+    deps.sanitary.trySanitaryRpcFinalize.mockResolvedValue({ status: "handled_refresh_failed", eventoId: "evt-server-1234", error: new Error("pull failed") });
     const finalize = createRegistrarFinalizeController(deps);
     const input = buildFinalizeInput();
     input.context.tipoManejo = "sanitario";
-    input.context.sourceTaskId = "agenda-1";
     input.onFinalizeHandled = vi.fn();
-
     await finalize(input);
-
     expect(deps.feedback.showSuccess).toHaveBeenCalledTimes(1);
-    expect(deps.feedback.showSuccess).toHaveBeenCalledWith(
-      expect.stringContaining("registrada no servidor"),
-    );
-    expect(deps.feedback.showSuccess).toHaveBeenCalledWith(
-      expect.stringContaining("atualizacao local falhou"),
-    );
-    expect(deps.feedback.buildPostFinalizeNavigationPath).toHaveBeenCalledWith(
-      null,
-      "agenda-1",
-    );
+    expect(deps.feedback.showSuccess).toHaveBeenCalledWith(expect.stringContaining("registrada no servidor"));
+    expect(deps.feedback.showSuccess).toHaveBeenCalledWith(expect.stringContaining("atualizacao local falhou"));
+    expect(deps.feedback.buildPostFinalizeNavigationPath).toHaveBeenCalledWith(null, null);
     expect(deps.feedback.navigate).toHaveBeenCalledWith("/home");
     expect(input.onFinalizeHandled).toHaveBeenCalledTimes(1);
-    expect(deps.commit.buildAgendaCompletionOp).toHaveBeenCalledWith({
-      sourceTaskId: "agenda-1",
-      linkedEventId: "evt-server-1234",
-    });
-    expect(deps.commit.runFinalizeGesture).toHaveBeenCalledTimes(1);
+    expect(deps.commit.buildAgendaCompletionOp).not.toHaveBeenCalled();
+    expect(deps.commit.runFinalizeGesture).not.toHaveBeenCalled();
   });
 
   it("monta commit offline no trilho financeiro quando RPC não trata", async () => {

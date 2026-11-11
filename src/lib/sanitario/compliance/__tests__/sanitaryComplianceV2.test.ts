@@ -69,7 +69,6 @@ const item = (
   sourceRefsByField: {},
   limitations: [],
   snapshotTemplate: {},
-  allowsAgendaAuto: false,
   requiresMvResponsavel: true,
   status: "draft",
   ...overrides,

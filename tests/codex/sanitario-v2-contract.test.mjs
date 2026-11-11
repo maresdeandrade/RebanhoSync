@@ -36,7 +36,7 @@ const ids = {
 function validPayload() {
   return {
     artifact: "sanitario_protocols_v2_canonical_payload",
-    artifact_version: "13.0.0-canonical-contract",
+    artifact_version: "14.0.0-canonical-contract",
     payload: {
       source_rows: [{
         id: ids.source,
@@ -106,7 +106,6 @@ function validPayload() {
         product_type: "vacina",
         species_scope: ["bovino"],
         curation_status: "needs_review",
-        automation_status: "manual_only",
       }],
       product_class_group_rows: [{
         id: ids.group,
@@ -114,7 +113,6 @@ function validPayload() {
         scope: "global",
         name: "Grupo sintetico",
         curation_status: "needs_review",
-        automation_status: "manual_only",
       }],
       product_class_group_member_rows: [{
         id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
@@ -151,7 +149,6 @@ function validPayload() {
         operational_window_rule: { type: "age" },
         species_authorization: [{ species: "bovino", source_ref: "SRC_TEST_LABEL" }],
         source_refs_by_field: { dose: [{ source_ref: "SRC_TEST_LABEL" }] },
-        allows_agenda_auto: false,
       }],
     },
   };
@@ -293,7 +290,7 @@ describe("sanitario v2 canonical contract", () => {
     ["item operational_window_rule", (p) => delete p.payload.protocol_item_rows[0].operational_window_rule],
     ["item species_authorization", (p) => delete p.payload.protocol_item_rows[0].species_authorization],
     ["class curation_status", (p) => delete p.payload.product_class_rows[0].curation_status],
-    ["group automation_status", (p) => delete p.payload.product_class_group_rows[0].automation_status],
+    ["group curation_status", (p) => delete p.payload.product_class_group_rows[0].curation_status],
     ["default rule species_code", (p) => delete p.payload.product_class_default_rule_rows[0].species_code],
   ])("requires schema column %s", (_name, mutate) => {
     const payload = validPayload();
@@ -316,7 +313,7 @@ describe("sanitario v2 canonical contract", () => {
 
   function realFormPayload() {
     return {
-      artifact_version: "13.0.0-canonical-contract",
+      artifact_version: "14.0.0-canonical-contract",
       import_gate: { import_real_authorized: false },
       payload: {
         sanitario_fontes_tecnicas_v2: { rows: [{
@@ -336,8 +333,7 @@ describe("sanitario v2 canonical contract", () => {
           product_type: "vacina",
           species_scope: ["bovino"],
           curation_status: "needs_review",
-          automation_status: "manual_only",
-        }] },
+          }] },
         sanitario_protocolos_v2: { rows: [{
           id: ids.protocol,
           family_code: "protocol_test",
@@ -365,7 +361,6 @@ describe("sanitario v2 canonical contract", () => {
             operational_window_rule: { type: "age" },
             species_authorization: [{ species: "bovino", source_ref: "SRC_TEST_LABEL" }],
             source_refs_by_field: { dose: [{ source_ref: "SRC_TEST_LABEL" }] },
-            allows_agenda_auto: false,
           },
           {
             id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -382,7 +377,6 @@ describe("sanitario v2 canonical contract", () => {
             operational_window_rule: { type: "age" },
             species_authorization: [{ species: "bovino", source_ref: "SRC_TEST_LABEL" }],
             source_refs_by_field: { dose: [{ source_ref: "SRC_TEST_LABEL" }] },
-            allows_agenda_auto: false,
           },
         ] },
         sanitario_product_class_groups_v2: { rows: [{
@@ -391,8 +385,7 @@ describe("sanitario v2 canonical contract", () => {
           scope: "global",
           name: "Grupo sintetico",
           curation_status: "needs_review",
-          automation_status: "manual_only",
-        }] },
+          }] },
       },
     };
   }
@@ -459,7 +452,6 @@ describe("sanitario v2 canonical contract", () => {
       scope: "global",
       fazenda_id: null,
       curation_status: "needs_review",
-      automation_status: "manual_only",
     });
     expect(ibrBvd.limitations).toEqual(expect.arrayContaining([
       "requires_real_product",
@@ -583,7 +575,7 @@ describe("sanitario v2 canonical contract", () => {
     }
     expect(payload.execute_import).toBe(false);
     expect(payload.import_gate.import_real_authorized).toBe(false);
-    expect(rows.every((row) => !row.allows_agenda_auto && row.status === "draft")).toBe(true);
+    expect(rows.every((row) => row.status === "draft")).toBe(true);
     expect(payload.payload.sanitario_protocolos_v2.rows.every((row) => row.approval_status === "draft" && !row.metadata.approved_for_catalog)).toBe(true);
   });
 

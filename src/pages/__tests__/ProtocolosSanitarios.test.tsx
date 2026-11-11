@@ -95,7 +95,7 @@ describe("Central Sanitária", () => {
     const user = userEvent.setup();
     renderPage();
     expect(pullSanitarioProtocolCatalogV2).not.toHaveBeenCalled();
-    await user.click(screen.getByText("Catálogo e configuração automática"));
+    await user.click(screen.getByRole("tab", { name: /Catálogo sanitário/ }));
     await user.click(screen.getByRole("button", { name: "Atualizar catálogo" }));
     expect(pullSanitarioProductClassV2Catalog).toHaveBeenCalledExactlyOnceWith("farm-1");
     expect(pullSanitarioTechnicalCatalogV2).toHaveBeenCalledExactlyOnceWith("farm-1");
@@ -165,7 +165,6 @@ describe("Central Sanitária", () => {
               sourceRefsByField: {},
               limitations: [],
               snapshotTemplate: {},
-              allowsAgendaAuto: false,
               requiresMvResponsavel: false,
               status: "draft",
             },
@@ -310,7 +309,6 @@ describe("Central Sanitária", () => {
             sourceRefsByField: {},
             limitations: [],
             snapshotTemplate: {},
-            allowsAgendaAuto: false,
             requiresMvResponsavel: false,
             status: "draft",
           },
@@ -489,7 +487,6 @@ describe("Central Sanitária", () => {
               sourceRefsByField: {},
               limitations: [],
               snapshotTemplate: {},
-              allowsAgendaAuto: false,
               requiresMvResponsavel: false,
               status: "draft",
             },

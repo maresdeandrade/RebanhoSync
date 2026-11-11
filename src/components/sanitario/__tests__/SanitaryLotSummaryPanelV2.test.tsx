@@ -53,7 +53,6 @@ const catalog: SanitaryProtocolCatalogReadModelV2 = {
       sourceRefsByField: {},
       limitations: [],
       snapshotTemplate: {},
-      allowsAgendaAuto: false,
       requiresMvResponsavel: false,
       status: "draft",
     },

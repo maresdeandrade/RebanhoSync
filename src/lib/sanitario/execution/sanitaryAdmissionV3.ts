@@ -32,11 +32,7 @@ export function prepareSanitaryAdmissionV3(
     !Array.isArray(event) &&
     ((event as Record<string, unknown>).natureza === "primary_execution" ||
       (event as Record<string, unknown>).source_sanitario_agenda_v2_id);
-  if (
-    input.intent === "agenda_execution" ||
-    input.agendaId ||
-    factualExecution
-  ) {
+  if (input.intent === "external_history" && factualExecution) {
     return {
       disposition: "blocked",
       reason: SANITARIO_V3_EXECUTION_NOT_ENABLED,
@@ -96,9 +92,7 @@ export function prepareSanitaryCommandV3(
     (envelope.payload.event.natureza === "primary_execution" ||
       envelope.payload.event.source_sanitario_agenda_v2_id) &&
     (envelope.payload.event.natureza !== "primary_execution" ||
-      !envelope.payload.event.source_sanitario_agenda_v2_id ||
-      (envelope.payload.event.payload as Record<string, unknown> | undefined)
-        ?.sanitario_v3_progressive !== true)
+      !envelope.payload.event.source_sanitario_agenda_v2_id)
   ) {
     throw new Error(
       `Execução sanitária indisponível nesta etapa. ${SANITARIO_V3_EXECUTION_NOT_ENABLED}`,

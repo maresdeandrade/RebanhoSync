@@ -33,9 +33,24 @@ describe("offline ProductClass v2 catalog stores", () => {
   });
 
   it("registra stores ProductClass v2 no Dexie", () => {
-    expect(db.verno).toBeGreaterThanOrEqual(23);
+    expect(db.verno).toBeGreaterThanOrEqual(36);
     expect(db.tables.map((table) => table.name)).toEqual(
       expect.arrayContaining([...stores]),
+    );
+    const indexes = new Map(
+      db.tables.map((table) => [
+        table.name,
+        new Set(table.schema.indexes.map((index) => index.name)),
+      ]),
+    );
+    expect(indexes.get("catalog_sanitario_product_classes_v2")).not.toContain(
+      "automation_status",
+    );
+    expect(indexes.get("catalog_sanitario_product_class_groups_v2")).not.toContain(
+      "automation_status",
+    );
+    expect(indexes.get("catalog_sanitario_protocolo_itens_versions_v2")).not.toContain(
+      "allows_agenda_auto",
     );
   });
 
@@ -60,7 +75,6 @@ describe("offline ProductClass v2 catalog stores", () => {
       target_condition: "brucelose",
       species_scope: ["bovino", "bubalino"],
       curation_status: "candidate",
-      automation_status: "manual_only",
       limitations: ["requer fonte forte por produto executado"],
       metadata: { source: "phase_12e1_test", tags: ["catalog"] },
       created_at: now,
@@ -96,7 +110,6 @@ describe("offline ProductClass v2 catalog stores", () => {
       name: "Antiparasitarios da fazenda",
       requires_mv_for_other_class: true,
       curation_status: "needs_review",
-      automation_status: "preview_allowed",
       limitations: ["configuracao local ainda sem push"],
       metadata: { owner: "farm-1" },
       created_at: now,

@@ -10,7 +10,6 @@ import {
   validateSpeciesAuthorizationV2,
   type SpeciesAuthorizationV2,
 } from "./sanitaryProductV2";
-import { sanitaryHasNoAgendaAutoV2 } from "../agenda/sanitaryPlanningPolicyV2";
 import {
   validateProductRequirementRuleV2,
   type SanitaryProductRequirementRuleV2,
@@ -91,7 +90,6 @@ export type SanitaryProtocolItemVersionV2 = {
   sourceRefsByField: Record<string, SanitarySourceRefV2[]>;
   limitations: string[];
   snapshotTemplate?: Record<string, unknown>;
-  allowsAgendaAuto: boolean;
   requiresMvResponsavel?: boolean;
   status: SanitaryProtocolLifecycleStatusV2;
 };
@@ -323,20 +321,10 @@ function collectAuthorizationStatuses(
   return authorizations.map((authorization) => authorization.authorizationStatus);
 }
 
-function autoRestrictionIssues(item: SanitaryProtocolItemVersionV2): SanitaryValidationIssueV2[] {
-  const issues: SanitaryValidationIssueV2[] = [];
-  if (item.allowsAgendaAuto && sanitaryHasNoAgendaAutoV2({ limitations: item.limitations, snapshotTemplate: item.snapshotTemplate ?? {} })) {
-    issues.push({ code: "no_agenda_auto_restriction", severity: "block", field: "allowsAgendaAuto",
-      message: "no_agenda_auto exige revisão técnica versionada antes de permitir automação." });
-  }
-  return issues;
-}
-
 export function validateSanitaryProtocolItemVersionV2(
   item: SanitaryProtocolItemVersionV2,
 ): SanitaryValidationResultV2 {
   const issues: SanitaryValidationIssueV2[] = [];
-  issues.push(...autoRestrictionIssues(item));
 
   if (!item.protocolId || !item.logicalItemKey?.trim()) {
     issues.push({
@@ -367,25 +355,7 @@ export function validateSanitaryProtocolItemVersionV2(
     );
   }
 
-  if ((item.itemStatus === "somente_alerta" || item.itemStatus === "bloqueado") && item.allowsAgendaAuto) {
-    issues.push({
-      code: "alert_or_blocked_item_cannot_auto_schedule",
-      severity: "block",
-      field: "allowsAgendaAuto",
-      message: "Item somente_alerta ou bloqueado nao pode permitir agenda automatica futura.",
-    });
-  }
-
   const authorizationStatuses = collectAuthorizationStatuses(item.speciesAuthorization);
-
-  if (authorizationStatuses.includes("NAO_AUTORIZADO") && item.allowsAgendaAuto) {
-    issues.push({
-      code: "not_authorized_blocks_auto_schedule",
-      severity: "block",
-      field: "speciesAuthorization",
-      message: "NAO_AUTORIZADO bloqueia agenda automatica futura.",
-    });
-  }
 
   if (authorizationStatuses.includes("PRECISA_VALIDAR") && item.limitations.length === 0) {
     issues.push({
@@ -417,7 +387,6 @@ export function requiresNewProtocolItemVersionV2(
   next: SanitaryProtocolItemVersionV2,
 ): boolean {
   const semanticPrevious = {
-    allowsAgendaAuto: previous.allowsAgendaAuto,
     limitations: previous.limitations,
     snapshotTemplate: previous.snapshotTemplate,
     itemStatus: previous.itemStatus,
@@ -436,7 +405,6 @@ export function requiresNewProtocolItemVersionV2(
     sourceRefsByField: previous.sourceRefsByField,
   };
   const semanticNext = {
-    allowsAgendaAuto: next.allowsAgendaAuto,
     limitations: next.limitations,
     snapshotTemplate: next.snapshotTemplate,
     itemStatus: next.itemStatus,

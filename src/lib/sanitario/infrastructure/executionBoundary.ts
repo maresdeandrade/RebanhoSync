@@ -1,4 +1,3 @@
-import { requireSanitaryAdmissionV3 } from "@/lib/sanitario/execution/sanitaryAdmissionV3";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import type { SanitarioTipoEnum } from "@/lib/offline/types";
 import {
@@ -67,8 +66,6 @@ export async function executeSanitaryCompletion(
     return { status: "skip" };
   }
 
-  requireSanitaryAdmissionV3({ intent: "agenda_execution", fazendaId: input.fazendaId, agendaId: input.sourceTaskId,
-    clientOpId: "", clientTxId: "", domainOpId: "", payload: {} });
   const completeAgendaWithEvent =
     input.completeAgendaWithEvent ?? concluirPendenciaSanitaria;
   const refreshStateAfterCompletion =

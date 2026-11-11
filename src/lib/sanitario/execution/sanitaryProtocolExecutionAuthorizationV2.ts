@@ -27,7 +27,7 @@ function protocolUnavailable(
 function protocolUnapproved(protocol: SanitarioProtocoloLocalV2) {
   return protocol.status !== "active" || protocol.approval_status !== "approved" ||
     ["bloqueado", "experimental_alerta"].includes(protocol.legal_status) ||
-    protocol.metadata.automationStatus === "blocked" || protocol.metadata.archived === true;
+    protocol.metadata.archived === true;
 }
 
 function jurisdictionRejections(

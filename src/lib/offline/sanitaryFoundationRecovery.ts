@@ -1,7 +1,6 @@
 import { db, LOCAL_OWNERSHIP_KEY } from "./db";
 import { getCurrentLocalReadOwnership } from "./localReadBoundary";
 import { supabase } from "@/lib/supabase";
-import { mapQueuedSanitaryPlanV2 } from "@/lib/sanitario/agenda/sanitaryPlanningSyncV2";
 import { upsertReconciliationObligations } from "./reconciliationObligations";
 import type { LocalOwnershipDecision } from "./ownership";
 import type { Operation, Gesture, SyncOperationResult } from "./types";
@@ -45,7 +44,6 @@ export function isSanitaryEvidenceOperation(op: Operation): boolean {
   return (
     op.table === "sanitario_v2" ||
     op.record?.domain === "sanitario_v2" ||
-    !!mapQueuedSanitaryPlanV2(op, String(op.record?.fazenda_id ?? "")) ||
     op.table.replace(/^event_/, "") === "eventos_sanitario" ||
     op.record?.dominio === "sanitario" ||
     op.record?.tipo === "consumo_sanitario"
@@ -55,8 +53,6 @@ function entityId(envelope: Record<string, unknown>): string | undefined {
   const payload = envelope.payload as
     | Record<string, Record<string, unknown> | string>
     | undefined;
-  if (envelope.command === "set_automation_plan")
-    return envelope.fazenda_id as string;
   const entityKey = new Map<unknown, string>([
     ["create_agenda", "agenda"],
     ["apply_factual_core", "event"],
@@ -68,16 +64,13 @@ function entityId(envelope: Record<string, unknown>): string | undefined {
 function canonicalEntity(command: unknown, result: Record<string, unknown>) {
   if (command === "apply_factual_core") return result.evento_id;
   if (command === "close_agenda") return result.closure_id;
-  if (command === "set_automation_plan") return result.fazenda_id;
   return result.agenda_id;
 }
 function originalEnvelope(
   op: Operation,
   gesture: Gesture,
 ): Record<string, unknown> | null {
-  const mapped = mapQueuedSanitaryPlanV2(op, gesture.fazenda_id);
-  const envelope =
-    mapped ?? (op.record?.domain === "sanitario_v2" ? op.record : null);
+  const envelope = op.record?.domain === "sanitario_v2" ? op.record : null;
   if (!envelope || !matchesOriginalEnvelope(envelope, op, gesture)) return null;
   return { ...envelope, fazenda_id: gesture.fazenda_id };
 }

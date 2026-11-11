@@ -272,7 +272,6 @@ describe("V3 admission and receipt recovery", () => {
     ["replace_agenda_animals", ids.agenda],
     ["apply_factual_core", ids.event],
     ["close_agenda", ids.closure],
-    ["set_automation_plan", ids.farm],
     ["reschedule_agenda", ids.agenda],
   ] as const)(
     "receipt keeps the canonical entity of %s",
@@ -309,18 +308,7 @@ describe("V3 admission and receipt recovery", () => {
                           closure_type: "cancelled",
                         },
                       }
-                    : command === "set_automation_plan"
-                      ? {
-                          plan: {
-                            schemaVersion: 2,
-                            revision: 1,
-                            enabled: false,
-                            rules: [],
-                            context: {},
-                          },
-                          expected_plan: null,
-                        }
-                      : command === "reschedule_agenda"
+                    : command === "reschedule_agenda"
                         ? {
                             agenda_id: ids.agenda,
                             data_programada: "2026-11-01",
@@ -1243,112 +1231,7 @@ describe("sync-batch sanitario v2: serialização estrita", () => {
   });
 });
 
-describe("sanitary planning convergence commands", () => {
-  const planCommand = () => ({
-    ...createAgendaOperation(),
-    command: "set_automation_plan",
-    expected_revision: 0,
-    payload: {
-      expected_plan: null,
-      plan: {
-        schemaVersion: 2,
-        revision: 1,
-        enabled: true,
-        rules: [],
-        context: {},
-      },
-    },
-  });
-  it("maps authenticated actor, transaction and plan CAS to the existing service boundary", async () => {
-    const deps = dependencies({
-      rpcData: {
-        command: "set_automation_plan",
-        fazenda_id: ids.farm,
-        status: "saved",
-        revision: 1,
-      },
-    });
-    const result = await executeSanitarioSyncV2Operation(
-      planCommand(),
-      context,
-      deps,
-    );
-    expect(result).toMatchObject({
-      status: "APPLIED",
-      canonical_entity_id: ids.farm,
-      current_revision: 1,
-    });
-    expect(deps.callRpc).toHaveBeenCalledWith(
-      expect.objectContaining({
-        functionName: "internal_sanitario_admit_v3",
-        args: expect.objectContaining({
-          actor_user_id: ids.actor,
-          fazenda_id: ids.farm,
-          receipt_only: false,
-          operation_args: expect.objectContaining({
-            client_id: context.clientId,
-            client_tx_id: ids.tx,
-            expected_revision: 0,
-          }),
-        }),
-      }),
-    );
-  });
-  it("rejects a cowboy, untrusted actor and mismatching farm before calling the RPC", async () => {
-    for (const [raw, ctx] of [
-      [planCommand(), { ...context, membershipRole: "cowboy" }],
-      [{ ...planCommand(), actor_user_id: ids.actor }, context],
-      [{ ...planCommand(), fazenda_id: ids.animal }, context],
-    ] as const) {
-      const deps = dependencies();
-      expect(
-        (await executeSanitarioSyncV2Operation(raw, ctx, deps)).status,
-      ).toBe("REJECTED");
-      expect(deps.callRpc).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          args: expect.objectContaining({ receipt_only: false }),
-        }),
-      );
-    }
-  });
-  it.each([undefined, -1, 1.5])(
-    "requires an immutable expected plan revision (%s)",
-    async (expected) => {
-      const deps = dependencies();
-      expect(
-        (
-          await executeSanitarioSyncV2Operation(
-            { ...planCommand(), expected_revision: expected },
-            context,
-            deps,
-          )
-        ).status,
-      ).toBe("REJECTED");
-      expect(deps.callRpc).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          args: expect.objectContaining({ receipt_only: false }),
-        }),
-      );
-    },
-  );
-  it("classifies an explicit plan PT409 as conflict without retry or automatic overwrite", async () => {
-    const result = await executeSanitarioSyncV2Operation(
-      planCommand(),
-      context,
-      dependencies({
-        rpcError: {
-          code: "PT409",
-          message: "SANITARIO_PLAN_REVISION_CONFLICT current_revision=4",
-        },
-      }),
-    );
-    expect(result).toMatchObject({
-      status: "CONFLICT",
-      reason_code: "SANITARIO_PLAN_REVISION_CONFLICT",
-      current_revision: 4,
-      retryable: false,
-    });
-  });
+describe("sanitary schedule operations", () => {
   it("maps schedule changes without generating any factual command", async () => {
     const deps = dependencies();
     await executeSanitarioSyncV2Operation(

@@ -37,22 +37,23 @@ export function buildApprovalCandidate(canonical, packet, canonicalBytes, packet
     assert.equal(entry.record.id, entry.expected_id, "STABLE_PROTOCOL_ID_REQUIRED");
     assert.equal(entry.record.status, "draft");
     assert.equal(entry.record.approval_status, "draft");
-    assert.equal(entry.record.metadata.agenda_allowed, false);
     assert.equal(entry.record.metadata.approved_for_catalog, false);
-    data.protocol_rows[index] = structuredClone(entry.record);
-    // Existing importer accepts only manual_only drafts. This is not activation.
-    data.protocol_rows[index].metadata.automationStatus = "manual_only";
+    const protocolRecord = structuredClone(entry.record);
+    delete protocolRecord.metadata.agenda_allowed;
+    delete protocolRecord.metadata.automationStatus;
+    data.protocol_rows[index] = protocolRecord;
   }
   for (const entry of packet.prepared_item_records) {
     const index = data.protocol_item_rows.findIndex((row) => row.id === entry.expected_previous_id);
     assert(index >= 0 && data.protocol_item_rows[index].version === entry.expected_previous_version, "ITEM_VERSION_CONFLICT");
-    const proposal = itemProposals.find((row) => row.id === entry.record.id);
+    const proposal = structuredClone(itemProposals.find((row) => row.id === entry.record.id));
     assert.equal(proposal.version, entry.expected_previous_version + 1);
     assert.equal(proposal.protocol_id, data.protocol_item_rows[index].protocol_id);
     assert.equal(proposal.status, "draft");
-    assert.equal(proposal.allows_agenda_auto, false);
-    assert.equal(proposal.snapshot_template.metadata.agenda_allowed, false);
     assert.equal(proposal.snapshot_template.metadata.approved_for_catalog, false);
+    delete proposal.allows_agenda_auto;
+    delete proposal.snapshot_template.metadata.agenda_allowed;
+    delete proposal.snapshot_template.metadata.automationStatus;
     data.protocol_item_rows[index] = proposal;
   }
   for (const record of packet.retained_restricted_records) {

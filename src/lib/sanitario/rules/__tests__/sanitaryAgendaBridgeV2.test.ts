@@ -78,7 +78,6 @@ function protocolItem(
       species_authorization: [labelSource],
     },
     limitations: [],
-    allowsAgendaAuto: true,
     status: "active",
     ...overrides,
   };
@@ -144,7 +143,7 @@ describe("sanitaryAgendaBridgeV2", () => {
       createSanitaryAgendaV2SnapshotPayload(
         validInput({
           protocolItem: protocolItem({
-            allowsAgendaAuto: false,
+            itemStatus: "bloqueado",
           }),
         }),
       );
@@ -153,7 +152,7 @@ describe("sanitaryAgendaBridgeV2", () => {
     expect(result.snapshot).toBeUndefined();
     expect(result.issues).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ code: "protocol_item_disallows_auto_agenda" }),
+        expect.objectContaining({ code: "protocol_item_not_schedulable" }),
       ]),
     );
   });

@@ -49,8 +49,8 @@ export function resolveSanitaryRabiesRegionalContextV2(input: RegionalContextInp
     adopted: adoptedRabiesProtocol(config), uf: config?.uf ?? null, municipality: input.municipality ?? null,
     rule: valid ? overlay : null,
     coverage: valid ? "contextual_rule_available" as const : "unresolved" as const,
-    mandatory: null, allowsAgendaAuto: false as const,
+    mandatory: null,
     explanation: valid ? "Regra regional identificada; condições epidemiológicas e decisão técnica continuam necessárias. Não comprova obrigação individual."
-      : "Cobertura regional não comprovada. Consulta e planejamento manual disponíveis, sem inferir obrigação ou autorizar automação.",
+      : "Cobertura regional não comprovada. Consulta disponível; o planejamento manual continua condicionado à comprovação territorial e técnica.",
   };
 }

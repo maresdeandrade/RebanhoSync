@@ -1,6 +1,6 @@
 {
   "artifact": "sanitario_commercial_products_v2_review_candidates",
-  "artifact_version": "13.0.0-canonical-contract",
+  "artifact_version": "14.0.0-canonical-contract",
   "identity_model": "VERSIONED_EXPLICIT_UUID",
   "source_artifacts": {
     "candidate_json": {
@@ -59,7 +59,6 @@
         "fabricante": "Zoetis",
         "id": "ba59c489-49d5-5362-b5f4-94818c90deb4",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -95,7 +94,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "f5540551-7dd6-5176-b909-22916e5ed3de",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -131,7 +129,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "45e406f2-303e-528b-8146-804f38492815",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -167,7 +164,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "453b1b35-93a4-5790-8217-7b7e83c78c49",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -203,7 +199,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "ec3eb33d-b739-5a62-826d-fee85e04a9dd",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -239,7 +234,6 @@
         "fabricante": "Zoetis",
         "id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -276,7 +270,6 @@
         "fabricante": "Zoetis",
         "id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -313,7 +306,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "d1702fc4-01bb-59be-84a2-eab38babe223",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -350,7 +342,6 @@
         "fabricante": "Zoetis",
         "id": "7fc44e31-3373-50de-97fd-58e874938938",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -386,7 +377,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "5402b0be-eabb-5bce-91e8-242db1112151",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -422,7 +412,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "36ea6650-6c8f-5a56-a778-bfb6e428102d",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -458,7 +447,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "1957cff0-3741-5dd8-bf81-b157a2d575c8",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -494,7 +482,6 @@
         "fabricante": "Ceva",
         "id": "1628cf40-3676-53a6-9fe2-4e154936167b",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -530,7 +517,6 @@
         "fabricante": "Labovet",
         "id": "d66dddec-b33c-5882-bcc4-b3a82389d349",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -566,7 +552,6 @@
         "fabricante": "Ceva",
         "id": "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -602,7 +587,6 @@
         "fabricante": "Labovet",
         "id": "6417c886-2a93-599a-b74a-c72ac1c03752",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -638,7 +622,6 @@
         "fabricante": "Labovet",
         "id": "dfed6e97-286a-5404-985b-528d0befa1ec",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -674,7 +657,6 @@
         "fabricante": "Labovet",
         "id": "af618de9-e22b-5ad7-a852-43933c6cb3d3",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -710,7 +692,6 @@
         "fabricante": "Labovet",
         "id": "55e88d23-83c9-5421-ba2f-7da1b979c03b",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -746,7 +727,6 @@
         "fabricante": "Labovet",
         "id": "12128db7-71ff-551d-92e0-18418140b91b",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -782,7 +762,6 @@
         "fabricante": "Ceva",
         "id": "0f1b6c73-c50f-5ad4-a308-29788de7429a",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -818,7 +797,6 @@
         "fabricante": "Zoetis",
         "id": "3e0a501b-1742-506c-a094-d8a18ad8a98a",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -854,7 +832,6 @@
         "fabricante": "Zoetis",
         "id": "0168212e-2443-5eaf-97f1-108924e58d4d",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -890,7 +867,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "a90ae0cf-d97b-577c-a622-080f2db70c3c",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -926,7 +902,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "c2171cd8-1865-5d12-90c0-22062043bc73",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -963,7 +938,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "33521603-7562-551e-8a66-5b5d3523b83d",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -999,7 +973,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "a805aad2-7cd4-567e-8ace-676bf7cfd9f4",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1035,7 +1008,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "234204f8-4113-5294-8aa2-b0d2b3f83d95",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1071,7 +1043,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "942f1bf9-874b-5c46-ae35-a44648dcc893",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1107,7 +1078,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "e5043b4b-6646-52d9-a40d-b2b46d18e774",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1143,7 +1113,6 @@
         "fabricante": "Zoetis",
         "id": "53678137-452a-5910-9bc6-67022504a6ce",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1179,7 +1148,6 @@
         "fabricante": "Zoetis",
         "id": "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1215,7 +1183,6 @@
         "fabricante": "Ceva",
         "id": "670001a6-3634-582b-a277-f3bc65f89a0e",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1251,7 +1218,6 @@
         "fabricante": "Ceva",
         "id": "ebd8a49a-47ed-5cbf-a225-4dfe10ffadaa",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1287,7 +1253,6 @@
         "fabricante": "Ceva",
         "id": "db743728-59e2-5ecb-8b2e-211ab170618f",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1323,7 +1288,6 @@
         "fabricante": "Ceva",
         "id": "4f011f00-0ae7-5b4e-97d3-b093578df236",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1359,7 +1323,6 @@
         "fabricante": "Ceva",
         "id": "3eb90dec-26cb-525e-b106-530c2ffc67e0",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1395,7 +1358,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "a919841d-69b7-5340-848c-3c121b840ff8",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1431,7 +1393,6 @@
         "fabricante": "MSD Saúde Animal",
         "id": "725304b5-c3c2-57b3-b255-a85032a23a55",
         "metadata": {
-          "allows_agenda_auto": false,
           "approved_for_catalog": false,
           "automatic_product_selection_authorized": false,
           "candidate_class_keys_unverified": [
@@ -1474,5 +1435,5 @@
     "protocol_rows": [],
     "protocol_item_rows": []
   },
-  "content_sha256": "a777233b2d8083d4d1b89c93947df74cec210a9ef8571576dbd35dcbac3b84e1"
+  "content_sha256": "96bd6a586a6dfce582021c17293b5b69a076e2abae17e6baf1f1d27f33b550a6"
 }

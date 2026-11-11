@@ -52,21 +52,12 @@ function validItem(overrides: Partial<SanitaryProtocolItemVersionV2> = {}): Sani
       product_requirement: [officialSource],
     },
     limitations: [],
-    allowsAgendaAuto: true,
     status: "active",
     ...overrides,
   };
 }
 
 describe("sanitaryProtocolV2", () => {
-  it("restrição no_agenda_auto bloqueia automação e sua remoção exige nova versão", () => {
-    const previous = validItem({ logicalItemKey: "raiva_primovac_reforco_30d", limitations: ["no_agenda_auto"] });
-    expect(validateSanitaryProtocolItemVersionV2(previous).issues).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: "no_agenda_auto_restriction" }),
-    ]));
-    expect(requiresNewProtocolItemVersionV2(previous, { ...previous, limitations: [] })).toBe(true);
-    expect(requiresNewProtocolItemVersionV2(previous, { ...previous, allowsAgendaAuto: false })).toBe(true);
-  });
   it("protocolo obrigatorio por norma exige fonte forte de legal_status", () => {
     const protocol: SanitaryProtocolV2 = {
       familyCode: "febre-aftosa",
@@ -82,39 +73,6 @@ describe("sanitaryProtocolV2", () => {
     };
 
     expect(validateSanitaryProtocolV2(protocol).ok).toBe(true);
-  });
-
-  it("item experimental/somente_alerta nao permite agenda automatica", () => {
-    const result = validateSanitaryProtocolItemVersionV2(
-      validItem({ itemStatus: "somente_alerta", allowsAgendaAuto: true }),
-    );
-
-    expect(result.ok).toBe(false);
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: "alert_or_blocked_item_cannot_auto_schedule" }),
-      ]),
-    );
-  });
-
-  it("item NAO_AUTORIZADO bloqueia agenda automatica", () => {
-    const result = validateSanitaryProtocolItemVersionV2(
-      validItem({
-        speciesAuthorization: [
-          validAuthorization({
-            authorizationStatus: "NAO_AUTORIZADO",
-          }),
-        ],
-        allowsAgendaAuto: true,
-      }),
-    );
-
-    expect(result.ok).toBe(false);
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: "not_authorized_blocks_auto_schedule" }),
-      ]),
-    );
   });
 
   it("PRECISA_VALIDAR preserva limitacao", () => {
@@ -335,7 +293,7 @@ describe("sanitaryProtocolV2", () => {
     );
   });
 
-  it("productRequirementKind = product_class_group valido nao permite agenda automatica por implicacao", () => {
+  it("productRequirementKind = product_class_group valido preserva o contrato estrutural", () => {
     const item = validItem({
       productRequirementKind: "product_class_group",
       productClass: null,
@@ -347,7 +305,6 @@ describe("sanitaryProtocolV2", () => {
         requiresMvForOtherClass: true,
         executionProductPolicy: "required_at_execution",
       },
-      allowsAgendaAuto: false,
     });
 
     const result = validateSanitaryProtocolItemVersionV2(item);

@@ -34,7 +34,6 @@ const protocol = (
   approval_status: "draft",
   source_refs_snapshot: [],
   metadata: {
-    agenda_allowed: false,
     approved_for_catalog: false,
   },
   ...overrides,
@@ -65,12 +64,9 @@ const item = (
   limitations: [],
   snapshot_template: {
     metadata: {
-      automationStatus: "manual_only",
-      agenda_allowed: false,
       approved_for_catalog: false,
     },
   },
-  allows_agenda_auto: false,
   requires_mv_responsavel: false,
   status: "draft",
   ...overrides,
@@ -84,10 +80,8 @@ const group = (groupKey: string): JsonRecord => ({
   name: groupKey,
   requires_mv_for_other_class: true,
   curation_status: "needs_review",
-  automation_status: "blocked",
   limitations: ["members_sem_class_id_bloqueados"],
   metadata: {
-    agenda_allowed: false,
     approved_for_catalog: false,
   },
 });

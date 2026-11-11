@@ -108,6 +108,23 @@ describe("createSanitaryOperationalPreview", () => {
     });
   });
 
+  it("preserva a janela temporal V2 no grupo acionável", () => {
+    const temporalWindow = {
+      resolution: "determined" as const,
+      evidence: "grounded" as const,
+      structure: "bounded" as const,
+      intervals: [{ startDate: "2026-04-01", endDate: "2026-08-29" }],
+      provenance: ["brucelose_b19", "animal.nascimento"],
+      limitations: [],
+    };
+    const preview = createSanitaryOperationalPreview({
+      referenceDate: "2026-05-01",
+      demandGroups: [demandGroup({ temporalWindow })],
+    });
+
+    expect(preview.groups[0].temporalWindow).toEqual(temporalWindow);
+  });
+
   it("exclui not_applicable do preview operacional", () => {
     const preview = createSanitaryOperationalPreview({
       referenceDate: "2026-05-01",

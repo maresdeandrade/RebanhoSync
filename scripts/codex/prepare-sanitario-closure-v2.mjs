@@ -23,6 +23,16 @@ const labels = {
   lepto8: { source_key: "SRC_VIRBAC_BOVIGEN_LEPTO8_REVIEW_20261022", title: "Bovigen Lepto 8 — informações oficiais Virbac Brasil",
     url: "https://br.virbac.com/products/biologicos/bovigen-lepto-8", issuer: "Virbac", dose_ml: 3, route: "SC", interval: [21, 30] },
 };
+const removedAgendaAutomationFields = new Set(["allows_agenda_auto", "allowsAgendaAuto", "automation_status", "automationStatus", "agenda_allowed"]);
+function withoutAgendaAutomation(value) {
+  if (Array.isArray(value)) return value.map(withoutAgendaAutomation);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => !removedAgendaAutomationFields.has(key))
+    .map(([key, child]) => [key, ["limitations", "restrictions"].includes(key) && Array.isArray(child)
+      ? child.filter(item => item !== "no_agenda_auto").map(withoutAgendaAutomation)
+      : withoutAgendaAutomation(child)]));
+}
 
 export function prepareClosureCandidates(baseline, identities) {
   const original = structuredClone(baseline);
@@ -31,8 +41,8 @@ export function prepareClosureCandidates(baseline, identities) {
   const protocols = new Map(baseline.protocols.map(p => [p.family_code, p]));
   const lookup = key => { const row = baseline.items.find(i => i.logical_item_key === key); assert(row, `BASELINE_ITEM_REQUIRED:${key}`); return row; };
   const referencedFamilies = ["ibr_bvd", "leptospirose", "raiva_herbivoros"];
-  payload.protocol_rows = referencedFamilies.map(family => ({ ...protocols.get(family), protocol_key: family }));
-  payload.product_class_rows = baseline.classes.filter(c => ["vacina_ibr_bvd", "vacina_leptospirose", "vacina_raiva_herbivoros"].includes(c.class_key));
+  payload.protocol_rows = referencedFamilies.map(family => ({ ...withoutAgendaAutomation(protocols.get(family)), protocol_key: family }));
+  payload.product_class_rows = baseline.classes.filter(c => ["vacina_ibr_bvd", "vacina_leptospirose", "vacina_raiva_herbivoros"].includes(c.class_key)).map(withoutAgendaAutomation);
   const sourceRefs = {};
   for (const [variant, label] of Object.entries(labels)) {
     const sourceId = id(`source:${variant}`);
@@ -49,17 +59,17 @@ export function prepareClosureCandidates(baseline, identities) {
   }
   function candidate(prior, variant, key = prior.logical_item_key, blockers = []) {
     const version = key === prior.logical_item_key ? prior.version + 1 : 1;
-    const row = { ...structuredClone(prior), id: id(`item:${key}`), logical_item_key: key, version,
+    const row = { ...withoutAgendaAutomation(prior), id: id(`item:${key}`), logical_item_key: key, version,
       protocol_key: protocols.get(referencedFamilies.find(f => protocols.get(f).id === prior.protocol_id)).family_code,
       class_key: prior.product_class, status: "draft", item_status: blockers.length ? "bloqueado" : "condicional",
-      allows_agenda_auto: false, product_id: null, dose_rule: null, route_rule: null,
+      product_id: null, dose_rule: null, route_rule: null,
       eligibility_rule: { species: ["bovino"] }, source_refs_by_field: sourceRefs[variant] ?? {},
       species_authorization: [{ species: "bovino", source_ref: labels[variant]?.source_key }],
       limitations: ["bovine_only", "do_not_generalize_class", "withdrawal_by_executed_product", ...blockers],
       snapshot_template: { executionProductPolicy: "required_at_execution",
         sourcePolicy: { operational_window: "compatible_product_required_at_execution", withdrawal: "by_executed_product_snapshot" },
-        metadata: { proposal_only: true, planning_scope: "class_scheme", agenda_allowed: false, approved_for_catalog: false,
-          automationStatus: "decision_required", variant_key: variant, approval_blockers: blockers,
+        metadata: { proposal_only: true, planning_scope: "class_scheme", approved_for_catalog: false,
+          variant_key: variant, approval_blockers: blockers,
           ...(key === prior.logical_item_key ? { supersedes: { id: prior.id, version: prior.version, reason: "Proposta prospectiva; histórico preservado." } } : {}) } } };
     delete row.created_at; delete row.updated_at; delete row.deleted_at;
     payload.protocol_item_rows.push(row);
@@ -109,9 +119,7 @@ export function prepareClosureCandidates(baseline, identities) {
     const row = candidate(prior, "national_manual_rabies", key);
     row.eligibility_rule = { ...prior.eligibility_rule, requires_regional_overlay: true };
     row.species_authorization = prior.species_authorization;
-    row.limitations.push("no_agenda_auto");
     row.snapshot_template.metadata.catalog_review_scope = "manual_planning";
-    row.snapshot_template.metadata.automationStatus = "manual_only";
     row.source_refs_by_field = rabiesRefs;
     row.booster_rule.tolerance = { days: 0 };
     if (key === "raiva_reforco_anual_area_risco") {
@@ -129,7 +137,7 @@ export function prepareClosureCandidates(baseline, identities) {
     excluded: [{ variant: "bovela", reason: "BVD-only; no IBR coverage inferred. Brazilian label and scoped contract still required." }],
     publication_blockers: ["This full review artifact cannot be applied. Only its separately validated eligible subset uses the existing incremental publisher.",
       "No remote publication or curatorial authorization. Taxonomic class review does not approve execution.",
-      "Rabies global candidates authorize consultation/manual planning only; farm adoption and regional applicability remain separate. Global automation stays blocked."],
+      "Raiva global candidates permitem consulta e planejamento manual somente; adoção por fazenda e aplicabilidade regional continuam separadas. Agendas não são criadas automaticamente."],
   };
   validateCanonicalTechnicalContract(packet);
   assert.deepEqual(baseline, original);
@@ -157,9 +165,10 @@ export function prepareClosureDelta(baseline, candidates, preservation, inputs) 
     identity_model: "VERSIONED_EXPLICIT_UUID", delta_kind: CLOSURE_DELTA_KIND, project_ref: candidates.project_ref,
     execute_import: false, approved: false, import_gate: { import_real_authorized: false, authorization_reference: null }, inputs, payload,
     baseline: { source_rows: payload.source_rows.filter(s => baseline.sources.some(b => b.id === s.id)), product_rows: [],
-      protocol_rows: payload.protocol_rows, product_class_rows: baseline.classes.filter(c => payload.product_class_rows.some(n => n.id === c.id)), predecessors },
+      protocol_rows: payload.protocol_rows, product_class_rows: baseline.classes.filter(c => payload.product_class_rows.some(n => n.id === c.id)).map(withoutAgendaAutomation),
+      predecessors: predecessors.map(withoutAgendaAutomation) },
     protected: structuredClone(preservation.protected) };
-  assert.deepEqual(packet.protected.approved_item_ids, baseline.items.filter(i => i.status === "active" && i.allows_agenda_auto).map(i => i.id).sort());
+  assert.deepEqual(packet.protected.approved_item_ids, baseline.items.filter(i => i.status === "active" && !i.deleted_at).map(i => i.id).sort());
   validateCanonicalTechnicalContract(packet);
   packet.content_sha256 = classDeltaDigest(packet);
   return packet;
