@@ -10,6 +10,7 @@ import { buildPostPartumOps } from "../postPartum";
 import { executeSanitaryAgendaV2 } from "@/lib/sanitario/execution/sanitaryAgendaExecutionV2";
 import { deterministicUuidFromText } from "../deterministicUuid";
 import { listLocalSanitaryAgendasV2 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
+import { SANITARIO_V2_CONTRACT_VERSION } from "@/lib/offline/sanitarioV2Cutover";
 import type { Animal } from "@/lib/offline/types";
 
 const farm = "11111111-1111-4111-8111-111111111111";
@@ -33,7 +34,7 @@ beforeEach(async () => {
   vi.stubGlobal("fetch", () => { throw new Error("NETWORK_FORBIDDEN"); });
   farmContext = farm;
   await establishLocalOwnership({ user: { id: "neonatal-user" } } as never);
-  await db.sync_sanitario_v2_cutovers.put({ key: `${farm}:2`, fazenda_id: farm, contract_version: 2, status: "APPLIED", prepared_at: now, applied_at: now, updated_at: now } as never);
+  await db.sync_sanitario_v2_cutovers.put({ key: `${farm}:${SANITARIO_V2_CONTRACT_VERSION}`, fazenda_id: farm, contract_version: SANITARIO_V2_CONTRACT_VERSION, status: "APPLIED", prepared_at: now, applied_at: now, updated_at: now } as never);
   await db.state_animais.put({ id: motherId, fazenda_id: farm, identificacao: "MAE", sexo: "F", status: "ativo", payload: {}, deleted_at: null } as Animal);
   const built = buildReproductionGesture({ fazendaId: farm, animalId: motherId, animalIdentificacao: "MAE", eventId: birthId, occurredAt: now,
     data: { tipo: "parto", dataParto: "2026-04-01", numeroCrias: 1 } });
@@ -56,19 +57,40 @@ describe("execução neonatal canônica", () => {
   });
   it("executes D0/D1/D2 individually with one fact, animal link and stable sync command per intention", async () => {
     const rows = (await db.ops_sanitario_agenda_v2.toArray()).filter(row => row.acao_sanitaria === "cura_umbigo").sort((a,b) => a.data_programada.localeCompare(b.data_programada));
-
+    for (let day = 0; day < 3; day++) {
+      const result = await executeSanitaryAgendaV2(request(rows[day].id, day + 1));
+      expect(await db.event_eventos_sanitario.count()).toBe(day + 1);
+      expect(await db.event_eventos_animais.where("evento_id").equals(result.eventId).count()).toBe(1);
+      expect(await db.event_eventos.get(result.eventId)).toMatchObject({ animal_id: calf.id, source_sanitario_agenda_v2_id: rows[day].id });
+      const facts = (await db.queue_ops.toArray()).filter(op => op.record.command === "apply_factual_core");
+      expect(facts).toHaveLength(day + 1);
+      expect(facts.find(op => op.record.payload.event.id === result.eventId)?.record).toMatchObject({ expected_revision: rows[day].revision, payload: { event: { source_sanitario_agenda_v2_id: rows[day].id }, detail: { dose_quantidade: null, via_aplicacao: null, produto_sanitario_v2_id: null } } });
+      for (const future of rows.slice(day + 1)) expect((await db.ops_sanitario_agenda_v2.get(future.id))?.status).toBe("programada");
+      expect((await db.event_eventos_sanitario.get(result.eventId))?.tipo).toBe("medicamento");
+    }
     const review = (await db.ops_sanitario_agenda_v2.toArray()).find(row=>row.acao_sanitaria === "revisao_neonatal")!;
-    await assertNeonatalV31Blocked([...rows.map((row,day)=>request(row.id,day+1)),
-request(review.id, 4)]);
+    expect(review.status).toBe("programada");
+    expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+    await executeSanitaryAgendaV2(request(review.id, 4));
+    expect(await db.event_eventos_sanitario.count()).toBe(4);
   });
 
-  it("retries, concurrent confirmations and reopening preserve the same factual identity", async () => {
+  it("retries, alternate confirmations and reopening preserve the same factual identity", async () => {
     const row = (await db.ops_sanitario_agenda_v2.toArray()).find(row => row.acao_sanitaria === "cura_umbigo")!;
 
-    await assertNeonatalV31Blocked([request(row.id),
-{ ...request(row.id), clientOpId: "another-confirmation" },
-request(row.id),
-request(row.id)]);
+    const result = await executeSanitaryAgendaV2(request(row.id));
+    expect((await executeSanitaryAgendaV2({ ...request(row.id), clientOpId: "another-confirmation" })).eventId).toBe(result.eventId);
+    const queue = await db.queue_ops.toArray();
+    await db.close(); await db.open();
+    expect((await executeSanitaryAgendaV2(request(row.id))).eventId).toBe(result.eventId);
+    expect(await db.event_eventos_sanitario.count()).toBe(1);
+    expect(await db.queue_ops.toArray()).toEqual(queue);
+    await db.ops_sanitario_agenda_v2.update(row.id, { status: "fechada", execution_evento_id: null });
+    await db.event_eventos.update(result.eventId, { source_task_id: null, source_client_op_id: null });
+    expect((await executeSanitaryAgendaV2(request(row.id))).eventId).toBe(result.eventId);
+    const built = buildPostPartumOps({ fazendaId: farm, mother: { id: motherId, identificacao: "MAE" }, calves: [calf], drafts: [{ calfId: calf.id, identificacao: calf.identificacao, nome: "", loteId: null, pesoKg: "", curaUmbigo: true }] });
+    expect(built.ops.filter(op => op.table === "eventos_sanitario")).toHaveLength(0);
+    expect(built.ops.filter(op => op.table === "agenda_itens" && op.action === "UPDATE")).toHaveLength(0);
   });
 
   it.each(["gate", "cutover", "birth", "animal", "origin", "context", "extra_target"])("refuses invalid %s without a partial fact", async reason => {
@@ -82,20 +104,33 @@ request(row.id)]);
     if (reason === "extra_target") await db.ops_sanitario_agenda_v2.update(row.id, { metadata: { ...row.metadata, targetAnimalIds: [calf.id, "another-calf"] } });
     const queue = await db.queue_ops.toArray();
 
-    await assertNeonatalV31Blocked([request(row.id)]);
+    const expected = {
+      gate: "NEONATAL_EXECUTION_REQUIRES_SYNC_V2",
+      cutover: "SANITARIO_V2_CUTOVER_NOT_APPLIED",
+      birth: "NEONATAL_AGENDA_BIRTH_EVIDENCE_MISSING",
+      animal: "NEONATAL_AGENDA_BIRTH_EVIDENCE_MISSING",
+      origin: "missing_protocol_item",
+      context: "FARM_CHANGED",
+      extra_target: "missing_protocol_item",
+    }[reason];
+    await expect(executeSanitaryAgendaV2(request(row.id))).rejects.toThrow(expected);
+    expect(await db.event_eventos_sanitario.count()).toBe(0);
+    expect(await db.queue_ops.toArray()).toEqual(queue);
+    expect((await db.ops_sanitario_agenda_v2.get(row.id))?.status).toBe("programada");
   });
 
   it("keeps missing_protocol_item for unrelated protocol-less agendas", async () => {
     const row = (await db.ops_sanitario_agenda_v2.toArray())[0];
     await db.ops_sanitario_agenda_v2.update(row.id, { dedup_key: "manual-without-protocol" });
 
-    await assertNeonatalV31Blocked([request(row.id)]);
+    await expect(executeSanitaryAgendaV2(request(row.id))).rejects.toThrow("missing_protocol_item");
   });
   it("does not duplicate a partially pulled execution while its fact is missing", async () => {
     const row = (await db.ops_sanitario_agenda_v2.toArray())[0];
     await db.ops_sanitario_agenda_animais_v2.update([row.id, calf.id], { planned_status: "executado", execution_evento_id: "missing-fact" });
 
-    await assertNeonatalV31Blocked([request(row.id)]);
+    await expect(executeSanitaryAgendaV2(request(row.id))).rejects.toThrow("NEONATAL_EXECUTION_REQUIRES_FACT_RECONCILIATION");
+    expect(await db.event_eventos_sanitario.count()).toBe(0);
   });
 
   it.each(["revision", "targets", "owner", "gate", "context"])("rechecks %s inside the transaction", async reason => {
@@ -111,7 +146,16 @@ request(row.id)]);
       return original(...args);
     }) as typeof db.transaction);
 
-    await assertNeonatalV31Blocked([request(row.id)]);
+    const expected = {
+      revision: "NEONATAL_AGENDA_CHANGED",
+      targets: "NEONATAL_AGENDA_ORIGIN_MISMATCH",
+      owner: "NEONATAL_EXECUTION_OWNERSHIP_CHANGED",
+      gate: "SANITARIO_V2_PUSH_DISABLED",
+      context: "FARM_CHANGED",
+    }[reason];
+    await expect(executeSanitaryAgendaV2(request(row.id))).rejects.toThrow(expected);
+    expect(await db.event_eventos_sanitario.count()).toBe(0);
+    expect((await db.queue_ops.toArray()).filter(op => op.record.command === "apply_factual_core")).toHaveLength(0);
   });
 
   it("rolls back a partial write and retries the same identity after reconnect", async () => {
@@ -119,9 +163,15 @@ request(row.id)]);
     const hook = () => { throw new Error("INJECTED_NEONATAL_WRITE_FAILURE"); };
     db.event_eventos_sanitario.hook("creating", hook);
 
-    await assertNeonatalV31Blocked([request(row.id),
-request(row.id),
-request(row.id)]);
+    try { await expect(executeSanitaryAgendaV2(request(row.id))).rejects.toThrow("INJECTED_NEONATAL_WRITE_FAILURE"); }
+    finally { db.event_eventos_sanitario.hook("creating").unsubscribe(hook); }
+    expect(await db.event_eventos_sanitario.count()).toBe(0);
+    expect((await db.ops_sanitario_agenda_v2.get(row.id))?.status).toBe("programada");
+    const result = await executeSanitaryAgendaV2(request(row.id));
+    localStorage.removeItem("rebanhosync:sanitario-v2-push");
+    localStorage.setItem("rebanhosync:sanitario-v2-push", "local");
+    expect((await executeSanitaryAgendaV2(request(row.id))).eventId).toBe(result.eventId);
+    expect((await db.queue_ops.toArray()).filter(op => op.record.command === "apply_factual_core")).toHaveLength(1);
   });
 
   it("executes one existing six-slot intention without converting its siblings", async () => {
@@ -135,13 +185,8 @@ request(row.id)]);
     await db.ops_sanitario_agenda_v2.bulkPut(rows);
     await db.ops_sanitario_agenda_animais_v2.bulkPut(rows.map(row => ({ agenda_id: row.id, fazenda_id: farm, animal_id: calf.id, planned_status: "planejado" as const, execution_evento_id: null, not_executed_reason: null, metadata: {}, created_at: now, updated_at: now })));
 
-    await assertNeonatalV31Blocked([request(rows[0].id)]);
+    await executeSanitaryAgendaV2(request(rows[0].id));
+    expect(await db.event_eventos_sanitario.count()).toBe(1);
+    expect((await db.ops_sanitario_agenda_v2.toArray()).filter(row => row.status === "programada")).toHaveLength(5);
   });
 });
-
-async function assertNeonatalV31Blocked(inputs: Parameters<typeof executeSanitaryAgendaV2>[0][]) {
-  const stores=[db.event_eventos,db.event_eventos_sanitario,db.event_eventos_animais,db.state_animais,db.queue_ops,db.ops_sanitario_agenda_v2,db.ops_sanitario_agenda_animais_v2];
-  const before=await Promise.all(stores.map(store=>store.toArray()));
-  for(const input of inputs) await expect(executeSanitaryAgendaV2(input)).rejects.toThrow("SANITARIO_V3_EXECUTION_NOT_ENABLED");
-  expect(await Promise.all(stores.map(store=>store.toArray()))).toEqual(before);
-}
