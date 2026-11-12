@@ -872,9 +872,23 @@ function identityReason(publisher, row, existingRows) {
   return null;
 }
 
+const RETIRED_PRODUCT_METADATA_KEYS = new Set(["allows_agenda_auto", "allowsAgendaAuto", "automation_status", "automationStatus", "agenda_allowed"]);
+function productMetadataContractProjection(value) {
+  if (Array.isArray(value)) return value.map(productMetadataContractProjection);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => !RETIRED_PRODUCT_METADATA_KEYS.has(key))
+    .map(([key, child]) => [key, productMetadataContractProjection(child)]));
+}
+
 function compareRow(publisher, existing, row) {
   return Object.entries(row).some(([field, value]) => {
     let actual = existing[field] ?? null;
+    if (publisher.collection === "product_rows" && field === "metadata") {
+      // Preserve retired keys already stored remotely; they are outside v14's semantic contract.
+      actual = productMetadataContractProjection(actual);
+      value = productMetadataContractProjection(value);
+    }
     if (publisher.expressions?.[field]) {
       return isDifferent(publisher.normalize(field, actual), publisher.normalize(field, value));
     }
@@ -1784,7 +1798,7 @@ async function incrementalMain(args) {
 }
 // Closed P38 increment: same planner, transactional writer and MCP compiler.
 // It only emits SQL after rehearsal against a fresh loopback materialization.
-const C02_P38_SHA256 = "8b3a14846c8e0f90e7f355cf2a25b36bd10d3f8c587a22943edb57310b635330";
+const C02_P38_SHA256 = "fffc77fe6ff5204cf2f5f859142a68a9ff59099e2953b15b8c52826351830e15";
 function p38StateSql(normalized = false) {
   const product = "'db743728-59e2-5ecb-8b2e-211ab170618f'::uuid";
   const sourceWhere = "id in ('3dfa7ffc-b505-5440-826f-84fc87ac8d6f','8d47206a-fe64-5a8d-8587-72675c8cfb94','c6ab8b68-1bbf-583c-82c9-2bfbc2ca6507') or source_key='SRC_C02_P38_EPRECIS_P12073_V00' or url='https://ruminants.ceva.com/app/uploads/sites/16/2023/10/Eprecis-Bula.pdf'";
@@ -1806,7 +1820,7 @@ function p38StateSql(normalized = false) {
 async function c02P38Main(args, closure = false) {
   const flag = closure ? "--c02-f6-closure" : "--c02-p38";
   const prefix = closure ? "C02_F6_CLOSURE" : "C02_P38";
-  const digest = closure ? "f09d9ebc4c4873693740b2afe218ce75ceff4cff3c66218a4e5be4bf6d4389bb" : C02_P38_SHA256;
+  const digest = closure ? "8ada29135f25cc87f9220758d0c3c76c647bb4b5538e29f8f7884f01b15b6654" : C02_P38_SHA256;
   const stateSql = closure ? c02StateSql : p38StateSql;
   const planCount = closure ? 85 : 6;
   const allowed = [flag, "--local-port", "--mcp-snapshot", "--emit-mcp-apply", "--project-ref", "--authorization-ref"];
@@ -1819,14 +1833,14 @@ async function c02P38Main(args, closure = false) {
   assert(options.get("--project-ref") === C02_ADMIN_PROJECT_REF && options.get("--authorization-ref").length >= 10, `${prefix}_AUTHORIZATION_REQUIRED`);
   const raw = readFileSync(options.get(flag), "utf8");
   assert(createHash("sha256").update(raw).digest("hex") === digest, `${prefix}_CANDIDATE_CHANGED`);
+  const port = Number(options.get("--local-port"));
+  assert(Number.isInteger(port) && port > 0 && port <= 65535, "C02_P38_LOCAL_PORT_REQUIRED");
   const packet = JSON.parse(raw);
   const data = validateCanonicalTechnicalContract(packet).data;
   const snapshot = JSON.parse(readFileSync(options.get("--mcp-snapshot"), "utf8"));
   assert(snapshot.project_ref === C02_ADMIN_PROJECT_REF && snapshot.read_only === "on" &&
     snapshot.isolation === "repeatable read" && snapshot.executor === "postgres" && snapshot.session_executor === "postgres" &&
     snapshot.contracts?.length === 8, "C02_P38_REMOTE_SNAPSHOT_REQUIRED");
-  const port = Number(options.get("--local-port"));
-  assert(Number.isInteger(port) && port > 0 && port <= 65535, "C02_P38_LOCAL_PORT_REQUIRED");
   const client = new Client({ host: "127.0.0.1", port, user: "postgres", database: "rebanhosync_c02_p11" });
   await client.connect();
   let before, after;
