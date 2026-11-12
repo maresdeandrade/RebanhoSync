@@ -35,7 +35,6 @@ import {
   runRegistrarReproductionFinalizeEffect,
   type RegistrarPostPartoRedirect,
 } from "@/pages/Registrar/effects/reproductionFinalize";
-import { resolveManualSanitaryAgendaCompletionOpsEffect } from "@/pages/Registrar/effects/sanitaryAgendaReconciliation";
 import {
   buildCommercialOperationGesture,
   type CommercialNewAnimalDraft,
@@ -167,15 +166,6 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
     eventId: string;
     ops: OperationInput[];
   };
-  resolveManualSanitaryAgendaCompletionOps?: (input: {
-    fazendaId: string;
-    linkedEventId: string;
-    animalId: string | null;
-    loteId: string | null;
-    sanitarioTipo: SanitarioTipoEnum;
-    sanitaryProductName: string;
-    protocoloItem: ProtocoloSanitarioItem | null;
-  }) => Promise<OperationInput[]>;
 }): Promise<
   | { issue: string; linkedEventId: null; postPartoRedirect: null; ops: [] }
   | {
@@ -186,9 +176,6 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
     }
 > {
   const buildGesture = input.buildGesture ?? buildEventGesture;
-  const resolveManualSanitaryAgendaCompletionOps =
-    input.resolveManualSanitaryAgendaCompletionOps ??
-    resolveManualSanitaryAgendaCompletionOpsEffect;
   const ops: OperationInput[] = [];
   let linkedEventId: string | null = null;
   let postPartoRedirect: RegistrarPostPartoRedirect | null = null;
@@ -532,20 +519,6 @@ export async function resolveRegistrarNonFinancialFinalizePlan(input: {
           }),
         },
       });
-    }
-
-    if (input.tipoManejo === "sanitario" && !input.sourceTaskId) {
-      ops.push(
-        ...(await resolveManualSanitaryAgendaCompletionOps({
-          fazendaId: input.fazendaId,
-          linkedEventId: built.eventId,
-          animalId: animalId ?? null,
-          loteId: targetLoteId,
-          sanitarioTipo: input.sanitarioData.tipo,
-          sanitaryProductName: input.sanitaryProductName,
-          protocoloItem: input.protocoloItem,
-        })),
-      );
     }
 
     if (

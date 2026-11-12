@@ -17,7 +17,6 @@ import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
 import { pullDataForFarm } from "@/lib/offline/pull";
 import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
-import { concluirPendenciaSanitaria } from "@/lib/sanitario/infrastructure/service";
 import {
   parseAgendaDominioFilter,
   parseCalendarAnchorQuickFilter,
@@ -355,14 +354,8 @@ export default function Agenda() {
         activeFarmId,
         navigate,
         createGesture,
-        concludePendingSanitary: concluirPendenciaSanitaria,
-        pullDataForFarm,
-        getProtocolItemById: async (id) =>
-          (await db.state_protocolos_sanitarios_itens.get(id)) ?? null,
         showError,
         showSuccess,
-        nowIso: () => new Date().toISOString(),
-        logError: (...args) => console.error(...args),
       }),
     [activeFarmId, navigate],
   );

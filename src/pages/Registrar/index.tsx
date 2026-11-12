@@ -52,7 +52,6 @@ import {
   isRegistrarFinancialFlow,
   resolveRegistrarNonFinancialFinalizePlan,
 } from "@/pages/Registrar/effects/nonFinancialFinalize";
-import { tryRegistrarSanitaryRpcFinalizeEffect } from "@/pages/Registrar/effects/sanitaryRpc";
 import { loadRegistrarAnimalsMap } from "@/pages/Registrar/effects/animalLookup";
 import { loadRegistrarSanitaryFinalizeContext } from "@/pages/Registrar/effects/sanitaryContext";
 import {
@@ -1479,7 +1478,6 @@ const Registrar = () => {
         },
         sanitary: {
           loadSanitaryFinalizeContext: loadRegistrarSanitaryFinalizeContext,
-          trySanitaryRpcFinalize: tryRegistrarSanitaryRpcFinalizeEffect,
         },
         tracks: {
           isFinancialFlow: isRegistrarFinancialFlow,

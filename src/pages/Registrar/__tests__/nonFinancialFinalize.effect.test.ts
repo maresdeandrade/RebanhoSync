@@ -145,20 +145,8 @@ describe("resolveRegistrarNonFinancialFinalizePlan", () => {
     expect(result.ops).toEqual([]);
   });
 
-  it("conclui pendencia sanitaria correspondente quando registro manual bate com agenda aberta", async () => {
+  it("mantem registro sanitário factual independente de Agenda", async () => {
     const animal = buildAnimal("a-1");
-    const resolveManualSanitaryAgendaCompletionOps = vi.fn(async () => [
-      {
-        table: "agenda_itens",
-        action: "UPDATE" as const,
-        record: {
-          id: "agenda-1",
-          status: "concluido",
-          source_evento_id: "evt-manual-1",
-        },
-      },
-    ]);
-
     const result = await resolveRegistrarNonFinancialFinalizePlan({
       ...baseInput(),
       tipoManejo: "sanitario",
@@ -198,55 +186,15 @@ describe("resolveRegistrarNonFinancialFinalizePlan", () => {
           },
         ],
       }),
-      resolveManualSanitaryAgendaCompletionOps,
     });
 
     expect(result.issue).toBeNull();
-    expect(resolveManualSanitaryAgendaCompletionOps).toHaveBeenCalledWith({
-      fazendaId: "farm-1",
-      linkedEventId: "evt-manual-1",
-      animalId: "a-1",
-      loteId: "lote-1",
-      sanitarioTipo: "vacinacao",
-      sanitaryProductName: "Vacina Raiva Herbivoros",
-      protocoloItem: expect.objectContaining({ id: "item-1" }),
-    });
     expect(result.ops).toEqual([
       { table: "eventos", action: "INSERT", record: { id: "evt-manual-1" } },
-      {
-        table: "agenda_itens",
-        action: "UPDATE",
-        record: {
-          id: "agenda-1",
-          status: "concluido",
-          source_evento_id: "evt-manual-1",
-        },
-      },
     ]);
   });
 
-  it("reconcilia agenda sanitaria dos animais pelo lote quando nao ha animal individual", async () => {
-    const resolveManualSanitaryAgendaCompletionOps = vi.fn(async () => [
-      {
-        table: "agenda_itens",
-        action: "UPDATE" as const,
-        record: {
-          id: "agenda-a1",
-          status: "concluido",
-          source_evento_id: "evt-lote-1",
-        },
-      },
-      {
-        table: "agenda_itens",
-        action: "UPDATE" as const,
-        record: {
-          id: "agenda-a2",
-          status: "concluido",
-          source_evento_id: "evt-lote-1",
-        },
-      },
-    ]);
-
+  it("mantem registro sanitário em lote sem reconciliar Agenda legada", async () => {
     const result = await resolveRegistrarNonFinancialFinalizePlan({
       ...baseInput(),
       tipoManejo: "sanitario",
@@ -263,37 +211,12 @@ describe("resolveRegistrarNonFinancialFinalizePlan", () => {
           },
         ],
       }),
-      resolveManualSanitaryAgendaCompletionOps,
     });
 
     expect(result.issue).toBeNull();
-    expect(resolveManualSanitaryAgendaCompletionOps).toHaveBeenCalledWith({
-      fazendaId: "farm-1",
-      linkedEventId: "evt-lote-1",
-      animalId: null,
-      loteId: "lote-1",
-      sanitarioTipo: "vacinacao",
-      sanitaryProductName: "Vacina Lote",
-      protocoloItem: null,
-    });
-    expect(result.ops).toContainEqual({
-      table: "agenda_itens",
-      action: "UPDATE",
-      record: {
-        id: "agenda-a1",
-        status: "concluido",
-        source_evento_id: "evt-lote-1",
-      },
-    });
-    expect(result.ops).toContainEqual({
-      table: "agenda_itens",
-      action: "UPDATE",
-      record: {
-        id: "agenda-a2",
-        status: "concluido",
-        source_evento_id: "evt-lote-1",
-      },
-    });
+    expect(result.ops).toEqual([
+      { table: "eventos", action: "INSERT", record: { id: "evt-lote-1" } },
+    ]);
   });
 
   it("registra secagem manual com payload dry_cow_therapy e atualiza taxonomia do animal", async () => {
