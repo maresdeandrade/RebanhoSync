@@ -2,8 +2,8 @@
 
 Atualizado em: 2026-11-11
 Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED apenas no envelope reconnect 1k; produção não provisionada**
-Próxima fase: **Fase 24 — continuidade pós-#287, sem nova fase. B01/F07 #272 e comando durável B02/A05 #274 integrados; Sanitário #285–#287 integrado no recorte de execução V3, triagem proativa e planejamento manual coletivo. Convergência com os protótipos e homologação V01 real continuam separadas. Evidência local não certifica kill real ou convergência remota. F24.6A2 não iniciada.**
-Baseline integrada consultada: `main@2f5d74a36666b14893ae904089f19b2cf86c8ef7` (PR #287)
+Próxima fase: **Fase 24 — continuidade pós-#288, sem nova fase. B01/F07 #272 e comando durável B02/A05 #274 integrados; Sanitário #285–#287 integrado no recorte de execução V3, triagem proativa e planejamento manual coletivo. Etapa 3 local (`dae55abf`): READY WITH CAVEAT, pré-merge; publicação da branch/PR/CI pendentes. Convergência com os protótipos e homologação V01 real continuam separadas. F24.6A2 não iniciada.**
+Baseline indicada para esta continuidade: `main@75d2dca03948f8193d5e84631de69ee0f6b0873a` (PR #288; sem reconfirmação remota nesta atualização documental)
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -25,7 +25,7 @@ Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
 ## Central Sanitária — integrações até #287
 
-Baseline remota confirmada em 11/11/2026: `main@2f5d74a36666b14893ae904089f19b2cf86c8ef7`. **CLOSED / INTEGRATED** para os incrementos abaixo; não para certificação sanitária completa ou rollout.
+Baseline do snapshot detalhado até #287, confirmada em 11/11/2026: `main@2f5d74a36666b14893ae904089f19b2cf86c8ef7`. A baseline indicada para a Etapa 3 é `main@75d2dca03948f8193d5e84631de69ee0f6b0873a` (#288), sem reconfirmação remota nesta atualização. **CLOSED / INTEGRATED** para os incrementos abaixo; não para certificação sanitária completa ou rollout.
 
 | Entrega | Merge confirmado | Recorte integrado |
 | --- | --- | --- |
@@ -37,6 +37,8 @@ Baseline remota confirmada em 11/11/2026: `main@2f5d74a36666b14893ae904089f19b2c
 | [#287](https://github.com/maresdeandrade/RebanhoSync/pull/287) | `2f5d74a3` | Adiciona seleção coletiva além dos registros renderizados, prévia explícita e integração triagem → resolução → writer manual → Dexie; o planejamento não cria Evento, estoque ou carência. |
 
 O [manual da Central](../manuals/screens/SANITARIO.md#central-sanitária-e-filtros) reflete as abas reais e os limites offline. O #287 preserva a separação entre triagem derivada, Agenda-intenção e Evento factual; a seleção coletiva opera sobre o conjunto filtrado, e a confirmação é o limite da escrita local. As validações focadas registradas nos PRs passaram; a integração do PR #287 foi confirmada no merge `2f5d74a3`. Isso não equivale a homologação de V01 real, entrega dos protótipos finais, convergência remota geral ou rollout. Não repetir provas históricas nesta reconciliação documental.
+
+**Etapa 3 — READY WITH CAVEAT (pré-merge; `dae55abf`):** o fluxo local percorreu Triagem → Agenda manual → Evento → leitura local; o marcador de confirmação do cenário integrado foi simulado. O harness HTTP separado passou 10/10; a bateria focal passou 94/94 antes do ajuste exclusivo de cleanup e, após esse ajuste, a suíte de triagem passou 15/15. `tsc --noEmit` e ESLint passaram; `tsc --build` manteve zero delta contra o baseline (958 diagnósticos em ambos); os avisos Prettier eram preexistentes e as linhas modificadas foram conferidas. Publicação da branch, PR e CI permanecem pendentes. Não houve alteração de migration/RLS/RPC; F24.7/F24.8, homologação operacional real e rollout não estão certificados/comprovados.
 
 B02/A05 também está **CLOSED / INTEGRATED** pelo [PR #274](https://github.com/maresdeandrade/RebanhoSync/pull/274), merge `0673a9747cf6e45bd6da4c368f4722c4572cd49d`: caller durável, transação do comando/fila e destino efetivo do desmame. As 59 provas locais já registradas conservam seus limites; sem certificação de kill real, dispositivos físicos ou convergência remota. C06 heterogêneo permanece [CLOSED / INTEGRATED #260](./SANITARIO_C06_GESTO_HETEROGENEO_20261030.md#estado-integrado--atualização-de-08112026); F24.7 completa não certificada. GATE-03, BLQ-002/003 e rollout mantêm os critérios próprios.
 

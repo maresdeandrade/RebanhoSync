@@ -1,9 +1,9 @@
 # Project Status — RebanhoSync
 
 Atualizado em: 2026-11-11
-Baseline integrada consultada: `main@2f5d74a36666b14893ae904089f19b2cf86c8ef7` (#287)
+Baseline indicada para esta atualização: `main@75d2dca03948f8193d5e84631de69ee0f6b0873a` (PR #288)
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no escopo certificado)**.
-Próxima fase de desenvolvimento: **Fase 24 — continuidade pós-#287, sem nova fase. B01/F07 #272 e B02/A05 #274 integrados; [contrato e limites](../architecture/OPERATIONAL_FLOWS.md) preservados. Sanitário #285–#287 integrou a remoção da automação, a execução V3, a triagem proativa e o planejamento manual coletivo; convergência com os protótipos e homologação dirigida com V01 real continuam separadas. GATE-03 bloqueado; F24.6A2 sem início; nenhum novo ciclo F24 aberto.**
+Próxima fase de desenvolvimento: **Fase 24 — continuidade pós-#288, sem nova fase. B01/F07 #272 e B02/A05 #274 integrados; [contrato e limites](../architecture/OPERATIONAL_FLOWS.md) preservados. Sanitário #285–#287 integrou a remoção da automação, a execução V3, a triagem proativa e o planejamento manual coletivo; a Etapa 3 local (`dae55abf`) está READY WITH CAVEAT, pré-merge, com publicação da branch/PR/CI pendentes. Convergência com os protótipos e homologação dirigida com V01 real continuam separadas. GATE-03 bloqueado; F24.6A2 sem início; nenhum novo ciclo F24 aberto.**
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.

@@ -587,6 +587,8 @@ A agenda corretiva deve preservar:
 
 Evento sanitário é fato histórico executado.
 
+Na captura operacional, a data e a hora factuais são informadas pelo operador em horário local do dispositivo. Novas gravações exigem data/hora completas e válidas; data sem hora não inicia um novo fato. `occurred_at` representa o instante normalizado, e `occurred_on` a data civil em `America/Sao_Paulo`. A validação de timestamp para nova gravação ocorre após a verificação idempotente do fato histórico existente, preservando replay; retries da mesma operação mantêm identidade e instante originais. Ao reabrir o formulário para retry, exige-se nova confirmação explícita sem alterar esses valores.
+
 Deve preservar, quando aplicável:
 
 - `protocol_item_version_id`;
