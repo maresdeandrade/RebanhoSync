@@ -41,7 +41,7 @@ const IMPORT_LOCK_KEY = "rebanhosync:sanitario-protocols-v2:12F10";
 const C02_P11_SHA256 = "751ba7c3fb4c0bb912e2f2a401c8b7405a37ad22e2615b9d326823aa0df64275";
 const C02_LOCAL_DATABASE = "rebanhosync_c02_p11";
 const C02_LOCAL_MARKER = "C02_P11_DISPOSABLE_LOCAL_ONLY";
-const C02_F6_SHA256 = "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367";
+const C02_F6_SHA256 = "c3b0e577d361a4d100d250a7e8b8c591c9e7b1b8721ada8fb4e665f610e8cf4c";
 const C02_ADMIN_PROJECT_REF = "zqloazqzhwauamcejmuz";
 
 const DEPRECATED_ACTIVE_ITEMS = [
@@ -68,6 +68,12 @@ const FORBIDDEN_TRUE_FLAGS = [
   "creates_stock_movement",
   "creates_active_withdrawal",
   "allows_operational_release",
+  "allows_agenda_auto",
+  "allowsAgendaAuto",
+  "automatic_product_selection_authorized",
+  "automation_status",
+  "automationStatus",
+  "agenda_allowed",
 ];
 
 const UUID_LIKE =
@@ -872,23 +878,9 @@ function identityReason(publisher, row, existingRows) {
   return null;
 }
 
-const RETIRED_PRODUCT_METADATA_KEYS = new Set(["allows_agenda_auto", "allowsAgendaAuto", "automation_status", "automationStatus", "agenda_allowed"]);
-function productMetadataContractProjection(value) {
-  if (Array.isArray(value)) return value.map(productMetadataContractProjection);
-  if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value)
-    .filter(([key]) => !RETIRED_PRODUCT_METADATA_KEYS.has(key))
-    .map(([key, child]) => [key, productMetadataContractProjection(child)]));
-}
-
 function compareRow(publisher, existing, row) {
   return Object.entries(row).some(([field, value]) => {
     let actual = existing[field] ?? null;
-    if (publisher.collection === "product_rows" && field === "metadata") {
-      // Preserve retired keys already stored remotely; they are outside v14's semantic contract.
-      actual = productMetadataContractProjection(actual);
-      value = productMetadataContractProjection(value);
-    }
     if (publisher.expressions?.[field]) {
       return isDifferent(publisher.normalize(field, actual), publisher.normalize(field, value));
     }
@@ -1199,6 +1191,8 @@ async function preserveC02Baseline(client, data, context, lockRows = true) {
   for (const candidate of [...data.product_rows].sort((a, b) => a.id.localeCompare(b.id))) {
     const baseline = context.baseline?.find(p => p.id === candidate.id) ?? candidate;
     const prefix = `C02_${context.scope}`;
+    assert(FORBIDDEN_TRUE_FLAGS.every(flag => candidate.metadata?.[flag] !== true),
+      `${prefix}_OPERATIONAL_METADATA`);
     const { rows: [existing] } = await client.query(
       `select * from public.sanitario_produtos_v2 where id=$1${lockRows ? " for update" : ""}`, [candidate.id],
     );

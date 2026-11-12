@@ -161,13 +161,16 @@ describe("P38: candidata documental de leite, sem promoção operacional", () =>
     expect(client.rows.sanitario_produto_dose_rules_v2).toEqual(before.sanitario_produto_dose_rules_v2);
     expect(client.rows.sanitario_produto_especie_autorizacao_v2).toEqual(before.sanitario_produto_especie_autorizacao_v2);
 
-    const observedBefore = JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_C02_P38_REMOTE_BEFORE_20261029.json", "utf8")).rows;
-    const observedPlan = await buildPlan(new SnapshotReader(observedBefore), data);
-    assertPublishablePlan(observedPlan);
-    expect(observedPlan.map(op => op.action).sort()).toEqual(["create", "create", "create", "create", "create", "skip"]);
-    expect(observedPlan.find(op => op.collection === "product_rows")).toMatchObject({ action: "skip" });
+    // The historical remote snapshot retains the retired v13 flag. The strict
+    // v14 planner must consume the explicit v14 contract projection instead;
+    // the historical snapshot remains covered by the evidence assertions above.
+    const contractBefore = v14Snapshot.rows;
+    const contractPlan = await buildPlan(new SnapshotReader(contractBefore), data);
+    assertPublishablePlan(contractPlan);
+    expect(contractPlan.map(op => op.action).sort()).toEqual(["create", "create", "create", "create", "create", "skip"]);
+    expect(contractPlan.find(op => op.collection === "product_rows")).toMatchObject({ action: "skip" });
 
-    const unrelatedMetadataChange = structuredClone(observedBefore);
+    const unrelatedMetadataChange = structuredClone(contractBefore);
     unrelatedMetadataChange.sanitario_produtos_v2[0].metadata.unrelated_v14_regression_probe = true;
     const changedPlan = await buildPlan(new SnapshotReader(unrelatedMetadataChange), data);
     expect(changedPlan.find(op => op.collection === "product_rows").action).toBe("reject");

@@ -10,8 +10,9 @@ import { classifyDocumentedField, reconcileClosure } from "../../scripts/codex/s
 const read = name => JSON.parse(readFileSync("docs/review/evidence/" + name, "utf8"));
 const packet = read("SANITARIO_V2_C02_F6_CLOSURE_CANDIDATE_V14_20261112.json");
 const matrix = read("SANITARIO_V2_C02_F6_CLOSURE_MATRIX_20261029.json");
-const before = read("SANITARIO_V2_C02_F6_CLOSURE_ADMIN_BEFORE_20261029.json").rows;
 const v14Snapshot = read("SANITARIO_V2_C02_F6_CLOSURE_CONTRACT_SNAPSHOT_V14_20261112.json");
+const historicalBefore = read("SANITARIO_V2_C02_F6_CLOSURE_ADMIN_BEFORE_20261029.json").rows;
+const before = v14Snapshot.rows;
 const payload = packet.payload;
 const cell = (code, field) => matrix.cells.find(c => c.code === code && c.field === field);
 class SnapshotReader {
@@ -70,7 +71,7 @@ describe("Fechamento F6 consolidado, sem promoção operacional", () => {
       .update(readFileSync("docs/review/evidence/SANITARIO_V2_C02_F6_CLOSURE_CONTRACT_SNAPSHOT_V14_20261112.json")).digest("hex"));
     expect(v14Snapshot).toMatchObject({ artifact_version: packet.artifact_version, projection_only: true, usable_as_importer_mcp_snapshot: false });
     expect(v14Snapshot.source_snapshot_sha256).toBe(createHash("sha256").update(readFileSync("docs/review/evidence/SANITARIO_V2_C02_F6_CLOSURE_ADMIN_BEFORE_20261029.json")).digest("hex"));
-    expect(before.sanitario_produtos_v2.some(p => Object.hasOwn(p.metadata, "allows_agenda_auto"))).toBe(true);
+    expect(historicalBefore.sanitario_produtos_v2.some(p => Object.hasOwn(p.metadata, "allows_agenda_auto"))).toBe(true);
     expect(v14Snapshot.rows.sanitario_produtos_v2.every(p => !Object.hasOwn(p.metadata, "allows_agenda_auto"))).toBe(true);
     for (const p of payload.product_rows) {
       const { product_key: _key, ...actual } = p;
