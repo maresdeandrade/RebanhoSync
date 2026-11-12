@@ -490,6 +490,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
         }),
       ]),
     );
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
   it("mostra sucesso parcial e reenvia somente agendas falhas ou não executadas", async () => {
@@ -606,6 +607,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     fireEvent.click(retryButton);
     await waitFor(() => expect(onExecute).toHaveBeenCalledTimes(2));
     const retryPayloads = onExecute.mock.calls[1][0];
+    expect(retryPayloads).toEqual([firstPayloads[1], firstPayloads[2]]);
     expect(
       retryPayloads.map((payload: { agendaId: string }) => payload.agendaId),
     ).toEqual(["agenda-b", "agenda-c"]);
@@ -619,6 +621,73 @@ describe("SanitaryLocalAgendaPanelV2", () => {
         (payload: { executedAt: string }) => payload.executedAt,
       ),
     ).toEqual([firstPayloads[1].executedAt, firstPayloads[2].executedAt]);
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /Executar grupo/i }));
+    expect(screen.queryByText("Resultado por agenda")).not.toBeInTheDocument();
+  });
+
+  it("mantém alvo e detalhe quando a falha não tem retry disponível", async () => {
+    const onExecute = vi.fn().mockImplementation(async (payloads) =>
+      batchResult(payloads.map((payload: { agendaId: string; clientOpId: string }) => ({
+        agendaId: payload.agendaId,
+        clientOpId: payload.clientOpId,
+        status: "FALHOU" as const,
+        retryAvailable: false,
+        errorMessage: "Falha terminal de fixture",
+      }))),
+    );
+    renderPanel(vi.fn(), vi.fn(), onExecute);
+    fireEvent.click(screen.getByRole("button", { name: /Executar grupo/i }));
+    fireEvent.click(screen.getByLabelText("Produto real"));
+    fireEvent.click(screen.getByRole("option", { name: "Vermífugo A · Lab" }));
+    fireEvent.change(screen.getByLabelText("Via"), { target: { value: "subcutanea" } });
+    fireEvent.click(screen.getByLabelText("Confirmo que este manejo sanitário foi executado."));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar execução" }));
+
+    await screen.findByText("Resultado por agenda");
+    expect(screen.getByLabelText("Data e hora da execução (horário local)")).toBeInTheDocument();
+    expect(screen.getByText(/Alvo: Novilhas/)).toBeInTheDocument();
+    expect(screen.getByText("Falha terminal de fixture")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Reenviar/ })).not.toBeInTheDocument();
+  });
+
+  it("preserva o payload e a identidade após exceção ambígua e limpa resultado ao iniciar de novo", async () => {
+    const onExecute = vi.fn()
+      .mockRejectedValueOnce(new Error("TIMEOUT_DE_FIXTURE"))
+      .mockImplementationOnce(async (payloads) => batchResult(
+        payloads.map((payload: { agendaId: string; clientOpId: string }) => ({
+          agendaId: payload.agendaId,
+          clientOpId: payload.clientOpId,
+          status: "EXECUTADO" as const,
+          retryAvailable: false,
+        })),
+      ));
+    renderPanel(vi.fn(), vi.fn(), onExecute);
+    fireEvent.click(screen.getByRole("button", { name: /Executar grupo/i }));
+    fireEvent.change(screen.getByLabelText("Data e hora da execução (horário local)"), { target: { value: "2026-10-30T14:37" } });
+    fireEvent.click(screen.getByLabelText("Produto real"));
+    fireEvent.click(screen.getByRole("option", { name: "Vermífugo A · Lab" }));
+    fireEvent.change(screen.getByLabelText("Via"), { target: { value: "subcutanea" } });
+    fireEvent.click(screen.getByLabelText("Confirmo que este manejo sanitário foi executado."));
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar execução" }));
+
+    expect(await screen.findByText(/TIMEOUT_DE_FIXTURE/)).toBeInTheDocument();
+    const retryButton = screen.getByRole("button", { name: "Reenviar 1 pendente(s)" });
+    expect(retryButton).toBeDisabled();
+    const originalPayloads = onExecute.mock.calls[0][0];
+    expect(originalPayloads[0]).toMatchObject({ executedAt: "2026-10-30T14:37" });
+    fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Confirmo que este manejo sanitário foi executado."));
+    fireEvent.click(retryButton);
+
+    await waitFor(() => expect(onExecute).toHaveBeenCalledTimes(2));
+    expect(onExecute.mock.calls[1][0]).toEqual(originalPayloads);
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /Executar grupo/i }));
+    expect(screen.queryByText("Resultado por agenda")).not.toBeInTheDocument();
   });
 
   it("envia somente os animais escolhidos e conserva uma identidade UUID no retry", async () => {

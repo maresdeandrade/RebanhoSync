@@ -8,6 +8,7 @@ import { format } from "date-fns";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
+import { isCompleteSanitaryExecutionBatch } from "@/lib/sanitario/execution/sanitaryExecutionResultV2";
 import { SanitaryCompliancePanelV2 } from "@/components/sanitario/SanitaryCompliancePanelV2";
 import { SanitaryProactiveTriagePanelV2 } from "@/components/sanitario/SanitaryProactiveTriagePanelV2";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,23 @@ function sourceExecutedEvents(source: SanitaryProtocolWindowSourceV2 | undefined
   return source?.executedEvents ?? [];
 }
 
+function localExecutionDateKey(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : format(date, "yyyy-MM-dd");
+}
+
+function formatLocalExecutionDateTime(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Data/hora indisponível"
+    : `${format(date, "dd/MM/yyyy HH:mm")} (horário local)`;
+}
+
+function matchesHistoryFilter(value: string, query: string) {
+  const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
+  return !normalizedQuery || value.toLocaleLowerCase("pt-BR").includes(normalizedQuery);
+}
+
 function sourceWithFarmLocation(source: SanitaryProtocolWindowSourceV2 | undefined, location: ReturnType<typeof useSanitaryFarmLocationV2>) {
   if (!source) return source;
   return { ...source, farmMunicipality: location && location.fazendaId === source.fazendaId ? location.municipio : null };
@@ -101,7 +119,7 @@ function CentralExecutedEvents({ events: executedEvents, onOpen }: { events: San
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <p className="font-medium">{event.protocolLabel} · {event.itemLabel}</p>
-                          <p className="text-sm text-muted-foreground">{new Date(event.executedAt).toLocaleDateString("pt-BR")} · {event.animalLabel} · {event.lotLabel}</p>
+                          <p className="text-sm text-muted-foreground">{formatLocalExecutionDateTime(event.executedAt)} · {event.animalLabel} · {event.lotLabel}</p>
                           <p className="text-sm text-muted-foreground">{event.productLabel} · {event.doseLabel} · {event.routeLabel}</p>
                           <p className="text-sm text-muted-foreground">{event.responsibleLabel} · {event.originLabel} · estoque {event.stockLabel} · carência {event.withdrawalLabel}</p>
                         </div>
@@ -122,6 +140,7 @@ function CentralDocumentaryPendencies({ rows: filteredPendencies }: { rows: Sani
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <p className="font-medium">{pendency.protocolLabel} · {pendency.itemLabel}</p>
+                          <p className="text-sm text-muted-foreground">Animal: {pendency.animalLabel}</p>
                           <p className="text-sm text-muted-foreground">{pendency.lotLabel}</p>
                           <p className="mt-1 text-sm text-amber-700">{pendency.reasons[0]}</p>
                         </div>
@@ -194,8 +213,9 @@ const ProtocolosSanitarios = () => {
   }) : [], [windowSource, documentaryDate, activeTab]);
   const executedEvents = sourceExecutedEvents(windowSource).filter((event) => {
     if (historyFilters.recordType !== "todos" && historyFilters.recordType !== "executed_event") return false;
-    if (historyFilters.startDate && event.executedAt.slice(0, 10) < historyFilters.startDate) return false;
-    if (historyFilters.endDate && event.executedAt.slice(0, 10) > historyFilters.endDate) return false;
+    const eventDate = localExecutionDateKey(event.executedAt);
+    if (historyFilters.startDate && (!eventDate || eventDate < historyFilters.startDate)) return false;
+    if (historyFilters.endDate && (!eventDate || eventDate > historyFilters.endDate)) return false;
     const fields = [
       event.protocolLabel,
       event.itemLabel,
@@ -204,30 +224,30 @@ const ProtocolosSanitarios = () => {
       event.productLabel,
       event.originLabel,
     ];
-    const text = historyFilters.text.trim().toLocaleLowerCase("pt-BR");
-    if (text && !fields.join(" ").toLocaleLowerCase("pt-BR").includes(text)) return false;
-    if (historyFilters.animal && !event.animalLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.animal.toLocaleLowerCase("pt-BR"))) return false;
-    if (historyFilters.lote && !event.lotLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.lote.toLocaleLowerCase("pt-BR"))) return false;
-    if (historyFilters.protocol && !event.protocolLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.protocol.toLocaleLowerCase("pt-BR"))) return false;
-    if (historyFilters.item && !event.itemLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.item.toLocaleLowerCase("pt-BR"))) return false;
-    if (historyFilters.product && !event.productLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.product.toLocaleLowerCase("pt-BR"))) return false;
-    if (historyFilters.origin && !event.originLabel.toLocaleLowerCase("pt-BR").includes(historyFilters.origin.toLocaleLowerCase("pt-BR"))) return false;
+    if (!matchesHistoryFilter(fields.join(" "), historyFilters.text)) return false;
+    if (!matchesHistoryFilter(event.animalLabel, historyFilters.animal)) return false;
+    if (!matchesHistoryFilter(event.lotLabel, historyFilters.lote)) return false;
+    if (!matchesHistoryFilter(event.protocolLabel, historyFilters.protocol)) return false;
+    if (!matchesHistoryFilter(event.itemLabel, historyFilters.item)) return false;
+    if (!matchesHistoryFilter(event.productLabel, historyFilters.product)) return false;
+    if (!matchesHistoryFilter(event.originLabel, historyFilters.origin)) return false;
     return true;
   });
   const filteredPendencies = documentaryPendencies.filter((pendency) => {
     if (historyFilters.recordType !== "todos" && historyFilters.recordType !== "documentary_pendency") return false;
-    const text = historyFilters.text.trim().toLocaleLowerCase("pt-BR");
-    if (!text) return true;
-    return [
+    const fields = [
       pendency.protocolLabel,
       pendency.itemLabel,
       pendency.animalLabel,
       pendency.lotLabel,
       pendency.reasons.join(" "),
-    ]
-      .join(" ")
-      .toLocaleLowerCase("pt-BR")
-      .includes(text);
+    ];
+    if (!matchesHistoryFilter(fields.join(" "), historyFilters.text)) return false;
+    if (!matchesHistoryFilter(pendency.animalLabel, historyFilters.animal)) return false;
+    if (!matchesHistoryFilter(pendency.lotLabel, historyFilters.lote)) return false;
+    if (!matchesHistoryFilter(pendency.protocolLabel, historyFilters.protocol)) return false;
+    if (!matchesHistoryFilter(pendency.itemLabel, historyFilters.item)) return false;
+    return true;
   });
 
   if (!activeFarmId) {
@@ -270,15 +290,17 @@ const ProtocolosSanitarios = () => {
         },
       })),
     );
-    if (result.retryAvailableCount === 0) {
-      toast.success(`${result.executedCount} grupo(s) salvo(s) localmente. Aguardam reconhecimento na sincroniza\u00e7\u00e3o; a Agenda permanece aberta.`);
+    if (isCompleteSanitaryExecutionBatch(payloads, result)) {
+      toast.success("Execução sanitária confirmada para todas as agendas. A leitura local será atualizada.");
     } else if (result.executedCount > 0) {
       toast.warning(
-        `${result.executedCount} grupo(s) salvo(s) localmente; ${result.retryAvailableCount} item(ns) pode(m) ser reenviado(s).`,
+        `Execução parcial: ${result.executedCount} fato(s) confirmado(s), ${result.failedCount} falha(s) e ${result.notExecutedCount} não executado(s). Consulte o resultado por Agenda.`,
       );
+    } else if (result.retryAvailableCount > 0) {
+      toast.warning(`Nenhuma execução foi confirmada; ${result.retryAvailableCount} agenda(s) podem ser reenviadas com a mesma identidade.`);
     } else {
       toast.error(
-        `Nenhum item foi executado; ${result.retryAvailableCount} item(ns) pode(m) ser reenviado(s).`,
+        `Nenhuma execução foi confirmada. ${result.failedCount} falha(s) e ${result.notExecutedCount} não executado(s); consulte o resultado por Agenda.`,
       );
     }
     return result;
@@ -353,7 +375,7 @@ const ProtocolosSanitarios = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Filtros do histórico sanitário</CardTitle>
-                <CardDescription>Filtros locais sobre eventos executados e registros documentais. Agenda futura não entra como histórico.</CardDescription>
+                <CardDescription>Filtros locais. Texto, animal, lote, protocolo e item filtram Eventos e pendências; produto, origem e intervalo de datas aplicam-se somente a eventos executados. Agenda futura não entra como histórico.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-4">
                 <Input aria-label="Texto" placeholder="Texto" value={historyFilters.text} onChange={(event) => setHistoryFilters((current) => ({ ...current, text: event.target.value }))} />

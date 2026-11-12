@@ -102,9 +102,79 @@ describe("SanitaryProactiveTriagePanelV2", () => {
     vi.mocked(triageSanitaryProtocolIntervalV2).mockReturnValue(collectiveResult);
 
     render(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={source} /></MemoryRouter>);
-    fireEvent.click(screen.getByRole("button", { name: /Selecionar todo o grupo Protocolo 1 Manejo 1/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Selecionar elegíveis do grupo Protocolo 1 Manejo 1 \(60\)/ }));
 
     expect(screen.getByText("60 avaliação(ões) selecionada(s)")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Planejar selecionados/ })).toBeEnabled();
+  });
+
+  it("seleciona somente as avaliações elegíveis em um grupo misto", () => {
+    const mixedEvaluations = Array.from({ length: 4 }, (_, index) => ({
+      ...evaluation(index),
+      animalId: `mixed-animal-${index}`,
+      animalHref: `/animais/mixed-animal-${index}`,
+      disposition: index % 2 === 0 ? "opportunity_in_window" as const : "restricted" as const,
+      blockers: index % 2 === 0 ? [] : ["Bloqueio técnico"],
+    }));
+    vi.mocked(triageSanitaryProtocolIntervalV2).mockReturnValue({
+      ...result,
+      evaluations: mixedEvaluations,
+      summary: { ...result.summary, opportunity_in_window: 2, restricted: 2 },
+    } as typeof result);
+
+    render(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={source} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Selecionar elegíveis do grupo Protocolo 1 Manejo 1 \(2\)/ }));
+
+    expect(screen.getByText("2 avaliação(ões) selecionada(s)")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Selecionar elegíveis no recorte \(2\)/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Planejar selecionados/ })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: /Protocolo 1.*Manejo 1.*4 avaliações/ }));
+    expect(screen.getAllByRole("checkbox", { name: /para Agenda/ })).toHaveLength(2);
+  });
+
+  it("desabilita ações coletivas quando o recorte não tem avaliação elegível", () => {
+    const blocked = {
+      ...evaluation(1),
+      disposition: "restricted" as const,
+      blockers: ["Bloqueio técnico"],
+    };
+    vi.mocked(triageSanitaryProtocolIntervalV2).mockReturnValue({
+      ...result,
+      evaluations: [blocked],
+      summary: { ...result.summary, opportunity_in_window: 0, restricted: 1 },
+    } as typeof result);
+
+    render(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={source} /></MemoryRouter>);
+
+    expect(screen.getByRole("button", { name: /Selecionar elegíveis no recorte \(0\)/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Selecionar elegíveis do grupo Protocolo 1 Manejo 1 \(0\)/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Planejar selecionados/ })).toBeDisabled();
+  });
+
+  it("preserva a seleção individual ao avançar a paginação do mesmo recorte", () => {
+    const pagedResult = {
+      ...result,
+      evaluations: Array.from({ length: 60 }, (_, index) => ({
+        ...evaluation(index),
+        animalId: `paged-animal-${index}`,
+        identification: `Paginado ${index}`,
+        disposition: "opportunity_in_window" as const,
+        blockers: [],
+      })),
+      summary: { ...result.summary, opportunity_in_window: 60, restricted: 0 },
+    } as typeof result;
+    vi.mocked(triageSanitaryProtocolIntervalV2).mockReturnValue(pagedResult);
+
+    render(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={source} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Protocolo 1.*Manejo 1.*60 avaliações/ }));
+    const firstCheckbox = screen.getByRole("checkbox", { name: "Selecionar Paginado 0 para Agenda" });
+    fireEvent.click(firstCheckbox);
+    expect(screen.getByText("1 avaliação(ões) selecionada(s)")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Mostrar mais \(10 restantes\)/ }));
+
+    expect(screen.getByRole("checkbox", { name: "Selecionar Paginado 0 para Agenda" })).toBeChecked();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Selecionar Paginado 55 para Agenda" }));
+    expect(screen.getByText("2 avaliação(ões) selecionada(s)")).toBeInTheDocument();
   });
 });

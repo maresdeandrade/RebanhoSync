@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,12 @@ function selectionKey(evaluation: SanitaryTriageEvaluationV2) {
   return `${evaluation.animalId}:${evaluation.protocolId}:${evaluation.itemId}`;
 }
 
+function isSelectableEvaluation(evaluation: SanitaryTriageEvaluationV2) {
+  return evaluation.disposition === "opportunity_in_window" &&
+    !evaluation.alreadyPlanned &&
+    evaluation.blockers.length === 0;
+}
+
 function groupEvaluations(evaluations: SanitaryTriageEvaluationV2[]) {
   const groups = new Map<string, SanitaryTriageEvaluationV2[]>();
   for (const evaluation of evaluations) {
@@ -138,7 +144,7 @@ function SummaryCard({ label, value, description }: { label: string; value: numb
 }
 
 function EvaluationDetails({ evaluation, selected, onToggle, onOpenSection }: { evaluation: SanitaryTriageEvaluationV2; selected: boolean; onToggle: (evaluation: SanitaryTriageEvaluationV2) => void; onOpenSection?: Props["onOpenSection"] }) {
-  const selectable = evaluation.disposition === "opportunity_in_window" && !evaluation.alreadyPlanned && evaluation.blockers.length === 0;
+  const selectable = isSelectableEvaluation(evaluation);
   return <li className="rounded-md border border-border/70 bg-background p-3 text-sm">
     <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
       <div className="space-y-1">
@@ -169,14 +175,15 @@ function EvaluationGroup({ group, selectedKeys, onToggle, onSelectGroup, onOpenS
   const [page, setPage] = useState(1);
   const visible = open ? group.slice(0, page * PAGE_SIZE) : [];
   const first = group[0];
+  const selectableGroup = group.filter(isSelectableEvaluation);
   return <section className="rounded-lg border border-border p-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <button type="button" className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left font-medium" aria-expanded={open} onClick={() => setOpen(current => !current)}>
         <span>{first.protocolLabel} · {first.itemLabel}</span>
         <span className="text-sm text-muted-foreground">{group.length} avaliações {open ? "−" : "+"}</span>
       </button>
-      <Button type="button" variant="outline" size="sm" onClick={() => onSelectGroup(group)} aria-label={`Selecionar todo o grupo ${first.protocolLabel} ${first.itemLabel}`}>
-        Selecionar grupo ({group.length})
+      <Button type="button" variant="outline" size="sm" disabled={!selectableGroup.length} onClick={() => onSelectGroup(selectableGroup)} aria-label={`Selecionar elegíveis do grupo ${first.protocolLabel} ${first.itemLabel} (${selectableGroup.length})`}>
+        Selecionar elegíveis ({selectableGroup.length})
       </Button>
     </div>
     {open ? <>
@@ -261,6 +268,18 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
     matchesText(row, text) &&
     row.disposition !== "outside_period"
   ), [animalFilter, itemFilter, lotFilter, protocolFilter, result, situationFilter, text]);
+  const selectableEvaluations = useMemo(() => filtered.filter(isSelectableEvaluation), [filtered]);
+  const selectableKeys = useMemo(() => new Set(selectableEvaluations.map(selectionKey)), [selectableEvaluations]);
+  const selectedEvaluations = useMemo(
+    () => selectableEvaluations.filter(evaluation => selectedKeys.has(selectionKey(evaluation))),
+    [selectableEvaluations, selectedKeys],
+  );
+  useEffect(() => {
+    setSelectedKeys(current => {
+      const next = new Set([...current].filter(key => selectableKeys.has(key)));
+      return next.size === current.size ? current : next;
+    });
+  }, [selectableKeys]);
   const groups = useMemo(() => groupEvaluations(filtered), [filtered]);
   const filteredSummary = useMemo(() => summarize(filtered), [filtered]);
   const farmEvaluations = result?.evaluations.filter(row => row.disposition !== "outside_period") ?? [];
@@ -270,6 +289,7 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
   const preview = useMemo(() => review ? buildSanitaryWindowPlanningPreviewV2(review) : null, [review]);
 
   const toggleSelection = (evaluation: SanitaryTriageEvaluationV2) => {
+    if (!isSelectableEvaluation(evaluation)) return;
     const key = selectionKey(evaluation);
     setSelectedKeys(current => {
       const next = new Set(current);
@@ -281,14 +301,18 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
   };
 
   const selectEvaluations = (evaluations: SanitaryTriageEvaluationV2[]) => {
-    setSelectedKeys(current => new Set([...current, ...evaluations.map(selectionKey)]));
+    const eligible = evaluations.filter(isSelectableEvaluation);
+    if (!eligible.length) return;
+    setSelectedKeys(current => new Set([...current, ...eligible.map(selectionKey)]));
     setPlanningNotice(null);
     setPlanningError(null);
   };
 
   const openPlanningReview = () => {
     if (!source || !result) return;
-    const evaluations = result.evaluations.filter(evaluation => selectedKeys.has(selectionKey(evaluation)));
+    const evaluations = filtered.filter(evaluation =>
+      isSelectableEvaluation(evaluation) && selectedKeys.has(selectionKey(evaluation)),
+    );
     const rows = resolveSanitaryTriagePlanningRowsV2({ source, evaluatedAt: result.evaluatedAt, evaluations });
     if (!rows.length) {
       setPlanningError("Selecione ao menos uma oportunidade elegível na janela.");
@@ -369,7 +393,7 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
       <Card>
         <CardHeader><CardTitle>Oportunidades e condições por protocolo</CardTitle><CardDescription>Selecione somente oportunidades elegíveis na janela. A confirmação cria Agenda futura, nunca Evento factual.</CardDescription></CardHeader>
         <CardContent>
-          <div className="mb-3 flex flex-wrap items-center gap-3"><span className="text-sm text-muted-foreground">{selectedKeys.size} avaliação(ões) selecionada(s)</span><Button type="button" variant="outline" disabled={!filtered.length} onClick={() => selectEvaluations(filtered)}>Selecionar todo o recorte ({filtered.length})</Button><Button type="button" variant="outline" disabled={!selectedKeys.size} onClick={() => setSelectedKeys(new Set())}>Limpar seleção</Button><Button type="button" disabled={!selectedKeys.size || !source.fazendaId} onClick={openPlanningReview}>Planejar selecionados</Button>{planningNotice ? <span role="status" className="text-sm text-green-700">{planningNotice}</span> : null}{planningError && !review ? <span role="alert" className="text-sm text-destructive">{planningError}</span> : null}</div>
+          <div className="mb-3 flex flex-wrap items-center gap-3"><span className="text-sm text-muted-foreground">{selectedEvaluations.length} avaliação(ões) selecionada(s)</span><Button type="button" variant="outline" disabled={!selectableEvaluations.length} onClick={() => selectEvaluations(selectableEvaluations)}>Selecionar elegíveis no recorte ({selectableEvaluations.length})</Button><Button type="button" variant="outline" disabled={!selectedKeys.size} onClick={() => setSelectedKeys(new Set())}>Limpar seleção</Button><Button type="button" disabled={!selectedEvaluations.length || !source.fazendaId} onClick={openPlanningReview}>Planejar selecionados</Button>{planningNotice ? <span role="status" className="text-sm text-green-700">{planningNotice}</span> : null}{planningError && !review ? <span role="alert" className="text-sm text-destructive">{planningError}</span> : null}</div>
           {groups.length === 0 ? <p role="status" className="text-sm text-muted-foreground">Nenhuma oportunidade ou condição encontrada com os filtros atuais. Isso não constitui comprovação de conformidade.</p> : <div className="space-y-3">{groups.map(group => <EvaluationGroup key={groupKey(group[0])} group={group} selectedKeys={selectedKeys} onToggle={toggleSelection} onSelectGroup={selectEvaluations} onOpenSection={onOpenSection} />)}</div>}
         </CardContent>
       </Card>

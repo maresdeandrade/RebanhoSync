@@ -394,11 +394,17 @@ export function SanitaryAgendaExecutionConfirmV2({
   const [batchClientOpId, setBatchClientOpId] = useState("");
   const [batchResult, setBatchResult] =
     useState<SanitaryAgendaBatchResultV2 | null>(null);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [retryPayloads, setRetryPayloads] = useState<ExecutionPayload[] | null>(
     null,
   );
   const retryPayloadsRef = useRef(retryPayloads);
   retryPayloadsRef.current = retryPayloads;
+  const ambiguousRetryPending = Boolean(submissionError && retryPayloads?.length);
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && ambiguousRetryPending) return;
+    onOpenChange(nextOpen);
+  };
   const openedItemsKey = useRef<string | null>(null);
   const itemsKey = JSON.stringify(items.map((entry) => entry.id));
   const productRequired = items.some(requiresProduct);
@@ -472,6 +478,7 @@ export function SanitaryAgendaExecutionConfirmV2({
     setNotes("");
     setConfirmed(false);
     setBatchResult(null);
+    setSubmissionError(null);
     setRetryPayloads(null);
     setBatchClientOpId(`sanitary-agenda-batch-v2:${operationId()}`);
   }, [defaultResponsibleName, items, itemsKey, open]);
@@ -566,10 +573,11 @@ export function SanitaryAgendaExecutionConfirmV2({
       return;
     submittingRef.current = true;
     setSubmitting(true);
+    setSubmissionError(null);
+    let payloads: ExecutionPayload[] = retryPayloads ?? [];
     try {
-      const payloads =
-        retryPayloads ??
-        items
+      if (!retryPayloads) {
+        payloads = items
           .filter((entry) =>
             selectedAnimals.some((id) => id.startsWith(`${entry.id}:`)),
           )
@@ -618,6 +626,7 @@ export function SanitaryAgendaExecutionConfirmV2({
               },
             };
           });
+      }
       const result = await onConfirm(payloads);
       const retryableIds = new Set(
         result.items
@@ -630,6 +639,19 @@ export function SanitaryAgendaExecutionConfirmV2({
           ? payloads.filter((payload) => retryableIds.has(payload.clientOpId))
           : null,
       );
+    } catch (error) {
+      const detail = error instanceof Error && error.message.trim()
+        ? error.message.trim()
+        : "Erro inesperado ao confirmar o resultado.";
+      if (payloads.length > 0) {
+        setSubmissionError(
+          `Não foi possível confirmar o resultado. ${detail} Mantenha esta janela aberta; o reenvio preservará data, hora, identidade e dados originais.`,
+        );
+        setRetryPayloads(payloads);
+      } else {
+        setSubmissionError(`Não foi possível confirmar o resultado. ${detail}`);
+      }
+      setConfirmed(false);
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
@@ -637,7 +659,7 @@ export function SanitaryAgendaExecutionConfirmV2({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Executar agenda sanitária</DialogTitle>
@@ -645,6 +667,10 @@ export function SanitaryAgendaExecutionConfirmV2({
             Esta ação registra um evento sanitário executado.
           </DialogDescription>
         </DialogHeader>
+
+        {submissionError ? (
+          <p role="alert" className="text-sm text-destructive">{submissionError}</p>
+        ) : null}
 
         {item ? (
           <div className="space-y-4">
@@ -944,7 +970,7 @@ export function SanitaryAgendaExecutionConfirmV2({
           <Button
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
           >
             Voltar
           </Button>
