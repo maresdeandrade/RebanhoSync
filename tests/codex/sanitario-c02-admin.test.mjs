@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 
-const candidate = "docs/review/evidence/SANITARIO_V2_C02_F6_REVIEW_CANDIDATE_20261026.json";
+const candidate = "docs/review/evidence/SANITARIO_V2_C02_F6_TECHNICAL_CANDIDATE_V14_20261112.json";
 const ref = "zqloazqzhwauamcejmuz";
 const publisherSource = readFileSync("scripts/codex/import-sanitario-protocols-v2.mjs", "utf8");
 const transportHelpers = publisherSource.slice(publisherSource.indexOf("function c02SqlLiteral("),
@@ -12,7 +12,7 @@ const transportHelpers = publisherSource.slice(publisherSource.indexOf("function
 const { c02SqlLiteral, compileC02McpTransaction } = new Function(
   "assert", "createHash", "C02_ADMIN_PROJECT_REF", "C02_F6_SHA256", "IMPORT_LOCK_KEY", "c02Tables",
   transportHelpers + "; return {c02SqlLiteral,compileC02McpTransaction};")(
-  assert, createHash, ref, "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367", "test-lock", () => []);
+  assert, createHash, ref, "c3b0e577d361a4d100d250a7e8b8c591c9e7b1b8721ada8fb4e665f610e8cf4c", "test-lock", () => []);
 const cli = (...args) => spawnSync(process.execPath,
   ["scripts/codex/import-sanitario-protocols-v2.mjs", ...args],
   { encoding: "utf8", env: { ...process.env, DB_URL: "must-not-connect", ALLOW_SANITARIO_IMPORT: "1", ALLOW_SANITARIO_REMOTE_IMPORT: "1" } });
@@ -21,7 +21,12 @@ describe("C02 authorized post-approval baseline", () => {
   const packet = JSON.parse(readFileSync(candidate, "utf8"));
   const observed = JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_C02_POST_APPROVAL_READONLY_20261027.json", "utf8"));
   const product = packet.payload.product_rows.find(p => p.metadata.research_lot_code === "P11");
-  const current = observed.rows.sanitario_produtos_v2.find(p => p.id === product.id);
+  // The observed 2026-10-27 row carries the v13 approval receipt. For this
+  // unit test, materialize the same approved row under the v14 candidate digest;
+  // this is not a remote snapshot and does not authorize a write.
+  const observedCurrent = observed.rows.sanitario_produtos_v2.find(p => p.id === product.id);
+  const current = structuredClone(observedCurrent);
+  current.metadata.c02_cadastral_approval.candidate_sha256 = "c3b0e577d361a4d100d250a7e8b8c591c9e7b1b8721ada8fb4e665f610e8cf4c";
   const flags = publisherSource.slice(publisherSource.indexOf("const FORBIDDEN_TRUE_FLAGS ="),
     publisherSource.indexOf("\nconst UUID_LIKE"));
   const preserve = new Function("assert", "C02_F6_SHA256", "C02_ADMIN_PROJECT_REF", flags +
@@ -100,7 +105,7 @@ describe("C02 MCP transaction transport", () => {
   const approve = new Function("assert", "C02_ADMIN_PROJECT_REF", "C02_F6_SHA256",
     publisherSource.slice(publisherSource.indexOf("async function approveC02Products("),
       publisherSource.indexOf("\nconst c02Tables")) + "; return approveC02Products;")(
-    assert, ref, "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367");
+    assert, ref, "c3b0e577d361a4d100d250a7e8b8c591c9e7b1b8721ada8fb4e665f610e8cf4c");
   it("rejects unexpected child rule states before issuing registration approval", async () => {
     let calls = 0;
     const db = { query: async () => { calls++; return { rows: [{ id: "unexpected-active-rule" }] }; } };
@@ -142,7 +147,7 @@ describe("C02 MCP transaction transport", () => {
     expect(() => compileC02McpTransaction({ projectRef: ref, candidateDigest: "changed" })).toThrow("C02_ADMIN_CANDIDATE_CHANGED");
   });
   it("does not open generic remote apply when only a confirmation flag is supplied", () => {
-    const r = cli("--apply", "--c02-admin", candidate, "--project-ref", ref, "--confirm-c02", "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367");
+    const r = cli("--apply", "--c02-admin", candidate, "--project-ref", ref, "--confirm-c02", "c3b0e577d361a4d100d250a7e8b8c591c9e7b1b8721ada8fb4e665f610e8cf4c");
     expect(r.status).not.toBe(0);
     expect(r.stderr).toContain("C02_ADMIN_REMOTE_WRITE_DISABLED");
   });

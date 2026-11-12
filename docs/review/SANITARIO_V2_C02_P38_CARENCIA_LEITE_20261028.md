@@ -101,6 +101,12 @@ Gate técnico: **READY exclusivamente para a entrega local da candidata pendente
 
 O ensaio é dry-run do planner em memória, não CLI administrativa remota, aplicação SQL, integração PostgreSQL, teste de locks/CAS/RLS ou replay remoto. Os testes do runtime usam a candidata pendente e a regra corte pendente, sem ativá-las. Não houve mudança no writer, gate sanitário, publicador, schema, migrations, RPC, RLS, dose ou autorização por espécie. Build, E2E e regressão global não executados por ausência de delta de runtime.
 
+## Reemissão versionada do contrato v14 — 2026-11-12
+
+A candidata v13 e o snapshot remoto histórico permanecem inalterados. Para compatibilidade com o contrato canônico v14, foi criada uma nova [candidata P38 v14](evidence/SANITARIO_V2_C02_P38_REVIEW_CANDIDATE_V14_20261112.json), SHA256 `fffc77fe6ff5204cf2f5f859142a68a9ff59099e2953b15b8c52826351830e15`, e uma [projeção v14 do snapshot](evidence/SANITARIO_V2_C02_P38_CONTRACT_SNAPSHOT_V14_20261112.json), SHA256 `e4ebd7ec1333fe5d28f2f606c8c50e5d91452d3afc7292d568b16ab59521ae3f`.
+
+A projeção declara `projection_only=true` e `usable_as_importer_mcp_snapshot=false`; o planner continua recebendo o snapshot remoto original. O importador local foi fixado ao digest da candidata v14. A suíte focada P38/F6 passou com **28/28 testes**; o planner P38 observou cinco criações e um skip no snapshot bruto, sem escrita ou conexão a backend remoto. A reemissão preserva o candidato v13, os snapshots/recibos de 2026-10-29 e não altera o estado remoto nem autoriza ativação operacional.
+
 ## Pendências reais
 
 1. Revisar antes de qualquer aprovação operacional a semântica de `zero`: em `operationalWithdrawalSnapshotV2.ts`, o estado zero é tratado para ambos os propósitos dentro da aptidão selecionada, independentemente de `meat_days=null`. Portanto esta candidata pendente **não deve ser ativada diretamente** sem avaliação específica do consumidor; isso não invalida a confirmação documental de leite e não autoriza alteração de runtime neste escopo.

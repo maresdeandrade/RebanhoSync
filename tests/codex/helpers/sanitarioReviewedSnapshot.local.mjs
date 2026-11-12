@@ -6,8 +6,8 @@ import pg from "pg";
 import { withDisposableC02 } from "../../../scripts/codex/run-sanitario-c02-disposable.mjs";
 
 const profiles = {
-  p38: { marker: "C02_P38_DISPOSABLE_LOCAL_ONLY", flag: "--c02-p38", snapshot: "SANITARIO_V2_C02_P38_REMOTE_BEFORE_20261029.json", candidate: "SANITARIO_V2_C02_P38_REVIEW_CANDIDATE_20261028.json", output: "SANITARIO_V2_C02_P38_APPLY_20261029.sql", authorization: "C02-P38-20261029-EXPLICIT-USER-EXECUTIVE-CLOSURE" },
-  f6: { marker: "C02_F6_CLOSURE_DISPOSABLE_LOCAL_ONLY", flag: "--c02-f6-closure", snapshot: "SANITARIO_V2_C02_F6_CLOSURE_ADMIN_BEFORE_20261029.json", candidate: "SANITARIO_V2_C02_F6_CLOSURE_CANDIDATE_20261029.json", output: "SANITARIO_V2_C02_F6_CLOSURE_APPLY_20261029.sql", authorization: "C02-F6-20261029-EXPLICIT-USER-CONSOLIDATED-CLOSURE" },
+  p38: { marker: "C02_P38_DISPOSABLE_LOCAL_ONLY", flag: "--c02-p38", snapshot: "SANITARIO_V2_C02_P38_REMOTE_BEFORE_20261029.json", candidate: "SANITARIO_V2_C02_P38_REVIEW_CANDIDATE_V14_20261112.json", output: "SANITARIO_V2_C02_P38_APPLY_V14_20261112.sql", authorization: "C02-P38-20261029-EXPLICIT-USER-EXECUTIVE-CLOSURE" },
+  f6: { marker: "C02_F6_CLOSURE_DISPOSABLE_LOCAL_ONLY", flag: "--c02-f6-closure", snapshot: "SANITARIO_V2_C02_F6_CLOSURE_ADMIN_BEFORE_20261029.json", candidate: "SANITARIO_V2_C02_F6_CLOSURE_CANDIDATE_V14_20261112.json", output: "SANITARIO_V2_C02_F6_CLOSURE_APPLY_V14_20261112.sql", authorization: "C02-F6-20261029-EXPLICIT-USER-CONSOLIDATED-CLOSURE" },
 };
 
 export async function rehearseReviewedSnapshot(profile, outputFile = null) {

@@ -1,7 +1,6 @@
 import { isCalfJourneyAgendaItem } from "@/lib/reproduction/calfJourney";
-import type { AgendaItem, ProtocoloSanitarioItem } from "@/lib/offline/types";
-import { asSanitarioTipo, readString } from "@/pages/Agenda/helpers/formatting";
-import { pickVeterinaryProductMetadata } from "@/lib/sanitario/catalog/products";
+import type { AgendaItem } from "@/lib/offline/types";
+import { readString } from "@/pages/Agenda/helpers/formatting";
 
 type AgendaActionControllerDeps = {
   activeFarmId: string | null;
@@ -14,29 +13,24 @@ type AgendaActionControllerDeps = {
       record: Record<string, unknown>;
     }>,
   ) => Promise<unknown>;
-  concludePendingSanitary: (input: {
-    agendaItemId: string;
-    occurredAt: string;
-    tipo?: "vacinacao" | "vermifugacao" | "medicamento";
-    produto?: string;
-    payload?: Record<string, unknown>;
-  }) => Promise<string>;
-  pullDataForFarm: (
-    farmId: string,
-    tables: string[],
-    options: { mode: "merge" },
-  ) => Promise<unknown>;
-  getProtocolItemById: (id: string) => Promise<ProtocoloSanitarioItem | null>;
   showError: (message: string) => void;
   showSuccess: (message: string) => void;
-  nowIso: () => string;
-  logError: (...args: unknown[]) => void;
 };
 
 export function createAgendaActionController(deps: AgendaActionControllerDeps) {
   const inFlightStatusUpdates = new Set<string>();
 
   const goToRegistrar = (item: AgendaItem) => {
+    if (item.dominio === "sanitario") {
+      const agendaV2Id = readString(item.source_ref, "agenda_v2_id");
+      deps.navigate(
+        agendaV2Id
+          ? `/protocolos-sanitarios?tab=agenda&agendaId=${agendaV2Id}`
+          : "/protocolos-sanitarios?tab=agenda",
+      );
+      return;
+    }
+
     if (item.animal_id && isCalfJourneyAgendaItem(item)) {
       const params = new URLSearchParams();
       params.set("agendaItemId", item.id);
@@ -57,12 +51,9 @@ export function createAgendaActionController(deps: AgendaActionControllerDeps) {
     const protocoloItemId = item.protocol_item_version_id;
     const produto =
       readString(item.source_ref, "produto") ?? readString(item.payload, "produto");
-    const sanitarioTipo = asSanitarioTipo(readString(item.source_ref, "tipo"));
-
     if (protocoloId) params.set("protocoloId", protocoloId);
     if (protocoloItemId) params.set("protocoloItemId", protocoloItemId);
     if (produto) params.set("produto", produto);
-    if (sanitarioTipo) params.set("sanitarioTipo", sanitarioTipo);
 
     deps.navigate(`/registrar?${params.toString()}`);
   };
@@ -76,55 +67,11 @@ export function createAgendaActionController(deps: AgendaActionControllerDeps) {
 
     inFlightStatusUpdates.add(item.id);
     try {
-      const sourceTipo = asSanitarioTipo(readString(item.source_ref, "tipo"));
-      const sourceProduto =
-        readString(item.source_ref, "produto") ??
-        readString(item.payload, "produto") ??
-        null;
-      const protocolItem = item.protocol_item_version_id
-        ? await deps.getProtocolItemById(item.protocol_item_version_id)
-        : null;
-      const sanitaryProductMetadata = {
-        ...pickVeterinaryProductMetadata(protocolItem?.payload),
-        ...pickVeterinaryProductMetadata(item.source_ref),
-        ...pickVeterinaryProductMetadata(item.payload),
-      };
-
-      if (item.dominio === "sanitario" && status === "concluido") {
-        try {
-          const eventoId = await deps.concludePendingSanitary({
-            agendaItemId: item.id,
-            occurredAt: deps.nowIso(),
-            tipo: sourceTipo ?? undefined,
-            produto: sourceProduto ?? undefined,
-            payload: {
-              origem: "agenda_concluir",
-              ...sanitaryProductMetadata,
-            },
-          });
-
-          try {
-            await deps.pullDataForFarm(
-              deps.activeFarmId,
-              ["agenda_itens", "eventos", "eventos_sanitario"],
-              { mode: "merge" },
-            );
-
-            deps.showSuccess(
-              `Concluído direto na agenda com evento sanitário. Evento ${eventoId.slice(0, 8)}.`,
-            );
-          } catch (pullError) {
-            deps.logError("[agenda] pull failed after sanitary RPC success", pullError);
-            deps.showSuccess(
-              `Execução registrada. A atualização local falhou; sincronize/atualize para refletir o novo estado. Evento ${eventoId.slice(0, 8)}.`,
-            );
-          }
-          return;
-        } catch (error) {
-          deps.logError("[agenda] failed to conclude sanitary item with event", error);
-          deps.showError("Falha ao concluir pendência sanitária com evento.");
-          return;
-        }
+      if (item.dominio === "sanitario") {
+        deps.showError(
+          "Itens sanitários devem ser gerenciados exclusivamente na Central Sanitária.",
+        );
+        return;
       }
 
       try {

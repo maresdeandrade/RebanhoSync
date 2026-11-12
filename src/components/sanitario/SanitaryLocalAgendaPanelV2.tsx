@@ -34,6 +34,7 @@ import {
   type SanitaryLocalAgendaFiltersV2,
   type SanitaryLocalAgendaListItemV2,
 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
+import { isCompleteSanitaryExecutionBatch } from "@/lib/sanitario/execution/sanitaryExecutionResultV2";
 import type {
   ExecuteSanitaryAgendaInputV2,
   SanitaryAgendaBatchResultV2,
@@ -63,7 +64,6 @@ const initialFilters: SanitaryLocalAgendaFiltersV2 = {
 };
 
 type ExecutionPayload = Omit<ExecuteSanitaryAgendaInputV2, "fazendaId">;
-
 type Props = {
   renderCollaboration?: (item: SanitaryLocalAgendaListItemV2) => ReactNode;
   items: SanitaryLocalAgendaListItemV2[] | undefined;
@@ -208,7 +208,8 @@ export function SanitaryLocalAgendaPanelV2({
     setBusyAction("execute:batch");
     try {
       const result = await onExecute(payloads);
-      if (result.retryAvailableCount === 0) {
+      if (isCompleteSanitaryExecutionBatch(payloads, result)) {
+        setExecutionOpen(false);
         setExecutionTargets([]);
         setSelectedAgendaIds(new Set());
       }

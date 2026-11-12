@@ -1,7 +1,7 @@
 # Manual da Tela — Sanitário
 
-Atualizado em: 2026-11-11
-**Baseline Commit:** `2f5d74a36666b14893ae904089f19b2cf86c8ef7`
+Atualizado em: 2026-11-12
+**Baseline Commit:** `94121a21652cbf49923a49895eaba2990f18fe58`
 
 ## Para que serve
 
@@ -133,7 +133,7 @@ A rota `/protocolos-sanitarios`, acessível pelo menu `Sanitário`, contém as a
 
 ### Planejamento manual a partir da triagem
 
-* O usuário pode selecionar avaliações individualmente, por grupo ou por recorte filtrado, inclusive com **Selecionar todo o recorte**. A seleção pode abranger registros além dos 50 detalhes mostrados por página.
+* O usuário pode selecionar **avaliações elegíveis** individualmente, por grupo ou por recorte filtrado, inclusive com **Selecionar todo o recorte**. Avaliações bloqueadas continuam visíveis, mas não entram na seleção; a seleção elegível pode abranger registros além dos 50 detalhes mostrados por página.
 * **Seleção não equivale a autorização**: antes da criação de Agenda, o fluxo resolve as avaliações em linhas canônicas, verifica data, janela, contexto, elegibilidade, duplicidade e restrições técnicas pertinentes.
 * **Planejar selecionados** abre a revisão da data e dos resultados: itens compatíveis, excluídos por janela e rejeitados por restrições ou equivalência. A confirmação permanece impedida enquanto houver incompatibilidades não resolvidas; a interface permite remover exclusões identificadas na revisão.
 * Somente **Confirmar e gerar Agenda** inicia o writer manual canônico, com revalidação na persistência. Agendas equivalentes são preservadas conforme as regras de episódio/idempotência. O resultado inicial é **local/offline**, não uma confirmação remota.
@@ -142,7 +142,7 @@ A rota `/protocolos-sanitarios`, acessível pelo menu `Sanitário`, contém as a
 ### Outras abas e navegação contextual
 
 * **Agenda sanitária:** consultar, gerenciar e executar Agendas pelos comandos próprios; Agenda aberta não é histórico executado.
-* **Histórico sanitário:** consultar Eventos factuais e pendências documentais, sem inferir execução a partir de planejamento.
+* **Histórico sanitário:** consultar Eventos factuais e pendências documentais, sem inferir execução a partir de planejamento. Animal, lote, protocolo/item e texto filtram ambas as listas; produto, origem e intervalo de datas aplicam-se somente a Eventos. O horário do Evento é apresentado no fuso local do dispositivo.
 * **Catálogo sanitário:** consultar regras, fontes e versões; a atualização do catálogo é ação explícita.
 * **Conformidade:** consultar os dados locais e as limitações da evidência; não constitui liberação comercial ou regulatória universal.
 * Atalhos por URL podem abrir a Central com filtros iniciais de animal (`animalId`) ou lote (`loteId`). A troca de fazenda deve preservar o isolamento do contexto. Limpar filtros retorna ao recorte geral.

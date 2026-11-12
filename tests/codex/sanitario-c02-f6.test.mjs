@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-const file = "docs/review/evidence/SANITARIO_V2_C02_F6_REVIEW_CANDIDATE_20261026.json";
+const file = "docs/review/evidence/SANITARIO_V2_C02_F6_TECHNICAL_CANDIDATE_V14_20261112.json";
 const packet = JSON.parse(readFileSync(file, "utf8"));
 const data = packet.payload;
 const temporary = mkdtempSync(path.join(tmpdir(), "rebanhosync-c02-f6-"));
@@ -12,6 +12,14 @@ const cli = (...args) => spawnSync(process.execPath,
   ["scripts/codex/import-sanitario-protocols-v2.mjs", ...args],
   { encoding: "utf8", env: { ...process.env, DB_URL: "must-not-be-read", ALLOW_SANITARIO_REMOTE_IMPORT: "1" } });
 const key = code => data.product_rows.find(p => p.metadata.research_lot_code === code).product_key;
+const retiredMetadataKeys = new Set(["allows_agenda_auto", "allowsAgendaAuto", "automation_status", "automationStatus", "agenda_allowed"]);
+const withoutRetiredContractFields = value => {
+  if (Array.isArray(value)) return value.map(withoutRetiredContractFields);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value)
+    .filter(([field]) => !retiredMetadataKeys.has(field))
+    .map(([field, child]) => [field, withoutRetiredContractFields(child)]));
+};
 
 describe("local C02 F6 reviewed packet", () => {
   it("records SQL replay separately from first-apply partial skips", () => {
@@ -41,7 +49,7 @@ describe("local C02 F6 reviewed packet", () => {
   it("preserves the complete P11 technical packet", () => {
     const original = JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_C02_P11_REVIEW_CANDIDATE_20261026.json")).payload;
     for (const [collection, rows] of Object.entries(original)) for (const row of rows)
-      expect(data[collection]).toContainEqual(row);
+      expect(data[collection]).toContainEqual(withoutRetiredContractFields(row));
   });
   it("carries the documented reproductive restrictions with vaccine evidence", () => {
     for (const [code, restriction] of [["P09", "12 meses"], ["P24", "30 dias"], ["P26", "não estabelecida em prenhes"]]) {

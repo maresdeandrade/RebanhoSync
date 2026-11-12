@@ -3,15 +3,36 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { describe, it, expect } from "vitest";
 import { validateCanonicalTechnicalContract } from "../../scripts/codex/sanitario-v2-contract.mjs";
+import { buildPlan, assertPublishablePlan } from "../../scripts/codex/import-sanitario-protocols-v2.mjs";
 import { buildOperationalWithdrawalSnapshotV2 } from "../../src/lib/sanitario/execution/operationalWithdrawalSnapshotV2";
 import { classifyDocumentedField, reconcileClosure } from "../../scripts/codex/summarize-sanitario-f6-closure.mjs";
 
 const read = name => JSON.parse(readFileSync("docs/review/evidence/" + name, "utf8"));
-const packet = read("SANITARIO_V2_C02_F6_CLOSURE_CANDIDATE_20261029.json");
+const packet = read("SANITARIO_V2_C02_F6_CLOSURE_CANDIDATE_V14_20261112.json");
 const matrix = read("SANITARIO_V2_C02_F6_CLOSURE_MATRIX_20261029.json");
-const before = read("SANITARIO_V2_C02_F6_CLOSURE_ADMIN_BEFORE_20261029.json").rows;
+const v14Snapshot = read("SANITARIO_V2_C02_F6_CLOSURE_CONTRACT_SNAPSHOT_V14_20261112.json");
+const historicalBefore = read("SANITARIO_V2_C02_F6_CLOSURE_ADMIN_BEFORE_20261029.json").rows;
+const before = v14Snapshot.rows;
 const payload = packet.payload;
 const cell = (code, field) => matrix.cells.find(c => c.code === code && c.field === field);
+class SnapshotReader {
+  constructor(rows) { this.rows = structuredClone(rows); }
+  async query(sql, values) {
+    const text = sql.replace(/\s+/g, " ").trim().toLowerCase();
+    if (!text.startsWith("select * from public.")) throw new Error("Unexpected SQL in read-only dry-run");
+    const table = /public\.(\w+)/.exec(text)[1];
+    const fields = [...text.matchAll(/(lower\(\w+\)|coalesce\(\w+, '[^']*'\)|\w+) is not distinct from \$(\d+)/g)];
+    if (!fields.length) throw new Error("Unsupported identity predicate");
+    return { rows: structuredClone((this.rows[table] ?? []).filter(row =>
+      (text.includes(" or id = ") && row.id === values.at(-1)) || fields.every(([, expression, position]) => {
+        const field = expression.match(/\w+/g)[expression.includes("(") ? 1 : 0];
+        let value = row[field] ?? null;
+        if (expression.startsWith("lower(")) value = value?.toLowerCase();
+        if (expression.startsWith("coalesce(")) value ??= /'([^']*)'/.exec(expression)[1];
+        return value === values[Number(position) - 1];
+      }))) };
+  }
+}
 const uuid = name => {
   const b = createHash("sha1").update(Buffer.from("6ba7b8119dad11d180b400c04fd430c8", "hex")).update("rebanhosync:" + name).digest().subarray(0,16);
   b[6] = (b[6] & 15) | 80; b[8] = (b[8] & 63) | 128;
@@ -33,19 +54,49 @@ function evaluate(code, active = false, links = true) {
 }
 
 describe("Fechamento F6 consolidado, sem promoção operacional", () => {
-  it("valida contrato e digest fechado, sem atualizar cadastros", () => {
+  it("valida contrato v14 e proveniência fechada sem substituir evidência histórica", () => {
     expect(validateCanonicalTechnicalContract(packet).data.product_rows).toHaveLength(39);
-    const raw = readFileSync("docs/review/evidence/SANITARIO_V2_C02_F6_CLOSURE_CANDIDATE_20261029.json");
-    expect(createHash("sha256").update(raw).digest("hex")).toBe("f09d9ebc4c4873693740b2afe218ce75ceff4cff3c66218a4e5be4bf6d4389bb");
+    const raw = readFileSync("docs/review/evidence/SANITARIO_V2_C02_F6_CLOSURE_CANDIDATE_V14_20261112.json");
+    expect(createHash("sha256").update(raw).digest("hex")).toBe("8ada29135f25cc87f9220758d0c3c76c647bb4b5538e29f8f7884f01b15b6654");
+    const originalPath = "docs/review/evidence/SANITARIO_V2_C02_F6_CLOSURE_CANDIDATE_20261029.json";
+    expect(packet.artifact_version).toBe("14.0.0-canonical-contract");
+    expect(packet.reissue).toMatchObject({
+      source_candidate_file: "SANITARIO_V2_C02_F6_CLOSURE_CANDIDATE_20261029.json",
+      source_candidate_sha256: createHash("sha256").update(readFileSync(originalPath)).digest("hex"),
+      source_artifact_version: "13.0.0-canonical-contract",
+      contract_snapshot_projection_file: "SANITARIO_V2_C02_F6_CLOSURE_CONTRACT_SNAPSHOT_V14_20261112.json",
+      remote_write_performed: false,
+    });
+    expect(packet.reissue.contract_snapshot_projection_sha256).toBe(createHash("sha256")
+      .update(readFileSync("docs/review/evidence/SANITARIO_V2_C02_F6_CLOSURE_CONTRACT_SNAPSHOT_V14_20261112.json")).digest("hex"));
+    expect(v14Snapshot).toMatchObject({ artifact_version: packet.artifact_version, projection_only: true, usable_as_importer_mcp_snapshot: false });
+    expect(v14Snapshot.source_snapshot_sha256).toBe(createHash("sha256").update(readFileSync("docs/review/evidence/SANITARIO_V2_C02_F6_CLOSURE_ADMIN_BEFORE_20261029.json")).digest("hex"));
+    expect(historicalBefore.sanitario_produtos_v2.some(p => Object.hasOwn(p.metadata, "allows_agenda_auto"))).toBe(true);
+    expect(v14Snapshot.rows.sanitario_produtos_v2.every(p => !Object.hasOwn(p.metadata, "allows_agenda_auto"))).toBe(true);
     for (const p of payload.product_rows) {
       const { product_key: _key, ...actual } = p;
-      const { created_at: _c, updated_at: _u, deleted_at: _d, ...prior } = before.sanitario_produtos_v2.find(r => r.id === p.id);
+      const { created_at: _c, updated_at: _u, deleted_at: _d, ...prior } = v14Snapshot.rows.sanitario_produtos_v2.find(r => r.id === p.id);
       expect(actual).toEqual(prior);
       expect(p.metadata.operational_authorization).toBe(false);
     }
     expect(payload.product_authorization_rows).toEqual([]);
     expect(payload.dose_rule_rows).toEqual([]);
     expect(payload.withdrawal_rule_rows.every(r => r.status_curatorial === "precisa_validar" && r.milk_days === null)).toBe(true);
+  });
+  it("planner v14 ignora somente o campo legado e rejeita outras divergências de metadata", async () => {
+    const data = validateCanonicalTechnicalContract(packet).data;
+    const plan = await buildPlan(new SnapshotReader(before), data);
+    assertPublishablePlan(plan);
+    expect(plan.filter(op => op.action === "create")).toHaveLength(43);
+    expect(plan.filter(op => op.action === "skip")).toHaveLength(42);
+    expect(plan.some(op => op.action === "update" || op.action === "reject")).toBe(false);
+
+    const changedSnapshot = structuredClone(before);
+    const candidateProductId = payload.product_rows[0].id;
+    changedSnapshot.sanitario_produtos_v2.find(p => p.id === candidateProductId).metadata.unrelated_v14_regression_probe = true;
+    const changedPlan = await buildPlan(new SnapshotReader(changedSnapshot), data);
+    expect(changedPlan.find(op => op.collection === "product_rows" && op.row.id === candidateProductId).action).toBe("reject");
+    expect(() => assertPublishablePlan(changedPlan)).toThrow();
   });
   it("recusa outro projeto antes de conectar ou emitir SQL", () => {
     const result = spawnSync(process.execPath, ["scripts/codex/import-sanitario-protocols-v2.mjs", "--c02-f6-closure", "unused.json",

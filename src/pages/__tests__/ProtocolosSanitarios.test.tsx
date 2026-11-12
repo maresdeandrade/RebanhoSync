@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { format } from "date-fns";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -54,8 +55,18 @@ function renderPage(initialEntry = "/protocolos-sanitarios") {
 }
 
 describe("Central Sanitária", () => {
-  beforeEach(() => {
-    vi.mocked(listSanitaryDocumentaryPendenciesV2).mockClear();
+  beforeEach(async () => {
+    const actual = await vi.importActual<typeof import("@/lib/sanitario/windows/sanitaryProtocolWindowsV2")>("@/lib/sanitario/windows/sanitaryProtocolWindowsV2");
+    vi.mocked(listSanitaryDocumentaryPendenciesV2).mockReset();
+    vi.mocked(listSanitaryDocumentaryPendenciesV2).mockImplementation(actual.listSanitaryDocumentaryPendenciesV2);
+    if (typeof HTMLElement.prototype.hasPointerCapture !== "function") {
+      Object.defineProperty(HTMLElement.prototype, "hasPointerCapture", { configurable: true, value: () => false });
+      Object.defineProperty(HTMLElement.prototype, "setPointerCapture", { configurable: true, value: () => {} });
+      Object.defineProperty(HTMLElement.prototype, "releasePointerCapture", { configurable: true, value: () => {} });
+    }
+    if (typeof HTMLElement.prototype.scrollIntoView !== "function") {
+      Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: () => {} });
+    }
     vi.mocked(pullSanitarioProductClassV2Catalog).mockClear();
     vi.mocked(pullSanitarioTechnicalCatalogV2).mockClear();
     vi.mocked(pullSanitarioProtocolCatalogV2).mockClear();
@@ -89,6 +100,47 @@ describe("Central Sanitária", () => {
     expect(pullSanitarioTechnicalCatalogV2).not.toHaveBeenCalled();
     expect(pullSanitarioProtocolCatalogV2).not.toHaveBeenCalled();
     expect(screen.getByText("Filtros do histórico sanitário")).toBeInTheDocument();
+  });
+
+  it("aplica filtros compatíveis às pendências e identifica filtros exclusivos de Eventos", async () => {
+    const user = userEvent.setup();
+    vi.mocked(listSanitaryDocumentaryPendenciesV2).mockReturnValue([
+      { animalId: "animal-1", animalLabel: "TAG-001", animalHref: "/animais/animal-1", lotLabel: "Lote Norte", protocolLabel: "Brucelose B19", itemLabel: "B19", reasons: ["Comprovação documental pendente"] },
+      { animalId: "animal-2", animalLabel: "TAG-002", animalHref: "/animais/animal-2", lotLabel: "Lote Sul", protocolLabel: "Raiva", itemLabel: "Reforço", reasons: ["Registro anterior não localizado"] },
+    ]);
+    renderPage("/protocolos-sanitarios?tab=historico");
+
+    await user.click(screen.getByRole("combobox", { name: "Tipo de registro" }));
+    await user.click(screen.getByRole("option", { name: "Pendências documentais" }));
+    expect(screen.getByText(/produto, origem e intervalo de datas aplicam-se somente a eventos executados/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Produto", { exact: true }), { target: { value: "produto inexistente" } });
+    fireEvent.change(screen.getByLabelText("Origem", { exact: true }), { target: { value: "origem inexistente" } });
+    fireEvent.change(screen.getByLabelText("Data inicial"), { target: { value: "2030-01-01" } });
+    fireEvent.change(screen.getByLabelText("Data final"), { target: { value: "2030-01-31" } });
+    expect(screen.getByText("Brucelose B19 · B19")).toBeInTheDocument();
+    expect(screen.getByText("Raiva · Reforço")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Texto"), { target: { value: "tag-002" } });
+    expect(screen.queryByText("Brucelose B19 · B19")).not.toBeInTheDocument();
+    expect(screen.getByText("Raiva · Reforço")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Texto"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Animal", { exact: true }), { target: { value: "tag-001" } });
+    expect(screen.getByText("Brucelose B19 · B19")).toBeInTheDocument();
+    expect(screen.queryByText("Raiva · Reforço")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Animal", { exact: true }), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Lote", { exact: true }), { target: { value: "sul" } });
+    expect(screen.getByText("Raiva · Reforço")).toBeInTheDocument();
+    expect(screen.queryByText("Brucelose B19 · B19")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Lote", { exact: true }), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Protocolo"), { target: { value: "brucelose" } });
+    expect(screen.getByText("Brucelose B19 · B19")).toBeInTheDocument();
+    expect(screen.queryByText("Raiva · Reforço")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Protocolo"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Item"), { target: { value: "reforço" } });
+    expect(screen.getByText("Raiva · Reforço")).toBeInTheDocument();
+    expect(screen.queryByText("Brucelose B19 · B19")).not.toBeInTheDocument();
+    expect(screen.getByText("Animal: TAG-002")).toBeInTheDocument();
   });
 
   it("preserva a atualização explícita dos três catálogos, sem pull na abertura", async () => {
@@ -271,7 +323,7 @@ describe("Central Sanitária", () => {
       executedEvents: [
         {
           eventId: "event-1",
-          executedAt: "2026-07-02T12:00:00.000Z",
+          executedAt: "2026-07-02T01:30:00.000Z",
           protocolLabel: "Raiva",
           itemLabel: "Reforço anual",
           animalLabel: "14 animais",
@@ -298,5 +350,12 @@ describe("Central Sanitária", () => {
     expect(screen.getByText("Raiva · Reforço anual")).toBeInTheDocument();
     expect(screen.getByText(/Vacina Raiva · 2 ml · subcutanea/)).toBeInTheDocument();
     expect(screen.getByText(/agenda sanitária · estoque sem baixa · carência sem regra/)).toBeInTheDocument();
+    const executedAt = new Date("2026-07-02T01:30:00.000Z");
+    const localDateTime = format(executedAt, "dd/MM/yyyy HH:mm");
+    const localDate = format(executedAt, "yyyy-MM-dd");
+    expect(screen.getByText((_, element) => element?.tagName === "P" && element.textContent?.startsWith(`${localDateTime} (horário local) · 14 animais · L_09`))).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Data inicial"), { target: { value: localDate } });
+    fireEvent.change(screen.getByLabelText("Data final"), { target: { value: localDate } });
+    expect(screen.getByText((_, element) => element?.tagName === "P" && element.textContent?.startsWith(`${localDateTime} (horário local) · 14 animais · L_09`))).toBeInTheDocument();
   });
 });

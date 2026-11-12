@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { describe, it, expect } from "vitest";
 import { validateCanonicalTechnicalContract } from "../../scripts/codex/sanitario-v2-contract.mjs";
@@ -6,9 +7,11 @@ import { buildPlan, assertPublishablePlan } from "../../scripts/codex/import-san
 import { validateWithdrawalRuleV2 } from "../../src/lib/sanitario/rules/sanitaryProductV2";
 import { buildOperationalWithdrawalSnapshotV2 } from "../../src/lib/sanitario/execution/operationalWithdrawalSnapshotV2";
 
-const packet = JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_C02_P38_REVIEW_CANDIDATE_20261028.json", "utf8"));
+const candidatePath = "docs/review/evidence/SANITARIO_V2_C02_P38_REVIEW_CANDIDATE_V14_20261112.json";
+const packet = JSON.parse(readFileSync(candidatePath, "utf8"));
 const payload = packet.payload;
 const baseline = packet.review_evidence.snapshot.rows;
+const v14Snapshot = JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_C02_P38_CONTRACT_SNAPSHOT_V14_20261112.json", "utf8"));
 const source = payload.source_rows[0];
 const rule = payload.withdrawal_rule_rows[0];
 const product = payload.product_rows[0];
@@ -46,7 +49,7 @@ const domainRule = fieldKeys => ({
 describe("P38: candidata documental de leite, sem promoção operacional", () => {
   it("entrada P38 não aceita apply genérico, outro projeto, candidata ou porta inválida", () => {
     const args = ["scripts/codex/import-sanitario-protocols-v2.mjs", "--c02-p38",
-      "docs/review/evidence/SANITARIO_V2_C02_P38_REVIEW_CANDIDATE_20261028.json",
+      candidatePath,
       "--local-port", "0", "--mcp-snapshot", "docs/review/evidence/SANITARIO_V2_C02_P38_REMOTE_BEFORE_20261029.json",
       "--emit-mcp-apply", "unused-no-output.sql", "--project-ref", "zqloazqzhwauamcejmuz",
       "--authorization-ref", "C02-P38-LOCAL-NEGATIVE-CONTROL"];
@@ -60,6 +63,22 @@ describe("P38: candidata documental de leite, sem promoção operacional", () =>
       expect(result.stderr).toContain({ apply: "C02_P38_INVALID_ARGUMENT", project: "C02_P38_AUTHORIZATION_REQUIRED",
         candidate: "C02_P38_CANDIDATE_CHANGED", port: "C02_P38_LOCAL_PORT_REQUIRED" }[change]);
     }
+  });
+  it("reemite pacote e snapshot como projeções v14 sem substituir a evidência histórica", () => {
+    const originalPath = "docs/review/evidence/SANITARIO_V2_C02_P38_REVIEW_CANDIDATE_20261028.json";
+    const projectionPath = "docs/review/evidence/SANITARIO_V2_C02_P38_CONTRACT_SNAPSHOT_V14_20261112.json";
+    expect(packet.artifact_version).toBe("14.0.0-canonical-contract");
+    expect(packet.reissue).toMatchObject({
+      source_candidate_file: "SANITARIO_V2_C02_P38_REVIEW_CANDIDATE_20261028.json",
+      source_candidate_sha256: createHash("sha256").update(readFileSync(originalPath)).digest("hex"),
+      source_artifact_version: "13.0.0-canonical-contract",
+      contract_snapshot_projection_file: "SANITARIO_V2_C02_P38_CONTRACT_SNAPSHOT_V14_20261112.json",
+      remote_write_performed: false,
+    });
+    expect(packet.reissue.contract_snapshot_projection_sha256)
+      .toBe(createHash("sha256").update(readFileSync(projectionPath)).digest("hex"));
+    expect(v14Snapshot).toMatchObject({ artifact_version: packet.artifact_version, projection_only: true, usable_as_importer_mcp_snapshot: false });
+    expect(v14Snapshot.rows).toEqual(baseline);
   });
   it("estado remoto persiste somente cinco linhas novas e replay não promove regras", () => {
     const before = JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_C02_P38_REMOTE_BEFORE_20261029.json", "utf8")).rows;
@@ -141,6 +160,20 @@ describe("P38: candidata documental de leite, sem promoção operacional", () =>
       .toEqual(before.sanitario_produto_carencia_rules_v2[0]);
     expect(client.rows.sanitario_produto_dose_rules_v2).toEqual(before.sanitario_produto_dose_rules_v2);
     expect(client.rows.sanitario_produto_especie_autorizacao_v2).toEqual(before.sanitario_produto_especie_autorizacao_v2);
+
+    // The historical remote snapshot retains the retired v13 flag. The strict
+    // v14 planner must consume the explicit v14 contract projection instead;
+    // the historical snapshot remains covered by the evidence assertions above.
+    const contractBefore = v14Snapshot.rows;
+    const contractPlan = await buildPlan(new SnapshotReader(contractBefore), data);
+    assertPublishablePlan(contractPlan);
+    expect(contractPlan.map(op => op.action).sort()).toEqual(["create", "create", "create", "create", "create", "skip"]);
+    expect(contractPlan.find(op => op.collection === "product_rows")).toMatchObject({ action: "skip" });
+
+    const unrelatedMetadataChange = structuredClone(contractBefore);
+    unrelatedMetadataChange.sanitario_produtos_v2[0].metadata.unrelated_v14_regression_probe = true;
+    const changedPlan = await buildPlan(new SnapshotReader(unrelatedMetadataChange), data);
+    expect(changedPlan.find(op => op.collection === "product_rows").action).toBe("reject");
   });
 
   it("rejeita tombstone ou UUID conflitante na fonte proposta", async () => {

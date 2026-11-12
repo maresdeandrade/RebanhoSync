@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createAgendaActionController } from "@/pages/Agenda/createAgendaActionController";
-import { concluirPendenciaSanitaria } from "@/lib/sanitario/infrastructure/service";
-import type { AgendaItem, ProtocoloSanitarioItem } from "@/lib/offline/types";
+import type { AgendaItem } from "@/lib/offline/types";
 
 function createAgendaItem(overrides: Partial<AgendaItem> = {}): AgendaItem {
   return {
@@ -40,33 +39,22 @@ function createDeps(overrides: Partial<Parameters<typeof createAgendaActionContr
     activeFarmId: "farm-1",
     navigate: vi.fn(),
     createGesture: vi.fn().mockResolvedValue(undefined),
-    concludePendingSanitary: vi.fn().mockResolvedValue("evento-12345678"),
-    pullDataForFarm: vi.fn().mockResolvedValue(undefined),
-    getProtocolItemById: vi.fn().mockResolvedValue(null as ProtocoloSanitarioItem | null),
     showError: vi.fn(),
     showSuccess: vi.fn(),
-    nowIso: () => "2026-01-01T00:00:00.000Z",
-    logError: vi.fn(),
     ...overrides,
   };
 }
 
 describe("createAgendaActionController", () => {
-  it("exibe erro e não persiste nem anuncia sucesso quando o serviço real bloqueia a conclusão V3", async () => {
-    const deps = createDeps({ concludePendingSanitary: concluirPendenciaSanitaria });
-    const item = createAgendaItem();
-    const before = structuredClone(item);
+  it.each(["concluido", "cancelado"] as const)("bloqueia status sanitário %s sem escrever em agenda_itens", async (status) => {
+    const deps = createDeps();
+    await createAgendaActionController(deps).updateStatus(createAgendaItem(), status);
 
-    await createAgendaActionController(deps).updateStatus(item, "concluido");
-
-    expect(deps.showError).toHaveBeenCalledWith("Falha ao concluir pendência sanitária com evento.");
-    expect(deps.logError).toHaveBeenCalledWith(
-      expect.any(String), expect.objectContaining({ message: expect.stringContaining("SANITARIO_V3_EXECUTION_NOT_ENABLED") }),
+    expect(deps.showError).toHaveBeenCalledWith(
+      "Itens sanitários devem ser gerenciados exclusivamente na Central Sanitária.",
     );
-    expect(deps.showSuccess).not.toHaveBeenCalled();
     expect(deps.createGesture).not.toHaveBeenCalled();
-    expect(deps.pullDataForFarm).not.toHaveBeenCalled();
-    expect(item).toEqual(before);
+    expect(deps.showSuccess).not.toHaveBeenCalled();
   });
   it("navigates calf journey items to cria-inicial", () => {
     const deps = createDeps();
@@ -100,11 +88,7 @@ describe("createAgendaActionController", () => {
       }),
     );
 
-    expect(deps.navigate).toHaveBeenCalledWith(
-      "/registrar?sourceTaskId=agenda-1&dominio=sanitario&animalId=animal-1&loteId=lote-1&protocoloId=protocolo-1&protocoloItemId=protocolo-item-1&produto=Vacina+X&sanitarioTipo=vacinacao",
-    );
-    expect(deps.createGesture).not.toHaveBeenCalled();
-    expect(deps.concludePendingSanitary).not.toHaveBeenCalled();
+    expect(deps.navigate).toHaveBeenCalledWith("/protocolos-sanitarios?tab=agenda");
   });
 
   it("navigates lote-only agenda item to Registrar with lote context", () => {
@@ -123,9 +107,7 @@ describe("createAgendaActionController", () => {
       }),
     );
 
-    expect(deps.navigate).toHaveBeenCalledWith(
-      "/registrar?sourceTaskId=agenda-1&dominio=sanitario&loteId=lote-1&protocoloId=protocolo-1&produto=Vacina+Lote&sanitarioTipo=vacinacao",
-    );
+    expect(deps.navigate).toHaveBeenCalledWith("/protocolos-sanitarios?tab=agenda");
   });
 
   it("does not use legacy source_ref key as protocol version id", () => {
@@ -143,60 +125,8 @@ describe("createAgendaActionController", () => {
       }),
     );
 
-    expect(deps.navigate).toHaveBeenCalledWith(
-      "/registrar?sourceTaskId=agenda-1&dominio=sanitario&animalId=animal-1&loteId=lote-1&protocoloId=protocolo-1&sanitarioTipo=vacinacao",
-    );
+    expect(deps.navigate).toHaveBeenCalledWith("/protocolos-sanitarios?tab=agenda");
   });
-
-
-  it("routes generic conclude to sanitary event and refresh", async () => {
-    const deps = createDeps();
-    const controller = createAgendaActionController(deps);
-
-    await controller.updateStatus(
-      createAgendaItem({
-        source_ref: { tipo: "vacinacao", produto: "Vacina X" },
-      }),
-      "concluido",
-    );
-
-    expect(deps.concludePendingSanitary).toHaveBeenCalled();
-    expect(deps.pullDataForFarm).toHaveBeenCalledWith(
-      "farm-1",
-      ["agenda_itens", "eventos", "eventos_sanitario"],
-      { mode: "merge" },
-    );
-    expect(deps.showSuccess).toHaveBeenCalledWith(
-      "Concluído direto na agenda com evento sanitário. Evento evento-1.",
-    );
-  });
-
-  it("agenda: se concluirPendenciaSanitaria resolve, mas pullDataForFarm falha, trata como sucesso com aviso", async () => {
-    const pullError = new Error("pull down failed");
-    const deps = createDeps({
-      pullDataForFarm: vi.fn().mockRejectedValue(pullError),
-    });
-    const controller = createAgendaActionController(deps);
-
-    await controller.updateStatus(
-      createAgendaItem({
-        source_ref: { tipo: "vacinacao", produto: "Vacina X" },
-      }),
-      "concluido",
-    );
-
-    // NOVO CONTRATO: RPC OK, refresh falhou ≠ execução falhou.
-    // - Servidor: evento criado, agenda atualizada.
-    // - Cliente: UI mostra sucesso com aviso de sincronização pendente.
-    // - evento_id preservado.
-    expect(deps.concludePendingSanitary).toHaveBeenCalledTimes(1);
-    expect(deps.pullDataForFarm).toHaveBeenCalledTimes(1);
-    expect(deps.showSuccess).toHaveBeenCalledWith(
-      "Execução registrada. A atualização local falhou; sincronize/atualize para refletir o novo estado. Evento evento-1.",
-    );
-    expect(deps.showError).not.toHaveBeenCalled();
-  });
-
   it("updates locally through gesture for non-sanitary branches", async () => {
     const deps = createDeps();
     const controller = createAgendaActionController(deps);
@@ -207,7 +137,6 @@ describe("createAgendaActionController", () => {
     );
 
     expect(deps.createGesture).toHaveBeenCalled();
-    expect(deps.concludePendingSanitary).not.toHaveBeenCalled();
   });
 
   it("ignores concurrent duplicate updates for the same agenda item", async () => {
@@ -240,48 +169,4 @@ describe("createAgendaActionController", () => {
     expect(deps.createGesture).not.toHaveBeenCalled();
   });
 
-  it("regressão: não exibe sucesso se concluirPendenciaSanitaria falhar", async () => {
-    const rpcError = new Error("RPC unauthorized");
-    const deps = createDeps({
-      concludePendingSanitary: vi.fn().mockRejectedValue(rpcError),
-    });
-    const controller = createAgendaActionController(deps);
-
-    await controller.updateStatus(
-      createAgendaItem({
-        source_ref: { tipo: "vacinacao", produto: "Vacina X" },
-      }),
-      "concluido",
-    );
-
-    expect(deps.showError).toHaveBeenCalledWith(
-      "Falha ao concluir pendência sanitária com evento.",
-    );
-    expect(deps.showSuccess).not.toHaveBeenCalled();
-    expect(deps.pullDataForFarm).not.toHaveBeenCalled();
-  });
-
-  it("contrato: RPC sucesso + refresh falha = sucesso com aviso, não erro", async () => {
-    // Novo contrato: RPC OK + refresh falha ≠ execução falhou.
-    // UI deve mostrar sucesso com aviso de sincronização pendente.
-    const pullError = new Error("network down");
-    const deps = createDeps({
-      pullDataForFarm: vi.fn().mockRejectedValue(pullError),
-    });
-    const controller = createAgendaActionController(deps);
-
-    await controller.updateStatus(
-      createAgendaItem({
-        dominio: "sanitario",
-        source_ref: { tipo: "vacinacao", produto: "Vacina X" },
-      }),
-      "concluido",
-    );
-
-    expect(deps.concludePendingSanitary).toHaveBeenCalledTimes(1);
-    expect(deps.showSuccess).toHaveBeenCalledWith(
-      "Execução registrada. A atualização local falhou; sincronize/atualize para refletir o novo estado. Evento evento-1.",
-    );
-    expect(deps.showError).not.toHaveBeenCalled();
-  });
 });

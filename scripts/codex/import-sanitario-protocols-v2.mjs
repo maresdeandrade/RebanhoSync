@@ -41,7 +41,7 @@ const IMPORT_LOCK_KEY = "rebanhosync:sanitario-protocols-v2:12F10";
 const C02_P11_SHA256 = "751ba7c3fb4c0bb912e2f2a401c8b7405a37ad22e2615b9d326823aa0df64275";
 const C02_LOCAL_DATABASE = "rebanhosync_c02_p11";
 const C02_LOCAL_MARKER = "C02_P11_DISPOSABLE_LOCAL_ONLY";
-const C02_F6_SHA256 = "6270981bb7c2f8e22eb547c8512f788d8191e7015e912cf62d5abd2350351367";
+const C02_F6_SHA256 = "c3b0e577d361a4d100d250a7e8b8c591c9e7b1b8721ada8fb4e665f610e8cf4c";
 const C02_ADMIN_PROJECT_REF = "zqloazqzhwauamcejmuz";
 
 const DEPRECATED_ACTIVE_ITEMS = [
@@ -68,6 +68,12 @@ const FORBIDDEN_TRUE_FLAGS = [
   "creates_stock_movement",
   "creates_active_withdrawal",
   "allows_operational_release",
+  "allows_agenda_auto",
+  "allowsAgendaAuto",
+  "automatic_product_selection_authorized",
+  "automation_status",
+  "automationStatus",
+  "agenda_allowed",
 ];
 
 const UUID_LIKE =
@@ -1185,6 +1191,8 @@ async function preserveC02Baseline(client, data, context, lockRows = true) {
   for (const candidate of [...data.product_rows].sort((a, b) => a.id.localeCompare(b.id))) {
     const baseline = context.baseline?.find(p => p.id === candidate.id) ?? candidate;
     const prefix = `C02_${context.scope}`;
+    assert(FORBIDDEN_TRUE_FLAGS.every(flag => candidate.metadata?.[flag] !== true),
+      `${prefix}_OPERATIONAL_METADATA`);
     const { rows: [existing] } = await client.query(
       `select * from public.sanitario_produtos_v2 where id=$1${lockRows ? " for update" : ""}`, [candidate.id],
     );
@@ -1784,7 +1792,7 @@ async function incrementalMain(args) {
 }
 // Closed P38 increment: same planner, transactional writer and MCP compiler.
 // It only emits SQL after rehearsal against a fresh loopback materialization.
-const C02_P38_SHA256 = "8b3a14846c8e0f90e7f355cf2a25b36bd10d3f8c587a22943edb57310b635330";
+const C02_P38_SHA256 = "fffc77fe6ff5204cf2f5f859142a68a9ff59099e2953b15b8c52826351830e15";
 function p38StateSql(normalized = false) {
   const product = "'db743728-59e2-5ecb-8b2e-211ab170618f'::uuid";
   const sourceWhere = "id in ('3dfa7ffc-b505-5440-826f-84fc87ac8d6f','8d47206a-fe64-5a8d-8587-72675c8cfb94','c6ab8b68-1bbf-583c-82c9-2bfbc2ca6507') or source_key='SRC_C02_P38_EPRECIS_P12073_V00' or url='https://ruminants.ceva.com/app/uploads/sites/16/2023/10/Eprecis-Bula.pdf'";
@@ -1806,7 +1814,7 @@ function p38StateSql(normalized = false) {
 async function c02P38Main(args, closure = false) {
   const flag = closure ? "--c02-f6-closure" : "--c02-p38";
   const prefix = closure ? "C02_F6_CLOSURE" : "C02_P38";
-  const digest = closure ? "f09d9ebc4c4873693740b2afe218ce75ceff4cff3c66218a4e5be4bf6d4389bb" : C02_P38_SHA256;
+  const digest = closure ? "8ada29135f25cc87f9220758d0c3c76c647bb4b5538e29f8f7884f01b15b6654" : C02_P38_SHA256;
   const stateSql = closure ? c02StateSql : p38StateSql;
   const planCount = closure ? 85 : 6;
   const allowed = [flag, "--local-port", "--mcp-snapshot", "--emit-mcp-apply", "--project-ref", "--authorization-ref"];
@@ -1819,14 +1827,14 @@ async function c02P38Main(args, closure = false) {
   assert(options.get("--project-ref") === C02_ADMIN_PROJECT_REF && options.get("--authorization-ref").length >= 10, `${prefix}_AUTHORIZATION_REQUIRED`);
   const raw = readFileSync(options.get(flag), "utf8");
   assert(createHash("sha256").update(raw).digest("hex") === digest, `${prefix}_CANDIDATE_CHANGED`);
+  const port = Number(options.get("--local-port"));
+  assert(Number.isInteger(port) && port > 0 && port <= 65535, "C02_P38_LOCAL_PORT_REQUIRED");
   const packet = JSON.parse(raw);
   const data = validateCanonicalTechnicalContract(packet).data;
   const snapshot = JSON.parse(readFileSync(options.get("--mcp-snapshot"), "utf8"));
   assert(snapshot.project_ref === C02_ADMIN_PROJECT_REF && snapshot.read_only === "on" &&
     snapshot.isolation === "repeatable read" && snapshot.executor === "postgres" && snapshot.session_executor === "postgres" &&
     snapshot.contracts?.length === 8, "C02_P38_REMOTE_SNAPSHOT_REQUIRED");
-  const port = Number(options.get("--local-port"));
-  assert(Number.isInteger(port) && port > 0 && port <= 65535, "C02_P38_LOCAL_PORT_REQUIRED");
   const client = new Client({ host: "127.0.0.1", port, user: "postgres", database: "rebanhosync_c02_p11" });
   await client.connect();
   let before, after;

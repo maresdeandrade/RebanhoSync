@@ -92,6 +92,12 @@ Validação desta continuidade: **33/33 testes em três arquivos**, comando `pnp
 
 Gate: **READY WITH CAVEAT para a entrega documental e persistência pendente**, com typecheck global herdado. **Sem liberação operacional.** Estado remoto real: regras novas pendentes → carne/leite unknown. Cópias sintéticas ativas com fonte específica → corte P33 sete dias/P38 12 dias, leite unknown; o teste anterior de P38 continua demonstrando leite zero sem carne zero.
 
+## Reemissão versionada do contrato v14 — 2026-11-12
+
+A candidata v13, o snapshot remoto usado no ensaio e os recibos de 2026-10-29 permanecem inalterados. Foi criada uma nova [candidata F6 v14](evidence/SANITARIO_V2_C02_F6_CLOSURE_CANDIDATE_V14_20261112.json), SHA256 `8ada29135f25cc87f9220758d0c3c76c647bb4b5538e29f8f7884f01b15b6654`, e uma [projeção v14 do snapshot](evidence/SANITARIO_V2_C02_F6_CLOSURE_CONTRACT_SNAPSHOT_V14_20261112.json), SHA256 `62a18e1be769005f8b5af0dcd6049d6cb97e70e37e292593043054136dedf2c4`.
+
+A projeção declara `projection_only=true` e `usable_as_importer_mcp_snapshot=false`; ela remove do formato canônico a chave legada `allows_agenda_auto`, mas não modifica o snapshot remoto nem aplica alteração aos cadastros. O importador local agora fixa o digest v14. A suíte focada P38/F6 passou com **28/28 testes**; o planner F6, contra o snapshot remoto bruto em transporte somente de leitura, observou **43 criações e 42 skips**, e rejeitou uma divergência de metadata não aposentada. Nenhuma escrita ou conexão a backend remoto foi realizada nesta validação; não há nova aplicação nem liberação operacional.
+
 ## Bloqueios reais e próxima ação consolidada
 
 1. A implantação não contém os contratos P38 e as regras técnicas/autorizações continuam pendentes; ativação exige compatibilidade implantada comprovada e decisão específica sobre dose, espécie, restrições e versão aplicável. Não se derivou histórico, Agenda ou Evento desta curadoria.
