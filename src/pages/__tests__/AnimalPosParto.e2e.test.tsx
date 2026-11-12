@@ -251,7 +251,7 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
   });
 
   it(
-    "fecha o pos-parto sem fato sanitário paralelo e preserva a restrição de execução neonatal",
+    "fecha o pós-parto sem fato sanitário paralelo e bloqueia execução sem cutover V3 aplicado",
     { retry: 2 },
     async () => {
     const user = userEvent.setup();
@@ -420,8 +420,8 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
       db.event_eventos, db.event_eventos_sanitario, db.event_eventos_animais,
       db.state_insumo_movimentacoes, db.queue_gestures, db.queue_ops, db.local_sanitario_participacoes];
     const before = await Promise.all(protectedStores.map(store => store.toArray()));
-    await expect(executeSanitaryAgendaV2(execution)).rejects.toThrow("SANITARIO_V3_EXECUTION_NOT_ENABLED");
-    await expect(executeSanitaryAgendaV2(execution)).rejects.toThrow("SANITARIO_V3_EXECUTION_NOT_ENABLED");
+    await expect(executeSanitaryAgendaV2(execution)).rejects.toThrow("SANITARIO_V2_CUTOVER_NOT_APPLIED");
+    await expect(executeSanitaryAgendaV2(execution)).rejects.toThrow("SANITARIO_V2_CUTOVER_NOT_APPLIED");
     expect(await Promise.all(protectedStores.map(store => store.toArray()))).toEqual(before);
     expect(await db.queue_gestures.count()).toBe(2);
     expect(await db.event_eventos_sanitario.count()).toBe(0);
@@ -429,4 +429,3 @@ describe("Fluxo E2E de parto -> pos-parto -> cria", () => {
     },
   );
 });
-

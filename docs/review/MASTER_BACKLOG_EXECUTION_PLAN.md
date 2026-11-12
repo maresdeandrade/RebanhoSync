@@ -5,6 +5,8 @@
 Atualizado em: 2026-11-08
 Estado vigente em 08/11/2026: main pós-#281 em `db4c2f21291d8ce8e87af2d0f2de4b1063693620`; [fechamento F24](./CURRENT_PHASE_HANDOFF.md#f24-integrada--pr-270) preservado. Comando neonatal B02/A05 integrado #274; [Central Sanitária contextual e UX integradas até #281](./CURRENT_PHASE_HANDOFF.md#central-sanitária--integrações-até-281). Nenhuma nova fase ou rollout iniciado.
 
+> **Atualização de continuidade — 11/11/2026:** a baseline indicada para a Etapa 3 é `main@75d2dca03948f8193d5e84631de69ee0f6b0873a` (PR #288). O patch local `dae55abf` está READY WITH CAVEAT após validação local; publicação da branch/PR/CI pendentes. Este adendo não cria ID de backlog ou fase, nem reabre a sequência histórica abaixo. F24.7/F24.8, homologação operacional real e rollout permanecem sem certificação/comprovação.
+
 ## Decisão de desenho proposta
 
 Método histórico da consolidação 01/02: descoberta com `repository-context-retrieval`; leitura independente por responsabilidade com `dispatching-parallel-agents`; desenho por `brainstorming` e plano por `writing-plans`, adaptados ao pedido documental explícito. A especificação já define os entregáveis e a alternativa candidata; não se exige aprovação redundante para escrevê-los. A aprovação arquitetural para mudar o produto permanece futura. Nenhum plano autoriza commit ou integração.

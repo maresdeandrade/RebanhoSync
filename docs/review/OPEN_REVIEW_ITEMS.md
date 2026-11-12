@@ -58,7 +58,7 @@ Integração pública F6–F9 encerrada pelo PR #244 em `main@0e7f5137a865f2671d
 | P2, condicionado ao alvo de liberação | **Limite de certificação:** cold start PWA sem shell/assets, crash real de processo e dispositivo físico não certificados pela VF5; nova intenção sem sessão utilizável ficou fora da VF4. | [Limites VF4](./SANITARIO_V2_VF4_VALIDACAO_20261024.md). Definir contrato/critério do alvo antes de testar; não atribuir bug ou prometer escrita sem sessão. |
 | P2 independente | **Dívida TypeScript:** 38 diagnósticos preexistentes no escopo `e2e/tsconfig.json`, triados na VF5; não houve nova contagem nesta atividade. | [Triagem VF5](./evidence/SANITARIO_V2_VF5_TYPESCRIPT_TRIAGE_20261024.json). Correção própria e comparação com baseline; não bloquear artificialmente F9 nem declarar TypeScript global aprovado. |
 
-Os guards de automação, inclusive `no_agenda_auto` dos três itens de raiva, permanecem restrições de produto; não são bugs a remover. Catálogo, configuração, planejamento e execução continuam distintos. F24.7/F24.8 e autorização operacional não são encerradas pelo merge #244. Nenhum bug novo foi reproduzido nesta revisão documental.
+Os guards de automação, inclusive `no_agenda_auto` dos três itens de raiva, permanecem restrições de produto à geração automática; não são bugs a remover. Esse guard não bloqueia o planejamento manual de Agenda. Catálogo, configuração, planejamento e execução continuam distintos. F24.7/F24.8 e autorização operacional não são encerradas pelo merge #244. Nenhum bug novo foi reproduzido nesta revisão documental.
 
 ### F24.1B — isolamento de ambientes
 

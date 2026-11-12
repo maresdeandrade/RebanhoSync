@@ -338,6 +338,73 @@ function validateExecutionInput(input: ExecuteSanitaryAgendaInputV2) {
   return { ok: rejected.length === 0, rejected, executedAt };
 }
 
+function isValidExecutionDateTime(value: string | undefined) {
+  const match =
+    /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})?$/i.exec(
+      value ?? "",
+    );
+  if (!match) return false;
+
+  const [, dateKey, hourText, minuteText, secondText = "00", fraction, zone] =
+    match;
+  const calendarDate = new Date(`${dateKey}T00:00:00.000Z`);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  if (
+    !Number.isFinite(calendarDate.getTime()) ||
+    calendarDate.toISOString().slice(0, 10) !== dateKey ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59
+  ) {
+    return false;
+  }
+
+  if (zone && zone.toUpperCase() !== "Z") {
+    const offset = /^[+-](\d{2}):(\d{2})$/.exec(zone);
+    if (!offset) return false;
+    const offsetHours = Number(offset[1]);
+    const offsetMinutes = Number(offset[2]);
+    if (
+      offsetHours > 14 ||
+      offsetMinutes > 59 ||
+      (offsetHours === 14 && offsetMinutes !== 0)
+    ) {
+      return false;
+    }
+  }
+
+  const parsed = new Date(value!);
+  if (!Number.isFinite(parsed.getTime())) return false;
+  if (zone) return true;
+
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const milliseconds = Number((fraction ?? "").padEnd(3, "0")) || 0;
+  return (
+    parsed.getFullYear() === year &&
+    parsed.getMonth() + 1 === month &&
+    parsed.getDate() === day &&
+    parsed.getHours() === hour &&
+    parsed.getMinutes() === minute &&
+    parsed.getSeconds() === second &&
+    parsed.getMilliseconds() === milliseconds
+  );
+}
+
+function civilDateInSaoPaulo(occurredAt: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(occurredAt));
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  return `${year}-${month}-${day}`;
+}
+
 function validateAgainstAgenda(input: {
   agenda: SanitarioAgendaLocalV2;
   agendaAnimals: SanitarioAgendaAnimalLocalV2[];
@@ -565,7 +632,7 @@ function buildRecords(input: {
     fazenda_id: request.fazendaId,
     dominio: "sanitario",
     occurred_at: executedAt,
-    occurred_on: executedAt.slice(0, 10),
+    occurred_on: civilDateInSaoPaulo(executedAt),
     animal_id: targetAnimalIds.length === 1 ? targetAnimalIds[0] : null,
     lote_id: agenda.lote_id,
     source_task_id: agenda.id,
@@ -800,6 +867,13 @@ export async function executeSanitaryAgendaV2(
           existingDetail?.produto_snapshot as ExecutedProductTechnicalSnapshotV2 | null,
         ).createsActiveWithdrawal,
     };
+  }
+
+  if (!isValidExecutionDateTime(input.executedAt)) {
+    const reason = /^\d{4}-\d{2}-\d{2}$/.test(input.executedAt)
+      ? "missing_execution_time"
+      : "invalid_executed_at";
+    throw new Error(`SANITARY_AGENDA_EXECUTION_REJECTED:${reason}`);
   }
 
   let agendaAnimals = await localDb.ops_sanitario_agenda_animais_v2

@@ -161,6 +161,7 @@ export function SanitaryLocalAgendaPanelV2({
   const [filters, setFilters] = useState(initialFilters);
   const [selected, setSelected] = useState<SanitaryLocalAgendaListItemV2 | null>(null);
   const [executionTargets, setExecutionTargets] = useState<SanitaryLocalAgendaListItemV2[]>([]);
+  const [executionOpen, setExecutionOpen] = useState(false);
   const [selectedAgendaIds, setSelectedAgendaIds] = useState<Set<string>>(new Set());
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [plannedFor, setPlannedFor] = useState("");
@@ -172,6 +173,11 @@ export function SanitaryLocalAgendaPanelV2({
   const groups = useMemo(() => groupLocalSanitaryAgendasV2(filteredItems), [filteredItems]);
   const selectedItems = filteredItems.filter((item) => selectedAgendaIds.has(item.id));
   const batchBlockMessage = selectedCompatibilityMessage(selectedItems);
+
+  const openExecution = (targets: SanitaryLocalAgendaListItemV2[]) => {
+    setExecutionTargets(targets);
+    setExecutionOpen(true);
+  };
 
   const openReschedule = (item: SanitaryLocalAgendaListItemV2) => {
     setSelected(item);
@@ -312,7 +318,7 @@ export function SanitaryLocalAgendaPanelV2({
               <Button
                 type="button"
                 disabled={selectedItems.length === 0 || Boolean(batchBlockMessage) || busyAction !== null}
-                onClick={() => setExecutionTargets(selectedItems)}
+                onClick={() => openExecution(selectedItems)}
               >
                 <Play className="h-4 w-4" />
                 Executar selecionadas
@@ -375,7 +381,7 @@ export function SanitaryLocalAgendaPanelV2({
                   </dl>
                   <div className="flex flex-wrap gap-2">
                     {group.compatible ? (
-                      <Button type="button" disabled={busyAction !== null} onClick={() => setExecutionTargets(group.items)}>
+                      <Button type="button" disabled={busyAction !== null} onClick={() => openExecution(group.items)}>
                         <Play className="h-4 w-4" />
                         Executar grupo
                       </Button>
@@ -404,7 +410,7 @@ export function SanitaryLocalAgendaPanelV2({
                               <Button type="button" variant="outline" disabled={!item.canManage || busyAction !== null} onClick={() => openReschedule(item)}>Reagendar</Button>
                               <Button type="button" variant="outline" disabled={!item.canManage || busyAction !== null} onClick={() => cancelAgenda(item)}>Cancelar agenda</Button>
                               {item.canExecute ? (
-                                <Button type="button" disabled={busyAction !== null} onClick={() => setExecutionTargets([item])}>
+                                <Button type="button" disabled={busyAction !== null} onClick={() => openExecution([item])}>
                                   Executar
                                 </Button>
                               ) : null}
@@ -442,11 +448,11 @@ export function SanitaryLocalAgendaPanelV2({
       </Dialog>
       <SanitaryAgendaExecutionConfirmV2
         items={executionTargets}
-        open={executionTargets.length > 0}
+        open={executionOpen}
         defaultResponsibleName={defaultResponsibleName}
         productOptions={executionProductOptions}
         inventoryLotOptions={executionInventoryLotOptions}
-        onOpenChange={(open) => !open && setExecutionTargets([])}
+        onOpenChange={setExecutionOpen}
         onConfirm={executeAgenda}
       />
     </div>
