@@ -28,8 +28,10 @@ vi.mock("../db", () => ({
     tables: localStores.map((name) => ({ name })),
     queue_ops: {
       toArray: vi.fn(async () => []),
+      add: vi.fn(), put: vi.fn(), bulkAdd: vi.fn(), clear: vi.fn(),
     },
-    queue_gestures: { toArray: vi.fn(async () => []) },
+    queue_gestures: { toArray: vi.fn(async () => []), add: vi.fn(), put: vi.fn(), bulkAdd: vi.fn(), clear: vi.fn() },
+    queue_rejections: { toArray: vi.fn(async () => []), add: vi.fn(), put: vi.fn(), bulkAdd: vi.fn(), clear: vi.fn() },
     table: vi.fn(),
     transaction: vi.fn(),
   },
@@ -204,7 +206,7 @@ describe("pullSanitarioProtocolCatalogV2", () => {
         }),
       ]),
     );
-    expect(db.transaction).toHaveBeenCalledWith("rw", localStores, expect.any(Function));
+    expect(db.transaction).toHaveBeenCalledWith("rw", [...localStores, "queue_ops", "queue_gestures", "queue_rejections"], expect.any(Function));
     expect(writeLog.filter((entry) => entry.store === localStores[0])[0].rows)
       .toHaveLength(10);
     expect(writeLog.filter((entry) => entry.store === localStores[1])[0].rows)
@@ -230,6 +232,12 @@ describe("pullSanitarioProtocolCatalogV2", () => {
 
     expect(db.table).not.toHaveBeenCalledWith("queue_ops");
     expect(fetchSpy).not.toHaveBeenCalled();
+    for (const queue of [db.queue_ops, db.queue_gestures, db.queue_rejections]) {
+      expect(queue.add).not.toHaveBeenCalled();
+      expect(queue.put).not.toHaveBeenCalled();
+      expect(queue.bulkAdd).not.toHaveBeenCalled();
+      expect(queue.clear).not.toHaveBeenCalled();
+    }
     for (const store of storesByName.values()) {
       expect(store.clear).not.toHaveBeenCalled();
     }
