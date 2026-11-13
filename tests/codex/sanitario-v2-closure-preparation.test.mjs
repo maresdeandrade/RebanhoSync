@@ -1,28 +1,41 @@
 import { afterAll, test } from "vitest";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { classDeltaDigest } from "../../scripts/codex/prepare-sanitario-class-delta-v2.mjs";
+import { validateCanonicalTechnicalContract } from "../../scripts/codex/sanitario-v2-contract.mjs";
 import { prepareClosureCandidates, prepareClosureDelta, prepareClosureBootstrap, BASELINE_PATH, CANDIDATE_PATH, ELIGIBLE_DELTA_PATH, BOOTSTRAP_PATH, BOOTSTRAP_VERSION } from "../../scripts/codex/prepare-sanitario-closure-v2.mjs";
 const baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8")).catalog;
-const prepared = JSON.parse(readFileSync(CANDIDATE_PATH, "utf8"));
-// Keep certified historical packets intact; exercise the current publisher with
-// freshly prepared test manifests, as in sanitario-v2-incremental.test.mjs.
+const historicalCandidate = JSON.parse(readFileSync(CANDIDATE_PATH, "utf8"));
+const prepared = prepareClosureCandidates(baseline, historicalCandidate.identities);
+// Historical v13 artifacts remain unchanged; v14 inputs exist only in a fixture.
 const historicalDelta = JSON.parse(readFileSync(ELIGIBLE_DELTA_PATH, "utf8"));
 const historicalBootstrap = JSON.parse(readFileSync(BOOTSTRAP_PATH, "utf8"));
+const directory = mkdtempSync(path.join(tmpdir(), "sanitario-closure-current-publisher-"));
+const realDirectory = realpathSync(directory);
+assert.equal(path.dirname(realDirectory), realpathSync(tmpdir()), "Fixture must stay directly inside the temporary directory");
+afterAll(() => rmSync(realDirectory, { recursive: true, force: true }));
+const candidatePath = path.join(directory, "candidates-v14.json");
+writeFileSync(candidatePath, JSON.stringify(prepared));
 const inputs = Object.fromEntries(Object.entries(historicalDelta.inputs).map(([key, input]) => [key,
-  { ...input, sha256: createHash("sha256").update(readFileSync(input.path)).digest("hex") }]));
+  { ...input, path: key === "candidates" ? candidatePath : input.path,
+    sha256: createHash("sha256").update(readFileSync(key === "candidates" ? candidatePath : input.path)).digest("hex") }]));
 const currentDelta = prepareClosureDelta(baseline, prepared,
   JSON.parse(readFileSync(inputs.preservation.path, "utf8")), inputs);
-for (const key of ["payload", "baseline", "protected", "import_gate"])
-  assert.deepEqual(currentDelta[key], historicalDelta[key], `Test fingerprints cannot change ${key}`);
+assert.deepEqual(currentDelta.protected, historicalDelta.protected);
+assert.deepEqual(currentDelta.import_gate, historicalDelta.import_gate);
+for (const section of ["payload", "baseline"]) {
+  for (const [key, historicalRows] of Object.entries(historicalDelta[section])) {
+    if (!Array.isArray(historicalRows)) continue;
+    const identities = rows => rows.map(row => [row.id, row.version, row.logical_item_key, row.source_key, row.field_key]).sort();
+    assert.deepEqual(identities(currentDelta[section][key]), identities(historicalRows), `Historical identities changed: ${section}.${key}`);
+  }
+}
 const currentBootstrap = prepareClosureBootstrap(currentDelta, baseline, historicalBootstrap.request_id);
 assert.deepEqual(currentBootstrap.groups, historicalBootstrap.groups);
-const directory = mkdtempSync(path.join(tmpdir(), "sanitario-closure-current-publisher-"));
-afterAll(() => rmSync(directory, { recursive: true, force: true }));
 const deltaPath = path.join(directory, "delta.json");
 const bootstrapPath = path.join(directory, "bootstrap.json");
 writeFileSync(deltaPath, JSON.stringify(currentDelta));
@@ -32,7 +45,14 @@ test("candidate replay preserves prospective identities, approved scopes and blo
   const packet = prepareClosureCandidates(baseline, prepared.identities);
   assert.deepEqual(packet, prepared);
   assert.deepEqual(baseline, before);
-  assert(packet.payload.protocol_item_rows.every(i => i.status === "draft" && !i.allows_agenda_auto));
+  assert.equal(historicalCandidate.artifact_version, "13.0.0-canonical-contract");
+  assert.equal(packet.artifact_version, "14.0.0-canonical-contract");
+  assert.deepEqual(packet.identities, historicalCandidate.identities);
+  assert.throws(() => validateCanonicalTechnicalContract(historicalCandidate), /campo removido|limitação exclusiva/);
+  const invalid = structuredClone(packet);
+  invalid.payload.protocol_item_rows[0].snapshot_template.metadata.automationStatus = "agenda_allowed";
+  assert.throws(() => validateCanonicalTechnicalContract(invalid), /campo removido/);
+  assert(packet.payload.protocol_item_rows.every(i => i.status === "draft" && !Object.hasOwn(i, "allows_agenda_auto")));
   const oldApproved = baseline.items.filter(i => i.status === "active");
   assert.equal(oldApproved.length, 7);
   assert(!packet.payload.protocol_item_rows.some(i => oldApproved.some(old => old.id === i.id || old.logical_item_key === i.logical_item_key)));
@@ -44,21 +64,21 @@ test("variants retain specific intervals and unknown withdrawal without inventin
   assert.equal(prepared.payload.product_rows.length, 0);
   assert.equal(prepared.label_facts_for_review_only.lepto8.dose_ml, 3);
   assert(prepared.payload.protocol_item_rows.filter(i => i.logical_item_key.startsWith("raiva_")).every(i =>
-    i.limitations.includes("no_agenda_auto") && i.booster_rule.tolerance.days === 0 && i.snapshot_template.metadata.catalog_review_scope === "manual_planning"));
+    !i.limitations.includes("no_agenda_auto") && i.booster_rule.tolerance.days === 0 && i.snapshot_template.metadata.catalog_review_scope === "manual_planning"));
   const d2 = prepared.payload.protocol_item_rows.find(i => i.logical_item_key === "ibr_bvd_cattlemaster_gold_primovac_dose2");
   assert.deepEqual([d2.operational_window_rule.min_offset_days, d2.operational_window_rule.max_offset_days], [21, 21]);
   assert.equal(d2.item_status, "bloqueado");
   assert(prepared.payload.protocol_item_rows.filter(i => i.logical_item_key.startsWith("lepto_bovigen8")).every(i => i.item_status === "bloqueado"));
 });
 test("canonical public review path accepts this exact packet and categorically refuses apply", () => {
-  const command = ["scripts/codex/import-sanitario-protocols-v2.mjs", "--review-candidate", CANDIDATE_PATH];
+  const command = ["scripts/codex/import-sanitario-protocols-v2.mjs", "--review-candidate", candidatePath];
   assert.match(execFileSync(process.execPath, [...command, "--validate"], { encoding: "utf8", windowsHide: true }), /12G validate OK/);
   const apply = spawnSync(process.execPath, [...command, "--apply"], { encoding: "utf8", windowsHide: true });
   assert.notEqual(apply.status, 0);
   assert.match(apply.stderr, /REVIEW_CANDIDATE_CANNOT_APPLY/);
 });
 test("eligible delta uses the same incremental route, isolates incomplete variants and refuses unauthorized apply", () => {
-  const delta = JSON.parse(readFileSync(ELIGIBLE_DELTA_PATH, "utf8"));
+  const delta = currentDelta;
   const preservation = JSON.parse(readFileSync(delta.inputs.preservation.path, "utf8"));
   assert.deepEqual(delta, prepareClosureDelta(baseline, prepared, preservation, delta.inputs));
   assert.equal(delta.payload.protocol_item_rows.length, 7);
