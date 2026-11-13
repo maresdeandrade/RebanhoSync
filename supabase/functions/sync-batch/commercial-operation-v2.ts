@@ -1,5 +1,5 @@
-export const COMMERCIAL_OPERATION_MAX_ANIMALS = 500;
-export const COMMERCIAL_OPERATION_MAX_PAYLOAD_BYTES = 1024 * 1024;
+const COMMERCIAL_OPERATION_MAX_ANIMALS = 500;
+const COMMERCIAL_OPERATION_MAX_PAYLOAD_BYTES = 1024 * 1024;
 
 export interface CommercialOperationV2 {
   domain: "commercial_operation_v2";

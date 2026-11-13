@@ -6,6 +6,7 @@ export async function runSanitaryCasCasesC06(h) {
   report.c06_contract={decision:"PARTIAL_PER_OPERATION",scope:"ordered create/reschedule with explicit expected_revision; receipt lookup precedes CAS",
     dynamic_result_reference:{status:"NOT_APPLICABLE",reason:"canonical envelope has no result-reference/dependency expression; revisions and target UUIDs must be explicit"}};
   report.c06_cas_blocked_ids=[];
+  report.c06_cas_rejected_ids=[];
   report.c06_cas_http=[];
   page.on("response",response=>{
     if(response.url().endsWith("/functions/v1/sync-batch"))report.c06_cas_http.push({tx:response.request().postDataJSON().client_tx_id,http:response.status()});
@@ -26,18 +27,31 @@ export async function runSanitaryCasCasesC06(h) {
     return{batch,gesture:g,anchor,receipts:await receiptCheck(batch,accepted(batch))};
   });
   await check("CAS02 dependência rejeitada não cria efeito órfão",async()=>{
-    const batch=await enqueue({badAnimal:animalB,chain:true});await processBatch(batch.tx);await drain(farmA);
+    const batch=await enqueue({badAnimal:animalB,chain:true});
+    const original=(await local()).ops.filter(op=>op.client_tx_id===batch.tx);
+    await processBatch(batch.tx);await drain(farmA);
     const g=await outcomes(batch);assert.equal(g.status,"REJECTED");assert.equal(g.operation_results.filter(r=>r.status==="REJECTED").length,1);
     assert.equal(g.operation_results.filter(r=>r.status==="BLOCKED_DEPENDENCY").length,2);assert.equal(await row(batch.id),undefined);
     const state=await local();for(const op of batch.operations)assert(state.rejections.some(r=>r.client_op_id===op.client_op_id&&r.fazenda_id===farmA));
-    assert.equal(state.ops.filter(op=>op.client_tx_id===batch.tx).length,0);
-    await drain(farmA);assert.equal((await local()).ops.filter(op=>op.client_tx_id===batch.tx).length,0);
+    const retained=state.ops.filter(op=>op.client_tx_id===batch.tx);
+    assert.equal(retained.length,3);
+    report.c06_cas_rejected_ids.push(...batch.operations.map(op=>op.client_op_id));
+    for(const op of retained){
+      const before=original.find(entry=>entry.client_op_id===op.client_op_id);assert(before);
+      assert.equal(op.sync_state,"REJECTED");assert.deepEqual(op.record,before.record);
+      assert.equal(op.domain_op_id,before.domain_op_id);
+      const rejection=state.rejections.find(entry=>entry.client_op_id===op.client_op_id);
+      if(op.record.command==="reschedule_agenda")assert.equal(rejection.payload.terminal_dependency_client_op_id,batch.operations[0].client_op_id);
+    }
+    await drain(farmA);
+    assert.deepEqual((await local()).ops.filter(op=>op.client_tx_id===batch.tx),retained);
     assert(!(await remote()).animals.some(r=>r.agenda_id===batch.id));return{batch,gesture:g,receipts:await receiptCheck(batch,[])};
   });
   await check("CAS03 CAS obsoleto preserva criação anterior e revisão do alvo",async()=>{
     const before=await row(anchor.id),batch=await enqueue({target:anchor.id,revision:0});await processBatch(batch.tx);await drain(farmA);
     const g=await outcomes(batch),conflict=g.operation_results.find(r=>r.status==="CONFLICT");assert(conflict);assert.equal(Number(conflict.current_revision),2);
     assert.equal(conflict.reason_code,"SANITARIO_AGENDA_REVISION_CONFLICT");assert.equal(g.status,"REJECTED");assert.deepEqual(await row(anchor.id),before);
+    report.c06_cas_rejected_ids.push(conflict.op_id);
     assert(await row(batch.id));const state=await local();assert(state.rejections.some(r=>r.client_op_id===conflict.op_id&&r.result_status==="CONFLICT"));
     const acceptedOp=batch.operations.find(op=>op.command==="create_agenda");return{batch,gesture:g,conflict,receipts:await receiptCheck(batch,[acceptedOp.client_op_id])};
   });
@@ -62,9 +76,19 @@ export async function runSanitaryCasCasesC06(h) {
   });
   await check("CAS05 conflito terminal não faz retry; nova intenção exige revisão atual",async()=>{
     const before=await snapshot(),old=await gesture(loser);
+    const rejectedBefore=before.local.ops.filter(r=>r.client_tx_id===loser.tx);
+    assert.equal(rejectedBefore.length,1);
+    const rejectedOp=loser.operations.find(op=>op.command==="reschedule_agenda");
+    report.c06_cas_rejected_ids.push(rejectedOp.client_op_id);
+    assert.equal(rejectedBefore[0].client_op_id,rejectedOp.client_op_id);
+    assert.equal(rejectedBefore[0].domain_op_id,rejectedOp.domain_op_id);
+    assert.equal(rejectedBefore[0].sync_state,"REJECTED");
+    assert.equal(rejectedBefore[0].blocked_reason,"SANITARIO_AGENDA_REVISION_CONFLICT");
     await page.evaluate(()=>window.c06.worker.recoverErroredGesturesOnce());await processBatch(loser.tx);
     assert.deepEqual(await row(anchor.id),before.postgres.agendas.find(r=>r.id===anchor.id));
-    assert.deepEqual((await remote()).receipts,before.postgres.receipts);assert.equal((await local()).ops.filter(r=>r.client_tx_id===loser.tx).length,0);
+    assert.deepEqual((await remote()).receipts,before.postgres.receipts);
+    const after=await local();assert.deepEqual(after.ops.filter(r=>r.client_tx_id===loser.tx),rejectedBefore);
+    assert(after.rejections.some(r=>r.client_op_id===rejectedOp.client_op_id&&r.result_status==="CONFLICT"));
     const fresh=await enqueue({target:anchor.id,revision:Number(raced.after.revision),plannedFor:"2026-11-14"});
     assert(!fresh.operations.some(op=>loser.operations.some(oldOp=>oldOp.client_op_id===op.client_op_id||oldOp.domain_op_id===op.domain_op_id)));
     await processBatch(fresh.tx);await drain(farmA);assert.equal((await gesture(fresh)).status,"DONE");

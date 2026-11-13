@@ -7,12 +7,22 @@ import { normalizeCanonicalData } from "../../scripts/codex/sanitario-v2-contrac
 import { adaptSanitaryProtocolV2Row, adaptSanitaryProtocolItemV2Row } from "../../src/lib/sanitario/catalog/sanitaryProtocolCatalogV2";
 import { sanitaryPlanningBlockersV2 } from "../../src/lib/sanitario/preview/sanitaryWindowPlanningPreviewV2";
 
+const RETIRED_AUTOMATION_FIELDS = new Set(["allows_agenda_auto", "allowsAgendaAuto", "automation_status", "automationStatus", "agenda_allowed"]);
+const projectHistoricalV13ToV14 = (value) => {
+  if (Array.isArray(value)) return value.filter((entry) => entry !== "no_agenda_auto").map(projectHistoricalV13ToV14);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => !RETIRED_AUTOMATION_FIELDS.has(key))
+    .map(([key, entry]) => [key, projectHistoricalV13ToV14(entry)]));
+};
+
 // Historical proposal input: promotion must not silently change these scenarios.
-const bytes = readFileSync(new URL("./fixtures/sanitario-v2-before-r03.json", import.meta.url));
+const bytes = readFileSync(new URL("../../docs/review/evidence/SANITARIO_V2_APROVACAO_HISTORICAL_INPUT_20261113.json", import.meta.url));
 const liveCanonicalBytes = readFileSync(CANONICAL_PATH);
 const packetBytes = readFileSync(DECISION_PATH);
-const canonical = JSON.parse(bytes);
-const packet = JSON.parse(packetBytes);
+const canonical = projectHistoricalV13ToV14(JSON.parse(bytes));
+canonical.artifact_version = "14.0.0-canonical-contract";
+const packet = projectHistoricalV13ToV14(JSON.parse(packetBytes));
 const build = (proposal = packet) => buildApprovalCandidate(canonical, proposal, bytes, packetBytes);
 
 describe("candidato versionado sem aprovacao/publicacao", () => {
@@ -35,7 +45,7 @@ describe("candidato versionado sem aprovacao/publicacao", () => {
     for (const row of candidate.payload.protocol_item_rows) {
       const old = original.protocol_item_rows.find((item) => item.logical_item_key === row.logical_item_key);
       expect(row.status).toBe("draft");
-      expect(row.allows_agenda_auto).toBe(false);
+      expect(row).not.toHaveProperty("allows_agenda_auto");
       if (packet.retained_restricted_records.some((item) => item.id === row.id)) expect(row).toEqual(old);
       else expect(row).toMatchObject({ version: old.version + 1, protocol_id: old.protocol_id });
     }
@@ -107,7 +117,7 @@ describe("candidato versionado sem aprovacao/publicacao", () => {
     if (kind === "protocol_version") altered.prepared_protocol_records[0].record.version += 1;
     if (kind === "restriction") altered.retained_restricted_records[0].allows_agenda_auto = true;
     if (kind === "hash") altered.source_canonical_sha256 = "wrong";
-    if (kind === "operational_metadata") altered.prepared_protocol_records[0].record.metadata.agenda_allowed = true;
+    if (kind === "operational_metadata") altered.prepared_protocol_records[0].record.metadata.approved_for_catalog = true;
     expect(() => build(altered)).toThrow();
   });
 

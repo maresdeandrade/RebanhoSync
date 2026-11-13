@@ -193,8 +193,8 @@ export async function runSanitaryHeterogeneousC06({ db, env, report, a, b, both,
     }
     const final=await snapshot();
     if(process.argv.includes("--c06-cas")) {
-      assert.deepEqual(final.local.ops.map(op=>op.client_op_id).sort(),[...report.c06_cas_blocked_ids].sort());
-      assert(final.local.ops.every(op=>op.sync_state==="PENDING"));
+      assert.deepEqual(final.local.ops.map(op=>op.client_op_id).sort(),[...report.c06_cas_blocked_ids,...report.c06_cas_rejected_ids].sort());
+      for(const op of final.local.ops)assert.equal(op.sync_state,report.c06_cas_blocked_ids.includes(op.client_op_id)?"PENDING":"REJECTED");
     } else assert.equal(final.local.ops.length,0);
     assert.equal(final.local.obligations.length,0);
     report.c06_final=final;report.c06_status="READY_FOR_REVIEW";
