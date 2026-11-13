@@ -122,7 +122,7 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
       const spoof=await a.client.from("fazenda_sanidade_config").update({fazenda_id:farmB}).eq("fazenda_id",farmA);
       assert(spoof.error,"tenant reassignment unexpectedly accepted");
       const direct=await a.client.rpc("internal_sanitario_sync_v2_create_agenda",{actor_user_id:a.id,fazenda_id:farmA,
-        contract_version:2,client_op_id:randomUUID(),domain_op_id:randomUUID(),
+        contract_version:3,client_op_id:randomUUID(),domain_op_id:randomUUID(),
         payload:{...agendaA.payload.agenda,client_id:"vf4-real-server",client_tx_id:agendaA.client_tx_id},animal_ids:[animalA]});
       assert.equal(direct.error?.code,"42501");
       return {matrix,spoof_code:spoof.error.code,direct_internal_rpc:direct.error.code};
@@ -182,6 +182,7 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
       for(const item of items){const op=creation(animalA,randomUUID(),item,true);const response=await send(a,farmA,[op]);denied(response);assert.equal(await count("sanitario_agenda_v2",op.payload.agenda.id),0);results.push(response.data.results[0].reason_code);}
       assert.deepEqual(results,["SANITARIO_AUTOMATION_RETIRED","SANITARIO_AUTOMATION_RETIRED","SANITARIO_AUTOMATION_RETIRED"]);
       const rows=(await db.query("select id,limitations from public.sanitario_protocolo_itens_versions_v2")).rows;
+      assert(rows.every(i=>i.limitations.includes("no_agenda_auto")));
       return {reasons:results,items:rows,agenda_rows_persisted:0};
     });
     await check("Indisponibilidade transitória real da RPC: cancelamento PostgreSQL retorna RETRYABLE e replay aplica uma vez",async()=>{
@@ -203,10 +204,11 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
       } finally {await lock.end();await pending?.catch(()=>{});}
     });
     await check("Fato sintético canônico: aceitação e replay não duplicam Evento ou detalhe",async()=>{
-      const payload={schema:"sanitary_agenda_execution_v2",registration_mode:"executed_fact",entry_history_source:"external_declared",evidence_class:"declared",prospective_authorization:false,creates_active_withdrawal:false,vf4:true};
-      const op=operation("apply_factual_core",{event:{id:randomUUID(),natureza:"standalone_fact",occurred_at:new Date().toISOString(),client_recorded_at:new Date().toISOString(),animal_id:animalA,payload},
+      const executionAgenda=creation(animalA);applied(await send(a,farmA,[executionAgenda]));
+      const payload={schema:"sanitary_agenda_execution_v2",sanitario_v3_progressive:true,registration_mode:"executed_fact",prospective_authorization:false,creates_active_withdrawal:false,vf4:true};
+      const op=operation("apply_factual_core",{event:{id:randomUUID(),natureza:"primary_execution",source_sanitario_agenda_v2_id:executionAgenda.payload.agenda.id,occurred_at:new Date().toISOString(),client_recorded_at:new Date().toISOString(),animal_id:animalA,payload},
         detail:{tipo:"vacinacao",produto_nome_snapshot:"Produto sintético VF4 sem carência declarada",dose_quantidade:1,dose_unidade:"ml",via_aplicacao:"subcutanea",payload},
-        event_animals:[{id:randomUUID(),animal_id:animalA}]});
+        event_animals:[{id:randomUUID(),animal_id:animalA}]},{expected_revision:0});
       applied(await send(a,farmA,[op]));applied(await send(a,farmA,[op]));
       assert.equal(await count("eventos",op.payload.event.id),1);
       const details=await db.query("select count(*)::int n from public.eventos_sanitario where evento_id=$1",[op.payload.event.id]);assert.equal(details.rows[0].n,1);

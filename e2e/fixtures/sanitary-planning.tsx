@@ -15,8 +15,6 @@ import ProtocolosSanitarios from "../../src/pages/ProtocolosSanitarios";
 import SelectFazenda from "../../src/pages/SelectFazenda";
 import SanitarioCatalogoV2 from "../../src/pages/SanitarioCatalogoV2";
 import "../../src/globals.css";
-import { seedNormalizedFixture, seedNormalizedHistory, seedPublishedCatalogFixture, normalizedDraft, automaticItemKeys } from "../../src/lib/sanitario/agenda/__tests__/fixtures/sanitaryNormalizedFixtureV2";
-import { saveSanitaryAutomationPlanV2 } from "../../src/lib/sanitario/agenda/sanitaryAutomationPlanV2";
 
 const endpoint = new URL(import.meta.env.VITE_SUPABASE_URL);
 if (endpoint.hostname !== "127.0.0.1" || endpoint.port !== "59997") {
@@ -62,13 +60,42 @@ const protocol = "00000000-0000-4000-8000-000000000030";
 const item = "00000000-0000-4000-8000-000000000040";
 const now = "2026-07-04T12:00:00.000Z";
 const stamp = { created_at: now, updated_at: now, deleted_at: null };
-const integral = new URLSearchParams(location.search).has("integral");
+async function seedManualPlanningFixture() {
+    await db.catalog_sanitario_protocolos_v2.put({ id: protocol, family_code: "brucelose_b19", name: "Brucelose B19 — teste",
+      scope: "global", fazenda_id: null, species_scope: {}, jurisdiction_scope: {}, legal_status: "obrigatorio", version: 1,
+      status: "active", approval_status: "approved", source_refs_snapshot: [], metadata: { requires_uf_context: true, excluded_ufs: [] }, ...stamp });
+    await db.catalog_sanitario_protocolo_itens_versions_v2.put({ id: item, protocol_id: protocol, logical_item_key: "b19_femeas_3_8_meses",
+      version: 1, item_status: "obrigatorio", action_type: "vacinacao", product_requirement_kind: "product_class", product_id: null,
+      product_class: "vacina_brucelose_b19", product_class_group_id: null, eligibility_rule: { species: ["bovino"], sex: "femea", age_min_months: 3, age_max_months: 8 },
+      operational_window_rule: {}, dose_rule: {}, route_rule: {}, booster_rule: {}, species_authorization: [],
+      limitations: [], snapshot_template: {},
+      source_refs_by_field: Object.fromEntries(
+        ["eligibility_rule", "operational_window", "product_requirement"].map((field) => [field, [{
+          kind: "norma_oficial", title: "Fixture explicitamente aprovada — teste local", strength: "forte", evidenceStatus: "SIM_NORMA", fieldKeys: [field],
+        }]]),
+      ), requires_mv_responsavel: true, status: "active", ...stamp });
+    await db.catalog_sanitario_produtos_v2.put({ id: "product-existing", nome_comercial: "Produto existente de teste", classe: "vacina_brucelose_b19", status_curatorial: "ativo", ...stamp } as never);
+}
 const homologated = new URLSearchParams(location.search).has("homologado");
 if (!await db.state_animais.count() && homologated) {
   const { default: catalog } = await import("../../docs/review/evidence/SANITARIO_V2_VF2_CATALOG_READONLY_20261023.json");
-  await seedPublishedCatalogFixture(farm, catalog);
+  // Published read-only evidence plus synthetic local animals; no approval or automation.
+  await db.state_fazenda_sanidade_config.put({ fazenda_id: farm, uf: "DF", payload: {}, ...stamp } as never);
+  await db.state_animais.bulkPut([
+    { id: "00000000-0000-4000-8000-000000000101", identificacao: "Bezerra integral", sexo: "F", data_nascimento: "2026-03-01" },
+    { id: "00000000-0000-4000-8000-000000000102", identificacao: "Recria integral", sexo: "M", data_nascimento: "2025-05-01" },
+    { id: "00000000-0000-4000-8000-000000000103", identificacao: "Matriz integral", sexo: "F", data_nascimento: "2022-01-01" },
+    { id: "00000000-0000-4000-8000-000000000104", identificacao: "Espécie fora da regra", sexo: "M", data_nascimento: "2022-01-01", especie: "ovino" },
+  ].map(row => ({ fazenda_id: farm, especie: "bovino", status: "ativo", lote_id: null, payload: {}, ...row, ...stamp })) as never[]);
+  await db.catalog_sanitario_protocolos_v2.bulkPut(catalog.protocols as never[]);
+  await db.catalog_sanitario_protocolo_itens_versions_v2.bulkPut(catalog.items as never[]);
+  await db.catalog_sanitario_product_class_groups_v2.bulkPut(catalog.groups as never[]);
+  await db.catalog_sanitario_product_class_group_members_v2.bulkPut(catalog.groupMembers as never[]);
+  await db.catalog_sanitario_fontes_tecnicas_v2.bulkPut(catalog.sources as never[]);
+  await db.catalog_sanitario_fonte_cobertura_campos_v2.bulkPut(catalog.coverage as never[]);
+  if (recovery) await seedManualPlanningFixture();
 }
-if (!await db.state_animais.count() && !integral && !homologated) {
+if (!await db.state_animais.count() && !homologated) {
   await db.state_lotes.put({ id: "lot-test", fazenda_id: farm, nome: "Bezerras de teste", ...stamp } as never);
   await db.state_fazenda_sanidade_config.put({ fazenda_id: farm, uf: "MG", ...stamp } as never);
   for (const [id, identification, farmId, sex] of [
@@ -80,28 +107,7 @@ if (!await db.state_animais.count() && !integral && !homologated) {
     await db.state_animais.put({ id, identificacao: identification, fazenda_id: farmId, sexo: sex,
       especie: "bovino", data_nascimento: "2026-03-01", status: "ativo", lote_id: farmId === farm ? "lot-test" : null, ...stamp } as never);
   }
-  if (!new URLSearchParams(location.search).has("empty")) {
-    await db.catalog_sanitario_protocolos_v2.put({ id: protocol, family_code: "brucelose_b19", name: "Brucelose B19 — teste",
-      scope: "global", fazenda_id: null, species_scope: {}, jurisdiction_scope: {}, legal_status: "obrigatorio", version: 1,
-      status: "active", approval_status: "approved", source_refs_snapshot: [], metadata: { requires_uf_context: true, excluded_ufs: [] }, ...stamp });
-    await db.catalog_sanitario_protocolo_itens_versions_v2.put({ id: item, protocol_id: protocol, logical_item_key: "b19_femeas_3_8_meses",
-      version: 1, item_status: "obrigatorio", action_type: "vacinacao", product_requirement_kind: "product_class", product_id: null,
-      product_class: "vacina_brucelose_b19", product_class_group_id: null, eligibility_rule: { species: ["bovino"], sex: "femea", age_min_months: 3, age_max_months: 8 },
-      operational_window_rule: {}, dose_rule: {}, route_rule: {}, booster_rule: {}, species_authorization: {},
-      limitations: [], snapshot_template: {}, allows_agenda_auto: new URLSearchParams(location.search).has("approved"),
-      source_refs_by_field: new URLSearchParams(location.search).has("approved") ? Object.fromEntries(
-        ["eligibility_rule", "operational_window", "product_requirement"].map((field) => [field, [{
-          kind: "norma_oficial", title: "Fixture explicitamente aprovada — teste local", strength: "forte", evidenceStatus: "SIM_NORMA", fieldKeys: [field],
-        }]]),
-      ) : {}, requires_mv_responsavel: true, status: "active", ...stamp });
-    await db.catalog_sanitario_produtos_v2.put({ id: "product-existing", nome_comercial: "Produto existente de teste", classe: "vacina_brucelose_b19", status_curatorial: "ativo", ...stamp } as never);
-  }
-}
-if (integral && !await db.state_animais.count()) {
-  await seedNormalizedFixture(farm);
-  for (const key of automaticItemKeys) await seedNormalizedHistory(key, farm);
-  await saveSanitaryAutomationPlanV2({ fazendaId: farm, actorId: user.id, expectedRevision: 0,
-    draft: await normalizedDraft(farm), enabled: false, confirmed: false });
+  if (!new URLSearchParams(location.search).has("empty")) await seedManualPlanningFixture();
 }
 export function RecoveryProbe() {
   const { activeFarmId, role, refreshSettings, setActiveFarm } = useAuth();

@@ -59,7 +59,8 @@ export async function runSanitaryConvergenceFixture({
         assert.ifError(decision.error);
       }
       const allowed = await db.query(
-        "select count(*)::int n from public.sanitario_protocolo_itens_versions_v2 where allows_agenda_auto and deleted_at is null",
+        "select count(*)::int n from public.sanitario_protocolo_itens_versions_v2 where id = any($1::uuid[]) and status = 'active' and deleted_at is null",
+        [ready.map(row => row.record.id)],
       );
       assert.equal(allowed.rows[0].n, 7);
     },
@@ -111,8 +112,8 @@ export async function runSanitaryConvergenceFixture({
     [farm, second.id],
   );
   await db.query(
-    `insert into public.sanitario_sync_v2_gates(fazenda_id,enabled,minimum_contract_version,maximum_contract_version,allowed_user_ids,rollout_percentage)
-    values($1,true,2,2,$2,100)`,
+    `insert into public.sanitario_sync_v2_gates(fazenda_id,enabled,minimum_contract_version,maximum_contract_version,allowed_user_ids,rollout_percentage,foundation_state)
+    values($1,true,3,3,$2,100,'ready')`,
     [farm, [owner.id, second.id]],
   );
   for (const [id, sex, birth] of [
@@ -181,8 +182,6 @@ export async function runSanitaryConvergenceFixture({
             worker,
             pull,
             ownership,
-            plan,
-            generator,
             windows,
             manage,
           ] = await Promise.all([
@@ -192,8 +191,6 @@ export async function runSanitaryConvergenceFixture({
             import("/src/lib/offline/syncWorker.ts"),
             import("/src/lib/offline/pull.ts"),
             import("/src/lib/offline/ownership.ts"),
-            import("/src/lib/sanitario/agenda/sanitaryAutomationPlanV2.ts"),
-            import("/src/lib/sanitario/agenda/sanitaryAutomaticGenerationV2.ts"),
             import("/src/lib/sanitario/windows/sanitaryProtocolWindowsV2.ts"),
             import("/src/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2.ts"),
           ]);
@@ -223,8 +220,6 @@ export async function runSanitaryConvergenceFixture({
             cut,
             worker,
             pull,
-            plan,
-            generator,
             windows,
             manage,
           };
@@ -237,11 +232,8 @@ export async function runSanitaryConvergenceFixture({
       b = await client(second);
     const state = (page) =>
       page.evaluate(async (farm) => {
-        const { db, plan } = window.cert;
+        const { db } = window.cert;
         return {
-          plan: plan.readSanitaryAutomationPlanV2(
-            await db.state_fazenda_sanidade_config.get(farm),
-          ),
           agendas: await db.ops_sanitario_agenda_v2
             .where("fazenda_id")
             .equals(farm)
@@ -250,7 +242,7 @@ export async function runSanitaryConvergenceFixture({
           gestures: await db.queue_gestures.toArray(),
           approved: (
             await db.catalog_sanitario_protocolo_itens_versions_v2.toArray()
-          ).filter((row) => row.allows_agenda_auto).length,
+          ).filter((row) => row.status === "active").map(row => row.id),
         };
       }, farm);
     async function drain(page) {
@@ -291,208 +283,48 @@ export async function runSanitaryConvergenceFixture({
     await check(
       "Two Chromium contexts independently pull the seven published versions through authenticated RLS",
       async () => {
-        assert.equal((await state(a.page)).approved, 7);
-        assert.equal((await state(b.page)).approved, 7);
+        const publishedA = (await state(a.page)).approved;
+        const publishedB = (await state(b.page)).approved;
+        assert(ready.every(row => (publishedA.includes(row.record.id))));
+        assert(ready.every(row => (publishedB.includes(row.record.id))));
       },
     );
-    const createPlan = (page) =>
-      page.evaluate(
-        async ({ farm, calf, rearing, dam, ready }) => {
-          const { db, plan, windows } = window.cert;
-          const source = await windows.loadSanitaryProtocolWindowSourceV2(farm);
-          const rules = ready.map((row) => {
-            const item = source.catalog.items.find(
-              (item) => item.id === row.record.id,
-            );
-            return plan.selectSanitaryAutomationRuleV2(
-              source.catalog.protocols.find((p) => p.id === item.protocolId),
-              item,
-            );
-          });
-          const base = windows.EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2;
-          const contexts = Object.fromEntries(
-            ready.map((row) => {
-              const context = { ...base };
-              if (row.decision_set === "PAR") {
-                context.management = "rearing";
-                context.regionalCalendar = {
-                  uf: "DF",
-                  months: row.record.operational_window_rule.calendar_months,
-                };
-              }
-              if (row.decision_set === "DES") {
-                context.management = "pre_weaning";
-                context.preWeaningBasis = {
-                  kind: "intensive_dairy",
-                  reference: "Calendário sintético leiteiro",
-                };
-              }
-              if (row.decision_set === "CONF")
-                context.management = "pre_feedlot";
-              if (row.decision_set === "PARTO")
-                context.reproductiveContext = "prepartum";
-              if (["CONF", "PARTO"].includes(row.decision_set))
-                context.scheduledContext = {
-                  date: "2026-05-15",
-                  animalIds: [row.decision_set === "PARTO" ? dam : rearing],
-                  reference: "Manejo futuro sintético",
-                };
-              return [row.record.id, context];
-            }),
-          );
-          const current = plan.readSanitaryAutomationPlanV2(
-            await db.state_fazenda_sanidade_config.get(farm),
-          );
-          return plan.saveSanitaryAutomationPlanV2({
-            fazendaId: farm,
-            actorId: window.cert.actor,
-            expectedRevision: current?.revision ?? 0,
-            draft: { rules, context: base, ruleContexts: contexts },
-            enabled: true,
-            confirmed: true,
-          });
-        },
-        { farm, calf, rearing, dam, ready },
-      );
-    await check(
-      "Offline plan is durable in A, then canonical in PostgreSQL and received in B",
-      async () => {
-        // The authenticated session is already established; block only network transport.
-        await a.context.setOffline(true);
-        const offlineDraft = await createPlan(a.page);
-        assert.equal(offlineDraft.revision, 1);
-        assert.equal((await state(b.page)).plan, null);
-        await a.page.evaluate(async () => {
-          window.cert.db.close();
-          await window.cert.db.open();
-        });
-        assert.equal((await state(a.page)).plan.revision, 1);
-        await a.context.setOffline(false);
-        await pull(a.page);
-        assert.equal(
-          (await state(a.page)).plan?.revision,
-          1,
-          "Reconnect pull must preserve the pending local plan",
-        );
-        const result = await drain(a.page);
-        report.plan_roundtrip_transport = result;
-        if (result.some((row) => row.status !== "DONE")) {
-          const sent = await a.page.evaluate(() => window.cert.lastSent[0]);
-          const op = sent.ops[0];
-          await db.query("begin");
-          try {
-            await db.query("set local role service_role");
-            await db.query(
-              "select public.internal_sanitario_sync_v2_set_automation_plan($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
-              [
-                owner.id,
-                farm,
-                2,
-                op.client_op_id,
-                op.domain_op_id,
-                op.expected_revision,
-                sent.gesture.client_id,
-                op.client_tx_id,
-                op.payload.plan,
-                op.payload.expected_plan,
-              ],
-            );
-          } catch (error) {
-            report.plan_rpc_diagnostic = {
-              code: error.code,
-              message: error.message,
-            };
-          } finally {
-            await db.query("rollback");
-          }
-        }
-        assert(
-          result.every((row) => row.status === "DONE"),
-          JSON.stringify(result),
-        );
-        await pull(b.page);
-        assert.equal(
-          (await state(b.page)).plan?.revision,
-          1,
-          "B must parse the canonical transaction timestamp",
-        );
-        assert.equal(
-          (
-            await db.query(
-              "select payload->>'unrelated' value from public.fazenda_sanidade_config where fazenda_id=$1",
-              [farm],
-            )
-          ).rows[0].value,
-          "preserved",
-        );
-      },
-    );
-    const generate = (page, date) =>
-      page.evaluate(
-        ({ farm, date }) =>
-          window.cert.generator.generateSanitaryAutomaticAgendasV2({
-            fazendaId: farm,
-            referenceDate: date,
-          }),
-        { farm, date },
-      );
-    await check(
-      "Offline automatic Agendas from A and B converge without duplicates across seven candidate items",
-      async () => {
-        await a.context.setOffline(true);
-        await b.context.setOffline(true);
-        const ga = await generate(a.page, "2026-05-15"),
-          gb = await generate(b.page, "2026-05-15");
-        report.generation_first = { a: ga, b: gb };
-        assert.deepEqual(ga.failures, []);
-        assert.deepEqual(gb.failures, []);
-        assert(ga.created > 1);
-        const idsA = (await state(a.page)).agendas.map((row) => row.id).sort(),
-          idsB = (await state(b.page)).agendas.map((row) => row.id).sort();
-        assert.deepEqual(idsA, idsB);
-        // Older canonical queue entries lack the optional root farm field.
-        // Their immutable UUIDs and trusted gesture farm must still work.
-        await b.page.evaluate(async () => {
-          await window.cert.db.queue_ops.toCollection().modify((op) => {
-            if (op.record.command === "create_agenda")
-              delete op.record.fazenda_id;
-          });
-        });
-        await a.context.setOffline(false);
-        await b.context.setOffline(false);
-        const competing = await Promise.all([drain(a.page), drain(b.page)]);
-        assert(
-          competing.every((rows) => rows.every((row) => row.status === "DONE")),
-          JSON.stringify(competing),
-        );
-        await pull(a.page);
-        await pull(b.page);
-        assert.deepEqual(
-          (await state(a.page)).agendas,
-          (await state(b.page)).agendas,
-        );
-        for (const date of ["2026-07-15", "2026-09-15"]) {
-          const result = await generate(a.page, date);
-          assert.deepEqual(result.failures, []);
-          assert((await drain(a.page)).every((row) => row.status === "DONE"));
-          await pull(b.page);
-        }
-        const remote = (
-          await db.query(
-            "select distinct catalog_protocol_item_version_v2_id id from public.sanitario_agenda_v2 where fazenda_id=$1",
-            [farm],
-          )
-        ).rows
-          .map((row) => row.id)
-          .sort();
-        report.automatically_generated_item_ids = remote;
-        assert.deepEqual(remote, ready.map((row) => row.record.id).sort());
-      },
-    );
+    // Explicit manual confirmation replaces the retired persistent plan/generator.
+    // Both clients retain the same reviewed user intention and operation identity.
+    const createManual = page => page.evaluate(async ({ farm, calf, itemId }) => {
+      const { windows } = window.cert;
+      const source = await windows.loadSanitaryProtocolWindowSourceV2(farm);
+      const item = source.catalog.items.find(row => row.id === itemId);
+      const preview = windows.buildSanitaryProtocolWindowV2({ source, protocolId: item.protocolId,
+        itemId, evaluatedAt: "2026-05-15" });
+      const rows = preview.rows.filter(row => row.animalId === calf);
+      if (rows.length !== 1 || (!rows[0].canSelect && !rows[0].alreadyPlanned)) throw new Error("MANUAL_B19_PREVIEW_NOT_ELIGIBLE");
+      return windows.createGroupedManualSanitaryAgendasV2({ rows, fazendaId: farm,
+        plannedFor: "2026-05-15", confirmed: true });
+    }, { farm, calf, itemId: ready.find(row => row.decision_set === "B19").record.id });
+    await check("Offline manual intention survives reopen, replay and pull in a second client", async () => {
+      await a.context.setOffline(true);
+      await createManual(a.page);
+      const before = await state(a.page);
+      assert.equal(before.agendas.length, 1);
+      assert.equal(before.ops.length, 1);
+      await a.page.evaluate(async () => { window.cert.db.close(); await window.cert.db.open(); });
+      assert.deepEqual((await state(a.page)).ops, before.ops);
+      await a.context.setOffline(false);
+      await pull(a.page);
+      assert.equal((await state(a.page)).ops[0].client_op_id, before.ops[0].client_op_id);
+      assert((await drain(a.page)).every(row => row.status === "DONE"));
+      await pull(b.page);
+      assert.equal((await state(b.page)).agendas[0].id, before.agendas[0].id);
+      await createManual(b.page);
+      assert.equal((await state(b.page)).agendas.length, 1);
+      assert.equal((await state(b.page)).ops.length, 0);
+      report.manual_intention = { agenda_id: before.agendas[0].id, replayed_without_duplicate: true };
+    });
     const validCreation = await a.page.evaluate(() =>
       window.cert.lastSent.at(-1),
     );
-    async function sendCreation(item, keepDedup = false) {
+    async function sendCreation(item) {
       const tx = randomUUID(),
         op = structuredClone(validCreation.ops[0]);
       assert.equal(op.command, "create_agenda");
@@ -502,8 +334,8 @@ export async function runSanitaryConvergenceFixture({
         domain_op_id: randomUUID(),
       });
       op.payload.agenda.id = randomUUID();
-      if (!keepDedup)
-        op.payload.agenda.dedup_key = `forbidden-fixture:${randomUUID()}`;
+      op.payload.agenda.dedup_key = `forbidden-fixture:${randomUUID()}`;
+      op.payload.agenda.protocol_item_snapshot.generationMode = "automatic";
       if (item) {
         op.payload.agenda.protocolo_id = item.protocol_id;
         op.payload.agenda.protocol_item_version_id = item.id;
@@ -519,44 +351,17 @@ export async function runSanitaryConvergenceFixture({
         },
       });
     }
-    await check(
-      "Another UUID cannot duplicate an existing automatic intent",
-      async () => {
-        const result = await sendCreation(null, true);
+    await check("Stale automatic requests are rejected even for published and restricted items", async () => {
+      const items = [...packet.prepared_item_records.map(row => row.record), ...packet.retained_restricted_records];
+      assert.equal(items.length, 20);
+      for (const item of items) {
+        const result = await sendCreation(item);
         assert.ifError(result.error);
-        assert.equal(
-          result.data.results[0].reason_code,
-          "SANITARIO_AUTOMATIC_IDENTITY_CONFLICT",
-        );
-      },
-    );
-    await check(
-      "All seven pending commercial items and all six protected items reject automatic creation",
-      async () => {
-        const blocked = [
-          ...packet.prepared_item_records
-            .filter((row) => !readySets.includes(row.decision_set))
-            .map((row) => row.record),
-          ...packet.retained_restricted_records,
-        ];
-        assert.equal(blocked.length, 13);
-        for (const item of blocked) {
-          const result = await sendCreation(item);
-          assert.ifError(result.error);
-          assert.equal(
-            result.data.results[0].status,
-            "REJECTED",
-            item.logical_item_key,
-          );
-          assert.equal(
-            result.data.results[0].reason_code,
-            "SANITARIO_AUTOMATIC_RULE_NOT_APPROVED_OR_ACTIVATED",
-            item.logical_item_key,
-          );
-        }
-        report.restricted_automatic_creation_attempts_rejected = 13;
-      },
-    );
+        assert.equal(result.data.results[0].status, "REJECTED");
+        assert.equal(result.data.results[0].reason_code, "SANITARIO_AUTOMATION_RETIRED");
+      }
+      report.retired_automatic_requests_rejected = items.length;
+    });
     async function schedule(page, date) {
       const agenda = (await state(page)).agendas.find(
         (row) => row.status === "programada",
@@ -738,49 +543,6 @@ export async function runSanitaryConvergenceFixture({
       },
     );
     await check(
-      "Reschedule, cancellation and reconnect converge; later generation does not recreate the same intent",
-      async () => {
-        const agenda = (await state(a.page)).agendas.find(
-          (row) => row.metadata.automationKey && row.status === "programada",
-        );
-        await a.context.setOffline(true);
-        await a.page.evaluate(
-          async ({ farm, id }) => {
-            await window.cert.manage.rescheduleLocalSanitaryAgendaV2({
-              fazendaId: farm,
-              agendaId: id,
-              plannedFor: "2026-11-01",
-            });
-            await window.cert.manage.cancelLocalSanitaryAgendaV2({
-              fazendaId: farm,
-              agendaId: id,
-            });
-          },
-          { farm, id: agenda.id },
-        );
-        await a.context.setOffline(false);
-        const result = await drain(a.page);
-        assert(
-          result.every((row) => row.status === "DONE"),
-          JSON.stringify(result),
-        );
-        await pull(b.page);
-        const canonical = (await state(b.page)).agendas.find(
-          (row) => row.id === agenda.id,
-        );
-        assert.equal(canonical.status, "cancelada");
-        assert.equal(canonical.data_programada, "2026-11-01");
-        assert.equal(canonical.revision, Number(agenda.revision) + 2);
-        await generate(b.page, "2026-05-15");
-        assert.equal(
-          (await state(b.page)).agendas.filter(
-            (row) => row.dedup_key === agenda.dedup_key,
-          ).length,
-          1,
-        );
-      },
-    );
-    await check(
       "Farm switch retains the original queued farm and does not write the newly selected farm",
       async () => {
         const agenda = (await state(a.page)).agendas.find(
@@ -814,88 +576,67 @@ export async function runSanitaryConvergenceFixture({
         );
       },
     );
+    await check("Concurrent manual reschedules conflict without rebasing stale client content", async () => {
+      await pull(a.page);
+      await pull(b.page);
+      await schedule(a.page, "2026-11-03");
+      await schedule(b.page, "2026-11-04");
+      assert((await drain(a.page)).every(row => row.status === "DONE"));
+      const rejected = await drain(b.page);
+      assert(rejected.some(row => row.results?.some(result => result.status === "CONFLICT")), JSON.stringify(rejected));
+      await pull(b.page);
+      assert.equal((await state(b.page)).agendas[0].data_programada, "2026-11-03");
+    });
     await check(
-      "Concurrent farm plan revisions conflict; the rejected client receives the canonical version",
+      "Reschedule, cancellation and reconnect preserve the manual intention",
       async () => {
-        await Promise.all([createPlan(a.page), createPlan(b.page)]);
-        const ar = await drain(a.page),
-          br = await drain(b.page);
-        assert(ar.every((row) => row.status === "DONE"));
+        const agenda = (await state(a.page)).agendas.find(
+          (row) => row.status === "programada",
+        );
+        await a.context.setOffline(true);
+        await a.page.evaluate(
+          async ({ farm, id }) => {
+            await window.cert.manage.rescheduleLocalSanitaryAgendaV2({
+              fazendaId: farm,
+              agendaId: id,
+              plannedFor: "2026-11-01",
+            });
+            await window.cert.manage.cancelLocalSanitaryAgendaV2({
+              fazendaId: farm,
+              agendaId: id,
+            });
+          },
+          { farm, id: agenda.id },
+        );
+        await a.context.setOffline(false);
+        const result = await drain(a.page);
         assert(
-          br.some((row) =>
-            row.results?.some(
-              (result) => result.reason === "SANITARIO_PLAN_REVISION_CONFLICT",
-            ),
-          ),
-          JSON.stringify(br),
+          result.every((row) => row.status === "DONE"),
+          JSON.stringify(result),
         );
         await pull(b.page);
-        assert.equal((await state(b.page)).plan.revision, 2);
-        const current = (
-          await owner.client
-            .from("fazenda_sanidade_config")
-            .select("payload")
-            .eq("fazenda_id", farm)
-            .single()
-        ).data.payload.sanitary_agenda_automation_v2;
-        const wrongBase = structuredClone(current);
-        wrongBase.context.sanitaryCadence = "annual";
-        const tx = randomUUID(),
-          operation = {
-            domain: "sanitario_v2",
-            command: "set_automation_plan",
-            contract_version: 2,
-            client_op_id: randomUUID(),
-            client_tx_id: tx,
-            domain_op_id: randomUUID(),
-            expected_revision: 2,
-            payload: {
-              plan: { ...current, revision: 3 },
-              expected_plan: wrongBase,
-            },
-          };
-        const stale = await owner.client.functions.invoke("sync-batch", {
-          body: {
-            fazenda_id: farm,
-            client_id: "synthetic-plan-content-conflict",
-            client_tx_id: tx,
-            ops: [operation],
-          },
-        });
-        assert.ifError(stale.error);
+        const canonical = (await state(b.page)).agendas.find(
+          (row) => row.id === agenda.id,
+        );
+        assert.equal(canonical.status, "cancelada");
+        assert.equal(canonical.data_programada, "2026-11-01");
+        assert.equal(canonical.revision, Number(agenda.revision) + 2);
         assert.equal(
-          stale.data.results[0].reason_code,
-          "SANITARIO_PLAN_REVISION_CONFLICT",
+          (await state(b.page)).agendas.filter(
+            (row) => row.dedup_key === agenda.dedup_key,
+          ).length,
+          1,
         );
       },
     );
     await check(
-      "RLS denies another farm; direct plan overwrite cannot bypass the canonical writer",
+      "RLS hides another farm's manual Agenda and denies direct overwrite",
       async () => {
-        const outsiderRead = await outsider.client
-          .from("fazenda_sanidade_config")
-          .select("*")
-          .eq("fazenda_id", farm);
+        const outsiderRead = await outsider.client.from("sanitario_agenda_v2").select("*").eq("fazenda_id", farm);
         assert.ifError(outsiderRead.error);
         assert.equal(outsiderRead.data.length, 0);
-        const actual = await owner.client
-          .from("fazenda_sanidade_config")
-          .select("payload")
-          .eq("fazenda_id", farm)
-          .single();
-        assert.ifError(actual.error);
-        const direct = await owner.client
-          .from("fazenda_sanidade_config")
-          .update({
-            payload: {
-              ...actual.data.payload,
-              sanitary_agenda_automation_v2: {
-                ...actual.data.payload.sanitary_agenda_automation_v2,
-                enabled: false,
-              },
-            },
-          })
-          .eq("fazenda_id", farm);
+        const agenda = (await state(a.page)).agendas[0];
+        const direct = await owner.client.from("sanitario_agenda_v2").update({ data_programada: "2027-01-01" }).eq("id", agenda.id);
         assert.equal(direct.error?.code, "42501");
       },
     );
@@ -908,7 +649,7 @@ export async function runSanitaryConvergenceFixture({
         (select count(*)::int from public.eventos where fazenda_id=$1) facts,
         (select count(*)::int from public.eventos_sanitario where fazenda_id=$1) details,
         (select count(*)::int from public.insumo_movimentacoes where fazenda_id=$1) stock,
-        (select count(*)::int from public.sanitario_protocolo_itens_versions_v2 where allows_agenda_auto) authorized`,
+        (select count(*)::int from public.sanitario_agenda_v2 where fazenda_id=$1) intentions`,
             [farm],
           )
         ).rows[0];
@@ -916,7 +657,7 @@ export async function runSanitaryConvergenceFixture({
           facts: 0,
           details: 0,
           stock: 0,
-          authorized: 7,
+          intentions: 1,
         });
         report.planning_effects = counts;
       },

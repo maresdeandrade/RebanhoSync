@@ -1,6 +1,6 @@
-export const SANITARIO_SYNC_V2_DOMAIN = "sanitario_v2" as const;
-export const SANITARIO_SYNC_V2_MAX_TARGETS = 500;
-export const SANITARIO_SYNC_V2_MAX_PAYLOAD_BYTES = 1024 * 1024;
+const SANITARIO_SYNC_V2_DOMAIN = "sanitario_v2" as const;
+const SANITARIO_SYNC_V2_MAX_TARGETS = 500;
+const SANITARIO_SYNC_V2_MAX_PAYLOAD_BYTES = 1024 * 1024;
 
 export type SanitarioSyncV2Command =
   | "manage_agenda"
@@ -507,7 +507,7 @@ function validateExternalHistoryFactualCore(input: {
   return null;
 }
 
-export function validateSanitaryCorrectionFactualCore(input: {
+function validateSanitaryCorrectionFactualCore(input: {
   event: Record<string, unknown>;
   detail: Record<string, unknown>;
   eventAnimals: unknown[];
@@ -1154,7 +1154,7 @@ function isSanitarioConflictError(
   );
 }
 
-export function classifySanitarioSyncV2Error(
+function classifySanitarioSyncV2Error(
   operation: SanitarioSyncV2Operation,
   error: SanitarioDbError,
 ): SanitarioSyncV2Result {

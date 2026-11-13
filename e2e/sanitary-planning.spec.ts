@@ -33,6 +33,7 @@ async function fulfillSyntheticApi(route: Route, unexpected: string[]) {
 }
 
 async function prepare(page: Page, api?: (route: Route, unexpected: string[]) => Promise<void>) {
+  await page.context().grantPermissions(["local-network-access"], { origin: "http://127.0.0.1:4187" });
   const unexpected: string[] = [];
   page.on("pageerror", (error) => console.error(error.message));
   await page.clock.install({ time: new Date("2026-07-04T12:00:00Z") });
@@ -56,10 +57,34 @@ async function prepare(page: Page, api?: (route: Route, unexpected: string[]) =>
   return unexpected;
 }
 
-async function selectProtocol(page: Page) {
-  await page.getByRole("button", { name: "Por protocolo", exact: true }).click();
-  await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(protocol);
-  await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(item);
+async function selectProtocol(page: Page, protocolId = protocol, itemId = item) {
+  await page.getByLabel("Filtrar por protocolo", { exact: true }).selectOption(protocolId);
+  await page.getByLabel("Filtrar por manejo", { exact: true }).selectOption(itemId);
+  await page.getByLabel("Filtrar por situação", { exact: true }).selectOption("opportunity_in_window");
+  await expect(page.getByRole('button', { name: /^Selecionar elegíveis no recorte/ })).toBeEnabled();
+}
+
+async function openPlanning(page: Page) {
+  const unexpected = await prepare(page);
+  await page.goto("/select-fazenda");
+  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+  await selectProtocol(page);
+  return unexpected;
+}
+
+async function reviewSelection(page: Page) {
+  await selectAllForPlanning(page);
+  await page.getByRole("button", { name: "Planejar selecionados", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Revisar planejamento sanitário", exact: true })).toBeVisible();
+}
+
+async function selectAllForPlanning(page: Page) {
+  await page.getByRole("button", { name: /^Selecionar elegíveis no recorte/ }).click();
+}
+
+async function confirmPlanning(page: Page) {
+  await page.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 }
 
 async function openHomologated(page: Page) {
@@ -67,7 +92,6 @@ async function openHomologated(page: Page) {
   await page.goto("/select-fazenda?homologado");
   await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
   await expect(page.getByRole("heading", { name: "Central Sanitária", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Por protocolo", exact: true }).click();
   return unexpected;
 }
 
@@ -137,123 +161,6 @@ test("VF2 catálogo homologado mantém IDs, versões, fontes e restrições veri
   expect(unexpected).toEqual([]);
 });
 
-for (const scenario of [
-  { key: "raiva_primovac_dose1", previous: null, occurredAt: null },
-  { key: "raiva_primovac_reforco_30d", previous: "raiva_primovac_dose1", occurredAt: "2026-06-04" },
-  { key: "raiva_reforco_anual_area_risco", previous: "raiva_primovac_reforco_30d", occurredAt: "2025-07-04" },
-]) {
-  test(`VF2 raiva manual homologada: ${scenario.key}`, async ({ page }) => {
-    const unexpected = await openHomologated(page);
-    const item = homologatedCatalog.items.find(item => item.logical_item_key === scenario.key && item.status === "active")!;
-    expect(item).toMatchObject({ version: 2, allows_agenda_auto: false });
-    expect(item.limitations).toContain("no_agenda_auto");
-    await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(item.protocol_id);
-    await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(item.id);
-    await expect(page.getByLabel("Geração de Agenda", { exact: true })).toHaveValue("manual");
-    const selectAnimal = page.getByLabel("Selecionar Matriz integral", { exact: true });
-    if (scenario.previous) {
-      await expect(selectAnimal).toBeDisabled();
-      const previous = homologatedCatalog.items.find(row => row.logical_item_key === scenario.previous && row.status === "active")!;
-      await page.evaluate(async ({ previous, target, farmId, occurredAt }) => {
-        const { db } = await import("/src/lib/offline/db.ts");
-        const source = target.source_refs_by_field.operational_window[0];
-        const eventId = "vf2-synthetic-rabies-history";
-        const productId = "vf2-synthetic-executed-product";
-        const stamp = { created_at: "2026-07-04T12:00:00Z", updated_at: "2026-07-04T12:00:00Z", deleted_at: null };
-        await db.event_eventos.put({ id: eventId, fazenda_id: farmId, animal_id: "adult", dominio: "sanitario", occurred_at: `${occurredAt}T12:00:00Z`, payload: {}, ...stamp } as never);
-        await db.event_eventos_sanitario.put({ evento_id: eventId, fazenda_id: farmId, protocol_item_version_id: previous.id,
-          protocol_item_logical_key: previous.logical_item_key, produto_veterinario_id: productId,
-          protocol_item_snapshot: { protocolId: previous.protocol_id, itemKey: previous.logical_item_key },
-          produto_snapshot: { executedProductId: productId, product_class: target.product_class,
-            fieldEvidence: [{ fieldKey: "operational_window", coverageStatus: "covers", reason: "class_scheme_product_compatibility_verified",
-              productSource: { productId }, sourceRef: source, sourceCoverageId: source.metadata.coverage_ids[0] }] },
-          payload: {}, ...stamp } as never);
-      }, { previous, target: item, farmId: farm, occurredAt: scenario.occurredAt });
-    } else {
-      // Regional information may be absent for national manual planning.
-      await page.evaluate(async (farmId) => {
-        const { db } = await import("/src/lib/offline/db.ts");
-        await db.state_fazenda_sanidade_config.update(farmId, { uf: null });
-      }, farm);
-    }
-    if (scenario.key === "raiva_reforco_anual_area_risco") {
-      await page.getByLabel("Área de risco para raiva", { exact: true }).selectOption("yes");
-    }
-    await expect(selectAnimal).toBeEnabled();
-    await selectAnimal.check();
-    const before = await counts(page);
-    await page.getByRole("button", { name: "Planejar agenda para selecionados", exact: true }).click();
-    const dialog = page.getByRole("dialog", { name: "Revisar planejamento sanitário", exact: true });
-    await expect(dialog).toBeVisible();
-    await dialog.getByText(/^Cuidados técnicos do planejamento/).click();
-    await expect(dialog.getByText(scenario.previous
-      ? /Regra regional identificada;.*Não comprova obrigação individual/
-      : /Cobertura regional não comprovada/)).toBeVisible();
-    await dialog.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true }).click();
-    await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
-    expect(await counts(page)).toMatchObject({ agendas: 1, events: before.events, movements: 0, queue: 0 });
-    const saved = await page.evaluate(async () => {
-      const { db } = await import("/src/lib/offline/db.ts");
-      return { agendas: await db.ops_sanitario_agenda_v2.toArray(), animals: await db.ops_sanitario_agenda_animais_v2.toArray() };
-    });
-    expect(saved.agendas[0]).toMatchObject({ fazenda_id: farm, protocol_item_version_id: item.id,
-      execution_evento_id: null, protocol_item_snapshot: { generationMode: "manual" },
-      metadata: { createsEvent: false, createsStockMovement: false, automationKey: null } });
-    expect(saved.animals).toEqual([expect.objectContaining({ fazenda_id: farm, animal_id: "adult" })]);
-    await page.reload();
-    await expect(page.getByRole("heading", { name: "Central Sanitária", exact: true })).toBeVisible();
-    expect(await counts(page)).toMatchObject({ agendas: 1, events: before.events, movements: 0, queue: 0 });
-    expect(unexpected).toEqual([]);
-  });
-}
-
-test("VF2 variantes incompletas, aftosa, automação de raiva e nascimento ausente ficam bloqueados", async ({ page }) => {
-  const unexpected = await openHomologated(page);
-  await page.getByText("Configurar plano automático", { exact: true }).click();
-  await expect(page.getByRole("checkbox", { name: /^Automatizar .*?(Raiva|aftosa)/i })).toHaveCount(0);
-  for (const key of ["fmd_bloqueio_vacinacao_rotina", "lepto_primovac_dose2"]) {
-    const item = homologatedCatalog.items.find(item => item.logical_item_key === key)!;
-    await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(item.protocol_id);
-    await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(item.id);
-    await expect(page.getByLabel("Selecionar todos os elegíveis visíveis", { exact: true })).toBeDisabled();
-    await expect(page.getByLabel("Selecionar Matriz integral", { exact: true })).toBeDisabled();
-  }
-  const rabies = homologatedCatalog.items.find(item => item.logical_item_key === "raiva_primovac_dose1" && item.status === "active")!;
-  await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(rabies.protocol_id);
-  await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(rabies.id);
-  await page.getByLabel("Geração de Agenda", { exact: true }).selectOption("automatic");
-  await expect(page.getByLabel("Selecionar Matriz integral", { exact: true })).toBeDisabled();
-  await page.getByLabel("Geração de Agenda", { exact: true }).selectOption("manual");
-  await expect(page.getByLabel("Selecionar Matriz integral", { exact: true })).toBeEnabled();
-  await page.evaluate(async () => {
-    const { db } = await import("/src/lib/offline/db.ts");
-    await db.state_animais.update("adult", { data_nascimento: null });
-  });
-  await expect(page.getByLabel("Selecionar Matriz integral", { exact: true })).toBeDisabled();
-  expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0, queue: 0 });
-  expect(unexpected).toEqual([]);
-});
-
-test("B19 aprovada em fixture gera Agenda genérica condicional, offline e sem fatos", async ({ page, context }) => {
-  const unexpected = await prepare(page);
-  await page.goto("/select-fazenda?approved");
-  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await selectProtocol(page);
-  await page.getByLabel("Geração de Agenda", { exact: true }).selectOption("automatic");
-  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeEnabled();
-  await context.setOffline(true);
-  await page.getByLabel("Selecionar Bezerra teste 101", { exact: true }).check();
-  await page.getByRole("button", { name: "Planejar agenda para selecionados" }).click();
-  await expect(page.getByText(/Avaliação\/manejo genérico/)).toBeVisible();
-  await page.getByRole("button", { name: "Confirmar e gerar Agenda" }).click();
-  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
-  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0, queue: 0 });
-  await context.setOffline(false);
-  await page.reload();
-  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0 });
-  expect(unexpected).toEqual([]);
-});
-
 async function counts(page: Page) {
   return page.evaluate(async () => {
     const { db } = await import("/src/lib/offline/db.ts");
@@ -262,137 +169,72 @@ async function counts(page: Page) {
   });
 }
 
-for (const layout of [{ width: 390 }, { width: 768 }, { width: 1280, container: 800 }, { width: 1920 }, { width: 1600, container: 480 }]) {
-test(`refinamento responsivo ${layout.width}px contêiner ${layout.container ?? "livre"}`, async ({ page }) => {
-  const unexpected = await prepare(page);
-  await page.setViewportSize({ width: layout.width, height: 900 });
-  await page.goto("/select-fazenda");
-  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await selectProtocol(page);
-  const table = page.getByRole("table");
-  if (layout.container) await table.evaluate((element, width) => { element.parentElement!.style.maxWidth = `${width}px`; }, layout.container);
-  expect(await table.evaluate(element => element.parentElement!.scrollWidth <= element.parentElement!.clientWidth + 1)).toBe(true);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await expect(page.getByLabel("Ordenar resultados por")).toBeVisible();
-  await page.getByLabel("Selecionar Bezerra teste 101", { exact: true }).check();
-  await page.getByLabel("Ordenar resultados por").selectOption("lote");
-  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeChecked();
-  await page.getByRole("button", { name: "Inverter ordem" }).focus();
-  await page.keyboard.press("Enter");
-  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeChecked();
-  const display = await table.evaluate(element => getComputedStyle(element).display);
-  expect(display).toBe(layout.width === 1920 ? "table" : "block");
-  await page.getByLabel("Selecionar todos os elegíveis visíveis", { exact: true }).check();
-  await expect(page.getByLabel("Selecionar Bezerra teste 102", { exact: true })).toBeChecked();
-  await expect(page.getByLabel("Selecionar Bezerro teste 201", { exact: true })).toBeDisabled();
-  await page.setViewportSize({ width: 1920, height: 900 });
-  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeChecked();
-  await page.setViewportSize({ width: layout.width, height: 900 });
-  await expect(page.getByLabel("Selecionar Bezerra teste 102", { exact: true })).toBeChecked();
-  await page.screenshot({ path: `scratch/sanitary-refinement-${layout.width}-${layout.container ?? "full"}.png`, fullPage: true });
-  expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0 });
-  expect(unexpected).toEqual([]);
-});
+for (const width of [390, 1280]) {
+  test(`triagem → revisão manual → Agenda em ${width}px, offline, reload e isolamento`, async ({ page, context }) => {
+    await page.setViewportSize({ width, height: 844 });
+    const unexpected = await openPlanning(page);
+    // Reading/filtering the triage never materializes an intention or a fact.
+    expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0, queue: 0 });
+    await selectAllForPlanning(page);
+    await context.setOffline(true);
+    await page.getByRole("button", { name: "Planejar selecionados", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Revisar planejamento sanitário", exact: true })).toBeVisible();
+    const review = page.getByRole("dialog");
+    await expect(review).toContainText("Bezerra teste 101");
+    await expect(review).toContainText("Bezerra teste 102");
+    await expect(review).not.toContainText("Bezerro teste 201");
+    await expect(review).not.toContainText("Outra fazenda 301");
+    expect(await counts(page)).toMatchObject({ agendas: 0, events: 0 });
+    await page.getByRole("button", { name: "Voltar à seleção", exact: true }).click();
+    expect(await counts(page)).toMatchObject({ agendas: 0, events: 0 });
+    await page.getByRole("button", { name: "Planejar selecionados", exact: true }).click();
+    await confirmPlanning(page);
+    await expect.poll(() => counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0, queue: 0 });
+    await page.getByLabel("Filtrar por situação", { exact: true }).selectOption("scheduled");
+    await expect(page.getByRole("button", { name: /^Selecionar elegíveis no recorte/ })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Planejar selecionados", exact: true })).toBeDisabled();
+    await context.setOffline(false);
+    await page.reload();
+    await page.getByRole("tab", { name: "Agenda sanitária", exact: true }).click();
+    await page.getByRole("button", { name: "Ver agendas", exact: true }).first().click();
+    await page.getByRole("button", { name: "Reagendar", exact: true }).first().click();
+    await page.getByLabel("Nova data planejada").fill("2026-07-11");
+    await page.getByRole("button", { name: "Salvar nova data" }).click();
+    await expect(page.getByText("11/07/2026", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Trocar fazenda", exact: true }).click();
+    await page.getByRole("button").filter({ hasText: "Outra fazenda" }).click();
+    await page.getByRole("tab", { name: "Agenda sanitária", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Reagendar", exact: true })).toHaveCount(0);
+    await page.getByRole("link", { name: "Trocar fazenda", exact: true }).click();
+    await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+    await page.getByRole("tab", { name: "Agenda sanitária", exact: true }).click();
+    await page.getByRole("button", { name: "Ver agendas", exact: true }).first().click();
+    await page.getByRole("button", { name: "Cancelar agenda", exact: true }).first().click();
+    await expect(page.getByText("Cancelada", { exact: true })).toBeVisible();
+    expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0, queue: 0 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    expect(unexpected).toEqual([]);
+  });
 }
 
-test("refinamento encaminha para histórico e Agenda sem materialização por navegação", async ({ page }) => {
-  const unexpected = await prepare(page);
-  await page.goto("/select-fazenda");
-  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await page.getByLabel("Animal das necessidades").selectOption("female-test");
-  await page.getByLabel("Data de avaliação das necessidades").fill("2026-12-04");
-  await page.getByText(/^Informações insuficientes ·/).click();
-  await page.getByRole("button", { name: "Consultar histórico", exact: true }).click();
-  await expect(page.getByRole("tab", { name: "Histórico sanitário", exact: true })).toHaveAttribute("aria-selected", "true");
-  expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0 });
-  await page.getByRole("tab", { name: "Avaliação sanitária", exact: true }).click();
-  await page.getByRole("button", { name: "Planejar manejo", exact: true }).click();
-  await page.getByLabel("Selecionar Bezerra teste 101", { exact: true }).check();
-  await page.getByRole("button", { name: "Planejar agenda para selecionados", exact: true }).click();
-  await page.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true }).click();
-  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
-  await page.getByRole("tab", { name: "Avaliação sanitária", exact: true }).click();
-  await page.getByRole("button", { name: "Abrir Agenda sanitária", exact: true }).click();
-  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
-  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0 });
-  expect(unexpected).toEqual([]);
-});
-
-test("revisão coletiva explica a data por animal antes de gravar em mobile", async ({ page }) => {
-  const unexpected = await prepare(page);
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/select-fazenda");
-  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
+test("revisão coletiva revalida nascimento, sexo e data antes de gravar", async ({ page }) => {
+  const unexpected = await openPlanning(page);
+  await reviewSelection(page);
   await page.evaluate(async () => {
     const { db } = await import("/src/lib/offline/db.ts");
-    await db.state_animais.update("female-test-2", { data_nascimento: "2026-06-01" });
+    await db.state_animais.update("female-test-2", { data_nascimento: null, sexo: null });
   });
-  await selectProtocol(page);
-  await page.getByLabel("Data de avaliação", { exact: true }).fill("2026-09-04");
-  await page.getByRole("button", { name: "Selecionar todos os elegíveis visíveis", exact: true }).click();
-  await expect(page.getByLabel("Selecionar Bezerra teste 102", { exact: true })).toBeChecked();
-  await page.getByLabel("Data planejada da agenda agrupada").fill("2026-07-04");
-  await page.getByRole("button", { name: "Planejar agenda para selecionados", exact: true }).click();
-  const review = page.getByRole("dialog");
-  await expect(review).toContainText("Compatível com a data");
-  await expect(review).toContainText("Incompatível com a data");
-  await expect(review.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Remover excluídos e continuar", exact: true }).click();
+  await page.getByLabel("Data planejada da Agenda", { exact: true }).fill("2026-12-04");
+  await expect(page.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true })).toBeDisabled();
   expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0 });
-  await page.screenshot({ path: "scratch/sanitary-collective-review-390.png", fullPage: true });
-  await review.getByRole("button", { name: "Excluir incompatíveis e revisar novamente", exact: true }).click();
-  await expect(review).not.toContainText("Bezerra teste 102");
-  await review.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true }).click();
-  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
-  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0 });
+  await page.getByLabel("Data planejada da Agenda", { exact: true }).fill("2026-07-04");
+  await confirmPlanning(page);
+  const participants = await page.evaluate(async () => (await import("/src/lib/offline/db.ts")).db.ops_sanitario_agenda_animais_v2.toArray());
+  expect(participants.map(row => row.animal_id)).toEqual(["female-test"]);
   expect(unexpected).toEqual([]);
 });
-
-for (const width of [390, 1280]) {
-test(`necessidades contextuais → revisão → Agenda local em ${width}px, offline e sem duplicação`, async ({ page, context }) => {
-  const unexpected = await prepare(page);
-  await page.setViewportSize({ width, height: 844 });
-  await page.goto("/select-fazenda");
-  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await expect(page.getByRole("button", { name: "Por animal", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await page.getByLabel("Lote das necessidades", { exact: true }).selectOption("lot-test");
-  await expect(page).toHaveURL(/loteId=lot-test/);
-  const need = page.getByRole("region", { name: "Planejamento disponível", exact: true }).getByRole("article", { name: /Brucelose B19/ });
-  await expect(need).toContainText("Bezerra teste 101");
-  await expect(need).not.toContainText("Bezerro teste 201");
-  await context.setOffline(true);
-  await expect(page.getByText(/Offline: consulta local disponível/)).toBeVisible();
-  await need.getByRole("button", { name: "Planejar manejo", exact: true }).focus();
-  await page.keyboard.press("Enter");
-  await expect(page.getByLabel("Área de risco para raiva", { exact: true })).toHaveCount(0);
-  const layout = await page.evaluate(() => ({ viewport: window.innerWidth, documentWidth: document.documentElement.scrollWidth,
-    overflowing: Array.from(document.querySelectorAll("button, input, select, table")).filter(element => element.getBoundingClientRect().right > window.innerWidth + 1).map(element => ({ tag: element.tagName, label: element.textContent?.slice(0, 80), right: element.getBoundingClientRect().right })) }));
-  expect(layout.documentWidth, JSON.stringify(layout)).toBeLessThanOrEqual(layout.viewport);
-  await page.screenshot({ path: `scratch/sanitary-contextual-${width}.png`, fullPage: true });
-  await page.getByLabel("Selecionar Bezerra teste 101", { exact: true }).check();
-  await expect(page.getByLabel("Selecionar Bezerro teste 201", { exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "Planejar agenda para selecionados", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText("Bezerra teste 101");
-  expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0 });
-  await page.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true }).click();
-  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByText("Agenda sanitária salva localmente. Sem confirmação remota.", { exact: true })).toBeVisible();
-  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0, queue: 0 });
-  await page.getByRole("tab", { name: "Avaliação sanitária", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Agendas existentes", exact: true })).toContainText("Agenda existente");
-  await page.getByRole("region", { name: "Planejamento disponível", exact: true }).getByRole("button", { name: "Planejar manejo", exact: true }).click();
-  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeDisabled();
-  await context.setOffline(false);
-  await page.reload();
-  await expect(page.getByRole("region", { name: "Agendas existentes", exact: true })).toContainText("Agenda existente");
-  expect(await counts(page)).toMatchObject({ agendas: 1, events: 0, movements: 0 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.getByRole("link", { name: "Trocar fazenda", exact: true }).click();
-  await page.getByRole("button").filter({ hasText: "Outra fazenda" }).click();
-  await expect(page.getByLabel("Lote das necessidades", { exact: true })).toHaveValue("");
-  await expect(page.getByRole("article")).toHaveCount(0);
-  expect(unexpected).toEqual([]);
-});
-}
 
 type RecoveryWindow = Window & {
   sanitaryRecoveryAuth: { set(state: "valid" | "expired" | "signed_out"): void };
@@ -414,11 +256,12 @@ async function recoveryAuth(page: Page, state: "valid" | "expired" | "signed_out
 }
 
 async function recoveryPreview(page: Page) {
-  const rabies = homologatedCatalog.items.find(item => item.logical_item_key === "raiva_primovac_dose1" && item.status === "active")!;
-  await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(rabies.protocol_id);
-  await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(rabies.id);
-  await page.getByLabel("Selecionar Matriz integral", { exact: true }).check();
-  await page.getByRole("button", { name: "Planejar agenda para selecionados", exact: true }).click();
+  // Recovery exercises the current manually plannable B19 fixture. Published
+  // rabies metadata remains available for the independent catalog assertions.
+  await selectProtocol(page);
+  await page.getByLabel("Filtrar por animal", { exact: true }).selectOption("00000000-0000-4000-8000-000000000101");
+  await page.getByRole("button", { name: /^Selecionar elegíveis no recorte/ }).click();
+  await page.getByRole("button", { name: "Planejar selecionados", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Revisar planejamento sanitário", exact: true })).toBeVisible();
 }
 
@@ -430,17 +273,44 @@ async function recoverySnapshot(page: Page) {
       events: await db.event_eventos.count(), movements: await db.state_insumo_movimentacoes.count(),
       pushFlag: localStorage.getItem("rebanhosync:sanitario-v2-push"),
       rabies: (await db.catalog_sanitario_protocolo_itens_versions_v2.toArray()).filter(item => item.logical_item_key.startsWith("raiva_") && item.status === "active")
-        .map(item => ({ id: item.id, auto: item.allows_agenda_auto, limitations: item.limitations })),
+        .map(item => ({ id: item.id, limitations: item.limitations })),
     };
   });
 }
 
-async function queueRecoveryPlan(page: Page) {
+async function confirmRecoveryPlanning(page: Page) {
   await page.evaluate(async farmId => {
-    const { saveSanitaryAutomationPlanV2 } = await import("/src/lib/sanitario/agenda/sanitaryAutomationPlanV2.ts");
-    const { EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 } = await import("/src/lib/sanitario/windows/sanitaryProtocolWindowsV2.ts");
-    await saveSanitaryAutomationPlanV2({ fazendaId: farmId, actorId: "00000000-0000-4000-8000-000000000001", expectedRevision: 0,
-      draft: { rules: [], context: EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 }, enabled: false, confirmed: false });
+    const cut = await import("/src/lib/offline/sanitarioV2Cutover.ts");
+    await cut.applySanitarioV2Cutover(farmId, async () => {});
+    cut.setSanitarioV2PushEnabled(true, "local");
+  }, farm);
+  try { await confirmPlanning(page); }
+  finally {
+    await page.evaluate(async () => (await import("/src/lib/offline/sanitarioV2Cutover.ts")).setSanitarioV2PushEnabled(false, "local"));
+  }
+}
+
+async function queueRecoveryAgenda(page: Page) {
+  await page.evaluate(async farmId => {
+    const { db } = await import("/src/lib/offline/db.ts");
+    const cut = await import("/src/lib/offline/sanitarioV2Cutover.ts");
+    const manual = await import("/src/lib/sanitario/agenda/sanitaryManualAgendaV2.ts");
+    if (await db.queue_ops.count()) return;
+    if (await db.ops_sanitario_agenda_v2.count()) throw new Error("Expected an empty recovery fixture before manual creation");
+    // Only synthetic local cutover; no backend or automatic-plan writer.
+    await cut.applySanitarioV2Cutover(farmId, async () => {});
+    cut.setSanitarioV2PushEnabled(true, "local");
+    try {
+      await manual.createManualSanitaryAgendaV2({
+        target: { scope: "animal", id: "00000000-0000-4000-8000-000000000101", fazendaId: farmId },
+        source: { kind: "sanitary_precheck_preview_v2", protocolId: "00000000-0000-4000-8000-000000000030",
+          protocolItemVersionId: "00000000-0000-4000-8000-000000000040",
+          familyCode: "brucelose_b19", itemKey: "b19_femeas_3_8_meses", itemLabel: "Avaliação B19", protocolName: "Brucelose B19 — teste",
+          precheckStatus: "in_action_window" },
+        plannedFor: "2026-07-05", clientOpId: crypto.randomUUID(), confirmed: true,
+        syncContext: { projectRef: "local", clientId: "sanitary-recovery-fixture" },
+      });
+    } finally { cut.setSanitarioV2PushEnabled(false, "local"); }
   }, farm);
 }
 
@@ -468,22 +338,20 @@ test("VF3 sessão expirada preserva intenção e fila, bloqueia escrita e recupe
   // Dev-server modules must already be loaded before the browser goes offline.
   await page.evaluate(async () => { await import("/src/lib/offline/syncWorker.ts"); });
   await recoveryPreview(page);
-  await recoveryAuth(page, "expired");
   await context.setOffline(true);
-  await page.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true }).click();
-  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
-  await queueRecoveryPlan(page);
+  await confirmRecoveryPlanning(page);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await queueRecoveryAgenda(page);
   const queued = await recoverySnapshot(page);
   expect(queued.agendas).toHaveLength(1);
   expect(queued.ops).toHaveLength(1);
+  await recoveryAuth(page, "expired");
+  await expect(page.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true })).toHaveCount(0);
   await processRecoveryQueue(page);
   expect(batches).toEqual([]);
   await context.setOffline(false);
   await processRecoveryQueue(page);
   expect(batches).toEqual([]);
-  await page.getByRole("tab", { name: "Catálogo sanitário", exact: true }).click();
-  await page.getByRole("button", { name: "Abrir catálogo sanitário", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Catálogo sanitário v2", exact: true })).toBeVisible();
   await recoveryAuth(page, "signed_out");
   await expect(page.getByText("Sessão encerrada — fixture VF3", { exact: true })).toBeVisible();
   const denied = await page.evaluate(async () => {
@@ -513,7 +381,7 @@ test("VF3 sessão expirada preserva intenção e fila, bloqueia escrita e recupe
   expect(restored.gestures.every(gesture => gesture.status !== "DONE")).toBe(true);
   expect(restored).toMatchObject({ events: 0, movements: 0, pushFlag: null });
   expect(restored.rabies).toHaveLength(3);
-  expect(restored.rabies.every(item => !item.auto)).toBe(true);
+  expect(restored.rabies.every(item => item.limitations.includes("no_agenda_auto"))).toBe(true);
   expect(unexpected).toEqual([]);
   await testInfo.attach("vf3-session-evidence", { body: JSON.stringify({ queued, signedOut, restored, syntheticBatchAttempts: batches.length }), contentType: "application/json" });
 });
@@ -544,7 +412,7 @@ test("VF3 farm-switch descarta contexto regional e refreshSettings atrasados de 
   try {
     await page.evaluate(async farmId => {
       const { db } = await import("/src/lib/offline/db.ts");
-      const animal = await db.state_animais.get("adult");
+      const animal = await db.state_animais.get("00000000-0000-4000-8000-000000000103");
       await db.state_animais.put({ ...animal!, id: "vf3-farm-b-animal", fazenda_id: farmId, identificacao: "VF3 animal B" });
       await db.state_fazenda_sanidade_config.put({ fazenda_id: farmId, uf: "SC", payload: {}, created_at: "2026-07-04", updated_at: "2026-07-04", deleted_at: null } as never);
     }, otherFarm);
@@ -557,17 +425,14 @@ test("VF3 farm-switch descarta contexto regional e refreshSettings atrasados de 
     await page.evaluate(farmId => (window as unknown as RecoveryWindow).sanitaryRecoveryContext.setActiveFarm(farmId), otherFarm);
     await expect(page.getByLabel("Fazenda ativa na fixture", { exact: true })).toHaveText(otherFarm);
     await expect(page.getByRole("dialog", { name: "Revisar planejamento sanitário", exact: true })).toHaveCount(0);
-    await expect(page.getByLabel("Selecionar Matriz integral", { exact: true })).toHaveCount(0);
-    const rabies = homologatedCatalog.items.find(item => item.logical_item_key === "raiva_primovac_dose1" && item.status === "active")!;
-    await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(rabies.protocol_id);
-    await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(rabies.id);
-    await expect(page.getByLabel("Selecionar VF3 animal B", { exact: true })).not.toBeChecked();
+    await expect(page.getByLabel("Selecionar Matriz integral para Agenda", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Planejar selecionados", exact: true })).toBeDisabled();
     releaseRegion();
     releaseSettings();
     await page.evaluate(() => (window as unknown as RecoveryWindow).sanitaryRecoveryPending);
     await expect(page.getByLabel("Fazenda ativa na fixture", { exact: true })).toHaveText(otherFarm);
     await expect(page.getByLabel("Papel ativo na fixture", { exact: true })).toHaveText("manager");
-    await expect(page.getByLabel("Selecionar Matriz integral", { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel("Selecionar Matriz integral para Agenda", { exact: true })).toHaveCount(0);
     const state = await recoverySnapshot(page);
     expect(state).toMatchObject({ agendas: [], events: 0, movements: 0, pushFlag: null });
     expect(unexpected).toEqual([]);
@@ -586,9 +451,9 @@ test("VF3 restart real do contexto Chromium preserva Agenda e fila offline sem d
     const firstUnexpected = await openRecovery(firstPage);
     await first.setOffline(true);
     await recoveryPreview(firstPage);
-    await firstPage.getByRole("button", { name: "Confirmar e gerar Agenda", exact: true }).click();
-    await expect(firstPage.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("aria-selected", "true");
-    await queueRecoveryPlan(firstPage);
+    await confirmRecoveryPlanning(firstPage);
+    await expect(firstPage.getByRole("dialog")).toHaveCount(0);
+    await queueRecoveryAgenda(firstPage);
     const before = await recoverySnapshot(firstPage);
     expect(before.agendas).toHaveLength(1);
     expect(before.ops).toHaveLength(1);
@@ -605,11 +470,8 @@ test("VF3 restart real do contexto Chromium preserva Agenda e fila offline sem d
     expect(rehydrated.agendas).toEqual(before.agendas);
     expect(rehydrated.ops).toEqual(before.ops);
     await second.setOffline(true);
-    const rabies = homologatedCatalog.items.find(item => item.logical_item_key === "raiva_primovac_dose1" && item.status === "active")!;
-    await secondPage.getByLabel("Selecionar protocolo", { exact: true }).selectOption(rabies.protocol_id);
-    await secondPage.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(rabies.id);
-    await expect(secondPage.getByLabel("Selecionar Matriz integral", { exact: true })).toBeDisabled();
-    await expect(secondPage.getByLabel("Selecionar Bezerra integral", { exact: true })).not.toBeChecked();
+    await secondPage.getByRole("tab", { name: "Agenda sanitária", exact: true }).click();
+    await expect.poll(() => recoverySnapshot(secondPage)).toMatchObject({ agendas: before.agendas, ops: before.ops });
     await second.setOffline(false);
     const after = await recoverySnapshot(secondPage);
     expect(after.agendas).toEqual(before.agendas);
@@ -671,7 +533,7 @@ test("VF3 HTTP 401 sintético interrompe retry até reautenticação e preserva 
     }
     return fulfillSyntheticApi(route, violations);
   });
-  await queueRecoveryPlan(page);
+  await queueRecoveryAgenda(page);
   const before = await recoverySnapshot(page);
   await processRecoveryQueue(page);
   expect(batches).toHaveLength(1);
@@ -690,7 +552,8 @@ test("VF3 HTTP 401 sintético interrompe retry até reautenticação e preserva 
   expect(batches[1]).toEqual(batches[0]);
   const after = await recoverySnapshot(page);
   expect(after.ops.map(op => op.client_op_id)).toEqual(before.ops.map(op => op.client_op_id));
-  expect(after).toMatchObject({ agendas: [], events: 0, movements: 0, pushFlag: null });
+  expect(after.agendas).toEqual(before.agendas);
+  expect(after).toMatchObject({ events: 0, movements: 0, pushFlag: null });
   expect(unexpected).toEqual([]);
   await testInfo.attach("vf3-http401-evidence", { body: JSON.stringify({ before, blocked, after, attempts: batches.length, samePayloadOnRetry: true }), contentType: "application/json" });
 });
@@ -712,6 +575,7 @@ test("VF3 catálogo HTTP atrasado durante preview de A preserva contexto de B", 
     return fulfillSyntheticApi(route, violations);
   });
   try {
+    await page.locator("summary").filter({ hasText: "Catálogo sanitário" }).click();
     await page.getByRole("button", { name: "Atualizar catálogo", exact: true }).click();
     await expect.poll(() => waiting).toBe(true);
     await recoveryPreview(page);
@@ -720,11 +584,8 @@ test("VF3 catálogo HTTP atrasado durante preview de A preserva contexto de B", 
     await expect(page.getByRole("dialog", { name: "Revisar planejamento sanitário", exact: true })).toHaveCount(0);
     release();
     await expect.poll(() => delivered).toBe(true);
-    const rabies = homologatedCatalog.items.find(item => item.logical_item_key === "raiva_primovac_dose1" && item.status === "active")!;
-    await page.getByLabel("Selecionar protocolo", { exact: true }).selectOption(rabies.protocol_id);
-    await page.getByLabel("Selecionar item do protocolo", { exact: true }).selectOption(rabies.id);
-    await expect(page.getByText("Nenhum animal corresponde aos filtros selecionados.", { exact: true })).toBeVisible();
-    await expect(page.getByLabel("Selecionar Matriz integral", { exact: true })).toHaveCount(0);
+    await expect(page.getByText(/Nenhum animal ativo disponível nesta fazenda/)).toBeVisible();
+    await expect(page.getByLabel("Selecionar Matriz integral para Agenda", { exact: true })).toHaveCount(0);
     await expect(page.getByLabel("Fazenda ativa na fixture", { exact: true })).toHaveText(otherFarm);
     const state = await recoverySnapshot(page);
     expect(state).toMatchObject({ agendas: [], ops: [], events: 0, movements: 0, pushFlag: null });
@@ -733,198 +594,16 @@ test("VF3 catálogo HTTP atrasado durante preview de A preserva contexto de B", 
   } finally { release(); }
 });
 
-test("nascimento e sexo ausentes impedem seleção e não criam intenção ou fato", async ({ page }) => {
-  const unexpected = await prepare(page);
-  await page.goto("/select-fazenda");
-  await expect(page.getByRole("button").filter({ hasText: "Fazenda de teste" })).toBeVisible();
-  await page.evaluate(async () => {
-    const { db } = await import("/src/lib/offline/db.ts");
-    const changedBirth = await db.state_animais.update("female-test", { data_nascimento: null });
-    const changedSex = await db.state_animais.update("female-test-2", { sexo: null });
-    if (changedBirth !== 1 || changedSex !== 1) throw new Error("Fixture ainda não disponível");
-  });
-  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await selectProtocol(page);
-  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeDisabled();
-  await expect(page.getByLabel("Selecionar Bezerra teste 102", { exact: true })).toBeDisabled();
-  await expect(page.getByLabel("Selecionar todos os elegíveis visíveis", { exact: true })).toBeDisabled();
-  expect(await counts(page)).toMatchObject({ agendas: 0, events: 0, movements: 0, queue: 0 });
-  expect(unexpected).toEqual([]);
-});
-
-for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
-  test(`catálogo navegável offline, raiva restrita e aftosa retirada em ${viewport.width}px`, async ({ page, context }) => {
-    const unexpected = await prepare(page);
-    const errors: string[] = [];
-    page.on("pageerror", (error) => errors.push(error.message));
-    await page.setViewportSize(viewport);
-    await page.goto("/select-fazenda?integral");
-    await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-    await expect(page.getByRole("heading", { name: "Central Sanitária", exact: true })).toBeVisible();
-    const before = await counts(page);
-    await page.getByRole("tab", { name: "Catálogo sanitário", exact: true }).click();
-    await page.getByRole("button", { name: "Abrir catálogo sanitário", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Catálogo sanitário v2", exact: true })).toBeVisible();
-    await context.setOffline(true);
-    for (const family of ["brucelose_b19", "clostridioses", "raiva_herbivoros", "leptospirose", "ibr_bvd",
-      "controle_parasitario_recria_5_7_9", "vermifugacao_pre_desmama", "vermifugacao_pre_confinamento_pasto_vedado", "matrizes_pre_parto"]) {
-      await page.getByRole("button").filter({ hasText: family }).click();
-      await expect(page.getByRole("button", { name: "Limitações e detalhes técnicos", exact: true }).first()).toBeVisible();
-    }
-    await page.getByRole("button").filter({ hasText: "raiva_herbivoros" }).click();
-    await page.getByRole("button", { name: "Limitações e detalhes técnicos", exact: true }).first().click();
-    await expect(page.getByText("Agenda automática", { exact: true }).last()).toBeVisible();
-    await expect(page.getByText("Agenda automática", { exact: true }).last().locator("..").getByText("Não", { exact: true })).toBeVisible();
-    await page.getByRole("button").filter({ hasText: "febre_aftosa" }).click();
-    await expect(page.getByText("Bloqueado/retirado", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Confirmar e gerar Agenda|Registrar execução/ })).toHaveCount(0);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({ path: `scratch/sanitary-functional-catalog-${viewport.width}.png`, fullPage: true });
-    expect(await counts(page)).toEqual(before);
-    await context.setOffline(false);
-    await page.reload();
-    await expect(page.getByRole("heading", { name: "Catálogo sanitário v2", exact: true })).toBeVisible();
-    expect(await counts(page)).toEqual(before);
-    expect(errors).toEqual([]);
-    expect(unexpected).toEqual([]);
-  });
-}
-
-test("plano confirmado gera sozinho, recupera offline e respeita cancelamento e farm-switch", async ({ page, context }) => {
-  const unexpected = await prepare(page);
-  await page.goto("/select-fazenda?approved");
-  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await page.getByText("Configurar plano automático", { exact: true }).click();
-  await page.getByRole("checkbox", { name: /^Automatizar Brucelose B19/ }).check();
-  await expect(page.getByText(/2 Agenda\(s\) serão criadas/)).toBeVisible();
-  await context.setOffline(true);
-  await page.getByLabel("Confirmar ativação do plano", { exact: true }).check();
-  await page.getByRole("button", { name: "Ativar plano automático", exact: true }).click();
-  await expect(page.getByText("Plano automático ativo", { exact: true })).toBeVisible();
-  await page.getByText("Configurar plano automático", { exact: true }).click();
-  await expect(page.getByText("Agendas geradas automaticamente (2)", { exact: true })).toBeVisible();
-  expect(await counts(page)).toMatchObject({ agendas: 2, events: 0, movements: 0, queue: 1 });
-  await page.getByRole("button", { name: "Reavaliar plano", exact: true }).click();
-  expect(await counts(page)).toMatchObject({ agendas: 2, events: 0 });
-  await context.setOffline(false);
-  await page.reload();
-  await expect(page.getByText("Plano automático ativo", { exact: true })).toBeVisible();
-  await page.getByText("Configurar plano automático", { exact: true }).click();
-  expect(await counts(page)).toMatchObject({ agendas: 2, events: 0 });
-  await page.evaluate(async () => {
-    const { db } = await import("/src/lib/offline/db.ts");
-    const { cancelLocalSanitaryAgendaV2 } = await import("/src/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2.ts");
-    const agenda = await db.ops_sanitario_agenda_v2.toCollection().first();
-    await cancelLocalSanitaryAgendaV2({ agendaId: agenda!.id, fazendaId: agenda!.fazenda_id });
-  });
-  await page.getByRole("button", { name: "Reavaliar plano", exact: true }).click();
-  expect(await counts(page)).toMatchObject({ agendas: 2, events: 0, movements: 0 });
-  // A local data refresh must trigger generation without another confirmation.
-  await page.evaluate(async () => {
-    const { db } = await import("/src/lib/offline/db.ts");
-    const animal = await db.state_animais.get("female-test");
-    await db.state_animais.put({ ...animal!, id: "new-female-test", identificacao: "Nova bezerra" });
-  });
-  await expect(page.getByText("Agendas geradas automaticamente (3)", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Trocar fazenda", exact: true }).click();
-  await page.getByRole("button").filter({ hasText: "Outra fazenda" }).click();
-  await expect(page.getByText("Plano automático desativado", { exact: true })).toBeVisible();
-  expect(await counts(page)).toMatchObject({ agendas: 3, events: 0 });
-  expect(unexpected).toEqual([]);
-});
-
-test("fazenda → protocolo → seleção → revisão → Agenda; offline, reload, reagendamento, cancelamento e farm-switch", async ({ page, context }) => {
-  const unexpected = await prepare(page);
-  await page.goto("/select-fazenda");
-  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await expect(page.getByText("Central Sanitária", { exact: true })).toBeVisible();
-  await selectProtocol(page);
-  await expect(page.getByLabel("Selecionar Bezerra teste 101", { exact: true })).toBeEnabled();
-  await expect(page.getByLabel("Selecionar Bezerro teste 201", { exact: true })).toBeDisabled();
-  await expect(page.getByText("Outra fazenda 301", { exact: true })).toHaveCount(0);
-  await context.setOffline(true);
-  await page.getByRole("button", { name: "Selecionar todos os elegíveis visíveis" }).click();
-  await page.getByRole("button", { name: "Planejar agenda para selecionados" }).click();
-  await expect(page.getByRole("dialog", { name: "Revisar planejamento sanitário" })).toBeVisible();
-  expect((await counts(page)).agendas).toBe(0);
-  await page.getByRole("button", { name: "Voltar à seleção" }).click();
-  expect((await counts(page)).agendas).toBe(0);
-  await page.getByRole("button", { name: "Planejar agenda para selecionados" }).click();
-  await page.getByRole("button", { name: "Confirmar e gerar Agenda" }).dblclick();
-  await expect(page.getByRole("tab", { name: "Agenda sanitária", exact: true })).toHaveAttribute("data-state", "active");
-  await expect.poll(() => counts(page)).toEqual({ agendas: 1, events: 0, movements: 0, queue: 0, products: 1 });
-  await expect(page.getByText("Brucelose B19 — teste", { exact: false }).first()).toBeVisible();
-  await page.screenshot({ path: "scratch/sanitary-planning-agenda.png", fullPage: true });
-  await context.setOffline(false);
-  await page.reload();
-  await page.getByRole("tab", { name: "Agenda sanitária", exact: true }).click();
-  await page.getByRole("button", { name: "Ver agendas", exact: true }).first().click();
-  await expect(page.getByRole("button", { name: "Reagendar", exact: true }).first()).toBeVisible();
-  await page.getByRole("button", { name: "Reagendar", exact: true }).first().click();
-  await page.getByLabel("Nova data planejada").fill("2026-07-11");
-  await page.getByRole("button", { name: "Salvar nova data" }).click();
-  await expect(page.getByText("11/07/2026", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Trocar fazenda" }).click();
-  await page.getByRole("button").filter({ hasText: "Outra fazenda" }).click();
-  await page.getByRole("tab", { name: "Agenda sanitária", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Reagendar", exact: true })).toHaveCount(0);
-  await page.getByRole("link", { name: "Trocar fazenda" }).click();
-  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await page.getByRole("tab", { name: "Agenda sanitária", exact: true }).click();
-  await page.getByRole("button", { name: "Ver agendas", exact: true }).first().click();
-  await page.getByRole("button", { name: "Cancelar agenda", exact: true }).first().click();
-  await expect(page.getByText("Cancelada", { exact: true })).toBeVisible();
-  expect(await counts(page)).toEqual({ agendas: 1, events: 0, movements: 0, queue: 0, products: 1 });
-  expect(unexpected).toEqual([]);
-});
-
 test("catálogo vazio informa indisponibilidade sem fabricar protocolos ou produtos", async ({ page }) => {
   const unexpected = await prepare(page);
   await page.goto("/select-fazenda?empty=1");
   await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await expect(page.getByText(/Nenhum protocolo disponível no catálogo local/)).toBeVisible();
+  await expect(page.getByText(/Nenhum item de protocolo disponível no catálogo local/)).toBeVisible();
+  await page.getByRole("tab", { name: "Catálogo sanitário", exact: true }).click();
+  await page.getByRole("button", { name: "Abrir catálogo sanitário", exact: true }).click();
   await page.getByRole("button", { name: "Atualizar catálogo", exact: true }).click();
   await expect(page.getByRole("button", { name: "Atualizar catálogo", exact: true })).toBeEnabled();
   expect(await counts(page)).toEqual({ agendas: 0, events: 0, movements: 0, queue: 0, products: 0 });
-  expect(unexpected).toEqual([]);
-});
-
-test("plano integral exclui itens restritos e automatiza vários protocolos com histórico e recuperação offline", async ({ page, context }) => {
-  const unexpected = await prepare(page);
-  await page.goto("/select-fazenda?integral");
-  await page.getByRole("button").filter({ hasText: "Fazenda de teste" }).click();
-  await page.getByText("Configurar plano automático", { exact: true }).click();
-  const checkboxes = page.getByRole("checkbox", { name: /^Automatizar / });
-  // Six restricted/blocked items are excluded from automatic rule choices.
-  await expect(checkboxes).toHaveCount(14);
-  await expect(page.getByText("Plano automático desativado", { exact: true })).toBeVisible();
-  await expect(page.getByRole("checkbox", { name: /^Automatizar .*?(Raiva|aftosa)/i })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Consultar catálogo sanitário", exact: true })).toBeVisible();
-  await context.setOffline(true);
-  await page.getByLabel("Confirmar ativação do plano", { exact: true }).check();
-  await page.getByRole("button", { name: "Ativar plano automático", exact: true }).click();
-  await expect(page.getByText("Plano automático ativo", { exact: true })).toBeVisible();
-  await page.getByText("Configurar plano automático", { exact: true }).click();
-  const snapshot = () => page.evaluate(async () => {
-    const { db } = await import("/src/lib/offline/db.ts");
-    const agendas = await db.ops_sanitario_agenda_v2.toArray();
-    return { count: agendas.length, items: new Set(agendas.map((agenda) => agenda.protocol_item_snapshot.itemKey)).size,
-      identities: new Set(agendas.map((agenda) => agenda.metadata.automationKey)).size,
-      events: await db.event_eventos.count(), movements: await db.state_insumo_movimentacoes.count() };
-  });
-  await expect.poll(snapshot).toMatchObject({ items: 12, events: 4, movements: 0 });
-  const before = await snapshot();
-  expect(before.identities).toBe(before.count);
-  await page.getByRole("button", { name: "Reavaliar plano", exact: true }).click();
-  expect(await snapshot()).toEqual(before);
-  await context.setOffline(false);
-  await page.reload();
-  await expect(page.getByText("Plano automático ativo", { exact: true })).toBeVisible();
-  await expect.poll(snapshot).toEqual(before);
-  await page.getByRole("link", { name: "Trocar fazenda", exact: true }).click();
-  await page.getByRole("button").filter({ hasText: "Outra fazenda" }).click();
-  await expect(page.getByText("Plano automático desativado", { exact: true })).toBeVisible();
-  expect(await snapshot()).toEqual(before);
   expect(unexpected).toEqual([]);
 });
 

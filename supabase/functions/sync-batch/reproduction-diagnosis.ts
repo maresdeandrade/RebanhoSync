@@ -138,12 +138,6 @@ function fingerprint(
   )));
 }
 
-export function isDiagnosisDetailOperation(op: Operation) {
-  return op.table === "eventos_reproducao" &&
-    op.action === "INSERT" &&
-    op.record?.tipo === "diagnostico";
-}
-
 export function isSyncedReproductionDetailOperation(op: Operation) {
   return op.table === "eventos_reproducao" &&
     op.action === "INSERT" &&
@@ -199,16 +193,6 @@ export function isAppliedResult(
   const status = processedResults.find((entry) => entry.op_id === clientOpId)
     ?.status;
   return status === "APPLIED" || status === "APPLIED_ALTERED";
-}
-
-export function findDiagnosisDetailForEvent(
-  eventId: string,
-  operations: Operation[],
-) {
-  return operations.find((candidate) =>
-    isDiagnosisDetailOperation(candidate) &&
-    candidate.record?.evento_id === eventId
-  ) ?? null;
 }
 
 export function sameReproductionDiagnosisRecord(
