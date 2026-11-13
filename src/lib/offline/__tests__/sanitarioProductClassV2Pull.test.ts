@@ -23,17 +23,21 @@ const { localStores } = vi.hoisted(() => ({
 ] as const,
 }));
 
-vi.mock("../db", () => ({
-  db: {
+vi.mock("../db", () => {
+  const queue = () => ({
+    toArray: vi.fn(async () => []),
+    add: vi.fn(), put: vi.fn(), bulkAdd: vi.fn(), bulkPut: vi.fn(),
+    update: vi.fn(), delete: vi.fn(), bulkDelete: vi.fn(), clear: vi.fn(),
+  });
+  return { db: {
     tables: localStores.map((name) => ({ name })),
-    queue_ops: {
-      toArray: vi.fn(async () => []),
-    },
-    queue_gestures: { toArray: vi.fn(async () => []) },
+    queue_ops: queue(),
+    queue_gestures: queue(),
+    queue_rejections: queue(),
     table: vi.fn(),
     transaction: vi.fn(),
-  },
-}));
+  } };
+});
 
 type ScopeKey = "global" | "tenant";
 
@@ -198,7 +202,11 @@ describe("pullSanitarioProductClassV2Catalog", () => {
       );
     }
 
-    expect(db.transaction).toHaveBeenCalledWith("rw", localStores, expect.any(Function));
+    expect(db.transaction).toHaveBeenCalledWith(
+      "rw",
+      [...localStores, "queue_ops", "queue_gestures", "queue_rejections"],
+      expect.any(Function),
+    );
     expect(writeLog.map((entry) => entry.store)).toEqual(localStores);
     expect(writeLog[0].rows).toEqual([
       expect.objectContaining({
@@ -227,7 +235,16 @@ describe("pullSanitarioProductClassV2Catalog", () => {
       expect.objectContaining({ id: "rule-global", class_id: "class-global" }),
     ]);
 
-    expect(db.table).not.toHaveBeenCalledWith("queue_ops");
+    for (const [name, queue] of [
+      ["queue_ops", db.queue_ops],
+      ["queue_gestures", db.queue_gestures],
+      ["queue_rejections", db.queue_rejections],
+    ] as const) {
+      expect(db.table).not.toHaveBeenCalledWith(name);
+      for (const method of ["add", "put", "bulkAdd", "bulkPut", "update", "delete", "bulkDelete", "clear"] as const) {
+        expect(queue[method]).not.toHaveBeenCalled();
+      }
+    }
     expect(fetchSpy).not.toHaveBeenCalled();
     for (const store of storesByName.values()) {
       expect(store.clear).not.toHaveBeenCalled();
