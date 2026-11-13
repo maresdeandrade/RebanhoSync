@@ -313,7 +313,7 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
 
     expect(db.transaction).toHaveBeenCalledWith(
       "rw",
-      localStores,
+      [...localStores, "queue_ops", "queue_gestures", "queue_rejections"],
       expect.any(Function),
     );
     expect(writeLog.map((entry) => entry.store)).toEqual(localStores);
