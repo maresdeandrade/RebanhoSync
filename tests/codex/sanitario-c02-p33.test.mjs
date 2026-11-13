@@ -1,10 +1,16 @@
 import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
-import { validateCanonicalTechnicalContract } from "../../scripts/codex/sanitario-v2-contract.mjs";
+import { CANONICAL_ARTIFACT_VERSION, validateCanonicalTechnicalContract } from "../../scripts/codex/sanitario-v2-contract.mjs";
 import { buildPlan, assertPublishablePlan } from "../../scripts/codex/import-sanitario-protocols-v2.mjs";
 import { buildOperationalWithdrawalSnapshotV2 } from "../../src/lib/sanitario/execution/operationalWithdrawalSnapshotV2";
 
-const packet = JSON.parse(readFileSync("docs/review/evidence/SANITARIO_V2_C02_P33_CORTE_SC_REVIEW_CANDIDATE_20261029.json", "utf8"));
+const historicalPath = "docs/review/evidence/SANITARIO_V2_C02_P33_CORTE_SC_REVIEW_CANDIDATE_20261029.json";
+const historicalBytes = readFileSync(historicalPath);
+const historicalPacket = JSON.parse(historicalBytes.toString("utf8"));
+const packet = structuredClone(historicalPacket);
+packet.artifact_version = CANONICAL_ARTIFACT_VERSION;
+delete packet.payload.product_rows[0].metadata.allows_agenda_auto;
+delete packet.review_evidence.snapshot.rows.sanitario_produtos_v2[0].metadata.allows_agenda_auto;
 const payload = packet.payload;
 const baseline = packet.review_evidence.snapshot.rows;
 const source = payload.source_rows[0];
@@ -46,6 +52,14 @@ function evaluate({ status = "precisa_validar", route = "SC", aptitude = "corte"
 }
 
 describe("P33: candidata local de abate bovino SC, sem promoção", () => {
+  it("preserva o artefato histórico v13 e rejeita seu contrato no validador atual", () => {
+    expect(historicalPacket.artifact_version).toBe("13.0.0-canonical-contract");
+    expect(historicalPacket.payload.product_rows[0].metadata.allows_agenda_auto).toBe(false);
+    expect(historicalPacket.review_evidence.snapshot.rows.sanitario_produtos_v2[0].metadata.allows_agenda_auto).toBe(false);
+    expect(() => validateCanonicalTechnicalContract(historicalPacket)).toThrow(/versao esperada 14\.0\.0-canonical-contract/);
+    expect(() => validateCanonicalTechnicalContract(historicalPacket)).toThrow(/allows_agenda_auto: campo removido/);
+    expect(readFileSync(historicalPath)).toEqual(historicalBytes);
+  });
   it("valida contrato e preserva cadastro, gates e campos fora do recorte", () => {
     expect(validateCanonicalTechnicalContract(packet).data.withdrawal_rule_rows).toHaveLength(1);
     const { product_key: _key, ...actual } = product;

@@ -1,9 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-11-12
+Atualizado em: 2026-11-13
 Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED apenas no envelope reconnect 1k; produção não provisionada**
-Próxima fase: **Fase 24 — continuidade pós-#289, sem nova fase. B01/F07 #272 e comando durável B02/A05 #274 integrados; Sanitário #285–#287 integrado no recorte de execução V3, triagem proativa e planejamento manual coletivo. Etapa 3: PR #289 merged em `564b2cc7`; validação obrigatória e Vercel SUCCESS, Supabase Preview SKIPPED. Etapa 4B — correções UX da Central Sanitária com evidência V01 — validada localmente, ainda não integrada; homologação factual V01 parcial. F24.6A2 não iniciada.**
-Baseline indicada para esta continuidade: `main@94121a21652cbf49923a49895eaba2990f18fe58`, confirmada no remoto em 12/11/2026.
+Próxima fase: **Fase 24 — continuidade pós-#294, sem nova fase. As correções UX da Central estão integradas pelo #290; homologação factual V01 segue parcial. A reconciliação do backend sanitário e a validação global completa permanecem pendentes. F24.6A2 não iniciada.**
+Baseline integrada confirmada para esta continuidade: `main@f543bb6bd5a67c6c37a040904a33c99f0e189999` (#294). O patch de teste P33 em `codex/sanitario-p33-v14` ainda não está integrado nesta baseline.
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -22,6 +22,22 @@ Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
+
+## Reconciliação sanitária — snapshot pós-#294
+
+| PR integrado | Merge | Recorte comprovado |
+| --- | --- | --- |
+| [#290](https://github.com/maresdeandrade/RebanhoSync/pull/290) | `e6153e0c` | Correções UX da Central Sanitária; evidência V01 impressa permanece insuficiente para comprovar produto, dose ou horário factual. |
+| [#291](https://github.com/maresdeandrade/RebanhoSync/pull/291) | `fab6c5ec` | Correções de convergência e recovery da Agenda Sanitária V3. |
+| [#292](https://github.com/maresdeandrade/RebanhoSync/pull/292) | `0b7be92b` | Atualização de fixtures sanitárias e remoção de código não utilizado. |
+| [#293](https://github.com/maresdeandrade/RebanhoSync/pull/293) | `a43ee9f6` | Aposenta `sanitario-reconcile` no código; inclui ajustes de testes preexistentes de fechamento e pull. A função remota não foi removida. |
+| [#294](https://github.com/maresdeandrade/RebanhoSync/pull/294) | `f543bb6b` | Resolve e valida o intervalo de commits para `pull_request`, `merge_group` e `workflow_dispatch`; o gate final manual recebe `base_sha` obrigatório. |
+
+O preflight anterior reconstruiu as 75 migrations em PostgreSQL descartável; a comparação dirigida dos catálogos remotos com as primeiras 65 não demonstrou incompatibilidade material. O harness HTTP isolado da mesma baseline exercitou Auth, `sync-batch`, planejamento e execução V3, colaboração, RLS e replay, com 11 testes aprovados; seus resultados não certificam o ambiente remoto. Em 13/11, o dry-run ligado ao projeto `zqloazqzhwauamcejmuz` listou as dez migrations de `20261030120000` a `20261110193000`; o inventário registrou 65 aplicadas, `sync-batch` v29, `sanitario-reconcile` v5 e gates desligados. Esse é um snapshot, não uma reconfirmação futura.
+
+A [validação global 43491293594](https://github.com/maresdeandrade/RebanhoSync/actions/runs/43491293594) sobre `f543bb6b` executou até o teste P33: 4.138 aprovados, um falho e 59 ignorados. O teste tentou validar artefato histórico v13 com o contrato canônico v14; a correção local cria projeção sintética em memória, preserva o arquivo histórico e passou 8 testes dirigidos. **A correção ainda não está integrada neste snapshot; o CI global precisa ser repetido sobre a `main` integrada.** O preflight remoto permanece `NOT READY`; não houve remoção remota, migration, deploy ou ativação de gate nesta continuidade.
+
+Após integração e aprovação integral do CI, a sequência de implantação exige autorização explícita: retirar a função remota aposentada, aplicar as dez migrations após novo dry-run e publicar `sync-batch` da mesma baseline, seguidos de verificações remotas com gates desligados. Sucesso factual/colaboração sujeito ao gate não pode ser certificado no remoto com o gate desligado. Compatibilidade do backend não comprova homologação factual V01, seleção de produtos de Brucelose ou apresentação da Agenda no menu geral.
 
 ## Central Sanitária — integrações até #287
 
@@ -42,7 +58,7 @@ O [manual da Central](../manuals/screens/SANITARIO.md#central-sanitária-e-filtr
 
 ## Etapa 4 — Homologação UX dirigida da Central Sanitária
 
-**Status: IN_PROGRESS (12/11/2026; baseline local `codex/etapa4-homologacao-v01-central-sanitaria@94121a216`).** A `amostra 1.pdf` é uma impressão de interface com rótulos V01/triagem B19, mas não comprova Evento factual nem os valores efetivamente registrados/usados de produto, dose ou horário de execução; nenhum fato ausente foi inferido. O patch UX local restringe seleção individual/coletiva às avaliações elegíveis, fecha o diálogo somente após sucesso integral confirmado e mantém o contexto no resultado de falha, além de aplicar filtros de identidade às pendências documentais e mostrar data/hora local dos Eventos. Quatro suítes focadas passaram (45/45); após extrair o classificador de resultado para módulo puro, as duas suítes diretamente afetadas passaram novamente (23/23). O walkthrough da página real em Chromium passou: grupo misto/prévia e confirmação manual sintética, fechamento após sucesso integral, retenção do modal/Agenda/horário em falha terminal sem retry, filtros documentais e data/hora local de Evento; em 390×844 não houve overflow horizontal. Os callbacks de escrita e leituras foram substituídos por fixtures sintéticas em memória; não houve persistência, Evento real ou tráfego externo (0 tentativas, 0 erros de console). `tsc --noEmit`, ESLint (sem erros nem warnings), `git diff --check` e `gates:docs` passaram. A conferência de V01 continua limitada à interface impressa: produto, dose e horário factual real permanecem não comprovados. A entrega não está integrada; não alterou migration, RLS, RPC ou rollout.
+**Snapshot da validação local de 12/11/2026, integrado posteriormente pelo [PR #290](https://github.com/maresdeandrade/RebanhoSync/pull/290) em `e6153e0c`.** A `amostra 1.pdf` é uma impressão de interface com rótulos V01/triagem B19, mas não comprova Evento factual nem os valores efetivamente registrados/usados de produto, dose ou horário de execução; nenhum fato ausente foi inferido. O patch UX restringe seleção individual/coletiva às avaliações elegíveis, fecha o diálogo somente após sucesso integral confirmado e mantém o contexto no resultado de falha, além de aplicar filtros de identidade às pendências documentais e mostrar data/hora local dos Eventos. Quatro suítes focadas passaram (45/45); após extrair o classificador de resultado para módulo puro, as duas suítes diretamente afetadas passaram novamente (23/23). O walkthrough da página real em Chromium passou: grupo misto/prévia e confirmação manual sintética, fechamento após sucesso integral, retenção do modal/Agenda/horário em falha terminal sem retry, filtros documentais e data/hora local de Evento; em 390×844 não houve overflow horizontal. Os callbacks de escrita e leituras foram substituídos por fixtures sintéticas em memória; não houve persistência, Evento real ou tráfego externo (0 tentativas, 0 erros de console). `tsc --noEmit`, ESLint (sem erros nem warnings), `git diff --check` e `gates:docs` passaram. A conferência de V01 continua limitada à interface impressa: produto, dose e horário factual real permanecem não comprovados. A integração não comprova rollout.
 
 B02/A05 também está **CLOSED / INTEGRATED** pelo [PR #274](https://github.com/maresdeandrade/RebanhoSync/pull/274), merge `0673a9747cf6e45bd6da4c368f4722c4572cd49d`: caller durável, transação do comando/fila e destino efetivo do desmame. As 59 provas locais já registradas conservam seus limites; sem certificação de kill real, dispositivos físicos ou convergência remota. C06 heterogêneo permanece [CLOSED / INTEGRATED #260](./SANITARIO_C06_GESTO_HETEROGENEO_20261030.md#estado-integrado--atualização-de-08112026); F24.7 completa não certificada. GATE-03, BLQ-002/003 e rollout mantêm os critérios próprios.
 
