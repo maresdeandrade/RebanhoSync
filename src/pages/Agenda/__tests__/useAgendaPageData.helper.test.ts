@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { normalizeAgendaPageData } from "@/pages/Agenda/useAgendaPageData";
+import { buildAgendaBaseRows } from "@/pages/Agenda/helpers/derivations";
 import type {
   AgendaItem,
   Animal,
@@ -153,6 +154,13 @@ describe("normalizeAgendaPageData", () => {
         produto: "Vacina IBR/BVD",
       }),
     });
+    const awaiting = normalizeAgendaPageData({
+      sanitaryAgendasV2: [sanitaryAgenda],
+      sanitaryOperations: [{ client_op_id: "conflict-op", client_tx_id: "conflict-tx", table: "sanitario_v2", sync_state: "REJECTED", blocked_reason: "SANITARIO_AGENDA_REVISION_CONFLICT", record: { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: "farm-1", payload: { agenda_id: "san-agenda-1" } } }] as never,
+      reconciliationObligations: [{ fazenda_id: "farm-1", scope: "sanitario-v2", diagnostics: { origins: [{ client_tx_id: "conflict-tx", client_op_ids: ["conflict-op"] }] } }] as never,
+    });
+    const rows = buildAgendaBaseRows(awaiting, { search: "", statusFilter: "all", dominioFilter: "all", dateFrom: "", dateTo: "" });
+    expect(rows[0].syncStage).toBe("rejected");
   });
 
   it("preserva vínculos animais de agenda sanitária agrupada por lote", () => {

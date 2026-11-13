@@ -1,5 +1,6 @@
 import type { OfflineDB } from "@/lib/offline/db";
 import { requireTenantSensitiveAccess } from "@/lib/offline/localReadBoundary";
+import { findUnreconciledSanitaryAgendaConflicts } from "@/lib/offline/sanitaryAgendaConflictPresentation";
 import {
   buildCloseAgendaOperation,
   createSanitarioV2Identity,
@@ -51,6 +52,7 @@ export type SanitaryLocalAgendaListItemV2 = {
   target: SanitaryAgendaTargetV2;
   canManage: boolean;
   canExecute: boolean;
+  reconciliationPending?: boolean;
 };
 
 export type SanitaryLocalAgendaFiltersV2 = {
@@ -69,6 +71,8 @@ type LocalAgendaDbV2 = Pick<
   | "catalog_sanitario_protocolos_v2"
   | "catalog_sanitario_protocolo_itens_versions_v2"
   | "state_fazenda_sanidade_config"
+  | "queue_ops"
+  | "sync_reconcile_obligations"
   | "transaction"
 >;
 
@@ -201,7 +205,7 @@ export async function listLocalSanitaryAgendasV2(
 ): Promise<SanitaryLocalAgendaListItemV2[]> {
   await requireTenantSensitiveAccess();
   const db = localDb ?? (await getDefaultDb());
-  const [agendas, agendaAnimals, animals, lots] = await Promise.all([
+  const [agendas, agendaAnimals, animals, lots, operations, obligations] = await Promise.all([
     db.ops_sanitario_agenda_v2.where("fazenda_id").equals(fazendaId).toArray(),
     db.ops_sanitario_agenda_animais_v2
       .where("fazenda_id")
@@ -209,7 +213,10 @@ export async function listLocalSanitaryAgendasV2(
       .toArray(),
     db.state_animais.where("fazenda_id").equals(fazendaId).toArray(),
     db.state_lotes.where("fazenda_id").equals(fazendaId).toArray(),
+    db.queue_ops.toArray(),
+    db.sync_reconcile_obligations.where("fazenda_id").equals(fazendaId).toArray(),
   ]);
+  const unreconciled = findUnreconciledSanitaryAgendaConflicts(fazendaId, operations, obligations);
   const activeAgendas = agendas.filter((agenda) => !agenda.deleted_at);
   const [protocols, protocolItems, farmConfig] = await Promise.all([
     db.catalog_sanitario_protocolos_v2.bulkGet([
@@ -321,6 +328,7 @@ export async function listLocalSanitaryAgendasV2(
         id: agenda.id,
         fazendaId: agenda.fazenda_id,
         plannedFor: agenda.data_programada,
+        reconciliationPending: unreconciled.has(agenda.id),
         status: agenda.status,
         protocolId: agenda.protocolo_id,
         itemKey:

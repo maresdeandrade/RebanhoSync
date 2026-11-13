@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   pullSanitarioAgendaV2: vi.fn(async () => undefined),
   pullSanitarioV2CutoverState: vi.fn(async () => undefined),
   pullReproductionDiagnosisState: vi.fn(async () => undefined),
+  from: vi.fn(),
 }));
 
 vi.mock("@/lib/storage", () => ({
@@ -34,6 +35,7 @@ vi.mock("@/lib/reproduction/remoteSync", () => ({
 
 vi.mock("@/lib/supabase", () => ({
   supabase: {
+    from: mocks.from,
     auth: {
       getSession: vi.fn(async () => ({
         data: {
@@ -56,6 +58,7 @@ vi.mock("@/lib/telemetry/pilotMetrics", () => ({
 }));
 
 import { buildEventGesture } from "@/lib/events/buildEventGesture";
+import { supabase } from "@/lib/supabase";
 import { db } from "../db";
 import { createGesture } from "../ops";
 import { establishLocalOwnership } from "../ownership";
@@ -284,6 +287,42 @@ describe("sync worker reconciliation drain", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     await clearStores();
+  });
+
+  it.each(["missing", "stale", "valid", "advanced", "terminal", "otherfarm", "network", "changed"] as const)("recupera dependência V3 apenas com evidência autorizada: %s", async scenario => {
+    const domainId = "70000000-0000-4000-8000-000000000001", agendaId = "80000000-0000-4000-8000-000000000001";
+    const op = { client_op_id: opIds[0], client_tx_id: txId, domain_op_id: domainId, table: "sanitario_v2", action: "INSERT" as const,
+      sync_state: "BLOCKED_DEPENDENCY" as const, blocked_reason: "SANITARIO_AGENDA_NOT_FOUND", created_at: "2026-11-01",
+      record: { domain: "sanitario_v2", contract_version: 3, command: "reschedule_agenda", fazenda_id: farmId, client_op_id: opIds[0], client_tx_id: txId, domain_op_id: domainId, expected_revision: 1, payload: { agenda_id: agendaId, data_programada: "2026-11-12" } } };
+    const result = { op_id: opIds[0], client_op_id: opIds[0], domain_op_id: domainId, status: "BLOCKED_DEPENDENCY" as const, reason_code: "SANITARIO_AGENDA_NOT_FOUND", matched: true, recorded_at: "2026-11-01" };
+    const terminalId = opIds[1], terminalDomain = "70000000-0000-4000-8000-000000000002";
+    const terminalResult = { op_id: terminalId, client_op_id: terminalId, domain_op_id: terminalDomain, status: "CONFLICT" as const, matched: true, recorded_at: "2026-11-01" };
+    await db.queue_ops.put(op);
+    if (scenario === "terminal") await db.queue_ops.put({ ...op, client_op_id: terminalId, domain_op_id: terminalDomain, sync_state: "REJECTED", record: { ...op.record, client_op_id: terminalId, domain_op_id: terminalDomain, expected_revision: 0 } });
+    await db.queue_gestures.put({ client_tx_id: txId, fazenda_id: farmId, client_id: "client", status: "ERROR", created_at: "2026-11-01", operation_results: scenario === "terminal" ? [terminalResult, result] : [result] });
+    await upsertReconciliationObligations([{ fazendaId: farmId, scope: "sanitario-v2", origins: [{ client_tx_id: txId, client_op_ids: [opIds[0]] }] }]);
+    const maybeSingle = vi.fn(async () => {
+      if (scenario === "changed") await db.queue_ops.update(opIds[0], { retry_count: 3 });
+      return { data: scenario === "missing" || scenario === "network" ? null : { id: agendaId, fazenda_id: scenario === "otherfarm" ? otherFarmId : farmId, revision: scenario === "stale" ? 0 : scenario === "advanced" ? 2 : 1 }, error: scenario === "network" ? new Error("NetworkError") : null };
+    });
+    const query = { select: vi.fn(), eq: vi.fn(), maybeSingle }; query.select.mockReturnValue(query); query.eq.mockReturnValue(query); mocks.from.mockReturnValue(query);
+    mocks.pullSanitarioV2CutoverState.mockRejectedValueOnce(new Error("SANITARIO_CONFLICT_RECONCILIATION_PENDING_OPERATION"));
+    await drainReconciliationObligations(farmId);
+    expect(await getObligation(farmId, "sanitario-v2")).toBeDefined();
+    const after = await db.queue_ops.get(opIds[0]);
+    expect(after?.sync_state).toBe(["valid", "advanced"].includes(scenario) ? "PENDING" : "BLOCKED_DEPENDENCY");
+    expect(after?.record).toEqual(op.record);
+    expect(after?.domain_op_id).toBe(domainId);
+    if (scenario === "terminal") expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("mantém obrigação se a sessão expirar entre o pull e a recuperação", async () => {
+    await upsertReconciliationObligations([{ fazendaId: farmId, scope: "sanitario-v2" }]);
+    mocks.pullSanitarioV2CutoverState.mockImplementationOnce(async () => {
+      vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({ data: { session: null }, error: null } as never);
+    });
+    await drainReconciliationObligations(farmId);
+    expect(await getObligation(farmId, "sanitario-v2")).toBeDefined();
   });
 
   it("ACK allApplied persiste obligation factual na mesma fronteira e deriva as mesmas tabelas do pull (T1)", async () => {

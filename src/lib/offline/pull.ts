@@ -348,6 +348,7 @@ async function getPendingRecordIds(
     operations.filter(isSanitaryEvidenceOperation).map((op) => op.client_tx_id),
   );
   for (const operation of operations) {
+    if (isRejectedSanitaryRescheduleConflict(operation)) continue;
     if (
       (operation.sync_state === "REJECTED" &&
         !sanitaryTransactions.has(operation.client_tx_id)) ||
@@ -370,6 +371,39 @@ async function getPendingRecordIds(
     }
   }
   return pendingIds;
+}
+
+function isRejectedSanitaryRescheduleConflict(operation: Operation) {
+  return operation.sync_state === "REJECTED" &&
+    operation.table === "sanitario_v2" &&
+    operation.record?.command === "reschedule_agenda" &&
+    operation.blocked_reason === "SANITARIO_AGENDA_REVISION_CONFLICT";
+}
+
+async function fetchConflictedSanitaryAgendas(fazendaId: string): Promise<RemoteRow[]> {
+  const targets = (await db.queue_ops.toArray()).filter(op =>
+    isRejectedSanitaryRescheduleConflict(op) && op.record.fazenda_id === fazendaId,
+  ).map(op => ({
+    id: asRemoteRow(op.record.payload)?.agenda_id,
+    expectedRevision: op.record.expected_revision,
+  }));
+  if (targets.length === 0) return [];
+  if (targets.some(target => typeof target.id !== "string" || typeof target.expectedRevision !== "number"))
+    throw new Error("SANITARIO_CONFLICT_RECONCILIATION_INVALID_ENVELOPE");
+  const ids = [...new Set(targets.map(target => target.id as string))];
+  const { data, error } = await supabase.from("sanitario_agenda_v2").select("*")
+    .eq("fazenda_id", fazendaId).in("id", ids);
+  if (error) throw error;
+  const rows = (data ?? []) as RemoteRow[];
+  if (targets.some(target => !rows.some(row => row.id === target.id && row.fazenda_id === fazendaId &&
+    typeof row.revision === "number" && row.revision > (target.expectedRevision as number))))
+    throw new Error("SANITARIO_CONFLICT_RECONCILIATION_SNAPSHOT_UNAVAILABLE");
+  return rows;
+}
+
+function mergeConflictedSanitaryAgendas(rows: RemoteRow[], targets: RemoteRow[]) {
+  const targetedIds = new Set(targets.map(row => row.id));
+  return [...rows.filter(row => !targetedIds.has(row.id)), ...targets];
 }
 
 function asRemoteRow(value: unknown): RemoteRow | null {
@@ -652,6 +686,184 @@ async function writeFarmPullStore(
   );
 }
 
+async function validateSanitaryConflictReconciliation(
+  storesToUpdate: Array<{ remote: string; local: string }>,
+  results: Record<string, RemoteRow[]>,
+  pendingRecordIds: ReadonlyMap<string, ReadonlySet<string>>,
+  fazendaId: string,
+) {
+  if (!storesToUpdate.some(({ remote }) => remote === "sanitario_agenda_v2"))
+    return;
+
+  const conflicts = (await db.queue_ops.toArray()).filter(
+    (op) =>
+      isRejectedSanitaryRescheduleConflict(op) &&
+      op.record.fazenda_id === fazendaId,
+  );
+  if (conflicts.length === 0) return;
+
+  const [rejections, gestures] = await Promise.all([
+    db.queue_rejections.toArray(),
+    db.queue_gestures.toArray(),
+  ]);
+  for (const op of conflicts) {
+    validateSanitaryConflictOperation(
+      op,
+      results,
+      pendingRecordIds,
+      rejections,
+      gestures,
+      fazendaId,
+    );
+  }
+}
+
+function validateSanitaryConflictOperation(
+  op: Operation,
+  results: Record<string, RemoteRow[]>,
+  pendingRecordIds: ReadonlyMap<string, ReadonlySet<string>>,
+  rejections: Awaited<ReturnType<typeof db.queue_rejections.toArray>>,
+  gestures: Awaited<ReturnType<typeof db.queue_gestures.toArray>>,
+  fazendaId: string,
+) {
+  const id = asRemoteRow(op.record.payload)?.agenda_id;
+  const expected = op.record.expected_revision;
+  const revisions = getSanitaryConflictRevisions(
+    op,
+    rejections,
+    gestures,
+    fazendaId,
+  );
+    if (
+      typeof id === "string" &&
+      pendingRecordIds.get("sanitario_agenda_v2")?.has(id)
+    ) {
+      throw new Error("SANITARIO_CONFLICT_RECONCILIATION_PENDING_OPERATION");
+    }
+    const hasWinner = (results.sanitario_agenda_v2 ?? []).some(
+      (row) =>
+        row.id === id &&
+        row.fazenda_id === fazendaId &&
+        typeof row.revision === "number" &&
+        typeof expected === "number" &&
+        row.revision > expected &&
+        revisions.length > 0 &&
+        row.revision >= Math.max(...revisions),
+    );
+    if (typeof id !== "string" || typeof expected !== "number" || !hasWinner) {
+      throw new Error("SANITARIO_CONFLICT_RECONCILIATION_SNAPSHOT_UNAVAILABLE");
+    }
+}
+
+function getSanitaryConflictRevisions(
+  op: Operation,
+  rejections: Awaited<ReturnType<typeof db.queue_rejections.toArray>>,
+  gestures: Awaited<ReturnType<typeof db.queue_gestures.toArray>>,
+  fazendaId: string,
+) {
+  const rejectionRevisions = rejections
+    .filter(
+      (entry) =>
+        entry.client_op_id === op.client_op_id &&
+        entry.client_tx_id === op.client_tx_id &&
+        entry.fazenda_id === fazendaId &&
+        entry.result_status === "CONFLICT",
+    )
+    .map((entry) => entry.current_revision);
+  const auditRevisions = gestures
+    .filter(
+      (entry) =>
+        entry.client_tx_id === op.client_tx_id &&
+        entry.fazenda_id === fazendaId,
+    )
+    .flatMap((entry) => entry.operation_results ?? [])
+    .filter(
+      (result) =>
+        result.op_id === op.client_op_id && result.status === "CONFLICT",
+    )
+    .map((result) => result.current_revision);
+  return [...rejectionRevisions, ...auditRevisions].filter(
+    (revision): revision is number => typeof revision === "number",
+  );
+}
+
+async function filterObsoleteSanitaryAgendaRows(
+  store: ReturnType<typeof db.table>,
+  rows: RemoteRow[],
+  cursorBlockedTables: Set<string>,
+) {
+  const safeRows: RemoteRow[] = [];
+  for (const row of rows) {
+    const existing =
+      typeof row.id === "string" && typeof row.revision === "number"
+        ? ((await store.get(row.id)) as RemoteRow | undefined)
+        : undefined;
+    if (
+      typeof existing?.revision === "number" &&
+      existing.revision > (row.revision as number)
+    ) {
+      cursorBlockedTables.add("sanitario_agenda_v2");
+    } else {
+      safeRows.push(row);
+    }
+  }
+  return safeRows;
+}
+
+function prepareMergeResults(
+  storesToUpdate: Array<{ remote: string; local: string }>,
+  results: Record<string, RemoteRow[]>,
+  pendingEventIds: ReadonlySet<string>,
+  pendingRecordIds: ReadonlyMap<string, ReadonlySet<string>>,
+) {
+  const effectiveResults: Record<string, RemoteRow[]> = { ...results };
+  const cursorBlockedTables = new Set<string>();
+  for (const { remote } of storesToUpdate) {
+    const protectedResult = protectPendingFactualRows(
+      remote,
+      results[remote] ?? [],
+      pendingEventIds,
+    );
+    const protectedRecords = protectPendingRecordRows(
+      remote,
+      protectedResult.rows,
+      pendingRecordIds,
+    );
+    effectiveResults[remote] = protectedRecords.rows;
+    if (protectedResult.skipped || protectedRecords.skipped)
+      cursorBlockedTables.add(remote);
+  }
+  return { effectiveResults, cursorBlockedTables };
+}
+
+async function writeMergeStore(
+  update: { remote: string; local: string },
+  rows: RemoteRow[],
+  cursorBlockedTables: Set<string>,
+) {
+  const store = db.table(update.local);
+  if (update.remote === "sanitario_agenda_v2") {
+    rows = await filterObsoleteSanitaryAgendaRows(
+      store,
+      rows,
+      cursorBlockedTables,
+    );
+  }
+
+  if (update.remote === "sanitario_produto_carencia_fontes_v2")
+    await store.clear();
+
+  if (rows.length > 0) {
+    if (update.remote === "eventos_animais")
+      await appendEventoAnimais(store, rows);
+    else await store.bulkPut(normalizeCatalogAgendaRows(update.remote, rows));
+  }
+
+  console.log(
+    `[pull] Synced ${rows.length} records for ${update.remote} -> ${update.local} (mode=merge)`,
+  );
+}
+
 async function applyFarmPull(
   fazendaId: string,
   remoteTables: readonly string[],
@@ -694,59 +906,32 @@ async function writeMergeResults(
   cursorUpdates: CursorUpdate[],
   fazendaId: string,
 ) {
-  const protectsFactualRows = storesToUpdate.some(({ remote }) =>
-    PENDING_FACTUAL_REMOTE_TABLES.has(remote),
-  );
-  const pendingEventIds = protectsFactualRows
-    ? await getPendingFactualEventIds()
-    : new Set<string>();
-  const pendingRecordIds = await getPendingRecordIds(
-    storesToUpdate.map(({ remote }) => remote),
-    fazendaId,
-  );
-  const effectiveResults: Record<string, RemoteRow[]> = { ...results };
-  const cursorBlockedTables = new Set<string>();
-  for (const { remote } of storesToUpdate) {
-    const protectedResult = protectPendingFactualRows(
-      remote,
-      results[remote] ?? [],
-      pendingEventIds,
-    );
-    const protectedRecords = protectPendingRecordRows(
-      remote,
-      protectedResult.rows,
-      pendingRecordIds,
-    );
-    effectiveResults[remote] = protectedRecords.rows;
-    if (protectedResult.skipped || protectedRecords.skipped) {
-      cursorBlockedTables.add(remote);
-    }
-  }
   const storeNames = storesToUpdate.map((s) => s.local);
   const transactionStores = hasPullCursorStore()
-    ? [...storeNames, PULL_CURSOR_STORE]
-    : storeNames;
+    ? [...storeNames, PULL_CURSOR_STORE, "queue_ops", "queue_gestures", "queue_rejections"]
+    : [...storeNames, "queue_ops", "queue_gestures", "queue_rejections"];
 
   await db.transaction("rw", transactionStores, async () => {
+    const protectsFactualRows = storesToUpdate.some(({ remote }) => PENDING_FACTUAL_REMOTE_TABLES.has(remote));
+    const pendingEventIds = protectsFactualRows ? await getPendingFactualEventIds() : new Set<string>();
+    const pendingRecordIds = await getPendingRecordIds(storesToUpdate.map(({ remote }) => remote), fazendaId);
+    const { effectiveResults, cursorBlockedTables } = prepareMergeResults(
+      storesToUpdate,
+      results,
+      pendingEventIds,
+      pendingRecordIds,
+    );
+    await validateSanitaryConflictReconciliation(
+      storesToUpdate,
+      results,
+      pendingRecordIds,
+      fazendaId,
+    );
     for (const { remote, local } of storesToUpdate) {
-      const rows = effectiveResults[remote] ?? [];
-      const store = db.table(local);
-
-      // This composite link has no updated_at/deleted_at. Install only a complete
-      // RLS-visible snapshot, in the same transaction as its catalog parents.
-      if (remote === "sanitario_produto_carencia_fontes_v2")
-        await store.clear();
-
-      if (rows.length > 0) {
-        if (remote === "eventos_animais") {
-          await appendEventoAnimais(store, rows as RemoteRow[]);
-        } else {
-          await store.bulkPut(normalizeCatalogAgendaRows(remote, rows));
-        }
-      }
-
-      console.log(
-        `[pull] Synced ${rows.length} records for ${remote} -> ${local} (mode=merge)`,
+      await writeMergeStore(
+        { remote, local },
+        effectiveResults[remote] ?? [],
+        cursorBlockedTables,
       );
     }
 
@@ -1354,6 +1539,18 @@ async function pullSanitarioProtocolCatalogSnapshotV2(): Promise<SanitarioProtoc
   return buildProtocolCatalogPullResult(protocolsFullFetch, protocolRows, storesToUpdate.length);
 }
 
+async function readPullRows<T extends { data: unknown[] | null; error: unknown | null }>(
+  query: PromiseLike<T>,
+  label: string,
+): Promise<RemoteRow[]> {
+  const { data, error } = await query;
+  if (error) {
+    console.error(`[pull] Error pulling ${label}:`, error);
+    throw error;
+  }
+  return (data ?? []) as RemoteRow[];
+}
+
 export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
   console.log(
     `[pull] Starting sanitario agenda v2 pull for farm ${fazenda_id}`,
@@ -1369,15 +1566,10 @@ export const pullSanitarioAgendaV2 = async (fazenda_id: string) => {
       supabase.from(remoteTable).select("*").eq("fazenda_id", fazenda_id),
       cursorKey,
     );
-    const { data, error } = await query;
-
-    if (error) {
-      console.error(`[pull] Error pulling agenda v2 ${remoteTable}:`, error);
-      throw error;
-    }
-
-    const rows = (data ?? []) as RemoteRow[];
-    results[remoteTable] = rows;
+    const rows = await readPullRows(query, `agenda v2 ${remoteTable}`);
+    results[remoteTable] = remoteTable === "sanitario_agenda_v2"
+      ? mergeConflictedSanitaryAgendas(rows, await fetchConflictedSanitaryAgendas(fazenda_id))
+      : rows;
     cursorUpdates.push({
       key: cursorKey,
       remoteTable,
@@ -1441,13 +1633,10 @@ export const pullSanitarioV2CutoverState = async (fazendaId: string) => {
       remoteTable === "eventos_animais"
         ? baseQuery
         : await applyUpdatedAtCursor(baseQuery, cursorKey);
-    const { data, error } = await query;
-    if (error) {
-      console.error(`[pull] Error pulling sanitario v2 ${remoteTable}:`, error);
-      throw error;
-    }
-    const rows = (data ?? []) as RemoteRow[];
-    results[remoteTable] = rows;
+    const rows = await readPullRows(query, `sanitario v2 ${remoteTable}`);
+    results[remoteTable] = remoteTable === "sanitario_agenda_v2"
+      ? mergeConflictedSanitaryAgendas(rows, await fetchConflictedSanitaryAgendas(fazendaId))
+      : rows;
     if (remoteTable !== "eventos_animais") {
       cursorUpdates.push({
         key: cursorKey,
