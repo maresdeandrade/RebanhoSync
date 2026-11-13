@@ -264,6 +264,135 @@ describe("sanitario v2 incremental pull cursors", () => {
     expect(await db.sync_pull_cursors.get(`${table}:unscoped:null`)).toBeUndefined();
   });
   const fazendaId = "farm-cursor-12e5";
+  async function addConflictEvidence(opId: string) {
+    const op = await db.queue_ops.get(opId);
+    if (!op) throw new Error("missing test operation");
+    return db.queue_rejections.add({ client_op_id: opId, client_tx_id: op.client_tx_id, fazenda_id: fazendaId, table: "sanitario_v2", action: "INSERT", reason_code: "SANITARIO_AGENDA_REVISION_CONFLICT", reason_message: "conflict", result_status: "CONFLICT", current_revision: 2, created_at: "2026-11-01" });
+  }
+  it("usa o resultado durável do gesto se a rejeição temporária tiver expirado", async () => {
+    const id = crypto.randomUUID(), opId = crypto.randomUUID(), tx = crypto.randomUUID();
+    const local = { id, fazenda_id: fazendaId, status: "programada", data_programada: "2026-11-09", revision: 1, updated_at: "2026-11-01T00:00:00Z" };
+    await db.ops_sanitario_agenda_v2.put(local as never);
+    await db.queue_ops.put({ client_op_id: opId, client_tx_id: tx, table: "sanitario_v2", action: "INSERT", sync_state: "REJECTED", blocked_reason: "SANITARIO_AGENDA_REVISION_CONFLICT", created_at: "2026-11-01", record: { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: fazendaId, expected_revision: 1, payload: { agenda_id: id, data_programada: "2026-11-09" } } });
+    await db.queue_gestures.put({ client_tx_id: tx, fazenda_id: fazendaId, client_id: "client", status: "REJECTED", created_at: "2026-11-01", operation_results: [{ op_id: opId, status: "CONFLICT", current_revision: 2, matched: true, recorded_at: "2026-11-01" }] });
+    remoteRows.sanitario_agenda_v2 = [{ ...local, revision: 2, data_programada: "2026-11-08" }];
+    try {
+      await pullSanitarioAgendaV2(fazendaId);
+      expect(await db.ops_sanitario_agenda_v2.get(id)).toMatchObject({ data_programada: "2026-11-08", revision: 2 });
+      expect(await db.queue_ops.get(opId)).toMatchObject({ sync_state: "REJECTED" });
+    } finally { await db.queue_ops.delete(opId); await db.queue_gestures.delete(tx); }
+  });
+  it.each(["PENDING", "RETRYABLE", "BLOCKED_DEPENDENCY", "RECONCILE"] as const)("mantém reconciliação pendente quando intenção %s protege a mesma Agenda", async (pendingState) => {
+    const id = crypto.randomUUID(), rejectedId = crypto.randomUUID(), pendingId = crypto.randomUUID(), tx = crypto.randomUUID();
+    const local = { id, fazenda_id: fazendaId, status: "programada", data_programada: "2026-11-10", revision: 1, updated_at: "2026-11-01T00:00:00Z" };
+    const record = { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: fazendaId, expected_revision: 1, payload: { agenda_id: id, data_programada: "2026-11-09" } };
+    await db.ops_sanitario_agenda_v2.put(local as never);
+    await db.queue_ops.bulkPut([
+      { client_op_id: rejectedId, client_tx_id: tx, table: "sanitario_v2", action: "INSERT", sync_state: "REJECTED", blocked_reason: "SANITARIO_AGENDA_REVISION_CONFLICT", created_at: "2026-11-01", record },
+      { client_op_id: pendingId, client_tx_id: tx, table: "sanitario_v2", action: "INSERT", sync_state: pendingState, created_at: "2026-11-02", record: { ...record, payload: { agenda_id: id, data_programada: "2026-11-10" } } },
+    ]);
+    const rejectionId = await addConflictEvidence(rejectedId);
+    remoteRows.sanitario_agenda_v2 = [{ ...local, revision: 2, data_programada: "2026-11-08" }];
+    try {
+      await expect(pullSanitarioAgendaV2(fazendaId)).rejects.toThrow("SANITARIO_CONFLICT_RECONCILIATION_PENDING_OPERATION");
+      expect(await db.ops_sanitario_agenda_v2.get(id)).toMatchObject({ data_programada: "2026-11-10", revision: 1 });
+      expect(await db.queue_ops.get(pendingId)).toMatchObject({ sync_state: pendingState });
+    } finally { await db.queue_ops.bulkDelete([rejectedId, pendingId]); await db.queue_rejections.delete(rejectionId); }
+  });
+  it("não instala snapshot anterior à revisão informada no conflito", async () => {
+    const id = crypto.randomUUID(), opId = crypto.randomUUID(), txId = crypto.randomUUID();
+    const local = { id, fazenda_id: fazendaId, status: "programada", data_programada: "2026-11-09", revision: 1, updated_at: "2026-11-01T00:00:00Z" };
+    await db.ops_sanitario_agenda_v2.put(local as never);
+    await db.queue_ops.put({ client_op_id: opId, client_tx_id: txId, table: "sanitario_v2", action: "INSERT", sync_state: "REJECTED", blocked_reason: "SANITARIO_AGENDA_REVISION_CONFLICT", created_at: "2026-11-01", record: { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: fazendaId, expected_revision: 1, payload: { agenda_id: id, data_programada: "2026-11-09" } } });
+    const oldRejectionId = await addConflictEvidence(opId);
+    const rejectionId = await db.queue_rejections.add({ client_op_id: opId, client_tx_id: txId, fazenda_id: fazendaId, table: "sanitario_v2", action: "INSERT", reason_code: "SANITARIO_AGENDA_REVISION_CONFLICT", reason_message: "conflict", result_status: "CONFLICT", current_revision: 3, created_at: "2026-11-01" });
+    remoteRows.sanitario_agenda_v2 = [{ ...local, data_programada: "2026-11-08", revision: 2, updated_at: "2026-11-02T00:00:00Z" }];
+    try {
+      await expect(pullSanitarioAgendaV2(fazendaId)).rejects.toThrow("SANITARIO_CONFLICT_RECONCILIATION_SNAPSHOT_UNAVAILABLE");
+      expect(await db.ops_sanitario_agenda_v2.get(id)).toMatchObject({ revision: 1, data_programada: "2026-11-09" });
+    } finally { await db.queue_ops.delete(opId); await db.queue_rejections.bulkDelete([oldRejectionId, rejectionId]); }
+  });
+  it("protege intenção criada após o fetch e antes da instalação do pull", async () => {
+    const id = crypto.randomUUID(), opId = crypto.randomUUID();
+    const remote = { id, fazenda_id: fazendaId, status: "programada", data_programada: "2026-11-08", revision: 2, updated_at: "2026-11-02T00:00:00Z" };
+    remoteRows.sanitario_agenda_v2 = [remote];
+    const originalTransaction = db.transaction.bind(db);
+    const transaction = vi.spyOn(db, "transaction").mockImplementationOnce((async (...args: unknown[]) => {
+      await db.ops_sanitario_agenda_v2.put({ ...remote, data_programada: "2026-11-10" } as never);
+      await db.queue_ops.put({ client_op_id: opId, client_tx_id: crypto.randomUUID(), table: "sanitario_v2", action: "INSERT", sync_state: "PENDING", created_at: "2026-11-02", record: { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: fazendaId, expected_revision: 2, payload: { agenda_id: id, data_programada: "2026-11-10" } } });
+      return (originalTransaction as (...values: unknown[]) => unknown)(...args);
+    }) as typeof db.transaction);
+    try {
+      await pullSanitarioAgendaV2(fazendaId);
+      expect(await db.ops_sanitario_agenda_v2.get(id)).toMatchObject({ data_programada: "2026-11-10", revision: 2 });
+      expect(await db.queue_ops.get(opId)).toMatchObject({ sync_state: "PENDING" });
+      expect(await db.sync_pull_cursors.get(`sanitario_agenda_v2:fazenda:${fazendaId}`)).toBeUndefined();
+    } finally { transaction.mockRestore(); await db.queue_ops.delete(opId); }
+  });
+  it("não conclui pull sem snapshot vencedor e recupera a mesma rejeição quando ele reaparece", async () => {
+    const id = crypto.randomUUID(), opId = crypto.randomUUID(), txId = crypto.randomUUID();
+    const local = { id, fazenda_id: fazendaId, status: "programada", data_programada: "2026-11-09", revision: 1, updated_at: "2026-11-01T00:00:00Z" };
+    const record = { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: fazendaId, expected_revision: 1, payload: { agenda_id: id, data_programada: "2026-11-09" } };
+    await db.ops_sanitario_agenda_v2.put(local as never);
+    await db.queue_ops.put({ client_op_id: opId, client_tx_id: txId, table: "sanitario_v2", action: "INSERT", sync_state: "REJECTED", blocked_reason: "SANITARIO_AGENDA_REVISION_CONFLICT", created_at: "2026-11-01", record });
+    const rejectionId = await addConflictEvidence(opId);
+    try {
+      await expect(pullSanitarioAgendaV2(fazendaId)).rejects.toThrow("SANITARIO_CONFLICT_RECONCILIATION_SNAPSHOT_UNAVAILABLE");
+      expect(await db.ops_sanitario_agenda_v2.get(id)).toMatchObject({ data_programada: "2026-11-09", revision: 1 });
+      expect(await db.sync_pull_cursors.get(`sanitario_agenda_v2:fazenda:${fazendaId}`)).toBeUndefined();
+      expect(await db.queue_ops.get(opId)).toMatchObject({ client_tx_id: txId, sync_state: "REJECTED", record });
+      remoteRows.sanitario_agenda_v2 = [{ ...local, data_programada: "2026-11-08", revision: 2, updated_at: "2026-11-02T00:00:00Z" }];
+      await pullSanitarioAgendaV2(fazendaId);
+      expect(await db.ops_sanitario_agenda_v2.get(id)).toMatchObject({ data_programada: "2026-11-08", revision: 2 });
+      expect(await db.queue_ops.get(opId)).toMatchObject({ client_tx_id: txId, sync_state: "REJECTED", record });
+    } finally { await db.queue_ops.delete(opId); await db.queue_rejections.delete(rejectionId); }
+  });
+  it("não troca uma Agenda de revisão superior por snapshot remoto obsoleto", async () => {
+    const id = crypto.randomUUID();
+    const newer = { id, fazenda_id: fazendaId, status: "programada", data_programada: "2026-11-10", revision: 3, updated_at: "2026-11-03T00:00:00Z" };
+    await db.ops_sanitario_agenda_v2.put(newer as never);
+    remoteRows.sanitario_agenda_v2 = [{ ...newer, data_programada: "2026-11-08", revision: 2, updated_at: "2026-11-02T00:00:00Z" }];
+    await pullSanitarioAgendaV2(fazendaId);
+    expect(await db.ops_sanitario_agenda_v2.get(id)).toMatchObject({ data_programada: "2026-11-10", revision: 3 });
+    expect(await db.sync_pull_cursors.get(`sanitario_agenda_v2:fazenda:${fazendaId}`)).toBeUndefined();
+  });
+  it("recupera revisão vencedora mais antiga que o cursor da tabela após conflito", async () => {
+    const agendaId = crypto.randomUUID(), opId = crypto.randomUUID();
+    const local = { id: agendaId, fazenda_id: fazendaId, status: "programada", data_programada: "2026-11-09", revision: 1, updated_at: "2026-11-01T00:00:00Z" };
+    await db.ops_sanitario_agenda_v2.put(local as never);
+    await db.queue_ops.put({ client_op_id: opId, client_tx_id: crypto.randomUUID(), table: "sanitario_v2", action: "INSERT", sync_state: "REJECTED", blocked_reason: "SANITARIO_AGENDA_REVISION_CONFLICT", created_at: "2026-11-01", record: { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: fazendaId, expected_revision: 1, payload: { agenda_id: agendaId, data_programada: "2026-11-09" } } });
+    const rejectionId = await addConflictEvidence(opId);
+    await db.sync_pull_cursors.put({ key: `sanitario_agenda_v2:fazenda:${fazendaId}`, remote_table: "sanitario_agenda_v2", local_store: "ops_sanitario_agenda_v2", scope: "fazenda", fazenda_id: fazendaId, last_updated_at: "2026-11-03T00:00:00Z", last_id: null, updated_at: "2026-11-03T00:00:00Z" });
+    remoteRows.sanitario_agenda_v2 = [{ ...local, data_programada: "2026-11-08", revision: 2, updated_at: "2026-11-02T00:00:00Z" }];
+    try {
+      await pullSanitarioAgendaV2(fazendaId);
+      expect(await db.ops_sanitario_agenda_v2.get(agendaId)).toMatchObject({ data_programada: "2026-11-08", revision: 2 });
+      expect(await db.queue_ops.get(opId)).toMatchObject({ sync_state: "REJECTED" });
+    } finally { await db.queue_ops.delete(opId); await db.queue_rejections.delete(rejectionId); }
+  });
+  it("reconcilia reagendamento em conflito sem perder evidência nem sobrescrever outra intenção pendente da mesma transação", async () => {
+    const tx = crypto.randomUUID(), rejectedId = crypto.randomUUID(), pendingId = crypto.randomUUID();
+    const rejectedAgenda = crypto.randomUUID(), pendingAgenda = crypto.randomUUID();
+    const original = { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: fazendaId,
+      payload: { agenda_id: rejectedAgenda, data_programada: "2026-11-09" }, expected_revision: 1 };
+    const row = (id: string, date: string, revision: number) => ({ id, fazenda_id: fazendaId,
+      data_programada: date, revision, status: "programada", updated_at: "2026-11-11T10:00:00Z" });
+    await db.ops_sanitario_agenda_v2.bulkPut([row(rejectedAgenda, "2026-11-09", 1), row(pendingAgenda, "2026-11-12", 1)] as never[]);
+    await db.queue_ops.bulkPut([
+      { client_op_id: rejectedId, client_tx_id: tx, domain_op_id: crypto.randomUUID(), table: "sanitario_v2", action: "INSERT", sync_state: "REJECTED", blocked_reason: "SANITARIO_AGENDA_REVISION_CONFLICT", created_at: "2026-11-11", record: original },
+      { client_op_id: pendingId, client_tx_id: tx, domain_op_id: crypto.randomUUID(), table: "sanitario_v2", action: "INSERT", sync_state: "RETRYABLE", created_at: "2026-11-11", record: { ...original, payload: { agenda_id: pendingAgenda, data_programada: "2026-11-12" } } },
+    ]);
+    const rejectionId = await addConflictEvidence(rejectedId);
+    remoteRows.sanitario_agenda_v2 = [row(rejectedAgenda, "2026-11-08", 2), row(pendingAgenda, "2026-11-10", 2)];
+    try {
+      await pullSanitarioAgendaV2(fazendaId);
+      expect(await db.ops_sanitario_agenda_v2.get(rejectedAgenda)).toMatchObject({ data_programada: "2026-11-08", revision: 2 });
+      expect(await db.ops_sanitario_agenda_v2.get(pendingAgenda)).toMatchObject({ data_programada: "2026-11-12", revision: 1 });
+      expect(await db.queue_ops.get(rejectedId)).toMatchObject({ client_tx_id: tx, sync_state: "REJECTED", record: original });
+      expect(await db.queue_ops.get(pendingId)).toMatchObject({ sync_state: "RETRYABLE" });
+      expect(await db.sync_pull_cursors.get(`sanitario_agenda_v2:fazenda:${fazendaId}`)).toBeUndefined();
+    } finally { await db.queue_ops.bulkDelete([rejectedId, pendingId]); await db.queue_rejections.delete(rejectionId); }
+  });
   it("não avança cursor de participante dispensado antes do ACK e instala o remoto depois", async () => {
     const table = "sanitario_agenda_animais_v2", agendaId = crypto.randomUUID(), animalId = crypto.randomUUID();
     const opId = crypto.randomUUID();

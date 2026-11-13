@@ -74,6 +74,7 @@ async function clearScope() {
     db.catalog_sanitario_protocolos_v2.clear(),
     db.catalog_sanitario_protocolo_itens_versions_v2.clear(),
     db.queue_ops.clear(),
+    db.sync_reconcile_obligations.clear(),
     db.event_eventos.clear(),
     db.event_eventos_sanitario.clear(),
     db.state_insumo_movimentacoes.clear(),
@@ -81,6 +82,14 @@ async function clearScope() {
 }
 
 describe("sanitaryLocalAgendaManagementV2", () => {
+  it("sinaliza a data rejeitada enquanto a obrigação de pull permanece", async () => {
+    await db.ops_sanitario_agenda_v2.put(agenda());
+    await db.queue_ops.put({ client_op_id: "conflict-op", client_tx_id: "conflict-tx", table: "sanitario_v2", action: "INSERT", sync_state: "REJECTED", blocked_reason: "SANITARIO_AGENDA_REVISION_CONFLICT", created_at: "2026-11-01", record: { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: "farm-1", payload: { agenda_id: "agenda-1" } } });
+    await db.sync_reconcile_obligations.put({ key: "farm-1:sanitario-v2", fazenda_id: "farm-1", scope: "sanitario-v2", generation_id: "generation", created_at: "2026-11-01", updated_at: "2026-11-01", diagnostics: { origins: [{ client_tx_id: "conflict-tx", client_op_ids: ["conflict-op"] }] } });
+    expect((await listLocalSanitaryAgendasV2("farm-1", db))[0]).toMatchObject({ reconciliationPending: true });
+    await db.sync_reconcile_obligations.delete("farm-1:sanitario-v2");
+    expect((await listLocalSanitaryAgendasV2("farm-1", db))[0]).toMatchObject({ reconciliationPending: false });
+  });
   it("reagenda dado persistido V2 com comando V3 preservando identidade e metadados históricos",async()=>{
     const storage=new Map<string,string>();
     vi.stubGlobal("localStorage",{getItem:(key:string)=>storage.get(key)??null,setItem:(key:string,value:string)=>storage.set(key,value),removeItem:(key:string)=>storage.delete(key)});

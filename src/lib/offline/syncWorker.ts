@@ -709,10 +709,21 @@ async function executeReconciliationForScope(
       await pullSanitarioAgendaV2(fazendaId);
       return;
     case "sanitario-v2":
-      await pullSanitarioV2CutoverState(fazendaId);
-      await recoverBlockedSanitarioV2Operations("reconciliation_drain");
-      return;
+      return executeSanitaryReconciliation(fazendaId);
   }
+}
+
+async function executeSanitaryReconciliation(fazendaId: string): Promise<void> {
+  try {
+    await pullSanitarioV2CutoverState(fazendaId);
+  } catch (error) {
+    if (error instanceof Error && error.message === "SANITARIO_CONFLICT_RECONCILIATION_PENDING_OPERATION")
+      await recoverSanitaryMissingAgendaDependencies(fazendaId);
+    throw error;
+  }
+  if (await recoverSanitaryMissingAgendaDependencies(fazendaId))
+    throw new Error("SANITARIO_AGENDA_DEPENDENCY_RECONCILIATION_PENDING");
+  await recoverBlockedSanitarioV2Operations("reconciliation_drain");
 }
 
 export async function drainReconciliationObligations(fazendaId: string | null) {
@@ -1294,6 +1305,12 @@ async function processSanitarioCanonicalResults(
 
   const sanitarioV2CutoverRequired =
     deriveSanitarioV2CutoverRequired(matchedForReconcile);
+  const missingAgendaDependency = matchedForReconcile.some(({ op, result }) =>
+    op.table === "sanitario_v2" && op.record?.domain === "sanitario_v2" &&
+    op.record.contract_version === 3 && op.record.command === "reschedule_agenda" &&
+    result.status === "BLOCKED_DEPENDENCY" && result.reason_code === "SANITARIO_AGENDA_NOT_FOUND" &&
+    operationUpdates.get(op.client_op_id)?.sync_state === "BLOCKED_DEPENDENCY",
+  );
 
   let ackCommitted = false;
   await db.transaction(
@@ -1342,7 +1359,7 @@ async function processSanitarioCanonicalResults(
           });
         }
       }
-      if (sanitarioV2CutoverRequired) {
+      if (sanitarioV2CutoverRequired || missingAgendaDependency) {
         await upsertReconciliationObligations([
           { fazendaId: gesture.fazenda_id, scope: "sanitario-v2",
             origins: [{ client_tx_id: gesture.client_tx_id,
@@ -1718,6 +1735,87 @@ export type SanitarioV2RecoveryTrigger =
   | "contract_version_updated"
   | "remote_dependency_recovered";
 
+function isMissingSanitaryAgendaDependency(op: Operation, fazendaId: string): boolean {
+  return op.sync_state === "BLOCKED_DEPENDENCY" && op.blocked_reason === "SANITARIO_AGENDA_NOT_FOUND" &&
+    op.table === "sanitario_v2" && op.record?.domain === "sanitario_v2" && op.record.contract_version === 3 &&
+    op.record.command === "reschedule_agenda" && op.record.fazenda_id === fazendaId;
+}
+
+function missingAgendaRecoveryTarget(op: Operation): { id: string; revision: number } | null {
+  const envelope = op.record;
+  const id = envelope.payload?.agenda_id, revision = envelope.expected_revision;
+  if (typeof id !== "string" || typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0 ||
+      envelope.client_op_id !== op.client_op_id || envelope.client_tx_id !== op.client_tx_id ||
+      envelope.domain_op_id !== op.domain_op_id) return null;
+  return { id, revision };
+}
+
+function hasRecoverableMissingAgendaEvidence(op: Operation, gesture: Gesture | undefined, operations: Operation[], fazendaId: string): boolean {
+  if (gesture?.fazenda_id !== fazendaId || gesture.status !== "ERROR") return false;
+  const result = gesture.operation_results?.find(row => row.op_id === op.client_op_id &&
+    row.client_op_id === op.client_op_id && row.domain_op_id === op.domain_op_id && row.matched &&
+    row.status === "BLOCKED_DEPENDENCY" && row.reason_code === "SANITARIO_AGENDA_NOT_FOUND");
+  return Boolean(result) && !findTerminalSanitaryPlanningDependencyV2(op, operations, gesture.operation_results ?? []) &&
+    !hasPendingSanitaryPlanningDependencyV2(op, operations);
+}
+
+async function rearmMissingAgendaIfUnchanged(op: Operation, gesture: Gesture, ownerUserId: string, sessionChanged: () => boolean) {
+  await db.transaction("rw", [db.queue_ops, db.queue_gestures, db.local_ownership], async () => {
+    const owner = await evaluateLocalOwnership(ownerUserId);
+    const current = await db.queue_ops.get(op.client_op_id);
+    const currentGesture = await db.queue_gestures.get(op.client_tx_id);
+    const allOps = await db.queue_ops.toArray();
+    if (sessionChanged() || owner.status !== "OWNED" || JSON.stringify(current) !== JSON.stringify(op) ||
+        JSON.stringify(currentGesture) !== JSON.stringify(gesture) ||
+        !hasRecoverableMissingAgendaEvidence(op, currentGesture, allOps, gesture.fazenda_id)) return;
+    await db.queue_ops.update(op.client_op_id, { sync_state: "PENDING", blocked_reason: undefined, next_attempt_at: undefined });
+    await db.queue_gestures.update(op.client_tx_id, { status: "PENDING", sync_result: undefined, completed_at: undefined,
+      last_error: "sanitario_v2 missing Agenda verified; retrying original operation" });
+    if (sessionChanged()) throw new Error("SANITARIO_RECOVERY_AUTH_CHANGED");
+  });
+}
+
+async function isSanitaryAgendaReadyForCas(fazendaId: string, target: { id: string; revision: number }): Promise<boolean> {
+  const remote = await supabase.from("sanitario_agenda_v2").select("id,fazenda_id,revision")
+    .eq("fazenda_id", fazendaId).eq("id", target.id).maybeSingle();
+  if (remote.error) throw remote.error;
+  return Boolean(remote.data && remote.data.id === target.id && remote.data.fazenda_id === fazendaId &&
+    typeof remote.data.revision === "number" && remote.data.revision >= target.revision);
+}
+
+async function recoverOneMissingAgenda(op: Operation, operations: Operation[], fazendaId: string, ownerUserId: string, sessionChanged: () => boolean) {
+  const target = missingAgendaRecoveryTarget(op);
+  const gesture = await db.queue_gestures.get(op.client_tx_id);
+  if (!target || !gesture || !hasRecoverableMissingAgendaEvidence(op, gesture, operations, fazendaId)) return;
+  if (!await isSanitaryAgendaReadyForCas(fazendaId, target) || sessionChanged()) return;
+  const currentOwnership = await getCurrentLocalReadOwnership();
+  if (sessionChanged() || currentOwnership.status !== "OWNED" || currentOwnership.currentUserId !== ownerUserId) return;
+  await rearmMissingAgendaIfUnchanged(op, gesture, ownerUserId, sessionChanged);
+}
+
+/** Re-arm only when the visible Agenda can be decided by server CAS without rebasing. */
+async function recoverSanitaryMissingAgendaDependencies(fazendaId: string): Promise<number> {
+  const ownership = await getCurrentLocalReadOwnership();
+  if (ownership.status !== "OWNED" || !ownership.currentUserId)
+    throw new Error("SANITARIO_DEPENDENCY_RECOVERY_AUTH_UNAVAILABLE");
+  const ownerUserId = ownership.currentUserId;
+  let sessionChanged = false;
+  const subscription = supabase.auth.onAuthStateChange?.((_event, session) => {
+    if (session?.user.id !== ownerUserId) sessionChanged = true;
+  })?.data.subscription;
+  try {
+    const operations = await db.queue_ops.toArray();
+    const candidates = operations.filter(op => isMissingSanitaryAgendaDependency(op, fazendaId));
+    for (const op of candidates) {
+      await recoverOneMissingAgenda(op, operations, fazendaId, ownerUserId, () => sessionChanged);
+    }
+    // A waiting or newly re-armed operation still needs its durable obligation.
+    return candidates.length;
+  } finally {
+    subscription?.unsubscribe();
+  }
+}
+
 export async function recoverBlockedSanitarioV2Operations(
   trigger: SanitarioV2RecoveryTrigger,
   excludedOpIds: ReadonlySet<string> = new Set(),
@@ -1729,6 +1827,7 @@ export async function recoverBlockedSanitarioV2Operations(
     .filter(
       (op) =>
         op.sync_state === "BLOCKED_DEPENDENCY" &&
+        !(op.record?.domain === "sanitario_v2" && op.record.contract_version === 3 && op.record.command === "reschedule_agenda") &&
         ![
           "SANITARIO_V3_EXECUTION_NOT_ENABLED",
           "SANITARIO_FOUNDATION_COMPANION_REQUIRES_RECONCILIATION",
@@ -3163,7 +3262,16 @@ async function runOwnedSyncWork(): Promise<boolean> {
   if (ownership.status !== "OWNED") return false;
 
   await runInitialOfflinePullForActiveFarmOnce();
-  await drainReconciliationObligations(getActiveFarmId());
+  const activeFarmId = getActiveFarmId();
+  if (activeFarmId) {
+    const blocked = (await db.queue_ops.toArray()).filter(op => isMissingSanitaryAgendaDependency(op, activeFarmId));
+    const obligations = blocked.length ? await listReconciliationObligations(activeFarmId) : [];
+    if (blocked.length && !obligations.some(entry => entry.scope === "sanitario-v2")) {
+      await upsertReconciliationObligations([{ fazendaId: activeFarmId, scope: "sanitario-v2",
+        origins: blocked.map(op => ({ client_tx_id: op.client_tx_id, client_op_ids: [op.client_op_id] })) }]);
+    }
+  }
+  await drainReconciliationObligations(activeFarmId);
   if (!startupRecoveryDone) {
     await recoverErroredGesturesOnce();
     await recoverBlockedSanitarioV2Operations("app_startup");

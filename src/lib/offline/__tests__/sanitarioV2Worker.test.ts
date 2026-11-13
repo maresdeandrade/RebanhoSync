@@ -112,6 +112,23 @@ async function loadGesture(clientTxId: string) {
 }
 
 describe("sanitario_v2 canonical worker/reconcile", () => {
+  it("persiste obrigação ao bloquear reagendamento V3 por Agenda ausente e não rearma sem observação", async () => {
+    const { gesture, ops } = await seedGesture(["reschedule_agenda"], "missing-agenda-v3");
+    await db.queue_ops.update(ops[0].client_op_id, { table: "sanitario_v2", record: { ...ops[0].record, contract_version: 3, fazenda_id: FAZENDA_ID, expected_revision: 1, payload: { agenda_id: "agenda-missing", data_programada: "2026-11-12" } } });
+    respondWith([{ op_id: ops[0].client_op_id, client_op_id: ops[0].client_op_id, domain_op_id: ops[0].domain_op_id, status: "BLOCKED_DEPENDENCY", reason_code: "SANITARIO_AGENDA_NOT_FOUND", retryable: false }]);
+    await processGesture(gesture);
+    expect(await db.queue_ops.get(ops[0].client_op_id)).toMatchObject({ sync_state: "BLOCKED_DEPENDENCY", blocked_reason: "SANITARIO_AGENDA_NOT_FOUND" });
+    expect(await db.sync_reconcile_obligations.get(`${FAZENDA_ID}:sanitario-v2`)).toMatchObject({ diagnostics: { origins: [{ client_tx_id: gesture.client_tx_id, client_op_ids: [ops[0].client_op_id] }] } });
+    await recoverBlockedSanitarioV2Operations("app_startup");
+    expect(await db.queue_ops.get(ops[0].client_op_id)).toMatchObject({ sync_state: "BLOCKED_DEPENDENCY" });
+  });
+  it("não rearma reagendamento V3 por motivo não comprovado apenas pelo gatilho genérico", async () => {
+    const { gesture, ops } = await seedGesture(["reschedule_agenda"], "unknown-dependency-v3");
+    await db.queue_ops.update(ops[0].client_op_id, { table: "sanitario_v2", sync_state: "BLOCKED_DEPENDENCY", blocked_reason: "SANITARIO_SYNC_V2_DEPENDENCY_UNAVAILABLE", record: { ...ops[0].record, contract_version: 3, fazenda_id: FAZENDA_ID } });
+    await db.queue_gestures.update(gesture.client_tx_id, { status: "ERROR", sync_result: "ERROR" });
+    expect(await recoverBlockedSanitarioV2Operations("app_startup")).toBe(0);
+    expect(await db.queue_ops.get(ops[0].client_op_id)).toMatchObject({ sync_state: "BLOCKED_DEPENDENCY", blocked_reason: "SANITARIO_SYNC_V2_DEPENDENCY_UNAVAILABLE" });
+  });
   it.each([true, false])("preserva consequência animal no retry após ACK do Evento (sanitário=%s)", async (withSanitary) => {
     const { gesture, ops } = await seedGesture(withSanitary ? ["death_participant"] : [], "death-state-retry");
     const eventId = "death-state-event", animalId = "death-state-animal";

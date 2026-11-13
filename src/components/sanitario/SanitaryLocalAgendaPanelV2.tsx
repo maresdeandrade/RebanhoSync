@@ -148,6 +148,12 @@ function selectedCompatibilityMessage(items: SanitaryLocalAgendaListItemV2[]) {
   return null;
 }
 
+function reconciliationBadge(items: SanitaryLocalAgendaListItemV2[]) {
+  return items.some((item) => item.reconciliationPending) ? (
+    <Badge variant="destructive">Conflito: reconciliação pendente</Badge>
+  ) : null;
+}
+
 export function SanitaryLocalAgendaPanelV2({
   renderCollaboration,
   items,
@@ -367,6 +373,7 @@ export function SanitaryLocalAgendaPanelV2({
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      {reconciliationBadge(group.items)}
                       <Badge variant={group.status === "programada" ? "default" : "secondary"}>{statusLabels[group.status]}</Badge>
                       <Button type="button" variant="ghost" size="sm" onClick={() => toggleGroupExpanded(group.key)}>
                         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -392,7 +399,7 @@ export function SanitaryLocalAgendaPanelV2({
                     <div className="md:col-span-2">
                       <div className="divide-y rounded-lg border border-border">
                         {group.items.map((item) => (
-                          <div key={item.id} className="grid gap-3 p-3 text-sm md:grid-cols-[auto_1fr_auto] md:items-center">
+                          <div key={item.id} className="grid gap-3 p-3 text-sm md:grid-cols-3 md:items-center">
                             <Checkbox
                               aria-label={`Selecionar agenda ${item.target.label}`}
                               checked={selectedAgendaIds.has(item.id)}

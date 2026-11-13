@@ -83,7 +83,7 @@ export function buildAgendaBaseRows(
       const animal = item.animal_id ? animalById.get(item.animal_id) : null;
       const resolvedLoteId = item.lote_id ?? animal?.lote_id ?? null;
       const lote = resolvedLoteId ? loteById.get(resolvedLoteId) : null;
-      const syncStage = getGestureSyncStage(
+      const syncStage = item.payload?.source === "ops_sanitario_agenda_v2" && item.payload?.sanitary_reconciliation_pending === true ? "rejected" : getGestureSyncStage(
         item.client_tx_id ? gestoByTx.get(item.client_tx_id) ?? null : null,
       );
 

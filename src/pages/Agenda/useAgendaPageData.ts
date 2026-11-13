@@ -1,6 +1,8 @@
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { db } from "@/lib/offline/db";
+import { findUnreconciledSanitaryAgendaConflicts } from "@/lib/offline/sanitaryAgendaConflictPresentation";
+import type { ReconciliationObligation } from "@/lib/offline/reconciliationTypes";
 import type {
   AgendaItem,
   Animal,
@@ -8,6 +10,7 @@ import type {
   CatalogoProtocoloOficialItem,
   FazendaSanidadeConfig,
   Gesture,
+  Operation,
   Lote,
   ProtocoloSanitario,
   ProtocoloSanitarioItem,
@@ -31,6 +34,8 @@ type AgendaPageDataRaw = {
   officialTemplateItems?: CatalogoProtocoloOficialItem[] | null;
   sanitaryAgendasV2?: SanitarioAgendaLocalV2[] | null;
   sanitaryAgendaAnimalsV2?: SanitarioAgendaAnimalLocalV2[] | null;
+  sanitaryOperations?: Operation[] | null;
+  reconciliationObligations?: ReconciliationObligation[] | null;
 };
 
 function readText(source: Record<string, unknown> | null | undefined, key: string) {
@@ -44,11 +49,30 @@ function mapSanitaryAgendaStatus(status: SanitarioAgendaLocalV2["status"]) {
   return "agendado";
 }
 
+function activeRows<T extends { deleted_at?: string | null }>(
+  rows: readonly T[] | null | undefined,
+) {
+  return (rows ?? []).filter((row) => !row.deleted_at);
+}
+
+function readFarmRows<T>(
+  table: {
+    where: (index: string) => {
+      equals: (value: string) => { toArray: () => Promise<T[]> };
+    };
+  },
+  farmId: string,
+) {
+  return table.where("fazenda_id").equals(farmId).toArray();
+}
+
 function buildSanitaryAgendaV2AdapterItems(input: {
   agendas: SanitarioAgendaLocalV2[];
   agendaAnimals: SanitarioAgendaAnimalLocalV2[];
   animals: Animal[];
   lots: Lote[];
+  operations: Operation[];
+  obligations: ReconciliationObligation[];
 }): AgendaItem[] {
   const animalsById = new Map(input.animals.map((animal) => [animal.id, animal]));
   const lotsById = new Map(input.lots.map((lot) => [lot.id, lot]));
@@ -63,6 +87,7 @@ function buildSanitaryAgendaV2AdapterItems(input: {
   return input.agendas
     .filter((agenda) => !agenda.deleted_at)
     .map((agenda): AgendaItem => {
+      const unresolvedTx = findUnreconciledSanitaryAgendaConflicts(agenda.fazenda_id, input.operations, input.obligations).get(agenda.id);
       const entries = agendaAnimalsById.get(agenda.id) ?? [];
       const firstAnimalId = entries.length === 1 ? entries[0].animal_id : null;
       const firstAnimal = firstAnimalId ? animalsById.get(firstAnimalId) : null;
@@ -139,6 +164,7 @@ function buildSanitaryAgendaV2AdapterItems(input: {
           protocolLabel,
           itemLabel,
           source: "ops_sanitario_agenda_v2",
+          ...(unresolvedTx ? { sanitary_reconciliation_pending: true } : {}),
         },
         client_id: agenda.client_id,
         client_op_id: agenda.client_op_id,
@@ -155,26 +181,24 @@ function buildSanitaryAgendaV2AdapterItems(input: {
 export function normalizeAgendaPageData(
   raw: AgendaPageDataRaw | null | undefined,
 ): AgendaPageData {
-  const activeAnimals = (raw?.animais ?? []).filter((animal) => !animal.deleted_at);
-  const activeLots = (raw?.lotes ?? []).filter((lote) => !lote.deleted_at);
+  const activeAnimals = activeRows(raw?.animais);
+  const activeLots = activeRows(raw?.lotes);
   return {
     itens: [
-      ...(raw?.itens ?? []).filter((item) => !item.deleted_at),
+      ...activeRows(raw?.itens),
       ...buildSanitaryAgendaV2AdapterItems({
         agendas: raw?.sanitaryAgendasV2 ?? [],
         agendaAnimals: raw?.sanitaryAgendaAnimalsV2 ?? [],
         animals: activeAnimals,
         lots: activeLots,
+        operations: raw?.sanitaryOperations ?? [],
+        obligations: raw?.reconciliationObligations ?? [],
       }),
     ],
     animais: activeAnimals,
     lotes: activeLots,
-    protocolos: (raw?.protocolos ?? []).filter(
-      (protocolo) => !protocolo.deleted_at,
-    ),
-    protocoloItens: (raw?.protocoloItens ?? []).filter(
-      (item) => !item.deleted_at,
-    ),
+    protocolos: activeRows(raw?.protocolos),
+    protocoloItens: activeRows(raw?.protocoloItens),
     gestos: raw?.gestos ?? [],
     sanidadeConfig:
       raw?.sanidadeConfig && !raw.sanidadeConfig.deleted_at
@@ -203,18 +227,14 @@ export function useAgendaPageData(activeFarmId: string | null) {
       officialTemplateItems,
       sanitaryAgendasV2,
       sanitaryAgendaAnimalsV2,
+      sanitaryOperations,
+      reconciliationObligations,
     ] = await Promise.all([
-      db.state_agenda_itens.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_animais.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_lotes.where("fazenda_id").equals(activeFarmId).toArray(),
-      db.state_protocolos_sanitarios
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .toArray(),
-      db.state_protocolos_sanitarios_itens
-        .where("fazenda_id")
-        .equals(activeFarmId)
-        .toArray(),
+      readFarmRows(db.state_agenda_itens, activeFarmId),
+      readFarmRows(db.state_animais, activeFarmId),
+      readFarmRows(db.state_lotes, activeFarmId),
+      readFarmRows(db.state_protocolos_sanitarios, activeFarmId),
+      readFarmRows(db.state_protocolos_sanitarios_itens, activeFarmId),
       db.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
       db.state_fazenda_sanidade_config.get(activeFarmId),
       db.catalog_protocolos_oficiais.toArray(),
@@ -224,6 +244,8 @@ export function useAgendaPageData(activeFarmId: string | null) {
         .where("fazenda_id")
         .equals(activeFarmId)
         .toArray(),
+      db.queue_ops.toArray(),
+      db.sync_reconcile_obligations.where("fazenda_id").equals(activeFarmId).toArray(),
     ]);
 
     return normalizeAgendaPageData({
@@ -238,6 +260,8 @@ export function useAgendaPageData(activeFarmId: string | null) {
       officialTemplateItems,
       sanitaryAgendasV2,
       sanitaryAgendaAnimalsV2,
+      sanitaryOperations,
+      reconciliationObligations,
     });
   }, [activeFarmId]);
 }

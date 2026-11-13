@@ -129,6 +129,10 @@ function renderPanel(
 }
 
 describe("SanitaryLocalAgendaPanelV2", () => {
+  it("avisa quando a data ainda aguarda reconciliação após conflito", () => {
+    renderPanel(vi.fn(), vi.fn(), vi.fn(), [{ ...items[0], reconciliationPending: true }]);
+    expect(screen.getByText("Conflito: reconciliação pendente")).toBeInTheDocument();
+  });
   beforeEach(async () => {
     await db.open();
     await Promise.all([

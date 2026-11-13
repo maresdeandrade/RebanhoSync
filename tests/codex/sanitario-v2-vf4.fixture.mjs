@@ -10,6 +10,7 @@ import pg from "pg";
 import { createConfirmedTestSession, restrictContextToLoopback } from "./sanitary-disposable-support.fixture.mjs";
 
 export async function runSanitaryRecoveryVF4({ db, env, report }) {
+  const blockedDirected = process.argv.includes("--blocked-directed");
   assert.equal(new URL(env.API_URL).hostname, "127.0.0.1");
   assert.equal(new URL(env.API_URL).port, "55421");
   assert.equal(new URL(env.DB_URL).port, "55422");
@@ -38,8 +39,8 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
     for (const member of [owner, both]) await db.query("insert into public.user_fazendas(fazenda_id,user_id,role,accepted_at) values($1,$2,'owner',now())", [farm, member.id]);
     await db.query("insert into public.fazenda_sanidade_config(fazenda_id,uf,payload) values($1,'MG','{}')", [farm]);
     await db.query("insert into public.animais(id,fazenda_id,identificacao,sexo,data_nascimento,especie) values($1,$2,'VF4 animal','F','2023-01-01','bovino')", [animal, farm]);
-    await db.query(`insert into public.sanitario_sync_v2_gates(fazenda_id,enabled,minimum_contract_version,maximum_contract_version,allowed_user_ids,rollout_percentage)
-      values($1,true,2,2,$2,100)`, [farm, [owner.id, both.id]]);
+    await db.query(`insert into public.sanitario_sync_v2_gates(fazenda_id,enabled,minimum_contract_version,maximum_contract_version,allowed_user_ids,rollout_percentage,foundation_state)
+      values($1,true,3,3,$2,100,'ready')`, [farm, [owner.id, both.id]]);
   }
   const snapshotBytes = readFileSync("docs/review/evidence/SANITARIO_V2_VF2_CATALOG_READONLY_20261023.json");
   const snapshot = JSON.parse(snapshotBytes);
@@ -54,9 +55,15 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
       keys.map(k => row[k] !== null && typeof row[k] === "object" ? JSON.stringify(row[k]) : row[k]));
   };
   await insert("sanitario_protocolos_v2", { ...protocol, created_by: null, approved_by: a.id });
-  for (const item of items) await insert("sanitario_protocolo_itens_versions_v2", item);
+  for (const item of items)
+    await insert(
+      "sanitario_protocolo_itens_versions_v2",
+      Object.fromEntries(
+        Object.entries(item).filter(([field]) => field !== "allows_agenda_auto"),
+      ),
+    );
   report.catalog_fixture = { snapshot_sha256: createHash("sha256").update(snapshotBytes).digest("hex"),
-    protocol_id: protocol.id, item_ids: items.map(i=>i.id), changes: ["protocol.created_by=null", "protocol.approved_by=synthetic local user FK"],
+    protocol_id: protocol.id, item_ids: items.map(i=>i.id), changes: ["protocol.created_by=null", "protocol.approved_by=synthetic local user FK", "item.allows_agenda_auto omitted (retired column)"],
     scope: "three active rabies items only; no bootstrap/import/curatorial decisions" };
   const raw = async (actor, path, method = "GET", body, token) => {
     const session = actor ? await actor.client.auth.getSession() : null;
@@ -66,7 +73,7 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
       ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(25000) });
     return { http: response.status, data: await response.json() };
   };
-  const operation = (command, payload, extra={}) => ({ domain: "sanitario_v2", contract_version: 2,
+  const operation = (command, payload, extra={}) => ({ domain: "sanitario_v2", contract_version: 3,
     client_op_id: randomUUID(), client_tx_id: randomUUID(), domain_op_id: randomUUID(), command, payload, ...extra });
   const envelope = (farm, ops) => ({ fazenda_id: farm, client_id: "vf4-real-server", client_tx_id: ops[0].client_tx_id, ops });
   const send = (actor, farm, ops, token) => raw(actor, "/functions/v1/sync-batch", "POST", envelope(farm, ops), token);
@@ -97,6 +104,7 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
       await runSanitaryAuthCompositionC05({ db, env, report, a, b, both, outsider, farmA, farmB, animalA, animalB, protocol, items });
       return;
     }
+    if (!blockedDirected) {
     await check("Auth real: login de quatro identidades e refresh válido", async () => {
       for (const user of [a,b,both,outsider]) { const r=await user.client.auth.getUser(); assert.ifError(r.error); assert.equal(r.data.user.id,user.id); }
       const refresh=await a.client.auth.refreshSession(); assert.ifError(refresh.error); assert.equal(refresh.data.user.id,a.id);
@@ -172,9 +180,9 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
     await check("Raiva: três versões homologadas recusam criação automática no servidor",async()=>{
       const results=[];
       for(const item of items){const op=creation(animalA,randomUUID(),item,true);const response=await send(a,farmA,[op]);denied(response);assert.equal(await count("sanitario_agenda_v2",op.payload.agenda.id),0);results.push(response.data.results[0].reason_code);}
-      const rows=(await db.query("select id,allows_agenda_auto,limitations from public.sanitario_protocolo_itens_versions_v2")).rows;
-      assert(rows.every(i=>!i.allows_agenda_auto&&i.limitations.includes("no_agenda_auto")));
-      return {reasons:results,items:rows};
+      assert.deepEqual(results,["SANITARIO_AUTOMATION_RETIRED","SANITARIO_AUTOMATION_RETIRED","SANITARIO_AUTOMATION_RETIRED"]);
+      const rows=(await db.query("select id,limitations from public.sanitario_protocolo_itens_versions_v2")).rows;
+      return {reasons:results,items:rows,agenda_rows_persisted:0};
     });
     await check("Indisponibilidade transitória real da RPC: cancelamento PostgreSQL retorna RETRYABLE e replay aplica uma vez",async()=>{
       const op=creation(animalA), key=`${farmA}:agenda:${op.payload.agenda.dedup_key}`;
@@ -195,7 +203,7 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
       } finally {await lock.end();await pending?.catch(()=>{});}
     });
     await check("Fato sintético canônico: aceitação e replay não duplicam Evento ou detalhe",async()=>{
-      const payload={schema:"sanitary_agenda_execution_v2",registration_mode:"executed_fact",prospective_authorization:false,creates_active_withdrawal:false,vf4:true};
+      const payload={schema:"sanitary_agenda_execution_v2",registration_mode:"executed_fact",entry_history_source:"external_declared",evidence_class:"declared",prospective_authorization:false,creates_active_withdrawal:false,vf4:true};
       const op=operation("apply_factual_core",{event:{id:randomUUID(),natureza:"standalone_fact",occurred_at:new Date().toISOString(),client_recorded_at:new Date().toISOString(),animal_id:animalA,payload},
         detail:{tipo:"vacinacao",produto_nome_snapshot:"Produto sintético VF4 sem carência declarada",dose_quantidade:1,dose_unidade:"ml",via_aplicacao:"subcutanea",payload},
         event_animals:[{id:randomUUID(),animal_id:animalA}]});
@@ -205,6 +213,9 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
       return {event_id:op.payload.event.id,events:1,details:1};
     });
 
+    } else {
+      applied(await send(a,farmA,[agendaA]));applied(await send(b,farmB,[agendaB]));
+    }
     Object.assign(process.env,{VITE_SUPABASE_URL:env.API_URL,VITE_SUPABASE_PUBLISHABLE_KEY:env.ANON_KEY,VITE_SUPABASE_FUNCTIONS_URL:`${env.API_URL}/functions/v1`,VITE_BACKEND_ENV:"homologation"});
     vite=await createServer({server:{host:"127.0.0.1",port:8181,strictPort:true},logLevel:"error"});await vite.listen();
     browser=await chromium.launch({headless:true});
@@ -213,17 +224,17 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
     await restrictContextToLoopback(context);
     await context.route("http://127.0.0.1:8181/",route=>route.fulfill({contentType:"text/html",body:"<!doctype html><html><body>VF4 servidor real</body></html>"}));
     let page=await context.newPage();await page.goto("http://127.0.0.1:8181/");
-    await page.evaluate(async({email,password,farm})=>{
-      const [{db},{supabase},cut,pull,worker,ownership,manage,plan,windows]=await Promise.all([
+    await page.evaluate(async({email,password,farm,blockedDirected})=>{
+      const [{db},{supabase},cut,pull,worker,ownership,manage,windows]=await Promise.all([
         import("/src/lib/offline/db.ts"),import("/src/lib/supabase.ts"),import("/src/lib/offline/sanitarioV2Cutover.ts"),
         import("/src/lib/offline/pull.ts"),import("/src/lib/offline/syncWorker.ts"),import("/src/lib/offline/ownership.ts"),
-        import("/src/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2.ts"),import("/src/lib/sanitario/agenda/sanitaryAutomationPlanV2.ts"),import("/src/lib/sanitario/windows/sanitaryProtocolWindowsV2.ts")]);
+        import("/src/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2.ts"),import("/src/lib/sanitario/windows/sanitaryProtocolWindowsV2.ts")]);
       const login=await supabase.auth.signInWithPassword({email,password});if(login.error)throw Error("VF4_LOGIN_FAILED");
       await ownership.establishLocalOwnership(login.data.session);localStorage.setItem("gestao_agro_active_fazenda_id",farm);
       cut.setSanitarioV2PushEnabled(true,"local");await pull.pullDataForFarm(farm,["animais","fazenda_sanidade_config"],{mode:"merge"});
       await cut.applySanitarioV2Cutover(farm,pull.pullSanitarioV2CutoverState);
-      window.vf4={db,supabase,worker,pull,manage,plan,windows};
-    },{email:a.email,password:a.password,farm:farmA});
+      window.vf4={db,supabase,worker,pull,manage,windows};
+    },{email:a.email,password:a.password,farm:farmA,blockedDirected});
     const state=()=>page.evaluate(async()=>({ops:await window.vf4.db.queue_ops.toArray(),gestures:await window.vf4.db.queue_gestures.toArray(),agendas:await window.vf4.db.ops_sanitario_agenda_v2.toArray()}));
     const drain=()=>page.evaluate(async()=>{const{db,worker}=window.vf4;for(const g of await db.queue_gestures.toArray())if(g.status==="PENDING")await worker.processGesture(g);});
     const recover=()=>page.evaluate(()=>window.vf4.worker.recoverErroredGesturesOnce());
@@ -235,6 +246,11 @@ export async function runSanitaryRecoveryVF4({ db, env, report }) {
       const current=await state();throw Error(`VF4_REPLAY_PENDING ${JSON.stringify({ops:current.ops.map(o=>({state:o.sync_state,reason:o.blocked_reason})),gestures:current.gestures.map(g=>({status:g.status,error:g.last_error}))})}`);
     };
     const reschedule=date=>page.evaluate(({farm,id,date})=>window.vf4.manage.rescheduleLocalSanitaryAgendaV2({fazendaId:farm,agendaId:id,plannedFor:date}),{farm:farmA,id:agendaA.payload.agenda.id,date});
+    if (blockedDirected) {
+      const {runSanitaryBlockedRecoveryV3}=await import("./sanitario-v3-blocked-recovery.fixture.mjs");
+      await runSanitaryBlockedRecoveryV3({page,context,db,report,farmA,farmB,animalA,animalB,a,agendaB,check,creation,operation,send,applied});
+      return;
+    }
     await check("ACK perdido após commit, timeout de transporte e reinício do cliente: fila converge sem reaplicar",async()=>{
       await reschedule("2026-11-04");const before=await state();assert.equal(before.ops.length,1);
       let committed=false;
