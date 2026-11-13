@@ -28,7 +28,7 @@ assert.equal(targets.homologation_project_refs.length, 0, "Review target binding
 
 const migrations = readdirSync(path.join(root, "supabase/migrations")).filter(name => name.endsWith(".sql")).sort()
   .map(name => `supabase/migrations/${name}`);
-const functions = ["sync-batch", "sanitario-reconcile", "telemetry-ingest"];
+const functions = ["sync-batch", "telemetry-ingest"];
 const closure = new Set(["supabase/functions/deno.json"]);
 function visit(name) {
   assert(!path.isAbsolute(name) && !name.split("/").includes(".."), "Package path escapes repository");
@@ -77,8 +77,7 @@ const manifest = {
     reuse_production_auth_users_secrets_data_or_functions: false },
   migrations: migrations.map(name => ({ path: name, sha256: sha256(bytes(name)) })),
   functions: functions.map(name => ({ name, verify_jwt: true, entrypoint: `supabase/functions/${name}/index.ts`,
-    runtime_secrets: name === "sanitario-reconcile" ? ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
-      : name === "sync-batch" ? ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "APP_ORIGIN"]
+    runtime_secrets: name === "sync-batch" ? ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "APP_ORIGIN"]
       : ["SUPABASE_URL", "SUPABASE_ANON_KEY", "APP_ORIGIN"] })),
   excluded: ["test-auth", "supabase/.temp", "supabase/seed.sql", ".env*", "credentials and production data"],
   files: sourceFiles.map(name => ({ path: name, sha256: sha256(bytes(name)) })),
