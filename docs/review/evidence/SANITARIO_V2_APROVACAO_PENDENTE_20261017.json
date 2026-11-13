@@ -1,7 +1,7 @@
 {
   "artifact": "sanitario_v2_pending_catalog_review_form",
   "schema_version": 3,
-  "candidate_sha256": "2b3adab34d0eb58dcc5d8fa976d1cd852d41f204e00063b776e2271d60753fe6",
+  "candidate_sha256": "4090052d16af7ff317cb1b60cacd7288b64beea2e2ffc08708b76c6625be7e6e",
   "decisions_sha256": "f7dcda6d73f917177b1f5f358d7c2dae9db289b3b2839ebc7590c5698359c185",
   "operational_authorization": false,
   "electronic_review_contract": {
