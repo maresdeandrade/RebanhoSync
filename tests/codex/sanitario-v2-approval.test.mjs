@@ -17,7 +17,7 @@ const projectHistoricalV13ToV14 = (value) => {
 };
 
 // Historical proposal input: promotion must not silently change these scenarios.
-const bytes = readFileSync(new URL("./fixtures/sanitario-v2-approval-historical.json", import.meta.url));
+const bytes = readFileSync(new URL("../../docs/review/evidence/SANITARIO_V2_APROVACAO_HISTORICAL_INPUT_20261113.json", import.meta.url));
 const liveCanonicalBytes = readFileSync(CANONICAL_PATH);
 const packetBytes = readFileSync(DECISION_PATH);
 const canonical = projectHistoricalV13ToV14(JSON.parse(bytes));
