@@ -7,36 +7,23 @@ import {
 } from "./finalizeFlowTestUtils";
 
 describe("flow: registro sanitario com dependencias", () => {
-  it("usa caminho de RPC sanitario quando servidor conclui evento", async () => {
+  it("registra o evento sem concluir a agenda sanitaria legada", async () => {
     const deps = createBaseFinalizeDeps();
-    deps.sanitary.trySanitaryRpcFinalize = deps.sanitary.trySanitaryRpcFinalize.mockResolvedValue({
-      status: "handled",
-      eventoId: "evt-srv-1234",
-    });
 
     const finalize = createRegistrarFinalizeController(deps);
 
     await finalize(createBaseFinalizeInput());
 
-    expect(deps.sanitary.trySanitaryRpcFinalize).toHaveBeenCalledWith(
-      expect.objectContaining({
-        tipoManejo: "sanitario",
-        sourceTaskId: "agenda-1",
-        tipo: "vacinacao",
-      }),
-    );
+    expect(deps.sanitary.trySanitaryRpcFinalize).not.toHaveBeenCalled();
+    expect(deps.commit.buildAgendaCompletionOp).not.toHaveBeenCalled();
     expect(deps.commit.runFinalizeGesture).toHaveBeenCalledWith(
       expect.objectContaining({
         fazendaId: "farm-1",
         ops: [
           {
-            table: "agenda_itens",
-            action: "UPDATE",
-            record: {
-              id: "agenda-1",
-              status: "concluido",
-              source_evento_id: "evt-srv-1234",
-            },
+            table: "eventos",
+            action: "INSERT",
+            record: { id: "evt-1" },
           },
         ],
       }),
@@ -45,7 +32,7 @@ describe("flow: registro sanitario com dependencias", () => {
     expect(deps.feedback.navigate).toHaveBeenCalledWith("/agenda");
   });
 
-  it("quando RPC nao trata, propaga dependencias para o plano nao financeiro", async () => {
+  it("propaga dependencias para o plano nao financeiro", async () => {
     const deps = createBaseFinalizeDeps();
     const finalize = createRegistrarFinalizeController(deps);
 

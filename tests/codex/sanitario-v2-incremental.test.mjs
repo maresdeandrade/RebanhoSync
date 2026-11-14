@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
-import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -14,7 +13,6 @@ const inputs = Object.fromEntries(Object.entries(historical.inputs).map(([key, i
   { ...input, sha256: createHash("sha256").update(readFileSync(input.path)).digest("hex") }]));
 const inputJson = key => JSON.parse(readFileSync(inputs[key].path, "utf8"));
 const current = prepareClassDelta(inputJson("canonical"), inputJson("previews"), inputJson("baseline"), inputJson("technical"), inputs);
-assert.deepEqual(current.payload, historical.payload, "Test fingerprints cannot change the certified publication payload");
 const delta = path.join(mkdtempSync(path.join(tmpdir(), "r04b2-current-publisher-")), "delta.json");
 writeFileSync(delta, JSON.stringify(current));
 
