@@ -24,7 +24,7 @@ describe("v34 withdrawal provenance is additive and pull-only", () => {
       await old.table("catalog_sanitario_produto_carencia_rules_v2").put({ id: "old-rule", product_id: "product", deleted_at: null });
       old.close();
       await current.open();
-      expect(current.verno).toBe(35);
+      expect(current.verno).toBe(36);
       expect(current.tables.map(table => table.name).sort()).toEqual([...Object.keys(stores), ...addedStores].sort());
       for (const table of addedStores) expect(await current.table(table).count()).toBe(0);
       expect(await current.queue_ops.toArray()).toEqual([pending]);
