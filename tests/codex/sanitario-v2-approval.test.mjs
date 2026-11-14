@@ -57,12 +57,12 @@ describe("candidato versionado sem aprovacao/publicacao", () => {
     const row = data.protocol_item_rows.find((item) => item.logical_item_key === "b19_femeas_3_8_meses");
     const protocol = data.protocol_rows.find((item) => item.id === row.protocol_id);
     const adapted = adaptSanitaryProtocolItemV2Row(row);
-    expect(sanitaryPlanningBlockersV2(adaptSanitaryProtocolV2Row(protocol), adapted, "automatic").length).toBeGreaterThan(0);
-    // Authorized simulation only: signing/publication is never performed by the preparer.
+    expect(sanitaryPlanningBlockersV2(adaptSanitaryProtocolV2Row(protocol), adapted).length).toBeGreaterThan(0);
+    // Synthetic approval only: signing/publication is never performed by the preparer.
     const signedSimulation = { ...protocol, status: "active", approval_status: "approved",
-      metadata: { ...protocol.metadata, agenda_allowed: true, approved_for_catalog: true } };
+      metadata: { ...protocol.metadata, approved_for_catalog: true } };
     expect(sanitaryPlanningBlockersV2(adaptSanitaryProtocolV2Row(signedSimulation),
-      { ...adapted, status: "active", allowsAgendaAuto: true }, "automatic")).toEqual([]);
+      { ...adapted, status: "active" })).toEqual([]);
     expect(row.product_id ?? null).toBeNull();
     expect(row.snapshot_template.metadata.planning_scope).toBe("assessment_only");
     for (const field of ["eligibility_rule", "operational_window", "product_requirement"])
@@ -78,7 +78,7 @@ describe("candidato versionado sem aprovacao/publicacao", () => {
       expect(row).toMatchObject({ action_type: "manejo_sanitario", product_requirement_kind: "none", dose_rule: {}, route_rule: {} });
       expect(row.product_key ?? null).toBeNull();
       const protocol = data.protocol_rows.find((item) => item.id === row.protocol_id);
-      expect(sanitaryPlanningBlockersV2(adaptSanitaryProtocolV2Row(protocol), adaptSanitaryProtocolItemV2Row(row), "automatic").length).toBeGreaterThan(0);
+      expect(sanitaryPlanningBlockersV2(adaptSanitaryProtocolV2Row(protocol), adaptSanitaryProtocolItemV2Row(row)).length).toBeGreaterThan(0);
     }
     expect(groups.every((group) => group.submission_status === "READY_FOR_GLOBAL_REVIEW")).toBe(true);
     expect(groups.every((group) => group.catalog_review_request.requires_specific_farm === false)).toBe(true);

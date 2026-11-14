@@ -59,31 +59,21 @@ function createDeps(overrides: Partial<Parameters<typeof createAgendaActionContr
   };
 }
 
-describe("smoke: agenda -> registrar -> conclusao", () => {
-  it("navega para registrar com contexto de protocolo e conclui item sanitario", async () => {
+describe("smoke: agenda sanitaria", () => {
+  it("direciona para a central e impede conclusao pela agenda legada", async () => {
     const deps = createDeps();
     const controller = createAgendaActionController(deps);
     const item = createAgendaItem();
 
     controller.goToRegistrar(item);
 
-    expect(deps.navigate).toHaveBeenCalledWith(
-      "/registrar?sourceTaskId=agenda-smoke-1&dominio=sanitario&animalId=animal-1&loteId=lote-1&protocoloId=protocolo-1&protocoloItemId=protocolo-item-1&produto=Vacina+X&sanitarioTipo=vacinacao",
-    );
+    expect(deps.navigate).toHaveBeenCalledWith("/protocolos-sanitarios?tab=agenda");
 
     await controller.updateStatus(item, "concluido");
 
-    expect(deps.concludePendingSanitary).toHaveBeenCalledWith(
-      expect.objectContaining({
-        agendaItemId: "agenda-smoke-1",
-        tipo: "vacinacao",
-        produto: "Vacina X",
-      }),
-    );
-    expect(deps.pullDataForFarm).toHaveBeenCalledWith(
-      "farm-1",
-      ["agenda_itens", "eventos", "eventos_sanitario"],
-      { mode: "merge" },
-    );
+    expect(deps.showError).toHaveBeenCalledWith("Itens sanitários devem ser gerenciados exclusivamente na Central Sanitária.");
+    expect(deps.createGesture).not.toHaveBeenCalled();
+    expect(deps.concludePendingSanitary).not.toHaveBeenCalled();
+    expect(deps.pullDataForFarm).not.toHaveBeenCalled();
   });
 });

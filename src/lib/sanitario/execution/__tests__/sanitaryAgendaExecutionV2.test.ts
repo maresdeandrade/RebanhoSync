@@ -332,7 +332,7 @@ async function seedAgenda(record = agenda()) {
     eligibility_rule: {}, operational_window_rule: {}, dose_rule: null,
     route_rule: null, booster_rule: null, species_authorization: [],
     source_refs_by_field: {}, limitations: [], snapshot_template: {},
-    allows_agenda_auto: false, requires_mv_responsavel: false, status: "active",
+    requires_mv_responsavel: false, status: "active",
     created_at: "2026-01-01", updated_at: "2026-01-01", deleted_at: null,
   });
 }
