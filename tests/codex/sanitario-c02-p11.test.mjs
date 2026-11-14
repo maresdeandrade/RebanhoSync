@@ -39,12 +39,14 @@ describe("local technical C02 P11 entry", () => {
     expect(result.stderr).toContain("C02_P11_CANDIDATE_CHANGED");
   });
 
-  it("validates through the CLI without reading a DB URL or opening a database", () => {
+  it("rejects the historical v13 candidate without reading a DB URL or opening a database", () => {
     const result = spawnSync(process.execPath, ["scripts/codex/import-sanitario-protocols-v2.mjs", "--validate", "--c02-p11", candidatePath], {
       encoding: "utf8", env: { ...process.env, DB_URL: "invalid-and-must-not-be-read" },
     });
-    expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain("C02 P11 validate OK");
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("versao esperada 14.0.0-canonical-contract");
+    expect(result.stderr).toContain("allows_agenda_auto: campo removido");
+    expect(result.stdout).not.toContain("database host=");
   });
 
   it("refuses remote or generic apply arguments on the C02 path", () => {
