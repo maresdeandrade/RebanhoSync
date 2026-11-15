@@ -154,7 +154,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     ]);
   });
 
-  it("resolve insumo sanitário em estoque como produto selecionável quando não há vínculo técnico", async () => {
+  it("não oferece insumo sanitário em estoque sem vínculo técnico para requisito de classe", async () => {
     await db.state_insumos.put({
       id: "insumo-ibr-bvd",
       fazenda_id: "farm-1",
@@ -207,20 +207,8 @@ describe("SanitaryLocalAgendaPanelV2", () => {
       },
     ]);
 
-    expect(result.productOptions).toEqual([
-      expect.objectContaining({
-        id: "insumo:insumo-ibr-bvd",
-        name: "Vacina Reprodutiva IBR BVD Leptospirose",
-        weakTechnicalLink: true,
-      }),
-    ]);
-    expect(result.inventoryLotOptions).toEqual([
-      expect.objectContaining({
-        id: "stock-lot-ibr-bvd",
-        productId: "insumo:insumo-ibr-bvd",
-        balanceLabel: "100 doses",
-      }),
-    ]);
+    expect(result.productOptions).toEqual([]);
+    expect(result.inventoryLotOptions).toEqual([]);
   });
 
   it("oferece produto com revisão pendente para registrar fato, preservando aviso", async () => {
