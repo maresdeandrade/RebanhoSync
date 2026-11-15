@@ -986,6 +986,18 @@ describe("executeSanitaryAgendaV2", () => {
     ).rejects.toThrow("missing_route");
   });
 
+  it("rejeita produto sem classe técnica na execução de agenda por classe", async () => {
+    await seedAgenda();
+
+    await expect(
+      executeSanitaryAgendaV2(
+        { ...baseInput, product: { ...baseInput.product, productClass: undefined } },
+        db,
+      ),
+    ).rejects.toThrow("product_class_mismatch");
+    expect(await db.event_eventos.count()).toBe(0);
+  });
+
   it("é idempotente por clientOpId e também retorna o evento existente quando a agenda já foi executada", async () => {
     await seedAgenda();
 
