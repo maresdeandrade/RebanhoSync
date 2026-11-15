@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Calendar, Plus } from "lucide-react";
 
@@ -15,7 +15,7 @@ import {
 } from "@/lib/animals/lifecycle";
 import { db } from "@/lib/offline/db";
 import { createGesture } from "@/lib/offline/ops";
-import { pullDataForFarm } from "@/lib/offline/pull";
+import { pullDataForFarm, pullSanitarioAgendaV2 } from "@/lib/offline/pull";
 import { buildRegulatoryOperationalReadModel } from "@/lib/sanitario/compliance/regulatoryReadModel";
 import {
   parseAgendaDominioFilter,
@@ -53,6 +53,7 @@ export default function Agenda() {
   const [searchParams] = useSearchParams();
   const { activeFarmId, farmLifecycleConfig, user } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshGeneration = useRef(0);
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const queryCalendarModeFilter = parseCalendarModeQuickFilter(
     searchParams.get("calendarMode"),
@@ -113,29 +114,38 @@ export default function Agenda() {
   useEffect(() => {
     if (!activeFarmId) return;
 
+    const generation = ++refreshGeneration.current;
     setIsRefreshing(true);
     setRefreshError(null);
-    pullDataForFarm(
-      activeFarmId,
-      [
-        "agenda_itens",
-        "animais",
-        "lotes",
-        "protocolos_sanitarios",
-        "protocolos_sanitarios_itens",
-        "fazenda_sanidade_config",
-      ],
-      {
-        mode: "merge",
-      },
-    )
+    Promise.all([
+      pullDataForFarm(
+        activeFarmId,
+        [
+          "agenda_itens",
+          "animais",
+          "lotes",
+          "protocolos_sanitarios",
+          "protocolos_sanitarios_itens",
+          "fazenda_sanidade_config",
+        ],
+        {
+          mode: "merge",
+        },
+      ),
+      pullSanitarioAgendaV2(activeFarmId),
+    ])
       .catch((error) => {
-        console.warn("[agenda] failed to refresh agenda_itens", error);
+        if (generation !== refreshGeneration.current) return;
+        console.warn("[agenda] failed to refresh agenda sources", error);
         setRefreshError("Falha ao atualizar agenda local.");
       })
       .finally(() => {
+        if (generation !== refreshGeneration.current) return;
         setIsRefreshing(false);
       });
+    return () => {
+      if (generation === refreshGeneration.current) refreshGeneration.current += 1;
+    };
   }, [activeFarmId]);
 
   const data = useAgendaPageData(activeFarmId);

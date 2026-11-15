@@ -123,15 +123,6 @@ function formatDate(value: string | undefined) {
     : "Data não informada";
 }
 
-function normalizeForMatch(value: string | null | undefined) {
-  return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, " ")
-    .trim()
-    .toLocaleLowerCase("pt-BR");
-}
-
 function productLabel(product: SanitarioProdutoLocalV2) {
   return [product.nome_comercial, product.fabricante]
     .filter(Boolean)
@@ -184,36 +175,10 @@ function compatibleSupplyByFallback(
   if (supply.tipo !== "sanitario" || !supply.ativo || supply.deleted_at)
     return false;
   if (item.productRequirementKind === "none") return true;
-  const text = normalizeForMatch(
-    [supply.nome, supply.categoria, JSON.stringify(supply.payload ?? {})].join(
-      " ",
-    ),
-  );
-  if (item.productClass) {
-    const classLabel = normalizeForMatch(
-      formatSanitaryProductClassLabelV2(item.productClass) ?? item.productClass,
-    );
-    const classTokens = classLabel
-      .split(" ")
-      .filter((token) => token.length > 2);
-    if (
-      classTokens.length > 0 &&
-      classTokens.every((token) => text.includes(token))
-    ) {
-      return true;
-    }
-    if (item.productClass.startsWith("vacina") && text.includes("vacina")) {
-      return true;
-    }
-  }
-  if (item.productClassGroupName) {
-    const group = normalizeForMatch(item.productClassGroupName);
-    if (group && text.includes(group)) return true;
-  }
-  return (
-    item.productRequirementKind === "product_class_group" &&
-    text.includes("sanitario")
-  );
+  // A free-text inventory match cannot prove any required technical rule.
+  // The catalog product (or its explicit technical link) is the only safe
+  // source for class, indication, species and formulation compatibility.
+  return false;
 }
 
 function classScopeAvailable(
@@ -809,6 +774,8 @@ export function SanitaryAgendaExecutionConfirmV2({
                 {productRequired && productOptions.length === 0 ? (
                   <p className="text-xs text-amber-700">
                     Nenhum produto sanitário cadastrado compatível encontrado.
+                    Para esta agenda, produtos sem classe técnica ou sem vínculo
+                    explícito com o catálogo não são elegíveis.
                   </p>
                 ) : null}
               </label>

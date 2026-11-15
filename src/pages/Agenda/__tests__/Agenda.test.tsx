@@ -9,7 +9,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useAuth } from "@/hooks/useAuth";
 import { writeAgendaUiState, readAgendaUiState } from "@/lib/agenda/storage";
 import { DEFAULT_FARM_LIFECYCLE_CONFIG } from "@/lib/farms/lifecycleConfig";
-import { pullDataForFarm } from "@/lib/offline/pull";
+import { pullDataForFarm, pullSanitarioAgendaV2 } from "@/lib/offline/pull";
 import type {
   AgendaItem,
   Animal,
@@ -26,6 +26,7 @@ vi.mock("dexie-react-hooks", () => ({
 }));
 vi.mock("@/lib/offline/pull", () => ({
   pullDataForFarm: vi.fn().mockResolvedValue(undefined),
+  pullSanitarioAgendaV2: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockNavigate = vi.fn();
@@ -223,6 +224,7 @@ function createOfficialTemplateItem(
 
 async function renderAgenda(initialEntries: string[] = ["/agenda"]) {
   const mockedPullDataForFarm = vi.mocked(pullDataForFarm);
+  const mockedPullSanitarioAgendaV2 = vi.mocked(pullSanitarioAgendaV2);
   const rendered = render(
     <MemoryRouter
       initialEntries={initialEntries}
@@ -234,6 +236,7 @@ async function renderAgenda(initialEntries: string[] = ["/agenda"]) {
 
   await waitFor(() => {
     expect(mockedPullDataForFarm).toHaveBeenCalled();
+    expect(mockedPullSanitarioAgendaV2).toHaveBeenCalledWith(FARM_ID);
   });
 
   await waitFor(() => {
