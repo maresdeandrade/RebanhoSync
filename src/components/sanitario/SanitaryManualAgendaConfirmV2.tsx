@@ -15,6 +15,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { db } from "@/lib/offline/db";
+import type { SanitarioProdutoLocalV2 } from "@/lib/offline/types";
+import {
   createManualSanitaryAgendaV2,
   type CreateManualSanitaryAgendaInputV2,
   type ManualSanitaryAgendaResultV2,
@@ -82,6 +91,8 @@ export function SanitaryManualAgendaConfirmV2({
   const [result, setResult] = useState<ManualSanitaryAgendaResultV2 | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [products, setProducts] = useState<SanitarioProdutoLocalV2[]>([]);
+  const [plannedProductId, setPlannedProductId] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -91,11 +102,23 @@ export function SanitaryManualAgendaConfirmV2({
     setResult(null);
     setError(null);
     setClientOpId(clientOpIdFactory());
+    setPlannedProductId("");
+    void db.catalog_sanitario_produtos_v2.toArray().then((entries) => {
+      setProducts(entries.filter((entry) => !entry.deleted_at));
+    });
   }, [clientOpIdFactory, open]);
 
   if (!item) return null;
 
   const requirementWarning = productRequirementWarning(item);
+  const plannedProductOptions = products.filter((product) => {
+    if (item.productRequirementKind === "specific_product")
+      return product.id === item.plannedProductId;
+    if (item.productRequirementKind === "product_class")
+      return Boolean(item.productClass) && product.classe === item.productClass;
+    if (item.productRequirementKind === "product_class_group") return false;
+    return true;
+  });
   const canSubmit = Boolean(plannedFor) && confirmed && !isSubmitting;
 
   async function handleSubmit() {
@@ -123,6 +146,7 @@ export function SanitaryManualAgendaConfirmV2({
           blockers: item.blockers,
           warnings: item.warnings,
           productRequirementKind: item.productRequirementKind,
+          plannedProductId: plannedProductId || null,
           productClass: item.productClass,
           productClassGroupId: item.productClassGroupId,
           productClassGroupName: item.productClassGroupName,
@@ -174,6 +198,33 @@ export function SanitaryManualAgendaConfirmV2({
               value={plannedFor}
               onChange={(event) => setPlannedFor(event.target.value)}
             />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="sanitary-manual-agenda-product">
+              Produto técnico planejado (opcional)
+            </Label>
+            <Select
+              value={plannedProductId || "__none__"}
+              onValueChange={(value) =>
+                setPlannedProductId(value === "__none__" ? "" : value)
+              }
+            >
+              <SelectTrigger id="sanitary-manual-agenda-product">
+                <SelectValue placeholder="Sem produto definido" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Sem produto definido</SelectItem>
+                {plannedProductOptions.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.nome_comercial} · {product.classe}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              É apenas planejamento; o produto efetivamente utilizado será registrado no Evento.
+            </p>
           </div>
 
           <div className="grid gap-2">

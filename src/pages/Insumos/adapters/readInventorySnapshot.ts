@@ -12,6 +12,7 @@ type InventorySnapshotDatabase = Pick<
   | "event_eventos_nutricao"
   | "event_eventos_pasto_avaliacao"
   | "catalog_produtos_veterinarios"
+  | "catalog_sanitario_produtos_v2"
   | "queue_gestures"
 >;
 
@@ -31,6 +32,7 @@ export async function readInventorySnapshot(
     nutricao,
     pasto,
     produtos,
+    produtosSanitariosV2,
     gestures,
   ] = await Promise.all([
     database.state_insumos.where("fazenda_id").equals(activeFarmId).toArray(),
@@ -60,6 +62,7 @@ export async function readInventorySnapshot(
       .equals(activeFarmId)
       .toArray(),
     database.catalog_produtos_veterinarios.toArray(),
+    database.catalog_sanitario_produtos_v2.toArray(),
     database.queue_gestures.where("fazenda_id").equals(activeFarmId).toArray(),
   ]);
 
@@ -73,6 +76,7 @@ export async function readInventorySnapshot(
     nutricao: nutricao.filter((item) => !item.deleted_at),
     pasto: pasto.filter((item) => !item.deleted_at),
     produtos,
+    produtosSanitariosV2: produtosSanitariosV2.filter((item) => !item.deleted_at),
     pendingTxIds: new Set(
       gestures
         .filter(

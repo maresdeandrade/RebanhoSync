@@ -239,6 +239,28 @@ const inventoryLot = (overrides: Partial<InsumoLote> = {}): InsumoLote => ({
   ...overrides,
 });
 
+const inventorySupply = (overrides: Record<string, unknown> = {}) => ({
+  id: "insumo-1",
+  fazenda_id: "farm-1",
+  nome: "Vacina Raiva",
+  tipo: "sanitario",
+  categoria: "Vacina",
+  produto_veterinario_id: null,
+  sanitario_produto_v2_id: "product-1",
+  unidade_base: "ml",
+  ativo: true,
+  payload: {},
+  client_id: "client-1",
+  client_op_id: "supply-op-1",
+  client_tx_id: null,
+  client_recorded_at: "2026-01-01T00:00:00.000Z",
+  server_received_at: "2026-01-01T00:00:00.000Z",
+  created_at: "2026-01-01T00:00:00.000Z",
+  updated_at: "2026-01-01T00:00:00.000Z",
+  deleted_at: null,
+  ...overrides,
+});
+
 const catalog: SanitaryProtocolCatalogReadModelV2 = {
   protocols: [
     {
@@ -448,7 +470,8 @@ describe("executeSanitaryAgendaV2", () => {
     await seedClassSchemeAgenda();
     const result = await executeSanitaryAgendaV2(baseInput, db);
     const detail = await db.event_eventos_sanitario.get(result.eventId);
-    expect(detail?.produto_veterinario_id).toBe("product-1");
+    expect(detail?.produto_veterinario_id).toBeNull();
+    expect(detail?.produto_sanitario_v2_id).toBe("product-1");
     expect(detail?.produto_snapshot).toMatchObject({ fieldEvidence: expect.arrayContaining([
       expect.objectContaining({ fieldKey: "operational_window", sourceCoverageId: "class-operational_window", coverageStatus: "covers" }),
     ]) });
@@ -1073,7 +1096,8 @@ describe("executeSanitaryAgendaV2", () => {
     expect(detail?.produto_snapshot).toEqual(persistedSnapshot);
     expect(result.createsActiveWithdrawal).toBe(true);
     expect(detail).toMatchObject({
-      produto_veterinario_id: "product-1",
+      produto_veterinario_id: null,
+      produto_sanitario_v2_id: "product-1",
       carencia_carne_dias: 30,
       carencia_carne_ate: "2026-08-01",
       carencia_leite_dias: null,
@@ -1103,6 +1127,7 @@ describe("executeSanitaryAgendaV2", () => {
 
   it("baixa estoque somente após evento e não deixa falha de estoque marcar agenda como executada", async () => {
     await seedAgenda();
+    await db.state_insumos.put(inventorySupply() as never);
     await db.state_insumo_lotes.put(inventoryLot());
 
     expect(await db.event_eventos.count()).toBe(0);
@@ -1306,6 +1331,9 @@ describe("executeSanitaryAgendaV2", () => {
         fazenda_id: ids.farm,
         insumo_id: ids.supply,
       }),
+    );
+    await db.state_insumos.put(
+      inventorySupply({ id: ids.supply, fazenda_id: ids.farm }) as never,
     );
 
     if (registrationMode === "executed_fact") {

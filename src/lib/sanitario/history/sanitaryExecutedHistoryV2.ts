@@ -94,10 +94,15 @@ function resolveWithdrawalStatus(detail: EventoSanitario) {
     : "not_applicable";
 }
 
+function executedProductId(detail: EventoSanitario) {
+  return detail.produto_sanitario_v2_id ?? detail.produto_veterinario_id ?? null;
+}
+
 function classSchemeCoverage(detail: EventoSanitario): string | null {
   const snapshot = readRecord(detail.produto_snapshot);
+  const productId = executedProductId(detail);
   if (
-    snapshot.executedProductId !== detail.produto_veterinario_id ||
+    snapshot.executedProductId !== productId ||
     !Array.isArray(snapshot.fieldEvidence)
   )
     return null;
@@ -107,7 +112,7 @@ function classSchemeCoverage(detail: EventoSanitario): string | null {
       field.fieldKey === "operational_window" &&
       field.coverageStatus === "covers" &&
       field.reason === "class_scheme_product_compatibility_verified" &&
-      link.productId === detail.produto_veterinario_id &&
+      link.productId === productId &&
       sanitaryClassFieldSourcesV2([field.sourceRef], "operational_window")
         .length === 1
     );
@@ -238,7 +243,7 @@ export function buildSanitaryExecutedHistoryV2(
                 ).classe
               : null,
           ) ?? (isSanitaryClassSchemeV2(item) ? null : item.productClass),
-        productId: detail.produto_veterinario_id ?? null,
+        productId: executedProductId(detail),
         classSchemeCoverageId: classSchemeCoverage(detail),
         productName:
           detail.produto_nome_snapshot ??

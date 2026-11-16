@@ -599,7 +599,7 @@ function buildRecords(input: {
     creates_active_withdrawal: withdrawal.createsActiveWithdrawal,
     animal_ids: targetAnimalIds,
     target_animal_ids: targetAnimalIds,
-    produto_veterinario_id: request.product?.productId ?? null,
+    produto_veterinario_id: null,
     product: productSnapshot,
     withdrawal: {
       reason: withdrawal.reason,
@@ -654,8 +654,7 @@ function buildRecords(input: {
     fazenda_id: request.fazendaId,
     tipo: actionTypeToSanitaryType(actionType(agenda)),
     produto: productName,
-    produto_veterinario_id:
-      request.product?.productId ?? expectedProductId(agenda),
+    produto_veterinario_id: null,
     produto_sanitario_v2_id: request.product?.productId ?? null,
     produto_snapshot: productTechnicalSnapshot,
     insumo_id: inventory?.insumoId ?? null,
@@ -1236,6 +1235,19 @@ export async function executeSanitaryAgendaV2(
     if (!lot || lot.fazenda_id !== input.fazendaId || lot.deleted_at) {
       throw new Error(
         "SANITARY_AGENDA_EXECUTION_REJECTED:inventory_lot_not_found",
+      );
+    }
+    const supply = await localDb.state_insumos.get(lot.insumo_id);
+    if (
+      !supply ||
+      supply.fazenda_id !== input.fazendaId ||
+      supply.deleted_at ||
+      !supply.ativo ||
+      supply.tipo !== "sanitario" ||
+      supply.sanitario_produto_v2_id !== input.product.productId
+    ) {
+      throw new Error(
+        "SANITARY_AGENDA_EXECUTION_REJECTED:inventory_product_link_mismatch",
       );
     }
     if (input.product.unit !== lot.unidade_base) {

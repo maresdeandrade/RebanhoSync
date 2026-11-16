@@ -123,15 +123,6 @@ function formatDate(value: string | undefined) {
     : "Data não informada";
 }
 
-function normalizeForMatch(value: string | null | undefined) {
-  return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, " ")
-    .trim()
-    .toLocaleLowerCase("pt-BR");
-}
-
 function productLabel(product: SanitarioProdutoLocalV2) {
   return [product.nome_comercial, product.fabricante]
     .filter(Boolean)
@@ -156,7 +147,7 @@ function supplyLabel(supply: Insumo) {
 function compatibleProduct(
   product: SanitarioProdutoLocalV2,
   item: SanitaryLocalAgendaListItemV2,
-  classesByGroup: Map<string, Set<string>>,
+  classesByGroup: Map<string, Set<string> | null>,
 ) {
   if (
     item.productRequirementKind === "specific_product" &&
@@ -172,48 +163,27 @@ function compatibleProduct(
     item.productClassGroupId
   ) {
     const classIds = classesByGroup.get(item.productClassGroupId);
-    return classIds && classIds.size > 0 ? classIds.has(product.classe) : true;
+    return Boolean(classIds && classIds.size > 0 && classIds.has(product.classe));
   }
-  return true;
+  return item.productRequirementKind === "none";
 }
 
-function compatibleSupplyByFallback(
+function explicitSanitaryProductId(supply: Insumo) {
+  const value = supply.sanitario_produto_v2_id;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function compatibleSupply(
   supply: Insumo,
   item: SanitaryLocalAgendaListItemV2,
+  productsById: Map<string, SanitarioProdutoLocalV2>,
+  classesByGroup: Map<string, Set<string> | null>,
 ) {
   if (supply.tipo !== "sanitario" || !supply.ativo || supply.deleted_at)
     return false;
-  if (item.productRequirementKind === "none") return true;
-  const text = normalizeForMatch(
-    [supply.nome, supply.categoria, JSON.stringify(supply.payload ?? {})].join(
-      " ",
-    ),
-  );
-  if (item.productClass) {
-    const classLabel = normalizeForMatch(
-      formatSanitaryProductClassLabelV2(item.productClass) ?? item.productClass,
-    );
-    const classTokens = classLabel
-      .split(" ")
-      .filter((token) => token.length > 2);
-    if (
-      classTokens.length > 0 &&
-      classTokens.every((token) => text.includes(token))
-    ) {
-      return true;
-    }
-    if (item.productClass.startsWith("vacina") && text.includes("vacina")) {
-      return true;
-    }
-  }
-  if (item.productClassGroupName) {
-    const group = normalizeForMatch(item.productClassGroupName);
-    if (group && text.includes(group)) return true;
-  }
-  return (
-    item.productRequirementKind === "product_class_group" &&
-    text.includes("sanitario")
-  );
+  const productId = explicitSanitaryProductId(supply);
+  const product = productId ? productsById.get(productId) : undefined;
+  return Boolean(product && compatibleProduct(product, item, classesByGroup));
 }
 
 function classScopeAvailable(
@@ -231,7 +201,7 @@ function resolveClassKeysByGroup(
   groupMembers: SanitarioProductClassGroupMemberLocalV2[],
   fazendaId: string | null,
 ) {
-  const classesByGroup = new Map<string, Set<string>>();
+  const classesByGroup = new Map<string, Set<string> | null>();
   const classKeysById = new Map(
     productClasses
       .filter(
@@ -253,7 +223,7 @@ function resolveClassKeysByGroup(
     classesByGroup.set(member.group_id, current);
   }
   // Partial pull is not proof of incompatibility in an already performed fact.
-  for (const groupId of unresolvedGroups) classesByGroup.delete(groupId);
+  for (const groupId of unresolvedGroups) classesByGroup.set(groupId, null);
   return classesByGroup;
 }
 
@@ -278,6 +248,9 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
     productClasses,
     groupMembers,
     fazendaId,
+  );
+  const productsById = new Map(
+    products.filter((product) => !product.deleted_at).map((product) => [product.id, product]),
   );
   const catalogProductOptions = products
     .filter((product) => !product.deleted_at)
@@ -305,24 +278,21 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
         !supply.deleted_at && supply.tipo === "sanitario" && supply.ativo,
     )
     .filter((supply) =>
-      items.every((item) => compatibleSupplyByFallback(supply, item)),
+      items.every((item) =>
+        compatibleSupply(supply, item, productsById, classesByGroup),
+      ),
     )
     .map((supply) => {
-      const linkedProductId = supply.produto_veterinario_id;
-      const id =
-        linkedProductId && existingOptionIds.has(linkedProductId)
-          ? linkedProductId
-          : `insumo:${supply.id}`;
+      const linkedProductId = explicitSanitaryProductId(supply)!;
+      const id = linkedProductId;
       return {
         id,
         label: supplyLabel(supply),
         name: supply.nome,
         productClass: null,
         source: "inventory_supply" as const,
-        weakTechnicalLink: !linkedProductId,
-        warning: linkedProductId
-          ? null
-          : "Produto encontrado no estoque, mas sem vínculo técnico completo. Confirme antes de executar.",
+        weakTechnicalLink: false,
+        warning: null,
         supplyId: supply.id,
       };
     })
@@ -330,16 +300,15 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
       (option, index, all) =>
         all.findIndex((entry) => entry.id === option.id) === index,
     )
-    .filter((option) => !existingOptionIds.has(option.id));
+    .filter((option) => existingOptionIds.has(option.id));
   const productOptions = [...catalogProductOptions, ...supplyOptions];
   const productIdBySupply = new Map<string, string>();
   for (const supply of supplies) {
-    const linkedOptionId =
-      supply.produto_veterinario_id &&
-      existingOptionIds.has(supply.produto_veterinario_id)
-        ? supply.produto_veterinario_id
-        : `insumo:${supply.id}`;
-    if (productOptions.some((option) => option.id === linkedOptionId)) {
+    const linkedOptionId = explicitSanitaryProductId(supply);
+    if (
+      linkedOptionId &&
+      productOptions.some((option) => option.id === linkedOptionId)
+    ) {
       productIdBySupply.set(supply.id, linkedOptionId);
     }
   }

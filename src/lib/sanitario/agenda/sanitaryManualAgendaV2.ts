@@ -338,9 +338,10 @@ export function buildManualSanitaryAgendaRecordsV2(
     janela_fim: null,
     data_programada: plannedFor,
     lote_id: input.target.scope === "lote" ? input.target.id : null,
-    produto_veterinario_id: input.source.plannedProductId ?? null,
+    produto_veterinario_id: null,
     produto_snapshot: {
       planningOnly: true,
+      plannedProductId: input.source.plannedProductId ?? null,
       realProductDefinedOnlyAtExecution: true,
       doseDefinedOnlyAtExecution: true,
       withdrawalDefinedOnlyAtExecution: true,

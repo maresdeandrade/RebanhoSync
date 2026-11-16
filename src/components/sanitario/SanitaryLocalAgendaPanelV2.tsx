@@ -92,6 +92,33 @@ function formatDate(value: string) {
   return year && month && day ? `${day}/${month}/${year}` : "Data não informada";
 }
 
+function forecastLabel(item: SanitaryLocalAgendaListItemV2) {
+  const forecast = item.forecast;
+  if (!forecast || forecast.status === "product_not_selected") return "Previsão indisponível: produto não definido";
+  if (forecast.status === "insufficient_data") return "Previsão indisponível: dados insuficientes";
+  if (forecast.status === "stock_unknown") return `Estimativa ${forecast.estimatedQuantity} ${forecast.unit} · disponibilidade de estoque desconhecida`;
+  const estimated = `${forecast.estimatedQuantity} ${forecast.unit}`;
+  const stock = `${forecast.compatibleStock} ${forecast.unit}`;
+  return forecast.status === "stock_insufficient"
+    ? `Estimativa ${estimated} · saldo ${stock} · déficit ${forecast.deficit} ${forecast.unit}`
+    : `Estimativa ${estimated} · saldo compatível ${stock}`;
+}
+
+function indicatorsLabel(item: SanitaryLocalAgendaListItemV2) {
+  const indicators = item.indicators;
+  if (!indicators) return "Indicadores indisponíveis";
+  const coverage = indicators.coverageRatio == null ? "cobertura indisponível" : `${Math.round(indicators.coverageRatio * 100)}% de cobertura`;
+  const applied = indicators.appliedQuantity == null ? "aplicado desconhecido" : `aplicado ${indicators.appliedQuantity}`;
+  const consumed = indicators.consumedQuantity == null ? "baixado desconhecido" : `baixado ${indicators.consumedQuantity}`;
+  const losses = indicators.lossQuantity == null ? "perdas desconhecidas" : `perdas ${indicators.lossQuantity}`;
+  const comparison = indicators.comparable && indicators.variance != null
+    ? `desvio comparável ${indicators.variance}`
+    : indicators.comparisonStatus === "partial_execution"
+      ? "execução parcial; desvio não comparável"
+      : "desvio não comparável";
+  return `${coverage} · ${applied} · ${consumed} · ${losses} · ${comparison}`;
+}
+
 function compatibilityKey(item: SanitaryLocalAgendaListItemV2) {
   return [
     item.protocolId ?? item.protocolLabel,
@@ -386,6 +413,8 @@ export function SanitaryLocalAgendaPanelV2({
                   <dl className="grid gap-3 text-sm sm:grid-cols-2">
                     <div><dt className="text-muted-foreground">Data planejada</dt><dd className="font-medium">{formatDate(group.plannedFor)}</dd></div>
                     <div><dt className="text-muted-foreground">Seleção</dt><dd className="font-medium">{selectedCount} de {group.items.length}</dd></div>
+                    <div className="sm:col-span-2"><dt className="text-muted-foreground">Consumo previsto</dt><dd className="font-medium">{forecastLabel(group.items[0])}</dd></div>
+                    <div className="sm:col-span-2"><dt className="text-muted-foreground">Planejado × realizado</dt><dd className="font-medium">{indicatorsLabel(group.items[0])}</dd></div>
                   </dl>
                   <div className="flex flex-wrap gap-2">
                     {group.compatible ? (

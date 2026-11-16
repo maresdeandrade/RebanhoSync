@@ -154,7 +154,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     ]);
   });
 
-  it("resolve insumo sanitário em estoque como produto selecionável quando não há vínculo técnico", async () => {
+  it("não trata nome ou produto legado do estoque como vínculo técnico V2", async () => {
     await db.state_insumos.put({
       id: "insumo-ibr-bvd",
       fazenda_id: "farm-1",
@@ -207,18 +207,37 @@ describe("SanitaryLocalAgendaPanelV2", () => {
       },
     ]);
 
-    expect(result.productOptions).toEqual([
-      expect.objectContaining({
-        id: "insumo:insumo-ibr-bvd",
-        name: "Vacina Reprodutiva IBR BVD Leptospirose",
-        weakTechnicalLink: true,
-      }),
+    expect(result.productOptions).toEqual([]);
+    expect(result.inventoryLotOptions).toEqual([]);
+
+    await db.catalog_sanitario_produtos_v2.put({
+      id: "product-linked",
+      nome_comercial: "Produto V2 vinculado",
+      classe: "vacina_ibr_bvd",
+      tipo_produto: "vacina",
+      status_curatorial: "ativo",
+      metadata: {},
+      deleted_at: null,
+    } as never);
+    await db.state_insumos.update("insumo-ibr-bvd", {
+      sanitario_produto_v2_id: "product-linked",
+    });
+
+    const linkedResult = await loadSanitaryAgendaExecutionOptionsV2([
+      {
+        ...items[0],
+        productRequirementKind: "product_class",
+        productClass: "vacina_ibr_bvd",
+        productClassLabel: "Vacina IBR/BVD",
+      },
     ]);
-    expect(result.inventoryLotOptions).toEqual([
+    expect(linkedResult.productOptions).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "product-linked" })]),
+    );
+    expect(linkedResult.inventoryLotOptions).toEqual([
       expect.objectContaining({
         id: "stock-lot-ibr-bvd",
-        productId: "insumo:insumo-ibr-bvd",
-        balanceLabel: "100 doses",
+        productId: "product-linked",
       }),
     ]);
   });
@@ -252,7 +271,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
   });
 
   it.each([true, false])(
-    "resolve UUID de member para class_key sem ocultar produto no cache parcial: %s",
+    "só oferece grupo técnico quando o cache de classes está resolvido: %s",
     async (classCached) => {
       const classId = "40000000-0000-4000-8000-000000000001";
       await db.catalog_sanitario_produtos_v2.put({
@@ -288,11 +307,15 @@ describe("SanitaryLocalAgendaPanelV2", () => {
           productClassGroupId: "group-1",
         },
       ]);
-      expect(result.productOptions).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ id: "product-class-key" }),
-        ]),
-      );
+      if (classCached) {
+        expect(result.productOptions).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: "product-class-key" }),
+          ]),
+        );
+      } else {
+        expect(result.productOptions).toEqual([]);
+      }
     },
   );
 

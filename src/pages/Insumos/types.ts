@@ -16,6 +16,7 @@ import type {
   InsumoTipoEnum,
   InsumoUnidadeBaseEnum,
   InsumoUnidadeCompraEnum,
+  SanitarioProdutoLocalV2,
 } from "@/lib/offline/types";
 import type { InventoryCostMode } from "@/lib/inventory/inventoryFormPresets";
 
@@ -23,6 +24,7 @@ export type LotEditForm = {
   lotId: string;
   insumoNome: string;
   categoria: string;
+  sanitarioProdutoV2Id: string;
   ativo: boolean;
   estoqueMinimoBase: string;
   pontoRessuprimentoBase: string;
@@ -43,6 +45,7 @@ export type EntryForm = {
   nome: string;
   categoria: string;
   produtoVeterinarioId: string;
+  sanitarioProdutoV2Id: string;
   unidadeBase: InsumoUnidadeBaseEnum;
   unidadeCompra: InsumoUnidadeCompraEnum;
   apresentacaoNome: string;
@@ -98,6 +101,7 @@ export type InventorySnapshot = {
   nutricao: EventoNutricao[];
   pasto: EventoPastoAvaliacao[];
   produtos: ProdutoVeterinarioCatalogEntry[];
+  produtosSanitariosV2: SanitarioProdutoLocalV2[];
   pendingTxIds: Set<string>;
 };
 
