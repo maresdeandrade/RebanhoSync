@@ -154,7 +154,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     ]);
   });
 
-  it("não trata nome ou produto legado do estoque como vínculo técnico V2", async () => {
+  it("não oferece insumo sanitário em estoque sem vínculo técnico para requisito de classe", async () => {
     await db.state_insumos.put({
       id: "insumo-ibr-bvd",
       fazenda_id: "farm-1",
