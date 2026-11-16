@@ -181,27 +181,6 @@ function compatibleSupplyByFallback(
   return false;
 }
 
-function explicitSanitaryProductId(supply: Insumo) {
-  const value = supply.sanitario_produto_v2_id;
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
-function compatibleSupply(
-  supply: Insumo,
-  item: SanitaryLocalAgendaListItemV2,
-  productsById: Map<string, SanitarioProdutoLocalV2>,
-  classesByGroup: Map<string, Set<string> | null>,
-) {
-  if (supply.tipo !== "sanitario" || !supply.ativo || supply.deleted_at)
-    return false;
-  const productId = explicitSanitaryProductId(supply);
-  const product = productId ? productsById.get(productId) : undefined;
-  return (
-    Boolean(product && compatibleProduct(product, item, classesByGroup)) ||
-    compatibleSupplyByFallback(supply, item)
-  );
-}
-
 function classScopeAvailable(
   entry: { scope: string; fazenda_id: string | null },
   fazendaId: string | null,
@@ -344,6 +323,27 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
       balanceLabel: `${lot.saldo_atual_base} ${formatUnit(lot.unidade_base, lot.saldo_atual_base)}`,
     }));
   return { productOptions, inventoryLotOptions };
+}
+
+function explicitSanitaryProductId(supply: Insumo) {
+  const value = supply.sanitario_produto_v2_id;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function compatibleSupply(
+  supply: Insumo,
+  item: SanitaryLocalAgendaListItemV2,
+  productsById: Map<string, SanitarioProdutoLocalV2>,
+  classesByGroup: Map<string, Set<string> | null>,
+) {
+  if (supply.tipo !== "sanitario" || !supply.ativo || supply.deleted_at)
+    return false;
+  const productId = explicitSanitaryProductId(supply);
+  const product = productId ? productsById.get(productId) : undefined;
+  return (
+    Boolean(product && compatibleProduct(product, item, classesByGroup)) ||
+    compatibleSupplyByFallback(supply, item)
+  );
 }
 
 export function SanitaryAgendaExecutionConfirmV2({
