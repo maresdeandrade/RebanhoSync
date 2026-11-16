@@ -168,6 +168,19 @@ function compatibleProduct(
   return item.productRequirementKind === "none";
 }
 
+function compatibleSupplyByFallback(
+  supply: Insumo,
+  item: SanitaryLocalAgendaListItemV2,
+) {
+  if (supply.tipo !== "sanitario" || !supply.ativo || supply.deleted_at)
+    return false;
+  if (item.productRequirementKind === "none") return true;
+  // A free-text inventory match cannot prove any required technical rule.
+  // The catalog product (or its explicit technical link) is the only safe
+  // source for class, indication, species and formulation compatibility.
+  return false;
+}
+
 function explicitSanitaryProductId(supply: Insumo) {
   const value = supply.sanitario_produto_v2_id;
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -183,7 +196,10 @@ function compatibleSupply(
     return false;
   const productId = explicitSanitaryProductId(supply);
   const product = productId ? productsById.get(productId) : undefined;
-  return Boolean(product && compatibleProduct(product, item, classesByGroup));
+  return (
+    Boolean(product && compatibleProduct(product, item, classesByGroup)) ||
+    compatibleSupplyByFallback(supply, item)
+  );
 }
 
 function classScopeAvailable(

@@ -209,7 +209,9 @@ describe("SanitaryLocalAgendaPanelV2", () => {
 
     expect(result.productOptions).toEqual([]);
     expect(result.inventoryLotOptions).toEqual([]);
+  });
 
+  it("oferece lote somente quando o estoque aponta para produto V2 compatível", async () => {
     await db.catalog_sanitario_produtos_v2.put({
       id: "product-linked",
       nome_comercial: "Produto V2 vinculado",
@@ -219,24 +221,42 @@ describe("SanitaryLocalAgendaPanelV2", () => {
       metadata: {},
       deleted_at: null,
     } as never);
-    await db.state_insumos.update("insumo-ibr-bvd", {
+    await db.state_insumos.put({
+      id: "insumo-linked",
+      fazenda_id: "farm-1",
+      nome: "Estoque vinculado",
+      tipo: "sanitario",
+      categoria: "Vacina",
+      produto_veterinario_id: null,
       sanitario_produto_v2_id: "product-linked",
-    });
-
-    const linkedResult = await loadSanitaryAgendaExecutionOptionsV2([
+      unidade_base: "dose",
+      ativo: true,
+      payload: {},
+      deleted_at: null,
+    } as Insumo);
+    await db.state_insumo_lotes.put({
+      id: "stock-lot-linked",
+      fazenda_id: "farm-1",
+      insumo_id: "insumo-linked",
+      identificacao_lote: null,
+      saldo_atual_base: 100,
+      unidade_base: "dose",
+      status: "ativo",
+      deleted_at: null,
+    } as InsumoLote);
+    const result = await loadSanitaryAgendaExecutionOptionsV2([
       {
         ...items[0],
         productRequirementKind: "product_class",
         productClass: "vacina_ibr_bvd",
-        productClassLabel: "Vacina IBR/BVD",
       },
     ]);
-    expect(linkedResult.productOptions).toEqual(
+    expect(result.productOptions).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: "product-linked" })]),
     );
-    expect(linkedResult.inventoryLotOptions).toEqual([
+    expect(result.inventoryLotOptions).toEqual([
       expect.objectContaining({
-        id: "stock-lot-ibr-bvd",
+        id: "stock-lot-linked",
         productId: "product-linked",
       }),
     ]);
