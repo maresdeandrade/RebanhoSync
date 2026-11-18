@@ -15,7 +15,8 @@ import {
 
 describe.each(Object.entries(readers))(
   "inventory snapshot query: %s",
-  (_, read) => {
+  (readerName, read) => {
+    const includesSanitaryCatalog = readerName === "current";
     let database: ReturnType<typeof createDatabase>;
     beforeEach(async () => {
       database = createDatabase();
@@ -32,11 +33,11 @@ describe.each(Object.entries(readers))(
       async (farm) => {
         const snapshot = await read(farm, database);
         const snapshotKeysForReader = snapshotKeys.filter(
-          (key) => key !== "produtosSanitariosV2" || "produtosSanitariosV2" in snapshot!,
+          (key) => key !== "produtosSanitariosV2" || includesSanitaryCatalog,
         );
         expect(Object.keys(snapshot!).sort()).toEqual(snapshotKeysForReader);
         for (const [key, table] of Object.entries(collections)) {
-          if (!(key in snapshot!)) continue;
+          if (key === "produtosSanitariosV2" && !includesSanitaryCatalog) continue;
           const collection = key as Collection;
           const expectedFarm =
             key === "produtos" || key === "produtosSanitariosV2"
@@ -91,7 +92,7 @@ describe.each(Object.entries(readers))(
       await database.open();
       await read("A", database);
       const expectedTables = [...Object.values(collections), "queue_gestures"].filter(
-        (table) => table !== collections.produtosSanitariosV2 || reads.some((r) => r.table === table),
+        (table) => table !== collections.produtosSanitariosV2 || includesSanitaryCatalog,
       );
       expect(reads.map((r) => r.table).sort()).toEqual(expectedTables.sort());
       for (const trace of reads.filter(
@@ -112,7 +113,7 @@ describe.each(Object.entries(readers))(
     it("returns empty arrays for an absent farm but retains the global catalog", async () => {
       const snapshot = await read("empty", database);
       for (const key of Object.keys(collections) as Collection[]) {
-        if (snapshot![key] == null) continue;
+        if (key === "produtosSanitariosV2" && !includesSanitaryCatalog) continue;
         expect(snapshot![key]).toHaveLength(
           key === "produtos" ? 2 : key === "produtosSanitariosV2" ? 1 : 0,
         );

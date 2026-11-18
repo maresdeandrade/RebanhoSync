@@ -24,3 +24,76 @@ describe("sanitary agenda forecast v2", () => {
     expect(buildSanitaryPlanRealizedIndicatorsV2({ fazendaId: "farm-1", eventIds: ["e1"], plannedAnimals: 4, executedAnimalIds: ["a1", "a2"], estimatedQuantity: 8, appliedQuantities: [{ quantity: 4, unit: "ml" }], movements: [{ id: "m1", fazenda_id: "farm-1", source_evento_id: "e1", quantidade_base: 5, unidade_base: "ml", tipo: "consumo_sanitario", deleted_at: null }], comparableUnit: "ml" })).toMatchObject({ executedAnimals: 2, coverageRatio: 0.5, appliedQuantity: 4, consumedQuantity: 5, variance: null, comparable: false, comparisonStatus: "partial_execution" });
   });
 });
+
+describe("sanitary plan realized movement classification", () => {
+  type Input = Parameters<typeof buildSanitaryPlanRealizedIndicatorsV2>[0];
+  type Movement = Input["movements"][number];
+  const consumption: Movement = { id: "consumption-1", fazenda_id: "farm-1", source_evento_id: "e1", quantidade_base: 10, unidade_base: "ml", tipo: "consumo_sanitario", deleted_at: null };
+  const loss: Movement = { ...consumption, id: "loss-1", quantidade_base: 3, tipo: "perda" };
+  const input = (movements: Movement[]): Input => ({
+    fazendaId: "farm-1",
+    eventIds: ["e1"],
+    plannedAnimals: 1,
+    executedAnimalIds: ["a1"],
+    estimatedQuantity: 8,
+    appliedQuantities: [{ quantity: 8, unit: "ml" }],
+    movements,
+    comparableUnit: "ml",
+  });
+
+  it("contabiliza perda do mesmo Evento sem somá-la à aplicação ou ao consumo", () => {
+    const source = input([consumption, loss]);
+    const original = structuredClone(source);
+
+    expect(buildSanitaryPlanRealizedIndicatorsV2(source)).toMatchObject({
+      appliedQuantity: 8,
+      consumedQuantity: 10,
+      lossQuantity: 3,
+      variance: 2,
+      comparable: true,
+      comparisonStatus: "comparable",
+    });
+    expect(source).toEqual(original);
+  });
+
+  it.each([
+    { name: "consumo sem perdas", movements: [consumption], consumed: 10, lost: 0 },
+    { name: "perda sem consumo", movements: [loss], consumed: 0, lost: 3 },
+    { name: "consumo duplicado", movements: [consumption, { ...consumption }], consumed: 10, lost: 0 },
+    { name: "perda duplicada", movements: [loss, { ...loss }], consumed: 0, lost: 3 },
+    { name: "duplicatas intercaladas", movements: [loss, consumption, { ...loss }, { ...consumption }], consumed: 10, lost: 3 },
+  ])("preserva totais em $name", ({ movements, consumed, lost }) => {
+    expect(buildSanitaryPlanRealizedIndicatorsV2(input(movements))).toMatchObject({
+      consumedQuantity: consumed,
+      lossQuantity: lost,
+      appliedQuantity: 8,
+    });
+  });
+
+  it.each([
+    { name: "outra fazenda", patch: { fazenda_id: "farm-2" } },
+    { name: "outro Evento", patch: { source_evento_id: "e2" } },
+    { name: "sem vínculo factual", patch: { source_evento_id: null } },
+    { name: "movimento excluído", patch: { deleted_at: "2026-01-02" } },
+    { name: "unidade incompatível", patch: { unidade_base: "kg" as const } },
+    { name: "quantidade negativa", patch: { quantidade_base: -3 } },
+    { name: "quantidade não finita", patch: { quantidade_base: Number.NaN } },
+  ])("exclui consumo e perda com $name", ({ patch }) => {
+    const invalidConsumption = { ...consumption, ...patch };
+    const invalidLoss = { ...loss, ...patch };
+    expect(buildSanitaryPlanRealizedIndicatorsV2(input([invalidConsumption, invalidLoss]))).toMatchObject({
+      consumedQuantity: 0,
+      lossQuantity: 0,
+    });
+  });
+
+  it("mantém perdas desconhecidas quando não há unidade comparável", () => {
+    expect(buildSanitaryPlanRealizedIndicatorsV2({ ...input([consumption, loss]), comparableUnit: null })).toMatchObject({
+      appliedQuantity: null,
+      consumedQuantity: null,
+      lossQuantity: null,
+      comparable: false,
+      comparisonStatus: "incomplete_data",
+    });
+  });
+});

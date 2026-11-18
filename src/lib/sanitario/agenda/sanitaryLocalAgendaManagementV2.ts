@@ -78,6 +78,7 @@ type LocalAgendaDbV2 = Pick<
   | "state_insumo_movimentacoes"
   | "event_eventos"
   | "event_eventos_sanitario"
+  | "event_eventos_animais"
   | "catalog_sanitario_protocolos_v2"
   | "catalog_sanitario_protocolo_itens_versions_v2"
   | "state_fazenda_sanidade_config"
@@ -215,7 +216,7 @@ export async function listLocalSanitaryAgendasV2(
 ): Promise<SanitaryLocalAgendaListItemV2[]> {
   await requireTenantSensitiveAccess();
   const db = localDb ?? (await getDefaultDb());
-  const [agendas, agendaAnimals, animals, lots, supplies, inventoryLots, movements, events, eventDetails, operations, obligations] = await Promise.all([
+  const [agendas, agendaAnimals, animals, lots, supplies, inventoryLots, movements, events, eventDetails, eventAnimals, operations, obligations] = await Promise.all([
     db.ops_sanitario_agenda_v2.where("fazenda_id").equals(fazendaId).toArray(),
     db.ops_sanitario_agenda_animais_v2
       .where("fazenda_id")
@@ -228,6 +229,7 @@ export async function listLocalSanitaryAgendasV2(
     db.state_insumo_movimentacoes.where("fazenda_id").equals(fazendaId).toArray(),
     db.event_eventos.where("fazenda_id").equals(fazendaId).toArray(),
     db.event_eventos_sanitario.where("fazenda_id").equals(fazendaId).toArray(),
+    db.event_eventos_animais.where("fazenda_id").equals(fazendaId).toArray(),
     db.queue_ops.toArray(),
     db.sync_reconcile_obligations.where("fazenda_id").equals(fazendaId).toArray(),
   ]);
@@ -268,12 +270,21 @@ export async function listLocalSanitaryAgendasV2(
   );
   const agendaAnimalsById = new Map<string, SanitarioAgendaAnimalLocalV2[]>();
   const eventsByAgendaId = new Map<string, typeof events>();
+  const participantsByEventId = new Map<string, Set<string>>();
+  for (const relation of eventAnimals) {
+    const participants = participantsByEventId.get(relation.evento_id) ?? new Set<string>();
+    participants.add(relation.animal_id);
+    participantsByEventId.set(relation.evento_id, participants);
+  }
   for (const event of events) {
     const agendaId = event.source_sanitario_agenda_v2_id ?? readText(event.payload, "agenda_id");
     if (!agendaId || event.deleted_at) continue;
     const current = eventsByAgendaId.get(agendaId) ?? [];
     current.push(event);
     eventsByAgendaId.set(agendaId, current);
+    if (!participantsByEventId.has(event.id) && event.animal_id) {
+      participantsByEventId.set(event.id, new Set([event.animal_id]));
+    }
   }
 
   for (const entry of agendaAnimals) {
@@ -403,19 +414,24 @@ export async function listLocalSanitaryAgendasV2(
             fazendaId,
             eventIds,
             plannedAnimals: Math.max(entries.length, 1),
-            executedAnimalIds: agendaEvents.flatMap((event) => event.animal_id ? [event.animal_id] : []),
+            executedAnimalIds: agendaEvents.flatMap((event) => [...(participantsByEventId.get(event.id) ?? [])]),
             estimatedQuantity: buildSanitaryAgendaForecastV2({
               fazendaId,
               asOf: agenda.data_programada,
               item: { animalCount: Math.max(entries.length, 1), plannedProductId, suggestedDose, suggestedDoseUnit, suggestedDoseBasis, suggestedDoseProductId },
               stock: { complete: true, supplies, lots: inventoryLots },
             }).estimatedQuantity,
-            appliedQuantities: details.map((detail) => ({
-              quantity: detail.dose_quantidade ?? null,
-              unit: detail.dose_unidade ?? null,
-              productId: detail.produto_sanitario_v2_id ?? detail.produto_veterinario_id ?? null,
-              expectedProductId: plannedProductId,
-            })),
+            appliedQuantities: details.map((detail) => {
+              const participantCount = participantsByEventId.get(detail.evento_id)?.size ?? 0;
+              return {
+                quantity: detail.dose_quantidade != null && participantCount > 0
+                  ? detail.dose_quantidade * participantCount
+                  : null,
+                unit: detail.dose_unidade ?? null,
+                productId: detail.produto_sanitario_v2_id ?? detail.produto_veterinario_id ?? null,
+                expectedProductId: plannedProductId,
+              };
+            }),
             movements,
             comparableUnit: suggestedDoseUnit,
           });

@@ -18,6 +18,7 @@ function makeInput({
     lotId: "lot-1",
     insumoNome: "  Ração  ",
     categoria: "  Nutrição  ",
+    sanitarioProdutoV2Id: "",
     ativo: true,
     estoqueMinimoBase: "5",
     pontoRessuprimentoBase: "10",
@@ -211,6 +212,8 @@ describe("buildLotEditOperations", () => {
     const input = deepFreeze(makeInput(overrides));
     const before = structuredClone(input);
     const expected = buildBaselineLotEditOperations(input);
+    // The technical link is the intentional additive delta from the frozen baseline.
+    expected[0].record.sanitario_produto_v2_id = null;
     const actual = buildLotEditOperations(input);
 
     // Strict equality checks order, nulls, keys, payloads and financial metadata.
@@ -233,5 +236,18 @@ describe("buildLotEditOperations", () => {
     );
     expect(input).toStrictEqual(before);
     expect(buildLotEditOperations(input)).toStrictEqual(actual);
+  });
+
+  it.each([
+    { value: "product-v2-1", expected: "product-v2-1" },
+    { value: "  product-v2-1  ", expected: "product-v2-1" },
+    { value: "", expected: null },
+  ])("grava o vínculo técnico explícito $value", ({ value, expected }) => {
+    const operations = buildLotEditOperations(makeInput({ editForm: { sanitarioProdutoV2Id: value } }));
+    expect(operations[0]).toMatchObject({
+      table: "insumos",
+      action: "UPDATE",
+      record: { sanitario_produto_v2_id: expected },
+    });
   });
 });

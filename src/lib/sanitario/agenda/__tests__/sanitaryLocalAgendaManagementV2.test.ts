@@ -77,6 +77,7 @@ async function clearScope() {
     db.sync_reconcile_obligations.clear(),
     db.event_eventos.clear(),
     db.event_eventos_sanitario.clear(),
+    db.event_eventos_animais.clear(),
     db.state_insumo_movimentacoes.clear(),
   ]);
 }
@@ -237,6 +238,35 @@ describe("sanitaryLocalAgendaManagementV2", () => {
 
     expect(result[0]?.forecast).toMatchObject({ status: "stock_sufficient", estimatedQuantity: 2, compatibleStock: 10 });
     expect(result[0]?.indicators).toMatchObject({ executedAnimals: 1, coverageRatio: 1, appliedQuantity: 2, consumedQuantity: 2, variance: 0, comparable: true, comparisonStatus: "comparable" });
+  });
+
+  it("conta participantes factuais e dose por animal na execução coletiva, sem contar avaliação", async () => {
+    await db.ops_sanitario_agenda_v2.put(agenda({
+      produto_snapshot: { plannedProductId: "product-1" },
+      metadata: { dose: 2, doseUnit: "ml", doseBasis: "animal", doseProductId: "product-1" },
+    }));
+    await db.ops_sanitario_agenda_animais_v2.bulkPut(["animal-1", "animal-2"].map((animal_id) => ({
+      id: `target-${animal_id}`, fazenda_id: "farm-1", agenda_id: "agenda-1", animal_id, planned_status: "executado", deleted_at: null,
+    })) as never);
+    await db.event_eventos.bulkPut([
+      { id: "application", fazenda_id: "farm-1", animal_id: null, source_sanitario_agenda_v2_id: "agenda-1", sanitario_sync_v2_nature: "primary_execution", payload: { schema: "sanitary_agenda_execution_v2" }, deleted_at: null },
+      { id: "assessment", fazenda_id: "farm-1", animal_id: "animal-3", source_sanitario_agenda_v2_id: null, payload: { schema: "sanitary_assessment_v1" }, deleted_at: null },
+    ] as never);
+    await db.event_eventos_sanitario.put({ evento_id: "application", fazenda_id: "farm-1", tipo: "medicamento", produto_sanitario_v2_id: "product-1", dose_quantidade: 2, dose_unidade: "ml", deleted_at: null } as never);
+    await db.event_eventos_animais.bulkPut([
+      { id: "r1", fazenda_id: "farm-1", evento_id: "application", animal_id: "animal-1" },
+      { id: "r2", fazenda_id: "farm-1", evento_id: "application", animal_id: "animal-2" },
+      { id: "other-farm", fazenda_id: "farm-2", evento_id: "application", animal_id: "animal-other-farm" },
+    ] as never);
+
+    const [result] = await listLocalSanitaryAgendasV2("farm-1", db);
+    expect(result.indicators).toMatchObject({
+      plannedAnimals: 2,
+      executedAnimals: 2,
+      coverageRatio: 1,
+      estimatedQuantity: 4,
+      appliedQuantity: 4,
+    });
   });
 
   it("reagenda alterando somente a data planejada e sem efeitos operacionais", async () => {
