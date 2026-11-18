@@ -47,6 +47,8 @@ export function buildLotEditOperations({
         id: insumo.id,
         nome: editForm.insumoNome.trim(),
         categoria: editForm.categoria.trim() || null,
+        sanitario_produto_v2_id:
+          editForm.sanitarioProdutoV2Id.trim() || null,
         ativo: editForm.ativo,
         payload: buildInventoryResupplyPayload(
           {

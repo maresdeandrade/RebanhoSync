@@ -1,4 +1,16 @@
-# Resultado mais recente — integração pública Sanitário V2 F6–F9
+# Resultado mais recente — #302 integrada e #301 validada
+
+Atualizado em: 2026-11-18 (America/Sao_Paulo)
+Baseline integrada: `main@175e9dee3639ea1726f9c62c9b0d208e1452d7dc` (#302).
+Entrega fora da main: #301, head `6cdc72848f6cd0af0fbc6273a17a67544d7b5c62`, gate READY e PR aberta.
+
+#302 integra Protocolos da Fazenda, avaliações factuais append-only e controle estratégico individual; junho permanece contextual. #301 conclui vínculo estoque–produto V2, previsão e indicadores, com perdas separadas e contagem factual de participantes coletivos.
+
+Gate completo #302: 5.481 aprovados/61 ignorados. Gate completo #301: 5.509 aprovados/61 ignorados, lint/build/Fallow obrigatório e gates documentais aprovados; baseline funcional local 5/5 e HTTP descartável 11/11. São evidências da entrega, não novos testes desta atualização documental. [Execuções, SHAs e limites](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+
+Sem nova fase, merge da #301, disponibilização remota ou produção operacional declarada. TypeScript global mantém dívida histórica não tratada; o fechamento da #301 não incluiu nova contagem.
+
+## Registro anterior preservado — integração pública Sanitário V2 F6–F9
 
 Atualizado em: 2026-10-25 (America/Sao_Paulo)
 Baseline pós-merge: `origin/main@0e7f5137a865f2671d035e51d624609a563e441e`

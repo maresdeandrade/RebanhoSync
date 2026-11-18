@@ -1141,6 +1141,58 @@ Deno.serve(async (req: Request) => {
             continue;
           }
 
+          const [{ data: sourceSupply, error: supplyError }, { data: sourceLot, error: lotError }] =
+            await Promise.all([
+              supabase
+                .from("insumos")
+                .select("id, fazenda_id, tipo, ativo, sanitario_produto_v2_id, deleted_at")
+                .eq("id", String(record.insumo_id))
+                .eq("fazenda_id", fazenda_id)
+                .limit(1)
+                .maybeSingle(),
+              supabase
+                .from("insumo_lotes")
+                .select("id, fazenda_id, insumo_id, status, saldo_atual_base, unidade_base, deleted_at")
+                .eq("id", String(record.insumo_lote_id))
+                .eq("fazenda_id", fazenda_id)
+                .limit(1)
+                .maybeSingle(),
+            ]);
+          if (supplyError || lotError) {
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: "RETRYABLE",
+              retryable: true,
+              reason_code: "SANITARIO_INVENTORY_IDENTITY_LOOKUP_FAILED",
+              reason_message: supplyError?.message ?? lotError?.message ?? "Inventory identity lookup failed",
+            });
+            continue;
+          }
+          if (
+            !sourceSupply ||
+            sourceSupply.deleted_at ||
+            sourceSupply.tipo !== "sanitario" ||
+            sourceSupply.ativo !== true ||
+            sourceSupply.sanitario_produto_v2_id !== sourceDetail?.produto_sanitario_v2_id ||
+            !sourceLot ||
+            sourceLot.deleted_at ||
+            sourceLot.insumo_id !== sourceSupply.id ||
+            sourceLot.status !== "ativo" ||
+            sourceLot.unidade_base !== record.unidade_base
+          ) {
+            results.push({
+              op_id: op.client_op_id,
+              client_op_id: op.client_op_id,
+              domain_op_id: String(record.domain_op_id),
+              status: "REJECTED",
+              reason_code: "SANITARIO_INVENTORY_PRODUCT_LINK_MISMATCH",
+              reason_message: "Inventory lot is not an active sanitary lot linked to the executed V2 product",
+            });
+            continue;
+          }
+
           const [byClientOp, byDomainOp, byLogicalMovement] = await Promise.all(
             [
               supabase

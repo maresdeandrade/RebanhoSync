@@ -1415,6 +1415,7 @@ export interface Insumo {
   tipo: InsumoTipoEnum;
   categoria: string | null;
   produto_veterinario_id: string | null;
+  sanitario_produto_v2_id: string | null;
   unidade_base: InsumoUnidadeBaseEnum;
   ativo: boolean;
   principio_ativo?: string | null;

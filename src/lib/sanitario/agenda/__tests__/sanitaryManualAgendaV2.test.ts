@@ -148,6 +148,20 @@ describe("sanitaryManualAgendaV2", () => {
     });
   });
 
+  it("persiste produto tecnico V2 planejado apenas no snapshot", () => {
+    const records = buildManualSanitaryAgendaRecordsV2(
+      baseInput({
+        source: { ...baseInput().source, plannedProductId: "product-v2-1" },
+      }),
+    );
+
+    expect(records.agenda.produto_veterinario_id).toBeNull();
+    expect(records.agenda.produto_snapshot).toMatchObject({
+      plannedProductId: "product-v2-1",
+      planningOnly: true,
+    });
+  });
+
   it("e idempotente por clientOpId e nao duplica agenda", async () => {
     const db = createMemoryDb();
 

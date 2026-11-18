@@ -4,16 +4,25 @@
 
 > **Patch local — 22/10/2026, sem publicação ou aprovação remota:** novas versões com `catalog_review_scope=manual_planning` permitem curadoria nacional de raiva para consulta/planejamento manual, preservando `no_agenda_auto` e flags de automação desligadas. A migration `20261022230000_sanitario_manual_catalog_review_v2.sql` mantém autenticação, digest, CAS, replay e auditoria; não aprova registros nem altera gates. Adesão continua na configuração sanitária existente da fazenda; o motor consulta os overlays versionados do protocolo e o município cadastrado, sem solicitar legislação ao produtor ou inferir foco/perifoco, obrigatoriedade ou dispensa por endereço. Ausência/expiração de cobertura mantém consulta/manual; menores de três meses ou indicação contextual exigem confirmação e responsável técnico. Variantes com condição materna usam Evento compatível documentado antes do nascimento ou contexto documental explícito, sem tratar ausência de histórico como mãe não vacinada. Reforço anual de `class_scheme` usa aniversário do calendário, inclusive ano bissexto. O pacote de candidatas é somente revisão pelo publicador canônico; `--apply` permanece recusado nesse caminho. CattleMaster e Bovigen Lepto 8 permanecem propostas bloqueadas onde faltam condições de runtime; Bovela não comprova IBR. Nada neste patch certifica produto, registro vigente ou execução.
 
-```markdown
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-10-30
+Atualizado em: 2026-11-18
 
 ## Estado integrado até #265 — 01/11/2026
 
 [GTA/CAS #264](https://github.com/maresdeandrade/RebanhoSync/pull/264), merge `56dbe1b1`, encerra o recorte factual/avisos: pendência documental ou sanitária não bloqueia o registro de fato ocorrido; guards técnicos permanecem e casos abertos continuam sinalizados com projeção stale. Não emite autorização oficial nem encerra I05/I06/G02 integralmente.
 
 [V3.1/V3.2 #265](https://github.com/maresdeandrade/RebanhoSync/pull/265), merge `23893a97`, integra fundação A/B/C, contrato único 3, execução por subconjuntos, recibos e recuperação offline; leitores de histórico, estoque e carência passam a considerar múltiplos Eventos conforme a [fonte de verdade](../context/SOURCE_OF_TRUTH.md#execução-sanitária-progressiva--contrato-integrado-265). A prova local 30/15/5/5/5 conserva cinco pendências e Agenda aberta; não implementa fechamento gerencial/continuidade do design integral. As seis migrations de #265 estão versionadas; aplicação em ambiente existente depende de autorização própria. [Evidências e limites](../review/CURRENT_PHASE_HANDOFF.md#entregas-integradas-até-os-prs-264-e-265--01112026). As descrições V2 e baselines de homologação abaixo conservam seus recortes históricos; não implicam liberação de produção.
+
+## Contrato vigente — 18/11/2026
+
+Os adendos e o recorte #265 acima são históricos. #268 integrou colaboração, fechamento gerencial e continuidade; #285 retirou geração automática de Agenda. Triagem é reativa e a materialização é manual e confirmada.
+
+**#302 integrada:** Protocolos da Fazenda e monitoramento ON/OFF; avaliações `no_treatment_indicated`, `treatment_indicated` e `insufficient_data`, com participantes explícitos e correções append-only. Avaliação é fato de avaliação, não aplicação; não gera estoque ou carência. O controle estratégico individual preserva ciclo, etapa, variante 5-7-9/5-6-9 e evidências; junho continua contextual. A unicidade individual de Agenda é transacional, sem depender apenas de agrupamento, data ou lote.
+
+**#301 validada, PR aberta:** vínculo explícito de insumo sanitário ao produto V2; previsão de consumo com unidade/base e produto compatíveis; aplicado, baixado e perdas separados. Eventos coletivos usam participantes factuais para cobertura e quantidade aplicada. A deduplicação é derivada, não corrige movimentos persistidos. Estoque sem vínculo técnico não é validado por coincidência de nome ou campo legado. Guards farmacológicos, fonte técnica, isolamento e replay permanecem no fluxo canônico.
+
+[estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026) registra integração, testes e limites. Disponibilidade remota não foi reconfirmada; não reabre o desenvolvimento local nem exige suporte a aplicativos antigos inexistentes.
 
 ## Objetivo
 
@@ -542,7 +551,7 @@ Na Edge, execução primária com `registration_mode=executed_fact` e `prospecti
 
 `SANITARIO_V2_E2E_PLATFORM_BLOCKED = CLOSED` em 05/10/2026 após PT409, PostgREST 14.18 e E2E remoto stale de `replace_agenda_animals`. Historicamente, `40001` não retornava pelo transporte antes do timeout. Ver [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Gate remoto `OFF`, flag `false`, rollout e importação real não autorizados; outras RPCs não foram recertificadas.
 
-Os itens 3.9, 3.13, 4, 5 e 6 estão validados localmente; o hardening integrado local foi executado. Demais E2Es remotos, rollout e fechamento da Fase 12 permanecem pendentes; a recertificação stale não amplia esse escopo.
+Os itens 3.9, 3.13, 4, 5 e 6 estão validados localmente; o hardening integrado local foi executado. A Fase 12 está encerrada. A recertificação stale não equivale à certificação remota universal; verificações ampliadas e disponibilização permanecem condicionadas ao alvo, sem reabrir o fechamento funcional.
 
 ---
 
@@ -1110,7 +1119,3 @@ Por decisão do proprietário, a implantação inicial usa `--bootstrap-initial`
 * Autorizar venda/abate por sinal sanitário isolado.
 
 ---
-
-```
-
-```

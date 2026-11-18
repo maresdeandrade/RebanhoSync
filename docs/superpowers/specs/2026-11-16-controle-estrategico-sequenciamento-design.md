@@ -2,7 +2,7 @@
 
 > Registro histórico da proposta de 16/11/2026. Parte do desenho foi implementada localmente após este registro; a janela de junho permanece contextual, sem materialização validada. Este documento não representa o estado de implantação remota.
 
-Status: **proposta para implementação posterior**, não publicada nem executável. A adoção de 5-6-9 é declaração de prática da fazenda, não equivalência clínica, recomendação universal ou alteração da curadoria 5-7-9. A implementação depende do contrato factual efetivo da Fase 2 e de validação técnica da janela contextual de junho.
+Status vigente em 18/11/2026: **controle estratégico individual integrado pela #302**. A proposta abaixo é histórica; a escolha 5-6-9 é declaração da fazenda, sem equivalência clínica presumida. Junho permanece contextual, sem materialização. [Implementação e limites](../../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 ## Contratos observados
 

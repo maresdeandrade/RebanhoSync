@@ -7,7 +7,8 @@
 - **Fase 24 — Release Hardening / Scale Readiness**; F24.5 integrada e F24.6 ativa.
 - F24.6A1 integrada pelo PR #200; certificação restrita ao envelope reconnect 1k. Não implica capacidade geral de escala.
 - F24.6A2 é proposta de inventário estático; escopo e critérios devem ser formalizados antes do início.
-- Sync Sanitário v2 está implementado sob gate remoto desligado; rollout e importação real não estão autorizados, e produção não está provisionada.
+- Em 18/11/2026, `main@175e9dee` inclui #302: Protocolos da Fazenda, avaliações factuais e controle estratégico individual. #301 está validada em `6cdc7284`, com gate READY e integração pendente.
+- Desenvolvimento local, integração e disponibilização remota são distintos. O produto não tem produção operacional declarada; ausência de deploy não reabre entregas locais encerradas.
 
 Hierarquia factual: código e migrations ativas; depois [estado do projeto](./context/PROJECT_STATUS.md); depois documentos normativos e derivados. Este índice e os READMEs não substituem essas fontes.
 

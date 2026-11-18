@@ -21,6 +21,7 @@ import type {
   SanitarioAgendaV2Status,
   SanitarioAgendaClosureLocalV2,
 } from "@/lib/offline/types";
+import { buildSanitaryAgendaForecastV2, buildSanitaryPlanRealizedIndicatorsV2, type SanitaryAgendaForecastV2, type SanitaryPlanRealizedIndicatorsV2 } from "./sanitaryAgendaForecastV2";
 
 export type SanitaryAgendaTargetV2 = {
   kind: "animal" | "lote" | "nao_identificado";
@@ -46,6 +47,8 @@ export type SanitaryLocalAgendaListItemV2 = {
   plannedProductName: string | null;
   suggestedDose: number | null;
   suggestedDoseUnit: string | null;
+  suggestedDoseBasis?: string | null;
+  suggestedDoseProductId?: string | null;
   suggestedRoute: string | null;
   animalCount: number;
   animalOptions?: { id: string; label: string; recognized: boolean }[];
@@ -53,6 +56,8 @@ export type SanitaryLocalAgendaListItemV2 = {
   canManage: boolean;
   canExecute: boolean;
   reconciliationPending?: boolean;
+  forecast?: SanitaryAgendaForecastV2;
+  indicators?: SanitaryPlanRealizedIndicatorsV2;
 };
 
 export type SanitaryLocalAgendaFiltersV2 = {
@@ -68,6 +73,12 @@ type LocalAgendaDbV2 = Pick<
   | "ops_sanitario_agenda_animais_v2"
   | "state_animais"
   | "state_lotes"
+  | "state_insumos"
+  | "state_insumo_lotes"
+  | "state_insumo_movimentacoes"
+  | "event_eventos"
+  | "event_eventos_sanitario"
+  | "event_eventos_animais"
   | "catalog_sanitario_protocolos_v2"
   | "catalog_sanitario_protocolo_itens_versions_v2"
   | "state_fazenda_sanidade_config"
@@ -205,7 +216,7 @@ export async function listLocalSanitaryAgendasV2(
 ): Promise<SanitaryLocalAgendaListItemV2[]> {
   await requireTenantSensitiveAccess();
   const db = localDb ?? (await getDefaultDb());
-  const [agendas, agendaAnimals, animals, lots, operations, obligations] = await Promise.all([
+  const [agendas, agendaAnimals, animals, lots, supplies, inventoryLots, movements, events, eventDetails, eventAnimals, operations, obligations] = await Promise.all([
     db.ops_sanitario_agenda_v2.where("fazenda_id").equals(fazendaId).toArray(),
     db.ops_sanitario_agenda_animais_v2
       .where("fazenda_id")
@@ -213,6 +224,12 @@ export async function listLocalSanitaryAgendasV2(
       .toArray(),
     db.state_animais.where("fazenda_id").equals(fazendaId).toArray(),
     db.state_lotes.where("fazenda_id").equals(fazendaId).toArray(),
+    db.state_insumos.where("fazenda_id").equals(fazendaId).toArray(),
+    db.state_insumo_lotes.where("fazenda_id").equals(fazendaId).toArray(),
+    db.state_insumo_movimentacoes.where("fazenda_id").equals(fazendaId).toArray(),
+    db.event_eventos.where("fazenda_id").equals(fazendaId).toArray(),
+    db.event_eventos_sanitario.where("fazenda_id").equals(fazendaId).toArray(),
+    db.event_eventos_animais.where("fazenda_id").equals(fazendaId).toArray(),
     db.queue_ops.toArray(),
     db.sync_reconcile_obligations.where("fazenda_id").equals(fazendaId).toArray(),
   ]);
@@ -252,6 +269,23 @@ export async function listLocalSanitaryAgendasV2(
     lots.filter((lot) => !lot.deleted_at).map((lot) => [lot.id, lot]),
   );
   const agendaAnimalsById = new Map<string, SanitarioAgendaAnimalLocalV2[]>();
+  const eventsByAgendaId = new Map<string, typeof events>();
+  const participantsByEventId = new Map<string, Set<string>>();
+  for (const relation of eventAnimals) {
+    const participants = participantsByEventId.get(relation.evento_id) ?? new Set<string>();
+    participants.add(relation.animal_id);
+    participantsByEventId.set(relation.evento_id, participants);
+  }
+  for (const event of events) {
+    const agendaId = event.source_sanitario_agenda_v2_id ?? readText(event.payload, "agenda_id");
+    if (!agendaId || event.deleted_at) continue;
+    const current = eventsByAgendaId.get(agendaId) ?? [];
+    current.push(event);
+    eventsByAgendaId.set(agendaId, current);
+    if (!participantsByEventId.has(event.id) && event.animal_id) {
+      participantsByEventId.set(event.id, new Set([event.animal_id]));
+    }
+  }
 
   for (const entry of agendaAnimals) {
     const current = agendaAnimalsById.get(entry.agenda_id) ?? [];
@@ -319,6 +353,14 @@ export async function listLocalSanitaryAgendasV2(
         readText(agenda.metadata, "doseUnit") ??
         readText(agenda.protocol_item_snapshot, "doseUnit") ??
         readText(agenda.protocol_item_snapshot, "dose_unit");
+      const suggestedDoseBasis =
+        readText(agenda.metadata, "doseBasis") ??
+        readText(agenda.protocol_item_snapshot, "doseBasis") ??
+        readText(agenda.protocol_item_snapshot, "dose_basis");
+      const suggestedDoseProductId =
+        readText(agenda.metadata, "doseProductId") ??
+        readText(agenda.protocol_item_snapshot, "doseProductId") ??
+        readText(agenda.protocol_item_snapshot, "dose_product_id");
       const suggestedRoute =
         readText(agenda.metadata, "route") ??
         readText(agenda.protocol_item_snapshot, "route") ??
@@ -347,8 +389,53 @@ export async function listLocalSanitaryAgendasV2(
         plannedProductName,
         suggestedDose,
         suggestedDoseUnit,
+        suggestedDoseBasis,
+        suggestedDoseProductId,
         suggestedRoute,
         animalCount: Math.max(entries.length, 1),
+        forecast: buildSanitaryAgendaForecastV2({
+          fazendaId,
+          asOf: agenda.data_programada,
+          item: {
+            animalCount: Math.max(entries.length, 1),
+            plannedProductId,
+            suggestedDose,
+            suggestedDoseUnit,
+            suggestedDoseBasis,
+            suggestedDoseProductId,
+          },
+          stock: { complete: true, supplies, lots: inventoryLots },
+        }),
+        indicators: (() => {
+          const agendaEvents = eventsByAgendaId.get(agenda.id) ?? [];
+          const eventIds = agendaEvents.map((event) => event.id);
+          const details = eventDetails.filter((detail) => eventIds.includes(detail.evento_id) && !detail.deleted_at);
+          return buildSanitaryPlanRealizedIndicatorsV2({
+            fazendaId,
+            eventIds,
+            plannedAnimals: Math.max(entries.length, 1),
+            executedAnimalIds: agendaEvents.flatMap((event) => [...(participantsByEventId.get(event.id) ?? [])]),
+            estimatedQuantity: buildSanitaryAgendaForecastV2({
+              fazendaId,
+              asOf: agenda.data_programada,
+              item: { animalCount: Math.max(entries.length, 1), plannedProductId, suggestedDose, suggestedDoseUnit, suggestedDoseBasis, suggestedDoseProductId },
+              stock: { complete: true, supplies, lots: inventoryLots },
+            }).estimatedQuantity,
+            appliedQuantities: details.map((detail) => {
+              const participantCount = participantsByEventId.get(detail.evento_id)?.size ?? 0;
+              return {
+                quantity: detail.dose_quantidade != null && participantCount > 0
+                  ? detail.dose_quantidade * participantCount
+                  : null,
+                unit: detail.dose_unidade ?? null,
+                productId: detail.produto_sanitario_v2_id ?? detail.produto_veterinario_id ?? null,
+                expectedProductId: plannedProductId,
+              };
+            }),
+            movements,
+            comparableUnit: suggestedDoseUnit,
+          });
+        })(),
         animalOptions: entries.map((entry) => ({
           id: entry.animal_id,
           label: animalLabel(animalsById.get(entry.animal_id)),

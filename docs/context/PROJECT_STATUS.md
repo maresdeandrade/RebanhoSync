@@ -1,9 +1,9 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-11-13
-Baseline integrada confirmada para esta atualização: `main@f543bb6bd5a67c6c37a040904a33c99f0e189999` (PR #294). A correção do teste P33 está proposta na branch local `codex/sanitario-p33-v14`, ainda não integrada nesta baseline.
+Atualizado em: 2026-11-18
+Baseline integrada confirmada: `main@175e9dee3639ea1726f9c62c9b0d208e1452d7dc` (#302). Entrega validada fora da main: #301, head `6cdc72848f6cd0af0fbc6273a17a67544d7b5c62`, PR aberta e gate READY.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no escopo certificado)**.
-Próxima fase de desenvolvimento: **Fase 24 — continuidade pós-#294, sem nova fase. Sanitário #285–#287 integrou planejamento manual e execução V3; #290 integrou as correções UX da Central. O backend sanitário segue não reconciliado e a homologação factual V01 permanece parcial. A validação global de `main@f543bb6b` falhou no teste P33; sua correção está proposta localmente. [Evidências e limites](../review/CURRENT_PHASE_HANDOFF.md). GATE-03 bloqueado; F24.6A2 sem início; nenhum novo ciclo F24 aberto.**
+Próxima fase de desenvolvimento: **Fase 24 — continuidade localizada, sem nova fase. #302 integrada; #301 corrigida e validada, aguardando decisão de integração. Depois, tratar somente exceções curatoriais necessárias ao alvo escolhido e lacunas operacionais comprovadas. F24.6A2 não iniciada; GATE-03 e homologação ampla preservam seus limites, sem bloquear artificialmente o desenvolvimento local.**
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`; `REAL_PROCESS_KILL = NOT_PROVEN`.
 Baseline auditada da F24.4A: `main@fd746a2b73946f5609afd1b23575a94e4346d115`; `REAL_MULTI_DEVICE = NOT_PROVEN`.
@@ -29,6 +29,13 @@ com fila heterogênea foram certificados. Kill real de processo/browser permanec
 O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é a referência arquitetural canônica dos fluxos operacionais. Código e migrations ativas mantêm precedência factual; os resumos deste `PROJECT_STATUS.md` registram estado e contexto, mas não redefinem contratos do mapa.
 
 ## Estado atual
+
+**Consolidação de 18/11/2026:** núcleo operacional integrado; produto em desenvolvimento, sem produção operacional declarada. As fases F12–F23 e os recortes encerrados de F24 não são reabertos por ausência de deploy, migrations remotas ou clientes legados inexistentes. Preservação de fatos, pendências reais, isolamento e recuperação continuam obrigatórios.
+
+- **#295–#300 integradas:** P33/contrato v14, fixtures históricas, upgrades de telemetria/fontes e correções de Agenda/seleção B19. A antiga pendência de P33 foi superada.
+- **#302 integrada** em `175e9dee`: Protocolos da Fazenda, monitoramento ON/OFF, avaliações factuais e correções append-only, controle estratégico 5-7-9/5-6-9 e unicidade transacional de Agenda. Junho permanece contextual. Gate completo do head integrado: 5.481 aprovados/61 ignorados, lint/build/Fallow obrigatório aprovados; 232 diagnósticos TypeScript preexistentes registrados, sem regressão identificada naquela comparação.
+- **#301 implementada e validada, não integrada:** estoque ligado explicitamente ao produto V2, previsão e indicadores; perdas deduplicadas separadamente e participantes factuais de Eventos coletivos. [CI completo](https://github.com/maresdeandrade/RebanhoSync/actions/runs/44305287559): 5.509 aprovados/61 ignorados, lint/build/Fallow obrigatório e gates documentais aprovados. Baseline funcional local 5/5 e harness HTTP descartável 11/11; gate READY no head `6cdc7284`.
+- O inventário de backend de 13/11 abaixo é histórico. Não foi reconfirmado nesta atualização, e a disponibilidade remota não é pendência de desenvolvimento dessas entregas. [Resultados, integração e sequência vigente](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 **Reconciliação sanitária e CI — snapshot de 13/11/2026:** os PRs [#290–#294](../review/CURRENT_PHASE_HANDOFF.md#reconciliação-sanitária--snapshot-pós-294) estão integrados; #293 aposentou `sanitario-reconcile` no código e #294 corrigiu a resolução do intervalo do CI manual. A validação global [43491293594](https://github.com/maresdeandrade/RebanhoSync/actions/runs/43491293594), em `f543bb6b`, terminou com 4.138 testes aprovados, um falho e 59 ignorados; a falha P33 compara evidência histórica v13 ao contrato atual v14. O patch local de teste passou 8/8, mas não substitui a repetição do CI sobre código integrado. No inventário remoto de 13/11, o projeto `zqloazqzhwauamcejmuz` tinha 65 migrations, `sync-batch` v29, `sanitario-reconcile` v5 e gates desligados; o dry-run listou as dez migrations pendentes. **Backend não reconciliado; nenhuma implantação ou ativação foi comprovada.**
 
@@ -265,7 +272,7 @@ Estado dos subitens:
 |---|---|
 | 3.1–3.3 Schema, migrations e RLS | Concluídos |
 | 3.4–3.11 e 3.13 Sync funcional | Concluído e certificado no escopo da Fase 12 |
-| 3.12 Conflito multi-dispositivo | Desenvolvimento concluído; rollout bloqueado pela plataforma |
+| 3.12 Conflito multi-dispositivo | Desenvolvimento concluído; blocker stale da plataforma superado em 05/10/2026, sem certificação universal |
 | 4 Produto técnico e fonte por campo | Concluído |
 | 5 Correção sanitária append-only | Concluído |
 | 6 Carência sanitária operacional | Concluído |
@@ -323,7 +330,7 @@ Limites: as outras RPCs autoritativas não foram exercitadas nessa recertificaç
 
 ## Próximo desenvolvimento
 
-**Estado vigente — 20/10/2026:** F24.6 continua ACTIVE; F24.6A1 está CLOSED / INTEGRATED pelo PR #200 somente no envelope reconnect 1k certificado. O resultado não comprova capacidade geral de escala. F24.6A2 é uma proposta de inventário estático independente; formalizar escopo e critérios antes de iniciar. Não iniciar medição, otimização ou rollout por inferência.
+**Estado vigente — 18/11/2026:** #302 integrada; #301 validada e aberta, aguardando decisão de integração. F24.6 continua ativa e F24.6A1 encerrada no envelope certificado; F24.6A2 permanece proposta sem início, não pré-requisito automático para correções. Exceções curatoriais e verificações futuras devem seguir o alvo escolhido, sem reabrir entregas locais por ausência de deploy ou clientes legados inexistentes.
 
 O próximo parágrafo é `HISTORICAL_CORRECT / SUPERSEDED` e preserva um snapshot da F24.4E/F24.5, não o estado corrente.
 

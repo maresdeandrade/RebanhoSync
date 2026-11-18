@@ -1,9 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-11-13
-Status: **Fase 24 ativa; F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED apenas no envelope reconnect 1k; produção não provisionada**
-Próxima fase: **Fase 24 — continuidade pós-#294, sem nova fase. As correções UX da Central estão integradas pelo #290; homologação factual V01 segue parcial. A reconciliação do backend sanitário e a validação global completa permanecem pendentes. F24.6A2 não iniciada.**
-Baseline integrada confirmada para esta continuidade: `main@f543bb6bd5a67c6c37a040904a33c99f0e189999` (#294). O patch de teste P33 em `codex/sanitario-p33-v14` ainda não está integrado nesta baseline.
+Atualizado em: 2026-11-18
+Status: **Fase 24 ativa; núcleo operacional integrado; #302 integrada; #301 READY e não integrada; produto em desenvolvimento, sem produção operacional declarada**
+Próxima fase: **Fase 24 — continuidade localizada: decisão de integração da #301 validada, exceções curatoriais necessárias ao alvo escolhido e lacunas funcionais comprovadas; sem nova fase, benchmark ou rollout automático.**
+Baseline integrada confirmada para esta continuidade: `main@175e9dee3639ea1726f9c62c9b0d208e1452d7dc` (#302). Head validado da #301: `6cdc72848f6cd0af0fbc6273a17a67544d7b5c62`; PR aberta.
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -22,6 +22,30 @@ Baseline de abertura da Fase 19: `main@b07a1252a6436a413f9562a7f9079269cb49d026`
 Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
+
+## Consolidação pós-302 e validação da 301 — 18/11/2026
+
+Esta é a continuidade vigente. As seções datadas abaixo preservam snapshots anteriores; não reabrem entregas posteriores comprovadas. Código e migrations ativas mantêm precedência factual.
+
+| Entrega | Estado confirmado | Resultado e evidência |
+| --- | --- | --- |
+| #295–#299 | Integradas | P33/contrato v14, upgrades de telemetria/fontes e fixtures históricas corrigidos. A falha P33 relatada em #294 foi superada. |
+| #300 | Integrada em `2d639cc3` | Correções da Agenda e seleção sanitária B19, com guards de classe técnica e vínculo de catálogo. |
+| [#302](https://github.com/maresdeandrade/RebanhoSync/pull/302) | Integrada em `175e9dee`; head `79890ce2` | Protocolos da Fazenda, monitoramento ON/OFF, avaliação factual e correções append-only, controle individual 5-7-9/5-6-9 e unicidade transacional de Agenda. Junho permanece contextual, sem materialização. |
+| [#301](https://github.com/maresdeandrade/RebanhoSync/pull/301) | Implementada/validada, PR aberta; gate READY em `6cdc7284` | Estoque vinculado a produto técnico V2, previsão e planejado × realizado; deduplicação única com consumo/perdas separados; participantes factuais e dose por animal em Eventos coletivos. Composição com #300/#302 preservada. |
+
+**Evidências reaproveitadas, não reexecutadas nesta reconciliação documental:**
+
+- #302: [gate completo](https://github.com/maresdeandrade/RebanhoSync/actions/runs/44235602178) com 5.481 testes aprovados, 61 ignorados, lint/build/Fallow obrigatório aprovados. Comparação TypeScript daquela entrega: 232 diagnósticos preexistentes, sem regressão identificada; não é typecheck global limpo.
+- #301: [check obrigatório](https://github.com/maresdeandrade/RebanhoSync/actions/runs/44305306397) e [gate completo](https://github.com/maresdeandrade/RebanhoSync/actions/runs/44305287559) aprovados no mesmo head: 5.509 testes aprovados, 61 ignorados; 541 arquivos aprovados, cinco ignorados; lint/build/Fallow obrigatório, integridade e gates documentais aprovados.
+- #301: regressões de perdas e execução coletiva reproduzidas antes da correção. Testes e fixtures de IndexedDB, vínculo V2 e reatividade do inventário alinhados ao contrato ativo, preservando referências históricas. Baseline funcional Supabase 5/5 e harness HTTP 11/11 em stack novo, exclusivo e descartável; nenhum backend existente foi usado nessas provas. Typecheck global não reexecutado nessa conclusão.
+
+**Continuidade:** o núcleo funcional não exige nova fase ou reimplementação sanitária. A ação imediata é decidir a integração da #301; esta atualização não a executa. Exceções C02/C03 são individualizadas e dependem dos produtos/contextos necessários; não repetir a curadoria dos 39. Escala ampliada, Capacitor, hardware e site comercial são evoluções condicionadas ao escopo de produto. F24.6A2 não iniciada; F24.7/F24.8 e GATE-03 conservam seus recortes de homologação, sem equivaler a funcionalidades ausentes.
+
+**Limites:** sem produção operacional declarada e sem requisito de clientes legados inexistentes. Integridade de fatos, snapshots, recibos e operações pendentes reais permanece obrigatória. Não houve nova consulta, migration ou ativação remota; o inventário de backend de 13/11 é histórico, inclusive a antiga contagem de dez migrations pendentes, que não deve orientar aplicação atual sem novo levantamento autorizado. Disponibilização remota exige autorização própria e não impede conclusão local.
+
+
+> Snapshot histórico anterior às integrações #295–#302 e à validação final da #301; não representa a pendência atual de P33 ou do CI.
 
 ## Reconciliação sanitária — snapshot pós-#294
 

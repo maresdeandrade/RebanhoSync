@@ -124,6 +124,7 @@ const EMPTY_ENTRY_FORM: EntryForm = {
   nome: "",
   categoria: "",
   produtoVeterinarioId: NONE_VALUE,
+  sanitarioProdutoV2Id: NONE_VALUE,
   unidadeBase: "kg",
   unidadeCompra: "saco",
   apresentacaoNome: "",
@@ -323,6 +324,7 @@ function buildLotEditForm(
     lotId: lot.id,
     insumoNome: insumo?.nome ?? "",
     categoria: insumo?.categoria ?? "",
+    sanitarioProdutoV2Id: insumo?.sanitario_produto_v2_id ?? "",
     ativo: insumo?.ativo ?? true,
     estoqueMinimoBase:
       resupplyPolicy.minimumStockBase == null
@@ -1269,6 +1271,27 @@ function Insumos({
                                   }
                                 />
                               </div>
+                              {insumo?.tipo === "sanitario" ? (
+                                <div className="space-y-2 sm:col-span-2">
+                                  <Label>Produto técnico sanitário V2</Label>
+                                  <Select
+                                    value={editForm.sanitarioProdutoV2Id || NONE_VALUE}
+                                    onValueChange={(value) =>
+                                      setEditField("sanitarioProdutoV2Id", value === NONE_VALUE ? "" : value)
+                                    }
+                                  >
+                                    <SelectTrigger><SelectValue placeholder="Vínculo técnico opcional" /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value={NONE_VALUE}>Sem vínculo</SelectItem>
+                                      {(snapshot?.produtosSanitariosV2 ?? []).map((product) => (
+                                        <SelectItem key={product.id} value={product.id}>
+                                          {product.nome_comercial}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ) : null}
                               <div className="space-y-2">
                                 <Label>
                                   Estoque minimo ({lot.unidade_base})
@@ -1575,6 +1598,7 @@ function Insumos({
                         categoria: "",
                         nome: "",
                         produtoVeterinarioId: NONE_VALUE,
+                        sanitarioProdutoV2Id: NONE_VALUE,
                       }));
                       setEntryEditedFields((prev) => {
                         const next = new Set(prev);
@@ -1618,6 +1642,7 @@ function Insumos({
                     categoria: "",
                     nome: "",
                     produtoVeterinarioId: NONE_VALUE,
+                    sanitarioProdutoV2Id: NONE_VALUE,
                   }));
                 } else {
                   setIsCustomCategory(false);
@@ -1634,6 +1659,10 @@ function Insumos({
                         ...prev,
                         categoria: value,
                         nome: "",
+                        sanitarioProdutoV2Id:
+                          entryForm.tipo === "sanitario"
+                            ? prev.sanitarioProdutoV2Id
+                            : NONE_VALUE,
                         produtoVeterinarioId: isVeterinaryProductRequired(
                           entryForm.tipo,
                           value,
@@ -1728,6 +1757,34 @@ function Insumos({
               <p className="text-xs leading-5 text-muted-foreground">
                 Categoria clinica/medicamentosa: selecione um produto
                 veterinario catalogado para manter rastreabilidade do estoque.
+              </p>
+            </div>
+          ) : null}
+
+          {entryForm.tipo === "sanitario" ? (
+            <div className="space-y-2">
+              <Label>Produto técnico sanitário V2</Label>
+              <Select
+                value={entryForm.sanitarioProdutoV2Id}
+                onValueChange={(value) =>
+                  setEntryField("sanitarioProdutoV2Id", value)
+                }
+                disabled={!canManage}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Vínculo técnico opcional" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_VALUE}>Sem vínculo</SelectItem>
+                  {(snapshot?.produtosSanitariosV2 ?? []).map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.nome_comercial}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs leading-5 text-muted-foreground">
+                Vínculo explícito usado para validar execução e consumo; não substitui o produto executado.
               </p>
             </div>
           ) : null}

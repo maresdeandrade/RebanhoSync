@@ -1,11 +1,13 @@
 /** @vitest-environment jsdom */
+import "fake-indexeddb/auto";
 import "@testing-library/jest-dom";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SanitaryManualPreviewV2 } from "@/components/sanitario/SanitaryManualPreviewV2";
+import { db } from "@/lib/offline/db";
 import type { CreateManualSanitaryAgendaInputV2 } from "@/lib/sanitario/agenda/sanitaryManualAgendaV2";
 import {
   precheckSanitaryProtocolsForAnimalV2,
@@ -230,6 +232,9 @@ function renderManualPreview(
 }
 
 describe("SanitaryManualPreviewV2", () => {
+  beforeEach(async () => { await db.catalog_sanitario_produtos_v2.clear(); });
+  afterEach(async () => { await db.catalog_sanitario_produtos_v2.clear(); });
+
   it("preview renderiza resultados de animal com textos principais em portugues", () => {
     renderAnimalPreview();
 

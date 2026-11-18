@@ -16,13 +16,17 @@ export const collections = {
   nutricao: "event_eventos_nutricao",
   pasto: "event_eventos_pasto_avaliacao",
   produtos: "catalog_produtos_veterinarios",
+  produtosSanitariosV2: "catalog_sanitario_produtos_v2",
 } as const;
 export type Collection = keyof typeof collections;
 export const snapshotKeys = [
   ...Object.keys(collections),
   "pendingTxIds",
 ].sort();
-export const retainedTombstones = new Set<Collection>(["eventos", "produtos"]);
+export const retainedTombstones = new Set<Collection>([
+  "eventos",
+  "produtos",
+]);
 export const statuses = [
   "PENDING",
   "SYNCING",
@@ -42,7 +46,10 @@ export function row(farm: string, name: string, deleted = false) {
 }
 export async function seed(database: OfflineDB) {
   for (const [key, table] of Object.entries(collections)) {
-    const farms = key === "produtos" ? ["global"] : ["A", "B"];
+    const farms =
+      key === "produtos" || key === "produtosSanitariosV2"
+        ? ["global"]
+        : ["A", "B"];
     await database
       .table(table)
       .bulkPut(farms.flatMap((farm) => [row(farm, key), row(farm, key, true)]));

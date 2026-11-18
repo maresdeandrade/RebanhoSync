@@ -15,7 +15,8 @@ import {
 
 describe.each(Object.entries(readers))(
   "inventory snapshot query: %s",
-  (_, read) => {
+  (readerName, read) => {
+    const includesSanitaryCatalog = readerName === "current";
     let database: ReturnType<typeof createDatabase>;
     beforeEach(async () => {
       database = createDatabase();
@@ -31,16 +32,23 @@ describe.each(Object.entries(readers))(
       "reads the complete snapshot scoped to farm %s and preserves distinct tombstone policies",
       async (farm) => {
         const snapshot = await read(farm, database);
-        expect(Object.keys(snapshot!).sort()).toEqual(snapshotKeys);
+        const snapshotKeysForReader = snapshotKeys.filter(
+          (key) => key !== "produtosSanitariosV2" || includesSanitaryCatalog,
+        );
+        expect(Object.keys(snapshot!).sort()).toEqual(snapshotKeysForReader);
         for (const [key, table] of Object.entries(collections)) {
+          if (key === "produtosSanitariosV2" && !includesSanitaryCatalog) continue;
           const collection = key as Collection;
-          const expectedFarm = key === "produtos" ? "global" : farm;
+          const expectedFarm =
+            key === "produtos" || key === "produtosSanitariosV2"
+              ? "global"
+              : farm;
           const expected = [row(expectedFarm, key)];
           if (retainedTombstones.has(collection))
             expected.push(row(expectedFarm, key, true));
           expect(snapshot![collection]).toEqual(expected);
           expect(await database.table(table).count()).toBe(
-            key === "produtos" ? 2 : 4,
+            key === "produtos" || key === "produtosSanitariosV2" ? 2 : 4,
           );
         }
         expect([...snapshot!.pendingTxIds].sort()).toEqual([
@@ -83,11 +91,14 @@ describe.each(Object.entries(readers))(
       });
       await database.open();
       await read("A", database);
-      expect(reads.map((r) => r.table).sort()).toEqual(
-        [...Object.values(collections), "queue_gestures"].sort(),
+      const expectedTables = [...Object.values(collections), "queue_gestures"].filter(
+        (table) => table !== collections.produtosSanitariosV2 || includesSanitaryCatalog,
       );
+      expect(reads.map((r) => r.table).sort()).toEqual(expectedTables.sort());
       for (const trace of reads.filter(
-        (r) => r.table !== collections.produtos,
+        (r) =>
+          r.table !== collections.produtos &&
+          r.table !== collections.produtosSanitariosV2,
       )) {
         expect(trace).toMatchObject({
           index: "fazenda_id",
@@ -101,8 +112,12 @@ describe.each(Object.entries(readers))(
     });
     it("returns empty arrays for an absent farm but retains the global catalog", async () => {
       const snapshot = await read("empty", database);
-      for (const key of Object.keys(collections) as Collection[])
-        expect(snapshot![key]).toHaveLength(key === "produtos" ? 2 : 0);
+      for (const key of Object.keys(collections) as Collection[]) {
+        if (key === "produtosSanitariosV2" && !includesSanitaryCatalog) continue;
+        expect(snapshot![key]).toHaveLength(
+          key === "produtos" ? 2 : key === "produtosSanitariosV2" ? 1 : 0,
+        );
+      }
       expect(snapshot!.pendingTxIds.size).toBe(0);
     });
     it.each(statuses)(

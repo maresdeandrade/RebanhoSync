@@ -260,11 +260,16 @@ it("uses the local contract when the browser resolves sync on loopback",async()=
   expect(await db.queue_ops.count()).toBe(1);
 });
 
-it("queues a stocked progressive group without embedding conflicting client context",async()=>{
+it.each([true,false])("requires an explicit V2 link for a stocked progressive group: %s",async(linked)=>{
   const supply=crypto.randomUUID(),stock=crypto.randomUUID();
-  await db.state_insumos.put({id:supply,fazenda_id:farm,nome:"Fixture",tipo:"sanitario",unidade_base:"ml",produto_veterinario_id:products[0],ativo:true,payload:{}} as never);
+  await db.state_insumos.put({id:supply,fazenda_id:farm,nome:"Fixture",tipo:"sanitario",unidade_base:"ml",produto_veterinario_id:products[0],sanitario_produto_v2_id:linked?products[0]:null,ativo:true,payload:{}} as never);
   await db.state_insumo_lotes.put({id:stock,fazenda_id:farm,insumo_id:supply,unidade_base:"ml",saldo_atual_base:100,quantidade_inicial_base:100,status:"ativo",payload:{}} as never);
   const request=input([animals[0]]);request.product={...request.product!,inventoryLotId:stock,quantityConsumed:2,unit:"ml"};request.confirmation.userConfirmedStockMovement=true;
+  if(!linked){
+    await expect(executeSanitaryAgendaV2(request)).rejects.toThrow("inventory_product_link_mismatch");
+    expect(await db.queue_ops.count()).toBe(0);expect(await db.event_eventos.count()).toBe(0);expect(await db.state_insumo_movimentacoes.count()).toBe(0);
+    return;
+  }
   await executeSanitaryAgendaV2(request);
   expect(await db.queue_ops.count()).toBe(1);expect(await db.state_insumo_movimentacoes.count()).toBe(0);
   const queued=(await db.queue_ops.toArray())[0];expect(queued.record.payload.event.payload.inventory_movement).toMatchObject({insumo_lote_id:stock,quantidade_base:2});

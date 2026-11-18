@@ -1,8 +1,14 @@
 # Capability Map — RebanhoSync
 
-Atualizado em: 2026-10-20
+Atualizado em: 2026-11-18
 
 **Baseline documental original:** `32d7779`
+
+## Implementação observada — 18/11/2026
+
+Baseline integrada `main@175e9dee` (#302): Protocolos da Fazenda, monitoramento ON/OFF, avaliação factual e controle estratégico individual. A Agenda V3 colaborativa e a jornada neonatal durável já foram integradas por #268/#274. #301 está validada em `6cdc7284`, gate READY, com vínculo estoque–produto V2, previsão e indicadores; integração pendente.
+
+Este registro atualiza maturidade técnica, sem transformar propostas complementares ou avanços de código em novos requisitos obrigatórios do MVP. O produto permanece em desenvolvimento. Migrations/deploy remotos e compatibilidade com versões antigas inexistentes não são funcionalidades faltantes. Junho continua contextual; capacidades avançadas e liberação ampla dependem do alvo escolhido. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 ## Objetivo
 

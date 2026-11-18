@@ -77,6 +77,7 @@ async function clearScope() {
     db.sync_reconcile_obligations.clear(),
     db.event_eventos.clear(),
     db.event_eventos_sanitario.clear(),
+    db.event_eventos_animais.clear(),
     db.state_insumo_movimentacoes.clear(),
   ]);
 }
@@ -219,6 +220,53 @@ describe("sanitaryLocalAgendaManagementV2", () => {
 
     expect(filterLocalSanitaryAgendasV2(items, { search: "novilhas", status: "programada", startDate: "2026-06-01", endDate: "2026-07-31" })).toEqual([items[0]]);
     expect(filterLocalSanitaryAgendasV2(items, { search: "estrela", status: "programada", startDate: "", endDate: "" })).toEqual([]);
+  });
+
+  it("integra cobertura, aplicação e baixa somente do Evento da Agenda", async () => {
+    await db.ops_sanitario_agenda_v2.put(agenda({
+      produto_snapshot: { plannedProductId: "product-1" },
+      metadata: { dose: 2, doseUnit: "ml", doseBasis: "animal", doseProductId: "product-1" },
+    }));
+    await db.ops_sanitario_agenda_animais_v2.put({ agenda_id: "agenda-1", fazenda_id: "farm-1", animal_id: "animal-1", planned_status: "planejado", execution_evento_id: null, not_executed_reason: null, metadata: {}, created_at: "2026-06-01", updated_at: "2026-06-01", deleted_at: null });
+    await db.state_insumos.put({ id: "supply-1", fazenda_id: "farm-1", nome: "Produto", tipo: "sanitario", categoria: null, produto_veterinario_id: null, sanitario_produto_v2_id: "product-1", unidade_base: "ml", ativo: true, payload: {}, client_id: "c", client_op_id: "o", client_tx_id: null, client_recorded_at: "2026-06-01", server_received_at: "2026-06-01", created_at: "2026-06-01", updated_at: "2026-06-01", deleted_at: null });
+    await db.state_insumo_lotes.put({ id: "lot-1", fazenda_id: "farm-1", insumo_id: "supply-1", apresentacao_id: null, identificacao_lote: "L1", validade: "2027-01-01", fabricante: null, local_armazenamento: null, quantidade_inicial_base: 10, saldo_atual_base: 10, unidade_base: "ml", status: "ativo", payload: {}, client_id: "c", client_op_id: "o", client_tx_id: null, client_recorded_at: "2026-06-01", server_received_at: "2026-06-01", created_at: "2026-06-01", updated_at: "2026-06-01", deleted_at: null });
+    await db.event_eventos.put({ id: "event-1", fazenda_id: "farm-1", dominio: "sanitario", occurred_at: "2026-07-01T10:00:00Z", occurred_on: "2026-07-01", animal_id: "animal-1", lote_id: "lot-1", source_task_id: "agenda-1", source_tx_id: null, source_client_op_id: "event-op", corrige_evento_id: null, observacoes: null, payload: { agenda_id: "agenda-1" }, source_sanitario_agenda_v2_id: "agenda-1", sanitario_sync_v2_nature: "primary_execution", sanitario_contract_version: 3, client_id: "c", client_op_id: "event-op", client_tx_id: null, client_recorded_at: "2026-07-01", server_received_at: "2026-07-01", created_at: "2026-07-01", updated_at: "2026-07-01", deleted_at: null } as never);
+    await db.event_eventos_sanitario.put({ evento_id: "event-1", fazenda_id: "farm-1", tipo: "medicamento", produto: "Produto", produto_sanitario_v2_id: "product-1", insumo_id: "supply-1", dose_quantidade: 2, dose_unidade: "ml", payload: {}, client_id: "c", client_op_id: "detail-op", client_tx_id: null, client_recorded_at: "2026-07-01", server_received_at: "2026-07-01", created_at: "2026-07-01", updated_at: "2026-07-01", deleted_at: null } as never);
+    await db.state_insumo_movimentacoes.put({ id: "movement-1", fazenda_id: "farm-1", insumo_id: "supply-1", insumo_lote_id: "lot-1", tipo: "consumo_sanitario", quantidade_base: 2, unidade_base: "ml", occurred_at: "2026-07-01T10:00:00Z", source_evento_id: "event-1", source_evento_dominio: "sanitario", animal_id: "animal-1", rebanho_lote_id: "lot-1", pasto_id: null, observacoes: null, payload: {}, client_id: "c", client_op_id: "movement-op", client_tx_id: null, client_recorded_at: "2026-07-01", server_received_at: "2026-07-01", created_at: "2026-07-01", updated_at: "2026-07-01", deleted_at: null });
+
+    const result = await listLocalSanitaryAgendasV2("farm-1", db);
+
+    expect(result[0]?.forecast).toMatchObject({ status: "stock_sufficient", estimatedQuantity: 2, compatibleStock: 10 });
+    expect(result[0]?.indicators).toMatchObject({ executedAnimals: 1, coverageRatio: 1, appliedQuantity: 2, consumedQuantity: 2, variance: 0, comparable: true, comparisonStatus: "comparable" });
+  });
+
+  it("conta participantes factuais e dose por animal na execução coletiva, sem contar avaliação", async () => {
+    await db.ops_sanitario_agenda_v2.put(agenda({
+      produto_snapshot: { plannedProductId: "product-1" },
+      metadata: { dose: 2, doseUnit: "ml", doseBasis: "animal", doseProductId: "product-1" },
+    }));
+    await db.ops_sanitario_agenda_animais_v2.bulkPut(["animal-1", "animal-2"].map((animal_id) => ({
+      id: `target-${animal_id}`, fazenda_id: "farm-1", agenda_id: "agenda-1", animal_id, planned_status: "executado", deleted_at: null,
+    })) as never);
+    await db.event_eventos.bulkPut([
+      { id: "application", fazenda_id: "farm-1", animal_id: null, source_sanitario_agenda_v2_id: "agenda-1", sanitario_sync_v2_nature: "primary_execution", payload: { schema: "sanitary_agenda_execution_v2" }, deleted_at: null },
+      { id: "assessment", fazenda_id: "farm-1", animal_id: "animal-3", source_sanitario_agenda_v2_id: null, payload: { schema: "sanitary_assessment_v1" }, deleted_at: null },
+    ] as never);
+    await db.event_eventos_sanitario.put({ evento_id: "application", fazenda_id: "farm-1", tipo: "medicamento", produto_sanitario_v2_id: "product-1", dose_quantidade: 2, dose_unidade: "ml", deleted_at: null } as never);
+    await db.event_eventos_animais.bulkPut([
+      { id: "r1", fazenda_id: "farm-1", evento_id: "application", animal_id: "animal-1" },
+      { id: "r2", fazenda_id: "farm-1", evento_id: "application", animal_id: "animal-2" },
+      { id: "other-farm", fazenda_id: "farm-2", evento_id: "application", animal_id: "animal-other-farm" },
+    ] as never);
+
+    const [result] = await listLocalSanitaryAgendasV2("farm-1", db);
+    expect(result.indicators).toMatchObject({
+      plannedAnimals: 2,
+      executedAnimals: 2,
+      coverageRatio: 1,
+      estimatedQuantity: 4,
+      appliedQuantity: 4,
+    });
   });
 
   it("reagenda alterando somente a data planejada e sem efeitos operacionais", async () => {

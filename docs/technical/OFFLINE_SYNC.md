@@ -1,12 +1,20 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-10-19
+Atualizado em: 2026-11-18
 
 ## Responsabilidade documental
 
 Este documento descreve os detalhes internos do mecanismo offline/sync. O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é o contrato canônico de como esse mecanismo participa dos fluxos de domínio; fontes de verdade de domínio não são redefinidas aqui.
 
 Para impacto operacional, consulte no mapa os contratos de resultado por operação (`APPLIED`, `APPLIED_ALTERED`, `RETRYABLE`, `REJECTED` e `BLOCKED_DEPENDENCY`), proteção de pending, pull padrão ou especializado, retry e preservação de identidade.
+
+## Evolução sanitária vigente
+
+#268 integra colaboração/fechamento/continuidade; #293 aposentou a Edge `sanitario-reconcile` no repositório. O fluxo atual usa fila/worker, `sync-batch`, RPC e pull/reconciliação canônicos; a aposentadoria de uma Edge não elimina a reconciliação local.
+
+#302 integra comandos de adoção/monitoramento e variante com CAS/replay, avaliações factuais append-only e unicidade individual de Agenda. O envio revalida sessão e fazenda; configuração pendente não substitui estado confirmado. Avaliação não gera efeito farmacológico.
+
+#301, validada mas não integrada, acrescenta vínculo estoque–produto V2 e validação do vínculo no `sync-batch`. Indicadores só leem fatos, participantes e movimentos; não criam fila, consumo ou fonte de verdade paralela. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 ## Contrato geral
 
@@ -33,6 +41,8 @@ Regras:
 - `state_*` não é superfície direta de push.
 
 ## Plano e Agendas sanitárias V2
+
+> Descrição histórica do plano de automação e seu transporte. #285 retirou a geração automática do produto; não interpretar esta seção como fluxo atual de criação automática. Para monitoramento, planejamento manual e execução, prevalece a evolução sanitária vigente acima.
 
 O plano continua em `fazenda_sanidade_config.payload.sanitary_agenda_automation_v2`.
 O writer existente produz gesto/operação com before snapshot; o worker traduz somente

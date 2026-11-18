@@ -1,10 +1,16 @@
 # UX-DISCOVERY-02 — Decisões preservadas e reconciliação pós-merge
 
-Atualizado em: 2026-11-08
+Atualizado em: 2026-11-18
+
+## Evolução funcional posterior
+
+#285–#287 integram triagem reativa, seleção e planejamento manual; #290 integra as correções UX antes descritas como locais. #302 integra monitoramento, avaliações factuais e controle estratégico individual. #301 validada acrescenta vínculo técnico de estoque e indicadores; não está integrada à main.
+
+Essas entregas superam a leitura de que suas funcionalidades permanecem sem implementação. Não equivalem à homologação ampla de jornadas/atores nem autorizam automaticamente a Etapa 3 do processo UX: GATE-03 conserva seu recorte. Não exigir novo redesign ou certificação universal para encerrar a implementação localizada. [Evidências atuais](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 ## Autoridade e proveniência
 
-Reconciliação documental sobre `origin/main@db4c2f21291d8ce8e87af2d0f2de4b1063693620`
+Reconciliação vigente em 18/11/2026: `main@175e9dee` (#302) e #301 validada em `6cdc7284`, ainda não integrada. O parágrafo seguinte preserva o recorte histórico pós-#281:
 (#281), com B02/A05 integrado #274 e os incrementos contextuais da Central Sanitária integrados. **GATE-03 = BLOQUEADO; Etapa 3 não autorizada.**
 Este registro complementa o [backlog canônico](../review/MASTER_BACKLOG.md#reconciliação-dos-bloqueadores-e-decisões),
 sem criar backlog, homologação UX ou autorização operacional.

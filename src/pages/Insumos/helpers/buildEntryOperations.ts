@@ -50,6 +50,11 @@ export function buildEntryOperations({
           entryForm.produtoVeterinarioId !== noneValue
             ? entryForm.produtoVeterinarioId
             : null,
+        ...(entryForm.tipo === "sanitario" &&
+        entryForm.sanitarioProdutoV2Id &&
+        entryForm.sanitarioProdutoV2Id !== noneValue
+          ? { sanitario_produto_v2_id: entryForm.sanitarioProdutoV2Id }
+          : {}),
         unidade_base: entryForm.unidadeBase,
         ativo: true,
         payload: { origem: "inventario_ui_mvp" },
