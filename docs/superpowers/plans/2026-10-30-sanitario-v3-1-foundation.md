@@ -1,5 +1,7 @@
 # Fundação Sanitária V3.1 — Implementation Plan
 
+> **Continuidade vigente — 18/11/2026:** fundação e execução progressiva integradas #265; colaboração/fechamento/continuidade #268; configuração e avaliação factual #302. Este plano e suas instruções de implementação abaixo são históricos e não autorizam reexecução. [Estado consolidado](../../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+
 > **Status em 01/11/2026:** plano executado no recorte V3.1-A/B/C; V3.2 e o bootstrap offline foram implementados sob autorizações posteriores do PO. A preparação, commits, push da branch dedicada e abertura do PR foram autorizados; merge, implantação e alteração de gates reais continuam não autorizados. As restrições de autorização abaixo registram o snapshot original de planejamento. [Evidências e limites locais](../../review/evidence/SANITARIO_V31_V32_LOCAL_20261101.json).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

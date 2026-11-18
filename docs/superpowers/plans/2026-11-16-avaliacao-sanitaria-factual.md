@@ -1,5 +1,7 @@
 # Avaliação sanitária factual — plano de implementação
 
+> **Encerramento vigente — 18/11/2026:** avaliação factual e correções integradas pela #302 (`main@175e9dee`); calendário/controle estratégico também integrado. Gate completo do head integrado aprovado. Compatibilidade com leitores antigos inexistentes não é critério de aceite. Checklist e NOT READY abaixo são registros históricos anteriores ao fechamento; não constituem tarefas atuais. [Evidências](../../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+
 > Registro histórico da execução de 16/11/2026. As tarefas e classificações abaixo refletem aquele momento; o calendário posteriormente recebeu implementação local e o critério atual de compatibilidade consta ao final deste documento.
 
 Objetivo: registrar avaliação sem aplicação no sistema canônico de Eventos, integrá-la à Triagem e verificar a adesão por HTTP/Auth isolado. Referência: solicitação de retomada de 16/11/2026; HEAD `2d639cc3ad2f8fcc21372d82b1eef6321313cd7a` e patch não commitado da Fase 1 preservados.

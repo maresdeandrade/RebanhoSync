@@ -1,14 +1,23 @@
-```md
 # FAQ — Sanitário
 
-Atualizado em: 2026-07-12
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-18
+**Baseline documental original:** `32d7779`
 
 ## Objetivo
 
 Responder dúvidas comuns sobre protocolo sanitário, agenda sanitária, evento sanitário, produtos, estoque, carência e sinais sanitários.
 
 ---
+
+## Monitoramento ligado registra aplicação?
+
+Não. Monitoramento é configuração de acompanhamento. Avaliação registra um fato de avaliação, inclusive indicação de tratamento ou dados insuficientes, sem comprovar aplicação, baixa ou carência. Correção mantém o fato original e acrescenta outro vinculado. Junho do controle 5-6-9 permanece contextual, sem materialização.
+
+## Por que um estoque com nome parecido não aparece para execução?
+
+Na versão validada da #301, ainda não integrada, o estoque precisa estar ligado explicitamente ao produto técnico V2 compatível. Confira o vínculo em Insumos e o lote selecionado; não substitua essa identificação pelo nome. Previsão de consumo não baixa estoque, e aplicado, baixado e perdas são indicadores distintos.
+
+Referência: [manual da Central Sanitária](../screens/SANITARIO.md).
 
 ## Qual a diferença entre protocolo, agenda e evento?
 
@@ -174,5 +183,3 @@ Acione o suporte se:
 * agenda sanitária não bate com o evento;
 * ocorrência sanitária não aparece;
 * sinais sanitários aparecem como liberação comercial.
-
-```

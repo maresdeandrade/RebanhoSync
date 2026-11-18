@@ -6,6 +6,10 @@ Implementação V3.1/V3.2: **AUTORIZADA E HOMOLOGADA LOCALMENTE; PR AUTORIZADO E
 
 **Autorização posterior:** a entrega V3.1/V3.2 e o bootstrap offline foram executados sob autorização explícita do PO. O registro de aprovação original abaixo conserva o escopo histórico de 30/10; os contratos de produto permanecem os aprovados. Evidências e limites na [consolidação local](../../review/evidence/SANITARIO_V31_V32_LOCAL_20261101.json).
 
+## Implementação posterior consolidada — 18/11/2026
+
+Fundação/execução progressiva #265 e colaboração, fechamento gerencial, tardios e continuidade #268 estão integrados. #302 integra Protocolos da Fazenda, monitoramento, avaliação factual e controle estratégico individual. #301 está validada, ainda não integrada, para estoque V2, previsão e indicadores. Procedimento excepcional para participação irrecuperável continua futuro condicional; não bloqueia nem reabre o fechamento normal implementado. Os diagnósticos de implementação anteriores abaixo conservam seu recorte histórico. [Resultados e limites](../../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+
 ## Autoridade e proveniência
 
 Fonte da aprovação: solicitação explícita do PO nesta sessão, “RebanhoSync — Superpowers | Formalização V3 e Continuidade da Fase Sanitária”, em **30/10/2026**. Aprovador: PO solicitante, sem nome civil informado. A revisão técnica final anterior classificou a especificação candidata como DESIGN APTO PARA APROVAÇÃO; a autorização humana atual aprova o design e sua formalização documental, sem autorizar implementação, planejamento executável, implantação ou mudança de gate.

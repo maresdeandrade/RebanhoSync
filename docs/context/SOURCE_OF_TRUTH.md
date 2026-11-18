@@ -1,7 +1,6 @@
-```md
 # Source of Truth — RebanhoSync
 
-Atualizado em: 2026-11-01
+Atualizado em: 2026-11-18
 
 ## Objetivo
 
@@ -64,6 +63,14 @@ Em caso de conflito, confiar nesta ordem:
 A fundação V3.1 e a execução V3.2 estão integradas em `main@23893a97`. A obrigação/atendimento por animal identifica o que foi atendido e referencia o Evento confirmado; não substitui o Evento como fato. Subconjuntos podem produzir múltiplos Eventos para a mesma Agenda, sem converter execução parcial em fechamento administrativo global. Recibos e admissão preservam identidade/idempotência; o consumo é efeito transacional do Evento confirmado, e carência exige regra técnica explícita. [Contrato de domínio aprovado](../superpowers/specs/2026-10-30-sanitario-agenda-v3-design.md) e [provas/limites da integração](../review/CURRENT_PHASE_HANDOFF.md#entregas-integradas-até-os-prs-264-e-265--01112026).
 
 O contexto offline guardado em `local_ownership` permite continuidade local somente para identidade/fazenda antes verificadas; não concede autorização remota. Envio após recuperação exige revalidação remota de sessão e membership; logout invalida esse contexto. Colaboração completa, barreira/fechamento gerencial e continuidade do design não são declarados implementados pelo recorte V3.1/V3.2. Integração de código/migrations não comprova aplicação em ambiente existente ou ativação de produção.
+
+## Evolução factual posterior — #268, #302 e #301
+
+#268 integrou colaboração, barreira/fechamento gerencial, tardios e continuidade. O limite descrito acima é o recorte histórico de #265, não ausência atual dessas capacidades.
+
+#302 integra avaliação sanitária como Evento factual sem aplicação farmacológica: resultado, participantes, data, responsável e correções append-only não geram produto, dose, estoque ou carência. Adoção/monitoramento e variante são configurações da fazenda; controle estratégico e triagem são projeções. Junho permanece contextual, sem writer de materialização.
+
+Na #301 validada e ainda não integrada, `insumos.sanitario_produto_v2_id` identifica explicitamente o produto técnico do estoque. Produto planejado não é produto aplicado. Indicadores derivam de Eventos/detalhes, participantes factuais e movimentos da mesma fazenda; deduplicação não mistura consumo com perda, nem transforma perdas em aplicação. Nenhum desses cálculos altera fatos ou saldo persistido. Consultar [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 ## Política de registro, alertas e elegibilidade
 
@@ -455,7 +462,3 @@ Uma mudança respeita este contrato quando:
 * decisão crítica exige fonte técnica explícita;
 * limitações são declaradas quando a fonte é parcial;
 * não há fonte paralela de verdade.
-
-```
-
-```

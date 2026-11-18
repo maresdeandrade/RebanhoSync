@@ -1,7 +1,7 @@
 # Review Docs — RebanhoSync
 
-Atualizado em: 2026-10-01
-**Baseline Commit:** `91e0775`
+Atualizado em: 2026-11-18
+**Baseline integrada:** `175e9dee` (#302); #301 validada em `6cdc7284`, não integrada. Resultados atuais no handoff e no resultado mais recente.
 
 ## Objetivo
 
@@ -31,12 +31,14 @@ Se é histórico/fechado/substituído → docs/archive/
 | `DOCS_RECONCILIATION_REPORT.md` | Relatório ativo de reorganização documental. |
 | `ACTIVE_REVIEW_INDEX.md` | Índice das revisões ativas. |
 | `ACTIVE_PHASE_PLAN.md` | Plano ativo da Fase 24. |
-| `CURRENT_PHASE_HANDOFF.md` | Handoff técnico vigente da Fase 24. |
+| `CURRENT_PHASE_HANDOFF.md` | Continuidade vigente, integrações e evidências #302/#301. |
+| `LAST_PHASE_RESULT.md` | Resultado mais recente; preserva registros anteriores. |
+| `MASTER_BACKLOG.md` | Portfólio reconciliado; iniciativas candidatas não são obrigações abertas. |
 | `F24_4E_CONFLICT_RESOLUTION_CONTRACT.md` | Characterization ativa da F24.4E e matriz de resolução de conflitos por domínio. |
 | `F24_4D_CROSS_DEVICE_CLOCK_AUTHORITY.md` | Relatório canônico da F24.4D (Cross-device Offline/Reconnect + Clock Authority). |
 | `F24_3_CLOSEOUT_AND_NEXT_PHASE_PLAN.md` | Closeout F24.3 e planejamento F24.4–F24.6. |
 | `README.md` | Explica a pasta. |
-| `PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md` | Plano ativo da Fase 11.5 — Agenda Sanitária v2. |
+| `PLANO_FASE_11_5_SANITARIO_AGENDA_V2.md` | Plano histórico da Fase 11.5; não usar como próxima execução. |
 
 ---
 
@@ -129,8 +131,8 @@ Mas regras permanentes devem ficar em `.agents/rules/`, não apenas em relatóri
 
 ## Continuidade atual
 
-- [ACTIVE_PHASE_PLAN.md](./ACTIVE_PHASE_PLAN.md): plano corrente da Fase 12 e próximo incremento 3.8.
-- [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md): estado técnico detalhado e risco de plataforma.
+- [ACTIVE_PHASE_PLAN.md](./ACTIVE_PHASE_PLAN.md): plano corrente da Fase 24 e continuidade localizada pós-#302/#301.
+- [CURRENT_PHASE_HANDOFF.md](./CURRENT_PHASE_HANDOFF.md): estado técnico, integração e evidências vigentes; snapshots anteriores identificados.
 - [LAST_PHASE_RESULT.md](./LAST_PHASE_RESULT.md): resultado funcional mais recente.
 - [OPEN_REVIEW_ITEMS.md](./OPEN_REVIEW_ITEMS.md): bloqueios e pendências reais.
 

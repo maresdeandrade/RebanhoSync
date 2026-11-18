@@ -2,15 +2,23 @@
 
 > Fechamento C02/F6 — 29/10/2026: cadastro e curadoria documental encerrados; 288 campos confirmados, 283 representados, cinco sem representação estruturada. Integração C07 e exceções específicas constam de [integração definitiva](./SANITARIO_V2_C02_F6_INTEGRACAO_DEFINITIVA_20261029.md). Baseline sanitária bc310735/main remota c752c9a, com árvores idênticas; commit de segurança 3f3c960. Notas anteriores conservam seus recortes históricos; não reabrem a curadoria dos 39.
 
-Atualizado em: 2026-11-12
-Estado vigente em 08/11/2026: main pós-#281 em `db4c2f21291d8ce8e87af2d0f2de4b1063693620`; [fechamento F24](./CURRENT_PHASE_HANDOFF.md#f24-integrada--pr-270) preservado. Comando neonatal B02/A05 integrado #274; [Central Sanitária contextual e UX integradas até #281](./CURRENT_PHASE_HANDOFF.md#central-sanitária--integrações-até-281). Nenhuma nova fase ou rollout iniciado.
+Atualizado em: 2026-11-18
+Snapshot histórico de 08/11/2026: main pós-#281; a reconciliação de 18/11/2026 abaixo prevalece para continuidade atual.
 
-> **Atualização de continuidade — 12/11/2026:** a Etapa 3 foi integrada pela PR #289 em `94121a216`; a validação obrigatória e Vercel passaram, enquanto Supabase Preview foi skipped. A base remota atual é `main@94121a21652cbf49923a49895eaba2990f18fe58`. A Etapa 4B segue como patch UX local validado, ainda sem integração; a homologação factual V01 permanece parcial. Este adendo não cria ID de backlog ou fase, nem reabre a sequência histórica abaixo. F24.7/F24.8, homologação operacional real e rollout permanecem sem certificação/comprovação.
+> **Snapshot histórico de continuidade — 12/11/2026:** a Etapa 3 foi integrada pela PR #289 em `94121a216`; a validação obrigatória e Vercel passaram, enquanto Supabase Preview foi skipped. A base remota atual é `main@94121a21652cbf49923a49895eaba2990f18fe58`. A Etapa 4B segue como patch UX local validado, ainda sem integração; a homologação factual V01 permanece parcial. Este adendo não cria ID de backlog ou fase, nem reabre a sequência histórica abaixo. F24.7/F24.8, homologação operacional real e rollout permanecem sem certificação/comprovação.
+## Estado reconciliado — 18/11/2026
+
+Baseline integrada: `main@175e9dee` (#302). #295–#299 superaram P33/fixtures/upgrades antigos; #300 corrigiu Agenda/B19. #302 integra Protocolos da Fazenda, monitoramento, avaliações factuais e controle estratégico individual; junho permanece contextual. #301 está corrigida e validada em `6cdc7284`, gate READY, com integração pendente: vínculo estoque–produto V2, previsão e indicadores, consumo/perdas separados e participantes factuais coletivos.
+
+[Consolidação e evidências](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026). Os 71 IDs são iniciativas candidatas, não 71 entregas obrigatórias abertas. O diagnóstico não demonstrou P0 ativo novo; ausência de certificação universal não é defeito confirmado. F24.6A2, mobile, hardware e website são evoluções condicionadas ao alvo, não pré-requisitos gerais para concluir a #301.
+
+Não reabrir #268/#274, C05/C06 ou a curadoria documental dos 39. Preservar exceções curatoriais individualizadas e fatos/filas reais; compatibilidade com aplicativos antigos inexistentes e disponibilização remota não integram o backlog funcional local. A ação imediata é decidir a integração da #301, sem autorização de merge nesta atualização. Snapshots anteriores e suas matrizes conservam seus recortes históricos.
+
 ## Decisão de desenho proposta
 
 Método histórico da consolidação 01/02: descoberta com `repository-context-retrieval`; leitura independente por responsabilidade com `dispatching-parallel-agents`; desenho por `brainstorming` e plano por `writing-plans`, adaptados ao pedido documental explícito. A especificação já define os entregáveis e a alternativa candidata; não se exige aprovação redundante para escrevê-los. A aprovação arquitetural para mudar o produto permanece futura. Nenhum plano autoriza commit ou integração.
 
-**Recomendação:** Alternativa B, consolidação incremental com estruturas físicas preservadas inicialmente. Manter coexistência legada/V2 até inventário de callers, ownership, compatibilidade e clientes pendentes. Alternativa A (reestruturação ampla/limpeza) tem risco de perder contratos e extrapola o pedido; Alternativa C (camada externa independente do domínio) criaria mapeamentos concorrentes. A escolha estrutural definitiva de B e mudanças novas de contrato dependem do Product Owner e revisão técnica. I01/I02 encerraram o ownership no recorte examinado segundo S10 do índice; essa adoção estrutural não exige reabrir o diagnóstico concluído.
+**Recomendação:** Alternativa B, consolidação incremental com estruturas físicas preservadas inicialmente. Preservar contratos internos ainda consumidos, fatos e operações pendentes comprovadas. Não exigir coexistência operacional ou suporte a aplicativos antigos inexistentes. Alternativa A (reestruturação ampla/limpeza) tem risco de perder contratos e extrapola o pedido; Alternativa C (camada externa independente do domínio) criaria mapeamentos concorrentes. A escolha estrutural definitiva de B e mudanças novas de contrato dependem do Product Owner e revisão técnica. I01/I02 encerraram o ownership no recorte examinado segundo S10 do índice; essa adoção estrutural não exige reabrir o diagnóstico concluído.
 
 ## Normalização das relações — MASTER-BACKLOG-02
 

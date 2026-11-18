@@ -1,7 +1,7 @@
 # Manual da Tela — Sanitário
 
-Atualizado em: 2026-11-12
-**Baseline Commit:** `94121a21652cbf49923a49895eaba2990f18fe58`
+Atualizado em: 2026-11-18
+**Baselines:** #302 integrada em `175e9dee`; recursos de estoque e indicadores da #301 validados em `6cdc7284`, ainda não integrados à main. Disponibilidade no ambiente deve ser verificada separadamente.
 
 ## Para que serve
 
@@ -131,6 +131,13 @@ A rota `/protocolos-sanitarios`, acessível pelo menu `Sanitário`, contém as a
 * Ao expandir um registro, são apresentadas as justificativas, a janela técnica disponível, as restrições, pendências documentais e a referência a uma Agenda existente, quando aplicável. Há navegação contextual para o animal, a Agenda e o Histórico.
 * A triagem é **derivada e somente leitura**: não cria Agenda, Evento, baixa de estoque, carência ou operação de sincronização. Ausência de oportunidade **não comprova conformidade**. Dados locais podem estar desatualizados; consultas retrospectivas não reconstituem integralmente o estado histórico.
 
+### Protocolos da Fazenda, avaliação e controle estratégico
+
+- **Protocolos da Fazenda** permite consultar pacotes/itens e acompanhar o monitoramento ON/OFF. A mudança é configuração: não cria Agenda ou aplicação automaticamente. Configuração enviada aguarda confirmação de sincronização.
+- **Registrar avaliação sanitária** exige os participantes, a data e o responsável. Os resultados distinguem ausência de indicação de tratamento, indicação de tratamento e dados insuficientes. Indicação não comprova administração.
+- **Corrigir avaliação sanitária** registra novo fato vinculado e preserva o original; divergências não são resolvidas escolhendo silenciosamente o registro mais recente.
+- **Controle estratégico individual** permite consultar animal, ano/ciclo e variante declarada 5-7-9 ou 5-6-9. A variante não é recomendação clínica. Junho permanece contextual, sem criação de Agenda; mudar variante não apaga fatos ou Agendas anteriores.
+
 ### Planejamento manual a partir da triagem
 
 * O usuário pode selecionar **avaliações elegíveis** individualmente, por grupo ou por recorte filtrado, inclusive com **Selecionar todo o recorte**. Avaliações bloqueadas continuam visíveis, mas não entram na seleção; a seleção elegível pode abranger registros além dos 50 detalhes mostrados por página.
@@ -150,6 +157,14 @@ A rota `/protocolos-sanitarios`, acessível pelo menu `Sanitário`, contém as a
 A antiga função de **plano de geração automática** foi retirada na PR #285; ela **não** faz parte da interface vigente. A integração das PRs #285–#287 não comprova, por si, homologação com o caso V01 real, convergência remota integral ou autorização de rollout.
 
 ---
+
+## Estoque e indicadores — versão validada da #301
+
+Estes recursos estão implementados e validados na branch da #301, ainda fora da main. Em **Insumos**, o vínculo **Produto técnico sanitário V2** relaciona o estoque ao produto do catálogo. Para executar com estoque, escolher lote ativo, da fazenda e ligado ao produto efetivamente utilizado; nome semelhante ou vínculo antigo não substitui essa identificação.
+
+O produto planejado é opcional e não comprova aplicação. **Consumo previsto** depende de produto, dose/base por animal e unidade compatíveis; dados insuficientes ou disponibilidade desconhecida não significam saldo zero. A previsão não reserva nem baixa estoque.
+
+**Planejado × realizado** separa cobertura, aplicado, baixado, perdas e desvio comparável. Eventos coletivos consideram seus participantes factuais. Um consumo de 10 ml e perda de 3 ml são exibidos separadamente, sem transformar perda em aplicação nem duplicar movimentos repetidos. Execução parcial ou unidades incompatíveis limitam a comparação.
 
 ## Custo sanitário
 

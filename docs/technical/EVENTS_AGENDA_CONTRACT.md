@@ -1,13 +1,19 @@
 # Events and Agenda Contract — RebanhoSync
 
-Atualizado em: 2026-06-06
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-18
+**Baseline documental original:** `32d7779`
 
 ## Objetivo
 
 Definir o contrato técnico entre Agenda, Eventos, `state_*`, Protocolos, tags, sinais e insights.
 
 ---
+
+## Evolução do contrato sanitário
+
+#268 integra múltiplos Eventos por Agenda, participação e fechamento gerencial com barreira e continuidade auditável; fechamento não comprova execução de todos os animais. #302 acrescenta avaliação factual sem produto, com participantes originais e correções append-only: avaliar não é aplicar. Monitoramento e variante são configurações, e junho permanece contextual.
+
+Na #301 validada, ainda não integrada, o planejado continua intenção; aplicado vem de Evento/detalhe e participantes factuais; baixado e perdas vêm de movimentos vinculados. Deduplicação e indicadores são leituras derivadas e não alteram essas fontes. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 ## Regra central
 

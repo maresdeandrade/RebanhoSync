@@ -1,6 +1,16 @@
 # Pendências abertas — RebanhoSync
 
-Atualizado em: 2026-11-06 (main pós-#272; fechamentos preservados)
+Atualizado em: 2026-11-18
+
+## Pendências vigentes — 18/11/2026
+
+- **Integração:** #301 aberta, gate READY em `6cdc7284`; perdas e indicadores coletivos corrigidos e validados. Não há correção funcional pendente demonstrada nesse recorte. [CI e limites](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+- **Curadoria contextual:** manter somente exceções C02/C03 necessárias ao produto/regra/finalidade escolhidos. Cadastro/curadoria documental dos 39 encerrados; não repetir importação.
+- **Evoluções/limites:** kill real, dispositivos físicos, escopo mobile, performance ampliada e homologação de jornadas dependem de alvo e necessidade concretos; ausência de comprovação não é ausência de implementação nem P0 automático.
+- **Superadas como implementação pendente:** P33/fixtures de #294, caller neonatal #274, colaboração/fechamento/continuidade #268, UX #290 e funcionalidades #302. Junho continua contextual por decisão de produto.
+- **Fora do backlog funcional obrigatório:** deploy/migrations remotos e compatibilidade com versões antigas inexistentes. Nenhum defeito P0 ativo novo foi demonstrado no levantamento; isso não certifica segurança universal.
+
+Os snapshots e matrizes abaixo mantêm os recortes e prioridades históricas; prevalece esta consolidação quando uma integração posterior resolveu o item.
 
 ## Objetivo
 
@@ -12,11 +22,11 @@ F24.1D.1 do `sanitario-reconcile`. O fechamento inclui matriz negativa, consumid
 `service_role`, E2E 1/1, replay e limpeza. A F24.2 também está fechada no
 [closeout autoritativo](./F24_2_CLOSEOUT_AND_REBASELINE.md). Não existe produção operacional.
 
-**V3.1/V3.2 integrada — #265, merge `23893a97`:** fundação, contrato único, writer progressivo, efeitos/leitores e recovery implementados e homologados localmente; [evidência](./evidence/SANITARIO_V31_V32_LOCAL_20261101.json). Integração Git confirmada, sem comprovação de implantação ou ativação real. **BLQ-002/003 ABERTOS; GATE-03 BLOQUEADO.** A matriz abaixo registra o contrato integral; itens já implementados não são tarefas a repetir. Colaboração completa, fechamento gerencial, continuidade e homologação PWA ampla permanecem fora do aceite.
+**V3.1/V3.2 integrada — #265, merge `23893a97`:** fundação, contrato único, writer progressivo, efeitos/leitores e recovery implementados e homologados localmente; [evidência](./evidence/SANITARIO_V31_V32_LOCAL_20261101.json). Integração Git confirmada, sem comprovação de implantação ou ativação real. **BLQ-002/003 ABERTOS; GATE-03 BLOQUEADO.** A matriz abaixo registra o contrato integral; itens já implementados não são tarefas a repetir. Colaboração, fechamento gerencial e continuidade ficaram fora do aceite original de #265 e foram posteriormente integrados por #268. Homologação PWA ampla conserva limites próprios.
 
 ## Pendências vigentes pós-F24
 
-[fechamento F24](./CURRENT_PHASE_HANDOFF.md#f24-integrada--pr-270) preserva #270, FULL/CI e B2, sem repetição. #271 integrou o builder neonatal e #272 B01/F07. O caller D7/D30/desmame foi corrigido localmente neste incremento B02/A05, integração pendente: identidade por intenção e transação atômica com a fila existente. Restam como limites de certificação o kill real, múltiplos dispositivos e a convergência remota; reabertura Dexie, replay, lost ACK e sucesso parcial foram testados localmente com transporte simulado. [Contrato](../architecture/OPERATIONAL_FLOWS.md#conclusão-d7d30desmame--b02a05); [UX](../ux/UX-DISCOVERY-02.md), GATE-03 bloqueado. Seed operacional/remoto não exercitados. Checkout antigo e fechamentos anteriores preservados; diagnósticos herdados e rollout V3 continuam nos seus recortes.
+[fechamento F24](./CURRENT_PHASE_HANDOFF.md#f24-integrada--pr-270) preserva #270, FULL/CI e B2, sem repetição. #271 integrou o builder neonatal e #272 B01/F07. O caller D7/D30/desmame está integrado pelo #274: identidade por intenção e transação atômica com a fila existente. Restam como limites de certificação o kill real, múltiplos dispositivos e a convergência remota; reabertura Dexie, replay, lost ACK e sucesso parcial foram testados localmente com transporte simulado. [Contrato](../architecture/OPERATIONAL_FLOWS.md#conclusão-d7d30desmame--b02a05); [UX](../ux/UX-DISCOVERY-02.md), GATE-03 bloqueado. Seed operacional/remoto não exercitados. Checkout antigo e fechamentos anteriores preservados; diagnósticos herdados e rollout V3 continuam nos seus recortes.
 
 ## GTA/CAS — incidente independente do encerramento funcional
 
@@ -53,7 +63,7 @@ Integração pública F6–F9 encerrada pelo PR #244 em `main@0e7f5137a865f2671d
 
 | Prioridade | Item aberto e classificação | Fonte / condição de fechamento |
 |---|---|---|
-| P1 para uso operacional dos produtos | **Curadoria/regulatório:** os 39 produtos importados são de revisão (`precisa_validar`); registro vigente, composição, espécie, dose, via e carência não estão certificados. Três candidatos retidos fora do lote. | [Resumo F6–F9](./SANITARIO_V2_F6_F9_PUBLIC_SUMMARY.md). Exige fontes técnicas e decisão curatorial auditável por produto, em tarefa própria; cadastro comercial não libera operação. |
+| P1 somente para contextos necessários | **Curadoria/regulatório:** cadastro e curadoria documental dos 39 encerrados em C02/F6; exceções, retenções e fontes insuficientes são individualizadas. Três candidatos continuam retidos. Não repetir pesquisa/cadastro de todo o lote. | [Fechamento consolidado](./SANITARIO_V2_C02_F6_ENCERRAMENTO_CONSOLIDADO_20261029.md). Resolver somente produto/regra/finalidade necessários ao alvo de uso; cadastro não libera operação. |
 | P1 antes de certificação completa/rollout | **C06_TECHNICAL_CLOSED / INTEGRATED:** #259–#262 integrados em main@5d472d6. **F24.7_FULL_CERTIFICATION = NOT_CERTIFIED**; integração técnica não autoriza produção. | [Evidências consolidadas](./CURRENT_PHASE_HANDOFF.md#fechamento-técnico-c06--259262-integrados). Próximo gate F24.7: comandos do alvo, critérios PWA/kill/dispositivo e limites operacionais; não definido/executado neste fechamento. Sem nova unidade C06 ou rollout automático. |
 | P2, condicionado ao alvo de liberação | **Limite de certificação:** cold start PWA sem shell/assets, crash real de processo e dispositivo físico não certificados pela VF5; nova intenção sem sessão utilizável ficou fora da VF4. | [Limites VF4](./SANITARIO_V2_VF4_VALIDACAO_20261024.md). Definir contrato/critério do alvo antes de testar; não atribuir bug ou prometer escrita sem sessão. |
 | P2 independente | **Dívida TypeScript:** 38 diagnósticos preexistentes no escopo `e2e/tsconfig.json`, triados na VF5; não houve nova contagem nesta atividade. | [Triagem VF5](./evidence/SANITARIO_V2_VF5_TYPESCRIPT_TRIAGE_20261024.json). Correção própria e comparação com baseline; não bloquear artificialmente F9 nem declarar TypeScript global aprovado. |

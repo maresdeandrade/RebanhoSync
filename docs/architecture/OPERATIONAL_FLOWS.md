@@ -15,6 +15,14 @@ Document source: `docs/review/evidence/MAPA_FLUXOS_CONTRATOS_REBANHOSYNC_VALIDAD
 
 > Este documento preserva invariantes dos fluxos. Os hashes e patches candidate abaixo são evidência histórica, não baseline da implementação atual. Para comportamento executado, prevalecem código e migrations ativos; a fase e a ativação são registradas em [`PROJECT_STATUS.md`](../context/PROJECT_STATUS.md).
 
+## Atualização dos fluxos — 18/11/2026
+
+As notas de automação de outubro acima são históricas: #285 retirou a geração automática de Agenda. #268 integrou colaboração, fechamento gerencial, tardios e continuidade; #274 integrou o comando neonatal durável. Não reconstruir essas implementações a partir de snapshots antigos.
+
+#302 integra Protocolos da Fazenda e monitoramento → gesto/fila → `sync-batch`/RPC com CAS → pull da configuração confirmada. Avaliação sanitária usa Evento e participantes factuais, correção append-only e reconciliação; não cria produto, estoque ou carência. Controle estratégico é projeção, e junho não materializa intenção.
+
+Na #301 validada e ainda não integrada, seleção de estoque exige `sanitario_produto_v2_id` compatível com o produto executado, revalidado no writer e na Edge. Indicadores consultam Eventos/detalhes, participantes e movimentos por fazenda; quantidade aplicada coletiva considera dose por animal, consumo e perda têm classificação separada e deduplicação única. Prévia e indicadores não escrevem fatos, movimentos ou saldo. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+
 ## 1. Escopo e precedência
 
 Este documento registra invariantes arquiteturais e fronteiras dos fluxos. A evidência detalhada permanece no mapa de validação indicado no cabeçalho. Para determinar comportamento implementado, prevalecem o código e as migrations ativas; este documento não substitui inspeção do estado corrente do produto.

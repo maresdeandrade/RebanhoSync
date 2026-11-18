@@ -1,9 +1,15 @@
 # Roadmap — RebanhoSync
 
-Atualizado em: 2026-10-20
+Atualizado em: 2026-11-18
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no cenário certificado)**
-Próxima frente: **formalizar escopo e critérios para a proposta de inventário estático F24.6A2; não iniciar benchmarks nem otimizações**
+Próxima frente: **Fase 24 — continuidade localizada: decisão de integração da #301 validada, exceções curatoriais necessárias ao alvo escolhido e lacunas funcionais comprovadas; sem nova fase, benchmark ou rollout automático.**
 Fase anterior: **Fase 23 — Simulação Produtiva e Comercial (CLOSED)**
+
+## Continuidade reconciliada — 18/11/2026
+
+#302 está integrada à `main@175e9dee`; #301 está implementada e validada em `6cdc7284`, com gate READY e integração pendente. P33/upgrades foram corrigidos em #295–#299 e Agenda/B19 em #300. [Resultados e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+
+O produto permanece em desenvolvimento; disponibilidade remota e clientes legados inexistentes não são pendências locais. F24.6A2 é proposta sem início, não pré-requisito automático de correções localizadas. Certificação ampla e preparação de liberação dependem do alvo escolhido; não há nova fase.
 
 ## Objetivo
 
