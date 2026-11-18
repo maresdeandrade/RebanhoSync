@@ -218,7 +218,9 @@ function prepareSanitaryInventoryEvidence(
 ) {
   const { futureSupplyNeeds, futureDemandGroups } = supply;
   const sanitaryExecutionEvents = eventos.filter(
-    (event) => !event.deleted_at && event.dominio === "sanitario",
+    (event) => !event.deleted_at && event.dominio === "sanitario" &&
+      event.payload?.schema !== "sanitary_assessment_v1" &&
+      sanitaryDetailByEventId.get(event.id)?.tipo !== "avaliacao",
   );
   const sanitaryDetailsLoaded = input.eventosSanitario !== undefined;
   const sanitaryDetailsComplete = sanitaryDetailsLoaded

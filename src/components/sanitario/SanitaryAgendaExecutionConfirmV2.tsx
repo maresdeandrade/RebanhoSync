@@ -794,6 +794,8 @@ export function SanitaryAgendaExecutionConfirmV2({
                 {productRequired && productOptions.length === 0 ? (
                   <p className="text-xs text-amber-700">
                     Nenhum produto sanitário cadastrado compatível encontrado.
+                    Para esta agenda, produtos sem classe técnica ou sem vínculo
+                    explícito com o catálogo não são elegíveis.
                   </p>
                 ) : null}
               </label>

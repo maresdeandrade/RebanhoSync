@@ -63,6 +63,48 @@ const result = {
 } as unknown as ReturnType<typeof triageSanitaryProtocolIntervalV2>;
 
 describe("SanitaryProactiveTriagePanelV2", () => {
+  it("expõe fatos divergentes, permite correção vinculada e nova avaliação independente", () => {
+    const configured = { ...source, catalog: { ...source.catalog, items: [{ id: "item-1", protocolId: "protocol-1", version: 1, actionType: "manejo_sanitario", itemStatus: "recomendado", status: "active", snapshotTemplate: { metadata: { planning_scope: "assessment_only" } } }] }, assessmentEventAnimals: [{ evento_id: "fact-a", fazenda_id: "farm-1", animal_id: "animal-0" }] } as unknown as SanitaryProtocolWindowSourceV2;
+    const disputed = { ...evaluation(0), disposition: "insufficient_data", assessmentConflict: true, assessmentEvidence: [{ eventId: "fact-a", result: "no_treatment_indicated", occurredAt: "2026-05-01", responsibleName: "Ana", observation: "Primeira" }, { eventId: "fact-b", result: "treatment_indicated", occurredAt: "2026-05-02", responsibleName: "Beto", observation: null }] };
+    vi.mocked(triageSanitaryProtocolIntervalV2).mockReturnValue({ ...result, evaluations: [disputed] } as typeof result);
+    render(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={configured} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Protocolo 1.*Manejo 1.*1 avaliações/ }));
+    expect(screen.getByText(/Ana.*Tratamento não indicado/)).toBeInTheDocument();
+    expect(screen.getByText(/Beto.*Tratamento indicado/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Corrigir avaliação de Ana/ }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Corrigir avaliação sanitária");
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Registrar nova avaliação" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Registrar avaliação sanitária");
+  });
+  it("oferece registro explícito para etapa canônica de avaliação", () => {
+    const configured = { ...source, catalog: { ...source.catalog, items: [{ id: "item-1", protocolId: "protocol-1", version: 1, actionType: "manejo_sanitario", itemStatus: "recomendado", status: "active", snapshotTemplate: { metadata: { planning_scope: "assessment_only" } } }] } } as unknown as SanitaryProtocolWindowSourceV2;
+    render(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={configured} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Protocolo 1.*Manejo 1.*100 avaliações/ }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Registrar avaliação" })[0]);
+    expect(screen.getByRole("dialog")).toHaveTextContent("Registrar avaliação sanitária");
+  });
+  it("abre a etapa solicitada sem manter filtros que ocultariam seus animais e preserva o período", () => {
+    const { rerender } = render(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={source} /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Horizonte da triagem"), { target: { value: "60" } });
+    fireEvent.change(screen.getByLabelText("Buscar na triagem"), { target: { value: "inexistente" } });
+    rerender(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={source} focusStage={{ protocolId: "protocol-1", itemId: "item-1", request: 1 }} /></MemoryRouter>);
+    expect(screen.getByLabelText("Filtrar por protocolo")).toHaveValue("protocol-1");
+    expect(screen.getByLabelText("Filtrar por manejo")).toHaveValue("item-1");
+    expect(screen.getByLabelText("Buscar na triagem")).toHaveValue("");
+    expect(screen.getByLabelText("Horizonte da triagem")).toHaveValue("60");
+    expect(screen.getByRole("button", { name: /100 avaliações/ })).toBeInTheDocument();
+  });
+  it("publica a coleção exata da triagem e substitui o resultado quando a fonte muda", () => {
+    const onResultChange = vi.fn();
+    const { rerender } = render(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={source} onResultChange={onResultChange} /></MemoryRouter>);
+    expect(onResultChange).toHaveBeenLastCalledWith(source, result);
+    const nextSource = { ...source, agendas: [] };
+    const nextResult = { ...result, evaluations: [] };
+    vi.mocked(triageSanitaryProtocolIntervalV2).mockReturnValue(nextResult);
+    rerender(<MemoryRouter><SanitaryProactiveTriagePanelV2 source={nextSource} onResultChange={onResultChange} /></MemoryRouter>);
+    expect(onResultChange).toHaveBeenLastCalledWith(nextSource, nextResult);
+  });
   beforeEach(() => {
     vi.mocked(triageSanitaryProtocolIntervalV2).mockReturnValue(result);
   });

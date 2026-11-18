@@ -9,6 +9,7 @@ import type {
   AnimalStatusEnum,
   Evento,
   EventoSanitario,
+  EventoAnimalLocalV2,
   Lote,
   SanitarioAgendaAnimalLocalV2,
   SanitarioAgendaLocalV2,
@@ -64,6 +65,7 @@ import { resolveSanitaryRabiesRegionalContextV2 } from "../agenda/sanitaryRabies
 export type SanitaryProtocolWindowSourceV2 = {
   reproductiveEvents?: ReproductiveProjectionEvent[];
   contextEvents?: Evento[];
+  assessmentEventAnimals?: EventoAnimalLocalV2[];
   weightDetails?: EventoPesagem[];
   managementAgendas?: AgendaItem[];
   fazendaId?: string;
@@ -296,6 +298,7 @@ function buildCentralExecutedEvents(input: {
       (event) =>
         event.fazenda_id === input.fazendaId &&
         event.dominio === "sanitario" &&
+        event.payload?.schema !== "sanitary_assessment_v1" &&
         !event.deleted_at &&
         (event.sanitario_v3_confirmation == null ||
           event.sanitario_v3_confirmation === "confirmed"),
@@ -863,6 +866,8 @@ async function readSanitaryProtocolWindowSourceV2(
           .anyOf(events.map((event) => event.id))
           .toArray()
       : [];
+  const assessmentIds = events.filter(event => event.payload?.schema === "sanitary_assessment_v1").map(event => event.id);
+  const assessmentEventAnimals = assessmentIds.length ? await db.event_eventos_animais.where("evento_id").anyOf(assessmentIds).toArray() : [];
   const reproductionDetails = await db.event_eventos_reproducao.bulkGet(events.filter((event) => event.dominio === "reproducao").map((event) => event.id));
   const reproById = new Map(reproductionDetails.filter((detail) => detail?.fazenda_id === fazendaId).map((detail) => [detail!.evento_id, detail!]));
   const reproductiveEvents = events.filter((event) => event.dominio === "reproducao").map((event) => ({ ...event, details: reproById.get(event.id) }));
@@ -898,6 +903,7 @@ async function readSanitaryProtocolWindowSourceV2(
     farmUf: farmConfig?.deleted_at ? null : farmConfig?.uf,
     reproductiveEvents,
     contextEvents: events,
+    assessmentEventAnimals,
     weightDetails: weightDetails.filter((detail): detail is EventoPesagem => Boolean(detail && detail.fazenda_id === fazendaId)),
     managementAgendas,
   };

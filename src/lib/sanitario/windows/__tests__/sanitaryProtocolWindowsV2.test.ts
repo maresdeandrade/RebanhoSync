@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/offline/db";
 import { reviewSanitaryPlanningDateV2, sanitaryOperationalGroupV2 } from "../sanitaryOperationalProjectionV2";
 import { EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 } from "../sanitaryProtocolWindowsV2";
+import { projectStrategicCycleV1 } from "../../strategic/strategicCycleV1";
 import type { Animal, Lote, SanitarioAgendaLocalV2 } from "@/lib/offline/types";
 import type {
   SanitaryProtocolCatalogReadModelV2,
@@ -238,6 +239,18 @@ function source(
     ...overrides,
   };
 }
+
+it("projeta mês estratégico curatorial usando pré-checagem real", () => {
+  const strategic = protocol("strategic", "controle_parasitario_recria_5_7_9");
+  const may = item("may", "strategic", "recria_maio", {
+    actionType: "vermifugacao", operationalWindowRule: { type: "calendar", calendar_months: [5] },
+  });
+  const input = source({ fazendaId: "farm-1", catalog: { protocols: [strategic], items: [may], productClassGroups: [] },
+    animals: [animal("female", "F", "2025-03-01")], contextEvents: [], assessmentEventAnimals: [] });
+  const projection = projectStrategicCycleV1({ source: input, animalId: "female", cycleYear: 2026,
+    variant: "5-7-9", configRevision: 1, evaluatedAt: "2026-05-15" });
+  expect(projection.stages[0]).toMatchObject({ itemId: "may", window: { startDate: "2026-05-01", endDate: "2026-05-31" }, assessment: "not_done", application: "unknown", canPlan: false });
+});
 
 function windowFor(input: {
   protocolId: string;

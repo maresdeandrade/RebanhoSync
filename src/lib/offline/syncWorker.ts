@@ -949,6 +949,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function referencesLocalAgenda(value: unknown, agendaId: string): boolean {
+  if (value === agendaId) return true;
+  if (Array.isArray(value)) return value.some(entry => referencesLocalAgenda(entry, agendaId));
+  return isRecord(value) && Object.values(value).some(entry => referencesLocalAgenda(entry, agendaId));
+}
+
 function isSanitarioCanonicalResult(
   result: SyncOperationResult,
   knownSanitarioOpIds: ReadonlySet<string>,
@@ -1117,6 +1123,7 @@ async function processSanitarioCanonicalResults(
   const operationUpdates = new Map<string, QueueOperationUpdate>();
   const rejectedInventoryProjections: Operation[] = [];
   const rejectedDeathCancellations: Operation[] = [];
+  const conflictingAgendaCreates: Array<{ op: Operation; reason: string }> = [];
   const deathReconcileOps = sentOps.filter((op) =>
     (op.death_cancel || deathStateOps.has(op.client_op_id)) &&
     results.some((result) => result.op_id === op.client_op_id && ["APPLIED", "APPLIED_ALTERED", "REJECTED", "CONFLICT"].includes(result.status)),
@@ -1194,6 +1201,7 @@ async function processSanitarioCanonicalResults(
     }
 
     terminalRejection = true;
+    if (command === "create_agenda" && ((result.status === "CONFLICT" && result.reason_code === "SANITARIO_OPEN_OBLIGATION_CONFLICT") || (result.status === "REJECTED" && result.reason_code === "SANITARIO_CONTEXTUAL_JUNE_NOT_ENABLED"))) conflictingAgendaCreates.push({ op, reason: result.reason_code });
     if (terminalDependency) audits[audits.length - 1].local_reason_code = "SYNC_DEPENDENCY_TERMINAL";
     if (isSanitaryEvidenceOperation(op)) {
       // Keep the immutable envelope for an explicit, identity-preserving retry.
@@ -1323,6 +1331,8 @@ async function processSanitarioCanonicalResults(
       ...getAffectedStores([...rejectedInventoryProjections, ...rejectedDeathCancellations]),
       db.event_eventos,
       db.event_eventos_sanitario,
+      db.ops_sanitario_agenda_v2,
+      db.ops_sanitario_agenda_animais_v2,
     ],
     // fallow-ignore-next-line complexity
     async () => {
@@ -1380,6 +1390,34 @@ async function processSanitarioCanonicalResults(
         await upsertReconciliationObligations([{ fazendaId: gesture.fazenda_id, scope: "factual", tables: ["insumo_movimentacoes", "insumo_lotes"],
           origins: [{ client_tx_id: gesture.client_tx_id, client_op_ids: rejectedInventoryProjections.map(op => op.client_op_id) }] }]);
         for (const op of rejectedInventoryProjections) await rollbackOpLocal(op);
+      }
+
+      for (const { op, reason } of conflictingAgendaCreates) {
+        const payload = isRecord(op.record.payload) ? op.record.payload : {};
+        const draft = isRecord(payload.agenda) ? payload.agenda : {};
+        const agendaId = typeof draft.id === "string" ? draft.id : null;
+        if (!agendaId) continue;
+        const agenda = await db.ops_sanitario_agenda_v2.get(agendaId);
+        if (!agenda || agenda.fazenda_id !== gesture.fazenda_id || !op.domain_op_id || agenda.domain_op_id !== op.domain_op_id) continue;
+        const queue = await db.queue_ops.toArray();
+        const linked = queue.filter(other => other.client_op_id !== op.client_op_id && referencesLocalAgenda(other.record, agendaId));
+        const linkedGestures = await db.queue_gestures.bulkGet(linked.map(other => other.client_tx_id));
+        // A missing gesture is ambiguous: keep the projection rather than erase data.
+        const dependencies = linked.some((other, index) => other.record?.fazenda_id === gesture.fazenda_id || !linkedGestures[index] || linkedGestures[index]?.fazenda_id === gesture.fazenda_id);
+        const facts = (await db.event_eventos.toArray()).some(event => event.fazenda_id === gesture.fazenda_id && (event.source_sanitario_agenda_v2_id === agendaId || event.source_task_id === agendaId));
+        const participants = await db.ops_sanitario_agenda_animais_v2.where("agenda_id").equals(agendaId).filter(row => row.fazenda_id === gesture.fazenda_id).toArray();
+        const expectedAnimals = payload.animal_ids;
+        const target = isRecord(agenda.metadata?.target) ? agenda.metadata.target : {};
+        const expectedMetadata = { source: "sanitary_precheck_preview_v2", targetScope: target.scope, createsEvent: false };
+        const altered = agenda.status !== "programada" || agenda.created_at !== agenda.updated_at || agenda.execution_evento_id != null || agenda.closing_barrier != null || Object.entries(draft).some(([key, value]) => JSON.stringify((agenda as unknown as Record<string, unknown>)[key]) !== JSON.stringify(value)) || !Array.isArray(expectedAnimals) || JSON.stringify(participants.map(row => row.animal_id).sort()) !== JSON.stringify([...expectedAnimals].sort()) || participants.some(row => row.planned_status !== "planejado" || row.execution_evento_id != null || row.not_executed_reason != null || row.created_at !== row.updated_at || JSON.stringify(row.metadata) !== JSON.stringify(expectedMetadata));
+        if (dependencies || facts || altered) {
+          await db.ops_sanitario_agenda_v2.update(agendaId, { status: agenda.status === "programada" ? "conflito_local" : agenda.status, metadata: { ...agenda.metadata, sync_open_identity_conflict: true, sync_agenda_rejection_reason: reason } });
+          deleteIds.delete(op.client_op_id);
+          operationUpdates.set(op.client_op_id, { sync_state: "REJECTED", next_attempt_at: undefined, blocked_reason: reason });
+        } else {
+          await db.ops_sanitario_agenda_animais_v2.where("agenda_id").equals(agendaId).filter(row => row.fazenda_id === gesture.fazenda_id).delete();
+          await db.ops_sanitario_agenda_v2.delete(agendaId);
+        }
       }
 
       if (deleteIds.size > 0) {
@@ -1998,10 +2036,25 @@ function mapDeathCancellationForSync(op: Operation, fazendaId: string): Record<s
   };
 }
 
+function isProtocolAdoptionOperation(op: Operation) {
+  return ["sanitary_protocol_adoption_v1", "sanitary_strategic_calendar_v1"].includes(String(op.record.domain));
+}
+
 export function mapOperationForSync(
   op: Operation,
   fazendaId: string,
 ): Record<string, unknown> {
+  if (isProtocolAdoptionOperation(op)) {
+    if (op.table !== "fazenda_sanidade_config" || op.action !== "UPDATE" ||
+      op.record.fazenda_id !== fazendaId || op.record.client_op_id !== op.client_op_id ||
+      op.record.client_tx_id !== op.client_tx_id) throw new Error("PROTOCOL_ADOPTION_IDENTITY_MISMATCH");
+    return {
+      domain: op.record.domain, contract_version: 1, fazenda_id: fazendaId,
+      client_op_id: op.client_op_id, client_tx_id: op.client_tx_id,
+      expected_revision: op.record.expected_revision,
+      ...(op.record.domain === "sanitary_strategic_calendar_v1" ? { variant: op.record.variant } : { families: op.record.families }),
+    };
+  }
   if (op.death_cancel) return mapDeathCancellationForSync(op, fazendaId);
   if (isMovementOperation(op)) return mapMovementForSync(op, fazendaId);
   const sanitary = queuedSanitaryEnvelope(op);
@@ -2063,7 +2116,8 @@ async function reconcileGenericOperationResults(
     recordedAt,
     isTerminalBlockedDependency,
   );
-  if (plan.rejected.length === 0) return false;
+  const adoptionOnly = operations.length > 0 && operations.every(isProtocolAdoptionOperation);
+  if (plan.rejected.length === 0 && !adoptionOnly) return false;
 
   const rejectedOps = plan.rejected.map(({ op }) => op);
   const appliedOps = plan.applied.map(({ op }) => op);
@@ -2175,10 +2229,10 @@ async function reconcileGenericOperationResults(
       )
       .join(" | ");
     await db.queue_gestures.update(gesture.client_tx_id, {
-      status: retryableOps.length > 0 ? "PENDING" : "REJECTED",
-      sync_result: retryableOps.length > 0 ? undefined : "REJECTED",
+      status: retryableOps.length > 0 ? "PENDING" : plan.rejected.length > 0 ? "REJECTED" : "DONE",
+      sync_result: retryableOps.length > 0 ? undefined : plan.rejected.length > 0 ? "REJECTED" : "APPLIED",
       completed_at: retryableOps.length > 0 ? undefined : recordedAt,
-      last_error: rejectionSummary || "Gesture has rejected operations",
+      last_error: rejectionSummary || (plan.rejected.length > 0 ? "Gesture has rejected operations" : plan.retryable[0]?.result.reason_code),
       operation_results: mergeOperationAudit(
         current.operation_results ?? gesture.operation_results,
         plan.audits,
@@ -2858,7 +2912,7 @@ export async function processGesture(gesture: Gesture) {
       }
 
       if (
-        hasRejected &&
+        (hasRejected || ops.every(isProtocolAdoptionOperation)) &&
         !hasCommercialPurchase &&
         (await reconcileGenericOperationResults(
           gesture,

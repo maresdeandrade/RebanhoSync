@@ -215,6 +215,8 @@ export function buildSanitaryExecutedHistoryV2(
     }
     const detail = detailsByEventId.get(event.id);
     if (!detail) continue;
+    // Assessment facts do not establish a pharmacological administration.
+    if (event.payload?.schema === "sanitary_assessment_v1" || String(detail.tipo) === "avaliacao") continue;
     const item = resolveCatalogItem({ detail, catalog: input.catalog });
     if (!item) continue;
     const protocol = protocolsById.get(item.protocolId);
@@ -388,6 +390,7 @@ export async function getLotSanitaryExecutedHistoryV2(
   return buildSanitaryExecutedHistoryV2({
     events: lotEvents,
     sanitaryDetails: source.sanitaryDetails,
+    eventAnimals: source.eventAnimals,
     catalog: input.catalog,
     fazendaId: input.fazendaId,
     allowedAnimalIds: input.animalIds,

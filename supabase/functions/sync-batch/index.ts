@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { executeProtocolAdoptionV1, isProtocolAdoptionV1 } from "./protocol-adoption-v1.ts";
 import {
   buildInternalErrorResult,
   buildMutationMatch,
@@ -381,6 +382,10 @@ Deno.serve(async (req: Request) => {
 
     for (const rawOp of ops) {
       try {
+        if (isProtocolAdoptionV1(rawOp)) {
+          results.push(await executeProtocolAdoptionV1(supabase, rawOp, { fazendaId: fazenda_id, clientTxId: client_tx_id }));
+          continue;
+        }
         if (isObitoAgendaOperation(rawOp)) {
           results.push(serviceSupabase
             ? await executeObitoAgenda(serviceSupabase, rawOp, {

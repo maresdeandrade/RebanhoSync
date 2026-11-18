@@ -462,8 +462,8 @@ function validateAgainstAgenda(input: {
   if (
     requirement === "product_class" &&
     plannedClass &&
-    request.product?.productClass &&
-    request.product.productClass !== plannedClass
+    (!request.product?.productClass ||
+      request.product.productClass !== plannedClass)
   ) {
     rejected.push("product_class_mismatch");
   }
