@@ -201,12 +201,32 @@ function sanitaryProtocolDetail(detail: EventoSanitario) {
   return protocol ? `protocolo ${protocol}` : null;
 }
 
-function formatSanitaryEventDetail(detail: EventoSanitario): string {
-  const product = detail.produto_nome_snapshot ?? detail.produto ?? detail.tipo;
+function formatSanitaryEventDetail(detail: EventoSanitario, event: Evento): string {
+  const product = detail.tipo === "avaliacao"
+    ? "Avaliação sanitária"
+    : detail.produto_nome_snapshot ?? detail.produto ?? detail.tipo;
   if (detail.sanitario_v3_confirmation === "pending")
     return `${product} · Declaração local aguardando reconhecimento; efeitos ainda não confirmados.`;
   if (detail.sanitario_v3_confirmation === "collision")
     return `${product} · Declaração em conflito; nenhum segundo atendimento reconhecido.`;
+  if (detail.tipo === "avaliacao") {
+    const assessment = event.payload?.assessment;
+    const result = readSnapshotString(assessment, "result");
+    const resultLabels: Record<string, string> = {
+      no_treatment_indicated: "Tratamento não indicado",
+      treatment_indicated: "Tratamento indicado",
+      insufficient_data: "Inconclusiva por dados insuficientes",
+    };
+    const responsible = readSnapshotString(assessment, "responsible_name");
+    const observation = readSnapshotString(assessment, "observation");
+    return [
+      product,
+      (result && resultLabels[result]) || "Resultado não informado",
+      responsible ? `Responsável: ${responsible}` : "Responsável não informado",
+      observation ? `Observação: ${observation}` : null,
+      sanitaryProtocolDetail(detail),
+    ].filter(Boolean).join(" | ");
+  }
   return [
     product,
     ...sanitaryApplicationDetail(detail),
@@ -544,7 +564,7 @@ const Eventos = () => {
 
     if (baseEvento.dominio === "sanitario") {
       const detail = detailMaps.sanitarioByEvento.get(baseEvento.id);
-      if (!detail) return null;
+      if (!detail || detail.tipo === "avaliacao" || !detail.produto) return null;
       return {
         dominio: "sanitario",
         fazendaId: activeFarmId,
@@ -777,7 +797,7 @@ const Eventos = () => {
 
         if (evento.dominio === "sanitario") {
           const d = sanitarioByEvento.get(evento.id);
-          detail = d ? formatSanitaryEventDetail(d) : "Sem detalhe sanitario";
+          detail = d ? formatSanitaryEventDetail(d, evento) : "Sem detalhe sanitario";
           canCreateInventoryConsumption =
             evaluateSanitaryInventoryConsumptionReadiness({
               event: evento,

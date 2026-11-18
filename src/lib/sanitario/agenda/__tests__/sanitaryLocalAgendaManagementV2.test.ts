@@ -82,6 +82,12 @@ async function clearScope() {
 }
 
 describe("sanitaryLocalAgendaManagementV2", () => {
+  it("exibe conflito local preservado sem permitir gerenciar ou executar", async () => {
+    await db.ops_sanitario_agenda_v2.put(agenda({ status: "conflito_local", metadata: { sync_open_identity_conflict: true } }));
+    const [item] = await listLocalSanitaryAgendasV2("farm-1", db);
+    expect(item).toMatchObject({ status: "conflito_local", canManage: false, canExecute: false });
+    await expect(rescheduleLocalSanitaryAgendaV2({ agendaId: item.id, fazendaId: "farm-1", plannedFor: "2026-07-15" }, db)).rejects.toThrow("AGENDA_SANITARIA_NAO_GERENCIAVEL");
+  });
   it("sinaliza a data rejeitada enquanto a obrigação de pull permanece", async () => {
     await db.ops_sanitario_agenda_v2.put(agenda());
     await db.queue_ops.put({ client_op_id: "conflict-op", client_tx_id: "conflict-tx", table: "sanitario_v2", action: "INSERT", sync_state: "REJECTED", blocked_reason: "SANITARIO_AGENDA_REVISION_CONFLICT", created_at: "2026-11-01", record: { domain: "sanitario_v2", command: "reschedule_agenda", fazenda_id: "farm-1", payload: { agenda_id: "agenda-1" } } });

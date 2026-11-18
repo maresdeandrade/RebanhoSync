@@ -944,6 +944,18 @@ describe("buildOperationalSummary", () => {
     );
   });
 
+  it("mantém avaliação factual no total de Eventos sem tratá-la como aplicação sem rastreabilidade", () => {
+    const range = resolveReportRange("30d", new Date("2026-05-31T12:00:00.000Z"));
+    const assessment = { ...baseEvento, id: "assessment", dominio: "sanitario", occurred_at: "2026-05-20T12:00:00.000Z", payload: { schema: "sanitary_assessment_v1" } } as Evento;
+    const detail = { evento_id: assessment.id, fazenda_id: "farm-1", tipo: "avaliacao", produto: null, payload: {}, deleted_at: null } as EventoSanitario;
+    const report = buildOperationalSummary({ fazendaId: "farm-1", animals: [], lotes: [], pastos: [], agenda: [], eventos: [assessment], eventosSanitario: [detail], eventosPesagem: [], eventosFinanceiro: [], gestures: [], rejections: [], historicalCoverage: { sanitario_execucoes: { state: "verified", evidence: ["fixture factual"] } } }, range, new Date("2026-05-31T12:00:00.000Z"));
+    expect(report.summary.eventosPeriodo).toBe(1);
+    expect(report.metrics.sanitario_execucoes.value).toBe(0);
+    expect(report.inventory.sanitaryTraceability.eventsWithoutCompleteTraceability).toBe(0);
+    expect(report.inventory.sanitaryTraceability.byAnimal).toEqual([]);
+    expect(report.inventory.sanitaryPhase3Prerequisites.sanitaryEvents).toBe(0);
+  });
+
   it("identifies sanitary events without stock lot, cost and complete traceability", () => {
     const range = resolveReportRange(
       "30d",

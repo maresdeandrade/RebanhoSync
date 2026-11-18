@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { SanitaryAssessmentDialogV1 } from "./SanitaryAssessmentDialogV1";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import {
   triageSanitaryProtocolIntervalV2,
   type SanitaryTriageDispositionV2,
   type SanitaryTriageEvaluationV2,
+  type SanitaryTriageResultV2,
 } from "@/lib/sanitario/triage/sanitaryTriageV2";
 
 type PeriodMode = "30" | "60" | "90" | "custom";
@@ -34,6 +36,8 @@ type Props = {
   initialLotId?: string | null;
   onTargetChange?: (animalId: string, lotId: string) => void;
   onOpenSection?: (section: "agenda" | "historico") => void;
+  onResultChange?: (source: SanitaryProtocolWindowSourceV2 | undefined, result: SanitaryTriageResultV2 | null) => void;
+  focusStage?: { protocolId: string; itemId: string; request: number } | null;
 };
 
 const PAGE_SIZE = 50;
@@ -43,6 +47,8 @@ const dispositionLabels: Record<SanitaryTriageDispositionV2, string> = {
   future_opportunity: "Oportunidade futura",
   scheduled: "Manejo já programado",
   factual_completed: "Atendimento factual comprovado",
+  assessment_completed: "Avaliação concluída sem tratamento indicado",
+  treatment_indicated: "Tratamento indicado, aplicação não comprovada",
   restricted: "Restrição técnica",
   insufficient_data: "Dados insuficientes",
   outside_period: "Fora do período",
@@ -88,7 +94,7 @@ function selectionKey(evaluation: SanitaryTriageEvaluationV2) {
 }
 
 function isSelectableEvaluation(evaluation: SanitaryTriageEvaluationV2) {
-  return evaluation.disposition === "opportunity_in_window" &&
+  return (evaluation.disposition === "opportunity_in_window" || evaluation.disposition === "treatment_indicated") &&
     !evaluation.alreadyPlanned &&
     evaluation.blockers.length === 0;
 }
@@ -118,6 +124,8 @@ function summarize(evaluations: SanitaryTriageEvaluationV2[]) {
     future_opportunity: 0,
     scheduled: 0,
     factual_completed: 0,
+    assessment_completed: 0,
+    treatment_indicated: 0,
     restricted: 0,
     insufficient_data: 0,
     outside_period: 0,
@@ -143,7 +151,7 @@ function SummaryCard({ label, value, description }: { label: string; value: numb
   </Card>;
 }
 
-function EvaluationDetails({ evaluation, selected, onToggle, onOpenSection }: { evaluation: SanitaryTriageEvaluationV2; selected: boolean; onToggle: (evaluation: SanitaryTriageEvaluationV2) => void; onOpenSection?: Props["onOpenSection"] }) {
+function EvaluationDetails({ evaluation, selected, onToggle, onOpenSection, onAssessment }: { evaluation: SanitaryTriageEvaluationV2; selected: boolean; onToggle: (evaluation: SanitaryTriageEvaluationV2) => void; onOpenSection?: Props["onOpenSection"]; onAssessment?: (evaluation: SanitaryTriageEvaluationV2) => void }) {
   const selectable = isSelectableEvaluation(evaluation);
   return <li className="rounded-md border border-border/70 bg-background p-3 text-sm">
     <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
@@ -160,9 +168,19 @@ function EvaluationDetails({ evaluation, selected, onToggle, onOpenSection }: { 
         {evaluation.blockers.map(blocker => <p key={blocker} className="text-red-700">{blocker}</p>)}
         {evaluation.documentaryPendingReasons.map(reason => <p key={reason} className="text-amber-700">Dados documentais: {reason}</p>)}
         {evaluation.plannedFor ? <p className="text-muted-foreground">Agenda existente para {displayDate(evaluation.plannedFor)}.</p> : null}
+        {evaluation.assessmentConflict || evaluation.assessmentEvidence?.length ? <div className="space-y-2 rounded-md border p-2">
+          <p>{evaluation.assessmentConflict ? "Há avaliações divergentes ou histórico incompleto." : "Há avaliações independentes com a mesma conclusão."} Cada fato mantém sua identidade; corrija somente o registro incorreto.</p>
+          {(evaluation.assessmentEvidence ?? []).length === 0 ? <p>Não foi possível carregar a cadeia completa. Atualize os dados antes de corrigir.</p> : <ul className="space-y-2">{evaluation.assessmentEvidence!.map(evidence => <li key={evidence.eventId}>
+            <p>{evidence.responsibleName} · {evidence.result === "no_treatment_indicated" ? "Tratamento não indicado" : evidence.result === "treatment_indicated" ? "Tratamento indicado" : "Dados insuficientes"} · {displayDate(evidence.occurredAt.slice(0, 10))}</p>
+            {evidence.observation ? <p>{evidence.observation}</p> : null}
+            {onAssessment ? <button type="button" className="text-primary underline" onClick={() => onAssessment({ ...evaluation, assessmentEventId: evidence.eventId })}>Corrigir avaliação de {evidence.responsibleName}</button> : null}
+          </li>)}</ul>}
+        </div> : null}
       </div>
       <div className="flex shrink-0 gap-2">
         <Link className="text-primary underline" to={evaluation.animalHref}>Abrir animal</Link>
+        {onAssessment ? <button type="button" className="text-primary underline" onClick={() => onAssessment({ ...evaluation, assessmentEventId: undefined })}>{evaluation.assessmentConflict ? "Registrar nova avaliação" : "Registrar avaliação"}</button> : null}
+        {onAssessment && evaluation.assessmentEventId ? <button type="button" className="text-primary underline" onClick={() => onAssessment(evaluation)}>Corrigir avaliação</button> : null}
         {evaluation.disposition === "scheduled" && onOpenSection ? <button type="button" className="text-primary underline" onClick={() => onOpenSection("agenda")}>Abrir Agenda</button> : null}
         {evaluation.disposition === "factual_completed" && onOpenSection ? <button type="button" className="text-primary underline" onClick={() => onOpenSection("historico")}>Abrir histórico</button> : null}
       </div>
@@ -170,7 +188,7 @@ function EvaluationDetails({ evaluation, selected, onToggle, onOpenSection }: { 
   </li>;
 }
 
-function EvaluationGroup({ group, selectedKeys, onToggle, onSelectGroup, onOpenSection }: { group: SanitaryTriageEvaluationV2[]; selectedKeys: Set<string>; onToggle: (evaluation: SanitaryTriageEvaluationV2) => void; onSelectGroup: (group: SanitaryTriageEvaluationV2[]) => void; onOpenSection?: Props["onOpenSection"] }) {
+function EvaluationGroup({ group, selectedKeys, onToggle, onSelectGroup, onOpenSection, onAssessment }: { group: SanitaryTriageEvaluationV2[]; selectedKeys: Set<string>; onToggle: (evaluation: SanitaryTriageEvaluationV2) => void; onSelectGroup: (group: SanitaryTriageEvaluationV2[]) => void; onOpenSection?: Props["onOpenSection"]; onAssessment?: (evaluation: SanitaryTriageEvaluationV2) => void }) {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
   const visible = open ? group.slice(0, page * PAGE_SIZE) : [];
@@ -187,7 +205,7 @@ function EvaluationGroup({ group, selectedKeys, onToggle, onSelectGroup, onOpenS
       </Button>
     </div>
     {open ? <>
-      <ul className="mt-3 space-y-2">{visible.map((evaluation, index) => <EvaluationDetails key={`${selectionKey(evaluation)}:${index}`} evaluation={evaluation} selected={selectedKeys.has(selectionKey(evaluation))} onToggle={onToggle} onOpenSection={onOpenSection} />)}</ul>
+      <ul className="mt-3 space-y-2">{visible.map((evaluation, index) => <EvaluationDetails key={`${selectionKey(evaluation)}:${index}`} evaluation={evaluation} selected={selectedKeys.has(selectionKey(evaluation))} onToggle={onToggle} onOpenSection={onOpenSection} onAssessment={onAssessment} />)}</ul>
       {visible.length < group.length ? <button type="button" className="mt-3 text-sm text-primary underline" onClick={() => setPage(current => current + 1)}>Mostrar mais ({group.length - visible.length} restantes)</button> : null}
     </> : null}
   </section>;
@@ -219,7 +237,7 @@ function PlanningDialog({ review, dateReview, preview, planning, error, onDateCh
   </Dialog>;
 }
 
-export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initialLotId, onTargetChange, onOpenSection }: Props) {
+export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initialLotId, onTargetChange, onOpenSection, onResultChange, focusStage }: Props) {
   const initialStart = todayKey();
   const [periodMode, setPeriodMode] = useState<PeriodMode>("30");
   const [startDate, setStartDate] = useState(initialStart);
@@ -235,6 +253,16 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
   const [planning, setPlanning] = useState(false);
   const [planningError, setPlanningError] = useState<string | null>(null);
   const [planningNotice, setPlanningNotice] = useState<string | null>(null);
+  const [assessment, setAssessment] = useState<SanitaryTriageEvaluationV2 | null>(null);
+  useEffect(() => {
+    if (!focusStage) return;
+    setProtocolFilter(focusStage.protocolId);
+    setItemFilter(focusStage.itemId);
+    setLotFilter("todos");
+    setAnimalFilter("todos");
+    setSituationFilter("todos");
+    setText("");
+  }, [focusStage]);
 
   const period = periodForMode(periodMode, startDate) ?? { startDate, endDate };
   const periodStartDate = period.startDate;
@@ -254,6 +282,7 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
       return null;
     }
   }, [periodEndDate, periodError, periodStartDate, source]);
+  useEffect(() => { onResultChange?.(source, result); }, [source, result, onResultChange]);
 
   const protocols = useMemo(() => [...new Map((result?.evaluations ?? []).map(row => [row.protocolId, row.protocolLabel])).entries()], [result]);
   const items = useMemo(() => [...new Map((result?.evaluations ?? []).filter(row => protocolFilter === "todos" || row.protocolId === protocolFilter).map(row => [row.itemId, row.itemLabel])).entries()], [protocolFilter, result]);
@@ -394,10 +423,16 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
         <CardHeader><CardTitle>Oportunidades e condições por protocolo</CardTitle><CardDescription>Selecione somente oportunidades elegíveis na janela. A confirmação cria Agenda futura, nunca Evento factual.</CardDescription></CardHeader>
         <CardContent>
           <div className="mb-3 flex flex-wrap items-center gap-3"><span className="text-sm text-muted-foreground">{selectedEvaluations.length} avaliação(ões) selecionada(s)</span><Button type="button" variant="outline" disabled={!selectableEvaluations.length} onClick={() => selectEvaluations(selectableEvaluations)}>Selecionar elegíveis no recorte ({selectableEvaluations.length})</Button><Button type="button" variant="outline" disabled={!selectedKeys.size} onClick={() => setSelectedKeys(new Set())}>Limpar seleção</Button><Button type="button" disabled={!selectedEvaluations.length || !source.fazendaId} onClick={openPlanningReview}>Planejar selecionados</Button>{planningNotice ? <span role="status" className="text-sm text-green-700">{planningNotice}</span> : null}{planningError && !review ? <span role="alert" className="text-sm text-destructive">{planningError}</span> : null}</div>
-          {groups.length === 0 ? <p role="status" className="text-sm text-muted-foreground">Nenhuma oportunidade ou condição encontrada com os filtros atuais. Isso não constitui comprovação de conformidade.</p> : <div className="space-y-3">{groups.map(group => <EvaluationGroup key={groupKey(group[0])} group={group} selectedKeys={selectedKeys} onToggle={toggleSelection} onSelectGroup={selectEvaluations} onOpenSection={onOpenSection} />)}</div>}
+          {groups.length === 0 ? <p role="status" className="text-sm text-muted-foreground">Nenhuma oportunidade ou condição encontrada com os filtros atuais. Isso não constitui comprovação de conformidade.</p> : <div className="space-y-3">{groups.map(group => {
+            const item = source.catalog.items.find(entry => entry.id === group[0].itemId && entry.protocolId === group[0].protocolId);
+            const metadata = item?.snapshotTemplate?.metadata as Record<string, unknown> | undefined;
+            const canAssess = item?.actionType === "manejo_sanitario" && metadata?.planning_scope === "assessment_only" && item.itemStatus !== "bloqueado" && item.status !== "retired" && item.status !== "blocked";
+            return <EvaluationGroup key={groupKey(group[0])} group={group} selectedKeys={selectedKeys} onToggle={toggleSelection} onSelectGroup={selectEvaluations} onOpenSection={onOpenSection} onAssessment={canAssess ? setAssessment : undefined} />;
+          })}</div>}
         </CardContent>
       </Card>
       {review ? <PlanningDialog review={review} dateReview={dateReview} preview={preview} planning={planning} error={planningError} onDateChange={date => setReview(current => current ? { ...current, plannedFor: date } : current)} onClose={() => { if (!planning) { setReview(null); setPlanningError(null); } }} onConfirm={confirmPlanning} onRemoveRejected={removeRejectedFromReview} /> : null}
+      {assessment ? <SanitaryAssessmentDialogV1 source={source} evaluation={assessment} onClose={() => setAssessment(null)} onQueued={() => { setAssessment(null); setPlanningNotice("Avaliação aguardando sincronização."); }} /> : null}
     </> : null}
   </div>;
 }

@@ -487,7 +487,7 @@ describe("sanitario v2 ordered pull", () => {
     expect(recomputeSanitaryComplianceAfterPullV2).toHaveBeenCalledTimes(2);
   });
 
-  it.each(["PENDING", "REJECTED"] as const)(
+  it.each(["PENDING", "REJECTED", "BLOCKED_DEPENDENCY"] as const)(
     "preserva fato, detalhe, relação e companion contra pull (%s)",
     async (state) => {
       await db.event_eventos.put({

@@ -9,6 +9,7 @@ import { db } from "@/lib/offline/db";
 import type { Insumo, InsumoLote } from "@/lib/offline/types";
 import { loadSanitaryAgendaExecutionOptionsV2 } from "@/components/sanitario/SanitaryAgendaExecutionConfirmV2";
 import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocalAgendaPanelV2";
+import type { SanitaryLocalAgendaListItemV2 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
 import type {
   SanitaryAgendaBatchItemResultV2,
   SanitaryAgendaBatchResultV2,
@@ -89,7 +90,7 @@ function renderPanel(
   onReschedule = vi.fn(),
   onCancel = vi.fn(),
   onExecute = vi.fn().mockResolvedValue(batchResult([])),
-  panelItems = items,
+  panelItems: SanitaryLocalAgendaListItemV2[] = items,
 ) {
   render(
     <MemoryRouter>
@@ -129,6 +130,11 @@ function renderPanel(
 }
 
 describe("SanitaryLocalAgendaPanelV2", () => {
+  it("identifica Agenda local recusada e não oferece execução", () => {
+    renderPanel(vi.fn(), vi.fn(), vi.fn(), [{ ...items[0], status: "conflito_local", canManage: false, canExecute: false }]);
+    expect(screen.getByText("Conflito local — revisão necessária")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Executar grupo" })).not.toBeInTheDocument();
+  });
   it("avisa quando a data ainda aguarda reconciliação após conflito", () => {
     renderPanel(vi.fn(), vi.fn(), vi.fn(), [{ ...items[0], reconciliationPending: true }]);
     expect(screen.getByText("Conflito: reconciliação pendente")).toBeInTheDocument();

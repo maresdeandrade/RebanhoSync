@@ -1256,6 +1256,7 @@ export interface SanitarioProdutoCarenciaRuleLocalV2 {
 
 export type SanitarioAgendaV2Status =
   | "programada"
+  | "conflito_local"
   | "executada"
   | "fechada"
   | "cancelada"
@@ -1272,6 +1273,9 @@ export type SanitarioAgendaClosureV2Type =
   | "dismissed";
 
 export interface SanitarioAgendaLocalV2 {
+  strategic_cycle_year_v1?: number | null;
+  strategic_family_v1?: string | null;
+  strategic_stage_v1?: string | null;
   closing_barrier?: { barrier_id: string; snapshot: Record<string, unknown>; not_executed: { animal_id: string; reason: string }[] } | null;
   result_revision?: number;
   operational_revision?: number;
@@ -1638,8 +1642,8 @@ export interface EventoSanitario {
   sanitario_v3_confirmation?: SanitaryConfirmationV3;
   evento_id: string;
   fazenda_id: string;
-  tipo: SanitarioTipoEnum;
-  produto: string;
+  tipo: SanitarioTipoEnum | "avaliacao";
+  produto: string | null;
   produto_veterinario_id?: string | null;
   produto_nome_snapshot?: string | null;
   estoque_lote_id?: string | null;

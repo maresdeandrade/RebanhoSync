@@ -11,6 +11,9 @@ import { SanitaryLocalAgendaPanelV2 } from "@/components/sanitario/SanitaryLocal
 import { isCompleteSanitaryExecutionBatch } from "@/lib/sanitario/execution/sanitaryExecutionResultV2";
 import { SanitaryCompliancePanelV2 } from "@/components/sanitario/SanitaryCompliancePanelV2";
 import { SanitaryProactiveTriagePanelV2 } from "@/components/sanitario/SanitaryProactiveTriagePanelV2";
+import { SanitaryFarmProtocolsV1 } from "@/components/sanitario/SanitaryFarmProtocolsV1";
+import { StrategicCalendarPanelV1 } from "@/components/sanitario/StrategicCalendarPanelV1";
+import type { SanitaryTriageResultV2 } from "@/lib/sanitario/triage/sanitaryTriageV2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -178,7 +181,12 @@ function useFarmSanitaryFilters(activeFarmId: string | null, searchParams: URLSe
 const ProtocolosSanitarios = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activeFarmId, user } = useAuth();
+  const { activeFarmId, user, role } = useAuth();
+  const [triageSnapshot, setTriageSnapshot] = useState<{ source: SanitaryProtocolWindowSourceV2 | undefined; result: SanitaryTriageResultV2 | null } | null>(null);
+  const [focusedStage, setFocusedStage] = useState<{ farmId: string; protocolId: string; itemId: string; request: number } | null>(null);
+  const receiveTriageResult = useCallback((source: SanitaryProtocolWindowSourceV2 | undefined, result: SanitaryTriageResultV2 | null) => {
+    setTriageSnapshot(previous => previous && previous.source === source && previous.result === result ? previous : { source, result });
+  }, []);
   const { animalId: initialAnimalId, lotId: initialLotId } = useFarmSanitaryFilters(activeFarmId, searchParams, setSearchParams);
   const currentFarm = useRef(activeFarmId);
   currentFarm.current = activeFarmId;
@@ -328,7 +336,7 @@ const ProtocolosSanitarios = () => {
           <TabsTrigger value="conformidade"><ShieldCheck className="mr-2 h-4 w-4" />Conformidade</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="janelas">
+        <TabsContent value="janelas" forceMount hidden={activeTab !== "janelas"}>
           <WindowReadState failed={windowReadError} onRetry={refreshPlanning}>
           <SanitaryProactiveTriagePanelV2
             key={activeFarmId}
@@ -339,6 +347,8 @@ const ProtocolosSanitarios = () => {
               setSearchParams(sanitaryTargetSearchParams(searchParams, animalId || null, lotId || null), { replace: true });
             }}
             onOpenSection={setActiveTab}
+            onResultChange={receiveTriageResult}
+            focusStage={focusedStage?.farmId === activeFarmId ? focusedStage : null}
           />
           </WindowReadState>
         </TabsContent>
@@ -364,6 +374,25 @@ const ProtocolosSanitarios = () => {
         </TabsContent>
 
         <TabsContent value="catalogo">
+          {currentFarmSource(windowSource, activeFarmId) ? <StrategicCalendarPanelV1
+            source={currentFarmSource(windowSource, activeFarmId)!}
+            canManage={role === "owner" || role === "manager"}
+            onOpenAgenda={() => setActiveTab("agenda")}
+            onOpenTriage={(protocolId, itemId) => {
+              if (protocolId && itemId) setFocusedStage(previous => ({ farmId: activeFarmId, protocolId, itemId, request: (previous?.request ?? 0) + 1 }));
+              setActiveTab("janelas");
+            }}
+          /> : null}
+          {currentFarmSource(windowSource, activeFarmId) ? <SanitaryFarmProtocolsV1
+            source={currentFarmSource(windowSource, activeFarmId)!}
+            result={triageSnapshot?.source === windowSource ? triageSnapshot.result : null}
+            canManage={role === "owner" || role === "manager"}
+            onOpenAgenda={() => setActiveTab("agenda")}
+            onOpenTriage={(protocolId, itemId) => {
+              if (protocolId && itemId) setFocusedStage(previous => ({ farmId: activeFarmId, protocolId, itemId, request: (previous?.request ?? 0) + 1 }));
+              setActiveTab("janelas");
+            }}
+          /> : null}
           <Card>
             <CardHeader><CardTitle>Catálogo sanitário v2</CardTitle><CardDescription>Consulta local de protocolos, itens e grupos técnicos. Catálogo é regra e não comprova execução.</CardDescription></CardHeader>
             <CardContent><Button onClick={() => navigate("/protocolos-sanitarios/catalogo-v2")}>Abrir catálogo sanitário</Button></CardContent>
