@@ -204,6 +204,7 @@ describe("integração C2C → C2A → C2B", () => {
         lotId: "lot-1",
         insumoNome: " Insumo ",
         categoria: " Categoria ",
+        sanitarioProdutoV2Id: "",
         ativo: true,
         estoqueMinimoBase: minimum,
         pontoRessuprimentoBase: reorder,
@@ -218,15 +219,13 @@ describe("integração C2C → C2A → C2B", () => {
         custoUnitario: unit,
         origemCusto: "financeiro_vinculado",
       };
-      expect(
-        planLotEdit(form, validateLotEditForm, buildLotEditOperations),
-      ).toStrictEqual(
-        planLotEdit(
-          form,
-          validateBaselineLotEditForm,
-          buildBaselineLotEditOperations,
-        ),
+      const expected = planLotEdit(
+        form,
+        validateBaselineLotEditForm,
+        buildBaselineLotEditOperations,
       );
+      if (Array.isArray(expected)) expected[0].record.sanitario_produto_v2_id = null;
+      expect(planLotEdit(form, validateLotEditForm, buildLotEditOperations)).toStrictEqual(expected);
     },
   );
 });

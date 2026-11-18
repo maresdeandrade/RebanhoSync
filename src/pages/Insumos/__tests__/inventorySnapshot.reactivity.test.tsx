@@ -38,7 +38,7 @@ class QueryBoundary extends Component<
 
 describe.each(Object.entries(hooks))(
   "inventory snapshot React/Dexie: %s",
-  (_, useSnapshot) => {
+  (readerName, useSnapshot) => {
     let database: ReturnType<typeof createDatabase>;
     beforeEach(async () => {
       database = createDatabase();
@@ -51,14 +51,17 @@ describe.each(Object.entries(hooks))(
       await database.delete();
     });
 
-    it.each(Object.entries(collections))(
+    it.each(Object.entries(collections).filter(([key]) =>
+      key !== "produtosSanitariosV2" || readerName === "current",
+    ))(
       "reacts to changes in %s without polling",
       async (key, table) => {
         const { result } = renderHook(() => useSnapshot("A", database));
         await waitFor(() =>
           expect(result.current?.insumos[0].id).toBe("A-insumos"),
         );
-        const target = key === "produtos" ? `global-${key}` : `A-${key}`;
+        const target = key === "produtos" || key === "produtosSanitariosV2"
+          ? `global-${key}` : `A-${key}`;
         await act(async () => {
           await database.table(table).update(target, { testMarker: "updated" });
         });
