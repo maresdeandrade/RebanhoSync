@@ -134,6 +134,26 @@ function detail(overrides: Partial<EventoSanitario> = {}): EventoSanitario {
 }
 
 describe("sanitaryExecutedHistoryV2", () => {
+  it("não interpreta avaliação factual sem produto como aplicação farmacológica", () => {
+    const history = buildSanitaryExecutedHistoryV2({ events: [event({ payload: { schema: "sanitary_assessment_v1" } })], sanitaryDetails: [detail()], catalog: catalog(), fazendaId: "farm-1" });
+    expect(history).toEqual([]);
+  });
+  it("preserva participantes explícitos de evento coletivo na leitura do lote", async () => {
+    const id = "event-collective-history-test";
+    await db.event_eventos.put(event({ id, animal_id: null, lote_id: "lot-1" }));
+    await db.event_eventos_sanitario.put(detail({ evento_id: id }));
+    await db.event_eventos_animais.bulkPut(["animal-1", "animal-2"].map(animal_id => ({
+      id: `${id}-${animal_id}`, fazenda_id: "farm-1", evento_id: id, animal_id, created_at: "2026-04-01T10:00:00.000Z",
+    })));
+    try {
+      const history = await getLotSanitaryExecutedHistoryV2({ loteId: "lot-1", animalIds: ["animal-1", "animal-2"], fazendaId: "farm-1", catalog: catalog() });
+      expect(history.map(entry => entry.animalId).sort()).toEqual(["animal-1", "animal-2"]);
+    } finally {
+      await db.event_eventos_animais.bulkDelete([`${id}-animal-1`, `${id}-animal-2`]);
+      await db.event_eventos_sanitario.delete(id);
+      await db.event_eventos.delete(id);
+    }
+  });
   it("projeta somente evento sanitario executado com item resolvido", () => {
     const history = buildSanitaryExecutedHistoryV2({
       events: [event()],

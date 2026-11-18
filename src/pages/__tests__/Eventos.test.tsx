@@ -516,6 +516,47 @@ describe("Eventos page", () => {
     ).toBeInTheDocument();
   });
 
+  it.each([
+    ["no_treatment_indicated", "Tratamento não indicado"],
+    ["treatment_indicated", "Tratamento indicado"],
+    ["insufficient_data", "Inconclusiva por dados insuficientes"],
+  ])("apresenta avaliação factual %s sem campos farmacológicos", async (result, label) => {
+    queueLiveQueryResponses({
+      ...emptyData(), totalCount: 1,
+      eventos: [{ ...event("assessment", "sanitario"), payload: {
+        schema: "sanitary_assessment_v1", assessment: {
+          result, responsible_name: "Dra. Ana", observation: "Avaliação clínica no curral",
+        },
+      } }],
+      sanitarios: [{ evento_id: "assessment", tipo: "avaliacao", produto: null, payload: {} }],
+    });
+    renderPage();
+    const detail = screen.getByText(/Avaliação sanitária/);
+    expect(detail).toHaveTextContent(label);
+    expect(detail).toHaveTextContent("Responsável: Dra. Ana");
+    expect(detail).toHaveTextContent("Observação: Avaliação clínica no curral");
+    expect(detail).not.toHaveTextContent(/estoque|car[eê]ncia|dose|via |validade|custo/i);
+    await userEvent.click(screen.getByRole("button", { name: /mais acoes para o evento assessment/i }));
+    expect(screen.queryByRole("menuitem", { name: /baixar do estoque/i })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["pending", "Declaração local aguardando reconhecimento"],
+    ["collision", "Declaração em conflito"],
+  ])("preserva aviso %s sem apresentar resultado como confirmado", (confirmation, message) => {
+    queueLiveQueryResponses({
+      ...emptyData(), totalCount: 1,
+      eventos: [{ ...event("assessment", "sanitario"), payload: {
+        assessment: { result: "no_treatment_indicated", responsible_name: "Dra. Ana", observation: "Observação ainda não confirmada" },
+      } }],
+      sanitarios: [{ evento_id: "assessment", tipo: "avaliacao", produto: null, sanitario_v3_confirmation: confirmation, payload: {} }],
+    });
+    renderPage();
+    expect(screen.getByText(new RegExp(message))).toBeInTheDocument();
+    expect(screen.queryByText(/Tratamento não indicado|Dra. Ana|Observação ainda não confirmada/)).not.toBeInTheDocument();
+    expect(createGesture).not.toHaveBeenCalled();
+  });
+
   it("oferece baixa assistida de estoque para evento sanitario com produto catalogado", async () => {
     const user = userEvent.setup();
 

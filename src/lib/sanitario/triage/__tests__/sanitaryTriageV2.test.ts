@@ -20,6 +20,7 @@ import {
   resolveSanitaryTriagePlanningRowsV2,
   triageSanitaryProtocolIntervalV2,
 } from "../sanitaryTriageV2";
+import { defaultProtocolFamiliesV1 } from "../../adoption/protocolAdoptionV1";
 
 vi.mock("@/lib/offline/localReadBoundary", () => ({
   getCurrentLocalReadOwnership: vi.fn(async () => ({
@@ -198,6 +199,95 @@ function findEvaluation(
 }
 
 describe("triageSanitaryProtocolIntervalV2", () => {
+  it("associa avaliação única à janela curatorial de maio sem conflito artificial", () => {
+    const input = source({ familyCode: "controle_parasitario_recria_5_7_9", birth: "2025-01-01", item: item({ logicalItemKey: "recria_maio", eligibilityRule: { species: ["bovino"] }, operationalWindowRule: { type: "calendar", calendar_months: [5] }, snapshotTemplate: { metadata: { planning_scope: "assessment_only" } } }) });
+    input.contextEvents = [{ id: "may-assessment", fazenda_id: "farm-1", dominio: "sanitario", occurred_at: "2026-05-10T12:00:00Z", deleted_at: null, payload: { schema: "sanitary_assessment_v1", assessment: { schema_version: 1, result: "no_treatment_indicated", protocol_id: "protocol-1", item_id: "item-1", item_version: 1, cycle_key: "2026" } } }] as typeof input.contextEvents;
+    input.assessmentEventAnimals = [{ evento_id: "may-assessment", animal_id: "animal-1", fazenda_id: "farm-1" }] as typeof input.assessmentEventAnimals;
+    expect(findEvaluation(triageSanitaryProtocolIntervalV2({ source: input, startDate: "2026-05-01", endDate: "2026-05-31" }))).toMatchObject({ assessmentEventId: "may-assessment", disposition: "assessment_completed" });
+  });
+  it("não fabrica conclusão ou conflito quando a janela curatorial está indeterminada", () => {
+    const input = source({ familyCode: "controle_parasitario_recria_5_7_9", birth: "2025-01-01", item: item({ logicalItemKey: "recria_maio", eligibilityRule: { species: ["bovino"] }, operationalWindowRule: { type: "calendar", calendar_months: [6] }, snapshotTemplate: { metadata: { planning_scope: "assessment_only" } } }) });
+    input.contextEvents = [{ id: "uncertain-window", fazenda_id: "farm-1", dominio: "sanitario", occurred_at: "2026-05-10T12:00:00Z", deleted_at: null, payload: { schema: "sanitary_assessment_v1", assessment: { schema_version: 1, result: "no_treatment_indicated", protocol_id: "protocol-1", item_id: "item-1", item_version: 1, cycle_key: "2026" } } }] as typeof input.contextEvents;
+    input.assessmentEventAnimals = [{ evento_id: "uncertain-window", animal_id: "animal-1", fazenda_id: "farm-1" }] as typeof input.assessmentEventAnimals;
+    expect(findEvaluation(triageSanitaryProtocolIntervalV2({ source: input, startDate: "2026-05-01", endDate: "2026-05-31" }))).toMatchObject({ assessmentEventId: "uncertain-window", disposition: "insufficient_data", assessmentConflict: false });
+  });
+  it("não associa avaliação de maio anterior a período que não intersecta esse mês", () => {
+    const input = source({ familyCode: "controle_parasitario_recria_5_7_9", birth: "2024-01-01", item: item({ logicalItemKey: "recria_maio", eligibilityRule: { species: ["bovino"] }, operationalWindowRule: { type: "calendar", calendar_months: [5] }, snapshotTemplate: { metadata: { planning_scope: "assessment_only" } } }) });
+    input.contextEvents = [{ id: "old-may", fazenda_id: "farm-1", dominio: "sanitario", occurred_at: "2025-05-10T12:00:00Z", deleted_at: null, payload: { schema: "sanitary_assessment_v1", assessment: { schema_version: 1, result: "no_treatment_indicated", protocol_id: "protocol-1", item_id: "item-1", item_version: 1, cycle_key: "2025" } } }] as typeof input.contextEvents;
+    input.assessmentEventAnimals = [{ evento_id: "old-may", animal_id: "animal-1", fazenda_id: "farm-1" }] as typeof input.assessmentEventAnimals;
+    const evaluation = findEvaluation(triageSanitaryProtocolIntervalV2({ source: input, startDate: "2025-12-01", endDate: "2026-02-01" }));
+    expect(evaluation?.assessmentEventId).toBeUndefined();
+    expect(evaluation?.disposition).not.toBe("assessment_completed");
+  });
+  it("reconhece avaliação de janeiro em janela técnica iniciada em dezembro", () => {
+    const input = source({ birth: "2025-04-25", item: item({ snapshotTemplate: { metadata: { planning_scope: "assessment_only" } } }) });
+    input.contextEvents = [{ id: "jan-window", fazenda_id: "farm-1", dominio: "sanitario", occurred_at: "2026-01-10T12:00:00Z", deleted_at: null, payload: { schema: "sanitary_assessment_v1", assessment: { schema_version: 1, result: "no_treatment_indicated", protocol_id: "protocol-1", item_id: "item-1", item_version: 1, cycle_key: "2026" } } }] as typeof input.contextEvents;
+    input.assessmentEventAnimals = [{ evento_id: "jan-window", animal_id: "animal-1", fazenda_id: "farm-1" }] as typeof input.assessmentEventAnimals;
+    const result = findEvaluation(triageSanitaryProtocolIntervalV2({ source: input, startDate: "2026-01-01", endDate: "2026-01-20" }));
+    expect(result).toMatchObject({ intervalStart: "2025-12-25", intervalEnd: "2026-01-24", disposition: "assessment_completed" });
+  });
+  it("preserva conflito e correção de avaliações que atravessam a virada do ano", () => {
+    const input = source({ birth: "2025-04-25", item: item({ snapshotTemplate: { metadata: { planning_scope: "assessment_only" } } }) });
+    const assessment = (id: string, date: string, result: string, cycle: string, parent: string | null = null) => ({ id, fazenda_id: "farm-1", dominio: "sanitario", occurred_at: date, corrige_evento_id: parent, deleted_at: null, payload: { schema: "sanitary_assessment_v1", assessment: { schema_version: 1, result, protocol_id: "protocol-1", item_id: "item-1", item_version: 1, cycle_key: cycle } } });
+    const december = assessment("dec", "2025-12-28T12:00:00Z", "no_treatment_indicated", "2025");
+    const january = assessment("jan", "2026-01-10T12:00:00Z", "treatment_indicated", "2026");
+    input.contextEvents = [december, january] as typeof input.contextEvents;
+    input.assessmentEventAnimals = ["dec", "jan"].map(evento_id => ({ evento_id, animal_id: "animal-1", fazenda_id: "farm-1" })) as typeof input.assessmentEventAnimals;
+    const evaluate = () => findEvaluation(triageSanitaryProtocolIntervalV2({ source: input, startDate: "2025-12-25", endDate: "2026-01-20" }));
+    expect(evaluate()).toMatchObject({ assessmentConflict: true, disposition: "insufficient_data" });
+    january.corrige_evento_id = "dec"; january.payload.assessment.cycle_key = "2025";
+    expect(evaluate()).toMatchObject({ assessmentEventId: "jan", disposition: "treatment_indicated" });
+  });
+  it("aplica OFF somente na triagem e preserva Agendas e fatos do source", () => {
+    const input = source();
+    input.agendas = [{ id: "already-confirmed", fazenda_id: "farm-1", status: "programada", metadata: {}, protocol_item_snapshot: {} }] as SanitarioAgendaLocalV2[];
+    input.executedEvents = [{ eventId: "already-executed" }] as typeof input.executedEvents;
+    const families = defaultProtocolFamiliesV1();
+    families.clostridioses.monitoringEnabled = false;
+    input.farmConfig = { fazenda_id: "farm-1", payload: { sanitary_protocol_adoption_v1: { schemaVersion: 1, revision: 1, families } } } as NonNullable<typeof input.farmConfig>;
+    const before = structuredClone(input);
+    expect(triageSanitaryProtocolIntervalV2({ source: input, startDate: "2026-05-01", endDate: "2026-05-31" }).evaluations).toEqual([]);
+    expect(input).toEqual(before);
+  });
+
+  it("ON inclui oportunidade; preferência de outra fazenda e ausência preservam comportamento legado", () => {
+    const input = source();
+    const query = () => triageSanitaryProtocolIntervalV2({ source: input, startDate: "2026-05-01", endDate: "2026-05-31" });
+    expect(query().evaluations[0]?.disposition).toBe("opportunity_in_window");
+    const families = defaultProtocolFamiliesV1();
+    input.farmConfig = { fazenda_id: "farm-1", payload: { sanitary_protocol_adoption_v1: { schemaVersion: 1, revision: 1, families } } } as NonNullable<typeof input.farmConfig>;
+    expect(query().evaluations[0]?.disposition).toBe("opportunity_in_window");
+    families.clostridioses.monitoringEnabled = false;
+    input.farmConfig.fazenda_id = "other-farm";
+    expect(query().evaluations[0]?.disposition).toBe("opportunity_in_window");
+  });
+
+  it("ON não promove item bloqueado nem remove restrições técnicas", () => {
+    const input = source({ item: item({ itemStatus: "bloqueado", status: "draft" }) });
+    input.farmConfig = { fazenda_id: "farm-1", payload: { sanitary_protocol_adoption_v1: { schemaVersion: 1, revision: 1, families: defaultProtocolFamiliesV1() } } } as NonNullable<typeof input.farmConfig>;
+    const result = triageSanitaryProtocolIntervalV2({ source: input, startDate: "2026-05-01", endDate: "2026-05-31" });
+    expect(result.evaluations[0]?.disposition).toBe("restricted");
+    expect(result.evaluations[0]?.blockers.length).toBeGreaterThan(0);
+  });
+
+  it("reconhece avaliação do ano da janela quando o período atravessa a virada", () => {
+    const input = source({ birth: "2025-05-01", item: item({ snapshotTemplate: { metadata: { planning_scope: "assessment_only" } } }) });
+    input.contextEvents = [{ id: "jan", fazenda_id: "farm-1", dominio: "sanitario", occurred_at: "2026-01-10T12:00:00Z", deleted_at: null, payload: { schema: "sanitary_assessment_v1", assessment: { schema_version: 1, result: "no_treatment_indicated", protocol_id: "protocol-1", item_id: "item-1", item_version: 1, cycle_key: "2026" } } }] as typeof input.contextEvents;
+    input.assessmentEventAnimals = [{ evento_id: "jan", animal_id: "animal-1", fazenda_id: "farm-1" }] as typeof input.assessmentEventAnimals;
+    expect(findEvaluation(triageSanitaryProtocolIntervalV2({ source: input, startDate: "2025-12-20", endDate: "2026-02-15" }))?.disposition).toBe("assessment_completed");
+  });
+  it("distingue avaliação factual de aplicação e preserva tratamento indicado", () => {
+    const input = source({ item: item({ snapshotTemplate: { metadata: { planning_scope: "assessment_only" } } }) });
+    const fact = { id: "assessment-1", fazenda_id: "farm-1", dominio: "sanitario", occurred_at: "2026-05-02T12:00:00Z", deleted_at: null, payload: { schema: "sanitary_assessment_v1", assessment: { schema_version: 1, result: "no_treatment_indicated", protocol_id: "protocol-1", item_id: "item-1", item_version: 1, cycle_key: "2026" } } };
+    input.contextEvents = [fact] as typeof input.contextEvents;
+    input.assessmentEventAnimals = [{ evento_id: "assessment-1", animal_id: "animal-1", fazenda_id: "farm-1" }] as typeof input.assessmentEventAnimals;
+    const evaluate = () => findEvaluation(triageSanitaryProtocolIntervalV2({ source: input, startDate: "2026-05-01", endDate: "2026-05-31" }));
+    expect(evaluate()?.disposition).toBe("assessment_completed");
+    fact.payload.assessment.result = "treatment_indicated";
+    expect(evaluate()?.disposition).toBe("treatment_indicated");
+    fact.payload.assessment.result = "insufficient_data";
+    expect(evaluate()?.disposition).toBe("insufficient_data");
+  });
   it.each([30, 60, 90])("classifica horizonte de %i dias sem confundir janela futura com elegibilidade atual", (days) => {
     const result = triageSanitaryProtocolIntervalV2({
       source: source(),

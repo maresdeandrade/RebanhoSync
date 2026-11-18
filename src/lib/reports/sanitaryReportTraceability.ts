@@ -101,7 +101,9 @@ function summarizeSanitaryPrerequisites({
   "eventos" | "sanitaryDetailByEventId" | "stock"
 >) {
   const sanitaryEvents = eventos.filter(
-    (evento) => evento.dominio === "sanitario",
+    (evento) => evento.dominio === "sanitario" &&
+      evento.payload?.schema !== "sanitary_assessment_v1" &&
+      sanitaryDetailByEventId.get(evento.id)?.tipo !== "avaliacao",
   );
   const { sanitaryCatalogProductIds, catalogLinkedEvents } =
     collectCatalogLinkedEvents(sanitaryEvents, sanitaryDetailByEventId);

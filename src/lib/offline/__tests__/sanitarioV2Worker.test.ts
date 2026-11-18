@@ -112,6 +112,69 @@ async function loadGesture(clientTxId: string) {
 }
 
 describe("sanitario_v2 canonical worker/reconcile", () => {
+  it("remove somente projeção otimista de criação recusada por conflito individual", async () => {
+    const { gesture, ops } = await seedGesture(["create_agenda"], "open-identity-conflict");
+    const agendaId = "agenda-open-identity-conflict";
+    await db.ops_sanitario_agenda_v2.put({ id: agendaId, fazenda_id: FAZENDA_ID, domain_op_id: ops[0].domain_op_id, status: "programada", data_programada: "2026-05-10", metadata: { target: { scope: "animal" } } } as never);
+    await db.ops_sanitario_agenda_animais_v2.put({ agenda_id: agendaId, animal_id: "animal-a", fazenda_id: FAZENDA_ID, planned_status: "planejado", execution_evento_id: null, not_executed_reason: null, metadata: { source: "sanitary_precheck_preview_v2", targetScope: "animal", createsEvent: false }, created_at: "now", updated_at: "now" } as never);
+    await db.queue_ops.update(ops[0].client_op_id, { table: "sanitario_v2", record: { ...ops[0].record, contract_version: 3, fazenda_id: FAZENDA_ID, payload: { agenda: { id: agendaId, data_programada: "2026-05-10", metadata: { target: { scope: "animal" } } }, animal_ids: ["animal-a"] } } });
+    respondWith([{ op_id: ops[0].client_op_id, client_op_id: ops[0].client_op_id, domain_op_id: ops[0].domain_op_id, status: "CONFLICT", reason_code: "SANITARIO_OPEN_OBLIGATION_CONFLICT", retryable: false }]);
+    await processGesture(gesture);
+    expect(await db.ops_sanitario_agenda_v2.get(agendaId)).toBeUndefined();
+    expect(await db.ops_sanitario_agenda_animais_v2.where("agenda_id").equals(agendaId).count()).toBe(0);
+    expect((await db.queue_rejections.toArray()).filter(entry => entry.client_op_id === ops[0].client_op_id)).toHaveLength(1);
+  });
+  it("preserva alterações locais posteriores à criação conflitante", async () => {
+    const { gesture, ops } = await seedGesture(["create_agenda"], "open-conflict-edited");
+    const agendaId = "agenda-open-conflict-edited";
+    await db.ops_sanitario_agenda_v2.put({ id: agendaId, fazenda_id: FAZENDA_ID, domain_op_id: ops[0].domain_op_id, status: "programada", data_programada: "2026-06-01", metadata: {} } as never);
+    await db.queue_ops.update(ops[0].client_op_id, { table: "sanitario_v2", record: { ...ops[0].record, contract_version: 3, fazenda_id: FAZENDA_ID, payload: { agenda: { id: agendaId, data_programada: "2026-05-10" }, animal_ids: [] } } });
+    respondWith([{ op_id: ops[0].client_op_id, client_op_id: ops[0].client_op_id, domain_op_id: ops[0].domain_op_id, status: "CONFLICT", reason_code: "SANITARIO_OPEN_OBLIGATION_CONFLICT", retryable: false }]);
+    await processGesture(gesture);
+    expect(await db.ops_sanitario_agenda_v2.get(agendaId)).toMatchObject({ status: "conflito_local", data_programada: "2026-06-01" });
+  });
+  it("preserva operação dependente vinculada pela fazenda da gesture", async () => {
+    const { gesture, ops } = await seedGesture(["create_agenda"], "open-conflict-dependent");
+    const agendaId = "agenda-open-conflict-dependent";
+    await db.ops_sanitario_agenda_v2.put({ id: agendaId, fazenda_id: FAZENDA_ID, domain_op_id: ops[0].domain_op_id, status: "programada", metadata: {} } as never);
+    await db.queue_ops.update(ops[0].client_op_id, { table: "sanitario_v2", record: { ...ops[0].record, contract_version: 3, fazenda_id: FAZENDA_ID, payload: { agenda: { id: agendaId, metadata: {} }, animal_ids: [] } } });
+    await db.queue_gestures.add({ client_tx_id: "tx-dependent", fazenda_id: FAZENDA_ID, client_id: CLIENT_ID, status: "PENDING", created_at: gesture.created_at });
+    await db.queue_ops.add({ client_op_id: "op-dependent", client_tx_id: "tx-dependent", table: "sanitario_v2", action: "UPDATE", record: { payload: { agenda_id: agendaId } }, created_at: gesture.created_at } as Operation);
+    respondWith([{ op_id: ops[0].client_op_id, client_op_id: ops[0].client_op_id, domain_op_id: ops[0].domain_op_id, status: "CONFLICT", reason_code: "SANITARIO_OPEN_OBLIGATION_CONFLICT", retryable: false }]);
+    await processGesture(gesture);
+    expect(await db.ops_sanitario_agenda_v2.get(agendaId)).toMatchObject({ status: "conflito_local" });
+    expect(await db.queue_ops.get("op-dependent")).toBeDefined();
+  });
+  it("preserva status local cancelado anterior ao conflito", async () => {
+    const { gesture, ops } = await seedGesture(["create_agenda"], "open-conflict-cancelled");
+    const agendaId = "agenda-open-conflict-cancelled";
+    await db.ops_sanitario_agenda_v2.put({ id: agendaId, fazenda_id: FAZENDA_ID, domain_op_id: ops[0].domain_op_id, status: "cancelada", metadata: {} } as never);
+    await db.queue_ops.update(ops[0].client_op_id, { table: "sanitario_v2", record: { ...ops[0].record, contract_version: 3, fazenda_id: FAZENDA_ID, payload: { agenda: { id: agendaId }, animal_ids: [] } } });
+    respondWith([{ op_id: ops[0].client_op_id, client_op_id: ops[0].client_op_id, domain_op_id: ops[0].domain_op_id, status: "CONFLICT", reason_code: "SANITARIO_OPEN_OBLIGATION_CONFLICT", retryable: false }]);
+    await processGesture(gesture);
+    expect(await db.ops_sanitario_agenda_v2.get(agendaId)).toMatchObject({ status: "cancelada", metadata: { sync_open_identity_conflict: true } });
+  });
+  it("remove projeção não alterada de junho cuja cria��o foi rejeitada", async () => {
+    const { gesture, ops } = await seedGesture(["create_agenda"], "june-not-enabled");
+    const agendaId = "agenda-june-not-enabled";
+    await db.ops_sanitario_agenda_v2.put({ id: agendaId, fazenda_id: FAZENDA_ID, domain_op_id: ops[0].domain_op_id, status: "programada", metadata: {} } as never);
+    await db.queue_ops.update(ops[0].client_op_id, { table: "sanitario_v2", record: { ...ops[0].record, contract_version: 3, fazenda_id: FAZENDA_ID, payload: { agenda: { id: agendaId, metadata: {} }, animal_ids: [] } } });
+    respondWith([{ op_id: ops[0].client_op_id, client_op_id: ops[0].client_op_id, domain_op_id: ops[0].domain_op_id, status: "REJECTED", reason_code: "SANITARIO_CONTEXTUAL_JUNE_NOT_ENABLED", retryable: false }]);
+    await processGesture(gesture);
+    expect(await db.ops_sanitario_agenda_v2.get(agendaId)).toBeUndefined();
+  });
+  it("preserva Agenda e fato local vinculados a uma criação conflitante", async () => {
+    const { gesture, ops } = await seedGesture(["create_agenda"], "open-conflict-evidence");
+    const agendaId = "agenda-open-conflict-evidence";
+    await db.ops_sanitario_agenda_v2.put({ id: agendaId, fazenda_id: FAZENDA_ID, domain_op_id: ops[0].domain_op_id, status: "programada", metadata: {} } as never);
+    await db.event_eventos.put({ id: "local-evidence", fazenda_id: FAZENDA_ID, dominio: "sanitario", source_task_id: agendaId } as never);
+    await db.queue_ops.update(ops[0].client_op_id, { table: "sanitario_v2", record: { ...ops[0].record, contract_version: 3, fazenda_id: FAZENDA_ID, payload: { agenda: { id: agendaId } } } });
+    respondWith([{ op_id: ops[0].client_op_id, client_op_id: ops[0].client_op_id, domain_op_id: ops[0].domain_op_id, status: "CONFLICT", reason_code: "SANITARIO_OPEN_OBLIGATION_CONFLICT", retryable: false }]);
+    await processGesture(gesture);
+    expect(await db.event_eventos.get("local-evidence")).toBeDefined();
+    expect(await db.ops_sanitario_agenda_v2.get(agendaId)).toMatchObject({ status: "conflito_local", metadata: { sync_open_identity_conflict: true } });
+    expect(await db.queue_ops.get(ops[0].client_op_id)).toMatchObject({ sync_state: "REJECTED" });
+  });
   it("persiste obrigação ao bloquear reagendamento V3 por Agenda ausente e não rearma sem observação", async () => {
     const { gesture, ops } = await seedGesture(["reschedule_agenda"], "missing-agenda-v3");
     await db.queue_ops.update(ops[0].client_op_id, { table: "sanitario_v2", record: { ...ops[0].record, contract_version: 3, fazenda_id: FAZENDA_ID, expected_revision: 1, payload: { agenda_id: "agenda-missing", data_programada: "2026-11-12" } } });
@@ -283,6 +346,9 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
+      db.sync_reconcile_obligations.clear(),
+      db.ops_sanitario_agenda_v2.clear(),
+      db.ops_sanitario_agenda_animais_v2.clear(),
       db.event_eventos.clear(),
       db.event_eventos_sanitario.clear(),
       db.state_insumo_movimentacoes.clear(),
@@ -298,6 +364,9 @@ describe("sanitario_v2 canonical worker/reconcile", () => {
       db.queue_gestures.clear(),
       db.queue_ops.clear(),
       db.queue_rejections.clear(),
+      db.sync_reconcile_obligations.clear(),
+      db.ops_sanitario_agenda_v2.clear(),
+      db.ops_sanitario_agenda_animais_v2.clear(),
       db.event_eventos.clear(),
       db.event_eventos_sanitario.clear(),
       db.state_insumo_movimentacoes.clear(),

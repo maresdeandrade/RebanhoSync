@@ -494,6 +494,13 @@ export const createGesture = async (
         transactionStage = "write-gesture";
         await movement?.verify();
         await assertInventoryFarmContext(fazenda_id, ops_input);
+        if (ops_input.some(op => ["sanitary_protocol_adoption_v1", "sanitary_strategic_calendar_v1"].includes(String(op.record.domain)))) {
+          const pending = await db.queue_ops.filter(op =>
+            ops_input.some(input => input.record.domain === op.record?.domain && ["sanitary_protocol_adoption_v1", "sanitary_strategic_calendar_v1"].includes(String(input.record.domain))) &&
+            op.record.fazenda_id === fazenda_id && op.sync_state !== "REJECTED"
+          ).first();
+          if (pending) throw new Error("PROTOCOL_ADOPTION_PENDING");
+        }
         validateContext();
         await db.queue_gestures.add(gesture);
         transactionStage = "write-operations";
@@ -611,6 +618,7 @@ function unavailableDeathAgenda(op: Operation, existing: Parameters<typeof valid
 }
 
 export const applyOpLocal = async (op: Operation) => {
+  if (["sanitary_protocol_adoption_v1", "sanitary_strategic_calendar_v1"].includes(String(op.record.domain))) return;
   const localStoreName = getLocalStoreName(op.table);
   const store = db.table(localStoreName);
 
@@ -664,6 +672,7 @@ export const applyOpLocal = async (op: Operation) => {
 };
 
 export const reapplyOpLocal = async (op: Operation) => {
+  if (["sanitary_protocol_adoption_v1", "sanitary_strategic_calendar_v1"].includes(String(op.record.domain))) return;
   const localStoreName = getLocalStoreName(op.table);
   const store = db.table(localStoreName);
   if (!store) return;
@@ -703,6 +712,7 @@ async function ownsDeathCancellationSnapshot(op: Operation, store: ReturnType<ty
 }
 
 export const rollbackOpLocal = async (op: Operation) => {
+  if (["sanitary_protocol_adoption_v1", "sanitary_strategic_calendar_v1"].includes(String(op.record.domain))) return;
   const { isSanitaryEvidenceOperation } = await import("./sanitaryFoundationRecovery");
   // A rejected stock projection can be rolled back without discarding its
   // immutable queue envelope or the confirmed sanitary fact (C06 + V3).

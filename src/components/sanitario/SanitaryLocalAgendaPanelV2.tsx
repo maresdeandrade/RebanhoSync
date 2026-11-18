@@ -47,6 +47,7 @@ import {
 
 const statusLabels = {
   programada: "Planejada",
+  conflito_local: "Conflito local — revisão necessária",
   executada: "Executada",
   fechada: "Fechada",
   cancelada: "Cancelada",

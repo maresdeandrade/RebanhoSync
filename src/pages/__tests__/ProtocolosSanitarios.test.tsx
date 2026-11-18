@@ -43,8 +43,9 @@ const emptyWindowSource = {
 
 function mockLiveQueries(windowSource = emptyWindowSource, localAgenda: unknown[] = []) {
   let call = 0;
-  const source = { farmUf: "MG", ...windowSource };
-  vi.mocked(useLiveQuery).mockImplementation(() => {
+  const source = { fazendaId: "farm-1", farmUf: "MG", ...windowSource };
+  vi.mocked(useLiveQuery).mockImplementation((_query, dependencies) => {
+    if (dependencies?.length === 1) return [];
     call += 1;
     return call % 2 === 1 ? localAgenda : source;
   });
@@ -55,6 +56,23 @@ function renderPage(initialEntry = "/protocolos-sanitarios") {
 }
 
 describe("Central Sanitária", () => {
+  it("aguarda a primeira leitura local sem falhar ao publicar resultado vazio", () => {
+    let call = 0;
+    vi.mocked(useLiveQuery).mockImplementation(() => ++call % 2 ? [] : undefined);
+    renderPage();
+    expect(screen.getByText(/Carregando catálogo, rebanho e histórico sanitário local/)).toBeInTheDocument();
+  });
+  it("mantém o período da triagem ao consultar os protocolos da fazenda", async () => {
+    const user = userEvent.setup();
+    mockLiveQueries({ ...emptyWindowSource, animals: [{ id: "animal-1", fazenda_id: "farm-1", status: "ativo" }], catalog: { ...emptyWindowSource.catalog, items: [{ id: "item-1", protocolId: "protocol-1", eligibilityRule: {}, operationalWindowRule: {} }] } });
+    renderPage();
+    await user.selectOptions(screen.getByLabelText("Horizonte da triagem"), "90");
+    await user.click(screen.getByRole("tab", { name: /Catálogo sanitário/ }));
+    expect(screen.getByRole("heading", { name: "Protocolos da Fazenda" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Abrir catálogo sanitário" })).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /Triagem sanitária/ }));
+    expect(screen.getByLabelText("Horizonte da triagem")).toHaveValue("90");
+  });
   beforeEach(async () => {
     const actual = await vi.importActual<typeof import("@/lib/sanitario/windows/sanitaryProtocolWindowsV2")>("@/lib/sanitario/windows/sanitaryProtocolWindowsV2");
     vi.mocked(listSanitaryDocumentaryPendenciesV2).mockReset();

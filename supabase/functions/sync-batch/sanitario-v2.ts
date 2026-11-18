@@ -345,6 +345,12 @@ function isUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_PATTERN.test(value);
 }
 
+function assessmentCivilYear(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric" }).format(date) : null;
+}
+
 function isRevision(value: unknown): value is number {
   return Number.isSafeInteger(value) && Number(value) >= 0;
 }
@@ -513,6 +519,10 @@ function validateSanitaryCorrectionFactualCore(input: {
   eventAnimals: unknown[];
 }): string | null {
   const { event, detail } = input;
+  if (isRecord(event.payload) && event.payload.schema === "sanitary_assessment_v1") {
+    return event.natureza === "correction" && (!isUuid(event.corrige_evento_id) || event.corrige_evento_id === event.id || !readNonEmptyString(event.observacoes))
+      ? "SANITARIO_ASSESSMENT_CORRECTION_INVALID" : null;
+  }
   if (event.natureza !== "correction") {
     return event.corrige_evento_id == null
       ? null
@@ -599,6 +609,17 @@ export function validateSanitaryCorrectionSourceConsistency(input: {
   const event = operation.payload.event as unknown as Record<string, unknown>;
   const detail = operation.payload.detail as unknown as Record<string, unknown>;
   const payload = isRecord(event.payload) ? event.payload : {};
+  if (payload.schema === "sanitary_assessment_v1") {
+    const prior = isRecord(sourceEvent.payload) ? sourceEvent.payload : {};
+    const currentAssessment = isRecord(payload.assessment) ? payload.assessment : {};
+    const priorAssessment = isRecord(prior.assessment) ? prior.assessment : {};
+    const sameScope = ["protocol_id", "item_id", "item_version", "cycle_key"].every(key => currentAssessment[key] === priorAssessment[key]);
+    const currentAnimals = operation.payload.event_animals.map(entry => entry.animal_id).sort();
+    return prior.schema === "sanitary_assessment_v1" && sourceDetail.tipo === "avaliacao" &&
+      sourceEvent.id === event.corrige_evento_id && sameScope &&
+      JSON.stringify([...input.sourceAnimalIds].sort()) === JSON.stringify(currentAnimals)
+      ? null : "SANITARIO_ASSESSMENT_CORRECTION_INVALID";
+  }
   const correction = isRecord(payload.sanitary_correction)
     ? payload.sanitary_correction
     : {};
@@ -855,6 +876,27 @@ export function validateSanitarioSyncV2Operation(
       };
     }
     const event = payload.event;
+    const eventPayload = isRecord(event.payload) ? event.payload : {};
+    const detail = payload.detail;
+    if (eventPayload.schema === "sanitary_assessment_v1" || detail.tipo === "avaliacao") {
+      const assessment = isRecord(eventPayload.assessment) ? eventPayload.assessment : {};
+      if (eventPayload.schema !== "sanitary_assessment_v1" || detail.tipo !== "avaliacao" ||
+          assessment.schema_version !== 1 || !["no_treatment_indicated", "treatment_indicated", "insufficient_data"].includes(String(assessment.result)) ||
+          !isUuid(assessment.protocol_id) || !isUuid(assessment.item_id) ||
+          !Number.isSafeInteger(assessment.item_version) || Number(assessment.item_version) < 1 ||
+          !/^[0-9]{4}$/.test(String(assessment.cycle_key ?? "")) ||
+          !assessmentCivilYear(event.occurred_at) || (event.natureza === "standalone_fact" && assessmentCivilYear(event.occurred_at) !== assessment.cycle_key) ||
+          assessment.origin !== "farm_assessment" || !readNonEmptyString(assessment.responsible_name) ||
+          (assessment.observation != null && typeof assessment.observation !== "string") ||
+          (event.natureza !== "standalone_fact" && event.natureza !== "correction") || event.source_sanitario_agenda_v2_id != null ||
+          Object.keys(eventPayload).some(key => key !== "schema" && key !== "assessment") ||
+          Object.keys(assessment).some(key => !["schema_version", "result", "protocol_id", "item_id", "item_version", "cycle_key", "responsible_name", "origin", "observation"].includes(key)) ||
+          hasNonNullField(detail, ["produto_sanitario_v2_id", "insumo_id", "estoque_lote_id", "produto_nome_snapshot", "estoque_lote_codigo_snapshot", "lote_fabricante", "validade_produto", "dose_quantidade", "dose_unidade", "via_aplicacao", "carencia_carne_dias", "carencia_leite_dias", "carencia_carne_ate", "carencia_leite_ate", "custo_unitario_snapshot", "custo_total_snapshot"]) ||
+          (detail.produto_snapshot != null && JSON.stringify(detail.produto_snapshot) !== "{}") ||
+          (detail.payload != null && JSON.stringify(detail.payload) !== "{}")) {
+        return { ok: false, result: reject(raw, "SANITARIO_ASSESSMENT_INVALID") };
+      }
+    }
     if (
       event.natureza !== "primary_execution" &&
       event.natureza !== "correction" &&
@@ -882,6 +924,9 @@ export function validateSanitarioSyncV2Operation(
         ok: false,
         result: reject(raw, "SANITARIO_EVENT_ANIMALS_INVALID"),
       };
+    }
+    if (eventPayload.schema === "sanitary_assessment_v1" && event.animal_id != null && !animalIds.includes(event.animal_id)) {
+      return { ok: false, result: reject(raw, "SANITARIO_ASSESSMENT_ANIMAL_MISMATCH") };
     }
     const externalHistoryIssue = validateExternalHistoryFactualCore({
       event,
