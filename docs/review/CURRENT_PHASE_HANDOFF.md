@@ -1,7 +1,7 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
 Atualizado em: 2026-11-18
-Status: **Fase 24 ativa; núcleo operacional integrado; #302 integrada; #301 READY e não integrada; produto em desenvolvimento, sem produção operacional declarada**
+Status: **Fase 24 ativa; núcleo operacional integrado; #302 integrada; #301 integrada e READY; produto em desenvolvimento, sem produção operacional declarada**
 Próxima fase: **Fase 24 — continuidade localizada: decisão de integração da #301 validada, exceções curatoriais necessárias ao alvo escolhido e lacunas funcionais comprovadas; sem nova fase, benchmark ou rollout automático.**
 Baseline integrada confirmada para esta continuidade: `main@175e9dee3639ea1726f9c62c9b0d208e1452d7dc` (#302). Head validado da #301: `6cdc72848f6cd0af0fbc6273a17a67544d7b5c62`; PR aberta.
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`

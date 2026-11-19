@@ -24,7 +24,7 @@ UI
 
 O contrato único V3 inclui colaboração, fechamento gerencial e continuidade (#268). #302 integra configuração de protocolos/monitoramento, avaliação factual e projeção estratégica; configuração, fato e projeção permanecem separados. Não existe materialização de junho.
 
-#301 está validada fora da main: o vínculo técnico V2 do estoque é revalidado no domínio e na Edge; previsão e indicadores leem as fontes existentes, incluindo participantes factuais dos Eventos coletivos. Não há novo motor de estoque ou fila. `sanitario-reconcile` foi aposentada como Edge no código (#293), mantendo recuperação e pull canônicos. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+#301 está integrada na baseline local autorizada: o vínculo técnico V2 do estoque é revalidado no domínio e na Edge; previsão e indicadores leem as fontes existentes, incluindo participantes factuais dos Eventos coletivos. Não há novo motor de estoque ou fila. `sanitario-reconcile` foi aposentada como Edge no código (#293), mantendo recuperação e pull canônicos. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 ## Invariantes
 

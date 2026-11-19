@@ -93,6 +93,7 @@ export function SanitaryManualAgendaConfirmV2({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<SanitarioProdutoLocalV2[]>([]);
   const [plannedProductId, setPlannedProductId] = useState("");
+  const [groupClasses, setGroupClasses] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -103,10 +104,19 @@ export function SanitaryManualAgendaConfirmV2({
     setError(null);
     setClientOpId(clientOpIdFactory());
     setPlannedProductId("");
-    void db.catalog_sanitario_produtos_v2.toArray().then((entries) => {
+    setGroupClasses(null);
+    void Promise.all([
+      db.catalog_sanitario_produtos_v2.toArray(),
+      db.catalog_sanitario_product_class_group_members_v2.toArray(),
+      db.catalog_sanitario_product_classes_v2.toArray(),
+    ]).then(([entries, members, classes]) => {
       setProducts(entries.filter((entry) => !entry.deleted_at));
+      if (item.productClassGroupId) {
+        const classIds = new Set(members.filter((member) => member.group_id === item.productClassGroupId && member.is_allowed && !member.deleted_at).map((member) => member.class_id));
+        setGroupClasses(classes.filter((entry) => classIds.has(entry.id) && !entry.deleted_at).map((entry) => entry.class_key));
+      }
     });
-  }, [clientOpIdFactory, open]);
+  }, [clientOpIdFactory, item?.productClassGroupId, open]);
 
   if (!item) return null;
 
@@ -116,7 +126,8 @@ export function SanitaryManualAgendaConfirmV2({
       return product.id === item.plannedProductId;
     if (item.productRequirementKind === "product_class")
       return Boolean(item.productClass) && product.classe === item.productClass;
-    if (item.productRequirementKind === "product_class_group") return false;
+    if (item.productRequirementKind === "product_class_group")
+      return Boolean(groupClasses?.length && groupClasses.includes(product.classe));
     return true;
   });
   const canSubmit = Boolean(plannedFor) && confirmed && !isSubmitting;
@@ -148,8 +159,8 @@ export function SanitaryManualAgendaConfirmV2({
           productRequirementKind: item.productRequirementKind,
           plannedProductId: plannedProductId || null,
           productClass: item.productClass,
-          productClassGroupId: item.productClassGroupId,
-          productClassGroupName: item.productClassGroupName,
+          productClassGroupId: item.productClassGroupId ?? null,
+          productClassGroupName: item.productClassGroupName ?? null,
         },
         plannedFor,
         notes,

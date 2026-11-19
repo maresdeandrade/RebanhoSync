@@ -70,7 +70,7 @@ O contexto offline guardado em `local_ownership` permite continuidade local some
 
 #302 integra avaliação sanitária como Evento factual sem aplicação farmacológica: resultado, participantes, data, responsável e correções append-only não geram produto, dose, estoque ou carência. Adoção/monitoramento e variante são configurações da fazenda; controle estratégico e triagem são projeções. Junho permanece contextual, sem writer de materialização.
 
-Na #301 validada e ainda não integrada, `insumos.sanitario_produto_v2_id` identifica explicitamente o produto técnico do estoque. Produto planejado não é produto aplicado. Indicadores derivam de Eventos/detalhes, participantes factuais e movimentos da mesma fazenda; deduplicação não mistura consumo com perda, nem transforma perdas em aplicação. Nenhum desses cálculos altera fatos ou saldo persistido. Consultar [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+Na #301 integrada, `insumos.sanitario_produto_v2_id` identifica explicitamente o produto técnico do estoque. Produto planejado não é produto aplicado. Indicadores derivam de Eventos/detalhes, participantes factuais e movimentos da mesma fazenda; deduplicação não mistura consumo com perda, nem transforma perdas em aplicação. Nenhum desses cálculos altera fatos ou saldo persistido. Consultar [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 ## Política de registro, alertas e elegibilidade
 

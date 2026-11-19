@@ -14,6 +14,9 @@ describe("sanitary agenda forecast v2", () => {
   it("sinaliza déficit sem bloquear o planejamento", () => {
     expect(buildSanitaryAgendaForecastV2({ fazendaId: "farm-1", asOf: "2026-01-01", item: { animalCount: 10, plannedProductId: "p1", suggestedDose: 2, suggestedDoseUnit: "ml", suggestedDoseBasis: "animal", suggestedDoseProductId: "p1" }, stock: { complete: true, supplies: [supply("s1", "p1")], lots: [lot("l1", "s1", 5)] } })).toMatchObject({ status: "stock_insufficient", deficit: 15 });
   });
+  it("não interpreta ausência de baixa como consumo zero", () => {
+    expect(buildSanitaryPlanRealizedIndicatorsV2({ fazendaId: "farm-1", eventIds: ["e1"], plannedAnimals: 1, executedAnimalIds: ["a1"], estimatedQuantity: 2, appliedQuantities: [{ quantity: 2, unit: "ml" }], movements: [], comparableUnit: "ml" })).toMatchObject({ consumedQuantity: null, lossQuantity: null, comparisonStatus: "incomplete_data" });
+  });
   it("diferencia estoque desconhecido de estoque vazio e isola fazenda", () => {
     const item = { animalCount: 10, plannedProductId: "p1", suggestedDose: 2, suggestedDoseUnit: "ml", suggestedDoseBasis: "animal", suggestedDoseProductId: "p1" } as const;
     expect(buildSanitaryAgendaForecastV2({ fazendaId: "farm-1", asOf: "2026-01-01", item }).status).toBe("stock_unknown");
@@ -21,7 +24,10 @@ describe("sanitary agenda forecast v2", () => {
     expect(buildSanitaryAgendaForecastV2({ fazendaId: "farm-1", asOf: "2026-01-01", item, stock: { complete: true, supplies: [{ ...supply("s1", "p1"), fazenda_id: "farm-2" }], lots: [lot("l1", "s1", 50)] } })).toMatchObject({ status: "stock_insufficient", compatibleStock: 0 });
   });
   it("separa cobertura e consumo baixado", () => {
-    expect(buildSanitaryPlanRealizedIndicatorsV2({ fazendaId: "farm-1", eventIds: ["e1"], plannedAnimals: 4, executedAnimalIds: ["a1", "a2"], estimatedQuantity: 8, appliedQuantities: [{ quantity: 4, unit: "ml" }], movements: [{ id: "m1", fazenda_id: "farm-1", source_evento_id: "e1", quantidade_base: 5, unidade_base: "ml", tipo: "consumo_sanitario", deleted_at: null }], comparableUnit: "ml" })).toMatchObject({ executedAnimals: 2, coverageRatio: 0.5, appliedQuantity: 4, consumedQuantity: 5, variance: null, comparable: false, comparisonStatus: "partial_execution" });
+    expect(buildSanitaryPlanRealizedIndicatorsV2({ fazendaId: "farm-1", eventIds: ["e1"], plannedAnimals: 4, executedAnimalIds: ["a1", "a2"], estimatedQuantity: 8, appliedQuantities: [{ quantity: 4, unit: "ml" }], movements: [{ id: "m1", fazenda_id: "farm-1", source_evento_id: "e1", quantidade_base: 5, unidade_base: "ml", tipo: "consumo_sanitario", deleted_at: null }], comparableUnit: "ml" })).toMatchObject({ executedAnimals: 2, remainingAnimals: 2, remainingEstimatedQuantity: 4, coverageRatio: 0.5, appliedQuantity: 4, consumedQuantity: 5, variance: null, comparable: false, comparisonStatus: "partial_execution" });
+  });
+  it("não interpreta ausência de baixa como consumo zero", () => {
+    expect(buildSanitaryPlanRealizedIndicatorsV2({ fazendaId: "farm-1", eventIds: ["e1"], plannedAnimals: 1, executedAnimalIds: ["a1"], estimatedQuantity: 2, appliedQuantities: [{ quantity: 2, unit: "ml" }], movements: [], comparableUnit: "ml" })).toMatchObject({ consumedQuantity: null, lossQuantity: null, comparable: false, comparisonStatus: "incomplete_data" });
   });
 });
 
@@ -57,10 +63,10 @@ describe("sanitary plan realized movement classification", () => {
   });
 
   it.each([
-    { name: "consumo sem perdas", movements: [consumption], consumed: 10, lost: 0 },
-    { name: "perda sem consumo", movements: [loss], consumed: 0, lost: 3 },
-    { name: "consumo duplicado", movements: [consumption, { ...consumption }], consumed: 10, lost: 0 },
-    { name: "perda duplicada", movements: [loss, { ...loss }], consumed: 0, lost: 3 },
+    { name: "consumo sem perdas", movements: [consumption], consumed: 10, lost: null },
+    { name: "perda sem consumo", movements: [loss], consumed: null, lost: 3 },
+    { name: "consumo duplicado", movements: [consumption, { ...consumption }], consumed: 10, lost: null },
+    { name: "perda duplicada", movements: [loss, { ...loss }], consumed: null, lost: 3 },
     { name: "duplicatas intercaladas", movements: [loss, consumption, { ...loss }, { ...consumption }], consumed: 10, lost: 3 },
   ])("preserva totais em $name", ({ movements, consumed, lost }) => {
     expect(buildSanitaryPlanRealizedIndicatorsV2(input(movements))).toMatchObject({
@@ -82,8 +88,8 @@ describe("sanitary plan realized movement classification", () => {
     const invalidConsumption = { ...consumption, ...patch };
     const invalidLoss = { ...loss, ...patch };
     expect(buildSanitaryPlanRealizedIndicatorsV2(input([invalidConsumption, invalidLoss]))).toMatchObject({
-      consumedQuantity: 0,
-      lossQuantity: 0,
+      consumedQuantity: null,
+      lossQuantity: null,
     });
   });
 

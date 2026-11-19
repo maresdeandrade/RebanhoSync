@@ -211,9 +211,25 @@ function EvaluationGroup({ group, selectedKeys, onToggle, onSelectGroup, onOpenS
   </section>;
 }
 
-function PlanningDialog({ review, dateReview, preview, planning, error, onDateChange, onClose, onConfirm, onRemoveRejected }: { review: { rows: SanitaryProtocolWindowRowV2[]; plannedFor: string; context: SanitaryOperationalContextV2 }; dateReview: ReturnType<typeof reviewSanitaryPlanningDateV2>; preview: ReturnType<typeof buildSanitaryWindowPlanningPreviewV2> | null; planning: boolean; error: string | null; onDateChange: (date: string) => void; onClose: () => void; onConfirm: () => void; onRemoveRejected: () => void }) {
+function PlanningDialog({ review, source, plannedProductId, onProductChange, dateReview, preview, planning, error, onDateChange, onClose, onConfirm, onRemoveRejected }: { review: { rows: SanitaryProtocolWindowRowV2[]; plannedFor: string; context: SanitaryOperationalContextV2 }; source: SanitaryProtocolWindowSourceV2; plannedProductId: string; onProductChange: (id: string) => void; dateReview: ReturnType<typeof reviewSanitaryPlanningDateV2>; preview: ReturnType<typeof buildSanitaryWindowPlanningPreviewV2> | null; planning: boolean; error: string | null; onDateChange: (date: string) => void; onClose: () => void; onConfirm: () => void; onRemoveRejected: () => void }) {
   const blocked = !dateReview.length || dateReview.some(entry => entry.situation !== "compatible") || !preview?.commands.length || !!preview?.rejected.length;
   const rejected = dateReview.filter(entry => entry.situation !== "compatible");
+  const compatibleProducts = (source.products ?? []).filter(product => {
+    if (product.deleted_at || product.status_curatorial !== "ativo") return false;
+    return review.rows.every(row => {
+      const item = source.catalog.items.find(candidate => candidate.id === row.itemId);
+      if (!item || item.productRequirementKind === "none") return false;
+      if (item.productRequirementKind === "specific_product") return product.id === item.productId;
+      if (item.productRequirementKind === "product_class") return product.classe === item.productClass;
+      if (item.productRequirementKind === "product_class_group") {
+        const classIds = new Set((source.productClassGroupMembers ?? [])
+          .filter(member => member.group_id === item.productClassGroupId && member.is_allowed && !member.deleted_at)
+          .map(member => member.class_id));
+        return (source.productClasses ?? []).some(entry => classIds.has(entry.id) && entry.class_key === product.classe && !entry.deleted_at);
+      }
+      return false;
+    });
+  });
   return <Dialog open onOpenChange={open => { if (!open && !planning) onClose(); }}>
     <DialogContent>
       <DialogHeader>
@@ -222,6 +238,7 @@ function PlanningDialog({ review, dateReview, preview, planning, error, onDateCh
       </DialogHeader>
       <div className="max-h-96 space-y-3 overflow-auto text-sm">
         <label className="block space-y-1"><span className="font-medium">Data planejada</span><Input aria-label="Data planejada da Agenda" type="date" value={review.plannedFor} onChange={event => onDateChange(event.target.value)} /></label>
+        {compatibleProducts.length ? <label className="block space-y-1"><span className="font-medium">Produto planejado (opcional)</span><select aria-label="Produto planejado opcional" className="h-10 w-full rounded-md border border-input bg-background px-3" value={plannedProductId || "__none__"} onChange={event => onProductChange(event.target.value === "__none__" ? "" : event.target.value)}><option value="__none__">Não definir agora</option>{compatibleProducts.map(product => <option key={product.id} value={product.id}>{product.nome_comercial}{product.classe ? ` · ${product.classe}` : ""}</option>)}</select><span className="text-xs text-muted-foreground">A seleção não autoriza aplicação, não inventa dose e será revalidada na execução.</span></label> : null}
         <p>{review.rows.length} avaliação(ões) selecionada(s). Prévia: {preview?.commands.length ?? 0} Agenda(s) elegível(is), {rejected.length + (preview?.rejected.length ?? 0)} excluída(s) ou bloqueada(s).</p>
         <ul className="space-y-2">{dateReview.map(entry => <li key={`${entry.original.itemId}:${entry.original.animalId}`}><strong>{entry.original.identification}</strong> · {entry.original.lotLabel}<br />{entry.original.protocolLabel} · {entry.original.itemLabel}<br /><strong>{entry.label}</strong><br /><span className="text-muted-foreground">{entry.reason}</span></li>)}</ul>
         {preview?.rejected.length ? <p className="text-amber-700">A prévia também rejeitou {preview.rejected.length} comando(s) por equivalência ou restrição operacional.</p> : null}
@@ -252,6 +269,7 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
   const [review, setReview] = useState<{ rows: SanitaryProtocolWindowRowV2[]; plannedFor: string; context: SanitaryOperationalContextV2 } | null>(null);
   const [planning, setPlanning] = useState(false);
   const [planningError, setPlanningError] = useState<string | null>(null);
+  const [plannedProductId, setPlannedProductId] = useState("");
   const [planningNotice, setPlanningNotice] = useState<string | null>(null);
   const [assessment, setAssessment] = useState<SanitaryTriageEvaluationV2 | null>(null);
   useEffect(() => {
@@ -347,6 +365,7 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
       setPlanningError("Selecione ao menos uma oportunidade elegível na janela.");
       return;
     }
+    setPlannedProductId("");
     setPlanningError(null);
     setReview({ rows, plannedFor: period.startDate, context: { ...EMPTY_SANITARY_OPERATIONAL_CONTEXT_V2 } });
   };
@@ -370,6 +389,7 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
         plannedFor: review.plannedFor,
         confirmed: true,
         operationalContext: review.context,
+        plannedProductId: plannedProductId || null,
       });
       setPlanningNotice(`${results.length} Agenda(s) criada(s) como intenção futura.`);
       setSelectedKeys(new Set());
@@ -431,7 +451,7 @@ export function SanitaryProactiveTriagePanelV2({ source, initialAnimalId, initia
           })}</div>}
         </CardContent>
       </Card>
-      {review ? <PlanningDialog review={review} dateReview={dateReview} preview={preview} planning={planning} error={planningError} onDateChange={date => setReview(current => current ? { ...current, plannedFor: date } : current)} onClose={() => { if (!planning) { setReview(null); setPlanningError(null); } }} onConfirm={confirmPlanning} onRemoveRejected={removeRejectedFromReview} /> : null}
+      {review ? <PlanningDialog review={review} source={source} plannedProductId={plannedProductId} onProductChange={setPlannedProductId} dateReview={dateReview} preview={preview} planning={planning} error={planningError} onDateChange={date => setReview(current => current ? { ...current, plannedFor: date } : current)} onClose={() => { if (!planning) { setReview(null); setPlanningError(null); } }} onConfirm={confirmPlanning} onRemoveRejected={removeRejectedFromReview} /> : null}
       {assessment ? <SanitaryAssessmentDialogV1 source={source} evaluation={assessment} onClose={() => setAssessment(null)} onQueued={() => { setAssessment(null); setPlanningNotice("Avaliação aguardando sincronização."); }} /> : null}
     </> : null}
   </div>;

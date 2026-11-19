@@ -33,6 +33,11 @@ export type CreateManualSanitaryAgendaInputV2 = {
     protocolItemVersionId?: string;
     actionType?: string;
     plannedProductId?: string | null;
+    productName?: string | null;
+    dose?: number | null;
+    doseUnit?: string | null;
+    doseBasis?: string | null;
+    doseProductId?: string | null;
     planningKind?: SanitaryPlanningKindV2;
     planningEvidence?: Record<string, unknown>;
     planningDedupKey?: string;
@@ -170,13 +175,6 @@ function targetAnimalRows(input: CreateManualSanitaryAgendaInputV2) {
   return uniqueSorted(input.target.animalIds);
 }
 
-function hasGenericProduct(input: CreateManualSanitaryAgendaInputV2) {
-  return (
-    manualPlanningKind(input) === "avaliacao_manejo_generica" &&
-    !!input.source.plannedProductId
-  );
-}
-
 function manualPlanningKind(input: CreateManualSanitaryAgendaInputV2) {
   return input.source.planningKind ?? "avaliacao_manejo_generica";
 }
@@ -207,10 +205,8 @@ function hasExecutionPayload(
 ): boolean {
   const source = input.source as Record<string, unknown>;
   return (
-    hasGenericProduct(input) ||
     source.productId != null ||
     source.executedProductId != null ||
-    source.dose != null ||
     source.executedDose != null ||
     source.withdrawal != null ||
     source.activeWithdrawal != null ||
@@ -342,8 +338,13 @@ export function buildManualSanitaryAgendaRecordsV2(
     produto_snapshot: {
       planningOnly: true,
       plannedProductId: input.source.plannedProductId ?? null,
+      productName: input.source.productName ?? null,
+      dose: input.source.dose ?? null,
+      doseUnit: input.source.doseUnit ?? null,
+      doseBasis: input.source.doseBasis ?? null,
+      doseProductId: input.source.doseProductId ?? null,
       realProductDefinedOnlyAtExecution: true,
-      doseDefinedOnlyAtExecution: true,
+      doseDefinedOnlyAtExecution: input.source.dose == null,
       withdrawalDefinedOnlyAtExecution: true,
 
       ...manualProductRequirementSnapshot(input.source),

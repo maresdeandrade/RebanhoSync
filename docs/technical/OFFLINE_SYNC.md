@@ -14,7 +14,7 @@ Para impacto operacional, consulte no mapa os contratos de resultado por operaç
 
 #302 integra comandos de adoção/monitoramento e variante com CAS/replay, avaliações factuais append-only e unicidade individual de Agenda. O envio revalida sessão e fazenda; configuração pendente não substitui estado confirmado. Avaliação não gera efeito farmacológico.
 
-#301, validada mas não integrada, acrescenta vínculo estoque–produto V2 e validação do vínculo no `sync-batch`. Indicadores só leem fatos, participantes e movimentos; não criam fila, consumo ou fonte de verdade paralela. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+#301 integrada, acrescenta vínculo estoque–produto V2 e validação do vínculo no `sync-batch`. Indicadores só leem fatos, participantes e movimentos; não criam fila, consumo ou fonte de verdade paralela. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 ## Contrato geral
 

@@ -160,7 +160,7 @@ A antiga função de **plano de geração automática** foi retirada na PR #285;
 
 ## Estoque e indicadores — versão validada da #301
 
-Estes recursos estão implementados e validados na branch da #301, ainda fora da main. Em **Insumos**, o vínculo **Produto técnico sanitário V2** relaciona o estoque ao produto do catálogo. Para executar com estoque, escolher lote ativo, da fazenda e ligado ao produto efetivamente utilizado; nome semelhante ou vínculo antigo não substitui essa identificação.
+Estes recursos estão implementados e validados na baseline integrada da #301. Em **Insumos**, o vínculo **Produto técnico sanitário V2** relaciona o estoque ao produto do catálogo. Para executar com estoque, escolher lote ativo, da fazenda e ligado ao produto efetivamente utilizado; nome semelhante ou vínculo antigo não substitui essa identificação.
 
 O produto planejado é opcional e não comprova aplicação. **Consumo previsto** depende de produto, dose/base por animal e unidade compatíveis; dados insuficientes ou disponibilidade desconhecida não significam saldo zero. A previsão não reserva nem baixa estoque.
 

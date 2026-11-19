@@ -1,7 +1,7 @@
 # Review Docs — RebanhoSync
 
 Atualizado em: 2026-11-18
-**Baseline integrada:** `175e9dee` (#302); #301 validada em `6cdc7284`, não integrada. Resultados atuais no handoff e no resultado mais recente.
+**Baseline integrada:** `175e9dee` (#302); #301 integrada e validada. Resultados atuais no handoff e no resultado mais recente.
 
 ## Objetivo
 
