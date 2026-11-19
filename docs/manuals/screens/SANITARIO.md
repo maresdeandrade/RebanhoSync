@@ -1,7 +1,7 @@
 # Manual da Tela — Sanitário
 
-Atualizado em: 2026-11-18
-**Baselines:** #302 integrada em `175e9dee`; recursos de estoque e indicadores da #301 validados em `6cdc7284`, ainda não integrados à main. Disponibilidade no ambiente deve ser verificada separadamente.
+Atualizado em: 2026-11-19
+**Baselines:** #302 integrada em `175e9dee`; PR [#303](https://github.com/maresdeandrade/RebanhoSync/pull/303) validada por CI no head `2dcdded1`, ainda não integrada à main. Disponibilidade no ambiente deve ser verificada separadamente.
 
 ## Para que serve
 
@@ -158,13 +158,13 @@ A antiga função de **plano de geração automática** foi retirada na PR #285;
 
 ---
 
-## Estoque e indicadores — versão validada da #301
+## Estoque e indicadores — versão validada da #303
 
-Estes recursos estão implementados e validados na baseline integrada da #301. Em **Insumos**, o vínculo **Produto técnico sanitário V2** relaciona o estoque ao produto do catálogo. Para executar com estoque, escolher lote ativo, da fazenda e ligado ao produto efetivamente utilizado; nome semelhante ou vínculo antigo não substitui essa identificação.
+Estes recursos estão implementados e validados no escopo da PR #303, ainda não integrada à main. Em **Insumos**, o vínculo **Produto técnico sanitário V2** relaciona o estoque ao produto do catálogo. Para executar com estoque, escolher lote ativo, da fazenda e ligado ao produto efetivamente utilizado; nome semelhante ou vínculo antigo não substitui essa identificação.
 
-O produto planejado é opcional e não comprova aplicação. **Consumo previsto** depende de produto, dose/base por animal e unidade compatíveis; dados insuficientes ou disponibilidade desconhecida não significam saldo zero. A previsão não reserva nem baixa estoque.
+O produto planejado é opcional e o seletor deve oferecer somente opções tecnicamente compatíveis com o requisito da Agenda. Avaliação sem tratamento não depende de produto comercial. Dose planejada só aparece quando sua aplicabilidade técnica é demonstrada; ausência de contexto não autoriza inventar dose ou equivalência. Produto planejado não comprova aplicação. **Consumo previsto** depende de produto, dose/base por animal e unidade compatíveis; dados insuficientes ou disponibilidade desconhecida não significam saldo zero. A previsão não reserva nem baixa estoque.
 
-**Planejado × realizado** separa cobertura, aplicado, baixado, perdas e desvio comparável. Eventos coletivos consideram seus participantes factuais. Um consumo de 10 ml e perda de 3 ml são exibidos separadamente, sem transformar perda em aplicação nem duplicar movimentos repetidos. Execução parcial ou unidades incompatíveis limitam a comparação.
+**Planejado × realizado** separa a demanda originalmente planejada, os animais/quantidade restantes após execução parcial, cobertura, aplicado, baixado, perdas e desvio comparável. Eventos coletivos consideram seus participantes factuais. Um consumo de 10 ml e perda de 3 ml são exibidos separadamente, sem transformar perda em aplicação nem duplicar movimentos repetidos. Ausência de movimentação factual mantém consumo/perda como desconhecidos, não como zero. Execução parcial ou unidades incompatíveis limitam a comparação.
 
 ## Custo sanitário
 
