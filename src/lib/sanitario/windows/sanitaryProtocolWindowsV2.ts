@@ -16,6 +16,9 @@ import type {
   SexoEnum,
   SanitarioProdutoLocalV2,
   SanitarioProdutoEspecieAutorizacaoLocalV2,
+  SanitarioProdutoDoseRuleLocalV2,
+  SanitarioProductClassLocalV2,
+  SanitarioProductClassGroupMemberLocalV2,
   FazendaSanidadeConfig,
   EventoPesagem,
   AgendaItem,
@@ -74,6 +77,9 @@ export type SanitaryProtocolWindowSourceV2 = {
   farmConfig?: FazendaSanidadeConfig;
   products?: SanitarioProdutoLocalV2[];
   productSpeciesAuthorizations?: SanitarioProdutoEspecieAutorizacaoLocalV2[];
+  productDoseRules?: SanitarioProdutoDoseRuleLocalV2[];
+  productClasses?: SanitarioProductClassLocalV2[];
+  productClassGroupMembers?: SanitarioProductClassGroupMemberLocalV2[];
   catalog: SanitaryProtocolCatalogReadModelV2;
   animals: Animal[];
   lots: Lote[];
@@ -824,6 +830,9 @@ async function readSanitaryProtocolWindowSourceV2(
     farmConfig,
     products,
     productSpeciesAuthorizations,
+    productDoseRules,
+    productClasses,
+    productClassGroupMembers,
     managementAgendas,
   ] = await Promise.all([
     readLocalSanitaryProtocolCatalogV2(
@@ -839,6 +848,9 @@ async function readSanitaryProtocolWindowSourceV2(
     db.state_fazenda_sanidade_config.get(fazendaId),
     db.catalog_sanitario_produtos_v2.toArray(),
     db.catalog_sanitario_produto_especie_autorizacao_v2.toArray(),
+    db.catalog_sanitario_produto_dose_rules_v2.toArray().catch(() => []),
+    db.catalog_sanitario_product_classes_v2.toArray().catch(() => []),
+    db.catalog_sanitario_product_class_group_members_v2.toArray().catch(() => []),
     db.state_agenda_itens.where("fazenda_id").equals(fazendaId).toArray(),
   ]);
   const protocols = allCatalog.protocols.filter((protocol) =>
@@ -900,6 +912,9 @@ async function readSanitaryProtocolWindowSourceV2(
     farmConfig,
     products,
     productSpeciesAuthorizations,
+    productDoseRules,
+    productClasses,
+    productClassGroupMembers,
     farmUf: farmConfig?.deleted_at ? null : farmConfig?.uf,
     reproductiveEvents,
     contextEvents: events,
@@ -987,6 +1002,7 @@ type GroupedSanitaryPlanningInputV2 = {
   rows: SanitaryProtocolWindowRowV2[];
   fazendaId: string;
   plannedFor: string;
+  plannedProductId?: string | null;
   confirmed?: boolean;
   operationalContext?: SanitaryOperationalContextV2;
   createdBy?: string;
@@ -1111,6 +1127,14 @@ async function persistPlanningCommand(
   );
   const first = rows[0];
   const item = source.catalog.items.find((entry) => entry.id === first.itemId)!;
+  const selectedProductId = input.plannedProductId ?? item.productId ?? null;
+  const selectedProduct = source.products?.find((product) => product.id === selectedProductId && !product.deleted_at);
+  const doseRules = source.productDoseRules?.filter((rule) => rule.product_id === selectedProductId && !rule.deleted_at && rule.status_curatorial === "ativo") ?? [];
+  const applicableDoseRules = doseRules.filter((rule) => rows.every((row) => {
+    const animal = source.animals.find((candidate) => candidate.id === row.animalId);
+    return Boolean(animal && (!rule.species_code || rule.species_code === animal.especie) && rule.dose_basis !== "kg_peso_vivo" && rule.min_weight_kg == null && rule.max_weight_kg == null);
+  }));
+  const linkedDose = applicableDoseRules.length === 1 ? applicableDoseRules[0] : null;
   rejectDuplicatePhysicalApplication(
     source,
     item,
@@ -1134,6 +1158,9 @@ async function persistPlanningCommand(
             protocolItemVersionId: first.itemId,
             actionType: item.actionType,
             plannedProductId: item.productId,
+            ...(selectedProductId ? { plannedProductId: selectedProductId } : {}),
+            ...(selectedProduct ? { productName: selectedProduct.nome_comercial } : {}),
+            ...(linkedDose ? { dose: linkedDose.dose_quantity, doseUnit: linkedDose.dose_unit, doseBasis: linkedDose.dose_basis, doseProductId: selectedProductId } : {}),
             planningKind: first.planningKind,
             planningEvidence: {
               itemVersion: item.version,
@@ -1206,6 +1233,7 @@ export async function createGroupedManualSanitaryAgendasV2(
       db.catalog_sanitario_product_class_groups_v2,
       db.event_eventos,
       db.catalog_sanitario_produtos_v2,
+      db.catalog_sanitario_produto_dose_rules_v2,
       db.catalog_sanitario_produto_especie_autorizacao_v2,
       db.event_eventos_sanitario,
       db.event_eventos_animais,

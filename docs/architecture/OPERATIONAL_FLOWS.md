@@ -21,7 +21,7 @@ As notas de automação de outubro acima são históricas: #285 retirou a geraç
 
 #302 integra Protocolos da Fazenda e monitoramento → gesto/fila → `sync-batch`/RPC com CAS → pull da configuração confirmada. Avaliação sanitária usa Evento e participantes factuais, correção append-only e reconciliação; não cria produto, estoque ou carência. Controle estratégico é projeção, e junho não materializa intenção.
 
-Na #301 validada e ainda não integrada, seleção de estoque exige `sanitario_produto_v2_id` compatível com o produto executado, revalidado no writer e na Edge. Indicadores consultam Eventos/detalhes, participantes e movimentos por fazenda; quantidade aplicada coletiva considera dose por animal, consumo e perda têm classificação separada e deduplicação única. Prévia e indicadores não escrevem fatos, movimentos ou saldo. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+Na #301 integrada, seleção de estoque exige `sanitario_produto_v2_id` compatível com o produto executado, revalidado no writer e na Edge. Indicadores consultam Eventos/detalhes, participantes e movimentos por fazenda; quantidade aplicada coletiva considera dose por animal, consumo e perda têm classificação separada e deduplicação única. Prévia e indicadores não escrevem fatos, movimentos ou saldo. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
 ## 1. Escopo e precedência
 

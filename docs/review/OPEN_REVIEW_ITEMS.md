@@ -4,7 +4,7 @@ Atualizado em: 2026-11-18
 
 ## Pendências vigentes — 18/11/2026
 
-- **Integração:** #301 aberta, gate READY em `6cdc7284`; perdas e indicadores coletivos corrigidos e validados. Não há correção funcional pendente demonstrada nesse recorte. [CI e limites](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+- **Integração:** #301 integrada, gate READY; perdas e indicadores coletivos corrigidos e validados. Não há correção funcional pendente demonstrada nesse recorte. [CI e limites](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 - **Curadoria contextual:** manter somente exceções C02/C03 necessárias ao produto/regra/finalidade escolhidos. Cadastro/curadoria documental dos 39 encerrados; não repetir importação.
 - **Evoluções/limites:** kill real, dispositivos físicos, escopo mobile, performance ampliada e homologação de jornadas dependem de alvo e necessidade concretos; ausência de comprovação não é ausência de implementação nem P0 automático.
 - **Superadas como implementação pendente:** P33/fixtures de #294, caller neonatal #274, colaboração/fechamento/continuidade #268, UX #290 e funcionalidades #302. Junho continua contextual por decisão de produto.

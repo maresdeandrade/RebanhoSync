@@ -1,9 +1,9 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-11-18
+Atualizado em: 2026-11-19
 Status: **Fase 24 ativa; F24.5 e F24.6A1 CLOSED / INTEGRATED no escopo certificado; F24.6 ACTIVE**
-Próxima fase: **Fase 24 — continuidade localizada: decisão de integração da #301 validada, exceções curatoriais necessárias ao alvo escolhido e lacunas funcionais comprovadas; sem nova fase, benchmark ou rollout automático.**
-Baseline integrada consultada: `main@175e9dee3639ea1726f9c62c9b0d208e1452d7dc` (#302). #301 validada em `6cdc7284`, ainda fora da main.
+Próxima fase: **Fase 24 — continuidade localizada: curadoria dirigida do catálogo sanitário e preparação da baseline limpa; sem nova fase, benchmark ou rollout automático.**
+Baseline integrada consultada: `main@175e9dee3639ea1726f9c62c9b0d208e1452d7dc` (#302). PR [#303](https://github.com/maresdeandrade/RebanhoSync/pull/303) validada por CI no head `2dcdded1`, ainda não integrada.
 F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29.
 Baseline de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`.
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27.
@@ -24,11 +24,11 @@ O backlog F24.1–F24.8, dependências, critérios de entrada/saída e release b
 registrados nessa baseline. Produção e rollout Sanitário v2 não estão autorizados; o blocker
 stale foi fechado em 05/10/2026 conforme a [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Nenhuma frente posterior deve ser iniciada automaticamente.
 
-## Continuidade reconciliada — 18/11/2026
+## Continuidade reconciliada — 19/11/2026
 
-#302 está integrada à `main@175e9dee`; #301 está implementada e validada em `6cdc7284`, com gate READY e integração pendente. Os testes históricos de P33 e upgrades foram corrigidos em #295–#299; #300 corrigiu Agenda/B19. [Resultados e evidências atuais](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+#302 está integrada à `main@175e9dee`; #303 está validada por CI e permanece aberta, ainda não integrada. Os testes históricos de P33 e upgrades foram corrigidos em #295–#299; #300 corrigiu Agenda/B19. [Resultados e evidências atuais](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-303--19112026).
 
-O produto permanece em desenvolvimento. Ausência de implantação remota e suporte a versões antigas inexistentes não são pendências de desenvolvimento. F24.6A2 é proposta, sem início; sua formalização não é pré-requisito automático para uma correção localizada. Não se encerra certificação ampla F24.7/F24.8 por associação nem se abre nova fase.
+O produto permanece em desenvolvimento. Ausência de implantação remota e suporte a versões antigas inexistentes não são pendências de desenvolvimento. A próxima prioridade é curadoria dirigida do catálogo e preparação da baseline limpa. F24.6A2 é proposta, sem início; sua formalização não é pré-requisito automático para uma correção localizada. Não se encerra certificação ampla F24.7/F24.8 por associação nem se abre nova fase.
 
 ## F24.6A — Performance / Scale Baseline
 

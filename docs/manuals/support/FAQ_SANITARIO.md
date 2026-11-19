@@ -15,7 +15,7 @@ Não. Monitoramento é configuração de acompanhamento. Avaliação registra um
 
 ## Por que um estoque com nome parecido não aparece para execução?
 
-Na versão validada da #301, ainda não integrada, o estoque precisa estar ligado explicitamente ao produto técnico V2 compatível. Confira o vínculo em Insumos e o lote selecionado; não substitua essa identificação pelo nome. Previsão de consumo não baixa estoque, e aplicado, baixado e perdas são indicadores distintos.
+Na versão integrada da #301, o estoque precisa estar ligado explicitamente ao produto técnico V2 compatível. Confira o vínculo em Insumos e o lote selecionado; não substitua essa identificação pelo nome. Previsão de consumo não baixa estoque, e aplicado, baixado e perdas são indicadores distintos.
 
 Referência: [manual da Central Sanitária](../screens/SANITARIO.md).
 

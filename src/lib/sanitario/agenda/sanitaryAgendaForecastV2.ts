@@ -21,8 +21,10 @@ export type SanitaryAgendaForecastV2 = {
 export type SanitaryPlanRealizedIndicatorsV2 = {
   plannedAnimals: number;
   executedAnimals: number;
+  remainingAnimals: number;
   coverageRatio: number | null;
   estimatedQuantity: number | null;
+  remainingEstimatedQuantity: number | null;
   appliedQuantity: number | null;
   consumedQuantity: number | null;
   lossQuantity: number | null;
@@ -86,6 +88,7 @@ export function buildSanitaryPlanRealizedIndicatorsV2(input: {
 }): SanitaryPlanRealizedIndicatorsV2 {
   const plannedAnimals = Math.max(0, input.plannedAnimals);
   const executedAnimals = new Set(input.executedAnimalIds).size;
+  const remainingAnimals = Math.max(0, plannedAnimals - executedAnimals);
   const applied = input.appliedQuantities.filter((entry) => entry.quantity != null && Number.isFinite(entry.quantity) && entry.quantity >= 0 && entry.unit === input.comparableUnit);
   const productMismatch = input.appliedQuantities.some((entry) => entry.expectedProductId != null && entry.productId != null && entry.expectedProductId !== entry.productId);
   const seenMovements = new Set<string>();
@@ -98,17 +101,43 @@ export function buildSanitaryPlanRealizedIndicatorsV2(input: {
     .filter((movement) => movement.fazenda_id === input.fazendaId && movement.source_evento_id != null && input.eventIds.includes(movement.source_evento_id) && movement.tipo === "consumo_sanitario" && !movement.deleted_at && Number.isFinite(movement.quantidade_base) && movement.quantidade_base >= 0 && movement.unidade_base === input.comparableUnit)
     .reduce((sum, movement) => sum + Math.max(0, movement.quantidade_base), 0);
   const appliedQuantity = applied.length ? Number(applied.reduce((sum, entry) => sum + (entry.quantity ?? 0), 0).toFixed(4)) : null;
-  const consumedQuantity = input.comparableUnit ? Number(consumed.toFixed(4)) : null;
+  const hasConsumptionEvidence = uniqueMovements.some((movement) =>
+    movement.fazenda_id === input.fazendaId &&
+    movement.source_evento_id != null &&
+    input.eventIds.includes(movement.source_evento_id) &&
+    movement.tipo === "consumo_sanitario" &&
+    !movement.deleted_at &&
+    Number.isFinite(movement.quantidade_base) &&
+    movement.quantidade_base >= 0 &&
+    movement.unidade_base === input.comparableUnit,
+  );
+  const consumedQuantity = input.comparableUnit && hasConsumptionEvidence
+    ? Number(consumed.toFixed(4))
+    : null;
   const loss = uniqueMovements
     .filter((movement) => movement.fazenda_id === input.fazendaId && movement.source_evento_id != null && input.eventIds.includes(movement.source_evento_id) && movement.tipo === "perda" && !movement.deleted_at && Number.isFinite(movement.quantidade_base) && movement.quantidade_base >= 0 && movement.unidade_base === input.comparableUnit)
     .reduce((sum, movement) => sum + Math.max(0, movement.quantidade_base), 0);
-  const lossQuantity = input.comparableUnit ? Number(loss.toFixed(4)) : null;
+  const hasLossEvidence = uniqueMovements.some((movement) =>
+    movement.fazenda_id === input.fazendaId &&
+    movement.source_evento_id != null &&
+    input.eventIds.includes(movement.source_evento_id) &&
+    movement.tipo === "perda" &&
+    !movement.deleted_at &&
+    Number.isFinite(movement.quantidade_base) &&
+    movement.quantidade_base >= 0 &&
+    movement.unidade_base === input.comparableUnit,
+  );
+  const lossQuantity = input.comparableUnit && hasLossEvidence ? Number(loss.toFixed(4)) : null;
   const comparable = !productMismatch && input.estimatedQuantity != null && consumedQuantity != null && plannedAnimals > 0 && executedAnimals >= plannedAnimals && input.comparableUnit != null;
   return {
     plannedAnimals,
     executedAnimals,
+    remainingAnimals,
     coverageRatio: plannedAnimals > 0 ? Number((executedAnimals / plannedAnimals).toFixed(4)) : null,
     estimatedQuantity: input.estimatedQuantity,
+    remainingEstimatedQuantity: input.estimatedQuantity != null && plannedAnimals > 0
+      ? Number((input.estimatedQuantity * remainingAnimals / plannedAnimals).toFixed(4))
+      : null,
     appliedQuantity,
     consumedQuantity,
     lossQuantity,
