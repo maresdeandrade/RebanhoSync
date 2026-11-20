@@ -129,6 +129,18 @@ function renderPanel(
   );
 }
 
+async function putTechnicalClassLink(productId: string, classId: string, classKey: string, cacheClass = true) {
+  if (cacheClass) await db.catalog_sanitario_product_classes_v2.put({
+    id: classId, class_key: classKey, scope: "global", fazenda_id: null,
+    curation_status: "approved_for_catalog", deleted_at: null,
+  } as never);
+  await db.catalog_sanitario_produto_class_links_v2.put({
+    id: `link-${productId}`, product_id: productId, class_id: classId,
+    status_curatorial: "ativo", source_refs: [{ id: "composition-source", field: "product_class" }],
+    deleted_at: null,
+  } as never);
+}
+
 describe("SanitaryLocalAgendaPanelV2", () => {
   it("identifica Agenda local recusada e não oferece execução", () => {
     renderPanel(vi.fn(), vi.fn(), vi.fn(), [{ ...items[0], status: "conflito_local", canManage: false, canExecute: false }]);
@@ -143,6 +155,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
     await db.open();
     await Promise.all([
       db.catalog_sanitario_produtos_v2.clear(),
+      db.catalog_sanitario_produto_class_links_v2.clear(),
       db.catalog_sanitario_product_classes_v2.clear(),
       db.catalog_sanitario_product_class_group_members_v2.clear(),
       db.state_insumos.clear(),
@@ -153,6 +166,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
   afterEach(async () => {
     await Promise.all([
       db.catalog_sanitario_produtos_v2.clear(),
+      db.catalog_sanitario_produto_class_links_v2.clear(),
       db.catalog_sanitario_product_classes_v2.clear(),
       db.catalog_sanitario_product_class_group_members_v2.clear(),
       db.state_insumos.clear(),
@@ -227,13 +241,15 @@ describe("SanitaryLocalAgendaPanelV2", () => {
       metadata: {},
       deleted_at: null,
     } as never);
-    const result = await loadSanitaryAgendaExecutionOptionsV2([
+    const pendingItems: SanitaryLocalAgendaListItemV2[] = [
       {
         ...items[0],
         productRequirementKind: "product_class",
         productClass: "vacina_raiva",
       },
-    ]);
+    ];
+    expect((await loadSanitaryAgendaExecutionOptionsV2(pendingItems)).productOptions).toEqual([]);
+    const result = await loadSanitaryAgendaExecutionOptionsV2(pendingItems, "executed_fact");
     expect(result.productOptions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -267,14 +283,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
         fazenda_id: null,
         deleted_at: null,
       } as never);
-      if (classCached)
-        await db.catalog_sanitario_product_classes_v2.put({
-          id: classId,
-          class_key: "lactonas_macrociclicas",
-          scope: "global",
-          fazenda_id: null,
-          deleted_at: null,
-        } as never);
+      await putTechnicalClassLink("product-class-key", classId, "lactonas_macrociclicas", classCached);
       const result = await loadSanitaryAgendaExecutionOptionsV2([
         {
           ...items[0],
@@ -305,6 +314,7 @@ describe("SanitaryLocalAgendaPanelV2", () => {
       metadata: {},
       deleted_at: null,
     } as never);
+    await putTechnicalClassLink("product-linked", "class-linked", "vacina_ibr_bvd");
     await db.state_insumos.put({
       id: "insumo-linked",
       fazenda_id: "farm-1",
@@ -382,6 +392,8 @@ describe("SanitaryLocalAgendaPanelV2", () => {
         deleted_at: null,
       },
     ] as never);
+    await putTechnicalClassLink("product-allowed", "class-allowed", "lactonas_macrociclicas");
+    await putTechnicalClassLink("product-foreign-member", "class-foreign-member", "vacina_raiva");
     await db.catalog_sanitario_product_class_group_members_v2.bulkPut([
       {
         id: "member-allowed",
