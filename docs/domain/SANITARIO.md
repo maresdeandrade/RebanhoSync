@@ -6,7 +6,20 @@
 
 # Sanitário — RebanhoSync
 
-Atualizado em: 2026-11-19
+Atualizado em: 2026-11-20
+
+## Correspondência produto-classe publicada — #304
+
+A [#304](https://github.com/maresdeandrade/RebanhoSync/pull/304), integrada em `main@ce304edbc37863ac1bdee61104bb05dce7541b36`, estabelece `sanitario_produto_class_links_v2` como fonte persistente N:N da classificação técnica. `sanitario_produtos_v2.classe` permanece categoria comercial: nomes, categoria e metadados candidatos não comprovam classe técnica. Produtos multivalentes podem ter mais de uma associação validada; isso não duplica aplicação factual.
+
+- Associações ativas exigem evidência técnica rastreável e classe aprovada; a aprovação cadastral dos produtos é preservada. Fonte oficial inequívoca de composição pode comprovar classificação sem cobrir campos clínicos: `SIM_COMPOSICAO_FABRICANTE` restringe-se a composição/classe, sem substituir evidência de dose, via, espécie ou carência.
+- Seleção e writers locais revalidam a associação persistente; `sync-batch` e guards remotos verificam a mesma relação. O catálogo global é pull-only, sem escrita por usuários comuns, com store Dexie v37 e propagação de revogações/tombstones.
+- Snapshots preservam a associação e sua evidência admitida no fato; histórico não reconstrói classificação passada a partir do catálogo atual. Revogação impede novas correspondências, sem invalidar retroativamente fatos persistidos.
+- `executed_fact` registra aplicação realizada, inclusive com pendência técnica explícita, sem convertê-la em autorização prospectiva ou comprovação de cumprimento. Espécie, dose, via, carência e demais verificações clínicas mantêm seus contratos próprios; `can_validate_execution = false` é preservado.
+
+Publicação confirmada: 39 produtos ativos preservados, 33 classificados, 37 vínculos ativos e oito classes aprovadas; 13/13 itens e 4/4 grupos com opções. Seis produtos fora da taxonomia continuam comerciais; RB-51 não satisfaz B19. [Carga aprovada](../review/evidence/SANITARIO_PRODUCT_CLASS_PUBLICATION_20261120.json) e [estado de publicação e limites](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-304--20112026). Esta disponibilidade técnica não constitui homologação operacional ampla.
+
+As notas datadas de outubro acima são snapshots históricos. Preparação de associações ou restrição documental ali registrada não representa pendência atual de classificação onde superada pela #304; os requisitos clínicos específicos não foram promovidos por essa aprovação.
 
 ## Estado integrado até #265 — 01/11/2026
 
@@ -14,15 +27,15 @@ Atualizado em: 2026-11-19
 
 [V3.1/V3.2 #265](https://github.com/maresdeandrade/RebanhoSync/pull/265), merge `23893a97`, integra fundação A/B/C, contrato único 3, execução por subconjuntos, recibos e recuperação offline; leitores de histórico, estoque e carência passam a considerar múltiplos Eventos conforme a [fonte de verdade](../context/SOURCE_OF_TRUTH.md#execução-sanitária-progressiva--contrato-integrado-265). A prova local 30/15/5/5/5 conserva cinco pendências e Agenda aberta; não implementa fechamento gerencial/continuidade do design integral. As seis migrations de #265 estão versionadas; aplicação em ambiente existente depende de autorização própria. [Evidências e limites](../review/CURRENT_PHASE_HANDOFF.md#entregas-integradas-até-os-prs-264-e-265--01112026). As descrições V2 e baselines de homologação abaixo conservam seus recortes históricos; não implicam liberação de produção.
 
-## Contrato vigente — 19/11/2026
+## Contrato vigente — 20/11/2026
 
 Os adendos e o recorte #265 acima são históricos. #268 integrou colaboração, fechamento gerencial e continuidade; #285 retirou geração automática de Agenda. Triagem é reativa e a materialização é manual e confirmada.
 
 **#302 integrada:** Protocolos da Fazenda e monitoramento ON/OFF; avaliações `no_treatment_indicated`, `treatment_indicated` e `insufficient_data`, com participantes explícitos e correções append-only. Avaliação é fato de avaliação, não aplicação; não gera estoque ou carência. O controle estratégico individual preserva ciclo, etapa, variante 5-7-9/5-6-9 e evidências; junho continua contextual. A unicidade individual de Agenda é transacional, sem depender apenas de agrupamento, data ou lote.
 
-**#303 validada por CI, PR aberta e ainda não integrada:** na Agenda, o produto planejado é opcional e o seletor oferece somente produtos tecnicamente compatíveis com o requisito; avaliação sem tratamento permanece independente de produto comercial. Dose planejada só é demonstrada quando há aplicabilidade técnica contextual, sem inventar equivalências. Demanda originalmente planejada e demanda restante após execução parcial são distintas. Consumo e perdas desconhecidos por ausência de movimentação factual não são convertidos em zero. O vínculo de insumo ao produto V2, a separação entre aplicado/baixado/perdas, os participantes factuais e os guards de isolamento/idempotência permanecem no fluxo canônico.
+**#303 integrada em `b6b2296a`:** na Agenda, o produto planejado é opcional e o seletor oferece somente produtos tecnicamente compatíveis com o requisito; avaliação sem tratamento permanece independente de produto comercial. Dose planejada só é demonstrada quando há aplicabilidade técnica contextual, sem inventar equivalências. Demanda originalmente planejada e demanda restante após execução parcial são distintas. Consumo e perdas desconhecidos por ausência de movimentação factual não são convertidos em zero. O vínculo de insumo ao produto V2, a separação entre aplicado/baixado/perdas, os participantes factuais e os guards de isolamento/idempotência permanecem no fluxo canônico.
 
-[estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026) registra integração, testes e limites. Disponibilidade remota não foi reconfirmada; não reabre o desenvolvimento local nem exige suporte a aplicativos antigos inexistentes.
+[Estado e evidências atuais](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-304--20112026) registra integração, publicação técnica e limites. A #304 confirmou a disponibilidade remota do contrato produto–classe, sem ampliar homologação operacional nem exigir suporte a aplicativos antigos inexistentes.
 
 ## Objetivo
 
