@@ -23,6 +23,16 @@ As notas de automação de outubro acima são históricas: #285 retirou a geraç
 
 Na #301 integrada, seleção de estoque exige `sanitario_produto_v2_id` compatível com o produto executado, revalidado no writer e na Edge. Indicadores consultam Eventos/detalhes, participantes e movimentos por fazenda; quantidade aplicada coletiva considera dose por animal, consumo e perda têm classificação separada e deduplicação única. Prévia e indicadores não escrevem fatos, movimentos ou saldo. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
 
+## Correspondência técnica produto–classe — atualização de 20/11/2026
+
+Na [#304](https://github.com/maresdeandrade/RebanhoSync/pull/304), o fluxo passa a usar produto comercial → associação curada N:N em `sanitario_produto_class_links_v2` → classe técnica aprovada → requisito de classe/grupo do item. A categoria comercial `sanitario_produtos_v2.classe` não é fonte de classificação técnica. Multivalência é representada por associações distintas, sem criar aplicações ou fatos duplicados.
+
+O catálogo global é pull-only: Supabase/RLS → pull completo ou incremental, incluindo revogações/tombstones e recuperação de cache parcial → store Dexie v37 → seleção e writer local. A validação remota revalida a mesma relação no limite da admissão; a UI não é a única proteção. O snapshot factual congela vínculo, versão e evidência admitidos; histórico/conformidade usam esse fato preservado, sem reinterpretá-lo pelo catálogo atual.
+
+`executed_fact` permanece distinto de autorização prospectiva e comprovação de protocolo. Associação revogada impede novas correspondências, sem invalidar retrospectivamente os fatos históricos. Classificação cadastral não substitui evidência clínica por campo nem autoriza dose, espécie, via ou carência. [Contrato de domínio](../domain/SANITARIO.md#correspondência-produto-classe-publicada--304).
+
+Banco e catálogo foram publicados antes dos clientes dependentes: migrations `20261116010000`, `20261120045339` e `20261120090000`, `sync-batch` v31 e frontend em `ce304edb`. O pull dos 37 vínculos foi confirmado no aplicativo. [Artefato canônico](../review/evidence/SANITARIO_PRODUCT_CLASS_PUBLICATION_20261120.json) e [publicação e limites da Fase 24](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-304--20112026); publicação técnica não amplia homologação operacional ou certificações anteriores.
+
 ## 1. Escopo e precedência
 
 Este documento registra invariantes arquiteturais e fronteiras dos fluxos. A evidência detalhada permanece no mapa de validação indicado no cabeçalho. Para determinar comportamento implementado, prevalecem o código e as migrations ativas; este documento não substitui inspeção do estado corrente do produto.

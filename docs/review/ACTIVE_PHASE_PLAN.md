@@ -1,9 +1,9 @@
 # Plano ativo — Fase 24 / Release Hardening & Scale Readiness
 
-Atualizado em: 2026-11-19
+Atualizado em: 2026-11-20
 Status: **Fase 24 ativa; F24.5 e F24.6A1 CLOSED / INTEGRATED no escopo certificado; F24.6 ACTIVE**
-Próxima fase: **Fase 24 — continuidade localizada: curadoria dirigida do catálogo sanitário e preparação da baseline limpa; sem nova fase, benchmark ou rollout automático.**
-Baseline integrada consultada: `main@175e9dee3639ea1726f9c62c9b0d208e1452d7dc` (#302). PR [#303](https://github.com/maresdeandrade/RebanhoSync/pull/303) validada por CI no head `2dcdded1`, ainda não integrada.
+Próxima fase: **Fase 24 — mantida; nenhuma próxima frente definida nesta consolidação documental.** Implementação, curadoria e publicação produto–classe encerradas; sem nova fase ou certificação automática.
+Baseline integrada consultada: `main@ce304edbc37863ac1bdee61104bb05dce7541b36` ([#304](https://github.com/maresdeandrade/RebanhoSync/pull/304)); #303 integrada em `b6b2296a`. Contrato produto–classe publicado e gate da entrega READY.
 F24.4D integrada pelo PR #170 em `main@79d2a8fce0de08583ead1b8a5bee0e1b43865cae` em 2026-09-29.
 Baseline de abertura da F24.4E: `main@4bfae54612be67ef5bb2502e4d79862c3517baf9`.
 F24.4C integrada pelo PR #169 em `main@3b7ac50ed878d8d8d4b88874ad98c9d98816149b` em 2026-09-27.
@@ -21,14 +21,16 @@ Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 Este documento aponta para o [closeout autoritativo da F24.2](./F24_2_CLOSEOUT_AND_REBASELINE.md)
 e para a [baseline autoritativa da F24.0](./F24_RELEASE_READINESS_BASELINE.md).
 O backlog F24.1–F24.8, dependências, critérios de entrada/saída e release blockers estão
-registrados nessa baseline. Produção e rollout Sanitário v2 não estão autorizados; o blocker
+registrados nessa baseline histórica. A publicação técnica delimitada da #304 não amplia a homologação operacional nem os recortes certificados; o blocker
 stale foi fechado em 05/10/2026 conforme a [evidência canônica](../context/PROJECT_STATUS.md#recertificação-remota-stale-sanitário-v2--05102026). Nenhuma frente posterior deve ser iniciada automaticamente.
 
-## Continuidade reconciliada — 19/11/2026
+## Continuidade reconciliada — 20/11/2026
 
-#302 está integrada à `main@175e9dee`; #303 está validada por CI e permanece aberta, ainda não integrada. Os testes históricos de P33 e upgrades foram corrigidos em #295–#299; #300 corrigiu Agenda/B19. [Resultados e evidências atuais](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-303--19112026).
+#303 integrada; [#304](https://github.com/maresdeandrade/RebanhoSync/pull/304) integrada e publicada. A implementação e a curadoria da correspondência produto–classe estão encerradas: 33 produtos classificados, 37 vínculos ativos, oito classes aprovadas e disponibilidade nos 13/13 itens e 4/4 grupos, preservando os 39 cadastros comerciais ativos e os seis produtos fora da taxonomia. [Resultado e evidência canônica](./CURRENT_PHASE_HANDOFF.md#consolidação-pós-304--20112026).
 
-O produto permanece em desenvolvimento. Ausência de implantação remota e suporte a versões antigas inexistentes não são pendências de desenvolvimento. A próxima prioridade é curadoria dirigida do catálogo e preparação da baseline limpa. F24.6A2 é proposta, sem início; sua formalização não é pré-requisito automático para uma correção localizada. Não se encerra certificação ampla F24.7/F24.8 por associação nem se abre nova fase.
+A publicação técnica abrange as três migrations da entrega, catálogo, `sync-batch` v31, frontend e pull dos vínculos; cinco migrations não relacionadas permanecem pendentes, sem bloquear esse recorte. Não há pendência vigente de implementação, curadoria ou publicação produto–classe. Nenhuma próxima frente foi definida por esta consolidação.
+
+O produto permanece em desenvolvimento. F24.6A2 não iniciada; não se encerra homologação ampla F24.7/F24.8 ou GATE-03 por associação, não se repetem certificações anteriores e não se abre nova fase. Exceções clínicas específicas continuam independentes da classificação cadastral.
 
 ## F24.6A — Performance / Scale Baseline
 

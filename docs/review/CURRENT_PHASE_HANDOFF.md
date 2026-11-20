@@ -1,9 +1,9 @@
 # Handoff atual — Fase 24 / Release Readiness Baseline
 
-Atualizado em: 2026-11-19
-Status: **Fase 24 ativa; núcleo operacional integrado; #302 integrada; #303 validada por CI e ainda não integrada; produto em desenvolvimento, sem produção operacional declarada**
-Próxima fase: **Fase 24 — continuidade localizada: curadoria dirigida do catálogo sanitário e preparação da baseline limpa; sem nova fase, benchmark ou rollout automático.**
-Baseline integrada confirmada para esta continuidade: `main@175e9dee3639ea1726f9c62c9b0d208e1452d7dc` (#302). Head validado da #303: `2dcdded19674c2eb86d4224f4099ef661a1efecd`; PR aberta, CI obrigatório aprovado.
+Atualizado em: 2026-11-20
+Status: **Fase 24 ativa; #303 integrada; #304 integrada e publicada; frente produto–classe encerrada; produto em desenvolvimento, sem homologação operacional ampla declarada**
+Próxima fase: **Fase 24 — mantida; nenhuma próxima frente definida nesta consolidação documental.** Implementação, curadoria e publicação produto–classe encerradas; sem nova fase ou certificação automática.
+Baseline integrada confirmada: `main@ce304edbc37863ac1bdee61104bb05dce7541b36` ([#304](https://github.com/maresdeandrade/RebanhoSync/pull/304)); #303 integrada em `b6b2296a`. Gate da entrega produto–classe: **READY**.
 Baseline autoritativo de saída da Fase 24.0: `main@93c3d1dd8401488139454c69c2a6595ae46abaa5`
 Baseline de fechamento da F24.2: `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`
 Baseline auditada para o closeout da F24.3: `main@ddd1ba3c2a5fb8055027723c0b9b3c83abe449d5`
@@ -23,9 +23,30 @@ Commit integrado da Fase 17: `797f84d3aa49f424bf0b6ca013e416c61f24c41e`
 Fase anterior: **Fase 22 — Eficiência Produtiva e Econômica (CLOSED)**
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness**
 
+## Consolidação pós-304 — 20/11/2026
+
+Esta é a continuidade vigente. A [#304](https://github.com/maresdeandrade/RebanhoSync/pull/304) encerrou implementação, curadoria e publicação da correspondência produto–classe, após a integração da #303. A publicação técnica em produção não equivale à homologação operacional ampla do produto e não reabre ou amplia os recortes certificados da Fase 24.
+
+| Resultado confirmado na entrega | Estado |
+| --- | --- |
+| Produtos comerciais ativos preservados | 39 |
+| Produtos classificados / associações ativas | 33 / 37 |
+| Classes técnicas aprovadas | 8 |
+| Itens de protocolo / grupos com produtos disponíveis | 13/13 / 4/4 |
+| Produtos fora da taxonomia atual | 6, sem impedimento cadastral |
+| Migrations aplicadas pelo fluxo normal, sem repair | `20261116010000`, `20261120045339`, `20261120090000` |
+| Frontend / Edge | Commit integrado `ce304edb` / `sync-batch` v31 ativa, com JWT |
+| Pull pós-publicação no aplicativo | 37 vínculos sincronizados para o Dexie local |
+
+A relação N:N persistente `sanitario_produto_class_links_v2` é a fonte de verdade da classificação técnica, com Dexie v37 e pull-only. Seleção, writers, validação remota e snapshots usam essa relação; histórico consulta a evidência factual preservada. Categoria comercial, nome ou metadados candidatos não substituem associação validada. `executed_fact`, snapshots e fatos históricos permanecem preservados; classificação não autoriza dose, espécie, via, carência ou execução prospectiva. Os seis produtos fora das classes atuais não foram bloqueados cadastralmente.
+
+Evidência detalhada: [artefato canônico de publicação](./evidence/SANITARIO_PRODUCT_CLASS_PUBLICATION_20261120.json) e [CI obrigatório da #304](https://github.com/maresdeandrade/RebanhoSync/actions/runs/44699301508). Contagens, RLS/ACL e hashes de produtos e regras clínicas foram conferidos na entrega; a validação remota foi não destrutiva, sem eventos fictícios em fazendas reais. Essas evidências são reaproveitadas, não reexecutadas nesta atualização documental.
+
+**Encerramento e limites:** gate da entrega **READY**; não resta implementação, curadoria ou publicação produto–classe pendente. Cinco migrations não relacionadas permanecem pendentes, sem bloquear esta entrega. F24.6 continua ativa; F24.6A2 não iniciada, F24.7/F24.8, GATE-03 e certificações anteriores mantêm seus limites. Não foi definida próxima frente de desenvolvimento.
+
 ## Consolidação pós-302 e validação da 303 — 19/11/2026
 
-Esta é a continuidade vigente. As seções datadas abaixo preservam snapshots anteriores; não reabrem entregas posteriores comprovadas. Código e migrations ativas mantêm precedência factual.
+**Snapshot histórico — SUPERSEDED pela consolidação pós-304 acima.** As referências à #303 aberta, à curadoria como próxima ação e à ausência de publicação descrevem 19/11/2026, não pendências vigentes. As evidências e contagens históricas abaixo permanecem preservadas; código e migrations ativas mantêm precedência factual.
 
 | Entrega | Estado confirmado | Resultado e evidência |
 | --- | --- | --- |
