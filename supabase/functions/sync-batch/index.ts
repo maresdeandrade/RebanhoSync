@@ -638,6 +638,8 @@ Deno.serve(async (req: Request) => {
                   operation.payload.detail.produto_sanitario_v2_id;
                 const empty = Promise.resolve({ data: [], error: null });
                 const [
+                  productClassLinksResult,
+                  productClassesResult,
                   productResult,
                   sourcesResult,
                   coveragesResult,
@@ -648,6 +650,8 @@ Deno.serve(async (req: Request) => {
                   authorizationsResult,
                   animalsResult,
                 ] = await Promise.all([
+                  serviceSupabase.from("sanitario_produto_class_links_v2").select("*").eq("product_id", productId),
+                  serviceSupabase.from("sanitario_product_classes_v2").select("*").eq("scope", "global"),
                   serviceSupabase
                     .from("sanitario_produtos_v2")
                     .select("*")
@@ -703,6 +707,8 @@ Deno.serve(async (req: Request) => {
                     .in("id", animalIds),
                 ]);
                 const lookupError = [
+                  productClassLinksResult,
+                  productClassesResult,
                   productResult,
                   sourcesResult,
                   coveragesResult,
@@ -723,6 +729,8 @@ Deno.serve(async (req: Request) => {
                     snapshot,
                     trustedFazendaId,
                     {
+                      productClassLinks: productClassLinksResult.data ?? [],
+                      productClasses: productClassesResult.data ?? [],
                       product: productResult.data as Record<
                         string,
                         unknown

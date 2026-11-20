@@ -23,6 +23,14 @@ const labelSource: SanitarySourceRefV2 = {
 };
 
 describe("sanitarySourceV2", () => {
+  it("aceita documento específico do fabricante para composição sem promover campos clínicos", () => {
+    const source: SanitarySourceRefV2 = { kind: "registro_produto", title: "Composição oficial", strength: "forte", evidenceStatus: "SIM_COMPOSICAO_FABRICANTE", fieldKeys: ["composition"] };
+    expect(validateTechnicalSourceV2(source).ok).toBe(true);
+    for (const field of ["dose", "route", "species_authorization", "withdrawal"]) {
+      expect(validateTechnicalSourceV2({ ...source, fieldKeys: [field] }).ok).toBe(false);
+      expect(validateSourceCoverageForCriticalField([{ ...source, fieldKeys: [field] }], field).ok).toBe(false);
+    }
+  });
   it("guideline isolado nao valida carencia", () => {
     const result = validateSourceCoverageForCriticalField([guidelineSource], "withdrawal");
 

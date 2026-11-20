@@ -160,9 +160,7 @@ export function buildExecutedProductTechnicalSnapshotV2(
   if (productUsable && input.product!.nome_comercial.trim() !== input.executedProductName.trim()) {
     limitations.push("executed_product_name_divergent");
   }
-  if (productUsable && input.executedProductClass && input.product!.classe !== input.executedProductClass) {
-    limitations.push("executed_product_class_divergent");
-  }
+
 
   for (const [speciesCode, animalIds] of groupAnimals(input)) {
     const authorizations = speciesCode
@@ -232,6 +230,7 @@ export function buildExecutedProductTechnicalSnapshotV2(
   ).sort((left, right) => (left.id ?? "").localeCompare(right.id ?? ""));
   const snapshot: ExecutedProductTechnicalSnapshotV2 = {
     schemaVersion: "sanitario-executed-product-technical-snapshot-v2",
+    productClassLinks: [],
     eventId: input.eventId,
     executedProductId: input.executedProductId,
     executedProductName: input.executedProductName.trim(),

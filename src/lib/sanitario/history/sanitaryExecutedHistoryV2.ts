@@ -101,6 +101,7 @@ function executedProductId(detail: EventoSanitario) {
 function classSchemeCoverage(detail: EventoSanitario): string | null {
   const snapshot = readRecord(detail.produto_snapshot);
   const productId = executedProductId(detail);
+  if (Array.isArray(snapshot.productClassLinks) && snapshot.productClassLinks.length === 0) return null;
   if (
     snapshot.executedProductId !== productId ||
     !Array.isArray(snapshot.fieldEvidence)
@@ -234,17 +235,9 @@ export function buildSanitaryExecutedHistoryV2(
         protocolId: protocol.id,
         familyCode: protocol.familyCode,
         itemKey: item.logicalItemKey,
-        productClass:
-          readString(
-            detail.payload.product_class,
-            readRecord(detail.produto_snapshot).product_class,
-            event.payload.product_class,
-            isSanitaryClassSchemeV2(item)
-              ? readRecord(
-                  readRecord(detail.produto_snapshot).executedProductSnapshot,
-                ).classe
-              : null,
-          ) ?? (isSanitaryClassSchemeV2(item) ? null : item.productClass),
+        productClass: Array.isArray(readRecord(detail.produto_snapshot).productClassLinks)
+          ? ((readRecord(detail.produto_snapshot).productClassLinks as Array<{ classKey: string }>).find((link) => link.classKey === item.productClass)?.classKey ?? null)
+          : readString(detail.payload.product_class, readRecord(detail.produto_snapshot).product_class, event.payload.product_class, isSanitaryClassSchemeV2(item) ? readRecord(readRecord(detail.produto_snapshot).executedProductSnapshot).classe : null) ?? (isSanitaryClassSchemeV2(item) ? null : item.productClass),
         productId: executedProductId(detail),
         classSchemeCoverageId: classSchemeCoverage(detail),
         productName:

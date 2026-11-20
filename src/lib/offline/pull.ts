@@ -49,6 +49,7 @@ export const SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES = [
   "sanitario_fontes_tecnicas_v2",
   "sanitario_fonte_cobertura_campos_v2",
   "sanitario_produtos_v2",
+  "sanitario_produto_class_links_v2",
   "sanitario_produto_especie_autorizacao_v2",
   "sanitario_produto_fontes_v2",
   "sanitario_produto_dose_rules_v2",
@@ -1321,6 +1322,44 @@ export const pullSanitarioTechnicalCatalogV2 = async (fazenda_id: string) => {
     }
 
     const cursorKey = buildPullCursorKey(remoteTable, "unscoped", null);
+    if (remoteTable === "sanitario_produto_class_links_v2") {
+      // A partial cache may retain its cursor. Compare total rows (including
+      // tombstones) before using it, then repair missing rows with a full pull.
+      const { count, error: countError } = await supabase.from(remoteTable).select("id", { count: "exact", head: true });
+      if (countError) throw countError;
+      const cachedCount = await db.table(localStore).count();
+      const full = count == null || count !== cachedCount;
+      const base = supabase.from(remoteTable).select("*");
+      const cursor = full ? null : await getPullCursor(cursorKey);
+      const query = cursor ? base.gte("updated_at", cursor.last_updated_at) : base;
+      const rows: RemoteRow[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await query.order("id").range(offset, offset + 999);
+        if (error) throw error;
+        rows.push(...(data ?? []));
+        if ((data?.length ?? 0) < 1000) break;
+      }
+      const classStore = "catalog_sanitario_product_classes_v2";
+      if (db.tables.some(table => table.name === classStore)) {
+        const links = new Map<string, RemoteRow>();
+        for (const row of [...await db.table(localStore).toArray(), ...rows] as RemoteRow[]) links.set(String(row.id), row);
+        const classIds = [...new Set([...links.values()].filter(row => !row.deleted_at && row.status_curatorial === "ativo").map(row => String(row.class_id)))];
+        const cachedClasses = await db.table(classStore).bulkGet(classIds);
+        const missing = classIds.filter((_id, index) => !cachedClasses[index]);
+        if (missing.length) {
+          const recovered: RemoteRow[] = [];
+          for (let start = 0; start < missing.length; start += 100) {
+            const { data, error } = await supabase.from("sanitario_product_classes_v2").select("*").eq("scope", "global").in("id", missing.slice(start, start + 100));
+            if (error) throw error;
+            recovered.push(...(data ?? []));
+          }
+          if (recovered.length) results.sanitario_product_classes_v2 = recovered;
+        }
+      }
+      results[remoteTable] = rows;
+      cursorUpdates.push({ key: cursorKey, remoteTable, localStore, scope: "unscoped", fazendaId: null, rows });
+      continue;
+    }
     const baseQuery = supabase.from(remoteTable).select("*");
     const query =
       remoteTable === "sanitario_produto_fontes_v2"
@@ -1348,7 +1387,9 @@ export const pullSanitarioTechnicalCatalogV2 = async (fazenda_id: string) => {
   }
 
   const validTableNames = new Set(db.tables.map((t) => t.name));
-  const storesToUpdate = SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES.map(
+  const storesToUpdate = [...SANITARIO_TECHNICAL_CATALOG_V2_REMOTE_TABLES,
+    ...(results.sanitario_product_classes_v2 ? ["sanitario_product_classes_v2"] : []),
+  ].map(
     (rt) => ({ remote: rt, local: getLocalStoreName(rt) }),
   ).filter(({ remote, local }) => {
     if (!validTableNames.has(local)) {

@@ -19,6 +19,7 @@ const { localStores } = vi.hoisted(() => ({
     "catalog_sanitario_fontes_tecnicas_v2",
     "catalog_sanitario_fonte_cobertura_campos_v2",
     "catalog_sanitario_produtos_v2",
+    "catalog_sanitario_produto_class_links_v2",
     "catalog_sanitario_produto_especie_autorizacao_v2",
     "catalog_sanitario_produto_fontes_v2",
     "catalog_sanitario_produto_dose_rules_v2",
@@ -70,12 +71,14 @@ const makeQuery = (table: string) => {
         value: null,
       });
 
+      if (table === "sanitario_produto_class_links_v2") return query;
       if (table !== "sanitario_fontes_tecnicas_v2" && table !== "sanitario_produto_carencia_fontes_v2") {
         return Promise.resolve({ data: rowsByTable[table] ?? [], error: null });
       }
 
       return query;
     }),
+    then: (resolve: (value: unknown) => unknown) => Promise.resolve({ data: [], count: (rowsByTable[table] ?? []).length, error: null }).then(resolve),
     order: vi.fn(() => query),
     range: vi.fn((start: number, end: number) => Promise.resolve({ data: (rowsByTable[table] ?? []).slice(start, end + 1), error: null })),
     eq: vi.fn((column: string, value: unknown) => {
@@ -168,6 +171,7 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
         updated_at: "2026-06-12T12:30:00Z",
       },
     ];
+    rowsByTable.sanitario_produto_class_links_v2 = [{ id: "link-1", product_id: "product-1", class_id: "class-1", status_curatorial: "bloqueado", updated_at: "2026-06-12", deleted_at: "2026-06-12" }];
     rowsByTable.sanitario_produtos_v2 = [
       {
         id: "product-1",
@@ -241,6 +245,7 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
     );
     (db.table as unknown as Mock).mockImplementation((storeName: string) => {
       const store = {
+        count: vi.fn(async () => 0),
         clear: vi.fn(),
         bulkPut: vi.fn((rows: unknown[]) => {
           writeLog.push({ store: storeName, rows });
@@ -258,7 +263,7 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
 
     await pullSanitarioTechnicalCatalogV2(fazendaId);
 
-    expect(supabase.from).toHaveBeenCalledTimes(9);
+    expect(supabase.from).toHaveBeenCalledTimes(11);
     const sourceQueryGroups = Object.values(
       queryLog
         .filter((entry) => entry.table === "sanitario_fontes_tecnicas_v2")
@@ -348,7 +353,8 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
         metadata: { catalogOnly: true },
       }),
     ]);
-    expect(writeLog[3].rows).toEqual([
+    expect(writeLog[3].rows).toEqual(rowsByTable.sanitario_produto_class_links_v2);
+    expect(writeLog[4].rows).toEqual([
       expect.objectContaining({
         id: "auth-1",
         product_id: "product-1",
@@ -356,21 +362,21 @@ describe("pullSanitarioTechnicalCatalogV2", () => {
         aptitude: "corte",
       }),
     ]);
-    expect(writeLog[4].rows).toEqual([
+    expect(writeLog[5].rows).toEqual([
       expect.objectContaining({
         product_id: "product-1",
         source_id: "source-global",
         field_key: "withdrawal",
       }),
     ]);
-    expect(writeLog[5].rows).toEqual([
+    expect(writeLog[6].rows).toEqual([
       expect.objectContaining({
         id: "dose-1",
         product_id: "product-1",
         species_code: "bovino",
       }),
     ]);
-    expect(writeLog[6].rows).toEqual([
+    expect(writeLog[7].rows).toEqual([
       expect.objectContaining({
         id: "withdrawal-1",
         product_id: "product-1",

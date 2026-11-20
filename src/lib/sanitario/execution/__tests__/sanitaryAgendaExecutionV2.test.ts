@@ -1,4 +1,7 @@
 import "fake-indexeddb/auto";
+import { loadSanitaryAgendaExecutionOptionsV2 } from "@/components/sanitario/SanitaryAgendaExecutionConfirmV2";
+import { validateSanitaryProductEvidenceCatalog } from "../../../../../supabase/functions/sync-batch/sanitary-product-evidence";
+import type { SanitaryLocalAgendaListItemV2 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/lib/offline/db";
@@ -319,6 +322,9 @@ async function clearScope() {
     db.catalog_sanitario_produto_carencia_rules_v2.clear(),
     db.catalog_sanitario_produto_carencia_fontes_v2.clear(),
     db.catalog_sanitario_produtos_v2.clear(),
+    db.catalog_sanitario_produto_class_links_v2.clear(),
+    db.catalog_sanitario_product_classes_v2.clear(),
+    db.catalog_sanitario_product_class_group_members_v2.clear(),
     db.catalog_sanitario_protocolos_v2.clear(),
     db.catalog_sanitario_protocolo_itens_versions_v2.clear(),
     db.catalog_sanitario_fontes_tecnicas_v2.clear(),
@@ -371,6 +377,8 @@ async function seedWithdrawalContext() {
     status_curatorial: "ativo", metadata: {}, created_at: now, updated_at: now,
     deleted_at: null,
   });
+  await db.catalog_sanitario_product_classes_v2.put({ id: "class-raiva", class_key: "vacina_raiva", name: "Raiva", scope: "global", fazenda_id: null, product_type: "vacina", product_subtype: null, target_condition: null, species_scope: ["bovino"], curation_status: "approved_for_catalog", limitations: [], metadata: {}, created_at: now, updated_at: now, deleted_at: null });
+  await db.catalog_sanitario_produto_class_links_v2.put({ id: "link-raiva", product_id: "product-1", class_id: "class-raiva", status_curatorial: "ativo", source_refs: [{ id: "withdrawal-source", field: "product_class" }], limitations: [], metadata: {}, created_at: now, updated_at: now, deleted_at: null });
   await db.state_animais.put({
     id: "animal-1", fazenda_id: "farm-1", identificacao: "A-1", sexo: "F",
     status: "ativo", lote_id: "lot-1", data_nascimento: null, data_entrada: null,
@@ -465,6 +473,65 @@ describe("executeSanitaryAgendaV2", () => {
   });
 
   afterEach(clearScope);
+
+  it.each(["precisa_validar", "bloqueado", "deleted", "missing"] as const)("associação %s impede nova correspondência e preserva declaração factual sem comprovação", async status => {
+    await seedClassSchemeAgenda();
+    if (status === "missing") await db.catalog_sanitario_produto_class_links_v2.clear();
+    else await db.catalog_sanitario_produto_class_links_v2.update("link-raiva", status === "deleted" ? { deleted_at: "2026-11-20" } : { status_curatorial: status });
+    await expect(executeSanitaryAgendaV2(baseInput, db)).rejects.toThrow("product_class_mismatch");
+    const result = await executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db);
+    const detail = await db.event_eventos_sanitario.get(result.eventId);
+    expect(detail?.produto_snapshot).toMatchObject({ productClassLinks: [] });
+    expect(detail?.payload).toMatchObject({ registration_mode: "executed_fact", prospective_authorization: false, catalog_review_warnings: expect.arrayContaining(["product_class_unverified"]) });
+    expect((detail?.produto_snapshot as ExecutedProductTechnicalSnapshotV2).fieldEvidence.some(field => field.reason === "class_scheme_product_compatibility_verified")).toBe(false);
+  });
+
+  it("integra seleção, writer, remoto simulado, prova factual e revogação sem reescrever histórico", async () => {
+    await seedClassSchemeAgenda();
+    await db.catalog_sanitario_produtos_v2.update("product-1", { classe: "vacina" });
+    const selection = [{ fazendaId: "farm-1", productRequirementKind: "product_class", productClass: "vacina_raiva" }] as SanitaryLocalAgendaListItemV2[];
+    await db.catalog_sanitario_product_classes_v2.put({ ...(await db.catalog_sanitario_product_classes_v2.get("class-raiva"))!, id: "class-lepto", class_key: "vacina_lepto" });
+    await db.catalog_sanitario_produto_class_links_v2.put({ ...(await db.catalog_sanitario_produto_class_links_v2.get("link-raiva"))!, id: "link-lepto", class_id: "class-lepto" });
+    const multivalentSelection = [...selection, { ...selection[0], productClass: "vacina_lepto" }];
+    expect((await loadSanitaryAgendaExecutionOptionsV2(multivalentSelection)).productOptions.map(option => option.id)).toEqual(["product-1"]);
+    const options = await loadSanitaryAgendaExecutionOptionsV2(selection);
+    expect(options.productOptions.some(option => option.id === "product-1")).toBe(true);
+    const result = await executeSanitaryAgendaV2({ ...baseInput, product: { ...baseInput.product, productClass: "vacina" }, registrationMode: "executed_fact" }, db);
+    const detail = (await db.event_eventos_sanitario.get(result.eventId))!;
+    const event = (await db.event_eventos.get(result.eventId))!;
+    const snapshot = detail.produto_snapshot as unknown as ExecutedProductTechnicalSnapshotV2;
+    expect(snapshot.executedProductSnapshot?.classe).toBe("vacina");
+    expect(snapshot.productClassLinks).toEqual([expect.objectContaining({ classKey: "vacina_raiva", linkId: "link-raiva" })]);
+    const remoteCatalog = {
+      product: (await db.catalog_sanitario_produtos_v2.get("product-1"))!,
+      productClassLinks: await db.catalog_sanitario_produto_class_links_v2.toArray(),
+      productClasses: await db.catalog_sanitario_product_classes_v2.toArray(),
+      sources: await db.catalog_sanitario_fontes_tecnicas_v2.toArray(),
+      coverages: await db.catalog_sanitario_fonte_cobertura_campos_v2.toArray(),
+      productSources: await db.catalog_sanitario_produto_fontes_v2.toArray(),
+      doseRules: await db.catalog_sanitario_produto_dose_rules_v2.toArray(),
+      withdrawalRules: [], withdrawalRuleSources: [],
+      speciesAuthorizations: await db.catalog_sanitario_produto_especie_autorizacao_v2.toArray(),
+      animals: await db.state_animais.toArray(),
+    };
+    expect(validateSanitaryProductEvidenceCatalog(snapshot, "farm-1", remoteCatalog as never, event as never)).toBeNull();
+    const frozen = JSON.stringify(detail);
+    await db.catalog_sanitario_produto_class_links_v2.update("link-raiva", { status_curatorial: "bloqueado", updated_at: "2026-11-19T20:00:00.000Z" });
+    remoteCatalog.productClassLinks = await db.catalog_sanitario_produto_class_links_v2.toArray();
+    expect(validateSanitaryProductEvidenceCatalog(snapshot, "farm-1", remoteCatalog as never, { ...event, payload: { ...event.payload, registration_mode: "catalog_checked_record" } } as never)).toBe("SANITARIO_PRODUCT_CLASS_LINK_MISMATCH");
+    expect((await loadSanitaryAgendaExecutionOptionsV2(selection)).productOptions).toEqual([]);
+    expect((await loadSanitaryAgendaExecutionOptionsV2(selection, "executed_fact")).productOptions).toEqual([expect.objectContaining({ id: "product-1", weakTechnicalLink: true, warning: expect.stringContaining("não comprova") })]);
+    // New prospective match is denied in the writer even with the same commercial category.
+    await db.ops_sanitario_agenda_v2.put({ ...(await db.ops_sanitario_agenda_v2.get("agenda-1"))!, id: "agenda-new", status: "programada", execution_evento_id: null });
+    await db.ops_sanitario_agenda_animais_v2.put(agendaAnimal({ agenda_id: "agenda-new" }));
+    await expect(executeSanitaryAgendaV2({ ...baseInput, agendaId: "agenda-new", clientOpId: "new-op" }, db)).rejects.toThrow("product_class_mismatch");
+    const factual = await executeSanitaryAgendaV2({ ...baseInput, agendaId: "agenda-new", clientOpId: "new-factual", registrationMode: "executed_fact" }, db);
+    expect((await db.event_eventos_sanitario.get(factual.eventId))?.produto_snapshot).toMatchObject({ productClassLinks: [] });
+    expect(JSON.stringify(await db.event_eventos_sanitario.get(result.eventId))).toBe(frozen);
+    expect((await executeSanitaryAgendaV2({ ...baseInput, registrationMode: "executed_fact" }, db)).eventId).toBe(result.eventId);
+    const catalogNow = { protocols: [adaptSanitaryProtocolV2Row((await db.catalog_sanitario_protocolos_v2.get("protocol-1"))!)], items: [adaptSanitaryProtocolItemV2Row((await db.catalog_sanitario_protocolo_itens_versions_v2.get("item-version-1"))!)], productClassGroups: [] };
+    expect(buildSanitaryExecutedHistoryV2({ events: [event], sanitaryDetails: [detail], catalog: catalogNow, fazendaId: "farm-1" })[0].events[0].productClass).toBe("vacina_raiva");
+  });
 
   it("R04B registra produto escolhido na execução, prova o esquema e mantém carência desconhecida e replay único", async () => {
     await seedClassSchemeAgenda();
@@ -1009,8 +1076,9 @@ describe("executeSanitaryAgendaV2", () => {
     ).rejects.toThrow("missing_route");
   });
 
-  it("rejeita produto sem classe técnica na execução de agenda por classe", async () => {
+  it("rejeita produto sem associação técnica persistente na execução de agenda por classe", async () => {
     await seedAgenda();
+    await db.catalog_sanitario_produto_class_links_v2.clear();
 
     await expect(
       executeSanitaryAgendaV2(
@@ -1071,6 +1139,8 @@ describe("executeSanitaryAgendaV2", () => {
       classe: "antiparasitario", metadata: {},
     });
 
+    await db.catalog_sanitario_product_class_group_members_v2.put({ id: "member", group_id: "group-1", class_id: "class-raiva", scope: "global", fazenda_id: null, is_allowed: true, limitations: [], metadata: {}, created_at: "2026-01-01", updated_at: "2026-01-01", deleted_at: null });
+    await db.catalog_sanitario_produto_class_links_v2.put({ ...(await db.catalog_sanitario_produto_class_links_v2.get("link-raiva"))!, id: "link-group", product_id: "product-antiparasitario-1" });
     const result = await executeSanitaryAgendaV2(
       {
         ...baseInput,

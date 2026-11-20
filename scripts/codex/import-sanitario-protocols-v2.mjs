@@ -1879,6 +1879,7 @@ async function c02P38Main(args, closure = false) {
 
 async function main() {
   const args = process.argv.slice(2);
+  if (args.includes("--product-class-links")) return (await import("./sanitario-product-class-publication-v2.mjs")).productClassPublicationMainV2(args);
   if (args.includes("--c02-f6-closure")) return c02P38Main(args, true);
   if (args.includes("--c02-p38")) return c02P38Main(args);
   if (args.includes("--c02-p11") || args.includes("--c02-f6") || args.includes("--c02-admin")) return c02Main(args);
