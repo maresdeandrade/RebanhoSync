@@ -1,3 +1,4 @@
+import { readProductRequirementMatchV2 } from "./sanitaryProductClassLinkV2";
 import { allocateSanitarySequenceV3 } from "./sanitaryCollaborationV3";
 import { readWithdrawalEvidenceCatalogV2 } from "./withdrawalEvidenceCatalogV2";
 import { buildInventoryCostSnapshot } from "@/lib/inventory/costing";
@@ -118,6 +119,9 @@ export type SanitaryAgendaExecutionDbV2 = Pick<
   | "state_insumo_movimentacoes"
   | "catalog_sanitario_produto_carencia_rules_v2"
   | "catalog_sanitario_produto_carencia_fontes_v2"
+  | "catalog_sanitario_produto_class_links_v2"
+  | "catalog_sanitario_product_classes_v2"
+  | "catalog_sanitario_product_class_group_members_v2"
   | "catalog_sanitario_produtos_v2"
   | "catalog_sanitario_protocolos_v2"
   | "catalog_sanitario_protocolo_itens_versions_v2"
@@ -458,16 +462,6 @@ function validateAgainstAgenda(input: {
     rejected.push("product_mismatch");
   }
 
-  const plannedClass = expectedProductClass(agenda);
-  if (
-    requirement === "product_class" &&
-    plannedClass &&
-    (!request.product?.productClass ||
-      request.product.productClass !== plannedClass)
-  ) {
-    rejected.push("product_class_mismatch");
-  }
-
   return { ok: rejected.length === 0, rejected, targetAnimalIds: animals };
 }
 
@@ -576,7 +570,9 @@ function buildRecords(input: {
   const productSnapshot = {
     productId: request.product?.productId ?? null,
     productName,
-    productClass: request.product?.productClass ?? null,
+    productClass: productTechnicalSnapshot
+      ? (productTechnicalSnapshot.productClassLinks?.[0]?.classKey ?? null)
+      : (request.product?.productClass ?? null),
     productClassGroupId:
       request.product?.productClassGroupId ??
       readString(
@@ -952,6 +948,7 @@ export async function executeSanitaryAgendaV2(
       ? sanitaryProtocolExecutionRejectionsV2(current, protocol, item, uf)
       : [];
   };
+  let productTechnicalSnapshot: ExecutedProductTechnicalSnapshotV2 | null = null;
   const catalogReviewWarnings = await assertProtocolAuthorization(agenda);
   // Keep the short availability/identity/class checks together and ordered.
   // Covered by sanitaryAgendaExecutionV2.test.ts, including factual/pending curation.
@@ -976,20 +973,19 @@ export async function executeSanitaryAgendaV2(
         "SANITARY_AGENDA_EXECUTION_REJECTED:product_identity_mismatch",
       );
     }
-    const requiredClass = expectedProductClass(current);
-    if (
-      productRequirementKind(current) === "product_class" &&
-      requiredClass &&
-      product.classe !== requiredClass
-    ) {
-      throw new Error(
-        "SANITARY_AGENDA_EXECUTION_REJECTED:product_class_mismatch",
-      );
+    const warnings = product.status_curatorial !== "ativo" ? [`product_curation_${product.status_curatorial}`] : [];
+    const kind = productRequirementKind(current);
+    if (kind === "product_class" || kind === "product_class_group") {
+      const match = await readProductRequirementMatchV2(localDb, product.id, {
+        kind, classKey: expectedProductClass(current),
+        groupId: readString(current.metadata.productClassGroupId, current.protocol_item_snapshot.productClassGroupId, current.protocol_item_snapshot.product_class_group_id),
+      }, current.fazenda_id);
+      if (!match.matches) {
+        if (input.registrationMode !== "executed_fact") throw new Error("SANITARY_AGENDA_EXECUTION_REJECTED:product_class_mismatch");
+        warnings.push("product_class_unverified");
+      }
+      if (productTechnicalSnapshot) productTechnicalSnapshot.productClassLinks = match.links;
     }
-    const warnings =
-      product.status_curatorial !== "ativo"
-        ? [`product_curation_${product.status_curatorial}`]
-        : [];
     const evidence = current.protocol_item_snapshot.planningEvidence as
       | Record<string, unknown>
       | undefined;
@@ -1027,8 +1023,6 @@ export async function executeSanitaryAgendaV2(
     ? createSanitarioV2Identity(factualIdentity.clientTxId)
     : undefined;
 
-  let productTechnicalSnapshot: ExecutedProductTechnicalSnapshotV2 | null =
-    null;
   if (
     input.product?.productId &&
     input.application?.dose &&
@@ -1106,6 +1100,7 @@ export async function executeSanitaryAgendaV2(
       withdrawalRules,
       withdrawalSources,
     });
+    await assertProductApproval(agenda);
     const planningEvidence = agenda.protocol_item_snapshot.planningEvidence as
       | Record<string, unknown>
       | undefined;
@@ -1473,6 +1468,9 @@ export async function executeSanitaryAgendaV2(
       localDb.catalog_sanitario_protocolo_itens_versions_v2,
       localDb.state_fazenda_sanidade_config,
       localDb.catalog_sanitario_produtos_v2,
+      localDb.catalog_sanitario_produto_class_links_v2,
+      localDb.catalog_sanitario_product_classes_v2,
+      localDb.catalog_sanitario_product_class_group_members_v2,
       localDb.catalog_sanitario_produto_fontes_v2,
       localDb.catalog_sanitario_fontes_tecnicas_v2,
       localDb.catalog_sanitario_fonte_cobertura_campos_v2,
@@ -1488,6 +1486,7 @@ export async function executeSanitaryAgendaV2(
         ...(await recheckClassScheme(current)),
       ];
       // Event, detail and queued operation share this payload until persistence.
+      if (productTechnicalSnapshot) records.payload.product.productClass = productTechnicalSnapshot.productClassLinks?.[0]?.classKey ?? null;
       records.payload.catalog_review_warnings = currentWarnings;
       records.payload.warnings = mergeCatalogReviewNotices(
         currentWarnings,

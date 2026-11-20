@@ -52,6 +52,8 @@ export const TABLE_MAP: Record<string, string> = {
     "catalog_sanitario_product_class_groups_v2",
   sanitario_product_class_group_members_v2:
     "catalog_sanitario_product_class_group_members_v2",
+  sanitario_produto_class_links_v2:
+    "catalog_sanitario_produto_class_links_v2",
   sanitario_product_class_default_rules_v2:
     "catalog_sanitario_product_class_default_rules_v2",
   sanitario_fontes_tecnicas_v2: "catalog_sanitario_fontes_tecnicas_v2",

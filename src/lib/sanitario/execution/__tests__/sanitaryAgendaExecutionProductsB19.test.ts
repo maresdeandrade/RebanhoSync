@@ -31,6 +31,7 @@ const item = {
 
 describe("B19 directed product selection", () => {
   beforeEach(async () => {
+    await db.catalog_sanitario_produto_class_links_v2.clear();
     await db.catalog_sanitario_produtos_v2.clear();
     await db.catalog_sanitario_product_class_group_members_v2.clear();
     await db.catalog_sanitario_product_classes_v2.clear();
@@ -55,6 +56,9 @@ describe("B19 directed product selection", () => {
         deleted_at: null,
       } as never,
     ]);
+    await db.catalog_sanitario_product_classes_v2.put({ id: "b19-class", class_key: "vacina_b19", scope: "global", fazenda_id: null, curation_status: "approved_for_catalog", deleted_at: null } as never);
+    await db.catalog_sanitario_produto_class_links_v2.put({ id: "b19-link", product_id: "product-compatible", class_id: "b19-class", status_curatorial: "ativo", source_refs: [{ id: "bula", field: "product_class" }], deleted_at: null } as never);
+    await db.catalog_sanitario_produtos_v2.update("product-compatible", { classe: "vacina" });
     await db.state_insumos.bulkPut([
       {
         id: "supply-no-class",
@@ -82,11 +86,21 @@ describe("B19 directed product selection", () => {
   });
 
   afterEach(async () => {
+    await db.catalog_sanitario_produto_class_links_v2.clear();
     await db.catalog_sanitario_produtos_v2.clear();
     await db.catalog_sanitario_product_class_group_members_v2.clear();
     await db.catalog_sanitario_product_classes_v2.clear();
     await db.state_insumos.clear();
     await db.state_insumo_lotes.clear();
+  });
+
+  it("declara fato sem vínculo vigente, preservando identidade de produto específico", async () => {
+    await db.catalog_sanitario_produto_class_links_v2.clear();
+    const factual = await loadSanitaryAgendaExecutionOptionsV2([item as never], "executed_fact");
+    expect(factual.productOptions.map(option => option.id)).toContain("product-compatible");
+    expect(factual.productOptions.find(option => option.id === "product-compatible")?.weakTechnicalLink).toBe(true);
+    const specific = await loadSanitaryAgendaExecutionOptionsV2([{ ...item, productRequirementKind: "specific_product", plannedProductId: "product-compatible" } as never], "executed_fact");
+    expect(specific.productOptions.map(option => option.id)).toEqual(["product-compatible"]);
   });
 
   it("mantém compatível, bloqueia incompatível e rejeita sem classe ou vínculo explícito", async () => {

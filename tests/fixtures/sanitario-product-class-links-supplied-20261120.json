@@ -1,0 +1,374 @@
+{
+  "mode": "local_seed_preparation",
+  "no_remote_changes": true,
+  "class_key_basis": "specific_reviewed_product_composition; no runtime metadata fallback",
+  "data_snapshot": "remote read 2026-11-20",
+  "source_evidence_not_reverified_today": true,
+  "products": 32,
+  "total_links": 36,
+  "with_sim_bula_composition": 31,
+  "requires_review": 5,
+  "suggested_activation_only_after_local_contract_validation": true,
+  "links": [
+    {
+      "product_id": "ba59c489-49d5-5362-b5f4-94818c90deb4",
+      "class_id": "6e3d48fe-851e-4db7-aa2f-c2c0d89f069d",
+      "class_key": "vacina_brucelose_b19",
+      "source_id": "e8fb10c5-8b05-5527-aaec-e70a384d87d3",
+      "coverage_id": "443af7f5-2b68-52fe-ac7d-18a6eed004ca",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Abor-Vac"
+    },
+    {
+      "product_id": "0f1b6c73-c50f-5ad4-a308-29788de7429a",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "source_id": "feb9458c-3c75-5157-9fcd-e76885020a50",
+      "coverage_id": "dbe016b3-7298-5952-81d8-604b31b336e7",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "BOTULINOMAX"
+    },
+    {
+      "product_id": "3e0a501b-1742-506c-a094-d8a18ad8a98a",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "source_id": "ac792c71-4772-587b-9ca2-19961d1a2dd2",
+      "coverage_id": "79675b7c-9294-5821-b711-866421b5e13f",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Bovi-Shield Gold One Shot"
+    },
+    {
+      "product_id": "ec3eb33d-b739-5a62-826d-fee85e04a9dd",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "source_id": "eccceb9c-0ca1-54fa-853a-e2a99652eac1",
+      "coverage_id": "78eb7c34-3bc1-5318-87f1-4831b50590bb",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Bovilis Poli-Star T"
+    },
+    {
+      "product_id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "source_id": "12de317d-0bce-539b-abdb-8551f9d4f15f",
+      "coverage_id": "13838d52-4d52-5bc2-ae8d-d2061623a11d",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Bovilis Vista 5 L5 CFP"
+    },
+    {
+      "product_id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+      "class_id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+      "class_key": "vacina_leptospirose",
+      "source_id": "12de317d-0bce-539b-abdb-8551f9d4f15f",
+      "coverage_id": "13838d52-4d52-5bc2-ae8d-d2061623a11d",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Bovilis Vista 5 L5 CFP"
+    },
+    {
+      "product_id": "a90ae0cf-d97b-577c-a622-080f2db70c3c",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "source_id": "06df6732-4e7e-5178-ad5d-46adeb01a3e5",
+      "coverage_id": "29f41157-0590-5b3e-b30a-ba45a8ce1913",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Bovilis Vista Once SQ"
+    },
+    {
+      "product_id": "0168212e-2443-5eaf-97f1-108924e58d4d",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "source_id": "84d7b10d-986e-558a-bc12-8e0f4661551b",
+      "coverage_id": "dbfb40fc-93c9-5926-b7b7-17902a5da1d8",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Cattle Master 4"
+    },
+    {
+      "product_id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+      "coverage_id": "00e74a62-0540-5002-8f24-8c0449399c37",
+      "source_status": "PRECISA_VALIDAR",
+      "suggested_status": "precisa_validar",
+      "nome_comercial": "Cattle Master 4 L5"
+    },
+    {
+      "product_id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+      "class_id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+      "class_key": "vacina_leptospirose",
+      "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+      "coverage_id": "00e74a62-0540-5002-8f24-8c0449399c37",
+      "source_status": "PRECISA_VALIDAR",
+      "suggested_status": "precisa_validar",
+      "nome_comercial": "Cattle Master 4 L5"
+    },
+    {
+      "product_id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "source_id": "c23279c0-2e4d-5727-834b-5c707f6d2627",
+      "coverage_id": "2949dd8a-9f95-5d8d-9070-740effdd0d45",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Cattle Master Gold FP 5/L5"
+    },
+    {
+      "product_id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+      "class_id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+      "class_key": "vacina_leptospirose",
+      "source_id": "c23279c0-2e4d-5727-834b-5c707f6d2627",
+      "coverage_id": "2949dd8a-9f95-5d8d-9070-740effdd0d45",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Cattle Master Gold FP 5/L5"
+    },
+    {
+      "product_id": "af618de9-e22b-5ad7-a852-43933c6cb3d3",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "source_id": "eb8f4a45-4daa-5402-bda2-083e3b04790a",
+      "coverage_id": "f789ecb9-e466-5d37-92e4-487450463445",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Clostrimune 10TH"
+    },
+    {
+      "product_id": "dfed6e97-286a-5404-985b-528d0befa1ec",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "source_id": "463c1c16-8788-5dd7-a7ee-c5f1469ab0df",
+      "coverage_id": "287c955b-a795-5371-8083-5e772b776a37",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Clostrimune 8"
+    },
+    {
+      "product_id": "453b1b35-93a4-5790-8217-7b7e83c78c49",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "source_id": "1f09ce2e-9fa6-51d2-8a6f-ebb834b5944e",
+      "coverage_id": "0a62958a-43a2-5155-9749-6e4ac6b03c79",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Covexin 9"
+    },
+    {
+      "product_id": "7fc44e31-3373-50de-97fd-58e874938938",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "source_id": "9218da1b-8759-545c-9ec8-4bcd5351c15e",
+      "coverage_id": "c50930cc-bb81-5539-9610-fcf59f8493c3",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Cydectin 1%"
+    },
+    {
+      "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "source_id": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+      "coverage_id": "ea66f1b7-7e68-5840-b6ca-b09548548966",
+      "source_status": "PRECISA_VALIDAR",
+      "suggested_status": "precisa_validar",
+      "nome_comercial": "Eprecis"
+    },
+    {
+      "product_id": "a805aad2-7cd4-567e-8ace-676bf7cfd9f4",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "source_id": "35b7ce3b-570f-5696-87a1-8d519ddfc155",
+      "coverage_id": "2804bb75-5b1c-54de-b7e6-62686eabc094",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Exceller"
+    },
+    {
+      "product_id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "source_id": "03d0815b-ba94-5032-96b1-def150c78670",
+      "coverage_id": "4c934eba-3936-5bba-b0b5-d970e362a6c3",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "FertiGuard Selenium Max"
+    },
+    {
+      "product_id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+      "class_id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+      "class_key": "vacina_leptospirose",
+      "source_id": "03d0815b-ba94-5032-96b1-def150c78670",
+      "coverage_id": "4c934eba-3936-5bba-b0b5-d970e362a6c3",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "FertiGuard Selenium Max"
+    },
+    {
+      "product_id": "36ea6650-6c8f-5a56-a778-bfb6e428102d",
+      "class_id": "cb2b48d3-25a0-4e09-b3da-39a30a1765d2",
+      "class_key": "benzimidazois",
+      "source_id": "c45fd47a-f7b4-52b9-8862-c813d4d1ba39",
+      "coverage_id": "800b35da-6ee0-53a0-b8c4-4cb76e9f37a1",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Panacur 10%"
+    },
+    {
+      "product_id": "33521603-7562-551e-8a66-5b5d3523b83d",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "source_id": "c694ebad-fd15-594f-bbb8-7e80558b4017",
+      "coverage_id": "c64dd154-570d-57d4-b0bd-a7298be335e2",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Poli-Star"
+    },
+    {
+      "product_id": "ebd8a49a-47ed-5cbf-a225-4dfe10ffadaa",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "source_id": "bacb440a-2013-54a7-900d-464ac37293de",
+      "coverage_id": "7b7f8031-a750-58d2-af38-f90c82da00ca",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Puritec Gold"
+    },
+    {
+      "product_id": "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c",
+      "class_id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+      "class_key": "vacina_raiva_herbivoros",
+      "source_id": "3928214e-1932-585e-a573-28b198138116",
+      "coverage_id": "7fa9c22a-d40b-531c-9c66-2e47a0386c54",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "RABMUNE"
+    },
+    {
+      "product_id": "45e406f2-303e-528b-8146-804f38492815",
+      "class_id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+      "class_key": "vacina_raiva_herbivoros",
+      "source_id": "3b3672f6-89fe-5e0f-a73d-2f3d591ad5db",
+      "coverage_id": "d315d8f1-d766-5b9f-b77f-45377fca1d05",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Raivacel Multi"
+    },
+    {
+      "product_id": "234204f8-4113-5294-8aa2-b0d2b3f83d95",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "source_id": "43c112cc-cc2d-562b-a43e-52e984e39f39",
+      "coverage_id": "1329c639-ee2e-5c38-8881-b59bc47052fc",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Ranger"
+    },
+    {
+      "product_id": "5402b0be-eabb-5bce-91e8-242db1112151",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "source_id": "53356802-c59b-58c7-9d8d-a200f2340877",
+      "coverage_id": "2e7f8d3d-aca9-5339-ad8a-96ae6821a685",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Ranger LA 3,5%"
+    },
+    {
+      "product_id": "53678137-452a-5910-9bc6-67022504a6ce",
+      "class_id": "f7212d4a-1742-4f2a-80c9-ffec7f43b214",
+      "class_key": "imidazotiazoleis",
+      "source_id": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+      "coverage_id": "00e74a62-0540-5002-8f24-8c0449399c37",
+      "source_status": "PRECISA_VALIDAR",
+      "suggested_status": "precisa_validar",
+      "nome_comercial": "Ripercol L 150 F"
+    },
+    {
+      "product_id": "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07",
+      "class_id": "f7212d4a-1742-4f2a-80c9-ffec7f43b214",
+      "class_key": "imidazotiazoleis",
+      "source_id": "ea580dd1-9d7b-5ab7-8fa9-fbbcb4a0eb4e",
+      "coverage_id": "5446ca3c-ae4a-5bcf-ace4-6d4a0e5b732f",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Ripercol L Injetável"
+    },
+    {
+      "product_id": "942f1bf9-874b-5c46-ae35-a44648dcc893",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "source_id": "05a28596-b4b6-55d9-9fb1-1270e3709928",
+      "coverage_id": "75f4fc7b-9726-581e-964b-b8f59e492f78",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Solution 3,5%"
+    },
+    {
+      "product_id": "55e88d23-83c9-5421-ba2f-7da1b979c03b",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "source_id": "a7e807f3-5766-556a-b85e-c320fd66945c",
+      "coverage_id": "5fe571d2-bd0e-5cf0-9747-d2300b38745d",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "StarVac"
+    },
+    {
+      "product_id": "12128db7-71ff-551d-92e0-18418140b91b",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "source_id": "a920e292-c284-5fbc-aec1-14772d87f473",
+      "coverage_id": "9644d729-165b-55bf-be1b-04c6bb9c6d50",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "StarVac 12"
+    },
+    {
+      "product_id": "e5043b4b-6646-52d9-a40d-b2b46d18e774",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "source_id": "5ec069f2-d34d-558c-8069-d9378421d738",
+      "coverage_id": "c6f1a803-65b8-55ee-8fc3-e8cce35199db",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Supramec Pour-On"
+    },
+    {
+      "product_id": "670001a6-3634-582b-a277-f3bc65f89a0e",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "source_id": "4c4494dd-ba1f-5234-9f3c-3a3209f23bbf",
+      "coverage_id": "b37af85e-75ae-5b60-8cf1-5d8fc36170ed",
+      "source_status": "PRECISA_VALIDAR",
+      "suggested_status": "precisa_validar",
+      "nome_comercial": "Ticson 3.50"
+    },
+    {
+      "product_id": "6417c886-2a93-599a-b74a-c72ac1c03752",
+      "class_id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+      "class_key": "vacina_raiva_herbivoros",
+      "source_id": "f112ec97-634d-571a-9b4e-4350bd52bd93",
+      "coverage_id": "6fed13c8-6db0-5178-ae54-eba2f43169ef",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Vacina Antirrábica Inativada para Herbívoros Labovet"
+    },
+    {
+      "product_id": "d66dddec-b33c-5882-bcc4-b3a82389d349",
+      "class_id": "6e3d48fe-851e-4db7-aa2f-c2c0d89f069d",
+      "class_key": "vacina_brucelose_b19",
+      "source_id": "188e195e-ff2d-5871-b758-129a2752fa95",
+      "coverage_id": "f82db723-d5d8-5bf7-876a-87c2577fd64d",
+      "source_status": "SIM_BULA",
+      "suggested_status": "ativo",
+      "nome_comercial": "Vacina Liofilizada contra a Brucelose Bovina Labovet"
+    }
+  ]
+}

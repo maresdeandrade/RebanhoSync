@@ -1,3 +1,4 @@
+import { productMatchesTechnicalRequirementV2, resolveClassKeysByGroupV2 } from "@/lib/sanitario/execution/sanitaryProductClassLinkV2";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { SanitaryAssessmentDialogV1 } from "./SanitaryAssessmentDialogV1";
@@ -220,12 +221,10 @@ function PlanningDialog({ review, source, plannedProductId, onProductChange, dat
       const item = source.catalog.items.find(candidate => candidate.id === row.itemId);
       if (!item || item.productRequirementKind === "none") return false;
       if (item.productRequirementKind === "specific_product") return product.id === item.productId;
-      if (item.productRequirementKind === "product_class") return product.classe === item.productClass;
+      if (item.productRequirementKind === "product_class") return Boolean(item.productClass && productMatchesTechnicalRequirementV2(product.id, item.productClass, source.productClassLinks ?? [], source.productClasses ?? [], source.fazendaId ?? null));
       if (item.productRequirementKind === "product_class_group") {
-        const classIds = new Set((source.productClassGroupMembers ?? [])
-          .filter(member => member.group_id === item.productClassGroupId && member.is_allowed && !member.deleted_at)
-          .map(member => member.class_id));
-        return (source.productClasses ?? []).some(entry => classIds.has(entry.id) && entry.class_key === product.classe && !entry.deleted_at);
+        const keys = resolveClassKeysByGroupV2(source.productClasses ?? [], source.productClassGroupMembers ?? [], source.fazendaId ?? null).get(item.productClassGroupId ?? "");
+        return Boolean(keys && [...keys].some(key => productMatchesTechnicalRequirementV2(product.id, key, source.productClassLinks ?? [], source.productClasses ?? [], source.fazendaId ?? null)));
       }
       return false;
     });

@@ -21,7 +21,7 @@ export function classSchemeExecutionEvidenceV2(input: {
     return fields.length > 0 && fields.every((entry) => entry.coverageStatus === "covers" && entry.sourceRef &&
       hasStrongSourceCoveringFieldV2([entry.sourceRef], field));
   });
-  if (!technicalFieldsCovered || snapshot.executedProductSnapshot?.classe !== input.agenda.produto_classe) return null;
+  if (!technicalFieldsCovered || !snapshot.productClassLinks?.some((link) => link.classKey === input.agenda.produto_classe)) return null;
   for (const ref of refs) {
     const registered = input.sources.find((s) => s.id === ref.id && s.scope === "global" && !s.deleted_at &&
       s.kind === ref.kind && s.strength === "forte" && ["SIM_BULA", "SIM_NORMA"].includes(s.evidence_status));
@@ -34,7 +34,7 @@ export function classSchemeExecutionEvidenceV2(input: {
       fieldKey: "operational_window", coverageStatus: "covers",
       factualValue: { productId: snapshot.executedProductId, productClass: input.agenda.produto_classe },
       technicalValue: { operationalWindowRule: evidence.operationalWindowRule, boosterRule: evidence.boosterRule },
-      sourceRef: ref, sourceCoverageId: coverage.id,
+      sourceRef: { ...ref, version: registered.version }, sourceCoverageId: coverage.id,
       productSource: { productId: link.product_id, sourceId: link.source_id, fieldKey: link.field_key },
       qualifiers: {}, reason: "class_scheme_product_compatibility_verified",
     };

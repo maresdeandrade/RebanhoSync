@@ -61,7 +61,7 @@ function makeQuery(table: string) {
       resolve: (value: { data: Array<Record<string, unknown>>; error: null }) => unknown,
       reject?: (reason: unknown) => unknown,
     ) => {
-      return Promise.resolve({ data: filterRows(table, filters), error: null })
+      return Promise.resolve({ data: filterRows(table, filters), count: (remoteRows[table] ?? []).length, error: null })
         .then(resolve, reject);
     },
   };
@@ -90,6 +90,28 @@ function filterRows(table: string, filters: Array<{ op: FilterOp; column: string
 }
 
 describe("sanitario v2 incremental pull cursors", () => {
+  it("repara associação ausente em cache parcial e propaga revogação/tombstone no reconnect incremental", async () => {
+    const table = "sanitario_produto_class_links_v2";
+    const link = { id: "link-a", product_id: "p", class_id: "c", status_curatorial: "ativo", source_refs: [], updated_at: "2026-01-01", deleted_at: null };
+    remoteRows[table] = [link, { ...link, id: "link-b", class_id: "c2" }];
+    remoteRows.sanitario_product_classes_v2 = [{ id: "c", scope: "global", updated_at: "2026-01-01" }, { id: "c2", scope: "global", updated_at: "2026-01-01" }];
+    await pullSanitarioTechnicalCatalogV2("farm");
+    expect(await db.catalog_sanitario_produto_class_links_v2.count()).toBe(2);
+    await db.catalog_sanitario_produto_class_links_v2.delete("link-a");
+    await db.sync_pull_cursors.update(`${table}:unscoped:null`, { last_updated_at: "2026-10-01" });
+    await pullSanitarioTechnicalCatalogV2("farm");
+    expect(await db.catalog_sanitario_produto_class_links_v2.get("link-a")).toBeDefined();
+    await db.catalog_sanitario_product_classes_v2.delete("c");
+    await pullSanitarioTechnicalCatalogV2("farm");
+    expect(await db.catalog_sanitario_product_classes_v2.get("c")).toBeDefined();
+    remoteRows[table][0] = { ...link, status_curatorial: "bloqueado", deleted_at: "2026-11-20", updated_at: "2026-11-20" };
+    queryLog.length = 0;
+    await pullSanitarioTechnicalCatalogV2("farm");
+    expect(queryLog).toContainEqual(expect.objectContaining({ table, op: "gte", column: "updated_at" }));
+    expect(await db.catalog_sanitario_produto_class_links_v2.get("link-a")).toMatchObject({ status_curatorial: "bloqueado", deleted_at: "2026-11-20" });
+    expect(await db.queue_ops.count()).toBe(0);
+  });
+
   it("recupera cache vazio com cursor antigo sem perder registros remotos anteriores ao cursor", async () => {
     remoteRows.sanitario_protocolos_v2 = [
       {
@@ -429,6 +451,7 @@ describe("sanitario v2 incremental pull cursors", () => {
       db.catalog_sanitario_fontes_tecnicas_v2.clear(),
       db.catalog_sanitario_fonte_cobertura_campos_v2.clear(),
       db.catalog_sanitario_produtos_v2.clear(),
+      db.catalog_sanitario_produto_class_links_v2.clear(),
       db.catalog_sanitario_produto_especie_autorizacao_v2.clear(),
       db.catalog_sanitario_produto_fontes_v2.clear(),
       db.catalog_sanitario_produto_dose_rules_v2.clear(),

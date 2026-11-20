@@ -2,6 +2,8 @@ type Row = Record<string, unknown>;
 
 export interface SanitaryProductEvidenceCatalog {
   product: Row | null;
+  productClassLinks?: Row[];
+  productClasses?: Row[];
   sources: Row[];
   coverages: Row[];
   productSources: Row[];
@@ -156,6 +158,23 @@ export function validateSanitaryProductEvidenceCatalog(
   const retrospective = event?.natureza === "primary_execution" &&
     payload?.registration_mode === "executed_fact" &&
     payload?.prospective_authorization === false;
+  if (Array.isArray(snapshot.productClassLinks)) {
+    for (const raw of snapshot.productClassLinks) {
+      const proof = record(raw);
+      const link = catalog.productClassLinks?.find(row => row.id === proof?.linkId);
+      const cls = catalog.productClasses?.find(row => row.id === proof?.classId);
+      if (!proof || !link || !cls || link.product_id !== snapshot.executedProductId || link.class_id !== cls.id ||
+        cls.class_key !== proof.classKey || cls.scope !== "global" || cls.fazenda_id != null ||
+        !sameJson(proof.sourceRefs, link.source_refs) ||
+        ((!retrospective || proof.catalogUpdatedAt === link.updated_at) &&
+          (!active(link) || link.status_curatorial !== "ativo" || !active(cls) || cls.curation_status !== "approved_for_catalog")) ||
+        (proof.catalogUpdatedAt !== link.updated_at && (!retrospective ||
+          typeof proof.catalogUpdatedAt !== "string" || String(proof.catalogUpdatedAt) >= String(link.updated_at) ||
+          String(event?.occurred_at) > String(link.updated_at)))) {
+        if (!retrospective) return "SANITARIO_PRODUCT_CLASS_LINK_MISMATCH";
+      }
+    }
+  }
   if (productSnapshot) {
     const product = catalog.product;
     if (

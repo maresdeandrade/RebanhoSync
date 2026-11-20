@@ -119,6 +119,7 @@ export type ExecutedProductFieldEvidenceV2 = {
 };
 
 export type ExecutedProductTechnicalSnapshotV2 = {
+  productClassLinks?: Array<{ linkId: string; classId: string; classKey: string; catalogUpdatedAt: string; sourceRefs: Array<Record<string, unknown> | string> }>;
   schemaVersion: "sanitario-executed-product-technical-snapshot-v2";
   eventId: string;
   executedProductId: string;

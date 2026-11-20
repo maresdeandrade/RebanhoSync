@@ -43,7 +43,7 @@ function execution(productId = "actual-product") {
     planningScope: "class_scheme", sourceRefsByField: i.sourceRefsByField,
     operationalWindowRule: i.operationalWindowRule, boosterRule: i.boosterRule,
   } } } as unknown as SanitarioAgendaLocalV2,
-  snapshot: { executedProductId: productId, executedProductSnapshot: { classe: i.productClass },
+  snapshot: { productClassLinks: [{ classKey: i.productClass }], executedProductId: productId, executedProductSnapshot: { classe: i.productClass },
     fieldEvidence: ["dose", "route", "species_authorization"].map(field => ({ fieldKey: field, coverageStatus: "covers", sourceRef: ref(field) })),
   } as unknown as ExecutedProductTechnicalSnapshotV2,
   productSources: [{ product_id: productId, source_id: "norm", field_key: "operational_window" }],

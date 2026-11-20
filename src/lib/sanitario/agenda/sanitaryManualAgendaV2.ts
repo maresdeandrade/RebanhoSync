@@ -1,3 +1,4 @@
+import { readProductRequirementMatchV2 } from "../execution/sanitaryProductClassLinkV2";
 import type {
   SanitarioAgendaAnimalLocalV2,
   SanitarioAgendaLocalV2,
@@ -102,6 +103,9 @@ export type ManualSanitaryAgendaValidationV2 = {
 };
 
 export type ManualSanitaryAgendaLocalDbV2 = {
+  catalog_sanitario_produto_class_links_v2?: typeof import("@/lib/offline/db").db.catalog_sanitario_produto_class_links_v2;
+  catalog_sanitario_product_classes_v2?: typeof import("@/lib/offline/db").db.catalog_sanitario_product_classes_v2;
+  catalog_sanitario_product_class_group_members_v2?: typeof import("@/lib/offline/db").db.catalog_sanitario_product_class_group_members_v2;
   ops_sanitario_agenda_v2: {
     get?(id: string): Promise<SanitarioAgendaLocalV2 | undefined>;
     where(index: "client_op_id"): {
@@ -409,7 +413,7 @@ export async function createManualSanitaryAgendaV2(
   if (input.syncContext) await validateSanitarioV2Enqueue({ fazendaId: input.target.fazendaId, ...input.syncContext, operations });
   return db.transaction(
     "rw",
-    [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2, ...(input.syncContext ? [realDb.queue_gestures, realDb.queue_ops] : [])],
+    [db.ops_sanitario_agenda_v2, db.ops_sanitario_agenda_animais_v2, ...[db.catalog_sanitario_produto_class_links_v2, db.catalog_sanitario_product_classes_v2, db.catalog_sanitario_product_class_group_members_v2].filter(Boolean), ...(input.syncContext ? [realDb.queue_gestures, realDb.queue_ops] : [])],
     async () => {
       const existing = await db.ops_sanitario_agenda_v2.get?.(records.agenda.id) ?? await db.ops_sanitario_agenda_v2
         .where("client_op_id")
@@ -426,6 +430,14 @@ export async function createManualSanitaryAgendaV2(
           created: false,
           ...OPERATIONAL_FALSE_FLAGS,
         };
+      }
+      const kind = input.source.productRequirementKind;
+      if (input.source.plannedProductId && (kind === "product_class" || kind === "product_class_group")) {
+        if (!db.catalog_sanitario_produto_class_links_v2 || !db.catalog_sanitario_product_classes_v2 || !db.catalog_sanitario_product_class_group_members_v2) throw new Error("MANUAL_SANITARY_AGENDA_REJECTED:technical_catalog_unavailable");
+        const match = await readProductRequirementMatchV2(realDb, input.source.plannedProductId, {
+          kind, classKey: input.source.productClass, groupId: input.source.productClassGroupId,
+        }, input.target.fazendaId);
+        if (!match.matches) throw new Error("MANUAL_SANITARY_AGENDA_REJECTED:product_class_mismatch");
       }
       await db.ops_sanitario_agenda_v2.put(records.agenda);
       if (records.animals.length > 0) {

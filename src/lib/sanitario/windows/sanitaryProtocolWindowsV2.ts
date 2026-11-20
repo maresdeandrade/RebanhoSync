@@ -15,6 +15,7 @@ import type {
   SanitarioAgendaLocalV2,
   SexoEnum,
   SanitarioProdutoLocalV2,
+  SanitarioProdutoClassLinkLocalV2,
   SanitarioProdutoEspecieAutorizacaoLocalV2,
   SanitarioProdutoDoseRuleLocalV2,
   SanitarioProductClassLocalV2,
@@ -76,6 +77,7 @@ export type SanitaryProtocolWindowSourceV2 = {
   farmMunicipality?: string | null;
   farmConfig?: FazendaSanidadeConfig;
   products?: SanitarioProdutoLocalV2[];
+  productClassLinks?: SanitarioProdutoClassLinkLocalV2[];
   productSpeciesAuthorizations?: SanitarioProdutoEspecieAutorizacaoLocalV2[];
   productDoseRules?: SanitarioProdutoDoseRuleLocalV2[];
   productClasses?: SanitarioProductClassLocalV2[];
@@ -831,6 +833,7 @@ async function readSanitaryProtocolWindowSourceV2(
     products,
     productSpeciesAuthorizations,
     productDoseRules,
+    productClassLinks,
     productClasses,
     productClassGroupMembers,
     managementAgendas,
@@ -849,6 +852,7 @@ async function readSanitaryProtocolWindowSourceV2(
     db.catalog_sanitario_produtos_v2.toArray(),
     db.catalog_sanitario_produto_especie_autorizacao_v2.toArray(),
     db.catalog_sanitario_produto_dose_rules_v2.toArray().catch(() => []),
+    db.catalog_sanitario_produto_class_links_v2.toArray(),
     db.catalog_sanitario_product_classes_v2.toArray().catch(() => []),
     db.catalog_sanitario_product_class_group_members_v2.toArray().catch(() => []),
     db.state_agenda_itens.where("fazenda_id").equals(fazendaId).toArray(),
@@ -913,6 +917,7 @@ async function readSanitaryProtocolWindowSourceV2(
     products,
     productSpeciesAuthorizations,
     productDoseRules,
+    productClassLinks,
     productClasses,
     productClassGroupMembers,
     farmUf: farmConfig?.deleted_at ? null : farmConfig?.uf,
@@ -1233,6 +1238,9 @@ export async function createGroupedManualSanitaryAgendasV2(
       db.catalog_sanitario_product_class_groups_v2,
       db.event_eventos,
       db.catalog_sanitario_produtos_v2,
+      db.catalog_sanitario_produto_class_links_v2,
+      db.catalog_sanitario_product_classes_v2,
+      db.catalog_sanitario_product_class_group_members_v2,
       db.catalog_sanitario_produto_dose_rules_v2,
       db.catalog_sanitario_produto_especie_autorizacao_v2,
       db.event_eventos_sanitario,

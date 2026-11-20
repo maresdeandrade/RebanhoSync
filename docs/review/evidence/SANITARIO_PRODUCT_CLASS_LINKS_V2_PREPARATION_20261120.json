@@ -1,0 +1,1838 @@
+{
+  "artifact": "sanitario_product_class_links_v2_preparation",
+  "review_only": true,
+  "execute_import": false,
+  "sourcePath": "docs/review/evidence/SANITARIO_V2_C02_F6_CLOSURE_ADMIN_BEFORE_20261029.json",
+  "sourceSha256": "5952ee1ce7f66629d2520a6e4672e6eb08c8506c8e9e229e6cd9bdc42704fc1a",
+  "capturedAt": "2026-10-29T17:49:35.96234+00:00",
+  "note": "Reaproveita os 39 cadastros ativos históricos; não reconfirma estado remoto atual nem promove candidate_class_keys_unverified.",
+  "counts": {
+    "products": 39,
+    "pharmacologicallyClassified": 32,
+    "preparedLinks": 36,
+    "activeLinks": 0
+  },
+  "products": [
+    {
+      "code": "P01",
+      "productId": "ba59c489-49d5-5362-b5f4-94818c90deb4",
+      "name": "Abor-Vac",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Brucella abortus B19 viva, liofilizada",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_brucelose_b19"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "e8fb10c5-8b05-5527-aaec-e70a384d87d3",
+          "coverageId": "443af7f5-2b68-52fe-ac7d-18a6eed004ca",
+          "url": "https://www.zoetis.com.br/especies/bovinos/_assets/pdf/bula-aborvac-br.pdf",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "ba59c489-49d5-5362-b5f4-94818c90deb4",
+          "class_key": "vacina_brucelose_b19",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "e8fb10c5-8b05-5527-aaec-e70a384d87d3",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "443af7f5-2b68-52fe-ac7d-18a6eed004ca"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P02",
+      "productId": "f5540551-7dd6-5176-b909-22916e5ed3de",
+      "name": "Bovilis RB-51",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Brucella abortus RB-51 viva atenuada, liofilizada",
+      "pharmacologicalAssessment": "outside_existing_technical_classes",
+      "reviewedClassKeys": [],
+      "compositionEvidence": [
+        {
+          "sourceId": "56c813fd-4741-5a41-aad8-6ad827961daa",
+          "coverageId": "8014967d-40e9-5c76-afad-584c405b0828",
+          "url": "https://www.msd-saude-animal.com.br/produto/rb-51/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P03",
+      "productId": "45e406f2-303e-528b-8146-804f38492815",
+      "name": "Raivacel Multi",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Vírus rábico Pasteur inativado por BEI",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_raiva_herbivoros"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "3b3672f6-89fe-5e0f-a73d-2f3d591ad5db",
+          "coverageId": "d315d8f1-d766-5b9f-b77f-45377fca1d05",
+          "url": "https://www.msd-saude-animal.com.br/produto/raivacel-multi/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "45e406f2-303e-528b-8146-804f38492815",
+          "class_key": "vacina_raiva_herbivoros",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "3b3672f6-89fe-5e0f-a73d-2f3d591ad5db",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "d315d8f1-d766-5b9f-b77f-45377fca1d05"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P05",
+      "productId": "453b1b35-93a4-5790-8217-7b7e83c78c49",
+      "name": "Covexin 9",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Clostridium septicum, novyi, sordellii, haemolyticum, chauvoei e perfringens A/B/C/D inativados",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_clostridial"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "1f09ce2e-9fa6-51d2-8a6f-ebb834b5944e",
+          "coverageId": "0a62958a-43a2-5155-9749-6e4ac6b03c79",
+          "url": "https://www.msd-saude-animal.com.br/produto/covexin-9/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "453b1b35-93a4-5790-8217-7b7e83c78c49",
+          "class_key": "vacina_clostridial",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "1f09ce2e-9fa6-51d2-8a6f-ebb834b5944e",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "0a62958a-43a2-5155-9749-6e4ac6b03c79"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P06",
+      "productId": "ec3eb33d-b739-5a62-826d-fee85e04a9dd",
+      "name": "Bovilis Poli-Star T",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Toxoides clostridiais incluindo tetani e botulinum C/D; anacultura de C. chauvoei",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_clostridial"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "eccceb9c-0ca1-54fa-853a-e2a99652eac1",
+          "coverageId": "78eb7c34-3bc1-5318-87f1-4831b50590bb",
+          "url": "https://www.msd-saude-animal.com.br/produto/bovilis-poli-star-t/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "ec3eb33d-b739-5a62-826d-fee85e04a9dd",
+          "class_key": "vacina_clostridial",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "eccceb9c-0ca1-54fa-853a-e2a99652eac1",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "78eb7c34-3bc1-5318-87f1-4831b50590bb"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P07",
+      "productId": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+      "name": "Cattle Master 4 L5",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "IBR, PI3 e BRSV vivos; BVD e cinco leptospiras inativados",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_ibr_bvd",
+        "vacina_leptospirose"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+          "coverageId": "00e74a62-0540-5002-8f24-8c0449399c37",
+          "url": "https://www.zoetis.com.br/global-assets/private/revista-zoetis-net-paginas-mistas-versao-30-01.pdf",
+          "strength": "apoio",
+          "evidenceStatus": "PRECISA_VALIDAR"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+          "class_key": "vacina_ibr_bvd",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        },
+        {
+          "product_id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+          "class_key": "vacina_leptospirose",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P08",
+      "productId": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+      "name": "Cattle Master Gold FP 5/L5",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "IBR e PI3 termossensíveis; BRSV modificado; BVD 1/2 e cinco leptospiras inativados",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_ibr_bvd",
+        "vacina_leptospirose"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "c23279c0-2e4d-5727-834b-5c707f6d2627",
+          "coverageId": "2949dd8a-9f95-5d8d-9070-740effdd0d45",
+          "url": "https://www.zoetis.com.br/especies/bovinos/cattlemaster-gold/download/bula-cattlemaster-gold.pdf",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+          "class_key": "vacina_ibr_bvd",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "c23279c0-2e4d-5727-834b-5c707f6d2627",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "2949dd8a-9f95-5d8d-9070-740effdd0d45"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        },
+        {
+          "product_id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+          "class_key": "vacina_leptospirose",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "c23279c0-2e4d-5727-834b-5c707f6d2627",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "2949dd8a-9f95-5d8d-9070-740effdd0d45"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P09",
+      "productId": "d1702fc4-01bb-59be-84a2-eab38babe223",
+      "name": "Bovilis Vista 5 L5 CFP",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "IBR, BVD 1/2, PI3 e BRSV vivos modificados; cinco leptospiras inativadas",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_ibr_bvd",
+        "vacina_leptospirose"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "12de317d-0bce-539b-abdb-8551f9d4f15f",
+          "coverageId": "13838d52-4d52-5bc2-ae8d-d2061623a11d",
+          "url": "https://www.msd-saude-animal.com.br/produto/bovilis-vista/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+          "class_key": "vacina_ibr_bvd",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "12de317d-0bce-539b-abdb-8551f9d4f15f",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "13838d52-4d52-5bc2-ae8d-d2061623a11d"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        },
+        {
+          "product_id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+          "class_key": "vacina_leptospirose",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "12de317d-0bce-539b-abdb-8551f9d4f15f",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "13838d52-4d52-5bc2-ae8d-d2061623a11d"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P11",
+      "productId": "7fc44e31-3373-50de-97fd-58e874938938",
+      "name": "Cydectin 1%",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Moxidectina 1 g/100 mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "lactonas_macrociclicas"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "9218da1b-8759-545c-9ec8-4bcd5351c15e",
+          "coverageId": "c50930cc-bb81-5539-9610-fcf59f8493c3",
+          "url": "https://www2.zoetis.com.br/content/pt/pages/Especies/Bovinos/Cydectin/pdf/cydectin-bula.pdf",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "7fc44e31-3373-50de-97fd-58e874938938",
+          "class_key": "lactonas_macrociclicas",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "9218da1b-8759-545c-9ec8-4bcd5351c15e",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "c50930cc-bb81-5539-9610-fcf59f8493c3"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P12",
+      "productId": "5402b0be-eabb-5bce-91e8-242db1112151",
+      "name": "Ranger LA 3,5%",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Ivermectina 3,5 g/100 mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "lactonas_macrociclicas"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "53356802-c59b-58c7-9d8d-a200f2340877",
+          "coverageId": "2e7f8d3d-aca9-5339-ad8a-96ae6821a685",
+          "url": "https://www.msd-saude-animal.com.br/produto/ranger-la-35/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "5402b0be-eabb-5bce-91e8-242db1112151",
+          "class_key": "lactonas_macrociclicas",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "53356802-c59b-58c7-9d8d-a200f2340877",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "2e7f8d3d-aca9-5339-ad8a-96ae6821a685"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P13",
+      "productId": "36ea6650-6c8f-5a56-a778-bfb6e428102d",
+      "name": "Panacur 10%",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Fembendazol 100 mg/mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "benzimidazois"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "c45fd47a-f7b4-52b9-8862-c813d4d1ba39",
+          "coverageId": "800b35da-6ee0-53a0-b8c4-4cb76e9f37a1",
+          "url": "https://www.msd-saude-animal.com.br/produto/panacur-10/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "36ea6650-6c8f-5a56-a778-bfb6e428102d",
+          "class_key": "benzimidazois",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "c45fd47a-f7b4-52b9-8862-c813d4d1ba39",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "800b35da-6ee0-53a0-b8c4-4cb76e9f37a1"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P14",
+      "productId": "1957cff0-3741-5dd8-bf81-b157a2d575c8",
+      "name": "Exzolt 5% Bovinos",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Fluralaner 5%",
+      "pharmacologicalAssessment": "outside_existing_technical_classes",
+      "reviewedClassKeys": [],
+      "compositionEvidence": [
+        {
+          "sourceId": "6fc5bdb4-4ef1-53da-9710-f50bcc34999c",
+          "coverageId": "a47d8116-1ed0-579d-bed4-515f6dd93f47",
+          "url": "https://www.msd-saude-animal.com.br/produto/exzolt-2/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P15",
+      "productId": "1628cf40-3676-53a6-9fe2-4e154936167b",
+      "name": "ANAVAC B19",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": null,
+      "pharmacologicalAssessment": "composition_missing",
+      "reviewedClassKeys": [],
+      "compositionEvidence": [],
+      "preparedLinks": [],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P16",
+      "productId": "d66dddec-b33c-5882-bcc4-b3a82389d349",
+      "name": "Vacina Liofilizada contra a Brucelose Bovina Labovet",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Brucella abortus B19 viva; mínimo de 60 bilhões de germes viáveis/dose",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_brucelose_b19"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "188e195e-ff2d-5871-b758-129a2752fa95",
+          "coverageId": "f82db723-d5d8-5bf7-876a-87c2577fd64d",
+          "url": "https://labovet.com.br/produtos/vacina-contra-a-brucelose-bovina",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "d66dddec-b33c-5882-bcc4-b3a82389d349",
+          "class_key": "vacina_brucelose_b19",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "188e195e-ff2d-5871-b758-129a2752fa95",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "f82db723-d5d8-5bf7-876a-87c2577fd64d"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P17",
+      "productId": "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c",
+      "name": "RABMUNE",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Vírus rábico PV inativado por beta-propiolactona; hidróxido de alumínio e saponina",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_raiva_herbivoros"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "3928214e-1932-585e-a573-28b198138116",
+          "coverageId": "7fa9c22a-d40b-531c-9c66-2e47a0386c54",
+          "url": "https://ruminantes.ceva.com.br/products/rabmune/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c",
+          "class_key": "vacina_raiva_herbivoros",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "3928214e-1932-585e-a573-28b198138116",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "7fa9c22a-d40b-531c-9c66-2e47a0386c54"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P18",
+      "productId": "6417c886-2a93-599a-b74a-c72ac1c03752",
+      "name": "Vacina Antirrábica Inativada para Herbívoros Labovet",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Vírus rábico Pasteur inativado por BEI; hidróxido de alumínio",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_raiva_herbivoros"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "f112ec97-634d-571a-9b4e-4350bd52bd93",
+          "coverageId": "6fed13c8-6db0-5178-ae54-eba2f43169ef",
+          "url": "https://labovet.com.br/produtos/vacina-antirrabica-inativada-labovet-para-herbivoros",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "6417c886-2a93-599a-b74a-c72ac1c03752",
+          "class_key": "vacina_raiva_herbivoros",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "f112ec97-634d-571a-9b4e-4350bd52bd93",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "6fed13c8-6db0-5178-ae54-eba2f43169ef"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P19",
+      "productId": "dfed6e97-286a-5404-985b-528d0befa1ec",
+      "name": "Clostrimune 8",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Bacterina/toxoides clostridiais incluindo C. tetani; sem botulínicos na fórmula listada",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_clostridial"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "463c1c16-8788-5dd7-a7ee-c5f1469ab0df",
+          "coverageId": "287c955b-a795-5371-8083-5e772b776a37",
+          "url": "https://labovet.com.br/produtos/vacina-clostrimune-8",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "dfed6e97-286a-5404-985b-528d0befa1ec",
+          "class_key": "vacina_clostridial",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "463c1c16-8788-5dd7-a7ee-c5f1469ab0df",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "287c955b-a795-5371-8083-5e772b776a37"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P20",
+      "productId": "af618de9-e22b-5ad7-a852-43933c6cb3d3",
+      "name": "Clostrimune 10TH",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Clostrídios incluindo perfringens A/B/C/D, tetani e haemolyticum",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_clostridial"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "eb8f4a45-4daa-5402-bda2-083e3b04790a",
+          "coverageId": "f789ecb9-e466-5d37-92e4-487450463445",
+          "url": "https://labovet.com.br/produtos/vacina-clostrimune-10th",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "af618de9-e22b-5ad7-a852-43933c6cb3d3",
+          "class_key": "vacina_clostridial",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "eb8f4a45-4daa-5402-bda2-083e3b04790a",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "f789ecb9-e466-5d37-92e4-487450463445"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P21",
+      "productId": "55e88d23-83c9-5421-ba2f-7da1b979c03b",
+      "name": "StarVac",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Clostrídios incluindo botulinum C/D e perfringens B/C/D",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_clostridial"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "a7e807f3-5766-556a-b85e-c320fd66945c",
+          "coverageId": "5fe571d2-bd0e-5cf0-9747-d2300b38745d",
+          "url": "https://labovet.com.br/produtos/vacina-starvac",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "55e88d23-83c9-5421-ba2f-7da1b979c03b",
+          "class_key": "vacina_clostridial",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "a7e807f3-5766-556a-b85e-c320fd66945c",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "5fe571d2-bd0e-5cf0-9747-d2300b38745d"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P22",
+      "productId": "12128db7-71ff-551d-92e0-18418140b91b",
+      "name": "StarVac 12",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Clostrídios incluindo botulinum C/D, perfringens A/B/C/D, tetani e haemolyticum",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_clostridial"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "a920e292-c284-5fbc-aec1-14772d87f473",
+          "coverageId": "9644d729-165b-55bf-be1b-04c6bb9c6d50",
+          "url": "https://labovet.com.br/produtos/starvac-12",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "12128db7-71ff-551d-92e0-18418140b91b",
+          "class_key": "vacina_clostridial",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "a920e292-c284-5fbc-aec1-14772d87f473",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "9644d729-165b-55bf-be1b-04c6bb9c6d50"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P23",
+      "productId": "0f1b6c73-c50f-5ad4-a308-29788de7429a",
+      "name": "BOTULINOMAX",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Clostrídios incluindo botulinum C/D",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_clostridial"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "feb9458c-3c75-5157-9fcd-e76885020a50",
+          "coverageId": "dbe016b3-7298-5952-81d8-604b31b336e7",
+          "url": "https://ruminants.ceva.com/app/uploads/sites/16/2023/10/Botulinomax-20-doses-Bula.pdf",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "0f1b6c73-c50f-5ad4-a308-29788de7429a",
+          "class_key": "vacina_clostridial",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "feb9458c-3c75-5157-9fcd-e76885020a50",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "dbe016b3-7298-5952-81d8-604b31b336e7"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P24",
+      "productId": "3e0a501b-1742-506c-a094-d8a18ad8a98a",
+      "name": "Bovi-Shield Gold One Shot",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "IBR, BVD 1/2, PI3 e BRSV vivos modificados; toxoide de Mannheimia haemolytica",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_ibr_bvd"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "ac792c71-4772-587b-9ca2-19961d1a2dd2",
+          "coverageId": "79675b7c-9294-5821-b711-866421b5e13f",
+          "url": "https://www.zoetis.com.br/especies/bovinos/bovishield/index.aspx",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "3e0a501b-1742-506c-a094-d8a18ad8a98a",
+          "class_key": "vacina_ibr_bvd",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "ac792c71-4772-587b-9ca2-19961d1a2dd2",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "79675b7c-9294-5821-b711-866421b5e13f"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P25",
+      "productId": "0168212e-2443-5eaf-97f1-108924e58d4d",
+      "name": "Cattle Master 4",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "IBR, BRSV e PI3 vivos; BVD inativado",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_ibr_bvd"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "84d7b10d-986e-558a-bc12-8e0f4661551b",
+          "coverageId": "dbfb40fc-93c9-5926-b7b7-17902a5da1d8",
+          "url": "https://www.zoetis.com.br/_locale-assets/arquivos/bovinos/bula_bov-alt-50442300-cattlemaster-4.pdf",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "0168212e-2443-5eaf-97f1-108924e58d4d",
+          "class_key": "vacina_ibr_bvd",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "84d7b10d-986e-558a-bc12-8e0f4661551b",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "dbfb40fc-93c9-5926-b7b7-17902a5da1d8"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P26",
+      "productId": "a90ae0cf-d97b-577c-a622-080f2db70c3c",
+      "name": "Bovilis Vista Once SQ",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "IBR, BVD 1/2, PI3, BRSV, Mannheimia e Pasteurella",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_ibr_bvd"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "06df6732-4e7e-5178-ad5d-46adeb01a3e5",
+          "coverageId": "29f41157-0590-5b3e-b30a-ba45a8ce1913",
+          "url": "https://www.msd-saude-animal.com.br/produto/bovilis-vista-once-sq/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "a90ae0cf-d97b-577c-a622-080f2db70c3c",
+          "class_key": "vacina_ibr_bvd",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "06df6732-4e7e-5178-ad5d-46adeb01a3e5",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "29f41157-0590-5b3e-b30a-ba45a8ce1913"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P27",
+      "productId": "c2171cd8-1865-5d12-90c0-22062043bc73",
+      "name": "FertiGuard Selenium Max",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "IBR, BVD, PI3 e BRSV inativados; seis leptospiras; Campylobacter fetus fetus/venerealis; selenato de sódio 4,8 mg/mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_ibr_bvd",
+        "vacina_leptospirose"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "03d0815b-ba94-5032-96b1-def150c78670",
+          "coverageId": "4c934eba-3936-5bba-b0b5-d970e362a6c3",
+          "url": "https://www.msd-saude-animal.com.br/produto/fertiguard-selenium-max/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+          "class_key": "vacina_ibr_bvd",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "03d0815b-ba94-5032-96b1-def150c78670",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "4c934eba-3936-5bba-b0b5-d970e362a6c3"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        },
+        {
+          "product_id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+          "class_key": "vacina_leptospirose",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "03d0815b-ba94-5032-96b1-def150c78670",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "4c934eba-3936-5bba-b0b5-d970e362a6c3"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P28",
+      "productId": "33521603-7562-551e-8a66-5b5d3523b83d",
+      "name": "Poli-Star",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Clostrídios incluindo botulinum C/D",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "vacina_clostridial"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "c694ebad-fd15-594f-bbb8-7e80558b4017",
+          "coverageId": "c64dd154-570d-57d4-b0bd-a7298be335e2",
+          "url": "https://www.msd-saude-animal.com.br/produto/poli-star/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "33521603-7562-551e-8a66-5b5d3523b83d",
+          "class_key": "vacina_clostridial",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "c694ebad-fd15-594f-bbb8-7e80558b4017",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "c64dd154-570d-57d4-b0bd-a7298be335e2"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P29",
+      "productId": "a805aad2-7cd4-567e-8ace-676bf7cfd9f4",
+      "name": "Exceller",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Doramectina 1 g/100 mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "lactonas_macrociclicas"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "35b7ce3b-570f-5696-87a1-8d519ddfc155",
+          "coverageId": "2804bb75-5b1c-54de-b7e6-62686eabc094",
+          "url": "https://www.msd-saude-animal.com.br/produto/exceller/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "a805aad2-7cd4-567e-8ace-676bf7cfd9f4",
+          "class_key": "lactonas_macrociclicas",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "35b7ce3b-570f-5696-87a1-8d519ddfc155",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "2804bb75-5b1c-54de-b7e6-62686eabc094"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P30",
+      "productId": "234204f8-4113-5294-8aa2-b0d2b3f83d95",
+      "name": "Ranger",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Ivermectina 1 g/100 mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "lactonas_macrociclicas"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "43c112cc-cc2d-562b-a43e-52e984e39f39",
+          "coverageId": "1329c639-ee2e-5c38-8881-b59bc47052fc",
+          "url": "https://www.msd-saude-animal.com.br/produto/ranger/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "234204f8-4113-5294-8aa2-b0d2b3f83d95",
+          "class_key": "lactonas_macrociclicas",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "43c112cc-cc2d-562b-a43e-52e984e39f39",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "1329c639-ee2e-5c38-8881-b59bc47052fc"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P31",
+      "productId": "942f1bf9-874b-5c46-ae35-a44648dcc893",
+      "name": "Solution 3,5%",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Ivermectina 2,25 g e abamectina 1,25 g/100 mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "lactonas_macrociclicas"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "05a28596-b4b6-55d9-9fb1-1270e3709928",
+          "coverageId": "75f4fc7b-9726-581e-964b-b8f59e492f78",
+          "url": "https://www.msd-saude-animal.com.br/produto/solution-35/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "942f1bf9-874b-5c46-ae35-a44648dcc893",
+          "class_key": "lactonas_macrociclicas",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "05a28596-b4b6-55d9-9fb1-1270e3709928",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "75f4fc7b-9726-581e-964b-b8f59e492f78"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P32",
+      "productId": "e5043b4b-6646-52d9-a40d-b2b46d18e774",
+      "name": "Supramec Pour-On",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Ivermectina 5 mg/mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "lactonas_macrociclicas"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "5ec069f2-d34d-558c-8069-d9378421d738",
+          "coverageId": "c6f1a803-65b8-55ee-8fc3-e8cce35199db",
+          "url": "https://www.msd-saude-animal.com.br/produto/supramec-pour-on/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "e5043b4b-6646-52d9-a40d-b2b46d18e774",
+          "class_key": "lactonas_macrociclicas",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "5ec069f2-d34d-558c-8069-d9378421d738",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "c6f1a803-65b8-55ee-8fc3-e8cce35199db"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P33",
+      "productId": "53678137-452a-5910-9bc6-67022504a6ce",
+      "name": "Ripercol L 150 F",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Fosfato de levamisol 18,8 g/100 mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "imidazotiazoleis"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "e130bb95-7f48-5f5d-aacb-eaf28f79fe2e",
+          "coverageId": "00e74a62-0540-5002-8f24-8c0449399c37",
+          "url": "https://www.zoetis.com.br/global-assets/private/revista-zoetis-net-paginas-mistas-versao-30-01.pdf",
+          "strength": "apoio",
+          "evidenceStatus": "PRECISA_VALIDAR"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "53678137-452a-5910-9bc6-67022504a6ce",
+          "class_key": "imidazotiazoleis",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P34",
+      "productId": "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07",
+      "name": "Ripercol L Injetável",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Cloridrato de levamisol 7,5 g/100 mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "imidazotiazoleis"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "9d6ba368-64ce-5ebb-92f4-2323efaef3fc",
+          "coverageId": "f95ef56f-c900-5d08-86ad-7090d2536918",
+          "url": "https://www2.zoetis.com.br/content/pt/pages/Microsites/Portifolio-Zoetis-Atacadistas/_assets/Catalogo-Produtos-Marcas-estabelecidas-Zoetis_Bartofil_29042025_1080x2230.pdf",
+          "strength": "apoio",
+          "evidenceStatus": "PRECISA_VALIDAR"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07",
+          "class_key": "imidazotiazoleis",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P36",
+      "productId": "670001a6-3634-582b-a277-f3bc65f89a0e",
+      "name": "Ticson 3.50",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Ivermectina 3,5%",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "lactonas_macrociclicas"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "4c4494dd-ba1f-5234-9f3c-3a3209f23bbf",
+          "coverageId": "b37af85e-75ae-5b60-8cf1-5d8fc36170ed",
+          "url": "https://ruminants.ceva.com/app/uploads/sites/16/2023/10/Verminose-na-Recria-V3.docx.pdf",
+          "strength": "apoio",
+          "evidenceStatus": "PRECISA_VALIDAR"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "670001a6-3634-582b-a277-f3bc65f89a0e",
+          "class_key": "lactonas_macrociclicas",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P37",
+      "productId": "ebd8a49a-47ed-5cbf-a225-4dfe10ffadaa",
+      "name": "Puritec Gold",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Ivermectina B1a 3,5 g/100 mL",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "lactonas_macrociclicas"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "bacb440a-2013-54a7-900d-464ac37293de",
+          "coverageId": "7b7f8031-a750-58d2-af38-f90c82da00ca",
+          "url": "https://ruminantes.ceva.com.br/products/puritec-gold/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "ebd8a49a-47ed-5cbf-a225-4dfe10ffadaa",
+          "class_key": "lactonas_macrociclicas",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [
+            {
+              "id": "bacb440a-2013-54a7-900d-464ac37293de",
+              "field": "product_class",
+              "basedOnField": "composition",
+              "coverageId": "7b7f8031-a750-58d2-af38-f90c82da00ca"
+            }
+          ],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P38",
+      "productId": "db743728-59e2-5ecb-8b2e-211ab170618f",
+      "name": "Eprecis",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Eprinomectina 2%",
+      "pharmacologicalAssessment": "demonstrated_from_persisted_composition",
+      "reviewedClassKeys": [
+        "lactonas_macrociclicas"
+      ],
+      "compositionEvidence": [
+        {
+          "sourceId": "8d47206a-fe64-5a8d-8587-72675c8cfb94",
+          "coverageId": "ea66f1b7-7e68-5840-b6ca-b09548548966",
+          "url": "https://www.ceva.com.br/ceva-na-midia/noticias/precisao-no-controle-das-verminoses-e-essencial-para-pecuaria",
+          "strength": "apoio",
+          "evidenceStatus": "PRECISA_VALIDAR"
+        }
+      ],
+      "preparedLinks": [
+        {
+          "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+          "class_key": "lactonas_macrociclicas",
+          "class_id": null,
+          "status_curatorial": "precisa_validar",
+          "source_refs": [],
+          "pending": [
+            "resolve_actual_approved_class_id",
+            "verify_class_definition_against_composition"
+          ]
+        }
+      ],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P39",
+      "productId": "4f011f00-0ae7-5b4e-97d3-b093578df236",
+      "name": "FLURON Gold",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Cipermetrina 5%, clorpirifós 7%, fluazuron 2,5% e butóxido de piperonila 5%",
+      "pharmacologicalAssessment": "outside_existing_technical_classes",
+      "reviewedClassKeys": [],
+      "compositionEvidence": [
+        {
+          "sourceId": "894108f2-3535-5307-a6e3-276c7eae61e0",
+          "coverageId": "9946509c-ecef-5ac4-b4b7-6ee2ef88bc45",
+          "url": "https://ruminantes.ceva.com.br/products/fluron-gold/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P40",
+      "productId": "3eb90dec-26cb-525e-b106-530c2ffc67e0",
+      "name": "COMBO Pour On",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Cipermetrina 5 g e clorpirifós 7 g/100 mL; BPO presente, quantidade/unidade retida",
+      "pharmacologicalAssessment": "outside_existing_technical_classes",
+      "reviewedClassKeys": [],
+      "compositionEvidence": [],
+      "preparedLinks": [],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P41",
+      "productId": "a919841d-69b7-5340-848c-3c121b840ff8",
+      "name": "Butox P CE25",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Deltametrina; concentração não normalizada",
+      "pharmacologicalAssessment": "outside_existing_technical_classes",
+      "reviewedClassKeys": [],
+      "compositionEvidence": [
+        {
+          "sourceId": "ed15d3ac-5042-5ac0-a87f-ffb15e3526ee",
+          "coverageId": "66c732cb-4092-5fd0-b3d6-a9961e0c6e3c",
+          "url": "https://www.msd-saude-animal.com.br/produto/butox-p-ce25/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    },
+    {
+      "code": "P42",
+      "productId": "725304b5-c3c2-57b3-b255-a85032a23a55",
+      "name": "Tick Gard",
+      "cadastralStatus": "ativo",
+      "cadastralApprovalPreserved": true,
+      "composition": "Fluazuron e fipronil; concentração por volume não inferida",
+      "pharmacologicalAssessment": "outside_existing_technical_classes",
+      "reviewedClassKeys": [],
+      "compositionEvidence": [
+        {
+          "sourceId": "f51ca1d4-36ed-5a96-a854-0f9fe97cd996",
+          "coverageId": "b69809ef-37d0-5382-92c6-0cc82d636f41",
+          "url": "https://www.msd-saude-animal.com.br/produto/tick-gard/",
+          "strength": "forte",
+          "evidenceStatus": "SIM_BULA"
+        }
+      ],
+      "preparedLinks": [],
+      "operationalAuthorization": false,
+      "existingOperationalRulesPreserved": true,
+      "executionContextChecks": [
+        "species_context",
+        "applicable_dose_and_route",
+        "withdrawal_by_purpose",
+        "current_registration_validity"
+      ],
+      "limitation": "Classificação farmacológica não comprova cobertura integral de antígenos, esquema, espécie, dose, carência ou cumprimento de protocolo."
+    }
+  ]
+}

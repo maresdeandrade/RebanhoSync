@@ -12,6 +12,7 @@ export type SanitarySourceStrengthV2 = "forte" | "apoio" | "fraca";
 export type SanitaryEvidenceStatusV2 =
   | "SIM_BULA"
   | "SIM_NORMA"
+  | "SIM_COMPOSICAO_FABRICANTE"
   | "PRECISA_VALIDAR"
   | "NAO_AUTORIZADO"
   | "EXTRAPOLADO";
@@ -156,7 +157,10 @@ export function validateTechnicalSourceV2(
   if (
     source.strength === "forte" &&
     source.evidenceStatus !== "SIM_BULA" &&
-    source.evidenceStatus !== "SIM_NORMA"
+    source.evidenceStatus !== "SIM_NORMA" &&
+    !(source.evidenceStatus === "SIM_COMPOSICAO_FABRICANTE" &&
+      source.kind === "registro_produto" && source.fieldKeys.length > 0 &&
+      source.fieldKeys.every(field => ["composition", "product_class"].includes(field)))
   ) {
     issues.push({
       code: "strong_source_requires_authoritative_status",

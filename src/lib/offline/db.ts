@@ -49,6 +49,7 @@ import {
   type SanitarioProductClassGroupLocalV2,
   type SanitarioProductClassGroupMemberLocalV2,
   type SanitarioProductClassLocalV2,
+  type SanitarioProdutoClassLinkLocalV2,
   type SanitarioProdutoCarenciaRuleLocalV2,
   type SanitarioProdutoCarenciaFonteLocalV2,
   type SanitarioProdutoDoseRuleLocalV2,
@@ -159,6 +160,10 @@ export class OfflineDB extends Dexie {
   >;
   catalog_sanitario_product_class_group_members_v2!: Table<
     SanitarioProductClassGroupMemberLocalV2,
+    string
+  >;
+  catalog_sanitario_produto_class_links_v2!: Table<
+    SanitarioProdutoClassLinkLocalV2,
     string
   >;
   catalog_sanitario_product_class_default_rules_v2!: Table<
@@ -902,6 +907,11 @@ export class OfflineDB extends Dexie {
         "id, group_key, scope, fazenda_id, curation_status, deleted_at, updated_at, [scope+group_key], [fazenda_id+group_key]",
       catalog_sanitario_protocolo_itens_versions_v2:
         "id, protocol_id, logical_item_key, [protocol_id+logical_item_key+version], product_requirement_kind, deleted_at, updated_at",
+    });
+    // Version 37: relação pull-only N:N entre produto comercial e classe técnica.
+    this.version(37).stores({
+      catalog_sanitario_produto_class_links_v2:
+        "id, product_id, class_id, status_curatorial, deleted_at, updated_at, [product_id+class_id]",
     });
   }
 }

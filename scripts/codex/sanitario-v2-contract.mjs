@@ -51,7 +51,7 @@ const ENUMS = {
   sourceKind: ["norma_oficial", "bula", "registro_produto", "bibliografia", "guideline_apoio", "mv_responsavel"],
   sourceScope: ["global", "fazenda"],
   sourceStrength: ["forte", "apoio", "fraca"],
-  evidenceStatus: ["SIM_BULA", "SIM_NORMA", "PRECISA_VALIDAR", "NAO_AUTORIZADO", "EXTRAPOLADO"],
+  evidenceStatus: ["SIM_BULA", "SIM_NORMA", "SIM_COMPOSICAO_FABRICANTE", "PRECISA_VALIDAR", "NAO_AUTORIZADO", "EXTRAPOLADO"],
   coverageStatus: ["covers", "partially_covers", "does_not_cover"],
   species: ["bovino", "bubalino", "outro"],
   aptitude: ["corte", "leite", "mista", "all"],
@@ -227,7 +227,7 @@ function validateSourceRows(rows, issues) {
     }
     if (row.kind === "mv_responsavel" && row.scope !== "fazenda") fail(issues, `${path}.scope`, "mv_responsavel exige scope fazenda");
     if (row.kind === "guideline_apoio" && row.strength === "forte") fail(issues, `${path}.strength`, "guideline nao pode ser fonte forte");
-    if (row.strength === "forte" && !["SIM_BULA", "SIM_NORMA"].includes(row.evidence_status)) fail(issues, `${path}.evidence_status`, "fonte forte exige SIM_BULA ou SIM_NORMA");
+    if (row.strength === "forte" && !["SIM_BULA", "SIM_NORMA"].includes(row.evidence_status) && !(row.evidence_status === "SIM_COMPOSICAO_FABRICANTE" && row.kind === "registro_produto" && row.metadata?.classification_only === true)) fail(issues, `${path}.evidence_status`, "fonte forte exige SIM_BULA ou SIM_NORMA");
   });
 }
 
@@ -251,6 +251,8 @@ function validateTechnicalRows(data, indexes, issues) {
     requireField(issues, row, "coverage_status", path);
     enumValue(issues, row, "coverage_status", ENUMS.coverageStatus, path);
     reference(row.source_key, indexes.sources.keys, issues, `${path}.source_key`, "source_key");
+    const source = data.source_rows.find(source => source.source_key === row.source_key);
+    if (source?.evidence_status === "SIM_COMPOSICAO_FABRICANTE" && !["composition", "product_class"].includes(row.field_key)) fail(issues, `${path}.field_key`, "evidência de composição do fabricante não cobre campo operacional");
   });
 
   data.product_authorization_rows.forEach((row, index) => {

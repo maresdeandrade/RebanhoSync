@@ -1023,6 +1023,19 @@ export interface SanitarioProductClassGroupMemberLocalV2 {
   deleted_at: string | null;
 }
 
+export interface SanitarioProdutoClassLinkLocalV2 {
+  id: string;
+  product_id: string;
+  class_id: string;
+  status_curatorial: SanitarioTechnicalCuratorialStatusV2;
+  source_refs: Array<Record<string, unknown> | string>;
+  limitations: Array<Record<string, unknown> | string>;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 export interface SanitarioProductClassDefaultRuleLocalV2 {
   id: string;
   fazenda_id: string | null;
@@ -1106,6 +1119,7 @@ export type SanitarioTechnicalSourceStrengthV2 = "forte" | "apoio" | "fraca";
 export type SanitarioTechnicalEvidenceStatusV2 =
   | "SIM_BULA"
   | "SIM_NORMA"
+  | "SIM_COMPOSICAO_FABRICANTE"
   | "PRECISA_VALIDAR"
   | "NAO_AUTORIZADO"
   | "EXTRAPOLADO";

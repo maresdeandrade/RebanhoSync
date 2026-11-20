@@ -25,13 +25,18 @@ import type {
   Insumo,
   InsumoLote,
   SanitarioProdutoLocalV2,
+  SanitarioProdutoClassLinkLocalV2,
   SanitarioProductClassLocalV2,
-  SanitarioProductClassGroupMemberLocalV2,
 } from "@/lib/offline/types";
 import {
   formatSanitaryProductClassLabelV2,
   type SanitaryLocalAgendaListItemV2,
 } from "@/lib/sanitario/agenda/sanitaryLocalAgendaManagementV2";
+import { formatMissingTechnicalProductMessageV2 } from "@/lib/sanitario/execution/sanitaryProductAvailabilityPresentationV2";
+import {
+  productMatchesTechnicalRequirementV2,
+  resolveClassKeysByGroupV2,
+} from "@/lib/sanitario/execution/sanitaryProductClassLinkV2";
 import type {
   ExecuteSanitaryAgendaInputV2,
   SanitaryAgendaBatchResultV2,
@@ -148,6 +153,9 @@ function compatibleProduct(
   product: SanitarioProdutoLocalV2,
   item: SanitaryLocalAgendaListItemV2,
   classesByGroup: Map<string, Set<string> | null>,
+  productClassLinks: SanitarioProdutoClassLinkLocalV2[],
+  productClasses: SanitarioProductClassLocalV2[],
+  fazendaId: string | null,
 ) {
   if (
     item.productRequirementKind === "specific_product" &&
@@ -156,14 +164,32 @@ function compatibleProduct(
     return product.id === item.plannedProductId;
   }
   if (item.productRequirementKind === "product_class" && item.productClass) {
-    return product.classe === item.productClass;
+    return productMatchesTechnicalRequirementV2(
+      product.id,
+      item.productClass,
+      productClassLinks,
+      productClasses,
+      fazendaId,
+    );
   }
   if (
     item.productRequirementKind === "product_class_group" &&
     item.productClassGroupId
   ) {
     const classIds = classesByGroup.get(item.productClassGroupId);
-    return Boolean(classIds && classIds.size > 0 && classIds.has(product.classe));
+    return Boolean(
+      classIds &&
+        classIds.size > 0 &&
+        [...classIds].some((classKey) =>
+          productMatchesTechnicalRequirementV2(
+            product.id,
+            classKey,
+            productClassLinks,
+            productClasses,
+            fazendaId,
+          ),
+        ),
+    );
   }
   return item.productRequirementKind === "none";
 }
@@ -181,55 +207,16 @@ function compatibleSupplyByFallback(
   return false;
 }
 
-function classScopeAvailable(
-  entry: { scope: string; fazenda_id: string | null },
-  fazendaId: string | null,
-) {
-  return (
-    (entry.scope === "global" && entry.fazenda_id === null) ||
-    (entry.scope === "tenant" && entry.fazenda_id === fazendaId)
-  );
-}
-
-function resolveClassKeysByGroup(
-  productClasses: SanitarioProductClassLocalV2[],
-  groupMembers: SanitarioProductClassGroupMemberLocalV2[],
-  fazendaId: string | null,
-) {
-  const classesByGroup = new Map<string, Set<string> | null>();
-  const classKeysById = new Map(
-    productClasses
-      .filter(
-        (entry) => !entry.deleted_at && classScopeAvailable(entry, fazendaId),
-      )
-      .map((entry) => [entry.id, entry.class_key]),
-  );
-  const unresolvedGroups = new Set<string>();
-  for (const member of groupMembers) {
-    if (member.deleted_at || !member.is_allowed) continue;
-    if (!classScopeAvailable(member, fazendaId)) continue;
-    const classKey = classKeysById.get(member.class_id);
-    if (!classKey) {
-      unresolvedGroups.add(member.group_id);
-      continue;
-    }
-    const current = classesByGroup.get(member.group_id) ?? new Set<string>();
-    current.add(classKey);
-    classesByGroup.set(member.group_id, current);
-  }
-  // Partial pull is not proof of incompatibility in an already performed fact.
-  for (const groupId of unresolvedGroups) classesByGroup.set(groupId, null);
-  return classesByGroup;
-}
-
 // eslint-disable-next-line react-refresh/only-export-components
 export async function loadSanitaryAgendaExecutionOptionsV2(
   items: SanitaryLocalAgendaListItemV2[],
+  mode: "prospective" | "executed_fact" = "prospective",
 ) {
   const fazendaId = items[0]?.fazendaId ?? null;
-  const [products, groupMembers, supplies, lots, productClasses] =
+  const [products, productClassLinks, groupMembers, supplies, lots, productClasses] =
     await Promise.all([
       db.catalog_sanitario_produtos_v2.toArray(),
+      db.catalog_sanitario_produto_class_links_v2.toArray(),
       db.catalog_sanitario_product_class_group_members_v2.toArray(),
       fazendaId
         ? db.state_insumos.where("fazenda_id").equals(fazendaId).toArray()
@@ -239,7 +226,7 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
         : [],
       db.catalog_sanitario_product_classes_v2.toArray(),
     ]);
-  const classesByGroup = resolveClassKeysByGroup(
+  const classesByGroup = resolveClassKeysByGroupV2(
     productClasses,
     groupMembers,
     fazendaId,
@@ -250,7 +237,16 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
   const catalogProductOptions = products
     .filter((product) => !product.deleted_at)
     .filter((product) =>
-      items.every((item) => compatibleProduct(product, item, classesByGroup)),
+      items.every((item) =>
+        (mode === "executed_fact" && ["product_class", "product_class_group"].includes(item.productRequirementKind)) || compatibleProduct(
+          product,
+          item,
+          classesByGroup,
+          productClassLinks,
+          productClasses,
+          fazendaId,
+        ),
+      ),
     )
     .map((product) => ({
       id: product.id,
@@ -258,9 +254,10 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
       name: product.nome_comercial,
       productClass: product.classe ?? null,
       source: "catalog_product" as const,
-      weakTechnicalLink: false,
-      warning:
-        product.status_curatorial === "ativo"
+      weakTechnicalLink: !items.every(item => compatibleProduct(product, item, classesByGroup, productClassLinks, productClasses, fazendaId)),
+      warning: !items.every(item => compatibleProduct(product, item, classesByGroup, productClassLinks, productClasses, fazendaId))
+        ? "Correspondência técnica não comprovada. Declare somente aplicação já realizada; este registro não comprova cumprimento do protocolo nem autoriza aplicação futura."
+        : product.status_curatorial === "ativo"
           ? null
           : "Produto com conferência técnica pendente ou restrição no catálogo. Registre somente uma aplicação já realizada; este registro não autoriza nova aplicação nem comprova carência.",
     }));
@@ -274,7 +271,15 @@ export async function loadSanitaryAgendaExecutionOptionsV2(
     )
     .filter((supply) =>
       items.every((item) =>
-        compatibleSupply(supply, item, productsById, classesByGroup),
+        compatibleSupply(
+          supply,
+          item,
+          productsById,
+          classesByGroup,
+          productClassLinks,
+          productClasses,
+          fazendaId,
+        ),
       ),
     )
     .map((supply) => {
@@ -335,13 +340,26 @@ function compatibleSupply(
   item: SanitaryLocalAgendaListItemV2,
   productsById: Map<string, SanitarioProdutoLocalV2>,
   classesByGroup: Map<string, Set<string> | null>,
+  productClassLinks: SanitarioProdutoClassLinkLocalV2[],
+  productClasses: SanitarioProductClassLocalV2[],
+  fazendaId: string | null,
 ) {
   if (supply.tipo !== "sanitario" || !supply.ativo || supply.deleted_at)
     return false;
   const productId = explicitSanitaryProductId(supply);
   const product = productId ? productsById.get(productId) : undefined;
   return (
-    Boolean(product && compatibleProduct(product, item, classesByGroup)) ||
+    Boolean(
+      product &&
+        compatibleProduct(
+          product,
+          item,
+          classesByGroup,
+          productClassLinks,
+          productClasses,
+          fazendaId,
+        ),
+    ) ||
     compatibleSupplyByFallback(supply, item)
   );
 }
@@ -476,7 +494,7 @@ export function SanitaryAgendaExecutionConfirmV2({
       return;
     }
     let cancelled = false;
-    loadSanitaryAgendaExecutionOptionsV2(items)
+    loadSanitaryAgendaExecutionOptionsV2(items, "executed_fact")
       .then((options) => {
         if (cancelled) return;
         setProductOptions(options.productOptions);
@@ -596,7 +614,7 @@ export function SanitaryAgendaExecutionConfirmV2({
                     productId: selectedProduct.id,
                     productName: selectedProduct.name,
                     productClass:
-                      selectedProduct.productClass ?? entry.productClass,
+                      entry.productClass,
                     productClassGroupId: entry.productClassGroupId,
                     inventoryLotId: inventoryLotId.trim() || undefined,
                     quantityConsumed: quantityForAgenda,
@@ -793,9 +811,10 @@ export function SanitaryAgendaExecutionConfirmV2({
                 </Select>
                 {productRequired && productOptions.length === 0 ? (
                   <p className="text-xs text-amber-700">
-                    Nenhum produto sanitário cadastrado compatível encontrado.
-                    Para esta agenda, produtos sem classe técnica ou sem vínculo
-                    explícito com o catálogo não são elegíveis.
+                    {formatMissingTechnicalProductMessageV2(
+                      item?.productRequirementKind ?? "none",
+                      "execution",
+                    )}
                   </p>
                 ) : null}
               </label>

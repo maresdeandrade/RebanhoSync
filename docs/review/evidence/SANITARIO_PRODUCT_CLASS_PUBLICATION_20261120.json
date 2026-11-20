@@ -1,0 +1,814 @@
+{
+  "artifact": "sanitario_product_class_publication_v2",
+  "classification_only": true,
+  "operational_authorization": false,
+  "decision_reference": "EXPLICIT_USER_PRODUCT_CLASS_FINALIZATION_20261120",
+  "classes": [
+    {
+      "id": "cb2b48d3-25a0-4e09-b3da-39a30a1765d2",
+      "class_key": "benzimidazois",
+      "definition": "Família química que inclui fembendazol; classificação farmacológica, sem equivalência de eficácia, indicação ou dose.",
+      "references": [
+        "https://www.merckvetmanual.com/multimedia/table/delivery-routes-for-anthelmintics"
+      ]
+    },
+    {
+      "id": "f7212d4a-1742-4f2a-80c9-ffec7f43b214",
+      "class_key": "imidazotiazoleis",
+      "definition": "Família química do levamisol, inclusive seus sais; classificação farmacológica sem autorização clínica.",
+      "references": [
+        "https://www.merckvetmanual.com/multimedia/table/delivery-routes-for-anthelmintics"
+      ]
+    },
+    {
+      "id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "definition": "Família de ivermectina, abamectina, doramectina, eprinomectina e moxidectina; formulações não são clinicamente equivalentes.",
+      "references": [
+        "https://www.merckvetmanual.com/multimedia/table/delivery-routes-for-anthelmintics"
+      ]
+    },
+    {
+      "id": "6e3d48fe-851e-4db7-aa2f-c2c0d89f069d",
+      "class_key": "vacina_brucelose_b19",
+      "definition": "Imunobiológico contendo Brucella abortus cepa B19; exclui RB-51 e não certifica habilitação, espécie ou aplicação.",
+      "references": [
+        "https://www.gov.br/agricultura/pt-br/assuntos/sanidade-animal-e-vegetal/saude-animal/programas-de-saude-animal/pncebt/brucelose-e-tuberculose"
+      ]
+    },
+    {
+      "id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "definition": "Imunobiológico contendo bacterinas ou toxoides clostridiais. A classe não assegura todas as valências nem intercambialidade.",
+      "references": [
+        "https://labovet.com.br/produtos/starvac-12"
+      ]
+    },
+    {
+      "id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "definition": "Classe funcional restrita de imunobiológicos com componentes IBR e BVD documentados; formulações e variantes não são equivalentes.",
+      "references": [
+        "https://www.zoetis.com.br/_locale-assets/arquivos/bovinos/bula_bov-alt-50442600-cattlemaster-4l5.pdf"
+      ]
+    },
+    {
+      "id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+      "class_key": "vacina_leptospirose",
+      "definition": "Imunobiológicos com antígenos de Leptospira documentados; não afirma cobertura de todos os sorovares ou de todo esquema.",
+      "references": [
+        "https://www.zoetis.com.br/_locale-assets/arquivos/bovinos/bula_bov-alt-50442600-cattlemaster-4l5.pdf"
+      ]
+    },
+    {
+      "id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+      "class_key": "vacina_raiva_herbivoros",
+      "definition": "Imunobiológico antirrábico para herbívoros com antígeno de vírus rábico; classificação não determina obrigatoriedade ou esquema.",
+      "references": [
+        "https://www.zoetis.com.br/especies/bovinos/vacinas-bovinos.aspx"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "b64ce0b8-9f48-5925-a04a-b668cb2c6963",
+      "source_key": "SRC_PRODUCT_CLASS_20261120_88C4A3C9868D5EB0974CB16812A8918E",
+      "product_id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+      "title": "Cattle Master 4 L5 — composição documental para classificação cadastral",
+      "url": "https://www.zoetis.com.br/_locale-assets/arquivos/bovinos/bula_bov-alt-50442600-cattlemaster-4l5.pdf",
+      "issuer": "Zoetis",
+      "kind": "bula",
+      "evidence_status": "SIM_BULA",
+      "scope": "global",
+      "strength": "forte",
+      "limitations": [
+        "Comprova exclusivamente composição/classificação; não certifica espécie, dose, via, carência ou registro vigente."
+      ],
+      "metadata": {
+        "classification_only": true,
+        "operational_authorization": false,
+        "reviewed_at": "2026-11-20",
+        "evidence_summary": "IBR/BVD e cinco sorotipos de Leptospira expressos na composição da bula oficial."
+      },
+      "coverage": {
+        "id": "c30949e7-b2cc-5908-a8c7-5fb4b3cdaad8",
+        "field_key": "composition",
+        "coverage_status": "covers",
+        "notes": "IBR/BVD e cinco sorotipos de Leptospira expressos na composição da bula oficial."
+      }
+    },
+    {
+      "id": "6f5a47a2-83ec-5cb9-a6e5-9feed226f248",
+      "source_key": "SRC_PRODUCT_CLASS_20261120_53678137452A59109BC667022504A6CE",
+      "product_id": "53678137-452a-5910-9bc6-67022504a6ce",
+      "title": "Ripercol L 150 F — composição documental para classificação cadastral",
+      "url": "https://www.zoetis.com.br/especies/bovinos/endoparasiticidas.aspx",
+      "issuer": "Zoetis",
+      "kind": "registro_produto",
+      "evidence_status": "SIM_COMPOSICAO_FABRICANTE",
+      "scope": "global",
+      "strength": "forte",
+      "limitations": [
+        "Comprova exclusivamente composição/classificação; não certifica espécie, dose, via, carência ou registro vigente."
+      ],
+      "metadata": {
+        "classification_only": true,
+        "operational_authorization": false,
+        "reviewed_at": "2026-11-20",
+        "evidence_summary": "Página oficial específica identifica fosfato de levamisol 18,8%."
+      },
+      "coverage": {
+        "id": "a59f7820-0bc3-57af-aec1-4909231b9810",
+        "field_key": "composition",
+        "coverage_status": "covers",
+        "notes": "Página oficial específica identifica fosfato de levamisol 18,8%."
+      }
+    },
+    {
+      "id": "3823a6f0-708c-5bfe-a2ed-574fb2d58e61",
+      "source_key": "SRC_PRODUCT_CLASS_20261120_DB74372859E25ECB8B2E211AB170618F",
+      "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+      "title": "Eprecis — composição documental para classificação cadastral",
+      "url": "https://www.ceva.com.br/ceva-na-midia/noticias/controle-de-parasitas-na-epoca-do-periparto-e-aliado-estrategico-dos-produtores",
+      "issuer": "Ceva",
+      "kind": "registro_produto",
+      "evidence_status": "SIM_COMPOSICAO_FABRICANTE",
+      "scope": "global",
+      "strength": "forte",
+      "limitations": [
+        "Comprova exclusivamente composição/classificação; não certifica espécie, dose, via, carência ou registro vigente."
+      ],
+      "metadata": {
+        "classification_only": true,
+        "operational_authorization": false,
+        "reviewed_at": "2026-11-20",
+        "evidence_summary": "Comunicado oficial identifica Eprecis como produto à base de eprinomectina."
+      },
+      "coverage": {
+        "id": "fd53e112-7516-5fbc-af7e-19008fdb78c7",
+        "field_key": "composition",
+        "coverage_status": "covers",
+        "notes": "Comunicado oficial identifica Eprecis como produto à base de eprinomectina."
+      }
+    },
+    {
+      "id": "cc40f618-5ba5-5e4d-ac0e-cde80c7bc250",
+      "source_key": "SRC_PRODUCT_CLASS_20261120_670001A63634582BA277F3BC65F89A0E",
+      "product_id": "670001a6-3634-582b-a277-f3bc65f89a0e",
+      "title": "Ticson 3.50 — composição documental para classificação cadastral",
+      "url": "https://www.ceva.com.br/ceva-na-midia/noticias/precisao-no-controle-das-verminoses-e-essencial-para-pecuaria",
+      "issuer": "Ceva",
+      "kind": "registro_produto",
+      "evidence_status": "SIM_COMPOSICAO_FABRICANTE",
+      "scope": "global",
+      "strength": "forte",
+      "limitations": [
+        "Comprova exclusivamente composição/classificação; não certifica espécie, dose, via, carência ou registro vigente."
+      ],
+      "metadata": {
+        "classification_only": true,
+        "operational_authorization": false,
+        "reviewed_at": "2026-11-20",
+        "evidence_summary": "Comunicado oficial identifica Ticson 3.50 entre as formulações de ivermectina 3,5%."
+      },
+      "coverage": {
+        "id": "0dc74c66-1685-513d-aa66-608ff34147b9",
+        "field_key": "composition",
+        "coverage_status": "covers",
+        "notes": "Comunicado oficial identifica Ticson 3.50 entre as formulações de ivermectina 3,5%."
+      }
+    },
+    {
+      "id": "1b256ba2-596c-524b-a703-ef8d8ed0a391",
+      "source_key": "SRC_PRODUCT_CLASS_20261120_1628CF40367653A69FE24E154936167B",
+      "product_id": "1628cf40-3676-53a6-9fe2-4e154936167b",
+      "title": "ANAVAC B19 — composição documental para classificação cadastral",
+      "url": "https://ruminants.ceva.com/app/uploads/sites/16/2023/10/Anavac-B19.pdf",
+      "issuer": "Ceva",
+      "kind": "bula",
+      "evidence_status": "SIM_BULA",
+      "scope": "global",
+      "strength": "forte",
+      "limitations": [
+        "Comprova exclusivamente composição/classificação; não certifica espécie, dose, via, carência ou registro vigente."
+      ],
+      "metadata": {
+        "classification_only": true,
+        "operational_authorization": false,
+        "reviewed_at": "2026-11-20",
+        "evidence_summary": "Bula oficial, página única, P504889 V01: composição com Brucella abortus B19 liofilizada; conferência visual do documento.",
+        "document_sha256": "e6c3be5f8788526d05a882444f6dcae29df757aa392bcd45e0b41b68ba863da1"
+      },
+      "coverage": {
+        "id": "7261cf2e-641c-5b48-aa6b-d19157f1760e",
+        "field_key": "composition",
+        "coverage_status": "covers",
+        "notes": "Bula oficial, página única, P504889 V01: composição com Brucella abortus B19 liofilizada; conferência visual do documento."
+      },
+      "version": "P504889 V01"
+    }
+  ],
+  "links": [
+    {
+      "id": "0e0888d0-a84e-52c3-a98f-7db5ca407236",
+      "product_id": "ba59c489-49d5-5362-b5f4-94818c90deb4",
+      "product_name": "Abor-Vac",
+      "class_id": "6e3d48fe-851e-4db7-aa2f-c2c0d89f069d",
+      "class_key": "vacina_brucelose_b19",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "e8fb10c5-8b05-5527-aaec-e70a384d87d3",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "443af7f5-2b68-52fe-ac7d-18a6eed004ca"
+        }
+      ]
+    },
+    {
+      "id": "2df4c68d-c83a-5fe7-adf9-202a100fa6cc",
+      "product_id": "0f1b6c73-c50f-5ad4-a308-29788de7429a",
+      "product_name": "BOTULINOMAX",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "feb9458c-3c75-5157-9fcd-e76885020a50",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "dbe016b3-7298-5952-81d8-604b31b336e7"
+        }
+      ]
+    },
+    {
+      "id": "782a600a-4e0e-5a61-a568-8b9d031e3560",
+      "product_id": "3e0a501b-1742-506c-a094-d8a18ad8a98a",
+      "product_name": "Bovi-Shield Gold One Shot",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "ac792c71-4772-587b-9ca2-19961d1a2dd2",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "79675b7c-9294-5821-b711-866421b5e13f"
+        }
+      ]
+    },
+    {
+      "id": "3b5caeb2-f0f2-56e5-a440-b5ec22499dd1",
+      "product_id": "ec3eb33d-b739-5a62-826d-fee85e04a9dd",
+      "product_name": "Bovilis Poli-Star T",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "eccceb9c-0ca1-54fa-853a-e2a99652eac1",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "78eb7c34-3bc1-5318-87f1-4831b50590bb"
+        }
+      ]
+    },
+    {
+      "id": "2ba9db54-569d-54b5-a207-b6f0b86d4a54",
+      "product_id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+      "product_name": "Bovilis Vista 5 L5 CFP",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "12de317d-0bce-539b-abdb-8551f9d4f15f",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "13838d52-4d52-5bc2-ae8d-d2061623a11d"
+        }
+      ]
+    },
+    {
+      "id": "7c844508-a746-5425-a7aa-fe859f945c30",
+      "product_id": "d1702fc4-01bb-59be-84a2-eab38babe223",
+      "product_name": "Bovilis Vista 5 L5 CFP",
+      "class_id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+      "class_key": "vacina_leptospirose",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "12de317d-0bce-539b-abdb-8551f9d4f15f",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "13838d52-4d52-5bc2-ae8d-d2061623a11d"
+        }
+      ]
+    },
+    {
+      "id": "54cc8f4c-304f-589b-a9c1-ad83f7e5fbcc",
+      "product_id": "a90ae0cf-d97b-577c-a622-080f2db70c3c",
+      "product_name": "Bovilis Vista Once SQ",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "06df6732-4e7e-5178-ad5d-46adeb01a3e5",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "29f41157-0590-5b3e-b30a-ba45a8ce1913"
+        }
+      ]
+    },
+    {
+      "id": "fb992e87-39ff-5941-a61b-580057e0eb1a",
+      "product_id": "0168212e-2443-5eaf-97f1-108924e58d4d",
+      "product_name": "Cattle Master 4",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "84d7b10d-986e-558a-bc12-8e0f4661551b",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "dbfb40fc-93c9-5926-b7b7-17902a5da1d8"
+        }
+      ]
+    },
+    {
+      "id": "8033fb18-ab92-5618-a491-ea412b21d707",
+      "product_id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+      "product_name": "Cattle Master 4 L5",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "b64ce0b8-9f48-5925-a04a-b668cb2c6963",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "c30949e7-b2cc-5908-a8c7-5fb4b3cdaad8"
+        }
+      ]
+    },
+    {
+      "id": "9e23510d-fc7d-5a0f-ac87-7b8840c6f155",
+      "product_id": "88c4a3c9-868d-5eb0-974c-b16812a8918e",
+      "product_name": "Cattle Master 4 L5",
+      "class_id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+      "class_key": "vacina_leptospirose",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "b64ce0b8-9f48-5925-a04a-b668cb2c6963",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "c30949e7-b2cc-5908-a8c7-5fb4b3cdaad8"
+        }
+      ]
+    },
+    {
+      "id": "9ad1bae4-2b51-5e25-aa3b-b62c37062d22",
+      "product_id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+      "product_name": "Cattle Master Gold FP 5/L5",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "c23279c0-2e4d-5727-834b-5c707f6d2627",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "2949dd8a-9f95-5d8d-9070-740effdd0d45"
+        }
+      ]
+    },
+    {
+      "id": "b2b970b0-e3b4-5c53-a224-5a993a2f7504",
+      "product_id": "a1cae25c-7d96-5cd9-b5b3-fb2e74632545",
+      "product_name": "Cattle Master Gold FP 5/L5",
+      "class_id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+      "class_key": "vacina_leptospirose",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "c23279c0-2e4d-5727-834b-5c707f6d2627",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "2949dd8a-9f95-5d8d-9070-740effdd0d45"
+        }
+      ]
+    },
+    {
+      "id": "a4b95a2c-e192-5da1-a91e-26516026e87f",
+      "product_id": "af618de9-e22b-5ad7-a852-43933c6cb3d3",
+      "product_name": "Clostrimune 10TH",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "eb8f4a45-4daa-5402-bda2-083e3b04790a",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "f789ecb9-e466-5d37-92e4-487450463445"
+        }
+      ]
+    },
+    {
+      "id": "27ce1515-0ac3-53ec-a7ad-686b3d54ea08",
+      "product_id": "dfed6e97-286a-5404-985b-528d0befa1ec",
+      "product_name": "Clostrimune 8",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "463c1c16-8788-5dd7-a7ee-c5f1469ab0df",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "287c955b-a795-5371-8083-5e772b776a37"
+        }
+      ]
+    },
+    {
+      "id": "ff4ffe93-29c8-5414-a222-53b39f83db92",
+      "product_id": "453b1b35-93a4-5790-8217-7b7e83c78c49",
+      "product_name": "Covexin 9",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "1f09ce2e-9fa6-51d2-8a6f-ebb834b5944e",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "0a62958a-43a2-5155-9749-6e4ac6b03c79"
+        }
+      ]
+    },
+    {
+      "id": "4303e7e0-cdf7-5377-affc-85349579aaf8",
+      "product_id": "7fc44e31-3373-50de-97fd-58e874938938",
+      "product_name": "Cydectin 1%",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "9218da1b-8759-545c-9ec8-4bcd5351c15e",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "c50930cc-bb81-5539-9610-fcf59f8493c3"
+        }
+      ]
+    },
+    {
+      "id": "7cb8f51b-9563-5e88-aae8-60948e11a600",
+      "product_id": "db743728-59e2-5ecb-8b2e-211ab170618f",
+      "product_name": "Eprecis",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "3823a6f0-708c-5bfe-a2ed-574fb2d58e61",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "fd53e112-7516-5fbc-af7e-19008fdb78c7"
+        }
+      ]
+    },
+    {
+      "id": "a72de56d-311c-53d7-a5e1-ea26b6ecb9c7",
+      "product_id": "a805aad2-7cd4-567e-8ace-676bf7cfd9f4",
+      "product_name": "Exceller",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "35b7ce3b-570f-5696-87a1-8d519ddfc155",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "2804bb75-5b1c-54de-b7e6-62686eabc094"
+        }
+      ]
+    },
+    {
+      "id": "9ba2e3dd-db08-5c8e-a1eb-139a0ab2dfa9",
+      "product_id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+      "product_name": "FertiGuard Selenium Max",
+      "class_id": "f3dc1654-496e-4874-b44f-7d1215a4cc1f",
+      "class_key": "vacina_ibr_bvd",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "03d0815b-ba94-5032-96b1-def150c78670",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "4c934eba-3936-5bba-b0b5-d970e362a6c3"
+        }
+      ]
+    },
+    {
+      "id": "e0de2c93-0565-5949-abf1-3b8d69644db9",
+      "product_id": "c2171cd8-1865-5d12-90c0-22062043bc73",
+      "product_name": "FertiGuard Selenium Max",
+      "class_id": "e014edb6-8273-4eb8-aece-ae6ecd6cc36e",
+      "class_key": "vacina_leptospirose",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "03d0815b-ba94-5032-96b1-def150c78670",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "4c934eba-3936-5bba-b0b5-d970e362a6c3"
+        }
+      ]
+    },
+    {
+      "id": "c2d3e6be-3040-5a8d-aa6c-f74ea71f9f08",
+      "product_id": "36ea6650-6c8f-5a56-a778-bfb6e428102d",
+      "product_name": "Panacur 10%",
+      "class_id": "cb2b48d3-25a0-4e09-b3da-39a30a1765d2",
+      "class_key": "benzimidazois",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "c45fd47a-f7b4-52b9-8862-c813d4d1ba39",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "800b35da-6ee0-53a0-b8c4-4cb76e9f37a1"
+        }
+      ]
+    },
+    {
+      "id": "e3732772-67e1-5b97-a34e-d095b431f51d",
+      "product_id": "33521603-7562-551e-8a66-5b5d3523b83d",
+      "product_name": "Poli-Star",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "c694ebad-fd15-594f-bbb8-7e80558b4017",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "c64dd154-570d-57d4-b0bd-a7298be335e2"
+        }
+      ]
+    },
+    {
+      "id": "63c041c6-5f2c-5c87-af6b-aeb42faec936",
+      "product_id": "ebd8a49a-47ed-5cbf-a225-4dfe10ffadaa",
+      "product_name": "Puritec Gold",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "bacb440a-2013-54a7-900d-464ac37293de",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "7b7f8031-a750-58d2-af38-f90c82da00ca"
+        }
+      ]
+    },
+    {
+      "id": "f8c93856-f030-5457-a8d1-921797f5530d",
+      "product_id": "dca7ea4a-c0b8-5d88-8bb9-34cc6df6213c",
+      "product_name": "RABMUNE",
+      "class_id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+      "class_key": "vacina_raiva_herbivoros",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "3928214e-1932-585e-a573-28b198138116",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "7fa9c22a-d40b-531c-9c66-2e47a0386c54"
+        }
+      ]
+    },
+    {
+      "id": "d12c8544-de5f-521e-a2a5-9f4b8bb057a3",
+      "product_id": "45e406f2-303e-528b-8146-804f38492815",
+      "product_name": "Raivacel Multi",
+      "class_id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+      "class_key": "vacina_raiva_herbivoros",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "3b3672f6-89fe-5e0f-a73d-2f3d591ad5db",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "d315d8f1-d766-5b9f-b77f-45377fca1d05"
+        }
+      ]
+    },
+    {
+      "id": "4a990ec9-c316-5cf4-ad49-bd57ecc982ff",
+      "product_id": "234204f8-4113-5294-8aa2-b0d2b3f83d95",
+      "product_name": "Ranger",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "43c112cc-cc2d-562b-a43e-52e984e39f39",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "1329c639-ee2e-5c38-8881-b59bc47052fc"
+        }
+      ]
+    },
+    {
+      "id": "0d198591-b4c4-582b-a84a-fa32378084b7",
+      "product_id": "5402b0be-eabb-5bce-91e8-242db1112151",
+      "product_name": "Ranger LA 3,5%",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "53356802-c59b-58c7-9d8d-a200f2340877",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "2e7f8d3d-aca9-5339-ad8a-96ae6821a685"
+        }
+      ]
+    },
+    {
+      "id": "02d9328d-30f2-5ea8-a0db-fc84565aafd8",
+      "product_id": "53678137-452a-5910-9bc6-67022504a6ce",
+      "product_name": "Ripercol L 150 F",
+      "class_id": "f7212d4a-1742-4f2a-80c9-ffec7f43b214",
+      "class_key": "imidazotiazoleis",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "6f5a47a2-83ec-5cb9-a6e5-9feed226f248",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "a59f7820-0bc3-57af-aec1-4909231b9810"
+        }
+      ]
+    },
+    {
+      "id": "568b17f6-f426-59f5-a092-b71c63e02f33",
+      "product_id": "b7dcd012-0feb-5ac8-9ce8-f516b8d8ea07",
+      "product_name": "Ripercol L Injetável",
+      "class_id": "f7212d4a-1742-4f2a-80c9-ffec7f43b214",
+      "class_key": "imidazotiazoleis",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "ea580dd1-9d7b-5ab7-8fa9-fbbcb4a0eb4e",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "5446ca3c-ae4a-5bcf-ace4-6d4a0e5b732f"
+        }
+      ]
+    },
+    {
+      "id": "6e04b9bf-8d6c-5e13-a238-08660dec1a59",
+      "product_id": "942f1bf9-874b-5c46-ae35-a44648dcc893",
+      "product_name": "Solution 3,5%",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "05a28596-b4b6-55d9-9fb1-1270e3709928",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "75f4fc7b-9726-581e-964b-b8f59e492f78"
+        }
+      ]
+    },
+    {
+      "id": "7f24c0a5-7914-5a2d-a716-770855997315",
+      "product_id": "55e88d23-83c9-5421-ba2f-7da1b979c03b",
+      "product_name": "StarVac",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "a7e807f3-5766-556a-b85e-c320fd66945c",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "5fe571d2-bd0e-5cf0-9747-d2300b38745d"
+        }
+      ]
+    },
+    {
+      "id": "f05e9200-ada0-5e6f-abd5-446e4aaf211a",
+      "product_id": "12128db7-71ff-551d-92e0-18418140b91b",
+      "product_name": "StarVac 12",
+      "class_id": "d93e2a18-adf9-4988-8849-1b69889832b9",
+      "class_key": "vacina_clostridial",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "a920e292-c284-5fbc-aec1-14772d87f473",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "9644d729-165b-55bf-be1b-04c6bb9c6d50"
+        }
+      ]
+    },
+    {
+      "id": "800d14fa-d8a2-572a-a370-ce385c6987a2",
+      "product_id": "e5043b4b-6646-52d9-a40d-b2b46d18e774",
+      "product_name": "Supramec Pour-On",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "5ec069f2-d34d-558c-8069-d9378421d738",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "c6f1a803-65b8-55ee-8fc3-e8cce35199db"
+        }
+      ]
+    },
+    {
+      "id": "cccfcbf9-09b9-5e81-aadf-099498d01fdd",
+      "product_id": "670001a6-3634-582b-a277-f3bc65f89a0e",
+      "product_name": "Ticson 3.50",
+      "class_id": "41bc2394-2d1a-4677-b705-8bee8e3ac027",
+      "class_key": "lactonas_macrociclicas",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "cc40f618-5ba5-5e4d-ac0e-cde80c7bc250",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "0dc74c66-1685-513d-aa66-608ff34147b9"
+        }
+      ]
+    },
+    {
+      "id": "1373b608-174a-54b8-a95e-52db925b8fb0",
+      "product_id": "6417c886-2a93-599a-b74a-c72ac1c03752",
+      "product_name": "Vacina Antirrábica Inativada para Herbívoros Labovet",
+      "class_id": "b5205abc-2023-42bc-b3e9-f903a66c8202",
+      "class_key": "vacina_raiva_herbivoros",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "f112ec97-634d-571a-9b4e-4350bd52bd93",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "6fed13c8-6db0-5178-ae54-eba2f43169ef"
+        }
+      ]
+    },
+    {
+      "id": "3c056378-1e3e-54ed-a019-87196ae268cb",
+      "product_id": "d66dddec-b33c-5882-bcc4-b3a82389d349",
+      "product_name": "Vacina Liofilizada contra a Brucelose Bovina Labovet",
+      "class_id": "6e3d48fe-851e-4db7-aa2f-c2c0d89f069d",
+      "class_key": "vacina_brucelose_b19",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "188e195e-ff2d-5871-b758-129a2752fa95",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "f82db723-d5d8-5bf7-876a-87c2577fd64d"
+        }
+      ]
+    },
+    {
+      "id": "5f9f1ab8-d606-5c08-a88e-d703d87fa3c8",
+      "product_id": "1628cf40-3676-53a6-9fe2-4e154936167b",
+      "product_name": "ANAVAC B19",
+      "class_id": "6e3d48fe-851e-4db7-aa2f-c2c0d89f069d",
+      "class_key": "vacina_brucelose_b19",
+      "status_curatorial": "ativo",
+      "source_refs": [
+        {
+          "id": "1b256ba2-596c-524b-a703-ef8d8ed0a391",
+          "field": "product_class",
+          "basedOnField": "composition",
+          "coverageId": "7261cf2e-641c-5b48-aa6b-d19157f1760e"
+        }
+      ]
+    }
+  ],
+  "residuals": [],
+  "excluded_products": [
+    "Bovilis RB-51",
+    "Butox P CE25",
+    "COMBO Pour On",
+    "Exzolt 5% Bovinos",
+    "FLURON Gold",
+    "Tick Gard"
+  ]
+}
