@@ -56,4 +56,8 @@ Não use um novo convite para alterar o papel de alguém que já é membro ativo
 
 Convite expirado, cancelado, recusado ou já utilizado pode apresentar título próprio e não permitir novo aceite. Solicite novo convite quando necessário. Em falha de carregamento, use **Tentar novamente** ou **Entrar para continuar** conforme a tela. Se o problema persistir, informe ao responsável a mensagem, a fazenda e o horário, sem enviar senha ou link de acesso a pessoas não autorizadas.
 
-Ainda podem ser gerados links redundantes para destinatários repetidos. A verificação de identidade e o vínculo ativo continuam sendo conferidos no aceite; isso não equivale a prevenção geral de convites duplicados. Não há captura atual de Equipe incorporada a este manual; não se reutilizam telas anteriores à correção como se fossem a versão atual.
+Ainda podem ser gerados links redundantes para destinatários repetidos. A verificação de identidade e o vínculo ativo continuam sendo conferidos no aceite; isso não equivale a prevenção geral de convites duplicados.
+
+![Lista de equipe com um convite pendente](../../review/evidence/block1/screenshots/j04-correction/equipe-sem-perfil.png)
+
+*Exemplo em ambiente de teste após a correção J04: a lista apresenta membro e convite pendente mesmo sem perfil complementar.*

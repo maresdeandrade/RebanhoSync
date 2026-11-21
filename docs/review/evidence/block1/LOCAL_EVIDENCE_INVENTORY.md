@@ -2,6 +2,8 @@
 
 Snapshot de 2026-11-21. [Matriz central](../../BLOCK1_CONSOLIDATED_MATRIX.md). Nenhum original foi removido ou sobrescrito para produzir este arquivo.
 
+Rechecagem posterior: o usuário informou a exclusão de imagens. Das 230 entradas no [manifesto visual](screenshots-manifest.json), 111 permaneciam nos caminhos inventariados e 119 estavam ausentes; cinco cópias selecionadas mantinham o hash original. Não há confirmação de outro acervo ou backup externo para as imagens ausentes. Classificações pelo nome são inferências, e 121 imagens não tiveram cenário específico identificado automaticamente.
+
 ## Seleção versionada
 
 - Seis relatórios revisados: J01, J02, J03, J04 inicial, correção J04 e J05. Preservam observações/cenários/achados/recomendações/limites selecionados, separando estado original e avaliação posterior.

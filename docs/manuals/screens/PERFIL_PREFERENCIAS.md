@@ -55,4 +55,6 @@ Em erro de gravação, o formulário mantém o rascunho na tela; confira conexã
 
 A tela oferece foto, mas upload, substituição e recuperação de avatar não foram certificados neste recorte. Este capítulo não os apresenta como fluxo validado.
 
-Ainda falta uma captura limpa desta tela para a edição visual do guia. A persistência de perfil foi verificada também em nova sessão autenticada; isso não certifica todos os aparelhos ou situações de rede.
+![Perfil exibido em uma nova sessão no celular](../../review/evidence/block1/screenshots/block1/perfil-nova-sessao-mobile.png)
+
+*Perfil em nova sessão de teste, após salvar. A navegação inferior pode encobrir parte do formulário em telas pequenas.* A verificação não certifica todos os aparelhos ou situações de rede.
