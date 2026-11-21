@@ -25,6 +25,10 @@ A unidade orienta a apresentação e os controles que a utilizam; escolher Arrob
 
 ## Como consultar categorias e regras de estágio
 
+![Exemplo de regras de estágio da fazenda](../../review/evidence/block1/screenshots/j05/configuracoes-estagios.png)
+
+*Exemplo de parâmetros em ambiente de teste; os valores apresentados não são recomendação zootécnica.*
+
 A seção **Categorias zootecnicas** apresenta categorias por sexo. A seção **Regras de estagio de vida** permite revisar marcos de idade/peso e a **Base principal**, por **Idade** ou **Peso**. Os valores iniciais são padrões do aplicativo; não são recomendação universal para todas as raças, produções e sistemas.
 
 Para alterar, confira a unidade, os marcos iniciais e os marcos de machos/fêmeas. Use **Salvar regras** para gravar. **Reverter** volta o formulário à configuração carregada; não é restauração geral de dados do rebanho. Não preencha um valor apenas para eliminar um aviso sem avaliar sua pertinência operacional.

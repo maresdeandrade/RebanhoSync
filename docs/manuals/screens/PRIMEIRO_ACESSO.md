@@ -47,6 +47,10 @@ Depois de criar, confira o nome da fazenda no cabeçalho e os dados em **Editar 
 
 ## Se ocorrer erro
 
+![Validação de área negativa no cadastro](../../review/evidence/block1/screenshots/j02/area-invalida-apos-correcao.png)
+
+*Exemplo de validação após a correção: uma área negativa é rejeitada antes da criação.*
+
 Revise os campos apontados. Para área inválida, informe um valor positivo ou deixe o campo opcional vazio. Se faltar permissão de criação, solicite orientação ao responsável; não recrie a conta para tentar obter acesso. Em falha persistente, registre tela, horário e mensagem para o [suporte](../support/TROUBLESHOOTING.md).
 
 ## Limitações e referência visual

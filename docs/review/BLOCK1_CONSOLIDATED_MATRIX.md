@@ -83,6 +83,8 @@ Etapas produtivas, área pecuária, novas preferências de indicadores e dados d
 
 ## Evidências e limites
 
+- [Manifesto visual](evidence/block1/screenshots-manifest.json): inventário por imagem, hashes, situação local e referências encontradas; classificações por nome são inferências. A ausência de uma imagem no caminho inventariado não comprova que exista ou não outra cópia.
+
 - Resultados anteriores de SQL, concorrência, Chromium, lint e governança estão relacionados no [registro de integração](evidence/BLOCK1_INTEGRATION_20261121.json). O [preflight de publicação](evidence/BLOCK1_RELEASE_PREFLIGHT_20261121.json) é um snapshot anterior à proteção Vercel autorizada.
 - O inventário local identifica quais arquivos completos não foram arquivados no Git. Referências a capturas dentro dos JSONs são identificadores do acervo local, não links portáteis para imagens ausentes.
 - O status “corrigido localmente” nesta matriz não certifica frontend ou banco de produção. Migrations remotas e deploy continuam sujeitos a autorização separada.
