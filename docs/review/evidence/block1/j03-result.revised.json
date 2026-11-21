@@ -1,0 +1,702 @@
+{
+  "revision": "2026-11-21",
+  "purpose": "Versão revisada e sanitizada do relatório original; não é reexecução da jornada nem certificação da produção.",
+  "original": {
+    "localRoot": "workspace_original/.work",
+    "file": "j03-result.json",
+    "sha256": "d65f1fcb417e28a37ab37f519f3ffdeacedfee4ad372870558498ba6e5fc9681",
+    "bytes": 49565,
+    "archivedInGit": false
+  },
+  "originalReportedStatus": "executed_with_ux_recommendations_no_integral_isolation_certification",
+  "currentAssessment": [
+    {
+      "group": "B1-16",
+      "origins": [
+        "J02-04",
+        "J03-U01",
+        "J03-S07",
+        "J05-05"
+      ],
+      "title": "Descarte de rascunhos entre navegação, recarga e fazenda",
+      "status": "candidato; consolidado sem implementação",
+      "acceptance": "Futuro: navegar/voltar/trocar fazenda, manter edição ou descartar explicitamente, sem submissão/duplicação."
+    },
+    {
+      "group": "B1-17",
+      "origins": [
+        "J03-U02",
+        "J03-U05",
+        "J04-U02"
+      ],
+      "title": "Fazenda ativa e alcance do salvamento",
+      "status": "candidato",
+      "acceptance": "Futuro: duas propriedades e papéis diferentes, duas abas e viewport mobile."
+    },
+    {
+      "group": "B1-18",
+      "origins": [
+        "J02-05",
+        "J03-U03",
+        "J04-U01"
+      ],
+      "title": "Terminologia, obrigatoriedade e básico/avançado",
+      "status": "candidato",
+      "acceptance": "Futuro: tarefa de primeiro acesso e entendimento de controles indisponíveis."
+    },
+    {
+      "group": "B1-19",
+      "origins": [
+        "J03-U04"
+      ],
+      "title": "Estado local e confirmação remota",
+      "status": "candidato",
+      "acceptance": "Futuro: fila vazia, pendente, offline e confirmação desconhecida."
+    }
+  ],
+  "assessmentNote": "Estado das correções locais conforme matriz consolidada do Bloco 1. O conteúdo abaixo preserva o relato original, com redação sanitizada, sem substituir falhas históricas por resultados novos. Integração e publicação devem ser verificadas separadamente no PR306.",
+  "selection": "Campos narrativos, cenários, achados, recomendações e limites selecionados; identidade, sessões, inputs, dados persistidos, payloads e logs completos excluídos.",
+  "content": {
+    "journey": "J03 — Gestão de Múltiplas Fazendas e Avaliação Crítica de UX",
+    "date": "2026-11-20",
+    "timezone": "America/Sao_Paulo",
+    "created_at": "2026-11-20T22:15:20.947Z",
+    "baseline": {
+      "workspace": "[caminho local omitido]",
+      "branch": "codex/product-class-contract-v2",
+      "head": "6d63d8b597b18b353863f655662d82b557352061",
+      "mainFunctionalBaseline": "157376d90b3f3ac6ccfe806d98f1de37b2007644",
+      "frontend": "http://127.0.0.1:4173/",
+      "backend": "http://127.0.0.1:54321/",
+      "persistentChromium": "[caminho local omitido]",
+      "cdpEndpoint": "http://127.0.0.1:59390/",
+      "priorResultsAndDocsHashes": {
+        ".work/j01-result.json": "1f5efddac311ba1ed0b538a17a844971043a28b265f345c713df6d1bd8b03015",
+        ".work/j02-result.json": "afde54749a0a256415cebac7517676702f3a76445e8bfa1520ab3e9c6e07244b",
+        "docs/context/PROJECT_STATUS.md": "7307b3824d6cd20d2507aa2a211e3d68963c3b149829abe8f1069bf4f685bfc6",
+        "docs/review/ACTIVE_PHASE_PLAN.md": "b721f22485016270c1fd11c56d6e4569c3e96f2a0ad464af9c861a583d12a174",
+        "docs/review/CURRENT_PHASE_HANDOFF.md": "cbc5754afb0cd056306d03a2344e5a8ad6062396cd221fa30d4b1e85ea8e18da",
+        ".work/evidence/j02/01-authentication-required.jpg": "41cc852e75e82d0719d8831dba922a05d06b59149452f7fe84a9e1dd68b6eff3",
+        ".work/evidence/j02/02-sem-fazenda-desktop.png": "1f33eeacb018635a4c25ce0d5b6c2abd035ae1617349e6de8c2011343a169bcb",
+        ".work/evidence/j02/03-formulario-desktop.png": "0bb14174d27e72a7b0ba9da3b55a08ca7a51938fd3a01ffbe589ccf13fb6fb2c",
+        ".work/evidence/j02/04-campos-obrigatorios.png": "f302443091cdf2e982a02c9d39bd4c21f1d7ef1d7d797688ffb28537b5bf834d",
+        ".work/evidence/j02/05-area-cep-invalidos.png": "48e50b22be5285c5940e408d1d2c9bca2c5d744d32b878449227d6ee9ec7af40",
+        ".work/evidence/j02/06-resultado-tentativa-invalida.png": "9bb3a593fafcc13964fa99d8c22f118164d789a8cc542b10617a83bd873d5f42",
+        ".work/evidence/j02/07-validacao-mobile.png": "dfb07f93b2af4e901fdaa542ed1f4154b8f56a4c38e95f0311eee7ba1f59d7cd",
+        ".work/evidence/j02/08-retorno-formulario-mobile.png": "bb5fff899f1cafb84a1fd92d82003d1f71386e4add8ead9753b2d9ade6226510",
+        ".work/evidence/j02/09-obrigatorio-mobile.png": "c22f42819ee3f7a10213576e6cc9ac71a245b574f9457fbe76c77c85a47d12d8",
+        ".work/evidence/j02/10-dados-validos-mobile.png": "c4d15de25f6dbb34f54901987d8ddb50073908879642efa7c63345cc6581f787",
+        ".work/evidence/j02/11-onboarding-criado-mobile.png": "245776c63f8d6760b63b44510bcca284f2b74e630aedc79144693b82c3f1540d",
+        ".work/evidence/j02/12-onboarding-desktop.png": "ff3136037472ba81a277b90b0474eed84ccd8a55aff234b09aaea08ddbd3f733",
+        ".work/evidence/j02/13-etapa-fazenda-desktop.png": "ed923f9cf3d76176e56edae427f2082a9c112f06a312a8508b2a5d997c6485a4",
+        ".work/evidence/j02/14-home-inicial-desktop.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j02/15-home-primeiros-passos.png": "97d5abcfade75c2c0214a40fc6dfafdf7009d5ab378b6f15821165a7106d92b9",
+        ".work/evidence/j02/16-configuracoes-perfil.png": "b5090d17d6c2ddef8158d1e992876ccceb5d6aafb554e9ddb203b0c0153324e6",
+        ".work/evidence/j02/17-cadastro-persistido-desktop.png": "de9ea27f67ca423aa86b0a43e595c8ddf10bcfbe90c62079c6f823baca99aa8f",
+        ".work/evidence/j02/18-animais-vazio-desktop.png": "9f621a7c8187b2873695698a162b2606359c9ef444c4e1e2129cc795784fda51",
+        ".work/evidence/j02/19-lotes-vazio-desktop.png": "50823c7a8c88f457efccda1dff336f45f179c903a99e9cdf06ba84eb3fdc1751",
+        ".work/evidence/j02/20-pastos-vazio-desktop.png": "4cc9ce610bfaad239d459de9dffd454fd06abc718f9c57ca2db82c8ddc0ceb54",
+        ".work/evidence/j02/21-registrar-sem-execucao-desktop.png": "e7cf75e294d7e74a6270989acf46972a7fe71a169f1bb72e559a6bbda1cfb7d6",
+        ".work/evidence/j02/22-home-antes-recarga.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j02/23-home-pos-recarga-desktop.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j02/24-home-mobile.png": "332af37158935b4de3820d758885d42ea9b751143b886a43bc93498b34223a5a",
+        ".work/evidence/j02/25-menu-mais-mobile.png": "d73289e5b7b727557a5205f7a89e9320a99d95ac492e3a063627f2649c63c5ad",
+        ".work/evidence/j02/26-lotes-vazio-mobile.png": "8e84414b7f02286a9e9cca652f614bcf2a1388e96ad9389c8142da91b51ec40e",
+        ".work/evidence/j02/27-pastos-vazio-mobile.png": "53fa7e3c1fdd8605355c1091714bda3b9bb727f3df4445f33be4e9e8dc168cda",
+        ".work/evidence/j02/28-animais-vazio-mobile.png": "a78c099e8ab01d28cbbb75b713113c8d3901a197ba2780ac8d1ce02a5f96d91d",
+        ".work/evidence/j02/29-registrar-mobile.png": "8b3b5e93d7b2d4a48edce730748299a7bfb6dd8e2bc1b3da96ae490b86a7bd09",
+        ".work/evidence/j02/30-home-mobile-viewport.png": "459a67a96ddaf8229fbc789eb0f0cd7c4983aa2d1e88280304db2193125f71f5",
+        ".work/evidence/j02/31-reabertura-desktop.png": "3fec6d05e3abd48630ea9325f0708f2a92e512006c535a5f73ec06f7d3547041",
+        ".work/evidence/j02/32-home-final-desktop.png": "30c3354c1576b0965ed40c54e62e7dac409792f74ba84b786547710c210668d6"
+      },
+      "preexistingTrackedChanges": [
+        "docs/context/PROJECT_STATUS.md",
+        "docs/review/ACTIVE_PHASE_PLAN.md",
+        "docs/review/CURRENT_PHASE_HANDOFF.md"
+      ],
+      "preexistingUntracked": "Existing .work J01/J02 results, harnesses and evidence preserved; no J03 result existed at preflight"
+    },
+    "methods": [
+      "Superpowers using-superpowers selection, brainstorming for candidate assessment only and verification-before-completion; no implementation design or product changes",
+      "UI-first discovery; actual local creation, edit and farm switching; no direct service operation substituted for UI",
+      "Code inspected only to explain observed menu/copy/draft behavior and determine origin of proposed information; restricted read-only schema/fact queries"
+    ],
+    "scenario_count": {
+      "executed": 8,
+      "not_executed": 0,
+      "unit": "Explicit J03-S01 through J03-S08; subchecks grouped, technical setup excluded"
+    },
+    "scenarios": [
+      {
+        "id": "J03-S01",
+        "name": "Descoberta das fazendas",
+        "status": "executed",
+        "observed": "Cabeçalho identifica fazenda ativa; menu oferece Trocar fazenda, Configuracoes e Editar fazenda. Criar nova fazenda fica no seletor.",
+        "evidence": [
+          ".work/evidence/j03/02-menu-fazenda-desktop.png",
+          ".work/evidence/j03/06-controle-horizonte-seletor.png"
+        ]
+      },
+      {
+        "id": "J03-S02",
+        "name": "Criação da segunda propriedade",
+        "status": "executed",
+        "observed": "Fazenda Controle criada pela UI, SP/25ha/Leite, vinculada ao usuário original como owner; onboarding e contexto ativos; exatamente uma nova propriedade.",
+        "evidence": [
+          ".work/evidence/j03/04-controle-antes-criacao.png",
+          ".work/evidence/j03/05-controle-criada.png",
+          ".work/evidence/j03/persisted-facts.json"
+        ]
+      },
+      {
+        "id": "J03-S03",
+        "name": "Alternância entre propriedades",
+        "status": "executed",
+        "observed": "Horizonte → Controle → Horizonte exercitado em desktop/mobile. Cabeçalho e Home mudam; seleções retornam à Home. Não se observou confirmação adicional; seletor não marca explicitamente a propriedade atual.",
+        "evidence": [
+          ".work/evidence/j03/07-horizonte-controle-seletor.png",
+          ".work/evidence/j03/08-controle-horizonte-ativa.png",
+          ".work/evidence/j03/41-mobile-horizonte-controle-seletor.png",
+          ".work/evidence/j03/50-mobile-controle-horizonte-ativa.png"
+        ]
+      },
+      {
+        "id": "J03-S04",
+        "name": "Continuidade entre módulos",
+        "status": "executed",
+        "observed": "Home, Animais, Lotes, Pastos, Agenda, Registrar, Financeiro e Configurações abertos em ambas as propriedades: 16 combinações desktop com nome correto. Amostra mobile adicional de seis módulos/contextos. Fazendas vazias não certificam isolamento operacional.",
+        "evidence": [
+          ".work/evidence/j03/09-horizonte-animais.png",
+          ".work/evidence/j03/14-horizonte-financeiro.png",
+          ".work/evidence/j03/17-controle-animais.png",
+          ".work/evidence/j03/22-controle-financeiro.png",
+          ".work/evidence/j03/observations.json"
+        ]
+      },
+      {
+        "id": "J03-S05",
+        "name": "Edição cadastral",
+        "status": "executed",
+        "observed": "Código interno CTRL-J03 salvo apenas na Controle via UI; PATCH local 204 e retorno à Home. Edição reaberta/recarga confirmam persistência. Campos e updated_at da Horizonte preservados.",
+        "evidence": [
+          ".work/evidence/j03/24-controle-edicao-antes.png",
+          ".work/evidence/j03/25-controle-salvamento.png",
+          ".work/evidence/j03/27-controle-edicao-persistida.png",
+          ".work/evidence/j03/30-horizonte-inalterada.png",
+          ".work/evidence/j03/persisted-facts.json"
+        ]
+      },
+      {
+        "id": "J03-S06",
+        "name": "Persistência e navegação",
+        "status": "executed",
+        "observed": "Recarga e rota direta de edição preservaram Controle; nova aba retomou contexto. Troca na aba principal deixou outra aba coerentemente na Controle; recarga da outra aba passou à Horizonte. Voltar reabriu edição da fazenda ativa atual, não a anterior. Rotas diretas Registrar/Editar e retorno ao seletor exercitados.",
+        "evidence": [
+          ".work/evidence/j03/33-controle-edicao-pos-recarga.png",
+          ".work/evidence/j03/34-nova-aba-controle.png",
+          ".work/evidence/j03/36-outra-aba-apos-troca.png",
+          ".work/evidence/j03/37-outra-aba-pos-recarga.png",
+          ".work/evidence/j03/38-voltar-navegador.png",
+          ".work/evidence/j03/39-rota-direta-registrar.png"
+        ]
+      },
+      {
+        "id": "J03-S07",
+        "name": "Formulário não salvo",
+        "status": "executed",
+        "observed": "Rascunho NAO-SALVAR-J03 na Controle descartado sem aviso ao trocar para Horizonte; nenhum diálogo observado. Horizonte abriu com seus dados; ao retornar, Controle manteve CTRL-J03. Nenhum salvamento de rascunho ou gravação cruzada executado/observado.",
+        "evidence": [
+          ".work/evidence/j03/28-controle-rascunho.png",
+          ".work/evidence/j03/29-rascunho-troca-horizonte-ativa.png",
+          ".work/evidence/j03/30-horizonte-inalterada.png",
+          ".work/evidence/j03/32-rascunho-descartado-controle.png"
+        ]
+      },
+      {
+        "id": "J03-S08",
+        "name": "Responsividade",
+        "status": "executed",
+        "observed": "1440x900 e 390x844: seletor, alternância, edição e telas operacionais amostradas; nenhum overflow horizontal nas observações registradas. Formulários e cartões exigem scroll vertical no mobile; contexto permanece no cabeçalho sticky.",
+        "evidence": [
+          ".work/evidence/j03/40-edicao-horizonte-mobile.png",
+          ".work/evidence/j03/41-mobile-horizonte-controle-seletor.png",
+          ".work/evidence/j03/42-edicao-controle-mobile.png",
+          ".work/evidence/j03/48-controle-financeiro-mobile.png",
+          ".work/evidence/j03/49-controle-configuracoes-mobile.png"
+        ]
+      }
+    ],
+    "functional_findings": [],
+    "confirmed_new_functional_defects": 0,
+    "ux_recommendations": [
+      {
+        "id": "J03-U01",
+        "classification": "Melhoria de UX recomendada",
+        "priority": "P1",
+        "severity": "MEDIUM",
+        "flow": "Editar fazenda → Trocar fazenda",
+        "observed": "Rascunho é descartado sem aviso ao abrir o seletor; reapresentado código persistido ao retornar.",
+        "userNeed": "Trocar de propriedade sem perder preenchimento por engano.",
+        "proposal": "Detectar alterações não salvas e permitir continuar editando ou descartar conscientemente; avaliar rascunho apenas se necessário.",
+        "expectedBenefit": "Reduz retrabalho e incerteza após navegação.",
+        "complexity": "Baixa a média: tratar saída para seletor e outras rotas, sem mudar writers; rascunho persistente ampliaria custo e deve manter identidade da fazenda.",
+        "databaseChange": false,
+        "evidence": [
+          ".work/evidence/j03/28-controle-rascunho.png",
+          ".work/evidence/j03/32-rascunho-descartado-controle.png"
+        ],
+        "relatedPreviousFinding": "J02-04; nova evidência específica de troca de fazenda, sem reexecutar J02",
+        "source": [
+          "src/pages/EditarFazenda.tsx:180",
+          "src/components/layout/TopBar.tsx:150"
+        ],
+        "reproduction": [
+          "Na Controle, editar código CTRL-J03 para NAO-SALVAR-J03 sem salvar",
+          "Cabeçalho → Trocar fazenda → Horizonte",
+          "Retornar à edição da Controle"
+        ],
+        "expected": "Usuário informado antes de descartar alterações.",
+        "observedOutcome": "Sem diálogo; rascunho descartado; dado persistido permaneceu CTRL-J03. Não se demonstrou corrupção."
+      },
+      {
+        "id": "J03-U02",
+        "classification": "Melhoria de UX recomendada",
+        "priority": "P2",
+        "severity": "LOW",
+        "flow": "Cabeçalho e seletor",
+        "observed": "Três acionamentos para trocar: nome → Trocar → cartão. Cartões já têm nome, UF, área, produção e papel, mas não código CTRL-J03 nem marcador Atual.",
+        "userNeed": "Reconhecer propriedades e a seleção atual com poucos passos.",
+        "proposal": "Exibir Atual e código quando preenchido; tornar a ação Trocar mais explícita. Avaliar atalho ao seletor existente para reduzir um acionamento, sem duplicar seu mecanismo de autorização/consulta.",
+        "expectedBenefit": "Melhora orientação e diferenciação; redução de passos é verificável. Benefício para nomes semelhantes ainda requer usuários reais.",
+        "complexity": "Baixa para marcador/código e linguagem; navegação direta precisa avaliar espaço mobile. Não adicionar métricas extensas ao cartão.",
+        "databaseChange": false,
+        "evidence": [
+          ".work/evidence/j03/02-menu-fazenda-desktop.png",
+          ".work/evidence/j03/31-retorno-controle-seletor.png",
+          ".work/evidence/j03/41-mobile-horizonte-controle-seletor.png"
+        ],
+        "source": [
+          "src/components/layout/TopBar.tsx:134",
+          "src/pages/SelectFazenda.tsx:291"
+        ]
+      },
+      {
+        "id": "J03-U03",
+        "classification": "Melhoria de UX recomendada",
+        "priority": "P2",
+        "severity": "LOW",
+        "flow": "Editar dados estruturais / Configurações",
+        "observed": "Cadastro contém Rollout editavel, Modo essencial e Segurança dos registros; Configurações abre regras e parâmetros. Distinção entre editar identificação e configurar comportamento não é explicada.",
+        "userNeed": "Editar nome/código/área sem interpretar termos de implementação ou alterar proteções inadvertidamente.",
+        "proposal": "Usar Editar cadastro da fazenda; retirar o termo rollout da experiência do gestor; separar visualmente cadastro e opções avançadas, explicando efeitos e mantendo permissões e defaults.",
+        "expectedBenefit": "Menor carga cognitiva e risco de tocar parâmetros ao fazer manutenção cadastral.",
+        "complexity": "Baixa para texto e agrupamento; não remover guardas nem mudar contratos de metadata.",
+        "databaseChange": false,
+        "evidence": [
+          ".work/evidence/j03/24-controle-edicao-antes.png",
+          ".work/evidence/j03/42-edicao-controle-mobile.png"
+        ],
+        "source": [
+          "src/pages/EditarFazenda.tsx:283"
+        ]
+      },
+      {
+        "id": "J03-U04",
+        "classification": "Melhoria de UX recomendada",
+        "priority": "P2",
+        "severity": "LOW",
+        "flow": "Home / status de sincronização",
+        "observed": "Em dia aparece junto de Sem confirmacao em fazenda vazia.",
+        "userNeed": "Distinguir ausência de fila local de confirmação remota do dispositivo/contexto.",
+        "proposal": "Explicar o que Em dia mede e rotular a ausência de confirmação explicitamente; reutilizar o resumo de sync, sem inventar um novo status persistido.",
+        "expectedBenefit": "Evita interpretar fila vazia como comprovação de sincronização ou saúde remota.",
+        "complexity": "Baixa para rótulos/ajuda; sem expandir estados técnicos ou alterar semântica da fila.",
+        "databaseChange": false,
+        "evidence": [
+          ".work/evidence/j03/01-inicio-horizonte.png",
+          ".work/evidence/j03/52-final-horizonte.png"
+        ],
+        "limitation": "Não é defeito funcional de sincronização demonstrado; fazendas sem operações pendentes."
+      },
+      {
+        "id": "J03-U05",
+        "classification": "Melhoria de UX recomendada",
+        "priority": "P2",
+        "severity": "LOW",
+        "flow": "Salvar cadastro / múltiplas abas",
+        "observed": "Salvar fazenda é genérico e retorna à Home; abas podem manter fazendas diferentes com cabeçalhos coerentes até recarga.",
+        "userNeed": "Ter certeza de qual propriedade recebeu a alteração.",
+        "proposal": "Confirmar Cadastro da Fazenda Controle salvo e identificar o alvo no texto da ação ou confirmação. Não impor confirmação adicional em toda troca limpa.",
+        "expectedBenefit": "Reforça o alvo após retorno pelo navegador e uso simultâneo de abas.",
+        "complexity": "Baixa; usa identidade ativa já disponível, sem gravar outro contexto.",
+        "databaseChange": false,
+        "evidence": [
+          ".work/evidence/j03/25-controle-salvamento.png",
+          ".work/evidence/j03/26-controle-pos-salvamento.png",
+          ".work/evidence/j03/36-outra-aba-apos-troca.png",
+          ".work/evidence/j03/38-voltar-navegador.png"
+        ],
+        "source": [
+          "src/pages/EditarFazenda.tsx:224",
+          "src/pages/EditarFazenda.tsx:232"
+        ]
+      }
+    ],
+    "data_assessment": [
+      {
+        "id": "D01",
+        "information": "Nome e identificação curta/código interno",
+        "existsToday": "Sim: cadastro/edição; código não mostrado no seletor",
+        "decisionImproved": "Distinguir propriedades e alvo da manutenção",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Cabeçalho, seletor e confirmação de salvamento",
+        "captureTiming": "Nome no cadastro, código opcional a qualquer momento",
+        "mandatory": "Nome obrigatório conforme contrato existente; código opcional",
+        "canonicalSource": "fazendas.nome/codigo",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não necessária para reapresentar dados existentes",
+        "benefitVersusEffort": "Baixo custo: projetar campos existentes; no ensaio CTRL-J03 ficou restrito à edição",
+        "complexityRisk": "Evitar excesso de informação no cadastro/seletor",
+        "classification": "Melhoria de UX recomendada",
+        "recommendation": "Mostrar código somente quando preenchido, sem novo identificador paralelo."
+      },
+      {
+        "id": "D02",
+        "information": "Município e UF",
+        "existsToday": "Sim; ambas fazendas só têm UF e seletor mostra MG/SP",
+        "decisionImproved": "Distinguir localização e contexto regional",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Ficha e seletor",
+        "captureTiming": "Opcional no início ou posteriormente; não inventar município",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "fazendas.municipio/estado",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não necessária para reapresentar dados existentes",
+        "benefitVersusEffort": "Avaliar benefício observado antes de implementar; priorizar apresentação existente",
+        "complexityRisk": "Evitar excesso de informação no cadastro/seletor",
+        "classification": "Melhoria de UX recomendada",
+        "recommendation": "Manter os campos e apresentar município/UF quando informados; não obrigar município só para completar visual."
+      },
+      {
+        "id": "D03",
+        "information": "Finalidade produtiva e sistema de manejo",
+        "existsToday": "Sim: Corte/Leite/Mista e Pastagem/Semi-confinamento/Confinamento",
+        "decisionImproved": "Contextualizar operação e escolha da propriedade",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Cadastro e resumo do seletor",
+        "captureTiming": "Opcionais; coletar quando conhecidos",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "fazendas.tipo_producao/sistema_manejo",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não necessária para reapresentar dados existentes",
+        "benefitVersusEffort": "Já atende diferenciação Corte x Leite observada; sem alteração de schema",
+        "complexityRisk": "Evitar excesso de informação no cadastro/seletor",
+        "classification": "Não recomendado",
+        "recommendation": "Não criar novos campos equivalentes. Reutilizar os existentes e explicar finalidade versus manejo."
+      },
+      {
+        "id": "D04",
+        "information": "Etapa produtiva: cria/recria/engorda/ciclo completo",
+        "existsToday": "Não exposta explicitamente nos fluxos de cadastro/edição avaliados",
+        "decisionImproved": "Personalizar orientação e distinguir finalidade de etapa do ciclo",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Perfil produtivo e onboarding",
+        "captureTiming": "Opcional, preferencialmente após primeiro cadastro",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "Novo contrato explícito, se aprovado; não inferir de Corte ou Mista",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Provável contrato novo de domínio/persistência/sync e interfaces consumidoras; metadata genérica não dispensa esse contrato",
+        "benefitVersusEffort": "Benefício plausível; esforço maior que simples apresentação",
+        "complexityRisk": "Uma propriedade pode executar várias etapas; um único enum pode simplificar excessivamente",
+        "classification": "Evolução funcional candidata",
+        "recommendation": "Validar necessidade e cardinalidade com gestores antes de modelar; lacuna já registrada na J02."
+      },
+      {
+        "id": "D05",
+        "information": "Área total da propriedade",
+        "existsToday": "Sim: 100ha/25ha na ficha e seletor",
+        "decisionImproved": "Dimensionar a propriedade e reconhecer o cadastro",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Ficha e seletor",
+        "captureTiming": "Opcional no cadastro; manter unidade ha",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "fazendas.area_total_ha",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não necessária para reapresentar dados existentes",
+        "benefitVersusEffort": "Avaliar benefício observado antes de implementar; priorizar apresentação existente",
+        "complexityRisk": "Evitar excesso de informação no cadastro/seletor",
+        "classification": "Não recomendado",
+        "recommendation": "Preservar como área total; não reutilizar como área útil ou capacidade de lotação."
+      },
+      {
+        "id": "D06",
+        "information": "Área destinada à pecuária",
+        "existsToday": "Sem campo dedicado encontrado em fazendas ou nos formulários",
+        "decisionImproved": "Denominador para análise territorial da atividade",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Ficha ou análise territorial",
+        "captureTiming": "Opcional e posterior, somente com decisão concreta",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "Exigiria dado cadastral distinto e definição operacional",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Exigiria contrato específico, validação e sync se aprovado",
+        "benefitVersusEffort": "Sem operação territorial com dados reais nesta jornada; benefício ainda não demonstrado",
+        "complexityRisk": "Sobreposição com área total/pastos e áreas compartilhadas pode produzir precisão aparente",
+        "classification": "Hipótese a validar",
+        "recommendation": "Não acrescentar no cadastro inicial desta rodada; validar usos e critério de medição."
+      },
+      {
+        "id": "D07",
+        "information": "Área cadastrada de pastagens / área efetiva",
+        "existsToday": "Área por pasto existe; área efetiva útil não comprovada",
+        "decisionImproved": "Entender a estrutura cadastrada sem pedir o mesmo total duas vezes",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Resumo territorial, após cadastro dos pastos",
+        "captureTiming": "Não pedir soma no cadastro inicial",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "pastos.area_ha e read model local correspondente, filtrados por fazenda e remoção",
+        "parallelSourceRisk": "Alto se persistir novamente a soma na fazenda; evitar",
+        "databaseChange": "Não para soma cadastral; área efetiva exigiria definição adicional",
+        "benefitVersusEffort": "Avaliar benefício observado antes de implementar; priorizar apresentação existente",
+        "complexityRisk": "Evitar excesso de informação no cadastro/seletor",
+        "classification": "Melhoria de UX recomendada",
+        "recommendation": "Se necessário, derivar soma e chamar área cadastrada; não chamá-la área efetiva nem capacidade produtiva sem regras."
+      },
+      {
+        "id": "D08",
+        "information": "Quantidades de animais ativos, lotes e pastos",
+        "existsToday": "Sim, deriváveis e exibidas na Home/onboarding",
+        "decisionImproved": "Comparar porte e identificar fazendas ainda vazias",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Home; seletor somente se usuários demonstrarem necessidade",
+        "captureTiming": "Nunca pedir contagem manual no cadastro",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "Cadastro/estado canônico de animais, lotes e pastos, com fazenda_id e exclusões",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não necessária para reapresentar dados existentes",
+        "benefitVersusEffort": "Avaliar benefício observado antes de implementar; priorizar apresentação existente",
+        "complexityRisk": "Evitar excesso de informação no cadastro/seletor",
+        "classification": "Não recomendado",
+        "recommendation": "Não adicionar campos persistidos de contagem. Eventual resumo deve reutilizar projeções e indicar recorte/atualização."
+      },
+      {
+        "id": "D09",
+        "information": "Composição resumida do rebanho",
+        "existsToday": "Derivável dos atributos/estados dos animais; sem animais para validar composição nesta jornada",
+        "decisionImproved": "Entender categorias, sexo ou situação de cada rebanho",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Resumo/Rebanho, não formulário inicial",
+        "captureTiming": "Derivada após cadastrar animais",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "animais e state_animais local; mesma taxonomia canônica usada no produto",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Sem novo cadastro para agrupamentos existentes; recorte e semântica precisam ser conferidos",
+        "benefitVersusEffort": "Avaliar benefício observado antes de implementar; priorizar apresentação existente",
+        "complexityRisk": "Evitar excesso de informação no cadastro/seletor",
+        "classification": "Hipótese a validar",
+        "recommendation": "Validar qual agrupamento muda uma decisão; não pedir percentuais ou nova classificação na fazenda."
+      },
+      {
+        "id": "D10",
+        "information": "Pendências operacionais por fazenda",
+        "existsToday": "Agenda e indicadores existentes; ambos vazios",
+        "decisionImproved": "Priorizar a fazenda que precisa de atuação",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Home/Agenda; comparação entre propriedades somente se útil",
+        "captureTiming": "Derivada, nunca preenchida no cadastro",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "Agenda como intenção/tarefa, filtrada por fazenda; não confundir com Eventos",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não presumir mudança de schema; há custo de consulta, autorização e atualização multi-fazenda",
+        "benefitVersusEffort": "Avaliar benefício observado antes de implementar; priorizar apresentação existente",
+        "complexityRisk": "Contadores por todas as fazendas podem tornar seletor lento e excessivo",
+        "classification": "Evolução funcional candidata",
+        "recommendation": "Avaliar resumo comparativo reaproveitando consultas/projeções; não duplicar pendências na ficha."
+      },
+      {
+        "id": "D11",
+        "information": "Situação de sincronização",
+        "existsToday": "Sim: badge e resumo; observado Em dia/Sem confirmacao",
+        "decisionImproved": "Saber o que está pendente e o que foi confirmado neste dispositivo",
+        "users": [
+          "gestor",
+          "operador de campo"
+        ],
+        "targetScreen": "Cabeçalho/Home por contexto",
+        "captureTiming": "Automática; nunca cadastrar",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "Fila, resultados de sync e confirmação do contexto/dispositivo",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não necessária para reapresentar dados existentes",
+        "benefitVersusEffort": "Avaliar benefício observado antes de implementar; priorizar apresentação existente",
+        "complexityRisk": "Não tratar fila vazia como comprovação de confirmação remota; não comparar dispositivos como se fossem um só",
+        "classification": "Melhoria de UX recomendada",
+        "recommendation": "Clarificar semântica; não manter booleano sincronizado na fazenda."
+      },
+      {
+        "id": "D12",
+        "information": "Última atividade operacional",
+        "existsToday": "Histórico de Eventos existe; ambas fazendas sem fatos operacionais",
+        "decisionImproved": "Identificar propriedade sem atividade recente",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Resumo gerencial opcional",
+        "captureTiming": "Derivada; nunca informada manualmente",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "Eventos factuais com data canônica de ocorrência e recorte conhecido; não fazendas.updated_at",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não para uma projeção correta; confirmar fonte temporal e cobertura antes de implementar",
+        "benefitVersusEffort": "Benefício não demonstrado com fazendas vazias; depende de rotina real",
+        "complexityRisk": "Evitar excesso de informação no cadastro/seletor",
+        "classification": "Hipótese a validar",
+        "recommendation": "Se aprovada, reutilizar fonte factual do histórico e indicar cobertura local/remota; não usar edição cadastral como manejo."
+      },
+      {
+        "id": "D13",
+        "information": "Papel, permissões e equipe",
+        "existsToday": "Papel Proprietario no seletor; Equipe disponível no menu; só owner exercitado",
+        "decisionImproved": "Saber responsabilidade e acesso disponível por propriedade",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Seletor e Equipe; resumo quando pertinente",
+        "captureTiming": "Vínculos administrados na Equipe, não duplicados no primeiro cadastro",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "user_fazendas.role/membership, com remoção e autorização próprias",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não para reapresentar vínculos; papéis de outros usuários não certificados nesta jornada",
+        "benefitVersusEffort": "Avaliar benefício observado antes de implementar; priorizar apresentação existente",
+        "complexityRisk": "Evitar excesso de informação no cadastro/seletor",
+        "classification": "Não recomendado",
+        "recommendation": "Não cadastrar nome de responsável ou permissões em paralelo na fazenda; se exibir resumo, derivar dos vínculos."
+      },
+      {
+        "id": "D14",
+        "information": "Etapas pendentes de configuração",
+        "existsToday": "Onboarding existente com contagens e status; inconsistência de conclusão já registrada na J02",
+        "decisionImproved": "Retomar implantação ao trocar para fazenda ainda vazia",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Home/onboarding e indicação compacta opcional no seletor",
+        "captureTiming": "Derivada dos critérios reais",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "Mesma avaliação do onboarding e contagens canônicas",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não para apresentação; não criar segunda fonte de progresso",
+        "benefitVersusEffort": "Avaliar benefício observado antes de implementar; priorizar apresentação existente",
+        "complexityRisk": "Evitar excesso de informação no cadastro/seletor",
+        "classification": "Melhoria de UX recomendada",
+        "recommendation": "Corrigir coerência dos critérios já apontada na J02 antes de ampliar a projeção; não persistir outro configurada=true."
+      },
+      {
+        "id": "D15",
+        "information": "Localização geográfica/GPS",
+        "existsToday": "Não exposta no cadastro/edição inspecionados; contrato geográfico não avaliado",
+        "decisionImproved": "Eventual navegação de equipe até propriedade ou mapa",
+        "users": [
+          "gestor de múltiplas fazendas"
+        ],
+        "targetScreen": "Ficha/mapa, caso exista necessidade real",
+        "captureTiming": "Opcional, posterior",
+        "mandatory": "Não criar nova obrigatoriedade; dados adicionais opcionais",
+        "canonicalSource": "Exigiria fonte geográfica explícita, formato e precisão definidos",
+        "parallelSourceRisk": "Não copiar fatos, contagens ou permissões para novo cadastro paralelo",
+        "databaseChange": "Não presumir que metadata genérica forneça contrato geográfico compatível",
+        "benefitVersusEffort": "Sem necessidade de mapa/rota demonstrada na J03",
+        "complexityRisk": "Permissões de localização, precisão, privacidade e manutenção aumentam complexidade",
+        "classification": "Hipótese a validar",
+        "recommendation": "Não exigir GPS inicialmente; código e município/UF são alternativas mais simples para identificação."
+      }
+    ],
+    "critical_assessment": {
+      "topThreeLowCost": [
+        {
+          "id": "J03-U02",
+          "reason": "Marcar Atual, reaproveitar código existente e explicitar troca ajudam reconhecimento sem novo schema."
+        },
+        {
+          "id": "J03-U03",
+          "reason": "Textos e agrupamento separam cadastro de opções avançadas, sem alterar suas proteções."
+        },
+        {
+          "id": "J03-U04",
+          "reason": "Explicar fila/confirmacao reaproveita estado existente e evita interpretação excessiva do indicador."
+        }
+      ],
+      "higherPriorityButNotPureCopyChange": "J03-U01: aviso antes de descartar rascunho tem benefício direto; considerar abrangência de navegação e identidade da fazenda. Não implementar rascunho persistente por rotina.",
+      "additionalData": "Nenhum novo campo obrigatório justificado. Etapa produtiva é candidata opcional, já motivada pela J02; área pecuária/GPS/última atividade exigem validação e definição antes de desenvolvimento.",
+      "doNotAskInitially": [
+        "Contagens de animais/lotes/pastos",
+        "Composição e pendências do rebanho",
+        "Status de sincronização",
+        "Última atividade",
+        "Soma manual da área dos pastos",
+        "GPS e área útil sem operação concreta que os exija"
+      ],
+      "simplifyExisting": [
+        "Acesso de três acionamentos ao seletor",
+        "Apresentação de cadastro misturada com parâmetros e termo rollout",
+        "Feedback de salvamento e esclarecimento de contexto por aba"
+      ],
+      "rejected": [
+        {
+          "suggestion": "Persistir totais e progresso na fazenda",
+          "reason": "Duplicaria fontes derivadas e criaria drift em offline/sync."
+        },
+        {
+          "suggestion": "Transformar seletor em dashboard completo",
+          "reason": "Dois cartões já distinguem propriedades; métricas extensas adicionam scroll, custo de consulta e carga cognitiva sem necessidade demonstrada."
+        },
+        {
+          "suggestion": "Tornar município, manejo, GPS e área pecuária obrigatórios",
+          "reason": "Nenhum bloqueio operacional demonstrou essa necessidade; não inventar preenchimento."
+        },
+        {
+          "suggestion": "Confirmar toda troca de fazenda limpa",
+          "reason": "Acrescentaria etapa ao fluxo já composto de três acionamentos; priorizar confirmação apenas quando houver rascunho ou risco concreto."
+        },
+        {
+          "suggestion": "Criar outro modelo de papéis/equipe na ficha",
+          "reason": "Vínculos e papel já existem; autorização não deve depender de resumo visual."
+        }
+      ],
+      "validateWithRealUsers": [
+        "Frequência de troca, número de fazendas e ocorrência de nomes semelhantes",
+        "Código interno versus município/UF como identificador preferido",
+        "Uso de abas simultâneas: contextos independentes versus troca global",
+        "Qual decisão exige etapa produtiva, área pecuária ou última atividade",
+        "Necessidade de comparar pendências entre fazendas versus manter seletor enxuto"
+      ]
+    },
+    "limitations": [
+      "Only owner and two empty farms; no certification of RLS, cross-tenant operational isolation, other roles, concurrent writers or populated-farm mixing.",
+      "16 desktop module/farm contexts and six mobile module/context samples; not exhaustive visual/mobile certification.",
+      "No physical device, virtual keyboard, offline switch, network failure after commit or browser process restart.",
+      "Same-name property differentiation, useful territory, composition, pendency comparison and last activity are product hypotheses, not proven defects or approved requirements.",
+      "Two screenshot/click synchronization delays in harness; state reobserved and operations completed. Not classified as product bugs.",
+      "Existing J02 onboarding/profile findings remain referenced without repeating their certification."
+    ]
+  }
+}

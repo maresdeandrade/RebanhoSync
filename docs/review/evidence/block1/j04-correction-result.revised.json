@@ -1,0 +1,346 @@
+{
+  "revision": "2026-11-21",
+  "purpose": "Versão revisada e sanitizada do relatório original; não é reexecução da jornada nem certificação da produção.",
+  "original": {
+    "localRoot": "workspace_original/.work",
+    "file": "j04-correction-result.json",
+    "sha256": "a87d2ca220023a4d20b249dea9d20ac2774644668b7247eaf894c82bb897afa6",
+    "bytes": 17398,
+    "archivedInGit": false
+  },
+  "originalReportedStatus": "local_patch_validated_j04_resumed_with_documented_ux_limitations",
+  "currentAssessment": [
+    {
+      "group": "B1-06",
+      "origins": [
+        "J04-CUX01"
+      ],
+      "title": "Ações financeiras oferecidas ao cowboy",
+      "status": "corrigido localmente",
+      "acceptance": "FinanceiroSubmit (owner/cowboy); Chromium; policies ativas verificadas."
+    },
+    {
+      "group": "B1-07",
+      "origins": [
+        "J04-F06",
+        "J05-02"
+      ],
+      "title": "Tratamento de erros estruturados",
+      "status": "corrigido localmente",
+      "acceptance": "PerfilPersistence erro estruturado e rede; regressão J04 de mensagem/retry."
+    },
+    {
+      "group": "B1-08",
+      "origins": [
+        "J04-F01"
+      ],
+      "title": "Carregamento da equipe sem perfil",
+      "status": "corrigido localmente",
+      "acceptance": "Membros.test.tsx"
+    },
+    {
+      "group": "B1-09",
+      "origins": [
+        "J04-F02"
+      ],
+      "title": "Prévia e contexto de aceite",
+      "status": "corrigido localmente",
+      "acceptance": "AcceptInvite e InviteAuthContinuity"
+    },
+    {
+      "group": "B1-10",
+      "origins": [
+        "J04-F03"
+      ],
+      "title": "Contato inválido no convite",
+      "status": "corrigido localmente",
+      "acceptance": "InviteMemberDialog e member-invites SQL"
+    },
+    {
+      "group": "B1-11",
+      "origins": [
+        "J04-F04"
+      ],
+      "title": "Atualização da lista de convites",
+      "status": "corrigido localmente",
+      "acceptance": "Membros.test.tsx"
+    },
+    {
+      "group": "B1-12",
+      "origins": [
+        "J04-F05"
+      ],
+      "title": "Contador de convites",
+      "status": "corrigido localmente",
+      "acceptance": "Membros.test.tsx"
+    },
+    {
+      "group": "B1-13",
+      "origins": [
+        "J04-SC01"
+      ],
+      "title": "Destinatário, replay e reingresso",
+      "status": "corrigido localmente",
+      "acceptance": "member-invites.local.test.mjs + prova Auth/concorrência original J04 preservada"
+    },
+    {
+      "group": "B1-14",
+      "origins": [
+        "J04-SC02"
+      ],
+      "title": "Proteção de proprietário e último owner",
+      "status": "corrigido localmente",
+      "acceptance": "member-invites.local.test.mjs + concorrência real original J04; integração com trigger retestada"
+    },
+    {
+      "group": "B1-17",
+      "origins": [
+        "J03-U02",
+        "J03-U05",
+        "J04-U02"
+      ],
+      "title": "Fazenda ativa e alcance do salvamento",
+      "status": "candidato",
+      "acceptance": "Futuro: duas propriedades e papéis diferentes, duas abas e viewport mobile."
+    },
+    {
+      "group": "B1-18",
+      "origins": [
+        "J02-05",
+        "J03-U03",
+        "J04-U01"
+      ],
+      "title": "Terminologia, obrigatoriedade e básico/avançado",
+      "status": "candidato",
+      "acceptance": "Futuro: tarefa de primeiro acesso e entendimento de controles indisponíveis."
+    },
+    {
+      "group": "B1-21",
+      "origins": [
+        "J04-U03"
+      ],
+      "title": "Aviso de convite duplicado ou membro existente",
+      "status": "candidato",
+      "acceptance": "Futuro: dois convites, contato por email/telefone, expirado/cancelado e membro ativo."
+    },
+    {
+      "group": "B1-22",
+      "origins": [
+        "J04-U04"
+      ],
+      "title": "Continuidade na recuperação do convite",
+      "status": "corrigido localmente na continuidade implementada; ajuda adicional candidata",
+      "acceptance": "InviteAuthContinuity vigente."
+    },
+    {
+      "group": "B1-23",
+      "origins": [
+        "J04-U05"
+      ],
+      "title": "Entrega de convite e informação de equipe",
+      "status": "parcialmente corrigido na J04; evolução candidata",
+      "acceptance": "InviteMemberDialog; futuro: clareza de compartilhamento/data de ingresso."
+    }
+  ],
+  "assessmentNote": "Estado das correções locais conforme matriz consolidada do Bloco 1. O conteúdo abaixo preserva o relato original, com redação sanitizada, sem substituir falhas históricas por resultados novos. Integração e publicação devem ser verificadas separadamente no PR306.",
+  "selection": "Campos narrativos, cenários, achados, recomendações e limites selecionados; identidade, sessões, inputs, dados persistidos, payloads e logs completos excluídos.",
+  "content": {
+    "journey": "J04",
+    "kind": "correction_and_partial_resumption",
+    "created_at": "2026-11-20T23:33:00.105Z",
+    "updated_at": "2026-11-20T23:45:52.815Z",
+    "branch": "codex/j04-invites-members-auth",
+    "head": "157376d90b3f3ac6ccfe806d98f1de37b2007644",
+    "migration": {
+      "path": "supabase/migrations/20261120231349_j04_members_invites_authorization.sql",
+      "applied": true,
+      "draft_tested_only_in_transaction_rolled_back": true,
+      "local_main_alignment": {
+        "previous_latest": "20261110193000",
+        "new_latest": "20261120231349",
+        "existing_main_migrations_applied": 8,
+        "new_j04_migrations_applied": 1,
+        "cli": "supabase db push --local --skip-vault --yes",
+        "remote": false
+      }
+    },
+    "scenarios": [
+      {
+        "id": "J04-S01",
+        "result": "Owner and worker visible with no complementary profile; error vs empty regression; original two-person list confirmed"
+      },
+      {
+        "id": "J04-S03",
+        "result": "Original invite accepted via original worker identity; Horizonte automatically selected; used/cancelled/expired/missing states observed in real Chromium, invalid states lack accept CTA"
+      },
+      {
+        "id": "J04-S04",
+        "result": "Create/cancel updates list/counters without reload; separate original pending invite preserved then explicitly accepted"
+      },
+      {
+        "id": "J04-S05",
+        "result": "Owner changed worker cowboy -> manager -> cowboy in Horizonte via UI; controls after worker reload matched current role; server last owner/manager authority negatives verified"
+      },
+      {
+        "id": "J04-S06",
+        "result": "8 operational surfaces observed as manager Controle and cowboy Horizonte; config readonly and disabled saves for cowboy, management invite absent for cowboy; no operational CRUD submitted; financial form exposed to cowboy is residual UX finding"
+      },
+      {
+        "id": "J04-S07",
+        "result": "Original worker accepted manager invitation to Controle; correct destination selected; same user cowboy in Horizonte and manager Controle; switch rendered corresponding controls"
+      },
+      {
+        "id": "J04-S09",
+        "result": "390x844 members, invite policy/generator, acceptance and role dialog observed without horizontal overflow; final screenshots23/24 avoid opening-animation artifacts"
+      }
+    ],
+    "findings": [
+      {
+        "original_id": "J04-F01",
+        "original_observed": "PGRST relationship failure for user_fazendas/user_profiles; UI shows 0 people and empty state despite existing owner",
+        "current_evidence": "UI regression and Chromium screenshot 01"
+      },
+      {
+        "original_id": "J04-F02",
+        "original_observed": "HTTP 200 returns one-row array with is_valid=true; screen says expired/already used, displays empty badges, no acceptance button",
+        "current_evidence": "9 AcceptInvite and 25 invite-auth continuity tests; real acceptance pending migration"
+      },
+      {
+        "original_id": "J04-F03",
+        "original_observed": "Blank contacts rejected clearly, but malformed email created persisted invitation with HTTP 200",
+        "current_evidence": "UI test and screenshot02; SQL draft reject test"
+      },
+      {
+        "original_id": "J04-F04",
+        "original_observed": "New invite absent until page reload; after reload it is shown",
+        "current_evidence": "UI list refresh test and screenshots03-05"
+      },
+      {
+        "original_id": "J04-F05",
+        "original_observed": "Header says 0 convite(s) while valid pending invitation is listed",
+        "current_evidence": "UI list counter test and screenshots01,04,05"
+      },
+      {
+        "original_id": "J04-F06",
+        "original_observed": "Screen shows [object Object] and labels valid invitation invalid",
+        "current_evidence": "Structured PostgREST error retry regression; environment 401 diagnosed independently"
+      },
+      {
+        "original_id": "J04-SC01",
+        "original_observed": "Live function checks login/status/expiry only; no email/phone match; on conflict overwrites role and reactivates membership",
+        "current_evidence": "SQL before failures, draft transaction passes; not applied"
+      },
+      {
+        "original_id": "J04-SC02",
+        "original_observed": "Manager accepted by both routines; only assigning new owner role is restricted; target owner and last-owner checks absent. Removal targets active membership too, although UI only exposes pending removal.",
+        "current_evidence": "Real authenticated before failures incl mixed concurrency; draft sequential tests pass; after concurrency pending"
+      }
+    ],
+    "ux_recommendations": [
+      "Guard financial action presentation for cowboy in later UX consolidation",
+      "Translate technical role labels and avoid relying on reload to discover external role changes; current server authorization remains authoritative"
+    ],
+    "limitations": [
+      "Phone-only verified identity validated in server fixtures; current application does not provide phone verification UI",
+      "Operational full CRUD not certified; no operational data written in original farms"
+    ],
+    "previous_status": "implementation_incomplete_awaiting_essential_phone_policy",
+    "matrix": [
+      {
+        "id": "J04-F01",
+        "etapa": "Equipe",
+        "esperado": "Proprietário visível sem perfil",
+        "observado": "Confirmado no Chromium e regressão",
+        "tipo": "Defeito corrigido",
+        "evidencia": "01-owner-without-profile-desktop.png",
+        "severidade": "HIGH",
+        "correcao": "Consulta separada de vínculos e perfis"
+      },
+      {
+        "id": "J04-F02",
+        "etapa": "Convite",
+        "esperado": "Prévia válida e ingresso na fazenda correta",
+        "observado": "Aceites Horizonte/Controle observados; array interpretado",
+        "tipo": "Defeito corrigido",
+        "evidencia": "07-original-valid-invite.png;16-controle-context-selected-mobile.png",
+        "severidade": "HIGH",
+        "correcao": "Array de cardinalidade1; selecionar fazenda após aceite"
+      },
+      {
+        "id": "J04-F03",
+        "etapa": "Gerar convite",
+        "esperado": "Recusar email inválido",
+        "observado": "UI e SQL recusam",
+        "tipo": "Defeito corrigido",
+        "evidencia": "02-invalid-email-rejected.png;sql-after-applied.log",
+        "severidade": "MEDIUM",
+        "correcao": "Validar nas duas fronteiras"
+      },
+      {
+        "id": "J04-F04",
+        "etapa": "Convites pendentes",
+        "esperado": "Atualizar lista após criação/cancelamento",
+        "observado": "Atualização sem recarga observada",
+        "tipo": "Defeito corrigido",
+        "evidencia": "04-pending-list-refreshed.png;05-cancel-list-counter-refreshed.png",
+        "severidade": "MEDIUM",
+        "correcao": "Invalidar consulta por revisão"
+      },
+      {
+        "id": "J04-F05",
+        "etapa": "Contadores",
+        "esperado": "Contar farm_invites pendentes",
+        "observado": "Contadores acompanhando lista",
+        "tipo": "Defeito corrigido",
+        "evidencia": "10-two-members-no-pending.png",
+        "severidade": "MEDIUM",
+        "correcao": "Contar fonte de convites, desconhecido durante erro/carga"
+      },
+      {
+        "id": "J04-F06",
+        "etapa": "Erros",
+        "esperado": "Mensagem legível e recuperação",
+        "observado": "Erro PostgREST tratado; retry testado",
+        "tipo": "Defeito corrigido",
+        "evidencia": "ui-current.log",
+        "severidade": "MEDIUM",
+        "correcao": "Extrair message de objeto estruturado"
+      },
+      {
+        "id": "J04-SC01",
+        "etapa": "Aceitação RPC",
+        "esperado": "Conferir destinatário e preservar vínculo existente",
+        "observado": "Negativos e replay confirmados em SQL/Auth real",
+        "tipo": "Falha de autorização corrigida",
+        "evidencia": "sql-after-applied.log;real-auth-current.log",
+        "severidade": "BLOCKER",
+        "correcao": "Auth confirmado; replay sem efeito; reingresso exige novo convite"
+      },
+      {
+        "id": "J04-SC02",
+        "etapa": "Administração RPC",
+        "esperado": "Proteger proprietário e último proprietário",
+        "observado": "Concorrência e gerente indevido rejeitados com JWT real",
+        "tipo": "Falha de integridade corrigida",
+        "evidencia": "authenticated-concurrency-before.log;real-auth-current.log",
+        "severidade": "BLOCKER",
+        "correcao": "Lock da fazenda, revalidar autoridade e contar proprietários"
+      },
+      {
+        "id": "J04-CUX01",
+        "etapa": "Financeiro / cowboy",
+        "esperado": "Evitar oferecer ação incompatível com autorização de escrita",
+        "observado": "Novo lançamento abre formulário; nenhuma submissão executada",
+        "tipo": "Inconsistência de UX observada; sem demonstração de escrita indevida",
+        "evidencia": "19-cowboy-financial-dialog-exposed.png",
+        "severidade": "MEDIUM",
+        "correcao": "Consolidar guardas de apresentação na revisão UX posterior, preservando RLS"
+      }
+    ],
+    "documentation_changes": [
+      "docs/technical/SUPABASE_RLS.md"
+    ],
+    "no_remote_operation": true
+  },
+  "revisionNote": "A correção J04 complementa o diagnóstico inicial; não substituir nem reinterpretar suas evidências como publicação remota."
+}

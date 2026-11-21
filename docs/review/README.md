@@ -23,7 +23,9 @@ Se é histórico/fechado/substituído → docs/archive/
 
 ## Arquivos
 
-- [Inventário e evidência de integração J04/Bloco 1](./evidence/BLOCK1_INTEGRATION_20261121.json): código/testes preservados, documentos atualizados/preservados e limites de disponibilidade. A matriz integral de 26 grupos permanece em `.work/block1/`.
+- [Matriz consolidada J01–J05 — índice central](./BLOCK1_CONSOLIDATED_MATRIX.md): 26 grupos e referências aos resultados individuais revisados, incluindo a correção J04.
+- [Arquivo seletivo e evidências somente locais](./evidence/block1/LOCAL_EVIDENCE_INVENTORY.md): manifesto dos originais, conteúdo sanitizado no Git e limites de disponibilidade.
+- [Inventário e evidência de integração J04/Bloco 1](./evidence/BLOCK1_INTEGRATION_20261121.json): snapshot anterior de código/testes e documentação. A matriz em `.work/block1/` foi preservada como histórico.
 - [Guia do Usuário — índice único](../manuals/USER_MANUAL_INDEX.md): cinco capítulos J01–J05 e manuais anteriores preservados.
 
 | Arquivo | Uso |

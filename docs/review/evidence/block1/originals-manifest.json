@@ -1,0 +1,48 @@
+{
+  "date": "2026-11-21",
+  "localRoot": "workspace_original/.work",
+  "files": [
+    {
+      "original": "j01-result.json",
+      "revised": "j01-result.revised.json",
+      "sha256": "1f5efddac311ba1ed0b538a17a844971043a28b265f345c713df6d1bd8b03015",
+      "originalBytes": 733,
+      "revisedBytes": 2271
+    },
+    {
+      "original": "j02-result.json",
+      "revised": "j02-result.revised.json",
+      "sha256": "afde54749a0a256415cebac7517676702f3a76445e8bfa1520ab3e9c6e07244b",
+      "originalBytes": 20246,
+      "revisedBytes": 18536
+    },
+    {
+      "original": "j03-result.json",
+      "revised": "j03-result.revised.json",
+      "sha256": "d65f1fcb417e28a37ab37f519f3ffdeacedfee4ad372870558498ba6e5fc9681",
+      "originalBytes": 49565,
+      "revisedBytes": 43526
+    },
+    {
+      "original": "j04-result.json",
+      "revised": "j04-result.revised.json",
+      "sha256": "e059d2021255902298d200799564a69fb33d044b0af10adb8b96e5765c600fb2",
+      "originalBytes": 54161,
+      "revisedBytes": 54706
+    },
+    {
+      "original": "j04-correction-result.json",
+      "revised": "j04-correction-result.revised.json",
+      "sha256": "a87d2ca220023a4d20b249dea9d20ac2774644668b7247eaf894c82bb897afa6",
+      "originalBytes": 17398,
+      "revisedBytes": 14248
+    },
+    {
+      "original": "j05-result.json",
+      "revised": "j05-result.revised.json",
+      "sha256": "a13c927615648076055b964df22c618d8df29d472412d6c006fae962c7bebc74",
+      "originalBytes": 65612,
+      "revisedBytes": 44711
+    }
+  ]
+}
