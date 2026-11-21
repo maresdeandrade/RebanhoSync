@@ -1,11 +1,21 @@
 # FAQ — Offline e Sincronização
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
+**Baseline documental original:** `32d7779`
 
 ## Objetivo
 
 Responder dúvidas comuns sobre funcionamento offline, sincronização, pendências, conflitos e dados locais.
+
+## O indicador Em dia confirma tudo no servidor?
+
+Não. Confira o resultado específico da operação. Uma fila sem pendência visível não prova que um salvamento de Perfil, preferências ou configurações foi aceito remotamente. Se a tela informa ausência de confirmação, não interprete o indicador geral como confirmação daquela alteração.
+
+## Perfil e configurações são enviados depois se eu estiver offline?
+
+Esses salvamentos administrativos do Bloco 1 dependem de resposta remota; não foram colocados na fila de envio posterior. Falha de rede não é sucesso. No Perfil, o rascunho permanece enquanto a tela está aberta; navegar ou recarregar pode descartá-lo. Para registros operacionais que suportam fila, valem as orientações abaixo.
+
+Essas orientações descrevem o pacote validado localmente, ainda pendente de integração/publicação; confira a [disponibilidade](../../context/PROJECT_STATUS.md#estado-atual).
 
 ---
 

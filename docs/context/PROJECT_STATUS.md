@@ -1,7 +1,7 @@
 # Project Status — RebanhoSync
 
-Atualizado em: 2026-11-20
-Baseline integrada confirmada: `main@ce304edbc37863ac1bdee61104bb05dce7541b36` ([#304](https://github.com/maresdeandrade/RebanhoSync/pull/304)). #303 integrada em `b6b2296a`; #304 integrada e publicada, com verification gate da entrega **READY**.
+Atualizado em: 2026-11-21
+Baseline integrada confirmada: `main@157376d90b3f3ac6ccfe806d98f1de37b2007644` (#305; documentação da entrega #304). #303 e #304 integradas; a publicação produto–classe tem evidência própria. J04/Bloco 1 são o pacote local posterior, ainda não integrado.
 Fase atual: **Fase 24 — Release Hardening / Scale Readiness (F24.5 CLOSED / INTEGRATED; F24.6 ACTIVE; F24.6A1 CLOSED / INTEGRATED no escopo certificado)**.
 Próxima fase de desenvolvimento: **Fase 24 — mantida; nenhuma próxima frente definida nesta consolidação documental.** Implementação, curadoria e publicação produto–classe encerradas; sem nova fase ou certificação automática.
 Baseline histórica de fechamento da F24.2 (não descreve a publicação técnica de 20/11/2026): `main@41ffd254251bdcbf7ce440da9431ada2dfeaf993`; `REMOTE_INTEGRATION_BASELINE = VERIFIED`; `PRODUCTION_BACKEND = NOT_PROVISIONED`; `PRODUCTION_DATA = NONE`; `SANITARIO_V2 = EXTERNAL_BLOCKED`.
@@ -30,13 +30,35 @@ O [Mapa Oficial de Fluxos e Contratos](../architecture/OPERATIONAL_FLOWS.md) é 
 
 ## Estado atual
 
-**Consolidação de 20/11/2026:** núcleo operacional integrado e contrato produto–classe publicado tecnicamente em produção; produto em desenvolvimento, sem homologação operacional ampla declarada. As fases F12–F23 e os recortes encerrados de F24 não são reabertos por ausência de deploy, migrations remotas ou clientes legados inexistentes. Preservação de fatos, pendências reais, isolamento e recuperação continuam obrigatórios.
+**Preparação de integração — 21/11/2026:** a main remota foi confirmada em `157376d9`,
+sem divergência de commits com a baseline da worktree J04. Código, migrations e testes
+mantêm os hashes do gate local anterior; documentação ativa e cinco capítulos do
+[Guia do Usuário](../manuals/USER_MANUAL_INDEX.md) foram reconciliados ao pacote.
+O inventário remoto somente leitura confirmou as 83 migrations anteriores e ausência
+das duas migrations J04/Bloco 1. As duas já estão no banco local persistente, sem reaplicação.
+A entrega prepara commits locais e texto de PR; não executa push, merge, deploy nem J06.
+[Inventário e validação da integração](../review/evidence/BLOCK1_INTEGRATION_20261121.json).
+
+**Bloco 1 J01–J05 — validação local de 20/11/2026:** patch sobre
+`codex/j04-invites-members-auth@157376d9`, preservando a J04 não commitada. Foram
+corrigidas a autoridade das flags no PostgreSQL, gravações desatualizadas de metadata,
+persistência de perfil ausente, erros estruturados, silêncio inválido, validação de área,
+coerência do onboarding e apresentação financeira por papel. Evidência focal: 95 testes,
+29 testes SQL, concorrência em duas conexões, baseline em banco descartável e Chromium
+desktop/mobile. Matrizes/evidências permanecem em `.work/block1/` da worktree J04.
+As duas fazendas das jornadas e seus dados foram preservados; nenhuma J06 iniciada.
+Tema Sistema dinâmico, proteção geral de rascunhos e melhorias de UX continuam pendentes
+não bloqueantes deste recorte. As migrations J04 e `20261121023104` estão somente locais;
+não houve push, merge, deploy ou aplicação remota. Isso não amplia homologação do produto.
+
+**Consolidação de 20/11/2026:** núcleo operacional integrado e contrato produto–classe publicado tecnicamente em produção; as cinco migrations sanitárias previamente pendentes foram aplicadas remotamente pelo fluxo normal após dry-run, comparação de caminhos e validações focais. O produto permanece em desenvolvimento, sem homologação operacional ampla declarada. As fases F12–F23 e os recortes encerrados de F24 não são reabertos por clientes legados inexistentes. Preservação de fatos, pendências reais, isolamento e recuperação continuam obrigatórios.
 
 - **#295–#300 integradas:** P33/contrato v14, fixtures históricas, upgrades de telemetria/fontes e correções de Agenda/seleção B19. A antiga pendência de P33 foi superada.
 - **#302 integrada** em `175e9dee`: Protocolos da Fazenda, monitoramento ON/OFF, avaliações factuais e correções append-only, controle estratégico 5-7-9/5-6-9 e unicidade transacional de Agenda. Junho permanece contextual. Gate completo do head integrado: 5.481 aprovados/61 ignorados, lint/build/Fallow obrigatório aprovados; 232 diagnósticos TypeScript preexistentes registrados, sem regressão identificada naquela comparação.
 - **#303 integrada** em `b6b2296a`: consolida o incremento sanitário de produto opcional compatível, dose planejada condicionada à aplicabilidade, demanda original/restante após execução parcial e indicadores que distinguem consumo/perdas desconhecidos de zero. [PR #303](https://github.com/maresdeandrade/RebanhoSync/pull/303) integrada, com CI obrigatório aprovado no head `2dcdded1`; validação local focal: 79 testes, TypeScript e gates documentais aprovados.
 - **[#304](https://github.com/maresdeandrade/RebanhoSync/pull/304) integrada e publicada:** 39 produtos comerciais ativos preservados, 33 classificados, 37 associações ativas e oito classes aprovadas; 13/13 itens e 4/4 grupos com produtos disponíveis. Os seis produtos fora da taxonomia continuam comerciais, sem impedimento cadastral. Fonte da classificação: `sanitario_produto_class_links_v2`, N:N persistente e pull-only, com Dexie v37.
-- Migrations `20261116010000`, `20261120045339` e `20261120090000` aplicadas pelo fluxo normal; frontend no commit integrado e `sync-batch` v31 ativa. Pull dos 37 vínculos confirmado no aplicativo publicado. Cinco migrations não relacionadas permanecem pendentes, sem bloquear esta entrega. [Publicação, evidência e limites](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-304--20112026).
+- Migrations `20261116010000`, `20261120045339`, `20261120090000`, `20261115150000`, `20261116033209`, `20261116033214`, `20261116170000` e `20261116211358` estão aplicadas no remoto pelo fluxo normal; não havia pendência entre Local e Remote no inventário pós-push de 20/11, anterior às duas migrations J04/Bloco 1. `sync-batch` v31 permanece ativa com JWT e não foi redeployada. Catálogo produto–classe preservado: 37 vínculos; agendas/eventos remotos preexistentes foram preservados (7 agendas criadas em 20/10 e 3 eventos sanitários em 21/10). [Reconciliação e evidências](../review/CURRENT_PHASE_HANDOFF.md#reconciliação-backend-e-j01--20112026).
+- J01 local executada via Chromium contra `http://127.0.0.1:54321`, sem criação de fazenda: primeiro acesso, validações, cadastro sintético, login, logout, bloqueio de rota protegida e viewports 1440/390 passaram. Recuperação de senha não está exposta na UI; o cenário remoto/produtivo de recovery permanece não executado.
 - O inventário de backend de 13/11 abaixo é histórico e foi superado neste recorte pela publicação de 20/11; não deve ser usado para determinar migrations pendentes atuais.
 
 **Reconciliação sanitária e CI — snapshot de 13/11/2026:** os PRs [#290–#294](../review/CURRENT_PHASE_HANDOFF.md#reconciliação-sanitária--snapshot-pós-294) estão integrados; #293 aposentou `sanitario-reconcile` no código e #294 corrigiu a resolução do intervalo do CI manual. A validação global [43491293594](https://github.com/maresdeandrade/RebanhoSync/actions/runs/43491293594), em `f543bb6b`, terminou com 4.138 testes aprovados, um falho e 59 ignorados; a falha P33 compara evidência histórica v13 ao contrato atual v14. O patch local de teste passou 8/8, mas não substitui a repetição do CI sobre código integrado. No inventário remoto de 13/11, o projeto `zqloazqzhwauamcejmuz` tinha 65 migrations, `sync-batch` v29, `sanitario-reconcile` v5 e gates desligados; o dry-run listou as dez migrations pendentes. **Backend não reconciliado; nenhuma implantação ou ativação foi comprovada.**

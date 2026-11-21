@@ -1,7 +1,20 @@
 # Navigation Model — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
+**Baseline documental original:** `32d7779`
+
+## Rotas e contexto confirmados no Bloco 1 local
+
+| Entrada | Tela/rota e escopo |
+|---|---|
+| Cadastre-se aqui / Entrar | `/signup` e `/login`; identidade pessoal. |
+| Trocar fazenda | `/select-fazenda`; seleção dentre vínculos da conta; criação condicionada à permissão pessoal. |
+| Criar nova fazenda | `/criar-fazenda`, seguida de `/onboarding-inicial`; não cria registros operacionais automaticamente. |
+| Equipe | `/membros`, agrupada em Mais no mobile; equipe da fazenda ativa. |
+| Meu Perfil | `/perfil`; perfil/preferências pessoais mesmo com cabeçalho de fazenda. |
+| Configuracoes / Editar fazenda | `/configuracoes` e `/editar-fazenda`; parâmetros e dados da fazenda selecionada. |
+
+O cabeçalho não substitui conferência de autoridade. Papel pode variar por propriedade; abas podem manter contextos próprios. Rascunhos podem ser descartados ao navegar/trocar fazenda. Exibir melhor nome/código/papel e alcance do salvamento é recomendação, não nova navegação implementada. [Guia do Usuário](../manuals/USER_MANUAL_INDEX.md) e [disponibilidade](../context/PROJECT_STATUS.md#estado-atual).
 
 ## Objetivo
 

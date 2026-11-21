@@ -1,7 +1,6 @@
-```markdown
 # Technical Docs — RebanhoSync
 
-Atualizado em: 2026-07-30
+Atualizado em: 2026-11-21
 
 Documentação técnica normativa do RebanhoSync.
 
@@ -11,6 +10,8 @@ Não usar este diretório para auditorias antigas, prompts, relatórios históri
 ---
 
 ## Arquivos
+
+Para J04/Bloco 1, consulte [Auth/RLS/RPC/trigger](./SUPABASE_RLS.md#regras-de-rls), [escritores administrativos diretos](./ARCHITECTURE.md#fluxos-administrativos-diretos--j04bloco-1-local) e [testes focais](./TESTING_GATES.md#evidência-focal-j04bloco-1-e-preparação-de-integração). A disponibilidade vem do [estado do projeto](../context/PROJECT_STATUS.md#estado-atual); o manual não substitui esses contratos.
 
 | Arquivo | Uso |
 |---|---|
@@ -55,5 +56,3 @@ Em caso de conflito, seguir a ordem de precedência:
 * Não transformar este diretório em repositório de relatórios de auditoria.
 * Manter os arquivos de documentação curtos, acionáveis e fáceis de atualizar.
 * Atualizar a documentação apenas quando houver delta técnico e funcional real.
-
-```

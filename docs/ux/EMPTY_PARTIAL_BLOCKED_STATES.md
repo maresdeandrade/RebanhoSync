@@ -1,7 +1,22 @@
 # Empty, Partial and Blocked States — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
+**Baseline documental original:** `32d7779`
+
+## Estados verificados no Bloco 1 local
+
+| Situação | Apresentação e limite |
+|---|---|
+| Perfil complementar ausente | Formulário pessoal permite primeiro salvamento; não representa falha de autenticação. |
+| Falha ao carregar perfil | Erro e nova tentativa; salvamento bloqueado até carga válida. |
+| Falha de equipe/convites | Erro recuperável; não apresentar zero membros/convites como fato. |
+| Sem vínculo com fazenda | Orientar seleção, convite ou criação quando autorizada; conta autenticada pode existir sem fazenda. |
+| Cowboy em financeiro/configurações | Consulta conforme vínculo, sem oferecer escrita administrativa/financeira incompatível. |
+| Gerente em flags protegidas | Controles indisponíveis na UI e rejeição autoritativa no servidor. |
+| Metadata desatualizada | Rejeitar a gravação, não emitir sucesso, orientar recarga. |
+| Notificações sem plano elegível | Preferência salva não prova aviso entregue nem execução de Agenda. |
+
+Em fazenda vazia, algumas mensagens ainda sugerem recorte/filtro; estados de primeiro uso mais claros são candidatos. Mensagens de “salvo localmente” e envio futuro abaixo aplicam-se somente a fluxos que de fato utilizam a fila, não aos salvamentos administrativos remotos diretos do Bloco 1. [Manual](../manuals/USER_MANUAL_INDEX.md) e [estado do pacote](../context/PROJECT_STATUS.md#estado-atual).
 
 ## Objetivo
 

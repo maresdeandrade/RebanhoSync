@@ -1,6 +1,14 @@
 # Testing Gates — RebanhoSync
 
-Atualizado em: 2026-08-23
+Atualizado em: 2026-11-21
+
+## Evidência focal J04/Bloco 1 e preparação de integração
+
+O [registro da integração](../review/evidence/BLOCK1_INTEGRATION_20261121.json) identifica baseline, hashes reutilizados, comandos e limites. O pacote inclui testes Vitest de Equipe/Convite/Perfil/notificações/onboarding/financeiro e escritores de metadata; testes PostgreSQL locais de destinatário, papéis, isolamento e flags; concorrência real; e Chromium focal com nova sessão e falhas de gravação.
+
+Os scripts `tests/codex/block1-security.local.test.mjs` e `member-invites.local.test.mjs` usam fixtures transacionais com rollback na base local. `block1-concurrency.local.test.mjs` e `block1-browser.local.test.mjs` exigem a stack local descartável própria, configurada em `.work/block1/disposable`, API 54421/DB 54422; não apontar para a base das jornadas. Essa configuração local e cópias de migrations não integram o pacote Git. Antes de executar, provisione/inspecione uma stack descartável equivalente com migrations ativas e confirme os destinos; os scripts recusam portas inesperadas.
+
+O baseline funcional persiste fatos e só pode executar em backend descartável explicitamente identificado, com os parâmetros já exigidos pelo script. Nenhum desses testes autoriza reset/reaplicação do banco persistente ou escrita remota. Suíte global/build/E2E integral não são encerramento automático; repetir evidência afetada por conteúdo/baseline/ambiente alterado, mantendo as regras abaixo.
 
 ## Objetivo
 

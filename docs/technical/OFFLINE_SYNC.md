@@ -1,6 +1,14 @@
 # Offline e sync — RebanhoSync
 
-Atualizado em: 2026-11-18
+Atualizado em: 2026-11-21
+
+## Limite dos salvamentos administrativos — Bloco 1 local
+
+O caminho de fila compartilhada abaixo descreve operações operacionais que efetivamente o utilizam. Perfil, preferências pessoais e os três escritores de `fazendas.metadata` afetados pelo Bloco 1 usam gravação remota direta autenticada. Não houve nova fila, adaptação do worker ou promessa de envio posterior desses formulários.
+
+Erro de rede conserva o rascunho do Perfil enquanto a tela permanece montada; não prova persistência offline nem recuperação após navegação/recarga. Salvamento de metadata exige fazenda e `updated_at` carregados, confirma uma linha retornada e orienta recarga em conflito. A guarda SQL rejeita alteração efetiva das flags por não-owner inclusive em clientes antigos; o frontend atualizado também impede owner de restaurar uma versão antiga inadvertidamente.
+
+`Em dia` é indicador auxiliar e não substitui ACK de uma operação específica nem comprovação de confirmação remota. Perfil/configuração salva não é Evento executado. [Arquitetura](./ARCHITECTURE.md#fluxos-administrativos-diretos--j04bloco-1-local), [suporte operacional](../manuals/support/FAQ_SYNC.md) e [limites de disponibilização](../context/PROJECT_STATUS.md#estado-atual).
 
 ## Responsabilidade documental
 
@@ -14,7 +22,7 @@ Para impacto operacional, consulte no mapa os contratos de resultado por operaç
 
 #302 integra comandos de adoção/monitoramento e variante com CAS/replay, avaliações factuais append-only e unicidade individual de Agenda. O envio revalida sessão e fazenda; configuração pendente não substitui estado confirmado. Avaliação não gera efeito farmacológico.
 
-#301 integrada, acrescenta vínculo estoque–produto V2 e validação do vínculo no `sync-batch`. Indicadores só leem fatos, participantes e movimentos; não criam fila, consumo ou fonte de verdade paralela. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+#301 integrada, acrescenta vínculo estoque–produto V2 e validação do vínculo no `sync-batch`. Indicadores só leem fatos, participantes e movimentos; não criam fila, consumo ou fonte de verdade paralela. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-303--19112026).
 
 ## Contrato geral
 

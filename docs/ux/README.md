@@ -1,7 +1,7 @@
 # UX Docs — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
+**Baseline documental original:** `32d7779`
 
 ## Objetivo
 
@@ -12,6 +12,8 @@ Ela traduz decisões de produto e domínio em experiência operacional.
 ---
 
 ## Arquivos
+
+Os snapshots J01–J05 em Login, Navegação, Formulários, Copy e Estados distinguem comportamento validado localmente das diretrizes ainda candidatas. Uso e limitações estão no [Guia do Usuário](../manuals/USER_MANUAL_INDEX.md); nenhuma das 12 recomendações foi aprovada automaticamente. [Disponibilidade](../context/PROJECT_STATUS.md#estado-atual).
 
 | Arquivo | Uso |
 |---|---|

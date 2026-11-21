@@ -1,6 +1,18 @@
 # Source of Truth — RebanhoSync
 
-Atualizado em: 2026-11-18
+Atualizado em: 2026-11-21
+
+## Identidade, perfil e configuração — J04/Bloco 1 local
+
+| Pergunta | Fonte e limite |
+|---|---|
+| Quem está autenticado e pode aceitar o convite? | Auth confirmado e destinatário de `farm_invites`; nome/telefone de `user_profiles` e `user_metadata` editável não provam identidade. |
+| Qual papel vale nesta fazenda? | Vínculo ativo de `user_fazendas` na própria fazenda, revalidado no servidor; papel de outra fazenda ou botão visível não autoriza. |
+| Qual nome/telefone complementar foi salvo? | `user_profiles` da própria identidade; upsert com PK/FK e RLS self, sem substituir email/telefone confirmado do Auth. |
+| Preferência pessoal ou da fazenda? | `user_settings` é pessoal; unidade/regras/experiência/flags de `fazendas.metadata` pertencem à fazenda. Configuração não comprova fato operacional. |
+| Qual versão de metadata pode ser salva? | Escritores afetados comparam ID e `updated_at` do snapshot carregado. Zero linha/conflito não é sucesso; trigger protege mudanças das duas flags contra não-owner. |
+
+Contrato e migrations: [Supabase RLS](../technical/SUPABASE_RLS.md#regras-de-rls). Implementação/validação local não provam integração ou publicação; [estado atual](./PROJECT_STATUS.md#estado-atual). Agenda, Evento, estados atuais e Protocolos mantêm as fontes abaixo.
 
 ## Objetivo
 
@@ -70,7 +82,7 @@ O contexto offline guardado em `local_ownership` permite continuidade local some
 
 #302 integra avaliação sanitária como Evento factual sem aplicação farmacológica: resultado, participantes, data, responsável e correções append-only não geram produto, dose, estoque ou carência. Adoção/monitoramento e variante são configurações da fazenda; controle estratégico e triagem são projeções. Junho permanece contextual, sem writer de materialização.
 
-Na #301 integrada, `insumos.sanitario_produto_v2_id` identifica explicitamente o produto técnico do estoque. Produto planejado não é produto aplicado. Indicadores derivam de Eventos/detalhes, participantes factuais e movimentos da mesma fazenda; deduplicação não mistura consumo com perda, nem transforma perdas em aplicação. Nenhum desses cálculos altera fatos ou saldo persistido. Consultar [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+Na #301 integrada, `insumos.sanitario_produto_v2_id` identifica explicitamente o produto técnico do estoque. Produto planejado não é produto aplicado. Indicadores derivam de Eventos/detalhes, participantes factuais e movimentos da mesma fazenda; deduplicação não mistura consumo com perda, nem transforma perdas em aplicação. Nenhum desses cálculos altera fatos ou saldo persistido. Consultar [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-303--19112026).
 
 ## Política de registro, alertas e elegibilidade
 

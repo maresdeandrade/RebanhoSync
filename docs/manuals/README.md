@@ -1,147 +1,37 @@
-```md
-# Manuals — RebanhoSync
+# Manuais — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
 
-## Objetivo
+A entrada única da documentação operacional é o [Índice do Guia do Usuário](./USER_MANUAL_INDEX.md). Ele reúne orientações por tarefa, tela e dúvida de suporte para produtores, gestores e trabalhadores rurais.
 
-Esta pasta concentra manuais práticos de uso e suporte do RebanhoSync.
+## Disponibilidade e limites
 
-Os manuais explicam como usar o app, interpretar telas, entender estados operacionais e resolver dúvidas comuns.
+Os capítulos de primeiro acesso, fazendas, equipe, perfil/preferências e configurações descrevem a versão **validada localmente do Bloco 1**, sobre `main@157376d9`. As correções J04/Bloco 1 estão preparadas para revisão de integração, sem publicação remota comprovada nesta entrega. Consulte o [estado canônico](../context/PROJECT_STATUS.md#estado-atual) antes de comunicar disponibilidade aos usuários.
 
----
+Os capítulos operacionais anteriores foram preservados. A consolidação J01–J05 não reexecuta nem certifica Animais, Lotes, Pastos, Agenda, Registrar, Sanitário ou Compra/Venda; não inicia J06.
 
-## Estrutura
+## Organização
 
-```txt
-docs/manuals/
-  README.md
-  USER_MANUAL_INDEX.md
+- `screens/`: orientação por tela ou fluxo.
+- `support/`: perguntas frequentes e solução de problemas.
+- `images/block1/`: duas capturas atuais de ambiente sintético, copiadas sem edição das evidências locais. Referenciam onboarding e edição da fazenda; não provam publicação.
 
-  screens/
-    AGENDA.md
-    ANIMAIS.md
-    LOTES_PASTOS.md
-    COMPRA_VENDA.md
-    REGISTRAR.md
-    SANITARIO.md
+Cada novo capítulo responde: para que serve, onde encontrar, quem pode usar, como fazer, como confirmar, como resolver erro e quais são os limites. Use os nomes reais dos comandos; explique Owner/Manager/Cowboy em português sem inventar permissões.
 
-  support/
-    FAQ_LOGIN.md
-    FAQ_SYNC.md
-    FAQ_AGENDA.md
-    FAQ_SANITARIO.md
-    TROUBLESHOOTING.md
+## Interpretação segura
 
-```
+| Conceito | Significado |
+|---|---|
+| Agenda | Intenção/tarefa futura; não é histórico executado. |
+| Evento | Fato executado que compõe histórico. |
+| Estado atual | Situação consolidada agora; não substitui histórico. |
+| Protocolo | Regra/configuração; não comprova execução. |
+| Sinal | Alerta auxiliar; não autoriza decisão crítica. |
 
----
+“Sem carência sanitária vigente nas fontes estruturadas disponíveis” não significa liberação para venda ou abate. Custo parcial não comprova lucro. Preferência salva não comprova entrega de notificação. Troca visual de fazenda não certifica isolamento ou sincronização universal.
 
-## Quando usar esta pasta
+## Critérios editoriais
 
-Use `docs/manuals/` quando a tarefa envolver:
+Não prometer recuperação de senha, canais ou efeitos indisponíveis. Diferenciar confirmação remota, dado salvo no dispositivo e alteração apenas preenchida. Não recomendar reset, limpeza de dados locais ou recriação de conta como solução genérica.
 
-* manual do usuário;
-* ajuda dentro do app;
-* FAQ;
-* suporte operacional;
-* orientação por tela;
-* explicação de fluxo;
-* instrução para usuário final;
-* onboarding;
-* troubleshooting.
-
----
-
-## Quando não usar
-
-Não usar esta pasta como fonte principal para: arquitetura, RLS, sync técnico, schema, regra agropecuária detalhada, regra financeira, roadmap ou prompts de agentes.
-
-### Guia de Pastas por Tema
-
-| Tema | Pasta |
-| --- | --- |
-| Fonte de verdade / lacunas / status | `docs/context/` |
-| Arquitetura / sync / RLS / testes | `docs/technical/` |
-| Domínio agropecuário | `docs/domain/` |
-| Produto / roadmap / escopo | `docs/product/` |
-| UX / copy / telas | `docs/ux/` |
-| Financeiro / KPI | `docs/finance/` |
-| Histórico | `docs/archive/` |
-
----
-
-## Convenção
-
-* Pastas em minúsculo.
-* Arquivos em `UPPER_SNAKE_CASE.md`.
-* Manuais de tela em `screens/`.
-* FAQs e suporte em `support/`.
-
----
-
-## Regras críticas para manuais
-
-Os manuais devem preservar estes conceitos:
-
-* **Agenda:** tarefa futura ou pendência.
-* **Evento:** fato executado.
-* **Estado atual:** situação consolidada agora.
-* **Protocolo:** regra ou configuração.
-* **Sinal:** alerta auxiliar, não decisão crítica.
-
----
-
-## Linguagem para usuário
-
-### Preferir linguagem simples
-
-* Pendente
-* Atrasado
-* Registrado
-* Salvo neste dispositivo
-* Sincronização pendente
-* Fonte insuficiente
-
-### Evitar linguagem que prometa decisão indevida
-
-* Liberado para venda
-* Apto para abate
-* Livre de carência
-* Peso atual confiável
-* Conformidade garantida
-
----
-
-## Carência sanitária
-
-Carência sanitária pode aparecer como sinal quando vem de evento sanitário estruturado.
-
-O manual deve explicar:
-
-> ✅ *"Sem carência sanitária vigente nas fontes estruturadas disponíveis."*
-
-> ⚠️ **Não significa:**
-> * Liberado para venda.
-> * Apto para abate.
-> * Liberação sanitária final.
-> 
-> 
-
----
-
-## Critério de qualidade
-
-Um manual é aceitável quando:
-
-* [ ] explica o uso prático;
-* [ ] não cria regra de negócio nova;
-* [ ] não contradiz regras de domínio/produto/técnico;
-* [ ] orienta o usuário sem prometer certeza falsa;
-* [ ] diferencia pendência, fato, estado e sinal;
-* [ ] ajuda o suporte a resolver dúvidas comuns.
-
-```
-
-```
+Capturas devem ser atuais, sem segredos ou dados pessoais reais. Registrar falta de imagem adequada, sem usar versão antiga como atual. Detalhes técnicos, logs e matrizes ficam nas fontes de [contexto](../context/README.md), [contratos](../technical/README.md) e evidência técnica, sem duplicação no manual.

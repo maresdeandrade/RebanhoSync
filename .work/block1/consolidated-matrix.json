@@ -1,0 +1,1177 @@
+{
+  "scope": "Bloco 1 J01–J05; nenhuma J06",
+  "baseline": {
+    "head": "157376d90b3f3ac6ccfe806d98f1de37b2007644",
+    "branch": "codex/j04-invites-members-auth",
+    "preexisting": [
+      {
+        "path": "docs/technical/SUPABASE_RLS.md",
+        "sha256": "72b3bffc40f59d494dd8be47bc603da24d3d9c2453c162caff44cd55840b237d"
+      },
+      {
+        "path": "src/components/members/InviteMemberDialog.tsx",
+        "sha256": "74e54fe489c0019b31e508519a58c8d734f473eb7f1691216e830747a4f4560c"
+      },
+      {
+        "path": "src/components/members/MemberRoleDialog.tsx",
+        "sha256": "c457930c85075b7a9872f6c07cd0a3aecffea6000f952cc1d54e570d1987f7c2"
+      },
+      {
+        "path": "src/components/members/PendingInvites.tsx",
+        "sha256": "038a3b52042cf37a763f5062d9ae40d7c6ee23db41eec5f4173b33d109ef9345"
+      },
+      {
+        "path": "src/components/members/RemoveMemberDialog.tsx",
+        "sha256": "324a8205f9790e5e60852e145926cdd62586decbd73f8cb146150953c551461a"
+      },
+      {
+        "path": "src/pages/AcceptInvite.tsx",
+        "sha256": "5a944ee18c5f53d0686745bb170532ff77dece9f982824f2182c381f8985e432"
+      },
+      {
+        "path": "src/pages/Membros.tsx",
+        "sha256": "7e177adad964777069920d87e7bfcee930cc0be9c3054e0a7c3387c826a9dd58"
+      },
+      {
+        "path": "src/pages/__tests__/AcceptInvite.test.tsx",
+        "sha256": "8703cc9d87ce7b6ec78fb10bc3afd961e55d89301ca50d2be3f548ad97bf3e1c"
+      },
+      {
+        "path": "src/pages/__tests__/InviteAuthContinuity.test.tsx",
+        "sha256": "afc5573731a4e09f0e0340d83328a6c12a14f05ce39aa05587b4194dee7478c9"
+      },
+      {
+        "path": "src/components/members/InviteMemberDialog.test.tsx",
+        "sha256": "5e5cb55ec6135a9787e5184758fd96d5b6c95ef4cdce957fe2b0b4f0830b125e"
+      },
+      {
+        "path": "src/lib/auth/errorMessage.ts",
+        "sha256": "c681451111119f3e362de35262e75df476fa2dfccd7b8582fcf61985950963d0"
+      },
+      {
+        "path": "src/pages/__tests__/Membros.test.tsx",
+        "sha256": "0af040a79ddd5e2a2993134394bf4bf886a217cea8a99aab90bbe83065d27035"
+      },
+      {
+        "path": "supabase/migrations/20261120231349_j04_members_invites_authorization.sql",
+        "sha256": "49b4fe6b30b2de1f9d322cbc3c404b42d56ec99b166fbb3895b665ec7db990fa"
+      },
+      {
+        "path": "tests/codex/member-invites-concurrency.local.test.mjs",
+        "sha256": "26b7219c8a486d31d2f9f4de835e79eb896f3a07d68ed84172ea5e5aa3725458"
+      },
+      {
+        "path": "tests/codex/member-invites.local.test.mjs",
+        "sha256": "6dd255b73c1b19eed95c1f3b5406ea269a4e4eec9d21ed519cc1398be1d56d17"
+      }
+    ],
+    "originals": [
+      {
+        "path": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j01-result.json",
+        "sha256": "1f5efddac311ba1ed0b538a17a844971043a28b265f345c713df6d1bd8b03015"
+      },
+      {
+        "path": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j02-result.json",
+        "sha256": "afde54749a0a256415cebac7517676702f3a76445e8bfa1520ab3e9c6e07244b"
+      },
+      {
+        "path": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j03-result.json",
+        "sha256": "d65f1fcb417e28a37ab37f519f3ffdeacedfee4ad372870558498ba6e5fc9681"
+      },
+      {
+        "path": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+        "sha256": "a87d2ca220023a4d20b249dea9d20ac2774644668b7247eaf894c82bb897afa6"
+      },
+      {
+        "path": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+        "sha256": "e059d2021255902298d200799564a69fb33d044b0af10adb8b96e5765c600fb2"
+      },
+      {
+        "path": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j05-result.json",
+        "sha256": "a13c927615648076055b964df22c618d8df29d472412d6c006fae962c7bebc74"
+      }
+    ]
+  },
+  "rows": [
+    {
+      "id": "B1-01",
+      "origin": [
+        "J05-06"
+      ],
+      "title": "Autoridade e gravação concorrente das flags",
+      "kind": "vulnerabilidade",
+      "severity": "BLOCKER",
+      "status": "corrigido localmente",
+      "cause": "UPDATE owner/manager sem guarda de atributos; escritores enviavam JSON completo sem versão esperada.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Gerente podia mudar proteção; salvamento de preferências podia restaurar flags antigas.",
+      "integrityImpact": "Contorno de autoridade e perda de configuração de segurança.",
+      "intervention": "Trigger por valores efetivos + gravação condicional por fazenda/updated_at nos três escritores; manager preserva flags carregadas.",
+      "database": "Nova migration 20261121023104; J04 preservada.",
+      "acceptance": "block1-security.local.test.mjs; block1-concurrency.local.test.mjs; Chromium: owner desatualizado rejeitado, recarga e gravação válidas preservam chaves.",
+      "journeyScenario": "J05-06",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j05-result.json",
+          "section": "findings",
+          "observed": "Manager tem flags desabilitadas na UI, mas authenticated possui UPDATE em metadata; policy fazendas_update_owner_manager valida apenas papel owner/manager, sem comparação de campos. Triggers de fazendas não fazem guarda das flags; não há CHECK/rule para isso. Manager real salvou metadata de unidade no mesmo caminho.",
+          "evidence": [
+            "45-manager-security-readonly.png",
+            "25-manager-controle-save.png",
+            "farm-authority-inspection.json"
+          ],
+          "cause": "A diferenciação de autoridade entre owner e manager para eventos_rollout.strict_rules_enabled/strict_anti_teleporte existe na UI; UPDATE direto no JSON não aplica esse limite."
+        }
+      ]
+    },
+    {
+      "id": "B1-02",
+      "origin": [
+        "J05-01"
+      ],
+      "title": "Persistência do perfil complementar",
+      "kind": "defeito",
+      "severity": "HIGH",
+      "status": "corrigido localmente",
+      "cause": "Leitura ignorava erros; UPDATE de linha inexistente era aceito sem retorno.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Nome/telefone sumiam após sucesso aparente.",
+      "integrityImpact": "Falso sucesso; identidade canônica não deve vir do perfil.",
+      "intervention": "maybeSingle com erro explícito; upsert próprio e confirmação de linha retornada; erro preserva rascunho.",
+      "database": "Sem SQL: PK/FK e RLS self existentes são suficientes.",
+      "acceptance": "PerfilPersistence; SQL RLS; Chromium primeiro save, update, reload, nova sessão, identidade estrangeira, rede; zero linha simulado na fronteira.",
+      "journeyScenario": "J05-01",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j05-result.json",
+          "section": "findings",
+          "observed": "UPDATE user_profiles retornou204/sucesso, mas zero linhas existiam; nome/telefone voltaram vazios e não houve linha após recarga.",
+          "evidence": [
+            "04-profile-save-success.png",
+            "05-profile-not-persisted.png",
+            "persisted-before.json",
+            "persisted-after.json"
+          ],
+          "cause": "loadProfile consulta user_profiles e ignora erro da consulta; save usa update filtrado por user_id, sem inserir linha ausente nem conferir linhas afetadas. Metadados de cadastro não são carregados nesse formulário."
+        }
+      ]
+    },
+    {
+      "id": "B1-03",
+      "origin": [
+        "J05-03"
+      ],
+      "title": "Horário de silêncio inválido",
+      "kind": "defeito",
+      "severity": "MEDIUM",
+      "status": "corrigido localmente",
+      "cause": "Gravação não validava início/fim; leitura descartava intervalo incompleto.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Sucesso para configuração que reaparecia desligada.",
+      "integrityImpact": "Preferência inconsistente, sem novo canal de notificações.",
+      "intervention": "Validador compartilhado de HH:mm; rejeitar vazios/iguais; normalizar inválidos para null; permitir meia-noite.",
+      "database": "Nenhuma.",
+      "acceptance": "PerfilPersistence; sanitaryReminders; Chromium: intervalo inválido sem save e 22:00–06:00 persistido/recarregado.",
+      "journeyScenario": "J05-03",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j05-result.json",
+          "section": "findings",
+          "observed": "Início vazio e fim06:00 foram persistidos com toast de sucesso. Após recarga, silêncio ficou OFF e início voltou22:00.",
+          "evidence": [
+            "12-incomplete-quiet-hours-saved.png",
+            "13-incomplete-quiet-hours-lost.png",
+            "observations.json"
+          ],
+          "cause": "Save persiste quiet_hours sem validar os dois horários; resolver só aceita ambos preenchidos e devolve null para início vazio."
+        }
+      ]
+    },
+    {
+      "id": "B1-04",
+      "origin": [
+        "J02-01"
+      ],
+      "title": "Validação da área da fazenda",
+      "kind": "defeito",
+      "severity": "MEDIUM",
+      "status": "corrigido localmente",
+      "cause": "Campo só convertia para número; erro da constraint era exibido cru.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Mensagem técnica sem ação de correção.",
+      "integrityImpact": "Constraint protegia os dados; nenhum dado inválido comprovadamente persistido.",
+      "intervention": "Rejeitar zero/negativo junto ao campo e mapear constraint como defesa adicional.",
+      "database": "Preservar constraint atual.",
+      "acceptance": "CriarFazendaValidation: zero/negativo não chamam RPC; Chromium negativo.",
+      "journeyScenario": "J02-01",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j02-result.json",
+          "section": "findings",
+          "observed": "Request reaches create_fazenda; DB rejects with new row for relation fazendas violates check constraint fazendas_area_total_ha_check, shown raw in UI. No farm created.",
+          "evidence": [
+            ".work/evidence/j02/06-resultado-tentativa-invalida.png",
+            ".work/evidence/j02/07-validacao-mobile.png"
+          ],
+          "cause": "CriarFazenda.tsx registers area with valueAsNumber only, without positive-value validation; createError.message is thrown and displayed directly."
+        }
+      ]
+    },
+    {
+      "id": "B1-05",
+      "origin": [
+        "J02-02"
+      ],
+      "title": "Conclusão coerente do onboarding",
+      "kind": "defeito",
+      "severity": "MEDIUM",
+      "status": "corrigido localmente",
+      "cause": "done usava produção OU localização, enquanto copy exigia revisão não persistida e município+UF.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Etapa completa e localização não revisada simultâneas.",
+      "integrityImpact": "Não havia fato persistido de revisão; não inferir revisão de presença de campo.",
+      "intervention": "Critério nome+produção; localização exibida quando informada e declarada opcional.",
+      "database": "Nenhuma; nenhum novo campo obrigatório.",
+      "acceptance": "OnboardingInicial.e2e.test.tsx e Chromium MG sem município; navegação já existente preservada.",
+      "journeyScenario": "J02-02",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j02-result.json",
+          "section": "findings",
+          "observed": "Step says OK/Etapa concluida and contributes 1/6 while stating Localizacao nao revisada and requiring Nome e localizacao revisados.",
+          "evidence": [
+            ".work/evidence/j02/12-onboarding-desktop.png",
+            ".work/evidence/j02/13-etapa-fazenda-desktop.png"
+          ],
+          "cause": "OnboardingInicial.tsx:124 completes with tipo_producao OR municipio OR estado; location label at lines 110-113 requires municipio AND estado."
+        }
+      ]
+    },
+    {
+      "id": "B1-06",
+      "origin": [
+        "J04-CUX01"
+      ],
+      "title": "Ações financeiras oferecidas ao cowboy",
+      "kind": "inconsistência de apresentação",
+      "severity": "MEDIUM",
+      "status": "corrigido localmente",
+      "cause": "UI não usava os papéis de escrita já exigidos no servidor.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Operador abria formulário incompatível com sua autoridade.",
+      "integrityImpact": "Nenhuma escrita indevida demonstrada; RLS owner/manager já vigente.",
+      "intervention": "Alinhar ações, modais, handlers e seed local de categorias à autoridade existente.",
+      "database": "Sem alteração de RLS/permissão.",
+      "acceptance": "FinanceiroSubmit (owner/cowboy); Chromium; policies ativas verificadas.",
+      "journeyScenario": "J04-CUX01",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "matrix",
+          "observed": "Novo lançamento abre formulário; nenhuma submissão executada",
+          "evidence": "19-cowboy-financial-dialog-exposed.png"
+        }
+      ]
+    },
+    {
+      "id": "B1-07",
+      "origin": [
+        "J04-F06",
+        "J05-02"
+      ],
+      "title": "Tratamento de erros estruturados",
+      "kind": "defeito",
+      "severity": "MEDIUM",
+      "status": "corrigido localmente",
+      "cause": "String(error) sobre objeto PostgREST produzia [object Object].",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Erro sem orientação; recuperação confusa.",
+      "integrityImpact": "Não é vulnerabilidade independente.",
+      "intervention": "Reutilizar authOperationError da J04 no Perfil e nos escritores afetados.",
+      "database": "Nenhuma.",
+      "acceptance": "PerfilPersistence erro estruturado e rede; regressão J04 de mensagem/retry.",
+      "journeyScenario": "J04-F06, J05-02",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "findings",
+          "observed": "Screen shows [object Object] and labels valid invitation invalid",
+          "evidence": [
+            ".work/evidence/j04/07-link-cancelado-desktop.png",
+            ".work/evidence/j04/10-convite-valido-bloqueado-desktop.png",
+            ".work/evidence/j04/20-convite-anonimo-mobile.png",
+            ".work/evidence/j04/preview-response-sanitized.json"
+          ],
+          "cause": "PostgREST error is plain object; catch converts String(error) to Error instead of extracting useful normalized message"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "findings",
+          "observed": "Screen shows [object Object] and labels valid invitation invalid",
+          "evidence": "Structured PostgREST error retry regression; environment 401 diagnosed independently"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "matrix",
+          "observed": "Erro PostgREST tratado; retry testado",
+          "evidence": "ui-current.log"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j05-result.json",
+          "section": "findings",
+          "observed": "Falha seletiva da requisição PATCH exibiu Erro[object Object]; rascunho foi preservado.",
+          "evidence": [
+            "06-profile-network-error.png"
+          ],
+          "cause": "catch converte objeto PostgREST com String(error), não extrai message."
+        }
+      ]
+    },
+    {
+      "id": "B1-08",
+      "origin": [
+        "J04-F01"
+      ],
+      "title": "Carregamento da equipe sem perfil",
+      "kind": "defeito",
+      "severity": "HIGH",
+      "status": "corrigido localmente",
+      "cause": "Join para FK user_profiles inexistente.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Equipe aparecia vazia com membro persistido.",
+      "integrityImpact": "Consistência funcional.",
+      "intervention": "Consultar vínculos e perfis separadamente.",
+      "database": "Nenhuma.",
+      "acceptance": "Membros.test.tsx",
+      "journeyScenario": "J04-F01",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "findings",
+          "observed": "PGRST relationship failure for user_fazendas/user_profiles; UI shows 0 people and empty state despite existing owner",
+          "evidence": [
+            ".work/evidence/j04/01-equipe-proprietario-desktop.png",
+            ".work/evidence/j04/contracts.json",
+            ".work/evidence/j04/persisted-facts.json"
+          ],
+          "cause": "Membros.tsx requests user_profiles!user_id, but live user_fazendas.user_id FK points to auth.users and no direct profile FK exists"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "findings",
+          "observed": "PGRST relationship failure for user_fazendas/user_profiles; UI shows 0 people and empty state despite existing owner",
+          "evidence": "UI regression and Chromium screenshot 01"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "matrix",
+          "observed": "Confirmado no Chromium e regressão",
+          "evidence": "01-owner-without-profile-desktop.png"
+        }
+      ]
+    },
+    {
+      "id": "B1-09",
+      "origin": [
+        "J04-F02"
+      ],
+      "title": "Prévia e contexto de aceite",
+      "kind": "defeito",
+      "severity": "HIGH",
+      "status": "corrigido localmente",
+      "cause": "Retorno TABLE/array tratado como objeto.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Convite válido era recusado pela UI.",
+      "integrityImpact": "Consistência funcional.",
+      "intervention": "Validar array de cardinalidade 1 e selecionar fazenda do aceite.",
+      "database": "J04 acrescenta fazenda_id à prévia.",
+      "acceptance": "AcceptInvite e InviteAuthContinuity",
+      "journeyScenario": "J04-F02",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "findings",
+          "observed": "HTTP 200 returns one-row array with is_valid=true; screen says expired/already used, displays empty badges, no acceptance button",
+          "evidence": [
+            ".work/evidence/j04/11-validade-servidor-ui-divergente.png",
+            ".work/evidence/j04/23-colaborador-autenticado-convite-valido-bloqueado.png",
+            ".work/evidence/j04/28-colaborador-desktop-convite-valido.png",
+            ".work/evidence/j04/preview-states-sanitized.json"
+          ],
+          "cause": "AcceptInvite.tsx assigns RPC table response directly to object-shaped invite; invite.is_valid is undefined. Existing InviteAuthContinuity mocks return object rather than actual array."
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "findings",
+          "observed": "HTTP 200 returns one-row array with is_valid=true; screen says expired/already used, displays empty badges, no acceptance button",
+          "evidence": "9 AcceptInvite and 25 invite-auth continuity tests; real acceptance pending migration"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "matrix",
+          "observed": "Aceites Horizonte/Controle observados; array interpretado",
+          "evidence": "07-original-valid-invite.png;16-controle-context-selected-mobile.png"
+        }
+      ]
+    },
+    {
+      "id": "B1-10",
+      "origin": [
+        "J04-F03"
+      ],
+      "title": "Contato inválido no convite",
+      "kind": "defeito",
+      "severity": "MEDIUM",
+      "status": "corrigido localmente",
+      "cause": "Checagem de vazio sem validação suficiente nas fronteiras.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Convite inválido era persistido.",
+      "integrityImpact": "Consistência funcional.",
+      "intervention": "Validar email/telefone na UI e RPC.",
+      "database": "Migration J04.",
+      "acceptance": "InviteMemberDialog e member-invites SQL",
+      "journeyScenario": "J04-F03",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "findings",
+          "observed": "Blank contacts rejected clearly, but malformed email created persisted invitation with HTTP 200",
+          "evidence": [
+            ".work/evidence/j04/03-convite-contato-obrigatorio.png",
+            ".work/evidence/j04/04-email-invalido-convite-criado.png",
+            ".work/evidence/j04/persisted-facts.json"
+          ],
+          "cause": "Button handler only checks nonempty values; type=email alone does not validate this button-driven flow; create_invite only requires non-null contact"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "findings",
+          "observed": "Blank contacts rejected clearly, but malformed email created persisted invitation with HTTP 200",
+          "evidence": "UI test and screenshot02; SQL draft reject test"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "matrix",
+          "observed": "UI e SQL recusam",
+          "evidence": "02-invalid-email-rejected.png;sql-after-applied.log"
+        }
+      ]
+    },
+    {
+      "id": "B1-11",
+      "origin": [
+        "J04-F04"
+      ],
+      "title": "Atualização da lista de convites",
+      "kind": "defeito",
+      "severity": "MEDIUM",
+      "status": "corrigido localmente",
+      "cause": "Criação atualizava somente membros; lista não era invalidada.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Novo convite só aparecia após recarga.",
+      "integrityImpact": "Consistência funcional.",
+      "intervention": "Revisão da lista após criação/cancelamento.",
+      "database": "Nenhuma.",
+      "acceptance": "Membros.test.tsx",
+      "journeyScenario": "J04-F04",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "findings",
+          "observed": "New invite absent until page reload; after reload it is shown",
+          "evidence": [
+            ".work/evidence/j04/09-listagem-sem-atualizar.png",
+            ".work/evidence/j04/12-listagem-atualizada-com-convite.png"
+          ],
+          "cause": "Invite success invokes loadMembers only; PendingInvites fetch effect depends on fazendaId and is not invalidated by creation"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "findings",
+          "observed": "New invite absent until page reload; after reload it is shown",
+          "evidence": "UI list refresh test and screenshots03-05"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "matrix",
+          "observed": "Atualização sem recarga observada",
+          "evidence": "04-pending-list-refreshed.png;05-cancel-list-counter-refreshed.png"
+        }
+      ]
+    },
+    {
+      "id": "B1-12",
+      "origin": [
+        "J04-F05"
+      ],
+      "title": "Contador de convites",
+      "kind": "defeito",
+      "severity": "MEDIUM",
+      "status": "corrigido localmente",
+      "cause": "Contava membership em vez de farm_invites.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Contador divergente da lista.",
+      "integrityImpact": "Consistência funcional.",
+      "intervention": "Contar fonte de convites; desconhecido durante erro/carga.",
+      "database": "Nenhuma.",
+      "acceptance": "Membros.test.tsx",
+      "journeyScenario": "J04-F05",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "findings",
+          "observed": "Header says 0 convite(s) while valid pending invitation is listed",
+          "evidence": [
+            ".work/evidence/j04/12-listagem-atualizada-com-convite.png",
+            ".work/evidence/j04/16-equipe-convites-mobile.png"
+          ],
+          "cause": "counts.pending is computed from user_fazendas.accepted_at, not farm_invites pending source"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "findings",
+          "observed": "Header says 0 convite(s) while valid pending invitation is listed",
+          "evidence": "UI list counter test and screenshots01,04,05"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "matrix",
+          "observed": "Contadores acompanhando lista",
+          "evidence": "10-two-members-no-pending.png"
+        }
+      ]
+    },
+    {
+      "id": "B1-13",
+      "origin": [
+        "J04-SC01"
+      ],
+      "title": "Destinatário, replay e reingresso",
+      "kind": "vulnerabilidade",
+      "severity": "BLOCKER",
+      "status": "corrigido localmente",
+      "cause": "RPC confiava no token e fazia upsert incondicional de vínculo.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Identidade errada podia aceitar e vínculo podia ser elevado/reativado.",
+      "integrityImpact": "Autorização/integridade de vínculo.",
+      "intervention": "Auth confirmado, replay sem efeito e novo convite após revogação.",
+      "database": "Migration J04.",
+      "acceptance": "member-invites.local.test.mjs + prova Auth/concorrência original J04 preservada",
+      "journeyScenario": "J04-SC01",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "findings",
+          "observed": "Live function checks login/status/expiry only; no email/phone match; on conflict overwrites role and reactivates membership",
+          "evidence": [
+            ".work/evidence/j04/contracts.json",
+            ".work/evidence/j04/persisted-facts.json"
+          ],
+          "cause": "SECURITY DEFINER routine trusts bearer token and performs unconditional membership upsert"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "findings",
+          "observed": "Live function checks login/status/expiry only; no email/phone match; on conflict overwrites role and reactivates membership",
+          "evidence": "SQL before failures, draft transaction passes; not applied"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "matrix",
+          "observed": "Negativos e replay confirmados em SQL/Auth real",
+          "evidence": "sql-after-applied.log;real-auth-current.log"
+        }
+      ]
+    },
+    {
+      "id": "B1-14",
+      "origin": [
+        "J04-SC02"
+      ],
+      "title": "Proteção de proprietário e último owner",
+      "kind": "vulnerabilidade",
+      "severity": "BLOCKER",
+      "status": "corrigido localmente",
+      "cause": "RPC não protegia alvo owner nem último vínculo; decisão concorrente não serializada.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Gerente podia administrar owner; fazenda podia perder último owner.",
+      "integrityImpact": "Autorização/integridade de vínculo.",
+      "intervention": "Lock da fazenda, revalidar autoridade e preservar último proprietário.",
+      "database": "Migration J04.",
+      "acceptance": "member-invites.local.test.mjs + concorrência real original J04; integração com trigger retestada",
+      "journeyScenario": "J04-SC02",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "findings",
+          "observed": "Manager accepted by both routines; only assigning new owner role is restricted; target owner and last-owner checks absent. Removal targets active membership too, although UI only exposes pending removal.",
+          "evidence": [
+            ".work/evidence/j04/contracts.json"
+          ],
+          "cause": "SECURITY DEFINER UPDATE filters farm/target/deleted state but not protected target role or remaining ownership"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "findings",
+          "observed": "Manager accepted by both routines; only assigning new owner role is restricted; target owner and last-owner checks absent. Removal targets active membership too, although UI only exposes pending removal.",
+          "evidence": "Real authenticated before failures incl mixed concurrency; draft sequential tests pass; after concurrency pending"
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-correction-result.json",
+          "section": "matrix",
+          "observed": "Concorrência e gerente indevido rejeitados com JWT real",
+          "evidence": "authenticated-concurrency-before.log;real-auth-current.log"
+        }
+      ]
+    },
+    {
+      "id": "B1-15",
+      "origin": [
+        "J05-04"
+      ],
+      "title": "Tema Sistema durante mudança do SO",
+      "kind": "defeito",
+      "severity": "LOW",
+      "status": "aberto; não bloqueante neste recorte",
+      "cause": "applyTheme consulta matchMedia sem listener de change.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Tema só acompanha mudança após reaplicar/recarga.",
+      "integrityImpact": "Sem impacto em autorização ou persistência demonstrado.",
+      "intervention": "Candidato: acompanhar preferência do SO com cleanup do listener, em tarefa própria.",
+      "database": "Nenhuma.",
+      "acceptance": "Futuro: alternar prefers-color-scheme com página aberta; evidência J05 preservada, sem repetir agora.",
+      "journeyScenario": "J05-04",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j05-result.json",
+          "section": "findings",
+          "observed": "Com theme=system, matchMedia dark=true e classe light permaneceu após polling6s; recarga passou a dark.",
+          "evidence": [
+            "33-system-os-change-not-applied.png",
+            "34-system-dark-after-reload.png"
+          ],
+          "cause": "applyTheme consulta matchMedia ao executar, sem listener change no contrato inspecionado; nova carga reaplica."
+        }
+      ]
+    },
+    {
+      "id": "B1-16",
+      "origin": [
+        "J02-04",
+        "J03-U01",
+        "J03-S07",
+        "J05-05"
+      ],
+      "title": "Descarte de rascunhos entre navegação, recarga e fazenda",
+      "kind": "melhoria",
+      "severity": "MEDIUM",
+      "status": "candidato; consolidado sem implementação",
+      "cause": "Formulários mantêm rascunhos em memória sem proteção de navegação.",
+      "causeStatus": "observação de UX; solução candidata",
+      "userImpact": "Retrabalho após saída acidental.",
+      "integrityImpact": "Não salvar automaticamente nem transportar rascunho entre fazendas.",
+      "intervention": "Uma iniciativa de confirmação de descarte; rascunho temporário apenas com necessidade validada.",
+      "database": "Não necessária para aviso.",
+      "acceptance": "Futuro: navegar/voltar/trocar fazenda, manter edição ou descartar explicitamente, sem submissão/duplicação.",
+      "journeyScenario": "J02-04, J03-U01, J03-S07, J05-05",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j02-result.json",
+          "section": "findings",
+          "observed": "Inputs reset without warning or recoverable draft.",
+          "evidence": [
+            ".work/evidence/j02/08-retorno-formulario-mobile.png"
+          ]
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j03-result.json",
+          "section": "ux_recommendations",
+          "observed": "Rascunho é descartado sem aviso ao abrir o seletor; reapresentado código persistido ao retornar.",
+          "evidence": [
+            ".work/evidence/j03/28-controle-rascunho.png",
+            ".work/evidence/j03/32-rascunho-descartado-controle.png"
+          ]
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j05-result.json",
+          "section": "findings",
+          "observed": "Neonatal9 não salvo virou7 após sair/Voltar; unidade rascunho foi descartada após troca; nome rascunho mobile sumiu após recarga. Nenhum diálogo de confirmação.",
+          "evidence": [
+            "29-unsaved-lifecycle.png",
+            "30-unsaved-lifecycle-discarded.png",
+            "31-unsaved-farm-switch.png",
+            "48-profile-mobile-draft.png",
+            "49-profile-mobile-draft-discarded.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1-17",
+      "origin": [
+        "J03-U02",
+        "J03-U05",
+        "J04-U02"
+      ],
+      "title": "Fazenda ativa e alcance do salvamento",
+      "kind": "melhoria",
+      "severity": "LOW",
+      "status": "candidato",
+      "cause": "Nome/código/papel/escopo espalhados entre cabeçalho, seletor e formulário.",
+      "causeStatus": "observação de UX; solução candidata",
+      "userImpact": "Incerteza sobre propriedade afetada e diferença entre abas.",
+      "integrityImpact": "Sem novo bypass demonstrado; cada ação continua vinculada à fazenda.",
+      "intervention": "Exibir nome/código existente e escopo/papel junto à ação; confirmar efeito por propriedade.",
+      "database": "Nenhuma nova fonte.",
+      "acceptance": "Futuro: duas propriedades e papéis diferentes, duas abas e viewport mobile.",
+      "journeyScenario": "J03-U02, J03-U05, J04-U02",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j03-result.json",
+          "section": "ux_recommendations",
+          "observed": "Três acionamentos para trocar: nome → Trocar → cartão. Cartões já têm nome, UF, área, produção e papel, mas não código CTRL-J03 nem marcador Atual.",
+          "evidence": [
+            ".work/evidence/j03/02-menu-fazenda-desktop.png",
+            ".work/evidence/j03/31-retorno-controle-seletor.png",
+            ".work/evidence/j03/41-mobile-horizonte-controle-seletor.png"
+          ]
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j03-result.json",
+          "section": "ux_recommendations",
+          "observed": "Salvar fazenda é genérico e retorna à Home; abas podem manter fazendas diferentes com cabeçalhos coerentes até recarga.",
+          "evidence": [
+            ".work/evidence/j03/25-controle-salvamento.png",
+            ".work/evidence/j03/26-controle-pos-salvamento.png",
+            ".work/evidence/j03/36-outra-aba-apos-troca.png",
+            ".work/evidence/j03/38-voltar-navegador.png"
+          ]
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "ux_recommendations",
+          "observed": "Invite dialog is generic while farm name remains in blurred global header.",
+          "evidence": [
+            ".work/evidence/j04/02-dialogo-convite-desktop.png",
+            ".work/evidence/j04/08-convite-valido-gerado.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1-18",
+      "origin": [
+        "J02-05",
+        "J03-U03",
+        "J04-U01"
+      ],
+      "title": "Terminologia, obrigatoriedade e básico/avançado",
+      "kind": "melhoria",
+      "severity": "LOW",
+      "status": "candidato",
+      "cause": "Termos técnicos e rótulos de papel sem capacidades; primeiro passo pouco destacado.",
+      "causeStatus": "observação de UX; solução candidata",
+      "userImpact": "Mais leitura e tentativas para entender ação.",
+      "integrityImpact": "Tradução não concede autoridade.",
+      "intervention": "Explicar capacidades, efeitos e campos opcionais; organização básica/avançada sem novos obrigatórios.",
+      "database": "Nenhuma.",
+      "acceptance": "Futuro: tarefa de primeiro acesso e entendimento de controles indisponíveis.",
+      "journeyScenario": "J02-05, J03-U03, J04-U01",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j02-result.json",
+          "section": "findings",
+          "observed": "Provisionamento terminology; required/optional fields not marked; Home first steps below operational panels and collapsed by default.",
+          "evidence": [
+            ".work/evidence/j02/03-formulario-desktop.png",
+            ".work/evidence/j02/15-home-primeiros-passos.png",
+            ".work/evidence/j02/30-home-mobile-viewport.png"
+          ]
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j03-result.json",
+          "section": "ux_recommendations",
+          "observed": "Cadastro contém Rollout editavel, Modo essencial e Segurança dos registros; Configurações abre regras e parâmetros. Distinção entre editar identificação e configurar comportamento não é explicada.",
+          "evidence": [
+            ".work/evidence/j03/24-controle-edicao-antes.png",
+            ".work/evidence/j03/42-edicao-controle-mobile.png"
+          ]
+        },
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "ux_recommendations",
+          "observed": "Owner/Manager/Cowboy and raw cowboy shown without capability description; accept page uses separate translated mapping in code but is blocked before valid presentation.",
+          "evidence": [
+            ".work/evidence/j04/18-papeis-disponiveis-mobile.png",
+            ".work/evidence/j04/19-manager-selecionavel-mobile.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1-19",
+      "origin": [
+        "J03-U04"
+      ],
+      "title": "Estado local e confirmação remota",
+      "kind": "melhoria",
+      "severity": "LOW",
+      "status": "candidato",
+      "cause": "Em dia e Sem confirmação representam dimensões diferentes sem explicação.",
+      "causeStatus": "observação de UX; solução candidata",
+      "userImpact": "Usuário pode interpretar saúde local como comprovação remota.",
+      "integrityImpact": "Não inventar confirmação remota nem novo estado factual.",
+      "intervention": "Explicar origem, pendência e recuperação usando fontes atuais.",
+      "database": "Nenhuma.",
+      "acceptance": "Futuro: fila vazia, pendente, offline e confirmação desconhecida.",
+      "journeyScenario": "J03-U04",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j03-result.json",
+          "section": "ux_recommendations",
+          "observed": "Em dia aparece junto de Sem confirmacao em fazenda vazia.",
+          "evidence": [
+            ".work/evidence/j03/01-inicio-horizonte.png",
+            ".work/evidence/j03/52-final-horizonte.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1-20",
+      "origin": [
+        "J02-06"
+      ],
+      "title": "Estados vazios e primeiros passos",
+      "kind": "melhoria",
+      "severity": "LOW",
+      "status": "candidato",
+      "cause": "Mensagem de recorte vazio usada em fazenda inteiramente vazia.",
+      "causeStatus": "observação de UX; solução candidata",
+      "userImpact": "Novo usuário procura filtros em vez de primeiro cadastro.",
+      "integrityImpact": "Sem dados operacionais novos para produzir evidência.",
+      "intervention": "Distinguir ausência total de filtro vazio usando contagens existentes.",
+      "database": "Nenhuma.",
+      "acceptance": "Futuro: fazenda vazia versus rebanho filtrado.",
+      "journeyScenario": "J02-06",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j02-result.json",
+          "section": "findings",
+          "observed": "Nenhum animal ativo neste recorte suggests filters; creation action exists separately.",
+          "evidence": [
+            ".work/evidence/j02/18-animais-vazio-desktop.png",
+            ".work/evidence/j02/28-animais-vazio-mobile.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1-21",
+      "origin": [
+        "J04-U03"
+      ],
+      "title": "Aviso de convite duplicado ou membro existente",
+      "kind": "melhoria",
+      "severity": "LOW",
+      "status": "candidato",
+      "cause": "Criar convite não deduplica destinatário nem avisa vínculo prévio.",
+      "causeStatus": "observação de UX; solução candidata",
+      "userImpact": "Retrabalho e links redundantes.",
+      "integrityImpact": "Aceite J04 já rejeita elevação de membro ativo; duplicidade não equivale a bypass.",
+      "intervention": "Validar necessidade de aviso antes de nova regra de unicidade.",
+      "database": "Não aprovar constraint nova por hipótese.",
+      "acceptance": "Futuro: dois convites, contato por email/telefone, expirado/cancelado e membro ativo.",
+      "journeyScenario": "J04-U03",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "ux_recommendations",
+          "observed": "UI creates second valid invite for same recipient and also creates invite for original owner; no duplicate/member warning. Extra invitations cancelled; no association changed.",
+          "evidence": [
+            ".work/evidence/j04/14-dois-convites-mesmo-destinatario.png",
+            ".work/evidence/j04/15-convite-membro-existente-duplo.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1-22",
+      "origin": [
+        "J04-U04"
+      ],
+      "title": "Continuidade na recuperação do convite",
+      "kind": "melhoria",
+      "severity": "LOW",
+      "status": "corrigido localmente na continuidade implementada; ajuda adicional candidata",
+      "cause": "Falha original de prévia e retorno confuso.",
+      "causeStatus": "observação de UX; solução candidata",
+      "userImpact": "Usuário perdia próximo passo.",
+      "integrityImpact": "Preservar ação explícita de aceitar e identidade verificada.",
+      "intervention": "Reusar continuidade login/cadastro J04; avaliar orientação adicional sem repetir fluxo.",
+      "database": "Nenhuma adicional.",
+      "acceptance": "InviteAuthContinuity vigente.",
+      "journeyScenario": "J04-U04",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "ux_recommendations",
+          "observed": "Error offers only Voltar para o inicio; signup recovery ends at zero-farm selector with Criar nova fazenda. Invitation had to be reopened for diagnosis.",
+          "evidence": [
+            ".work/evidence/j04/20-convite-anonimo-mobile.png",
+            ".work/evidence/j04/22-cadastro-colaborador-sem-vinculo.png",
+            ".work/evidence/j04/23-colaborador-autenticado-convite-valido-bloqueado.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1-23",
+      "origin": [
+        "J04-U05"
+      ],
+      "title": "Entrega de convite e informação de equipe",
+      "kind": "melhoria",
+      "severity": "LOW",
+      "status": "parcialmente corrigido na J04; evolução candidata",
+      "cause": "Geração de link confundida com envio; dados operacionais existentes pouco claros.",
+      "causeStatus": "observação de UX; solução candidata",
+      "userImpact": "Expectativa de mensagem automática ou dado de equipe ausente.",
+      "integrityImpact": "Não declarar canal/entrega inexistente.",
+      "intervention": "J04 já explica link gerado e ausência de envio; avaliar data de ingresso existente.",
+      "database": "Nenhuma.",
+      "acceptance": "InviteMemberDialog; futuro: clareza de compartilhamento/data de ingresso.",
+      "journeyScenario": "J04-U05",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j04-result.json",
+          "section": "ux_recommendations",
+          "observed": "Pending list shows contact/role/dates but no sent-message delivery; success asks owner to share link. Member list is unavailable; joined date field exists but is not presented in card code.",
+          "evidence": [
+            ".work/evidence/j04/05-convite-pendente-listagem.png",
+            ".work/evidence/j04/08-convite-valido-gerado.png",
+            ".work/evidence/j04/16-equipe-convites-mobile.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1-24",
+      "origin": [
+        "J02-03"
+      ],
+      "title": "Etapas produtivas e ciclo completo",
+      "kind": "melhoria",
+      "severity": "MEDIUM",
+      "status": "candidato dependente de validação",
+      "cause": "Corte/Leite/Mista e modo da aplicação não modelam etapas cria/recria/engorda.",
+      "causeStatus": "observação de UX; solução candidata",
+      "userImpact": "Perfil de ciclo completo não foi representado explicitamente.",
+      "integrityImpact": "Não inferir equivalência nem criar fonte paralela.",
+      "intervention": "Validar uso operacional e fonte antes de novo campo opcional.",
+      "database": "Somente se modelo futuro for aprovado; não implementado.",
+      "acceptance": "Futuro: requisito de produto validado; não confundir Corte, Mista ou modo Completo.",
+      "journeyScenario": "J02-03",
+      "observedEvidence": [
+        {
+          "sourceFile": "C:\\Users\\mares\\dyad-apps\\GestaoAgro\\.work\\j02-result.json",
+          "section": "findings",
+          "observed": "Available production taxonomy is Corte/Leite/Mista; no explicit ciclo completo selection found in inspected farm configuration.",
+          "evidence": [
+            ".work/evidence/j02/03-formulario-desktop.png",
+            ".work/evidence/j02/16-configuracoes-perfil.png",
+            ".work/evidence/j02/17-cadastro-persistido-desktop.png"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "B1-25",
+      "origin": [
+        "J01 (observations.recovery_available)"
+      ],
+      "title": "Recuperação de senha não exposta",
+      "kind": "lacuna de fluxo",
+      "severity": "LOW",
+      "status": "aberto; fora das correções autorizadas",
+      "cause": "A jornada original não encontrou recuperação na UI.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Recovery remoto/produtivo não demonstrado.",
+      "integrityImpact": "Não inferir falha do Auth ou redefinir credenciais.",
+      "intervention": "Avaliar fluxo próprio de recovery com contrato e ambiente definidos.",
+      "database": "Não determinada.",
+      "acceptance": "J01 original preservada; nenhum recovery novo executado.",
+      "journeyScenario": "J01 (observations.recovery_available)",
+      "observedEvidence": []
+    },
+    {
+      "id": "B1-26",
+      "origin": [
+        "J01 (observations.failed_requests)"
+      ],
+      "title": "Request de logout abortado",
+      "kind": "observação",
+      "severity": "LOW",
+      "status": "não reproduzido como defeito funcional",
+      "cause": "ERR_ABORTED/400 registrado, mas logout e rota protegida funcionaram na jornada.",
+      "causeStatus": "confirmada por código/contrato e evidência indicada",
+      "userImpact": "Nenhuma continuidade indevida demonstrada.",
+      "integrityImpact": "Não classificar como sessão persistente sem prova.",
+      "intervention": "Manter observação e reproduzir apenas se houver sintoma novo.",
+      "database": "Nenhuma.",
+      "acceptance": "Evidência J01 original; nenhuma repetição de jornada.",
+      "journeyScenario": "J01 (observations.failed_requests)",
+      "observedEvidence": []
+    }
+  ],
+  "ux": [
+    {
+      "priority": "P1",
+      "theme": "Contexto e escopo",
+      "recommendation": "Nome/código da fazenda, papel e salvamento pessoal ou da fazenda",
+      "source": "fazendas, user_fazendas.role, active_fazenda_id e user_settings",
+      "cost": "baixo",
+      "risk": "baixo; não derivar autorização da apresentação",
+      "benefit": "Evitar alteração no contexto errado.",
+      "implemented": false
+    },
+    {
+      "priority": "P1",
+      "theme": "Rascunhos",
+      "recommendation": "Confirmação única de descarte e retorno à edição",
+      "source": "Estado do formulário e rotas existentes; chave por usuário/fazenda se houver rascunho",
+      "cost": "médio",
+      "risk": "médio; bloqueio de navegação e vazamento entre fazendas",
+      "benefit": "Reduzir retrabalho sem salvar automaticamente.",
+      "implemented": false
+    },
+    {
+      "priority": "P1",
+      "theme": "Notificações",
+      "recommendation": "Explicar canal in-app, categorias, opções indisponíveis e horário local",
+      "source": "user_settings.notifications, Agenda e SanitaryNotificationManager",
+      "cost": "baixo",
+      "risk": "baixo; não prometer push/SMS/email",
+      "benefit": "Permitir configurar efeitos que existem.",
+      "implemented": false
+    },
+    {
+      "priority": "P2",
+      "theme": "Obrigatoriedade e mobile",
+      "recommendation": "Marcar campos obrigatórios/opcionais e organizar seções longas",
+      "source": "Formulários e componentes atuais",
+      "cost": "baixo a médio",
+      "risk": "baixo a médio; foco, teclado e navegação inferior",
+      "benefit": "Reduzir tentativas e scroll sem novos campos obrigatórios.",
+      "implemented": false
+    },
+    {
+      "priority": "P2",
+      "theme": "Terminologia e controles avançados",
+      "recommendation": "Traduzir papéis por capacidades e explicar efeito dos parâmetros",
+      "source": "Membership, metadata e contratos implementados",
+      "cost": "baixo a médio",
+      "risk": "médio; preservar valores e dimensões de classificação",
+      "benefit": "Melhorar compreensão e evitar mudanças acidentais.",
+      "implemented": false
+    },
+    {
+      "priority": "P2",
+      "theme": "Primeiros passos",
+      "recommendation": "Distinguir vazio real de recorte e destacar ação inicial",
+      "source": "Contagens e atalhos existentes",
+      "cost": "baixo",
+      "risk": "baixo; isolamento e leitura consistente",
+      "benefit": "Ajudar a iniciar operação sem criar registros automaticamente.",
+      "implemented": false
+    },
+    {
+      "priority": "P2",
+      "theme": "Sync e confirmação",
+      "recommendation": "Explicar pendência local versus confirmação remota e recuperação",
+      "source": "Fila, saúde de sync e reconciliação atuais",
+      "cost": "médio",
+      "risk": "médio; não emitir confirmação fictícia",
+      "benefit": "Permitir continuar trabalhando e reconhecer pendências.",
+      "implemented": false
+    },
+    {
+      "priority": "P2",
+      "theme": "Equipe e multi propriedade",
+      "recommendation": "Exibir código/identificação e informação factual de ingresso",
+      "source": "fazendas.codigo, membership.accepted_at; contagens existentes",
+      "cost": "baixo",
+      "risk": "baixo a médio; não derivar histórico do estado atual",
+      "benefit": "Distinguir propriedades e compreender equipe.",
+      "implemented": false
+    },
+    {
+      "priority": "P3",
+      "theme": "Convites repetidos",
+      "recommendation": "Avisar vínculo/convite existente antes de nova emissão",
+      "source": "farm_invites e user_fazendas já protegidos",
+      "cost": "médio",
+      "risk": "médio; email/telefone, expiração, cancelamento e concorrência",
+      "benefit": "Reduzir links redundantes sem impor unicidade incorreta.",
+      "implemented": false
+    },
+    {
+      "priority": "P3",
+      "theme": "Tema Sistema",
+      "recommendation": "Acompanhar mudança do SO com listener e cleanup",
+      "source": "matchMedia e preferência theme existente",
+      "cost": "baixo",
+      "risk": "baixo; cleanup e modos claro/escuro",
+      "benefit": "Evitar necessidade de recarregar.",
+      "implemented": false
+    },
+    {
+      "priority": "Validação",
+      "theme": "Etapas produtivas e área pecuária",
+      "recommendation": "Validar necessidade de atributos opcionais antes de modelar",
+      "source": "Cadastro atual não determina etapas nem área efetivamente pecuária",
+      "cost": "médio a alto",
+      "risk": "alto se inferido ou tornado obrigatório",
+      "benefit": "Benefício depende de decisão operacional demonstrada.",
+      "implemented": false
+    },
+    {
+      "priority": "Validação",
+      "theme": "Indicadores e informações derivadas",
+      "recommendation": "Priorizar informação já calculável conforme decisão do usuário",
+      "source": "Read models e indicadores atuais; sem nova fonte factual",
+      "cost": "médio",
+      "risk": "médio; escopo observado não é contabilidade completa",
+      "benefit": "Benefício precisa de validação de uso e cobertura.",
+      "implemented": false
+    }
+  ],
+  "rejected": [
+    "Novos campos obrigatórios sem necessidade operacional comprovada.",
+    "Ciclo completo inferido de Corte, Mista ou modo Completo.",
+    "Unidade pessoal concorrente com unidade da fazenda.",
+    "Push, SMS ou email novos neste recorte.",
+    "Parâmetros técnicos de fila/background expostos por rotina.",
+    "Nova fonte de identidade/autorização no perfil ou user_metadata.",
+    "Regra de unicidade de convite sem semântica de contato/replay aprovada."
+  ],
+  "notes": [
+    "IDs de cenários são aliases de evidência, não novos defeitos.",
+    "J04-F06 e J05-02 têm uma causa consolidada.",
+    "Descarte de rascunhos é uma iniciativa única; não implementada automaticamente.",
+    "As manifestações de UX reunidas por tema não são contabilizadas como vulnerabilidades independentes.",
+    "Correções J04 são preexistentes, preservadas; regressão focal atual e evidências originais diferenciadas.",
+    "Não houve upload de avatar; persistência de URL usa o contrato de perfil existente, storage não foi alterado."
+  ],
+  "publication": {
+    "remote": false,
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "pending": [
+      "20261120231349_j04_members_invites_authorization.sql",
+      "20261121023104_block1_farm_security_flags_guard.sql",
+      "frontend corrigido e documentação no fluxo de integração autorizado futuramente"
+    ]
+  }
+}

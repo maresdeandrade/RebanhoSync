@@ -1,129 +1,57 @@
-```md
-# FAQ — Login e Acesso
+# FAQ — Login e acesso
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
 
-## Objetivo
-
-Responder dúvidas comuns sobre login, senha, sessão, fazenda ativa e permissões.
-
----
+As orientações J01–J05 descrevem o pacote validado localmente, ainda pendente de integração e publicação. Consulte a [disponibilidade](../../context/PROJECT_STATUS.md#estado-atual) e o [índice do guia](../USER_MANUAL_INDEX.md).
 
 ## Não consigo entrar. O que verificar?
 
-Verifique:
-1. Se o e-mail está correto.
-2. Se a senha está correta.
-3. Se há internet.
-4. Se o serviço está disponível.
-5. Se a conta tem vínculo com alguma fazenda.
+Confira email, senha, conexão e a mensagem da tela. Use **Entrar** e aguarde; falha de rede não comprova senha incorreta. A mensagem de credencial rejeitada não deve revelar qual parte da credencial está errada.
 
----
+Ter vínculo com fazenda é necessário para acessá-la, mas não para criar uma conta ou autenticar. Uma pessoa sem fazenda pode chegar à seleção vazia e receber orientação de criação ou convite.
 
-## O app diz “E-mail ou senha inválidos”. O que significa?
+## Como crio minha conta?
 
-Significa que a credencial informada não foi aceita.
-
-> 💡 **Nota:** Por segurança, o app não deve informar se o problema foi no e-mail ou na senha.
-
----
-
-## O app diz que não conseguiu conectar. É senha errada?
-
-Não necessariamente. Pode ser:
-- internet indisponível;
-- Supabase/Auth indisponível;
-- bloqueio de rede;
-- sessão expirada;
-- erro temporário.
-
----
-
-## Consigo usar o app offline sem login?
-
-Depende.
-
-Para novo login, normalmente precisa de conexão. Se já havia sessão salva no dispositivo, o app pode permitir acesso aos dados locais conforme o fluxo implementado.
-
----
-
-## Minha sessão expirou. Perdi meus dados?
-
-Não deveria.
-
-A sessão expirada exige novo login para continuar sincronizando. Alterações locais pendentes não devem ser apagadas automaticamente.
-
----
-
-## Entrei, mas minha fazenda não aparece
-
-**Possíveis causas:**
-- usuário não foi vinculado à fazenda;
-- vínculo foi removido;
-- permissão ainda não foi configurada;
-- erro de carregamento;
-- internet indisponível;
-- cache antigo.
-
-**Ação:**
-- conferir conexão;
-- tentar recarregar;
-- solicitar acesso ao administrador/proprietário;
-- acionar suporte se persistir.
-
----
-
-## Tenho mais de uma fazenda. Como funciona?
-
-O app deve pedir a seleção da fazenda ativa. A fazenda ativa define o contexto operacional.
-
-> ⚠️ **Regra:** Dados de uma fazenda não devem aparecer misturados com outra.
-
----
-
-## Posso trocar de fazenda?
-
-Sim, se o usuário tiver acesso a mais de uma fazenda. Ao trocar, o app deve recarregar o contexto e os dados da fazenda selecionada.
-
----
-
-## O app diz “sem permissão”. O que fazer?
-
-Solicite acesso ao administrador da fazenda. A interface (UI) pode orientar, mas a permissão real depende de Auth/RLS/vínculo com a fazenda.
-
----
+Na tela de entrada, abra **Cadastre-se aqui**. Siga o [primeiro acesso](../screens/PRIMEIRO_ACESSO.md). A conta não cria fazenda nem aceita convite automaticamente. Se foi orientado a confirmar o email, conclua essa etapa antes de usar um convite destinado àquele endereço.
 
 ## Esqueci minha senha
 
-Use a opção “Esqueci minha senha”.
+A tela atual de Login **não oferece “Esqueci minha senha”**. Esse fluxo não foi disponibilizado nem certificado por esta entrega. Procure o suporte pelo canal da sua organização. Não envie sua senha e não recrie a conta como solução genérica: isso pode deixar a nova identidade sem os vínculos anteriores.
 
-> 💡 **A mensagem correta é neutra:** `"Se o e-mail estiver cadastrado, enviaremos instruções de recuperação."`
+## Consigo fazer um novo login sem internet?
 
----
+Novo login exige comunicação com o serviço. Uma sessão previamente mantida pode permitir os fluxos locais que a aplicação suporta; isso não é garantia de autenticação offline para qualquer conta ou dispositivo.
 
-## O que não deve aparecer para o usuário?
+## Minha sessão expirou. Perdi os dados?
 
-O app **não** deve exibir:
-- token;
-- JWT;
-- refresh token;
-- `service_role`;
-- detalhes internos de RLS;
-- stack trace;
-- payload sensível.
+Expiração de sessão, por si, não significa perda de alterações locais. Entre novamente com a mesma conta para os fluxos que exigem acesso remoto e confira as pendências. Não limpe os dados locais. Confira um registro crítico pendente antes de tentar registrá-lo outra vez.
 
----
+## Entrei, mas a fazenda não aparece
+
+Confira a conta, a conexão e se o convite foi aceito. O vínculo pode estar ausente ou ter sido removido. Peça ao proprietário que confira seu acesso. Trate erro de carregamento antes de concluir que não existem fazendas.
+
+## Posso ter papéis diferentes em cada propriedade?
+
+Sim. O papel é da relação com aquela fazenda. Proprietário em uma não é proprietário de todas. Use **Trocar fazenda** e confira o cabeçalho, seguindo o [guia de Fazendas](../screens/FAZENDAS.md).
+
+## Recebi um convite, mas não consigo aceitar
+
+Confira validade, fazenda e conta usada. Convite por email exige o endereço destinatário confirmado. Telefone informado no Perfil não verifica identidade. Para convite somente por telefone, se não houver número confirmado na autenticação, solicite alternativa por email.
+
+Convite cancelado, expirado ou já utilizado não deve ser tratado como novo ingresso. Após remoção do vínculo, solicite novo convite emitido depois do desligamento. Veja [Equipe e convites](../screens/EQUIPE_CONVITES.md).
+
+## Gerar convite envia uma mensagem?
+
+Não. **Gerar convite** produz um link para compartilhamento. O responsável precisa copiá-lo e enviá-lo à pessoa correta por um meio de sua escolha. Não há envio automático de email/SMS nessa ação.
+
+## A tela informa falta de permissão
+
+Confira a fazenda e peça ao proprietário que confira seu papel. Gerente não administra proprietário nem muda opções exclusivas de Owner. Operador não recebe escrita administrativa ou financeira apenas por conseguir consultar uma tela.
+
+## Nome ou telefone do Perfil mudam minha conta de entrada?
+
+Não. São dados complementares de contato/apresentação. O email de entrada é mostrado sem edição nesse fluxo; mudar telefone no Perfil não confirma o número nem permite aceitar convite de outra pessoa.
 
 ## Quando acionar suporte?
 
-Acione o suporte se:
-- o login falhar mesmo com internet;
-- a fazenda não aparecer;
-- aparecer a fazenda errada;
-- a sessão expirar repetidamente;
-- a troca de fazenda misturar dados;
-- o usuário tiver permissão, mas o app bloquear o acesso;
-- a recuperação de senha não chegar após tentativas adequadas.
-
-```
+Se a falha persistir com conexão, o acesso esperado não aparecer, houver conta/fazenda incorreta ou expiração repetida, informe mensagem, tela e horário. Não envie senha, tokens ou links de convite a pessoas não autorizadas. Siga a [solução de problemas](./TROUBLESHOOTING.md).

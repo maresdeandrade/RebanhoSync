@@ -1,8 +1,7 @@
-```md
 # Troubleshooting — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
+**Baseline documental original:** `32d7779`
 
 ## Objetivo
 
@@ -13,6 +12,8 @@ Use este documento para triagem inicial antes de acionar o suporte técnico.
 ---
 
 ## 1. Não consigo logar
+
+Autenticar e ter acesso a uma fazenda são etapas diferentes. A pessoa pode criar conta/entrar sem vínculo e encontrar uma seleção vazia. A tela atual não oferece recuperação de senha; consulte a [FAQ de acesso](./FAQ_LOGIN.md#esqueci-minha-senha), sem recriar conta ou limpar dados locais por tentativa.
 
 ### Verifique
 * Internet.
@@ -224,6 +225,25 @@ Use este documento para triagem inicial antes de acionar o suporte técnico.
 
 ---
 
+## Bloco 1 — erro ao salvar, convite e configuração
+
+Esta seção descreve o pacote validado localmente, ainda pendente de integração e publicação. Confira o [estado do projeto](../../context/PROJECT_STATUS.md#estado-atual).
+
+| Sintoma | Ação suportada |
+|---|---|
+| Perfil não carregou | Use **Tentar carregar perfil** antes de salvar. Perfil vazio pela primeira vez pode ser ausência legítima; erro de carga não deve ser ignorado. |
+| Erro ao salvar perfil | Confira conexão e mensagem; preserve o rascunho na tela. Anote antes de sair. Após sucesso, reabra para conferir o valor. |
+| Horário de silêncio recusado | Habilitado exige início/fim válidos e diferentes. Intervalo 22:00–06:00 é válido; igual não significa 24 horas. |
+| Fazenda alterada ou acesso mudou | Anote sua intenção, recarregue e confira os valores atuais antes de refazer a alteração; não repita o envio antigo indefinidamente. |
+| Opção de segurança indisponível | Confira fazenda e papel: gerente não altera as opções exclusivas de proprietário; papel de outra fazenda não se transfere. |
+| Convite inválido/expirado/utilizado | Confira a conta e validade; solicite novo link quando necessário. Após remoção, precisa de convite emitido depois do desligamento. |
+| Telefone do Perfil não permite aceitar | Telefone de contato não comprova número confirmado; solicite convite para seu email confirmado. |
+| Não recebi mensagem após gerar link | Gerar convite não envia mensagem automática. O responsável deve compartilhar o link com o destinatário. |
+| Configuração salva, efeito não apareceu | Confira fazenda, escopo pessoal/da fazenda e condições do fluxo. Preferência de aviso não prova entrega; regra de estágio não comprova manejo executado. |
+| Em dia junto de ausência de confirmação | O indicador geral não substitui confirmação específica da operação. Confira as pendências e a mensagem da tela antes de repetir registros. |
+
+Não use reset, limpeza de IndexedDB ou recriação da conta como solução genérica. Se persistir, encaminhe as informações abaixo ao suporte, sem senha, tokens ou exposição de dados pessoais desnecessários.
+
 ## 14. O que informar ao suporte
 
 **Enviar:**
@@ -275,5 +295,3 @@ Escalar imediatamente se envolver:
 * duplicidade de animal;
 * perda aparente de histórico;
 * conflito não resolvido.
-
-```

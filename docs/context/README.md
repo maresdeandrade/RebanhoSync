@@ -1,7 +1,7 @@
 # Context Docs — RebanhoSync
 
-Atualizado em: 2026-05-31  
-**Baseline Commit:** `32d7779`
+Atualizado em: 2026-11-21
+**Baseline documental original:** `32d7779`
 
 ## Objetivo
 
@@ -15,15 +15,17 @@ Ela serve para orientar agentes, revisões, documentação e decisões de produt
 
 | Arquivo | Uso |
 |---|---|
-| `CORE_RULES.md` | Regras centrais e invariantes do projeto. |
+| [CORE_RULES.md](../../.agents/rules/CORE_RULES.md) | Regras centrais e invariantes do projeto. |
 | `SOURCE_OF_TRUTH.md` | Contrato de fontes: Agenda, Eventos, `state_*`, Protocolos, tags/sinais/insights. |
 | `PROJECT_STATUS.md` | Estado atual do projeto, fase, prioridades e foco. |
 | `KNOWN_GAPS.md` | Lacunas conhecidas e decisões bloqueadas sem fonte técnica explícita. |
-| `CONTEXT_LOADING_MATRIX.md` | Matriz de quais docs carregar por tipo de tarefa. |
+| [CONTEXT_LOADING.md](../../.agents/rules/CONTEXT_LOADING.md) | Roteador canônico de contexto e skills. |
 
 ---
 
 ## Quando usar esta pasta
+
+Identidade, perfil e configuração do Bloco 1 estão delimitados em [SOURCE_OF_TRUTH](./SOURCE_OF_TRUTH.md#identidade-perfil-e-configuração--j04bloco-1-local). Disponibilidade local/integrada/publicada vem de [PROJECT_STATUS](./PROJECT_STATUS.md#estado-atual); o uso prático começa no [Guia do Usuário](../manuals/USER_MANUAL_INDEX.md).
 
 Use `docs/context/` quando precisar responder:
 

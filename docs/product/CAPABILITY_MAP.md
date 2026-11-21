@@ -1,6 +1,6 @@
 # Capability Map — RebanhoSync
 
-Atualizado em: 2026-11-18
+Atualizado em: 2026-11-21
 
 **Baseline documental original:** `32d7779`
 
@@ -8,7 +8,20 @@ Atualizado em: 2026-11-18
 
 Baseline integrada `main@175e9dee` (#302): Protocolos da Fazenda, monitoramento ON/OFF, avaliação factual e controle estratégico individual. A Agenda V3 colaborativa e a jornada neonatal durável já foram integradas por #268/#274. #301 está integrada na baseline local autorizada, com vínculo estoque–produto V2, previsão e indicadores.
 
-Este registro atualiza maturidade técnica, sem transformar propostas complementares ou avanços de código em novos requisitos obrigatórios do MVP. O produto permanece em desenvolvimento. Migrations/deploy remotos e compatibilidade com versões antigas inexistentes não são funcionalidades faltantes. Junho continua contextual; capacidades avançadas e liberação ampla dependem do alvo escolhido. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-301--18112026).
+Este registro atualiza maturidade técnica, sem transformar propostas complementares ou avanços de código em novos requisitos obrigatórios do MVP. O produto permanece em desenvolvimento. Migrations/deploy remotos e compatibilidade com versões antigas inexistentes não são funcionalidades faltantes. Junho continua contextual; capacidades avançadas e liberação ampla dependem do alvo escolhido. [estado e evidências](../review/CURRENT_PHASE_HANDOFF.md#consolidação-pós-302-e-validação-da-303--19112026).
+
+## J01–J05 — maturidade observada no pacote local
+
+Este adendo descreve o patch preparado sobre `main@157376d9`; não altera a classificação de escopo MVP nem aprova as recomendações de UX.
+
+| Situação | Capacidade e limites |
+|---|---|
+| Implementado e validado localmente | Equipe/convites com destinatário confirmado, replay sem elevação e proteção de owner; flags por proprietário; metadata condicional; Perfil ausente; silêncio válido; área/onboarding coerentes; financeiro por papel. |
+| Implementado com limitação | Notificações sanitárias in-app dependem de plano elegível; sem novos canais nem entrega certificada. Chromium desktop/mobile não substitui aparelho físico; avatar não certificado. |
+| Pendente | Recuperação de senha não exposta, tema Sistema dinâmico e descarte de rascunhos ainda observados. |
+| Evolução candidata | 12 recomendações de contexto, ajuda, organização e informação operacional; etapas produtivas/área pecuária/indicadores dependem de validação. Sem novos campos obrigatórios ou taxonomia aprovada. |
+
+Integração e publicação J04/Bloco 1 permanecem pendentes. [Rastreabilidade](./REQUIREMENTS_TRACEABILITY.md#bloco-1--rastreabilidade-do-pacote-local), [guia](../manuals/USER_MANUAL_INDEX.md) e [estado canônico](../context/PROJECT_STATUS.md#estado-atual).
 
 ## Objetivo
 

@@ -1,0 +1,594 @@
+{
+  "date": "2026-11-21",
+  "scope": "Preparação local de integração J04 + Bloco 1 e consolidação documental J01–J05; sem J06.",
+  "base": "157376d90b3f3ac6ccfe806d98f1de37b2007644",
+  "branch": "codex/j04-invites-members-auth",
+  "classification": "READY",
+  "codeCommit": "035e8b5f9e889880a9fe765db9afc3387e6fa606",
+  "codeBehaviorChangedInThisTask": false,
+  "baselineRelationship": "origin/main...HEAD=0/0 antes dos commits locais; main remota confirmada por ls-remote/fetch.",
+  "conflicts": [
+    {
+      "file": "docs/context/PROJECT_STATUS.md",
+      "kind": "contexto documental",
+      "resolution": "git apply --check recusou contexto sobreposto; cinco substituições exatas dos três deltas originais foram conciliadas com os parágrafos do Bloco 1, sem preferência automática ou perda de conteúdo."
+    }
+  ],
+  "remote": {
+    "project": "zqloazqzhwauamcejmuz",
+    "status": "ACTIVE_HEALTHY",
+    "method": "Supabase MCP get_project + list_migrations; read only",
+    "migrationCount": 83,
+    "latest": "20261120090000",
+    "pending": [
+      "20261120231349",
+      "20261121023104"
+    ],
+    "mutations": false
+  },
+  "migrations": [
+    {
+      "file": "supabase/migrations/20261120231349_j04_members_invites_authorization.sql",
+      "sha256": "49b4fe6b30b2de1f9d322cbc3c404b42d56ec99b166fbb3895b665ec7db990fa",
+      "localInstalled": true,
+      "reapplied": false
+    },
+    {
+      "file": "supabase/migrations/20261121023104_block1_farm_security_flags_guard.sql",
+      "sha256": "e39da3d5cbebd8ab0ca9a0849d6627574c97073e7a4e85fdb348a55dc86db2e8",
+      "localInstalled": true,
+      "reapplied": false
+    }
+  ],
+  "documentInventory": [
+    {
+      "document": "README.md",
+      "before": "Snapshot #301 aberta e baseline anterior.",
+      "required": "Remover informação superada e apontar disponibilidade/guia.",
+      "result": "Main remota 157376d9; pacote J04/Bloco 1 separado da publicação.",
+      "action": "atualizado",
+      "sha256": "8de0d518acec6b24be0e80a03db6bf9c0747abbd51421eef5347acdb9733da89"
+    },
+    {
+      "document": "docs/README.md",
+      "before": "Índice sem entrada operacional e snapshot anterior.",
+      "required": "Incluir guia e evidência de integração.",
+      "result": "Índice aponta para fontes correntes sem certificar produção ampla.",
+      "action": "atualizado",
+      "sha256": "b880efa1a06e6629db71fc3c18388069708200b24db4456fcd39bd5433c22e60"
+    },
+    {
+      "document": "docs/context/PROJECT_STATUS.md",
+      "before": "Resumo local do Bloco 1 e alteração concorrente original não incorporada.",
+      "required": "Conciliar baseline atual, backend anterior e pacote local.",
+      "result": "Deltas originais preservados, main confirmada, duas migrations remotas pendentes e guia local explícito.",
+      "action": "atualizado",
+      "sha256": "55f9d2bd69a224b8ba5d4e5215eb336352eda3e8f4325b0b87526cb8c1a3dc9a"
+    },
+    {
+      "document": "docs/context/KNOWN_GAPS.md",
+      "before": "Sem consolidação de pendências J01–J05.",
+      "required": "Separar corrigido local, limitação, pendência e candidata.",
+      "result": "Recovery/tema/rascunhos e limites permanecem explícitos, sem repetir 26 grupos.",
+      "action": "atualizado",
+      "sha256": "f7aed5bbbd3646682112ee7f769de4574449c50d4e2ce24a24cd4a556fa0c873"
+    },
+    {
+      "document": "docs/context/SOURCE_OF_TRUTH.md",
+      "before": "Sem distinção explícita entre Auth, perfil e preferências deste fluxo.",
+      "required": "Identificar fonte canônica de identidade, vínculo e configuração.",
+      "result": "Tabela de fontes sem criar autorização por metadata editável.",
+      "action": "atualizado",
+      "sha256": "cefa0298d8b49d7e12a7614d1267995078b9e5ff2d18e6ad81006af2bc1a9520"
+    },
+    {
+      "document": "docs/context/README.md",
+      "before": "Referências de regras/roteador em caminhos não canônicos.",
+      "required": "Apontar regras reais e contexto Bloco 1.",
+      "result": "Links para .agents/rules, fonte de verdade e guia.",
+      "action": "atualizado",
+      "sha256": "0f7e6f8b7db36753feee3fbcce1034a74c2ed8048cf539d3675d01a9c8f918ed"
+    },
+    {
+      "document": "docs/review/ACTIVE_PHASE_PLAN.md",
+      "before": "Resumo anterior e delta original separado.",
+      "required": "Preservar reconciliação anterior; delimitar preparação local.",
+      "result": "Sem nova fase/J06; revisão/publicação continuam separadas.",
+      "action": "atualizado",
+      "sha256": "d6906d5b8a48b79d2731d347312c93f72699786e48b45770eb762dd12c516c40"
+    },
+    {
+      "document": "docs/review/CURRENT_PHASE_HANDOFF.md",
+      "before": "Bloco 1 misturado ao snapshot pós-304; registro original pendente de incorporação.",
+      "required": "Separar continuidade 21/11 e snapshots históricos.",
+      "result": "Contexto documental resolvido preservando os dois conjuntos, com evidência e guia.",
+      "action": "atualizado",
+      "sha256": "9208a85e579b2e92af487da93140a785e007e035a285657bebe7eb1c92ef7a57"
+    },
+    {
+      "document": "docs/review/OPEN_REVIEW_ITEMS.md",
+      "before": "Sem pendências específicas do Bloco 1.",
+      "required": "Registrar somente resíduos acionáveis.",
+      "result": "Integração/publicação, lacunas observadas e candidatas sem backlog obrigatório novo.",
+      "action": "atualizado",
+      "sha256": "5f1a6533bfe0fdce9aa524e1f0f88c97b764032bec67f6e587db29e3b85bdd7c"
+    },
+    {
+      "document": "docs/review/README.md",
+      "before": "Baseline/índice anteriores.",
+      "required": "Incluir evidência e índice operacional.",
+      "result": "Main confirmada e pacote local delimitado.",
+      "action": "atualizado",
+      "sha256": "bf979c4661fbe1c36e903edc32a633f3a6a8e26b755c4e76374ebf32c96b1500"
+    },
+    {
+      "document": "docs/technical/SUPABASE_RLS.md",
+      "before": "J04/Bloco 1 já descritos; arquivo envolvido em fence externa.",
+      "required": "Preservar contratos, atualizar referência e renderização.",
+      "result": "RPC/Auth/RLS/trigger/UPDATE condicional distintos; sem alteração de SQL nesta etapa.",
+      "action": "atualizado",
+      "sha256": "e232c59a9c0535f993845a6f2edd7feb1c7f217d7f09ac79073274a702dc8a4a"
+    },
+    {
+      "document": "docs/technical/ARCHITECTURE.md",
+      "before": "Fluxo de fila genérico e estado antigo de produção.",
+      "required": "Documentar gravações administrativas diretas e autoridade.",
+      "result": "Exceções existentes da fila explicitadas, disponibilidade delegada ao estado canônico.",
+      "action": "atualizado",
+      "sha256": "c01ec41c6c1e52c5370cd7440725119ca97c6abc635b89e0aea8f30323c396d3"
+    },
+    {
+      "document": "docs/technical/OFFLINE_SYNC.md",
+      "before": "Descrição geral de fila podia ser aplicada indevidamente a Perfil/Configurações.",
+      "required": "Delimitar confirmação remota e ausência de enqueue administrativo.",
+      "result": "Sem promessa de envio posterior ou recuperação geral de rascunhos.",
+      "action": "atualizado",
+      "sha256": "ae1fb2661f8fbadafcd8acfdf79083c388c623b0371193f52cc026c3ca9bd449"
+    },
+    {
+      "document": "docs/technical/TESTING_GATES.md",
+      "before": "Sem referência ao conjunto focal e suas bases.",
+      "required": "Identificar testes e necessidade de stack descartável.",
+      "result": "Execução/reuso proporcional, sem reset ou suíte global automática.",
+      "action": "atualizado",
+      "sha256": "da823e072528c59230f9a218a83910c3b66afad310c3d0bb0148e46313091b24"
+    },
+    {
+      "document": "docs/technical/README.md",
+      "before": "Índice sem contratos Bloco 1; fence externa.",
+      "required": "Adicionar rotas de leitura e tornar Markdown utilizável.",
+      "result": "Links para contratos/testes/estado; ADRs preservados.",
+      "action": "atualizado",
+      "sha256": "cc8e4d3850584364df5499b2855cac8b00818c9d613da66c8d2138bfc4dccb72"
+    },
+    {
+      "document": "docs/product/CAPABILITY_MAP.md",
+      "before": "Sem maturidade de J01–J05.",
+      "required": "Separar implementação local, limitação, pendência e candidata.",
+      "result": "Nenhum escopo MVP ou recomendação aprovado por documentação.",
+      "action": "atualizado",
+      "sha256": "f1824fd02bd348b2a7ce36d2d59abbed3ac500c930de536d606204a5ef535fd9"
+    },
+    {
+      "document": "docs/product/REQUIREMENTS_TRACEABILITY.md",
+      "before": "Matriz anterior sem requisitos atômicos dos fluxos corrigidos.",
+      "required": "Relacionar capacidades existentes, código, migrations e testes.",
+      "result": "Adendo RS-IAM-003/004, RS-PREF-001 e RS-UX-001 com estado local explícito.",
+      "action": "atualizado",
+      "sha256": "e75c137e1fbdd0262e9be394d2e9eb1a301ca29fbd43b4f30ed0e612e3ba8396"
+    },
+    {
+      "document": "docs/product/ROADMAP.md",
+      "before": "Próxima frente mencionava decisão de integração já superada.",
+      "required": "Atualizar continuidade sem iniciar nova frente.",
+      "result": "Revisão do pacote local; J06 e candidatas não iniciadas.",
+      "action": "atualizado",
+      "sha256": "62f4c80731c01f25c16f058fc1d23eac37675d739ec8681903d5acb480468529"
+    },
+    {
+      "document": "docs/product/README.md",
+      "before": "Índice sem rastreabilidade/guia atual; fence externa.",
+      "required": "Apontar fontes canônicas de maturidade e operação.",
+      "result": "Índice navegável; nenhuma nova decisão de produto.",
+      "action": "atualizado",
+      "sha256": "b686277712b57a14d29c0e6bdc3a133e1ef2fde1c55b8e121e968ffd864ca7d7"
+    },
+    {
+      "document": "docs/ux/LOGIN_UX.md",
+      "before": "Recovery descrito como ação normal; critérios normativos sem situação atual.",
+      "required": "Separar referência candidata da implementação real.",
+      "result": "Cadastro/convite/fazenda atuais e recovery ausente explícitos.",
+      "action": "atualizado",
+      "sha256": "904c2497877c0b17690c803b982c5fa598f2531c2a97ed04d1c05cbbd803dcd1"
+    },
+    {
+      "document": "docs/ux/NAVIGATION_MODEL.md",
+      "before": "Modelo genérico sem rotas/escopos J01–J05.",
+      "required": "Relacionar entradas reais e contextos pessoal/fazenda.",
+      "result": "Tabela de rotas, papéis distintos e limites de abas/rascunhos.",
+      "action": "atualizado",
+      "sha256": "6321c551533da3973690c47e52319d7c3dc331e9cdd2eb6732fd17774c82e49b"
+    },
+    {
+      "document": "docs/ux/FORM_PATTERNS.md",
+      "before": "Padrões sem provas e limites desses formulários.",
+      "required": "Registrar área, Perfil, silêncio e metadata confirmados.",
+      "result": "Distinção entre critérios normativos e cobertura local implementada.",
+      "action": "atualizado",
+      "sha256": "e1a03d1580c0a0987f45bbc5fb102f3aed0f63eb6c825c07799dd8e572b96317"
+    },
+    {
+      "document": "docs/ux/COPY_GUIDELINES.md",
+      "before": "Diretrizes sem mensagens/resultados específicos corrigidos.",
+      "required": "Delimitar sucesso, erro estruturado, papel e link gerado.",
+      "result": "Sem prometer envio, confirmação remota geral ou ciclo produtivo por modo da UI.",
+      "action": "atualizado",
+      "sha256": "b641d0b0d5571ff01370ddd9a6aac727b0dc2e253d7c1741b4d05066e9d59746"
+    },
+    {
+      "document": "docs/ux/EMPTY_PARTIAL_BLOCKED_STATES.md",
+      "before": "Estados genéricos sem ausência legítima/erro do Perfil e Equipe.",
+      "required": "Mapear erros, vazio, bloqueio e conflito reais.",
+      "result": "Não confundir zero/erro nem generalizar fila a salvamentos remotos.",
+      "action": "atualizado",
+      "sha256": "b9852bc35939750a2013664dcfb51b79218d232bce5ad1502c2ea6e902a84e6b"
+    },
+    {
+      "document": "docs/ux/README.md",
+      "before": "Índice de padrões sem situação de disponibilidade.",
+      "required": "Apontar snapshots locais e guia.",
+      "result": "Recomendações e diretrizes não equivalem a entregas.",
+      "action": "atualizado",
+      "sha256": "0463c516465539efb2730c2c11eb7cdfe4aabf1b96dd78e7ff80e900becb0a3e"
+    },
+    {
+      "document": "docs/manuals/README.md",
+      "before": "Manual genérico, sem primeiros fluxos e envolvido em código.",
+      "required": "Definir entrada única, disponibilidade e critérios editoriais.",
+      "result": "Índice único e separação dos módulos preservados.",
+      "action": "atualizado",
+      "sha256": "d35841908b3d39d4774ff26fe2eb940d28de8a5509abb526579c2fa7c4dc246b"
+    },
+    {
+      "document": "docs/manuals/USER_MANUAL_INDEX.md",
+      "before": "Somente módulos operacionais; links em texto e fence externa.",
+      "required": "Incluir cinco fluxos, FAQs e limitações.",
+      "result": "Entrada única navegável; seis capítulos anteriores preservados.",
+      "action": "atualizado",
+      "sha256": "54f5e96278f3c55325af0f19f4f3ab6c934b947645c366d68bf1a039023f34a8"
+    },
+    {
+      "document": "docs/manuals/support/FAQ_LOGIN.md",
+      "before": "Orientava Esqueci minha senha indisponível e misturava autenticação/vínculo.",
+      "required": "Corrigir acesso/convite/papel/identidade e recovery.",
+      "result": "Instrução operacional sem contorno administrativo ou falsa disponibilidade.",
+      "action": "atualizado",
+      "sha256": "2754d29668c1aa840330c7c32766d99922633323009d56e4c3eac8cc914cd064"
+    },
+    {
+      "document": "docs/manuals/support/FAQ_SYNC.md",
+      "before": "Confirmação genérica sem distinguir Em dia e gravação direta.",
+      "required": "Adicionar limites de confirmação e salvamentos administrativos.",
+      "result": "Fila operacional preservada sem promessa de enqueue do Perfil.",
+      "action": "atualizado",
+      "sha256": "261e2f1e455e0aa2966e44eec25026a23e9c143251e32477ab79cbe4b9a1aff1"
+    },
+    {
+      "document": "docs/manuals/support/TROUBLESHOOTING.md",
+      "before": "Triagem genérica sem falhas corrigidas; fence externa.",
+      "required": "Acrescentar triagem Bloco 1 e preservar módulos anteriores.",
+      "result": "Orientações de recarga, permissões, convite e silêncio; sem reset/limpeza de dados.",
+      "action": "atualizado",
+      "sha256": "eddf8a2383163b66f1d1290f59be32ec2673ac05a66e739d1f7d69e2ec577726"
+    },
+    {
+      "document": "docs/manuals/screens/PRIMEIRO_ACESSO.md",
+      "before": "Capítulo ausente.",
+      "required": "Cobertura operacional necessária para J01–J05, sem novo índice paralelo.",
+      "result": "Conta, entrada, criação, campos opcionais, onboarding e fazenda vazia.",
+      "action": "criado",
+      "sha256": "273df41f60d0c7ea090273d7bc28f8fb38b748622a15f974545a20cee857780d"
+    },
+    {
+      "document": "docs/manuals/screens/FAZENDAS.md",
+      "before": "Capítulo ausente.",
+      "required": "Cobertura operacional necessária para J01–J05, sem novo índice paralelo.",
+      "result": "Fazenda ativa, múltiplas propriedades, edição, papéis e conflito.",
+      "action": "criado",
+      "sha256": "b30f8cc32ed4c97b18581ee3c0b7d579c7f644008cc365258a9e8cd3ee0cd023"
+    },
+    {
+      "document": "docs/manuals/screens/EQUIPE_CONVITES.md",
+      "before": "Capítulo ausente.",
+      "required": "Cobertura operacional necessária para J01–J05, sem novo índice paralelo.",
+      "result": "Convidar/compartilhar/aceitar/cancelar e ajustar papel com limites reais de UI e serviço.",
+      "action": "criado",
+      "sha256": "250daf3df2a8249b8deaff5dd3d8b3013a4a8dad6be46709350708fb8ac6831b"
+    },
+    {
+      "document": "docs/manuals/screens/PERFIL_PREFERENCIAS.md",
+      "before": "Capítulo ausente.",
+      "required": "Cobertura operacional necessária para J01–J05, sem novo índice paralelo.",
+      "result": "Perfil versus identidade, tema, categorias de avisos, silêncio, persistência e recuperação.",
+      "action": "criado",
+      "sha256": "f171536321e6fb0e8bf8e7a298362c14998269d410028f4885d873234dabd3ca"
+    },
+    {
+      "document": "docs/manuals/screens/CONFIGURACOES_FAZENDA.md",
+      "before": "Capítulo ausente.",
+      "required": "Cobertura operacional necessária para J01–J05, sem novo índice paralelo.",
+      "result": "Unidade, regras/estágios, modos, segurança, contexto e limites zootécnicos.",
+      "action": "criado",
+      "sha256": "569a957c20b57223aaaa3b8ceb8bd935c2361b941e78701de72ca0e54cefbeaf"
+    },
+    {
+      "document": "docs/product/DECISION_LOG.md",
+      "before": "Fonte existente; sem alteração do contrato pertinente.",
+      "required": "Preservar conteúdo e limite de evidência.",
+      "result": "Decisões de produto preservadas; esta entrega não aprova escopo novo ou as 12 recomendações. Não é changelog técnico.",
+      "action": "preservado sem alteração",
+      "sha256": "e4c0e7bc12dcdc577ff883063f13331bb005243a2044c5c8a811a57c5e22326d"
+    },
+    {
+      "document": "docs/manuals/screens/ANIMAIS.md",
+      "before": "Fonte existente; sem alteração do contrato pertinente.",
+      "required": "Preservar conteúdo e limite de evidência.",
+      "result": "Módulo de jornada futura; sem delta autorizado/revalidação operacional.",
+      "action": "preservado sem alteração",
+      "sha256": "88421f2b3cb3559516852848183476ff39956568947a28cfb8837c9e5db12346"
+    },
+    {
+      "document": "docs/manuals/screens/LOTES_PASTOS.md",
+      "before": "Fonte existente; sem alteração do contrato pertinente.",
+      "required": "Preservar conteúdo e limite de evidência.",
+      "result": "Módulos de jornadas futuras; capítulo preservado sem reescrita.",
+      "action": "preservado sem alteração",
+      "sha256": "6bae1816933fb716bac114362854c4b3709d37f80e1eea6d7f61ca946a85ed57"
+    },
+    {
+      "document": "docs/manuals/screens/AGENDA.md",
+      "before": "Fonte existente; sem alteração do contrato pertinente.",
+      "required": "Preservar conteúdo e limite de evidência.",
+      "result": "Contrato/factualidade preservados; nenhuma jornada operacional nova.",
+      "action": "preservado sem alteração",
+      "sha256": "ad1aa144517aca93435157c0ea297b11739c15df4af9d7762015abcb6849ef2e"
+    },
+    {
+      "document": "docs/manuals/screens/REGISTRAR.md",
+      "before": "Fonte existente; sem alteração do contrato pertinente.",
+      "required": "Preservar conteúdo e limite de evidência.",
+      "result": "Nenhum writer operacional novo; capítulo preservado.",
+      "action": "preservado sem alteração",
+      "sha256": "3385ccf99ff1820772dcae9b8091ef4df7711019534e2941cc7dfe1278c52ca2"
+    },
+    {
+      "document": "docs/manuals/screens/SANITARIO.md",
+      "before": "Fonte existente; sem alteração do contrato pertinente.",
+      "required": "Preservar conteúdo e limite de evidência.",
+      "result": "Sem nova execução sanitária ou canais; capítulo preservado.",
+      "action": "preservado sem alteração",
+      "sha256": "449510b8b02773b2c0a97d41e51d1e6ed20464392b2ecda8826e1dfbcd4afdc7"
+    },
+    {
+      "document": "docs/manuals/screens/COMPRA_VENDA.md",
+      "before": "Fonte existente; sem alteração do contrato pertinente.",
+      "required": "Preservar conteúdo e limite de evidência.",
+      "result": "Sem mudança comercial; capítulo preservado.",
+      "action": "preservado sem alteração",
+      "sha256": "0e4150fa2dd5e6bcb4aa5bc28880392f65dd6d36aca7265dd715288f979a9163"
+    },
+    {
+      "document": "docs/manuals/support/FAQ_AGENDA.md",
+      "before": "Fonte existente; sem alteração do contrato pertinente.",
+      "required": "Preservar conteúdo e limite de evidência.",
+      "result": "Sem delta de Agenda; FAQ preservada sem recertificação.",
+      "action": "preservado sem alteração",
+      "sha256": "1e5d0b1a941a13778a92ea10bba1060dfc0e875b6ffd9930a798f0a3ffc5ff9f"
+    },
+    {
+      "document": "docs/manuals/support/FAQ_SANITARIO.md",
+      "before": "Fonte existente; sem alteração do contrato pertinente.",
+      "required": "Preservar conteúdo e limite de evidência.",
+      "result": "Sem delta no fluxo sanitário operacional; FAQ preservada.",
+      "action": "preservado sem alteração",
+      "sha256": "3553892c1ec95c26e795651c9eedcec7f19a9e596c0756dd1cbaff74656a4ed7"
+    },
+    {
+      "document": ".github/pull_request_template.md",
+      "before": "Fonte existente; sem alteração do contrato pertinente.",
+      "required": "Preservar conteúdo e limite de evidência.",
+      "result": "Template atual lido e preservado para preparar texto após gate READY.",
+      "action": "preservado sem alteração",
+      "sha256": "9b754feb020ce99988c7ad6172159110c4ad27d982d89e37a8f39021655068c3"
+    }
+  ],
+  "guide": {
+    "entry": "docs/manuals/USER_MANUAL_INDEX.md",
+    "created": [
+      "docs/manuals/screens/PRIMEIRO_ACESSO.md",
+      "docs/manuals/screens/FAZENDAS.md",
+      "docs/manuals/screens/EQUIPE_CONVITES.md",
+      "docs/manuals/screens/PERFIL_PREFERENCIAS.md",
+      "docs/manuals/screens/CONFIGURACOES_FAZENDA.md"
+    ],
+    "revised": [
+      "docs/manuals/README.md",
+      "docs/manuals/USER_MANUAL_INDEX.md",
+      "docs/manuals/support/FAQ_LOGIN.md",
+      "docs/manuals/support/FAQ_SYNC.md",
+      "docs/manuals/support/TROUBLESHOOTING.md"
+    ],
+    "screenshots": [
+      {
+        "path": "docs/manuals/images/block1/onboarding-desktop.png",
+        "source": ".work/block1/screens/onboarding-desktop.png",
+        "sha256": "e10905f2e0607590e5a9e822c56ad57eb3aa6e4a9b3000c74068206cb5d64d71",
+        "synthetic": true,
+        "edited": false
+      },
+      {
+        "path": "docs/manuals/images/block1/edit-desktop.png",
+        "source": ".work/block1/screens/edit-desktop.png",
+        "sha256": "82847fa8b8a95b15878026f529a3980fdb3f77ffb169e6908759e02beacfe7d5",
+        "synthetic": true,
+        "edited": false
+      }
+    ],
+    "missingCaptures": [
+      "Cadastro/confirmacao de email",
+      "Equipe na versão corrigida",
+      "Perfil/preferências com captura limpa adequada ao guia"
+    ],
+    "futureModulesRewritten": false
+  },
+  "localEvidenceSelectedForGit": [
+    ".work/block1/consolidated-matrix.json",
+    ".work/block1/consolidated-matrix.md",
+    ".work/block1/final-result.json",
+    ".work/block1-integration/check-links.mjs"
+  ],
+  "scratchExcludedFromGit": "Demais .work: logs locais, snapshots sintéticos, configuração descartável e cópias de migrations; preservados no disco, sem descarte.",
+  "evidenceReuse": {
+    "source": ".work/block1/final-result.json",
+    "reason": "Código/migrations/testes e baseline inalterados por hashes; alterações desta etapa são documentais/commits.",
+    "reused": [
+      "Chromium focal com nova sessão/rede e owner desatualizado",
+      "Concorrência PostgreSQL em duas conexões e rebaixamento enquanto aguarda lock",
+      "Baseline funcional em stack local descartável 54421/54422",
+      "ESLint sem erros"
+    ],
+    "fresh": [
+      "95 testes Vitest em 12 arquivos",
+      "29 testes SQL transacionais locais",
+      "Gates documentais, links/índices e diff/preservação"
+    ]
+  },
+  "checks": [
+    {
+      "command": "node node_modules/vitest/vitest.mjs run src/pages/__tests__/PerfilPersistence.test.tsx src/pages/__tests__/PerfilAdminNavigation.test.tsx src/lib/notifications/__tests__/sanitaryReminders.test.ts src/lib/farms/__tests__/updateFarm.test.ts src/pages/__tests__/FinanceiroSubmit.test.tsx src/pages/__tests__/OnboardingInicial.e2e.test.tsx src/pages/__tests__/CriarFazendaValidation.test.tsx src/pages/__tests__/EditarFazenda.test.tsx src/pages/__tests__/AcceptInvite.test.tsx src/pages/__tests__/InviteAuthContinuity.test.tsx src/pages/__tests__/Membros.test.tsx src/components/members/InviteMemberDialog.test.tsx",
+      "result": "95/95 em 12 arquivos",
+      "reused": false
+    },
+    {
+      "command": "node --test tests/codex/block1-security.local.test.mjs tests/codex/member-invites.local.test.mjs",
+      "result": "29/29, fixtures com rollback",
+      "reused": false
+    },
+    {
+      "command": "node scripts/antigravity/run_bash.mjs scripts/antigravity/docs_gates.sh",
+      "result": "exit 0; headers, continuidade e auditoria de agentes",
+      "reused": false
+    },
+    {
+      "command": "node .work/block1-integration/check-links.mjs",
+      "result": "425 links internos em 35 documentos; zero ausentes",
+      "reused": false
+    },
+    {
+      "command": "git diff --check; git diff --cached --check",
+      "result": "sem erro",
+      "reused": false
+    },
+    {
+      "command": "node .work/block1-integration/check-preservation.mjs",
+      "result": "nenhuma diferença nos dados das jornadas ou resultados originais",
+      "reused": false
+    },
+    {
+      "command": "Conferência de 32 literais de interface em 10 fontes + revisão de UI/RLS/RPC/trigger/Auth",
+      "result": "nomes e limitações conferidos; não é teste funcional",
+      "reused": false
+    },
+    {
+      "command": "node --test tests/codex/block1-concurrency.local.test.mjs",
+      "result": "1/1; concorrência PostgreSQL real; código/contrato inalterados",
+      "reused": true
+    },
+    {
+      "command": "node --test tests/codex/block1-browser.local.test.mjs",
+      "result": "1/1 Chromium; nova sessão/rede/owner stale; código e capturas inalterados",
+      "reused": true
+    },
+    {
+      "command": "node scripts/codex/validate-supabase-baseline-functional.mjs",
+      "result": "exit 0 na stack descartável 54421/54422; sem delta de migrations/contrato nesta preparação",
+      "reused": true
+    },
+    {
+      "command": "node node_modules/eslint/bin/eslint.js .",
+      "result": "exit 0; nenhum fonte de runtime/teste mudou desde essa execução",
+      "reused": true
+    }
+  ],
+  "notes": [
+    "Matriz de 26 grupos preservada em .work; não duplicada em fontes canônicas.",
+    "Sem nova decisão de produto: 12 recomendações continuam candidatas; recovery, tema dinâmico e rascunhos permanecem lacunas observadas.",
+    "Arquivos de arquivo histórico não foram reescritos; capítulos de jornadas futuras foram preservados.",
+    "Não foram criados READMEs redundantes em manuals/screens ou manuals/support.",
+    "Os três artefatos originais de .work/block1 são snapshots do gate local anterior, preservados sem reescrita; este registro descreve a preparação posterior."
+  ],
+  "notExecuted": [
+    "Todas as jornadas J01–J05 novamente, suíte global/build/E2E integral: sem delta comportamental ou conflito de código.",
+    "Migrations locais já instaladas: somente leitura, sem reaplicação.",
+    "Merge, push, deploy, migration remota e J06: não executados."
+  ],
+  "j06": {
+    "started": false,
+    "localBlockerDemonstrated": false,
+    "remotePrerequisite": "J04/Bloco 1 ainda não publicados; não extrapolar gate local ao ambiente remoto. Não inicia automaticamente."
+  },
+  "operations": {
+    "push": false,
+    "merge": false,
+    "deploy": false,
+    "remoteMigration": false
+  },
+  "review": {
+    "kind": "autorrevisão e verificações focais; sem revisão independente",
+    "missingCriticalChecks": []
+  },
+  "scopeOfReady": "Revisão de integração do conjunto local de código, migrations, testes, fontes ativas e base do Guia do Usuário; não declara merge, publicação ou certificação global.",
+  "codeHashesPreserved": 34,
+  "preservation": {
+    "originalJourneyResults": 6,
+    "originalMismatches": [],
+    "inheritedCodeMismatches": [],
+    "journeyDifferences": [],
+    "counts": {
+      "animais": 0,
+      "lotes": 0,
+      "pastos": 0,
+      "eventos": 0,
+      "finance_transactions": 0
+    },
+    "originalWorkspaceDocumentsUnchanged": true,
+    "preservedDocuments": 10
+  },
+  "inconsistenciesResolved": [
+    "Recovery inexistente descrito como ação disponível",
+    "Identidade Auth confundível com contato de Perfil",
+    "UI de membros não oferece Ajustar papel a Owner; menu Equipe não é oferecido a Cowboy",
+    "Fluxo administrativo remoto confundível com fila offline",
+    "Maturidade local/integrada/publicada e snapshots de backend misturados",
+    "Oito links para âncora de handoff inexistente, redirecionados ao snapshot real preservado",
+    "Fences externas que impediam renderização de índices/manuais/contrato alterados"
+  ],
+  "selectedHistoricalArtifactHashes": [
+    {
+      "path": ".work/block1/consolidated-matrix.json",
+      "sha256": "0fbec82f37c79c79d41335c3eadca2c989d3c8ecf3397c4ae06d4c69ed61def7"
+    },
+    {
+      "path": ".work/block1/consolidated-matrix.md",
+      "sha256": "31e0197279b50788d4f7c13fc458b060f4103e04a545941c316790ab710dc1ef"
+    },
+    {
+      "path": ".work/block1/final-result.json",
+      "sha256": "2dbb56928da66d9068e43a99736ab27dcb9e1187d25ba9d08fe300f0aea0f76d"
+    },
+    {
+      "path": ".work/block1-integration/check-links.mjs",
+      "sha256": "12a62f2aabfe5a188a6ad1696ed22bc7bf9179f1e57fa7b6d444a1376ef37bb6"
+    }
+  ]
+}

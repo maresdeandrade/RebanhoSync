@@ -1,7 +1,7 @@
 # Review Docs — RebanhoSync
 
-Atualizado em: 2026-11-18
-**Baseline integrada:** `175e9dee` (#302); #301 integrada e validada. Resultados atuais no handoff e no resultado mais recente.
+Atualizado em: 2026-11-21
+**Baseline integrada:** `157376d9` (#305), confirmada na main remota. J04/Bloco 1 são pacote local posterior; integração e publicação ainda pendentes.
 
 ## Objetivo
 
@@ -22,6 +22,9 @@ Se é histórico/fechado/substituído → docs/archive/
 ---
 
 ## Arquivos
+
+- [Inventário e evidência de integração J04/Bloco 1](./evidence/BLOCK1_INTEGRATION_20261121.json): código/testes preservados, documentos atualizados/preservados e limites de disponibilidade. A matriz integral de 26 grupos permanece em `.work/block1/`.
+- [Guia do Usuário — índice único](../manuals/USER_MANUAL_INDEX.md): cinco capítulos J01–J05 e manuais anteriores preservados.
 
 | Arquivo | Uso |
 |---|---|
