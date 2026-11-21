@@ -4,6 +4,10 @@ Snapshot de 2026-11-21. [Matriz central](../../BLOCK1_CONSOLIDATED_MATRIX.md). N
 
 Rechecagem posterior: o usuário informou a exclusão de imagens. Das 230 entradas no [manifesto visual](screenshots-manifest.json), 111 permaneciam nos caminhos inventariados e 119 estavam ausentes; cinco cópias selecionadas mantinham o hash original. Não há confirmação de outro acervo ou backup externo para as imagens ausentes. Classificações pelo nome são inferências, e 121 imagens não tiveram cenário específico identificado automaticamente.
 
+**Recuperação verificada em 2026-11-21:** as 230 imagens voltaram a estar presentes nos caminhos inventariados e todas corresponderam em tamanho e SHA-256, inclusive as 119 anteriormente ausentes. O diretório `workspace_original/.work/evidence/` contém 256 arquivos: 217 imagens (216 PNG e um JPEG), 26 JSON e 13 logs; não há outros tipos. As 13 capturas adicionais de `worktree_PR/.work/block1/screens/` elevam o total preservado para 269 arquivos: 230 imagens, 26 JSON e 13 logs.
+
+Foi criada uma cópia local independente em `C:/Users/mares/RebanhoSync-acervo/bloco1-20261121`, fora do Git e das worktrees. Os 269 arquivos foram comparados à origem por tamanho e SHA-256; o arquivo `backup-hashes.json` nesse diretório registra os resultados. Os originais não foram modificados. Trata-se de cópia no mesmo computador, não de backup externo nem de proteção contra perda do dispositivo. Não foram copiadas sessões ou perfis Chromium.
+
 ## Seleção versionada
 
 - Seis relatórios revisados: J01, J02, J03, J04 inicial, correção J04 e J05. Preservam observações/cenários/achados/recomendações/limites selecionados, separando estado original e avaliação posterior.
