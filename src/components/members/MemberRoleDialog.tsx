@@ -20,6 +20,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { authOperationError } from "@/lib/auth/errorMessage";
 
 type Role = "owner" | "manager" | "cowboy";
 
@@ -71,10 +72,9 @@ export const MemberRoleDialog = ({
       onSuccess();
       onOpenChange(false);
     } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
       toast({
         title: "Erro ao atualizar papel",
-        description: err.message,
+        description: authOperationError(error, "Não foi possível alterar o papel."),
         variant: "destructive",
       });
     } finally {

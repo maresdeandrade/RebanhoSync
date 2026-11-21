@@ -38,6 +38,7 @@ const CriarFazenda = () => {
     register,
     handleSubmit,
     setValue,
+    setError: setFieldError,
     watch,
     formState: { errors },
   } = useForm<CriarFazendaForm>();
@@ -101,6 +102,11 @@ const CriarFazenda = () => {
       );
 
       if (createError) {
+        if (createError.message?.includes("fazendas_area_total_ha_check")) {
+          setFieldError("area_total_ha", { message: "Informe uma área maior que zero." });
+          setIsLoading(false);
+          return;
+        }
         console.error("[CriarFazenda] Error creating farm:", createError);
 
         if (
@@ -222,8 +228,14 @@ const CriarFazenda = () => {
                   className="h-12 rounded-xl bg-background"
                   placeholder="Ex: 450"
                   disabled={isLoading}
-                  {...register("area_total_ha", { valueAsNumber: true })}
+                  aria-invalid={Boolean(errors.area_total_ha)}
+                  aria-describedby={errors.area_total_ha ? "area-error" : undefined}
+                  {...register("area_total_ha", {
+                    valueAsNumber: true,
+                    validate: (value) => value === undefined || Number.isNaN(value) || (Number.isFinite(value) && value > 0) || "Informe uma área maior que zero.",
+                  })}
                 />
+                {errors.area_total_ha && <p id="area-error" role="alert" className="text-sm text-destructive">{errors.area_total_ha.message}</p>}
               </div>
 
               <div className="space-y-2">

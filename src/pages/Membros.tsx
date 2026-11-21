@@ -68,10 +68,13 @@ function getStatusTone(status: MemberStatus) {
   return "danger";
 }
 
-export default function Membros() {
+function FarmMembers() {
   const { activeFarmId, role: userRole } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [inviteRevision, setInviteRevision] = useState(0);
+  const [pendingInvites, setPendingInvites] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | MemberStatus>("all");
   const [showInviteDialog, setShowInviteDialog] = useState(false);
@@ -88,6 +91,8 @@ export default function Membros() {
     if (!activeFarmId) return;
 
     setIsLoading(true);
+    setLoadError(false);
+    try {
     const { data: membersData, error: membersError } = await supabase
       .from("user_fazendas")
       .select(
@@ -97,20 +102,19 @@ export default function Membros() {
         role,
         accepted_at,
         deleted_at,
-        created_at,
-        user_profiles!user_id(display_name, phone)
+        created_at
       `,
       )
       .eq("fazenda_id", activeFarmId);
 
-    if (membersError) {
-      toast({
-        title: "Erro ao carregar membros",
-        description: membersError.message,
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
+    if (membersError) throw membersError;
+    const userIds = (membersData || []).map((item) => item.user_id);
+    const profileMap = new Map<string, { display_name: string | null; phone: string | null }>();
+    if (userIds.length) {
+      const { data: profiles, error } = await supabase.from("user_profiles")
+        .select("user_id, display_name, phone").in("user_id", userIds);
+      if (error) throw error;
+      for (const profile of profiles || []) profileMap.set(profile.user_id, profile);
     }
 
     const transformedMembers: Member[] = (membersData || []).map(
@@ -121,19 +125,17 @@ export default function Membros() {
         accepted_at: item.accepted_at as string | null,
         deleted_at: item.deleted_at as string | null,
         created_at: item.created_at as string,
-        display_name: (item.user_profiles as Record<string, unknown>)
-          ?.display_name as string | null,
-        phone: (item.user_profiles as Record<string, unknown>)?.phone as
-          | string
-          | null,
+        display_name: profileMap.get(item.user_id as string)?.display_name ?? null,
+        phone: profileMap.get(item.user_id as string)?.phone ?? null,
       }),
     );
 
     if (transformedMembers.length > 0) {
       const userIds = transformedMembers.map((member) => member.user_id);
-      const { data: emailsData } = await supabase.rpc("get_user_emails", {
+      const { data: emailsData, error } = await supabase.rpc("get_user_emails", {
         user_ids: userIds,
       });
+      if (error) throw error;
 
       if (emailsData) {
         const emailMap = new Map<string, string>();
@@ -150,8 +152,12 @@ export default function Membros() {
     }
 
     setMembers(transformedMembers);
+    } catch {
+      setLoadError(true);
+    } finally {
     setIsLoading(false);
-  }, [activeFarmId, toast]);
+    }
+  }, [activeFarmId]);
 
   useEffect(() => {
     if (activeFarmId) {
@@ -243,12 +249,12 @@ export default function Membros() {
         title="Pessoas e convites da fazenda"
         meta={
           <>
-            <StatusBadge tone="neutral">{counts.total} pessoa(s)</StatusBadge>
-            <StatusBadge tone="success">{counts.active} ativa(s)</StatusBadge>
-            <StatusBadge tone="warning">
-              {counts.pending} convite(s)
-            </StatusBadge>
-            {counts.inactive > 0 ? (
+            {!isLoading && !loadError && <>
+              <StatusBadge tone="neutral">{counts.total} pessoa(s)</StatusBadge>
+              <StatusBadge tone="success">{counts.active} ativa(s)</StatusBadge>
+            </>}
+            {canManageMembers && pendingInvites !== null && <StatusBadge tone="warning">{pendingInvites} convite(s)</StatusBadge>}
+            {!isLoading && !loadError && counts.inactive > 0 ? (
               <StatusBadge tone="danger">{counts.inactive} inativa(s)</StatusBadge>
             ) : null}
           </>
@@ -291,9 +297,9 @@ export default function Membros() {
         </ToolbarGroup>
 
         <ToolbarGroup className="gap-2">
-          <StatusBadge tone="info">
+          {!isLoading && !loadError && <StatusBadge tone="info">
             {filteredMembers.length} no recorte atual
-          </StatusBadge>
+          </StatusBadge>}
         </ToolbarGroup>
       </Toolbar>
 
@@ -304,6 +310,10 @@ export default function Membros() {
             Carregando equipe.
           </CardContent>
         </Card>
+      ) : loadError ? (
+        <EmptyState role="alert" icon={Users} title="Não foi possível carregar a equipe"
+          description="Verifique sua conexão e tente novamente."
+          action={{ label: "Tentar novamente", onClick: () => void loadMembers() }} />
       ) : filteredMembers.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -443,8 +453,9 @@ export default function Membros() {
         </div>
       )}
 
-      {activeFarmId ? (
-        <PendingInvites fazendaId={activeFarmId} onUpdate={loadMembers} />
+      {activeFarmId && canManageMembers ? (
+        <PendingInvites fazendaId={activeFarmId} onUpdate={loadMembers}
+          revision={inviteRevision} onCountChange={setPendingInvites} />
       ) : null}
 
       {activeFarmId ? (
@@ -453,7 +464,7 @@ export default function Membros() {
           onOpenChange={setShowInviteDialog}
           fazendaId={activeFarmId}
           callerRole={role}
-          onSuccess={loadMembers}
+          onSuccess={() => setInviteRevision((revision) => revision + 1)}
         />
       ) : null}
 
@@ -486,6 +497,12 @@ export default function Membros() {
       ) : null}
     </div>
   );
+}
+
+export default function Membros() {
+  const { activeFarmId } = useAuth();
+  // A farm switch never reuses a previous farm's rows or pending requests.
+  return <FarmMembers key={activeFarmId ?? "none"} />;
 }
 
 

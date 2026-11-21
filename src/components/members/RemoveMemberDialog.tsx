@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { authOperationError } from "@/lib/auth/errorMessage";
 
 interface Member {
   user_id: string;
@@ -56,10 +57,9 @@ export const RemoveMemberDialog = ({
       onSuccess();
       onOpenChange(false);
     } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
       toast({
         title: "Erro ao remover membro",
-        description: err.message,
+        description: authOperationError(error, "Não foi possível remover o membro."),
         variant: "destructive",
       });
     } finally {

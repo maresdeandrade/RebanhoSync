@@ -138,7 +138,8 @@ function TransactionDateField({
 
 const Financeiro = () => {
   const navigate = useNavigate();
-  const { activeFarmId } = useAuth();
+  const { activeFarmId, role } = useAuth();
+  const canWriteFinance = role === "owner" || role === "manager";
 
   // Search & Filtering
   const [search, setSearch] = useState("");
@@ -273,7 +274,7 @@ const Financeiro = () => {
 
   // Seeding default categories offline if none exist
   useEffect(() => {
-    if (!activeFarmId || !data) return;
+    if (!activeFarmId || !canWriteFinance || !data) return;
     const seedCategories = async () => {
       const count = await db.state_finance_categories
         .where("fazenda_id")
@@ -291,7 +292,7 @@ const Financeiro = () => {
       }
     };
     seedCategories();
-  }, [activeFarmId, data]);
+  }, [activeFarmId, canWriteFinance, data]);
 
   // Combined Rows Mapper
   const rows = useMemo(() => {
@@ -549,7 +550,7 @@ const Financeiro = () => {
 
   // Save Transaction
   const handleSaveTx = async () => {
-    if (!activeFarmId || savingTxRef.current) return;
+    if (!activeFarmId || !canWriteFinance || savingTxRef.current) return;
     setTxErrors([]);
 
     const dateError = validateFinanceDateInput(formTxOccurredAt);
@@ -625,7 +626,7 @@ const Financeiro = () => {
   };
 
   const handleReverseTransaction = async (transactionId: string) => {
-    if (!activeFarmId || !data) return;
+    if (!activeFarmId || !canWriteFinance || !data) return;
     const original = data.transactions.find(
       (transaction) => transaction.id === transactionId,
     );
@@ -652,7 +653,7 @@ const Financeiro = () => {
 
   // Save Category
   const handleSaveCat = async () => {
-    if (!activeFarmId || savingCatRef.current) return;
+    if (!activeFarmId || !canWriteFinance || savingCatRef.current) return;
     setCatErrors([]);
 
     if (!formCatNome.trim()) {
@@ -712,7 +713,7 @@ const Financeiro = () => {
           <StatusBadge tone="neutral">{rows.length} lançamento(s)</StatusBadge>
         }
         actions={
-          <div className="flex flex-wrap gap-2">
+          canWriteFinance ? <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setIsCatModalOpen(true)}>
               <FolderOpen className="h-4 w-4" />
               Nova categoria
@@ -721,7 +722,7 @@ const Financeiro = () => {
               <PlusCircle className="h-4 w-4" />
               Novo lançamento
             </Button>
-          </div>
+          </div> : undefined
         }
       />
 
@@ -1153,7 +1154,7 @@ const Financeiro = () => {
                       ? "Estorno já registrado."
                       : "Correção preserva este lançamento e cria um contra-lançamento."}
                   </p>
-                  {!data?.transactions.some(
+                  {canWriteFinance && !data?.transactions.some(
                     (transaction) =>
                       parseFinanceReversal(transaction.observacoes)
                         ?.original_transaction_id === row.id,
@@ -1176,7 +1177,7 @@ const Financeiro = () => {
 
       {/* Modal - Novo Lançamento Gerencial */}
       <Dialog
-        open={isTxModalOpen}
+        open={isTxModalOpen && canWriteFinance}
         onOpenChange={(open) => {
           if (!isSavingTx) setIsTxModalOpen(open);
         }}
@@ -1508,7 +1509,7 @@ const Financeiro = () => {
 
       {/* Modal - Nova Categoria Gerencial */}
       <Dialog
-        open={isCatModalOpen}
+        open={isCatModalOpen && canWriteFinance}
         onOpenChange={(open) => {
           if (!isSavingCat) setIsCatModalOpen(open);
         }}

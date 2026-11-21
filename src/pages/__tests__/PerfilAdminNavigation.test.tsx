@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 vi.mock("@/hooks/useAuth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/supabase", () => ({ supabase: {
   auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "fixture-user" } } }) },
-  from: vi.fn(() => ({ select: () => ({ eq: () => ({ single: async () => ({ data: null }) }) }) })),
+  from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) })),
 } }));
 
 describe("atalho administrativo do Perfil", () => {

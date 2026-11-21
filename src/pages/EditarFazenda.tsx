@@ -28,6 +28,8 @@ import {
   withFarmExperienceMode,
 } from "@/lib/farms/experienceMode";
 import { supabase } from "@/lib/supabase";
+import { updateFarmFromSnapshot, type FarmWriteSnapshot } from "@/lib/farms/updateFarm";
+import { authOperationError } from "@/lib/auth/errorMessage";
 
 type FarmFormState = {
   nome: string;
@@ -91,6 +93,7 @@ export default function EditarFazenda() {
   const navigate = useNavigate();
   const [form, setForm] = useState<FarmFormState>(EMPTY_FORM);
   const [farmMetadata, setFarmMetadata] = useState<Record<string, unknown>>({});
+  const [farmSnapshot, setFarmSnapshot] = useState<FarmWriteSnapshot | null>(null);
   const [essentialModeEnabled, setEssentialModeEnabled] = useState(true);
   const [strictRulesEnabled, setStrictRulesEnabled] = useState(true);
   const [strictAntiTeleportEnabled, setStrictAntiTeleportEnabled] =
@@ -122,7 +125,7 @@ export default function EditarFazenda() {
         const { data, error: fetchError } = await supabase
           .from("fazendas")
           .select(
-            "nome, codigo, municipio, estado, cep, area_total_ha, tipo_producao, sistema_manejo, metadata",
+            "nome, codigo, municipio, estado, cep, area_total_ha, tipo_producao, sistema_manejo, metadata, updated_at",
           )
           .eq("id", activeFarmId)
           .single();
@@ -158,6 +161,7 @@ export default function EditarFazenda() {
               : "",
         });
         setFarmMetadata(metadata);
+        setFarmSnapshot({farmId: activeFarmId, updatedAt: data?.updated_at});
         setEssentialModeEnabled(
           resolveFarmExperienceMode(metadata) === "essencial",
         );
@@ -197,18 +201,16 @@ export default function EditarFazenda() {
     setError(null);
 
     try {
-      const rolloutMetadata = withEventosRolloutFlags(farmMetadata, {
+      const rolloutMetadata = canManageRolloutFlags ? withEventosRolloutFlags(farmMetadata, {
         strict_rules_enabled: strictRulesEnabled,
         strict_anti_teleporte: strictRulesEnabled && strictAntiTeleportEnabled,
-      });
+      }) : farmMetadata;
       const updatedMetadata = withFarmExperienceMode(
         rolloutMetadata,
         essentialModeEnabled ? "essencial" : "completo",
       );
 
-      const { error: updateError } = await supabase
-        .from("fazendas")
-        .update({
+      const saved = await updateFarmFromSnapshot(activeFarmId, farmSnapshot, {
           nome: form.nome.trim(),
           codigo: form.codigo.trim() || null,
           municipio: form.municipio.trim() || null,
@@ -220,21 +222,14 @@ export default function EditarFazenda() {
           tipo_producao: form.tipoProducao || null,
           sistema_manejo: form.sistemaManejo || null,
           metadata: updatedMetadata,
-        })
-        .eq("id", activeFarmId);
-
-      if (updateError) {
-        throw updateError;
-      }
+        });
 
       setFarmMetadata(updatedMetadata);
+      setFarmSnapshot({farmId: activeFarmId, updatedAt: saved.updated_at});
       await refreshSettings();
       navigate("/home");
     } catch (submitError) {
-      const message =
-        submitError instanceof Error
-          ? submitError.message
-          : "Nao foi possivel salvar a fazenda.";
+      const message = authOperationError(submitError, "Nao foi possivel salvar a fazenda.");
       setError(message);
     } finally {
       setIsSaving(false);

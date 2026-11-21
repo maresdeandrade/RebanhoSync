@@ -59,6 +59,16 @@ describe("OnboardingInicial wizard", () => {
     } as never);
   });
 
+  it("estado e produção não afirmam revisão de localização nem exigem município opcional", async () => {
+    maybeSingle.mockResolvedValue({data:{nome:"Horizonte",municipio:null,estado:"MG",tipo_producao:"corte"}});
+    render(<MemoryRouter><OnboardingInicial /></MemoryRouter>);
+    await screen.findAllByText(/Producao corte/);
+    fireEvent.click(screen.getByRole("button",{name:/Fazenda/}));
+    expect(screen.queryByText("Localizacao nao revisada")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nome e localizacao revisados.")).not.toBeInTheDocument();
+    expect(screen.getByText(/Municipio.*opciona/i)).toBeInTheDocument();
+  });
+
   it("foca a primeira etapa pendente e permite navegar pelo wizard", async () => {
     render(
       <MemoryRouter

@@ -78,7 +78,7 @@ export function resolveNotificationPreferences(
       DEFAULT_NOTIFICATION_PREFERENCES.agendaReminders,
     daysBefore: normalizeDaysBefore(record?.days_before),
     quietHours:
-      quietHoursStart && quietHoursEnd
+      quietHoursStart && quietHoursEnd && !validateQuietHours(quietHoursStart, quietHoursEnd)
         ? { start: quietHoursStart, end: quietHoursEnd }
         : DEFAULT_NOTIFICATION_PREFERENCES.quietHours,
     sanitaryCritical:
@@ -105,6 +105,14 @@ function timeToMinutes(value: string): number | null {
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
 
   return hours * 60 + minutes;
+}
+
+export function validateQuietHours(start: string, end: string): string | null {
+  if (timeToMinutes(start) === null || timeToMinutes(end) === null) {
+    return "Informe início e fim válidos para o horário de silêncio.";
+  }
+  if (start === end) return "O início e o fim do horário de silêncio devem ser diferentes.";
+  return null;
 }
 
 export function isWithinQuietHours(

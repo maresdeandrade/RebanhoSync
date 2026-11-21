@@ -13,6 +13,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { authOperationError } from "@/lib/auth/errorMessage";
 
 interface PendingInvite {
   id: string;
@@ -27,6 +28,8 @@ interface PendingInvite {
 interface PendingInvitesProps {
   fazendaId: string;
   onUpdate: () => void;
+  revision?: number;
+  onCountChange?: (count: number | null) => void;
 }
 
 function formatDate(dateString: string) {
@@ -37,15 +40,18 @@ function isExpired(expiresAt: string) {
   return new Date(expiresAt) < new Date();
 }
 
-export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => {
+export const PendingInvites = ({ fazendaId, onUpdate, revision = 0, onCountChange }: PendingInvitesProps) => {
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchInvites = useCallback(async () => {
     try {
       setIsLoading(true);
+      setLoadError(false);
+      onCountChange?.(null);
       const { data, error } = await supabase
         .from("farm_invites")
         .select("id, email, phone, role, token, expires_at, created_at")
@@ -56,21 +62,17 @@ export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => 
 
       if (error) throw error;
       setInvites(data || []);
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      toast({
-        title: "Erro ao carregar convites",
-        description: err.message,
-        variant: "destructive",
-      });
+      onCountChange?.((data || []).length);
+    } catch {
+      setLoadError(true);
     } finally {
       setIsLoading(false);
     }
-  }, [fazendaId, toast]);
+  }, [fazendaId, onCountChange]);
 
   useEffect(() => {
     void fetchInvites();
-  }, [fetchInvites]);
+  }, [fetchInvites, revision]);
 
   const handleCancelInvite = async (inviteId: string) => {
     try {
@@ -88,10 +90,9 @@ export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => 
       await fetchInvites();
       onUpdate();
     } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
       toast({
         title: "Erro ao cancelar convite",
-        description: err.message,
+        description: authOperationError(error, "Não foi possível cancelar o convite."),
         variant: "destructive",
       });
     }
@@ -126,6 +127,11 @@ export const PendingInvites = ({ fazendaId, onUpdate }: PendingInvitesProps) => 
       </Card>
     );
   }
+
+  if (loadError) return <Card role="alert"><CardContent className="py-6">
+    <p>Não foi possível carregar os convites.</p>
+    <Button variant="outline" onClick={() => void fetchInvites()}>Tentar novamente</Button>
+  </CardContent></Card>;
 
   if (invites.length === 0) {
     return null;

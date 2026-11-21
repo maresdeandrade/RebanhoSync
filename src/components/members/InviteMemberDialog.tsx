@@ -22,6 +22,7 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { authOperationError } from "@/lib/auth/errorMessage";
 
 type Role = "owner" | "manager" | "cowboy";
 
@@ -46,6 +47,7 @@ export const InviteMemberDialog = ({
   const [isLoading, setIsLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const resetState = () => {
@@ -54,9 +56,12 @@ export const InviteMemberDialog = ({
     setRole("cowboy");
     setInviteLink(null);
     setCopied(false);
+    setValidationError(null);
   };
 
   const handleSubmit = async () => {
+    if (isLoading) return;
+    setValidationError(null);
     if (!email.trim() && !phone.trim()) {
       toast({
         title: "Contato obrigatorio",
@@ -65,12 +70,20 @@ export const InviteMemberDialog = ({
       });
       return;
     }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setValidationError("Informe um email válido.");
+      return;
+    }
+    if (phone.trim() && (!/^[+0-9().\s-]+$/.test(phone.trim()) || !/^\d{8,15}$/.test(phone.replace(/\D/g, "")))) {
+      setValidationError("Informe um telefone válido com código do país.");
+      return;
+    }
 
     setIsLoading(true);
     try {
       const { data, error } = await supabase.rpc("create_invite", {
         _fazenda_id: fazendaId,
-        _email: email.trim() || null,
+        _email: email.trim().toLowerCase() || null,
         _phone: phone.trim() || null,
         _role: role,
       });
@@ -82,16 +95,15 @@ export const InviteMemberDialog = ({
       setInviteLink(link);
 
       toast({
-        title: "Convite criado",
-        description: "Compartilhe o link com a pessoa convidada.",
+        title: "Link gerado",
+        description: "Compartilhe o link com a pessoa convidada. Nenhuma mensagem foi enviada automaticamente.",
       });
 
       onSuccess();
     } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
       toast({
         title: "Erro ao criar convite",
-        description: err.message,
+        description: authOperationError(error, "Não foi possível criar o convite."),
         variant: "destructive",
       });
     } finally {
@@ -170,6 +182,10 @@ export const InviteMemberDialog = ({
                   </div>
                 </div>
               </div>
+              <p className="text-sm text-muted-foreground">
+                O destinatário deve entrar com o email confirmado do convite. Para convite somente por telefone, o número precisa estar verificado na autenticação; informar o telefone no perfil não verifica a identidade. Se necessário, use email.
+              </p>
+              {validationError && <p role="alert" className="text-sm text-destructive">{validationError}</p>}
 
               <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
                 <div className="space-y-2">

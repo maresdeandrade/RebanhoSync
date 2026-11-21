@@ -8,8 +8,11 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { getInviteAuthPath } from "@/lib/auth/inviteRedirect";
+import { useAuth } from "@/hooks/useAuth";
+import { authOperationError } from "@/lib/auth/errorMessage";
 
 interface InvitePreview {
+  fazenda_id: string;
   fazenda_nome: string;
   role: string;
   inviter_nome: string;
@@ -46,7 +49,7 @@ function normalizeAcceptError(message?: string) {
   }
 
   if (normalized.includes("phone does not match")) {
-    return "Seu telefone nao corresponde ao telefone informado no convite. Atualize seu perfil ou fale com quem enviou o convite.";
+    return "Seu telefone nao corresponde ao convite. Entre com a conta que possui o telefone destinatario verificado ou solicite um convite para seu email.";
   }
 
   if (normalized.includes("already a member")) {
@@ -68,6 +71,7 @@ export const AcceptInvite = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { setActiveFarm } = useAuth();
 
   const loadInvite = useCallback(async () => {
     if (!token) {
@@ -83,18 +87,15 @@ export const AcceptInvite = () => {
       });
 
       if (error) throw error;
-      if (!data) {
+      if (!Array.isArray(data) || data.length !== 1) {
         throw new Error("Convite nao encontrado.");
       }
-
-      setInvite(data);
+      const preview = data[0] as InvitePreview;
+      if (!preview.fazenda_id || typeof preview.is_valid !== "boolean") throw new Error("Resposta de convite invalida.");
+      setInvite(preview);
       setError(null);
     } catch (previewError: unknown) {
-      const normalized =
-        previewError instanceof Error
-          ? previewError
-          : new Error(String(previewError));
-      setError(normalized.message);
+      setError(authOperationError(previewError, "Nao foi possivel carregar este convite."));
       setInvite(null);
     } finally {
       setIsLoading(false);
@@ -106,6 +107,7 @@ export const AcceptInvite = () => {
   }, [loadInvite]);
 
   const handleAccept = async () => {
+    if (isProcessing || !invite) return;
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -137,19 +139,17 @@ export const AcceptInvite = () => {
         throw new Error(normalizeAcceptError(error.message));
       }
 
+      await setActiveFarm(invite.fazenda_id);
+
       toast({
         title: "Convite aceito",
         description: "Voce entrou na fazenda com sucesso.",
       });
       navigate("/home");
     } catch (acceptError: unknown) {
-      const normalized =
-        acceptError instanceof Error
-          ? acceptError
-          : new Error(String(acceptError));
       toast({
         title: "Nao foi possivel aceitar o convite",
-        description: normalized.message,
+        description: authOperationError(acceptError, "Nao foi possivel aceitar o convite."),
         variant: "destructive",
       });
     } finally {
@@ -173,13 +173,9 @@ export const AcceptInvite = () => {
       });
       navigate("/");
     } catch (rejectError: unknown) {
-      const normalized =
-        rejectError instanceof Error
-          ? rejectError
-          : new Error(String(rejectError));
       toast({
         title: "Nao foi possivel recusar o convite",
-        description: normalized.message,
+        description: authOperationError(rejectError, "Nao foi possivel recusar o convite."),
         variant: "destructive",
       });
     } finally {
@@ -206,9 +202,10 @@ export const AcceptInvite = () => {
             description={error || undefined}
             meta={<StatusBadge tone="danger">Convite invalido</StatusBadge>}
             actions={
-              <Button onClick={() => navigate("/")}>
-                Voltar para o inicio
-              </Button>
+              <>
+                <Button onClick={() => void loadInvite()}>Tentar novamente</Button>
+                <Button variant="outline" onClick={() => navigate(getInviteAuthPath("login", new URLSearchParams({ redirect: `/invites/${token}` }).toString()))}>Entrar para continuar</Button>
+              </>
             }
           />
         </div>
@@ -223,7 +220,7 @@ export const AcceptInvite = () => {
           <PageIntro
             variant="plain"
             eyebrow="Convite"
-            title="Convite expirado ou ja utilizado"
+            title={invite.status === "accepted" ? "Convite ja utilizado" : invite.status === "cancelled" ? "Convite cancelado" : invite.status === "rejected" ? "Convite recusado" : "Convite expirado"}
             meta={
               <>
                 <StatusBadge tone="danger">{invite.status}</StatusBadge>
