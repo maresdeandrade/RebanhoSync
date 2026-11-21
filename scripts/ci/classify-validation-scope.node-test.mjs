@@ -264,6 +264,23 @@ test("final gate is always FULL", () => {
   );
 });
 
+test("local node:test contracts require Supabase and never become Vitest targets", () => {
+  for (const harness of [
+    "member-invites", "member-invites-concurrency", "block1-security",
+    "block1-concurrency", "block1-browser",
+  ]) {
+    const file = `tests/codex/${harness}.local.test.mjs`;
+    for (const files of [[file], [file, "src/pages/__tests__/Membros.test.tsx", "docs/testing.md"]]) {
+      const prScope = classifyPrScope(files);
+      const deltaScope = classifyDeltaScope(files);
+      assert.equal(prScope, "FULL");
+      assert.equal(deltaScope, "FULL");
+      assert.equal(deriveExecution({ prScope, deltaScope }).needsSupabase, true);
+      assert.ok(!selectTestTargets(files).includes(file));
+    }
+  }
+});
+
 test("test selection uses changed tests and conservative directories", () => {
   assert.deepEqual(
     selectTestTargets([
